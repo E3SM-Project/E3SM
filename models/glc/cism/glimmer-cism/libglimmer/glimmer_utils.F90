@@ -33,7 +33,7 @@
 !> Module containing utility code for GLIMMER.
 module glimmer_utils
 
-  use glimmer_global
+  use glimmer_global, only: dp
 
   implicit none
 
@@ -53,11 +53,11 @@ contains
   !!
   !! the location is wrapped around the array boundaries until it falls within the array
   !! \author The value of the location in question.
-  real(rk) function array_bcs1d(array,i)
+  real(dp) function array_bcs1d(array,i)
 
     ! Arguments
 
-    real(rk),dimension(:),intent(in) :: array !< The array to be indexed.
+    real(dp),dimension(:),intent(in) :: array !< The array to be indexed.
     integer,intent(in)               :: i     !< The location to be extracted.
 
     ! Internal variables
@@ -90,12 +90,12 @@ contains
   !! the location is wrapped around the array boundaries until it falls within the array
   !! as array_bcs1d but for polar boundary conditions
   !! \author The value of the location in question.
-  real(rk) function array_bcs_lats(array,i)
+  real(dp) function array_bcs_lats(array,i)
 
 
     ! Arguments
 
-    real(rk),dimension(:),intent(in) :: array !< The array to be indexed.
+    real(dp),dimension(:),intent(in) :: array !< The array to be indexed.
     integer,intent(in) :: i !< The location to be extracted.
 
     ! Internal variables
@@ -112,12 +112,12 @@ contains
 
     if (ii>n) then
       ii=2*n-ii
-      array_bcs_lats=-180.0+array(ii)
+      array_bcs_lats=-180.d0+array(ii)
     endif
 
     if (ii<1) then
       ii=1-ii
-      array_bcs_lats=180.0-array(ii)
+      array_bcs_lats=180.d0-array(ii)
     endif
 
   end function array_bcs_lats
@@ -128,11 +128,11 @@ contains
   !! location, checking first for the boundaries. 
   !! Over-the-pole boundary conditions are implemented here.
   !! \return The value of the location specified.
-  real(rk) function array_bcs2d(array,i,j)
+  real(dp) function array_bcs2d(array,i,j)
 
     ! Arguments
 
-    real(rk),dimension(:,:),intent(in) :: array !< Array to be indexed
+    real(dp),dimension(:,:),intent(in) :: array !< Array to be indexed
     integer,intent(in) :: i !< The location to be extracted    
     integer,intent(in) :: j !< The location to be extracted
 
@@ -215,8 +215,8 @@ contains
 
     use glimmer_log
 
-    real(rk),dimension(:,:),intent(in) :: array1 !< The array 1 to be checked
-    real(rk),dimension(:,:),intent(in) :: array2 !< The array 2 to be checked
+    real(dp),dimension(:,:),intent(in) :: array1 !< The array 1 to be checked
+    real(dp),dimension(:,:),intent(in) :: array2 !< The array 2 to be checked
     character(*),intent(in),optional :: label    !< Optional label, to facilitate bug tracking if the check fails.
 
     if ((size(array1,1)/=size(array2,1)).or.(size(array1,2)/=size(array2,2))) then

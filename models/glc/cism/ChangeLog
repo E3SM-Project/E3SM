@@ -1,0 +1,4616 @@
+================================================================================
+This file describes what main-trunk tags were created and why
+================================================================================
+
+================================================================================
+Originator: jfyke, sacks
+Date: May 1, 2014
+Model: cism
+Version: cism1_140501
+One-line summary: Add an elevation class 0, for bare land SMB
+
+Purpose of changes:
+
+   Changes from Jeremy Fyke to add an elevation class 0, for bare land SMB. Also
+   adds ice_sheet_grid_mask. Also some minor, unrelated changes as noted below.
+
+   This involves extensive changes to glint, as well as some changes to the glc
+   code.
+
+   In addition, this tag pulls in an unrelated change to the glimmer-cism
+   external: a fix from Stephen Cornford for glint_mbal_io.
+
+Changes answers relative to previous tag: YES
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_RunMod.F90
+M       source_glc/glc_override_frac.F90
+M       source_glc/glc_global_fields.F90
+M       drivers/cpl/glc_cpl_indices.F90
+
+*** Also, clean up interfaces for glc_import & glc_export ('use' things directly
+    rather than having them passed through the interface)
+M       drivers/cpl/glc_comp_mct.F90
+M       drivers/cpl/glc_comp_esmf.F90
+M       drivers/cpl/glc_import_export.F90
+
+*** Use some constants from shr_const_mod
+M       source_glc/glc_constants.F90
+
+*** Add an option to decrease the mass balance time step, for testing purposes
+    (currently not exercised in any tests)
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures (note: the GEN cases probably would have given CFAIL if I had been
+   patient):
+
+CFAIL ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.140430-125442
+CFAIL NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.140430-125442
+FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.140430-125442 
+GEN SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.140430-125442
+GEN SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.140430-125442
+CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.140430-125445
+
+   Note: I am now getting a CFAIL instead of a FAIL for the IS2 cases... seems
+   to be something having to do with the yellowstone upgrade... I'm guessing
+   it's a problem with the C++/Fortran link. I get this message:
+
+      cannot find -lmkl_rt
+
+Externals used for testing: cesm1_3_beta07, but with quite a few changes:
+
+   Index: SVN_EXTERNAL_DIRECTORIES
+   ===================================================================
+   --- SVN_EXTERNAL_DIRECTORIES	(revision 59711)
+   +++ SVN_EXTERNAL_DIRECTORIES	(working copy)
+   @@ -1,23 +1,23 @@
+   -scripts                            https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_140113
+   -scripts/ccsm_utils/Machines        https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_140124
+   +scripts                            https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/add_dynlu_tests_tags/add_dynlu_tests_n02_scripts4_140305
+   +scripts/ccsm_utils/Machines        https://svn-ccsm-models.cgd.ucar.edu/Machines/branch_tags/arfs_tags/arfs_01_mach140218
+   tools/cprnc                        https://svn-ccsm-models.cgd.ucar.edu/tools/cprnc/trunk_tags/cprnc_131224
+   tools/mapping                      https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_131217a
+   -models/drv                         https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_08
+   -models/csm_share                   https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_131231
+   +models/drv                         https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/branch_tags/bare_land_smb_tags/bare_land_smb_n02_drvseq5_0_08
+   +models/csm_share                   https://svn-ccsm-models.cgd.ucar.edu/csm_share/branch_tags/shr_assert_macro_tags/shr_assert_macro_n04_share3_140115
+   scripts/validation_testing         https://svn-ccsm-models.cgd.ucar.edu/validation_testing/trunk_tags/validation_20131108/run_CESM/
+   models/atm/cam                     https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_3_23/models/atm/cam
+   -models/atm/datm                    https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_131201
+   +models/atm/datm                    https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_140114
+   models/atm/satm                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/satm
+   models/atm/xatm                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xatm
+   models/dead_share                  https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/dead_share
+   -models/glc/cism                    https://svn-ccsm-models.cgd.ucar.edu/glc/trunk_tags/cism1_131213
+   +models/glc/cism                    https://svn-ccsm-models.cgd.ucar.edu/glc/branch_tags/bare_land_smb_tags/bare_land_smb_n06_cism1_140416
+   models/glc/sglc                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/sglc
+   models/glc/xglc                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xglc
+   models/ice/cice                    https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20131002
+   models/ice/dice                    https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_131201
+   models/ice/sice                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/sice
+   models/ice/xice                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xice
+   -models/lnd/clm                     https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_57/models/lnd/clm
+   +models/lnd/clm                     https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/bare_land_smb_tags/bare_land_smb_n14_clm4_5_70/models/lnd/clm
+   models/lnd/dlnd                    https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_131201
+   models/lnd/slnd                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/slnd
+   models/lnd/xlnd                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xlnd
+   @@ -27,16 +27,16 @@
+   models/ocn/socn                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/socn
+   models/ocn/xocn                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xocn
+   models/rof/drof                    https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_131201
+   -models/rof/rtm                     https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_36
+   +models/rof/rtm                     https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_37
+   models/rof/srof                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/srof
+   models/rof/xrof                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xrof
+   models/utils/esmf_wrf_timemgr      https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_130213
+   models/utils/mct                   https://github.com/quantheory/MCT/tags/compiler_fixes_n04_MCT_2.8.3
+   -models/utils/pio                   http://parallelio.googlecode.com/svn/trunk_tags/pio1_8_7/pio
+   +models/utils/pio                   http://parallelio.googlecode.com/svn/trunk_tags/pio1_8_11/pio
+   models/utils/timing                https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_131108
+   models/wav/swav                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/swav
+   models/wav/ww3                     https://svn-ccsm-models.cgd.ucar.edu/ww3/trunk_tags/ww3_130905
+   models/wav/xwav                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_09/xwav
+   -scripts/ccsm_utils/CMake           https://github.com/quantheory/CMake_Fortran_utils/tags/CMake_Fortran_utils_140116
+   +scripts/ccsm_utils/CMake           https://github.com/quantheory/CMake_Fortran_utils/tags/CMake_Fortran_utils_140403
+   scripts/doc                        https://svn-ccsm-models.cgd.ucar.edu/doc/trunk_tags/doc_131021
+   tools/unit_testing                 https://svn-ccsm-models.cgd.ucar.edu/unit_testing/trunk_tags/unit_testing_0_04
+
+
+cism tag used for baseline comparisons: cism1_140303
+
+Any other externals that differed in baseline: See notes under cism1_140303 below
+
+================================================================================
+Originator: muszala
+Date: April 16, 2014
+Model: cism
+Version: cism1_140416
+One-line summary: bring in SHR_ASSERT macros
+
+Purpose of changes: Removed 'use shr_assert_mod' statements and replace
+'call shr_assert' with SHR_ASSERT or SHR_ASSERT_ALL where appropriate.
+Add #include "shr_assert.h" to modules where macro is used.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/): N/A
+
+List all modified files, and describe the changes:
+
+M       source_glc/glc_override_frac.F90
+M       drivers/cpl/glc_comp_mct.F90
+M       drivers/cpl/glc_comp_esmf.F90
+M       drivers/cpl/glc_import_export.F90
+
+Summary of testing:
+
+Tested along with clm4_5_70.  This includes yellowstone+{intel,pgi} and
+goldbach+{nag,pgi,intel} and component comp. gen with ys+intel.
+
+Externals used for testing: alpha09b
+
+Cism tag used for baseline comparisons: cism1_140303 in clm4_5_69
+
+Any other externals that differed in baseline:  Many, including: Pio, Mct, timing,
+scripts, machines.  Please compare clm4_5_69 and clm4_5_70 for all details.
+
+================================================================================
+Originator: sacks
+Date: April 3, 2014
+Model: cism
+Version: cism1_140403
+One-line summary: fix allocate statement so it works with gfortran
+
+Purpose of changes:
+
+   I accidentally used a F2008 feature - trying to pick up array dimensions with
+   allocate(..., source=...); I have fixed this.
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       drivers/cpl/glc_import_export.F90
+
+Summary of testing:
+
+   Just ran a subset of tests:
+
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140403-132534 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140403-132534.memleak
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140403-132534.generate.cism1_140403 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140403-132534.compare_hist.cism1_140305 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140403-132534.memcomp.cism1_140305 
+FAIL  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140403-132534.tputcomp.cism1_140305 
+COMMENT   tput_decr = 8.0199999 tput_decr = 3.7669999 
+
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140403-132608 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140403-132608.memleak
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140403-132608.generate.cism1_140403 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140403-132608.compare_hist.cism1_140305 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140403-132608.memcomp.cism1_140305 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140403-132608.tputcomp.cism1_140305 
+COMMENT   tput_decr = 2.2609999 
+
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140403-140743 
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140403-140743.memleak
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140403-140743.generate.cism1_140403 
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140403-140743.compare_hist.cism1_140305 
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140403-140743.memcomp.cism1_140305 
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140403-140743.tputcomp.cism1_140305 
+
+And from component_gen_comp:
+
+PASS   SMS_D.f09_g16_gl10.TG.yellowstone_pgi.compare_hist.cism1_140305.cism.h 
+PASS   SMS_D.f09_g16_gl10.TG.yellowstone_pgi.generate.cism.h 
+
+PASS   SMS_D.f09_g16.TG.yellowstone_intel.compare_hist.cism1_140305.cism.h 
+PASS   SMS_D.f09_g16.TG.yellowstone_intel.generate.cism.h 
+
+PASS   ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.compare_hist.cism1_140305.cism.h 
+PASS   ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.generate.cism.h 
+
+
+Externals used for testing: cesm1_3_beta07, but scripts4_140305 and Machines_140227
+
+cism tag used for baseline comparisons: cism1_140305
+
+Any other externals that differed in baseline: none
+
+================================================================================
+Originator: sacks
+Date: March 5, 2014
+Model: cism
+Version: cism1_140305
+One-line summary: fix capping of increase_frac override
+
+Purpose of changes:
+
+   The capping of inrease_frac was accidentally capping each elevation class at
+   100%, when it should be capping the sum of elevation classes at 100%. That is
+   now fixed.
+
+Changes answers relative to previous tag: NO (only changes test cases that use increase_frac)
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       source_glc/glc_override_frac.F90
+
+Summary of testing:
+
+   Just ran a subset of tests:
+
+PASS  ERS_Ld9.f19_g16.IGCLM45.yellowstone_pgi.cism-override_glc_frac.GC.140305-092736 
+
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532.memleak
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532.generate.cism1_140305 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532.compare_hist.cism1_140303 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532.memcomp.cism1_140303 
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532.tputcomp.cism1_140303 
+PASS SMS_D.f09_g16_gl10.TG.yellowstone_pgi.GC.140305-093532.nlcomp
+
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417.memleak
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417.generate.cism1_140305 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417.compare_hist.cism1_140303 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417.memcomp.cism1_140303 
+PASS  SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417.tputcomp.cism1_140303 
+PASS SMS_D.f09_g16.TG.yellowstone_intel.GC.140305-093417.nlcomp
+
+Externals used for testing: cesm1_3_beta07, but scripts4_140305 and Machines_140227
+
+cism tag used for baseline comparisons: cism1_140303
+
+Any other externals that differed in baseline: baseline used scripts4_140221a
+
+================================================================================
+Originator: sacks
+Date: March 3, 2014
+Model: cism
+Version: cism1_140303
+One-line summary: add options to override glc frac sent to cpl, for testing
+
+Purpose of changes:
+
+   Put in place a number of namelist settings that can be used to modify the glc
+   frac sent from GLC -> CPL. The point of this is to push CLM's dynamic
+   landunits in various ways (e.g., going from 0% glacier to non-zero glacier,
+   from 100% glacier down to 0% glacier, etc.).
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+M       source_glc/glc_InitMod.F90
+A       source_glc/glc_override_frac.F90
+M       source_glc/glc_global_fields.F90
+M       drivers/cpl/glc_import_export.F90
+
+*** Unrelated change: fix documentation
+M       bld/README.build-namelist
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.140228-162551 
+FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.140228-162551 
+FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.140228-162551 
+FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.140228-162551 
+FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.140228-162551 
+CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.140228-162555
+
+
+Externals used for testing: cesm1_3_beta07, but scripts4_140221a and Machines_140227
+
+cism tag used for baseline comparisons: cism1_140203
+
+Any other externals that differed in baseline: baseline used cesm1_3_beta07, unmodified
+
+================================================================================
+Originator: sacks
+Date: Feb 3, 2014
+Model: cism
+Version: cism1_140203
+One-line summary: fix exact restart problem with cism -> cpl fields
+
+Purpose of changes:
+
+   Update glimmer-cism external to fix an exact restart problem that appears
+   with a few of the cism -> cpl fields - specifically, the rofi, rofl and hflx
+   fields. This problem showed up with runs with daily (rather than annual)
+   coupling - i.e., all compsets other than TG. For example, this test was
+   failing:
+
+   ERS_Ly5.T31_g37.IGCLM45.yellowstone_intel
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update from r55984 -> r56989
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.140129-134856
+BFAIL ERS_Ly5.T31_g37.IGCLM45.yellowstone_intel.GC.140129-134851.compare_hist.cism1_131213_beta07 
+FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.140129-134851 
+FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.140129-134851 
+FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.140129-134851 
+FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.140129-134851 
+FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.140129-134851 
+
+
+Externals used for testing: cesm1_3_beta07
+
+cism tag used for baseline comparisons: cism1_131213
+
+Any other externals that differed in baseline: none
+
+================================================================================
+Originator: sacks
+Date: Dec 13, 2013
+Model: cism
+Version: cism1_131213
+One-line summary: update glimmer-cism external
+
+Purpose of changes:
+
+  Update glimmer-cism external to r55984. The main change here is to remove
+  prevtemp from the computation of the diagnostic quantity dTtop; this changes
+  answers for hflx, but nothing else.
+
+Changes answers relative to previous tag: YES
+
+   Just changes answers for the hflx term sent to the coupler. Diffs are
+   generally about 1e-6 (relative error), though some RMS errors are as large as
+   1e-4 (relative error).
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.143014
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.143009 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.143009 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.143009 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.143009 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.143009 
+
+Externals used for testing: cesm1_3_beta05
+
+cism tag used for baseline comparisons: cism1_131212a
+
+Any other externals that differed in baseline: none
+
+================================================================================
+Originator: sacks
+Date: Dec 12, 2013
+Model: cism
+Version: cism1_131212a
+One-line summary: update glimmer-cism external
+
+Purpose of changes:
+
+   Update glimmer-cism external from r55935 to r55978. This changes the number
+   of seconds in a year to exactly 365 days, in agreement with the rest of CESM.
+
+Changes answers relative to previous tag: YES
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.142829
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.142824 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.142824 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.142824 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.142824 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.142824 
+
+
+Externals used for testing: cesm1_3_beta05
+
+cism tag used for baseline comparisons: cism1_131212
+
+Any other externals that differed in baseline: none
+
+================================================================================
+Originator: sacks
+Date: Dec 12, 2013
+Model: cism
+Version: cism1_131212
+One-line summary: update glimmer-cism external, fixing fields sent from glc to cpl
+
+Purpose of changes:
+
+   Update glimmer-cism external from r54059 to r55935. The main changes here
+   involve fixing the fields sent from glc to the CESM coupler - specifically,
+   rofi, rofl and hflx. Also, a few other minor changes.
+
+Changes answers relative to previous tag: YES
+
+   Changes answers for all fields sent from GLC -> CPL: SIGNIFICANT differences
+   for hflx, rofi and rofl; and roundoff-level changes for frac and topo.
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.133413
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.133404 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.133404 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.133404 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.133404 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.133404 
+
+
+Externals used for testing: cesm1_3_beta05
+
+cism tag used for baseline comparisons: cism1_131203
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: Dec 3, 2013
+Model: cism
+Version: cism1_131203
+One-line summary: call glc_export in mct initialization
+
+Purpose of changes:
+
+   With the changes in cism1_131008, the esmf side had been changed to call
+   glc_export in initialization, but the mct side had not been changed
+   similarly. This tag makes a simple change to the mct side so that CME tests
+   now pass. (This problem was missed in the testing for cism1_131008 because it
+   only shows up in IG/FG/BG compsets, which were excluded from the testing of
+   that tag.)
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       drivers/cpl/glc_comp_mct.F90
+
+Summary of testing: 
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.103449
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.103445 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.103445 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.103445 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.103445 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.103445 
+
+   Note that this test failed in the baseline:
+
+   CME_Ly5.T31_g37.IG.yellowstone_intel.clm-reduceOutput
+
+   However, I manually compared the cpl hist files, and they are identical in
+   the new tag compared with the baseline.
+
+Externals used for testing: cesm1_3_beta05
+
+cism tag used for baseline comparisons: cism1_131008
+
+Any other externals that differed in baseline: None (baselines also generated
+from cesm1_3_beta05)
+
+================================================================================
+Originator: sacks, mvertens
+Date: Oct 8, 2013
+Model: cism
+Version: cism1_131008
+One-line summary: Mariana's changes to cpl infrastructure, update external
+
+Purpose of changes:
+
+(1) Bring in Mariana's refactoring of the cpl infrastructure
+
+(2) Point glimmer-cism external to new repository location
+
+(3) Small update to glimmer-cism external: Bring in Matt Hoffman's
+change to the logic for allocating isostasy variables
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** (1) above
+M       bld/cism.buildexe.csh
+D       drivers/cpl_share
+D       drivers/cpl_mct
+D       drivers/cpl_esmf
+A       drivers/cpl/glc_comp_mct.F90
+A       drivers/cpl/glc_comp_esmf.F90
+A       drivers/cpl/glc_import_export.F90
+A       drivers/cpl/glc_coupling_flags.F90
+A       drivers/cpl/glc_cpl_indices.F90
+A       drivers/cpl
+
+*** (2) and (3) above
+M       SVN_EXTERNAL_DIRECTORIES
+
+
+Summary of testing:
+
+   Ran just a subset of the yellowstone intel & pgi test lists: Just the TG
+   CISM1 tests. It was not ideal to exclude the IG / FG / BG tests, but I made
+   this compromise because yellowstone is down. 
+
+   All PASS except the following expected failure:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.215132
+
+   Update 12-2-13: Ran IG / FG / BG CISM1 tests; all pass EXCEPT:
+
+   *** Known failure; working on resolving this
+   FAIL  CME_Ly5.T31_g37.IG.yellowstone_intel.GC.100040 
+
+   *** Diffs only in x2l_Flrr_volr
+   FAIL  ERI.f19_g16.IGRCP85CN.yellowstone_pgi.GC.100111.compare_hist.cism1_130924 
+
+   (component_gen_comp: all PASS, including the two above test failures)
+
+Externals used for testing: cesm1_3_alpha04c
+
+cism tag used for baseline comparisons: cism1_130924
+
+Any other externals that differed in baseline: Baseline used externals at cesm1_3_beta03
+
+================================================================================
+Originator: sacks
+Date: Sept 24, 2013
+Model: cism
+Version: cism1_130924
+One-line summary: Update glimmer-cism external to r1966
+
+Purpose of changes: Bring in latest glimmer-cism external - update from r1950 to
+r1966
+
+Changes answers relative to previous tag: No diffs according to test suite,
+although log messages suggest there may have been some small answer changes.
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following
+   expected failures:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.162146
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.162141 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.162141 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.162141 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.162141 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.162141 
+
+
+Externals used for testing: cesm1_3_beta03
+
+cism tag used for baseline comparisons: cism1_130905
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks, tcraig
+Date: Sept 5, 2013
+Model: cism
+Version: cism1_130905
+One-line summary: rework coupling fields, update glimmer-cism external
+
+Purpose of changes:
+
+(1) Rework the runoff coupling fields (rofi & rofl) to fit in with Tony Craig's
+    coupler changes. These fields are now routed to the ocean and/or sea ice,
+    instead of to the land. Also, these are no longer separated by elevation
+    class.
+
+(2) Update glimmer-cism external from r1936 -> r1950. This brings in a number of
+    changes. The most important are some changes from Bill Lipscomb that fix
+    some of the g2x coupling fields, and remove the elevation class dimension
+    from the g2x rofi & rofl fields.
+
+
+Changes answers relative to previous tag: YES
+   Changes all of the g2x coupling fields.
+   However, CISM history files are bfb
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Changes to coupling fields as described above
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_RunMod.F90
+M       source_glc/glc_global_fields.F90
+M       drivers/cpl_share/glc_cpl_indices.F90
+M       drivers/cpl_mct/glc_comp_mct.F90
+M       drivers/cpl_esmf/glc_comp_esmf.F90
+
+*** Routines to determine whether to send calving flux to ocean or sea ice
+A       source_glc/glc_route_ice_runoff.F90
+A       drivers/cpl_share/glc_coupling_flags.F90
+
+*** Add a namelist option to choose where calving flux should go
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+*** Update from r1936 -> r1950
+M       SVN_EXTERNAL_DIRECTORIES
+
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. Testing was done in the context of Tony
+   Craig's changes, which involved the coupler and many other components. The
+   testing documented here was done on cplupa_n03_cism1_130624.
+
+   Baseline comparisons fail for g2x fields and the derived x2l fields. CISM
+   history files are bfb according to component_gen_comp. 
+
+   Test failures are:
+
+   *** Expected failures
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel
+
+   *** Failures in IG/FG tests that I think are expected (note: these all failed
+       in the baseline, too; also note that I have TG tests that cover the same
+       kind of functionality - e.g., a CME TG test - so this likely points to
+       problems outside of GLC; also, Tony says that the IG failures are
+       expected)
+   FAIL  ERI.f19_g16.IGRCP85CN.yellowstone_pgi
+   FAIL  SMS_D.f09_g16.IG20TR.yellowstone_pgi
+   FAIL  CME_Ly5.T31_g37.IG.yellowstone_intel
+   FAIL  SMS.f19_f19.FG20TRCN.yellowstone_intel
+
+
+Externals used for testing:
+
+   models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/branch_tags/cesmcosp_cam5_3_xx_tags/cesmcosp_n01_cam5_3_04/models/atm/cam
+   models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_130424
+   models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/satm
+   models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm130325
+   models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_06/xatm
+   models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/branch_tags/cplupa_tags/cplupa_n01_share3_130528
+   models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/dead_share
+   models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/branch_tags/cplupa_tags/cplupa_n02_drvseq4_2_33
+   models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/branches/cplupa
+   models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/sglc
+   models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/xglc
+   models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/branch_tags/cplupa_tags/cplupa_n01_cice4_0_20130524
+   models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/branch_tags/cplupa_tags/cplupa_n01_dice8_130313
+   models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/sice
+   models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/xice
+   models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/cplupa_tags/cplupa_n02_clm4_5_11/models/lnd/clm
+   models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/branch_tags/cplupa_tags/cplupa_n01_dlnd8_130213
+   models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/slnd
+   models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/xlnd
+   models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_130313
+   models/ocn/pop2                 https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20130517
+   models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/socn
+   models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/xocn
+   models/ocn/aquap                https://svn-ccsm-models.cgd.ucar.edu/aquap/trunk_tags/aquap_130503
+   models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_130503
+   models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/branch_tags/cplupa_tags/cplupa_n01_rtm1_0_28
+   models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/srof
+   models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/xrof
+   models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_130213
+   models/utils/mct                https://github.com/quantheory/MCT/tags/compiler_fixes_n03_MCT_2.8.3
+   models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_7_2/pio
+   models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_130506
+   models/wav/swav                    https://svn-ccsm-models.cgd.ucar.edu/stubs/branch_tags/cplupa_tags/cplupa_n02_stubs1_4_02/swav
+   models/wav/ww3                  https://svn-ccsm-models.cgd.ucar.edu/ww3/trunk_tags/ww3_130314
+   models/wav/xwav                 https://svn-ccsm-models.cgd.ucar.edu/dead7/branch_tags/cplupa_tags/cplupa_n02_dead7_7_06/xwav
+   scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/cplupa_tags/cplupa_n02_scripts4_130627
+   scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_130625
+   tools/cprnc                     https://svn-ccsm-models.cgd.ucar.edu/tools/cprnc/trunk_tags/cprnc_130529
+   tools/mapping                   https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509
+
+
+cism tag used for baseline comparisons: cplupa_n02_cism1_130624
+   Note: I removed the rofi & rofl coupling stuff from cism so that it would
+   work in the context of the above externals
+
+Any other externals that differed in baseline: Same as above
+
+================================================================================
+Originator: sacks
+Date: June 24, 2013
+Model: cism
+Version: cism1_130624
+One-line summary: update glimmer-cism external
+
+Purpose of changes:
+
+Update glimmer-cism external, from r1876 to r1936. 
+
+Also update documentation of config options.
+
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+M       bld/namelist_files/namelist_definition_cism.xml
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following
+   expected failures:
+
+   *** No ESMF for PGI
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi
+
+   *** CISM2 failures
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.163141 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.163141 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.163141 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.163141 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.163141 
+
+
+   Note that nlcomp failed for 10km & 20km, as expected (with
+   comparison to cism1_130514)
+
+
+Externals used for testing: cesm1_2_beta08, with scripts @ scripts4_130513b
+
+cism tag used for baseline comparisons: cism1_130514
+
+Any other externals that differed in baseline: None.
+
+================================================================================
+Originator: sacks
+Date: May 24, 2013
+Model: cism
+Version: cism1_130524
+One-line summary: change idiag & jdiag for 10km & 20km; allow other
+                  sigma values; fix some namelist documentation
+
+
+Purpose of changes: (see summary)
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+Summary of testing:
+
+   Ran the following with comparison to baseline (but NOT component_gen_comp):
+   SMS_D.f09_g16_gl10.TG.yellowstone_pgi
+   ERS_Ly20.f09_g16.TG1850.yellowstone_intel
+   SMS_D.f09_g16.TG.yellowstone_intel
+
+   Ran the following with NO comparison to baseline:
+   SMS_D.f09_g16.IG20TR.yellowstone_intel
+
+   Also, ran the following with CISM_GRID=gland20, also with
+   comparison to baseline (including component_gen_comp):
+   SMS.f09_g16.TG.yellowstone_pgi
+
+   Note that nlcomp failed for 10km & 20km, as expected
+
+Externals used for testing: cesm1_2_beta08, with scripts @ scripts4_130513b
+
+cism tag used for baseline comparisons: cism1_130514
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: May 14, 2013
+Model: cism
+Version: cism1_130514
+One-line summary: Update glimmer-cism: use double-precision for all variables
+
+Purpose of changes:
+
+Bring in changes from Bill L to convert all variables to double precision
+
+
+Changes answers relative to previous tag: YES -- answers change by
+single-precision roundoff (as expected), along with some slightly unexpected,
+large changes around the continental margin (at least in acab & temp)
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update from r1863 -> r1876
+M       SVN_EXTERNAL_DIRECTORIES
+
+*** Change some variables to double precision
+M       source_glc/glc_InitMod.F90
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. For this testing, I have switched over to
+   using the xml-based test lists, since they have been fixed to include all
+   desired tests in the latest scripts tag.
+
+   Baseline comparisons fail, as expected. Other than that, failures are:
+
+   *** No ESMF for PGI
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.094304
+
+   *** CISM2 failures
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.094301 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.094301 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.094301 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.094301 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.094301 
+
+
+Externals used for testing: cesm1_2_beta08, with scripts @ scripts4_130513b
+
+cism tag used for baseline comparisons: cism1_130502
+
+Any other externals that differed in baseline: Unsure... I may have used
+cesm1_2_beta06 for the baseline by accident, but it doesn't really matter
+because there are known baseline differences in this new tag.
+
+================================================================================
+Originator: sacks
+Date: May 2, 2013
+Model: cism
+Version: cism1_130502
+One-line summary: Update glimmer-cism: fix restart bugs, clean-up from Bill L
+
+Purpose of changes:
+
+Update glimmer-cism from r1849 -> 1863, mainly for two purposes:
+
+- Fixes for restart bugs in non-default configurations (from Matt Hoffman)
+
+- Clean-up (mostly of comments) from Bill Lipscomb
+
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. I used the plain text test lists as they
+   existed before the conversion of test lists to xml, because there were some
+   missing tests in the xml
+
+   All PASS except:
+
+   *** No ESMF for PGI
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.150138
+
+   *** CISM2 failures
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.150142 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.150142 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.150142 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.150142 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.150142 
+
+Externals used for testing: cesm1_2_beta06, but PIO @ pio1_6_8
+
+cism tag used for baseline comparisons: cism1_130430a
+
+Any other externals that differed in baseline: No differences
+
+================================================================================
+Originator: sacks
+Date: April 30, 2013
+Model: cism
+Version: cism1_130430a
+One-line summary: Update glimmer-cism external, including getting restarts to
+                  work for evolution=2; also add some config options
+
+Purpose of changes:
+
+- Update external (1846 -> 1849): 
+  - some cleanup from Bill Lipscomb
+  - get restarts to work with evolution=2
+
+- Add some config options to namelist_definition file
+
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_definition_cism.xml
+M       SVN_EXTERNAL_DIRECTORIES
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. I used the plain text test lists as they
+   existed before the conversion of test lists to xml, because there were some
+   missing tests in the xml
+
+   All PASS except:
+
+   *** No ESMF for PGI
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.084959
+
+   *** CISM2 failures
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.085004 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.085004 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.085004 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.085004 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.085004 
+
+   
+   Also ran all CISM1 tests from a sandbox that set evolution=2,
+   dt=0.0083333333333333333333333333333333333 by default (for all
+   resolutions). These all pass except:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.102727
+
+   Note, in particular, that all restart tests are now passing for
+   evolution=2. However, note that a small time step is needed for these
+   evolution=2 cases to pass (even using dt=0.025 led to failure of some cases)
+
+Externals used for testing: cesm1_2_beta06, but PIO @ pio1_6_8
+
+cism tag used for baseline comparisons: cism1_130429
+
+Any other externals that differed in baseline: No differences
+
+================================================================================
+Originator: sacks
+Date: April 30, 2013
+Model: cism
+Version: cism1_130430
+One-line summary: Use new glint interfaces
+
+Purpose of changes:
+
+Use new glint interfaces from Bill L.
+
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update glimmer-cism external from r1837 to r1846, to use new glint
+    interfaces (this also includes some other changes that should have no effect
+    on the code run within CESM)
+M       SVN_EXTERNAL_DIRECTORIES
+
+*** Use new glint interfaces
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_RunMod.F90
+
+*** Comment out use of deleted itest, jtest (now these are iglint_global and
+    jglint_global, but those are hard-coded values that don't make sense for
+    most runs, so for now it's best not to use them)
+M       source_glc/glc_global_grid.F90
+
+*** Unrelated clean-up of documentation
+M       bld/namelist_files/namelist_definition_cism.xml
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. I used the plain text test lists as they
+   existed before the conversion of test lists to xml, because there were some
+   missing tests in the xml
+
+   All PASS except:
+
+   *** No ESMF for PGI
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.202525
+
+   *** CISM2 failures
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.202556 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.202556 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.202556 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.202556 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.202556 
+
+
+Externals used for testing: cesm1_2_beta06, but PIO @ pio1_6_8
+
+cism tag used for baseline comparisons: cism1_130429
+
+Any other externals that differed in baseline: No differences
+
+================================================================================
+Originator: sacks
+Date: April 29, 2013
+Model: cism
+Version: cism1_130429
+One-line summary: Change some parameter values
+
+Purpose of changes:
+
+The previous tag kept parameter values at their cism1 defaults, for testing
+purposes. In this tag, we change parameter values to those that we want moving
+forward. In particular, this changes:
+
+- temp_init: 2 instead of 1
+- basal_mass_balance: 1 instead of 0
+- sigma: 0 instead of 2 for cism_phys=cism1
+
+Changes answers relative to previous tag: YES
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+*** fix some comments
+M       bld/build-namelist
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. I used the plain text test lists as they
+   existed before the conversion of test lists to xml, because there were some
+   missing tests in the xml
+
+   All PASS except:
+
+   *** Missing ESMF library
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.G.061715
+
+   *** CISM2 failures
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.G.061723 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.G.061723 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.G.061723 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.G.061723 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.G.061723 
+
+
+Externals used for testing: cesm1_2_beta06, but PIO @ pio1_6_8
+
+cism tag used for baseline comparisons: N/A -- no baseline comparisons performed
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: April 28, 2013
+Model: cism
+Version: cism1_130428
+One-line summary: Cleanup of glimmer-cism external code, with focus on cleaning
+                  up config options
+
+Purpose of changes:
+
+- Bring in latest glimmer-cism external, which cleans up config options, as well
+  as a number of other changes from Bill L
+
+- Get cismIO generation working
+
+- Run some tests to make sure that new code gives the same answers as the
+  cesm1.1.1 release
+
+
+Changes answers relative to previous tag: YES
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       SVN_EXTERNAL_DIRECTORIES
+
+*** Get cismIO generation working. This includes getting files from glimmer-cism
+    external rather than maintaining copies of them
+D       bld/cismIO/glide_lithot_vars.def
+D       bld/cismIO/glint_mbal_vars.def
+D       bld/cismIO/glint_vars.def
+D       bld/cismIO/ncdf_template.F90.in
+D       bld/cismIO/glide_vars.def
+D       bld/cismIO/generate_ncvars.py
+M       bld/cismIO/cism.buildIO.template.csh
+M       bld/cism.cpl7.template
+
+*** Handle Bill L's changes to config options
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+*** Add blank line
+M       bld/user_nl_cism
+
+
+Summary of testing:
+
+   (1) Yellowstone intel & pgi test lists. I used the plain text test lists as
+       they existed before the conversion of test lists to xml, because there
+       were some missing tests in the xml
+
+       All PASS except:
+
+       *** Missing ESMF library
+       CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.194914
+
+       *** CISM2 failures
+       FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.194923 
+       FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.GC.194923 
+       FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.194923 
+       FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.194923 
+       FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.GC.194923 
+
+
+   (2) Comparisons of latest code base with cesm1.1.1 release code. Expect CISM1
+       compsets to be the same within roundoff, once some code mods were made to
+       the new and old code to correct for known differences (put in place by
+       Bill L). For each of these, I ran one-year TG compsets from the new code
+       base and from cesm1.1.1; I compared log files (first few time steps, and
+       last time step of the year-long run), looked at cprnc results, and did a
+       visual comparison of history files for any fields with large differences
+       according to cprnc.
+
+       (a) baseline, out-of-the-box settings (done by Bill L, reproduced by me)
+
+       (b) basal sliding on (done by Bill L)
+
+       (c) 10 km
+
+       (d) 20 km
+
+       (e) evolution=2
+
+       (f) basal_water=1
+
+       (g) flow_law: 0 in new, 2 in old
+
+       (h) sigma=0 (in old code, implemented this by commenting out the call to
+           glide_read_sigma)
+
+       (i) use Jeremy Fyke's initial conditions, which have been copied to
+           bg40.1850.track1.1deg.006b.cism.r.0863-01-01-00000.nc; along with
+           hotstart=1
+
+       (j) slip_coeff: 5 in old, 3 in new; also, use initial conditions as in
+           (i)
+
+       All of these appeared to differ only by single-precision roundoff, EXCEPT
+       (i) was questionable and (j) had big differences (in cesm1.1.1, (j) was
+       unstable in the old code). The differences in (i) suggest that old cism1
+       restart files MAY not be compatible with the new code base. The
+       differences in (j) might be connected to the use of initial conditions in
+       this run, rather than a problem with slip_coeff per se. For example, it
+       seems that the old code, with Bill L's mods to make the old & new more
+       similar, didn't read bheatflx from the restart file.
+       
+
+Externals used for testing: cesm1_2_beta06, but PIO @ pio1_6_8
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: April 25, 2013
+Model: cism
+Version: cism1_130425
+One-line summary: Allow longer case names, and error-check too-long case names
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       source_glc/glc_io.F90
+M       source_glc/glc_time_management.F90
+
+Summary of testing:
+
+   Ran standard cism1 tests on yellowstone, from glc aux test lists (for intel &
+   pgi); took these test lists from an older scripts tag from before the
+   conversion to xml, since the xml list has some problems. 
+
+   All tests PASSed, except the following expected failures:
+
+   *** No esmf library for pgi
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.145755
+
+   *** PIO broken for mpi-serial
+   RUN   PEA_P1_M.f09_g16.TG20TR.yellowstone_intel.GC.145802 
+
+   All baseline comparisons, including component_gen_comp, PASSed or BFAILed in
+   an expected way.
+
+
+   Also ran an ERI_Ly44 test with a long testid that resulted in a > 160
+   character case name (old limit was 80, new is 256 characters).
+
+Externals used for testing: cesm1_2_beta06
+
+cism tag used for baseline comparisons: cism1_130405
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: April 5, 2013
+Model: cism
+Version: cism1_130405
+One-line summary: Change namelist defaults for cism1
+
+Purpose of changes:
+
+I was getting instabilities in cism1. Resolving these required either
+decreasing the time step or changing evolution back to 0 (rather than the
+new default of 2). Bill L recommended changing evolution back to 0. 
+
+So this tag changes these defaults for cism1:
+- evolution=0 rather than 2
+- dt=0.1 rather than 0.025 for gl10
+
+These changes bring the cism1 namelist defaults back to what they were in
+cism1_121114
+
+
+Changes answers relative to previous tag: YES
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+Summary of testing:
+
+   NOTE: The testing was accidentally run on a version of code that
+   did NOT include the changes from cism1_130403.
+
+   JUST RAN THE CISM1 TESTS FROM THESE LISTS (NO BASELINE COMPARISONS):
+   - yellowstone_intel.glc.auxtest
+   - yellowstone_pgi.glc.auxtest
+ 
+   All PASS except the following expected failures:
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.G.205611 
+   FAIL  CME_Ly5.T31_g37.IG.yellowstone_intel.G.205554 
+
+   NOTE THAT THE ERS AND ERI TESTS ARE NOW PASSING!
+
+   CONFIRMING THAT RESTART TESTS ARE NOW WORKING: 
+   Ran the following additional tests:
+
+PASS  ERS_Ly100.f09_g16.TG.yellowstone_intel.062613 
+PASS  ERS_Ly100.f09_g16.TG.yellowstone_intel.062613.memleak
+PASS  ERI_Ly220.f09_g16.TG20TR.yellowstone_intel.062613 
+PASS  ERI_Ly220.f09_g16.TG20TR.yellowstone_intel.062613.memleak
+PASS  ERS_Ly200.f09_g16_gl10.TG1850.yellowstone_intel.062613 
+PASS  ERS_Ly200.f09_g16_gl10.TG1850.yellowstone_intel.062613.memleak
+PASS  ERI_Ly440.f09_g16_gl10.TGRCP85.yellowstone_intel.062613 
+PASS  ERI_Ly440.f09_g16_gl10.TGRCP85.yellowstone_intel.062613.memleak
+PASS  ERS_Ly20.f09_g16_gl10.TG1850.yellowstone_intel.062613 
+PASS  ERS_Ly20.f09_g16_gl10.TG1850.yellowstone_intel.062613.memleak
+PASS  ERI_Ly44.f09_g16_gl10.TGRCP85.yellowstone_intel.062613 
+PASS  ERI_Ly44.f09_g16_gl10.TGRCP85.yellowstone_intel.062613.memleak
+
+  SO INDEED, IT SEEMS THAT RESTARTS ARE EXACT NOW, WITH EVOLUTION=0
+
+
+Externals used for testing: cesm1_2_beta05, except scripts4_130405 and
+CLM at branches/newcompsets/models/lnd/clm, r45570
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: April 3, 2013
+Model: cism
+Version: cism1_130403
+One-line summary: Add CISM_OBSERVED_IC option for hybrid runs
+
+Purpose of changes:
+
+Allow cism to ignore the refcase's restart file in a hybrid run by
+setting the CISM_OBSERVED_IC env_run.xml variable to TRUE.
+
+As part of this change, the default value of hotstart is now set in
+build-namelist rather than being set via namelist_defaults_cism.xml.
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+
+Summary of testing:
+
+- Test runs where I leave CISM_OBSERVED_IC at its default value (FALSE); compare namelist/config file and cism history file with baseline runs
+	- startup
+		- namelist/config files
+		- hist file
+	- hybrid
+		- namelist/config files
+		- hist file
+	- branch
+		- namelist/config files
+		- hist file
+
+- Test runs where I set CISM_OBSERVED_IC to TRUE; compare namelist/config file and cism history file with baseline runs
+	- startup
+		- namelist/config files
+		NOT DOING - hist file
+	- hybrid: should differ from baseline hybrid, be identical to baseline startup (in particular: hostart, cisminputfile)
+		- namelist/config files
+		- hist file: should be identical to baseline startup
+			Note: time coordinate variable differs from baseline hybrid
+		- restart file: should be identical to baseline startup
+			Note: time coordinate variable differs from baseline hybrid
+		- compare netcdf headers for hist & restart files
+	- branch: BUILD-NAMELIST SHOULD DIE
+
+
+
+Externals used for testing: cesm1_2_beta05, with updated scripts
+
+cism tag used for baseline comparisons: cism1_130401
+
+Any other externals that differed in baseline: old scripts used for
+baseline runs
+
+================================================================================
+Originator: sacks
+Date: April 1, 2013
+Model: cism
+Version: cism1_130401
+One-line summary: Update external, including significant glide updates
+
+Purpose of changes:
+
+Update glimmer-cism external. Among other things, this includes a
+large set of glide updates from Bill Lipscomb.
+
+Changes answers relative to previous tag: YES
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update glimmer-cism from r1773 to r1785
+M       SVN_EXTERNAL_DIRECTORIES
+
+*** Delete bluefire test stubs
+M       ChangeLog_template
+
+Summary of testing:
+
+   yellowstone_intel.glc.auxtest & yellowstone_pgi.glc.auxtest
+
+   (skipped hopper glc auxtests because for now I just care about
+   testing CISM1 compsets)
+
+All PASS except:
+
+***** NEW FAILURE: Problems building with mpi-serial with cmake
+RUN   PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.G.162507 
+
+***** NEW FAILURE: Problem in CLM or RTM ESMF (should be resolved as of clm4_0_69)
+FAIL  CME_Ly5.T31_g37.IG.yellowstone_intel.G.162507 
+
+***** Expected failures based on failures in cism1_130207
+FAIL  ERS_Ly20.f09_g16.TG1850.yellowstone_intel.G.162507 
+FAIL  ERI_Ly44.f09_g16.TGRCP85.yellowstone_intel.G.162507 
+RUN   ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.G.162507 
+FAIL  ERS_Ly20_E.f09_g16.TG20TR.yellowstone_intel.G.162507 
+FAIL  ERS_Ly20_N2_P2.f09_g16_gl10.TG.yellowstone_pgi.G.162510 
+CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.G.162510 
+
+
+Externals used for testing: cesm1_2_beta05
+
+cism tag used for baseline comparisons: N/A: No baseline comparisons done
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: tcraig
+Date: March 25, 2013
+Model: cism
+Version: cism1_130325
+One-line summary: updates for new CISM_GRID env variable
+
+the scripts env variable GLC_GRID was renamed to CISM_GRID and a few changes
+were needed in cism scripts.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       models/glc/cism/bld/trilinosOptions/README
+M       models/glc/cism/bld/README.build-namelist
+M       models/glc/cism/bld/build-namelist
+M       models/glc/cism/bld/cism.buildnml.csh
+
+Summary of testing: Ran a handful of yellowstone prealpha/beta tests
+
+Externals used for testing: cesm1_2_alpha04a+
+
+cism tag used for baseline comparisons: cism1_130315
+
+Any other externals that differed in baseline: Several including a
+ dependency on scripts changes and everything else in alpha05a.  This
+ tag does depends on the scripts tag in cesm1_2_alpha05a and that
+ scripts tag depends on everything else in alpha05a (add wave model).
+
+================================================================================
+Originator: sacks
+Date: March 15, 2013
+Model: cism
+Version: cism1_130315
+One-line summary: update glimmer-cism, including adding support for 36 columns
+
+Purpose of changes:
+
+Add support for 36 columns.
+
+While I'm at it, update glimmer-cism external to latest revision.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update glimmer-cism from r1746 to r1773
+ M      .
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+Ran the following test list, including component_gen_comp (note: this
+is the shortlist.glc.auxtest list, plus a long IG test):
+
+SMS_D.f09_g16.TG
+SMS_D_Ly1.f09_g16_gl10.TGIS2
+ERS_Ly20.f09_g16.TG1850
+SMS_D.f09_g16.IG20TR
+SMS_Ly5.T31_g37.IG
+
+All pass, except the following, which also failed in the baseline:
+FAIL  ERS_Ly20.f09_g16.TG1850.yellowstone_intel.GC.141629 
+
+Externals used for testing: cesm1_2_alpha03d
+
+cism tag used for baseline comparisons: cism1_130307
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: March 7, 2013
+Model: cism
+Version: cism1_130307
+One-line summary: fix dependency appends for new mkDepends... for real, now
+
+Purpose of changes:
+
+Yesterday's fix didn't really do the right thing. Now I have removed the
+awkward awk script, and instead use new functionality in mkDepends to do
+this appending the right way.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/cism.buildexe.csh
+
+Summary of testing:
+
+Summary of testing:
+
+MINIMAL TESTING DONE: JUST TESTED BUILD FOR A CASE WITH:
+-mach yellowstone -compset IG -res f09_g16
+
+Externals used for testing: cesm1_2_alpha03b, with Machines at Machines_130307
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: March 6, 2013
+Model: cism
+Version: cism1_130306
+One-line summary: fix dependency appends for new mkDepends
+
+Purpose of changes:
+
+The awk script that appended libglimmercismfortran.a to the list of
+dependencies accidentally assumed a space at the end of the lines
+created by mkDepends. The new version of mkDepends doesn't include a
+space at the end of each line, so the dependencies weren't created
+correctly. Now the necessary space is added in the awk script.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Just add a space
+M       bld/cism.buildexe.csh
+
+Summary of testing:
+
+MINIMAL TESTING DONE: JUST TESTED BUILD FOR A CASE WITH:
+-mach yellowstone -compset IG -res f09_g16
+
+Externals used for testing: cesm1_2_alpha03b, with Machines at Machines_130304b
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Feb 7, 2013
+Model: cism
+Version: cism1_130207
+One-line summary: bring cism2 to trunk
+
+Purpose of changes:
+
+Bring cism2 to trunk (merge changes from cism2_cesm_bld_wjs branch). This
+inovles:
+
+- bringing in the new glimmer-cism code base as an svn external, rather than
+  using copies of the source files
+
+- updating the build system to handle building glimmer-cism as a standalone
+  library, using its native cmake-based build system
+
+- modifying some source code so GLC works properly in a parallel environment
+  (see README.parallelization for details)
+
+- adding namelist options to support cism2
+
+
+Changes answers relative to previous tag: YES. 
+
+There are currently big answer changes (orders of magnitude differences), even
+for cism1 compsets that are supposed to give roughly the same answer. Bill
+Lipscomb is looking into this, and a new tag will be made once these changes are
+resolved.
+
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/): None
+
+List all modified files, and describe the changes:
+
+*** Bring in new glimmer-cism code base as an svn external, delete old copies of
+*** source files
+A       SVN_EXTERNAL_DIRECTORIES
+D       source_glimmer-cism
+D       source_glimmer-cism/glide.F90
+D       source_glimmer-cism/glimmer_scales.F90
+D       source_glimmer-cism/glint_timestep.F90
+D       source_glimmer-cism/smb_dummy.F90
+D       source_glimmer-cism/glide_thck.F90
+D       source_glimmer-cism/isostasy_setup.F90
+D       source_glimmer-cism/isostasy_el.F90
+D       source_glimmer-cism/glide_nc_custom.F90
+D       source_glimmer-cism/glide_lithot_io.F90
+D       source_glimmer-cism/glint_mbal_io.F90
+D       source_glimmer-cism/glimmer_ts.F90
+D       source_glimmer-cism/isostasy_types.F90
+D       source_glimmer-cism/glimmer_searchcircle.F90
+D       source_glimmer-cism/glimmer_routing.F90
+D       source_glimmer-cism/glimmer_daily_pdd.F90
+D       source_glimmer-cism/xls.F90
+D       source_glimmer-cism/glint_mbal.F90
+D       source_glimmer-cism/glide_temp.F90
+D       source_glimmer-cism/glint_climate.F90
+D       source_glimmer-cism/glimmer_utils.F90
+D       source_glimmer-cism/glimmer_map_init.F90
+D       source_glimmer-cism/glimmer_anomcouple.F90
+D       source_glimmer-cism/glimmer_filenames.F90
+D       source_glimmer-cism/glimmer_ncparams.F90
+D       source_glimmer-cism/glimmer_writestats.F90
+D       source_glimmer-cism/glimmer_restart_gcm.F90
+D       source_glimmer-cism/glint_initialise.F90
+D       source_glimmer-cism/glimmer_paramets.F90
+D       source_glimmer-cism/glimmer_vers.F90
+D       source_glimmer-cism/glide_lithot1d.F90
+D       source_glimmer-cism/glimmer_map_CFproj.F90
+D       source_glimmer-cism/glide_mask.F90
+D       source_glimmer-cism/glint_io.F90
+D       source_glimmer-cism/glide_setup.F90
+D       source_glimmer-cism/glide_profile.F90
+D       source_glimmer-cism/glimmer_map_proj4.F90
+D       source_glimmer-cism/glide_types.F90
+D       source_glimmer-cism/glide_velo.F90
+D       source_glimmer-cism/glimmer_global.F90
+D       source_glimmer-cism/glimmer_map_types.F90
+D       source_glimmer-cism/glimmer_deriv.F90
+D       source_glimmer-cism/glimmer_coordinates.F90
+D       source_glimmer-cism/glimmer_ncdf.F90
+D       source_glimmer-cism/kelvin.F90
+D       source_glimmer-cism/glide_stop.F90
+D       source_glimmer-cism/ncdf_utils.F90
+D       source_glimmer-cism/glint_example_clim.F90
+D       source_glimmer-cism/glimmer_log.F90
+D       source_glimmer-cism/glimmer_integrate.F90
+D       source_glimmer-cism/glint_precip_param.F90
+D       source_glimmer-cism/glint_global_grid.F90
+D       source_glimmer-cism/glint_constants.F90
+D       source_glimmer-cism/glimmer_sparse.F90
+D       source_glimmer-cism/glide_diagnostics.F90
+D       source_glimmer-cism/isostasy.F90
+D       source_glimmer-cism/glint_global_interp.F90
+D       source_glimmer-cism/glint_main.F90
+D       source_glimmer-cism/glimmer_config.F90
+D       source_glimmer-cism/glimmer_pdd.F90
+D       source_glimmer-cism/glint_mpinterp.F90
+D       source_glimmer-cism/glint_interp.F90
+D       source_glimmer-cism/glide_lithot3d.F90
+D       source_glimmer-cism/glimmer_physcon.F90
+D       source_glimmer-cism/glimmer_map_trans.F90
+D       source_glimmer-cism/profile.F90
+D       source_glimmer-cism/glimmer_ncio.F90
+D       source_glimmer-cism/glide_lithot.F90
+D       source_glimmer-cism/glint_mbal_coupling.F90
+D       source_glimmer-cism/glide_io.F90
+D       source_glimmer-cism/glint_type.F90
+D       source_slap
+D       source_slap/dmset.F
+D       source_slap/dlaputil.F
+D       source_slap/xersla.F
+D       source_slap/dcgs.F
+D       source_slap/blas.F
+D       source_slap/dmvops.F
+D       source_slap/mach.F
+
+*** Add xml files giving trilinos options; the correct one (based on resolution)
+*** is copied to the run directory
+A       bld/trilinosOptions
+A       bld/trilinosOptions/trilinosOptions_gland10.xml
+A       bld/trilinosOptions/trilinosOptions_gland20.xml
+A       bld/trilinosOptions/trilinosOptions_gland5.xml
+A       bld/trilinosOptions/trilinosOptions_gland5UM.xml
+A       bld/trilinosOptions/README
+M       bld/cism.buildnml.csh
+M       bld/README
+
+*** New build system for cism2, which includes building a separate glimmer-cism
+*** library using a cmake-based build system
+M       bld/cism.buildexe.csh
+
+*** Support new config options for cism2, including new xml variables
+*** "CISM_PHYS" and "CISM_USE_TRILINOS". Also change a few defaults for cism1:
+*** evolution=2 rather than 0, and dt=0.025 rather than 0.1 for 10km (to achieve
+*** stability when using evolution=2)
+M       bld/build-namelist
+M       bld/README.build-namelist
+M       bld/namelist_files/namelist_definition_cism.xml
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+*** Use new sourceMods directory for glimmer-cism-specific code
+*** (src.cism/glimmer-cism)
+M       bld/cism.cpl7.template
+
+*** Support operation in a parallel environment
+M       mpi/glc_communicate.F90
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_global_grid.F90
+M       source_glc/glc_io.F90 --------- also, minor changes for new glimmer-cism
+                                        i/o interface
+M       drivers/cpl_mct/glc_comp_mct.F90
+M       drivers/cpl_esmf/glc_comp_mct.F90
+M       drivers/cpl_esmf/glc_comp_esmf.F90
+A       README.parallelization
+
+Summary of testing:
+
+------------------------------------------------------------------------
+Core testing
+------------------------------------------------------------------------
+
+Ran the following from https://svn-ccsm-models.cgd.ucar.edu/cesm1/exp_tags/cism2_bld_tags/cism2_bld_21_cesm1_2_beta01
+
+For each machine, I first give failures, then passes. All of these
+failures should be resolved at some point (except the titan failures,
+which basically duplicate the hopper failures: no need to rerun titan
+tests in the future).
+
+Yellowstone: yellowstone_intel.glc.auxtest & yellowstone_pgi.glc.auxtest
+
+***** Restarts currently are not bfb
+FAIL  ERS_Ly20.f09_g16.TG1850.yellowstone_intel
+FAIL  ERI_Ly44.f09_g16.TGRCP85.yellowstone_intel
+FAIL  ERS_Ly20_E.f09_g16.TG20TR.yellowstone_intel
+FAIL  ERS_Ly20_N2_P2.f09_g16_gl10.TG.yellowstone_pgi
+***** Hangs in initialization of the last run (the continue run)
+***** (similar to the ERS IS2 run that fails on hopper)
+RUN   ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel
+***** No ESMF library for PGI
+CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi
+
+PASS  SMS_D.f09_g16.TG.yellowstone_intel
+PASS  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel
+PASS  PEA_P1_M.f09_g16.TG20TR.yellowstone_intel
+PASS  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel
+PASS  NCK.f09_g16.TG.yellowstone_intel
+PASS  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel
+PASS  CME_Ly10_N2_P2_D.f09_g16.TG1850.yellowstone_intel
+PASS  CME_Ly5.T31_g37.IG.yellowstone_intel
+PASS  SMS.f19_f19.FG20TRCN.yellowstone_intel
+PASS  SMS_D.T31_g37.BG1850CN.yellowstone_intel
+PASS  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel
+PASS  SMS_D.f09_g16_gl10.TG.yellowstone_pgi
+PASS  SMS_D.f09_g16.IG20TR.yellowstone_pgi
+PASS  ERI.f19_g16.IGRCP85CN.yellowstone_pgi
+
+
+Hopper: hopper_gnu.glc.auxtest & hopper_pgi.glc.auxtest
+
+***** Hangs in initialization of GLC for the restart run
+RUN   ERS_Ly11.f09_g16_gl10.TG1850IS2.hopper_gnu
+***** Dies while writing history file: subscript out of range (Dies
+***** while trying to write uflx: The problem is that it's trying to
+***** write 1:local_ewn, but for uflx, values only go 1:18, since it's
+***** on the flux grid. I think this is due to glint using some glide
+***** init routines rather than glissade, so nhalo has the wrong
+***** value)
+FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.hopper_pgi
+***** Dies as follows:
+***** (shr_mct_sMatReaddnc) reading mapping matrix data decomposed...
+***** (shr_mct_sMatReaddnc) * file name                  : idmap
+***** (shr_sys_abort) ERROR: (shr_mct_sMatReaddnc)No such file or directory
+***** I believe I have fixed this with a drv change, and have tested 
+***** SMS.T31_g37_gl10.BGCNIS2.yellowstone_intel, but haven't rerun
+***** this exact test
+FAIL  SMS_D.T31_g37_gl10.BGCNIS2.hopper_pgi
+
+PASS  SMS_D_Ly1.f09_g16_gl10.TGIS2.hopper_gnu
+PASS  SMS.f19_f19_gl10.FGCNIS2.hopper_gnu
+PASS  CME_Ly3.f09_g16_gl10.TGRCP85IS2.hopper_pgi
+
+
+
+Titan: titan.glc.auxtest:
+
+***** See notes for the similar hopper_pgi test
+FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.titan_pgi
+***** See notes for the similar hopper_gnu test
+RUN   ERS_Ly11.f09_g16_gl10.TG1850IS2.titan_pgi
+***** See notes for the similar hopper_pgi test
+FAIL  SMS_D.T31_g37_gl10.BGCNIS2.titan_pgi
+
+PASS  CME_Ly3.f09_g16_gl10.TGRCP85IS2.titan_pgi
+PASS  SMS.f19_f19_gl10.FGCNIS2.titan_pgi
+
+
+
+------------------------------------------------------------------------
+Additional CISM1 testing on multiple machines/compilers
+------------------------------------------------------------------------
+
+Ran the following test list:
+[SMS_Ly5 test is just in case the CME test fails because of lack of an esmf library]
+[B is to test a NON-GLC compset, to make sure I haven't broken that]
+
+SMS_D_Ly2.f09_g16.TGIS1
+SMS_D.f09_g16.IG20TRIS1
+SMS_Ly5.f09_g16_gl10.TG1850IS1
+CME_Ly5.f09_g16_gl10.TG1850IS1
+SMS.T31_g37.B
+
+on the following machines & compilers:
+
+- hopper
+  - pgi
+- frankfurt
+  - intel
+  - pgi
+- yellowstone
+  - pgi
+  - intel
+  - gnu
+- titan
+  - pgi
+- intrepid
+  - ibm
+
+(I did NOT run on Janus, assuming it's close enough to
+yellowstone. However, I DID test a TG build on Janus)
+
+In general, used: https://svn-ccsm-models.cgd.ucar.edu/cesm1/exp_tags/cism2_bld_tags/cism2_bld_17_cesm1_2_beta01
+(on yellowstone, used the following for the B compset test; this updates POP: 
+https://svn-ccsm-models.cgd.ucar.edu/cesm1/exp_tags/cism2_bld_tags/cism2_bld_18_cesm1_2_beta01)
+(on yellowstone, used the following for the gnu tests:
+https://svn-ccsm-models.cgd.ucar.edu/cesm1/exp_tags/cism2_bld_tags/cism2_bld_19_cesm1_2_beta01)
+
+IMPORTANT TEST FAILURES (I want to resolve these at some point):
+
+FAIL  SMS_D_Ly2.f09_g16.TGIS1.frankfurt_intel
+FAIL  SMS_Ly5.f09_g16_gl10.TG1850IS1.frankfurt_intel
+
+UNIMPORTANT TEST FAILURES:
+
+***** I think these are just because there are no ESMF libraries for these machines/compilers:
+CFAIL CME_Ly5.f09_g16_gl10.TG1850IS1.frankfurt_intel
+CFAIL CME_Ly5.f09_g16_gl10.TG1850IS1.frankfurt_pgi
+CFAIL CME_Ly5.f09_g16_gl10.TG1850IS1.yellowstone_pgi
+CFAIL CME_Ly5.f09_g16_gl10.TG1850IS1.yellowstone_gnu
+CFAIL CME_Ly5.f09_g16_gl10.TG1850IS1.intrepid_ibm
+
+***** Dies in lnd init. Sheri says no I compsets are being tested on
+***** intrepid, so I'm not going to worry about this. The following
+***** two additional tests passed on intrepid:
+***** ERS.f09_f09.FG1850CN.intrepid_ibm and ERS_Ld7.f09_g16.BGRCP26CN
+FAIL  SMS_D.f09_g16.IG20TRIS1.intrepid_ibm
+
+***** Also, Sheri said that she could only get glc to build if she set
+***** NTHRDS_GLC=1 (weird!) -- otherwise xlf hung while compiling
+***** glide_thck.F90. For now I have changed the PE layouts to set
+***** NTHRDS_GLC=1 by default on intrepid, as a workaround.
+
+
+------------------------------------------------------------------------
+
+Externals used for testing: See above
+
+cism tag used for baseline comparisons: N/A -- no baseline comparisons done,
+because big answer changes were expected (at some point, once some bugs are
+fixed, we should probably do baseline comparisons against cism1_121114 to
+confirm that cism1 compsets give [nearly] identical answers)
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Nov 14, 2012
+Model: cism
+Version: cism1_121114
+One-line summary: remove docs folder
+
+Purpose of changes:
+
+Remove duplicated docs folder. Instead, see
+https://svn-cism-model.cgd.ucar.edu/docs
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+D       doc
+D       doc/CESM_ice_sheets_documentation.pdf
+D       doc/glimmer_doc.pdf
+D       doc/README
+
+Summary of testing: NONE
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- Other tests: N/A
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: jwolfe
+Date: Nov 13, 2012
+Model: cism
+Version: cism1_121113
+One-line summary: Add parallel support in source_glc code
+
+Purpose of changes:
+
+In preparation for bringing cism2 in, some modifications were needed
+in source_glc so that this interface layer could operate in a parallel
+environment.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+A       mpi/glc_broadcast.F90
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_global_grid.F90
+M       source_glc/glc_io.F90
+M       source_glc/glc_time_management.F90
+
+Summary of testing: (Testing done by Bill Sacks)
+
+- bluefire.glc.auxtest: main test results: All PASS
+
+  Note: I made a mistake in running the baseline comparisons, so ran
+  them after the fact with component_gen_comp -model cpl
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: All PASS
+
+- Other tests: Jon Wolfe ran some tests specific to the new
+  functionality
+
+Externals used for testing: cesm1_1_beta18
+
+cism tag used for baseline comparisons: cism1_121012
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: Nov 6, 2012
+Model: cism
+Version: cism1_121106a
+One-line summary: Change name of documentation file
+
+Purpose of changes:
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+A  +    doc/CESM_ice_sheets_documentation.pdf
+D       doc/cism_doc.pdf
+M       doc/README
+
+Summary of testing: NONE
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- Other tests: NONE
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Nov 6, 2012
+Model: cism
+Version: cism1_121106
+One-line summary: Update documentation
+
+Purpose of changes:
+
+Update documentation for CESM1.1 release
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Add the CISM documentation to the repository
+A       doc/cism_doc.pdf
+
+*** Update to version 1.5.1 (rather than 1.0.0)
+M       doc/glimmer_doc.pdf
+
+*** Update notes about what's included in the doc directory
+M       doc/README
+
+*** Add notes about how to add a new optional section in cism.config
+M       bld/README.build-namelist
+
+Summary of testing: NONE (JUST CHANGED DOCUMENTATION)
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- Other tests: NONE
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Oct 12, 2012
+Model: cism
+Version: cism1_121012
+One-line summary: add namelist documentation, validation of dt,
+                  add/remove namelist items
+
+Purpose of changes:
+
+Main purpose is adding namelist documentation. Also added validation of dt in
+build-namelist (can't add this through simple valid_values).
+
+Also added / removed a few namelist parameters: Add scale_factor in cism.config:
+projection section. Removed namelist parameters which seem not to be used
+anywhere: isostasy, sliding_law, stress_calc, isos_time
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Add lots of documentation & valid_values; 
+*** add scale_factor namelist parameter;
+*** remove isostasy, sliding_law, stress_calc, isos_time;
+*** change standard_parallel to length-2 array
+*** change categories for html documentation
+M       bld/namelist_files/namelist_definition_cism.xml
+
+*** Add validation of dt; remove isostasy, sliding_law, stress_calc, isos_time
+M       bld/build-namelist
+
+*** remove isostasy, sliding_law, stress_calc, isos_time
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+*** Mostly unrelated: Add documentation
+M       bld/README.build-namelist
+
+*** Update ChangeLog entry for cism1_121009: document some more careful
+*** checks of the reasons for differences from baseline
+M       ChangeLog
+
+Summary of testing:
+
+- bluefire.glc.auxtest: main test results: All PASS except:
+
+(Ignoring failures in NLComp & tputcomp)
+
+***** Test not run in baseline case (this test was deleted in a recent scripts tag)
+BFAIL ERS_Ly20_E.f09_g16_gl10.TG20TR.bluefire_ibm.C.161152.compare_hist.cesm1_1_alpha18h_cism_smallerDT 
+
+***** Diffs just in x2a dust fluxes, due to externals change compared to baseline
+FAIL  SMS.f19_f19.FG20TRCN.bluefire_ibm.GC.063931.compare_hist.cesm1_1_alpha18f_scripts4_121008_clm_newGlacierData2_dlnd_121001_cism_changeTimeToDouble 
+FAIL  SMS_D.T31_g37.BG1850CN.bluefire_ibm.GC.063931.compare_hist.cesm1_1_alpha18f_scripts4_121008_clm_newGlacierData2_dlnd_121001_cism_changeTimeToDouble 
+
+So none of these failures are worrisome
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: All PASS except:
+
+***** Test not run in baseline case (this test was deleted in a recent scripts tag)
+BFAIL ERS_Ly20_E.f09_g16_gl10.TG20TR.bluefire_ibm.compare_hist.cesm1_1_alpha18h_cism_smallerDT.cism (baseline directory does not exist)
+
+
+- Other tests:
+
+  - out-of-the-box TG compset cism_in & cism.config identical to old
+    case, except for the 4 removed parameters (and runid in cism_in)
+
+Externals used for testing:
+
+https://svn-ccsm-models.cgd.ucar.edu/cesm1/tags/cesm1_1_alpha18g except:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_121008
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_0_54/models/lnd/clm
+
+cism tag used for baseline comparisons: cism1_121009 for most tests;
+cism1_121010 for _gl10 tests
+
+Any other externals that differed in baseline: MANY! (used baselines generated
+from cism1_121009 and cism1_121010, using externals as listed below)
+
+================================================================================
+Originator: sacks
+Date: Oct 10, 2012
+Model: cism
+Version: cism1_121010
+One-line summary: Decrease dt for resolutions other than gland5UM
+
+Purpose of changes:
+
+I found that temperature was blowing up for out-of-the-box gland10
+cases, ever since the cism1_121001 tag. Jeremy Fyke & Bill Lipscomb
+suggested fixing this by decreasing dt to 0.1.
+
+I am decreasing dt to 0.1 for gland10 & gland20, and to 0.05 for
+gland5 (same as what is already the case for gland5UM).
+
+Changes answers relative to previous tag: YES, for gland10, gland20
+and gland5 (but not gland5UM)
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Change defaults for dt & ndiag
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+*** Update ChangeLog entry for cism1_121009: document additional testing
+M       ChangeLog
+
+
+Summary of testing:
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- Other tests:
+
+Ran the single test from the bluefire.glc.auxtest list that tests a
+resolution other than gland5UM:
+
+PASS  ERS_Ly20_N2_P2.f09_g16_gl10.TG.bluefire_ibm.G.132320 
+
+Also, ran 300-year tests with TG compset, GLC_GRID=gland10 or
+gland20. Jeremy Fyke confirmed that temperature and other values look
+reasonable.
+
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_121009b
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_121009
+
+    mapping             			https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120929
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_07
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_121003
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_1_44/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_0_54/models/lnd/clm
+
+    models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_08
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120927
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/trunk
+
+    models/ocn/pop2                 https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120927
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_121008
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_121001
+    models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_120924
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120925
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120921
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xlnd
+    models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xrof
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/slnd
+    models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/srof
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.2
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_4/pio
+
+
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: lipscomb / sacks
+Date: Oct 9, 2012
+Model: cism
+Version: cism1_121009
+One-line summary: Change time to double precision to fix restart problem
+
+Purpose of changes:
+
+Starting with cism1_121001, some ERS tests were failing. Bill Lipscomb
+traced this to the mixture of single and double precision variables
+(and in one case an integer!) that are used to track time: a double
+precision time variable was being converted to single precision before
+being written to the restart file.
+
+We have changed these to be double precision universally. Note that
+this just refers to the time variables that are specified as
+fractional years: time variables that give number of hours are still
+integers.
+
+Also: Fix GetValueDouble to read in value as double precision
+
+Note that Bill L has also implemented these fixes in the seacism
+branch of cism2.
+
+Changes answers relative to previous tag: YES
+
+    I expected answer changes on the order of single precision
+    roundoff. However, the actual answer changes are larger than that for
+    select grid cells (cprnc's worst decimal digits between 1 and 2 for
+    some variables). I suspect this is just due to non-linear feedbacks in
+    the system, but haven't confirmed that; I am doing more investigation
+    of this, but needed to make this tag before that investigation is
+    complete. 
+
+        - update 10-12-12: diffs in first year are less, then diffs
+          increase. From looking quickly at maps of diffs in first year,
+          I'm not too concerned about this - I can believe that these diffs
+          are really due to single vs double precision, with initial small
+          differences expanding over time due to feedbacks in the system.
+
+    Also, there are differences in a gland10 run, too; I did not expect
+    these differences, since dt=1 there. This is also undergoing additional
+    investigation.
+
+        - update 10-11-12: note that geothermal heat flux is now read as
+          double rather than single precision. That could be the
+          explanation. Another explanation could be that time is used in
+          calculations that are now done in double rather than single
+          precision. I'm not too concerned because diffs in first year are
+          very small.
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Main changes: change time variables to double precision
+M       source_glc/glc_io.F90
+M       source_glimmer-cism/glide_thck.F90
+M       source_glimmer-cism/glide_lithot_io.F90
+M       source_glimmer-cism/glint_mbal_io.F90
+M       source_glimmer-cism/glimmer_ncparams.F90
+M       source_glimmer-cism/glint_io.F90
+M       source_glimmer-cism/glide_diagnostics.F90
+M       source_glimmer-cism/glimmer_ncio.F90
+M       source_glimmer-cism/glide_io.F90
+M       source_glimmer-cism/glint_type.F90
+M       source_glimmer-cism/glimmer_ncdf.F90
+        - includes change of an integer to double
+M       source_glimmer-cism/glide.F90
+        - also change unit 6 to stdout, changed some diagnostic output
+M       source_glimmer-cism/glide_types.F90
+        - also change defaults for tend, tinc
+        - also fix typo in comment
+M       source_glimmer-cism/glint_main.F90
+        - also add some diagnostic output
+        - also change diagnostic output to write model%numerics%time rather
+          than the local 'time' variable -- latter contains the time at the
+          start of the glint timestep, which can be up to a year behind
+M       source_glimmer-cism/glint_timestep.F90
+        - also add diagnostic output
+
+*** Fix GetValueDouble to read in value as double precision
+M       source_glimmer-cism/glimmer_config.F90
+
+*** Unrelated change: add a comment
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+
+Summary of testing:
+
+- bluefire.glc.auxtest: main test results: All PASS except:
+
+(Not listing failures in NLComp [which I don't think is working right] or
+tputcomp)
+
+FAIL  SMS_D.f09_g16.TG.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  PEA_P1.f09_g16.TG20TR.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+BFAIL ERS_Ly20.f09_g16.TG1850.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  ERI_Ly44.f09_g16.TGRCP85.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  ERS_Ly20_N2_P2.f09_g16_gl10.TG.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  NCK_P2.f09_g16.TG.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  CME_Ly10_N2_P2_D.f09_g16.TG1850.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+BFAIL ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  ERS_Ly20_E.f09_g16_gl10.TG20TR.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+FAIL  CME_Ly5_PL.T31_g37.IG.bluefire_ibm.GC.123515.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+
+These are all failures in history comparisons, which are expected.
+
+Note that the previously-failing ERS tests are now passing.
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: All PASS except:
+
+FAIL  CME_Ly10_N2_P2_D.f09_g16.TG1850.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  CME_Ly5_PL.T31_g37.IG.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  ERI_Ly44.f09_g16.TGRCP85.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  ERS_Ly20.f09_g16.TG1850.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  ERS_Ly20_E.f09_g16_gl10.TG20TR.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  ERS_Ly20_N2_P2.f09_g16_gl10.TG.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  NCK_P2.f09_g16.TG.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  PEA_P1.f09_g16.TG20TR.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+FAIL  SMS_D.f09_g16.TG.bluefire_ibm.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002.cism 
+
+These are all expected failures, except I did not expect failures in the two
+gl10 comparisons. I am investigating this further.
+
+- Other tests:
+
+Note: these two tests below used a user_nl_dir, which set cism's dt=0.05:
+ERS_D_Ly20.f09_g16_gl10.TG1850.bluefire_ibm
+ERI_D_Ly44.f09_g16_gl10.TGRCP85.bluefire_ibm
+
+PASS  ERS_D_Ly200.f09_g16_gl10.TG1850.bluefire_ibm.134929 
+PASS  ERS_Ly100.f09_g16.TG.bluefire_ibm.204752 
+PASS  ERS_D_Ly20.f09_g16_gl10.TG1850.bluefire_ibm.204752 
+PASS  ERI_D_Ly44.f09_g16_gl10.TGRCP85.bluefire_ibm.204752 
+PASS  ERI_D_Ly220.f09_g16_gl10.TGRCP85.bluefire_ibm.204752 
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_121008
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_120921
+
+    mapping             			https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_02
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_120918
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_1_42/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/new_glacier_data2_tags/new_glacier_data2_06_clm4_0_52/models/lnd/clm
+
+    models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_08
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120927
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/branches/change_time_to_double
+
+    models/ocn/pop2                 https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120927
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120925b
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_121001
+    models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_120924
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120925
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120921
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xlnd
+    models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xrof
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/slnd
+    models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/srof
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.2
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_4/pio
+
+
+cism tag used for baseline comparisons: cism1_121002
+
+Any other externals that differed in baseline:
+- scripts4_120930
+- dlnd8_120918
+
+================================================================================
+Originator: sacks
+Date: Oct 8, 2012
+Model: cism
+Version: cism1_121008
+One-line summary: add some namelist items, remove others
+
+Purpose of changes:
+
+Add some namelist items to namelist_definition_cism that users may want to
+change. Remove some items that should not be changed.
+
+Requires some new functionality in build-namelist to only create a section
+in cism.config under certain conditions.
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+Summary of testing:
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- shortlist.glc.auxtest on bluefire: main test results: All PASS except:
+
+FAIL  ERS_Ly20.f09_g16.TG1850.bluefire_ibm.C.165451 
+BFAIL ERS_Ly20.f09_g16.TG1850.bluefire_ibm.C.165451.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+
+These are expected failures based on cism1_121002 test results
+
+- shortlist.glc.auxtest: results of component_gen_comp -model cism: All PASS
+
+- Other tests:
+
+  - Confirmed that build-namelist gives error when trying to define
+    variables in gthf section, without setting do_gthf to .true.; same for
+    isostasy section; same for elastic lithosphere section, but this keys
+    off of lithosphere==1
+
+  - Confirmed that GTHF section isn't output when do_gthf is not set to
+    .true.; same for isostasy section; same for elastic lithosphere
+    section, but this keys off of lithosphere==1
+
+  - With empty user_nl_cism, gives identical cism.config to that in
+    cism1_121002.
+
+  - Added all new parameters to user_nl_cism, with values different from
+    their defaults (along with do_gthf=.true., do_isostasy=.true.)
+    - Checked cism.config: made sure each appears in the right section
+    - Ran model, checked output to make sure they are all read in correctly
+
+    Note: this job died with the error:
+
+      * FATAL ERROR : (/glade/proj3/cseg/people/sacks/cesm_code/cesm1_1_alpha18f_newCISM/models/glc/cism/source_glimmer-cism/glide_nc_custom.F90:1
+29) NetCDF: Start+count exceeds dimension bound
+
+    I have filed a bug report about this (1560); I am not going to worry
+    about this for now.
+
+Externals used for testing: 
+
+NOTE: perl5lib updated to include my new get_defined_vars_in_group function
+-- similar, but not identical, to the perl5lib tag I made 10-8-2012
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_120930
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_120921
+
+    mapping             			https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_02
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_120918
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_1_42/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/new_glacier_data2_tags/new_glacier_data2_06_clm4_0_52/models/lnd/clm
+
+    models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_08
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120927
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/trunk
+
+    models/ocn/pop2                 https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120927
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120925b
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_120918
+    models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_120924
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120925
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120921
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xlnd
+    models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xrof
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/slnd
+    models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/srof
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.2
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_4/pio
+
+
+
+cism tag used for baseline comparisons: cism1_121002
+
+Any other externals that differed in baseline: None (except unchanged perl5lib)
+
+================================================================================
+Originator: sacks
+Date: Oct 2, 2012
+Model: cism
+Version: cism1_121002
+One-line summary: add some namelist variables, fix others
+
+Purpose of changes:
+
+Change idiag and jdiag into config parameters rather than hard-coded,
+following what is done in the seacism branch.
+
+Add some optional config options that were missing from
+namelist_definition_cism.xml (found by searching for GetValue calls in
+cism).
+
+Remove niso (unused).
+
+Make ntem & nvel integers
+
+Make ndiag 20 for gland5UM
+
+Change basal_tract from real(10) to real(5)
+
+Fix categories in namelist_definition_cism, for documentation
+purposes.
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Remove hard-coded idiag, jdiag; instead use values set in config file
+M       source_glimmer-cism/glimmer_paramets.F90
+M       source_glimmer-cism/glide_setup.F90
+M       source_glimmer-cism/glide_types.F90
+M       source_glimmer-cism/glint_main.F90
+
+*** Changes to namelist variables as documented above
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+*** Fix documentation of categories
+M       bld/README.build-namelist
+
+
+Summary of testing:
+
+- bluefire.glc.auxtest: main test results: All PASS except:
+
+These were all expected failures based on previous tag:
+FAIL  ERS_Ly20.f09_g16.TG1850.bluefire_ibm.GC.233417 
+BFAIL ERS_Ly20.f09_g16.TG1850.bluefire_ibm.GC.233417.generate.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+BFAIL ERS_Ly20.f09_g16.TG1850.bluefire_ibm.GC.233417.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+FAIL  ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.GC.233417 
+BFAIL ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.GC.233417.generate.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_121002 
+BFAIL ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.GC.233417.compare_hist.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+
+tputcomp failures:
+FAIL  SMS_D.f09_g16.TG.bluefire_ibm.GC.233417.tputcomp.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+COMMENT   tput_decr = 71.718 tput_percent_decr = 21.9
+FAIL  ERS_Ly20_N2_P2.f09_g16_gl10.TG.bluefire_ibm.GC.233417.tputcomp.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+COMMENT   tput_decr = 7477.653 tput_percent_decr = 55.8
+FAIL  ERS_Ly20_E.f09_g16_gl10.TG20TR.bluefire_ibm.GC.233417.tputcomp.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+COMMENT   tput_decr = 983.18499 tput_percent_decr = 13.1
+
+NLComp failures; as far as I can tell, this is an error in the test script:
+FAIL  SMS_D.f09_g16.TG.bluefire_ibm.GC.233417.NLComp.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+FAIL  ERS_Ly20_N2_P2.f09_g16_gl10.TG.bluefire_ibm.GC.233417.NLComp.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+FAIL  ERS_Ly20_E.f09_g16_gl10.TG20TR.bluefire_ibm.GC.233417.NLComp.cesm1_1_alpha18f_scripts4_120930_clm_newGlacierData2_cism1_120930 
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: All PASS
+
+- Other tests:
+
+  - added newly-added config options to user_nl_cism, confirmed that they
+    appeared in correct place in cism.config, and that at least some of
+    them were read properly by cism
+
+  - confirmed that diagnostic output is done at the desired coordinates,
+    based on new idiag & jdiag
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_120930
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_120921
+
+    mapping             			https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_02
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_120918
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_1_42/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/new_glacier_data2_tags/new_glacier_data2_06_clm4_0_52/models/lnd/clm
+
+    models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_08
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120927
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/trunk
+
+    models/ocn/pop2                 https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120927
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120925b
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_120918
+    models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_120924
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120925
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120921
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xlnd
+    models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xrof
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/slnd
+    models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/srof
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.2
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_4/pio
+
+
+cism tag used for baseline comparisons: cism1_121001
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: Oct 1, 2012
+Model: cism
+Version: cism1_121001
+One-line summary: change parameter defaults
+
+Purpose of changes:
+
+Change some parameters to give better results, based on suggestions from
+Jeremy Fyke and Bill Lipscomb:
+
+- sigma_levels: focus resolution at the bottom
+
+- flow_law = 0
+
+- ntem=nvel=niso=1, because we realized these are multipliers, and values <
+  1 don't make sense
+
+Changes answers relative to previous tag: YES!
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Change parameters
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+*** Document that ntemp, nvel & niso are multipliers
+M       bld/namelist_files/namelist_definition_cism.xml
+
+
+Summary of testing:
+
+Note: baseline comparisons not done: I know this changes answers substantially
+
+- bluefire.glc.auxtest: main test results:
+
+All pass except the following:
+
+FAIL  ERS_Ly20.f09_g16.TG1850.bluefire_ibm.G.140709 
+BFAIL ERS_Ly20.f09_g16.TG1850.bluefire_ibm.G.140709.generate.cesm1_1_alpha18f_scripts4_120930_cism1_120930 
+FAIL  ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.G.140709 
+BFAIL ERS_Ly20_E.f09_g16.TG20TR.bluefire_ibm.G.140709.generate.cesm1_1_alpha18f_scripts4_120930_cism1_120930 
+  
+These failures reveal an old problem which has just come to the surface:
+under certain circumstatnces, cism isn't restarting exactly. The problem is
+in the temp field, and this only affects the cpl fields once we set
+flow_law=0. With flow_law=1 (the old default), there is still a problem,
+but it is only apparent in the cism history files, so doesn't trigger a
+failure in the ERS test. I confirmed that the same problem existed in
+cism1_110418, if you set parameters appropriately (in particular: gland5UM
+with evolution=0, dt=0.05).
+
+- bluefire.glc.auxtest: results of component_gen_comp -model cism:
+
+(Just did -generate, not -compare; all PASS)
+
+- Other tests:
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_120930
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_120921
+
+    mapping             			https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_02
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_120918
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_1_42/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/new_glacier_data2_tags/new_glacier_data2_06_clm4_0_52/models/lnd/clm
+
+    models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_08
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120927
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/trunk
+
+    models/ocn/pop2                 https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120927
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120925b
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_120918
+    models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_120924
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120925
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120921
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xlnd
+    models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xrof
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/slnd
+    models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/srof
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.2
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_4/pio
+
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: mvertens, tcraig
+Date: Sept 21, 2012
+Model: cism
+Version: cism1_120921
+One-line summary: add esmf interface
+
+Purpose of changes: Add esmf interface
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/cism.buildexe.csh
+A       drivers/cpl_esmf/glc_comp_mct.F90
+A       drivers/cpl_esmf/glc_comp_esmf.F90
+
+Summary of testing:
+
+(testing performed by Bill Sacks)
+
+*** Full test suite NOT run: Since the changes were isolated to the
+*** esmf interface, the full test suite seemed unnecessary
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- Other tests:
+
+PASS  CME10y.f09_g16.TG1850.bluefire_ibm 
+PASS  CME10y_N2_P2_D.f09_g16.TG1850.bluefire_ibm 
+PASS  CME10y_N2_P2.f09_g16.TG1850.bluefire_ibm 
+PASS  ERS20y_E.f09_g16.TG20TR.bluefire_ibm 
+PASS  ERS20y_E.f09_g16.TG20TR.bluefire_ibm.memleak
+PASS  CME5y_PL.T31_g37.IG.bluefire_ibm 
+PASS  SMS_D.f09_g16.BGRCP45CN.bluefire_ibm 
+PASS  SMS_D.f09_g16.BGRCP45CN.bluefire_ibm.memleak
+PASS  SMS_DE.f09_g16.BGRCP45CN.bluefire_ibm 
+PASS  SMS_DE.f09_g16.BGRCP45CN.bluefire_ibm.memleak
+PASS  NCK_E.T31_g37.BG1850CN.bluefire_ibm 
+
+Ran shortlist.glc.auxtest, with comparison to cesm1_1_alpha18a:
+
+PASS  SMS_D.f09_g16.TG.bluefire_ibm 
+PASS  SMS_D.f09_g16.TG.bluefire_ibm.memleak
+PASS  SMS_D.f09_g16.TG.bluefire_ibm.compare_hist.cesm1_1_alpha18a 
+PASS  SMS_D.f09_g16.TG.bluefire_ibm.memcomp.cesm1_1_alpha18a 
+FAIL  SMS_D.f09_g16.TG.bluefire_ibm.tputcomp.cesm1_1_alpha18a 
+COMMENT   tput_decr = 79.75 tput_percent_decr = 13.8
+PASS  ERS20y.f09_g16.TG1850.bluefire_ibm 
+PASS  ERS20y.f09_g16.TG1850.bluefire_ibm.memleak
+PASS  ERS20y.f09_g16.TG1850.bluefire_ibm.compare_hist.cesm1_1_alpha18a 
+PASS  ERS20y.f09_g16.TG1850.bluefire_ibm.memcomp.cesm1_1_alpha18a 
+PASS  ERS20y.f09_g16.TG1850.bluefire_ibm.tputcomp.cesm1_1_alpha18a PASS  SMS_D.T31_g37.IG.bluefire_ibm 
+PASS  SMS_D.T31_g37.IG.bluefire_ibm.memleak
+FAIL  SMS_D.T31_g37.IG.bluefire_ibm.compare_hist.cesm1_1_alpha18a 
+PASS  SMS_D.T31_g37.IG.bluefire_ibm.memcomp.cesm1_1_alpha18a 
+FAIL  SMS_D.T31_g37.IG.bluefire_ibm.tputcomp.cesm1_1_alpha18a 
+COMMENT   tput_decr = 2.949 tput_percent_decr = 12.1
+
+The failure in compare_hist with the IG case seems just due to runoff
+changes:
+
+[be1105en:/ptmp/sacks/tests/SMS_D.T31_g37.IG.bluefire_ibm.C.111836]$ grep RMS cprnc.out 
+ RMS r2x_Forr 1.3464E-06
+[be1105en:/ptmp/sacks/tests/SMS_D.T31_g37.IG.bluefire_ibm.C.111836]$ grep FILLDIFF cprnc.out 
+ FILLDIFF domr_lat
+ FILLDIFF domr_lon
+ FILLDIFF domr_are
+ FILLDIFF domr_are
+ FILLDIFF domr_mas
+ FILLDIFF domr_fra
+ FILLDIFF r2x_Forr
+ FILLDIFF r2x_Forr
+
+So I'm not worried about this
+
+Related component_gen_comp:
+
+PASS  ERS20y.f09_g16.TG1850.bluefire_ibm.compare_hist.cesm1_1_alpha18a.cism 
+PASS  SMS_D.T31_g37.IG.bluefire_ibm.compare_hist.cesm1_1_alpha18a.cism 
+PASS  SMS_D.f09_g16.TG.bluefire_ibm.compare_hist.cesm1_1_alpha18a.cism 
+
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/rtmcomp_tags/rtmcomp07_scripts4_120828
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/branch_tags/rtmcomp_tags/rtmcomp03_Machines_120829
+
+    mapping                                 https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/branch_tags/rtmcomp_tags/rtmcomp15_drvseq4_1_26
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/branch_tags/rtmcomp_tags/rtmcomp02_share3_120803
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/branch_tags/exe_cam5_1_33_tags/exe01_cam5_1_33/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/rtmcomp_tags/rtmcomp14_clm4_0_46/models/lnd/clm
+
+    models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_04
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120825
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/branches/rtmcomp
+
+    models/ocn/pop2/                https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120824
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120626
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/branch_tags/rtmcomp_tags/rtmcomp02_dlnd8_120626
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120626
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120626
+    models/rof/drof                 https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof8_120827
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xlnd
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xglc
+    models/rof/xrof                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/xrof
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_7_04/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/slnd
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/sglc
+    models/rof/srof                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_01/srof
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.0
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_3/pio
+
+cism tag used for baseline comparisons: cism1_120905
+
+Any other externals that differed in baseline: Used cesm1_1_alpha18a
+for baselines; this involves many differences in externals
+
+================================================================================
+Originator: sacks
+Date: Sept 5, 2012
+Model: cism
+Version: cism1_120905
+One-line summary: change basal_tract to real rather than integer
+
+Purpose of changes:
+
+basal_tract was mistakenly listed as an integer; I am fixing this.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_definition_cism.xml
+
+Summary of testing: No system tests; just tested namelist generation
+
+- bluefire.glc.auxtest: main test results: NOT DONE
+  
+- bluefire.glc.auxtest: results of component_gen_comp -model cism: NOT DONE
+
+- Other tests:
+
+(1) Ran 'create_newcase -compset TG -res f09_g16 -mach bluefire', then
+'setup'. Compared default cism.config with baseline version: identical
+
+(2) In that case, did the following:
+echo 'basal_tract = 2.5 10 10 0 1' >> user_nl_cism
+preview_namelists
+
+Confirmed that it worked to use a real value.
+
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_120828
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_120829
+
+    mapping             			https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_1_26
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_120803
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/branch_tags/exe_cam5_1_33_tags/exe01_cam5_1_33/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_0_46/models/lnd/clm 
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120825
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/branches/ensemble
+
+    models/ocn/pop2/                https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120824
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120626
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_120626
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120626
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120626
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xlnd
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/slnd
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.0
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_3/pio
+
+
+cism tag used for baseline comparisons: cism1_120829
+
+Any other externals that differed in baseline: None
+
+================================================================================
+Originator: sacks
+Date: Aug 29, 2012
+Model: cism
+Version: cism1_120829
+One-line summary: enable ensemble capabilities
+
+Purpose of changes:
+
+Enable ensemble capabilities for cism. These were already implemented
+in drv & scripts, but required some changes in the cism code.
+
+Also, change flow_factor to real rather than integer.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** New modules to handle variables that differ between ensemble members
+A       source_glc/glc_ensemble.F90
+A       source_glc/glc_files.F90
+A       test/unit/unit_test_replacements/glc_files.F90
+        - simplified version needed because the time management unit test
+          doesn't know anything about ensemble number
+
+*** Add ensemble capability
+M       drivers/cpl_mct/glc_comp_mct.F90
+M       source_glc/glc_io.F90
+        - Also deleted unused glc_io_create_suffix_cesm, because I think it
+          would have been broken with ensemble capabilities
+M       source_glc/glc_constants.F90
+        - Move file names that are no longer constant
+
+*** Change use statements to reflect movement of some file name variables
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_global_grid.F90
+M       source_glc/glc_time_management.F90
+
+*** Add use of glc_files.F90
+M       test/unit/time_management/Srcfiles
+
+*** Change flow_factor to real rather than integer
+M       bld/namelist_files/namelist_definition_cism.xml
+
+*** Updated changeLog template to give more testing details
+M       ChangeLog_template
+
+Summary of testing:
+
+- bluefire.glc.auxtest: main test results: 
+
+All PASS except the following (other than throughput tests, these are all expected failures):
+
+FAIL  ERS20y.f09_g16.TG1850.bluefire_ibm.tputcomp.cesm1_1_alpha17c 
+COMMENT   tput_decr = 1694.229 tput_percent_decr = 44.5
+BFAIL ERS20y_N2_P2.f09_g16.TGG10.bluefire_ibm.compare_hist.cesm1_1_alpha17c 
+BFAIL NCK_P2.f09_g16.TG.bluefire_ibm.compare_hist.cesm1_1_alpha17c 
+FAIL  SMS_PL.T31_g37.IGLONG.bluefire_ibm.tputcomp.cesm1_1_alpha17c 
+COMMENT   tput_decr = 3.6440000 tput_percent_decr = 2.08
+FAIL  SMS.f19_f19.FG20TRCN.bluefire_ibm.tputcomp.cesm1_1_alpha17c 
+COMMENT   tput_decr = 1.627 tput_percent_decr = 13.5
+
+(Note: test list was that in scripts4_120828, plus
+ERS20y.f09_g16.TGG10.bluefire_ibm [which was included in the baseline test
+suite, but has now been replaced by a _N2 version of this test])
+
+- bluefire.glc.auxtest: results of component_gen_comp -model cism:
+
+All PASS except the following (these are expected failures):
+
+BFAIL ERS20y_N2_P2.f09_g16.TGG10.bluefire_ibm.compare_hist.cesm1_1_alpha17c.cism (baseline directory does not exist)
+BFAIL NCK_P2.f09_g16.TG.bluefire_ibm.compare_hist.cesm1_1_alpha17c.cism (baseline directory does not exist)
+
+- Other tests:
+
+  - 4-instance TG run with differences in flow_factor: startup with one
+    continue run; compared instances #1 and #3 with analogous
+    single-instance runs (comparisons included cism hist, cism rest & cpl
+    hist files)
+
+  - as above, but 16 PE run with glc on PEs 4-7: compared with above run to
+    make sure results don't depend on PE location
+
+  - 4-instance IGLONG test with differences in the albice CLM parameter;
+    compared instance #3 with analogous single-instance run (comparisons
+    included clm hist, cism hist & cpl hist files)
+
+Externals used for testing:
+
+    scripts                         https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_120828
+
+    scripts/ccsm_utils/Machines     https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk_tags/Machines_120826
+
+    mapping                                 https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120816
+
+    models/drv                      https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_1_26
+
+    models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_120803
+
+    models/atm/cam                  https://svn-ccsm-models.cgd.ucar.edu/cam1/branch_tags/exe_cam5_1_33_tags/exe01_cam5_1_33/models/atm/cam
+    models/atm/wrf                  https://svn-ccsm-models.cgd.ucar.edu/wrf/trunk_tags/wrf32_ccsm120726
+
+    models/lnd/clm                  https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_0_46/models/lnd/clm 
+
+    models/ice/cice                 https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20120825
+
+    models/glc/cism                 https://svn-ccsm-models.cgd.ucar.edu/glc/branches/ensemble
+
+    models/ocn/pop2/                https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20120824
+
+    models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_120626
+    models/lnd/dlnd                 https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_120626
+    models/ice/dice                 https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_120626
+    models/ocn/docn                 https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_120626
+
+    models/atm/xatm                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xatm
+    models/lnd/xlnd                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xlnd
+    models/ice/xice                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xice
+    models/ocn/xocn                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xocn
+    models/glc/xglc                 https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/xglc
+    models/dead_share               https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_6_05/dead_share
+
+    models/atm/satm                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/satm
+    models/lnd/slnd                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/slnd
+    models/ice/sice                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/sice
+    models/ocn/socn                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/socn
+    models/glc/sglc                 https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_3_05/sglc
+
+    models/utils/timing             https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_120731
+    models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427
+
+    models/utils/mct                https://github.com/MCSclimate/MCT/tags/MCT_2.8.0
+
+    models/utils/pio                http://parallelio.googlecode.com/svn/trunk_tags/pio1_5_3/pio
+
+
+cism tag used for baseline comparisons: cism1_120823
+
+Any other externals that differed in baseline: 
+
+- scripts4_120727d: only diff is in bluefire.glc.auxtest list
+
+================================================================================
+Originator: sacks
+Date: Aug 23, 2012
+Model: cism
+Version: cism1_120823
+One-line summary: Turn evolution on for gland5UM
+
+Purpose of changes:
+
+Turn evolution on for gland5UM (evolution=0 rather than -1). Also shorten
+time steps so ice sheet evolution is stable for gland5UM: dt=0.05,
+ntem=nvel=niso=0.1. These parameters came from Jeremy Fyke's most recent
+runs.
+
+The values of these (and other) parameters may still change, but I wanted
+to use something for now that gives ice sheet evolution with gland5UM to
+facilitate testing. 
+
+Changes answers relative to previous tag: Yes, for gland5UM
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_defaults_cism.xml
+
+Summary of testing:
+
+No system tests!
+
+Just created three cases and compared cism.config with previously-generated
+cases:
+
+- gland5UM: diffs as expected
+
+- gland5: no diffs
+
+- gland10: no diffs
+
+================================================================================
+Originator: mvertens
+Date: June 29, 2012
+Model: cism
+Version: cism1_120629
+One-line summary: Change DIN_LOC_ROOT_CSMDATA to DIN_LOC_ROOT
+
+Purpose of changes: Change DIN_LOC_ROOT_CSMDATA to DIN_LOC_ROOT
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** simple, one-line change
+M       bld/build-namelist
+
+Summary of testing: NONE!
+
+================================================================================
+Originator: mvertens
+Date: May 29, 2012
+Model: cism
+Version: cism1_120529
+One-line summary: Modifications to build to fit with latest scripts
+
+Purpose of changes:
+
+Minor changes to fit in with other system changes Mariana is bringing in
+
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M      bld/cism.cpl7.template
+
+
+Summary of testing: NONE!
+
+================================================================================
+Originator: mvertens
+Date: May 21, 2012
+Model: cism
+Version: cism1_120521
+One-line summary: Support removal of env_conf.xml
+
+Purpose of changes:
+
+Changes to build-namelist to support removal of env_conf.xml, and related
+cleanup
+
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/build-namelist
+
+
+Summary of testing:
+
+(All tests except the ERI IGCN test were conducted by Bill S)
+
+Main testing: Unless otherwise noted, the following tests were done with a
+10-year TG compset, f09_g16, GLC_GRID=gland20. I compared (1) cism_in input
+file, (2) cism.config input file, (3) year 10 cism history output (using
+cprnc). The comparison cases were generated from cesm1_1_beta14.
+
+- startup run
+
+- startup run at f19_g16
+
+- startup run with gland5UM
+
+- branch run; 1 year (continuing the above startup run)
+
+
+Other tests:
+
+- ERI.T31_g37.IGCN.bluefire_ibm
+  - comparison with cesm1_1_alpha14a
+
+- Checked dt_option & dt_count in cism in for the following:
+  - NCPL_BASE_PERIOD=decade, GLC_NCPL=5 (dt_option=steps_per_year, dt_count=0.5)
+
+================================================================================
+Originator: mvertens, sacks
+Date: May 15, 2012
+Model: cism
+Version: cism1_120512
+One-line summary: New build-namelist functionality
+
+Purpose of changes:
+
+- New build-namelist functionality to make cism consistent with other CESM
+  components. Makes cism.buildnml.csh just a thin wrapper to
+  build-namelist. Namelist defaults now set in an xml file. 
+
+- Set dt_option and dt_count automatically to match the coupling interval.
+
+- Multi-instance capability in the build scripts (create multiple cism_in &
+  cism.config files).
+
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Major rework of build
+D       bld/configure
+D       bld/config_definition.xsl
+D       bld/namelist_defaults_overall.xml
+D       bld/namelist_definition_overall.xml
+D       bld/namelist_defaults.xsl
+D       bld/namelist_definition.xsl
+D       bld/config_definition.xml
+D       bld/namelist_defaults_cism.xml
+D       bld/namelist_definition_cism.xml
+A       bld/user_nl_cism
+A       bld/cismIO/cism.buildIO.template.csh
+A       bld/README.build-namelist
+A       bld/cism.buildexe.csh
+M       bld/build-namelist
+M       bld/cism.cpl7.template
+A       bld/cism.buildnml.csh
+M       bld/README
+A       bld/namelist_files/namelist_defaults_cism.xml
+A       bld/namelist_files/namelist_definition_cism.xml
+A       bld/namelist_files
+
+*** Remove now-unnecessary input templates (replaced by
+*** namelist_files/namelist_defaults_cism.xml)
+D       input_templates
+
+*** Add unit test for 2-year time step
+M       test/unit/time_management/restart_testlist
+A       test/unit/time_management/inputs/twoyear/time_management_test_in
+A       test/unit/time_management/inputs/twoyear/cism_in
+A       test/unit/time_management/inputs/twoyear
+M       test/unit/time_management/inputs/README
+A       test/unit/time_management/inputs/twoyear.restart1/time_management_test_in
+A       test/unit/time_management/inputs/twoyear.restart1/cism_in
+A       test/unit/time_management/inputs/twoyear.restart1
+A       test/unit/time_management/inputs/twoyear.restart2/time_management_test_in
+A       test/unit/time_management/inputs/twoyear.restart2/cism_in
+A       test/unit/time_management/inputs/twoyear.restart2
+M       test/unit/time_management/testlist
+
+*** Fix path
+M       test/unit/unit_test_shr/Makefile.common
+
+*** Remove redundant README file
+D       README
+
+*** Remove "Known bugs" section
+M       ChangeLog_template
+
+
+Summary of testing:
+
+CESM Tests (implemented change off of cesm1_1_beta13, compared with baseline
+cesm1_1_beta13):
+
+- bluefire.glc.auxtest: All tests passed except:
+
+CFAIL ERS.T31_g37.IGRCP85CN.bluefire_ibm.C.215553 
+FAIL  SMS.T31_T31.FG20TRCN.bluefire_ibm 
+BFAIL SMS.T31_T31.FG20TRCN.bluefire_ibm.compare_hist.cesm1_1_beta13 
+FAIL  SMS.T31_g37.TG.bluefire_ibm 
+BFAIL SMS.T31_g37.TG.bluefire_ibm.compare_hist.cesm1_1_beta13 
+
+These were all expected failures (also failed in cesm1_1_beta13)
+
+- ERS.f19_g16.IGCN.bluefire_ibm: PASS
+  - ran this because of failure in ERS.T31_g37.IGRCP85CN.bluefire_ibm
+
+
+Main testing of new build: Unless otherwise noted, the following tests were done
+with a 10-year TG compset, f09_g16, GLC_GRID=gland20. I compared (1) cism_in
+input file, (2) cism.config input file, (3) year 10 cism history output (using
+cprnc). The comparison cases were generated from cesm1_1_beta13.
+
+- startup run
+  - Also made sure that list of files in run directory is the same as before
+
+- startup run at f19_g16
+
+- startup run with gland5UM
+
+- startup run with gland5
+  - just checked cism_in and cism.config -- didn't actually do the run
+
+- startup run with gland10
+  - just checked cism_in and cism.config -- didn't actually do the run
+
+- hybrid run; 1 year (continuing the above startup run)
+
+- branch run; 1 year (continuing the above startup run)
+
+- continue run; 1 year -- continuing the above startup run
+
+- continue run; 1 year -- continuing the above branch run
+
+- IG: 1-year test at f19_g16, continuing an older run that had run for
+  10 years (hybrid)
+  - main point of this was to make sure 1-day coupling still works right
+
+
+
+Testing automatic setting of dt_option and dt_count, and making sure that it
+works to use values more general than what we have been using before:
+
+- New time manager unit tests, to make sure it works to have fractional dt_count
+  with steps_per_year (as we could get with NCPL_BASE_PERIOD='decade'):
+  - twoyear
+    - looked through output manually (briefly)
+    - compared with output from using dt_option='seconds', dt_count=63072000
+  - restart_test twoyear
+
+- Checked dt_option & dt_count in cism_in for the following:
+  - out-of-the-box TG
+  - out-of-the-box IG
+  - various values of NCPL_BASE_PERIOD & GLC_NCPL
+  - values overridden by user_nl_cism
+
+- TG run with NCPL_BASE_PERIOD='year', GLC_NCPL=2 (i.e., two time steps per
+  year): confirmed that there is one cism time step per coupling interval
+
+- TG run with NCPL_BASE_PERIOD='decade', GLC_NCPL=5 (i.e., 2-year time step),
+  with mass balance time step = 2 years (requires source mod in glint_mbal.F90),
+  ice dynamics time step = 2 years (dt=2.): confirmed that there is one cism
+  time step per coupling interval
+
+- Compared log files in two 1-year TG runs, which have the same time step but
+  specified in different ways: one with NCPL_BASE_PERIOD=day, GLC_NCPL=48
+  (results in dt_option=steps_per_day, dt_count=48); the other with
+  NCPL_BASE_PERIOD=hour, GLC_NCPL=2 (results in dt_option=seconds,
+  dt_count=1800): glc log files essentially identical (with verbose=.true.)  
+  - Note that these runs both died just before the end, with "Unexpected calling
+    of GLINT at time 8759", but I don't think that's a problem that I caused
+    (but it meant I could not compare hist files)
+
+
+Other tests:
+
+- modifications via user_nl_cism: just checked the generated cism_in and
+  cism.config files to make sure the modifications are picked up
+  - changed a cism_in variable: cism_debug
+  - changed a cism.config variable: basal_tract
+
+- multi-instance test: 4 instances, with no modifications in user_nl_cism_000*:
+  just checked the generated cism_in and cism.config files: paramfile set
+  correctly in cism_in_000*; everything else matches a single-instance case
+
+- multi-instance test: 4 instances, with modifications to ihour0 and evolution
+  in user_nl_cism_0001 & 0003 (but no changes in 0002 or 0004): just checked the
+  generated cism_in and cism.config files
+
+- cism.buildIO.csh:
+  - confirmed that the generated script is essentially the same as before
+  - added a variable in glide_vars.def, confirmed that all F90 files
+    created by cism.buildIO.csh are identical to those from an old
+    case with the same change in glide_vars.def
+
+================================================================================
+Originator: sacks
+Date: March 22, 2012
+Model: cism
+Version: cism1_120322
+One-line summary: fixed memory leak
+
+Purpose of changes:
+
+Fixed memory leak in glint_downscaling_gcm (~ 40 MB/year for some test
+runs)
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+Known bugs (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+      1433 (time manager needs additional changes to support longer timesteps)
+      1441 (time manager doesn't restart properly when last run stopped in the middle of a day)
+
+List all modified files, and describe the changes:
+
+*** Fix memory leak
+M       https://svn-ccsm-models.cgd.ucar.edu/glc/trunk_tags/cism1_120123/source_glimmer-cism/glint_climate.F90
+
+*** Fix comment (unrelated change)
+M       https://svn-ccsm-models.cgd.ucar.edu/glc/trunk_tags/cism1_120123/test/unit/unit_test_shr/Makefile.common
+
+Summary of testing:
+
+- CESM tests: bluefire.glc.auxtest, with comparison to previous
+  version (implemented change in cesm1_1_beta11, compared with
+  baseline cesm1_1_beta11). All tests passed except:
+
+  RUN   ERS.T31_g37.IGRCP85CN.bluefire_ibm.C.095358 
+  FAIL  SMS.T31_T31.FG20TRCN.bluefire_ibm 
+  BFAIL SMS.T31_T31.FG20TRCN.bluefire_ibm.compare_hist.cesm1_1_beta11 
+  FAIL  SMS.T31_g37.TG.bluefire_ibm 
+  BFAIL SMS.T31_g37.TG.bluefire_ibm.compare_hist.cesm1_1_beta11
+
+  All of these tests also failed in cesm1_1_beta11
+
+
+- 10-year TG compset using Bill L's recent instructions: f09_g16,
+  gland5UM, annual coupling interval using Gail's annual-average cpl
+  forcings; evolution=0, dt=ntem=nvel=niso=0.1. Last year of cism hist
+  is identical to code without this fix. NOTE: This change was done
+  off of an earlier version of cism (cism1_111214), but the change is
+  so straightforward that I'm pretty confident that the results should
+  translate to the latest version.
+
+================================================================================
+Originator: tcraig
+Date: Jan 23, 2012
+Model: cism
+Version: cism1_120123
+One-line summary: update esmf to 520r
+
+M       source_glc/glc_io.F90
+M       drivers/cpl_mct/glc_comp_mct.F90
+================================================================================
+Originator: sacks
+Date: Dec 21, 2011
+Model: cism
+Version: cism1_111221
+One-line summary: Restore "correct" glc_time_management, with fix for compiler bug
+
+Purpose of changes:
+
+Return glc_time_management to its "correct" state - i.e., before the changes
+made in cism1_111220a; introduce unused module variable in glc_time_management
+to get around an internal compiler error in xlf. Also, move incorrectly-placed
+'implicit none' in glc_time_management_test.F90.
+
+Changes answers relative to previous tag: No, but replaces functionality removed
+in cism1_111220a
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+Known bugs (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+      1433 (time manager needs additional changes to support longer timesteps)
+      1441 (time manager doesn't restart properly when last run stopped in the middle of a day)
+
+List all modified files, and describe the changes:
+
+*** Restore to version prior to cism1_111220a, introduce unused module variable
+    to get around internal compiler error
+M       source_glc/glc_time_management.F90
+
+*** Move incorrectly-placed 'implicit none'
+M       test/unit/time_management/glc_time_management_test.F90
+
+
+Summary of testing: 
+
+- Tested build for an IGCN case
+
+- Full cesm system tests pending, including bluefire.glc.auxtest with comparison
+  to beta07 (needed to create this tag before testing was complete, but I will
+  create a new tag if any fail)
+
+================================================================================
+Originator: sacks
+Date: Dec 20, 2011
+Model: cism
+Version: cism1_111220a
+One-line summary: Rolled back glc_time_management
+
+Purpose of changes:
+
+The cesm build was failing with the new version of glc_time_management. I have
+temporarily rolled this file back to the version in 31393.
+
+This should be fixed ASAP!
+
+
+Changes answers relative to previous tag: No, but removes functionality
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+Known bugs (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Rolled back
+M       source_glc/glc_time_management.F90
+
+Summary of testing: Just tested build
+
+================================================================================
+Originator: sacks
+Date: Dec 20, 2011
+Model: cism
+Version: cism1_111220
+One-line summary: Updated ChangeLog entry for cism1_111214
+
+Purpose of changes:
+  I realized that I hadn't documented the testing done for cism1_111214 entirely
+  correctly; I have now fixed this.
+
+Changes answers relative to previous tag: No
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+Known bugs (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+      1433 (time manager needs additional changes to support longer timesteps)
+      1441 (time manager doesn't restart properly when last run stopped in the middle of a day)
+
+List all modified files, and describe the changes:
+
+*** Update ChangeLog entry for cism1_111214
+M       ChangeLog
+
+Summary of testing: None
+
+================================================================================
+Originator: mvertens
+Date: Dec 18, 2011
+Model: cism
+Version: cism1_111218
+One-line summary: Simplified way that cism field names generated for driver
+
+Purpose of changes:
+  Implemented new scheme of determine cism field names that is more flexible
+  and robust 
+
+Changes answers relative to previous tag: No
+
+Known bugs (include bugzilla ID) (http://bugs.cgd.ucar.edu/): None
+
+List all modified files, and describe the changes:
+M       source_glc/glc_constants.F90
+        - no longer set glc_nec to 10 - but determine it from fields set in
+	  coupler - consistency check is also made in the land - more
+	  robust implemention
+M       drivers/cpl_share/glc_cpl_indices.F90
+	- new index array for multiple elevation classes now is used instead
+	  of hard wired index names for each class - much more extensible 
+	  scheme
+M       drivers/cpl_mct/glc_comp_mct.F90
+        - using changes in glc_cpl_indices - glc_export_mct and glc_import_mct
+	  are greatly simplified (no more hard-wiring)
+	
+Summary of testing: 
+Ran IGCN and BGCN system tests and verified that results were bit-for-bit
+
+================================================================================
+Originator: sacks
+Date: Dec 14, 2011
+Model: cism
+Version: cism1_111214
+One-line summary: Add test driver for glc_time_management
+
+Purpose of changes:
+
+Add a test driver for glc_time_management, along with a list of standard tests
+to run. Remove some variables from glc_time_management that aren't being used
+and weren't properly preserved in restarts. Add code & makefile that can be used
+for future unit testers. Add ChangeLog_template.
+
+
+Changes answers relative to previous tag: No
+
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+Known bugs (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+      1433 (time manager needs additional changes to support longer timesteps)
+      1441 (time manager doesn't restart properly when last run stopped in the middle of a day)
+
+
+List all modified files, and describe the changes:
+
+*** Remove unused variables that aren't preserved in restarts
+M       source_glc/glc_time_management.F90
+
+*** Add code & makefile that can be used for any cism unit tester
+A       test  
+A       test/unit 
+A       test/unit/unit_test_replacements 
+A       test/unit/unit_test_replacements/glc_communicate.F90
+A       test/unit/unit_test_replacements/shr_sys_mod.F90
+A       test/unit/unit_test_replacements/README
+A       test/unit/unit_test_shr/writevar_mod.F90
+A       test/unit/unit_test_shr/Makefile.common
+A       test/unit/unit_test_shr/README
+A       test/unit/unit_test_shr
+
+*** Add test driver for the glc_time_management module
+A       test/unit/time_management 
+A       test/unit/time_management/README 
+A       test/unit/time_management/Filepath
+A       test/unit/time_management/Srcfiles 
+A       test/unit/time_management/Makefile
+A       test/unit/time_management/glc_time_management_test_mod.F90
+A       test/unit/time_management/glc_time_management_test.F90
+
+*** Script to run exact restart test using the time management test driver
+A       test/unit/time_management/restart_test
+
+*** Add list of tests to be run with the time management test driver
+A       test/unit/time_management/restart_testlist
+A       test/unit/time_management/testlist
+
+*** Namelists for each of the standard tests to run using the time management
+    test driver and the restart_test script (note: I am not listing all of the
+    individual files added in this directory)
+A       test/unit/time_management/inputs
+
+*** Add ChangeLog_template to be used for new ChangeLog entries
+A       ChangeLog_template
+
+
+Summary of testing: No system tests, but many unit tests
+
+- test/unit/time_management (tests in testlist & restart_testlist; for testlist,
+  performed regression tests against code similar to cism1_111026 where
+  possible, manually checked output where regression tests were impossible -
+  e.g., where the old code was buggy):
+
+Note that there is a known bug in newhour (see bug 1433). I am considering tests
+to have passed even if they have the wrong newhour value. Also, since I didn't
+do a careful look at every variable output by the test driver, it's possible
+that there are errors in other variables that I didn't catch. Here, I am just
+listing tests that have failures in variables that I checked, other than
+newhour (variables I checked more carefully were: iyear, imonth, iday,
+seconds_this_day, eoy, eom, eod, adjust_nyears, elapsed_days, elapsed_months,
+elapsed_years).
+
+All pass except:
+
+  oneyear_leap: model doesn't run to completion (see bug 1433)
+
+  threeyear_leap: also has problems related to bug 1433, though here the model
+    runs to completion
+
+  219day_leap: also has problems related to bug 1433; the first error I notice
+    is that year 5, day_of_year 73 is translated to 0005-mar-13 rather than
+    0005-mar-14, but there are likely other errors, too, as for oneyear_leap
+
+  511day_leap: also has problems relatd to bug 1433; e.g., both the leap and the
+    non-leap tests have a time step with time stamp 0005-mar-15; the leap should
+    differ
+
+
+================================================================================
+Originator: sacks
+Date: Nov 22, 2011
+Model: cism
+Version: cism1_111122
+One-line summary: Modified time manager to support longer time steps
+
+Previously, the time manager did not correctly handle time steps longer
+than one month. With the changes here, time steps as long as desired
+should be possible. However, as noted below, I have only tested this for
+daily and annual time steps so far.
+	
+M       source_glc/glc_time_management.F90
+
+pretag testing: so far I have tested this for daily and annual time steps;
+more testing is needed of other length time steps
+
+	- 10-year TG compset with daily time step (i.e., the default),
+	using gland10 and 10 years of forcing from a af19_g16 IG compset:
+	last year of cism history output identical to a similar run set up
+	using old version; cism log files also essentially identical
+
+	- Similar to the above, but with annual time step & annual
+	coupling interval. This was set up by (1) averaging the 10 years
+	of cpl history files into annual-average files; (2) explicitly
+	setting atm_cpl_dt to 31536000, and the same for other components,
+	in cpl.buildnml.csh; (3) changing dt_option from steps_per_day to
+	steps_per_year in cism.buildnml.csh. Last year of cism history
+	output identical to the daily run; cism log files also show
+	correct time stepping
+
+	- exact restart, daily time step: similar to daily time step run
+	above, but two 5-year runs; checked last year of history file
+	against the above 10-year run
+
+	- exact restart, annual time step: similar to annual time step run
+	above, but two 5-year runs; checked last year of history file
+	against the above 10-year run
+
+================================================================================
+Originator: sacks
+Date: Oct 26, 2011
+Model: cism
+Version: cism1_111026
+One-line summary: change ntem default to 1000000. for gland5UM
+
+This turns off ice temperature evolution (I think) -- at least, as long as
+you are running for less than 1000000 years. This change should have been
+made at the same time as the creation of ice.config.gland5UM, when
+evolution was (correctly) set to -1.
+	
+M       input_templates/ice.config.gland5UM
+
+pretag testing: NONE
+
+================================================================================
+Originator: jwolfe
+Date:
+Model: cism
+Version: cism1_111007
+One-line summary: add support for new GLC_GRID gland5UM
+
+M       bld/cism.cpl7.template
+A       input_templates/ice.config.gland5UM
+
+================================================================================
+Originator: sacks, lipscomb
+Date: Oct 4, 2011
+Model: cism
+Version: cism1_111004
+One-line summary: allow evolution=-1; reformat glimmer_ncio.F90 to satisfy
+      		  some compilers
+
+* Allow evolution=-1 -- i.e., no thickness evolution
+M       source_glimmer-cism/glide.F90
+M       source_glimmer-cism/glide_setup.F90
+
+* Reformat to satisfy some compilers
+M       source_glimmer-cism/glimmer_ncio.F90
+
+pretag testing:
+	- 10-year TG compsets before and after these modifications
+	(evolution=0 in both cases), using a single year of forcing from a
+	f19_g16 IG compset: last year of cism history output identical
+
+	- 10-year TG compset with evolution=-1, compared with the above
+	evolution=0 case: last year of cism history output differs, as
+	expected (but didn't evaluate whether the differences make sense)
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Mon Apr 18, 2011
+Model: cism
+Version: cism1_110418
+One-line summary: changes to make restarts completely functional for branch
+                  and hybrid runs, using the glimmer-cism native hotstart
+                  capability
+
+M       bld/cism.cpl7.template
+M       input_templates/ice.config.gland10
+M       input_templates/ice.config.gland20
+M       input_templates/ice.config.gland5
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Mon Mar 07, 2011
+Model: cism
+Version: cism1_110307
+One-line summary: modify input templates to remove setting native glimmer-cism
+                  history output files, which interferes with creating CESM-style
+                  history output
+
+M       input_templates/ice.config.gland10
+M       input_templates/ice.config.gland20
+M       input_templates/ice.config.gland5
+
+pretag testing: Results are bfb relative to cesm1_0_beta15 for ERI.f19_f19.FG.bluefire
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Sun Feb 20, 2011
+Model: cism
+Version: cism1_110220
+One-line summary: reworked the way CISM handles history files, to more closely
+                  follow CESM naming conventions and alarms
+
+M       bld/cism.cpl7.template
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_io.F90
+M       drivers/cpl_mct/glc_comp_mct.F90
+
+pretag testing: Results are bfb relative to cesm1_0_beta15 for ERI.f19_f19.FG.bluefire
+
+================================================================================
+Originator: fischer
+Date: Tue Jan 25, 2011
+Model: cism
+Version: cism1_110125
+One-line summary: renamed glint_smb.F90 to smb_dummy.F90
+
+A      source_glimmer-cism/smb_dummy.F90
+D      source_glimmer-cism/glint_smb.F90
+
+================================================================================
+Originator: mvertens
+Date: Mon Jan 24, 2011
+Model: cism
+Version: cism1_110124
+One-line summary: removed use seq_flds_indices, now using local glc_cpl_indices_set
+
+A       drivers/cpl_share
+A       drivers/cpl_share/glc_cpl_indices.F90
+M       drivers/cpl_mct/glc_comp_mct.F90
+	
+pretag testing: Results are bfb relative to cesm1_0_beta14 for ERI.f19_f19.FG.bluefire
+	
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Sep 13, 2010
+Model: cism
+Version: cism1_100913
+One-line summary: add more capabilities, clean-up
+
+* pull vars.def files together along with template and python script, to
+  allow users to modify the IO list on a per case basis
+A      bld/cismIO
+A      bld/cismIO/glide_lithot_vars.def
+A      bld/cismIO/README.cismIO
+A      bld/cismIO/glint_mbal_vars.def
+A      bld/cismIO/glint_vars.def
+A      bld/cismIO/ncdf_template.F90.in
+A      bld/cismIO/glide_vars.def
+A      bld/cismIO/generate_ncvars.py
+M      bld/cism.cpl7.template
+
+* make GLC_DEBUG a variable instead of an IFDEF
+M      source_glimmer-cism/glide.F90
+M      source_glimmer-cism/glint_timestep.F90
+M      source_glimmer-cism/glint_climate.F90
+M      source_glimmer-cism/glimmer_paramets.F90
+M      source_glimmer-cism/glide_diagnostics.F90
+M      source_glimmer-cism/glint_main.F90
+M      source_glimmer-cism/glint_interp.F90
+M      source_glimmer-cism/glint_type.F90
+
+* reworked restart to keep glc calls out of glimmer-cism
+M      source_glc/glc_InitMod.F90
+M      source_glc/glc_io.F90
+A      source_glimmer-cism/glimmer_restart_gcm.F90
+M      source_glimmer-cism/glint_initialise.F90
+M      source_glimmer-cism/glimmer_config.F90
+
+* fixed configuration files to make other resolutions work correctly
+M      input_templates/ice.config.gland10
+M      input_templates/ice.config.gland20
+M      input_templates/ice.config.gland5
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Jun 17, 2010
+Model: cism
+Version: cism1_100617a
+One-line summary: keep use statement for shr_file_mod (temporarily)
+
+M      source_glimmer-cism/glimmer_config.F90
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Jun 17, 2010
+Model: cism
+Version: cism1_100617
+One-line summary: pick up mods to glc_comp from Bill L's sandbox
+
+M      drivers/cpl_mct/glc_comp_mct.F90
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Jun 16, 2010
+Model: cism
+Version: cism1_100616a
+One-line summary: change Filepath to refer to new drivers directory
+
+M      bld/cism.cpl7.template
+
+================================================================================
+Originator: jwolfe, lipscomb
+Date: Jun 16, 2010
+Model: cism
+Version: cism1_100616
+One-line summary: rearrange driver code for future esmf support, clean-up
+
+* rearrange driver code for future esmf support
+D      source_glc/glc_comp_mct.F90
+A      drivers
+A      drivers/cpl_mct
+A      drivers/cpl_mct/glc_comp_mct.F90
+A      drivers/cpl_esmf
+
+* remove unused code
+D      source_glc/glc_domain_size.F90
+D      source_glimmer-cism/glimmer_restart_statarr.F90
+D      source_glimmer-cism/glimmer_restart_pointarr.F90
+D      source_glimmer-cism/glimmer_restart_common.F90
+D      source_glimmer-cism/glimmer_restart.F90
+D      source_glimmer-cism/glimmer_restart_statscal.F90
+
+* fixed input template files for different resolutions
+M      input_templates/ice.config.gland10
+M      input_templates/ice.config.gland20
+M      input_templates/ice.config.gland5
+
+* enhanced I/O to fix restart issue
+M      source_glimmer-cism/glint_io.F90
+M      source_glimmer-cism/glide_lithot_io.F90
+M      source_glimmer-cism/glint_mbal_io.F90
+M      source_glimmer-cism/glide_io.F90
+
+* clean-up and fix documentation
+M      source_glc/glc_InitMod.F90
+M      source_glc/glc_RunMod.F90
+M      source_glc/glc_global_grid.F90
+M      source_glc/glc_io.F90
+M      source_glc/glc_constants.F90
+M      source_glc/glc_global_fields.F90
+M      source_glc/glc_FinalMod.F90
+M      source_glc/glc_time_management.F90
+M      source_glimmer-cism/glide.F90
+M      source_glimmer-cism/glimmer_scales.F90
+M      source_glimmer-cism/glint_timestep.F90
+M      source_glimmer-cism/glide_thck.F90
+M      source_glimmer-cism/isostasy_setup.F90
+M      source_glimmer-cism/isostasy_el.F90
+M      source_glimmer-cism/glide_nc_custom.F90
+M      source_glimmer-cism/isostasy_types.F90
+M      source_glimmer-cism/glimmer_ts.F90
+M      source_glimmer-cism/glimmer_routing.F90
+M      source_glimmer-cism/glimmer_searchcircle.F90
+M      source_glimmer-cism/glimmer_daily_pdd.F90
+M      source_glimmer-cism/xls.F90
+M      source_glimmer-cism/glint_mbal.F90
+M      source_glimmer-cism/glide_temp.F90
+M      source_glimmer-cism/glint_climate.F90
+M      source_glimmer-cism/glimmer_utils.F90
+M      source_glimmer-cism/glimmer_map_init.F90
+M      source_glimmer-cism/glimmer_anomcouple.F90
+M      source_glimmer-cism/glimmer_filenames.F90
+M      source_glimmer-cism/glimmer_ncparams.F90
+M      source_glimmer-cism/glimmer_writestats.F90
+M      source_glimmer-cism/glint_initialise.F90
+M      source_glimmer-cism/glimmer_paramets.F90
+M      source_glimmer-cism/glimmer_vers.F90
+M      source_glimmer-cism/glide_lithot1d.F90
+M      source_glimmer-cism/glimmer_map_CFproj.F90
+M      source_glimmer-cism/glide_mask.F90
+M      source_glimmer-cism/glide_profile.F90
+M      source_glimmer-cism/glide_setup.F90
+M      source_glimmer-cism/glimmer_map_proj4.F90
+M      source_glimmer-cism/glide_types.F90
+M      source_glimmer-cism/glide_velo.F90
+M      source_glimmer-cism/glimmer_global.F90
+M      source_glimmer-cism/glimmer_map_types.F90
+M      source_glimmer-cism/glimmer_deriv.F90
+M      source_glimmer-cism/glimmer_ncdf.F90
+M      source_glimmer-cism/glimmer_coordinates.F90
+M      source_glimmer-cism/kelvin.F90
+M      source_glimmer-cism/glide_stop.F90
+M      source_glimmer-cism/ncdf_utils.F90
+M      source_glimmer-cism/glint_example_clim.F90
+M      source_glimmer-cism/glimmer_log.F90
+M      source_glimmer-cism/glimmer_integrate.F90
+M      source_glimmer-cism/glint_precip_param.F90
+M      source_glimmer-cism/glint_global_grid.F90
+M      source_glimmer-cism/glimmer_sparse.F90
+M      source_glimmer-cism/glint_constants.F90
+M      source_glimmer-cism/glide_diagnostics.F90
+M      source_glimmer-cism/isostasy.F90
+M      source_glimmer-cism/glint_global_interp.F90
+M      source_glimmer-cism/glimmer_config.F90
+M      source_glimmer-cism/glint_main.F90
+M      source_glimmer-cism/glimmer_pdd.F90
+M      source_glimmer-cism/glint_mpinterp.F90
+M      source_glimmer-cism/glint_interp.F90
+M      source_glimmer-cism/glide_lithot3d.F90
+M      source_glimmer-cism/glimmer_physcon.F90
+M      source_glimmer-cism/glimmer_map_trans.F90
+M      source_glimmer-cism/profile.F90
+M      source_glimmer-cism/glimmer_ncio.F90
+M      source_glimmer-cism/glide_lithot.F90
+M      source_glimmer-cism/glint_mbal_coupling.F90
+M      source_glimmer-cism/glint_smb.F90
+M      source_glimmer-cism/glint_type.F90
+
+================================================================================
+Originator: jwolfe
+Date: Jun 08, 2010
+Model: cism
+Version: cism1_100608
+One-line summary: Additional resolution support, fix calendar bug
+
+M      bld/cism.cpl7.template
+M      source_glc/glc_io.F90
+M      source_glc/glc_time_management.F90
+
+================================================================================
+Originator: jwolfe
+Date: Jun 03, 2010
+Model: cism
+Version: cism1_100603
+One-line summary: Update cpl7 template to work correctly with hybrid and branch runs
+
+M      bld/cism.cpl7.template
+
+================================================================================
+Originator: jwolfe
+Date: May 25, 2010
+Model: cism
+Version: cism1_100525a
+One-line summary: patch to new tag, deleting one file that no longer belongs
+
+D      source_glc/glc_glint_interp.F90
+
+================================================================================
+Originator: jwolfe
+Date: May 25, 2010
+Model: cism
+Version: cism1_100525
+One-line summary: initial commit of cism1, which is more-or-less the same as
+                  $SVN/glc/branch_tags/glimmer-cism-gcm_tags/glimmer-cism-gcm03_glc4_100301
+                  except the var.def files have been removed from the bld as well
+                  as the scripts to handle them.  CSEG decided not to require
+                  python, which one of the scripts uses, so the resulting _io.F90
+                  files are included in source_glimmer-cism instead.
+
+A      source_slap
+A      source_slap/dmset.F
+A      source_slap/dlaputil.F
+A      source_slap/xersla.F
+A      source_slap/dcgs.F
+A      source_slap/blas.F
+A      source_slap/dmvops.F
+A      source_slap/mach.F
+D      bld/namelist_definition_gglc.xml
+M      bld/configure
+M      bld/config_definition.xsl
+D      bld/gglc.cpl7.template
+M      bld/README
+A      bld/namelist_definition_cism.xml
+D      bld/namelist_defaults_gglc.xml
+A      bld/cism.cpl7.template
+M      bld/build-namelist
+M      bld/config_definition.xml
+A      bld/namelist_defaults_cism.xml
+M      source_glc/glc_glint_interp.F90
+M      source_glc/glc_comp_mct.F90
+M      source_glc/glc_InitMod.F90
+M      source_glc/glc_RunMod.F90
+M      source_glc/glc_global_grid.F90
+M      source_glc/glc_io.F90
+M      source_glc/glc_constants.F90
+M      source_glc/glc_global_fields.F90
+M      source_glc/glc_time_management.F90
+A      source_glimmer-cism
+A      source_glimmer-cism/glide.F90
+A      source_glimmer-cism/glimmer_scales.F90
+A      source_glimmer-cism/glint_timestep.F90
+A      source_glimmer-cism/glide_thck.F90
+A      source_glimmer-cism/glide_lithot_io.F90
+A      source_glimmer-cism/isostasy_setup.F90
+A      source_glimmer-cism/isostasy_el.F90
+A      source_glimmer-cism/glide_nc_custom.F90
+A      source_glimmer-cism/glint_mbal_io.F90
+A      source_glimmer-cism/glimmer_restart_statarr.F90
+A      source_glimmer-cism/isostasy_types.F90
+A      source_glimmer-cism/glimmer_ts.F90
+A      source_glimmer-cism/glimmer_routing.F90
+A      source_glimmer-cism/glimmer_searchcircle.F90
+A      source_glimmer-cism/glimmer_daily_pdd.F90
+A      source_glimmer-cism/xls.F90
+A      source_glimmer-cism/glint_mbal.F90
+A      source_glimmer-cism/glide_temp.F90
+A      source_glimmer-cism/glint_climate.F90
+A      source_glimmer-cism/glimmer_utils.F90
+A      source_glimmer-cism/glimmer_map_init.F90
+A      source_glimmer-cism/glimmer_anomcouple.F90
+A      source_glimmer-cism/glimmer_restart_pointarr.F90
+A      source_glimmer-cism/glimmer_filenames.F90
+A      source_glimmer-cism/glimmer_ncparams.F90
+A      source_glimmer-cism/glimmer_writestats.F90
+A      source_glimmer-cism/glint_initialise.F90
+A      source_glimmer-cism/glimmer_paramets.F90
+A      source_glimmer-cism/glimmer_vers.F90
+A      source_glimmer-cism/glide_lithot1d.F90
+A      source_glimmer-cism/glimmer_map_CFproj.F90
+A      source_glimmer-cism/glide_mask.F90
+A      source_glimmer-cism/glint_io.F90
+A      source_glimmer-cism/glide_profile.F90
+A      source_glimmer-cism/glide_setup.F90
+A      source_glimmer-cism/glimmer_map_proj4.F90
+A      source_glimmer-cism/glimmer_restart_common.F90
+A      source_glimmer-cism/glide_types.F90
+A      source_glimmer-cism/glide_velo.F90
+A      source_glimmer-cism/glimmer_global.F90
+A      source_glimmer-cism/glimmer_map_types.F90
+A      source_glimmer-cism/glimmer_deriv.F90
+A      source_glimmer-cism/glimmer_coordinates.F90
+A      source_glimmer-cism/glimmer_ncdf.F90
+A      source_glimmer-cism/kelvin.F90
+A      source_glimmer-cism/glide_stop.F90
+A      source_glimmer-cism/ncdf_utils.F90
+A      source_glimmer-cism/glint_example_clim.F90
+A      source_glimmer-cism/glimmer_log.F90
+A      source_glimmer-cism/glimmer_integrate.F90
+A      source_glimmer-cism/glint_precip_param.F90
+A      source_glimmer-cism/glimmer_restart.F90
+A      source_glimmer-cism/glint_global_grid.F90
+A      source_glimmer-cism/glimmer_sparse.F90
+A      source_glimmer-cism/glint_constants.F90
+A      source_glimmer-cism/glide_diagnostics.F90
+A      source_glimmer-cism/isostasy.F90
+A      source_glimmer-cism/glint_global_interp.F90
+A      source_glimmer-cism/glimmer_config.F90
+A      source_glimmer-cism/glint_main.F90
+A      source_glimmer-cism/glimmer_pdd.F90
+A      source_glimmer-cism/glint_mpinterp.F90
+A      source_glimmer-cism/glint_interp.F90
+A      source_glimmer-cism/glide_lithot3d.F90
+A      source_glimmer-cism/glimmer_restart_statscal.F90
+A      source_glimmer-cism/glimmer_physcon.F90
+A      source_glimmer-cism/profile.F90
+A      source_glimmer-cism/glimmer_map_trans.F90
+A      source_glimmer-cism/glimmer_ncio.F90
+A      source_glimmer-cism/glide_lithot.F90
+A      source_glimmer-cism/glint_mbal_coupling.F90
+A      source_glimmer-cism/glide_io.F90
+A      source_glimmer-cism/glint_type.F90
+A      source_glimmer-cism/glint_smb.F90
+M      ChangeLog
+D      source_glimmer
+A      input_templates/ice.config.gland10
+M      input_templates/ice.config.gland20
+A      input_templates/ice.config.gland5
+M      README
+
+================================================================================
+Originator: jwolfe
+Date: May 07, 2010
+Model: glc
+Version: glc4_100507
+One-line summary: bug fixes and clean up
+
+* replace hard-wired unit numbers with calls to shr_file_getunit
+M      source_glimmer/glimmer_ts.F90
+M      source_glimmer/glimmer_config.F90
+
+* clean up unused files
+D      input_templates/glc_in.jw
+D      input_templates/glc_in
+
+* rename "ice.config" file to "cism.config"
+M      bld/gglc.cpl7.template
+M      bld/namelist_defaults_gglc.xml
+
+================================================================================
+Originator: jwolfe
+Date: Mar 30, 2010
+Model: glc
+Version: glc4_100330
+One-line summary: CCSMize output filenames, add tools for creating overlap files,
+                  bug fix
+
+* CCSMize output filenames
+A      source_glc/glc_io.F90
+M      bld/gglc.cpl7.template
+M      input_templates/ice.config.gland20
+M      source_glimmer/glint_initialise.F90
+
+* Add tools for creating overlap files
+A      tools
+A      tools/README.glc_tools
+A      tools/README.glc_overlap_tools
+A      tools/glc2scripConvert.ncl
+A      tools/scrip_make_wgts_CCSM_to_GLC_bilin.csh
+A      tools/scrip2CLMoverlap.ncl
+
+* Fix bug that closed log file before the end of output
+M      source_glimmer/glint_main.F90
+
+================================================================================
+Originator: jwolfe
+Date: Mar 16, 2010
+Model: glc
+Version: glc4_100316
+One-line summary: Support for fracdata files for downscaling
+
+* Changed output for gglc.buildnml.csh to point at fracdata file
+M      bld/gglc.cpl7.template
+
+* The following files were changed Bill Lipscomb to support the use of fracdata
+  files for downscaling:
+M      source_glc/glc_InitMod.F90
+M      source_glc/glc_comp_mct.F90
+M      source_glc/glc_constants.F90
+M      source_glc/glc_global_grid.F90
+M      source_glc/glc_glint_interp.F90
+M      source_glimmer/glint_global_grid.F90
+M      source_glimmer/glint_interp.F90
+M      source_glimmer/glint_main.F90
+M      source_glimmer/glint_mbal_coupling.F90
+M      source_glimmer/glint_timestep.F90
+
+================================================================================
+Originator: jwolfe
+Date: Mar 01, 2010
+Model: glc
+Version: glc4_100301
+One-line summary: Set test cell information in code based on global grid size,
+                  instead of set as parameters in glc_constants (caused a
+                  problem with T31 grid)
+
+M      source_glc/glc_global_grid.F90 ----- Added test cell settings based on
+                                            global grid size
+M      source_glc/glc_constants.F90 ------- Removed parameter attribute from 
+                                            test cell constants
+
+================================================================================
+Originator: erik
+Date: Nov 03, 2009
+Model: glc
+Version: glc4_091103
+One-line summary: Point to checked in version of topo files, add documentation,
+                  add config files to buildnml script so can change, start adding
+                  xml support.
+
+M      bld/gglc.cpl7.template -------------- Point to checked in version of topo files
+                                             Add documentation and put config file in
+                                             the buildnml script so can be changed by
+                                             the user. Start adding flexibility for
+                                             support for different GLC grids.
+
+A      bld/README -------------------------- Document files in the build directory
+A      bld/namelist_defaults_gglc.xml ------ GGLC specific namelist defaults
+A      bld/namelist_definition_gglc.xml ---- GGLC specific namelist defintion
+A      bld/namelist_defaults_overall.xml --- Overall namelist defaults
+A      bld/namelist_definition_overall.xml - Overall namelist defintion
+A      bld/namelist_defaults.xsl ----------- Style sheet to display defaults as html
+A      bld/namelist_definition.xsl --------- Style sheet to display definition as html
+
+Some scripts starting to add that do NOT work yet.
+
+A      bld/build-namelist ----------------- Start adding a build-namelist (not working yet)
+A      bld/configure ---------------------- Start adding a configure      (not working yet)
+A      bld/configure_definition.xml ------- Definition of configurations
+A      bld/configure_definition.xsl ------- Style sheet to display definition as html
+
+================================================================================
+Originator: lipscomb
+Date: Oct 27, 2009
+Model: glc
+Version: glc4_091027
+One-line summary: Add glimmer log file and add greenland 20km config file
+
+  M  source_glc/glc_InitMod.F90 ---------- Change glimmer log file
+  M  source_glimmer/glimmer_log.F90 ------ Add subroutine to change glimmer log
+  M  input_templates/ice.config.gland20 -- Add greenland 20km config file
+
+================================================================================
+Originator: erik
+Date: Aug 14, 2009
+Model: glc
+Version: glc4_090814
+One-line summary:  Template changes to allow multiple grid files
+
+Set up grid files for 48x96, 1.9x.25, and 0.9x1.25 resolutions. Abort
+if it isn't one of those. Also remove the coupled_nml namelist as not needed,
+and set the stop_option to never, since, the coupler will tell it to stop.
+
+M      bld/gglc.cpl7.template
+
+================================================================================
+Originator: lipscomb
+Date: Aug 13, 2009
+Model: glc
+Version: glc4_090813
+One-line summary:  Latest changes from Bill Lipscomb
+
+Mostly changes to get time-management working correctly. Also
+make sure proper mask of r8 for some variables. Update some of
+the documentation and formatting.
+
+M   README
+M   source_glc/glc_glint.F90
+M   source_glc/glc_comp_mct.F90
+M   source_glc/glc_InitMod.F90
+M   source_glc/glc_RunMod.F90
+M   source_glc/glc_global_grid.F90
+M   source_glc/glc_FinalMod.F90
+M   source_glc/glc_time_management.F90
+M   source_glimmer/glide.F90
+M   source_glimmer/glint_initialise.F90
+M   source_glimmer/glimmer_ncio.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Jan 16, 2009
+Model: glc
+Version: glc4_090116
+One-line summary:  Upgrade from ccsm3 to ccsm4 coupling
+
+- Try not to touch any glimmer code	
+- Delete unusued code and remove use of unused code from used code as needed
+- Add bld and gglc.cpl7.template
+- Delete glc.F90 and add glc_comp_mct.F90 for migration from ccsm3 to ccsm4
+- Update the stdout, stderr, and nml unit numbers to be set from shr_file_getunit,
+  eliminate use of local get_unit in favor of shr_file_getunit in glc
+- Migrate all use of unit 6 to stdout in all source_glc code.  includes write,
+  print, and flush statements.  this was not done to glimmer.
+- Add a shr_sys_abort to source_glimmer/glimmer_log.F90 before the stop to
+  prevent ccsm4 hang from glimmer abort.  (there are probably more calls to
+  stop that need to be fixed in the code).
+- Get rid of use and reference to ccsm3 coupling code
+- Update initialization of glc communicator from ccsm4 driver
+
+Other potential issues still not addressed
+- other unit numbers hardwired in glc/glimmer
+- use of stop, proper aborts
+- reference to gland20.input.nc file from ice.config input file
+- hardwired glc_nec = 10
+- hardwired T31 resolution
+- glimmer mostly writes to unit 6
+- restart flag captured in coupling interface but not used
+	
+A      bld
+A      bld/gglc.cpl7.template
+D      mpi/glc_gather_scatter.F90
+D      mpi/glc_global_reductions.F90
+D      mpi/glc_broadcast.F90
+D      mpi/glc_boundary.F90
+D      mpi/glc_timers.F90
+M      mpi/glc_communicate.F90
+A      source_glc/glc_comp_mct.F90
+D      source_glc/glc_fileunits.F90
+M      source_glc/glc_InitMod.F90
+M      source_glc/glc_RunMod.F90
+M      source_glc/glc_global_grid.F90
+D      source_glc/glc_domain.F90
+M      source_glc/glc_exit_mod.F90
+M      source_glc/glc_constants.F90
+M      source_glc/glc_glint.F90
+D      source_glc/glc_blocks.F90
+D      source_glc/glc_distribution.F90
+D      source_glc/glc.F90
+M      source_glc/glc_FinalMod.F90
+M      source_glc/glc_ErrorMod.F90
+M      source_glc/glc_time_management.F90
+D      source_glc/glc_coupled.F90
+D      source_glc/glc_io_types.F90
+M      source_glimmer/glimmer_log.F90
+	
+================================================================================
+Originator: tcraig
+Date: Oct 17, 2009
+Model: glc
+Version: glc_081017
+One-line summary:  Port to bluefire, update usability
+
+M       input_templates/glc_in
+  update input file paths to bluefire inputdata area
+	        
+================================================================================
+Originator: 
+Date: 
+Model: glc
+Version: glc_080817
+One-line summary: 
+Changes made: 
+
+================================================================================
+
+Originator: jwolfe
+Date: Mon Nov  5 13:39:33 MST 2007
+Model: glc
+Version: glc_071105
+One-line summary: update to include all of Bll Lipscomb's new changes
+Changes made: 
+
+?      source_glc/glc_glint.F90
+?      source_glc/glc_global_fields.F90
+?      source_glc/glc_coupled.F90
+?      source_glc/glc_global_grid.F90
+?      source_glc/POP_files/grid.F90
+M      source_glc/glc_domain_size.F90
+M      source_glc/glc_InitMod.F90
+M      source_glc/glc_RunMod.F90
+M      source_glc/glc_domain.F90
+M      source_glc/glc_io.F90
+M      source_glc/glc_kinds_mod.F90
+M      source_glc/glc_constants.F90
+M      source_glc/glc.F90
+M      source_glc/glc_FinalMod.F90
+M      source_glc/glc_ErrorMod.F90
+M      source_glc/glc_IOUnitsMod.F90
+M      source_glc/glc_time_management.F90
+M      source_glimmer/glint_timestep.F90
+M      source_glimmer/glint_initialise.F90
+M      source_glimmer/glint_example_clim.F90
+M      source_glimmer/glint_main.F90
+M      source_glimmer/glint_interp.F90
+M      input_templates/glc_in
+
+================================================================================

@@ -1,7 +1,0 @@
-site_code,soil_depth,n_layers,layer_depth,layer_sand%,layer_clay%
-CA-Ca1,-999,1,-999,80.0,5.0
-CA-Oas,-999,1,-999,50.0,26.62
-CA-Obs,-999,1,-999,96.0,3.0
-CA-Ojp,-999,1,-999,94.0,2.2
-CA-Man,-999,1,-999,33,0,33.0
-CA-Let,-999,1,-999,28,0,36.0

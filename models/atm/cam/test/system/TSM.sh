@@ -44,6 +44,7 @@ fi
 cd ${rundir}
 
 echo "TSM.sh: calling TCB.sh to prepare cam executable" 
+echo "${CAM_SCRIPTDIR}/TCB.sh $1 $4"
 ${CAM_SCRIPTDIR}/TCB.sh $1 $4
 rc=$?
 if [ $rc -ne 0 ]; then

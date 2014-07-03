@@ -1038,8 +1038,8 @@
 
      if(myID == root) then
 
-        call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
-             GMap%displs*nIA,MP_INTEGER,oV%iAttr(1,1),          &
+        call MPI_scatterv(iV%iAttr,GMap%counts*nIA, &
+             GMap%displs*nIA,MP_INTEGER,oV%iAttr,   &
              noV*nIA,MP_INTEGER,root,comm,ier )
         if(ier /= 0) then
            call MP_perr_die(myname_,'MPI_scatterv(iAttr) on root',ier)
@@ -1047,8 +1047,8 @@
 
      else
 
-        call MPI_scatterv(nonRootAV%iAttr(1,1),GMap%counts*nIA,	&
-             GMap%displs*nIA,MP_INTEGER,oV%iAttr(1,1),          &
+        call MPI_scatterv(nonRootAV%iAttr,GMap%counts*nIA, &
+             GMap%displs*nIA,MP_INTEGER,oV%iAttr,          &
              noV*nIA,MP_INTEGER,root,comm,ier )
         if(ier /= 0) then
            call MP_perr_die(myname_,'MPI_scatterv(iAttr) off root',ier)
@@ -1067,8 +1067,8 @@
      if(myID == root) then
 
 
-        call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
-             GMap%displs*nRA,mp_type_Av,oV%rAttr(1,1),          &
+        call MPI_scatterv(iV%rAttr,GMap%counts*nRA, &
+             GMap%displs*nRA,mp_type_Av,oV%rAttr,   &
              noV*nRA,mp_type_Av,root,comm,ier )
         if(ier /= 0) then
            call MP_perr_die(myname_,'MPI_scatterv(rAttr) on root',ier)
@@ -1077,7 +1077,7 @@
      else
 
 
-        call MPI_scatterv(nonRootAV%rAttr,GMap%counts*nRA,	&
+        call MPI_scatterv(nonRootAV%rAttr,GMap%counts*nRA, &
              GMap%displs*nRA,mp_type_Av,oV%rAttr,          &
              noV*nRA,mp_type_Av,root,comm,ier )
         if(ier /= 0) then

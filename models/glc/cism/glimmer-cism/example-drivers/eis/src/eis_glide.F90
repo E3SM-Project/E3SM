@@ -30,7 +30,7 @@
 
 program eis_glide
   !*FD This is the Edinburgh Ice Sheet GLIDE driver
-  use glimmer_global, only:rk
+  use glimmer_global, only: dp
   use glide
   use glide_nc_custom, only: glide_nc_fillall
   use eis_forcing
@@ -45,8 +45,8 @@ program eis_glide
   type(glide_global_type) :: model        ! model instance
   type(eis_climate_type) :: climate       ! climate
   type(ConfigSection), pointer :: config  ! configuration stuff
-  real(kind=rk) time
-  real(kind=dp) t1,t2
+  real(dp) :: time
+  real(dp) :: t1,t2
   integer clock,clock_rate
   
 

@@ -1,72 +1,34 @@
-#! /bin/csh -f
-#==============================================================================
-# Purpose:
-#     (a) Build pio library
-#==============================================================================
+#! /bin/csh -fx
 
-setenv PIO_DIR $CCSMROOT/models/utils/pio   # pio directory
-setenv PIO_LIBDIR $EXEROOT/pio
+# directory in which pio is built
+set pio_dir=$1/pio
 
-  echo "Copying source to CCSM EXEROOT..."
 
-  cd $PIO_LIBDIR
-  cp -p $PIO_DIR/Makefile .
 
-  set runconf = 0
-  set runclean = 0
 
-# It would be harmless to just run "configure" each time but it
-# takes time so use file "pio_conf" to determine if configure must
-# be run.  There are three possibilities:
-# 1. brand new build -- run configure
-# 2. already built but platform has changed (this can happen
-#    when a filesystem is mounted on multiple platforms) -- run configure
-# 3. already built, same platform -- don't run configure
-#
-  if(-e pio_conf) then
-    echo "PIO already built. Checking machine type"
-    cp -f pio_conf pio_conf.old
-    echo ${MACH} > pio_conf
-    set diffwc = 1
-    set diffwc = `diff pio_conf.old pio_conf | wc -m`
-    if ($diffwc != 0) then
-      echo "Different machine. Rerun configure"
-      rm Makefile.conf.old
-      rm -f $LIBROOT/libpio.a
-      set runconf = 1
-      set runclean = 1
-    else
-      echo "Same machine."
-      cp -p Makefile.conf.old Makefile.conf
-    endif
-  else
-    echo "New build of PIO"
-    echo ${MACH} > pio_conf
-    set runconf = 1
-  endif
+cd $pio_dir
 
-# run configure with correct arguments if necessary
-  set preconf = $CASETOOLS/pio.Makefile.conf.$MACH
-  if ($runconf == 1) then
-    if (-e $preconf && $MPILIB == "mpi-serial") then
-       # assuming pre-made Makefile.conf files are NOT good for MPISERIAL
-       echo "Using $preconf configure file"
-       cp -p $preconf Makefile.conf
-    else
-       echo "Running configure..."
-       echo "for OS=$OS MACH=$MACH"
-       $GMAKE -f $CASETOOLS/Makefile $PIO_LIBDIR/Makefile.conf MODEL=pio
-    endif
-  endif
+# ----------------------------------------------------------------------
+# Set options to cmake
+# ----------------------------------------------------------------------
+# Note that some other generic CMAKE options are set in the Makefile
+set cmake_opts=" -D USER_CMAKE_MODULE_PATH=$CCSMROOT/scripts/ccsm_utils/CMake"
+set cmake_opts="$cmake_opts -D GENF90_PATH=$CCSMROOT/tools/cprnc/genf90"
 
-  if ($runclean == 1) then
-    $GMAKE clean
-  endif
+# ----------------------------------------------------------------------
+# create the pio makefile by running cmake (done via a rule
+# in the system-level makefile)
+# ----------------------------------------------------------------------
+$GMAKE  $pio_dir/Makefile MODEL=pio USER_CMAKE_OPTS="$cmake_opts" \
+       PIO_LIBDIR=$pio_dir \
+       -f $CASETOOLS/Makefile || exit 1
 
-  cp -p Makefile.conf Makefile.conf.old
-
-  $GMAKE GENF90=$CCSMROOT/tools/cprnc/genf90 || exit 1
-
-  cp -p libpio.a $LIBROOT/
-
+# ----------------------------------------------------------------------
+# create the pio library (or libraries), using the makefile
+# created by cmake
+# ----------------------------------------------------------------------
+$GMAKE -j $GMAKE_J || exit 2
+cp -p lib*.a $pio_dir/../lib
+cp -p *.h *.mod $pio_dir/../include
 exit 0
+

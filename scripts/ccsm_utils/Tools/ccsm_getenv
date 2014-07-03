@@ -8,18 +8,21 @@ if ($status != 0) then
 endif
 
 # Source the result of the env files - in the following order
-foreach i (env_case.xml env_run.xml env_mach_pes.xml env_build.xml)
-  source $i:r || exit -1
-  if ($status != 0) then
-     echo "ccsm_getenv error: problem sourcing $i:r" 
-     exit -2
-  endif 
-  rm $i:r    
-  if ($status != 0) then
-     echo "ccsm_getenv error: problem removing $i:r" 
-     exit -3
+foreach i (env_case.xml  env_build.xml env_run.xml env_mach_pes.xml env_test.xml )
+  if ( -e $i ) then
+    source $i:r || exit -1
+    if ($status != 0) then
+       echo "ccsm_getenv error: problem sourcing $i:r" 
+       exit -2
+    endif 
+    rm $i:r    
+    if ($status != 0) then
+       echo "ccsm_getenv error: problem removing $i:r" 
+       exit -3
+    endif
   endif
 end
+
 
 # Source env_mach_specific 
 source env_mach_specific

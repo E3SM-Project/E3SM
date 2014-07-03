@@ -103,11 +103,7 @@ A python script using the PyGMT library to visualise the profile is provided.
 %
 \subsection{Restarts}\label{ug.sec.restarts}
 %
-GLIMMER provides {\it two} mechanisms for initialising the state of the model from results of a previous run, written to a file:
+GLIMMER allows for {\bf Restarts} (also called {\bf Hotstarts}), for initialising the state of the model from results of a previous run, written to a file. A NetCDF file containing \emph{hotstart} data may be written as part of the regular output from the model, along with other output files. The variables written to the hotstart file are limited to those describing the state of the ice sheet, such as thickness, temperature distribution, etc --- only those that are necessary to initialise the model cleanly. The model may be initialised from any of the time-slices in the hotstart file during the usual initialisation sequence.
+%\end{itemize}
 %
-\begin{itemize}
-\item {\bf Hotstarts:} This is the simpler of the two mechanisms. A NetCDF file containing \emph{hotstart} data may be written as part of the regular output from the model, along with other output files. The variables written to the hotstart file are limited to those describing the state of the ice sheet, such as thickness, temperature distribution, etc --- only those that are necessary to initialise the model cleanly. The model may be initialised from any of the time-slices in the hotstart file during the usual initialisation sequence. For most applications, hotstarting should be entirely adequate.
-\item {\bf Restarts:} Sometimes, however, it is desireable to be able to write the entire state of the model, including all temporary variables, accumulation arrays, etc, to file. The \emph{restart} mechanism enables this to be done. The difference in this case is that the model doesn't need to be initialised in the usual way - its state is simply read from file, and the run continues as before. The implementation of this is complex, as it involves writing all elements of each derived type and all its sub-types to file. Consequently, full restarts are disabled by default at build-time, and must be enabled with the \texttt{--enable-restarts} option when the build is configured.
-\end{itemize}
-%
-A full description of both methods are provided later in this manual.
+A full description of Hotstarts is given later in this manual.

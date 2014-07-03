@@ -31,7 +31,7 @@ sub usage {
 SYNOPSIS
      build-namelist [options]
 
-     Build the docn namelist 
+     Build the rtm namelist 
 OPTIONS
      -help [or -h]            	   Print usage to STDOUT.					    
      -infile "filepath"       	   Specify a file or list of files (comma delimited) 	    

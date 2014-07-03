@@ -1,4 +1,3 @@
-
 #======================================================================
 # Clear coupler log files for validation test
 #======================================================================
@@ -33,11 +32,9 @@ echo "doing a continue run" >>& $TESTSTATUS_LOG
 
 ./$CASE.run
 
-set CplLogFile = `ls -1t ${DOUT_S_ROOT}/cpl/cpl.log* | head -1`
-set mycpllog = $RUNDIR/logfile.hold
-cp $CplLogFile ${mycpllog}.gz
-gunzip ${mycpllog}.gz
-setenv CPLLOG_INIT $mycpllog
+gunzip ${CASEROOT}/logs/cpl.log*.gz
+set CplLogFile = `ls -1t ${CASERR1}/logs/cpl.log* | head -1`
+setenv CPLLOG_INIT $CplLogFile
 
 echo "running long-term archiver" >>& $TESTSTATUS_LOG 
 ./$CASE.l_archive

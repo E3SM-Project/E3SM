@@ -3,8 +3,8 @@
 !! @file 
 !! @brief Derived datatypes and constants for PIO
 !! 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 943 $
+!! $LastChangedDate: 2014-02-14 09:20:17 -0700 (Fri, 14 Feb 2014) $
 !<
 module pio_types
     use pio_kinds
@@ -14,6 +14,9 @@ module pio_types
 #endif
 #ifndef NO_MPIMOD
     use mpi, only : MPI_COMM_NULL, MPI_INFO_NULL ! _EXTERNAL
+#endif
+#ifdef USE_PNETCDF_MOD
+    use pnetcdf
 #endif
     implicit none
     private 
@@ -113,7 +116,6 @@ module pio_types
        type(iosystem_desc_t), pointer :: iosystem => null()
        type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
        integer :: buffsize=0
-       integer :: request_cnt=0
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
        integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
@@ -288,7 +290,9 @@ module pio_types
 !!  - PIO_char : character
 !<
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #include <pnetcdf.inc>   /* _EXTERNAL */
+#endif
    integer, public, parameter :: PIO_global = nf_global
    integer, public, parameter :: PIO_unlimited = nf_unlimited
    integer, public, parameter :: PIO_double = nf_double
@@ -323,6 +327,7 @@ module pio_types
    integer, public, parameter :: PIO_MAX_NAME = nf90_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf90_max_var_dims
    integer, public, parameter :: PIO_64BIT_OFFSET = nf90_64bit_offset
+   integer, public, parameter :: PIO_64BIT_DATA = 0
 #else
    integer, public, parameter :: PIO_global = 0
    integer, public, parameter :: PIO_double = 6
@@ -337,6 +342,7 @@ module pio_types
    integer, public, parameter :: PIO_WRITE = 20
    integer, public, parameter :: PIO_NOWRITE = 21
    integer, public, parameter :: PIO_64BIT_OFFSET = 0
+   integer, public, parameter :: PIO_64BIT_DATA = 0
 #endif
 #endif
    integer, public, parameter :: PIO_num_OST =  16

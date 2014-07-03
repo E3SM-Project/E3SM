@@ -296,29 +296,9 @@ Valid Values: TRUE,FALSE </pre>
              #cccccc;">
 	     <pre>TRUE implies always build model for openmp capability . 
 If FALSE, component libraries are built with OpenMP capability only if 
-the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+the NTHREADS_ setting for that component is greater than 1 in env_pesetup.xml.
 If TRUE, the component libraries are always built with OpenMP capability. 
 The default is FALSE.
-Valid Values: TRUE,FALSE </pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="USE_TRILINOS_tr">
-    <td><a name="USE_TRILINOS"></a>
-        <img id="USE_TRILINOS_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('USE_TRILINOS')">USE_TRILINOS</a>
-        </code>
-        <div id="USE_TRILINOS_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>TRUE implies linking to the trilinos library - set automatically by XXX_USE_TRILINOS options (do not edit) . 
-Flag to turn on linking to the trilinos library. Currently this is
-used by CISM. Note that trilinos is a C++ library, so setting this
-variable to TRUE will involve the inclusion of C++ code in the CESM
-executable. This is currently only supported for certain machines.
 Valid Values: TRUE,FALSE </pre>
         </div>
     </td>
@@ -390,7 +370,7 @@ component sets via using create_newcase with a compset_file argument.</pre>
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>CAM dynamical core
-Valid Values: eul,fv,se </pre>
+Valid Values: eul,fv,homme </pre>
         </div>
     </td>
     <td>env_build.xml</td>
@@ -448,7 +428,7 @@ This is an advanced flag and should only be used by expert users.</pre>
         <div id="CICE_AUTO_DECOMP_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>if false, user must set the CICE decomp, otherwise cesm_setup script sets it . 
+	     <pre>if false, user must set the CICE decomp, otherwise setup script sets it . 
 This is for experts only - if CICE_AUTO_DECOMP is set to false, then
 can manually set the values of CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS, 
 CICE_DECOMPTYPE, and CICE_DECOMPSETTING
@@ -542,6 +522,22 @@ to set this value, must first set CICE_AUTO_DECOMP to false </pre>
     </td>
     <td>env_build.xml</td>
   </tr>
+  <tr id="RTM_MODE_tr">
+    <td><a name="RTM_MODE"></a>
+        <img id="RTM_MODE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('RTM_MODE')">RTM_MODE</a>
+        </code>
+        <div id="RTM_MODE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>valid values: prognostic,null
+Valid Values: prognostic,null </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple"><a name="build_clm">CLM build-time settings</a></h3></span>
 <table id="build_component_clm_table" border="1" width="100%" cellpadding="2" cellspacing="0">
@@ -628,7 +624,7 @@ This is an advanced flag and should only be used by expert users.</pre>
         <div id="POP_AUTO_DECOMP_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>if false, user must set the POP decomp, otherwise cesm_setup script sets it
+	     <pre>if false, user must set the POP decomp, otherwise setup script sets it
 Valid Values: true,false </pre>
         </div>
     </td>
@@ -770,7 +766,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="SMP_VALUE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Status: smp status of current case, coded string (DO NOT EDIT)</pre>
+	     <pre>Status: smp status of current setup, coded string (DO NOT EDIT)</pre>
         </div>
     </td>
     <td>env_build.xml</td>
@@ -800,7 +796,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="NINST_VALUE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Status: ninst status of current case, coded string (DO NOT EDIT)</pre>
+	     <pre>Status: ninst status of current setup, coded string (DO NOT EDIT)</pre>
         </div>
     </td>
     <td>env_build.xml</td>
@@ -875,6 +871,22 @@ Valid Values: TRUE,FALSE </pre>
 <table id="build_grid_table" border="1" width="100%" cellpadding="2" cellspacing="0">
   <th width="80%">Variable Name</th>
   <th width="10%">File Name</th>
+  <tr id="PTS_MODE_tr">
+    <td><a name="PTS_MODE"></a>
+        <img id="PTS_MODE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('PTS_MODE')">PTS_MODE</a>
+        </code>
+        <div id="PTS_MODE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Operate on only a single point of the global grid  - DO NOT EDIT (for experts only)
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
   <tr id="GRID_tr">
     <td><a name="GRID"></a>
         <img id="GRID_arrow" src="./images/arrow_right.gif">
@@ -886,6 +898,39 @@ Valid Values: TRUE,FALSE </pre>
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>CESM grid - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="GLC_NX_tr">
+    <td><a name="GLC_NX"></a>
+        <img id="GLC_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC_NX')">GLC_NX</a>
+        </code>
+        <div id="GLC_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of glc cells in i direction - DO NOT EDIT (for experts only) . 
+Currently the GLC grid and GLC_NX and GLC_NY is assumed to be identical to the land grid.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="GLC_NY_tr">
+    <td><a name="GLC_NY"></a>
+        <img id="GLC_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC_NY')">GLC_NY</a>
+        </code>
+        <div id="GLC_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of glc cells in j direction - DO NOT EDIT (for experts only) . 
+Currently the GLC grid and GLC_NX and GLC_NY is assumed to be
+identical to the land grid.</pre>
         </div>
     </td>
     <td>env_build.xml</td>
@@ -1080,7 +1125,8 @@ Valid Values: TRUE,FALSE </pre>
         <div id="ROF_GRID_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>river runoff (rof) grid</pre>
+	     <pre>river runoff (rof) grid
+Valid Values: rx1,r01,r05,null </pre>
         </div>
     </td>
     <td>env_build.xml</td>
@@ -1111,111 +1157,6 @@ Valid Values: TRUE,FALSE </pre>
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>number of rof cells in j direction - DO NOT EDIT (for experts only)</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="GLC_GRID_tr">
-    <td><a name="GLC_GRID"></a>
-        <img id="GLC_GRID_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('GLC_GRID')">GLC_GRID</a>
-        </code>
-        <div id="GLC_GRID_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>river runoff (glc) grid</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="GLC_NX_tr">
-    <td><a name="GLC_NX"></a>
-        <img id="GLC_NX_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('GLC_NX')">GLC_NX</a>
-        </code>
-        <div id="GLC_NX_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>number of glc cells in i direction - DO NOT EDIT (for experts only)</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="GLC_NY_tr">
-    <td><a name="GLC_NY"></a>
-        <img id="GLC_NY_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('GLC_NY')">GLC_NY</a>
-        </code>
-        <div id="GLC_NY_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>number of glc cells in j direction - DO NOT EDIT (for experts only)</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="WAV_GRID_tr">
-    <td><a name="WAV_GRID"></a>
-        <img id="WAV_GRID_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('WAV_GRID')">WAV_GRID</a>
-        </code>
-        <div id="WAV_GRID_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>wave model (wav) grid</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="WAV_NX_tr">
-    <td><a name="WAV_NX"></a>
-        <img id="WAV_NX_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('WAV_NX')">WAV_NX</a>
-        </code>
-        <div id="WAV_NX_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>number of wav cells in i direction - DO NOT EDIT (for experts only)</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="WAV_NY_tr">
-    <td><a name="WAV_NY"></a>
-        <img id="WAV_NY_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('WAV_NY')">WAV_NY</a>
-        </code>
-        <div id="WAV_NY_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>number of wav cells in j direction - DO NOT EDIT (for experts only)</pre>
-        </div>
-    </td>
-    <td>env_build.xml</td>
-  </tr>
-  <tr id="MASK_GRID_tr">
-    <td><a name="MASK_GRID"></a>
-        <img id="MASK_GRID_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('MASK_GRID')">MASK_GRID</a>
-        </code>
-        <div id="MASK_GRID_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>grid mask - DO NOT EDIT (for experts only)</pre>
         </div>
     </td>
     <td>env_build.xml</td>

@@ -54,7 +54,7 @@ set npes   = \`${CASEROOT}/Tools/taskmaker.pl -sumpes\`
 set mthrds = \`${CASEROOT}/Tools/taskmaker.pl -maxthrds\`
 
 if (\${mthrds} > \${max_tasks_per_node}) then
-   echo "ERROR max threa/gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/ds greater than max tasks per node"
+   echo "ERROR max threads greater than max tasks per node"
    exit 1
 endif
 

@@ -6,16 +6,20 @@
 ! are set in the CLM_NAMELIST_OPTS env variable.
 !
 ! EXCEPTIONS: 
+! Set use_cndv           by the compset you use and the CLM_BLDNML_OPTS -dynamic_vegetation setting
+! Set use_vichydro       by the compset you use and the CLM_BLDNML_OPTS -vichydro           setting
+! Set use_cn             by the compset you use and CLM_BLDNML_OPTS -bgc  setting
+! Set use_crop           by the compset you use and CLM_BLDNML_OPTS -crop setting
+! Set spinup_state       by the CLM_BLDNML_OPTS -bgc_spinup      setting
+! Set irrigate           by the CLM_BLDNML_OPTS -irrig           setting
 ! Set co2_ppmv           with CCSM_CO2_PPMV                      option
-! Set co2_type           with CLM_CO2_TYPE                       option
 ! Set dtime              with L_NCPL                             option
 ! Set fatmlndfrc         with LND_DOMAIN_PATH/LND_DOMAIN_FILE    options
 ! Set finidat            with RUN_REFCASE/RUN_REFDATE/RUN_REFTOD options for hybrid or branch cases
 !                        (includes $inst_string for multi-ensemble cases)
-!                        Also use CLM_FORCE_COLDSTART='on' to startup
-!                        with arbitrary initial conditions (finidat = ' ')
 ! Set glc_grid           with CISM_GRID                          option
 ! Set glc_smb            with GLC_SMB                            option
 ! Set maxpatch_glcmec    with GLC_NEC                            option
+! Set glc_do_dynglacier  with CLM_UPDATE_GLC_AREAS               env variable
 !----------------------------------------------------------------------------------
 

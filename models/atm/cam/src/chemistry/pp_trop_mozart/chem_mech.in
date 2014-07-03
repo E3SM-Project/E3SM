@@ -118,7 +118,7 @@ CHEMISTRY
  [usr_O_O2]   O + O2 + M -> O3 + M
           O + O3 -> 2*O2                                                 ; 8e-12, -2060
  [o1d_n2] O1D + N2 -> O + N2                                             ; 2.1e-11, 115
- [o1d_o2] O1D + O2 -> O + O2                                             ; 3.2e-11, 70
+ [o1d_o2] O1D + O2 -> O + O2                                             ; 3.30e-11,    55.
  [ox_l1]  O1D + H2O -> 2*OH                                              ; 2.2e-10
           H2 + O1D -> HO2 + OH                                           ; 1.1e-10
           H2 + OH -> H2O + HO2                                           ; 2.8e-12, -1800
@@ -335,6 +335,7 @@ CHEMISTRY
       NO <- dataset
       CO <- dataset
       SO2 <- dataset
+      SO4 <- dataset
    End Ext Forcing
 
    END CHEMISTRY

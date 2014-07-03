@@ -1,0 +1,1 @@
+../PTCLMmkdata --quiet --cesm_root ../../../../../../.. -s US-Ho1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/stdquiet_file_creation 

@@ -289,6 +289,7 @@ contains
   end subroutine extfrc_timestep_init
 
   subroutine extfrc_set( lchnk, zint, frcing, ncol )
+
     !--------------------------------------------------------
     !	... form the external forcing
     !--------------------------------------------------------
@@ -312,17 +313,6 @@ contains
     integer  :: k, isec
     real(r8),parameter :: km_to_cm = 1.e5_r8
 
-#if (defined MODAL_AERO)
-    real(r8) :: fr_to_ait, fr_to_acc, fr_to_pom, fr_to_cor
-    real(r8) :: demis_ait, demis_acc, demis_pom, demis_cor
-           ! emitted mass-mean diameter (m) for aitken, accum, coarse modes
-           ! for log-normal, demis = dgn_emis * exp(1.5*(lnsigmag*2))
-    real(r8) :: x_mton_ait, x_mton_acc, x_mton_pom, x_mton_cor
-           ! [(number emissions)/(mass emissions)] for aitken, accum, coarse modes
-           ! x_mton_xxx = 1/(emitted particle mean mass)  (#/kg)
-    real(r8) :: om_to_oc
-#endif
-
     if( extfrc_cnt < 1 .or. extcnt < 1 ) then
        return
     end if
@@ -332,24 +322,7 @@ contains
     !--------------------------------------------------------
     src_loop : do m = 1,extfrc_cnt
 
-!!$#ifdef DIAGS
-!!$          write(iulog,*) ' '
-!!$          write(iulog,*) 'src frcing'
-!!$          write(iulog,'(1p5g15.7)') frc_data
-!!$          write(iulog,*) 'model frcing'
-!!$          write(iulog,'(1p5g15.7)') frc_model(:,1)
-!!$          data_dz(:)  = forcings(m)%levi(2:nlev+1) - forcings(m)%levi(1:nlev)
-!!$          model_dz(:) = model_z(2:pverp) - model_z(1:pver)
-!!$          data_sum  = dot_product( frc_data,data_dz )
-!!$          model_sum = dot_product( frc_model(:,1),model_dz )
-!!$          write(iulog,*) 'data_sum, model_sum = ',data_sum, model_sum
-!!$          write(iulog,*) '======================================================'
-!!$          if ( abs( (data_sum-model_sum)/max(1.e-20,(data_sum+model_sum)) ) > 0.3 ) then
-!!$             call endrun('EXTFRC_SET: data_sum and model_sum disagree')
-!!$          endif
-!!$#endif
-
-       n = forcings(m)%frc_ndx
+      n = forcings(m)%frc_ndx
 
        frcing(:ncol,:,n) = 0._r8
        do isec = 1,forcings(m)%nsectors
@@ -359,38 +332,6 @@ contains
              frcing(:ncol,:,n) = frcing(:ncol,:,n) + forcings(m)%fields(isec)%data(:ncol,:,lchnk)
           endif
        enddo
-
-#if (defined MODAL_AERO)
-   !! this is done here because so4_a1 and so4_a2 have the same emis files
-   !   fr_to_ait = 0.01             ! fraction of SO4 mass emitted to aitken mode
-   !   fr_to_acc = 1.0 - fr_to_ait  ! fraction of SO4 mass emitted to accu. mode
-   !   demis_ait = 0.018e-6    ! m
-   !   demis_acc = 0.11e-6     ! m
-       om_to_oc  = 1.4_r8
-
-   !   x_mton_ait = 6.0 * specmw_so4_amode /      &     ! kmol -> #
-   !               (pi*specdens_so4_amode*(demis_ait**3))
-   !   x_mton_acc = 6.0 * specmw_so4_amode /      &     ! kmol -> #
-   !               (pi*specdens_so4_amode*(demis_acc**3))
-
-       select case( forcings(m)%species )
-   !   case( 'so4_a1' )
-   !      frcing(:ncol,:,n) = frcing(:ncol,:,n) * fr_to_acc * 1._r8/2.5_r8 ! 0._r8
-   !   case( 'so4_a2' )
-   !      frcing(:ncol,:,n) = frcing(:ncol,:,n) * fr_to_ait * 1._r8/2.5_r8 ! 0._r8
-   !   case( 'num_a1' )
-   !      frcing(:ncol,:,n) = frcing(:ncol,:,n) * fr_to_acc * x_mton_acc * 1._r8/2.5_r8 ! 0._r8
-   !   case( 'num_a2' )
-   !      frcing(:ncol,:,n) = frcing(:ncol,:,n) * fr_to_ait * x_mton_ait * 1._r8/2.5_r8 ! 0._r8
-#if ( defined MODAL_AERO_7MODE )
-       case( 'pom_a3' )
-          frcing(:ncol,:,n) = frcing(:ncol,:,n) * om_to_oc
-#elif ( defined MODAL_AERO_3MODE )
-       case( 'pom_a1' )
-          frcing(:ncol,:,n) = frcing(:ncol,:,n) * om_to_oc
-#endif
-       end select
-#endif
 
        xfcname = trim(forcings(m)%species)//'_XFRC'
        call outfld( xfcname, frcing(:ncol,:,n), ncol, lchnk )

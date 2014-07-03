@@ -337,21 +337,14 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Determine xml variables
+unshift @INC, "$CASEROOT/Tools";
+require XML::Lite;
+require SetupTools;
 
 my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml  = XML::Lite->new( "$file" );
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
+SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
+  $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $RUNDIR                 = "$xmlvars{'RUNDIR'}";
@@ -368,7 +361,7 @@ my $OCN_ICE_FORCING        = "$xmlvars{'OCN_ICE_FORCING'}";
 my $OCN_CHL_TYPE           = "$xmlvars{'OCN_CHL_TYPE'}";
 my $OCN_CO2_TYPE           = "$xmlvars{'OCN_CO2_TYPE'}";
 my $OCN_TRANSIENT          = "$xmlvars{'OCN_TRANSIENT'}";
-my $OCN_TRACER_MODULES     = "$xmlvars{'OCN_TRACER_MODULES'}";
+my @OCN_TRACER_MODULES     = split(" ", "$xmlvars{'OCN_TRACER_MODULES'}");
 my $OCN_TRACER_MODULES_OPT = "$xmlvars{'OCN_TRACER_MODULES_OPT'}";
 my $OCN_TAVG_TRACER_BUDGET = "$xmlvars{'OCN_TAVG_TRACER_BUDGET'}";
 my $OCN_TAVG_HIFREQ        = "$xmlvars{'OCN_TAVG_HIFREQ'}";
@@ -378,6 +371,7 @@ my $POP_DECOMPTYPE         = "$xmlvars{'POP_DECOMPTYPE'}";
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
 my $RUN_TYPE               = "$xmlvars{'RUN_TYPE'}";
 my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
+my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 my $OCN_CO2_FLUX_OCMIP_BUG_FIX = "$xmlvars{'OCN_CO2_FLUX_OCMIP_BUG_FIX'}";
 
@@ -497,7 +491,7 @@ if ($tmp > 0) {
 }
 
 print "POP2 build-namelist: ocn_grid is $OCN_GRID \n";
-print "POP2 build-namelist: ocn_tracer_modules are $OCN_TRACER_MODULES \n";
+print "POP2 build-namelist: ocn_tracer_modules are @OCN_TRACER_MODULES \n";
 
 (-d $DIN_LOC_ROOT)  or  die <<"EOF";
 ** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
@@ -758,6 +752,7 @@ add_default($nl, 'lrich');
 add_default($nl, 'ldbl_diff');
 add_default($nl, 'lshort_wave');
 add_default($nl, 'lcheckekmo');
+add_default($nl, 'larctic_bckgrnd_vdc');
 add_default($nl, 'num_v_smooth_Ri');
 
 add_default($nl, 'bckgrnd_vdc1',     'lhoriz_varying_bckgrnd'=>"$lhoriz_varying_bckgrnd", 'ltidal_mixing'=>"$ltidal_mixing");
@@ -1143,25 +1138,9 @@ if (not $nl->get_value('niw_energy_file')) {
 # namelist group: passive_tracers_on_nml #
 ##########################################
 
-if ($OCN_TRACER_MODULES =~ /iage/) {
-    add_default($nl, 'iage_on', 'val'=>".true.");
-} else {
-    add_default($nl, 'iage_on', 'val'=>".false.");
-}
-if ($OCN_TRACER_MODULES =~ /cfc/) {
-    add_default($nl, 'cfc_on', 'val'=>".true.");
-} else {
-    add_default($nl, 'cfc_on', 'val'=>".false.");
-}
-if ($OCN_TRACER_MODULES =~ /ecosys/) {
-    add_default($nl, 'ecosys_on', 'val'=>".true.");
-} else {
-    add_default($nl, 'ecosys_on', 'val'=>".false.");
-}
-if ($OCN_TRACER_MODULES =~ /moby/) {
-    add_default($nl, 'moby_on', 'val'=>".true.");
-} else {
-    add_default($nl, 'moby_on', 'val'=>".false.");
+foreach (@OCN_TRACER_MODULES) {
+  my $module = $_;
+  add_default($nl, "$module\_on", 'val'=>'.true.');
 }
 
 
@@ -1169,7 +1148,7 @@ if ($OCN_TRACER_MODULES =~ /moby/) {
 # namelist group: iage_nml               #
 ##########################################
 
-if ($OCN_TRACER_MODULES =~ /iage/) {
+if (any(\@OCN_TRACER_MODULES, "iage")) {
     add_default($nl, 'init_iage_option',    'val'=>"ccsm_${RUN_TYPE}");
     add_default($nl, 'init_iage_init_file', 'val'=>'same_as_TS', 'noprepend'=>1);
 }
@@ -1178,7 +1157,7 @@ if ($OCN_TRACER_MODULES =~ /iage/) {
 # namelist group: cfc_nml                #
 ##########################################
 
-if ($OCN_TRACER_MODULES =~ /cfc/) {
+if (any(\@OCN_TRACER_MODULES, "cfc")) {
 
 #===============================================================================
 #  values of init_cfc_option for OCN_TRANSIENT == 1850-2000 are from following table
@@ -1195,8 +1174,13 @@ if ($OCN_TRACER_MODULES =~ /cfc/) {
     $init_cfc_option = "ccsm_${RUN_TYPE}";
     if ($OCN_TRANSIENT eq "1850-2000") {
       if ($RUN_TYPE ne "continue") {
-        my @START_ARRAY = split('-',$RUN_STARTDATE);
+        my $RUN_DAY_ONE = $RUN_STARTDATE;
+        if ($RUN_TYPE eq "branch") {
+          $RUN_DAY_ONE = $RUN_REFDATE;
+        }
+        my @START_ARRAY = split('-',$RUN_DAY_ONE);
         my $START_YEAR = @START_ARRAY[0];
+        print "Setting initial CFCs based on starting the run in $START_YEAR\n";
         if ($START_YEAR le 1930) {
           $init_cfc_option = "zero";
         } else {
@@ -1227,11 +1211,12 @@ if ($OCN_TRACER_MODULES =~ /cfc/) {
 # namelist group: ecosys_nml             #
 ##########################################
 
-if ($OCN_TRACER_MODULES =~ /ecosys/) {
+if (any(\@OCN_TRACER_MODULES, "ecosys")) {
 
 	my $temp;
 
-    if (($OCN_TRANSIENT ne "unset") && ($OCN_TRANSIENT ne "1850-2000")) {
+    if (($OCN_TRANSIENT ne "unset") &&  ($OCN_TRANSIENT ne "1850-2000") &&
+        ($OCN_TRANSIENT ne "rcp4.5") && ($OCN_TRANSIENT ne "rcp8.5")) {
       print " OCN_TRANSIENT=$OCN_TRANSIENT not supported by ecosystem module \n";
       die;
     }
@@ -1338,6 +1323,14 @@ if ($OCN_TRACER_MODULES =~ /ecosys/) {
       add_default($nl, 'ndep_shr_stream_scale_factor'); # kgN/m^2/sec -> nmolN/cm^2/sec
       add_default($nl, 'ndep_shr_stream_file');
     }
+    if (($OCN_TRANSIENT eq "rcp4.5") || ($OCN_TRANSIENT eq "rcp8.5")) {
+      add_default($nl, 'ndep_data_type', 'ocn_transient'=>"$OCN_TRANSIENT");
+      add_default($nl, 'ndep_shr_stream_year_first', 'ocn_transient'=>"$OCN_TRANSIENT");
+      add_default($nl, 'ndep_shr_stream_year_last', 'ocn_transient'=>"$OCN_TRANSIENT");
+      add_default($nl, 'ndep_shr_stream_year_align', 'ocn_transient'=>"$OCN_TRANSIENT");
+      add_default($nl, 'ndep_shr_stream_file', 'ocn_transient'=>"$OCN_TRANSIENT");
+      add_default($nl, 'ndep_shr_stream_scale_factor'); # kgN/m^2/sec -> nmolN/cm^2/sec
+    }
     add_default($nl, 'lecovars_full_depth_tavg');
 }
 
@@ -1345,7 +1338,7 @@ if ($OCN_TRACER_MODULES =~ /ecosys/) {
 # namelist group: ecosys_parms_nml       #
 ##########################################
 
-if ($OCN_TRACER_MODULES =~ /ecosys/) {
+if (any(\@OCN_TRACER_MODULES, "ecosys")) {
     add_default($nl, 'parm_Fe_bioavail');
     add_default($nl, 'parm_o2_min');
     add_default($nl, 'parm_o2_min_delta');
@@ -1397,7 +1390,7 @@ if ($OCN_TRACER_MODULES =~ /ecosys/) {
 # namelist group: moby_nml             #
 ##########################################
 
-if ($OCN_TRACER_MODULES =~ /moby/) {
+if (any(\@OCN_TRACER_MODULES, "moby")) {
     
     my $temp;
 
@@ -1649,8 +1642,7 @@ if ($OCN_TAVG_TRACER_BUDGET eq "TRUE") {
 #-------------------------
 # 3. tracer tavg contents 
 #-------------------------
-my @modules = split( ' ', $OCN_TRACER_MODULES);
-for my $module (@modules) {
+for my $module (@OCN_TRACER_MODULES) {
   my $file = "ocn.${module}.tavg.csh";
   my $my_stream = $numcols+1;
   if (-f "${my_path}/$file"){
@@ -1759,16 +1751,16 @@ my @groups = qw(domain_nml
                 niw_nml
                 passive_tracers_on_nml);
 
-if ($OCN_TRACER_MODULES =~ /iage/) {
+if (any(\@OCN_TRACER_MODULES, "iage")) {
     push @groups, qw(iage_nml);
 }    
-if ($OCN_TRACER_MODULES =~ /cfc/) {
+if (any(\@OCN_TRACER_MODULES, "cfc")) {
     push @groups, qw(cfc_nml);
 }    
-if ($OCN_TRACER_MODULES =~ /ecosys/) {
+if (any(\@OCN_TRACER_MODULES, "ecosys")) {
     push @groups, qw(ecosys_nml ecosys_parms_nml);
 }    
-if ($OCN_TRACER_MODULES =~ /moby/) {
+if (any(\@OCN_TRACER_MODULES, "moby")) {
     push @groups, qw(moby_nml moby_parms_nml );
 }
 
@@ -1993,6 +1985,9 @@ sub check_input_files {
       if ($input_pathname_type eq 'abs') {
         if ($inputdata_rootdir) {
           print OUTFILE "$var = $pathname\n";
+          if ($pathname =~ /GC007v3.pop.r.0001-01-16-00000$/) {
+            print OUTFILE "hdr_$var = $pathname.hdr\n";
+          }
         } else {
           if (-e $pathname) {  # use -e rather than -f since the absolute pathname
             # might be a directory
@@ -2255,3 +2250,20 @@ sub leap() {
 }
 
 
+#-------------------------------------------------------------------------------
+
+sub any() {
+# return 1 if array (arg 0) contains val (arg 1). Note that this uses "eq"
+# instead of "==" because it's meant for strings
+
+  my $array_ref = shift;
+  my @array = @$array_ref;
+  my $val = shift;
+
+  foreach (@array) {
+    if ($_ eq $val) {
+      return 1;
+    }
+  }
+  return 0;
+}

@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! WARNING: this file was automatically generated on
-! Wed, 24 Apr 2013 18:24:59 +0000
+! Mon, 28 Apr 2014 16:25:16 +0000
 ! from ncdf_template.F90.in
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -151,6 +151,7 @@ contains
 
     integer status,varid,pos
 
+    integer :: level_dimid
     integer :: time_dimid
     integer :: x0_dimid
     integer :: x1_dimid
@@ -158,28 +159,34 @@ contains
     integer :: y1_dimid
 
     ! defining dimensions
+    if (.not.outfile%append) then
+       status = parallel_def_dim(NCO%id,'level',model%general%upn,level_dimid)
+    else
+       status = parallel_inq_dimid(NCO%id,'level',level_dimid)
+    endif
+    call nc_errorhandle(__FILE__,__LINE__,status)
     status = parallel_inq_dimid(NCO%id,'time',time_dimid)
     call nc_errorhandle(__FILE__,__LINE__,status)
     if (.not.outfile%append) then
-       status = parallel_def_dim(NCO%id,'x0',model%general%ewn-1,x0_dimid)
+       status = parallel_def_dim(NCO%id,'x0',global_ewn-1,x0_dimid)
     else
        status = parallel_inq_dimid(NCO%id,'x0',x0_dimid)
     endif
     call nc_errorhandle(__FILE__,__LINE__,status)
     if (.not.outfile%append) then
-       status = parallel_def_dim(NCO%id,'x1',data%model%general%ewn,x1_dimid)
+       status = parallel_def_dim(NCO%id,'x1',global_ewn,x1_dimid)
     else
        status = parallel_inq_dimid(NCO%id,'x1',x1_dimid)
     endif
     call nc_errorhandle(__FILE__,__LINE__,status)
     if (.not.outfile%append) then
-       status = parallel_def_dim(NCO%id,'y0',model%general%nsn-1,y0_dimid)
+       status = parallel_def_dim(NCO%id,'y0',global_nsn-1,y0_dimid)
     else
        status = parallel_inq_dimid(NCO%id,'y0',y0_dimid)
     endif
     call nc_errorhandle(__FILE__,__LINE__,status)
     if (.not.outfile%append) then
-       status = parallel_def_dim(NCO%id,'y1',data%model%general%nsn,y1_dimid)
+       status = parallel_def_dim(NCO%id,'y1',global_nsn,y1_dimid)
     else
        status = parallel_inq_dimid(NCO%id,'y1',y1_dimid)
     endif
@@ -207,7 +214,8 @@ contains
           call write_log('Adding restart variables has made the list of output variables too long for file ' // NCO%filename, GM_FATAL)
        else
           ! Expand the restart variable list 
-          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  ! Need to maintain a space at beginning and end of list
+          ! Need to maintain a space at beginning and end of list
+          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  
           ! Set the xtype to be double (required for an exact restart)
           outfile%default_xtype = NF90_DOUBLE   
        endif
@@ -230,6 +238,17 @@ contains
        call write_log('The list of output variables is too long for file ' // NCO%filename, GM_FATAL)
     endif
 
+
+    !     level -- sigma layers
+    if (.not.outfile%append) then
+       call write_log('Creating variable level')
+       status = parallel_def_var(NCO%id,'level',get_xtype(outfile,NF90_FLOAT),(/level_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'formula_terms', 'sigma: level topo: topg thick: thk')
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'sigma layers')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'land_ice_sigma_coordinate')
+       status = parallel_put_att(NCO%id, varid, 'units', '1')
+     end if
 
     !     x0 -- Cartesian x-coordinate, velocity grid
     if (.not.outfile%append) then
@@ -695,39 +714,48 @@ contains
     character(len=150) message
 
     ! check dimensions
+    status = parallel_inq_dimid(NCI%id,'level',dimid)
+    if (dimid.gt.0) then
+       status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
+       if (dimsize.ne.model%general%upn) then
+          write(message,*) 'Error, reading file ',trim(NCI%filename),' size level does not match: ', &
+               model%general%upn
+          call write_log(message,GM_FATAL)
+       end if
+    end if
     status = parallel_inq_dimid(NCI%id,'x0',dimid)
     if (dimid.gt.0) then
        status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
-       if (dimsize.ne.model%general%ewn-1) then
+       if (dimsize.ne.global_ewn-1) then
           write(message,*) 'Error, reading file ',trim(NCI%filename),' size x0 does not match: ', &
-               model%general%ewn-1
+               global_ewn-1
           call write_log(message,GM_FATAL)
        end if
     end if
     status = parallel_inq_dimid(NCI%id,'x1',dimid)
     if (dimid.gt.0) then
        status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
-       if (dimsize.ne.data%model%general%ewn) then
+       if (dimsize.ne.global_ewn) then
           write(message,*) 'Error, reading file ',trim(NCI%filename),' size x1 does not match: ', &
-               data%model%general%ewn
+               global_ewn
           call write_log(message,GM_FATAL)
        end if
     end if
     status = parallel_inq_dimid(NCI%id,'y0',dimid)
     if (dimid.gt.0) then
        status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
-       if (dimsize.ne.model%general%nsn-1) then
+       if (dimsize.ne.global_nsn-1) then
           write(message,*) 'Error, reading file ',trim(NCI%filename),' size y0 does not match: ', &
-               model%general%nsn-1
+               global_nsn-1
           call write_log(message,GM_FATAL)
        end if
     end if
     status = parallel_inq_dimid(NCI%id,'y1',dimid)
     if (dimid.gt.0) then
        status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
-       if (dimsize.ne.data%model%general%nsn) then
+       if (dimsize.ne.global_nsn) then
           write(message,*) 'Error, reading file ',trim(NCI%filename),' size y1 does not match: ', &
-               data%model%general%nsn
+               global_nsn
           call write_log(message,GM_FATAL)
        end if
     end if
@@ -806,7 +834,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%ablt
   end subroutine glint_mbal_get_instant_ablt
@@ -817,7 +845,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%ablt = inarray
   end subroutine glint_mbal_set_instant_ablt
@@ -828,7 +856,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%acab
   end subroutine glint_mbal_get_instant_acab
@@ -839,7 +867,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%acab = inarray
   end subroutine glint_mbal_set_instant_acab
@@ -850,7 +878,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%artm
   end subroutine glint_mbal_get_instant_artm
@@ -861,7 +889,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%artm = inarray
   end subroutine glint_mbal_set_instant_artm
@@ -872,7 +900,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%humidity
   end subroutine glint_mbal_get_instant_humidity
@@ -883,7 +911,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%humidity = inarray
   end subroutine glint_mbal_set_instant_humidity
@@ -894,7 +922,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%lwdown
   end subroutine glint_mbal_get_instant_lwdown
@@ -905,7 +933,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%lwdown = inarray
   end subroutine glint_mbal_set_instant_lwdown
@@ -916,7 +944,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%prcp
   end subroutine glint_mbal_get_instant_prcp
@@ -927,7 +955,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%prcp = inarray
   end subroutine glint_mbal_set_instant_prcp
@@ -938,7 +966,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%psurf
   end subroutine glint_mbal_get_instant_psurf
@@ -949,7 +977,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%psurf = inarray
   end subroutine glint_mbal_set_instant_psurf
@@ -960,7 +988,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%siced
   end subroutine glint_mbal_get_instant_siced
@@ -971,7 +999,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%siced = inarray
   end subroutine glint_mbal_set_instant_siced
@@ -982,7 +1010,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%snowd
   end subroutine glint_mbal_get_instant_snowd
@@ -993,7 +1021,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%snowd = inarray
   end subroutine glint_mbal_set_instant_snowd
@@ -1004,7 +1032,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%swdown
   end subroutine glint_mbal_get_instant_swdown
@@ -1015,7 +1043,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%swdown = inarray
   end subroutine glint_mbal_set_instant_swdown
@@ -1026,7 +1054,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%xwind
   end subroutine glint_mbal_get_instant_xwind
@@ -1037,7 +1065,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%xwind = inarray
   end subroutine glint_mbal_set_instant_xwind
@@ -1048,7 +1076,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%mbal_accum%ywind
   end subroutine glint_mbal_get_instant_ywind
@@ -1059,7 +1087,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%mbal_accum%ywind = inarray
   end subroutine glint_mbal_set_instant_ywind

@@ -41,24 +41,24 @@
 
 ! !INTERFACE:
 
-      module glissade_transport
+  module glissade_transport
 !
 ! !USES:
-      use glimmer_global, only: dp
-      use glimmer_log
-      use glissade_remap, only: glissade_horizontal_remap, make_remap_mask, puny
+    use glimmer_global, only: dp
+    use glimmer_log
+    use glissade_remap, only: glissade_horizontal_remap, make_remap_mask, puny
 
-      use parallel 
+    use parallel 
 
 !
 !EOP
 !
-      implicit none
-      save
-      private
-      public :: glissade_transport_driver
+    implicit none
+    save
+    private
+    public :: glissade_transport_driver
 
-      logical, parameter ::  &
+    logical, parameter ::  &
          prescribed_area = .false.  ! if true, prescribe the area fluxed across each edge
 
 !TODO - Code uses Protex documenting.  Revise for doxygen
@@ -69,7 +69,7 @@
 
 !=======================================================================
 
-      contains
+  contains
 
 !=======================================================================
 !BOP
@@ -78,16 +78,17 @@
 !
 ! !INTERFACE:
 !
-      subroutine glissade_transport_driver(dt,                   &
-                                           dx,       dy,         &
-                                           nx,       ny,         &
-                                           nlyr,     sigma,      &
-                                           nhalo,    ntracer,    &
-                                           uvel,     vvel,       &
-                                           thck,                 &
-                                           acab,     bmlt,       &
-                                           temp,     age,        &
-                                           upwind_transport_in)
+    subroutine glissade_transport_driver(dt,                   &
+                                         dx,       dy,         &
+                                         nx,       ny,         &
+                                         nlyr,     sigma,      &
+                                         nhalo,    ntracer,    &
+                                         uvel,     vvel,       &
+                                         thck,                 &
+                                         acab,     bmlt,       &
+                                         temp,     age,        &
+                                         waterfrac,            &
+                                         upwind_transport_in)
 
 !
 ! !DESCRIPTION:
@@ -118,6 +119,9 @@
          dt,                   &! time step (s)
          dx, dy                 ! gridcell dimensions (m)
                                 ! (cells assumed to be rectangular)
+
+      !TODO - Pass in dx and dy as 3D fields to allow for spatially varying
+      !       cell dimensions as in POP/CICE?
 
       !TODO - Use nhalo in parallel module instead of passing in
       !     - Declare ntracer somewhere instead of passing in?
@@ -157,6 +161,9 @@
 
       real(dp), intent(inout), dimension(nlyr,nx,ny), optional :: &
          age                    ! ice age
+
+      real(dp), intent(inout), dimension(nlyr,nx,ny), optional :: &
+         waterfrac              ! internal water content fraction, 0 to 1
 
       logical, intent(in), optional ::  &
          upwind_transport_in    ! if true, do first-order upwind transport
@@ -280,7 +287,15 @@
             tracer(:,:,1,k) = 0.d0    ! dummy array
          endif
 
-         if (present(age) .and. ntracer >= 2) tracer(:,:,2,k) = age(k,:,:)
+         if (present(age) .and. ntracer >= 2) then
+            tracer(:,:,2,k) = age(k,:,:)
+         elseif (ntracer >= 2) then !BDM means we have waterfrac but no iceage
+            tracer(:,:,2,k) = 0.0d0   ! dummy array
+         endif
+
+         if (present(waterfrac)) then
+            tracer(:,:,3,k) = waterfrac(k,:,:)
+         endif
 
          !TODO - Other tracer fields could be added here
 
@@ -498,7 +513,9 @@
             !-----------------------------------------------------------------
             ! Upwind transport
             !-----------------------------------------------------------------
-
+            !TODO - Pass in dx and dy as 3D fields to allow for spatially varying
+            !       cell dimensions as in POP/CICE?
+ 
             do nt = 0, ntracer
                call upwind_field (nx,             ny,                  &
                                   ilo, ihi,       jlo, jhi,            &
@@ -579,6 +596,8 @@
          !-------------------------------------------------------------------
          ! Main remapping routine: Step ice thickness and tracers forward in time.
          !-------------------------------------------------------------------
+         !TODO - Pass in dx and dy as 3D fields to allow for spatially varying
+         !       cell dimensions as in POP/CICE?
 
             call glissade_horizontal_remap (dt,                                  &
                                             dx,                dy,               &
@@ -657,6 +676,7 @@
 
          if (present(temp)) temp(k,:,:) = tracer(:,:,1,k)
          if (present(age) .and. ntracer >= 2) age(k,:,:) = tracer(:,:,2,k)
+         if (present(waterfrac)) waterfrac(k,:,:) = tracer(:,:,3,k)
          !WHL - Could add more tracer fields here
 
       enddo
@@ -695,7 +715,7 @@
 
       endif                     ! conservation_check
 
-      end subroutine glissade_transport_driver
+    end subroutine glissade_transport_driver
 
 !=======================================================================
 !

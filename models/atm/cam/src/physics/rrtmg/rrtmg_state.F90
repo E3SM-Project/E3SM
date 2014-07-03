@@ -62,7 +62,9 @@ contains
     use ref_pres,only : pref_edge
     implicit none
 
-    num_rrtmg_levs = count( pref_edge(:) > 1.e-2_r8 ) ! pascals (1e-4 mbar)
+    ! The following cuts off RRTMG at roughly the point where it becomes
+    ! invalid due to low pressure.
+    num_rrtmg_levs = count( pref_edge(:) > 1._r8 ) ! pascals (1.e-2 mbar)
 
   end subroutine rrtmg_state_init
   

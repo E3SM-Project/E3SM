@@ -1882,7 +1882,7 @@ subroutine buoyan(lchnk   ,ncol    , &
 ! use of different formulas for es has about 1 g/kg difference
 ! in qs at t= 300k, and 0.02 g/kg at t=263k, with the formula
 ! above giving larger qs.
-            call qmmr_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+            call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
             a1(i) = cp / rl + qstp(i,k) * (1._r8+ qstp(i,k) / eps1) * rl * eps1 / &
                     (rd * tp(i,k) ** 2)
             a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/eps1*qstp(i,k))* &
@@ -1894,7 +1894,7 @@ subroutine buoyan(lchnk   ,ncol    , &
             a2(i) = -a2(i)*a1(i)**3
             y(i) = q(i,mx(i)) - qstp(i,k)
             tp(i,k) = tp(i,k) + a1(i)*y(i) + a2(i)*y(i)**2
-            call qmmr_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+            call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
 !
 ! buoyancy is increased by 0.5 k in cape calculation.
 ! dec. 9, 1994
@@ -1914,7 +1914,7 @@ subroutine buoyan(lchnk   ,ncol    , &
             tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
             qstp(i,k) = qstp(i,k+1)
             tp(i,k) = tp(i,k+1)* (p(i,k)/p(i,k+1))**(0.2854_r8* (1._r8-0.28_r8*qstp(i,k)))
-            call qmmr_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+            call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
             a1(i) = cp/rl + qstp(i,k)* (1._r8+qstp(i,k)/eps1)*rl*eps1/ (rd*tp(i,k)**2)
             a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/eps1*qstp(i,k))* &
                     (1._r8+qstp(i,k)/eps1)*eps1**2*rl*rl/ &
@@ -1925,7 +1925,7 @@ subroutine buoyan(lchnk   ,ncol    , &
             a2(i) = -a2(i)*a1(i)**3
             y(i) = qstp(i,k+1) - qstp(i,k)
             tp(i,k) = tp(i,k) + a1(i)*y(i) + a2(i)*y(i)**2
-            call qmmr_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+            call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
 !-jjh          tpv(i,k) =tp(i,k)*(1.+1.608*qstp(i,k))/
 !jt            (1.+q(i,mx(i)))
             tpv(i,k) = (tp(i,k)+tpert(i))* (1._r8+1.608_r8*qstp(i,k))/(1._r8+q(i,mx(i)))
@@ -2168,7 +2168,7 @@ subroutine cldprp(lchnk   , &
          mc(i,k) = 0._r8
          qu(i,k) = q(i,k)
          su(i,k) = s(i,k)
-         call qmmr_hPa(t(i,k), p(i,k), est(i), qst(i,k))
+         call qsat_hPa(t(i,k), p(i,k), est(i), qst(i,k))
 !++bee
          if ( p(i,k)-est(i) <= 0._r8 ) then
             qst(i,k) = 1.0_r8
@@ -2515,7 +2515,7 @@ subroutine cldprp(lchnk   , &
             qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k)- &
                             du(i,k)*qst(i,k))
             tu = su(i,k) - grav/cp*zf(i,k)
-            call qmmr_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
+            call qsat_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
             if (qu(i,k) >= qstu) then
                jlcl(i) = k
                kount = kount + 1
@@ -3561,29 +3561,24 @@ real(r8) function entropy(TK,p,qtot)
 ! from Raymond and Blyth 1992
 !
      real(r8), intent(in) :: p,qtot,TK
-     real(r8) :: qv,qst,e,est,L,eref,pref
-
-pref = 1000.0_r8           ! mb
-eref = 6.106_r8            ! sat p at tfreez (mb)
+     real(r8) :: qv,qst,e,est,L
+     real(r8), parameter :: pref = 1000._r8
 
 L = rl - (cpliq - cpwv)*(TK-tfreez)         ! T IN CENTIGRADE
 
-! Replace call to satmixutils.
-
-call qmmr_hPa(TK, p, est, qst)
+call qsat_hPa(TK, p, est, qst)
 
 qv = min(qtot,qst)                         ! Partition qtot into vapor part only.
 e = qv*p / (eps1 +qv)
 
 entropy = (cpres + qtot*cpliq)*log( TK/tfreez) - rgas*log( (p-e)/pref ) + &
         L*qv/TK - qv*rh2o*log(qv/qst)
-! 
-return
+
 end FUNCTION entropy
 
 !
 !-----------------------------------------------------------------------------------------
-   SUBROUTINE ientropy (rcall,icol,lchnk,s,p,qt,T,qst,Tfg)
+SUBROUTINE ientropy (rcall,icol,lchnk,s,p,qt,T,qst,Tfg)
 !-----------------------------------------------------------------------------------------
 !
 ! p(mb), Tfg/T(K), qt/qv(kg/kg), s(J/kg). 
@@ -3591,76 +3586,115 @@ end FUNCTION entropy
 ! for T and saturated vapor mixing ratio
 ! 
 
-     use phys_grid, only: get_rlon_p, get_rlat_p
+  use phys_grid, only: get_rlon_p, get_rlat_p
 
-     integer, intent(in) :: icol, lchnk, rcall
-     real(r8), intent(in)  :: s, p, Tfg, qt
-     real(r8), intent(out) :: qst, T
-     real(r8) :: qv,Ts,dTs,fs1,fs2,est
-     real(r8) :: pref,eref,L,e
-     real(r8) :: this_lat,this_lon
-     integer :: LOOPMAX,i
+  integer, intent(in) :: icol, lchnk, rcall
+  real(r8), intent(in)  :: s, p, Tfg, qt
+  real(r8), intent(out) :: qst, T
+  real(r8) :: est, this_lat,this_lon
+  real(r8) :: a,b,c,d,ebr,fa,fb,fc,pbr,qbr,rbr,sbr,tol1,xm,tol
+  integer :: i
 
-LOOPMAX = 100                   !* max number of iteration loops 
+  logical :: converged
 
-! Values for entropy
-pref = 1000.0_r8           ! mb ref pressure.
-eref = 6.106_r8           ! sat p at tfreez (mb)
+  ! Max number of iteration loops.
+  integer, parameter :: LOOPMAX = 100
+  real(r8), parameter :: EPS = 3.e-8_r8
 
-! Invert the entropy equation -- use Newton's method
+  converged = .false.
 
-Ts = Tfg                  ! Better first guess based on Tprofile from conv.
+  ! Invert the entropy equation -- use Brent's method
+  ! Brent, R. P. Ch. 3-4 in Algorithms for Minimization Without Derivatives. Englewood Cliffs, NJ: Prentice-Hall, 1973.
 
-converge: do i=0, LOOPMAX
+  T = Tfg                  ! Better first guess based on Tprofile from conv.
 
-   L = rl - (cpliq - cpwv)*(Ts-tfreez) 
+  a = Tfg-10			!low bracket
+  b = Tfg+10			!high bracket
 
-   call qmmr_hPa(Ts, p, est, qst)
-   qv = min(qt,qst) 
-   e = qv*p / (eps1 +qv)  ! Bolton (eq. 16)
-   fs1 = (cpres + qt*cpliq)*log( Ts/tfreez ) - rgas*log( (p-e)/pref ) + &
-        L*qv/Ts - qv*rh2o*log(qv/qst) - s
-   
-   L = rl - (cpliq - cpwv)*(Ts-1._r8-tfreez)         
+  fa = entropy(a, p, qt) - s
+  fb = entropy(b, p, qt) - s
 
-   call qmmr_hPa(Ts-1._r8, p, est, qst)
-   qv = min(qt,qst) 
-   e = qv*p / (eps1 +qv)
-   fs2 = (cpres + qt*cpliq)*log( (Ts-1._r8)/tfreez ) - rgas*log( (p-e)/pref ) + &
-        L*qv/(Ts-1._r8) - qv*rh2o*log(qv/qst) - s 
-   
-   dTs = fs1/(fs2 - fs1)
-   Ts  = Ts+dTs
-   if (abs(dTs).lt.0.001_r8) exit converge
-   if (i .eq. LOOPMAX - 1) then
-      this_lat = get_rlat_p(lchnk, icol)*57.296_r8
-      this_lon = get_rlon_p(lchnk, icol)*57.296_r8
-      write(iulog,*) '*** ZM_CONV: IENTROPY: Failed and about to exit, info follows ****'
-      write(iulog,100) 'ZM_CONV: IENTROPY. Details: call#,lchnk,icol= ',rcall,lchnk,icol, &
-       ' lat: ',this_lat,' lon: ',this_lon, &
-       ' P(mb)= ', p, ' Tfg(K)= ', Tfg, ' qt(g/kg) = ', 1000._r8*qt, &
-       ' qst(g/kg) = ', 1000._r8*qst,', s(J/kg) = ',s
-      call endrun('**** ZM_CONV IENTROPY: Tmix did not converge ****')
-   end if
-enddo converge
+  c=b
+  fc=fb
+  tol=0.001_r8
 
-! Replace call to satmixutils.
+  converge: do i=0, LOOPMAX
+     if ((fb > 0.0_r8 .and. fc > 0.0_r8) .or. &
+          (fb < 0.0_r8 .and. fc < 0.0_r8)) then
+        c=a
+        fc=fa
+        d=b-a
+        ebr=d
+     end if
+     if (abs(fc) < abs(fb)) then
+        a=b
+        b=c
+        c=a
+        fa=fb
+        fb=fc
+        fc=fa
+     end if
 
-call qmmr_hPa(Ts, p, est, qst)
+     tol1=2.0_r8*EPS*abs(b)+0.5_r8*tol
+     xm=0.5_r8*(c-b)
+     converged = (abs(xm) <= tol1 .or. fb == 0.0_r8)
+     if (converged) exit converge
 
-qv = min(qt,qst)                             !       /* check for saturation */
-T = Ts 
+     if (abs(ebr) >= tol1 .and. abs(fa) > abs(fb)) then
+        sbr=fb/fa
+        if (a == c) then
+           pbr=2.0_r8*xm*sbr
+           qbr=1.0_r8-sbr
+        else
+           qbr=fa/fc
+           rbr=fb/fc
+           pbr=sbr*(2.0_r8*xm*qbr*(qbr-rbr)-(b-a)*(rbr-1.0_r8))
+           qbr=(qbr-1.0_r8)*(rbr-1.0_r8)*(sbr-1.0_r8)
+        end if
+        if (pbr > 0.0_r8) qbr=-qbr
+        pbr=abs(pbr)
+        if (2.0_r8*pbr  <  min(3.0_r8*xm*qbr-abs(tol1*qbr),abs(ebr*qbr))) then
+           ebr=d
+           d=pbr/qbr
+        else
+           d=xm
+           ebr=d
+        end if
+     else
+        d=xm
+        ebr=d
+     end if
+     a=b
+     fa=fb
+     b=b+merge(d,sign(tol1,xm), abs(d) > tol1 )
 
- 100    format (A,I1,I4,I4,7(A,F6.2))
+     fb = entropy(b, p, qt) - s
 
-return
+  end do converge
+
+  T = b
+  call qsat_hPa(T, p, est, qst)
+
+  if (.not. converged) then
+     this_lat = get_rlat_p(lchnk, icol)*57.296_r8
+     this_lon = get_rlon_p(lchnk, icol)*57.296_r8
+     write(iulog,*) '*** ZM_CONV: IENTROPY: Failed and about to exit, info follows ****'
+     write(iulog,100) 'ZM_CONV: IENTROPY. Details: call#,lchnk,icol= ',rcall,lchnk,icol, &
+          ' lat: ',this_lat,' lon: ',this_lon, &
+          ' P(mb)= ', p, ' Tfg(K)= ', Tfg, ' qt(g/kg) = ', 1000._r8*qt, &
+          ' qst(g/kg) = ', 1000._r8*qst,', s(J/kg) = ',s
+     call endrun('**** ZM_CONV IENTROPY: Tmix did not converge ****')
+  end if
+
+100 format (A,I1,I4,I4,7(A,F6.2))
+
 end SUBROUTINE ientropy
 
-! Wrapper for qmmr that does translation between Pa and hPa
-! qmmr uses Pa internally, so get qmmr right, need to pass in Pa.
+! Wrapper for qsat_water that does translation between Pa and hPa
+! qsat_water uses Pa internally, so get it right, need to pass in Pa.
 ! Afterward, set es back to hPa.
-elemental subroutine qmmr_hPa(t, p, es, qm)
-  use wv_saturation, only: qmmr
+elemental subroutine qsat_hPa(t, p, es, qm)
+  use wv_saturation, only: qsat_water
 
   ! Inputs
   real(r8), intent(in) :: t    ! Temperature (K)
@@ -3670,10 +3704,10 @@ elemental subroutine qmmr_hPa(t, p, es, qm)
   real(r8), intent(out) :: qm  ! Saturation mass mixing ratio
                                ! (vapor mass over dry mass, kg/kg)
 
-  call qmmr(t, p*100._r8, es, qm)
+  call qsat_water(t, p*100._r8, es, qm)
 
   es = es*0.01_r8
 
-end subroutine qmmr_hPa
+end subroutine qsat_hPa
 
 end module zm_conv

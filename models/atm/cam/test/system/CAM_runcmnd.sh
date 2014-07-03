@@ -29,7 +29,7 @@ case $hostname in
     else
 	if grep -ic NOSMP ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
             ##mpi only
-	    CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+	    CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
 	fi
 
 	num_nodes=`echo $LSB_MCPU_HOSTS | wc -w`
@@ -65,7 +65,7 @@ case $hostname in
 
 
     ##yellowstone
-    ye* | ys* )
+    ye* | ys* | ca* )
     ##search config options file for parallelization info; default on aix is hybrid
     if grep -ic NOSPMD ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
 	if grep -ic NOSMP ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
@@ -79,7 +79,7 @@ case $hostname in
     else
 	if grep -ic NOSMP ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
             ##mpi only
-	    CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+            CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
 	fi
 
 	num_nodes=`echo $LSB_MCPU_HOSTS | wc -w`
@@ -113,8 +113,8 @@ case $hostname in
 	fi
     fi ;;
 
-    ##frankfurt
-    fr* | f0* )
+    ##goldbach
+    go* | g[[:digit:]]* )
     ##search config options file for parallelization info; default on linux is mpi
     if grep -ic NOSPMD ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
 	if grep -ic NOSMP ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
@@ -134,15 +134,9 @@ case $hostname in
         else
             ##mpi only
             cmnd=""
-            CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+            CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
         fi
-        if [ "$CAM_FC" == "INTEL" ]; then
-            cmnd="${cmnd}mpirun -np ${CAM_TASKS} "
-        elif [ "$CAM_FC" == "NAG" ]; then
-            cmnd="${cmnd}/home/santos/mpich-gcc-nag/bin/mpiexec -n ${CAM_TASKS} "
-        else
-            cmnd="${cmnd}/usr/local/mpiexec/bin/mpiexec -comm p4 -mpich-p4-no-shmem -n ${CAM_TASKS} "
-        fi
+        cmnd="${cmnd}mpiexec -n ${CAM_TASKS} "
     fi ;;
 
    ##edison
@@ -167,7 +161,7 @@ case $hostname in
             cmnd="env OMP_NUM_THREADS=${CAM_THREADS} aprun -N $tpn -n ${CAM_TASKS} -d ${CAM_THREADS} "
         else
             ##mpi only
-            CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+            CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
             cmnd="aprun -n ${CAM_TASKS} "
         fi
     fi ;;
@@ -194,7 +188,7 @@ case $hostname in
             cmnd="env OMP_NUM_THREADS=${CAM_THREADS} aprun -N $tpn -n ${CAM_TASKS} -d ${CAM_THREADS} "
         else
             ##mpi only
-            CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+            CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
             cmnd="aprun -n ${CAM_TASKS} "
         fi
     fi ;;
@@ -221,7 +215,7 @@ case $hostname in
             cmnd="env OMP_NUM_THREADS=${CAM_THREADS} aprun -N $tpn -n ${CAM_TASKS} -d ${CAM_THREADS} "
         else
             ##mpi only
-            CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+            CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
             cmnd="aprun -n ${CAM_TASKS} "
         fi
     fi ;;
@@ -247,7 +241,7 @@ case $hostname in
             cmnd="env OMP_NUM_THREADS=${CAM_THREADS} aprun -N $tpn -n ${CAM_TASKS} -d ${CAM_THREADS} "
         else
             ##mpi only
-            CAM_TASKS=`expr $CAM_TASKS "*" $CAM_THREADS / $2`
+            CAM_TASKS=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $2 ) ))
             cmnd="aprun -n ${CAM_TASKS} "
         fi
     fi ;;

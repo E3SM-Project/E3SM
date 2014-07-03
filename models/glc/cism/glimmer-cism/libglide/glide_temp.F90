@@ -62,6 +62,7 @@
 module glide_temp
 
   use glide_types
+  use glimmer_global, only : dp 
 
   !TODO - Remove 'oldglide' logic when comparisons are complete  
   use glimmer_paramets, only : oldglide
@@ -81,7 +82,6 @@ contains
     !*FD initialise temperature module
     use glimmer_physcon, only : rhoi, shci, coni, scyr, grav, gn, lhci, rhow, trpt
     use glimmer_paramets, only : tim0, thk0, acc0, len0, vis0, vel0
-    use glimmer_global, only : dp 
     use glimmer_log
     use glide_bwater, only : find_dt_wat
     use parallel, only: lhalo, uhalo
@@ -92,10 +92,15 @@ contains
     integer up, ns, ew
     real(dp) :: estimate
 
+    !TODO - Change VERT_DIFF, etc. to integers?
     if (VERT_DIFF==0.)   call write_log('Vertical diffusion is switched off')
     if (HORIZ_ADV==0.)   call write_log('Horizontal advection is switched off')
     if (VERT_ADV==0.)    call write_log('Vertical advection is switched off')
     if (STRAIN_HEAT==0.) call write_log('Strain heating is switched off')
+
+    !TODO - Should these allocations be done in glide_allocarr?
+    !TODO -  Make sure the arrays allocated here are deallocated at the end of the run.
+    !        Might want to move allocation/deallocation to subroutines in glide_types.
 
     ! horizontal advection stuff
     allocate(model%tempwk%hadv_u(model%general%upn,model%general%ewn,model%general%nsn))
@@ -334,8 +339,8 @@ contains
                                     sigma,       artm,         &
                                     thck,        temp)
 
-  ! Initialize temperatures in a column based on the value of temp_temp
-  ! Threee possibilities:
+  ! Initialize temperatures in a column based on the value of temp_init
+  ! Three possibilities:
   ! (1) Set ice temperature in column to 0 C (TEMP_INIT_ZERO)
   ! (2) Set ice temperature in column to surface air temperature (TEMP_INIT_ARTM)
   ! (3) Set up a linear temperature profile, with T = artm at the surface and T <= Tpmp
@@ -403,7 +408,6 @@ contains
     !*FD of several alternative methods.
 
     use glimmer_utils, only: tridiag
-    use glimmer_global, only : dp
     use glimmer_paramets, only : thk0, GLC_DEBUG
     use glide_bwater
     use glide_grid_operators, only: stagvarb
@@ -422,6 +426,7 @@ contains
     real(dp),dimension(size(model%numerics%sigma)) :: subd, diag, supd, rhsd
     real(dp),dimension(size(model%numerics%sigma)) :: prevtemp, iteradvt, diagadvt
     real(dp) :: tempresid
+    real(dp) :: dTtop, dthck
 
     integer :: iter
     integer :: ew,ns
@@ -435,8 +440,8 @@ contains
 ! debug
     integer :: j, k
     integer :: idiag, jdiag
-    idiag = model%numerics%idiag_global
-    jdiag = model%numerics%jdiag_global
+    idiag = model%numerics%idiag
+    jdiag = model%numerics%jdiag
 
     !------------------------------------------------------------------------------------
     ! ewbc/nsbc set the type of boundary condition aplied at the end of
@@ -463,12 +468,10 @@ contains
        !*MH model%tempwk%dissip   = 0.0d0  is also set to zero in finddisp
 
        ! ----------------------------------------------------------------------------------
-       !TODO - I think efvs is not needed here
 
        call glide_finddisp(model,          &
                            model%geometry%thck,     &
                            model%options%which_disp,&
-                           model%stress%efvs, &
                            model%geomderv%stagthck, &
                            model%geomderv%dusrfdew, &
                            model%geomderv%dusrfdns, &
@@ -515,7 +518,7 @@ contains
                              model%temper%temp(:,ew,ns-2:ns+2),      &
                              model%tempwk%hadv_u(:,ew,ns), &
                              model%tempwk%hadv_v(:,ew,ns))
-               
+
                 call findvtri(model,ew,ns,subd,diag,supd,diagadvt, &
                      weff, &
                      GLIDE_IS_FLOAT(model%geometry%thkmask(ew,ns)))
@@ -588,9 +591,28 @@ contains
                                  model%numerics%sigma,           &
                                  model%general%upn)
 
+                   ! Compute conductive flux = (k/H * dT/dsigma) at upper surface; positive down
+                   ! This is computed in case it needs to be upscaled and passed back to a GCM.
+
+                   dTtop = model%temper%temp(2,ew,ns) - model%temper%temp(1,ew,ns)
+                   dthck = model%geometry%thck(ew,ns)*thk0 * (model%numerics%sigma(2) - model%numerics%sigma(1))
+                   model%temper%ucondflx(ew,ns) = -coni * dTtop / dthck
+
+!WHL - debug
+!                   if (ew==model%numerics%idiag .and. ns==model%numerics%jdiag) then
+!                      print*, ' '
+!                      print*, 'glide_temp, ew, ns:', ew, ns
+!                      print*, 'dTtop, coni, dthck, ucondflx =', dTtop, coni, dthck, model%temper%ucondflx(ew,ns)
+!                   endif
+
+                   ! Check whether the temperature has converged everywhere
                    tempresid = max(tempresid, maxval(abs(model%temper%temp(:,ew,ns)-prevtemp(:))))
 
-                endif   ! temp > thklim
+                else    ! thck <= thklim
+                   ! Still need to set ucondflx, even for thin ice, so that something is
+                   ! passed to the coupler. Arbitrarily setting the flux to 0 in this case.
+                   model%temper%ucondflx(ew,ns) = 0.0d0
+                endif   ! thck > thklim
              end do     ! ew
           end do        ! ns
 
@@ -714,8 +736,6 @@ contains
 
   subroutine hadvpnt(iteradvt,diagadvt,tempx,tempy,u,v)
 
-    use glimmer_global, only : dp
-
     real(dp), dimension(:), intent(in) :: u,v
     real(dp), dimension(:,:), intent(in) :: tempx, tempy
     real(dp), dimension(:), intent(out) :: iteradvt, diagadvt
@@ -745,7 +765,6 @@ contains
 
   subroutine fohadvpnt(tempwk,iteradvt,diagadvt,tempx,tempy,uvel,vvel)
 
-    use glimmer_global, only : dp
     use glimmer_utils, only: hsum
 
     type(glide_tempwk) :: tempwk
@@ -783,8 +802,6 @@ contains
 
   subroutine hadvall(model,temp,thck)
 
-    use glimmer_global, only : dp 
-
     type(glide_global_type) :: model
     real(dp), dimension(:,0:,0:), intent(in) :: temp
     real(dp), dimension(:,:), intent(in) :: thck
@@ -814,8 +831,6 @@ contains
   !-------------------------------------------------------------------------
 
   subroutine findvtri(model,ew,ns,subd,diag,supd,diagadvt,weff,float)
-
-    use glimmer_global, only : dp
 
     type(glide_global_type) :: model
     integer, intent(in) :: ew, ns
@@ -873,7 +888,7 @@ contains
 
   subroutine findvtri_init(model,ew,ns,subd,diag,supd,weff,temp,thck,float)
     !*FD called during first iteration to set inittemp
-    use glimmer_global, only : dp
+
     use glimmer_paramets, only: vel0, vel_scale
 
     type(glide_global_type) :: model
@@ -948,11 +963,10 @@ contains
   subroutine findvtri_rhs(model,ew,ns,artm,iteradvt,rhsd,float)
 
     !*FD RHS of temperature tri-diag system
-    use glimmer_global, only : dp, sp 
 
     type(glide_global_type) :: model
     integer, intent(in) :: ew, ns
-    real(sp), intent(in) :: artm 
+    real(dp), intent(in) :: artm 
     real(dp), dimension(:), intent(in) :: iteradvt
     real(dp), dimension(:), intent(out) :: rhsd
     logical, intent(in) :: float    
@@ -975,8 +989,6 @@ contains
                             dusrfdew, dusrfdns,      &
                             ubas,     vbas,          &
                             bmlt,     floater)
-
-    use glimmer_global, only : dp 
 
     type(glide_global_type) :: model
     real(dp), dimension(:,0:,0:), intent(in) :: temp
@@ -1032,8 +1044,7 @@ contains
 
                 up = model%general%upn - 1
 
-                !TODO - Change reals to dp
-                do while (abs(temp(up,ew,ns)-pmptemp(up)) < 0.001 .and. up >= 3)
+                do while (abs(temp(up,ew,ns)-pmptemp(up)) < 1.d-3 .and. up >= 3)
                    bmlt(ew,ns) = bmlt(ew,ns) + newmlt
                    newmlt = model%tempwk%f(3) * model%tempwk%dupc(up) * thck(ew,ns) * model%tempwk%dissip(up,ew,ns)
                    up = up - 1
@@ -1046,14 +1057,14 @@ contains
                         model%tempwk%f(1) * ( (temp(up-2,ew,ns) - pmptemp(up-2)) * model%tempwk%dupa(up) &
                         + (temp(up-1,ew,ns) - pmptemp(up-1)) * model%tempwk%dupb(up) ) / thck(ew,ns) 
                 else
-                   bmlt(ew,ns) = bmlt(ew,ns) + max(0.0d0, newmlt - &
+                   bmlt(ew,ns) = bmlt(ew,ns) + max(0.d0, newmlt - &
                         model%tempwk%f(1) * ( (temp(up-2,ew,ns) - pmptemp(up-2)) * model%tempwk%dupa(up) &
                         + (temp(up-1,ew,ns) - pmptemp(up-1)) * model%tempwk%dupb(up) ) / thck(ew,ns)) 
                 end if
 
              else
 
-                bmlt(ew,ns) = 0.0d0
+                bmlt(ew,ns) = 0.d0
 
              end if
 
@@ -1062,7 +1073,7 @@ contains
           ! do nothing because the plume model will have written the bmlt field
           else
 
-              bmlt(ew,ns) = 0.0d0
+              bmlt(ew,ns) = 0.d0
 
           end if
        end do
@@ -1081,7 +1092,7 @@ contains
 
 !-------------------------------------------------------------------
 
-  subroutine glide_finddisp(model,thck,whichdisp,efvs,stagthck,dusrfdew,dusrfdns,flwa)
+  subroutine glide_finddisp(model,thck,whichdisp,stagthck,dusrfdew,dusrfdns,flwa)
 
     ! Compute the dissipation source term associated with strain heating.
     ! Note that the dissipation is computed in the same way on either a staggered or an
@@ -1089,12 +1100,11 @@ contains
     ! Note also that dissip and flwa must have the same vertical dimension 
     !  (1:upn on an unstaggered vertical grid, or 1:upn-1 on a staggered vertical grid).
     
-    use glimmer_global, only : dp
     use glimmer_physcon, only : gn
 
     type(glide_global_type) :: model
     real(dp), dimension(:,:), intent(in) :: thck, stagthck, dusrfdew, dusrfdns
-    real(dp), dimension(:,:,:), intent(in) :: flwa, efvs
+    real(dp), dimension(:,:,:), intent(in) :: flwa
     integer, intent(in) :: whichdisp
 
     integer, parameter :: p1 = gn + 1  
@@ -1172,8 +1182,6 @@ contains
 
   subroutine corrpmpt(temp,thck,bwat,sigma,upn)
 
-    use glimmer_global, only : dp
-
     real(dp), dimension(:), intent(inout) :: temp
     real(dp), intent(in) :: thck, bwat
     integer,intent(in) :: upn
@@ -1198,7 +1206,6 @@ contains
 
   subroutine calcpmpt(pmptemp,thck,sigma)
 
-    use glimmer_global, only : dp !, upn
     use glimmer_physcon, only : rhoi, grav, pmlt 
     use glimmer_paramets, only : thk0
 
@@ -1238,7 +1245,6 @@ contains
 
   subroutine calcpmptb(pmptemp,thck)
 
-    use glimmer_global, only : dp
     use glimmer_physcon, only : rhoi, grav, pmlt 
     use glimmer_paramets, only : thk0
 

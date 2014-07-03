@@ -30,7 +30,7 @@
 
 module eismint3_forcing
 
-  use glimmer_global, only: sp
+  use glimmer_global, only: dp
   use eismint3_types
 
   implicit none
@@ -52,6 +52,7 @@ contains
     use glimmer_log
     use glimmer_physcon, only: rhoi,rhow
     use glimmer_paramets, only: thk0
+    use glimmer_coordinates, only: coordsystem_allocate
 
     implicit none
 
@@ -80,24 +81,24 @@ contains
     case(0)
        ! Calculate initial thickness.
 
-       where (climate%presusurf>0.0)
-          climate%landsea=.true.
+       where (climate%presusurf > 0.d0)
+          climate%landsea = .true.
        elsewhere
-          climate%landsea=.false.
+          climate%landsea = .false.
        end where
 
-       call eismint3_temp(climate%artm,climate%arng,climate%presusurf,model%climate%lati,0.0_sp)
-       call glint_pdd_mbal(climate%pdd_scheme,climate%artm,climate%arng, &
-            climate%presprcp,climate%ablt,climate%acab,climate%landsea)
+       call eismint3_temp(climate%artm, climate%arng, climate%presusurf, model%climate%lati, 0.d0)
+
+       call glint_pdd_mbal(climate%pdd_scheme, climate%artm, climate%arng, &
+                           climate%presprcp,   climate%ablt, climate%acab, climate%landsea)
 
        ! Convert to ice-equivalent depth
 
-       climate%acab=climate%acab*(rhow/rhoi)
+       climate%acab = climate%acab*(rhow/rhoi)
 
        ! Put it into glide
 
-!WHLTSTEP - Subroutine glide_set_thk expects a real(sp) argument, so I left this line unchanged
-       call glide_set_thk(model,max(0.0,climate%acab*real(model%numerics%tinc)))
+       call glide_set_thk(model,max(0.d0,climate%acab*model%numerics%tinc))
     case(1)
        ! do nothing
     case(2)
@@ -111,7 +112,7 @@ contains
 
     ! Work out present-day temperature for precip enhancement calculation
 
-    call eismint3_temp(climate%presartm,climate%arng,climate%presusurf,model%climate%lati,0.0_sp)
+    call eismint3_temp(climate%presartm, climate%arng, climate%presusurf, model%climate%lati, 0.d0)
 
   end subroutine eismint3_initialise
 
@@ -164,20 +165,20 @@ contains
     type(glide_global_type) :: model       !*FD model instance
 
     call glide_get_usurf(model,climate%usrf)
-    where (climate%usrf>0.0)
-       climate%landsea=.true.
+    where (climate%usrf > 0.d0)
+       climate%landsea = .true.
     elsewhere
-       climate%landsea=.false.
+       climate%landsea = .false.
     end where
 
     call eismint3_temp(climate%artm,climate%arng,climate%usrf,model%climate%lati,climate%temp_perturb)
     call eismint3_prcp(climate%prcp,climate%artm,climate%presartm,climate%presprcp,climate%pfac)
     call glint_pdd_mbal(climate%pdd_scheme,climate%artm,climate%arng,climate%prcp,climate%ablt,climate%acab,climate%landsea)
 
-    where (.not.climate%landsea) climate%acab=0.0
+    where (.not.climate%landsea) climate%acab = 0.d0
 
     ! Convert to ice-equivalent depth
-    climate%acab=climate%acab*(rhow/rhoi)
+    climate%acab = climate%acab * (rhow/rhoi)
 
     call glide_set_acab(model,climate%acab)
     call glide_set_artm(model,climate%artm)
@@ -186,9 +187,9 @@ contains
 
   subroutine eismint3_prcp(prcp,artm,presartm,presprcp,pfac)
 
-    real(sp),dimension(:,:),intent(out) :: prcp
-    real(sp),dimension(:,:),intent(in)  :: artm,presartm,presprcp
-    real(sp) :: pfac
+    real(dp),dimension(:,:),intent(out) :: prcp
+    real(dp),dimension(:,:),intent(in)  :: artm,presartm,presprcp
+    real(dp) :: pfac
 
     prcp = presprcp * pfac**(artm - presartm)
 
@@ -196,12 +197,12 @@ contains
 
   subroutine eismint3_temp(artm,arng,usrf,lati,perturb)
 
-    real(sp),dimension(:,:),intent(out) :: artm,arng
-    real(sp),dimension(:,:),intent(in)  :: usrf,lati
-    real(sp),               intent(in)  :: perturb
+    real(dp),dimension(:,:),intent(out) :: artm,arng
+    real(dp),dimension(:,:),intent(in)  :: usrf,lati
+    real(dp),               intent(in)  :: perturb
 
-    artm=49.13-0.007992*max(usrf,20*(lati-65.0))-0.7576*lati+perturb
-    arng=30.78-0.006277*usrf-0.3262*lati+perturb-artm
+    artm = 49.13-0.007992*max(usrf,20*(lati-65.0))-0.7576*lati+perturb
+    arng = 30.78-0.006277*usrf-0.3262*lati+perturb-artm
 
   end subroutine eismint3_temp
 

@@ -42,11 +42,11 @@
 #   - return status should be "UNDEF"
 # 
 # - test_hist='', no baseline
-#   - return status should be "BFAIL1"
+#   - return status should be "BFAIL_NA"
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist DOES_NOT_EXIST -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ''`
 # 
 # - Given test history file doesn't exist, no baseline
-#   - return status should be "BFAIL1"
+#   - return status should be "BFAIL_NA"
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist DOES_NOT_EXIST -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist DOES_NOT_EXIST`
 #
 # - test_hist='' (but baseline file exists)
@@ -58,7 +58,7 @@
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist cism.h.nc -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist DOES_NOT_EXIST`
 #
 # - Given test history file exists, but no baseline
-#   - return status should be "BFAIL2"
+#   - return status should be "BFAIL"
 #   - example: component_compare.sh -baseline_dir $baseline_dir -baseline_hist DOES_NOT_EXIST -test_dir $test_dir -test_hist ERS_Ld211_P192x1.f19_g16.I_2000_CNDV_CROP.yellowstone_intel_crop.G.061555.clm2.h0.1998-07-30-00000.nc
 #
 # - History comparison fails: difference in values (e.g., set up by
@@ -92,13 +92,13 @@ function Usage {
     echo "     (this may be blank, but the colon will still be present)"
     echo ""
     echo "     Possible values for STATUS are:"
-    echo "     UNDEF : undefined result; this includes incorrect usage"
-    echo "     BFAIL1: no baseline file and no history file for the test case"
-    echo "       (note that BFAIL1 is only a problem if it occurs for all possible"
+    echo "     UNDEF   : undefined result; this includes incorrect usage"
+    echo "     BFAIL_NA: no baseline file and no history file for the test case"
+    echo "       (note that BFAIL_NA is only a problem if it occurs for all possible"
     echo "       history extensions for a given component)"
-    echo "     BFAIL2: no baseline file, but there IS a history file for the test case"
-    echo "     FAIL  : comparison fails (including: baseline exists but no history file for the test case)"
-    echo "     PASS  : success"
+    echo "     BFAIL   : no baseline file, but there IS a history file for the test case"
+    echo "     FAIL    : comparison fails (including: baseline exists but no history file for the test case)"
+    echo "     PASS    : success"
     echo ""
     echo "OPTIONS"
     echo "     -baseline_dir <name>   Full path to the baseline directory for this test (required)"
@@ -126,7 +126,7 @@ function Usage {
     echo "       -test_dir /glade/scratch/\$USER/\$CASE/run"
     echo "       -test_hist ''"
     echo "     This will generate a FAIL because there is no history file to compare with the baseline"
-    echo "     (or a BFAIL1 if /glade/scratch/\$USER/cesm_baselines/cesm1_1_beta16/\$TEST/clm.h.nc also doesn't exist)"
+    echo "     (or a BFAIL_NA if /glade/scratch/\$USER/cesm_baselines/cesm1_1_beta16/\$TEST/clm.h.nc also doesn't exist)"
     echo ""
 }
 
@@ -290,12 +290,12 @@ fi
 #----------------------------------------------------------------------
 
 if [[ $baseline_exists -eq 0 && $test_exists -eq 0 ]]; then
-    status="BFAIL1"
+    status="BFAIL_NA"
     info="neither baseline nor test history file exists"
     print_result $status "$info"
     exit 0
 elif [[ $baseline_exists -eq 0 && $test_exists -eq 1 ]]; then
-    status="BFAIL2"
+    status="BFAIL"
     info="baseline history file does not exist"
     print_result $status "$info"
     exit 0

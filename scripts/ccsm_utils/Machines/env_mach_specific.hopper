@@ -15,15 +15,19 @@ if (-e /opt/modules/default/init/csh) then
   module rm pgi
   module rm cray
   module rm pathscale
+  module rm parallel-netcdf
   module rm netcdf
   module rm cmake
+  module rm cray-mpich
+  module rm cray-netcdf
+  module rm cray-netcdf-hdf5parallel
+  module rm cray-parallel-netcdf
   module load subversion/1.7.2
 endif
 
 if ( $COMPILER == "pgi" ) then
     module load PrgEnv-pgi/4.1.40
-    module switch pgi       pgi/12.9.0
-    setenv PARALLEL_NETCDF_DIR /global/project/projectdirs/ccsm1/pnetcdf/svn1104/pgi/12.5.0
+    module switch pgi       pgi/13.6.0
 endif    
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel 
@@ -41,11 +45,26 @@ if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.7.1
 endif    
+module switch xt-asyncpe xt-asyncpe/5.23
+module load cray-mpich/6.2.0
+module switch cray-libsci cray-libsci/12.1.3
 
-module switch cray-mpich2 cray-mpich2/5.6.0
-module switch cray-libsci cray-libsci/12.0.00
-module load netcdf/4.2.0
-module load cmake/2.8.10.1
+
+if ( $MPILIB == "mpi-serial") then
+  module load cray-netcdf/4.3.0
+else
+  module load cray-netcdf-hdf5parallel/4.3.0
+  module load cray-parallel-netcdf/1.3.1.1
+endif
+
+module load cmake/2.8.11.2
+
+module use /global/project/projectdirs/ccsm1/modulefiles/hopper
+if( $DEBUG == "TRUE" ) then
+   module load esmf/6.2.0-defio-mpi-g
+else
+  module load esmf/6.2.0-defio-mpi-O
+endif
 
 
 

@@ -1,305 +1,155 @@
 module CNNStateUpdate1Mod
-#ifdef CN
-
 !-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: NStateUpdate1Mod
-!
-! !DESCRIPTION:
-! Module for nitrogen state variable updates, non-mortality fluxes.
-!
-! !USES:
-    use shr_kind_mod, only: r8 => shr_kind_r8
-    implicit none
-    save
-    private
-! !PUBLIC MEMBER FUNCTIONS:
-    public:: NStateUpdate1
-!
-! !REVISION HISTORY:
-! 4/23/2004: Created by Peter Thornton
-!
-!EOP
+  ! !DESCRIPTION:
+  ! Module for nitrogen state variable updates, non-mortality fluxes.
+  !
+  ! !USES:
+  use shr_kind_mod, only: r8 => shr_kind_r8
+  implicit none
+  save
+  private
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public:: NStateUpdate1
+  !
+  ! !REVISION HISTORY:
+  ! 4/23/2004: Created by Peter Thornton
 !-----------------------------------------------------------------------
 
 contains
 
 !-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: NStateUpdate1
-!
-! !INTERFACE:
 subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp)
-!
-! !DESCRIPTION:
-! On the radiation time step, update all the prognostic nitrogen state
-! variables (except for gap-phase mortality and fire fluxes)
-!
-! !USES:
-   use clmtype
-   use clm_time_manager, only: get_step_size
-    use clm_varpar   , only: nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
-   use clm_varctl  , only: iulog
-   use clm_varpar   , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-#ifdef NITRIF_DENITRIF
-   use clm_varcon, only: nitrif_n2o_loss_frac
-#endif
-   use pftvarcon       , only: npcropmin, nc3crop
-   use surfrdMod       , only: crop_prog
-!
-! !ARGUMENTS:
-   implicit none
-   integer, intent(in) :: num_soilc       ! number of soil columns in filter
-   integer, intent(in) :: filter_soilc(:) ! filter for soil columns
-   integer, intent(in) :: num_soilp       ! number of soil pfts in filter
-   integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
-!
-! !CALLED FROM:
-! subroutine CNEcosystemDyn
-!
-! !REVISION HISTORY:
-! 8/1/03: Created by Peter Thornton
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in scalars
-!
-   integer , pointer :: ivt(:)         ! pft vegetation type
-   real(r8), pointer :: woody(:)       ! binary flag for woody lifeform (1=woody, 0=not woody)
-   real(r8), pointer :: ndep_to_sminn(:)
-   real(r8), pointer :: nfix_to_sminn(:)        ! symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s) 
-   real(r8), pointer :: fert_to_sminn(:)
-   real(r8), pointer :: soyfixn_to_sminn(:)
-   real(r8), pointer :: sminn_to_denit_excess_vr(:,:)
-   real(r8), pointer :: sminn_to_denit_decomp_cascade_vr(:,:,:)   ! vertically-resolved denitrification along decomp cascade (gN/m3/s) 
-   real(r8), pointer :: sminn_to_plant_vr(:,:)
-   real(r8), pointer :: supplement_to_sminn_vr(:,:)
-   real(r8), pointer :: deadcrootn_storage_to_xfer(:)
-   real(r8), pointer :: deadcrootn_xfer_to_deadcrootn(:)
-   real(r8), pointer :: deadstemn_storage_to_xfer(:)
-   real(r8), pointer :: deadstemn_xfer_to_deadstemn(:)
-   real(r8), pointer :: frootn_storage_to_xfer(:)
-   real(r8), pointer :: frootn_to_litter(:)
-   real(r8), pointer :: frootn_xfer_to_frootn(:)
-   real(r8), pointer :: frootn_to_retransn(:)
-   real(r8), pointer :: leafn_storage_to_xfer(:)
-   real(r8), pointer :: leafn_to_litter(:)
-   real(r8), pointer :: leafn_to_retransn(:)
-   real(r8), pointer :: leafn_xfer_to_leafn(:)
-   real(r8), pointer :: livecrootn_storage_to_xfer(:)
-   real(r8), pointer :: livecrootn_to_deadcrootn(:)
-   real(r8), pointer :: livecrootn_to_retransn(:)
-   real(r8), pointer :: livecrootn_xfer_to_livecrootn(:)
-   real(r8), pointer :: livestemn_storage_to_xfer(:)
-   real(r8), pointer :: livestemn_to_deadstemn(:)
-   real(r8), pointer :: livestemn_to_retransn(:)
-   real(r8), pointer :: livestemn_xfer_to_livestemn(:)
-   real(r8), pointer :: npool_to_deadcrootn(:)
-   real(r8), pointer :: npool_to_deadcrootn_storage(:)
-   real(r8), pointer :: npool_to_deadstemn(:)
-   real(r8), pointer :: npool_to_deadstemn_storage(:)
-   real(r8), pointer :: npool_to_frootn(:)
-   real(r8), pointer :: npool_to_frootn_storage(:)
-   real(r8), pointer :: npool_to_leafn(:)
-   real(r8), pointer :: npool_to_leafn_storage(:)
-   real(r8), pointer :: npool_to_livecrootn(:)
-   real(r8), pointer :: npool_to_livecrootn_storage(:)
-   real(r8), pointer :: npool_to_livestemn(:)           ! allocation to live stem N (gN/m2/s)
-   real(r8), pointer :: npool_to_livestemn_storage(:)   ! allocation to live stem N storage (gN/m2/s)
-   real(r8), pointer :: retransn_to_npool(:)            ! deployment of retranslocated N (gN/m2/s)
-   real(r8), pointer :: sminn_to_npool(:)               ! deployment of soil mineral N uptake (gN/m2/s)
-   real(r8), pointer :: grainn_storage_to_xfer(:)       ! grain N shift storage to transfer (gN/m2/s)
-   real(r8), pointer :: grainn_to_food(:)               ! grain N to food (gN/m2/s)
-   real(r8), pointer :: grainn_xfer_to_grainn(:)        ! grain N growth from storage (gN/m2/s)
-   real(r8), pointer :: livestemn_to_litter(:)          ! livestem N to litter (gN/m2/s)
-   real(r8), pointer :: npool_to_grainn(:)              ! allocation to grain N (gN/m2/s)
-   real(r8), pointer :: npool_to_grainn_storage(:)      ! allocation to grain N storage (gN/m2/s)
-!
-! local pointers to implicit in/out scalars
-   real(r8), pointer :: sminn_vr(:,:)              ! (gN/m3) soil mineral N
-#ifdef NITRIF_DENITRIF
-   real(r8), pointer :: smin_no3_vr(:,:)              ! (gN/m3) soil NO3
-   real(r8), pointer :: smin_nh4_vr(:,:)              ! (gN/m3) soil NH4
-   real(r8), pointer :: f_nit_vr(:,:)                 ! (gN/m3/s) soil nitrification flux
-   real(r8), pointer :: f_denit_vr(:,:)               ! (gN/m3/s) soil denitrification flux
-   real(r8), pointer :: actual_immob_no3_vr(:,:)      ! (gN/m3/s) 
-   real(r8), pointer :: actual_immob_nh4_vr(:,:)      ! (gN/m3/s) 
-   real(r8), pointer :: smin_no3_to_plant_vr(:,:)     ! (gN/m3/s) 
-   real(r8), pointer :: smin_nh4_to_plant_vr(:,:)     ! (gN/m3/s) 
-   real(r8), pointer :: gross_nmin_vr(:,:)            ! (gN/m3/s) 
-#endif
-   real(r8), pointer :: decomp_npools_vr(:,:,:)                ! (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-   real(r8), pointer :: decomp_npools_sourcesink(:,:,:)        ! (gC/m3)  change in decomposing N pools over a timestep.  Used to update concentrations concurrently with vertical transport
-   real(r8), pointer :: decomp_cascade_ntransfer_vr(:,:,:)     ! vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
-   real(r8), pointer :: decomp_cascade_sminn_flux_vr(:,:,:)    ! vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
-   integer,  pointer :: cascade_donor_pool(:)                  ! which pool is C taken from for a given decomposition step
-   integer,  pointer :: cascade_receiver_pool(:)               ! which pool is C added to for a given decomposition step
-   real(r8), pointer :: ndep_prof(:,:)                         ! profile over which N deposition is distributed through column (1/m)
-   real(r8), pointer :: nfixation_prof(:,:)                    ! profile over which N fixation is distributed through column (1/m)
-   real(r8), pointer :: grainn(:)             ! (gN/m2) grain N
-   real(r8), pointer :: grainn_storage(:)     ! (gN/m2) grain N storage
-   real(r8), pointer :: grainn_xfer(:)        ! (gN/m2) grain N transfer
-   real(r8), pointer :: frootn(:)             ! (gN/m2) fine root N
-   real(r8), pointer :: frootn_storage(:)     ! (gN/m2) fine root N storage
-   real(r8), pointer :: frootn_xfer(:)        ! (gN/m2) fine root N transfer
-   real(r8), pointer :: leafn(:)              ! (gN/m2) leaf N
-   real(r8), pointer :: leafn_storage(:)      ! (gN/m2) leaf N storage
-   real(r8), pointer :: leafn_xfer(:)         ! (gN/m2) leaf N transfer
-   real(r8), pointer :: livecrootn(:)         ! (gN/m2) live coarse root N
-   real(r8), pointer :: livecrootn_storage(:) ! (gN/m2) live coarse root N storage
-   real(r8), pointer :: livecrootn_xfer(:)    ! (gN/m2) live coarse root N transfer
-   real(r8), pointer :: livestemn(:)          ! (gN/m2) live stem N
-   real(r8), pointer :: livestemn_storage(:)  ! (gN/m2) live stem N storage
-   real(r8), pointer :: livestemn_xfer(:)     ! (gN/m2) live stem N transfer
-   real(r8), pointer :: deadcrootn(:)         ! (gN/m2) dead coarse root N
-   real(r8), pointer :: deadcrootn_storage(:) ! (gN/m2) dead coarse root N storage
-   real(r8), pointer :: deadcrootn_xfer(:)    ! (gN/m2) dead coarse root N transfer
-   real(r8), pointer :: deadstemn(:)          ! (gN/m2) dead stem N
-   real(r8), pointer :: deadstemn_storage(:)  ! (gN/m2) dead stem N storage
-   real(r8), pointer :: deadstemn_xfer(:)     ! (gN/m2) dead stem N transfer
-   real(r8), pointer :: retransn(:)           ! (gN/m2) plant pool of retranslocated N
-   real(r8), pointer :: npool(:)              ! (gN/m2) temporary plant N pool
-   real(r8), pointer :: phenology_n_to_litr_met_n(:,:)             ! N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
-   real(r8), pointer :: phenology_n_to_litr_cel_n(:,:)             ! N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
-   real(r8), pointer :: phenology_n_to_litr_lig_n(:,:)             ! N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
-
-
-! local pointers for dynamic landcover fluxes and states
-   real(r8), pointer :: dwt_seedn_to_leaf(:)
-   real(r8), pointer :: dwt_seedn_to_deadstem(:)
-   real(r8), pointer :: dwt_frootn_to_litr_met_n(:,:)
-   real(r8), pointer :: dwt_frootn_to_litr_cel_n(:,:)
-   real(r8), pointer :: dwt_frootn_to_litr_lig_n(:,:)
-   real(r8), pointer :: dwt_livecrootn_to_cwdn(:,:)
-   real(r8), pointer :: dwt_deadcrootn_to_cwdn(:,:)
-   real(r8), pointer :: seedn(:)
-
-!
-! local pointers to implicit out scalars
-   real(r8), pointer :: col_begnb(:)   ! nitrogen mass, beginning of time step (gN/m**2)
-   real(r8), pointer :: pft_begnb(:)   ! nitrogen mass, beginning of time step (gN/m**2)
-!
-! !OTHER LOCAL VARIABLES:
-   integer :: c,p,j,l,k      ! indices
-   integer :: fp,fc    ! lake filter indices
-   real(r8):: dt       ! radiation time step (seconds)
-
-!EOP
+  !
+  ! !DESCRIPTION:
+  ! On the radiation time step, update all the prognostic nitrogen state
+  ! variables (except for gap-phase mortality and fire fluxes)
+  !
+  ! !USES:
+  use clmtype
+  use clm_time_manager, only: get_step_size
+  use clm_varpar      , only: nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions, &
+                              crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use clm_varctl      , only: iulog, use_nitrif_denitrif
+  use clm_varcon      , only: nitrif_n2o_loss_frac
+  use pftvarcon       , only: npcropmin, nc3crop
+  !
+  ! !ARGUMENTS:
+  implicit none
+  integer, intent(in) :: num_soilc       ! number of soil columns in filter
+  integer, intent(in) :: filter_soilc(:) ! filter for soil columns
+  integer, intent(in) :: num_soilp       ! number of soil pfts in filter
+  integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
+  !
+  ! !LOCAL VARIABLES:
+  integer :: c,p,j,l,k      ! indices
+  integer :: fp,fc    ! lake filter indices
+  real(r8):: dt       ! radiation time step (seconds)
 !-----------------------------------------------------------------------
-   ! assign local pointers
-   woody                          => pftcon%woody
 
-   ! assign local pointers at the column level
-   ndep_to_sminn                     => clm3%g%l%c%cnf%ndep_to_sminn
-   nfix_to_sminn                     => clm3%g%l%c%cnf%nfix_to_sminn
-   fert_to_sminn                     => clm3%g%l%c%cnf%fert_to_sminn
-   soyfixn_to_sminn                  => clm3%g%l%c%cnf%soyfixn_to_sminn
-#ifndef NITRIF_DENITRIF
-   sminn_to_denit_excess_vr          => clm3%g%l%c%cnf%sminn_to_denit_excess_vr
-   sminn_to_denit_decomp_cascade_vr  => clm3%g%l%c%cnf%sminn_to_denit_decomp_cascade_vr
-#else
-   smin_no3_vr                       => clm3%g%l%c%cns%smin_no3_vr
-   smin_nh4_vr                       => clm3%g%l%c%cns%smin_nh4_vr
-   f_nit_vr                          => clm3%g%l%c%cnf%f_nit_vr
-   f_denit_vr                        => clm3%g%l%c%cnf%f_denit_vr
-   actual_immob_no3_vr               => clm3%g%l%c%cnf%actual_immob_no3_vr
-   actual_immob_nh4_vr               => clm3%g%l%c%cnf%actual_immob_nh4_vr
-   smin_no3_to_plant_vr              => clm3%g%l%c%cnf%smin_no3_to_plant_vr
-   smin_nh4_to_plant_vr              => clm3%g%l%c%cnf%smin_nh4_to_plant_vr
-   gross_nmin_vr                     => clm3%g%l%c%cnf%gross_nmin_vr
-#endif
-   sminn_to_plant_vr                 => clm3%g%l%c%cnf%sminn_to_plant_vr
-   decomp_cascade_sminn_flux_vr      => clm3%g%l%c%cnf%decomp_cascade_sminn_flux_vr
-   decomp_cascade_ntransfer_vr       => clm3%g%l%c%cnf%decomp_cascade_ntransfer_vr
-   cascade_donor_pool                      => decomp_cascade_con%cascade_donor_pool
-   cascade_receiver_pool                   => decomp_cascade_con%cascade_receiver_pool
-   supplement_to_sminn_vr            => clm3%g%l%c%cnf%supplement_to_sminn_vr
-   decomp_npools_vr                  => clm3%g%l%c%cns%decomp_npools_vr
-   decomp_npools_sourcesink          => clm3%g%l%c%cnf%decomp_npools_sourcesink
-   sminn_vr                          => clm3%g%l%c%cns%sminn_vr
-   ndep_prof                         => clm3%g%l%c%cps%ndep_prof
-   nfixation_prof                    => clm3%g%l%c%cps%nfixation_prof
-   phenology_n_to_litr_met_n      => clm3%g%l%c%cnf%phenology_n_to_litr_met_n
-   phenology_n_to_litr_cel_n      => clm3%g%l%c%cnf%phenology_n_to_litr_cel_n
-   phenology_n_to_litr_lig_n      => clm3%g%l%c%cnf%phenology_n_to_litr_lig_n
-
-   ! new pointers for dynamic landcover
-   dwt_seedn_to_leaf              => clm3%g%l%c%cnf%dwt_seedn_to_leaf
-   dwt_seedn_to_deadstem          => clm3%g%l%c%cnf%dwt_seedn_to_deadstem
-   dwt_frootn_to_litr_met_n 	  => clm3%g%l%c%cnf%dwt_frootn_to_litr_met_n
-   dwt_frootn_to_litr_cel_n 	  => clm3%g%l%c%cnf%dwt_frootn_to_litr_cel_n
-   dwt_frootn_to_litr_lig_n 	  => clm3%g%l%c%cnf%dwt_frootn_to_litr_lig_n
-   dwt_livecrootn_to_cwdn	  => clm3%g%l%c%cnf%dwt_livecrootn_to_cwdn
-   dwt_deadcrootn_to_cwdn	  => clm3%g%l%c%cnf%dwt_deadcrootn_to_cwdn
-   seedn			  => clm3%g%l%c%cns%seedn
-
-
-   ! assign local pointers at the pft level
-   ivt                            => clm3%g%l%c%p%itype
-   deadcrootn_storage_to_xfer     => clm3%g%l%c%p%pnf%deadcrootn_storage_to_xfer
-   deadcrootn_xfer_to_deadcrootn  => clm3%g%l%c%p%pnf%deadcrootn_xfer_to_deadcrootn
-   deadstemn_storage_to_xfer      => clm3%g%l%c%p%pnf%deadstemn_storage_to_xfer
-   deadstemn_xfer_to_deadstemn    => clm3%g%l%c%p%pnf%deadstemn_xfer_to_deadstemn
-   frootn_storage_to_xfer         => clm3%g%l%c%p%pnf%frootn_storage_to_xfer
-   frootn_to_litter               => clm3%g%l%c%p%pnf%frootn_to_litter
-   frootn_to_retransn             => clm3%g%l%c%p%pnf%frootn_to_retransn
-   frootn_xfer_to_frootn          => clm3%g%l%c%p%pnf%frootn_xfer_to_frootn
-   leafn_storage_to_xfer          => clm3%g%l%c%p%pnf%leafn_storage_to_xfer
-   leafn_to_litter                => clm3%g%l%c%p%pnf%leafn_to_litter
-   leafn_to_retransn              => clm3%g%l%c%p%pnf%leafn_to_retransn
-   leafn_xfer_to_leafn            => clm3%g%l%c%p%pnf%leafn_xfer_to_leafn
-   livecrootn_storage_to_xfer     => clm3%g%l%c%p%pnf%livecrootn_storage_to_xfer
-   livecrootn_to_deadcrootn       => clm3%g%l%c%p%pnf%livecrootn_to_deadcrootn
-   livecrootn_to_retransn         => clm3%g%l%c%p%pnf%livecrootn_to_retransn
-   livecrootn_xfer_to_livecrootn  => clm3%g%l%c%p%pnf%livecrootn_xfer_to_livecrootn
-   livestemn_storage_to_xfer      => clm3%g%l%c%p%pnf%livestemn_storage_to_xfer
-   livestemn_to_deadstemn         => clm3%g%l%c%p%pnf%livestemn_to_deadstemn
-   livestemn_to_retransn          => clm3%g%l%c%p%pnf%livestemn_to_retransn
-   livestemn_xfer_to_livestemn    => clm3%g%l%c%p%pnf%livestemn_xfer_to_livestemn
-   npool_to_deadcrootn            => clm3%g%l%c%p%pnf%npool_to_deadcrootn
-   npool_to_deadcrootn_storage    => clm3%g%l%c%p%pnf%npool_to_deadcrootn_storage
-   npool_to_deadstemn             => clm3%g%l%c%p%pnf%npool_to_deadstemn
-   npool_to_deadstemn_storage     => clm3%g%l%c%p%pnf%npool_to_deadstemn_storage
-   npool_to_frootn                => clm3%g%l%c%p%pnf%npool_to_frootn
-   npool_to_frootn_storage        => clm3%g%l%c%p%pnf%npool_to_frootn_storage
-   npool_to_leafn                 => clm3%g%l%c%p%pnf%npool_to_leafn
-   npool_to_leafn_storage         => clm3%g%l%c%p%pnf%npool_to_leafn_storage
-   npool_to_livecrootn            => clm3%g%l%c%p%pnf%npool_to_livecrootn
-   npool_to_livecrootn_storage    => clm3%g%l%c%p%pnf%npool_to_livecrootn_storage
-   npool_to_livestemn             => clm3%g%l%c%p%pnf%npool_to_livestemn
-   npool_to_livestemn_storage     => clm3%g%l%c%p%pnf%npool_to_livestemn_storage
-   retransn_to_npool              => clm3%g%l%c%p%pnf%retransn_to_npool
-   sminn_to_npool                 => clm3%g%l%c%p%pnf%sminn_to_npool
-   grainn_storage_to_xfer         => clm3%g%l%c%p%pnf%grainn_storage_to_xfer
-   grainn_to_food                 => clm3%g%l%c%p%pnf%grainn_to_food
-   grainn_xfer_to_grainn          => clm3%g%l%c%p%pnf%grainn_xfer_to_grainn
-   livestemn_to_litter            => clm3%g%l%c%p%pnf%livestemn_to_litter
-   npool_to_grainn                => clm3%g%l%c%p%pnf%npool_to_grainn
-   npool_to_grainn_storage        => clm3%g%l%c%p%pnf%npool_to_grainn_storage
-   grainn                         => clm3%g%l%c%p%pns%grainn
-   grainn_storage                 => clm3%g%l%c%p%pns%grainn_storage
-   grainn_xfer                    => clm3%g%l%c%p%pns%grainn_xfer
-   deadcrootn                     => clm3%g%l%c%p%pns%deadcrootn
-   deadcrootn_storage             => clm3%g%l%c%p%pns%deadcrootn_storage
-   deadcrootn_xfer                => clm3%g%l%c%p%pns%deadcrootn_xfer
-   deadstemn                      => clm3%g%l%c%p%pns%deadstemn
-   deadstemn_storage              => clm3%g%l%c%p%pns%deadstemn_storage
-   deadstemn_xfer                 => clm3%g%l%c%p%pns%deadstemn_xfer
-   frootn                         => clm3%g%l%c%p%pns%frootn
-   frootn_storage                 => clm3%g%l%c%p%pns%frootn_storage
-   frootn_xfer                    => clm3%g%l%c%p%pns%frootn_xfer
-   leafn                          => clm3%g%l%c%p%pns%leafn
-   leafn_storage                  => clm3%g%l%c%p%pns%leafn_storage
-   leafn_xfer                     => clm3%g%l%c%p%pns%leafn_xfer
-   livecrootn                     => clm3%g%l%c%p%pns%livecrootn
-   livecrootn_storage             => clm3%g%l%c%p%pns%livecrootn_storage
-   livecrootn_xfer                => clm3%g%l%c%p%pns%livecrootn_xfer
-   livestemn                      => clm3%g%l%c%p%pns%livestemn
-   livestemn_storage              => clm3%g%l%c%p%pns%livestemn_storage
-   livestemn_xfer                 => clm3%g%l%c%p%pns%livestemn_xfer
-   npool                          => clm3%g%l%c%p%pns%npool
-   retransn                       => clm3%g%l%c%p%pns%retransn
+   associate(& 
+   woody                               =>    pftcon%woody                                , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
+   ndep_to_sminn                       =>    cnf%ndep_to_sminn                           , & ! Input:  [real(r8) (:)]                                                    
+   nfix_to_sminn                       =>    cnf%nfix_to_sminn                           , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+   fert_to_sminn                       =>    cnf%fert_to_sminn                           , & ! Input:  [real(r8) (:)]                                                    
+   soyfixn_to_sminn                    =>    cnf%soyfixn_to_sminn                        , & ! Input:  [real(r8) (:)]                                                    
+   sminn_to_denit_excess_vr            =>    cnf%sminn_to_denit_excess_vr                , & ! Input:  [real(r8) (:,:)]                                                  
+   sminn_to_denit_decomp_cascade_vr    =>    cnf%sminn_to_denit_decomp_cascade_vr        , & ! Input:  [real(r8) (:,:,:)]  vertically-resolved denitrification along decomp cascade (gN/m3/s)
+   smin_no3_vr                         =>    cns%smin_no3_vr                             , & ! InOut:  [real(r8) (:,:)]  (gN/m3) soil NO3                                
+   smin_nh4_vr                         =>    cns%smin_nh4_vr                             , & ! InOut:  [real(r8) (:,:)]  (gN/m3) soil NH4                                
+   f_nit_vr                            =>    cnf%f_nit_vr                                , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s) soil nitrification flux               
+   f_denit_vr                          =>    cnf%f_denit_vr                              , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s) soil denitrification flux             
+   actual_immob_no3_vr                 =>    cnf%actual_immob_no3_vr                     , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s)                                       
+   actual_immob_nh4_vr                 =>    cnf%actual_immob_nh4_vr                     , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s)                                       
+   smin_no3_to_plant_vr                =>    cnf%smin_no3_to_plant_vr                    , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s)                                       
+   smin_nh4_to_plant_vr                =>    cnf%smin_nh4_to_plant_vr                    , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s)                                       
+   gross_nmin_vr                       =>    cnf%gross_nmin_vr                           , & ! InOut:  [real(r8) (:,:)]  (gN/m3/s)                                       
+   sminn_to_plant_vr                   =>    cnf%sminn_to_plant_vr                       , & ! Input:  [real(r8) (:,:)]                                                  
+   decomp_cascade_sminn_flux_vr        =>    cnf%decomp_cascade_sminn_flux_vr            , & ! InOut:  [real(r8) (:,:,:)]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+   decomp_cascade_ntransfer_vr         =>    cnf%decomp_cascade_ntransfer_vr             , & ! InOut:  [real(r8) (:,:,:)]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
+   cascade_donor_pool                  =>    decomp_cascade_con%cascade_donor_pool       , & ! InOut:  [integer (:)]  which pool is C taken from for a given decomposition step
+   cascade_receiver_pool               =>    decomp_cascade_con%cascade_receiver_pool    , & ! InOut:  [integer (:)]  which pool is C added to for a given decomposition step
+   supplement_to_sminn_vr              =>    cnf%supplement_to_sminn_vr                  , & ! Input:  [real(r8) (:,:)]                                                  
+   decomp_npools_vr                    =>    cns%decomp_npools_vr                        , & ! InOut:  [real(r8) (:,:,:)]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+   decomp_npools_sourcesink            =>    cnf%decomp_npools_sourcesink                , & ! InOut:  [real(r8) (:,:,:)]  (gC/m3)  change in decomposing N pools over a timestep.  Used to update concentrations concurrently with vertical transport
+   sminn_vr                            =>    cns%sminn_vr                                , & ! InOut:  [real(r8) (:,:)]  (gN/m3) soil mineral N                          
+   ndep_prof                           =>    cps%ndep_prof                               , & ! InOut:  [real(r8) (:,:)]  profile over which N deposition is distributed through column (1/m)
+   nfixation_prof                      =>    cps%nfixation_prof                          , & ! InOut:  [real(r8) (:,:)]  profile over which N fixation is distributed through column (1/m)
+   phenology_n_to_litr_met_n           =>    cnf%phenology_n_to_litr_met_n               , & ! InOut:  [real(r8) (:,:)]  N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
+   phenology_n_to_litr_cel_n           =>    cnf%phenology_n_to_litr_cel_n               , & ! InOut:  [real(r8) (:,:)]  N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
+   phenology_n_to_litr_lig_n           =>    cnf%phenology_n_to_litr_lig_n               , & ! InOut:  [real(r8) (:,:)]  N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
+   dwt_seedn_to_leaf                   =>    cnf%dwt_seedn_to_leaf                       , & ! InOut:  [real(r8) (:)]                                                    
+   dwt_seedn_to_deadstem               =>    cnf%dwt_seedn_to_deadstem                   , & ! InOut:  [real(r8) (:)]                                                    
+   dwt_frootn_to_litr_met_n            =>    cnf%dwt_frootn_to_litr_met_n                , & ! InOut:  [real(r8) (:,:)]                                                  
+   dwt_frootn_to_litr_cel_n            =>    cnf%dwt_frootn_to_litr_cel_n                , & ! InOut:  [real(r8) (:,:)]                                                  
+   dwt_frootn_to_litr_lig_n            =>    cnf%dwt_frootn_to_litr_lig_n                , & ! InOut:  [real(r8) (:,:)]                                                  
+   dwt_livecrootn_to_cwdn              =>    cnf%dwt_livecrootn_to_cwdn                  , & ! InOut:  [real(r8) (:,:)]                                                  
+   dwt_deadcrootn_to_cwdn              =>    cnf%dwt_deadcrootn_to_cwdn                  , & ! InOut:  [real(r8) (:,:)]                                                  
+   seedn                               =>    cns%seedn                                   , & ! InOut:  [real(r8) (:)]                                                    
+   ivt                                 =>    pft%itype                                   , & ! Input:  [integer (:)]  pft vegetation type                                
+   deadcrootn_storage_to_xfer          =>    pnf%deadcrootn_storage_to_xfer              , & ! Input:  [real(r8) (:)]                                                    
+   deadcrootn_xfer_to_deadcrootn       =>    pnf%deadcrootn_xfer_to_deadcrootn           , & ! Input:  [real(r8) (:)]                                                    
+   deadstemn_storage_to_xfer           =>    pnf%deadstemn_storage_to_xfer               , & ! Input:  [real(r8) (:)]                                                    
+   deadstemn_xfer_to_deadstemn         =>    pnf%deadstemn_xfer_to_deadstemn             , & ! Input:  [real(r8) (:)]                                                    
+   frootn_storage_to_xfer              =>    pnf%frootn_storage_to_xfer                  , & ! Input:  [real(r8) (:)]                                                    
+   frootn_to_litter                    =>    pnf%frootn_to_litter                        , & ! Input:  [real(r8) (:)]                                                    
+   frootn_to_retransn                  =>    pnf%frootn_to_retransn                      , & ! Input:  [real(r8) (:)]                                                    
+   frootn_xfer_to_frootn               =>    pnf%frootn_xfer_to_frootn                   , & ! Input:  [real(r8) (:)]                                                    
+   leafn_storage_to_xfer               =>    pnf%leafn_storage_to_xfer                   , & ! Input:  [real(r8) (:)]                                                    
+   leafn_to_litter                     =>    pnf%leafn_to_litter                         , & ! Input:  [real(r8) (:)]                                                    
+   leafn_to_retransn                   =>    pnf%leafn_to_retransn                       , & ! Input:  [real(r8) (:)]                                                    
+   leafn_xfer_to_leafn                 =>    pnf%leafn_xfer_to_leafn                     , & ! Input:  [real(r8) (:)]                                                    
+   livecrootn_storage_to_xfer          =>    pnf%livecrootn_storage_to_xfer              , & ! Input:  [real(r8) (:)]                                                    
+   livecrootn_to_deadcrootn            =>    pnf%livecrootn_to_deadcrootn                , & ! Input:  [real(r8) (:)]                                                    
+   livecrootn_to_retransn              =>    pnf%livecrootn_to_retransn                  , & ! Input:  [real(r8) (:)]                                                    
+   livecrootn_xfer_to_livecrootn       =>    pnf%livecrootn_xfer_to_livecrootn           , & ! Input:  [real(r8) (:)]                                                    
+   livestemn_storage_to_xfer           =>    pnf%livestemn_storage_to_xfer               , & ! Input:  [real(r8) (:)]                                                    
+   livestemn_to_deadstemn              =>    pnf%livestemn_to_deadstemn                  , & ! Input:  [real(r8) (:)]                                                    
+   livestemn_to_retransn               =>    pnf%livestemn_to_retransn                   , & ! Input:  [real(r8) (:)]                                                    
+   livestemn_xfer_to_livestemn         =>    pnf%livestemn_xfer_to_livestemn             , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_deadcrootn                 =>    pnf%npool_to_deadcrootn                     , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_deadcrootn_storage         =>    pnf%npool_to_deadcrootn_storage             , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_deadstemn                  =>    pnf%npool_to_deadstemn                      , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_deadstemn_storage          =>    pnf%npool_to_deadstemn_storage              , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_frootn                     =>    pnf%npool_to_frootn                         , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_frootn_storage             =>    pnf%npool_to_frootn_storage                 , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_leafn                      =>    pnf%npool_to_leafn                          , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_leafn_storage              =>    pnf%npool_to_leafn_storage                  , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_livecrootn                 =>    pnf%npool_to_livecrootn                     , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_livecrootn_storage         =>    pnf%npool_to_livecrootn_storage             , & ! Input:  [real(r8) (:)]                                                    
+   npool_to_livestemn                  =>    pnf%npool_to_livestemn                      , & ! Input:  [real(r8) (:)]  allocation to live stem N (gN/m2/s)               
+   npool_to_livestemn_storage          =>    pnf%npool_to_livestemn_storage              , & ! Input:  [real(r8) (:)]  allocation to live stem N storage (gN/m2/s)       
+   retransn_to_npool                   =>    pnf%retransn_to_npool                       , & ! Input:  [real(r8) (:)]  deployment of retranslocated N (gN/m2/s)          
+   sminn_to_npool                      =>    pnf%sminn_to_npool                          , & ! Input:  [real(r8) (:)]  deployment of soil mineral N uptake (gN/m2/s)     
+   grainn_storage_to_xfer              =>    pnf%grainn_storage_to_xfer                  , & ! Input:  [real(r8) (:)]  grain N shift storage to transfer (gN/m2/s)       
+   grainn_to_food                      =>    pnf%grainn_to_food                          , & ! Input:  [real(r8) (:)]  grain N to food (gN/m2/s)                         
+   grainn_xfer_to_grainn               =>    pnf%grainn_xfer_to_grainn                   , & ! Input:  [real(r8) (:)]  grain N growth from storage (gN/m2/s)             
+   livestemn_to_litter                 =>    pnf%livestemn_to_litter                     , & ! Input:  [real(r8) (:)]  livestem N to litter (gN/m2/s)                    
+   npool_to_grainn                     =>    pnf%npool_to_grainn                         , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)                   
+   npool_to_grainn_storage             =>    pnf%npool_to_grainn_storage                 , & ! Input:  [real(r8) (:)]  allocation to grain N storage (gN/m2/s)           
+   grainn                              =>    pns%grainn                                  , & ! InOut:  [real(r8) (:)]  (gN/m2) grain N                                   
+   grainn_storage                      =>    pns%grainn_storage                          , & ! InOut:  [real(r8) (:)]  (gN/m2) grain N storage                           
+   grainn_xfer                         =>    pns%grainn_xfer                             , & ! InOut:  [real(r8) (:)]  (gN/m2) grain N transfer                          
+   deadcrootn                          =>    pns%deadcrootn                              , & ! InOut:  [real(r8) (:)]  (gN/m2) dead coarse root N                        
+   deadcrootn_storage                  =>    pns%deadcrootn_storage                      , & ! InOut:  [real(r8) (:)]  (gN/m2) dead coarse root N storage                
+   deadcrootn_xfer                     =>    pns%deadcrootn_xfer                         , & ! InOut:  [real(r8) (:)]  (gN/m2) dead coarse root N transfer               
+   deadstemn                           =>    pns%deadstemn                               , & ! InOut:  [real(r8) (:)]  (gN/m2) dead stem N                               
+   deadstemn_storage                   =>    pns%deadstemn_storage                       , & ! InOut:  [real(r8) (:)]  (gN/m2) dead stem N storage                       
+   deadstemn_xfer                      =>    pns%deadstemn_xfer                          , & ! InOut:  [real(r8) (:)]  (gN/m2) dead stem N transfer                      
+   frootn                              =>    pns%frootn                                  , & ! InOut:  [real(r8) (:)]  (gN/m2) fine root N                               
+   frootn_storage                      =>    pns%frootn_storage                          , & ! InOut:  [real(r8) (:)]  (gN/m2) fine root N storage                       
+   frootn_xfer                         =>    pns%frootn_xfer                             , & ! InOut:  [real(r8) (:)]  (gN/m2) fine root N transfer                      
+   leafn                               =>    pns%leafn                                   , & ! InOut:  [real(r8) (:)]  (gN/m2) leaf N                                    
+   leafn_storage                       =>    pns%leafn_storage                           , & ! InOut:  [real(r8) (:)]  (gN/m2) leaf N storage                            
+   leafn_xfer                          =>    pns%leafn_xfer                              , & ! InOut:  [real(r8) (:)]  (gN/m2) leaf N transfer                           
+   livecrootn                          =>    pns%livecrootn                              , & ! InOut:  [real(r8) (:)]  (gN/m2) live coarse root N                        
+   livecrootn_storage                  =>    pns%livecrootn_storage                      , & ! InOut:  [real(r8) (:)]  (gN/m2) live coarse root N storage                
+   livecrootn_xfer                     =>    pns%livecrootn_xfer                         , & ! InOut:  [real(r8) (:)]  (gN/m2) live coarse root N transfer               
+   livestemn                           =>    pns%livestemn                               , & ! InOut:  [real(r8) (:)]  (gN/m2) live stem N                               
+   livestemn_storage                   =>    pns%livestemn_storage                       , & ! InOut:  [real(r8) (:)]  (gN/m2) live stem N storage                       
+   livestemn_xfer                      =>    pns%livestemn_xfer                          , & ! InOut:  [real(r8) (:)]  (gN/m2) live stem N transfer                      
+   npool                               =>    pns%npool                                   , & ! InOut:  [real(r8) (:)]  (gN/m2) temporary plant N pool                    
+   retransn                            =>    pns%retransn                                  & ! InOut:  [real(r8) (:)]  (gN/m2) plant pool of retranslocated N            
+   )
 
    ! set time steps
    dt = real( get_step_size(), r8 )
@@ -318,15 +168,15 @@ subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          
-#ifndef NITRIF_DENITRIF
-         ! N deposition and fixation
-         sminn_vr(c,j) = sminn_vr(c,j) + ndep_to_sminn(c)*dt * ndep_prof(c,j)
-         sminn_vr(c,j) = sminn_vr(c,j) + nfix_to_sminn(c)*dt * nfixation_prof(c,j)
-#else
-         ! N deposition and fixation (put all into NH4 pool)
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + ndep_to_sminn(c)*dt * ndep_prof(c,j)
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + nfix_to_sminn(c)*dt * nfixation_prof(c,j)
-#endif
+         if (.not. use_nitrif_denitrif) then
+            ! N deposition and fixation
+            sminn_vr(c,j) = sminn_vr(c,j) + ndep_to_sminn(c)*dt * ndep_prof(c,j)
+            sminn_vr(c,j) = sminn_vr(c,j) + nfix_to_sminn(c)*dt * nfixation_prof(c,j)
+         else
+            ! N deposition and fixation (put all into NH4 pool)
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + ndep_to_sminn(c)*dt * ndep_prof(c,j)
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + nfix_to_sminn(c)*dt * nfixation_prof(c,j)
+         end if
 
          ! plant to litter fluxes
          ! phenology and dynamic landcover fluxes
@@ -344,15 +194,15 @@ subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp)
          ! column loop
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-#ifndef NITRIF_DENITRIF
-            ! N deposition and fixation
-            sminn_vr(c,j) = sminn_vr(c,j) + fert_to_sminn(c)*dt * ndep_prof(c,j)
-            sminn_vr(c,j) = sminn_vr(c,j) + soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-#else
-            ! N deposition and fixation (put all into NH4 pool)
-            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + fert_to_sminn(c)*dt * ndep_prof(c,j)
-            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-#endif
+            if (.not. use_nitrif_denitrif) then
+               ! N deposition and fixation
+               sminn_vr(c,j) = sminn_vr(c,j) + fert_to_sminn(c)*dt * ndep_prof(c,j)
+               sminn_vr(c,j) = sminn_vr(c,j) + soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
+            else
+               ! N deposition and fixation (put all into NH4 pool)
+               smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + fert_to_sminn(c)*dt * ndep_prof(c,j)
+               smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
+            end if
          end do
       end do
    end if
@@ -390,79 +240,79 @@ subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp)
       end if
    end do
    
-#ifndef NITRIF_DENITRIF         
-   ! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes and denitrification fluxes
-   do k = 1, ndecomp_cascade_transitions
-      if ( cascade_receiver_pool(k) .ne. 0 ) then  ! skip terminal transitions
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               sminn_vr(c,j)  = sminn_vr(c,j) - &
-                    (sminn_to_denit_decomp_cascade_vr(c,j,k) + decomp_cascade_sminn_flux_vr(c,j,k))* dt
+   if (.not. use_nitrif_denitrif) then
+      ! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes and denitrification fluxes
+      do k = 1, ndecomp_cascade_transitions
+         if ( cascade_receiver_pool(k) .ne. 0 ) then  ! skip terminal transitions
+            do j = 1, nlevdecomp
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  sminn_vr(c,j)  = sminn_vr(c,j) - &
+                       (sminn_to_denit_decomp_cascade_vr(c,j,k) + decomp_cascade_sminn_flux_vr(c,j,k))* dt
+               end do
             end do
-         end do
-      else
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               sminn_vr(c,j)  = sminn_vr(c,j) - sminn_to_denit_decomp_cascade_vr(c,j,k)* dt
-               sminn_vr(c,j)  = sminn_vr(c,j) + decomp_cascade_sminn_flux_vr(c,j,k)* dt
-               
-            end do
-         end do
-      endif
-   end do
+         else
+            do j = 1, nlevdecomp
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  sminn_vr(c,j)  = sminn_vr(c,j) - sminn_to_denit_decomp_cascade_vr(c,j,k)* dt
+                  sminn_vr(c,j)  = sminn_vr(c,j) + decomp_cascade_sminn_flux_vr(c,j,k)* dt
 
-   do j = 1, nlevdecomp
-      ! column loop
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         ! "bulk denitrification"
-         sminn_vr(c,j) = sminn_vr(c,j) - sminn_to_denit_excess_vr(c,j) * dt
-         
-         ! total plant uptake from mineral N
-         sminn_vr(c,j) = sminn_vr(c,j) - sminn_to_plant_vr(c,j)*dt
-         
-         ! flux that prevents N limitation (when Carbon_only is set)
-         sminn_vr(c,j) = sminn_vr(c,j) + supplement_to_sminn_vr(c,j)*dt
+               end do
+            end do
+         endif
       end do
-   end do
 
-#else   !-------------    NITRIF_DENITRIF --------------------
+      do j = 1, nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! "bulk denitrification"
+            sminn_vr(c,j) = sminn_vr(c,j) - sminn_to_denit_excess_vr(c,j) * dt
 
-   do j = 1, nlevdecomp
-      ! column loop
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         
-         ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + gross_nmin_vr(c,j)*dt
-         
-         ! immobilization fluxes
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - actual_immob_nh4_vr(c,j)*dt
-         smin_no3_vr(c,j) = smin_no3_vr(c,j) - actual_immob_no3_vr(c,j)*dt
-         
-         ! plant uptake fluxes
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - smin_nh4_to_plant_vr(c,j)*dt
-         smin_no3_vr(c,j) = smin_no3_vr(c,j) - smin_no3_to_plant_vr(c,j)*dt
-         
-         ! Account for nitrification fluxes
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - f_nit_vr(c,j) * dt
-         smin_no3_vr(c,j) = smin_no3_vr(c,j) + f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
-         ! Account for denitrification fluxes
-         smin_no3_vr(c,j) = smin_no3_vr(c,j) - f_denit_vr(c,j) * dt
-         
-         ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
-         smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + supplement_to_sminn_vr(c,j)*dt
-         
-         ! update diagnostic total
-         sminn_vr(c,j) = smin_nh4_vr(c,j) + smin_no3_vr(c,j)
-         
-      end do ! end of column loop
-   end do
-#endif
+            ! total plant uptake from mineral N
+            sminn_vr(c,j) = sminn_vr(c,j) - sminn_to_plant_vr(c,j)*dt
+
+            ! flux that prevents N limitation (when Carbon_only is set)
+            sminn_vr(c,j) = sminn_vr(c,j) + supplement_to_sminn_vr(c,j)*dt
+         end do
+      end do
+
+   else   !-------------    NITRIF_DENITRIF --------------------
+
+      do j = 1, nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+
+            ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + gross_nmin_vr(c,j)*dt
+
+            ! immobilization fluxes
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - actual_immob_nh4_vr(c,j)*dt
+            smin_no3_vr(c,j) = smin_no3_vr(c,j) - actual_immob_no3_vr(c,j)*dt
+
+            ! plant uptake fluxes
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - smin_nh4_to_plant_vr(c,j)*dt
+            smin_no3_vr(c,j) = smin_no3_vr(c,j) - smin_no3_to_plant_vr(c,j)*dt
+
+            ! Account for nitrification fluxes
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - f_nit_vr(c,j) * dt
+            smin_no3_vr(c,j) = smin_no3_vr(c,j) + f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
+            ! Account for denitrification fluxes
+            smin_no3_vr(c,j) = smin_no3_vr(c,j) - f_denit_vr(c,j) * dt
+
+            ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
+            smin_nh4_vr(c,j) = smin_nh4_vr(c,j) + supplement_to_sminn_vr(c,j)*dt
+
+            ! update diagnostic total
+            sminn_vr(c,j) = smin_nh4_vr(c,j) + smin_no3_vr(c,j)
+
+         end do ! end of column loop
+      end do
+   end if
 
    ! pft loop
    do fp = 1,num_soilp
@@ -587,9 +437,7 @@ subroutine NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp)
 
    end do
 
+ end associate
 end subroutine NStateUpdate1
-!-----------------------------------------------------------------------
-
-#endif
 
 end module CNNStateUpdate1Mod

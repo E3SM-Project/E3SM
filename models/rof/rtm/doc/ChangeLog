@@ -1,4 +1,123 @@
 ===============================================================
+Tag name:  rtm1_0_37
+Originator(s): muszala
+Date: Dec 27, 2014
+One-line Summary: add SHR_ASSERT macros
+
+Replace call shr_assert with SHR_ASSERT_ALL macros for Santos.  Add shr_assert.h.
+
+M       src/riverroute/RtmMod.F90
+
+===============================================================
+Tag name:  rtm1_0_36
+Originator(s): tcraig
+Date: Dec 27, 2013
+One-line Summary: fix multi instance hybrid/branch filenames
+
+M       bld/rtm.buildnml.csh
+
+===============================================================
+Tag name:  rtm1_0_35
+Originator(s): tcraig
+Date: Oct 28, 2013
+One-line Summary: fix rtm namelist for initial files set from the REFCASE
+
+M       bld/rtm.buildnml.csh
+
+===============================================================
+Tag name:  rtm1_0_34
+Originator(s): mvertens
+Date: Oct 2, 2013
+One-line Summary: removed mct2esmf calls from rof_comp_esmf.F90
+
+M       src/cpl/rof_comp_esmf.F90
+
+===============================================================
+Tag name:  rtm1_0_33
+Originator(s): mvertens
+Date: Sep 25, 2013
+One-line Summary: Coupler interface refactor
+
+migration of cpl_share/, cpl_esmf/ and cpl_mct code into 
+new cpl/ and introduction of rof_import_export.F90
+
+M       bld/rtm.buildexe.csh
+D       src/cpl_share
+D       src/cpl_share/rtm_cpl_indices.F90
+D       src/cpl_mct
+D       src/cpl_mct/rof_comp_mct.F90
+D       src/cpl_esmf
+D       src/cpl_esmf/rof_comp_mct.F90
+D       src/cpl_esmf/rof_comp_esmf.F90
+A  +    src/cpl
+A  +    src/cpl/rof_comp_mct.F90
+A  +    src/cpl/rof_comp_esmf.F90
+A  +    src/cpl/rtm_cpl_indices.F90
+A  +    src/cpl/rof_import_export.F90
+
+===============================================================
+Tag name:  rtm1_0_32
+Originator(s): muszala
+Date: Sep 19, 2013
+One-line Summary: fix fthresh bug and refactor RtmFloodInit
+
+runoff%fthresh was passed via argument list but then used
+within RtmFloodInit.  Fix initialization of some runoff fields.
+Refactor RtmFloodInit so that everything is passed via argument
+list.  Move global use statements so that they are local.
+
+M       src/riverroute/RtmMod.F90
+M       src/riverroute/RunoffMod.F90
+
+===============================================================
+Tag name:  rtm1_0_31
+Originator(s): tcraig
+Date: Sep 5, 2013
+One-line Summary: merge cplupa branch to trunk
+
+update runoff coupling field names for consistency with driver
+modify intents on init/run/finalize coupling interfaces
+add ifdef USE_ESMF_METADATA around esmf attribute calls
+add rof to ice control logic
+convert volr coupling field from state to flux
+
+M       src/cpl_share/rtm_cpl_indices.F90
+M       src/cpl_mct/rof_comp_mct.F90
+M       src/cpl_esmf/rof_comp_esmf.F90
+===============================================================
+Tag name:  rtm1_0_30
+Originator(s): erik
+Date: Aug 26, 2013
+One-line Summary: Fix bug 1777 (multi-instance) and 1789 (problem with branching)
+
+Change .r. in restart files to .r${inst_string}. as needed.
+Put needed "nrevsn_rtm='" in setting of nrevsn for branches.
+
+M       bld/rtm.buildnml.csh
+
+===============================================================
+Tag name:  rtm1_0_29
+Originator(s): muszala 
+Date: May 14, 2013
+One-line Summary: fix 1x1_camdenNJ tests and use message
+
+M       bld/rtm.buildnml.csh
+   Fix from Erik K. that ignores the initial/restart file setting if the grid is
+   null...fixes bug with ERI_D.1x1_camdenNJ.ICLM45CNTEST.yellowstone_intel.
+	See bug 1734 in bugzilla
+M       bld/build-namelist
+  fix use message error found by Sean Santos.
+
+===============================================================
+Tag name:  rtm1_0_28
+Originator(s): muszala 
+Date: May 14, 2013
+One-line Summary: VOLR area correction
+
+M       src/cpl_mct/rof_comp_mct.F90
+M       src/cpl_esmf/rof_comp_esmf.F90
+
+===============================================================
 Tag name:  rtm1_0_27
 Originator(s): erik
 Date: May 22, 2013

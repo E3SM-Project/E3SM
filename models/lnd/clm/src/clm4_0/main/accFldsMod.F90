@@ -61,7 +61,6 @@ contains
     use accumulMod   , only : init_accum_field, print_accum_fields
     use clm_time_manager , only : get_step_size
     use shr_const_mod, only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
-    use nanMod       , only : bigint
 !
 ! !ARGUMENTS:
     implicit none
@@ -74,7 +73,7 @@ contains
 !EOP
 !
     integer :: dtime                     !time step size
-    integer, parameter :: not_used = bigint
+    integer, parameter :: not_used = huge(1)
 !------------------------------------------------------------------------
 
     ! Hourly average of 2m temperature.

@@ -543,24 +543,13 @@ sub write_filepath
     my ($file, $cfg_ref) = @_;
     my  $fh = new IO::File;
 
-    my $comp_intf = $cfg_ref->get('comp_intf');
-    my $cpl_dir; 
-    if ( $comp_intf eq "MCT" ) { 
-	$cpl_dir = "cpl_mct";
-    } elsif ( $comp_intf eq "ESMF" ) { 
-	$cpl_dir = "cpl_esmf";
-    } else {
-	die "** comp_intf interface must by MCT or ESMF \n";
-    }
-
     my $CASEROOT = "$ENV{'CASEROOT'}";
     my $CODEROOT = "$ENV{'CODEROOT'}";
 
     $fh->open(">$file") or die "** can't open filepath file: $file\n";
 
     print $fh "$CASEROOT/SourceMods/src.cice\n";
-    print $fh "$CODEROOT/ice/cice/src/drivers/$cpl_dir\n";
-    print $fh "$CODEROOT/ice/cice/src/drivers/cpl_share\n";
+    print $fh "$CODEROOT/ice/cice/src/drivers/cpl\n";
     print $fh "$CODEROOT/ice/cice/src/mpi\n";
     print $fh "$CODEROOT/ice/cice/src/source\n";
 

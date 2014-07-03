@@ -12,11 +12,13 @@
 
 #add logic at the top to decide which versions to build 
 setenv TEST_DIR "/tmp/work/$USER/higher-order"
-setenv CODE_DIR "/tmp/work/$USER/seacism"
+setenv CODE_DIR "/ccs/home/$USER/seacism"
 cd $CODE_DIR
+# 0 is a successful build
 setenv build_no 0
+# setting to 0 means don't build that version
 setenv build_autoconf 1
-setenv build_cmake 0
+setenv build_cmake 1
 
 mkdir -p $TEST_DIR
 

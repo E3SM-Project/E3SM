@@ -1,7 +1,4 @@
 !===============================================================================
-! SVN $Id: seq_frac_mct.F90 46244 2013-04-23 16:51:27Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_33/driver/seq_frac_mct.F90 $
-!===============================================================================
 !BOP ===========================================================================
 !
 ! !MODULE: seq_frac_mct -- handles surface fractions.
@@ -133,9 +130,21 @@ module seq_frac_mct
   use shr_const_mod
 
   use mct_mod
-  use seq_cdata_mod
-  use seq_comm_mct, only: logunit, loglevel, seq_comm_mpicom, seq_comm_iamroot, CPLID
-  use seq_map_mod, only: seq_map_map, seq_map
+  use seq_infodata_mod
+  use seq_comm_mct,      only: logunit, loglevel, seq_comm_mpicom, seq_comm_iamroot, CPLID
+  use seq_map_mod,       only: seq_map_map
+  use seq_map_type_mod,  only: seq_map
+
+  use prep_lnd_mod, only: prep_lnd_get_mapper_Fa2l
+  use prep_ocn_mod, only: prep_ocn_get_mapper_Fa2o
+  use prep_ocn_mod, only: prep_ocn_get_mapper_SFi2o  
+  use prep_ice_mod, only: prep_ice_get_mapper_SFo2i
+  use prep_rof_mod, only: prep_rof_get_mapper_Fl2r
+  use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
+  use prep_atm_mod, only: prep_atm_get_mapper_Fi2a
+  use prep_atm_mod, only: prep_atm_get_mapper_Fl2a   
+
+  use component_type_mod
 
   implicit none
   private
@@ -166,15 +175,24 @@ module seq_frac_mct
   real(r8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
   logical ,parameter :: atm_frac_correct = .false. ! turn on frac correction on atm grid
   !--- standard plus atm fraction consistency ---
-!  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs 
-!  real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
-!  real(r8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
-!  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
+  !  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs 
+  !  real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
+  !  real(r8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
+  !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
   !--- unconstrained and area conserving? ---
-!  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs 
-!  real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
-!  real(r8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
-!  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
+  !  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs 
+  !  real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
+  !  real(r8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
+  !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
+
+  type(seq_map)  , pointer :: mapper_o2a
+  type(seq_map)  , pointer :: mapper_i2a
+  type(seq_map)  , pointer :: mapper_l2a
+  type(seq_map)  , pointer :: mapper_o2i
+  type(seq_map)  , pointer :: mapper_a2o
+  type(seq_map)  , pointer :: mapper_i2o
+  type(seq_map)  , pointer :: mapper_a2l
+  type(seq_map)  , pointer :: mapper_l2r
 
   private seq_frac_check
 
@@ -196,61 +214,52 @@ contains
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, cdata_w, &
-                         ice_present, ocn_present, lnd_present, glc_present, rof_present, &
-                         wav_present, dead_comps,  &
-                         fractions_a, fractions_i, fractions_l, fractions_o, fractions_g, &
-                         fractions_r, fractions_w, &
-                         mapper_i2a, mapper_o2i, mapper_i2o, mapper_o2a, mapper_a2o, &
-                         mapper_a2l, mapper_l2a, mapper_l2r, mapper_r2l)
+subroutine seq_frac_init( infodata,         &
+     atm, ice, lnd, ocn, glc, rof, wav,     &
+     fractions_a, fractions_i, fractions_l, &
+     fractions_o, fractions_g, fractions_r, fractions_w)
 
 ! !INPUT/OUTPUT PARAMETERS:
-
-   type(seq_cdata), intent(in)    :: cdata_a
-   type(seq_cdata), intent(in)    :: cdata_i
-   type(seq_cdata), intent(in)    :: cdata_l
-   type(seq_cdata), intent(in)    :: cdata_o
-   type(seq_cdata), intent(in)    :: cdata_g
-   type(seq_cdata), intent(in)    :: cdata_r
-   type(seq_cdata), intent(in)    :: cdata_w
-   logical        , intent(in)    :: ice_present   ! .true. => ocean is present and not aqua_planet
-   logical        , intent(in)    :: ocn_present   ! .true. => ocean is present
-   logical        , intent(in)    :: lnd_present   ! .true. => land is present
-   logical        , intent(in)    :: glc_present   ! .true. => glc is present
-   logical        , intent(in)    :: rof_present   ! .true. => rof is present
-   logical        , intent(in)    :: wav_present   ! .true. => wav is present
-   logical        , intent(in)    :: dead_comps    ! .true. => dead models present
-   type(mct_aVect), intent(inout) :: fractions_a   ! Fractions on atm grid/decomp
-   type(mct_aVect), intent(inout) :: fractions_i   ! Fractions on ice grid/decomp
-   type(mct_aVect), intent(inout) :: fractions_l   ! Fractions on lnd grid/decomp
-   type(mct_aVect), intent(inout) :: fractions_o   ! Fractions on ocn grid/decomp
-   type(mct_aVect), intent(inout) :: fractions_g   ! Fractions on glc grid/decomp
-   type(mct_aVect), intent(inout) :: fractions_r   ! Fractions on rof grid/decomp
-   type(mct_aVect), intent(inout) :: fractions_w   ! Fractions on wav grid/decomp
-   type(seq_map)  , intent(inout) :: mapper_i2a    ! for mapping ice to atm, inout need for lower methods
-   type(seq_map)  , intent(inout) :: mapper_i2o    ! for mapping ice to ocn
-   type(seq_map)  , intent(inout) :: mapper_o2i    ! for mapping ocn to ice
-   type(seq_map)  , intent(inout) :: mapper_o2a    ! for mapping ocn to atm
-   type(seq_map)  , intent(inout) :: mapper_a2o    ! for mapping atm to ocn
-   type(seq_map)  , intent(inout) :: mapper_a2l    ! for mapping atm to lnd
-   type(seq_map)  , intent(inout) :: mapper_l2a    ! for mapping lnd to atm
-   type(seq_map)  , intent(inout) :: mapper_l2r    ! for mapping lnd to rof
-   type(seq_map)  , intent(inout) :: mapper_r2l    ! for mapping rof to lnd
-
+   type(seq_infodata_type) , intent(in)    :: infodata
+   type(component_type)    , intent(in)    :: atm
+   type(component_type)    , intent(in)    :: ice
+   type(component_type)    , intent(in)    :: lnd
+   type(component_type)    , intent(in)    :: ocn
+   type(component_type)    , intent(in)    :: glc
+   type(component_type)    , intent(in)    :: rof
+   type(component_type)    , intent(in)    :: wav
+   type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_l   ! Fractions on lnd grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_o   ! Fractions on ocn grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_g   ! Fractions on glc grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_r   ! Fractions on rof grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_w   ! Fractions on wav grid/decomp
 !EOP
 
    !----- local -----
-   integer :: j,n                      ! indices
-   integer :: ka, ki, kl, ko, kf, kk, kr   ! indices 
-   integer :: lsize                    ! local size of ice av
-   integer :: debug_old                ! old debug value
-   type(mct_gGrid), pointer :: dom_a   ! pointer to component domain
-   type(mct_gGrid), pointer :: dom_i
-   type(mct_gGrid), pointer :: dom_l
-   type(mct_gGrid), pointer :: dom_o
-   type(mct_gGrid), pointer :: dom_g
-   type(mct_gGrid), pointer :: dom_r
-   type(mct_gGrid), pointer :: dom_w
+   type(mct_ggrid), pointer    :: dom_a
+   type(mct_ggrid), pointer    :: dom_i
+   type(mct_ggrid), pointer    :: dom_l
+   type(mct_ggrid), pointer    :: dom_o
+   type(mct_ggrid), pointer    :: dom_g
+   type(mct_ggrid), pointer    :: dom_r
+   type(mct_ggrid), pointer    :: dom_w
+
+   logical :: atm_present   ! .true. => atm is present
+   logical :: ice_present   ! .true. => ice is present
+   logical :: ocn_present   ! .true. => ocean is present
+   logical :: lnd_present   ! .true. => land is present
+   logical :: glc_present   ! .true. => glc is present
+   logical :: rof_present   ! .true. => rof is present
+   logical :: wav_present   ! .true. => wav is present
+   logical :: dead_comps    ! .true. => dead models present
+
+   integer :: j,n            ! indices
+   integer :: ka, ki, kl, ko ! indices
+   integer :: kf, kk, kr     ! indices 
+   integer :: lsize          ! local size of ice av
+   integer :: debug_old      ! old debug value
 
    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
@@ -267,41 +276,50 @@ subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, c
 !
 !-------------------------------------------------------------------------------
 
+   call seq_infodata_getData(infodata, &
+        atm_present=atm_present,       &
+        lnd_present=lnd_present,       &
+        rof_present=rof_present,       &
+        ice_present=ice_present,       &
+        ocn_present=ocn_present,       &
+        glc_present=glc_present,       &
+        wav_present=wav_present,       &
+        dead_comps=dead_comps)
+
+   dom_a => component_get_dom_cx(atm)   
+   dom_l => component_get_dom_cx(lnd)   
+   dom_i => component_get_dom_cx(ice)   
+   dom_o => component_get_dom_cx(ocn)   
+   dom_r => component_get_dom_cx(rof)   
+   dom_g => component_get_dom_cx(glc)   
+   dom_w => component_get_dom_cx(wav)   
+
    debug_old = seq_frac_debug
    seq_frac_debug = 2
 
-   seq_frac_dead = dead_comps
-
    ! Initialize fractions on atm grid/decomp (initialize ice fraction to zero)
 
-!  if (atm_present) then
-      call seq_cdata_setptrs(cdata_a, dom=dom_a)
-
+   if (atm_present) then
       lSize = mct_aVect_lSize(dom_a%data)
       call mct_aVect_init(fractions_a,rList=fraclist_a,lsize=lsize)
       call mct_aVect_zero(fractions_a)
 
       ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
       fractions_a%rAttr(ka,:) = 1.0_r8
-!  endif
+   endif
 
    ! Initialize fractions on glc grid decomp, just an initial "guess", updated later
 
    if (glc_present) then
-      call seq_cdata_setptrs(cdata_g, dom=dom_g)
-
       lSize = mct_aVect_lSize(dom_g%data)
       call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=lsize)
       call mct_aVect_zero(fractions_g)
       fractions_g%rAttr(:,:) = 1.0_r8
-      
    end if
       
    ! Initialize fractions on land grid decomp, just an initial "guess", updated later
 
    if (lnd_present) then
-      call seq_cdata_setptrs(cdata_l, dom=dom_l)
-
       lSize = mct_aVect_lSize(dom_l%data)
       call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
       call mct_aVect_zero(fractions_l)
@@ -310,16 +328,18 @@ subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, c
       kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
       fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
 
-      call seq_map_map(mapper_l2a, fractions_l, fractions_a, fldlist='lfrin', norm=.false.)
-      call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='afrac', norm=.false.)
+      if (atm_present) then
+         mapper_l2a => prep_atm_get_mapper_Fl2a()
+         mapper_a2l => prep_lnd_get_mapper_Fa2l()
+         call seq_map_map(mapper_l2a, fractions_l, fractions_a, fldlist='lfrin', norm=.false.)
+         call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='afrac', norm=.false.)
+      endif
 
    end if
       
    ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
    if (rof_present) then
-      call seq_cdata_setptrs(cdata_r, dom=dom_r)
-
       lSize = mct_aVect_lSize(dom_r%data)
       call mct_aVect_init(fractions_r,rList=fraclist_r,lsize=lsize)
       call mct_aVect_zero(fractions_r)
@@ -327,26 +347,20 @@ subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, c
       kr = mct_aVect_indexRa(fractions_r,"rfrac",perrWith=subName)	
       kf = mct_aVect_indexRA(dom_r%data ,"frac" ,perrWith=subName)
       fractions_r%rAttr(kr,:) = dom_r%data%rAttr(kf,:)
-
    end if
 
    ! Initialize fractions on wav grid decomp, just an initial "guess", updated later
 
    if (wav_present) then
-      call seq_cdata_setptrs(cdata_w, dom=dom_w)
-
       lSize = mct_aVect_lSize(dom_w%data)
       call mct_aVect_init(fractions_w,rList=fraclist_w,lsize=lsize)
       call mct_aVect_zero(fractions_w)
       fractions_w%rAttr(:,:) = 1.0_r8
-
    end if
 
    ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
    if (ice_present) then
-      call seq_cdata_setptrs(cdata_i, dom=dom_i)
-
       lSize = mct_aVect_lSize(dom_i%data)
       call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=lsize)
       call mct_aVect_zero(fractions_i)
@@ -355,35 +369,40 @@ subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, c
       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:)
 
-      call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
-
+      if (atm_present) then
+         mapper_i2a => prep_atm_get_mapper_Fi2a()
+         call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
+      endif
    end if
 
    ! Initialize fractions on ocean grid/decomp (initialize ice fraction to zero)
    ! These are initialize the same as for ice
 
    if (ocn_present) then
-      call seq_cdata_setptrs(cdata_o, dom=dom_o)
-      
       lSize = mct_aVect_lSize(dom_o%data)
       call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
       call mct_aVect_zero(fractions_o)
       
       if (ice_present) then
+         mapper_i2o => prep_ocn_get_mapper_SFi2o()
          call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false.)
       else
          ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)	
          kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
          fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
+         mapper_o2a => prep_atm_get_mapper_Fo2a()
          call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false.)
       endif
 
-      call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false.)
+      if (atm_present) then
+         mapper_a2o => prep_ocn_get_mapper_Fa2o()
+         call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false.)
+      endif
       if (ice_present) then
           ! --- this should be an atm2ice call above, but atm2ice doesn't work
-          call seq_map_map(mapper_o2i,fractions_o,fractions_i,fldlist='afrac',norm=.false.)
+         mapper_o2i => prep_ice_get_mapper_SFo2i()
+         call seq_map_map(mapper_o2i,fractions_o,fractions_i,fldlist='afrac',norm=.false.)
       endif
-
    end if
 
    ! --- Set ofrac and lfrac on atm grid.  These should actually be mapo2a of
@@ -391,41 +410,45 @@ subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, c
    !     weights.  So we have to settle for a residual calculation that is
    !     truncated to zero to try to preserve "all ocean" cells.
 
-   ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
-   ki = mct_aVect_indexRa(fractions_a,"ifrac",perrWith=subName)	
-   kl = mct_aVect_indexRa(fractions_a,"lfrac",perrWith=subName)
-   ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)	
-   kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)	
-   lSize = mct_aVect_lSize(fractions_a)
+   if (atm_present) then
+      ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
+      ki = mct_aVect_indexRa(fractions_a,"ifrac",perrWith=subName)	
+      kl = mct_aVect_indexRa(fractions_a,"lfrac",perrWith=subName)
+      ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)	
+      kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)	
+      lSize = mct_aVect_lSize(fractions_a)
 
-   if (ice_present .or. ocn_present) then
-      do n = 1,lsize
-         fractions_a%rAttr(kl,n) = 1.0_r8 - fractions_a%rAttr(ko,n)
-         if (abs(fractions_a%rAttr(kl,n)) < eps_fraclim) then
-            fractions_a%rAttr(kl,n) = 0.0_r8
-            if (atm_frac_correct) fractions_a%rAttr(ko,n) = 1.0_r8
-         endif
-      enddo
-   else if (lnd_present) then
-      do n = 1,lsize
-         fractions_a%rAttr(kl,n) = fractions_a%rAttr(kk,n)
-         fractions_a%rAttr(ko,n) = 1.0_r8 - fractions_a%rAttr(kl,n)
-         if (abs(fractions_a%rAttr(ko,n)) < eps_fraclim) then
-            fractions_a%rAttr(ko,n) = 0.0_r8
-            if (atm_frac_correct) fractions_a%rAttr(kl,n) = 1.0_r8
-         endif
-      enddo
+      if (ice_present .or. ocn_present) then
+         do n = 1,lsize
+            fractions_a%rAttr(kl,n) = 1.0_r8 - fractions_a%rAttr(ko,n)
+            if (abs(fractions_a%rAttr(kl,n)) < eps_fraclim) then
+               fractions_a%rAttr(kl,n) = 0.0_r8
+               if (atm_frac_correct) fractions_a%rAttr(ko,n) = 1.0_r8
+            endif
+         enddo
+      else if (lnd_present) then
+         do n = 1,lsize
+            fractions_a%rAttr(kl,n) = fractions_a%rAttr(kk,n)
+            fractions_a%rAttr(ko,n) = 1.0_r8 - fractions_a%rAttr(kl,n)
+            if (abs(fractions_a%rAttr(ko,n)) < eps_fraclim) then
+               fractions_a%rAttr(ko,n) = 0.0_r8
+               if (atm_frac_correct) fractions_a%rAttr(kl,n) = 1.0_r8
+            endif
+         enddo
+      endif
    endif
 
    ! --- finally, set fractions_l(lfrac) from fractions_a(lfrac)
    ! --- and fractions_r(lfrac) from fractions_l(lfrac)
 
-   if (lnd_present) then
+   if (atm_present .and. lnd_present) then
+      mapper_a2l => prep_lnd_get_mapper_Fa2l()
       call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='lfrac', norm=.false.)
-      if (rof_present) then
-         call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac', norm=.false.)
-      endif
    end if
+   if (lnd_present .and. rof_present) then
+      mapper_l2r => prep_rof_get_mapper_Fl2r()
+      call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac', norm=.false.)
+   endif
 
    if (lnd_present) call seq_frac_check(fractions_l,'lnd init')
    if (glc_present) call seq_frac_check(fractions_g,'glc init')
@@ -433,7 +456,7 @@ subroutine seq_frac_init(cdata_a, cdata_i, cdata_l, cdata_o, cdata_g, cdata_r, c
    if (wav_present) call seq_frac_check(fractions_w,'wav init')
    if (ice_present) call seq_frac_check(fractions_i,'ice init')
    if (ocn_present) call seq_frac_check(fractions_o,'ocn init')
-   if (lnd_present.or.ice_present.or.ocn_present) &
+   if (atm_present .and. (lnd_present.or.ice_present.or.ocn_present)) &
                     call seq_frac_check(fractions_a,'atm init')
    seq_frac_debug = debug_old
 
@@ -452,48 +475,26 @@ end subroutine seq_frac_init
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_frac_set(i2x_i, cdata_a, cdata_i, cdata_l, cdata_o, cdata_g,  &
-                         cdata_r, cdata_w, &
-                         ice_present, ocn_present, lnd_present, glc_present, &
-                         rof_present, wav_present, &
-                         fractions_a, fractions_i, fractions_l, fractions_o, &
-                         fractions_g, fractions_r, fractions_w, &
-                         mapper_i2a, mapper_i2o)
+subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
 
 ! !INPUT/OUTPUT PARAMETERS:
-
-   type(mct_aVect), intent(in)    :: i2x_i
-   type(seq_cdata), intent(in)    :: cdata_a
-   type(seq_cdata), intent(in)    :: cdata_i
-   type(seq_cdata), intent(in)    :: cdata_l
-   type(seq_cdata), intent(in)    :: cdata_o
-   type(seq_cdata), intent(in)    :: cdata_g
-   type(seq_cdata), intent(in)    :: cdata_r
-   type(seq_cdata), intent(in)    :: cdata_w
-   logical        , intent(in)    :: ice_present   ! true => ice is present
-   logical        , intent(in)    :: ocn_present   ! true => ocn is present
-   logical        , intent(in)    :: lnd_present   ! true => lnd is present
-   logical        , intent(in)    :: glc_present   ! true => glc is present
-   logical        , intent(in)    :: rof_present   ! true => rof is present
-   logical        , intent(in)    :: wav_present   ! true => wav is present
-   type(mct_aVect), intent(inout) :: fractions_a   ! Fractions on atm 
-   type(mct_aVect), intent(inout) :: fractions_i   ! Fractions on ice 
-   type(mct_aVect), intent(inout) :: fractions_l   ! Fractions on lnd 
-   type(mct_aVect), intent(inout) :: fractions_o   ! Fractions on ocn 
-   type(mct_aVect), intent(inout) :: fractions_g   ! Fractions on glc
-   type(mct_aVect), intent(inout) :: fractions_r   ! Fractions on rof
-   type(mct_aVect), intent(inout) :: fractions_w   ! Fractions on wav
-   type(seq_map)  , intent(inout) :: mapper_i2a    ! for mapping ice to atm
-   type(seq_map)  , intent(inout) :: mapper_i2o    ! for mapping ice to ocn
-
+   type(seq_infodata_type) , intent(in)    :: infodata
+   type(component_type)    , intent(in)    :: ice
+   type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm 
+   type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice 
+   type(mct_aVect)         , intent(inout) :: fractions_o   ! Fractions on ocn 
 !EOP
 
    !----- local -----
-   integer         :: j, n
-   integer         :: ki, kl, ka, ko, kf
-   integer         :: lsize
+   type(mct_aVect), pointer :: i2x_i
+   type(mct_ggrid), pointer :: dom_i
+   logical                  :: atm_present   ! true => atm is present
+   logical                  :: ice_present   ! true => ice is present
+   logical                  :: ocn_present   ! true => ocn is present
+   integer                  :: j, n
+   integer                  :: ki, kl, ka, ko, kf
+   integer                  :: lsize
    real(r8),allocatable :: fcorr(:)
-   type(mct_gGrid), pointer :: dom_i   ! pointer to component domain
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_frac_set) '
@@ -510,25 +511,39 @@ subroutine seq_frac_set(i2x_i, cdata_a, cdata_i, cdata_l, cdata_o, cdata_g,  &
    ! - Map ice/ocn fractions from ice grid to ocean and atm grids
    !----------------------------------------------------------------------
 
+   call seq_infodata_getData(infodata, &
+        atm_present=atm_present,       &
+        ice_present=ice_present,       &
+        ocn_present=ocn_present)
+
+   dom_i => component_get_dom_cx(ice)   
+   i2x_i => component_get_c2x_cx(ice)
+
    if (ice_present) then
-      call mct_aVect_copy(i2x_i, fractions_i,"Si_ifrac","ifrac")
-      call seq_cdata_setptrs(cdata_i, dom=dom_i)
+      call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")
+
       ki = mct_aVect_indexRA(fractions_i,"ifrac")
       ko = mct_aVect_indexRA(fractions_i,"ofrac")
       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
       fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
+
       call seq_frac_check(fractions_i,'ice set')
 
       if (ocn_present) then
-         call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac:ifrac',norm=.false.)
-         call seq_frac_check(fractions_o,'ocn set')
+         mapper_i2o => prep_ocn_get_mapper_SFi2o()
+         call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
+              fldlist='ofrac:ifrac',norm=.false.)
+         call seq_frac_check(fractions_o, 'ocn set')
       endif
 
-!      if (atm_present) then
-         call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac:ifrac',norm=.false.)
-!tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.  
-!   ---  but it introduces a conservation error in mapping
+      if (atm_present) then
+         mapper_i2a => prep_atm_get_mapper_Fi2a()
+         call seq_map_map(mapper_i2a, fractions_i, fractions_a, &
+              fldlist='ofrac:ifrac', norm=.false.)
+
+         !tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.  
+         !   ---  but it introduces a conservation error in mapping
          if (atm_frac_correct) then
             ki = mct_aVect_indexRA(fractions_a,"ifrac")
             ko = mct_aVect_indexRA(fractions_a,"ofrac")
@@ -537,7 +552,8 @@ subroutine seq_frac_set(i2x_i, cdata_a, cdata_i, cdata_l, cdata_o, cdata_g,  &
             allocate(fcorr(lsize))
             do n = 1,lsize
                if ((fractions_a%rAttr(ki,n)+fractions_a%rAttr(ko,n)) > 0.0_r8) then
-                  fcorr(n) = ((1.0_r8-fractions_a%rAttr(kl,n))/(fractions_a%rAttr(ki,n)+fractions_a%rAttr(ko,n)))
+                  fcorr(n) = ((1.0_r8-fractions_a%rAttr(kl,n))/ &
+                              (fractions_a%rAttr(ki,n)+fractions_a%rAttr(ko,n)))
                else
                   fcorr(n) = 0.0_r8
                endif
@@ -548,7 +564,7 @@ subroutine seq_frac_set(i2x_i, cdata_a, cdata_i, cdata_l, cdata_o, cdata_g,  &
          endif
 
          call seq_frac_check(fractions_a,'atm set')
-!     endif
+     endif
    end if
 
 end subroutine seq_frac_set
@@ -695,7 +711,8 @@ subroutine seq_frac_check(fractions,string)
          if (diff > eps_fracsum) then
             ncnt = ncnt + 1
             maxerr = max(maxerr, diff)
-!tcx debug            write(logunit,*) trim(lstring),' err# ',ncnt,n,lsize,fractions%rAttr(ko,n),fractions%rAttr(kl,n),fractions%rAttr(ki,n),sum
+            !tcx debug  write(logunit,*) trim(lstring),' err# ',ncnt, n, lsize, &
+            !fractions%rAttr(ko,n),fractions%rAttr(kl,n),fractions%rAttr(ki,n),sum
          endif
       enddo
    endif

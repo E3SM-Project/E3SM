@@ -292,7 +292,10 @@ class PrintNC_template(PrintVars):
                                                                                                               ))
         self.stream.write("%s    call nc_errorhandle(__FILE__,__LINE__,status)\n"%(spaces*' '))
         if 'factor' in var:
-            self.stream.write("%s    status = parallel_put_att(NCO%%id, %s, 'scale_factor',(%s))\n"%(spaces*' ',idstring,var['factor']))
+            if var['factor'] == 'noscale':
+                self.stream.write("%s    status = parallel_put_att(NCO%%id, %s, 'scale_factor',1.0)\n"%(spaces*' ',idstring))
+            else:
+                self.stream.write("%s    status = parallel_put_att(NCO%%id, %s, 'scale_factor',(%s))\n"%(spaces*' ',idstring,var['factor']))
         for attrib in var:
             if attrib not in NOATTRIB:
                 self.stream.write("%s    status = parallel_put_att(NCO%%id, %s, '%s', '%s')\n"%(spaces*' ',
@@ -519,10 +522,15 @@ class PrintNC_template(PrintVars):
             if var['type'] == 'int':
                 vtype = 'integer'
             else:
-                vtype = 'real'
+#WHL - Changing the default type to real(dp)
+#                vtype = 'real'
+                vtype = 'real(dp)'
             self.stream.write("    %s%s, intent(out) :: outarray\n\n"%(vtype,dimstring))
             if 'factor' in var:
-                self.stream.write("    outarray = (%s)*(%s)\n"%(var['factor'], var['data']))
+                if var["factor"] == 'noscale':
+                    self.stream.write("    outarray = %s\n"%(var['data']))
+                else:
+                    self.stream.write("    outarray = (%s)*(%s)\n"%(var['factor'], var['data']))
             else:
                 self.stream.write("    outarray = %s\n"%(var['data']))
             self.stream.write("  end subroutine %s_get_%s\n\n"%(module['name'],var['name']))
@@ -538,10 +546,15 @@ class PrintNC_template(PrintVars):
                 if var['type'] == 'int':
                     vtype = 'integer'
                 else:
-                    vtype = 'real'
+#WHL - Changing the default type to real(dp)
+#                    vtype = 'real'
+                    vtype = 'real(dp)'
                 self.stream.write("    %s%s, intent(in) :: inarray\n\n"%(vtype,dimstring))
                 if 'factor' in var:
-                    self.stream.write("    %s = inarray/(%s)\n"%(var['data'], var['factor']))
+                    if var['factor'] == 'noscale':
+                       self.stream.write("!  no rescaling here\n")
+                    else:
+                      self.stream.write("    %s = inarray/(%s)\n"%(var['data'], var['factor']))
                 else:
                     self.stream.write("    %s = inarray\n"%(var['data']))
                 self.stream.write("  end subroutine %s_set_%s\n\n"%(module['name'],var['name']))

@@ -42,23 +42,23 @@ module glint_mbal_coupling
      real(dp),dimension(:,:),pointer :: ablt_save  => null() !*FD used to accumulate ablation
      real(dp),dimension(:,:),pointer :: acab_save  => null() !*FD used to accumulate mass-balance
      real(dp),dimension(:,:),pointer :: artm_save  => null() !*FD used to average air-temperature
-     real(sp),dimension(:,:),pointer :: snowd      => null() !*FD Keeps track of snow depth
-     real(sp),dimension(:,:),pointer :: siced      => null() !*FD Keeps track of superimposed ice depth 
-     real(sp),dimension(:,:),pointer :: prcp       => null() !*FD Instantaneous precip
-     real(sp),dimension(:,:),pointer :: ablt       => null() !*FD Instantaneous ablation
-     real(sp),dimension(:,:),pointer :: acab       => null() !*FD Instantaneous mass-balance
-     real(sp),dimension(:,:),pointer :: artm       => null() !*FD Instantaneous air temperature
-     real(sp),dimension(:,:),pointer :: xwind      => null() !*FD Instantaneous x-wind
-     real(sp),dimension(:,:),pointer :: ywind      => null() !*FD Instantaneous y-wind
-     real(sp),dimension(:,:),pointer :: humidity   => null() !*FD Instantaneous humidity
-     real(sp),dimension(:,:),pointer :: SWdown     => null() !*FD Instantaneous sw down
-     real(sp),dimension(:,:),pointer :: LWdown     => null() !*FD Instantaneous lw down
-     real(sp),dimension(:,:),pointer :: Psurf      => null() !*FD Instantaneous psurf
-     real(sp),dimension(:,:),pointer :: snowd_save => null() !*FD Saves snow depth
-     real(sp),dimension(:,:),pointer :: siced_save => null() !*FD Saves superimposed ice depth 
-     integer :: av_count =0 !*FD Counter for averaging temperature input
-     logical :: new_accum=.true.
-     integer :: start_time !*FD the time we started averaging (hours)
+     real(dp),dimension(:,:),pointer :: snowd      => null() !*FD Keeps track of snow depth
+     real(dp),dimension(:,:),pointer :: siced      => null() !*FD Keeps track of superimposed ice depth 
+     real(dp),dimension(:,:),pointer :: prcp       => null() !*FD Instantaneous precip
+     real(dp),dimension(:,:),pointer :: ablt       => null() !*FD Instantaneous ablation
+     real(dp),dimension(:,:),pointer :: acab       => null() !*FD Instantaneous mass-balance
+     real(dp),dimension(:,:),pointer :: artm       => null() !*FD Instantaneous air temperature
+     real(dp),dimension(:,:),pointer :: xwind      => null() !*FD Instantaneous x-wind
+     real(dp),dimension(:,:),pointer :: ywind      => null() !*FD Instantaneous y-wind
+     real(dp),dimension(:,:),pointer :: humidity   => null() !*FD Instantaneous humidity
+     real(dp),dimension(:,:),pointer :: SWdown     => null() !*FD Instantaneous sw down
+     real(dp),dimension(:,:),pointer :: LWdown     => null() !*FD Instantaneous lw down
+     real(dp),dimension(:,:),pointer :: Psurf      => null() !*FD Instantaneous psurf
+     real(dp),dimension(:,:),pointer :: snowd_save => null() !*FD Saves snow depth
+     real(dp),dimension(:,:),pointer :: siced_save => null() !*FD Saves superimposed ice depth 
+     integer :: av_count  = 0 !*FD Counter for averaging temperature input
+     logical :: new_accum = .true.
+     integer :: start_time    !*FD the time we started averaging (hours)
      type(glint_mbal_params) :: mbal
   end type glint_mbc
 
@@ -72,10 +72,10 @@ contains
     type(coordsystem_type) :: lgrid
     type(ConfigSection), pointer :: config !*FD structure holding sections of configuration file
     integer          :: whichacab
-    real(sp),dimension(:,:),intent(in) :: snowd !*FD Initial snow-depth field
-    real(sp),dimension(:,:),intent(in) :: siced !*FD Initial superimposed ice field
+    real(dp),dimension(:,:),intent(in) :: snowd !*FD Initial snow-depth field
+    real(dp),dimension(:,:),intent(in) :: siced !*FD Initial superimposed ice field
     integer          :: nx,ny  !*FD grid dimensions (for SMB)
-    real(rk)         :: dx     !* Grid length (for SMB)
+    real(dp)         :: dx     !* Grid length (for SMB)
 
     ! Deallocate if necessary
 
@@ -100,24 +100,24 @@ contains
 
     ! Allocate arrays and zero
 
-    call coordsystem_allocate(lgrid,params%prcp_save);  params%prcp_save = 0.0
-    call coordsystem_allocate(lgrid,params%ablt_save);  params%ablt_save = 0.0
-    call coordsystem_allocate(lgrid,params%acab_save);  params%acab_save = 0.0
-    call coordsystem_allocate(lgrid,params%artm_save);  params%artm_save = 0.0
-    call coordsystem_allocate(lgrid,params%snowd);      params%snowd = 0.0
-    call coordsystem_allocate(lgrid,params%siced);      params%siced = 0.0
-    call coordsystem_allocate(lgrid,params%prcp);       params%prcp = 0.0
-    call coordsystem_allocate(lgrid,params%ablt);       params%ablt = 0.0
-    call coordsystem_allocate(lgrid,params%acab);       params%acab = 0.0
-    call coordsystem_allocate(lgrid,params%artm);       params%artm = 0.0
-    call coordsystem_allocate(lgrid,params%xwind);      params%xwind = 0.0
-    call coordsystem_allocate(lgrid,params%ywind);      params%ywind = 0.0
-    call coordsystem_allocate(lgrid,params%humidity);   params%humidity = 0.0
-    call coordsystem_allocate(lgrid,params%SWdown);     params%SWdown = 0.0
-    call coordsystem_allocate(lgrid,params%LWdown);     params%LWdown = 0.0
-    call coordsystem_allocate(lgrid,params%Psurf);      params%Psurf = 0.0
-    call coordsystem_allocate(lgrid,params%snowd_save); params%snowd_save = 0.0
-    call coordsystem_allocate(lgrid,params%siced_save); params%siced_save = 0.0
+    call coordsystem_allocate(lgrid,params%prcp_save);  params%prcp_save = 0.d0
+    call coordsystem_allocate(lgrid,params%ablt_save);  params%ablt_save = 0.d0
+    call coordsystem_allocate(lgrid,params%acab_save);  params%acab_save = 0.d0
+    call coordsystem_allocate(lgrid,params%artm_save);  params%artm_save = 0.d0
+    call coordsystem_allocate(lgrid,params%snowd);      params%snowd = 0.d0
+    call coordsystem_allocate(lgrid,params%siced);      params%siced = 0.d0
+    call coordsystem_allocate(lgrid,params%prcp);       params%prcp = 0.d0
+    call coordsystem_allocate(lgrid,params%ablt);       params%ablt = 0.d0
+    call coordsystem_allocate(lgrid,params%acab);       params%acab = 0.d0
+    call coordsystem_allocate(lgrid,params%artm);       params%artm = 0.d0
+    call coordsystem_allocate(lgrid,params%xwind);      params%xwind = 0.d0
+    call coordsystem_allocate(lgrid,params%ywind);      params%ywind = 0.d0
+    call coordsystem_allocate(lgrid,params%humidity);   params%humidity = 0.d0
+    call coordsystem_allocate(lgrid,params%SWdown);     params%SWdown = 0.d0
+    call coordsystem_allocate(lgrid,params%LWdown);     params%LWdown = 0.d0
+    call coordsystem_allocate(lgrid,params%Psurf);      params%Psurf = 0.d0
+    call coordsystem_allocate(lgrid,params%snowd_save); params%snowd_save = 0.d0
+    call coordsystem_allocate(lgrid,params%siced_save); params%siced_save = 0.d0
 
     ! Initialise the mass-balance scheme and other components
 
@@ -126,100 +126,66 @@ contains
     ! Copy snow and ice depths if relevant
 
     if (mbal_has_snow_model(params%mbal)) then
-       params%snowd=snowd
-       params%siced=siced
+       params%snowd = snowd
+       params%siced = siced
     end if
 
   end subroutine glint_mbc_init
 
   ! +++++++++++++++++++++++++++++++++++++++++++++++++
 
-  subroutine glint_mbc_init_gcm(params,  &
-                                lgrid,   &
-                                whichacab)
-
-    ! Simplified version of glint_mbc_init, used when coupling
-    ! to a GCM that provides the surface mass balance
-
-    use glimmer_coordinates
-    use glint_constants, only: years2hours
-
-    type(glint_mbc)        :: params      ! mass balance parameters
-    type(coordsystem_type) :: lgrid       ! local grid
-    integer, intent(in)    :: whichacab   ! mass balance method
-                                          ! = 0 for GCM coupling
-
-    ! Deallocate if necessary
-
-    if (associated(params%acab_save))  deallocate(params%acab_save)
-    if (associated(params%artm_save))  deallocate(params%artm_save)
-    if (associated(params%acab))       deallocate(params%acab)
-    if (associated(params%artm))       deallocate(params%artm)
-
-    ! Allocate arrays and zero
-
-    !TODO - Change to dp
-    call coordsystem_allocate(lgrid,params%acab_save);  params%acab_save = 0.0
-    call coordsystem_allocate(lgrid,params%artm_save);  params%artm_save = 0.0
-    call coordsystem_allocate(lgrid,params%acab);       params%acab = 0.0
-    call coordsystem_allocate(lgrid,params%artm);       params%artm = 0.0
-
-    ! Set the mbal method and tstep
-
-    params%mbal%which = whichacab     ! = 0 for GCM coupling
-    params%mbal%tstep = years2hours   ! no. of hours in 1 year
-
-  end subroutine glint_mbc_init_gcm
-
-  ! +++++++++++++++++++++++++++++++++++++++++++++++++
-
-  subroutine glint_accumulate(params, time,     artm,    arng,    prcp,       &
-                              snowd,  siced,    xwind,   ywind,   local_orog, &
-                              thck,   humidity, SWdown,  LWdown,  Psurf)
+  subroutine glint_accumulate_mbal(params, time,     artm,    arng,    prcp,       &
+                                   snowd,  siced,    xwind,   ywind,   local_orog, &
+                                   thck,   humidity, SWdown,  LWdown,  Psurf)
 
     type(glint_mbc)  :: params
     integer :: time
-    real(sp),dimension(:,:),intent(inout) :: artm      !*FD Mean air temperature (degC)
-    real(sp),dimension(:,:),intent(in) :: arng         !*FD Air temperature half-range (degC)
-    real(sp),dimension(:,:),intent(inout) :: prcp      !*FD Precipitation (m)
-    real(sp),dimension(:,:),intent(in) :: snowd        !*FD Snow depth (m)
-    real(sp),dimension(:,:),intent(in) :: siced        !*FD Superimposed ice depth (m)
-    real(rk),dimension(:,:),intent(in) :: xwind        !*FD $x$-component of surface winds (m/s)
-    real(rk),dimension(:,:),intent(in) :: ywind        !*FD $y$-component of surface winds (m/s)
-    real(sp),dimension(:,:),intent(in) :: local_orog   !*FD Local orography (m)
-    real(rk),dimension(:,:),intent(in) :: thck         !*FD Ice thickness (m)
-    real(rk),dimension(:,:),intent(in) :: humidity     !*FD Relative humidity (%)
-    real(rk),dimension(:,:),intent(in) :: SWdown       !*FD Downwelling shortwave (W/m^2)
-    real(rk),dimension(:,:),intent(in) :: LWdown       !*FD Downwelling longwave (W/m^2)
-    real(rk),dimension(:,:),intent(in) :: Psurf        !*FD Surface pressure (Pa)
+    real(dp),dimension(:,:),intent(inout) :: artm      !*FD Mean air temperature (degC)
+    real(dp),dimension(:,:),intent(in) :: arng         !*FD Air temperature half-range (degC)
+    real(dp),dimension(:,:),intent(inout) :: prcp      !*FD Precipitation (m)
+    real(dp),dimension(:,:),intent(in) :: snowd        !*FD Snow depth (m)
+    real(dp),dimension(:,:),intent(in) :: siced        !*FD Superimposed ice depth (m)
+    real(dp),dimension(:,:),intent(in) :: xwind        !*FD $x$-component of surface winds (m/s)
+    real(dp),dimension(:,:),intent(in) :: ywind        !*FD $y$-component of surface winds (m/s)
+    real(dp),dimension(:,:),intent(in) :: local_orog   !*FD Local orography (m)
+    real(dp),dimension(:,:),intent(in) :: thck         !*FD Ice thickness (m)
+    real(dp),dimension(:,:),intent(in) :: humidity     !*FD Relative humidity (%)
+    real(dp),dimension(:,:),intent(in) :: SWdown       !*FD Downwelling shortwave (W/m^2)
+    real(dp),dimension(:,:),intent(in) :: LWdown       !*FD Downwelling longwave (W/m^2)
+    real(dp),dimension(:,:),intent(in) :: Psurf        !*FD Surface pressure (Pa)
 
-    real(sp),dimension(size(artm,1),size(artm,2)) :: ablt,acab
+    real(dp),dimension(size(artm,1),size(artm,2)) :: ablt,acab
 
     ! Things to do the first time
 
     if (params%new_accum) then
 
-       params%new_accum=.false.
-       params%av_count =0
+       params%new_accum = .false.
+       params%av_count  = 0
 
        ! Initialise 
 
-       params%snowd=snowd
-       params%siced=siced
+       params%snowd = snowd
+       params%siced = siced
 
-       params%prcp_save=0.0
-       params%ablt_save=0.0
-       params%acab_save=0.0
-       params%artm_save=0.0
+       params%prcp_save = 0.d0
+       params%ablt_save = 0.d0
+       params%acab_save = 0.d0
+       params%artm_save = 0.d0
 
        params%start_time = time
 
     end if
 
-    params%av_count=params%av_count+1
+    params%av_count = params%av_count+1
 
-    call glint_mbal_calc(params%mbal,artm,arng,prcp,(local_orog>0.0.or.thck>0.0),params%snowd, &
-         params%siced,ablt,acab,thck,xwind,ywind,humidity,SWdown,LWdown,Psurf) 
+    call glint_mbal_calc(params%mbal,                      &
+                         artm,  arng,  prcp,               &
+                         (local_orog>0.d0 .or. thck>0.d0), &
+                         params%snowd, params%siced,       &
+                         ablt,  acab,  thck,               &
+                         xwind, ywind, humidity,           &
+                         SWdown,LWdown,Psurf) 
 
     ! Accumulate
 
@@ -230,111 +196,54 @@ contains
 
     ! Copy instantaneous fields
 
-    params%prcp=prcp
-    params%ablt=ablt
-    params%acab=acab
-    params%artm=artm
-    params%xwind=xwind
-    params%ywind=ywind
-    params%humidity=humidity
-    params%SWdown=SWdown
-    params%LWdown=LWdown
-    params%Psurf=Psurf
-
-  end subroutine glint_accumulate
-
-  ! +++++++++++++++++++++++++++++++++++++++++++++++++
-
-  subroutine glint_accumulate_gcm(params, time, acab, artm)
-
-    type(glint_mbc)  :: params
-    integer :: time
-
-    real(sp),dimension(:,:),intent(in), optional :: acab   ! Surface mass balance (m/s)
-    real(sp),dimension(:,:),intent(inout) :: artm          ! Mean air temperature (degC)
-
-    ! Things to do the first time
-
-    if (params%new_accum) then
-
-       params%new_accum = .false.
-       params%av_count  = 0
-
-       ! Initialise
-
-       params%acab_save = 0.0
-       params%artm_save = 0.0
-       params%start_time = time
-
-    end if
-
-    params%av_count = params%av_count + 1
-
-    ! Accumulate
-
-    params%acab_save = params%acab_save + acab
-    params%artm_save = params%artm_save + artm
-
-    ! Copy instantaneous fields
-
+    params%prcp = prcp
+    params%ablt = ablt
     params%acab = acab
     params%artm = artm
+    params%xwind = xwind
+    params%ywind = ywind
+    params%humidity = humidity
+    params%SWdown = SWdown
+    params%LWdown = LWdown
+    params%Psurf = Psurf
 
-  end subroutine glint_accumulate_gcm
+  end subroutine glint_accumulate_mbal
 
   ! +++++++++++++++++++++++++++++++++++++++++++++++++
 
-  subroutine glint_get_mbal(params,artm,prcp,ablt,acab,snowd,siced,dt)
+  subroutine glint_average_mbal(params,artm,prcp,ablt,acab,snowd,siced,dt)
 
     use glint_constants, only: hours2years
 
     type(glint_mbc)  :: params
-    real(sp),dimension(:,:),intent(out)   :: artm   !*FD Mean air temperature (degC)
-    real(sp),dimension(:,:),intent(out)   :: prcp   !*FD Precipitation (m)
-    real(sp),dimension(:,:),intent(out)   :: ablt   !*FD Ablation
-    real(sp),dimension(:,:),intent(out)   :: acab   !*FD Mass-balance
-    real(sp),dimension(:,:),intent(inout) :: snowd  !*FD Snow depth (m)
-    real(sp),dimension(:,:),intent(inout) :: siced  !*FD Superimposed ice depth (m)
+    real(dp),dimension(:,:),intent(out)   :: artm   !*FD Mean air temperature (degC)
+    real(dp),dimension(:,:),intent(out)   :: prcp   !*FD Precipitation (m/yr)
+    real(dp),dimension(:,:),intent(out)   :: ablt   !*FD Ablation (m/yr)
+    real(dp),dimension(:,:),intent(out)   :: acab   !*FD Mass-balance (m/yr)
+    real(dp),dimension(:,:),intent(inout) :: snowd  !*FD Snow depth (m)
+    real(dp),dimension(:,:),intent(inout) :: siced  !*FD Superimposed ice depth (m)
     integer,                intent(in)    :: dt     !*FD accumulation time in hours
 
-    if (.not.params%new_accum) then
-       params%artm_save = params%artm_save/real(params%av_count)
+    if (.not. params%new_accum) then
+       params%artm_save = params%artm_save / real(params%av_count,dp)
     end if
 
     params%new_accum=.true.
 
     artm  = params%artm_save
-    prcp  = params%prcp_save/real(dt*hours2years,sp)
-    ablt  = params%ablt_save/real(dt*hours2years,sp)
-    acab  = params%acab_save/real(dt*hours2years,sp)
+    prcp  = params%prcp_save/real(dt*hours2years,dp)
+    ablt  = params%ablt_save/real(dt*hours2years,dp)
+    acab  = params%acab_save/real(dt*hours2years,dp)
     snowd = params%snowd
     siced = params%siced
 
-    where (snowd<0.0) snowd=0.0
-    where (siced<0.0) siced=0.0
+    where (snowd < 0.d0) snowd = 0.d0
+    where (siced < 0.d0) siced = 0.d0
 
-  end subroutine glint_get_mbal
+  end subroutine glint_average_mbal
 
-  ! +++++++++++++++++++++++++++++++++++++++++++++++++
-
-  subroutine glint_get_mbal_gcm(params, dt, acab, artm)
-
-    use glint_constants, only: hours2years
-
-    type(glint_mbc)  :: params
-    integer,                intent(in)    :: dt     !*FD accumulation time in hours
-    real(sp),dimension(:,:),intent(out)   :: artm   !*FD Mean air temperature (degC)
-    real(sp),dimension(:,:),intent(out)   :: acab   !*FD Mass-balance
-
-    if (.not. params%new_accum) then
-       params%artm_save = params%artm_save/real(params%av_count)
-    end if
-
-    params%new_accum=.true.
-
-    artm  = params%artm_save
-    acab  = params%acab_save/real(dt*hours2years,sp)
-
-  end subroutine glint_get_mbal_gcm
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 end module glint_mbal_coupling
+
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++

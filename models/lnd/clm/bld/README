@@ -1,8 +1,10 @@
-models/lnd/clm/bld/README                            Jun/04/2013 
+models/lnd/clm/bld/README                            May/26/2011 
 
 CLM build and configure directory and scripts. Scripts to help
 you prepare to build CLM as a component within CESM, and setup
-a namelist for it.
+a namelist for it. There is also functionality only used for CLM
+stand-alone testing to build and run the complete system (in conjuction
+with the scripts in the models/lnd/clm/test/system directory).
 
 Important files/directories:
 
@@ -21,12 +23,8 @@ config_files/config_definition.xml --- XML file definining all CLM configuration
 build-namelist --- Build the namelists needed
 
 --------- CPL7 Script to create namelist and clm library
-clm.buildnml.csh -------- Script used by CPL7 scripts to create namelist for CLM
-clm.buildexe.csh -------- Script used by CPL7 scripts to build CLM as a component of CESM
-clm.cpl7.template ------- Script required by CPL7 scripts, but NOT used.
-user_nl_clm ------------- Sample empty user namelist file to put your namelist changes in.
-                          Has information on fields that SHOULD NOT BE CHANGED and env
-                          Variables used instead.
+clm.cpl7.template ------- Script used by CPL7 scripts to create namelist and the build
+                          for CLM as a component of CESM.
 
 --------- Scripts to query namelist defaults
 listDefaultNamelist.pl -- List the files needed, for a list of resolutions,
@@ -41,23 +39,23 @@ listDefaultNamelist.pl -- List the files needed, for a list of resolutions,
                           at once.
 queryDefaultNamelist.pl - Query default namelist for settings of variables
 queryDefaultXML.pm ------ Subroutines needed by queryDefaultNamelist.pl script
+config_query ------------ Queries the CESM config_*.xml files (in scripts/ccsm_utils/Case.template)
 
 
 --------- Test scripts directory
 unit_testers --- Directory of scripts to test scipts in this directory
                  (most notably build-namelist and possibly configure)
-                 (also includes the XML list of the CESM tests that are expected to fail)
-                 (unit_testers/xFail/expectedClmTestFails.xml)
 
 ---------- XML Files describing namelists in namelist_files
-namelist_files/namelist_defaults_clm4_0.xml -------- List of default values for the clm4_0 namelist
-namelist_files/namelist_defaults_clm4_5.xml -------- List of default values for the clm4_5 namelist
-namelist_files/namelist_defaults_clm4_0_tools.xml -- List of default values for the clm4_0 tools.
-namelist_files/namelist_defaults_clm4_5_tools.xml -- List of default values for the clm4_5 tools.
-namelist_files/namelist_defaults_overall.xml ------- List of default values for overall settings
-namelist_files/namelist_defaults_usr_files.xml ----- List of default values for the user-files
-namelist_files/namelist_definition_clm4_0.xml ------ Definition of all clm4_0 namelist items
-namelist_files/namelist_definition_clm4_5.xml ------ Definition of all clm4_5 namelist items
-namelist_files/namelist_definition.xsl ------------- Describes how to view the xml file as html
-namelist_files/use_cases --------------------------- Specific configurations that build-namelist uses
-namelist_files/namelist_defaults_drydep.xml -------- List of default values for the dry deposition module.
+namelist_files/namelist_defaults_clm.xml -------- List of default values for the clm namelist
+namelist_files/namelist_defaults_clm_tools.xml -- List of default values for the clm tools.
+namelist_files/namelist_defaults_overall.xml ---- List of default values for overall settings
+namelist_files/namelist_defaults_usr_files.xml -- List of default values for the user-files
+namelist_files/namelist_definition.xml ---------- Definition of all namelist items
+namelist_files/namelist_definition.xsl ---------- Describes how to view the xml file as html
+namelist_files/use_cases ------------------------ Specific configurations that build-namelist uses
+
+---------- XML Files describing namelists ONLY USED in stand-alone CLM testing
+namelist_files/namelist_defaults_stndln.xml --- List of default values for the datm and drv model 
+                                                for offline generation used in testing
+namelist_files/namelist_defaults_drydep.xml --- List of default values for the dry deposition module.

@@ -130,13 +130,16 @@ contains
     !
     ! NOTE: For CAM, the optional shortname needs to be provided for the group. These names
     ! should be 6 characters or less and without spaces.
-    call CARMAELEMENT_Create(carma, I_ELEM_CRCN, I_GRP_CRCN, "Sulfate CN", RHO_CN, I_INVOLATILE, I_H2SO4, rc, shortname="CRCN", isolute=I_SOL_CRH2SO4)
+    call CARMAELEMENT_Create(carma, I_ELEM_CRCN, I_GRP_CRCN, "Sulfate CN", RHO_CN, &
+         I_INVOLATILE, I_H2SO4, rc, shortname="CRCN", isolute=I_SOL_CRH2SO4)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
 
-    call CARMAELEMENT_Create(carma, I_ELEM_CRICE, I_GRP_CRICE, "Ice", RHO_I, I_VOLATILE, I_ICE, rc, shortname="CRICE")
+    call CARMAELEMENT_Create(carma, I_ELEM_CRICE, I_GRP_CRICE, "Ice", RHO_I, &
+         I_VOLATILE, I_ICE, rc, shortname="CRICE")
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
     
-    call CARMAELEMENT_Create(carma, I_ELEM_CRCORE, I_GRP_CRICE, "Core Mass", RHO_CN, I_COREMASS, I_H2SO4, rc, shortname="CRCORE", isolute=1)
+    call CARMAELEMENT_Create(carma, I_ELEM_CRCORE, I_GRP_CRICE, "Core Mass", RHO_CN, &
+         I_COREMASS, I_H2SO4, rc, shortname="CRCORE", isolute=1)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
 
     
@@ -160,7 +163,8 @@ contains
     ! NOTE: SInce the sulfates are not seen as part of the water/energy budget in CAM, don't
     ! include any latent heat from the freezing of the sulfate liquid. The latent heat of
     ! the gas associated with nucleation is accounted for.
-    call CARMA_AddNucleation(carma, I_ELEM_CRCN, I_ELEM_CRCORE, I_AERFREEZE + I_AF_KOOP_2000, 0._f, rc, igas=I_GAS_H2O, ievp2elem=I_ELEM_CRCN)
+    call CARMA_AddNucleation(carma, I_ELEM_CRCN, I_ELEM_CRCORE, &
+         I_AERFREEZE + I_AF_KOOP_2000, 0._f, rc, igas=I_GAS_H2O, ievp2elem=I_ELEM_CRCN)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMA_AddNucleation failed.')
 
     return
@@ -319,7 +323,6 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_lon_all_p, get_lat_all_p, get_rlat_all_p
     use time_manager,  only: get_curr_date, get_perp_date, get_curr_calday, &
                              is_perpetual
     use camsrfexch,       only: cam_in_t
@@ -337,10 +340,6 @@ contains
     real(r8), intent(out)              :: surfaceFlux(pcols)    !! constituent surface flux (kg/m^2/s)
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
-    integer      :: lat(pcols)              ! latitude index 
-    integer      :: lon(pcols)              ! longitude index
-    real(r8)     :: clat(pcols)             ! latitude 
-    integer      :: lchnk                   ! chunk identifier
     integer      :: ncol                    ! number of columns in chunk
     integer      :: icol                    ! column index
     real(r8)     :: calday                  ! current calendar day
@@ -362,14 +361,7 @@ contains
     end if
     doy = floor(calday)
 
-    ! Determine the latitude and longitude of each column.
-    lchnk = state%lchnk
     ncol = state%ncol
-    
-    call get_lat_all_p(lchnk, ncol, lat)
-    call get_lon_all_p(lchnk, ncol, lon)
-    call get_rlat_all_p(lchnk, ncol, clat)
-    
     
     ! Add any surface flux here.
     surfaceFlux(:ncol) = 0.0_r8
@@ -394,7 +386,8 @@ contains
     implicit none
     
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     ! Default return code.

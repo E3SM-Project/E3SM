@@ -123,6 +123,7 @@ module carma_types_mod
     !   imomelem    Scondary moment element for group
     !   icorelem    Core elements (itype = 2) in group           
     !   solfac      Solubility factor for wet deposition
+    !   is_fractal  If .true. then particle is fractal
     !   is_ice      If .true. then ice particle 
     !   is_cloud    If .true. then cloud particle
     !   is_sulfate  If .true. then sulfate particle
@@ -141,6 +142,7 @@ module carma_types_mod
     !   r           Radius bins [cm]
     !   rmass       Mass bins [g]
     !   rrat        Ratio of maximum diameter to diameter of equivalent sphere
+    !   rprat       Ratio of mobility diameter of a porous particle to diameter of equivlent sphere
     !   arat        Ratio of projected area to projected area of containing sphere
     !   vol         Particle volume [cm^3]
     !   dr          Width of bins in radius space [cm]
@@ -155,7 +157,12 @@ module carma_types_mod
     !   ifallrtn    routine to use to calculate fall velocity  [I_FALLRTN_...]
     !   imiertn     mie routine for optical properties [I_MIERTN_...]
     !   dpc_threshold convergence criteria for particle concentration [fraction]
-    !
+    !   rmon        monomer radius of fractal particles [cm]
+    !   df          fractal dimension for fractal particles
+    !   nmon        number of monomers per particle
+    !   falpha      fractal packing coefficient
+    !   neutral_volfrc volume fraction of core mass to neutralize the particle
+
     character(len=CARMA_NAME_LEN)               :: f_name
     character(len=CARMA_SHORT_NAME_LEN)         :: f_shortname
     integer                                     :: f_cnsttype
@@ -168,6 +175,7 @@ module carma_types_mod
     real(kind=f)                                :: f_solfac
     real(kind=f)                                :: f_scavcoef
     logical                                     :: f_if_sec_mom
+    logical                                     :: f_is_fractal
     logical                                     :: f_is_ice
     logical                                     :: f_is_cloud
     logical                                     :: f_is_sulfate
@@ -198,7 +206,13 @@ module carma_types_mod
     integer, allocatable, dimension(:)          :: f_icorelem   ! (NELEM)
     real(kind=f), allocatable, dimension(:)     :: f_arat       ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_rrat       ! (NBIN)
+    real(kind=f), allocatable, dimension(:)     :: f_rprat      ! (NBIN)
     real(kind=f)                                :: f_dpc_threshold
+    real(kind=f)                                :: f_rmon
+    real(kind=f), allocatable, dimension(:)     :: f_df         ! (NBIN)
+    real(kind=f), allocatable, dimension(:)     :: f_nmon       ! (NBIN)
+    real(kind=f)                                :: f_falpha
+    real(kind=f)                                :: f_neutral_volfrc
   end type carmagroup_type
   
   

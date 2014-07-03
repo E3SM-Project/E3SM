@@ -11,10 +11,11 @@ sub expand_env_var
 
     if ($value =~ /\$\{*([\w_]+)}*(.*)$/) {
        my $subst = $vars->{$1};
+       $subst = $ENV{$1} unless defined $subst;
        $value =~ s/\$\{*${1}\}*/$subst/g;
     }
+    
     $value = expand_env_var($value,$vars) if ($value =~ /\$\{*[\w_]+\}*.*$/) ;
-
     return $value; 
 }       
 
@@ -41,7 +42,7 @@ sub getxmlvars
 #-------------------------------------------------------------------------------
 sub set_compiler
 {
-    my ($os,$compiler_file, $compiler, $machine, $print, $macrosfile) = @_;
+    my ($os,$compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile) = @_;
 
     print "$compiler_file $compiler $machine\n" ;#if($print>1);
 
@@ -71,6 +72,7 @@ sub set_compiler
 	next if(defined $a{COMPILER} && $a{COMPILER} ne $compiler);
 	next if(defined $a{MACH} && $a{MACH} ne $machine);
 	next if(defined $a{OS} && $a{OS} ne $os);
+	next if(defined $a{MPILIB} && $a{MPILIB} ne $mpilib);
 
 	print "compiler $compiler $a{COMPILER} $a{OS} $a{MACH}\n" if($print>1);
 	push(@compiler_settings ,$e->get_children());

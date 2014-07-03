@@ -31,7 +31,7 @@
 program eis_erosion
   !*FD This is the Edinburgh Ice Sheet GLIDE driver
   !*FD with erosion
-  use glimmer_global, only:rk
+  use glimmer_global, only: dp
   use glide
   use glide_nc_custom, only: glide_nc_fillall
   use eis_forcing
@@ -48,11 +48,9 @@ program eis_erosion
   type(eis_climate_type) :: climate       ! climate
   type(erosion_type) :: er                ! erosion
   type(ConfigSection), pointer :: config  ! configuration stuff
-  real(kind=rk) time
-  real(kind=dp) t1,t2
+  real(dp) :: time
+  real(dp) :: t1,t2
   integer clock,clock_rate
-  
-
 
   call glimmer_GetCommandline()
   

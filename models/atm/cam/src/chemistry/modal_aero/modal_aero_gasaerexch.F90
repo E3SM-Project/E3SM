@@ -80,7 +80,6 @@
 subroutine modal_aero_gasaerexch_sub(                            &
                         lchnk,    ncol,     nstep,               &
                         loffset,  deltat,                        &
-                        latndx,   lonndx,                        &
                         t,        pmid,     pdel,                &
                         q,                  qqcw,                &
                         dqdt_other,         dqqcwdt_other,       &
@@ -107,7 +106,6 @@ implicit none
    integer,  intent(in)    :: ncol                 ! number of atmospheric column
    integer,  intent(in)    :: nstep                ! model time-step number
    integer,  intent(in)    :: loffset              ! offset applied to modal aero "ptrs"
-   integer,  intent(in)    :: latndx(pcols), lonndx(pcols)
    real(r8), intent(in)    :: deltat               ! time step (s)
 
    real(r8), intent(inout) :: q(ncol,pver,pcnstxx) ! tracer mixing ratio (TMR) array
@@ -228,13 +226,13 @@ implicit none
 
 
    icol_diag = -1
-   if (ldiag1 > 0) then
-   if (nstep < 3) then
-      do i = 1, ncol
-         if ((latndx(i) == 23) .and. (lonndx(i) == 37)) icol_diag = i
-      end do
-   end if
-   end if
+!!$   if (ldiag1 > 0) then
+!!$   if (nstep < 3) then
+!!$      do i = 1, ncol
+!!$         if ((latndx(i) == 23) .and. (lonndx(i) == 37)) icol_diag = i
+!!$      end do
+!!$   end if
+!!$   end if
 
 
 ! set gas species indices
@@ -622,44 +620,44 @@ implicit none
 
 
 ! diagnostics start -------------------------------------------------------
-   if (ldiag2 > 0) then
-   if (i == icol_diag) then 
-   if (mod(k-1,5) == 0) then
-      write(*,'(a,43i5)') 'gasaerexch aaa nstep,lat,lon,k', nstep, latndx(i), lonndx(i), k
-      write(*,'(a,1p,10e12.4)') 'uptkratebb   ', uptkratebb(:)
-      write(*,'(a,1p,10e12.4)') 'sum_uprt_so4 ', sum_uprt_so4
-      write(*,'(a,1p,10e12.4)') 'fgain_so4    ', fgain_so4(:)
-      write(*,'(a,1p,10e12.4)') 'sum_uprt_nh4 ', sum_uprt_nh4
-      write(*,'(a,1p,10e12.4)') 'fgain_nh4    ', fgain_nh4(:)
-      write(*,'(a,1p,10e12.4)') 'sum_uprt_soa ', sum_uprt_soa
-      write(*,'(a,1p,10e12.4)') 'fgain_soa    ', fgain_soa(:)
-      write(*,'(a,1p,10e12.4)') 'so4g o,dqdt,n', q(i,k,l_so4g), sum_dqdt_so4, &
-                                                (q(i,k,l_so4g)-deltat*sum_dqdt_so4)
-      write(*,'(a,1p,10e12.4)') 'nh3g o,dqdt,n', q(i,k,l_nh4g), sum_dqdt_nh4, sum_dqdt_nh4_b, &
-                                                (q(i,k,l_nh4g)-deltat*sum_dqdt_nh4_b)
-      write(*,'(a,1p,10e12.4)') 'soag o,dqdt,n', q(i,k,l_soag), sum_dqdt_soa, &
-                                                (q(i,k,l_soag)-deltat*sum_dqdt_soa)
-      write(*,'(a,i12,1p,10e12.4)') &
-                                'method,g0,t,p', method_soa, g0_soa, t(i,k), pmid(i,k)
-      write(*,'(a,1p,10e12.4)') 'so4 old      ', qold_so4(:)
-      write(*,'(a,1p,10e12.4)') 'so4 dqdt     ', dqdt_so4(:)
-      write(*,'(a,1p,10e12.4)') 'so4 new      ', (qold_so4(:)+deltat*dqdt_so4(:))
-      write(*,'(a,1p,10e12.4)') 'nh4 old      ', qold_nh4(:)
-      write(*,'(a,1p,10e12.4)') 'nh4 dqdt     ', dqdt_nh4(:)
-      write(*,'(a,1p,10e12.4)') 'nh4 new      ', (qold_nh4(:)+deltat*dqdt_nh4(:))
-      write(*,'(a,1p,10e12.4)') 'soa old      ', qold_soa(:)
-      write(*,'(a,1p,10e12.4)') 'soa dqdt     ', dqdt_soa(:)
-      write(*,'(a,1p,10e12.4)') 'soa new      ', (qold_soa(:)+deltat*dqdt_soa(:))
-      write(*,'(a,1p,10e12.4)') 'vshell, core ', vol_shell, vol_core
-      write(*,'(a,1p,10e12.4)') 'dr_mono, ... ', dr_so4_monolayers_pcage,   &
-                                 soa_equivso4_factor
-      write(*,'(a,1p,10e12.4)') 'dgn, ...     ', dgncur_a(i,k,modefrm_pcage),   &
-                                 fac_volsfc_pcarbon
-      write(*,'(a,1p,10e12.4)') 'tmp1, tmp2   ', tmp1, tmp2
-      write(*,'(a,1p,10e12.4)') 'xferfrac_age ', xferfrac_pcage
-   end if
-   end if
-   end if
+!!$   if (ldiag2 > 0) then
+!!$   if (i == icol_diag) then 
+!!$   if (mod(k-1,5) == 0) then
+!!$      write(*,'(a,43i5)') 'gasaerexch aaa nstep,lat,lon,k', nstep, latndx(i), lonndx(i), k
+!!$      write(*,'(a,1p,10e12.4)') 'uptkratebb   ', uptkratebb(:)
+!!$      write(*,'(a,1p,10e12.4)') 'sum_uprt_so4 ', sum_uprt_so4
+!!$      write(*,'(a,1p,10e12.4)') 'fgain_so4    ', fgain_so4(:)
+!!$      write(*,'(a,1p,10e12.4)') 'sum_uprt_nh4 ', sum_uprt_nh4
+!!$      write(*,'(a,1p,10e12.4)') 'fgain_nh4    ', fgain_nh4(:)
+!!$      write(*,'(a,1p,10e12.4)') 'sum_uprt_soa ', sum_uprt_soa
+!!$      write(*,'(a,1p,10e12.4)') 'fgain_soa    ', fgain_soa(:)
+!!$      write(*,'(a,1p,10e12.4)') 'so4g o,dqdt,n', q(i,k,l_so4g), sum_dqdt_so4, &
+!!$                                                (q(i,k,l_so4g)-deltat*sum_dqdt_so4)
+!!$      write(*,'(a,1p,10e12.4)') 'nh3g o,dqdt,n', q(i,k,l_nh4g), sum_dqdt_nh4, sum_dqdt_nh4_b, &
+!!$                                                (q(i,k,l_nh4g)-deltat*sum_dqdt_nh4_b)
+!!$      write(*,'(a,1p,10e12.4)') 'soag o,dqdt,n', q(i,k,l_soag), sum_dqdt_soa, &
+!!$                                                (q(i,k,l_soag)-deltat*sum_dqdt_soa)
+!!$      write(*,'(a,i12,1p,10e12.4)') &
+!!$                                'method,g0,t,p', method_soa, g0_soa, t(i,k), pmid(i,k)
+!!$      write(*,'(a,1p,10e12.4)') 'so4 old      ', qold_so4(:)
+!!$      write(*,'(a,1p,10e12.4)') 'so4 dqdt     ', dqdt_so4(:)
+!!$      write(*,'(a,1p,10e12.4)') 'so4 new      ', (qold_so4(:)+deltat*dqdt_so4(:))
+!!$      write(*,'(a,1p,10e12.4)') 'nh4 old      ', qold_nh4(:)
+!!$      write(*,'(a,1p,10e12.4)') 'nh4 dqdt     ', dqdt_nh4(:)
+!!$      write(*,'(a,1p,10e12.4)') 'nh4 new      ', (qold_nh4(:)+deltat*dqdt_nh4(:))
+!!$      write(*,'(a,1p,10e12.4)') 'soa old      ', qold_soa(:)
+!!$      write(*,'(a,1p,10e12.4)') 'soa dqdt     ', dqdt_soa(:)
+!!$      write(*,'(a,1p,10e12.4)') 'soa new      ', (qold_soa(:)+deltat*dqdt_soa(:))
+!!$      write(*,'(a,1p,10e12.4)') 'vshell, core ', vol_shell, vol_core
+!!$      write(*,'(a,1p,10e12.4)') 'dr_mono, ... ', dr_so4_monolayers_pcage,   &
+!!$                                 soa_equivso4_factor
+!!$      write(*,'(a,1p,10e12.4)') 'dgn, ...     ', dgncur_a(i,k,modefrm_pcage),   &
+!!$                                 fac_volsfc_pcarbon
+!!$      write(*,'(a,1p,10e12.4)') 'tmp1, tmp2   ', tmp1, tmp2
+!!$      write(*,'(a,1p,10e12.4)') 'xferfrac_age ', xferfrac_pcage
+!!$   end if
+!!$   end if
+!!$   end if
 ! diagnostics end ---------------------------------------------------------
 
 
@@ -683,9 +681,8 @@ implicit none
    is_dorename_atik = .true.
    call modal_aero_rename_sub(                              &
         'modal_aero_gasaerexch_sub',            &
-        lchnk,             ncol,      nstep,    &
+        lchnk,             ncol,   nstep,       &
         loffset,           deltat,              &
-        latndx,            lonndx,              &
         pdel,                                   &
         dotendrn,          q,                   &
         dqdt,              dqdt_other,          &
@@ -718,57 +715,57 @@ implicit none
 
 
 ! diagnostics start -------------------------------------------------------
-   if (ldiag3 > 0) then
-   if (icol_diag > 0) then 
-      i = icol_diag
-      write(*,'(a,3i5)') 'gasaerexch ppp nstep,lat,lon', nstep, latndx(i), lonndx(i)
-      write(*,'(2i5,3(2x,a))') 0, 0, 'ppp', 'pdel for all k'
-      write(*,'(1p,7e12.4)') (pdel(i,k), k=top_lev,pver)
-
-      write(*,'(a,3i5)') 'gasaerexch ddd nstep,lat,lon', nstep, latndx(i), lonndx(i)
-      do l = 1, pcnstxx
-         lb = l + loffset
-
-         if ( dotend(l) .or. dotendrn(l) ) then
-            write(*,'(2i5,3(2x,a))') 1, l, 'ddd1', cnst_name(lb),    'qold for all k'
-            write(*,'(1p,7e12.4)') (qold(i,k,l), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 1, l, 'ddd2', cnst_name(lb),    'qnew for all k'
-            write(*,'(1p,7e12.4)') (q(i,k,l), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 1, l, 'ddd3', cnst_name(lb),    'dqdt from conden for all k'
-            write(*,'(1p,7e12.4)') (dqdtsv1(i,k,l), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 1, l, 'ddd4', cnst_name(lb),    'dqdt from rename for all k'
-            write(*,'(1p,7e12.4)') ((dqdt(i,k,l)-dqdtsv1(i,k,l)), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 1, l, 'ddd5', cnst_name(lb),    'dqdt other for all k'
-            write(*,'(1p,7e12.4)') (dqdt_other(i,k,l), k=top_lev,pver)
-         end if
-
-         if ( dotendqqcw(l) .or. dotendqqcwrn(l) ) then
-            write(*,'(2i5,3(2x,a))') 2, l, 'ddd1', cnst_name_cw(lb), 'qold for all k'
-            write(*,'(1p,7e12.4)') (qqcwold(i,k,l), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 2, l, 'ddd2', cnst_name_cw(lb), 'qnew for all k'
-            write(*,'(1p,7e12.4)') (qqcw(i,k,l), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 2, l, 'ddd3', cnst_name_cw(lb), 'dqdt from conden for all k'
-            write(*,'(1p,7e12.4)') (dqqcwdtsv1(i,k,l), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 2, l, 'ddd4', cnst_name_cw(lb), 'dqdt from rename for all k'
-            write(*,'(1p,7e12.4)') ((dqqcwdt(i,k,l)-dqqcwdtsv1(i,k,l)), k=top_lev,pver)
-            write(*,'(2i5,3(2x,a))') 2, l, 'ddd5', cnst_name_cw(lb), 'dqdt other for all k'
-            write(*,'(1p,7e12.4)') (dqqcwdt_other(i,k,l), k=top_lev,pver)
-         end if
-
-      end do
-
-      write(*,'(a,3i5)') 'gasaerexch fff nstep,lat,lon', nstep, latndx(i), lonndx(i)
-      do l = 1, pcnstxx
-         lb = l + loffset
-         if ( dotend(l) .or. dotendrn(l) .or. dotendqqcw(l) .or. dotendqqcwrn(l) ) then
-            write(*,'(i5,2(2x,a,2l3))') l, &
-               cnst_name(lb), dotend(l), dotendrn(l), &
-               cnst_name_cw(lb), dotendqqcw(l), dotendqqcwrn(l)
-         end if
-      end do
-
-   end if
-   end if
+!!$   if (ldiag3 > 0) then
+!!$   if (icol_diag > 0) then 
+!!$      i = icol_diag
+!!$      write(*,'(a,3i5)') 'gasaerexch ppp nstep,lat,lon', nstep, latndx(i), lonndx(i)
+!!$      write(*,'(2i5,3(2x,a))') 0, 0, 'ppp', 'pdel for all k'
+!!$      write(*,'(1p,7e12.4)') (pdel(i,k), k=top_lev,pver)
+!!$
+!!$      write(*,'(a,3i5)') 'gasaerexch ddd nstep,lat,lon', nstep, latndx(i), lonndx(i)
+!!$      do l = 1, pcnstxx
+!!$         lb = l + loffset
+!!$
+!!$         if ( dotend(l) .or. dotendrn(l) ) then
+!!$            write(*,'(2i5,3(2x,a))') 1, l, 'ddd1', cnst_name(lb),    'qold for all k'
+!!$            write(*,'(1p,7e12.4)') (qold(i,k,l), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 1, l, 'ddd2', cnst_name(lb),    'qnew for all k'
+!!$            write(*,'(1p,7e12.4)') (q(i,k,l), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 1, l, 'ddd3', cnst_name(lb),    'dqdt from conden for all k'
+!!$            write(*,'(1p,7e12.4)') (dqdtsv1(i,k,l), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 1, l, 'ddd4', cnst_name(lb),    'dqdt from rename for all k'
+!!$            write(*,'(1p,7e12.4)') ((dqdt(i,k,l)-dqdtsv1(i,k,l)), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 1, l, 'ddd5', cnst_name(lb),    'dqdt other for all k'
+!!$            write(*,'(1p,7e12.4)') (dqdt_other(i,k,l), k=top_lev,pver)
+!!$         end if
+!!$
+!!$         if ( dotendqqcw(l) .or. dotendqqcwrn(l) ) then
+!!$            write(*,'(2i5,3(2x,a))') 2, l, 'ddd1', cnst_name_cw(lb), 'qold for all k'
+!!$            write(*,'(1p,7e12.4)') (qqcwold(i,k,l), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 2, l, 'ddd2', cnst_name_cw(lb), 'qnew for all k'
+!!$            write(*,'(1p,7e12.4)') (qqcw(i,k,l), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 2, l, 'ddd3', cnst_name_cw(lb), 'dqdt from conden for all k'
+!!$            write(*,'(1p,7e12.4)') (dqqcwdtsv1(i,k,l), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 2, l, 'ddd4', cnst_name_cw(lb), 'dqdt from rename for all k'
+!!$            write(*,'(1p,7e12.4)') ((dqqcwdt(i,k,l)-dqqcwdtsv1(i,k,l)), k=top_lev,pver)
+!!$            write(*,'(2i5,3(2x,a))') 2, l, 'ddd5', cnst_name_cw(lb), 'dqdt other for all k'
+!!$            write(*,'(1p,7e12.4)') (dqqcwdt_other(i,k,l), k=top_lev,pver)
+!!$         end if
+!!$
+!!$      end do
+!!$
+!!$      write(*,'(a,3i5)') 'gasaerexch fff nstep,lat,lon', nstep, latndx(i), lonndx(i)
+!!$      do l = 1, pcnstxx
+!!$         lb = l + loffset
+!!$         if ( dotend(l) .or. dotendrn(l) .or. dotendqqcw(l) .or. dotendqqcwrn(l) ) then
+!!$            write(*,'(i5,2(2x,a,2l3))') l, &
+!!$               cnst_name(lb), dotend(l), dotendrn(l), &
+!!$               cnst_name_cw(lb), dotendqqcw(l), dotendqqcwrn(l)
+!!$         end if
+!!$      end do
+!!$
+!!$   end if
+!!$   end if
 ! diagnostics end ---------------------------------------------------------
 
 
@@ -814,19 +811,19 @@ implicit none
 !		write(*,'(2(a,2x),1p,e11.3)') &
 !		'modal_aero_newnuc_sub outfld', fieldname, adv_mass(l)
 
- 	    if (ldiag4 > 0) then
- 	    if (icol_diag > 0) then
- 		i = icol_diag
- 		if (jac == 1) then
- 		    tmp1 = qsrflx(i,l,jsrf)
- 		else
- 		    tmp1 = qqcwsrflx(i,l,jsrf)
- 		end if
- 		write(*,'(a,4i5,2x,a,1p,2e12.4)')   &
- 		    'gasaerexch nstep,lat,lon,l,fieldname,qsrflx,adv_mass',   &
- 		    nstep, latndx(i), lonndx(i), l, fieldname, tmp1, adv_mass(l)
- 	    end if
- 	    end if
+!!$ 	    if (ldiag4 > 0) then
+!!$ 	    if (icol_diag > 0) then
+!!$ 		i = icol_diag
+!!$ 		if (jac == 1) then
+!!$ 		    tmp1 = qsrflx(i,l,jsrf)
+!!$ 		else
+!!$ 		    tmp1 = qqcwsrflx(i,l,jsrf)
+!!$ 		end if
+!!$ 		write(*,'(a,4i5,2x,a,1p,2e12.4)')   &
+!!$ 		    'gasaerexch nstep,lat,lon,l,fieldname,qsrflx,adv_mass',   &
+!!$ 		    nstep, latndx(i), lonndx(i), l, fieldname, tmp1, adv_mass(l)
+!!$ 	    end if
+!!$ 	    end if
 
 	end do ! jac = ...
 	end do ! jsrf = ...
@@ -889,6 +886,7 @@ implicit none
    integer, parameter :: nghq = 2
    integer :: i, iq, k, l1, l2, la, n
 
+   ! Can use sqrt here once Lahey is gone.
    real(r8), parameter :: tworootpi = 3.5449077_r8
    real(r8), parameter :: root2 = 1.4142135_r8
    real(r8), parameter :: beta = 2.0_r8
@@ -993,6 +991,7 @@ implicit none
           g_soa_tend, a_soa_tend )
 !         g_soa_tend, a_soa_tend, g0_soa, idiagss )
 
+        use mo_constants, only: rgas ! Gas constant (J/K/mol)
 !-----------------------------------------------------------------------
 !
 ! Purpose:
@@ -1038,8 +1037,6 @@ implicit none
       real(r8), parameter :: delh_vap_soa = 156.0e3_r8
       ! delh_vap_soa = heat of vaporization for gas soa (J/mol)
       real(r8), parameter :: p0_soa_298 = 1.0e-10_r8
-      ! p0_soa_298 = soa gas equilib vapor presssure (atm) at 298 k
-      real(r8), parameter :: rgas = 8.3144_r8   ! gas constant in J/K/mol
 
       real(r8) :: a_opoa(ntot_soamode)    ! oxidized-poa aerosol mixrat (mol/mol)
       real(r8) :: a_soa(ntot_soamode)     ! soa aerosol mixrat (mol/mol)

@@ -33,7 +33,7 @@ module glide_diagnostics
   ! subroutines for computing various useful diagnostics
   ! Author: William Lipscomb, LANL 
  
-  use glimmer_global
+  use glimmer_global, only: dp
   use glimmer_log
   use glide_types
 
@@ -95,19 +95,21 @@ contains
        nint_quotient = nint(quotient)
        if (abs(quotient - real(nint_quotient,dp)) < eps) then  ! time to write
 
-          call glide_write_diag(model, time,                  &
-                                minthick,                     &
-                                model%numerics%idiag_global,  &
-                                model%numerics%jdiag_global)
+          call glide_write_diag(model,                 &
+                                time,                  &
+                                minthick,              &
+                                model%numerics%idiag,  &
+                                model%numerics%jdiag)
        endif
 
     elseif (present(tstep_count) .and. model%numerics%ndiag > 0) then  ! decide based on ndiag
 
        if (mod(tstep_count, model%numerics%ndiag) == 0)  then          ! time to write
-          call glide_write_diag(model, time,                  &
-                                minthick,                     &
-                                model%numerics%idiag_global,  &
-                                model%numerics%jdiag_global)
+          call glide_write_diag(model,                 &
+                                time,                  &
+                                minthick,              &
+                                model%numerics%idiag,  &
+                                model%numerics%jdiag)
        endif
 
     endif    ! dt_diag > 0
@@ -116,9 +118,9 @@ contains
  
 !--------------------------------------------------------------------------
 
-  subroutine glide_write_diag (model,        time,         &
-                               minthick,                   &
-                               idiag_global, jdiag_global)
+  subroutine glide_write_diag (model,       time,         &
+                               minthick,                  &
+                               idiag,       jdiag)
 
     ! Write global diagnostics
     ! Optionally, write local diagnostics for a selected grid cell
@@ -139,7 +141,8 @@ contains
          minthick          ! ice thickness threshold (m) for including in diagnostics
 
     integer, intent(in), optional :: &
-         idiag_global, jdiag_global         ! global (i,j) for diagnostics
+         idiag, jdiag         ! i,j indices for diagnostics (on full grid)
+                              ! indices will generally be different on local processor
  
     ! local arguments
 
@@ -222,23 +225,23 @@ contains
     ! If so, communicate this information to the main processor.
     !-----------------------------------------------------------------
 
-    if (present(idiag_global) .and. present(jdiag_global)) then
+    if (present(idiag) .and. present(jdiag)) then
 
        rdiag_local = -999
        idiag_local = -999
        jdiag_local = -999
 
-       if (idiag_global >= 1 .and. idiag_global <= global_ewn  &
-                             .and.                             &
-           jdiag_global >= 1 .and. jdiag_global <= global_nsn) then
+       if (idiag >= 1 .and. idiag <= global_ewn  &
+                      .and.                             &
+           jdiag >= 1 .and. jdiag <= global_nsn) then
 
           ! loop over gridcells owned by this processor
           do j = lhalo+1, nsn-uhalo
           do i = lhalo+1, ewn-uhalo
              global_row = (j - lhalo) + global_row_offset
              global_col = (i - lhalo) + global_col_offset
-             if (global_col == idiag_global .and.   &
-                 global_row == jdiag_global) then   ! diag point lives on this processor
+             if (global_col == idiag .and.   &
+                 global_row == jdiag) then   ! diag point lives on this processor
                 rdiag_local = this_rank
                 idiag_local = i 
                 jdiag_local = j 
@@ -254,7 +257,7 @@ contains
        idiag_local = parallel_reduce_max(idiag_local)
        jdiag_local = parallel_reduce_max(jdiag_local)
 
-    endif         ! present(idiag_global, jdiag_global)
+    endif         ! present(idiag, jdiag)
 
     !-----------------------------------------------------------------
     ! Compute and write global diagnostics
@@ -609,7 +612,7 @@ contains
     spd_diag (:)  = unphys_val
     lithtemp_diag(:) = unphys_val    
 
-    if (present(idiag_global) .and. present(jdiag_global)) then
+    if (present(idiag) .and. present(jdiag)) then
 
        ! Set local diagnostic values, and communicate them to main_task
        
@@ -630,8 +633,8 @@ contains
           temp_diag(:) = model%temper%temp(1:upn,i,j)          
           spd_diag(:) = sqrt(model%velocity%uvel(1:upn,i,j)**2   &
                            + model%velocity%vvel(1:upn,i,j)**2) * vel0*scyr
-          lithtemp_diag(:) = model%lithot%temp(i,j,:)
-
+          if (model%options%gthf == GTHF_COMPUTE) &
+             lithtemp_diag(:) = model%lithot%temp(i,j,:)
        endif
 
        usrf_diag = parallel_reduce_max(usrf_diag)
@@ -655,10 +658,10 @@ contains
 
        call write_log(' ')
        write(message,'(a39,2i4)')  &
-            'Grid point diagnostics: global (i,j) =', idiag_global, jdiag_global
+            'Grid point diagnostics: (i,j) =', idiag, jdiag
        call write_log(trim(message), type = GM_DIAGNOSTIC)
        write(message,'(a39,3i4)')  &
-            '                  local (i ,j, rank) =', idiag_local, jdiag_local, rdiag_local
+            '                  Local (i,j,rank) =', idiag_local, jdiag_local, rdiag_local
        call write_log(trim(message), type = GM_DIAGNOSTIC)
        call write_log(' ')
  

@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --pftgrid --phys clm4_5 --clmnmlusecase=20thC_transient --cesm_root ../../../../../../.. -s US-Ha1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/clm45grd_trans_pft 

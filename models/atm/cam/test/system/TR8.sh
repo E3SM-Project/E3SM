@@ -34,11 +34,7 @@ ruby $ADDREALKIND_EXE -r r8 -l 1 -d $CAM_ROOT/models/atm/cam/src/utils
 rc=`expr $? + $rc`
 
 #Check coupler
-ruby $ADDREALKIND_EXE -r r8 -l 1 -d $CAM_ROOT/models/atm/cam/src/cpl_esmf
-rc=`expr $? + $rc`
-ruby $ADDREALKIND_EXE -r r8 -l 1 -d $CAM_ROOT/models/atm/cam/src/cpl_mct
-rc=`expr $? + $rc`
-ruby $ADDREALKIND_EXE -r r8 -l 1 -d $CAM_ROOT/models/atm/cam/src/cpl_share
+ruby $ADDREALKIND_EXE -r r8 -l 1 -d $CAM_ROOT/models/atm/cam/src/cpl
 rc=`expr $? + $rc`
 
 echo $rc

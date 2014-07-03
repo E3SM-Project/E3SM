@@ -6,9 +6,6 @@ module mo_mass_xforms
 
   private
   public :: mmr2vmr, mmr2vmri, vmr2mmr, vmr2mmri, h2o_to_vmr, h2o_to_mmr, init_mass_xforms
-#ifdef MODAL_AERO
-  public :: qqcw2vmr, vmr2qqcw
-#endif
   save
 
   real(r8) :: adv_mass_h2o = 18._r8
@@ -64,88 +61,6 @@ contains
     end do
 
   end subroutine mmr2vmr
-
-#ifdef MODAL_AERO
-  subroutine qqcw2vmr(lchnk, vmr, mbar, ncol, im, pbuf)
-    use modal_aero_data, only : qqcw_get_field
-    use physics_buffer, only : physics_buffer_desc
-    !-----------------------------------------------------------------
-    !	... Xfrom from mass to volume mixing ratio
-    !-----------------------------------------------------------------
-
-    use chem_mods, only : adv_mass, gas_pcnst
-
-    implicit none
-
-    !-----------------------------------------------------------------
-    !	... Dummy args
-    !-----------------------------------------------------------------
-    integer, intent(in)     :: lchnk, ncol, im
-    real(r8), intent(in)    :: mbar(ncol,pver)
-    real(r8), intent(inout) :: vmr(ncol,pver,gas_pcnst)
-    type(physics_buffer_desc), pointer :: pbuf(:)
-
-    !-----------------------------------------------------------------
-    !	... Local variables
-    !-----------------------------------------------------------------
-    integer :: k, m
-    real(r8), pointer :: fldcw(:,:)
-
-    do m=1,gas_pcnst
-       if( adv_mass(m) /= 0._r8 ) then
-          fldcw => qqcw_get_field(pbuf, m+im,lchnk,errorhandle=.true.)
-          if(associated(fldcw)) then
-             do k=1,pver
-                vmr(:ncol,k,m) = mbar(:ncol,k) * fldcw(:ncol,k) / adv_mass(m)
-             end do
-          else
-             vmr(:,:,m) = 0.0_r8
-          end if
-       end if
-    end do
-  end subroutine qqcw2vmr
-
-  subroutine vmr2qqcw( lchnk, vmr, mbar, ncol, im, pbuf )
-    !-----------------------------------------------------------------
-    !	... Xfrom from volume to mass mixing ratio
-    !-----------------------------------------------------------------
-
-    use m_spc_id
-    use chem_mods,       only : adv_mass, gas_pcnst
-    use modal_aero_data, only : qqcw_get_field
-    use physics_buffer,  only : physics_buffer_desc
-
-    implicit none
-
-    !-----------------------------------------------------------------
-    !	... Dummy args
-    !-----------------------------------------------------------------
-    integer, intent(in)     :: lchnk, ncol, im
-    real(r8), intent(in)    :: mbar(ncol,pver)
-    real(r8), intent(in)    :: vmr(ncol,pver,gas_pcnst)
-    type(physics_buffer_desc), pointer :: pbuf(:)
-
-    !-----------------------------------------------------------------
-    !	... Local variables
-    !-----------------------------------------------------------------
-    integer :: k, m
-    real(r8), pointer :: fldcw(:,:)
-    !-----------------------------------------------------------------
-    !	... The non-group species
-    !-----------------------------------------------------------------
-    do m = 1,gas_pcnst
-       fldcw => qqcw_get_field(pbuf, m+im,lchnk,errorhandle=.true.)
-       if( adv_mass(m) /= 0._r8 .and. associated(fldcw)) then
-          do k = 1,pver
-             fldcw(:ncol,k) = adv_mass(m) * vmr(:ncol,k,m) / mbar(:ncol,k)
-          end do
-       end if
-    end do
-
-  end subroutine vmr2qqcw
-
-#endif
-
 
   subroutine mmr2vmri( mmr, vmr, mbar, mi, ncol )
     !-----------------------------------------------------------------

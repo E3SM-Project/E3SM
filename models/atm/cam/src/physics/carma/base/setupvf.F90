@@ -31,7 +31,8 @@ subroutine setupvf(carma, cstate, rc)
 
   !  Define formats
   2 format(/,'Fall velocities and Reynolds number (prior to interpolation)')
-  3 format(/,'Particle group ',i3,' using algorithm ',i3,/,' bin   lev  p [dyne/cm2]  T [K]       r [cm]    wet r [cm]       bpm', &
+  3 format(/,'Particle group ',i3,' using algorithm ',i3,/, &
+         ' bin   lev  p [dyne/cm2]  T [K]       r [cm]    wet r [cm]       bpm', &
       '   vf [cm/s]        re'/)
   4 format(i3,4x,i3,7(1pe11.3,4x)) 
   

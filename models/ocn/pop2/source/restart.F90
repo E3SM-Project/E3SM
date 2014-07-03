@@ -9,7 +9,7 @@
 !  for restarting a POP simulation.
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: restart.F90 44198 2013-02-25 22:43:22Z mlevy@ucar.edu $
+!  SVN:$Id: restart.F90 59359 2014-04-20 22:10:41Z mlevy@ucar.edu $
 !
 ! !USES:
 
@@ -1115,7 +1115,8 @@
    !*** note that this option over-rides others
 
    if (check_time_flag(restart_flag) .or.   &
-      (check_time_flag(cpl_write_restart) .and. eod) ) then
+       (check_time_flag(cpl_write_restart) .and. &
+        (nsteps_this_interval.eq.nsteps_per_interval)) ) then
 
       lrestart_write = .true.
       restart_type = char_blank
@@ -1125,7 +1126,8 @@
 
    !*** turn off cpl_write_restart if necessary
 
-   if  (check_time_flag(cpl_write_restart) .and. eod) & 
+   if (check_time_flag(cpl_write_restart) .and. & 
+       (nsteps_this_interval.eq.nsteps_per_interval)) &
      call override_time_flag(cpl_write_restart, value=.false.)
 
 

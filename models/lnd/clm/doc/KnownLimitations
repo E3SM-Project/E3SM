@@ -1,4 +1,4 @@
-Known Limitations in CLM4.5/CESM1.2.0                              May/31/2013
+Known Limitations in CLM4/CESM1.1.0                              Nov/08/2012
 
 As opposed to the KnownBugs file where we expect that eventually we will find a 
 fix, these are limitations that we do NOT have plans to fix. They are simply known
@@ -6,10 +6,6 @@ limitations that we describe workarounds for below. In the course of doing other
 work they may be resolved, but we do not plan on addressing them directly. We 
 reference "bug numbers" in this list, but these are things where those "bugs" 
 were closed out with a "will-not-fix".
-
-====================================================================================
-Bug Number: 1641
-RCP6 used old bad wood harvest for 2006 and 2007 for CLM40
 
 ====================================================================================
 Bug Number: 1355
@@ -65,6 +61,15 @@ of albgrd & albgri depends on the values of the sref_* variables, which are
 initialized to 1 (and stay at 1 for any landunit for which coszen = 0).
 
 ====================================================================================
+Bug Number: 1147
+mkgriddata regional grids can't straddle over Greenwich
+
+mkgriddata is not able to run for any domain that has Eastern edge > Western
+edge, because it straddles across the 0 degree longitude line. 
+
+The workaround is to divide the domain into two and run two regional grids.
+
+====================================================================================
 Bug Number: 1110
 dtlimit error with datm8 when a full year isn't available
 
@@ -92,14 +97,11 @@ for the data). Or you just make sure that your input data doesn't have these typ
 of abnormal jumps of missing data.
 
 ====================================================================================
-Bug Number: 1100 and 652
-Trouble compiling/running with early versions of pgi
+Bug Number: 1100
+Trouble compiling with pgi7
 
-Earlier versions of The model do NOT compile using PGI7.2.2. It DOES compile with later versions of the
+The model does NOT compile using PGI7.2.2. It DOES compile with later versions of the
 PGI compiler, such as 9.0.4.
-
-Also PGI Version 6.1.6, and NetCDF Version 3.6.2 has trouble with threading. Works on other platforms/compilers and
-also works with later versions of PGI.
 
 The workaround is to use a later version of the PGI compilers.
 
@@ -108,9 +110,12 @@ Bug Number: 1017 and 1025
 PTS_MODE can NOT restart or use a global finidat file
 
 Single column mode (or PTS_MODE turned on using the -pts_lat and -pts_lon options in
-scripts/create_newcase) can NOT read restart files.
+scripts/create_newcase) can NOT read restart files or global finidat initial condition
+files.
 
-It was upgraded to read in global finidat files -- but there is a bug when it does this.
+The workaround is to use the models/lnd/clm/tools/ncl_scripts/getregional_datasets.pl 
+script to create datasets from the global datasets. See the CLM User's Guide and the
+README documentation in the ncl_scripts directory as well as in the script itself.
 
 Here's the message that happens when you try to run from a restart file.
 
@@ -131,6 +136,15 @@ CLM won't run at T62
 
 We aren't quite sure why. But we've found that CLM currently won't run at T62 resolution
 the same resolution as the input CLM-Qian atmosphere forcing data.
+
+====================================================================================
+Bug number: 652
+Output different for different number of threads PGF90
+
+PGI Version 6.1.6, and NetCDF Version 3.6.2. Works on other platforms/compilers and
+also works with PGI-7.0-7.
+
+The workaround is to use another compiler or a later version of the PGI compiler.
 
 ====================================================================================
 Bug Number: 452

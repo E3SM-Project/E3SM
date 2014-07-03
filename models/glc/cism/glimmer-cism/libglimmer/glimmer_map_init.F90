@@ -41,7 +41,7 @@ contains
   subroutine glimmap_readconfig(proj,config,dx,dy)
     use glimmer_config
     use glimmer_log
-    use glimmer_global
+    use glimmer_global, only: dp
     implicit none
     type(glimmap_proj),intent(inout) :: proj !< The projection parameters to be initialised
     type(ConfigSection), pointer :: config   !< structure holding sections of configuration file 
@@ -50,19 +50,19 @@ contains
 
     ! local variables
     type(ConfigSection), pointer :: section
-    real(rk) :: lonc,latc,efalse,nfalse,stdp1,stdp2,scale_factor,cpx,cpy
-    real(rk),dimension(:),pointer :: std_par
+    real(dp) :: lonc,latc,efalse,nfalse,stdp1,stdp2,scale_factor,cpx,cpy
+    real(dp),dimension(:),pointer :: std_par
     character(10) :: ptype
     logical :: stdp,scfac
     integer :: ptval,ptold
 
     ptype   = ''
-    lonc    = 0.0 ; latc   = 0.0
-    efalse  = 0.0 ; nfalse = 0.0
+    lonc    = 0.d0 ; latc   = 0.d0
+    efalse  = 0.d0 ; nfalse = 0.d0
     std_par => null()
-    scale_factor = 0.0
-    stdp1=0.0
-    stdp2=0.0
+    scale_factor = 0.d0
+    stdp1 = 0.d0
+    stdp2 = 0.d0
 
     call GetSection(config,section,'projection')
     if (associated(section)) then
@@ -75,13 +75,13 @@ contains
        call GetValue(section,'scale_factor',scale_factor)
 
        ! Parse the projection type
-       if (index(ptype,'LAEA')/=0.or.index(ptype,'laea')/=0) then
+       if (index(ptype,'LAEA')/=0 .or. index(ptype,'laea')/=0) then
           ptval = GMAP_LAEA
-       else if (index(ptype,'AEA')/=0.or.index(ptype,'aea')/=0) then
+       else if (index(ptype,'AEA')/=0 .or. index(ptype,'aea')/=0) then
           ptval = GMAP_AEA
-       else if (index(ptype,'LCC')/=0.or.index(ptype,'lcc')/=0) then
+       else if (index(ptype,'LCC')/=0 .or. index(ptype,'lcc')/=0) then
           ptval = GMAP_LCC
-       else if (index(ptype,'STERE')/=0.or.index(ptype,'stere')/=0) then
+       else if (index(ptype,'STERE')/=0 .or. index(ptype,'stere')/=0) then
           ptval = GMAP_STERE
        else
           call write_log('Unrecognised type in [projection]', &
@@ -107,7 +107,7 @@ contains
        end if
 
        ! Deal with scale factor
-       if (scale_factor/=0.0) then
+       if (scale_factor /= 0.d0) then
           scfac = .true.
        else
           scfac = .false.
@@ -135,11 +135,11 @@ contains
        end select
        efalse = dx*(cpx-1)
        nfalse = dy*(cpy-1)
-       if (stdp1/=0.0) then
-          stdp2=stdp1
-          stdp=.true.
+       if (stdp1 /= 0.d0) then
+          stdp2 = stdp1
+          stdp = .true.
        else
-          stdp=.false.
+          stdp = .false.
        end if
        scfac=.false.
     end if
@@ -266,13 +266,13 @@ contains
 
     type(glimmap_proj),intent(inout) :: cfp                      !< the projection data type
     integer,intent(in) :: ptype                                  !< the projection ID
-    real(rk),intent(in) :: longitude_of_central_meridian         !< the longitude of the central meridian
-    real(rk),intent(in) :: latitude_of_projection_origin         !< the latitude of the projection origin
-    real(rk),intent(in) :: false_easting                         !< false easting
-    real(rk),intent(in) :: false_northing                        !< false northing
-    real(rk),optional,intent(in) :: scale_factor_at_proj_origin  !< scale factor
-    real(rk),optional,intent(in) :: standard_parallel            !< standard parallel 1
-    real(rk),optional,intent(in) :: standard_parallel_2          !< standard parallel 2
+    real(dp),intent(in) :: longitude_of_central_meridian         !< the longitude of the central meridian
+    real(dp),intent(in) :: latitude_of_projection_origin         !< the latitude of the projection origin
+    real(dp),intent(in) :: false_easting                         !< false easting
+    real(dp),intent(in) :: false_northing                        !< false northing
+    real(dp),optional,intent(in) :: scale_factor_at_proj_origin  !< scale factor
+    real(dp),optional,intent(in) :: standard_parallel            !< standard parallel 1
+    real(dp),optional,intent(in) :: standard_parallel_2          !< standard parallel 2
 
 
     if (associated(cfp%laea))  deallocate(cfp%laea)
@@ -325,8 +325,8 @@ contains
        cfp%stere%latitude_of_projection_origin = latitude_of_projection_origin
        cfp%stere%false_easting  = false_easting
        cfp%stere%false_northing = false_northing
-       if(present(scale_factor_at_proj_origin).and.present(standard_parallel)) then
-          if (scale_factor_at_proj_origin/=0.0.and.standard_parallel/=0.0) &
+       if(present(scale_factor_at_proj_origin) .and. present(standard_parallel)) then
+          if (scale_factor_at_proj_origin/=0.d0 .and. standard_parallel/=0.d0) &
                call write_log('Both standard parallel and scale factor specified', &
                GM_FATAL,__FILE__,__LINE__)
        end if
@@ -352,12 +352,12 @@ contains
 
     ! Check whether polar
 
-    if (abs(params%latitude_of_projection_origin-90.0)<CONV_LIMIT) then
-       params%pole=1
-    else if (abs(params%latitude_of_projection_origin+90)<CONV_LIMIT) then
-       params%pole=-1
+    if (abs(params%latitude_of_projection_origin-90.d0)<CONV_LIMIT) then
+       params%pole = 1
+    else if (abs(params%latitude_of_projection_origin+90.d0)<CONV_LIMIT) then
+       params%pole = -1
     else
-       params%pole=0
+       params%pole = 0
     end if
 
   end subroutine glimmap_laea_init
@@ -368,13 +368,13 @@ contains
 
     type(proj_aea),intent(inout) :: params
 
-    params%n = 0.5*(sin(params%standard_parallel(1)*D2R) &
+    params%n = 0.5d0*(sin(params%standard_parallel(1)*D2R) &
          + sin(params%standard_parallel(2)*D2R))
-    params%i_n = 1.0/params%n
-    params%c = cos(params%standard_parallel(1)*D2R)**2.0 &
-         + 2.0*params%n*sin(params%standard_parallel(1)*D2R)
+    params%i_n = 1.d0/params%n
+    params%c = cos(params%standard_parallel(1)*D2R)**2.d0 &
+         + 2.d0*params%n*sin(params%standard_parallel(1)*D2R)
     params%rho0_R = params%i_n * sqrt(params%c - &
-         2.0*params%n*sin(params%latitude_of_projection_origin*D2R))
+           2.d0*params%n*sin(params%latitude_of_projection_origin*D2R))
     params%rho0 = params%rho0_R * EQ_RAD
 
   end subroutine glimmap_aea_init
@@ -390,14 +390,14 @@ contains
        params%n = sin(params%standard_parallel(1)*D2R)
     else
        params%n = log(cos(params%standard_parallel(1)*D2R)/cos(params%standard_parallel(2)*D2R))/ &
-            log(tan(M_PI_4+params%standard_parallel(2)*D2R/2.0)/tan(M_PI_4+params%standard_parallel(1)*D2R/2.0))
+            log(tan(M_PI_4+params%standard_parallel(2)*D2R/2.d0)/tan(M_PI_4+params%standard_parallel(1)*D2R/2.d0))
     end if
 
-    params%i_n = 1.0/params%n
+    params%i_n = 1.d0/params%n
 
     params%f = params%i_n*cos(params%standard_parallel(1)*D2R)* &
-         (tan(M_PI_4+params%standard_parallel(1)*D2R/2.0))**params%n
-    params%rho0 = EQ_RAD * params%f/(tan(M_PI_4+params%latitude_of_projection_origin*D2R/2.0))**params%n
+         (tan(M_PI_4+params%standard_parallel(1)*D2R/2.d0))**params%n
+    params%rho0 = EQ_RAD * params%f/(tan(M_PI_4+params%latitude_of_projection_origin*D2R/2.d0))**params%n
 
   end subroutine glimmap_lcc_init
 
@@ -412,13 +412,13 @@ contains
 
     ! Determine polar/equatorial, etc.
 
-    if (abs(params%latitude_of_projection_origin-90.0)<CONV_LIMIT) then
-       params%pole=1
-    else if (abs(params%latitude_of_projection_origin+90)<CONV_LIMIT) then
-       params%pole=-1
+    if (abs(params%latitude_of_projection_origin-90.d0) < CONV_LIMIT) then
+       params%pole = 1
+    else if (abs(params%latitude_of_projection_origin+90.d0) < CONV_LIMIT) then
+       params%pole = -1
     else
-       params%pole=0
-       if (abs(params%latitude_of_projection_origin)<CONV_LIMIT) then
+       params%pole = 0
+       if (abs(params%latitude_of_projection_origin) < CONV_LIMIT) then
           params%equatorial = .true.
        else
           params%equatorial = .false.
@@ -427,28 +427,28 @@ contains
 
     ! Set up constants accordingly
 
-    if (params%pole==1.or.params%pole==-1) then
-       if (params%standard_parallel/=0.0) then
-          if (params%pole==1)  params%k0 = EQ_RAD * (1 + sin(D2R*params%standard_parallel))/2.0
-          if (params%pole==-1) params%k0 = EQ_RAD * (1 - sin(D2R*params%standard_parallel))/2.0
-       else if (params%scale_factor_at_proj_origin/=0.0) then
+    if (params%pole==1 .or. params%pole==-1) then
+       if (params%standard_parallel /= 0.d0) then
+          if (params%pole==1)  params%k0 = EQ_RAD * (1.d0 + sin(D2R*params%standard_parallel))/2.d0
+          if (params%pole==-1) params%k0 = EQ_RAD * (1.d0 - sin(D2R*params%standard_parallel))/2.d0
+       else if (params%scale_factor_at_proj_origin /= 0.d0) then
           params%k0 = EQ_RAD * params%scale_factor_at_proj_origin
        else
           params%k0 = EQ_RAD
        end if
     else
-       if (params%scale_factor_at_proj_origin/=0.0) then
+       if (params%scale_factor_at_proj_origin /= 0.d0) then
           params%k0 = EQ_RAD * params%scale_factor_at_proj_origin
        else
           params%k0 = EQ_RAD
        end if
-       if (params%standard_parallel/=0.0) &
+       if (params%standard_parallel /= 0.d0) &
             call write_log('Stereographic projection not polar: ignoring standard parallel',GM_WARNING)
        params%sinp = sin(D2R * params%latitude_of_projection_origin)
        params%cosp = cos(D2R * params%latitude_of_projection_origin)
     end if
 
-    params%ik0 = 1.0/params%k0
+    params%ik0 = 1.d0/params%k0
 
   end subroutine glimmap_stere_init
 

@@ -6,7 +6,6 @@ cd $CASEBUILD/dlndconf || exit -1
 
 set default_lnd_in_filename0 = "dlnd_in"
 set default_lnd_in_filename  = "dlnd_lnd_in"
-set default_sno_in_filename  = "dlnd_sno_in"
 set inst_counter = 1
 while ($inst_counter <= $NINST_LND)
 
@@ -21,32 +20,20 @@ else
 endif
 set lnd_in_filename1 = ${default_lnd_in_filename0}${inst_string}
 set lnd_in_filename2 = ${default_lnd_in_filename}${inst_string}
-set sno_in_filename2 = ${default_sno_in_filename}${inst_string}
 
 if (-e $CASEROOT/user_nl_dlnd${inst_string}) then
   $CASEROOT/Tools/user_nlcreate -user_nl_file $CASEROOT/user_nl_dlnd${inst_string} \
     -namelist_name dlnd_inparm >! $CASEBUILD/dlndconf/cesm_namelist
 endif
-$CODEROOT/lnd/dlnd/bld/build-namelist -dlnd_type lnd \
+$CODEROOT/lnd/dlnd/bld/build-namelist \
     -infile $CASEBUILD/dlndconf/cesm_namelist \
     -caseroot $CASEROOT \
     -scriptsroot $SCRIPTSROOT \
     -inst_string "$inst_string" || exit -2
 
-if (-e $CASEROOT/user_nl_dlnd${inst_string}) then
-  $CASEROOT/Tools/user_nlcreate -user_nl_file $CASEROOT/user_nl_dsno${inst_string} \
-    -namelist_name dsno_inprm >! $CASEBUILD/dlndconf/cesm_namelist
-endif
-$CODEROOT/lnd/dlnd/bld/build-namelist -dlnd_type sno \
-    -infile $CASEBUILD/dlndconf/cesm_namelist \
-    -caseroot $CASEROOT \
-    -scriptsroot $SCRIPTSROOT \
-    -inst_string "$inst_string" || exit -4
-
 if (-d ${RUNDIR}) then
    cp $CASEBUILD/dlndconf/dlnd_in     ${RUNDIR}/$lnd_in_filename1 || exit -5
    cp $CASEBUILD/dlndconf/dlnd_lnd_in ${RUNDIR}/$lnd_in_filename2 || exit -6
-   cp $CASEBUILD/dlndconf/dlnd_sno_in ${RUNDIR}/$sno_in_filename2 || exit -8
    cp $CASEBUILD/dlndconf/*txt*       ${RUNDIR}/. >& /dev/null
 endif
 

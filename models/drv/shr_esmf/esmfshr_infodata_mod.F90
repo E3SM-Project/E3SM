@@ -442,53 +442,93 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, samegrid_ao=log_buf)
-       call ESMF_AttributeSet(state, name="samegrid_ao", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, wall_time_limit=real_buf)
+       call ESMF_AttributeSet(state, name="wall_time_limit", value=real_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-       call ESMF_AttributeGet(state, name="samegrid_ao", value=log_buf, rc=localrc)
+       call ESMF_AttributeGet(state, name="wall_time_limit", value=real_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, samegrid_ao=log_buf)
+       call seq_infodata_Putdata(infodata, wall_time_limit=real_buf)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, samegrid_ro=log_buf)
-       call ESMF_AttributeSet(state, name="samegrid_ro", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, force_stop_at=char_buf)
+       call ESMF_AttributeSet(state, name="force_stop_at", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-       call ESMF_AttributeGet(state, name="samegrid_ro", value=log_buf, rc=localrc)
+       call ESMF_AttributeGet(state, name="force_stop_at", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, samegrid_ro=log_buf)
+       call seq_infodata_Putdata(infodata, force_stop_at=char_buf)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, samegrid_al=log_buf)
-       call ESMF_AttributeSet(state, name="samegrid_al", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, atm_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="atm_gnam", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-       call ESMF_AttributeGet(state, name="samegrid_al", value=log_buf, rc=localrc)
+       call ESMF_AttributeGet(state, name="atm_gnam", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, samegrid_al=log_buf)
+       call seq_infodata_Putdata(infodata, atm_gnam=char_buf)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, samegrid_aw=log_buf)
-       call ESMF_AttributeSet(state, name="samegrid_aw", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, lnd_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="lnd_gnam", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-       call ESMF_AttributeGet(state, name="samegrid_aw", value=log_buf, rc=localrc)
+       call ESMF_AttributeGet(state, name="lnd_gnam", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, samegrid_aw=log_buf)
+       call seq_infodata_Putdata(infodata, lnd_gnam=char_buf)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, samegrid_ow=log_buf)
-       call ESMF_AttributeSet(state, name="samegrid_ow", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, ocn_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="ocn_gnam", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-       call ESMF_AttributeGet(state, name="samegrid_ow", value=log_buf, rc=localrc)
+       call ESMF_AttributeGet(state, name="ocn_gnam", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, samegrid_ow=log_buf)
+       call seq_infodata_Putdata(infodata, ocn_gnam=char_buf)
+    endif
+
+    if (i2s) then
+       call seq_infodata_Getdata(infodata, ice_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="ice_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="ice_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, ice_gnam=char_buf)
+    endif
+
+    if (i2s) then
+       call seq_infodata_Getdata(infodata, rof_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="rof_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="rof_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, rof_gnam=char_buf)
+    endif
+
+    if (i2s) then
+       call seq_infodata_Getdata(infodata, glc_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="glc_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="glc_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, glc_gnam=char_buf)
+    endif
+
+    if (i2s) then
+       call seq_infodata_Getdata(infodata, wav_gnam=char_buf)
+       call ESMF_AttributeSet(state, name="wav_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="wav_gnam", value=char_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, wav_gnam=char_buf)
     endif
 
     if (i2s) then
@@ -762,6 +802,16 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
+       call seq_infodata_Getdata(infodata, rofice_present=log_buf)
+       call ESMF_AttributeSet(state, name="rofice_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="rofice_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, rofice_present=log_buf)
+    endif
+
+    if (i2s) then
        call seq_infodata_Getdata(infodata, rof_prognostic=log_buf)
        call ESMF_AttributeSet(state, name="rof_prognostic", value=log_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
@@ -832,6 +882,16 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
+       call seq_infodata_Getdata(infodata, iceberg_prognostic=log_buf)
+       call ESMF_AttributeSet(state, name="iceberg_prognostic", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="iceberg_prognostic", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, iceberg_prognostic=log_buf)
+    endif
+
+    if (i2s) then
        call seq_infodata_Getdata(infodata, glc_present=log_buf)
        call ESMF_AttributeSet(state, name="glc_present", value=log_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
@@ -842,6 +902,36 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
+       call seq_infodata_Getdata(infodata, glclnd_present=log_buf)
+       call ESMF_AttributeSet(state, name="glclnd_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="glclnd_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, glclnd_present=log_buf)
+    endif
+
+    if (i2s) then
+       call seq_infodata_Getdata(infodata, glcocn_present=log_buf)
+       call ESMF_AttributeSet(state, name="glcocn_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="glcocn_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, glcocn_present=log_buf)
+    endif
+
+    if (i2s) then
+       call seq_infodata_Getdata(infodata, glcice_present=log_buf)
+       call ESMF_AttributeSet(state, name="glcice_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+    else
+       call ESMF_AttributeGet(state, name="glcice_present", value=log_buf, rc=localrc)
+       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
+       call seq_infodata_Putdata(infodata, glcice_present=log_buf)
+    endif
+
+    if (i2s) then
        call seq_infodata_Getdata(infodata, glc_prognostic=log_buf)
        call ESMF_AttributeSet(state, name="glc_prognostic", value=log_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
@@ -849,26 +939,6 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
        call ESMF_AttributeGet(state, name="glc_prognostic", value=log_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
        call seq_infodata_Putdata(infodata, glc_prognostic=log_buf)
-    endif
-
-    if (i2s) then
-       call seq_infodata_Getdata(infodata, sno_present=log_buf)
-       call ESMF_AttributeSet(state, name="sno_present", value=log_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else
-       call ESMF_AttributeGet(state, name="sno_present", value=log_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, sno_present=log_buf)
-    endif
-
-    if (i2s) then
-       call seq_infodata_Getdata(infodata, sno_prognostic=log_buf)
-       call ESMF_AttributeSet(state, name="sno_prognostic", value=log_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else
-       call ESMF_AttributeGet(state, name="sno_prognostic", value=log_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, sno_prognostic=log_buf)
     endif
 
     if (i2s) then
@@ -1022,26 +1092,6 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, sno_nx=int_buf)
-       call ESMF_AttributeSet(state, name="sno_nx", value=int_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else
-       call ESMF_AttributeGet(state, name="sno_nx", value=int_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, sno_nx=int_buf)
-    endif
-
-    if (i2s) then
-       call seq_infodata_Getdata(infodata, sno_ny=int_buf)
-       call ESMF_AttributeSet(state, name="sno_ny", value=int_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else
-       call ESMF_AttributeGet(state, name="sno_ny", value=int_buf, rc=localrc)
-       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, sno_ny=int_buf)
-    endif
-
-    if (i2s) then
        call seq_infodata_Getdata(infodata, wav_nx=int_buf)
        call ESMF_AttributeSet(state, name="wav_nx", value=int_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
@@ -1172,13 +1222,13 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, glc_g2supdate=log_buf)
-       call ESMF_AttributeSet(state, name="glc_g2supdate", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, glc_g2lupdate=log_buf)
+       call ESMF_AttributeSet(state, name="glc_g2lupdate", value=log_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-       call ESMF_AttributeGet(state, name="glc_g2supdate", value=log_buf, rc=localrc)
+       call ESMF_AttributeGet(state, name="glc_g2lupdate", value=log_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-       call seq_infodata_Putdata(infodata, glc_g2supdate=log_buf)
+       call seq_infodata_Putdata(infodata, glc_g2lupdate=log_buf)
     endif
 
     if (i2s) then

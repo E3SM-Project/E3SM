@@ -2,8 +2,10 @@
 
 <namelist_defaults>
 
-<!-- Solar constant from Lean -->
-<solar_const>1360.89</solar_const>
+<!-- Solar data from Lean (via Caspar Ammann) -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1850_cntl_c100407.nc</solar_data_file>
+<solar_data_ymd>18500101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
 
 <!-- 1850 GHG values from ipcc-ar4-cfcs-1850-2000.xls (Doug Kinnison) -->
 <co2vmr>284.7e-6</co2vmr>

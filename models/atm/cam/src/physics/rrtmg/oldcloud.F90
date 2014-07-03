@@ -145,7 +145,7 @@ subroutine old_liquid_optics_sw(state, pbuf, liq_tau, liq_tau_w, liq_tau_w_g, li
    ! greater than 20 micro-meters
 
    integer :: ns, i, k, indxsl, Nday
-   integer :: lchnk, itim
+   integer :: lchnk, itim_old
    real(r8) :: tmp1l, tmp2l, tmp3l, g
    real(r8) :: kext(pcols,pver)
    real(r8), pointer, dimension(:,:) :: iclwpth
@@ -153,8 +153,8 @@ subroutine old_liquid_optics_sw(state, pbuf, liq_tau, liq_tau_w, liq_tau_w_g, li
    Nday = state%ncol
    lchnk = state%lchnk
 
-   itim = pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, cld_idx,cldn, start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   itim_old = pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, cld_idx,cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, rel_idx,rel)
 
    if (oldliqwp) then
@@ -285,14 +285,14 @@ subroutine old_ice_optics_sw   (state, pbuf, ice_tau, ice_tau_w, ice_tau_w_g, ic
    real(r8), parameter :: cldeps = 0.0_r8
 
    integer :: ns, i, k, indxsl, lchnk, Nday
-   integer :: itim
+   integer :: itim_old
    real(r8) :: tmp1i, tmp2i, tmp3i, g
 
    Nday = state%ncol
    lchnk = state%lchnk
 
-   itim = pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, cld_idx,cldn, start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   itim_old = pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, cld_idx,cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, rei_idx,rei)
 
    if(oldicewp) then
@@ -377,7 +377,7 @@ subroutine oldcloud_lw(state,pbuf,cld_abs_od,oldwp)
 
    real(r8), pointer, dimension(:,:) :: cldn
    real(r8), pointer, dimension(:,:) :: rei 
-   integer :: ncol, itim, lwband, i, k, lchnk
+   integer :: ncol, itim_old, lwband, i, k, lchnk
    real(r8), pointer, dimension(:,:) :: iclwpth, iciwpth
 
     real(r8) :: kabs, kabsi
@@ -389,9 +389,9 @@ subroutine oldcloud_lw(state,pbuf,cld_abs_od,oldwp)
    ncol = state%ncol
    lchnk = state%lchnk
 
-   itim  =  pbuf_old_tim_idx()
+   itim_old  =  pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, rei_idx,   rei)
-   call pbuf_get_field(pbuf, cld_idx,   cldn,   start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, cld_idx,   cldn,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
    if (oldwp) then
      do k=1,pver
@@ -456,7 +456,7 @@ subroutine old_liq_get_rad_props_lw(state, pbuf, abs_od, oldliqwp)
    
    real(r8), pointer, dimension(:,:) :: cldn
    real(r8), pointer, dimension(:,:) :: rei
-   integer :: ncol, itim, lwband, i, k, lchnk 
+   integer :: ncol, itim_old, lwband, i, k, lchnk 
 
    real(r8) :: kabs, kabsi
    real(r8) kabsl                  ! longwave liquid absorption coeff (m**2/g)
@@ -467,9 +467,9 @@ subroutine old_liq_get_rad_props_lw(state, pbuf, abs_od, oldliqwp)
    ncol=state%ncol
    lchnk = state%lchnk
 
-   itim  =  pbuf_old_tim_idx()
+   itim_old  =  pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, rei_idx,   rei)
-   call pbuf_get_field(pbuf, cld_idx,   cldn,   start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, cld_idx,   cldn,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
    if (oldliqwp) then
      do k=1,pver
@@ -538,7 +538,7 @@ subroutine old_ice_get_rad_props_lw(state, pbuf, abs_od, oldicewp)
 
    real(r8), pointer, dimension(:,:) :: cldn
    real(r8), pointer, dimension(:,:) :: rei
-   integer :: ncol, itim, lwband, i, k, lchnk
+   integer :: ncol, itim_old, lwband, i, k, lchnk
 
     real(r8) :: kabs, kabsi
 
@@ -551,9 +551,9 @@ subroutine old_ice_get_rad_props_lw(state, pbuf, abs_od, oldicewp)
    ncol = state%ncol
    lchnk = state%lchnk
 
-   itim  =  pbuf_old_tim_idx()
+   itim_old  =  pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, rei_idx,   rei)
-   call pbuf_get_field(pbuf, cld_idx,   cldn,   start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, cld_idx,   cldn,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
    if(oldicewp) then
      do k=1,pver

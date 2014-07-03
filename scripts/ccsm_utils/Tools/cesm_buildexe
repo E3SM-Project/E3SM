@@ -1,6 +1,8 @@
 echo "-------------------------------------------------------------------------"
 echo " CESM BUILDEXE SCRIPT STARTING"
 
+cd $CASEROOT
+
 set atmstr = 0
 if ($NTHRDS_ATM > 1 || $BUILD_THREADED == "TRUE") set atmstr = 1
 set lndstr = 0
@@ -109,6 +111,9 @@ if ($MPILIB == "mpi-serial" && $USE_ESMF_LIB == "TRUE") then
   exit -20
 endif
 
+./xmlchange -file env_build.xml -id BUILD_COMPLETE -val FALSE
+rm LockedFiles/env_build*
+
 # -------------------------------------------------------------------------
 # Build Utility Libraries
 # -------------------------------------------------------------------------
@@ -123,15 +128,33 @@ endif
   echo " - Build Libraries: $blibs "
   setenv SMP "FALSE"
   if ($NTHRDS_ATM > 1 || $NTHRDS_CPL > 1 || $NTHRDS_ICE > 1 || $NTHRDS_ROF > 1 || \
-      $NTHRDS_LND > 1 || $NTHRDS_OCN > 1 || $NTHRDS_GLC > 1 || $NTHRDS_WAV > 1 )  \
+      $NTHRDS_LND > 1 || $NTHRDS_OCN > 1 || $NTHRDS_GLC > 1 || $NTHRDS_WAV > 1 )  then
       setenv SMP "TRUE"
+  endif
   foreach lib ($blibs)
-     set libdir = $EXEROOT/$lib; if !(-d $libdir) mkdir -p $libdir
-     set file_build = ${libdir}/$lib.bldlog.$LID
-     cd $libdir
+     
+     if($DEBUG == 'TRUE') then
+       set debugdir="debug"
+     else
+       set debugdir="nodebug"
+     endif
+     if($SMP == 'TRUE') then
+       set threaddir="threads"
+     else
+       set threaddir="nothreads"
+     endif
+     
+     setenv SHAREDPATH  "$SHAREDLIBROOT/$COMPILER/$MPILIB/$debugdir/$threaddir"
+     if !(-d "$SHAREDPATH/$lib") mkdir -p "$SHAREDPATH/$lib"
+     if !(-d "$SHAREDPATH/lib") mkdir -p "$SHAREDPATH/lib"
+     if !(-d "$SHAREDPATH/include") mkdir -p "$SHAREDPATH/include"
+     set file_build = ${SHAREDPATH}/$lib.bldlog.$LID
+     cd $SHAREDPATH
      touch ${file_build}
      echo `date` $file_build | tee -a ${file_build}
-     $CASEBUILD/buildlib.${lib} >>& ${file_build}
+     cd $lib
+     $CASEBUILD/buildlib.${lib} $SHAREDPATH >>& ${file_build}
+
      if ($status != 0) then
         echo  ERROR: buildlib.${lib} failed, see ${file_build}
         echo  ERROR: cat ${file_build}

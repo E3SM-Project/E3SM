@@ -1,0 +1,103 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# Pronghorn build specific settings
+# -------------------------------------------------------------------------
+
+source /glade/apps/opt/lmod/lmod/init/csh
+module purge
+module load ncarenv/1.0
+module load ncarbinlibs/1.0
+source /ncar/opt/lsf-pr/conf/cshrc.lsf
+setenv INTEL_LICENSE_FILE "28518@128.117.177.41"
+setenv LANGUAGE_TERRITORY en_US
+source /glade/u/ssg/pr/opt/intel/bin/compilervars.csh intel64
+source /glade/u/ssg/pr/opt/intel/impi/4.1.1.036/bin64/mpivars.csh
+source /glade/u/ssg/pr/opt/intel/vtune_amplifier_xe_2013/amplxe-vars.csh
+setenv LD_LIBRARY_PATH /glade/u/ssg/pr/opt/intel/composer_xe_2013_sp1.0.080/compiler/lib/mic:$LD_LIBRARY_PATH
+setenv I_MPI_FABRICS tcp
+setenv I_MPI_MIC enable
+
+
+
+#MPSS is the installed on a PR host's local disk within:
+#/opt/intel/mic
+
+if ( $COMPILER == "intel" ) then
+#  module load intel/13.1.1.163
+#  module load mkl/13.0.2.146
+# Currently trilinos is only supported with the INTEL compiler
+#  module load trilinos/11.0.3
+# Currently esmf is only supported with the INTEL compiler
+  #module load esmf
+#  if ( $MPILIB == "mvapich2") then
+#    module load mvapich2
+#  endif
+#  if ( $MPILIB == "impi") then
+#     module swap mvapich2 impi
+#  endif
+#module load hdf5
+#module load netcdf
+#module load parallel-netcdf/4.2.1.1
+setenv PRONGHORN_NETCDF_PATH /glade/p/work/srinathv/pronghorn-sw/netcdf/4.2.1.1/intel/14.0.0/snb
+endif
+
+if ( $COMPILER == "intelmic" ) then
+#  module load intel/13.1.1.163
+#  module load mkl/13.0.2.146
+# Currently trilinos is only supported with the INTEL compiler
+#  module load trilinos/11.0.3
+# Currently esmf is only supported with the INTEL compiler
+  #module load esmf
+#  if ( $MPILIB == "mvapich2") then
+#    module load mvapich2/1.9a2
+#  endif
+#  if ( $MPILIB == "impi") then
+#	module swap mvapich2 impi
+#  endif
+#module load netcdf/4.2.1.1
+#setenv TACC_NETCDF_DIR /work/02463/srinathv/netcdf/mic
+#module load parallel-netcdf/4.2.1.1
+setenv PRONGHORN_NETCDF_PATH /glade/p/work/srinathv/pronghorn-sw/netcdf/4.2.1.1/intel/14.0.0/mic
+endif
+
+#transfer netcdf from stampdede var to cesm var
+setenv NETCDF_PATH $PRONGHORN_NETCDF_PATH 
+module load cmake
+
+# -------------------------------------------------------------------------
+# Build and runtime environment variables - edit before the initial build 
+# -------------------------------------------------------------------------
+limit stacksize unlimited
+limit datasize  unlimited
+
+setenv OMP_STACKSIZE 256M
+#setenv MP_LABELIO yes
+
+# MPI Environment
+#setenv MP_INFOLEVEL                   2
+#setenv MP_SHARED_MEMORY             yes
+#setenv MP_EUILIB                    us
+#setenv MP_MPILIB                    $MPILIB
+#setenv MP_STDOUTMODE                unordered
+#
+#setenv MP_RC_USE_LMC                yes
+
+# setting MP_EUILIBPATH is a temporary work-around for occasional mpi hangs 
+# on yellowstone.  this should be removed when yellowstone is patched.
+#setenv MP_EUILIBPATH                /glade/u/home/archerc/EFIX5
+
+# Set a host file so that mpi can run on login node
+#if ( $HOSTNAME =~ {*login*} ) then
+#  echo $HOSTNAME > $CASEROOT/hostfile
+#  setenv MP_HOSTFILE $CASEROOT/hostfile
+#  setenv MP_PROCS 1
+#endif
+#if ( $DEBUG == "TRUE" ) then
+#  module load debug
+#  module load totalview
+#  setenv MP_EUIDEVELOP yes
+#  setenv MP_EAGER_LIMIT               0
+#else
+#  setenv MP_EUIDEVELOP min
+#endif

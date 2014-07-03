@@ -42,7 +42,7 @@ module glint_initialise
   !*FD Initialise GLINT model instance
 
   use glint_type
-
+  use glimmer_global, only: dp
   implicit none
 
   private
@@ -63,6 +63,7 @@ contains
     use glimmer_paramets, only: GLC_DEBUG
     use glimmer_log
     use glimmer_config
+    use glimmer_coordinates, only : coordsystem_new
     use glint_global_grid
     use glint_mbal_coupling
     use glint_io          , only: glint_io_createall     , glint_io_writeall
@@ -95,7 +96,7 @@ contains
     integer,     optional, intent(in)    :: gcm_config_unit  !*FD fileunit for reading config files
 
     ! Internal
-    real(sp),dimension(:,:),allocatable :: thk
+    real(dp),dimension(:,:),allocatable :: thk
     integer :: config_fileunit, restart_fileunit
     real(dp) :: timeyr       ! time in years
 
@@ -226,12 +227,12 @@ contains
                         instance%siced, &
                         instance%lgrid%size%pt(1), &
                         instance%lgrid%size%pt(2), &
-                        real(instance%lgrid%delta%pt(1),rk))
+                        real(instance%lgrid%delta%pt(1),dp))
 
     instance%mbal_tstep = instance%mbal_accum%mbal%tstep
     mbts = instance%mbal_tstep
 
-    instance%next_time = force_start-force_dt+instance%mbal_tstep
+    instance%next_time = force_start - force_dt + instance%mbal_tstep
 
     if (GLC_DEBUG .and. main_task) then
        write (6,*) 'Called glint_mbc_init'
@@ -262,7 +263,7 @@ contains
             'timestep must divide into one another',GM_FATAL,__FILE__,__LINE__)
     end if
 
-    if (instance%ice_tstep_multiply/=1 .and. mod(instance%mbal_accum_time,int(years2hours))/=0.0) then
+    if (instance%ice_tstep_multiply /= 1 .and. mod(instance%mbal_accum_time,int(years2hours)) /= 0.d0) then
        call write_log('For ice time-step multiplication, mass-balance accumulation timescale '//&
             'must be an integer number of years',GM_FATAL,__FILE__,__LINE__)
     end if
@@ -301,8 +302,8 @@ contains
     call glint_io_writeall(instance, instance%model)
     call glint_mbal_io_writeall(instance, instance%model, outfiles=instance%out_first)
 
-    if (instance%whichprecip == 2) need_winds=.true.
-    if (instance%whichacab == 3) then
+    if (instance%whichprecip == PRECIP_RL) need_winds=.true.
+    if (instance%whichacab == MASS_BALANCE_EBM) then   ! not currently supported
        need_winds = .true.
        enmabal = .true.
     end if
@@ -323,8 +324,9 @@ contains
     use glimmer_paramets, only: GLC_DEBUG
     use glimmer_log
     use glimmer_config
+    use glimmer_coordinates, only : coordsystem_new
     use glint_global_grid
-    use glint_mbal_coupling
+    use glint_downscale   , only: glint_init_input_gcm
     use glint_io          , only: glint_io_createall     , glint_io_writeall
     use glint_mbal_io     , only: glint_mbal_io_createall, glint_mbal_io_writeall
     use glimmer_ncio
@@ -475,9 +477,17 @@ contains
 
     ! initialise the mass-balance accumulation
 
-    call glint_mbc_init_gcm(instance%mbal_accum, &
-                            instance%lgrid,      &
-                            instance%whichacab)
+    call glint_init_input_gcm(instance%mbal_accum, &
+                              instance%lgrid,      &
+                              instance%whichacab)
+
+    !If flag set to force frequent coupling (for testing purposes)
+    !Decrease all coupling timesteps to very short intervals
+    if (instance%test_coupling) then
+       instance%mbal_accum%mbal%tstep = 24
+       instance%mbal_accum_time =       24
+       instance%ice_tstep =             24
+    endif
 
     !TODO - Do we need two copies of this tstep variable?
     instance%mbal_tstep = instance%mbal_accum%mbal%tstep
@@ -515,7 +525,7 @@ contains
                       'timestep must divide into one another',GM_FATAL,__FILE__,__LINE__)
     end if
 
-    if (instance%ice_tstep_multiply/=1 .and. mod(instance%mbal_accum_time,int(years2hours)) /= 0.0) then
+    if (instance%ice_tstep_multiply/=1 .and. mod(instance%mbal_accum_time,int(years2hours)) /= 0.d0) then
        call write_log('For ice time-step multiplication, mass-balance accumulation timescale '//&
                       'must be an integer number of years',GM_FATAL,__FILE__,__LINE__)
     end if
@@ -669,7 +679,7 @@ contains
     type(upscale),          intent(in)  :: ups               !*FD Upscaling used
     type(global_grid),      intent(in)  :: grid              !*FD Global grid used
     integer, dimension(:,:),intent(in)  :: mask_fulldomain   !*FD Mask of points for upscaling, spanning full domain (all tasks)
-    real(rk),dimension(:,:),intent(out) :: frac_coverage     !*FD Map of fractional 
+    real(dp),dimension(:,:),intent(out) :: frac_coverage     !*FD Map of fractional 
                                                              !*FD coverage of global by local grid-boxes.
     ! Internal variables
 
@@ -689,7 +699,7 @@ contains
     do i=1,grid%nx
        do j=1,grid%ny
           if (tempcount(i,j) == 0) then
-             frac_coverage(i,j) = 0.0
+             frac_coverage(i,j) = 0.d0
           else
              frac_coverage(i,j) = (tempcount(i,j)*lgrid_fulldomain%delta%pt(1)*lgrid_fulldomain%delta%pt(2))/ &
                                   (lon_diff(grid%lon_bound(i+1),grid%lon_bound(i))*D2R*EQ_RAD**2*    &
@@ -704,120 +714,120 @@ contains
 
     do i=2,grid%nx-1
        do j=2,grid%ny-1
-          if ((frac_coverage(i,j)   /= 0).and. &
-              (frac_coverage(i+1,j) /= 0).and. &
-              (frac_coverage(i,j+1) /= 0).and. &
-              (frac_coverage(i-1,j) /= 0).and. &
-              (frac_coverage(i,j-1) /= 0)) &
-                   frac_coverage(i,j) = 1.0
+          if ((frac_coverage(i,j)   /= 0.d0) .and. &
+              (frac_coverage(i+1,j) /= 0.d0) .and. &
+              (frac_coverage(i,j+1) /= 0.d0) .and. &
+              (frac_coverage(i-1,j) /= 0.d0) .and. &
+              (frac_coverage(i,j-1) /= 0.d0) ) &
+                   frac_coverage(i,j) = 1.d0
        enddo
     enddo
 
     ! top and bottom edges
 
     do i=2,grid%nx/2
-       if ((frac_coverage(i,1)   /= 0).and. &
-           (frac_coverage(i+1,1) /= 0).and. &
-           (frac_coverage(i,2)   /= 0).and. &
-           (frac_coverage(i-1,1) /= 0).and. &
-           (frac_coverage(i+grid%nx/2,1) /= 0)) &
-                frac_coverage(i,1) = 1.0
+       if ((frac_coverage(i,1)   /= 0.d0).and. &
+           (frac_coverage(i+1,1) /= 0.d0).and. &
+           (frac_coverage(i,2)   /= 0.d0).and. &
+           (frac_coverage(i-1,1) /= 0.d0).and. &
+           (frac_coverage(i+grid%nx/2,1) /= 0.d0)) &
+                frac_coverage(i,1) = 1.d0
     enddo
 
     do i=grid%nx/2+1,grid%nx-1
-       if ((frac_coverage(i,1)   /= 0).and. &
-           (frac_coverage(i+1,1) /= 0).and. &
-           (frac_coverage(i,2)   /= 0).and. &
-           (frac_coverage(i-1,1) /= 0).and. &
-           (frac_coverage(i-grid%nx/2,1) /= 0)) &
-                frac_coverage(i,1) = 1.0
+       if ((frac_coverage(i,1)   /= 0.d0).and. &
+           (frac_coverage(i+1,1) /= 0.d0).and. &
+           (frac_coverage(i,2)   /= 0.d0).and. &
+           (frac_coverage(i-1,1) /= 0.d0).and. &
+           (frac_coverage(i-grid%nx/2,1) /= 0.d0)) &
+                frac_coverage(i,1) = 1.d0
     enddo
 
     do i=2,grid%nx/2
-       if ((frac_coverage(i,grid%ny)   /= 0).and. &
-           (frac_coverage(i+1,grid%ny) /= 0).and. &
-           (frac_coverage(i+grid%nx/2,grid%ny) /= 0).and. &
-           (frac_coverage(i-1,grid%ny) /= 0).and. &
-           (frac_coverage(i,grid%ny-1) /= 0)) &
-                frac_coverage(i,grid%ny) = 1.0
+       if ((frac_coverage(i,grid%ny)   /= 0.d0).and. &
+           (frac_coverage(i+1,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i+grid%nx/2,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i-1,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i,grid%ny-1) /= 0.d0)) &
+                frac_coverage(i,grid%ny) = 1.d0
     enddo
 
     do i=grid%nx/2+1,grid%nx-1
-       if ((frac_coverage(i,grid%ny) /= 0).and. &
-           (frac_coverage(i+1,grid%ny) /= 0).and. &
-           (frac_coverage(i-grid%nx/2,grid%ny) /= 0).and. &
-           (frac_coverage(i-1,grid%ny) /= 0).and. &
-           (frac_coverage(i,grid%ny-1) /= 0)) &
-                frac_coverage(i,grid%ny) = 1.0
+       if ((frac_coverage(i,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i+1,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i-grid%nx/2,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i-1,grid%ny) /= 0.d0).and. &
+           (frac_coverage(i,grid%ny-1) /= 0.d0)) &
+                frac_coverage(i,grid%ny) = 1.d0
     enddo
 
     ! left and right edges
 
     do j=2,grid%ny-1
-       if ((frac_coverage(1,j) /= 0).and. &
-           (frac_coverage(2,j) /= 0).and. &
-           (frac_coverage(1,j+1) /= 0).and. &
-           (frac_coverage(grid%nx,j) /= 0).and. &
-           (frac_coverage(1,j-1) /= 0)) &
-                frac_coverage(1,j) = 1.0
-       if ((frac_coverage(grid%nx,j) /= 0).and. &
-           (frac_coverage(1,j) /= 0).and. &
-           (frac_coverage(grid%nx,j+1) /= 0).and. &
-           (frac_coverage(grid%nx-1,j) /= 0).and. &
-           (frac_coverage(grid%nx,j-1) /= 0)) &
-                frac_coverage(grid%nx,j) = 1.0
+       if ((frac_coverage(1,j) /= 0.d0).and. &
+           (frac_coverage(2,j) /= 0.d0).and. &
+           (frac_coverage(1,j+1) /= 0.d0).and. &
+           (frac_coverage(grid%nx,j) /= 0.d0).and. &
+           (frac_coverage(1,j-1) /= 0.d0)) &
+                frac_coverage(1,j) = 1.d0
+       if ((frac_coverage(grid%nx,j) /= 0.d0).and. &
+           (frac_coverage(1,j) /= 0.d0).and. &
+           (frac_coverage(grid%nx,j+1) /= 0.d0).and. &
+           (frac_coverage(grid%nx-1,j) /= 0.d0).and. &
+           (frac_coverage(grid%nx,j-1) /= 0.d0)) &
+                frac_coverage(grid%nx,j) = 1.d0
     enddo
 
     ! corners
 
-    if ((frac_coverage(1,1) /= 0).and. &
-        (frac_coverage(2,1) /= 0).and. &
-        (frac_coverage(1,2) /= 0).and. &
-        (frac_coverage(grid%nx,1) /= 0).and. &
-        (frac_coverage(grid%nx/2+1,1) /= 0)) &
-             frac_coverage(1,1) = 1.0
+    if ((frac_coverage(1,1) /= 0.d0).and. &
+        (frac_coverage(2,1) /= 0.d0).and. &
+        (frac_coverage(1,2) /= 0.d0).and. &
+        (frac_coverage(grid%nx,1) /= 0.d0).and. &
+        (frac_coverage(grid%nx/2+1,1) /= 0.d0)) &
+             frac_coverage(1,1) = 1.d0
 
-    if ((frac_coverage(1,grid%ny) /= 0).and. &
-        (frac_coverage(2,grid%ny) /= 0).and. &
-        (frac_coverage(grid%nx/2+1,grid%ny) /= 0).and. &
-        (frac_coverage(grid%nx,grid%ny) /= 0).and. &
-        (frac_coverage(1,grid%ny-1) /= 0)) &
-             frac_coverage(1,grid%ny) = 1.0
+    if ((frac_coverage(1,grid%ny) /= 0.d0).and. &
+        (frac_coverage(2,grid%ny) /= 0.d0).and. &
+        (frac_coverage(grid%nx/2+1,grid%ny) /= 0.d0).and. &
+        (frac_coverage(grid%nx,grid%ny) /= 0.d0).and. &
+        (frac_coverage(1,grid%ny-1) /= 0.d0)) &
+             frac_coverage(1,grid%ny) = 1.d0
 
-    if ((frac_coverage(grid%nx,1) /= 0).and. &
-        (frac_coverage(1,1) /= 0).and. &
-        (frac_coverage(grid%nx,2) /= 0).and. &
-        (frac_coverage(grid%nx-1,1) /= 0).and. &
-        (frac_coverage(grid%nx/2,1) /= 0)) &
-             frac_coverage(grid%nx,1) = 1.0
+    if ((frac_coverage(grid%nx,1) /= 0.d0).and. &
+        (frac_coverage(1,1) /= 0.d0).and. &
+        (frac_coverage(grid%nx,2) /= 0.d0).and. &
+        (frac_coverage(grid%nx-1,1) /= 0.d0).and. &
+        (frac_coverage(grid%nx/2,1) /= 0.d0)) &
+             frac_coverage(grid%nx,1) = 1.d0
 
-    if ((frac_coverage(grid%nx,grid%ny) /= 0).and. &
-        (frac_coverage(1,grid%ny) /= 0).and. &
-        (frac_coverage(grid%nx/2,grid%ny) /= 0).and. &
-        (frac_coverage(grid%nx-1,grid%ny) /= 0).and. &
-        (frac_coverage(grid%nx,grid%ny-1) /= 0)) &
-             frac_coverage(grid%nx,grid%ny) = 1.0
+    if ((frac_coverage(grid%nx,grid%ny) /= 0.d0).and. &
+        (frac_coverage(1,grid%ny) /= 0.d0).and. &
+        (frac_coverage(grid%nx/2,grid%ny) /= 0.d0).and. &
+        (frac_coverage(grid%nx-1,grid%ny) /= 0.d0).and. &
+        (frac_coverage(grid%nx,grid%ny-1) /= 0.d0)) &
+             frac_coverage(grid%nx,grid%ny) = 1.d0
 
     ! Finally fix any rogue points > 1.0
 
-    where (frac_coverage>1.0) frac_coverage=1.0
+    where (frac_coverage > 1.d0) frac_coverage = 1.d0
 
   end subroutine calc_coverage
 
   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-  real(rk) function lon_diff(a,b)
+  real(dp) function lon_diff(a,b)
 
     implicit none
 
-    real(rk),intent(in) :: a,b
-    real(rk) :: aa,bb
+    real(dp),intent(in) :: a,b
+    real(dp) :: aa,bb
 
     aa=a ; bb=b
 
     do
        if (aa > bb) exit
-       aa = aa + 360.0
+       aa = aa + 360.d0
     enddo
 
     lon_diff = aa - bb
@@ -846,17 +856,26 @@ contains
     ! Internal variables
     !------------------------------------------------------------------------------------
 
-    !------------------------------------------------------------------------------------
-
     ! Variables needed for restart with glint.
-    ! TODO I am simply inserting outmask because it was the only variable with hot=1 in glint_vars.def
-    !      Not sure it is needed
+    ! TODO I am inserting out_mask because it was the only variable with hot=1 in the old glint_vars.def
+    !      Not sure outflux is needed
     call glint_add_to_restart_variable_list('outmask')
+
+    ! The variables rofi_tavg, rofl_tavg, and hflx_tavg are time-averaged fluxes on the local grid
+    !  from the previous coupling interval. They are included here so that the coupler can be sent
+    !  the correct fluxes after restart; otherwise these fluxes would have values of zero.
+    ! These arrays are created only when Glint is run in GCM mode.
+    !TODO - Add av_count_output so we can restart in the middle of a mass balance timestep?
+   
+    if (instance%whichacab == MASS_BALANCE_GCM) then
+       call glint_add_to_restart_variable_list('rofi_tavg rofl_tavg hflx_tavg')
+    endif
 
     ! Variables needed for restart with glint_mbal
     ! No variables had hot=1 in glint_mbal_vars.def, so I am not adding any restart variables here.
     ! call glint_mbal_add_to_restart_variable_list('')
 
   end subroutine define_glint_restart_variables
+
 
 end module glint_initialise

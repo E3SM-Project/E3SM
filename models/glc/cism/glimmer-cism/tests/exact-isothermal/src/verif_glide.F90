@@ -33,10 +33,10 @@
 program verifglide
 
   ! load various modules
-  use glimmer_global, only:rk ! precision of the model
-  use glide                   ! main glide module
-  use glimmer_log             ! module for logging messages
-  use glimmer_config          ! module for handling configuration files
+  use glimmer_global, only: dp ! precision of the model
+  use glide                    ! main glide module
+  use glimmer_log              ! module for logging messages
+  use glimmer_config           ! module for handling configuration files
   use verif
   use verif_io
   use glimmer_commandline
@@ -50,8 +50,8 @@ program verifglide
 
   type(verif_type) :: veri
 
-  real(kind=rk) time ! current time
-  real(kind=dp) t1,t2
+  real(dp) :: time ! current time
+  real(dp) :: t1,t2
   integer clock,clock_rate
   
   call glimmer_GetCommandline()

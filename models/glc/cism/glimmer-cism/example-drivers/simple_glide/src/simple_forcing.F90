@@ -33,7 +33,7 @@ module simple_forcing
   !*FD read configuration and generate simple mass balance and 
   !*FD temperature fields
 
-  use glimmer_global, only : sp
+  use glimmer_global, only : dp
 
   type simple_climate
 
@@ -63,16 +63,16 @@ module simple_forcing
      !       correct EISMINT-1 values to be filled in below.
 
      !*FD air temperature parameterisation K, K km$^{-3}$
-     real(kind=sp), dimension(2) :: airt = (/ -3.150, 1.e-2 /)  
+     real(dp), dimension(2) :: airt = (/ -3.15d0, 1.d-2 /)  
 
      !*FD mass balance parameterisation:
-     real(kind=sp), dimension(3) :: nmsb = (/ 0.5, 1.05e-5, 450.0e3 /)
+     real(dp), dimension(3) :: nmsb = (/ 0.5d0, 1.05d-5, 450.0d3 /)
 
      !*FD EISMINT time-dep climate forcing period, switched off when set to 0
-     real(kind=sp) :: period = 0.
+     real(dp) :: period = 0.d0
 
      !*FD EISMINT amplitude of mass balance time-dep climate forcing
-     real(kind=sp) :: mb_amplitude = 0.2
+     real(dp) :: mb_amplitude = 0.2d0
 
   end type simple_climate
 
@@ -158,21 +158,21 @@ contains
 
     ! local variables
     type(ConfigSection), pointer :: section
-    real(kind=sp), dimension(:), pointer :: dummy
+    real(kind=dp), dimension(:), pointer :: dummy
 
     call GetSection(config,section,'EISMINT-1 fixed margin')
     if (associated(section)) then
        climate%eismint_type = 1
        dummy=>NULL()
        call GetValue(section,'temperature',dummy,2)
-       climate%airt = (/-34.15, 8.e-8/)
+       climate%airt = (/-34.15d0, 8.d-8/)
        if (associated(dummy)) then
           climate%airt = dummy
           deallocate(dummy)
           dummy=>NULL()
        end if
        call GetValue(section,'massbalance',dummy,1)
-       climate%nmsb = (/0.3, 0.0, 0.0/)
+       climate%nmsb = (/0.3d0, 0.d0, 0.d0/)
        if (associated(dummy)) then
           climate%nmsb(1) = dummy(1)
        end if
@@ -201,7 +201,7 @@ contains
           dummy=>NULL()
        end if
        call GetValue(section,'period',climate%period)
-       climate%mb_amplitude = 100000.
+       climate%mb_amplitude = 100000.d0
        call GetValue(section,'mb_amplitude',climate%mb_amplitude)
        return
     end if
@@ -216,7 +216,7 @@ contains
           deallocate(dummy)
           dummy=>NULL()
        else
-          climate%airt = (/-35., 1.67e-5/)
+          climate%airt = (/-35.d0, 1.67d-5/)
        end if
        call GetValue(section,'massbalance',dummy,3)
        if (associated(dummy)) then
@@ -294,8 +294,6 @@ contains
         return
     end if
 
-    !WHL - added GIS-TEST
-    !      This test had been labeled incorrectly as ISMIP-HOM
     call GetSection(config,section,'GIS-TEST')
     if (associated(section)) then 
         return
@@ -333,7 +331,7 @@ contains
        call write_log(message)
        write(message,*) 'period       : ',climate%period
        call write_log(message)
-       if (climate%period .gt.0) then
+       if (climate%period .gt. 0.d0) then
           write(message,*) 'mb amplitude : ',climate%mb_amplitude
           call write_log(message)
        end if
@@ -353,7 +351,7 @@ contains
        call write_log(message)
        write(message,*) 'period       : ',climate%period
        call write_log(message)
-       if (climate%period .gt.0) then
+       if (climate%period .gt. 0.d0) then
           write(message,*) 'mb amplitude : ',climate%mb_amplitude
           call write_log(message)
        end if
@@ -384,7 +382,7 @@ contains
 !TODO - Remove acc0
 
     use parallel
-    use glimmer_global, only : rk
+    use glimmer_global, only : dp
     use glide_types
     use glimmer_paramets, only : len0, acc0, scyr
     use glimmer_physcon, only : pi
@@ -393,21 +391,21 @@ contains
 
     type(simple_climate) :: climate         !*FD structure holding climate info
     type(glide_global_type) :: model        !*FD model instance
-    real(kind=dp), intent(in) :: time                !*FD current time
+    real(dp), intent(in) :: time            !*FD current time
 
     ! local variables
     integer  :: ns,ew
-    real :: dist, ewct, nsct, grid, rel
-    real :: periodic_bc = 1.
+    real(dp) :: dist, ewct, nsct, grid, rel
+    real(dp) :: periodic_bc = 1.d0  !TODO - Make this an integer?
 
-    ewct = real(model%general%ewn+1) / 2.0
-    nsct = real(model%general%nsn+1) / 2.0
-    grid = model%numerics%dew * len0
+    ewct = (real(model%general%ewn,dp) + 1.d0) / 2.d0
+    nsct = (real(model%general%nsn,dp) + 1.d0) / 2.d0
+    grid = real(model%numerics%dew,dp) * len0
 
     if (model%options%periodic_ew) then
-        periodic_bc = 0
+        periodic_bc = 0.d0
     else
-        periodic_bc = 1
+        periodic_bc = 1.d0
     end if
 
     select case(climate%eismint_type)
@@ -415,15 +413,15 @@ contains
     case(1)
        ! EISMINT-1 fixed margin
        model%climate%acab(:,:) = climate%nmsb(1)
-       if (climate%period.ne.0) then
-          model%climate%acab(:,:) = model%climate%acab(:,:) + climate%mb_amplitude * sin(2.*pi*time/climate%period)/ (acc0 * scyr)
-!          model%climate%acab(:,:) = model%climate%acab(:,:) + climate%mb_amplitude * sin(2.*pi*time/climate%period) / scale_acab
+       if (climate%period .ne. 0.d0) then
+          model%climate%acab(:,:) = model%climate%acab(:,:) + climate%mb_amplitude * sin(2.d0*pi*time/climate%period)/ (acc0 * scyr)
+!          model%climate%acab(:,:) = model%climate%acab(:,:) + climate%mb_amplitude * sin(2.d0*pi*time/climate%period) / scale_acab
        end if
 
     case(2)
        ! EISMINT-1 moving margin       
-       if (climate%period.ne.0) then
-          rel = climate%nmsb(3) + climate%mb_amplitude*sin(2.*pi*time/climate%period)
+       if (climate%period .ne. 0.d0) then
+          rel = climate%nmsb(3) + climate%mb_amplitude*sin(2.d0*pi*time/climate%period)
        else
           rel = climate%nmsb(3)
        end if
@@ -432,7 +430,7 @@ contains
 !!       call not_parallel(__FILE__,__LINE__)
        do ns = 1,model%general%nsn
           do ew = 1,model%general%ewn
-             dist = grid * sqrt(periodic_bc*(real(ew) - ewct)**2 + (real(ns) - nsct)**2)
+             dist = grid * sqrt(periodic_bc*(real(ew,kind=dp) - ewct)**2 + (real(ns,kind=dp) - nsct)**2)
              model%climate%acab(ew,ns) = min(climate%nmsb(1), climate%nmsb(2) * (rel - dist))
           end do
        end do
@@ -445,7 +443,7 @@ contains
 !!       call not_parallel(__FILE__,__LINE__)
        do ns = 1,model%general%nsn
           do ew = 1,model%general%ewn
-             dist = grid * sqrt(periodic_bc*(real(ew) - ewct)**2 + (real(ns) - nsct)**2)
+             dist = grid * sqrt(periodic_bc*(real(ew,kind=dp) - ewct)**2 + (real(ns,kind=dp) - nsct)**2)
              model%climate%acab(ew,ns) = min(climate%nmsb(1), climate%nmsb(2) * (rel - dist))
           end do
        end do
@@ -457,7 +455,7 @@ contains
     case(5)
        !verification 
        call not_parallel(__FILE__,__LINE__)
-       call exact_surfmass(climate,model,time,1.0,climate%airt(2))
+       call exact_surfmass(climate,model,time,1.d0,climate%airt(2))
 
     end select
 
@@ -469,28 +467,28 @@ contains
 
     use parallel
     use glide_types
-    use glimmer_global, only:rk
+    use glimmer_global, only: dp
     use glimmer_paramets, only : len0
     use glimmer_physcon, only : pi
     implicit none
 
     type(simple_climate) :: climate         !*FD structure holding climate info
     type(glide_global_type) :: model        !*FD model instance
-    real(kind=dp), intent(in) :: time       !*FD current time
+    real(dp), intent(in) :: time            !*FD current time
 
     ! local variables
     integer  :: ns,ew
-    real :: dist, ewct, nsct, grid
-    real :: periodic_bc = 1.
+    real(dp) :: dist, ewct, nsct, grid
+    real(dp) :: periodic_bc = 1.d0
 
-    ewct = real(model%general%ewn+1) / 2.0
-    nsct = real(model%general%nsn+1) / 2.0
-    grid = model%numerics%dew * len0
+    ewct = (real(model%general%ewn,dp)+1.d0) / 2.d0
+    nsct = (real(model%general%nsn,dp)+1.d0) / 2.d0
+    grid = real(model%numerics%dew,dp) * len0
 
     if (model%options%periodic_ew) then
-        periodic_bc = 0
+        periodic_bc = 0.d0
     else
-        periodic_bc = 1
+        periodic_bc = 1.d0
     end if
 
     select case(climate%eismint_type)
@@ -500,19 +498,19 @@ contains
        ! EISMINT-1 fixed margin
        do ns = 1,model%general%nsn
           do ew = 1,model%general%ewn
-             dist = grid * max(periodic_bc*abs(real(ew) - ewct),abs(real(ns) - nsct))*1e-3
+             dist = grid * max(periodic_bc*abs(real(ew,kind=dp) - ewct),abs(real(ns,kind=dp) - nsct))*1d-3
              model%climate%artm(ew,ns) = climate%airt(1) + climate%airt(2) * dist*dist*dist
           end do
        end do
-       if (climate%period.ne.0) then
-          model%climate%artm(:,:) = model%climate%artm(:,:) + 10.*sin(2.*pi*time/climate%period)
+       if (climate%period .ne. 0.d0) then
+          model%climate%artm(:,:) = model%climate%artm(:,:) + 10.d0*sin(2.d0*pi*time/climate%period)
        end if
 
     case(2)
        ! EISMINT-1 moving margin
        model%climate%artm(:,:) = climate%airt(1) - model%geometry%thck(:,:) * climate%airt(2)
-       if (climate%period.ne.0) then
-          model%climate%artm(:,:) = model%climate%artm(:,:) + 10.*sin(2.*pi*time/climate%period)
+       if (climate%period .ne. 0.d0) then
+          model%climate%artm(:,:) = model%climate%artm(:,:) + 10.d0*sin(2.d0*pi*time/climate%period)
        end if
 
     case(3)
@@ -521,7 +519,7 @@ contains
        ! EISMINT-2
        do ns = 1,model%general%nsn
           do ew = 1,model%general%ewn
-             dist = grid * sqrt(periodic_bc*(real(ew) - ewct)**2 + (real(ns) - nsct)**2)
+             dist = grid * sqrt(periodic_bc*(real(ew,kind=dp) - ewct)**2 + (real(ns,kind=dp) - nsct)**2)
              model%climate%artm(ew,ns) = climate%airt(1)+climate%airt(2) * dist
           end do
        end do
@@ -532,7 +530,7 @@ contains
     case(5)
        call not_parallel(__FILE__,__LINE__)
        !call both massbalance and surftemp at the same time to save computing time. 
-       call exact_surfmass(climate,model,time,0.0,climate%airt(2))
+       call exact_surfmass(climate,model,time,0.d0,climate%airt(2))
     end select
 
   end subroutine simple_surftemp
@@ -546,20 +544,22 @@ contains
     use testsFG
     implicit none
 
-    type(simple_climate) :: climate         !*FD structure holding climate info
-    type(glide_global_type) :: model        !*FD model instance
-    real(kind=dp), intent(in) :: time                !*FD current time
-    real(sp), intent(in) :: which_test                !*FD  Which exact test (F=0,G=1)
-    real(sp), intent(in) :: which_call                !*FD  0 = surface temp, 1= mass balance
+    type(simple_climate) :: climate             !*FD structure holding climate info
+    type(glide_global_type) :: model            !*FD model instance
+    real(dp), intent(in) :: time                !*FD current time
+    real(dp), intent(in) :: which_test          !*FD  Which exact test (F=0, G=1)
+    real(dp), intent(in) :: which_call          !*FD  0 = surface temp, 1 = mass balance
     integer  :: ns,ew,lev,center
 
     !verification
     real(dp) ::  t, r, z, x, y                    !in variables
     real(dp) ::  H, TT, U, w, Sig, M, Sigc        !out variables
     real(dp) :: H_0
-    center = (model%general%ewn - 1)*.5
 
-    if (which_call .eq. 0.0 .or. which_call .eq. 2.0) then
+    center = (model%general%ewn - 1) * 0.5
+
+    !TODO - Change which_call to an integer?
+    if (which_call .eq. 0.d0 .or. which_call .eq. 2.d0) then
 
         !point by point call to the function 
         do ns = 1,model%general%nsn
@@ -570,27 +570,27 @@ contains
                 do lev = 1, model%general%upn
                     z = model%geometry%thck(ew,ns)*model%numerics%sigma(lev)
                     !the function only returns values within the radius
-                    if(r>0.0 .and. r<L) then
-                        if (which_test .eq. 0.0) then
+                    if(r>0.d0 .and. r<L) then
+                        if (which_test .eq. 0.d0) then
                             call testF(r,z,H,TT,U,w,Sig,M,Sigc)
-                        else if (which_test .eq. 1.0) then
+                        else if (which_test .eq. 1.d0) then
                             call testG(time,r,z,H,TT,U,w,Sig,M,Sigc)
-                        else if (which_test .eq. 2.0) then
+                        else if (which_test .eq. 2.d0) then
                             !H_0 = H0
                             H_0 = model%geometry%thck(center,center)
-                            !TT = 0.0
+                            !TT = 0.d0
                             TT = model%tempwk%dissip(lev,ew,ns)
                             call model_exact(time,r,z,model%geometry%thck(ew,ns),H_0,TT,U,w,Sig,M,Sigc)
                         end if
-                        model%tempwk%compheat(lev,ew,ns) = -Sigc*SperA*1.0e6 ! (10^(-3) deg mK/a) (*10^3)
+                        model%tempwk%compheat(lev,ew,ns) = -Sigc*SperA*1.0d6 ! (10^(-3) deg mK/a) (*10^3)
                     else
-                        model%tempwk%compheat(lev,ew,ns) = 0.0
+                        model%tempwk%compheat(lev,ew,ns) = 0.d0
                     end if
                 end do
             end do
         end do
 
-    else if (which_call .eq. 1.0 .or. which_call .eq. 2.0) then
+    else if (which_call .eq. 1.d0 .or. which_call .eq. 2.d0) then
 
         do ns = 1,model%general%nsn
             do ew = 1,model%general%ewn
@@ -599,23 +599,23 @@ contains
                 r = sqrt(x**2 + y**2)
                 z = model%geometry%thck(ew,ns)
                 !the function only returns values within the radius
-                if(r>0.0 .and. r<L) then
-                    if (which_test .eq. 0.0) then
+                if(r>0.d0 .and. r<L) then
+                    if (which_test .eq. 0.d0) then
                         call testF(r,z,H,TT,U,w,Sig,M,Sigc)
-                    else if (which_test .eq. 1.0) then
+                    else if (which_test .eq. 1.d0) then
                         call testG(time,r,z,H,TT,U,w,Sig,M,Sigc)
-                    else if (which_test .eq. 2.0) then
+                    else if (which_test .eq. 2.d0) then
                         H_0 = H0 !H_0 = model%geometry%thck(center,center)
-                        TT = 0.0 !TT = model%tempwk%dissip(lev,ew,ns)
+                        TT = 0.d0 !TT = model%tempwk%dissip(lev,ew,ns)
                         call model_exact(time,r,z,model%geometry%thck(ew,ns),H_0,TT,U,w,Sig,M,Sigc)
                     end if
                     model%climate%acab(ew,ns) = M*SperA  !m/a
                 else
-                    if(r .eq. 0.0) then
-                        model%climate%acab(ew,ns) = 0.0
+                    if(r .eq. 0.d0) then
+                        model%climate%acab(ew,ns) = 0.d0
                         !model%climate%acab(ew,ns) = H0 - model%geometry%thck(center,center) !set it back to H0
                     else
-                        model%climate%acab(ew,ns) = -0.1  !outside the glacier we use .1 m ablation as specified in the paper
+                        model%climate%acab(ew,ns) = -0.1d0  !outside the glacier we use .1 m ablation as specified in the paper
                     end if
                 end if
             end do

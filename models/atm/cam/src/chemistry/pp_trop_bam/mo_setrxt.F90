@@ -26,9 +26,20 @@
       real(r8), intent(in)    :: m(ncol,pver)
       real(r8), intent(inout) :: rate(ncol,pver,rxntot)
 
+!-------------------------------------------------------
+!       ... local variables
+!-------------------------------------------------------
+      integer  ::  n
+      real(r8)  ::  itemp(ncol,pver)
+      real(r8)  ::  exp_fac(ncol,pver)
 
-      rate(:,:,1) = 1.006e-05_r8
-      rate(:,:,2) = 1.006e-05_r8
+      rate(:,:,8) = 1.006e-05_r8
+      rate(:,:,9) = 1.006e-05_r8
+      itemp(:ncol,:) = 1._r8 / temp(:ncol,:)
+      n = ncol*pver
+      rate(:,:,3) = 2.9e-12_r8 * exp( -160._r8 * itemp(:,:) )
+      rate(:,:,5) = 9.6e-12_r8 * exp( -234._r8 * itemp(:,:) )
+      rate(:,:,7) = 1.9e-13_r8 * exp( 520._r8 * itemp(:,:) )
 
       end subroutine setrxt
 
@@ -51,6 +62,12 @@
       real(r8), intent(in)    :: m(ncol,pver)
       real(r8), intent(inout) :: rate(ncol,pver,rxntot)
 
+!-------------------------------------------------------
+!       ... local variables
+!-------------------------------------------------------
+      integer  ::  n
+      real(r8)  ::  itemp(ncol,kbot)
+      real(r8)  ::  exp_fac(ncol,kbot)
 
 
       end subroutine setrxt_hrates

@@ -35,10 +35,11 @@ module glint_type
 
   !*FD contains type definitions for GLINT
 
-  use glimmer_global
+  use glimmer_global, only: dp
   use glint_interp
   use glide_types
   use glint_mbal_coupling, only: glint_mbc, mbal_has_snow_model
+  use glint_mbal
 
   implicit none
 
@@ -50,7 +51,18 @@ module glint_type
                                                ! (hold the ice state fixed at initial condition)
   integer, parameter :: EVOLVE_ICE_TRUE  = 1   ! let the ice sheet evolve
 
-  !TODO - Add other Glint options here to avoid hardwiring of case numbers
+!  These are defined in glint_mbal to avoid a circular dependency
+!  integer, parameter :: MASS_BALANCE_GCM = 0       ! receive mass balance from global climate model
+!  integer, parameter :: MASS_BALANCE_PDD = 1       ! compute mass balance using positive-degree-day scheme
+!  integer, parameter :: MASS_BALANCE_ACCUM = 2     ! accumulation only 
+!  integer, parameter :: MASS_BALANCE_EBM = 3       ! compute mass balance using energy-balance model
+!  integer, parameter :: MASS_BALANCE_DAILY_PDD = 4 ! compute mass balance using energy-balance model
+!  Note: Option 3 is not presently supported.
+    
+  integer, parameter :: PRECIP_STANDARD = 1    ! use large-scale precip field as is
+  integer, parameter :: PRECIP_RL = 2          ! use Roe-Lindzen paramterization
+  
+  !TODO - Add other Glint options here to avoid hardwiring of case numbers?
 
   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -89,25 +101,24 @@ module glint_type
 
      ! Climate inputs from global model --------------------------
 
-     !TODO - Change to dp
-     real(sp),dimension(:,:),pointer :: artm        => null() !*FD Annual mean air temperature
-     real(sp),dimension(:,:),pointer :: arng        => null() !*FD Annual air temperature half-range
-     real(sp),dimension(:,:),pointer :: prcp        => null() !*FD Precipitation (mm or m)
-     real(sp),dimension(:,:),pointer :: snowd       => null() !*FD Snow depth (m)
-     real(sp),dimension(:,:),pointer :: siced       => null() !*FD Superimposed ice depth (m)
-     real(rk),dimension(:,:),pointer :: xwind       => null() !*FD $x$-component of surface winds (m/s)
-     real(rk),dimension(:,:),pointer :: ywind       => null() !*FD $y$-component of surface winds (m/s)
-     real(rk),dimension(:,:),pointer :: humid       => null() !*FD Surface humidity (%)
-     real(rk),dimension(:,:),pointer :: lwdown      => null() !*FD Downwelling longwave (W/m^2)
-     real(rk),dimension(:,:),pointer :: swdown      => null() !*FD Downwelling shortwave (W/m^2)
-     real(rk),dimension(:,:),pointer :: airpress    => null() !*FD Surface air pressure (Pa)
+     real(dp),dimension(:,:),pointer :: artm        => null() !*FD Annual mean air temperature
+     real(dp),dimension(:,:),pointer :: arng        => null() !*FD Annual air temperature half-range
+     real(dp),dimension(:,:),pointer :: prcp        => null() !*FD Precipitation (mm or m)
+     real(dp),dimension(:,:),pointer :: snowd       => null() !*FD Snow depth (m)
+     real(dp),dimension(:,:),pointer :: siced       => null() !*FD Superimposed ice depth (m)
+     real(dp),dimension(:,:),pointer :: xwind       => null() !*FD $x$-component of surface winds (m/s)
+     real(dp),dimension(:,:),pointer :: ywind       => null() !*FD $y$-component of surface winds (m/s)
+     real(dp),dimension(:,:),pointer :: humid       => null() !*FD Surface humidity (%)
+     real(dp),dimension(:,:),pointer :: lwdown      => null() !*FD Downwelling longwave (W/m^2)
+     real(dp),dimension(:,:),pointer :: swdown      => null() !*FD Downwelling shortwave (W/m^2)
+     real(dp),dimension(:,:),pointer :: airpress    => null() !*FD Surface air pressure (Pa)
      real(dp),dimension(:,:),pointer :: global_orog => null() !*FD Global orography (m)
-     real(sp),dimension(:,:),pointer :: local_orog  => null() !*FD Local orography (m)
+     real(dp),dimension(:,:),pointer :: local_orog  => null() !*FD Local orography (m)
 
      ! Locally calculated climate/mass-balance fields ------------
 
-     real(sp),dimension(:,:),pointer :: ablt => null() !*FD Annual ablation
-     real(sp),dimension(:,:),pointer :: acab => null() !*FD Annual mass-balance
+     real(dp),dimension(:,:),pointer :: ablt => null() !*FD Annual ablation (m/y water equiv)
+     real(dp),dimension(:,:),pointer :: acab => null() !*FD Annual mass balance (m/y water equiv)
 
      ! Arrays to accumulate mass-balance quantities --------------
 
@@ -115,11 +126,11 @@ module glint_type
 
      ! Fractional coverage information ---------------------------
 
-     real(rk) ,dimension(:,:),pointer :: frac_coverage => null() 
+     real(dp) ,dimension(:,:),pointer :: frac_coverage => null() 
      !*FD Fractional coverage of each global gridbox by the projected grid.
      !*FD (ONLY VALID ON MAIN TASK)
 
-     real(rk) ,dimension(:,:),pointer :: frac_cov_orog => null() 
+     real(dp) ,dimension(:,:),pointer :: frac_cov_orog => null() 
      !*FD Fractional coverage of each global gridbox by the projected grid (orography).
      !*FD (ONLY VALID ON MAIN TASK)
 
@@ -140,6 +151,8 @@ module glint_type
      !*FD \item[1] The ice sheet can evolve
 
      integer :: whichacab = 1
+     
+     logical :: test_coupling = .false.
 
      !*FD Which mass-balance scheme: 
      !*FD \begin{description}
@@ -147,14 +160,15 @@ module glint_type
      !*FD \item[1] PDD mass-balance model
      !*FD \item[2] Accumulation only 
      !*FD \item[3] RAPID energy balance model
+     !*FD \item[4] daily PDD mass-balance model
      !*FD \end{description}
 
      integer :: whichprecip = 1
 
      !*FD Source of precipitation:
      !*FD \begin{description}
-     !*FD \item[1] Use large-scale precip as is.
-     !*FD \item[2] Use parameterization of \emph{Roe and Lindzen} 
+     !*FD \item[1] Use large-scale precip as is
+     !*FD \item[2] Use parameterization of Roe and Lindzen
      !*FD \end{description}
 
      integer :: use_mpint = 0
@@ -163,16 +177,24 @@ module glint_type
 
      ! Climate parameters ----------------------------------------------------------
 
-     !TODO - Change to dp
-     real(sp) :: ice_albedo   =   0.4 !*FD Ice albedo. (fraction)
-     real(sp) :: lapse_rate   =   8.0 !*FD Uniform lapse rate in deg C/km 
+     real(dp) :: ice_albedo   =   0.4d0 !*FD Ice albedo. (fraction)
+     real(dp) :: lapse_rate   =   8.d0  !*FD Uniform lapse rate in deg C/km 
      !*FD (N.B. This should be \emph{positive} for temperature falling with height!)
-     real(sp) :: data_lapse_rate = 8.0 !*FD Implied lapse rate in large-scale data (used for
-     !*FD tuning). Set equal to lapse\_rate if not supplied.
+     real(dp) :: data_lapse_rate = 8.d0 !*FD Implied lapse rate in large-scale data (used for
+                                        !*FD tuning). Set equal to lapse\_rate if not supplied.
 
      ! Counter for averaging temperature input --------------------------------------
 
      integer  :: av_count = 0 !*FD Counter for averaging temperature input
+
+     !WHL - added these for upscaling
+     ! Counters and fields for averaging dycore output
+
+     integer  :: av_count_output = 0       ! step counter
+     logical  :: new_tavg_output = .true.  ! if true, start new averaging
+     real(dp), dimension(:,:), pointer :: hflx_tavg => null()   ! conductive heat flux at top surface (W m-2)
+     real(dp), dimension(:,:), pointer :: rofi_tavg => null()   ! solid ice runoff (kg m-2 s-1)
+     real(dp), dimension(:,:), pointer :: rofl_tavg => null()   ! liquid runoff from basal/interior melting (kg m-2 s-1)
 
      ! Pointers to file input and output
 
@@ -207,7 +229,8 @@ module glint_type
 
   ! diagnostic points on global grid, useful for debugging
 
-  integer, parameter :: iglint_global = 56     ! SW Greenland point on 64 x 32 glint_example global grid
+  integer, parameter :: iglint_global = 56     ! SW Greenland point on 64 x 32 glint_example global grid (mostly ice covered)
+!  integer, parameter :: iglint_global = 57     ! SW Greenland point on 64 x 32 glint_example global grid (totally ice covered)
   integer, parameter :: jglint_global = 4      ! j increases from north to south
 
 contains
@@ -263,29 +286,29 @@ contains
     ! Then reallocate and zero...
     ! Global input fields
 
-    allocate(instance%artm(ewn,nsn));        instance%artm        = 0.0
-    allocate(instance%arng(ewn,nsn));        instance%arng        = 0.0
-    allocate(instance%prcp(ewn,nsn));        instance%prcp        = 0.0
-    allocate(instance%snowd(ewn,nsn));       instance%snowd       = 0.0
-    allocate(instance%siced(ewn,nsn));       instance%siced       = 0.0
-    allocate(instance%xwind(ewn,nsn));       instance%xwind       = 0.0
-    allocate(instance%ywind(ewn,nsn));       instance%ywind       = 0.0
-    allocate(instance%humid(ewn,nsn));       instance%humid       = 0.0
-    allocate(instance%lwdown(ewn,nsn));      instance%lwdown      = 0.0
-    allocate(instance%swdown(ewn,nsn));      instance%swdown      = 0.0
-    allocate(instance%airpress(ewn,nsn));    instance%airpress    = 0.0
-    allocate(instance%global_orog(ewn,nsn)); instance%global_orog = 0.0
-    allocate(instance%local_orog(ewn,nsn));  instance%local_orog  = 0.0
+    allocate(instance%artm(ewn,nsn));        instance%artm        = 0.d0
+    allocate(instance%arng(ewn,nsn));        instance%arng        = 0.d0
+    allocate(instance%prcp(ewn,nsn));        instance%prcp        = 0.d0
+    allocate(instance%snowd(ewn,nsn));       instance%snowd       = 0.d0
+    allocate(instance%siced(ewn,nsn));       instance%siced       = 0.d0
+    allocate(instance%xwind(ewn,nsn));       instance%xwind       = 0.d0
+    allocate(instance%ywind(ewn,nsn));       instance%ywind       = 0.d0
+    allocate(instance%humid(ewn,nsn));       instance%humid       = 0.d0
+    allocate(instance%lwdown(ewn,nsn));      instance%lwdown      = 0.d0
+    allocate(instance%swdown(ewn,nsn));      instance%swdown      = 0.d0
+    allocate(instance%airpress(ewn,nsn));    instance%airpress    = 0.d0
+    allocate(instance%global_orog(ewn,nsn)); instance%global_orog = 0.d0
+    allocate(instance%local_orog(ewn,nsn));  instance%local_orog  = 0.d0
 
     ! Local fields
 
-    allocate(instance%ablt(ewn,nsn)); instance%ablt = 0.0
-    allocate(instance%acab(ewn,nsn)); instance%acab = 0.0
+    allocate(instance%ablt(ewn,nsn)); instance%ablt = 0.d0
+    allocate(instance%acab(ewn,nsn)); instance%acab = 0.d0
 
     ! Fractional coverage map
 
-    allocate(instance%frac_coverage(nxg,nyg)); instance%frac_coverage = 0.0
-    allocate(instance%frac_cov_orog(nxgo,nygo)); instance%frac_cov_orog = 0.0
+    allocate(instance%frac_coverage(nxg,nyg)); instance%frac_coverage = 0.d0
+    allocate(instance%frac_cov_orog(nxgo,nygo)); instance%frac_cov_orog = 0.d0
 
     ! Output mask
 
@@ -305,24 +328,35 @@ contains
     integer,             intent(in)    :: nxg       !*FD Longitudinal size of global grid (grid-points).
     integer,             intent(in)    :: nyg       !*FD Latitudinal size of global grid (grid-points).
 
-    integer ewn,nsn
+    integer :: ewn,nsn    ! dimensions of local grid
 
     ewn = get_ewn(instance%model)
     nsn = get_nsn(instance%model)
 
     ! First deallocate if necessary
 
-    if (associated(instance%artm))          deallocate(instance%artm)
-    if (associated(instance%acab))          deallocate(instance%acab)
     if (associated(instance%frac_coverage)) deallocate(instance%frac_coverage)
     if (associated(instance%out_mask))      deallocate(instance%out_mask)  !TODO - Is this needed?
 
+    if (associated(instance%artm))          deallocate(instance%artm)
+    if (associated(instance%acab))          deallocate(instance%acab)
+
+    if (associated(instance%rofi_tavg))     deallocate(instance%rofi_tavg)
+    if (associated(instance%rofl_tavg))     deallocate(instance%rofl_tavg)
+    if (associated(instance%hflx_tavg))     deallocate(instance%hflx_tavg)
+
+
     ! Then reallocate and zero...
 
-    allocate(instance%artm(ewn,nsn));          instance%artm = 0.0
-    allocate(instance%acab(ewn,nsn));          instance%acab = 0.0
-    allocate(instance%frac_coverage(nxg,nyg)); instance%frac_coverage = 0.0
+    allocate(instance%frac_coverage(nxg,nyg)); instance%frac_coverage = 0.d0
     allocate(instance%out_mask(ewn,nsn));      instance%out_mask = 1   !TODO - Is this needed?
+
+    allocate(instance%artm(ewn,nsn));          instance%artm = 0.d0
+    allocate(instance%acab(ewn,nsn));          instance%acab = 0.d0
+
+    allocate(instance%rofi_tavg(ewn,nsn));     instance%rofi_tavg = 0.d0
+    allocate(instance%rofl_tavg(ewn,nsn));     instance%rofl_tavg = 0.d0
+    allocate(instance%hflx_tavg(ewn,nsn));     instance%hflx_tavg = 0.d0
 
   end subroutine glint_i_allocate_gcm
 
@@ -358,6 +392,7 @@ contains
        call GetValue(section,'evolve_ice',instance%evolve_ice)
        call GetValue(section,'precip_mode',instance%whichprecip)
        call GetValue(section,'acab_mode',instance%whichacab)
+       call GetValue(section,'test_coupling',instance%test_coupling)       
        call GetValue(section,'ice_albedo',instance%ice_albedo)
        call GetValue(section,'lapse_rate',instance%lapse_rate)
        instance%data_lapse_rate=instance%lapse_rate
@@ -455,12 +490,14 @@ contains
     call write_log(message)
     write(message,*) 'acab_mode   ',instance%whichacab
     call write_log(message)
+    write(message,*) 'test_coupling ',instance%test_coupling
+    call write_log(message)    
 
     if (instance%evolve_ice == EVOLVE_ICE_FALSE) then
        call write_log('The ice sheet state will not evolve after initialization')
     endif
 
-    if (instance%whichacab /= 0) then  ! not getting SMB from GCM
+    if (instance%whichacab /= MASS_BALANCE_GCM) then  ! not getting SMB from GCM
        write(message,*) 'ice_albedo  ',instance%ice_albedo
        call write_log(message)
        write(message,*) 'lapse_rate  ',instance%lapse_rate
@@ -470,13 +507,13 @@ contains
     endif
 
     if (instance%mbal_accum_time == -1) then
-       call write_log('Mass-balance accumulation time == ice time-step')
+       call write_log('Mass-balance accumulation time will be set to max(ice timestep, mbal timestep)')
     else
        write(message,*) 'Mass-balance accumulation time:',instance%mbal_accum_time * hours2years,' years'
        call write_log(message)
     end if
 
-    write(message,*) 'ice_tstep_multiply',instance%ice_tstep_multiply
+    write(message,*) 'ice_tstep_multiply:',instance%ice_tstep_multiply
     call write_log(message)
 
     select case(instance%use_mpint)

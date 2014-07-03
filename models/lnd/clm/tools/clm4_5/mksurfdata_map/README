@@ -1,4 +1,4 @@
-models/lnd/clm/tools/clm4_5/mksurfdata_map/README    Jun/04/2013
+models/lnd/clm/tools/mksurfdata_map/README    Jan 13, 2012
 
 The routines in this directory create a surface dataset.
 The output grid is read in from the input namelist and
@@ -28,33 +28,33 @@ and generate the surface dataset:
    For unsupported model resolutions - do the following...
    determine the pathname of the model resolution SCRIP grid file 
    
-   > cd ../../shared/mkmapdata
+   > cd mkmapdata
    invoke one of the following commands
    (for global resolution)
    > ./mkmapdata.sh -f <scrip grid file full pathname> -res <res> -type global    
    (for regional resolution)        
    > ./mkmapdata.sh -f <scrip grid file full pathname> -res <res> -type regional  
-   > cd ../../clm4_5/mksurfdata_map
+   > cd ../
 
-   note: the mapping files generated in ../../shared/mkmapdata will be used to
+   note: the mapping files generated in ./mkmapdata will be used to
    generate the surface dataset 
    note: the res argument above (<res>) MUST be identical to the one provided to
    mksurfdata.pl (see below)	
 
 3) make surface dataset(s)
-   > ./mksurfdata.pl --help  (for full usage instructions)
+   > mksurfdata.pl --help  (for full usage instructions)
    For supported model resolution (<res>)
-   > ./mksurfdata.pl -res <res> [options]	
+   > mksurfdata.pl -res <res> [options]	
 
    For unsupported, user specified model resolutions	
-   > ./mksurfdata.pl -res usrspec -usr_gname <res> -usr_gdate <user grid date>
+   > mksurfdata.pl -res usrspec -usr_gname <res> -usr_gdate <user grid date>
 
    Note that the argument to usr_gname MUST be the same as the -res argument value
    when invoking mkmapdata
 
    Example, for gridname=1x1_boulderCO with maps created on Jan/13/2012
 
-   > ./mksurfdata.pl -res usrspec -usr_gname 1x_boulderCO -usr_gdate 20120113
+   > mksurfdata.pl -res usrspec -usr_gname 1x_boulderCO -usr_gdate 20120113
 
 Lists of input files for range of dates historical or future scenarios:
 

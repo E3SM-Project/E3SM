@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: mct_mod.F90 43960 2013-02-14 00:35:31Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/shr/mct_mod.F90 $
+! SVN $Id: mct_mod.F90 56641 2014-01-15 23:10:15Z tcraig $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/mct_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -35,6 +35,7 @@ module mct_mod
    use shr_sys_mod          ! share system routines
    use shr_mpi_mod          ! mpi layer
    use shr_const_mod        ! constants
+   use shr_string_mod       ! string functions
 
    use shr_log_mod          ,only: s_loglev               => shr_log_Level
    use shr_log_mod          ,only: s_logunit              => shr_log_Unit
@@ -54,6 +55,8 @@ module mct_mod
    use m_AttrVect           ,only: mct_aVect_exportRattr  => exportRattr
    use m_AttrVect           ,only: mct_aVect_getIList     => getIList
    use m_AttrVect           ,only: mct_aVect_getRList     => getRList
+   use m_AttrVect           ,only: mct_aVect_getIList2c   => getIListToChar
+   use m_AttrVect           ,only: mct_aVect_getRList2c   => getRListToChar
    use m_AttrVect           ,only: mct_aVect_exportIList2c=> exportIListToChar
    use m_AttrVect           ,only: mct_aVect_exportRList2c=> exportRListToChar
    use m_AttrVect           ,only: mct_aVect_nIAttr       => nIAttr
@@ -61,15 +64,11 @@ module mct_mod
    use m_AttrVect           ,only: mct_aVect_copy         => Copy
    use m_AttrVect           ,only: mct_aVect_permute      => Permute
    use m_AttrVect           ,only: mct_aVect_unpermute    => Unpermute
+   use m_AttrVect           ,only: mct_aVect_SharedIndices=> AVSharedIndices
+   use m_AttrVect           ,only: mct_aVect_setSharedIndices=> SharedIndices
    use m_AttrVectComms      ,only: mct_aVect_scatter      => scatter
    use m_AttrVectComms      ,only: mct_aVect_gather       => gather 
    use m_AttrVectComms      ,only: mct_aVect_bcast        => bcast  
-
-   use m_Accumulator        ,only: mct_accum              => Accumulator
-   use m_Accumulator        ,only: mct_accum_init         => init
-   use m_Accumulator        ,only: mct_accum_zero         => zero
-   use m_Accumulator        ,only: mct_accum_accumulate   => accumulate
-!   use m_Accumulator        ,only: mct_accum_average      => average
 
    use m_GeneralGrid        ,only: mct_gGrid              => GeneralGrid
    use m_GeneralGrid        ,only: mct_gGrid_init         => init
@@ -159,7 +158,6 @@ module mct_mod
    use m_die                ,only: mct_die                => die
    use m_inpak90
 
-
    use m_Permuter           ,only: mct_permute            => Permute
 
    use m_MergeSorts         ,only: mct_indexset           => IndexSet
@@ -169,12 +167,14 @@ module mct_mod
 
    public :: mct_aVect_info
    public :: mct_aVect_fldIndex
+   public :: mct_aVect_sharedFields
+   public :: mct_aVect_initSharedFields
    public :: mct_aVect_getRAttr
    public :: mct_aVect_putRAttr
    public :: mct_aVect_accum
+   public :: mct_aVect_avg
    public :: mct_avect_mult
    public :: mct_avect_vecmult
-   public :: mct_aVect_avg
    public :: mct_rearr_rearrange_fldlist
    public :: mct_gsmap_identical
 
@@ -187,6 +187,8 @@ module mct_mod
    integer,parameter,private :: R8 = SHR_KIND_R8
    integer,parameter,private :: IN = SHR_KIND_IN
    integer,parameter,private :: CL = SHR_KIND_CL
+   integer,parameter,private :: CX = SHR_KIND_CX
+   integer,parameter,private :: CXX = SHR_KIND_CXX
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 contains
@@ -395,6 +397,115 @@ end function mct_aVect_fldIndex
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: mct_aVect_sharedFields - get a shared real fld index from two AVects
+!
+! !DESCRIPTION:
+!     Get the shared field index for a real field in two attribute vectors.
+!
+! !REMARKS:
+!
+! !REVISION HISTORY:
+!     2013 Jul 17 - T. Craig - first version
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine mct_aVect_sharedFields(aVect1, aVect2, rlistout, ilistout)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(mct_aVect),intent(in)  :: aVect1   ! an Attribute vector
+   type(mct_aVect),intent(in)  :: aVect2   ! an Attribute vector
+   character(*)   ,intent(inout),optional  :: rlistout      ! field name string
+   character(*)   ,intent(inout),optional  :: ilistout      ! field name string
+
+!EOP
+
+   !--- local ---
+   integer(IN) :: nflds1,nflds2
+   character(len=CXX) :: list1,list2
+
+   !--- formats ---
+   character(*),parameter :: subName = "(mct_aVect_sharedFields) "
+   character(*),parameter :: F00 = "('(mct_aVect_sharedFields) ',8a)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(rlistout)) then
+      nflds1 = mct_aVect_nRAttr(aVect1)
+      nflds2 = mct_aVect_nRAttr(aVect2)
+      rlistout = ''
+      list1 = ''
+      list2 = ''
+      if (nflds1 > 0 .and. nflds2 > 0) then
+         list1 = mct_aVect_exportRList2c(aVect1)
+         list2 = mct_aVect_exportRlist2c(aVect2)
+         call shr_string_listIntersect(list1,list2,rlistout)
+      endif
+   endif
+
+   if (present(ilistout)) then
+      nflds1 = mct_aVect_nIAttr(aVect1)
+      nflds2 = mct_aVect_nIAttr(aVect2)
+      ilistout = ''
+      list1 = ''
+      list2 = ''
+      if (nflds1 > 0 .and. nflds2 > 0) then
+         list1 = mct_aVect_exportIList2c(aVect1)
+         list2 = mct_aVect_exportIlist2c(aVect2)
+         call shr_string_listIntersect(list1,list2,ilistout)
+      endif
+   endif
+
+end subroutine mct_aVect_sharedFields
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: mct_aVect_initSharedFields - init new AVect based on shared fields 
+!     from two input aVects
+!
+! !DESCRIPTION:
+!     Init new AVect based on shared fields of two input AVects
+!
+! !REMARKS:
+!
+! !REVISION HISTORY:
+!     2013 Jul 17 - T. Craig - first version
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine mct_aVect_initSharedFields(aVect1, aVect2, aVect3, lsize)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(mct_aVect),intent(in)  :: aVect1   ! an Attribute vector
+   type(mct_aVect),intent(in)  :: aVect2   ! an Attribute vector
+   type(mct_aVect),intent(inout)  :: aVect3   ! new Attribute vector
+   integer(IN)    ,intent(in)  :: lsize    ! aVect3 size
+
+!EOP
+
+   !--- local ---
+   character(len=CXX) :: rlist,ilist
+
+   !--- formats ---
+   character(*),parameter :: subName = "(mct_aVect_initSharedFields) "
+   character(*),parameter :: F00 = "('(mct_aVect_initSharedFields) ',8a)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   call mct_aVect_sharedFields(aVect1,aVect2,rlist,ilist)
+   call mct_aVect_init(aVect3,ilist,rlist,lsize)
+
+end subroutine mct_aVect_initSharedFields
+
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: mct_aVect_getRAttr - get real F90 array data out of an aVect
 !
 ! !DESCRIPTION:
@@ -543,222 +654,201 @@ end subroutine mct_aVect_putRAttr
 ! be identical to the {\tt rList} or {\tt iList} but with the correct {\tt aVout}
 ! name subsititued at the appropriate place.
 !
+! This routine leverages the mct copy routines directly
+!
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
 ! if any of the specified attributes are not present in either {\tt aVout} or {\tt aVin}.
 !
 ! !REVISION HISTORY:
 !    2002 Sep 15 - ? - initial version.
+!     2013-Jul-20 - T. Craig -- updated
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine mct_aVect_accum(aVin, rList, TrList, iList, TiList, aVout)
+ subroutine mct_avect_accum(aVin, aVout, rList, TrList, iList, TiList, vector, sharedIndices,counter)
 
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(mct_avect),            intent(in)    :: aVin
+      character(len=*), optional, intent(in)    :: iList
+      character(len=*), optional, intent(in)    :: rList
+      character(len=*), optional, intent(in)    :: TiList
+      character(len=*), optional, intent(in)    :: TrList
+      logical, optional,          intent(in)    :: vector 
+      type(mct_avect_SharedIndices), optional, intent(in) :: sharedIndices
+
+! !OUTPUT PARAMETERS: 
+
+      type(mct_avect),         intent(inout) :: aVout
+      integer, optional,       intent(inout) :: counter
+
+
+! !REVISION HISTORY:
+
+!EOP ___________________________________________________________________
+
+   !--- local ---
+  logical :: usevector
+  integer(IN) :: lsize,nflds,npts,i,j
+  type(mct_avect) :: avotmp  ! temporary aVout copy
+  character(*),parameter :: subName = '(mct_aVect_accum) '
+
+!-----------------------------------------------------------------
+
+  usevector = .false.
+  if (present(vector)) then
+     usevector = vector
+  endif
+
+  if (present(counter)) then
+     counter = counter + 1
+  endif
+
+  ! --- allocate avotmp, a duplciate of aVout
+
+  lsize = mct_aVect_lsize(aVout)
+  call mct_avect_init(avotmp,aVout,lsize)
+  call mct_avect_zero(avotmp)
+
+  ! --- copy aVin fields into avotmp
+
+  if (present(sharedIndices)) then
+
+     if (present(rList) .and. present(iList)) then
+        if (present(trList) .and. present(tilist)) then
+           call mct_avect_copy(aVin, avotmp, rList, TrList, iList, tiList, vector = usevector, sharedIndices=sharedIndices)
+        elseif (present(trList)) then
+           call mct_avect_copy(aVin, avotmp, rList, TrList, iList, vector = usevector, sharedIndices=sharedIndices)
+        elseif (present(tiList)) then
+           call mct_avect_copy(aVin, avotmp, rList, iList=iList, tiList=tiList, vector = usevector, sharedIndices=sharedIndices)
+        else
+           call mct_avect_copy(aVin, avotmp, rList=rList, iList=iList, vector = usevector, sharedIndices=sharedIndices)
+        endif
+     else if (present(rList)) then
+        if (present(trList)) then
+           call mct_avect_copy(aVin, avotmp, rList, TrList, vector = usevector, sharedIndices=sharedIndices)
+        else
+           call mct_avect_copy(aVin, avotmp, rList, vector = usevector, sharedIndices=sharedIndices)
+        endif
+
+     else if (present(iList)) then
+        if (present(tiList)) then
+           call mct_avect_copy(aVin, avotmp, ilist=iList, tiList=tiList, vector = usevector, sharedIndices=sharedIndices)
+        else
+           call mct_avect_copy(aVin, avotmp, ilist=iList, vector = usevector, sharedIndices=sharedIndices)
+        endif
+
+     else
+        call mct_avect_copy(aVin, avotmp, vector=usevector, sharedIndices=sharedIndices)
+
+     endif
+
+  else   ! sharedIndices
+
+     if (present(rList) .and. present(iList)) then
+        if (present(trList) .and. present(tilist)) then
+           call mct_avect_copy(aVin, avotmp, rList, TrList, iList, tiList, vector = usevector)
+        elseif (present(trList)) then
+           call mct_avect_copy(aVin, avotmp, rList, TrList, iList, vector = usevector)
+        elseif (present(tiList)) then
+           call mct_avect_copy(aVin, avotmp, rList, iList=iList, tiList=tiList, vector = usevector)
+        else
+           call mct_avect_copy(aVin, avotmp, rList=rList, iList=iList, vector = usevector)
+        endif
+     else if (present(rList)) then
+        if (present(trList)) then
+           call mct_avect_copy(aVin, avotmp, rList, TrList, vector = usevector)
+        else
+           call mct_avect_copy(aVin, avotmp, rList, vector = usevector)
+        endif
+
+     else if (present(iList)) then
+        if (present(tiList)) then
+           call mct_avect_copy(aVin, avotmp, ilist=iList, tiList=tiList, vector = usevector)
+        else
+           call mct_avect_copy(aVin, avotmp, ilist=iList, vector = usevector)
+        endif
+
+     else
+        call mct_avect_copy(aVin, avotmp, vector=usevector)
+
+     endif
+
+  endif ! shared indices
+
+  ! --- accumulate avotmp into avout
+
+  nflds = mct_aVect_nRAttr(aVout)
+  npts  = mct_aVect_lsize (aVout)
+!DIR$ CONCURRENT
+!DIR$ PREFERVECTOR
+  do i=1,npts 
+  do j=1,nflds
+     aVout%rattr(j,i) = aVout%rattr(j,i) + avotmp%rattr(j,i)
+  enddo
+  enddo
+
+  ! --- clean avotmp
+
+  call mct_avect_clean(avotmp)
+
+ end subroutine mct_avect_accum
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: mct_aVect_avg - averages an accumulated attribute vector
+!
+! !DESCRIPTION:
+!     Average the data in attribute vector {\tt aVect}.  Divides all fields in 
+!     the attribute vector {\tt aVect} by the value of the input counter.
+!
+! !REVISION HISTORY:
+!     2002-Sep-15 - T. Craig -- initial version
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine mct_aVect_avg(aVect, counter)
 
 ! !USES:
 
-   use m_die ,          only : die
-   use m_stdio ,        only : stderr
-   use m_String ,       only : String_toChar => toChar
-   use m_String ,       only : String
-   use m_String ,       only : String_init
-   use m_String ,       only : String_clean => clean
-   use m_List ,         only : List
-   use m_List,          only : List_get => get
-   use m_List,          only : List_nullify => nullify
-   use m_List,          only : List_clean => clean
-   use m_List,          only : init,nitem
-   use m_AttrVect,      only : AttrVect
-   use m_AttrVect,      only : lsize
-   use m_AttrVect,      only : SharedAttrIndexList
+! !INPUT/OUTPUT PARAMETERS:
 
-   implicit none
-
-!INPUT/OUTPUT PARAMETERS
-
-   type(AttrVect)        ,intent(in)    :: aVin
-   character(*), optional,intent(in)    :: iList
-   character(*), optional,intent(in)    :: rList
-   character(*), optional,intent(in)    :: TiList
-   character(*), optional,intent(in)    :: TrList
-   type(AttrVect)        ,intent(inout) :: aVout
+   type(mct_aVect),intent(inout) :: aVect   ! bundle to read
+   integer        ,intent(in)    :: counter ! counter 
 
 !EOP
 
    !--- local ---
-   type(List)   :: rcpList       !  The list of real attributes to accum
-   type(List)   :: icpList       !  The list of integer attributes to accum
-   type(List)   :: TrcpList      !  Names of output attributes corresponding to input
-   type(List)   :: TicpList      !  Names of output attributes corresponding to input
-   type(String) :: attr          !  an individual attribute
-   type(String) :: attr2         !  an individual attribute
-   integer(IN)  :: i,j           ! generic indicies
-   integer(IN)  :: rcode         ! return code
-   integer(IN)  :: inx,outx
-   integer(IN)  :: num_indices   ! Overlapping attribute index number
-
-   !--- Overlapping attribute index storage arrays: ---
-   integer(IN), dimension(:), pointer :: aVinindices, aVoutindices
-
-   character(7) :: data_flag      ! character variable used as data type flag
+   integer(IN) :: i,j    ! generic indicies
+   integer(IN) :: npts   ! number of points (local) in an aVect field
+   integer(IN) :: nflds  ! number of aVect fields (real)
+   real(R8)    :: ravg   ! accumulation count
 
    !--- formats ---
-   character(*),parameter :: myname_='mct_accum'
+   character(*),parameter :: subName = '(mct_aVect_avg) '
 
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
 
-   call List_nullify(rcpList)
-   call List_nullify(icpList)
-   call List_nullify(TrcpList)
-   call List_nullify(TicpList)
+   if (counter == 0 .or. counter == 1) return
 
-   if (lsize(aVin) .ne. lsize(aVout)) then
-      write(stderr,'(2a)')myname_, &
-      'MCTERROR:  Input aV and output aV do not have the same size'
-      write(stderr,*)myname_, &
-      'MCTERROR: ',lsize(aVin),lsize(aVout)
-      call die(myname_,'lsize check',rcode)
-   endif
+   ravg = 1.0_R8/real(counter,R8)
 
-   !----------------------------------------------------------------------------
-   ! Accum the listed real attributes
-   !----------------------------------------------------------------------------
-   if ( present(rList)) then
-     if( len_trim(rList)>0 ) then
-
-      call init(rcpList,rList)    ! init.List()
-
-      !--- check translation list ---
-      if ( present(TrList) ) then 
-       if(len_trim(TrList)>0 ) then
-         call init(TrcpList,TrList)
-         if ( nitem(rcpList) .ne. nitem(TrcpList)) then
-            write(stderr,'(2a)')myname_, &
-            'MCTERROR:  Input rList and TrList do not have the same size'
-            call die(myname_,'nitem TrList check',rcode)
-         endif
-       endif
-      endif
-
-      if (nitem(rcpList) .ge. 1) then
-         do i=1,lsize(aVin)
-         do j=1,nitem(rcpList)
-            call List_get(attr,j,rcpList)
-            if (present(TrList)) then
-               call List_get(attr2,j,TrcpList)
-            else
-               call String_init(attr2,attr)
-            endif
-            inx=mct_aVect_indexRA(aVin,String_toChar(attr),dieWith=myname_//'real aVin')
-            outx=mct_aVect_indexRA(aVout,String_toChar(attr2),dieWith=myname_//'real aVout')
-            aVout%rAttr(outx,i)=aVout%rAttr(outx,i)+aVin%rAttr(inx,i)
-            call String_clean(attr)
-            call String_clean(attr2)
-         enddo
-         enddo
-      endif
-
-     call List_clean(rcpList)
-     if (present(TrList)) call List_clean(TrcpList)
-
-     endif
-   endif
-
-   !----------------------------------------------------------------------------
-   ! Accum the listed integer attributes 
-   !----------------------------------------------------------------------------
-   if ( present(iList) ) then
-     if (len_trim(iList)>0 ) then
-
-      call init(icpList,iList)    ! init.List()
-
-      !--- check translation list ---
-      if ( present(TiList) ) then
-        if (len_trim(TiList)>0 ) then
-         call init(TicpList,TiList)
-         if ( nitem(icpList) .ne. nitem(TicpList)) then
-             write(stderr,'(2a)')myname_, &
-            'MCTERROR:  Input iList and TiList do not have the same size'
-            call die(myname_,'nitem TiList check',rcode)
-         endif
-        endif
-      endif
-
-     if (nitem(icpList) .ge. 1) then
-        do i=1,lsize(aVin)
-        do j=1,nitem(icpList)
-           call List_get(attr,j,icpList)
-           if (present(TiList)) then
-              call List_get(attr2,j,TicpList)
-           else
-              call String_init(attr2,attr)
-           endif
-           inx =mct_aVect_indexIA(aVin ,String_toChar(attr) ,dieWith=myname_//'int aVin')
-           outx=mct_aVect_indexIA(aVout,String_toChar(attr2),dieWith=myname_//'int aVout')
-           aVout%iAttr(outx,i)=aVout%iAttr(outx,i)+aVin%iAttr(inx,i)
-           call String_clean(attr)
-           call String_clean(attr2)
-        enddo
-        enddo
-     endif
-
-     call List_clean(icpList)
-     if (present(TrList)) call List_clean(TicpList)
-
-     endif
-   endif
-
-   !----------------------------------------------------------------------------
-   ! if neither rList nor iList is present, accum shared attibutes from in to out
-   !----------------------------------------------------------------------------
-   if ( .not.present(rList) .and. .not.present(iList)) then
-
-      data_flag = 'REAL'
-      call SharedAttrIndexList(aVin, aVout, data_flag, num_indices, &
-                                aVinindices, aVoutindices)
-      if (num_indices .gt. 0) then
-#ifdef CPP_VECTOR
-         do j=1,num_indices
-!CDIR SELECT(VECTOR)
+   nflds = mct_aVect_nRAttr(aVect)
+   npts  = mct_aVect_lsize (aVect)
 !DIR$ CONCURRENT
-         do i=1,lsize(aVin)
-#else
-         do i=1,lsize(aVin)
-         do j=1,num_indices
-#endif
-            aVout%rAttr(aVoutindices(j),i)= &
-            & aVout%rAttr(aVoutindices(j),i)+aVin%rAttr(aVinindices(j),i)
-         enddo
-         enddo
-      endif
-      deallocate(aVinindices, aVoutindices,stat=rcode)
-      if (rcode /= 0) call die(myname_,'deallocate real(Vinindices...',rcode)
+!DIR$ PREFERVECTOR
+   do i=1,npts 
+   do j=1,nflds
+      aVect%rattr(j,i) = aVect%rattr(j,i)*ravg
+   enddo
+   enddo
 
-      data_flag = 'INTEGER'
-      call SharedAttrIndexList(aVin, aVout, data_flag, num_indices, &
-                                aVinindices, aVoutindices)
-      if (num_indices .gt. 0) then
-#ifdef CPP_VECTOR
-         do j=1,num_indices
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-         do i=1,lsize(aVin)
-#else
-         do i=1,lsize(aVin)
-         do j=1,num_indices
-#endif
-            aVout%iAttr(aVoutindices(j),i)= &
-            & aVout%iAttr(aVoutindices(j),i)+aVin%iAttr(aVinindices(j),i)
-         enddo
-         enddo
-      endif
-      deallocate(aVinindices, aVoutindices,stat=rcode)
-      if (rcode /= 0) call die(myname_,'deallocate int(Vinindices...',rcode)
-
-   endif
-
-end subroutine mct_aVect_accum
+end subroutine mct_aVect_avg
 
 !===============================================================================
 !BOP ===========================================================================
@@ -980,59 +1070,6 @@ subroutine mct_avect_vecmult(av,vec,avlist)
 end subroutine mct_aVect_vecmult
 
 !===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: mct_aVect_avg - averages an accumulated attribute vector
-!
-! !DESCRIPTION:
-!     Average the data in attribute vector {\tt aVect}.  Divides all fields in 
-!     the attribute vector {\tt aVect} by the value of the input counter.
-!
-! !REVISION HISTORY:
-!     2002-Sep-15 - T. Craig -- initial version
-!
-! !INTERFACE: ------------------------------------------------------------------
-
-subroutine mct_aVect_avg(aVect, counter)
-
-! !USES:
-
-! !INPUT/OUTPUT PARAMETERS:
-
-   type(mct_aVect),intent(inout) :: aVect   ! bundle to read
-   integer        ,intent(in)    :: counter ! counter 
-
-!EOP
-
-   !--- local ---
-   integer(IN) :: i,j    ! generic indicies
-   integer(IN) :: npts   ! number of points (local) in an aVect field
-   integer(IN) :: nflds  ! number of aVect fields (real)
-   real(R8)    :: ravg   ! accumulation count
-
-   !--- formats ---
-   character(*),parameter :: subName = '(mct_aVect_avg) '
-
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
-
-   if (counter == 0) return
-
-   ravg = 1.0_R8/real(counter,R8)
-
-   nflds = mct_aVect_nRAttr(aVect)
-   npts  = mct_aVect_lsize (aVect)
-!DIR$ CONCURRENT
-!DIR$ PREFERVECTOR
-   do i=1,npts 
-   do j=1,nflds
-      aVect%rattr(j,i) = aVect%rattr(j,i)*ravg
-   enddo
-   enddo
-
-end subroutine mct_aVect_avg
-
 ! !BOP ===========================================================================
 !
 ! !IROUTINE:  subroutine mct_rearr_rearrange_fldlst - rearrange on a fieldlist
@@ -1134,8 +1171,7 @@ logical function mct_gsmap_Identical(gsmap1,gsmap2)
 
 end function mct_gsmap_Identical
     
-!=======================================================================
-
+!===============================================================================
 ! !BOP ===========================================================================
 !
 ! !IROUTINE:  mct_myindex - binary search for index in list

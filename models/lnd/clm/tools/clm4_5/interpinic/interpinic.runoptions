@@ -1,1 +1,1 @@
--i /glade/p/cesm/cseg/inputdata/ccsm4_init/b40.1850.track1.2deg.003/year_401/b40.1850.track1.2deg.003.clm2.r.0401-01-01-00000.nc -o clmi.BCN.1949-01-01_10x15_USGS_simyr1850_c121113.nc
+-i /glade/p/cesm/cseg/inputdata/lnd/clm2/initdata_map/clmi.I2000CLM45CRUBGC.2000-01-01.0.9x1.25_gx1v6_simyr2000_c130926.nc -o clmi.I2000CLM45BGC.2000-01-01.10x15_simyr2000_c131104.nc

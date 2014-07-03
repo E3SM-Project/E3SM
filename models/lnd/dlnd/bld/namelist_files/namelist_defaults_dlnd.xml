@@ -49,9 +49,6 @@ Currently the following streams are supported
 
    lnd.cplhist
    sno.cplhist
-   rof.cplhist
-   rof.diatren_ann_rx1
-   rof.diatren_iaf_rx1
 
 -->
 
@@ -60,15 +57,8 @@ Currently the following streams are supported
 <!-- =========================================  -->
 
 <datamode dlnd_mode="NULL"    >NULL</datamode>
-<datamode dlnd_mode="CPLHIST" >CPLHIST</datamode>
-
-<datamode dlnd_rof_mode="NULL"           >NULL</datamode>
-<datamode dlnd_rof_mode="CPLHIST"        >CPLHIST</datamode>
-<datamode dlnd_rof_mode="DIATREN_ANN_RX1">DIATREN_ANN_RX1</datamode>
-<datamode dlnd_rof_mode="DIATREN_IAF_RX1">DIATREN_IAF_RX1</datamode>
-
-<datamode dlnd_sno_mode="NULL"   >NULL</datamode>
-<datamode dlnd_sno_mode="CPLHIST">CPLHIST</datamode>
+<datamode dlnd_mode="CPLHIST" >COPYALL</datamode>
+<datamode dlnd_mode="GLC_CPLHIST" >COPYALL</datamode>
 
 <!-- =========================================  -->
 <!--- streams                                   -->
@@ -76,41 +66,7 @@ Currently the following streams are supported
 
 <streamslist dlnd_mode="NULL"    >NULL</streamslist>
 <streamslist dlnd_mode="CPLHIST" >lnd.cplhist</streamslist>
-
-<streamslist dlnd_rof_mode="NULL"           >NULL</streamslist>
-<streamslist dlnd_rof_mode="CPLHIST"        >rof.cplhist</streamslist>
-<streamslist dlnd_rof_mode="DIATREN_ANN_RX1">rof.diatren_ann_rx1</streamslist>
-<streamslist dlnd_rof_mode="DIATREN_IAF_RX1">rof.diatren_iaf_rx1</streamslist>
-
-<streamslist dlnd_sno_mode="NULL"    >NULL</streamslist>
-<streamslist dlnd_sno_mode="CPLHIST" >sno.cplhist</streamslist>
-
-<!-- =========================================  -->
-<!--- dlnd.rof.cplhist                          -->
-<!-- =========================================  -->
-
-<strm_year_align stream="rof.cplhist">$DLND_CPLHIST_YR_ALIGN</strm_year_align>
-<strm_year_start stream="rof.cplhist">$DLND_CPLHIST_YR_START</strm_year_start>
-<strm_year_end   stream="rof.cplhist">$DLND_CPLHIST_YR_END</strm_year_end>
-<strm_cpl_case   stream="rof.cplhist">$DLND_CPLHIST_CASE</strm_cpl_case>
-<strm_offset     stream="rof.cplhist">-43200</strm_offset>
-<strm_tintalgo   stream="rof.cplhist">lower</strm_tintalgo>
-<strm_taxmode    stream="rof.cplhist">cycle</strm_taxmode>
-<strm_domdir     stream="rof.cplhist">$DIN_LOC_ROOT/lnd/dlnd7</strm_domdir>
-<strm_domfil     stream="rof.cplhist">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</strm_domfil>
-<strm_datdir     stream="rof.cplhist">$DLND_CPLHIST_DIR</strm_datdir>
-<strm_datfil     stream="rof.cplhist">$DLND_CPLHIST_CASE.cpl.hr2xacc.%y.nc</strm_datfil>
-<strm_domvar     stream="rof.cplhist">
-  time    time
-  xc      lon
-  yc      lat
-  area    area
-  mask    mask
-</strm_domvar>
-<strm_datvar     stream="rof.cplhist">
-  r2xacc_Forr_roff  roff
-  r2xacc_Forr_ioff  ioff
-</strm_datvar>
+<streamslist dlnd_mode="GLC_CPLHIST" >sno.cplhist</streamslist>
 
 <!-- =========================================  -->
 <!--- dlnd.sno.cplhist                          -->

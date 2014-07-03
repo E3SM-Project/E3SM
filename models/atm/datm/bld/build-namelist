@@ -42,6 +42,9 @@ OPTIONS
                               	      1 = regular						    
                               	      2 = verbose						    
      -test                    	   Enable checking that input datasets exist on local filesystem.
+     -user_xml_dir "directory"     Directory of where to look for user versions of 
+                                      namelist XML files (usually your SourceMods/src.datm directory)
+                                      (such as namelist_definition_datm.xml, or namelist_defaults_datm.xml)
      -caseroot                     CASEROOT directory variable
      -scriptsroot                  SCRIPTSROOT directory variable
      -inst_string                  INST_STRING variable
@@ -54,7 +57,7 @@ Note: The precedence for setting the values of namelist variables is (highest to
 
 NOTE: The following xml variables are REQUIRED (they are already set by scripts in the env_*.xml files)
          RUN_TYPE    DIN_LOC_ROOT  ATM_DOMAIN_FILE   ATM_DOMAIN_PATH
-	 DATM_MODE   DATM_PRESAERO ATM_GRID          GRID                     
+	 DATM_MODE   DATM_PRESAERO DATM_CO2_TSERIES  ATM_GRID          GRID                     
 EOF
 }
 
@@ -90,18 +93,20 @@ my %opts = ( help        => 0,
 	     caseroot    => undef,
 	     scriptsroot => &absolute_path( "$cfgdir/../../../../scripts" ),
 	     inst_string => undef,
+             user_xml_dir=> undef,
 	    );
 
 GetOptions(
-    "h|help"        => \$opts{'help'},
-    "infile=s"      => \$opts{'infile'},
-    "namelist=s"    => \$opts{'namelist'},
-    "print=i"       => \$opts{'print'},
-    "debug"         => \$opts{'debug'},
-    "test"          => \$opts{'test'},
-    "caseroot=s"    => \$opts{'caseroot'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
-    "inst_string=s" => \$opts{'inst_string'},	   
+    "h|help"         => \$opts{'help'},
+    "infile=s"       => \$opts{'infile'},
+    "namelist=s"     => \$opts{'namelist'},
+    "print=i"        => \$opts{'print'},
+    "debug"          => \$opts{'debug'},
+    "test"           => \$opts{'test'},
+    "caseroot=s"     => \$opts{'caseroot'},
+    "scriptsroot=s"  => \$opts{'scriptsroot'},
+    "inst_string=s"  => \$opts{'inst_string'},	   
+    "user_xml_dir=s" => \$opts{'user_xml_dir'},
 )  or usage();
 
 # Give usage message.
@@ -123,6 +128,23 @@ my $eol = "\n";
 if ( $opts{'debug'} && ! defined($opts{'caseroot'}) ) {
    $opts{'caseroot'} = "$cwd/unit_testers";
    if ( $print > 1 ) { print "caseroot = $opts{'caseroot'}\n"; }
+}
+
+# user_xml_dir
+my $opt = 'user_xml_dir';
+if (defined $opts{$opt}) {
+   my $dir = $opts{$opt};
+   if ( ! -d "$dir" ) {
+      die << "EOF";
+** $ProgName - $opt: $dir does NOT exist
+EOF
+   }
+   my @files = glob("$dir/*.xml");
+   if ( $#files == -1 && $print > 0 ) {
+      print << "EOF";
+** $ProgName - Warning NO XML files exist in $opt directory $dir
+EOF
+   }
 }
 
 my $CASEROOT    = $opts{'caseroot'};
@@ -177,11 +199,24 @@ EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.
-my $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_datm.xml";
-(-f "$nl_definition_file")  or  die <<"EOF";
-** $ProgName - Cannot find namelist definition file \"$nl_definition_file\" **
+my @nl_definition_files = ( "$cfgdir/namelist_files/namelist_definition_datm.xml" );
+# If user has user namelist definition files
+if (defined $opts{'user_xml_dir'}) {
+  my @filelist = @nl_definition_files;
+  foreach my $file  ( @filelist ) {
+    $file =~ s!(.*)/!!;
+    my $newfile = "$opts{'user_xml_dir'}/$file";
+    if ( -f "$newfile" ) {
+       unshift @nl_definition_files, $newfile;
+    }
+  }
+}
+foreach my $nl_defin_file  ( @nl_definition_files ) {
+   (-f "$nl_defin_file")  or  die <<"EOF";
+** $ProgName - Cannot find namelist definition file \"$nl_defin_file\" **
 EOF
-if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol"; }
+   if ($print>=2) { print "Using namelist definition file $nl_defin_file$eol"; }
+}
 
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
@@ -192,6 +227,17 @@ EOF
 
 # The namelist defaults file contains default values for all required namelist variables.
 my @nl_defaults_files = ( "$cfgdir/namelist_files/namelist_defaults_datm.xml"); 
+# If user has user namelist definition files
+if (defined $opts{'user_xml_dir'}) {
+  my @filelist = @nl_defaults_files;
+  foreach my $file  ( @filelist ) {
+    $file =~ s!(.*)/!!;
+    my $newfile = "$opts{'user_xml_dir'}/$file";
+    if ( -f "$newfile" ) {
+       unshift @nl_defaults_files, $newfile;
+    }
+  }
+}
 foreach my $nl_defaults_file ( @nl_defaults_files ) {
   (-f "$nl_defaults_file")  or  die <<"EOF";
 ** $ProgName - Cannot find namelist defaults file \"$nl_defaults_file\" **
@@ -232,7 +278,10 @@ my $cfg = Build::Config->new( $cfg_cache );
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
 # namelist groups.
-my $definition = Build::NamelistDefinition->new($nl_definition_file);
+my $definition = Build::NamelistDefinition->new( shift( @nl_definition_files ) );
+foreach my $nl_defin_file ( @nl_definition_files ) {
+   $definition->add( "$nl_defin_file" );
+}
 
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
@@ -319,13 +368,14 @@ foreach my $attr (keys %xmlvars) {
     }
 }
 
-foreach my $var ( "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID", "GRID" ) {
-   if ( $print > 1 ) { print "$var = $xmlvars{$var}\n"; }
-   if ( ! defined($xmlvars{$var})  || $xmlvars{$var} =~ /^(UNSET|)$/ ) {
-      die <<"EOF";
+foreach my $var ( "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", 
+		  "DATM_MODE", "DATM_PRESAERO", "DATM_CO2_TSERIES", "ATM_GRID", "GRID" ) {
+    if ( $print > 1 ) { print "$var = $xmlvars{$var}\n"; }
+    if ( ! defined($xmlvars{$var})  || $xmlvars{$var} =~ /^(UNSET|)$/ ) {
+	die <<"EOF";
 ** $ProgName - $var is NOT set  **
 EOF
-   }
+    }
 }
 
 my $RUN_TYPE        = $xmlvars{'RUN_TYPE'}; 
@@ -334,6 +384,7 @@ my $ATM_DOMAIN_FILE = &Streams::TemplateGeneric::expandXMLVar( $xmlvars{'ATM_DOM
 my $ATM_DOMAIN_PATH = &Streams::TemplateGeneric::expandXMLVar( $xmlvars{'ATM_DOMAIN_PATH'}, \%xmlvars );;  
 my $DATM_MODE       = $xmlvars{'DATM_MODE'};   
 my $DATM_PRESAERO   = $xmlvars{'DATM_PRESAERO'};    
+my $DATM_CO2_TSERIES= $xmlvars{'DATM_CO2_TSERIES'};
 my $ATM_GRID        = $xmlvars{'ATM_GRID'};    
 my $GRID            = $xmlvars{'GRID'};     
 my $CLM_USRDAT_NAME = $xmlvars{'CLM_USRDAT_NAME'};     
@@ -387,9 +438,10 @@ $fh_out->open(">$CASEROOT/Buildconf/datm.input_data_list") or
 
 # Hash for parsing default_namelist_datm.xml
 my %default_namelist_opts;
-$default_namelist_opts{'grid'}          = $GRID;
-$default_namelist_opts{'datm_mode'}     = $DATM_MODE;
-$default_namelist_opts{'presaero_mode'} = $DATM_PRESAERO;
+$default_namelist_opts{'grid'}             = $GRID;
+$default_namelist_opts{'datm_mode'}        = $DATM_MODE;
+$default_namelist_opts{'presaero_mode'}    = $DATM_PRESAERO;
+$default_namelist_opts{'datm_co2_tseries'} = $DATM_CO2_TSERIES;
 
 # Create streams template file(s) - loop over streams
 my $streams = $defaults->get_value( "streamslist", \%default_namelist_opts );
@@ -401,6 +453,25 @@ if ($DATM_PRESAERO ne "none") {
     } else {
 	push (@streams, "presaero.$DATM_PRESAERO");
     }
+}
+
+if ($DATM_CO2_TSERIES ne "none") {
+    push (@streams, "co2tseries.$DATM_CO2_TSERIES");
+}
+
+# anomaly forcing: Check for bias correction streams
+my $bias_correct = $nl->get_value( 'bias_correct' );
+$bias_correct =~ s/[\'\"]//g;
+if ( $bias_correct ) {
+    push (@streams, $bias_correct); #from namelist_defaults_datm.xml
+}
+
+#Check for anomaly forcing streams
+my $anomaly_forcing = $nl->get_value( 'anomaly_forcing' );
+$anomaly_forcing =~ s/[\'\"]//g;
+my @anomaly_forcing = split ",", $anomaly_forcing, -1;
+if ( @anomaly_forcing ) {
+    push (@streams, @anomaly_forcing);
 }
 
 my $ostreams  = undef;
@@ -439,6 +510,10 @@ foreach my $stream ( @streams ) {
     my $outstream = "datm.streams.txt" . ".$stream" . "$INST_STRING";
     if (-e "$CASEROOT/user_$outstream") {
 
+        if ( ! -w "$CASEROOT/user_$outstream" ) {
+           print "Your user streams file is read-only: $CASEROOT/user_$outstream\n";
+           die "Make it writable to continue\n";
+        }
 	my $command = "cp -p $CASEROOT/user_$outstream $bldconfdir/$outstream";
 	system($command) == 0  or die "system $command failed: $? \n";
 
@@ -590,6 +665,7 @@ if ($DATM_PRESAERO eq "none" ) {
     add_default($nl, 'presaero', 'val'=>'.true.');
 }
 add_default($nl, 'decomp',    'val'=>'1d');
+add_default($nl, 'force_prognostic_true', 'val'=>'.false.');
 add_default($nl, 'restfilm',  'val'=>'undefined'); 
 add_default($nl, 'restfils',  'val'=>'undefined'); 
 

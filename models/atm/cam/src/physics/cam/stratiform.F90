@@ -83,7 +83,7 @@ subroutine stratiform_register
    use constituents, only: cnst_add, pcnst
    use physconst,    only: mwdry, cpair
     
-   use physics_buffer, only : pbuf_add_field, dtype_r8, pbuf_times
+   use physics_buffer, only : pbuf_add_field, dtype_r8, dyn_time_lvls
 
    !-----------------------------------------------------------------------
 
@@ -96,13 +96,13 @@ subroutine stratiform_register
    call cnst_add(cnst_names(2), mwdry, cpair, 0._r8, ixcldice, &
       longname='Grid box averaged cloud ice amount', is_convtran1=.true.)
 
-   call pbuf_add_field('QCWAT',  'global', dtype_r8, (/pcols,pver,pbuf_times/), qcwat_idx)
-   call pbuf_add_field('LCWAT',  'global', dtype_r8, (/pcols,pver,pbuf_times/), lcwat_idx)
-   call pbuf_add_field('TCWAT',  'global', dtype_r8, (/pcols,pver,pbuf_times/), tcwat_idx)
+   call pbuf_add_field('QCWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qcwat_idx)
+   call pbuf_add_field('LCWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), lcwat_idx)
+   call pbuf_add_field('TCWAT',  'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tcwat_idx)
 
-   call pbuf_add_field('CLD',    'global', dtype_r8, (/pcols,pver,pbuf_times/), cld_idx)
-   call pbuf_add_field('AST',    'global', dtype_r8, (/pcols,pver,pbuf_times/), ast_idx)
-   call pbuf_add_field('CONCLD', 'global', dtype_r8, (/pcols,pver,pbuf_times/), concld_idx)
+   call pbuf_add_field('CLD',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), cld_idx)
+   call pbuf_add_field('AST',    'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), ast_idx)
+   call pbuf_add_field('CONCLD', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), concld_idx)
 
    call pbuf_add_field('FICE',   'physpkg', dtype_r8, (/pcols,pver/), fice_idx) 
 
@@ -398,7 +398,7 @@ subroutine stratiform_tend( &
    integer :: i, k, m
    integer :: lchnk                                  ! Chunk identifier
    integer :: ncol                                   ! Number of atmospheric columns
-   integer :: itim
+   integer :: itim_old
 
    ! Physics buffer fields
    real(r8), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ] 
@@ -506,14 +506,14 @@ subroutine stratiform_tend( &
 
    ! Associate pointers with physics buffer fields
 
-   itim = pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, qcwat_idx,   qcwat,   start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-   call pbuf_get_field(pbuf, tcwat_idx,   tcwat,   start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-   call pbuf_get_field(pbuf, lcwat_idx,   lcwat,   start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+   itim_old = pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, qcwat_idx,   qcwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, tcwat_idx,   tcwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, lcwat_idx,   lcwat,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-   call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-   call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-   call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
    call pbuf_get_field(pbuf, fice_idx,    fice)
  

@@ -1,4 +1,3 @@
-
 #======================================================================
 # All things common to all tests that need to be done at the beginning 
 # of each test should be put here to avoid duplication.  
@@ -12,11 +11,11 @@
 setenv TESTSTATUS_OUT   $CASEROOT/TestStatus
 setenv TESTSTATUS_LOG   $CASEROOT/TestStatus.out
 setenv TESTSTATUS_OUT_NLCOMP $CASEROOT/TestStatus.nlcomp
-if( $?COMPARE_BASELINE ) then
+if( "$COMPARE_BASELINE" == "TRUE" ) then
   setenv BASECMP_CPLLOGFILE  $BASECMP_DIR/cpl.log
   setenv COMPARE_NAMELISTS   TRUE
 endif
-if( $?GENERATE_BASELINE ) then
+if( "$GENERATE_BASELINE" == "TRUE" ) then
   setenv BASEGEN_CPLLOGFILE  $BASEGEN_DIR/cpl.log
 endif
 
@@ -50,9 +49,9 @@ echo "test started $sdate" >>& CaseStatus
 #======================================================================
 
 if ( ${CASE} =~ *_IOP*) then
-  set iopbase_argv = `echo ${TEST_ARGV} |  sed 's/_IOP[A-Z]*//'`
-  set iopbase_case = `echo ${CASE} |  sed 's/_IOP[A-Z]*//'`
-  set iopflags = `echo $CASE | sed 's/^.*_IOP\([A-Z]*\).*/\1/'`
+  set iopbase_argv = `echo ${TEST_ARGV} |  sed 's/_IOP[A-Z4cp]*//'`
+  set iopbase_case = `echo ${CASE} |  sed 's/_IOP[A-Z4cp]*//'`
+  set iopflags = `echo $CASE | sed 's/^.*_IOP\([A-Z4cp]*\).*/\1/'`
   echo "running create_test ${iopbase_argv}  -clean off -testid ${TEST_TESTID}" >>& $TESTSTATUS_LOG
   echo "iopflags = ${iopflags}" >>& $TESTSTATUS_LOG
 
@@ -61,8 +60,11 @@ if ( ${CASE} =~ *_IOP*) then
   cd $SCRIPTSROOT
   ./create_test ${iopbase_argv} -clean off -testid ${TEST_TESTID}
   cd $CASEROOT  || exit -9
+  ./xmlchange  HIST_OPTION='$STOP_OPTION'
+  ./xmlchange  HIST_N='$STOP_N'
   cd ../${iopbase_case}  || exit -9
-  cp $CASEROOT/env*.xml.* .
+  cp $CASEROOT/env_build.xml* .
+  cp $CASEROOT/env_run.xml* .
   foreach file (env_build.xml*)
     ./xmlchange -file $file -id EXEROOT        -val ${EXEROOT}
     ./xmlchange -file $file -id BUILD_COMPLETE -val TRUE
@@ -74,29 +76,30 @@ if ( ${CASE} =~ *_IOP*) then
   if ( ${iopflags} == '' ) then
     ./xmlchange -file env_run.xml -id PIO_TYPENAME -val 'pnetcdf'
   endif
-  if ( ${iopflags} =~ *A* ) then
-    ./xmlchange -file env_run.xml -id ATM_PIO_TYPENAME -val 'pnetcdf'
+  if ( ${iopflags} == '4p' ) then
+    ./xmlchange -file env_run.xml -id PIO_TYPENAME -val 'netcdf4p'
   endif
-  if ( ${iopflags} =~ *L* ) then
-    ./xmlchange -file env_run.xml -id LND_PIO_TYPENAME -val 'pnetcdf'
+  if ( ${iopflags} == '4c' ) then
+    ./xmlchange -file env_run.xml -id PIO_TYPENAME -val 'netcdf4c'
   endif
-  if ( ${iopflags} =~ *R* ) then
-    ./xmlchange -file env_run.xml -id ROF_PIO_TYPENAME -val 'pnetcdf'
-  endif
-  if ( ${iopflags} =~ *O* ) then
-    ./xmlchange -file env_run.xml -id OCN_PIO_TYPENAME -val 'pnetcdf'
-  endif
-  if ( ${iopflags} =~ *I* ) then
-    ./xmlchange -file env_run.xml -id ICE_PIO_TYPENAME -val 'pnetcdf'
-  endif
-  if ( ${iopflags} =~ *G* ) then
-    ./xmlchange -file env_run.xml -id GLC_PIO_TYPENAME -val 'pnetcdf'
-  endif
-  if ( ${iopflags} =~ *W* ) then
-    ./xmlchange -file env_run.xml -id WAV_PIO_TYPENAME -val 'pnetcdf'
-  endif
-  if ( ${iopflags} =~ *C* ) then
-    ./xmlchange -file env_run.xml -id CPL_PIO_TYPENAME -val 'pnetcdf'
-  endif
+
+  set pref = ( ATM CPL OCN WAV GLC ICE ROF LND )
+  set mod = ( A C O W G I R L )
+  set i = 0
+  while ( $i < 8 ) 
+    @ i ++
+    if ( ${iopflags} =~ *$mod[$i]4p*) then
+      ./xmlchange -file env_run.xml -id $pref[$i]_PIO_TYPENAME -val 'netcdf4p'
+    else if ( ${iopflags} =~ *$mod[$i]4c* ) then
+      ./xmlchange -file env_run.xml -id $pref[$i]_PIO_TYPENAME -val 'netcdf4c'
+    else if ( ${iopflags} =~ *$mod[$i]* ) then
+      ./xmlchange -file env_run.xml -id $pref[$i]_PIO_TYPENAME -val 'pnetcdf'
+    endif
+  end
+
+
+
+
+
 endif
 

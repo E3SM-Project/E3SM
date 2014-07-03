@@ -262,7 +262,7 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_lon_all_p, get_lat_all_p, get_rlat_all_p
+    use phys_grid,     only: get_lon_all_p, get_lat_all_p
     use camsrfexch,    only: cam_in_t
     use cam_history,   only: outfld
     
@@ -288,7 +288,8 @@ contains
     character(len=32) :: shortname          ! the shortname of the group
     
     ! -------- local variables added for dust model ------------
-    real(r8), parameter :: ch = 0.5e-9_r8                     ! dimensional factor & tuning number as it's model resolution dependent (kgs^2/m^5)!!!
+    real(r8), parameter :: ch = 0.5e-9_r8                     ! dimensional factor & tuning number,
+                                                              ! as it's model resolution dependent (kgs^2/m^5)!!!
     real(r8)            :: r(NBIN)                            ! bin center (cm)
     real(r8)            :: uth                                ! threshold wind velocity (m/s)
 
@@ -380,7 +381,8 @@ contains
     implicit none
 
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     ! -------- local variables ----------
@@ -788,7 +790,7 @@ contains
   !! @version August-2010
    subroutine WeibullWind(u, uth, n, uwb, wbk)
     use shr_kind_mod,   only: r8 => shr_kind_r8
-    use shr_spfn_mod, only: gamma =>  shr_spfn_gamma_nonintrinsic, &
+    use shr_spfn_mod, only: gamma =>  shr_spfn_gamma, &
          igamma => shr_spfn_igamma
 
     implicit none

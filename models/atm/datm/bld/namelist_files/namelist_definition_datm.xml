@@ -12,7 +12,7 @@
 type="char*256"  
 category="datm_setting"
 group="datm_env_settings" 
-valid_values="CLM_QIAN,CLM1PT,CLMCRUNCEP,CPLHIST3HrWx,CORE2_NYF,CORE2_IAF,WRF,COPYALL_NPS_v1,COPYALL_CORE2_v1,WW3">
+valid_values="CLM_QIAN,CLM1PT,CLMCRUNCEP,CPLHIST3HrWx,CORE2_NYF,CORE2_IAF,COPYALL_NPS_v1,COPYALL_CORE2_v1,WW3">
 Data Model mode to process forcing data
 </entry>
 
@@ -268,6 +268,27 @@ default="".
 <!--- datm_nml (in file datm_in)                -->
 <!-- =========================================  -->
 
+<!--- anomaly forcing - bias correction -->
+<entry id="bias_correct" 
+type="char*256" 
+category="datm"
+group="datm_nml"
+valid_values="BC.QIAN.CMAP.Precip,BC.QIAN.GPCP.Precip,BC.CRUNCEP.CMAP.Precip,BC.CRUNCEP.GPCP.Precip">
+If set, include bias correction streams in namelist.
+default = ""
+</entry>
+
+<entry id="anomaly_forcing" 
+type="char*50(10)" 
+category="datm"
+group="datm_nml"
+valid_values="Anomaly.Forcing.Precip,Anomaly.Forcing.Temperature,Anomaly.Forcing.Pressure,Anomaly.Forcing.Humidity,Anomaly.Forcing.Uwind,Anomaly.Forcing.Vwind,Anomaly.Forcing.Shortwave,Anomaly.Forcing.Longwave">
+If set, include anomaly forcing streams in namelist.
+default = ""
+</entry>
+
+<!--- for anomaly forcing -->
+
 <entry id="atm_in" 
 type="char*256" 
 category="datm"
@@ -310,6 +331,14 @@ type="logical"
 category="datm"
 group="datm_nml">
 If TRUE, prescribed aerosols are sent from datm (must be true for running with CLM).
+</entry>
+
+<entry id="force_prognostic_true"
+type="logical" 
+category="datm"
+group="datm_nml">
+If TRUE, prognostic is forced to true.
+default=false 
 </entry>
 
 <entry id="iradsw" 

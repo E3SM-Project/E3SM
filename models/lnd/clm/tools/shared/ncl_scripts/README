@@ -1,4 +1,4 @@
-models/lnd/clm/tools/shared/ncl_scripts					Jun/05/2013
+models/lnd/clm/tools/ncl_scripts					Nov/06/2012
 
 CLM NCL script tools for analysis of CLM history files -- or for creation or
 modification of CLM input files.
@@ -13,10 +13,13 @@ Scripts available:
 
 Master perl scripts that call the other ncl scripts:
 
+getregional_datasets.pl ----- Extract out regional datasets from global ones and put files in a location that 
+                              can be used by build-namelist.
 cprnc.pl -------------------- Compare two NetCDF files to see if they are same or different.
 
 NCL Scripts available:
 
+getregional_datasets.ncl ---- NCL script to extract out regional datasets.
 getco2_historical.ncl ------- Get historical CO2 to use for input in datm8 streams
 cprnc.ncl ------------------- Compare two NetCDF files to see if they are same or different.
 

@@ -273,7 +273,9 @@
       rad_part(:,:,INDX_LSSNOW) = ls_radsnow(:,:) !modified by ZYY
       rad_part(:,:,:)=MAX(rad_part(:,:,:),0.)
       rad_part(:,:,:)=MIN(rad_part(:,:,:),70.0e-6)
-      
+      ls_radsnow(:,:)=MAX(ls_radsnow(:,:),0.) !modified by ZYY in Mar 2013
+      ls_radsnow(:,:)=MIN(ls_radsnow(:,:),1000.e-6) !modified by ZYY in Mar 2013
+
 ! altitude at half pressure levels:
       zheight(:,1) = 0.0
       do k = 2, nlev+1
@@ -318,7 +320,7 @@
           qpart(:,:,INDX_LSSNOW) = q_lssnow(:,:) ! feb11 !modified by ZYY
 
 ! alpha of particles in each subcolumn:
-      do i = 1, npart
+      do i = 1, npart-1
         where ( rad_part(:,:,i).gt.0.0)
           alpha_part(:,:,i) = 3.0/4.0 * Qscat &
                  * rhoair(:,:) * qpart(:,:,i) &
@@ -327,6 +329,13 @@
           alpha_part(:,:,i) = 0.
         endwhere
       enddo
+        where ( ls_radsnow(:,:).gt.0.0)      !modified by ZYY in Mar 2013
+          alpha_part(:,:,5) = 3.0/4.0 * Qscat &
+                 * rhoair(:,:) * qpart(:,:,5) &
+                 / (rhopart(5) * ls_radsnow(:,:) )
+        elsewhere
+          alpha_part(:,:,5) = 0.
+        endwhere
 
 !------------------------------------------------------------
 !---- 4. Backscatter signal:

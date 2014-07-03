@@ -14,6 +14,7 @@ module pmgrid
 ! 
 ! 
 !-----------------------------------------------------------------------
+   implicit none
    save
 
    integer, parameter :: plon   = 1                     ! number of longitudes
@@ -54,8 +55,8 @@ module pmgrid
    parameter (beglat   = 1)
    parameter (endlat   = plat)
    parameter (numlats  = plat)
-   parameter (iam      = 0)
-   parameter (masterproc = .true.)
+   integer, parameter :: iam      = 0
+   logical, parameter :: masterproc = .true.
 #endif
 end module pmgrid
 

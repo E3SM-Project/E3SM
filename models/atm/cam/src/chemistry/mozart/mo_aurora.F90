@@ -51,7 +51,10 @@
 !-----------------------------------------------------------------------
 
       use shr_kind_mod,  only: r8 => shr_kind_r8
-      use physconst,     only: pi, avogad, boltz
+      use mo_constants,  only: pi, &
+                               avo => avogadro, &
+                               boltz_cgs, &
+                               gask => rgas_cgs
       use cam_logfile,   only: iulog
       use spmd_utils,    only: masterproc
 
@@ -66,10 +69,9 @@
 
       integer, parameter  :: isouth = 1
       integer, parameter  :: inorth = 2
+
+      ! g = 8.7 m/s^2? Because this is 400 km up?
       real(r8), parameter :: grav   = 870._r8          ! (cm/s^2)
-      real(r8), parameter :: gask   = 8.314e7_r8, &    ! gas constant
-                             boltzmann  = 1.e7_r8 * boltz, &
-                             avo    = 1.e-3_r8 * avogad
 
       integer  :: lev1 = 1
       real(r8) :: twopi
@@ -1009,7 +1011,7 @@ level_loop : &
           if( add_sproton ) then
              if( flx_sp > 1.e-19_r8 ) then
                 where( do_aurora(:) )
-                   p0ez_mbar(:) = press(:)/(boltzmann*tempi(:)*barm(:))/avo
+                   p0ez_mbar(:) = press(:)/(boltz_cgs*tempi(:)*barm(:))/avo
                    tk_mbar(:)   = gask*tempi(:)/(grav*barm(:))*p0ez_mbar(:)
                    xalfa_sp(:)  = ((tk_mbar(:)/.00271_r8)**.58140_r8)/alfa_sp
                 endwhere
@@ -1214,7 +1216,7 @@ level_loop : &
           if( add_sproton ) then
              if( flx_sp > 1.e-19_r8 ) then
                 where( do_aurora(:) )
-                   p0ez_mbar(:) = press(:)/(boltzmann*tempi(:)*barm(:))/avo
+                   p0ez_mbar(:) = press(:)/(boltz_cgs*tempi(:)*barm(:))/avo
                    tk_mbar(:)   = gask*tempi(:)/(grav*barm(:))*p0ez_mbar(:)
                    xalfa_sp(:)  = ((tk_mbar(:)/.00271_r8)**.58140_r8)/alfa_sp
                 endwhere

@@ -15,6 +15,9 @@ use oldcloud,         only: oldcloud_lw, old_liq_get_rad_props_lw, old_ice_get_r
 use ebert_curry,      only: scalefactor
 use cam_logfile,      only: iulog
 
+use interpolate_data, only: interp_type, lininterp_init, lininterp, &
+     extrap_method_bndry, lininterp_finish
+
 implicit none
 private
 save
@@ -44,21 +47,6 @@ real(r8), allocatable :: ext_sw_ice(:,:)
 real(r8), allocatable :: ssa_sw_ice(:,:)
 real(r8), allocatable :: asm_sw_ice(:,:)
 real(r8), allocatable :: abs_lw_ice(:,:)
-
-real(r8) :: dmin = 2. *  13. / scalefactor
-real(r8) :: dmax = 2. * 130. / scalefactor
-
-! Minimum cloud amount (as a fraction of the grid-box area) to 
-! distinguish from clear sky
-! 
-   real(r8) cldmin
-   parameter (cldmin = 1.0e-80_r8)
-!
-! Decimal precision of cloud amount (0 -> preserve full resolution;
-! 10^-n -> preserve n digits of cloud amount)
-! 
-   real(r8) cldeps
-   parameter (cldeps = 0.0_r8)
 
 ! 
 ! indexes into pbuf for optical parameters of MG clouds
@@ -433,7 +421,7 @@ end subroutine cloud_rad_props_get_lw
 
 !==============================================================================
 
-subroutine get_snow_optics_sw   (state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
+subroutine get_snow_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    type(physics_state), intent(in)   :: state
    type(physics_buffer_desc),pointer :: pbuf(:)
 
@@ -442,77 +430,23 @@ subroutine get_snow_optics_sw   (state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
    real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
 
-   real(r8), pointer, dimension(:,:) :: dei, iciwpth
-   real(r8) :: dlimited ! d limited to dmin,dmax range
+   real(r8), pointer :: icswpth(:,:), des(:,:)
 
-   integer :: i,k,i_d_grid,k_d_eff,i_swband,ncol,lchnk
-   real :: wd, onemwd, ext, ssa, asm
+   ! This does the same thing as get_ice_optics_sw, except with a different
+   ! water path and effective diameter.
+   call pbuf_get_field(pbuf, i_icswp, icswpth)
+   call pbuf_get_field(pbuf, i_des,   des)
 
-   ncol = state%ncol
-   lchnk = state%lchnk
+   call interpolate_ice_optics_sw(state%ncol, icswpth, des, tau, tau_w, &
+        tau_w_g, tau_w_f)
 
-! temporary code to support diagnostics of snow radiation
-   call pbuf_get_field(pbuf, i_icswp, iciwpth)
-   call pbuf_get_field(pbuf, i_des,   dei)
-! temporary code to support diagnostics of snow radiation
-
-   do i = 1,ncol
-      do k = 1,pver
-         dlimited = dei(i,k) ! min(dmax,max(dei(i,k),dmin))
-         if( iciwpth(i,k) < 1.e-80_r8 .or. dlimited .eq. 0._r8) then
-         ! if ice water path is too small, OD := 0
-            tau    (:,i,k) = 0._r8
-            tau_w  (:,i,k) = 0._r8
-            tau_w_g(:,i,k) = 0._r8
-            tau_w_f(:,i,k) = 0._r8
-         else 
-            !if (dlimited < g_d_eff(1) .or. dlimited > g_d_eff(n_g_d)) then
-               !write(iulog,*) 'dei from prognostic cldwat2m',dei(i,k)
-               !write(iulog,*) 'grid values of deff ice from optics file',g_d_eff
-               !call endrun ('deff of ice exceeds limits')
-            !endif
-            ! for each cell interpolate to find weights and indices in g_d_eff grid.
-            if (dlimited <= g_d_eff(1)) then
-               k_d_eff = 2
-               wd = 1._r8
-               onemwd = 0._r8
-            elseif (dlimited >= g_d_eff(n_g_d)) then
-               k_d_eff = n_g_d
-               wd = 0._r8
-               onemwd = 1._r8 
-            else
-               do i_d_grid = 1, n_g_d
-                  k_d_eff = i_d_grid
-                  if(g_d_eff(i_d_grid) > dlimited) exit
-               enddo
-               wd = (g_d_eff(k_d_eff) - dlimited)/(g_d_eff(k_d_eff) - g_d_eff(k_d_eff-1))
-               onemwd = 1._r8 - wd
-            endif
-            ! interpolate into grid and extract radiative properties
-            do i_swband = 1, nswbands
-               ext = wd*ext_sw_ice(k_d_eff-1,i_swband) + &
-                 onemwd*ext_sw_ice(k_d_eff  ,i_swband) 
-               ssa = wd*ssa_sw_ice(k_d_eff-1,i_swband) + &
-                 onemwd*ssa_sw_ice(k_d_eff  ,i_swband) 
-               asm = wd*asm_sw_ice(k_d_eff-1,i_swband) + &
-                 onemwd*asm_sw_ice(k_d_eff  ,i_swband) 
-               tau    (i_swband,i,k)=iciwpth(i,k) * ext
-               tau_w  (i_swband,i,k)=iciwpth(i,k) * ext * ssa
-               tau_w_g(i_swband,i,k)=iciwpth(i,k) * ext * ssa * asm
-               tau_w_f(i_swband,i,k)=iciwpth(i,k) * ext * ssa * asm * asm
-            enddo
-         endif
-      enddo
-   enddo
-
-   return
 end subroutine get_snow_optics_sw   
 
 !==============================================================================
 ! Private methods
 !==============================================================================
 
-subroutine get_ice_optics_sw   (state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
+subroutine get_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    type(physics_state), intent(in)   :: state
    type(physics_buffer_desc),pointer :: pbuf(:)
 
@@ -521,69 +455,68 @@ subroutine get_ice_optics_sw   (state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
    real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
 
-   real(r8), pointer, dimension(:,:) :: dei, iciwpth
-   real(r8) :: dlimited ! d limited to dmin,dmax range
+   real(r8), pointer :: iciwpth(:,:), dei(:,:)
 
-   integer :: i,k,i_d_grid,k_d_eff,i_swband,ncol,lchnk
-   real :: wd, onemwd, ext, ssa, asm
-
-   ncol = state%ncol
-   lchnk = state%lchnk
-
+   ! Get relevant pbuf fields, and interpolate optical properties from
+   ! the lookup tables.
    call pbuf_get_field(pbuf, i_iciwp, iciwpth)
    call pbuf_get_field(pbuf, i_dei,   dei)
 
-   do i = 1,ncol
-      do k = 1,pver
-         dlimited = dei(i,k) ! min(dmax,max(dei(i,k),dmin))
-         if( iciwpth(i,k) < 1.e-80_r8 .or. dlimited .eq. 0._r8) then
-         ! if ice water path is too small, OD := 0
-            tau    (:,i,k) = 0._r8
-            tau_w  (:,i,k) = 0._r8
-            tau_w_g(:,i,k) = 0._r8
-            tau_w_f(:,i,k) = 0._r8
-         else 
-            !if (dlimited < g_d_eff(1) .or. dlimited > g_d_eff(n_g_d)) then
-               !write(iulog,*) 'dei from prognostic cldwat2m',dei(i,k)
-               !write(iulog,*) 'grid values of deff ice from optics file',g_d_eff
-               !call endrun ('deff of ice exceeds limits')
-            !endif
-            ! for each cell interpolate to find weights and indices in g_d_eff grid.
-            if (dlimited <= g_d_eff(1)) then
-               k_d_eff = 2
-               wd = 1._r8
-               onemwd = 0._r8
-            elseif (dlimited >= g_d_eff(n_g_d)) then
-               k_d_eff = n_g_d
-               wd = 0._r8
-               onemwd = 1._r8 
-            else
-               do i_d_grid = 1, n_g_d
-                  k_d_eff = i_d_grid
-                  if(g_d_eff(i_d_grid) > dlimited) exit
-               enddo
-               wd = (g_d_eff(k_d_eff) - dlimited)/(g_d_eff(k_d_eff) - g_d_eff(k_d_eff-1))
-               onemwd = 1._r8 - wd
-            endif
-            ! interpolate into grid and extract radiative properties
-            do i_swband = 1, nswbands
-               ext = wd*ext_sw_ice(k_d_eff-1,i_swband) + &
-                 onemwd*ext_sw_ice(k_d_eff  ,i_swband) 
-               ssa = wd*ssa_sw_ice(k_d_eff-1,i_swband) + &
-                 onemwd*ssa_sw_ice(k_d_eff  ,i_swband) 
-               asm = wd*asm_sw_ice(k_d_eff-1,i_swband) + &
-                 onemwd*asm_sw_ice(k_d_eff  ,i_swband) 
-               tau    (i_swband,i,k)=iciwpth(i,k) * ext
-               tau_w  (i_swband,i,k)=iciwpth(i,k) * ext * ssa
-               tau_w_g(i_swband,i,k)=iciwpth(i,k) * ext * ssa * asm
-               tau_w_f(i_swband,i,k)=iciwpth(i,k) * ext * ssa * asm * asm
-            enddo
-         endif
-      enddo
-   enddo
+   call interpolate_ice_optics_sw(state%ncol, iciwpth, dei, tau, tau_w, &
+        tau_w_g, tau_w_f)
 
-   return
-end subroutine get_ice_optics_sw   
+end subroutine get_ice_optics_sw
+
+!==============================================================================
+
+subroutine interpolate_ice_optics_sw(ncol, iciwpth, dei, tau, tau_w, &
+     tau_w_g, tau_w_f)
+
+  integer, intent(in) :: ncol
+  real(r8), intent(in) :: iciwpth(pcols,pver)
+  real(r8), intent(in) :: dei(pcols,pver)
+
+  real(r8),intent(out) :: tau    (nswbands,pcols,pver) ! extinction optical depth
+  real(r8),intent(out) :: tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
+  real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
+  real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
+
+  type(interp_type) :: dei_wgts
+
+  integer :: i, k, swband
+  real(r8) :: ext(nswbands), ssa(nswbands), asm(nswbands)
+
+  do k = 1,pver
+     do i = 1,ncol
+        if( iciwpth(i,k) < 1.e-80_r8 .or. dei(i,k) == 0._r8) then
+           ! if ice water path is too small, OD := 0
+           tau    (:,i,k) = 0._r8
+           tau_w  (:,i,k) = 0._r8
+           tau_w_g(:,i,k) = 0._r8
+           tau_w_f(:,i,k) = 0._r8
+        else
+           ! for each cell interpolate to find weights in g_d_eff grid.
+           call lininterp_init(g_d_eff, n_g_d, dei(i:i,k), 1, &
+                extrap_method_bndry, dei_wgts)
+           ! interpolate into grid and extract radiative properties
+           do swband = 1, nswbands
+              call lininterp(ext_sw_ice(:,swband), n_g_d, &
+                   ext(swband:swband), 1, dei_wgts)
+              call lininterp(ssa_sw_ice(:,swband), n_g_d, &
+                   ssa(swband:swband), 1, dei_wgts)
+              call lininterp(asm_sw_ice(:,swband), n_g_d, &
+                   asm(swband:swband), 1, dei_wgts)
+           end do
+           tau    (:,i,k) = iciwpth(i,k) * ext
+           tau_w  (:,i,k) = tau(:,i,k) * ssa
+           tau_w_g(:,i,k) = tau_w(:,i,k) * asm
+           tau_w_f(:,i,k) = tau_w_g(:,i,k) * asm
+           call lininterp_finish(dei_wgts)
+        endif
+     enddo
+  enddo
+
+end subroutine interpolate_ice_optics_sw
 
 !==============================================================================
 
@@ -663,61 +596,14 @@ subroutine snow_cloud_get_rad_props_lw(state, pbuf, abs_od)
    type(physics_buffer_desc), pointer :: pbuf(:)
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
 
-   real(r8), pointer, dimension(:,:) :: dei, iciwpth
-   real(r8) :: dlimited ! d limited to range dmin,dmax
+   real(r8), pointer :: icswpth(:,:), des(:,:)
 
-   integer :: i,k,i_d_grid,k_d_eff,i_lwband,ncol,lchnk
-   real :: wd, onemwd, absor
+   ! This does the same thing as ice_cloud_get_rad_props_lw, except with a
+   ! different water path and effective diameter.
+   call pbuf_get_field(pbuf, i_icswp, icswpth)
+   call pbuf_get_field(pbuf, i_des,   des)
 
-   abs_od = 0._r8
-
-   ncol = state%ncol
-   lchnk = state%lchnk
-
-! note that this code makes the "ice path" point to the "snow path from CAM"
-   
-   call pbuf_get_field(pbuf, i_icswp, iciwpth)
-   call pbuf_get_field(pbuf, i_des,   dei)
-
-! note that this code makes the "ice path" point to the "snow path from CAM"
-
-   do i = 1,ncol
-      do k = 1,pver
-         dlimited = dei(i,k) ! min(dmax,max(dei(i,k),dmin))
-         ! if ice water path is too small, OD := 0
-         if( iciwpth(i,k) < 1.e-80_r8 .or. dlimited .eq. 0._r8) then
-            abs_od (:,i,k) = 0._r8
-         !else if (dlimited < g_d_eff(1) .or. dlimited > g_d_eff(n_g_d)) then
-         !   write(iulog,*) 'dlimited prognostic cldwat2m',dlimited
-         !   write(iulog,*) 'grid values of deff ice from optics file',g_d_eff(1),' -> ',g_d_eff(n_g_d)
-         !   !call endrun ('deff of ice exceeds limits')
-         else
-            ! for each cell interpolate to find weights and indices in g_d_eff grid.
-            if (dlimited <= g_d_eff(1)) then
-               k_d_eff = 2
-               wd = 1._r8
-               onemwd = 0._r8
-            elseif (dlimited >= g_d_eff(n_g_d)) then
-               k_d_eff = n_g_d
-               wd = 0._r8
-               onemwd = 1._r8 
-            else
-               do i_d_grid = 2, n_g_d
-                  k_d_eff = i_d_grid
-                  if(g_d_eff(i_d_grid) > dlimited) exit
-               enddo
-               wd = (g_d_eff(k_d_eff) - dlimited)/(g_d_eff(k_d_eff) - g_d_eff(k_d_eff-1))
-               onemwd = 1._r8 - wd
-            endif
-            ! interpolate into grid and extract radiative properties
-            do i_lwband = 1, nlwbands
-               absor = wd*abs_lw_ice(k_d_eff-1,i_lwband) + &
-                   onemwd*abs_lw_ice(k_d_eff  ,i_lwband)
-               abs_od (i_lwband,i,k)=  iciwpth(i,k) * absor 
-            enddo
-         endif
-      enddo
-   enddo
+   call interpolate_ice_optics_lw(state%ncol,icswpth, des, abs_od)
 
 end subroutine snow_cloud_get_rad_props_lw
 
@@ -728,59 +614,53 @@ subroutine ice_cloud_get_rad_props_lw(state, pbuf, abs_od)
    type(physics_buffer_desc), pointer  :: pbuf(:)
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
 
-   real(r8), pointer, dimension(:,:) :: dei, iciwpth
-   real(r8) :: dlimited ! d limited to range dmin,dmax
+   real(r8), pointer :: iciwpth(:,:), dei(:,:)
 
-   integer :: i,k,i_d_grid,k_d_eff,i_lwband,ncol,lchnk
-   real :: wd, onemwd, absor
-
-   abs_od = 0._r8
-
-   ncol = state%ncol
-   lchnk = state%lchnk
-
+   ! Get relevant pbuf fields, and interpolate optical properties from
+   ! the lookup tables.
    call pbuf_get_field(pbuf, i_iciwp, iciwpth)
    call pbuf_get_field(pbuf, i_dei,   dei)
 
-   do i = 1,ncol
-      do k = 1,pver
-         dlimited = dei(i,k) ! min(dmax,max(dei(i,k),dmin))
-         ! if ice water path is too small, OD := 0
-         if( iciwpth(i,k) < 1.e-80_r8 .or. dlimited .eq. 0._r8) then
-            abs_od (:,i,k) = 0._r8
-         !else if (dlimited < g_d_eff(1) .or. dlimited > g_d_eff(n_g_d)) then
-         !   write(iulog,*) 'dlimited prognostic cldwat2m',dlimited
-         !   write(iulog,*) 'grid values of deff ice from optics file',g_d_eff(1),' -> ',g_d_eff(n_g_d)
-         !   !call endrun ('deff of ice exceeds limits')
-         else
-            ! for each cell interpolate to find weights and indices in g_d_eff grid.
-            if (dlimited <= g_d_eff(1)) then
-               k_d_eff = 2
-               wd = 1._r8
-               onemwd = 0._r8
-            elseif (dlimited >= g_d_eff(n_g_d)) then
-               k_d_eff = n_g_d
-               wd = 0._r8
-               onemwd = 1._r8 
-            else
-               do i_d_grid = 2, n_g_d
-                  k_d_eff = i_d_grid
-                  if(g_d_eff(i_d_grid) > dlimited) exit
-               enddo
-               wd = (g_d_eff(k_d_eff) - dlimited)/(g_d_eff(k_d_eff) - g_d_eff(k_d_eff-1))
-               onemwd = 1._r8 - wd
-            endif
-            ! interpolate into grid and extract radiative properties
-            do i_lwband = 1, nlwbands
-               absor = wd*abs_lw_ice(k_d_eff-1,i_lwband) + &
-                   onemwd*abs_lw_ice(k_d_eff  ,i_lwband)
-               abs_od (i_lwband,i,k)=  iciwpth(i,k) * absor 
-            enddo
-         endif
-      enddo
-   enddo
+   call interpolate_ice_optics_lw(state%ncol,iciwpth, dei, abs_od)
 
 end subroutine ice_cloud_get_rad_props_lw
+
+!==============================================================================
+
+subroutine interpolate_ice_optics_lw(ncol, iciwpth, dei, abs_od)
+
+  integer, intent(in) :: ncol
+  real(r8), intent(in) :: iciwpth(pcols,pver)
+  real(r8), intent(in) :: dei(pcols,pver)
+
+  real(r8),intent(out) :: abs_od(nlwbands,pcols,pver)
+
+  type(interp_type) :: dei_wgts
+
+  integer :: i, k, lwband
+  real(r8) :: absor(nlwbands)
+
+  do k = 1,pver
+     do i = 1,ncol
+        ! if ice water path is too small, OD := 0
+        if( iciwpth(i,k) < 1.e-80_r8 .or. dei(i,k) == 0._r8) then
+           abs_od (:,i,k) = 0._r8
+        else
+           ! for each cell interpolate to find weights in g_d_eff grid.
+           call lininterp_init(g_d_eff, n_g_d, dei(i:i,k), 1, &
+                extrap_method_bndry, dei_wgts)
+           ! interpolate into grid and extract radiative properties
+           do lwband = 1, nlwbands
+              call lininterp(abs_lw_ice(:,lwband), n_g_d, &
+                   absor(lwband:lwband), 1, dei_wgts)
+           enddo
+           abs_od(:,i,k) = iciwpth(i,k) * absor
+           call lininterp_finish(dei_wgts)
+        endif
+     enddo
+  enddo
+
+end subroutine interpolate_ice_optics_lw
 
 !==============================================================================
 
@@ -789,49 +669,29 @@ subroutine gam_liquid_lw(clwptn, lamc, pgam, abs_od)
   real(r8), intent(in) :: lamc   ! prognosed value of lambda for cloud
   real(r8), intent(in) :: pgam   ! prognosed value of mu for cloud
   real(r8), intent(out) :: abs_od(1:nlwbands)
-  ! for interpolating into mu/lambda
-  integer :: imu, kmu, wmu, onemwmu
-  integer :: ilambda, klambda, wlambda, onemwlambda, lambdaplus, lambdaminus
+
   integer :: lwband ! sw band index
-  real(r8) :: absc
+
+  type(interp_type) :: mu_wgts
+  type(interp_type) :: lambda_wgts
 
   if (clwptn < 1.e-80_r8) then
     abs_od = 0._r8
     return
   endif
 
-  if (pgam < g_mu(1) .or. pgam > g_mu(nmu)) then
-    write(iulog,*)'pgam from prognostic cldwat2m',pgam
-    write(iulog,*)'g_mu from file',g_mu
-    call endrun ('pgam exceeds limits')
-  endif
-  do imu = 1, nmu
-    kmu = imu
-    if (g_mu(kmu) > pgam) exit
-  enddo
-  wmu = (g_mu(kmu) - pgam)/(g_mu(kmu) - g_mu(kmu-1))
-  onemwmu = 1._r8 - wmu
-
-  do ilambda = 1, nlambda
-    klambda = ilambda
-    if (wmu*g_lambda(kmu-1,ilambda) + onemwmu*g_lambda(kmu,ilambda) < lamc) exit
-  enddo
-  if (klambda <= 1 .or. klambda > nlambda) call endrun('lamc  exceeds limits')
-  lambdaplus = wmu*g_lambda(kmu-1,klambda  ) + onemwmu*g_lambda(kmu,klambda  )
-  lambdaminus= wmu*g_lambda(kmu-1,klambda-1) + onemwmu*g_lambda(kmu,klambda-1)
-  wlambda = (lambdaplus - lamc) / (lambdaplus - lambdaminus)
-  onemwlambda = 1._r8 - wlambda
+  call get_mu_lambda_weights(lamc, pgam, mu_wgts, lambda_wgts)
 
   do lwband = 1, nlwbands
-     absc=     wlambda*    wmu*abs_lw_liq(kmu-1,klambda-1,lwband) + &
-           onemwlambda*    wmu*abs_lw_liq(kmu-1,klambda  ,lwband) + &
-               wlambda*onemwmu*abs_lw_liq(kmu  ,klambda-1,lwband) + &
-           onemwlambda*onemwmu*abs_lw_liq(kmu  ,klambda  ,lwband)
-
-     abs_od(lwband) = clwptn * absc
+     call lininterp(abs_lw_liq(:,:,lwband), nmu, nlambda, &
+          abs_od(lwband:lwband), 1, mu_wgts, lambda_wgts)
   enddo
 
-  return
+  abs_od = clwptn * abs_od
+
+  call lininterp_finish(mu_wgts)
+  call lininterp_finish(lambda_wgts)
+
 end subroutine gam_liquid_lw
 
 !==============================================================================
@@ -841,11 +701,13 @@ subroutine gam_liquid_sw(clwptn, lamc, pgam, tau, tau_w, tau_w_g, tau_w_f)
   real(r8), intent(in) :: lamc   ! prognosed value of lambda for cloud
   real(r8), intent(in) :: pgam   ! prognosed value of mu for cloud
   real(r8), intent(out) :: tau(1:nswbands), tau_w(1:nswbands), tau_w_f(1:nswbands), tau_w_g(1:nswbands)
-  ! for interpolating into mu/lambda
-  integer :: imu, kmu, wmu, onemwmu
-  integer :: ilambda, klambda, wlambda, onemwlambda, lambdaplus, lambdaminus
+
   integer :: swband ! sw band index
-  real(r8) :: ext, ssa, asm
+
+  real(r8) :: ext(nswbands), ssa(nswbands), asm(nswbands)
+
+  type(interp_type) :: mu_wgts
+  type(interp_type) :: lambda_wgts
 
   if (clwptn < 1.e-80_r8) then
     tau = 0._r8
@@ -855,52 +717,55 @@ subroutine gam_liquid_sw(clwptn, lamc, pgam, tau, tau_w, tau_w_g, tau_w_f)
     return
   endif
 
-  if (pgam < g_mu(1) .or. pgam > g_mu(nmu)) then
-    write(iulog,*)'pgam from prognostic cldwat2m',pgam
-    write(iulog,*)'g_mu from file',g_mu
-    call endrun ('pgam exceeds limits')
-  endif
-  do imu = 1, nmu
-    kmu = imu
-    if (g_mu(kmu) > pgam) exit
-  enddo
-  wmu = (g_mu(kmu) - pgam)/(g_mu(kmu) - g_mu(kmu-1))
-  onemwmu = 1._r8 - wmu
-
-  do ilambda = 1, nlambda
-     klambda = ilambda
-     if (wmu*g_lambda(kmu-1,ilambda) + onemwmu*g_lambda(kmu,ilambda) < lamc) exit
-  enddo
-  if (klambda <= 1 .or. klambda > nlambda) call endrun('lamc  exceeds limits')
-     lambdaplus = wmu*g_lambda(kmu-1,klambda  ) + onemwmu*g_lambda(kmu,klambda  )
-     lambdaminus= wmu*g_lambda(kmu-1,klambda-1) + onemwmu*g_lambda(kmu,klambda-1)
-     wlambda = (lambdaplus - lamc) / (lambdaplus - lambdaminus)
-  onemwlambda = 1._r8 - wlambda
+  call get_mu_lambda_weights(lamc, pgam, mu_wgts, lambda_wgts)
 
   do swband = 1, nswbands
-     ext =     wlambda*    wmu*ext_sw_liq(kmu-1,klambda-1,swband) + &
-           onemwlambda*    wmu*ext_sw_liq(kmu-1,klambda  ,swband) + &
-               wlambda*onemwmu*ext_sw_liq(kmu  ,klambda-1,swband) + &
-           onemwlambda*onemwmu*ext_sw_liq(kmu  ,klambda  ,swband)
-     ! probably should interpolate ext*ssa
-     ssa =     wlambda*    wmu*ssa_sw_liq(kmu-1,klambda-1,swband) + &
-           onemwlambda*    wmu*ssa_sw_liq(kmu-1,klambda  ,swband) + &
-               wlambda*onemwmu*ssa_sw_liq(kmu  ,klambda-1,swband) + &
-           onemwlambda*onemwmu*ssa_sw_liq(kmu  ,klambda  ,swband)
-     ! probably should interpolate ext*ssa*asm
-     asm =     wlambda*    wmu*asm_sw_liq(kmu-1,klambda-1,swband) + &
-           onemwlambda*    wmu*asm_sw_liq(kmu-1,klambda  ,swband) + &
-               wlambda*onemwmu*asm_sw_liq(kmu  ,klambda-1,swband) + &
-           onemwlambda*onemwmu*asm_sw_liq(kmu  ,klambda  ,swband)
-     ! compute radiative properties
-     tau(swband) = clwptn * ext
-     tau_w(swband) = clwptn * ext * ssa
-     tau_w_g(swband) = clwptn * ext * ssa * asm
-     tau_w_f(swband) = clwptn * ext * ssa * asm * asm
+     call lininterp(ext_sw_liq(:,:,swband), nmu, nlambda, &
+          ext(swband:swband), 1, mu_wgts, lambda_wgts)
+     call lininterp(ssa_sw_liq(:,:,swband), nmu, nlambda, &
+          ssa(swband:swband), 1, mu_wgts, lambda_wgts)
+     call lininterp(asm_sw_liq(:,:,swband), nmu, nlambda, &
+          asm(swband:swband), 1, mu_wgts, lambda_wgts)
   enddo
 
-  return
+  ! compute radiative properties
+  tau = clwptn * ext
+  tau_w = tau * ssa
+  tau_w_g = tau_w * asm
+  tau_w_f = tau_w_g * asm
+
+  call lininterp_finish(mu_wgts)
+  call lininterp_finish(lambda_wgts)
+
 end subroutine gam_liquid_sw
+
+!==============================================================================
+
+subroutine get_mu_lambda_weights(lamc, pgam, mu_wgts, lambda_wgts)
+  real(r8), intent(in) :: lamc   ! prognosed value of lambda for cloud
+  real(r8), intent(in) :: pgam   ! prognosed value of mu for cloud
+  ! Output interpolation weights. Caller is responsible for freeing these.
+  type(interp_type), intent(out) :: mu_wgts
+  type(interp_type), intent(out) :: lambda_wgts
+
+  integer :: ilambda
+  real(r8) :: g_lambda_interp(nlambda)
+
+  ! Make interpolation weights for mu.
+  ! (Put pgam in a temporary array for this purpose.)
+  call lininterp_init(g_mu, nmu, [pgam], 1, extrap_method_bndry, mu_wgts)
+
+  ! Use mu weights to interpolate to a row in the lambda table.
+  do ilambda = 1, nlambda
+     call lininterp(g_lambda(:,ilambda), nmu, &
+          g_lambda_interp(ilambda:ilambda), 1, mu_wgts)
+  end do
+
+  ! Make interpolation weights for lambda.
+  call lininterp_init(g_lambda_interp, nlambda, [lamc], 1, &
+       extrap_method_bndry, lambda_wgts)
+
+end subroutine get_mu_lambda_weights
 
 !==============================================================================
 

@@ -45,9 +45,11 @@ subroutine seq_map_esmf_register(comp, rc)
     call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &
       seq_map_esmf_init, phase=1, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
     call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_RUN, &
       seq_map_esmf_run, phase=1, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
     call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_FINALIZE, &
       seq_map_esmf_final, phase=1, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
@@ -108,11 +110,13 @@ subroutine seq_map_esmf_init(comp, import_state, export_state, EClock, rc)
     ! These temporary Arrays are 2D of the size (1, size(gindex))
     call ESMF_ArrayGet(gindex_s, farrayPtr=gindex, rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
     array_s = mct2esmf_init(gindex, 'temparray_s', name='temparray_s', rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     call ESMF_ArrayGet(gindex_d, farrayPtr=gindex, rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
     array_d = mct2esmf_init(gindex, 'temparray_d', name='temparray_d', rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
@@ -130,12 +134,14 @@ subroutine seq_map_esmf_init(comp, import_state, export_state, EClock, rc)
     ! Attach routehandle to export State
     call ESMF_RoutehandleSet(routehandle, name="routehandle", rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
     call ESMF_StateAdd(export_state, (/routehandle/), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     ! Attach temporary Arrays to import/export State
     call ESMF_StateAdd(import_state, (/array_s/), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
     call ESMF_StateAdd(export_state, (/array_d/), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 

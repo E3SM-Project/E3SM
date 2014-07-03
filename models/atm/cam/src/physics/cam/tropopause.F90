@@ -694,6 +694,10 @@ contains
   ! UPDATE: The most "obvious" substitutions have been made to replace
   ! goto/return statements with cycle/exit. The structure is still
   ! somewhat tangled.
+  ! UPDATE 2: "gamma" renamed to "gam" in order to avoid confusion
+  ! with the Fortran 2008 intrinsic. "level" argument removed because
+  ! a physics column is not contiguous, so using explicit dimensions
+  ! will cause the data to be needlessly copied.
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -702,11 +706,10 @@ contains
   ! reference: Reichler, T., M. Dameris, and R. Sausen (2003)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine twmo(level, t, p, plimu, pliml, gamma, trp)
+  subroutine twmo(t, p, plimu, pliml, gam, trp)
 
-    integer, intent(in)                     :: level
-    real(r8), intent(in), dimension(level)  :: t, p
-    real(r8), intent(in)                    :: plimu, pliml, gamma
+    real(r8), intent(in), dimension(:)      :: t, p
+    real(r8), intent(in)                    :: plimu, pliml, gam
     real(r8), intent(out)                   :: trp
     
     real(r8), parameter                     :: deltaz = 2000.0_r8
@@ -716,6 +719,7 @@ contains
     real(r8)                                :: pm0, pmk0, dtdz0
     real(r8)                                :: p2km, asum, aquer
     real(r8)                                :: pmk2, pm2, a2, b2, tm2, dtdp2, dtdz2
+    integer                                 :: level
     integer                                 :: icount, jj
     integer                                 :: j
     
@@ -724,6 +728,7 @@ contains
     
     ! initialize start level
     ! dt/dz
+    level = size(t)
     pmk= .5_r8 * (p(level-1)**cnst_kap+p(level)**cnst_kap)
     pm = pmk**(1/cnst_kap)               
     a = (t(level-1)-t(level))/(p(level-1)**cnst_kap-p(level)**cnst_kap)
@@ -746,14 +751,14 @@ contains
       dtdp = a * cnst_kap * (pm**cnst_ka1)
       dtdz = cnst_faktor*dtdp*pm/tm
       ! dt/dz valid?
-      if (dtdz.le.gamma) cycle main_loop    ! no, dt/dz < -2 K/km
+      if (dtdz.le.gam) cycle main_loop    ! no, dt/dz < -2 K/km
       if (pm.gt.plimu)   cycle main_loop    ! no, too low
   
       ! dtdz is valid, calculate tropopause pressure
-      if (dtdz0.lt.gamma) then
+      if (dtdz0.lt.gam) then
         ag = (dtdz-dtdz0) / (pmk-pmk0)     
         bg = dtdz0 - (ag * pmk0)          
-        ptph = exp(log((gamma-bg)/ag)/cnst_kap)
+        ptph = exp(log((gam-bg)/ag)/cnst_kap)
       else
         ptph = pm
       endif
@@ -761,7 +766,7 @@ contains
       if (ptph.lt.pliml) cycle main_loop
       if (ptph.gt.plimu) cycle main_loop
   
-      ! 2nd test: dtdz above 2 km must not exceed gamma
+      ! 2nd test: dtdz above 2 km must not exceed gam
       p2km = ptph + deltaz*(pm/tm)*cnst_faktor     ! p at ptph + 2km
       asum = 0.0_r8                                ! dtdz above
       icount = 0                                   ! number of levels above
@@ -785,7 +790,7 @@ contains
         aquer = asum/float(icount)               ! dt/dz mean
    
         ! discard ptropo ?
-        if (aquer.le.gamma) cycle main_loop      ! dt/dz above < gamma
+        if (aquer.le.gam) cycle main_loop      ! dt/dz above < gam
     
       enddo in_loop  ! test next level
     
@@ -810,7 +815,7 @@ contains
     real(r8), optional, intent(inout)  :: tropZ(pcols)              ! tropopause height (m)
 
     ! Local Variables 
-    real(r8), parameter     :: gamma    = -0.002_r8         ! K/m
+    real(r8), parameter     :: gam    = -0.002_r8         ! K/m
     real(r8), parameter     :: plimu    = 45000._r8         ! Pa
     real(r8), parameter     :: pliml    = 7500._r8          ! Pa
      
@@ -831,7 +836,7 @@ contains
       if (tropLev(i) == NOTFOUND) then
 
         ! Use the routine from Reichler.
-        call twmo(pver, pstate%t(i, :), pstate%pmid(i, :), plimu, pliml, gamma, tP)
+        call twmo(pstate%t(i, :), pstate%pmid(i, :), plimu, pliml, gam, tP)
      
         ! if successful, store of the results and find the level and temperature.
         if (tP > 0) then

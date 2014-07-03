@@ -10,7 +10,7 @@
 !  diffusion of momentum and tracers.
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: hmix_del2.F90 26603 2011-01-28 23:09:02Z njn01 $
+!  SVN:$Id: hmix_del2.F90 55656 2013-11-26 22:01:15Z mlevy@ucar.edu $
 
 ! !USES:
 
@@ -314,13 +314,13 @@
 !
 !-----------------------------------------------------------------------
 
-      WORK1 = (HUS(:,:,iblock)/HTE(:,:,iblock))*p5*(AMF(:,:,iblock) + &
+      WORK1(:,:) = (HUS(:,:,iblock)/HTE(:,:,iblock))*p5*(AMF(:,:,iblock) + &
                             eoshift(AMF(:,:,iblock),dim=2,shift=-1))
 
       DUS(:,:,iblock) = WORK1*UAREA_R(:,:,iblock)
       DUN(:,:,iblock) = eoshift(WORK1,dim=2,shift=1)*UAREA_R(:,:,iblock)
 
-      WORK1 = (HUW(:,:,iblock)/HTN(:,:,iblock))*p5*(AMF(:,:,iblock) + &
+      WORK1(:,:) = (HUW(:,:,iblock)/HTN(:,:,iblock))*p5*(AMF(:,:,iblock) + &
                             eoshift(AMF(:,:,iblock),dim=1,shift=-1))
 
       DUW(:,:,iblock) = WORK1*UAREA_R(:,:,iblock)
@@ -333,42 +333,42 @@
 !
 !-----------------------------------------------------------------------
 
-      KXU = (eoshift(HUW(:,:,iblock),dim=1,shift=1) - HUW(:,:,iblock))*&
+      KXU(:,:) = (eoshift(HUW(:,:,iblock),dim=1,shift=1) - HUW(:,:,iblock))*&
             UAREA_R(:,:,iblock)
-      KYU = (eoshift(HUS(:,:,iblock),dim=2,shift=1) - HUS(:,:,iblock))*&
+      KYU(:,:) = (eoshift(HUS(:,:,iblock),dim=2,shift=1) - HUS(:,:,iblock))*&
             UAREA_R(:,:,iblock)
 
-      WORK1 = (HTE(:,:,iblock) -                         &
+      WORK1(:,:) = (HTE(:,:,iblock) -                    &
                eoshift(HTE(:,:,iblock),dim=1,shift=-1))* &
-              TAREA_R(:,:,iblock)  ! KXT
+               TAREA_R(:,:,iblock)  ! KXT
 
-      WORK2 = p5*(WORK1 + eoshift(WORK1,dim=2,shift=1))*    &
-              p5*(eoshift(AMF(:,:,iblock),dim=1,shift=-1) + &
+      WORK2(:,:) = p5*(WORK1 + eoshift(WORK1,dim=2,shift=1))* &
+              p5*(eoshift(AMF(:,:,iblock),dim=1,shift=-1) +   &
                   AMF(:,:,iblock))
 
-      DXKX = (eoshift(WORK2,dim=1,shift=1) - WORK2)*DXUR(:,:,iblock)
+      DXKX(:,:) = (eoshift(WORK2,dim=1,shift=1) - WORK2)*DXUR(:,:,iblock)
 
-      WORK2 = p5*(WORK1 + eoshift(WORK1,dim=1,shift=1))*    &
-              p5*(eoshift(AMF(:,:,iblock),dim=2,shift=-1) + &
+      WORK2(:,:) = p5*(WORK1 + eoshift(WORK1,dim=1,shift=1))* &
+              p5*(eoshift(AMF(:,:,iblock),dim=2,shift=-1) +   &
                   AMF(:,:,iblock))
 
-      DYKX = (eoshift(WORK2,dim=2,shift=1) - WORK2)*DYUR(:,:,iblock)
+      DYKX(:,:) = (eoshift(WORK2,dim=2,shift=1) - WORK2)*DYUR(:,:,iblock)
 
-      WORK1 = (HTN(:,:,iblock) -                         &
+      WORK1(:,:) = (HTN(:,:,iblock) -                    &
                eoshift(HTN(:,:,iblock),dim=2,shift=-1))* &
-              TAREA_R(:,:,iblock)  ! KYT
+               TAREA_R(:,:,iblock)  ! KYT
 
-      WORK2 = p5*(WORK1 + eoshift(WORK1,dim=1,shift=1))*    &
-              p5*(eoshift(AMF(:,:,iblock),dim=2,shift=-1) + &
+      WORK2(:,:) = p5*(WORK1 + eoshift(WORK1,dim=1,shift=1))* &
+              p5*(eoshift(AMF(:,:,iblock),dim=2,shift=-1) +   &
                   AMF(:,:,iblock))
 
-      DYKY = (eoshift(WORK2,dim=2,shift=1) - WORK2)*DYUR(:,:,iblock)
+      DYKY(:,:) = (eoshift(WORK2,dim=2,shift=1) - WORK2)*DYUR(:,:,iblock)
 
-      WORK2 = p5*(WORK1 + eoshift(WORK1,dim=2,shift=1))*    &
-              p5*(eoshift(AMF(:,:,iblock),dim=1,shift=-1) + &
+      WORK2(:,:) = p5*(WORK1 + eoshift(WORK1,dim=2,shift=1))* &
+              p5*(eoshift(AMF(:,:,iblock),dim=1,shift=-1) +   &
                   AMF(:,:,iblock))
 
-      DXKY = (eoshift(WORK2,dim=1,shift=1) - WORK2)*DXUR(:,:,iblock)
+      DXKY(:,:) = (eoshift(WORK2,dim=1,shift=1) - WORK2)*DXUR(:,:,iblock)
 
       DUM(:,:,iblock) = -(DXKX + DYKY + &
                         c2*AMF(:,:,iblock)*(KXU**2 + KYU**2))
@@ -381,16 +381,16 @@
 !
 !-----------------------------------------------------------------------
 
-      WORK1 = (eoshift(AMF(:,:,iblock),dim=2,shift= 1) -    &
-               eoshift(AMF(:,:,iblock),dim=2,shift=-1))/    &
+      WORK1(:,:) = (eoshift(AMF(:,:,iblock),dim=2,shift= 1) - &
+               eoshift(AMF(:,:,iblock),dim=2,shift=-1))/      &
               (HTE(:,:,iblock) + eoshift(HTE(:,:,iblock),dim=2,shift=1))
 
       DME(:,:,iblock) =  (c2*AMF(:,:,iblock)*KYU + WORK1)/  &
                          (HTN(:,:,iblock) +                 &
                           eoshift(HTN(:,:,iblock),dim=1,shift=1))
 
-      WORK1 = (eoshift(AMF(:,:,iblock),dim=1,shift= 1) -    &
-               eoshift(AMF(:,:,iblock),dim=1,shift=-1))/    &
+      WORK1(:,:) = (eoshift(AMF(:,:,iblock),dim=1,shift= 1) - &
+               eoshift(AMF(:,:,iblock),dim=1,shift=-1))/      &
               (HTN(:,:,iblock) + eoshift(HTN(:,:,iblock),dim=1,shift=1))
 
       DMN(:,:,iblock) = -(c2*AMF(:,:,iblock)*KXU + WORK1)/  &
@@ -617,14 +617,14 @@
             WORK2 (nx_block,ny_block))
 
    do iblock=1,nblocks_clinic
-      WORK1 = (HTN(:,:,iblock)/HUW(:,:,iblock))*p5*(AHF(:,:,iblock) + &
+      WORK1(:,:) = (HTN(:,:,iblock)/HUW(:,:,iblock))*p5*(AHF(:,:,iblock) + &
                             eoshift(AHF(:,:,iblock),dim=2,shift=1))
 
       DTN(:,:,iblock) = WORK1*TAREA_R(:,:,iblock)
       DTS(:,:,iblock) = eoshift(WORK1,dim=2,shift=-1)* &
                         TAREA_R(:,:,iblock)
 
-      WORK1 = (HTE(:,:,iblock)/HUS(:,:,iblock))*p5*(AHF(:,:,iblock) + &
+      WORK1(:,:) = (HTE(:,:,iblock)/HUS(:,:,iblock))*p5*(AHF(:,:,iblock) + &
                             eoshift(AHF(:,:,iblock),dim=1,shift=1))
 
       DTE(:,:,iblock) = WORK1*TAREA_R(:,:,iblock)

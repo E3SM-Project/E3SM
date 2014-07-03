@@ -38,6 +38,7 @@ module profile
   use parallel
 #endif
 
+  use glimmer_global, only: dp
   implicit none
 
 #if (defined CCSMCOUPLED || defined CESMTIMERS)
@@ -50,11 +51,11 @@ module profile
   !> the profiling type
   type profile_type
      integer :: profile_unit=0  !< file unit to be written to
-     real :: start_time         !< CPU time at start of log
+     real(dp) :: start_time         !< CPU time at start of log
      integer :: nump=0          !< number of profiles
 
-     real, dimension(max_prof) :: pstart,ptotal      !< for each log store start and totals
-     character(len=50), dimension(max_prof) :: pname !< name for each profile
+     real(dp), dimension(max_prof) :: pstart,ptotal    !< for each log store start and totals
+     character(len=50), dimension(max_prof) :: pname   !< name for each profile
   end type profile_type
 
 contains
@@ -124,7 +125,7 @@ contains
     integer, intent(in) :: profn !< the profile ID
     
 #if (defined PROFILING && ! defined CCSMCOUPLED && ! defined CESMTIMERS)
-    real t
+    real(dp) :: t
 
     call cpu_time(t)
     prof%ptotal(profn) = prof%ptotal(profn) + t-prof%pstart(profn)
@@ -143,7 +144,7 @@ contains
     character(len=*), intent(in), optional :: msg     !< message to be written to profile
 
 #if (defined PROFILING && ! defined CCSMCOUPLED && ! defined CESMTIMERS)
-    real t
+    real(dp) :: t
 
     call cpu_time(t)
     if (present(msg)) then
@@ -164,7 +165,7 @@ contains
     ! local variables
     character(len=8)  :: date
     character(len=10) :: time    
-    real t
+    real(dp) :: t
 
     call cpu_time(t)
     call date_and_time (date, time)

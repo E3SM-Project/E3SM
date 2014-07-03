@@ -1,59 +1,16 @@
 <bookinfo>
 
-<title>CESM1.1 User's Guide</title>
+<title>** DRAFT ** CESM User's Guide (CESM1.3 Release Series User's Guide) (<ulink url="ug.pdf">PDF</ulink>)</title>
 
 <authorgroup>
 <author>
-   <firstname>Mariana</firstname>
-   <surname>Vertenstein</surname>
-   <affiliation>
-   <orgname> NCAR </orgname>
-   </affiliation>
-</author>
-<author>
-   <firstname>Tony</firstname>
-   <surname>Craig</surname>
-   <affiliation>
-   <orgname> NCAR </orgname>
-   </affiliation>
-</author>
-<author>
-   <firstname>Jim</firstname>
-   <surname>Edwards</surname>
-   <affiliation>
-   <orgname> NCAR </orgname>
-   </affiliation>
-</author>
-<author>
-   <firstname>Mike</firstname>
-   <surname>Levy</surname>
-   <affiliation>
-   <orgname> NCAR </orgname>
-   </affiliation>
-</author>
-<author>
-   <firstname>Andrew</firstname>
-   <surname>Mai</surname>
-   <affiliation>
-   <orgname> NCAR </orgname>
-   </affiliation>
-</author>
-<author>
-   <firstname>Jay</firstname>
-   <surname>Schollenberger</surname>
-   <affiliation>
-   <orgname> NCAR </orgname>
-   </affiliation>
-</author>
-<author>
-   <firstname>Alice</firstname>
-   <surname>Bertini</surname>
+   <firstname>CESM Software Engineering Group</firstname>
+   <surname>(CSEG)</surname>
    <affiliation>
    <orgname> NCAR </orgname>
    </affiliation>
 </author>
 </authorgroup>
 
-<date>2012-11-15</date>
-
+<date>Last Update 2014-05-02</date>
 </bookinfo>

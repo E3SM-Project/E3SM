@@ -35,8 +35,13 @@ if ($BUILD_COMPLETE == 'FALSE') then
   if ($COMP_INTERFACE == 'MCT' ) set comp = mct
   if ($COMP_INTERFACE == 'ESMF') set comp = esmf
 
+  set CAM_LIB_DIRS = ""
+  if ("$CAM_CONFIG_OPTS" =~ "*cosp*") then
+    set CAM_LIB_DIRS = "-cosp_libdir $EXEROOT/atm/obj/cosp"
+  endif
+
   $CODEROOT/atm/cam/bld/configure -s  -ccsm_seq -ice none -ocn $ocn  -comp_intf $comp \
-      $scm $spmd -dyn $CAM_DYCORE -res $ATM_GRID  $CAM_CONFIG_OPTS || exit -1
+      $scm $spmd -dyn $CAM_DYCORE -res $ATM_GRID $CAM_LIB_DIRS $CAM_CONFIG_OPTS || exit -1
 
 else
 
@@ -108,6 +113,11 @@ set start_ymd = "start_ymd = $yyyymmdd"
 @ dtime  = ( 3600 * 24 ) / $ATM_NCPL
 @ ntasks = $NTASKS_ATM / $NINST_ATM
 set scmb = 
+if ($DEBUG == 'TRUE') then
+  set debug_checks = "state_debug_checks = .true."
+else
+  set debug_checks = 
+endif
 
 cat >! $CASEBUILD/camconf/cesm_namelist << EOF2
 &cam_inparm
@@ -117,6 +127,7 @@ cat >! $CASEBUILD/camconf/cesm_namelist << EOF2
  $co2vmr
  $start_ymd 
  $scmb
+ $debug_checks
 EOF2
 if (-e $CASEROOT/user_nl_cam${inst_string}) then
   $UTILROOT/Tools/user_nl_add -user_nl_file $CASEROOT/user_nl_cam${inst_string} >> $CASEBUILD/camconf/cesm_namelist 

@@ -338,7 +338,8 @@ contains
       do_pheat, do_pheatatm, dt_threshold, cstick, gsticki, gstickl, tstick, do_clearsky)
     type(carma_type), intent(inout)     :: carma         !! the carma object
     integer, intent(out)                :: rc            !! return code, negative indicates failure
-    logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats (instead of varying with temperature)?
+    logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats
+                                                         !! (instead of varying with temperature)?
     logical, intent(in), optional       :: do_coag       !! do coagulation?
     logical, intent(in), optional       :: do_detrain    !! do detrainement?
     logical, intent(in), optional       :: do_fixedinit  !! do initialization from reference atm?
@@ -351,7 +352,8 @@ contains
     logical, intent(in), optional       :: do_vdiff      !! do Brownian diffusion
     logical, intent(in), optional       :: do_vtran      !! do sedimentation
     logical, intent(in), optional       :: do_drydep     !! do dry deposition
-    real(kind=f), intent(in), optional  :: vf_const      !! if specified and non-zero, constant fall velocity for all particles [cm/s]
+    real(kind=f), intent(in), optional  :: vf_const      !! if specified and non-zero,
+                                                         !! constant fall velocity for all particles [cm/s]
     integer, intent(in), optional       :: minsubsteps   !! minimum number of substeps, default = 1
     integer, intent(in), optional       :: maxsubsteps   !! maximum number of substeps, default = 1
     integer, intent(in), optional       :: maxretries    !! maximum number of substep retries, default = 5
@@ -433,8 +435,13 @@ contains
     carma%f_do_step = .TRUE.
     
     ! Calculate the Optical Properties
+    !
+    ! NOTE: This is only needed by CARMA if particle heating is being used. For
+    ! fractal particle the optics can be very slow, so only do it if necessary,
+    if (carma%f_do_pheat) then
     call CARMA_InitializeOptics(carma, rc)
     if (rc < 0) return
+    end if
 
     ! If any of the processes have initialization that can be done without the state
     ! information, then perform that now. This will mostly be checking the configuration
@@ -765,14 +772,14 @@ contains
       endif
 
       ! Check that <isolute> is consistent with <inucgas>.
-      igas = carma%f_inucgas( carma%f_element(ielem)%f_igroup )
-      if( igas .ne. 0 )then
-        if( carma%f_element(ielem)%f_itype .eq. I_COREMASS .and. carma%f_element(ielem)%f_isolute .eq. 0 )then
-          if (carma%f_do_print) write(carma%f_LUNOPRT,*) 'CARMA_InitializeGrowth::ERROR - inucgas ne 0 but isolute eq 0'
-          rc = RC_ERROR
-          return
-        endif
-      endif
+!      igas = carma%f_inucgas( carma%f_element(ielem)%f_igroup )
+!      if( igas .ne. 0 )then
+!        if( carma%f_element(ielem)%f_itype .eq. I_COREMASS .and. carma%f_element(ielem)%f_isolute .eq. 0 )then
+!          if (carma%f_do_print) write(carma%f_LUNOPRT,*) 'CARMA_InitializeGrowth::ERROR - inucgas ne 0 but isolute eq 0'
+!          rc = RC_ERROR
+!          return
+!        endif
+!      endif
     enddo
 
     do ielem = 1, carma%f_NELEM
@@ -804,7 +811,7 @@ contains
 
           do ifrom = 1,carma%f_NBIN   ! source bin
             if( carma%f_inuc2bin(ifrom,igfrom,igto) .eq. 0 )then
-              if (carma%f_do_print) write(carma%f_LUNOPRT,7) igfrom,ifrom,igto
+              if ((carma%f_do_print) .and. (carma%f_do_print_init)) write(carma%f_LUNOPRT,7) igfrom,ifrom,igto
               bad_grid = .true.
             endif
           enddo
@@ -812,14 +819,12 @@ contains
       endif
     enddo
 
-    if( bad_grid )then
-      if (carma%f_do_print) write(carma%f_LUNOPRT,*) 'CARMA_InitializeGrowth::ERROR - incompatible grids for nucleation'
-      rc = RC_ERROR
-      return
-    endif
-      
     if (carma%f_do_print_init) then
     
+      if( bad_grid )then
+        if (carma%f_do_print) write(carma%f_LUNOPRT,*) 'CARMA_InitializeGrowth::Warning - incompatible grids for nucleation'
+      endif
+      
       ! Report some initialization values!
       write(carma%f_LUNOPRT,5)
       write(carma%f_LUNOPRT,1) 'inucgas  ',(carma%f_inucgas(i),i=1,carma%f_NGROUP)
@@ -905,14 +910,22 @@ contains
                      carma%f_group(igroup)%f_imiertn, &
                      carma%f_group(igroup)%f_r(ibin), &
                      carma%f_wave(iwave), &
-                     carma%f_group(igroup)%f_refidx(iwave), &
+                     carma%f_group(igroup)%f_nmon(ibin), &
+                     carma%f_group(igroup)%f_df(ibin), &
+                     carma%f_group(igroup)%f_rmon, &
+                     carma%f_group(igroup)%f_falpha, &
+                     carma%f_group(igroup)%f_refidx(iwave), &                   
                      Qext, &
                      Qsca, &
                      asym, &
                      rc)
 
             if (rc < RC_OK) then
-              if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_InitializeOptics:: Mie failed for (band, wavelength, group, bin)", iwave, carma%f_wave(iwave), igroup, ibin
+              if (carma%f_do_print) then
+                 write(carma%f_LUNOPRT, *) "CARMA_InitializeOptics::&
+                      &Mie failed for (band, wavelength, group, bin)", &
+                      iwave, carma%f_wave(iwave), igroup, ibin
+              end if
               return
             end if
 
@@ -1137,7 +1150,8 @@ contains
     integer, intent(in)                :: icollec       !! collection technique [I_COLLEC_CONST | I_COLLEC_FUCHS | I_COLLEC_DATA] 
     integer, intent(out)               :: rc            !! return code, negative indicates failure
     real(kind=f), intent(in), optional :: ck0           !! if specified, forces a constant coagulation kernel
-    real(kind=f), intent(in), optional :: grav_e_coll0  !! if <i>icollec</i> is I_COLLEC_CONST, the constant gravitational collection efficiency      
+    real(kind=f), intent(in), optional :: grav_e_coll0  !! if <i>icollec</i> is I_COLLEC_CONST
+                                                        !! the constant gravitational collection efficiency
     
     ! Assume success.
     rc = RC_OK
@@ -1187,7 +1201,11 @@ contains
       if (present(grav_e_coll0)) then
         carma%f_grav_e_coll0 = grav_e_coll0
       else
-        if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_AddCoagulation:: ERROR - A constant gravitational collection was requests, but grav_e_coll0 was not provided."
+        if (carma%f_do_print) then
+           write(carma%f_LUNOPRT, *) "CARMA_AddCoagulation::&
+                &ERROR - A constant gravitational collection was requests, &
+                &but grav_e_coll0 was not provided."
+        end if
         rc = RC_ERROR
         return
       end if
@@ -1301,7 +1319,8 @@ contains
     type(carma_type), intent(inout)    :: carma       !! the carma object
     integer, intent(in)                :: ielemfrom   !! the source element
     integer, intent(in)                :: ielemto     !! the destination element
-    integer, intent(in)                :: inucproc    !! the nucleation process [I_DROPACT | I_AERFREEZE | I_ICEMELT | I_HETNUC | I_HOMNUC]
+    integer, intent(in)                :: inucproc    !! the nucleation process
+                                                      !! [I_DROPACT | I_AERFREEZE | I_ICEMELT | I_HETNUC | I_HOMNUC]
     real(kind=f), intent(in)           :: rlh_nuc     !! the latent heat of nucleation [cm<sup>2</sup>/s<sup>2</sup>]
     integer, intent(out)               :: rc          !! return code, negative indicated failure
     integer, optional, intent(in)      :: igas        !! the gas
@@ -1350,7 +1369,10 @@ contains
     
     ! If aerosol freezing is selected, but no I_AF_xxx sub-method is selected, then indicate an error.
     if (inucproc == I_AERFREEZE) then
-      if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_AddNucleation:: ERROR - I_AERFREEZE was specified without an I_AF_xxx value."
+      if (carma%f_do_print) then
+         write(carma%f_LUNOPRT, *) "CARMA_AddNucleation::&
+              &ERROR - I_AERFREEZE was specified without an I_AF_xxx value."
+      end if
       return
     end if
     

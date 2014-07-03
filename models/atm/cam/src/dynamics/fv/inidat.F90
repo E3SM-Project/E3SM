@@ -318,7 +318,6 @@ contains
 !
     use constituents, only: cnst_name, qmin
     use chemistry   , only: chem_implements_cnst, chem_init_cnst
-    use aerosol_intr, only: aerosol_implements_cnst, aerosol_init_cnst
     use carma_intr,   only: carma_implements_cnst, carma_init_cnst
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
@@ -354,7 +353,7 @@ contains
     integer  ret, attlen                   ! netcdf return values
     real(r8), allocatable :: uv_local (:,:,:)
     character*256 text
-    character*80 trunits                   ! tracer untis
+    character*256 trunits                  ! tracer untis
 
     real(r8), pointer :: phisxy(:,:), psxy(:,:), t3xy(:,:,:)
     real(r8), pointer :: u3sxy(:,:,:), v3sxy(:,:,:)
@@ -527,9 +526,6 @@ contains
           else if (aoa_tracers_implements_cnst(cnst_name(m_cnst))) then
              call aoa_tracers_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "aoa_tracers_init_cnst"'
-          else if (aerosol_implements_cnst(cnst_name(m_cnst))) then
-             call aerosol_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
-             if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "aerosol_init_cnst"'
           else if (carma_implements_cnst(cnst_name(m_cnst))) then
              call carma_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "carma_init_cnst"'

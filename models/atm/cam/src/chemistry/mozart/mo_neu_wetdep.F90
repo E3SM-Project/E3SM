@@ -237,7 +237,6 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
 !
 ! from cam/src/physics/cam/stratiform.F90
 !
-  integer :: ifld,itim
 
   if (.not.do_neu_wetdep) return
 !

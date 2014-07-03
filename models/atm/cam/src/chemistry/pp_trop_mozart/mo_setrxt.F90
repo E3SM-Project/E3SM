@@ -73,7 +73,7 @@
       n = ncol*pver
       rate(:,:,42) = 8e-12_r8 * exp( -2060._r8 * itemp(:,:) )
       rate(:,:,43) = 2.1e-11_r8 * exp( 115._r8 * itemp(:,:) )
-      rate(:,:,44) = 3.2e-11_r8 * exp( 70._r8 * itemp(:,:) )
+      rate(:,:,44) = 3.30e-11_r8 * exp( 55._r8 * itemp(:,:) )
       rate(:,:,47) = 2.8e-12_r8 * exp( -1800._r8 * itemp(:,:) )
       rate(:,:,48) = 2.2e-11_r8 * exp( 120._r8 * itemp(:,:) )
       exp_fac(:,:) = exp( 200._r8 * itemp(:,:) )

@@ -11,7 +11,7 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval
+  use RtmVar         , only : iulog, spval, ispval
   use rtm_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -121,6 +121,8 @@ contains
     runoff%volrlnd(:,:)    = 0._r8
     runoff%volr_nt1(:)     = 0._r8
     runoff%volr_nt2(:)     = 0._r8
+    runoff%gindex(:)       = ispval
+    runoff%fthresh(:)      = spval
     runoff%flood(:)        = 0._r8
 
   end subroutine RunoffInit

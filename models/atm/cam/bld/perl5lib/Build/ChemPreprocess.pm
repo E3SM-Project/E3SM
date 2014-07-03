@@ -299,7 +299,6 @@ sub build_chem_preproc
     if ($fc_type) {
 
 	if    ($fc_type eq 'pgi')       { $cmplr = 'pgf90'; }
-	elsif ($fc_type eq 'lahey')     { $cmplr = 'lf95'; }
 	elsif ($fc_type eq 'intel')     { $cmplr = 'ifort'; }
 	elsif ($fc_type eq 'gnu')       { $cmplr = 'gfortran'; }
 	elsif ($fc_type eq 'xlf')       { $cmplr = 'xlf95'; }
@@ -393,7 +392,7 @@ EOF
 # searches $PATH for available compiler for the preprocessor
 sub find_preproc_compiler {
     # these are the compilers the preprocessor Makefile is setup for :
-    my @compilers = qw(xlf95 pgf90 pgf95 ifort lf95 gfortran g95 f90 f95);
+    my @compilers = qw(xlf95 pgf90 pgf95 ifort gfortran g95 f90 f95);
     my $path = $ENV{'PATH'};
     my @dirs = split(':',$path);
     foreach my $fc (@compilers) {
@@ -457,7 +456,7 @@ print $fh  <<"EOF";
       End Solution
 
       Fixed
-    M, N2, O2
+    M, N2, O2, H2O
 EOF
     if ( $prog_species =~ /SO4/ ) {
 	print $fh "    O3, OH, NO3, HO2\n"; 
@@ -505,10 +504,23 @@ print $fh <<"EOF";
 
  CHEMISTRY
       Photolysis
+EOF
+    if ( $prog_species =~ /SO4/ ) {
+      print $fh "   [jh2o2]       H2O2 + hv -> 2*OH \n"; 
+    }
+print $fh <<"EOF";
       End Photolysis
 
       Reactions
 EOF
+    if ( $prog_species =~ /SO4/ ) {
+        print $fh "  [usr_HO2_HO2] HO2 + HO2 -> H2O2 + O2                    \n";
+        print $fh "                H2O2 + OH -> H2O + HO2    ; 2.9e-12, -160 \n";
+        print $fh "  [usr_SO2_OH]  SO2 + OH -> SO4                           \n";
+        print $fh "                DMS + OH -> SO2           ; 9.6e-12,-234. \n";
+        print $fh "  [usr_DMS_OH]  DMS + OH -> .5 * SO2                      \n";
+        print $fh "                DMS + NO3 -> SO2          ; 1.9e-13, 520. \n";
+    }
     if ( $prog_species =~ /CARBON16/ ) {
 	print $fh "    OFPHO -> OFPHI    ; 1.006e-05 \n";
 	print $fh "    BFPHO -> BFPHI    ; 1.006e-05 \n";
@@ -534,14 +546,6 @@ EOF
     }
 print $fh <<"EOF";
       End Reactions
-
-      Heterogeneous
-EOF
-    if ( $prog_species =~ /SO4/ ) {
-        print $fh "    H2O2, SO2 \n";
-    }
-print $fh <<"EOF";
-      End Heterogeneous
 
       Ext Forcing
 EOF

@@ -73,11 +73,7 @@ module carma_model_mod
   ! should have a unique number.
   integer, public, parameter      :: I_SEA_SALT   = 1           !! sea salt composition
 
-  real(r8), parameter             :: uth = 4._r8                !! threshold wind velocity  
-
-  ! NOTE: The WeibullK distribution is not currently supported, since the coefficients are not
-  ! generated. This can be added later.
-  real(r8), allocatable, dimension(:,:) :: Weibull_k            ! Weibull K(nlat,nlon)
+  real(r8), parameter             :: uth = 4._r8                !! threshold wind velocity
 
 contains
 
@@ -108,7 +104,6 @@ contains
 
       if (do_print) write(LUNOPRT,*) ''
       if (do_print) write(LUNOPRT,*) 'CARMA ', trim(carma_model), ' specific settings :'
-      if (do_print) write(LUNOPRT,*) '  carma_do_WeibullK  = ', carma_do_WeibullK
       if (do_print) write(LUNOPRT,*) '  carma_seasalt_emis = ', trim(carma_seasalt_emis)
     end if
     
@@ -261,7 +256,7 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_lon_all_p, get_lat_all_p, get_rlat_all_p
+    use phys_grid,     only: get_lon_all_p, get_lat_all_p
     use camsrfexch,       only: cam_in_t
     
     implicit none
@@ -293,7 +288,8 @@ contains
     real(r8)            :: A_para, B_para, sita_para          ! A, B, and sita parameters in Gong
     real(r8)            :: B_mona                             ! the parameter used in Monahan
     real(r8)            :: W_Caff                             ! Correction factor in Caffrey
-    real(r8)            :: u14, ustar_smith, cd_smith         ! 14m wind velocity, friction velocity, and drag coefficient as desired by Andreas source function              
+    real(r8)            :: u14, ustar_smith, cd_smith         ! 14m wind velocity, friction velocity and drag
+                                                              ! coefficient as desired by Andreas source function
     real(r8)            :: wcap                               ! whitecap coverage
     real(r8)            :: fref                               ! correction factor suggested by Hoppe2005
     real(r8), parameter :: xkar = 0.4_r8                      ! Von Karman constant
@@ -374,9 +370,12 @@ contains
     real(r8)            :: A1                                ! Coefficient Ak in Clarkes's source function
     real(r8)            :: A2 
     real(r8)            :: A3    
-    A1(rpdry) = beta01 + beta11*(2._r8*rpdry) + beta21*(2._r8*rpdry)**2 + beta31*(2._r8*rpdry)**3 + beta41*(2._r8*rpdry)**4 + beta51*(2._r8*rpdry)**5
-    A2(rpdry) = beta02 + beta12*(2._r8*rpdry) + beta22*(2._r8*rpdry)**2 + beta32*(2._r8*rpdry)**3 + beta42*(2._r8*rpdry)**4 + beta52*(2._r8*rpdry)**5
-    A3(rpdry) = beta03 + beta13*(2._r8*rpdry) + beta23*(2._r8*rpdry)**2 + beta33*(2._r8*rpdry)**3 + beta43*(2._r8*rpdry)**4 + beta53*(2._r8*rpdry)**5  
+    A1(rpdry) = beta01 + beta11*(2._r8*rpdry) + beta21*(2._r8*rpdry)**2 + &
+         beta31*(2._r8*rpdry)**3 + beta41*(2._r8*rpdry)**4 + beta51*(2._r8*rpdry)**5
+    A2(rpdry) = beta02 + beta12*(2._r8*rpdry) + beta22*(2._r8*rpdry)**2 + &
+         beta32*(2._r8*rpdry)**3 + beta42*(2._r8*rpdry)**4 + beta52*(2._r8*rpdry)**5
+    A3(rpdry) = beta03 + beta13*(2._r8*rpdry) + beta23*(2._r8*rpdry)**2 + &
+         beta33*(2._r8*rpdry)**3 + beta43*(2._r8*rpdry)**4 + beta53*(2._r8*rpdry)**5
     
     ! ---------------------------------------------
     ! coefficient A1, A2 in Andreas's Source funcion
@@ -505,18 +504,19 @@ contains
             sita_para = 30                              
             A_para = - 4.7_r8 * (1+ sita_para * r80) ** (- 0.017_r8 * r80** (-1.44_r8))
             B_para = (0.433_r8 - log10(r80)) / 0.433_r8          
-            ncflx = 1.373_r8* u10in ** 3.41_r8 * r80 ** A_para * (1._r8 + 0.057_r8 * r80**3.45_r8) * 10._r8 ** (1.607_r8 * exp(- B_para **2))          
+            ncflx = 1.373_r8* u10in ** 3.41_r8 * r80 ** A_para * &
+                 (1._r8 + 0.057_r8 * r80**3.45_r8) * 10._r8 ** (1.607_r8 * exp(- B_para **2))
 !            if (do_print) write(LUNOPRT, *) "Gong: ncflx = ", ncflx, ", u10n = ", u10in
           end if
             
           !------Martensson source function-----
           if (carma_seasalt_emis == "Martensson") then               
             if (rdry .le. 0.0725_r8) then
-              ncflx = (Ak1(rdry*1.0e-6_r8)* (25._r8+273._r8) + Bk1(rdry*1.0e-6_r8)) * wcap      ! dF/dlogr [#/s/m2]                                     
+              ncflx = (Ak1(rdry*1.0e-6_r8)* (25._r8+273._r8) + Bk1(rdry*1.0e-6_r8)) * wcap      ! dF/dlogr [#/s/m2]
               ncflx = ncflx / (2.30258509_r8 * rdry)                                            ! dF/dr    [#/s/m2/um]        
             elseif (rdry .gt. 0.0725_r8 .and. rdry .le. 0.2095_r8) then  
               ncflx = (Ak2(rdry*1.0e-6_r8)* (25._r8+273._r8) + Bk2(rdry*1.0e-6_r8)) * wcap      ! dF/dlogr [#/s/m2]
-              ncflx = ncflx / (2.30258509_r8 * rdry)                                            ! dF/dr    [#/s/m2/um]                                
+              ncflx = ncflx / (2.30258509_r8 * rdry)                                            ! dF/dr    [#/s/m2/um]
             elseif (rdry .gt. 0.2095_r8 .and. rdry .le. 1.4_r8) then  
               ncflx = (Ak3(rdry*1.0e-6_r8)* (25._r8+273._r8) + Bk3(rdry*1.0e-6_r8)) * wcap      ! dF/dlogr [#/s/m2]
               ncflx = ncflx / (2.30258509_r8 * rdry)                                            ! dF/dr    [#/s/m2/um] 
@@ -545,14 +545,15 @@ contains
           if (carma_seasalt_emis == "Caffrey") then                          
             
             !Monahan        
-            B_mona = (0.38_r8 - log10(r80)) / 0.65_r8       
-            Monahan = 1.373_r8 * (u10in**3.41_r8) * r80**(-3._r8) * (1._r8 + 0.057 *r80**1.05_r8)  * 10._r8 ** (1.19_r8 * exp(-1. * B_mona**2)) ! dF/dr
+            B_mona = (0.38_r8 - log10(r80)) / 0.65_r8
+            Monahan = 1.373_r8 * (u10in**3.41_r8) * r80**(-3._r8) * &
+                 (1._r8 + 0.057 *r80**1.05_r8)  * 10._r8 ** (1.19_r8 * exp(-1. * B_mona**2)) ! dF/dr
             
             !Smith
             u14 = u10in * (1._r8 + cd_smith**0.5_r8 / xkar * log(14._r8 / 10._r8))  ! 14 meter wind
             A1A92 = 10._r8 ** (0.0676_r8 * u14 + 2.430_r8)
             A2A92 = 10._r8 ** (0.9590_r8 * u14**0.5_r8 - 1.476_r8) 
-            Smith = A1A92*exp(-f1 *(log(r80/r1))**2) + A2A92*exp(-f2 * (log(r80/r2))**2)     ! dF/dr   [#/m2/s/um]                    
+            Smith = A1A92*exp(-f1 *(log(r80/r1))**2) + A2A92*exp(-f2 * (log(r80/r2))**2)     ! dF/dr   [#/m2/s/um]
             
             !Caffrey based on Monahan and Smith
             W_Caff = 1.136_r8 **(-1._r8 * rdry ** (-0.855_r8))*(1._r8 + 0.2_r8/rdry) 
@@ -595,13 +596,14 @@ contains
             
             !Monahan   
             B_Mona = (0.38_r8 - log10(r80)) / 0.65_r8 
-            Monahan = 1.373_r8 * u10in ** 3.41_r8 * r80 ** (-3._r8) * (1._r8 + 0.057_r8 * r80**1.05_r8) * 10._r8 ** (1.19_r8 * exp(- B_Mona **2))
+            Monahan = 1.373_r8 * u10in ** 3.41_r8 * r80 ** (-3._r8) * &
+                 (1._r8 + 0.057_r8 * r80**1.05_r8) * 10._r8 ** (1.19_r8 * exp(- B_Mona **2))
             
             !Smith
             u14 = u10in * (1._r8 + cd_smith**0.5_r8 / xkar*log(14._r8 / 10._r8))  ! 14 meter wind
             A1A92 = 10._r8 ** (0.0676_r8 * u14 + 2.430_r8)
             A2A92 = 10._r8 ** (0.9590_r8 * u14**0.5_r8 - 1.476_r8) 
-            Smith = A1A92*exp(-f1 *(log(r80 / r1))**2) + A2A92*exp(-f2 * (log(r80 / r2))**2)     ! dF/dr   [#/m2/s/um]                    
+            Smith = A1A92*exp(-f1 *(log(r80 / r1))**2) + A2A92*exp(-f2 * (log(r80 / r2))**2)     ! dF/dr   [#/m2/s/um]
   
             !%%%%%%%%%%%%%%%%%%%%%%%%%
             !     CMS1 or CMS2
@@ -657,7 +659,8 @@ contains
     implicit none
 
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     ! Default return code.
@@ -751,7 +754,8 @@ contains
     integer, intent(out)                :: rc                    !! return code, negative indicates failure
     
     ! local variables
-    real(r8) :: uWB341              ! the nth mean wind with integration using Weibull Distribution(integrate from threshold wind velocity)      
+    ! the nth mean wind with integration using Weibull Distribution (integrate from threshold wind velocity)
+    real(r8) :: uWB341
 
     rc = RC_OK
 
@@ -760,16 +764,11 @@ contains
     ! calc. the Weibull wind distribution         
     u10in = cam_in%u10(icol)
     
-    ! Use Weibull with prescribed coefficients?
-    if (carma_do_WeibullK) then
-      call WeibullWind(u10in, uth, 3.41_r8, uWB341, Weibull_k(ilat, ilon))
-    else
-      call WeibullWind(u10in, uth, 3.41_r8, uWB341)
-    end if                
+    call WeibullWind(u10in, uth, 3.41_r8, uWB341)
 
+    ! Asked for 3.41 moment of the wind, but return the first moment of the
+    ! Weibull wind.
     u10in = uWB341 ** (1._r8 / 3.41_r8)
-
-!    if (do_print) write(LUNOPRT, *) 'CARMA_SurfaceWind: icol ',icol, ', u10 =', cam_in%u10(icol), ', u10in =', u10in
 
     return
   end subroutine CARMA_SurfaceWind
@@ -783,7 +782,7 @@ contains
   !! @version August-2010
    subroutine WeibullWind(u, uth, n, uwb, wbk)
     use shr_kind_mod,   only: r8 => shr_kind_r8
-    use shr_spfn_mod, only: gamma => shr_spfn_gamma_nonintrinsic, &
+    use shr_spfn_mod, only: gamma => shr_spfn_gamma, &
          igamma => shr_spfn_igamma
 
     implicit none
@@ -805,12 +804,14 @@ contains
 !    k = 2.5_r8                   ! Lansing's estimate
     end if 
   
-!  if (k .eq. 0._r8) then          ! at some locations the parameter is 0, not ocean
-!    k = 2.5_r8
-!  end if
-  
-    c   = u * (gamma(1._r8 + 1._r8 / k))**(-1._r8)  
-    uwb = c**n * igamma(n / k + 1._r8, (uth / c)**k)
+    ! At some locations the k parameter is 0, not ocean which then
+    ! makes the gamma functions unstable.
+    if (k .eq. 0._r8) then          
+      c = u**n
+    else
+      c   = u * (gamma(1._r8 + 1._r8 / k))**(-1._r8)  
+      uwb = c**n * igamma(n / k + 1._r8, (uth / c)**k)
+    end if
 
   end subroutine WeibullWind
 

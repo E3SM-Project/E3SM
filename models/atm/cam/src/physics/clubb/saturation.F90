@@ -28,6 +28,7 @@ module saturation
   ! Lookup table of values for saturation 
   real( kind = core_rknd ), private, dimension(188:343) :: &
     svp_liq_lookup_table
+!$omp threadprivate(svp_liq_lookup_table)
 
   data svp_liq_lookup_table(188:343) / &
     0.049560547_core_rknd, 0.059753418_core_rknd, 0.070129395_core_rknd, 0.083618164_core_rknd, &

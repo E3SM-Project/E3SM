@@ -33,7 +33,7 @@
 ! example.
 !------------------------------------------------------------------------------
 program simple_phaml
-    use glimmer_global, only:rk ! precision of the model
+    use glimmer_global, only:dp ! precision of the model
     use glide                   ! main glide module
     use glimmer_log             ! module for logging messages
     use glimmer_config          ! module for handling configuration files
@@ -48,7 +48,7 @@ program simple_phaml
     type(ConfigSection), pointer :: config
     character(len=50) :: fname 
     character(len=255) :: cwd
-    real(kind=rk) time
+    real(kind=dp) time
     !fname = 'sm.conf'
     write(*,*) 'Enter name of GLIDE configuration file to be read'
     read(*,*) fname

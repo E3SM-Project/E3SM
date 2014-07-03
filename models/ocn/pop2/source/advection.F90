@@ -13,7 +13,7 @@
 !  tracers.
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: advection.F90 47361 2013-05-21 20:54:30Z mlevy@ucar.edu $
+!  SVN:$Id: advection.F90 57769 2014-03-01 23:16:19Z mlevy@ucar.edu $
 
 ! !USES:
    use POP_KindsMod
@@ -837,7 +837,7 @@
 
    call define_tavg_field(tavg_PV,'PV',3,                              &
                           long_name='Potential Vorticity',             &
-                          units='1/s', grid_loc='3111',                &
+                          units='1/s/cm', grid_loc='3111',             &
                           coordinates='TLONG TLAT z_t time')
 
    call define_tavg_field(tavg_Q,'Q',3,                                &

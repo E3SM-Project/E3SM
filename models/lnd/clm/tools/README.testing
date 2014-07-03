@@ -1,8 +1,9 @@
-models/lnd/clm/tools/README.testing				Jun/04/2013
+models/lnd/clm/tools/README.testing				May/23/2011
 
 There is automated testing for all of the tools and scripts under this tools directory.
-The tests are in the models/lnd/clm/test/tools directory. There are several assumptions 
-made in order for the testing to work.
+The tests are in the models/lnd/clm/test/system directory and are any of the scripts
+that have "tools" in the name. There are several assumptions made in order for the 
+testing to work.
 
 
 1.) Executable name is the same as the directory name
@@ -12,11 +13,10 @@ The name of the executable program is the same as the directory name of the tool
 2.) Build works the same for any Fortran tools
 
 The build for any Fortran tools should work the same way, with the same options
-and required files for it. The files: Makefile, Makefile.common, Mkdepends, Filepath and Srcfiles
+and required files for it. The files: Makefile, Mkdepends, Filepath and Srcfile
 are expected to exist in the tool "src" sub-directory. To make maintaining these files easier
-in general the Makefile.common and Mkdepends files should be kept identical. Any
-customization is then placed in the main Makefile (with such things as executable name, 
-default settings for OPT and SMP and the output executable name).
+in general the Makefile and Mkdepends files should be kept identical other than
+default settings for OPT and SMP and the output executable name.
 
 Options to the Makefile:
 
@@ -28,10 +28,6 @@ Options to the Makefile:
                 (Linux and USER_FC=ftn only).
  USER_CC ------ Allow user to override the default C compiler specified in Makefile
                 (Linux only).
- USER_CPPDEFS - Additional CPP defines.
- USER_CFLAGS -- Additional C compiler flags that the user wishes to set.
- USER_FFLAGS -- Additional Fortran compiler flags that the user wishes to set.
- USER_LDFLAGS - Additional load flags that the user wishes to set.
  USER_LINKER -- Allow user to override the default linker specified in Makefile.
  SMP ---------- Shared memory Multi-processing (TRUE or FALSE) [default is FALSE]
  OPT ---------- Use optimized options. (TRUE or FALSE)
@@ -51,11 +47,10 @@ to other locations this means an "-nomv" option needs to be invoked (and one pro
 so that it leaves the files created in the current directory.
 
 5.) Either <toolname>.* namelist files exist or <toolname>.runoptions files
-    (but also see 6 below for another option)
 
 To specify options for the running of the tool, either sample namelist files
 are provided or a sample run options file. These files can EITHER be in the 
-tool directory OR the ../test/tools/nl_files directory.
+tool directory OR the ../test/system/nl_files directory.
 
   a. Namelist files
 

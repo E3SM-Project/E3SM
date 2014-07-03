@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="config_definition">
+    <xs:complexType>
+      <xs:sequence>
+
+	<xs:element name="components">
+	  <xs:complexType>
+	    <xs:sequence>
+
+	      <xs:element name="comp_archive_spec" maxOccurs="unbounded">
+		<xs:complexType>
+		  <xs:sequence>
+		    <xs:element name="rootdir" type="xs:string"/>
+		    <xs:element name="multi_instance" type="xs:string"/>
+		    <xs:element name="files" maxOccurs="unbounded">
+		      <xs:complexType>
+			<xs:sequence>
+
+			  <xs:element name="file_extension" maxOccurs="unbounded">
+			    <xs:complexType>
+			      <xs:sequence>
+				<xs:element name="subdir" type="xs:string"/>
+				<xs:element name="dispose" type="xs:string"/>
+				<xs:element name="keepLast" type="xs:string"/>
+				<xs:element name="tseries_create" type="xs:string" minOccurs="0"/>
+				<xs:element name="tseries_format" type="xs:string" minOccurs="0"/>
+			      </xs:sequence>
+			      <xs:attribute name="suffix" type="xs:string" use="required"/>
+			    </xs:complexType>
+			  </xs:element>
+
+			</xs:sequence>
+		      </xs:complexType>
+		    </xs:element>
+
+		    <xs:element name="tseries_time_variant_variables"  minOccurs="0" maxOccurs="1">
+		      <xs:complexType>
+			<xs:sequence>
+			  <xs:element name="variable" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		      </xs:complexType>
+		    </xs:element>
+
+		  </xs:sequence>
+		  <xs:attribute name="name" type="xs:string" use="required"/>
+		</xs:complexType>
+	      </xs:element>
+
+	    </xs:sequence>
+	  </xs:complexType>
+	</xs:element>
+
+	<xs:element name="tseries_specs">
+	  <xs:complexType>
+	    <xs:sequence>
+
+	      <xs:element name="tseries_archive_spec" maxOccurs="unbounded">
+		<xs:complexType>
+		  <xs:sequence>
+		    <xs:element name="subdir" type="xs:string"/>
+
+		    <xs:element name="in_time_formats" maxOccurs="unbounded">
+		      <xs:complexType>
+			<xs:sequence>
+			  <xs:element name="in_time_format" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		      </xs:complexType>
+		    </xs:element>
+
+		    <xs:element name="out_time_format" type="xs:string"/>
+		    <xs:element name="filecat_years" type="xs:integer"/>
+		  </xs:sequence>
+		  <xs:attribute name="tper" type="xs:string" use="required"/>
+		</xs:complexType>
+	      </xs:element>
+
+	    </xs:sequence>
+	  </xs:complexType>
+	</xs:element>
+
+	<xs:element name="entry" maxOccurs="unbounded">
+	  <xs:complexType>
+	    <xs:attribute name="id" type="xs:string" use="required"/>
+	    <xs:attribute name="value" type="xs:string" use="required"/>
+	  </xs:complexType>
+	</xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema> 

@@ -24,6 +24,7 @@ OPTIONS
      -prestage <prestage>   Prestage data from inputdata to prestage
      -datalistdir <dir>     Directory which will be searched for .input_data_list files
                             Default is $CASEBUILD.  Optional.
+     -verbose [or -v]       Print extra information. Optional.
      -help [or -h]          Print usage to STDOUT.  Optional.
 SUMMARY
 
@@ -44,6 +45,7 @@ my %opts = ( inputdata      => undef,
 	     export         => 0,
 	     prestage       => 0,
 	     datalistdir    => undef,
+	     verbose        => 0,
 	     help           => 0
 	    );
 
@@ -53,6 +55,7 @@ GetOptions(
     "export"                    => \$opts{'export'},
     "prestage=s"                => \$opts{'prestage'},
     "datalistdir=s"             => \$opts{'datalistdir'},
+    "v|verbose"                 => \$opts{'verbose'},
     "h|help"                    => \$opts{'help'},
 )  or usage();
 
@@ -109,10 +112,8 @@ EOF
 
 # Check prestage dir
 if ($prestageopt) {
-if (defined($opts{'prestage'})) {
     $prestage_rootdir = $opts{'prestage'};
-}
-(-d $prestage_rootdir)  or  die <<EOF;
+    (-d $prestage_rootdir)  or  die <<EOF;
 ** $ProgName - CESM prestage dir is not a directory: \"$prestage_rootdir\" **
 EOF
 }
@@ -120,12 +121,14 @@ EOF
 # Find .input_data_list files
 @filelocations = `find "$opts{'datalistdir'}" -name '*.input_data_list'`;
 
-print "Input Data List Files Found:\n";
-print @filelocations;
+if (defined($opts{'verbose'})) {
+    print "Input Data List Files Found:\n";
+    print @filelocations;
+}
 
 # Determine if will prestage input data
 if ($prestageopt) {
-if ($prestage_rootdir eq $inputdata_rootdir) {
+    if ($prestage_rootdir eq $inputdata_rootdir) {
 	print "Prestaging turned off; inputdata_rootdir eq $prestage_rootdir, $inputdata_rootdir,  $prestage_rootdir\n";
 	$prestageopt = 0;
     }

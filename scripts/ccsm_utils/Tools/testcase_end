@@ -26,15 +26,15 @@ endif
 # Generate new baseline for regression testing
 #======================================================================
 set genstatus = "UNDEF"
-
-set CplHistDir = $RUNDIR
-set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
-if (${CplHistFileName} == '') then
-  set CplHistDir = $DOUT_S_ROOT/cpl/hist
+if ( "$GENERATE_BASELINE" == "TRUE" ) then
+  set CplHistDir = $RUNDIR
   set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
+  if (${CplHistFileName} == '') then
+    set CplHistDir = $DOUT_S_ROOT/cpl/hist
+    set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
+  endif
+  set CplHistFile = $CplHistDir/$CplHistFileName
 endif
-set CplHistFile = $CplHistDir/$CplHistFileName
-
 echo " xyz " >! grep_a_test_file
 set grepa = "-a"
 grep -a xyz grep_a_test_file >& /dev/null
@@ -44,7 +44,7 @@ endif
 rm grep_a_test_file
 
 set memleak = ""
-if ( $?DETECT_MEMORY_LEAK) then 
+if ( $?DETECT_MEMORY_LEAK ) then 
  if ($basestatus == "PASS") then
    if ( $?CPLLOG_INIT ) then
     echo "Comparing memory highwater marks for consecutive days in $CPLLOG_INIT" >>& $TESTSTATUS_LOG
@@ -62,7 +62,7 @@ if ( $?DETECT_MEMORY_LEAK) then
  endif
 endif  
 
-if ( $?GENERATE_BASELINE ) then
+if ( "$GENERATE_BASELINE" == "TRUE" ) then
   if ($basestatus == "PASS") then
     set genstatus = "PASS "
     if ! ( -d $BASELINE_ROOT ) then
@@ -159,7 +159,7 @@ set pesmaxmem_incr = ""
 set tput_decr = ""
 set tput_percent_decr = ""
 
-if ( $?COMPARE_BASELINE ) then
+if ( "$COMPARE_BASELINE" == "TRUE" ) then
   if ! ( -d $BASELINE_ROOT ) then
     echo "ERROR in ${0}:  directory $BASELINE_ROOT does not exist " >>& $TESTSTATUS_LOG
     set genstatus = "BFAIL "
@@ -189,7 +189,7 @@ if ( $?COMPARE_BASELINE ) then
       echo "hist file comparison is $compstatus" >>& $TESTSTATUS_LOG
       echo "$compstatus ${CASEBASEID}.compare_hist.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
       if ($basestatus == "PASS") then
-        if( $?COMPARE_MEMORY ) then 
+        if( "$COMPARE_MEMORY" == "TRUE" ) then 
           echo "Comparing pes max memory value with baseline pes max memory value" >>& $TESTSTATUS_LOG 
           set baseline_CplLogFile = ` grep $grepa startup $BASECMP_DIR/cpl.log* | awk -F ":" '{ print $1 }'`
           echo "Comparing log files $CPLLOG_INIT and $baseline_CplLogFile" >>& $TESTSTATUS_LOG 
@@ -204,7 +204,7 @@ if ( $?COMPARE_BASELINE ) then
             echo "$compstatus ${CASEBASEID}.memcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
           endif
         endif  
-        if ( $?COMPARE_THROUGHPUT ) then
+        if ( "$COMPARE_THROUGHPUT" == "TRUE" ) then
           echo "Comparing throughput value with baseline throughput value" >>& $TESTSTATUS_LOG
           set baseline_CplLogFile = ` grep $grepa startup $BASECMP_DIR/cpl.log* | awk -F ":" '{ print $1 }'`
           echo "Comparing log files $CplLogFile and $baseline_CplLogFile" >>& $TESTSTATUS_LOG
@@ -224,11 +224,59 @@ if ( $?COMPARE_BASELINE ) then
   endif
 endif
 
+#======================================================================
+# Run the component gen compare to compare component history files
+# (Currently only recognizes cism, clm2 and could be used for cpl as well)
+# (Could be easily extended to recognize other components with the history extension list)
+#======================================================================
+set extension_list = ""
+if ( $MODEL_GEN_COMP != "UNSET" ) then
+   if      ( "$MODEL_GEN_COMP" == "cism" ) then
+      set extension_list = "h"
+   else if ( "$MODEL_GEN_COMP" == "clm2" ) then
+      set extension_list = "h0 h1 h2 h3 h4 h5"
+   else if ( "$MODEL_GEN_COMP" == "cpl" ) then
+      set extension_list = "hi"
+   endif
+   foreach type ( compare_hist generate )
+      set all_bfail=1
+      foreach extension ( $extension_list )
+         set test_hist=`cd $RUNDIR; ls -1 ${CASE}.${MODEL_GEN_COMP}*.${extension}*.nc | tail -1`
+         set base_hist="${MODEL_GEN_COMP}.${extension}.nc"
+         set ran="nope"
+         if ( "$type" == "compare_hist" && $?BASECMP_NAME ) then
+            set ran="yep"
+            $CASETOOLS/component_compare.sh -baseline_dir $BASECMP_DIR \
+             -test_dir $RUNDIR -test_hist "$test_hist" -baseline_hist $base_hist >> $TESTSTATUS_LOG
+         endif
+         if ( "$type" == "generate" && $?BASEGEN_NAME ) then
+            set ran="yep"
+            $CASETOOLS/component_generate.sh -baseline_dir $BASEGEN_DIR \
+             -test_dir $RUNDIR -test_hist "$test_hist" -baseline_hist $base_hist >> $TESTSTATUS_LOG
+         endif
+         if ( "$ran" == "yep" ) then
+            set compstatus = `tail -1 $TESTSTATUS_LOG | cut -d ':' -f 1`
+            if ( "$compstatus" != "BFAIL_NA" ) then
+               set all_bfail=0
+               echo "$compstatus ${CASEBASEID}.${MODEL_GEN_COMP}.${extension}.${type}.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+            endif
+         endif
+      end
+      if ( $all_bfail  == 1 && "$ran" == "yep" ) then
+         echo "BFAIL_NA ${CASEBASEID}.${MODEL_GEN_COMP}.all_extensions.${type}.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+      endif
+   end
+endif
+
 if ( $?CPLLOG_INIT) then
    if (-e $CPLLOG_INIT) then
       echo " " >>& $TESTSTATUS_LOG
       echo "=======================" >>& $TESTSTATUS_LOG
-      tail -20 $CPLLOG_INIT >>& $TESTSTATUS_LOG
+      if( "$CPLLOG_INIT" =~ /.gz/ ) then
+        zcat $CPLLOG_INIT | tail -15  >>& $TESTSTATUS_LOG
+      else
+        tail -15 $CPLLOG_INIT  >>& $TESTSTATUS_LOG
+      endif
       echo "=======================" >>& $TESTSTATUS_LOG
       echo " " >>& $TESTSTATUS_LOG
 
@@ -243,9 +291,9 @@ if ( $?CPLLOG_INIT) then
       if ( $?BASEGEN_NAME) then
         set tag = `echo $BASEGEN_NAME`
       endif
-      set tput = `grep "# simulated years " $CPLLOG_INIT | cut -c 63-72`
-      set memh = `grep "max memory highwater" $CPLLOG_INIT | cut -c 63-72`
-      set memr = `grep "max memory last usage" $CPLLOG_INIT | cut -c 63-72`
+      set tput = `zgrep "# simulated years " $CPLLOG_INIT | cut -c 63-72`
+      set memh = `zgrep "max memory highwater" $CPLLOG_INIT | cut -c 63-72`
+      set memr = `zgrep "max memory last usage" $CPLLOG_INIT | cut -c 63-72`
       echo "$bbb2" >>& $TESTSTATUS_LOG
       echo "CHECK ${CASEBASEID}.perf npes=$npes tput=$tput memh=$memh memr=$memr tag=$tag" >>& $TESTSTATUS_LOG
       if ( "${CASEBASEID}" =~ ERT* || "${CASEBASEID}" =~ PFS* ) then
@@ -274,7 +322,7 @@ endif
 # Clean up
 #======================================================================
 
-if ( $?CLEANUP ) then
+if ( "$CLEANUP" == "TRUE" ) then
   if ($basestatus == "PASS") then
     if ($compstatus != "FAIL") then
        rm -r -f $EXEROOT*/atm          >& /dev/null
@@ -308,7 +356,7 @@ else
 endif
 
 
-if ( $?GENERATE_BASELINE ) then
+if ( "$GENERATE_BASELINE" == "TRUE" ) then
   if (-e $BASEGEN_DIR) then
     cp $TESTSTATUS_LOG ${BASEGEN_DIR}/${TESTSTATUS_LOG:t}
     chmod ug+w,a+r ${BASEGEN_DIR}/${TESTSTATUS_LOG:t}

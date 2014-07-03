@@ -19,7 +19,9 @@
 ! !USES:
 
   use glc_kinds_mod
-  use shr_const_mod
+  use shr_const_mod, only: radius=> SHR_CONST_REARTH,&
+        	 	   tkfrz=>  SHR_CONST_TKFRZ,&
+			   pi=>     SHR_CONST_PI
 
 !lipscomb - Previously, stdout was defined in glc_constants.
 !           Moved to glimmer_paramets so that it can be accessed from
@@ -56,22 +58,6 @@
                           ! set in glc_cpl_indices_set - based on glc_nec
 
    !-----------------------------------------------------------------
-   ! physical constants
-   !-----------------------------------------------------------------
-
-   real(r8) :: radius = SHR_CONST_REARTH  ,&! radius of earth (m)
-                                            ! = 6.37122e6
-               tkfrz  = SHR_CONST_TKFRZ     ! freezing temp of water (K)
-                                            ! = 273.15
-   !-----------------------------------------------------------------
-   ! parameters for downscaling
-   !-----------------------------------------------------------------
-!lipscomb - TO DO- This should be consistent with lapse_glcmec in CLM (in clm_varcon.F90)
-!                  Make this a shared constant?
-
-   real(r8), parameter :: lapse = 0.006_r8   ! atm lapse rate, deg/m
-
-   !-----------------------------------------------------------------
    !  common formats for formatted output
    !-----------------------------------------------------------------
 
@@ -101,8 +87,7 @@
    real (r8), parameter, public :: &
       c0     =    0.0_r8   ,&
       c1     =    1.0_r8   ,&
-      eps    = 1.0e-10_r8  ,&     ! small number
-      pi     = 3.14159265358979_r8,&
+      eps    = 1.0e-10_r8  ,&
       radian = 180.0_r8/pi
 
 !EOP

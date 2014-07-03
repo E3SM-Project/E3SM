@@ -141,7 +141,7 @@
 * Odd-Oxygen Reactions (O1D only)
 * --------------------------------------------------------------
  [O1D_N2]            O1D + N2 -> O + N2                                      ; 2.15e-11,   110.
- [O1D_O2b]           O1D + O2 -> O + O2                                      ; 1.65e-12,    55.
+ [O1D_O2b]           O1D + O2 -> O + O2                                      ; 3.30e-11,    55.
  [O1D_O3]            O1D + O3 -> O2 + O2                                     ; 1.20e-10
  [ox_l1]             O1D + H2O -> 2*OH                                       ; 1.63e-10,    60.
  [O1D_H2]            O1D + H2 -> H + OH                                      ; 1.20e-10
@@ -473,6 +473,7 @@
       NO2 <-dataset 
       CO  <-dataset 
       SO2 <- dataset
+      SO4 <- dataset
       CB1 <- dataset
    End Ext Forcing
 

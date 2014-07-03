@@ -64,8 +64,5 @@ for input_file in `ls tests_*` ; do
     echo " " >> ./test_table.html
     echo "</pre>" >> ./test_table.html
 done
-echo "<pre>" >> ./test_table.html
-echo "* post-tag testing on bangkok is done with pgi compilers, pre-tag with lahey " >> ./test_table.html
-echo "</pre>" >> ./test_table.html
 
 exit 0

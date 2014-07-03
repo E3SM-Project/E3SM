@@ -214,14 +214,14 @@ average:       1
 dimensions:    time, y0, x0
 units:         kilopascal
 long_name:     basal shear stress in x direction
-data:          data%stress%tau_x
-factor:        1e-3*thk0*thk0/len0   
+data:          data%velocity%tau_x
+factor:        1e-3*thk0*thk0/len0
 
 [tauy]
 dimensions:    time, y0, x0
 units:         kilopascal
 long_name:     basal shear stress in y direction
-data:          data%stress%tau_y
+data:          data%velocity%tau_y
 factor:        1e-3*thk0*thk0/len0
 
 [thk]
@@ -316,6 +316,42 @@ factor:        thk0
 load:          1
 standard_name: bedrock_altitude
 coordinates:   lon lat
+
+## D. Martin added - fields that need to be passed to POP for ice-ocean coupling
+#[floating_mask]
+#dimensions:    time, y1, x1
+#units:         1
+#long_name:     real-valued mask denoting grounded/floating 
+#data:          data%geometry%floating_mask
+#factor:        1.0
+#coordinates:   lon lat
+
+## D. Martin added - fields that need to be passed to POP for ice-ocean coupling
+#[ice_mask]
+#dimensions:    time, y1, x1
+#units:         1
+#long_name:     real-valued mask denoting ice (1) or no ice (0)
+#data:          data%geometry%ice_mask
+#factor:        1.0
+#coordinates:   lon lat
+
+## D. Martin added - fields that need to be passed to POP for ice-ocean coupling
+#[lower_cell_loc]
+#dimensions:    time, y1, x1
+#units:         meter
+#long_name:     location in z of lower cell location
+#data:          data%geometry%lower_cell_loc
+#factor:        1.0
+#coordinates:   lon lat
+
+## D. Martin added - fields that need to be passed to POP for ice-ocean coupling
+#[lower_cell_temp]
+#dimensions:    time, y1, x1
+#units:         degrees K
+#long_name:     temperature at lower_cell_loc
+#data:          data%geometry%lower_cell_temp
+#factor:        1.0
+#coordinates:   lon lat
 
 [acab]
 dimensions:    time, y1, x1
@@ -532,9 +568,17 @@ factor:        scale_wvel
 coordinates:   lon lat
 load:          1
 
+[waterfrac]
+dimensions:    time, level, y1, x1
+units:         unitless [0,1]
+long_name:     internal water fraction
+data:          data%temper%waterfrac(up,:,:)
+coordinates:   lon lat
+load:          1
+
 [flwa]
 dimensions:    time, level, y1, x1
-units:         pascal/year
+units:         pascal^(-n) year^(-1)
 long_name:     Pre-exponential flow law parameter
 data:          data%temper%flwa(up,:,:)
 factor:        scale_flwa
@@ -543,7 +587,7 @@ coordinates:   lon lat
 
 [flwastag]
 dimensions:    time, staglevel, y1, x1
-units:         pascal/year
+units:         pascal^(-n) year^(-1)
 long_name:     Pre-exponential flow law parameter
 data:          data%temper%flwa(up,:,:)
 factor:        scale_flwa
@@ -599,24 +643,24 @@ factor:        tim0/scyr
 load:           0
 coordinates:   lon lat
 
-#TODO - What is phaml?
-[init_phaml]
-dimensions:    time, y1, x1
-units:         meter
-long_name:     phaml initial conditions
-data:          data%phaml%init_phaml
-standard_name: phaml_initial_conditions
-load:          1
-coordinates:   lon lat
+##TODO - What is phaml?
+#[init_phaml]
+#dimensions:    time, y1, x1
+#units:         meter
+#long_name:     phaml initial conditions
+#data:          data%phaml%init_phaml
+#standard_name: phaml_initial_conditions
+#load:          1
+#coordinates:   lon lat
 
-[phaml]
-dimensions:    time, y1, x1
-units:         meter
-long_name:     phaml true solution
-data:          data%phaml%uphaml
-standard_name: phaml_solution
-load:          1
-coordinates:   lon lat
+#[phaml]
+#dimensions:    time, y1, x1
+#units:         meter
+#long_name:     phaml true solution
+#data:          data%phaml%uphaml
+#standard_name: phaml_solution
+#load:          1
+#coordinates:   lon lat
 
 #TODO - Are these gline fields needed?
 [gl_ew]
@@ -636,7 +680,63 @@ coordinates:   lon lat
 [gline_flux]
 dimensions:   time, y1, x1
 units:        meter2/year
-long_name:    grounding line flux
+long_name:    grounding line fluxu
 data:         data%ground%gline_flux
+coordinates:  lon f
+
+
+[rho_ice]
+dimensions:    time
+units:         kg/meter^3
+long_name:     ice density
+data:          rhoi
+factor:        noscale
+standard_name: rho_ice
+
+[rho_seawater]
+dimensions:    time
+units:         kg/meter^3
+long_name:     seawater density
+data:          rhoo
+factor:        noscale
+standard_name: rho_seawater
+
+[gravity]
+dimensions:    time
+units:         meter/s/s
+long_name:     gravitational acceleration
+data:          grav
+factor:        noscale
+standard_name: gravity
+
+[seconds_per_year]
+dimensions:    time
+units:         s/yr
+long_name:     seconds per year
+data:          scyr
+factor:        noscale
+standard_name: seconds_per_year
+
+[ice_specific_heat]
+dimensions:    time
+units:         J/kg/K
+long_name:     ice specific heat 
+data:          shci
+factor:        noscale
+standard_name: ice_specific_heat
+
+[ice_thermal_conductivity]
+dimensions:    time
+units:         J/(K kg)
+long_name:     ice thermal conductivity 
+data:          coni
+factor:        noscale
+standard_name: ice_thermal_conductivity
+
+[dissip]
+dimensions:   time, level, y1, x1
+units:        deg C
+long_name:    dissipation divided by rhoi Ci
+data:         data%tempwk%dissip
 coordinates:  lon lat
 

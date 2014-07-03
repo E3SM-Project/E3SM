@@ -52,19 +52,30 @@
 
 #endif
 
+#ifdef BGQ
+
+#include <malloc.h>
+#include <spi/include/kernel/memory.h>
+
+#endif
 
 int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
 {
-#ifdef BGP
+#if defined (BGP) || defined(BGQ)
 
   long long alloc;
   struct mallinfo m;
+#if defined (BGP)
   Personality pers;
-
+#endif
+#if defined (BGQ)
+  uint64_t shared_mem_count;
+#endif
   long long total;
   int node_config;
  
  /* memory available */
+#if defined(BGP)
   Kernel_GetPersonality(&pers, sizeof(pers));
   total = BGP_Personality_DDRSizeMB(&pers);
 
@@ -74,7 +85,15 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   total *= 1024*1024;
 
   *size = total;
+#endif
 
+#if defined(BGQ)
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_SHARED, &shared_mem_count);
+
+  shared_mem_count *= 1024*1024;
+  *size = shared_mem_count;
+
+#endif
   /* total memory used  - heap only (not static memory)*/
 
   m = mallinfo();

@@ -259,4 +259,12 @@ valid_values="">
 Stream restart file name for drof model, needed for branch simulations
 </entry>
 
+<entry id="force_prognostic_true"
+type="logical" 
+category="drof"
+group="drof_nml">
+If TRUE, prognostic is forced to true.
+default=false 
+</entry>
+
 </namelist_definition>

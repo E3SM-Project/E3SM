@@ -122,7 +122,6 @@ subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat)
    integer :: ncol                   ! number of atmospheric columns
 
    ! physics buffer fields
-   integer :: i, itim
    real(r8), pointer, dimension(:) :: lhflx   ! latent heat flux
    real(r8), pointer, dimension(:) :: shflx   ! sensible heat flux
    real(r8), pointer, dimension(:) :: qflx    ! water vapor heat flux

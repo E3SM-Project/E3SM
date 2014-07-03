@@ -11,7 +11,7 @@
 !  and isopycnal diffusion.
 
 ! !REVISION HISTORY:
-!  SVN:$Id: hmix_gm.F90 26603 2011-01-28 23:09:02Z njn01 $
+!  SVN:$Id: hmix_gm.F90 48834 2013-07-09 19:37:42Z mlevy@ucar.edu $
 
 ! !USES:
 
@@ -3454,11 +3454,14 @@
                          SLA_SAVE(:,:,kbt,k,bid)) * RB(:,:,bid)
             endwhere
           else
-            where ( COMPUTE_TLT  .and.  K_START < KMT(:,:,bid)  .and. &
-                    K_START == k )
-              WORK = max(SLA_SAVE(:,:,kbt,k,bid), &
-                         SLA_SAVE(:,:,ktp,k+1,bid)) * RB(:,:,bid)
-            endwhere
+            ! Checking k < km guarantees that k+1 is not out of bounds
+            if (k.lt.km) then
+              where ( COMPUTE_TLT  .and.  K_START < KMT(:,:,bid)  .and. &
+                      K_START == k )
+                WORK = max(SLA_SAVE(:,:,kbt,k,bid), &
+                           SLA_SAVE(:,:,ktp,k+1,bid)) * RB(:,:,bid)
+              endwhere
+            end if
             where ( COMPUTE_TLT  .and.  K_START == KMT(:,:,bid)  .and. &
                     K_START == k )
               WORK = SLA_SAVE(:,:,kbt,k,bid) * RB(:,:,bid)
@@ -3677,17 +3680,19 @@
 
           LMASK = LMASK .and. TLT%K_LEVEL(:,:,bid) + 1 < KMT(:,:,bid)
 
-          where ( LMASK )
+          if (k.lt.km-1) then ! added to avoid out of bounds access
+            where ( LMASK )
 
-            WORK2_NEXT = c2 * dzwr(k+1) * ( &
-              KAPPA_THIC(:,:,kbt,k+1,bid) * SLX(:,:,kk,kbt,k+1,bid) * dz(k+1) - &
-              KAPPA_THIC(:,:,ktp,k+2,bid) * SLX(:,:,kk,ktp,k+2,bid) * dz(k+2))
+              WORK2_NEXT = c2 * dzwr(k+1) * ( &
+                KAPPA_THIC(:,:,kbt,k+1,bid) * SLX(:,:,kk,kbt,k+1,bid) * dz(k+1) - &
+                KAPPA_THIC(:,:,ktp,k+2,bid) * SLX(:,:,kk,ktp,k+2,bid) * dz(k+2))
 
-            WORK4_NEXT = c2 * dzwr(k+1) * ( &
-              KAPPA_THIC(:,:,kbt,k+1,bid) * SLY(:,:,kk,kbt,k+1,bid) * dz(k+1) - &
-              KAPPA_THIC(:,:,ktp,k+2,bid) * SLY(:,:,kk,ktp,k+2,bid) * dz(k+2))
+              WORK4_NEXT = c2 * dzwr(k+1) * ( &
+                KAPPA_THIC(:,:,kbt,k+1,bid) * SLY(:,:,kk,kbt,k+1,bid) * dz(k+1) - &
+                KAPPA_THIC(:,:,ktp,k+2,bid) * SLY(:,:,kk,ktp,k+2,bid) * dz(k+2))
 
-          endwhere
+            endwhere
+          end if
 
           where ( LMASK .and. abs(WORK2_NEXT) < abs(WORK2(:,:,kk)) ) &
             WORK2(:,:,kk) = WORK2_NEXT

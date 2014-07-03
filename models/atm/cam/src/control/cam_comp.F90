@@ -19,9 +19,7 @@ module cam_comp
    use ppgrid,            only: begchunk, endchunk
    use perf_mod
    use cam_logfile,       only: iulog
-   use physics_buffer,    only: physics_buffer_desc
-   use offline_driver,    only: offline_driver_init, offline_driver_readnl
-   use offline_driver,    only: offline_driver_dorun, offline_driver_run, offline_driver_done
+   use physics_buffer,            only: physics_buffer_desc
 
    implicit none
    private
@@ -122,6 +120,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    !
    ! Local variables
    !
+   integer :: dtime_cam        ! Time-step
    logical :: log_print        ! Flag to print out log information or not
    character(len=cs) :: filein ! Input namelist filename
    !-----------------------------------------------------------------------
@@ -132,7 +131,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 #if ( defined SPMD )
    cam_time_beg = mpi_wtime()
 #endif
-
    !
    ! Initialization needed for cam_history
    ! 
@@ -154,9 +152,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    ! branch.  On restart run intht need not be called because all the info is on restart dataset.
    !
    call init_pio_subsystem(filein)
-
-   ! read namelist for offline unit driver...
-   call offline_driver_readnl(filein)
 
    if ( nsrest == 0 )then
 
@@ -197,10 +192,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    if (single_column) call scm_intht()
    call intht()
 
-   !
-   ! initialize offline unit driver -- needs to be after PIO initialization
-   !
-   call offline_driver_init()
 
 end subroutine cam_init
 
@@ -238,9 +229,6 @@ subroutine cam_run1(cam_in, cam_out)
    if (masterproc .and. print_step_cost) then
       call t_stampf (wcstart, usrstart, sysstart)
    end if
-
-   if (offline_driver_dorun) return
-
    !----------------------------------------------------------
    ! First phase of dynamics (at least couple from dynamics to physics)
    ! Return time-step for physics from dynamics.
@@ -287,11 +275,6 @@ subroutine cam_run2( cam_out, cam_in )
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
    type(cam_in_t),  intent(inout) :: cam_in(begchunk:endchunk)
 
-   if (offline_driver_dorun) then
-      call offline_driver_run( phys_state, pbuf2d, cam_out, cam_in, dtime )
-      return
-   endif
-
    !
    ! Second phase of physics (after surface model update)
    !
@@ -336,9 +319,6 @@ subroutine cam_run3( cam_out )
 
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
 !-----------------------------------------------------------------------
-
-   if (offline_driver_dorun) return
-
    !
    ! Third phase of dynamics
    !
@@ -395,12 +375,10 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    ! History and restart logic: Write and/or dispose history tapes if required
    !----------------------------------------------------------
    !
-   if (.not.offline_driver_done) then
-      call t_barrierf ('sync_wshist', mpicom)
-      call t_startf ('wshist')
-      call wshist ()
-      call t_stopf  ('wshist')
-   endif
+   call t_barrierf ('sync_wshist', mpicom)
+   call t_startf ('wshist')
+   call wshist ()
+   call t_stopf  ('wshist')
 
 #if ( defined SPMD )
    stepon_time_end = mpi_wtime()

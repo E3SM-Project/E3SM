@@ -30,26 +30,26 @@
 
 module eismint3_types
 
-  use glimmer_global, only: sp
+  use glimmer_global, only: dp
   use glint_pdd
 
   implicit none
 
   type eismint3_climate
-     real(sp),dimension(:,:),pointer :: prcp !*FD Annual accumulation
-     real(sp),dimension(:,:),pointer :: acab !*FD Mass-balance
-     real(sp),dimension(:,:),pointer :: artm !*FD Surface temp
-     real(sp),dimension(:,:),pointer :: arng !*FD Surface temp half-range
-     real(sp),dimension(:,:),pointer :: usrf !*FD Surface elevation
-     real(sp),dimension(:,:),pointer :: ablt !*FD Ablation
-     real(sp),dimension(:,:),pointer :: presusurf !*FD Present-day upper-surface elevation
-     real(sp),dimension(:,:),pointer :: presartm  !*FD Present-day surface temperature
-     real(sp),dimension(:,:),pointer :: presprcp  !*FD Present-day precip (water-equivalent)
+     real(dp),dimension(:,:),pointer :: prcp !*FD Annual accumulation
+     real(dp),dimension(:,:),pointer :: acab !*FD Mass-balance
+     real(dp),dimension(:,:),pointer :: artm !*FD Surface temp
+     real(dp),dimension(:,:),pointer :: arng !*FD Surface temp half-range
+     real(dp),dimension(:,:),pointer :: usrf !*FD Surface elevation
+     real(dp),dimension(:,:),pointer :: ablt !*FD Ablation
+     real(dp),dimension(:,:),pointer :: presusurf !*FD Present-day upper-surface elevation
+     real(dp),dimension(:,:),pointer :: presartm  !*FD Present-day surface temperature
+     real(dp),dimension(:,:),pointer :: presprcp  !*FD Present-day precip (water-equivalent)
      logical,dimension(:,:),pointer :: landsea !*FD Land-sea mask
      type(glint_pdd_params) :: pdd_scheme
-     integer :: loadthk=0 !*FD Load thickness from file or start from scratch
-     real(sp) :: pfac=1.0533 !*FD Precip enhancement factor (default is supposed EISMINT value)
-     real(sp) :: temp_perturb = 0.0 !*FD Climate temperature perturbation
+     integer :: loadthk = 0          !*FD Load thickness from file or start from scratch
+     real(dp) :: pfac=1.0533d0       !*FD Precip enhancement factor (default is supposed EISMINT value)
+     real(dp) :: temp_perturb = 0.d0 !*FD Climate temperature perturbation
   end type eismint3_climate
 
 end module eismint3_types

@@ -38,20 +38,20 @@
 
 module verifBC
   
-  use glimmer_global, only : rk, sp
+  use glimmer_global, only : dp
 
-  private :: rk, sp, calc_h
+  private :: dp, calc_h
 
   type verifBC_type
-     real(rk) :: gamma
-     real(rk) :: lambda = 0.   !*FD accumulation paramter ($M_\lambda = \lambda t^{-1} H$)
-     real(rk) :: H0 = 3600.    !*FD central thickness at $t_0$ (m)
-     real(rk) :: R0 = 750.     !*FD radius of magin at t0 (m)
-     real(rk) :: tDel = 25000. !*FD time to advance from $t_0$ ($t_f = t_0+\Delta t$) (secs) if tDel<0 run from t=0 to $t_0$
-     real(rk) :: t0
-     real(rk) :: centre
-     real(rk) :: alf,bet
-     real(rk) :: gn
+     real(dp) :: gamma
+     real(dp) :: lambda = 0.   !*FD accumulation paramter ($M_\lambda = \lambda t^{-1} H$)
+     real(dp) :: H0 = 3600.    !*FD central thickness at $t_0$ (m)
+     real(dp) :: R0 = 750.     !*FD radius of magin at t0 (m)
+     real(dp) :: tDel = 25000. !*FD time to advance from $t_0$ ($t_f = t_0+\Delta t$) (secs) if tDel<0 run from t=0 to $t_0$
+     real(dp) :: t0
+     real(dp) :: centre
+     real(dp) :: alf,bet
+     real(dp) :: gn
   end type verifBC_type
 
 contains
@@ -101,8 +101,8 @@ contains
     type(verifBC_type)      :: veri  !*FD structure holding test setup
 
     ! local variables
-    real(rk) :: ts,tf
-    real(rk) :: rmax,l
+    real(dp) :: ts,tf
+    real(dp) :: rmax,l
     integer :: num
     character(len=100) :: message
 
@@ -112,7 +112,7 @@ contains
     ! scale some parameters
     veri%R0 = veri%R0*1000.
     veri%tDel = veri%tDel*scyr
-    veri%gn = real(gn,kind=rk)
+    veri%gn = real(gn,kind=dp)
 
     ! calculate Gamma
     veri%gamma = 2.*(rhoi*grav)**veri%gn*vis0/(veri%gn+2.)
@@ -168,12 +168,12 @@ contains
     implicit none
     type(glide_global_type)   :: model !*FD model instance
     type(verifBC_type)        :: veri  !*FD structure holding test setup
-    real(kind=rk), intent(in) :: time  !*FD current time
-    real(kind=rk), dimension(:,:), intent(out) :: exact_h
-    real(sp), dimension(:,:), intent(out) :: mb
+    real(dp), intent(in) :: time  !*FD current time
+    real(dp), dimension(:,:), intent(out) :: exact_h
+    real(dp), dimension(:,:), intent(out) :: mb
 
     ! local variables
-    real(rk) t,r,x,y
+    real(dp) t,r,x,y
     integer i,j
 
     t = time*scyr
@@ -200,19 +200,19 @@ contains
     !*FD calculate exact ice thickness
     implicit none
     type(verifBC_type)   :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
-    real(rk), intent(in) :: t    !*FD time   (s)
+    real(dp), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: t    !*FD time   (s)
 
-    real(rk) :: calc_h
+    real(dp) :: calc_h
 
     ! local variables
-    real(rk) :: rscl, temp
+    real(dp) :: rscl, temp
 
     if (t.eq.0.) then
        calc_h = 0.
     else
        rscl = (veri%t0/t)**(veri%bet)*(r/veri%R0)
-       temp = max(real(0.,kind=rk),1.-(rscl**((veri%gn+1.)/veri%gn)))
+       temp = max(real(0.,kind=dp),1.-(rscl**((veri%gn+1.)/veri%gn)))
        calc_h = veri%H0*(t/veri%t0)**(-veri%alf) * temp**(veri%gn/(2.*veri%gn+1.))
     end if
 

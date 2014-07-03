@@ -55,7 +55,6 @@ type dyn_export_t
      real(r8), dimension(:,:,:  ), pointer     :: mfy    ! Mass flux in Y
 end type dyn_export_t
 
-
 ! !DESCRIPTION: This module implements the FVCAM Dynamical Core as
 !               an ESMF gridded component.  It is specific to FVCAM
 !               and does not use ESMF.
@@ -126,6 +125,13 @@ real(r8), parameter        :: ONE                  = 1.0_r8
 real(r4), parameter        :: ONE_R4               = 1.0_r4
 real(r8), parameter        :: SECS_IN_SIX_HOURS    = 21600.0_r8
 
+! Frontogenesis indices
+integer, public :: frontgf_idx = -1
+integer, public :: frontga_idx = -1
+
+! Index into physics buffer for zonal mean zonal wind.
+integer, public :: uzm_idx = -1
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -191,6 +197,10 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
                                cpair,             &
                                zvir,              &
                                pi
+   use phys_control,    only : use_gw_front
+   use qbo,             only : qbo_use_forcing
+   use physics_buffer,  only : pbuf_add_field, dtype_r8
+   use ppgrid,          only : pcols, pver
 
    ! ARGUMENTS:
    type(file_desc_t),       intent(in)  :: file       ! PIO file handle for initial or restart file
@@ -249,8 +259,19 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
    integer :: mpicom_nyz=0
 #endif
 
-
   !----------------------------------------------------------------------
+
+  if (use_gw_front) then
+     call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
+          frontgf_idx)
+     call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
+          frontga_idx)
+  end if
+
+  if (qbo_use_forcing) then
+     call pbuf_add_field("UZM", "global", dtype_r8, (/pcols,pver/), &
+          uzm_idx)
+  end if
 
   ! Initialize hybrid coordinate arrays
   call hycoef_init(file)

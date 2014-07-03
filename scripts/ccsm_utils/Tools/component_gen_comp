@@ -78,12 +78,12 @@
 #
 # - test PASS for generate, with only one possible extension (e.g., for a cpl test)
 #
-# - test BFAIL1 for generate due to no hist file for any extension
-#   - should get a single BFAIL1 message
+# - test BFAIL_NA for generate due to no hist file for any extension
+#   - should get a single BFAIL_NA message
 #
-# - test BFAIL1 for h0, PASS for h1: should just see a PASS message
+# - test BFAIL_NA for h0, PASS for h1: should just see a PASS message
 #
-# - test BFAIL1 for generate, with only one possible extension (e.g., for a cpl test)
+# - test BFAIL_NA for generate, with only one possible extension (e.g., for a cpl test)
 #
 # - test with multiple history files for the component: make sure the
 #   right one is chosen
@@ -102,14 +102,14 @@
 #
 # - test PASS for compare, with only one possible extension (e.g., for a cpl test)
 #
-# - test BFAIL1 for compare due to no hist file for any extension in either test case or baseline
-#   - should get a single BFAIL1 message
+# - test BFAIL_NA for compare due to no hist file for any extension in either test case or baseline
+#   - should get a single BFAIL_NA message
 #
-# - test BFAIL1 for h0, PASS for h1: should just see a PASS message
+# - test BFAIL_NA for h0, PASS for h1: should just see a PASS message
 #
-# - test BFAIL1 for compare, with only one possible extension (e.g., for a cpl test)
+# - test BFAIL_NA for compare, with only one possible extension (e.g., for a cpl test)
 #
-# - test BFAIL2 for compare due to no baseline directory
+# - test BFAIL for compare due to no baseline directory
 #
 # - test FAIL for compare due to no hist file (can do this by
 # temporarily removing a history file from one test directory)
@@ -229,27 +229,27 @@ function get_info {
     echo $status_and_info | cut -d ':' -f 2-
 }
 
-# Update a variable saying whether everything we have seen is a BFAIL1
+# Update a variable saying whether everything we have seen is a BFAIL_NA
 # Inputs:
 #   - status of the last comparison / generate
-#   - all_bfail1: 1 if everything so far has been a BFAIL1, 0 if not
+#   - all_bfail_na: 1 if everything so far has been a BFAIL_NA, 0 if not
 # Output:
-#   - 1 if everything so far has been a BFAIL1, including the latest
+#   - 1 if everything so far has been a BFAIL_NA, including the latest
 #     comparison; 0 if not
-function still_all_bfail1 {
+function still_all_bfail_na {
     local status="$1"
-    local all_bfail1=$2
+    local all_bfail_na=$2
 
-    if [ $all_bfail1 -eq 0 ]; then
+    if [ $all_bfail_na -eq 0 ]; then
 	echo 0
-    elif [ $all_bfail1 -eq 1 ]; then
-	if [ "$status" = "BFAIL1" ]; then
+    elif [ $all_bfail_na -eq 1 ]; then
+	if [ "$status" = "BFAIL_NA" ]; then
 	    echo 1
 	else
 	    echo 0
 	fi
     else
-	echo "Unexpected value for all_bfail1: $all_bfail1" 1>&2
+	echo "Unexpected value for all_bfail_na: $all_bfail_na" 1>&2
 	exit 1
     fi
 }
@@ -276,7 +276,7 @@ function print_status {
     fi    
 
     # Print formatted test result
-    printf '%-6s %s %s\n' "$status" "${testcase}.${qualifier}" "$info_str"
+    printf '%-8s %s %s\n' "$status" "${testcase}.${qualifier}" "$info_str"
 }
 
 #======================================================================
@@ -377,14 +377,14 @@ fi
 #----------------------------------------------------------------------
 
 echo "Possible test result outcomes:"
-echo "  UNDEF  - undefined result (may be an error in the script)"
-echo "  BFAIL1 - compare:  no history file in baseline or in test case"
-echo "         - generate: no history file in test case"
-echo "  BFAIL2 - compare:  no baseline history file, despite existence of history file in test case"
-echo "         - generate: error creating baseline directory or copying baseline file into place"
-echo "  FAIL   - compare test fails (including: baseline exists but no history file for the test case)"
-echo "           (see *.cprnc.out in the test's run directory for details)"
-echo "  PASS   - test passes"
+echo "  UNDEF    - undefined result (may be an error in the script)"
+echo "  BFAIL_NA - compare:  no history file in baseline or in test case"
+echo "           - generate: no history file in test case"
+echo "  BFAIL    - compare:  no baseline history file, despite existence of history file in test case"
+echo "           - generate: error creating baseline directory or copying baseline file into place"
+echo "  FAIL     - compare test fails (including: baseline exists but no history file for the test case)"
+echo "             (see *.cprnc.out in the test's run directory for details)"
+echo "  PASS     - test passes"
 echo ""
 
 #----------------------------------------------------------------------
@@ -416,15 +416,15 @@ for testcase in $tests; do
     rundir=${runloc}/${testcase}/run
 
     #------------------------------------------------------------------
-    # Initialize variables tracking whether all results are BFAIL1
+    # Initialize variables tracking whether all results are BFAIL_NA
     #------------------------------------------------------------------
-    # For both compare & generate, BFAIL1 is acceptable unless it
+    # For both compare & generate, BFAIL_NA is acceptable unless it
     # occurs for all possible history file extensions. Thus, we only
-    # print a BFAIL1 result if it occurs for all history file
+    # print a BFAIL_NA result if it occurs for all history file
     # extensions. All other status options (PASS, FAIL, and other
     # types of BFAIL) are printed for each history file extension.
-    compare_all_bfail1=1
-    generate_all_bfail1=1
+    compare_all_bfail_na=1
+    generate_all_bfail_na=1
 
     #------------------------------------------------------------------
     # Loop over history file extensions
@@ -454,8 +454,8 @@ for testcase in $tests; do
 	    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$baseline_dir" -baseline_hist "$baseline_hist" -test_dir "$rundir" -test_hist "$test_hist"`
 	    compare_status=`get_status "$compare_result"`
 	    compare_info=`get_info "$compare_result"`
-	    compare_all_bfail1=`still_all_bfail1 $compare_status $compare_all_bfail1`
-	    if [ "$compare_status" != "BFAIL1" ]; then
+	    compare_all_bfail_na=`still_all_bfail_na $compare_status $compare_all_bfail_na`
+	    if [ "$compare_status" != "BFAIL_NA" ]; then
 		print_status "$compare_status" "$compare_info" "$testcase_base" "compare_hist.${compare_tag}.$model.$extension"
 	    fi
 	fi
@@ -468,19 +468,19 @@ for testcase in $tests; do
 	    generate_result=`${tools_dir}/component_generate.sh -baseline_dir "$baseline_dir" -baseline_hist "$baseline_hist" -test_dir "$rundir" -test_hist "$test_hist"`
 	    generate_status=`get_status "$generate_result"`
 	    generate_info=`get_info "$generate_result"`
-	    generate_all_bfail1=`still_all_bfail1 $generate_status $generate_all_bfail1`
-	    if [ "$generate_status" != "BFAIL1" ]; then
+	    generate_all_bfail_na=`still_all_bfail_na $generate_status $generate_all_bfail_na`
+	    if [ "$generate_status" != "BFAIL_NA" ]; then
 		print_status "$generate_status" "$generate_info" "$testcase_base" "generate.$model.$extension"
 	    fi
 	fi
     done  # loop over history file extensions
 
-    if [ -n "$compare_tag" -a $compare_all_bfail1 -eq 1 ]; then
-	print_status "BFAIL1" "encountered BFAIL1 for all possible history extensions" "$testcase_base" "compare_hist.${compare_tag}.$model"
+    if [ -n "$compare_tag" -a $compare_all_bfail_na -eq 1 ]; then
+	print_status "BFAIL_NA" "encountered BFAIL_NA for all possible history extensions" "$testcase_base" "compare_hist.${compare_tag}.$model"
     fi
     
-    if [ -n "$generate_tag" -a $generate_all_bfail1 -eq 1 ]; then
-	print_status "BFAIL1" "encountered BFAIL1 for all possible history extensions" "$testcase_base" "generate.$model"
+    if [ -n "$generate_tag" -a $generate_all_bfail_na -eq 1 ]; then
+	print_status "BFAIL_NA" "encountered BFAIL_NA for all possible history extensions" "$testcase_base" "generate.$model"
     fi
 done
 

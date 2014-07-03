@@ -207,7 +207,6 @@ contains
 
   subroutine geomders(numerics,ipvr,stagthck,opvrew,opvrns)
 
-    use glimmer_global, only : dp
     use glide_types, only: glide_numerics
 
     implicit none 

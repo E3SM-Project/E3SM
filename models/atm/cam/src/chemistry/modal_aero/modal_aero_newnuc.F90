@@ -57,7 +57,6 @@
    subroutine modal_aero_newnuc_sub(                             &
                         lchnk,    ncol,     nstep,               &
                         loffset,  deltat,                        &
-                        latndx,   lonndx,                        &
                         t,        pmid,     pdel,                &
                         zm,       pblh,                          &
                         qv,       cld,                           &
@@ -83,7 +82,6 @@
    integer, intent(in)  :: lchnk            ! chunk identifier
    integer, intent(in)  :: ncol             ! number of columns in chunk
    integer, intent(in)  :: nstep            ! model step
-   integer, intent(in)  :: latndx(pcols), lonndx(pcols) 
    integer, intent(in)  :: loffset          ! offset applied to modal aero "pointers"
    real(r8), intent(in) :: deltat           ! model timestep (s)
 
@@ -177,18 +175,18 @@
 	lun = 6
 
 !--------------------------------------------------------------------------------
-   if (ldiag1 > 0) then
-   do i = 1, ncol
-   if (lonndx(i) /= 37) cycle
-   if (latndx(i) /= 23) cycle
-   if (nstep > 3)       cycle
-   write( lun, '(/a,i7,3i5,f10.2)' )   &
-         '*** modal_aero_newnuc_sub -- nstep, iam, lat, lon =',   &
-         nstep, iam, latndx(i), lonndx(i)
-   end do
-   if (nstep > 3) call endrun( '*** modal_aero_newnuc_sub -- testing halt after step 3' )
-!  if (ncol /= -999888777) return
-   end if
+!!$   if (ldiag1 > 0) then
+!!$   do i = 1, ncol
+!!$   if (lonndx(i) /= 37) cycle
+!!$   if (latndx(i) /= 23) cycle
+!!$   if (nstep > 3)       cycle
+!!$   write( lun, '(/a,i7,3i5,f10.2)' )   &
+!!$         '*** modal_aero_newnuc_sub -- nstep, iam, lat, lon =',   &
+!!$         nstep, iam, latndx(i), lonndx(i)
+!!$   end do
+!!$   if (nstep > 3) call endrun( '*** modal_aero_newnuc_sub -- testing halt after step 3' )
+!!$!  if (ncol /= -999888777) return
+!!$   end if
 !--------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -325,17 +323,17 @@ main_i:	do i = 1, ncol
 
 !   call ... routine to get nucleation rates
  	ldiagveh02 = -1
- 	if (ldiag2 > 0) then
- 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
- 	if ((k >= 24) .or. (mod(k,4) == 0)) then
- 	    ldiagveh02 = +1
-            write(lun,'(/a,i8,3i4,f8.2,1p,4e10.2)')   &
- 		'veh02 call - nstep,lat,lon,k; tk,rh,p,cair',   &
- 		nstep, latndx(i), lonndx(i), k,   &
- 		t(i,k), relhumnn, pmid(k,k), aircon
- 	end if
- 	end if
- 	end if
+!!$ 	if (ldiag2 > 0) then
+!!$ 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
+!!$ 	if ((k >= 24) .or. (mod(k,4) == 0)) then
+!!$ 	    ldiagveh02 = +1
+!!$            write(lun,'(/a,i8,3i4,f8.2,1p,4e10.2)')   &
+!!$ 		'veh02 call - nstep,lat,lon,k; tk,rh,p,cair',   &
+!!$ 		nstep, latndx(i), lonndx(i), k,   &
+!!$ 		t(i,k), relhumnn, pmid(k,k), aircon
+!!$ 	end if
+!!$ 	end if
+!!$ 	end if
         call mer07_veh02_nuc_mosaic_1box(   &
            newnuc_method_flagaa,   &
            deltat, t(i,k), relhumnn, pmid(i,k),   &
@@ -484,58 +482,58 @@ main_i:	do i = 1, ncol
 
 
 !   diagnostic output start ----------------------------------------
- 	if (ldiag4 > 0) then
- 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
- 	if ((k >= 24) .or. (mod(k,4) == 0)) then
-        write(lun,97010) nstep, latndx(i), lonndx(i), k, t(i,k), aircon
-        write(lun,97020) 'pmid, pdel                   ',   &
-                pmid(i,k), pdel(i,k)
-        write(lun,97030) 'qv,qvsw, cld, rh_av, rh_clr  ',   &
-                qv(i,k), qvswtr, cldx, relhumav, relhum
-        write(lun,97020) 'h2so4_cur, _pre, _av, nh3_cur',   &
- 		qh2so4_cur, tmp_q2, qh2so4_avg, qnh3_cur
-        write(lun,97020) 'del_h2so4_gasprod, _aeruptk  ',   &
- 		del_h2so4_gasprod(i,k), del_h2so4_aeruptk(i,k),   &
- 		tmp_uptkrate*3600.0_r8
-        write(lun,97020) ' '
-        write(lun,97050) 'tmpch1, tmpch2               ', tmpch1, tmpch2
-        write(lun,97020) 'dndt_, dmdt_aitsv1           ',   &
- 				 dndt_aitsv1, dmdt_aitsv1
-        write(lun,97020) 'dndt_, dmdt_aitsv2           ',   &
- 				 dndt_aitsv2, dmdt_aitsv2
-        write(lun,97020) 'dndt_, dmdt_aitsv3           ',   &
- 				 dndt_aitsv3, dmdt_aitsv3
-        write(lun,97020) 'dndt_, dmdt_ait              ',   &
- 				 dndt_ait, dmdt_ait
-        write(lun,97020) 'dso4dt_, dnh4dt_ait          ',   &
- 				 dso4dt_ait, dnh4dt_ait
-        write(lun,97020) 'qso4a_del, qh2so4_del        ',   &
- 				 qso4a_del, qh2so4_del
-        write(lun,97020) 'qnh4a_del, qnh3_del          ',   &
- 				 qnh4a_del, qnh3_del
-        write(lun,97020) 'dqdt(h2so4), (nh3)           ',   &
- 		 dqdt(i,k,l_h2so4), dqdt(i,k,l_nh3) 
-        write(lun,97020) 'dqdt(so4a), (nh4a), (numa)   ',   &
- 		 dqdt(i,k,lso4ait), dqdt(i,k,lnh4ait), dqdt(i,k,lnumait)
- 
- 	dpnuc = 0.0_r8
- 	if (dndt_aitsv1 > 1.0e-5_r8) dpnuc = (6.0_r8*dmdt_aitsv1/   &
- 			(pi*specdens_so4_amode*dndt_aitsv1))**0.3333333_r8
-        if (dpnuc > 0.0_r8) then
-        write(lun,97020) 'dpnuc,      dp_aitlo, _aithi ',   &
- 			 dpnuc, dplom_mode(1), dphim_mode(1)
-        write(lun,97020) 'mass1p, mass1p_aitlo, _aithi ',   &
- 			 mass1p, mass1p_aitlo, mass1p_aithi
-        end if
- 
- 97010  format( / 'NEWNUC nstep,lat,lon,k,tk,cair', i8, 3i4, f8.2, 1pe12.4 )
- 97020  format( a, 1p, 6e12.4 )
- 97030  format( a, 1p, 2e12.4, 0p, 5f10.6 )
- 97040  format( 29x, 1p, 6e12.4 )
- 97050  format( a, 2(3x,a) )
-        end if
-        end if
-        end if
+!!$ 	if (ldiag4 > 0) then
+!!$ 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
+!!$ 	if ((k >= 24) .or. (mod(k,4) == 0)) then
+!!$        write(lun,97010) nstep, latndx(i), lonndx(i), k, t(i,k), aircon
+!!$        write(lun,97020) 'pmid, pdel                   ',   &
+!!$                pmid(i,k), pdel(i,k)
+!!$        write(lun,97030) 'qv,qvsw, cld, rh_av, rh_clr  ',   &
+!!$                qv(i,k), qvswtr, cldx, relhumav, relhum
+!!$        write(lun,97020) 'h2so4_cur, _pre, _av, nh3_cur',   &
+!!$ 		qh2so4_cur, tmp_q2, qh2so4_avg, qnh3_cur
+!!$        write(lun,97020) 'del_h2so4_gasprod, _aeruptk  ',   &
+!!$ 		del_h2so4_gasprod(i,k), del_h2so4_aeruptk(i,k),   &
+!!$ 		tmp_uptkrate*3600.0_r8
+!!$        write(lun,97020) ' '
+!!$        write(lun,97050) 'tmpch1, tmpch2               ', tmpch1, tmpch2
+!!$        write(lun,97020) 'dndt_, dmdt_aitsv1           ',   &
+!!$ 				 dndt_aitsv1, dmdt_aitsv1
+!!$        write(lun,97020) 'dndt_, dmdt_aitsv2           ',   &
+!!$ 				 dndt_aitsv2, dmdt_aitsv2
+!!$        write(lun,97020) 'dndt_, dmdt_aitsv3           ',   &
+!!$ 				 dndt_aitsv3, dmdt_aitsv3
+!!$        write(lun,97020) 'dndt_, dmdt_ait              ',   &
+!!$ 				 dndt_ait, dmdt_ait
+!!$        write(lun,97020) 'dso4dt_, dnh4dt_ait          ',   &
+!!$ 				 dso4dt_ait, dnh4dt_ait
+!!$        write(lun,97020) 'qso4a_del, qh2so4_del        ',   &
+!!$ 				 qso4a_del, qh2so4_del
+!!$        write(lun,97020) 'qnh4a_del, qnh3_del          ',   &
+!!$ 				 qnh4a_del, qnh3_del
+!!$        write(lun,97020) 'dqdt(h2so4), (nh3)           ',   &
+!!$ 		 dqdt(i,k,l_h2so4), dqdt(i,k,l_nh3) 
+!!$        write(lun,97020) 'dqdt(so4a), (nh4a), (numa)   ',   &
+!!$ 		 dqdt(i,k,lso4ait), dqdt(i,k,lnh4ait), dqdt(i,k,lnumait)
+!!$ 
+!!$ 	dpnuc = 0.0_r8
+!!$ 	if (dndt_aitsv1 > 1.0e-5_r8) dpnuc = (6.0_r8*dmdt_aitsv1/   &
+!!$ 			(pi*specdens_so4_amode*dndt_aitsv1))**0.3333333_r8
+!!$        if (dpnuc > 0.0_r8) then
+!!$        write(lun,97020) 'dpnuc,      dp_aitlo, _aithi ',   &
+!!$ 			 dpnuc, dplom_mode(1), dphim_mode(1)
+!!$        write(lun,97020) 'mass1p, mass1p_aitlo, _aithi ',   &
+!!$ 			 mass1p, mass1p_aitlo, mass1p_aithi
+!!$        end if
+!!$ 
+!!$ 97010  format( / 'NEWNUC nstep,lat,lon,k,tk,cair', i8, 3i4, f8.2, 1pe12.4 )
+!!$ 97020  format( a, 1p, 6e12.4 )
+!!$ 97030  format( a, 1p, 2e12.4, 0p, 5f10.6 )
+!!$ 97040  format( 29x, 1p, 6e12.4 )
+!!$ 97050  format( a, 2(3x,a) )
+!!$        end if
+!!$        end if
+!!$        end if
 !   diagnostic output end   ------------------------------------------
 
 
@@ -577,6 +575,10 @@ main_i:	do i = 1, ncol
            isize_nuc, qnuma_del, qso4a_del, qnh4a_del,   &
            qh2so4_del, qnh3_del, dens_nh4so4a, ldiagaa )
 !          qh2so4_del, qnh3_del, dens_nh4so4a )
+          use mo_constants, only: rgas, &               ! Gas constant (J/K/kmol)
+                                  avogad => avogadro    ! Avogadro's number (1/kmol)
+          use physconst,    only: mw_so4a => mwso4, &   ! Molecular weight of sulfate
+                                  mw_nh4a => mwnh4      ! Molecular weight of ammonium
 !.......................................................................
 !
 ! calculates new particle production from homogeneous nucleation
@@ -676,8 +678,6 @@ main_i:	do i = 1, ncol
         integer :: newnuc_method_flagaa2
 
         real(r8), parameter :: onethird = 1.0_r8/3.0_r8
-        real(r8), parameter :: avogad = 6.022e23_r8   ! avogadro number (molecules/mol)
-        real(r8), parameter :: mw_air = 28.966_r8     ! dry-air mean molecular weight (g/mol)
 
         real(r8), parameter :: accom_coef_h2so4 = 0.65_r8   ! accomodation coef for h2so4 conden
 
@@ -690,7 +690,6 @@ main_i:	do i = 1, ncol
         real(r8), parameter :: dens_ammsulf   = 1.770e3_r8
         real(r8), parameter :: dens_ammbisulf = 1.770e3_r8
         real(r8), parameter :: dens_sulfacid  = 1.770e3_r8
-        real(r8), parameter :: dens_water     = 1.0e3_r8
 
 ! molecular weights (g/mol) of aerosol ammsulf, ammbisulf, and sulfacid
 !    for ammbisulf and sulfacid, use 114 & 96 here rather than 115 & 98
@@ -698,10 +697,6 @@ main_i:	do i = 1, ncol
         real(r8), parameter :: mw_ammsulf   = 132.0_r8
         real(r8), parameter :: mw_ammbisulf = 114.0_r8
         real(r8), parameter :: mw_sulfacid  =  96.0_r8
-! molecular weights of aerosol sulfate and ammonium
-        real(r8), parameter :: mw_so4a      =  96.0_r8
-        real(r8), parameter :: mw_nh4a      =  18.0_r8
-        real(r8), parameter :: mw_water     =  18.0_r8
 
         real(r8), save :: reldiffmax = 0.0_r8
 
@@ -767,7 +762,7 @@ main_i:	do i = 1, ncol
 !
 
 ! calc h2so4 in molecules/cm3 and nh3 in ppt
-        cair = press_in/(temp_in*8.3144_r8)
+        cair = press_in/(temp_in*rgas)
         so4vol_in  = qh2so4_avg * cair * avogad * 1.0e-6_r8
         nh3ppt    = qnh3_cur * 1.0e12_r8
         ratenuclt = 1.0e-38_r8

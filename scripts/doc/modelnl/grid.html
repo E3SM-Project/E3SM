@@ -70,4523 +70,1549 @@ only matched variables.
 
 <h3><span style="background-color: #00FFFF" font color="purple">config_grid.xml variables</h3></span>
 <table id="config_grid.xml variables_table" border="1" width="100%" cellpadding="2" cellspacing="0">
-  <th width="70%">Compset Longname</th>
-  <th width="10%">Short Name</th>
-  <th width="10%">Alias</th>
-  <tr id="a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <th width="80%">Grid Name</th>
+  <th width="10%">Grid Short Name</th>
+  <tr id="CLM_USRDAT_tr">
+    <td><a name="CLM_USRDAT"></a>
+        <img id="CLM_USRDAT_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null')">a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('CLM_USRDAT')">CLM_USRDAT</a>
         </code>
-        <div id="a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="CLM_USRDAT_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID CLM_USRDAT 
-  ATM_NX   1 
-  ATM_NY   1 
-  user specified domain - only valid for DATM/CLM compset 
-
-LND_GRID CLM_USRDAT 
-  LND_NX   1 
-  LND_NY   1 
-  user specified domain - only valid for DATM/CLM compset 
-
-ICE_GRID CLM_USRDAT 
-  ICE_NX   1 
-  ICE_NY   1 
-  user specified domain - only valid for DATM/CLM compset 
-
-OCN_GRID CLM_USRDAT 
-  OCN_NX   1 
-  OCN_NY   1 
-  user specified domain - only valid for DATM/CLM compset 
-
-GLC_GRID CLM_USRDAT 
-  GLC_NX   1 
-  GLC_NY   1 
-  user specified domain - only valid for DATM/CLM compset 
-</pre>
+	     <pre>user specified clm domain and data -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.${CLM_USRDAT_NAME}_navy.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.${CLM_USRDAT_NAME}_navy.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>CLM_USRDAT</td>
-    <td>NOT_DEFINED</td>
+    <td>CLMUD</td>
   </tr>
-  <tr id="a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_brazil_tr">
+    <td><a name="1x1_brazil"></a>
+        <img id="1x1_brazil_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null')">a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_brazil')">1x1_brazil</a>
         </code>
-        <div id="a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_brazil_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_numaIA 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Numa Iowa -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_numaIA 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Numa Iowa -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_numaIA 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Numa Iowa -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_numaIA 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Numa Iowa -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_numaIA 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Numa Iowa -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 Brazil (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-brazil_navy.090715.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-brazil_navy.090715.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_numaIA</td>
-    <td>NOT_DEFINED</td>
+    <td>1brazil</td>
   </tr>
-  <tr id="a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_numaIA_tr">
+    <td><a name="1x1_numaIA"></a>
+        <img id="1x1_numaIA_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null')">a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_numaIA')">1x1_numaIA</a>
         </code>
-        <div id="a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_numaIA_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_brazil 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Brazil -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_brazil 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Brazil -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_brazil 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Brazil -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_brazil 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Brazil -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_brazil 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Brazil -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 Numa Iowa (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-numaIA_navy.110106.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-numaIA_navy.110106.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_brazil</td>
-    <td>NOT_DEFINED</td>
+    <td>1numa</td>
   </tr>
-  <tr id="a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_smallvilleIA_tr">
+    <td><a name="1x1_smallvilleIA"></a>
+        <img id="1x1_smallvilleIA_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null')">a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_smallvilleIA')">1x1_smallvilleIA</a>
         </code>
-        <div id="a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_smallvilleIA_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_smallvilleIA 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_smallvilleIA 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_smallvilleIA 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_smallvilleIA 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_smallvilleIA 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 `Smallville` Iowa Crop Test Case (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-smallvilleIA_test.110106.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-smallvilleIA_test.110106.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_smallvilleIA</td>
-    <td>NOT_DEFINED</td>
+    <td>1sville</td>
   </tr>
-  <tr id="a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_camdenNJ_tr">
+    <td><a name="1x1_camdenNJ"></a>
+        <img id="1x1_camdenNJ_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null')">a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_camdenNJ')">1x1_camdenNJ</a>
         </code>
-        <div id="a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_camdenNJ_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_camdenNJ 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Camden New Jersey -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_camdenNJ 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Camden New Jersey -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_camdenNJ 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Camden New Jersey -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_camdenNJ 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Camden New Jersey -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_camdenNJ 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Camden New Jersey -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 Camden New Jersey (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-camdenNJ_navy.111004.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-camdenNJ_navy.111004.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_camdenNJ</td>
-    <td>NOT_DEFINED</td>
+    <td>1camden</td>
   </tr>
-  <tr id="a%1x1_asphaltjungleNJ_l%1x1_asphaltjungleNJ_oi%1x1_asphaltjungleNJ_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_asphaltjungleNJ_l%1x1_asphaltjungleNJ_oi%1x1_asphaltjungleNJ_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_asphaltjungleNJ_l%1x1_asphaltjungleNJ_oi%1x1_asphaltjungleNJ_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_asphaltjungleNJ_tr">
+    <td><a name="1x1_asphaltjungleNJ"></a>
+        <img id="1x1_asphaltjungleNJ_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_asphaltjungleNJ_l%1x1_asphaltjungleNJ_oi%1x1_asphaltjungleNJ_r%null_m%reg_g%null_w%null')">a%1x1_asphaltjungleNJ_l%1x1_asphaltjungleNJ_oi%1x1_asphaltjungleNJ_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_asphaltjungleNJ')">1x1_asphaltjungleNJ</a>
         </code>
-        <div id="a%1x1_asphaltjungleNJ_l%1x1_asphaltjungleNJ_oi%1x1_asphaltjungleNJ_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_asphaltjungleNJ_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_asphaltjungleNJ 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Asphalt Jungle New Jersey Test Case -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_asphaltjungleNJ 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Asphalt Jungle New Jersey Test Case -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_asphaltjungleNJ 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Asphalt Jungle New Jersey Test Case -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_asphaltjungleNJ 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Asphalt Jungle New Jersey Test Case -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_asphaltjungleNJ 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Asphalt Jungle New Jersey Test Case -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 `Asphalt Jungle` New Jersey Test Case (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-camdenNJ_navy.111004.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-camdenNJ_navy.111004.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_asphaltjungleNJ</td>
-    <td>NOT_DEFINED</td>
+    <td>1asphalt</td>
   </tr>
-  <tr id="a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_mexicocityMEX_tr">
+    <td><a name="1x1_mexicocityMEX"></a>
+        <img id="1x1_mexicocityMEX_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null')">a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_mexicocityMEX')">1x1_mexicocityMEX</a>
         </code>
-        <div id="a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_mexicocityMEX_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_mexicocityMEX 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Mexico City Mexico -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_mexicocityMEX 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Mexico City Mexico -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_mexicocityMEX 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Mexico City Mexico -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_mexicocityMEX 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Mexico City Mexico -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_mexicocityMEX 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Mexico City Mexico -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 Mexico City Mexico (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_mexicocityMEX</td>
-    <td>NOT_DEFINED</td>
+    <td>1mexico</td>
   </tr>
-  <tr id="a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_vancouverCAN_tr">
+    <td><a name="1x1_vancouverCAN"></a>
+        <img id="1x1_vancouverCAN_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null')">a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_vancouverCAN')">1x1_vancouverCAN</a>
         </code>
-        <div id="a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_vancouverCAN_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_vancouverCAN 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Vancouver Canada -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_vancouverCAN 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Vancouver Canada -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_vancouverCAN 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Vancouver Canada -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_vancouverCAN 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Vancouver Canada -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_vancouverCAN 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Vancouver Canada -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 Vancouver Canada (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-vancouverCAN_navy.090715.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-vancouverCAN_navy.090715.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_vancouverCAN</td>
-    <td>NOT_DEFINED</td>
+    <td>1vancan</td>
   </tr>
-  <tr id="a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_tropicAtl_tr">
+    <td><a name="1x1_tropicAtl"></a>
+        <img id="1x1_tropicAtl_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null')">a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_tropicAtl')">1x1_tropicAtl</a>
         </code>
-        <div id="a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_tropicAtl_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_tropicAtl 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_tropicAtl 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_tropicAtl 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_tropicAtl 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_tropicAtl 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 `Tropical Atlantic` Test Case (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-tropicAtl_test.111004.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-tropicAtl_test.111004.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_tropicAtl</td>
-    <td>NOT_DEFINED</td>
+    <td>1tropatl</td>
   </tr>
-  <tr id="a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1x1_urbanc_alpha_tr">
+    <td><a name="1x1_urbanc_alpha"></a>
+        <img id="1x1_urbanc_alpha_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null')">a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('1x1_urbanc_alpha')">1x1_urbanc_alpha</a>
         </code>
-        <div id="a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="1x1_urbanc_alpha_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1x1_urbanc_alpha 
-  ATM_NX   1 
-  ATM_NY   1 
-  1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset 
-
-LND_GRID 1x1_urbanc_alpha 
-  LND_NX   1 
-  LND_NY   1 
-  1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset 
-
-ICE_GRID 1x1_urbanc_alpha 
-  ICE_NX   1 
-  ICE_NY   1 
-  1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset 
-
-OCN_GRID 1x1_urbanc_alpha 
-  OCN_NX   1 
-  OCN_NY   1 
-  1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset 
-
-GLC_GRID 1x1_urbanc_alpha 
-  GLC_NX   1 
-  GLC_NY   1 
-  1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>1x1 `Urban C Alpha` Test Case (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.1x1pt-urbanc_alpha_test.110201.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.1x1pt-urbanc_alpha_test.110201.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>1x1_urbanc_alpha</td>
-    <td>NOT_DEFINED</td>
+    <td>1urbanc</td>
   </tr>
-  <tr id="a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="5x5_amazon_tr">
+    <td><a name="5x5_amazon"></a>
+        <img id="5x5_amazon_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null')">a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('5x5_amazon')">5x5_amazon</a>
         </code>
-        <div id="a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="5x5_amazon_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 5x5_amazon 
-  ATM_NX   1 
-  ATM_NY   1 
-  5x5 Amazon regional case -- only valid for DATM/CLM compset 
-
-LND_GRID 5x5_amazon 
-  LND_NX   1 
-  LND_NY   1 
-  5x5 Amazon regional case -- only valid for DATM/CLM compset 
-
-ICE_GRID 5x5_amazon 
-  ICE_NX   1 
-  ICE_NY   1 
-  5x5 Amazon regional case -- only valid for DATM/CLM compset 
-
-OCN_GRID 5x5_amazon 
-  OCN_NX   1 
-  OCN_NY   1 
-  5x5 Amazon regional case -- only valid for DATM/CLM compset 
-
-GLC_GRID 5x5_amazon 
-  GLC_NX   1 
-  GLC_NY   1 
-  5x5 Amazon regional case -- only valid for DATM/CLM compset 
-</pre>
+	     <pre>5x5 amazon regional case (clm) -- only valid for I compset 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.5x5pt-amazon_navy.090715.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.5x5pt-amazon_navy.090715.nc 
+ 
+                       ICE_DOMAIN_FILE:  
+ 
+                       OCN_DOMAIN_FILE:  </pre>
         </div>
     </td>
-    <td>5x5_amazon</td>
     <td>5amazon</td>
   </tr>
-  <tr id="a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null_tr">
-    <td><a name="a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null"></a>
-        <img id="a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.23x0.31_0.23x0.31_tr">
+    <td><a name="0.23x0.31_0.23x0.31"></a>
+        <img id="0.23x0.31_0.23x0.31_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null')">a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</a>
+             onclick="toggleHelp('0.23x0.31_0.23x0.31')">0.23x0.31_0.23x0.31</a>
         </code>
-        <div id="a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null_help" style="display: none;
+        <div id="0.23x0.31_0.23x0.31_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 360x720cru 
-  ATM_NX   720 
-  ATM_NY   360 
-  Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset 
-
-LND_GRID 360x720cru 
-  LND_NX   720 
-  LND_NY   360 
-  Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset 
-
-ICE_GRID 360x720cru 
-  ICE_NX   720 
-  ICE_NY   360 
-  Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset 
-
-OCN_GRID 360x720cru 
-  OCN_NX   720 
-  OCN_NY   360 
-  Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset 
-
-GLC_GRID 360x720cru 
-  GLC_NX   720 
-  GLC_NY   360 
-  Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset 
-
-MASK 360x720cru 
-  Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>hcru_hcru</td>
-    <td>NOT_DEFINED</td>
-  </tr>
-  <tr id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null')">a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T31_gx3v7</td>
-    <td>T31_g37</td>
-  </tr>
-  <tr id="a%T85_l%T85_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%T85_l%T85_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%T85_l%T85_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T85_l%T85_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%T85_l%T85_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%T85_l%T85_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 128x256 
-  ATM_NX   256 
-  ATM_NY   128 
-  T85 is Gaussian grid: 
-
-LND_GRID 128x256 
-  LND_NX   256 
-  LND_NY   128 
-  T85 is Gaussian grid: 
-
-GLC_GRID 128x256 
-  GLC_NX   256 
-  GLC_NY   128 
-  T85 is Gaussian grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T85_gx1v6</td>
-    <td>T85_g16</td>
-  </tr>
-  <tr id="a%T85_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%T85_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%T85_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T85_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%T85_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%T85_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ATM_GRID 128x256 
-  ATM_NX   256 
-  ATM_NY   128 
-  T85 is Gaussian grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T85_0.9x1.25_gx1v6</td>
-    <td>T85_f09_g16</td>
-  </tr>
-  <tr id="a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%gx1v6 _g%null_w%null_tr">
-    <td><a name="a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%gx1v6 _g%null_w%null"></a>
-        <img id="a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%gx1v6 _g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%gx1v6 _g%null_w%null')">a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%gx1v6 _g%null_w%null</a>
-        </code>
-        <div id="a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%gx1v6 _g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ATM_GRID 128x256 
-  ATM_NX   256 
-  ATM_NY   128 
-  T85 is Gaussian grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T85_0.9x1.25_tx0.1v2</td>
-    <td>T85_f09_t12</td>
-  </tr>
-  <tr id="a%T85_l%0.23x0.31_oi%tx0.1v2_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%T85_l%0.23x0.31_oi%tx0.1v2_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%T85_l%0.23x0.31_oi%tx0.1v2_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T85_l%0.23x0.31_oi%tx0.1v2_r%r05_m%gx1v6_g%null_w%null')">a%T85_l%0.23x0.31_oi%tx0.1v2_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%T85_l%0.23x0.31_oi%tx0.1v2_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.23x0.31 
-  LND_NX   1152 
-  LND_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-GLC_GRID 0.23x0.31 
-  GLC_NX   1152 
-  GLC_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-ATM_GRID 128x256 
-  ATM_NX   256 
-  ATM_NY   128 
-  T85 is Gaussian grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T341_0.23x0.31_tx0.1v2</td>
-    <td>T341_f02_t12</td>
-  </tr>
-  <tr id="a%T05_l%T05_oi%T05_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%T05_l%T05_oi%T05_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%T05_l%T05_oi%T05_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T05_l%T05_oi%T05_r%r05_m%gx3v7_g%null_w%null')">a%T05_l%T05_oi%T05_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%T05_l%T05_oi%T05_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 8x16 
-  ATM_NX   16 
-  ATM_NY   8 
-  T05 is Gaussian grid: 
-
-LND_GRID 8x16 
-  LND_NX   16 
-  LND_NY   8 
-  T05 is Gaussian grid: 
-
-ICE_GRID 8x16 
-  ICE_NX   16 
-  ICE_NY   8 
-  T05 is Gaussian grid: 
-
-OCN_GRID 8x16 
-  OCN_NX   16 
-  OCN_NY   8 
-  T05 is Gaussian grid: 
-
-GLC_GRID 8x16 
-  GLC_NX   16 
-  GLC_NY   8 
-  T05 is Gaussian grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T05_T05</td>
-    <td>T05_T05</td>
-  </tr>
-  <tr id="a%T21_l%T21_oi%T21_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%T21_l%T21_oi%T21_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%T21_l%T21_oi%T21_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T21_l%T21_oi%T21_r%r05_m%gx3v7_g%null_w%null')">a%T21_l%T21_oi%T21_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%T21_l%T21_oi%T21_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 32x64 
-  ATM_NX   64 
-  ATM_NY   32 
-  T21 is Gaussian grid: 
-
-LND_GRID 32x64 
-  LND_NX   64 
-  LND_NY   32 
-  T21 is Gaussian grid: 
-
-ICE_GRID 32x64 
-  ICE_NX   64 
-  ICE_NY   32 
-  T21 is Gaussian grid: 
-
-OCN_GRID 32x64 
-  OCN_NX   64 
-  OCN_NY   32 
-  T21 is Gaussian grid: 
-
-GLC_GRID 32x64 
-  GLC_NX   64 
-  GLC_NY   32 
-  T21 is Gaussian grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T21_T21</td>
-    <td>T21_T21</td>
-  </tr>
-  <tr id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null')">a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID 48x96 
-  ICE_NX   96 
-  ICE_NY   48 
-  T31 is Gaussian grid: 
-
-OCN_GRID 48x96 
-  OCN_NX   96 
-  OCN_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T31_T31</td>
-    <td>T31_T31</td>
-  </tr>
-  <tr id="a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null_tr">
-    <td><a name="a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null"></a>
-        <img id="a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null')">a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null</a>
-        </code>
-        <div id="a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-MASK usgs 
-  USGS mask 
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 64x128 
-  ATM_NX   128 
-  ATM_NY   64 
-  T42 is Gaussian grid: 
-
-LND_GRID 64x128 
-  LND_NX   128 
-  LND_NY   64 
-  T42 is Gaussian grid: 
-
-ICE_GRID 64x128 
-  ICE_NX   128 
-  ICE_NY   64 
-  T42 is Gaussian grid: 
-
-OCN_GRID 64x128 
-  OCN_NX   128 
-  OCN_NY   64 
-  T42 is Gaussian grid: 
-
-GLC_GRID 64x128 
-  GLC_NX   128 
-  GLC_NY   64 
-  T42 is Gaussian grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T42_T42</td>
-    <td>T42_T42</td>
-  </tr>
-  <tr id="a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null"></a>
-        <img id="a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null')">a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID T62 
-  ATM_NX   192 
-  ATM_NY   96 
-  T62 is Gaussian grid: 
-
-LND_GRID T62 
-  LND_NX   192 
-  LND_NY   96 
-  T62 is Gaussian grid: 
-
-GLC_GRID T62 
-  GLC_NX   192 
-  GLC_NY   96 
-  T62 is Gaussian grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T62_gx3v7</td>
-    <td>T62_g37</td>
-  </tr>
-  <tr id="a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null_tr">
-    <td><a name="a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null"></a>
-        <img id="a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null')">a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null</a>
-        </code>
-        <div id="a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID T62 
-  ATM_NX   192 
-  ATM_NY   96 
-  T62 is Gaussian grid: 
-
-LND_GRID T62 
-  LND_NX   192 
-  LND_NY   96 
-  T62 is Gaussian grid: 
-
-GLC_GRID T62 
-  GLC_NX   192 
-  GLC_NY   96 
-  T62 is Gaussian grid: 
-
-ICE_GRID tx1v1 
-  ICE_NX   360 
-  ICE_NY   240 
-  tx1v1 is tripole v1 1-deg grid:
-testing proxy for high-res tripole ocean grids-  
-do not use scientific experiments; 
-use the T62_g16 resolution instead: 
+	     <pre>1/4 deg grid for atm/lnd. Normally used for CAM configuration using prescribed lnd, ocn, ice. 
  
-
-OCN_GRID tx1v1 
-  OCN_NX   360 
-  OCN_NY   240 
-  tx1v1 is tripole v1 1-deg grid:
-testing proxy for high-res tripole ocean grids-  
-do not use scientific experiments; 
-use the T62_g16 resolution instead: 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.23x0.31_gx1v6.100517.nc 
  
-
-MASK tx1v1 
-  tx1v1 is tripole v1 1-deg grid:
-testing proxy for high-res tripole ocean grids-  
-do not use scientific experiments; 
-use the T62_g16 resolution instead: 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_gx1v6.100517.nc 
  
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T62_tx1v1</td>
-    <td>T62_s11</td>
-  </tr>
-  <tr id="a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null')">a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID T62 
-  ATM_NX   192 
-  ATM_NY   96 
-  T62 is Gaussian grid: 
-
-LND_GRID T62 
-  LND_NX   192 
-  LND_NY   96 
-  T62 is Gaussian grid: 
-
-GLC_GRID T62 
-  GLC_NX   192 
-  GLC_NY   96 
-  T62 is Gaussian grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T62_tx0.1v2</td>
-    <td>T62_t12</td>
-  </tr>
-  <tr id="a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null"></a>
-        <img id="a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null')">a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID T62 
-  ATM_NX   192 
-  ATM_NY   96 
-  T62 is Gaussian grid: 
-
-LND_GRID T62 
-  LND_NX   192 
-  LND_NY   96 
-  T62 is Gaussian grid: 
-
-GLC_GRID T62 
-  GLC_NX   192 
-  GLC_NY   96 
-  T62 is Gaussian grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T62_gx1v6</td>
-    <td>T62_g16</td>
-  </tr>
-  <tr id="a%0.23x0.31_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.23x0.31_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.23x0.31_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.23x0.31_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%0.23x0.31_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%0.23x0.31_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.23x0.31 
-  ATM_NX   1152 
-  ATM_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-LND_GRID 0.23x0.31 
-  LND_NX   1152 
-  LND_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-GLC_GRID 0.23x0.31 
-  GLC_NX   1152 
-  GLC_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.23x0.31_gx1v6</td>
-    <td>f02_g16</td>
-  </tr>
-  <tr id="a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null')">a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.23x0.31 
-  ATM_NX   1152 
-  ATM_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-LND_GRID 0.23x0.31 
-  LND_NX   1152 
-  LND_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-GLC_GRID 0.23x0.31 
-  GLC_NX   1152 
-  GLC_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.23x0.31_tx0.1v2</td>
-    <td>f02_t12</td>
-  </tr>
-  <tr id="a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.47x0.63 
-  ATM_NX   576 
-  ATM_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-LND_GRID 0.47x0.63 
-  LND_NX   576 
-  LND_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-GLC_GRID 0.47x0.63 
-  GLC_NX   576 
-  GLC_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.47x0.63_gx1v6</td>
-    <td>f05_g16</td>
-  </tr>
-  <tr id="a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null')">a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.47x0.63 
-  ATM_NX   576 
-  ATM_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-LND_GRID 0.47x0.63 
-  LND_NX   576 
-  LND_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-GLC_GRID 0.47x0.63 
-  GLC_NX   576 
-  GLC_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.47x0.63_tx0.1v2</td>
-    <td>f05_t12</td>
-  </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.9x1.25_gx1v6</td>
-    <td>f09_g16</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>1.9x2.5_gx1v6</td>
-    <td>f19_g16</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%tx1v1_r%r05_m%tx1v1_g%null_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%tx1v1_r%r05_m%tx1v1_g%null_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%tx1v1_r%r05_m%tx1v1_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%tx1v1_r%r05_m%tx1v1_g%null_w%null')">a%1.9x2.5_l%1.9x2.5_oi%tx1v1_r%r05_m%tx1v1_g%null_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%tx1v1_r%r05_m%tx1v1_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID tx1v1 
-  ICE_NX   360 
-  ICE_NY   240 
-  tx1v1 is tripole v1 1-deg grid:
-testing proxy for high-res tripole ocean grids-  
-do not use scientific experiments; 
-use the T62_g16 resolution instead: 
+                       ICE_DOMAIN_FILE: domain.ocn.0.23x0.31_gx1v6_101108.nc 
  
-
-OCN_GRID tx1v1 
-  OCN_NX   360 
-  OCN_NY   240 
-  tx1v1 is tripole v1 1-deg grid:
-testing proxy for high-res tripole ocean grids-  
-do not use scientific experiments; 
-use the T62_g16 resolution instead: 
- 
-
-MASK tx1v1 
-  tx1v1 is tripole v1 1-deg grid:
-testing proxy for high-res tripole ocean grids-  
-do not use scientific experiments; 
-use the T62_g16 resolution instead: 
- 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
+                       OCN_DOMAIN_FILE: domain.ocn.0.23x0.31_gx1v6_101108.nc </pre>
         </div>
     </td>
-    <td>1.9x2.5_tx1v1</td>
-    <td>f19_s11</td>
-  </tr>
-  <tr id="a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null')">a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 4x5 
-  ATM_NX   72 
-  ATM_NY   46 
-  4x5 is FV 4-deg grid: 
-
-LND_GRID 4x5 
-  LND_NX   72 
-  LND_NY   46 
-  4x5 is FV 4-deg grid: 
-
-GLC_GRID 4x5 
-  GLC_NX   72 
-  GLC_NY   46 
-  4x5 is FV 4-deg grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>4x5_gx3v7</td>
-    <td>f45_g37</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null')">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r01 
-  ROF_NX   3600 
-  ROF_NY   1800 
-  r01 is 1/10 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>1.9x2.5_gx1v6_r01</td>
-    <td>f19_g16_r01</td>
-  </tr>
-  <tr id="a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null')">a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.23x0.31 
-  ATM_NX   1152 
-  ATM_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-LND_GRID 0.23x0.31 
-  LND_NX   1152 
-  LND_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-ICE_GRID 0.23x0.31 
-  ICE_NX   1152 
-  ICE_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-OCN_GRID 0.23x0.31 
-  OCN_NX   1152 
-  OCN_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-GLC_GRID 0.23x0.31 
-  GLC_NX   1152 
-  GLC_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.23x031_0.23x0.31</td>
     <td>f02_f02</td>
   </tr>
-  <tr id="a%0.47x0.63_l%0.47x0.63_oi%0.47x0.63_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.47x0.63_l%0.47x0.63_oi%0.47x0.63_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.47x0.63_l%0.47x0.63_oi%0.47x0.63_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.23x0.31_gx1v6_tr">
+    <td><a name="0.23x0.31_gx1v6"></a>
+        <img id="0.23x0.31_gx1v6_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.47x0.63_l%0.47x0.63_oi%0.47x0.63_r%r05_m%gx1v6_g%null_w%null')">a%0.47x0.63_l%0.47x0.63_oi%0.47x0.63_r%r05_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('0.23x0.31_gx1v6')">0.23x0.31_gx1v6</a>
         </code>
-        <div id="a%0.47x0.63_l%0.47x0.63_oi%0.47x0.63_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="0.23x0.31_gx1v6_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.47x0.63 
-  ATM_NX   576 
-  ATM_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-LND_GRID 0.47x0.63 
-  LND_NX   576 
-  LND_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-ICE_GRID 0.47x0.63 
-  ICE_NX   576 
-  ICE_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-OCN_GRID 0.47x0.63 
-  OCN_NX   576 
-  OCN_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-GLC_GRID 0.47x0.63 
-  GLC_NX   576 
-  GLC_NY   384 
-  0.47x0.23 is FV 1/2-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
+	     <pre>1/4 deg grid for atm/lnd, with the v6 1-deg Greenland pole ocn, ice. Normally used for fully coupled climate model. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.23x0.31_gx1v6.100517.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_gx1v6.100517.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
         </div>
     </td>
-    <td>0.47x0.63_0.47x0.63</td>
+    <td>f02_g16</td>
+  </tr>
+  <tr id="0.23x0.31_tx0.1v2_tr">
+    <td><a name="0.23x0.31_tx0.1v2"></a>
+        <img id="0.23x0.31_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('0.23x0.31_tx0.1v2')">0.23x0.31_tx0.1v2</a>
+        </code>
+        <div id="0.23x0.31_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/4 deg grid for atm, lnd, with 1-deg tripole grid for ocn/ice. Normally used for fully coupled climate runs. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.23x0.31_tx0.1v2_070929.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_tx0.1v2_070929.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>f02_t12</td>
+  </tr>
+  <tr id="0.47x0.63_0.47x0.63_tr">
+    <td><a name="0.47x0.63_0.47x0.63"></a>
+        <img id="0.47x0.63_0.47x0.63_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('0.47x0.63_0.47x0.63')">0.47x0.63_0.47x0.63</a>
+        </code>
+        <div id="0.47x0.63_0.47x0.63_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/2 deg grid for atm/lnd, gx1v6 mask. Normally used for CAM configuration using prescribed lnd, ocn, ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.47x0.63_gx1v6.090407.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.47x0.63_gx1v6.090407.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.0.47x0.63_gx1v6_090408.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.0.47x0.63_gx1v6_090408.nc </pre>
+        </div>
+    </td>
     <td>f05_f05</td>
   </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.47x0.63_gx1v6_tr">
+    <td><a name="0.47x0.63_gx1v6"></a>
+        <img id="0.47x0.63_gx1v6_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null')">a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('0.47x0.63_gx1v6')">0.47x0.63_gx1v6</a>
         </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="0.47x0.63_gx1v6_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID 0.9x1.25 
-  ICE_NX   288 
-  ICE_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-OCN_GRID 0.9x1.25 
-  OCN_NX   288 
-  OCN_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
+	     <pre>1/2 deg grid for atm/lnd with the v6 1-deg Greenland pole grid. Normally used for fully coupled climate runs. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.47x0.63_gx1v6.090407.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.47x0.63_gx1v6.090407.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
         </div>
     </td>
-    <td>0.9x1.25_0.9x1.25</td>
+    <td>f05_g16</td>
+  </tr>
+  <tr id="0.47x0.63_tx0.1v2_tr">
+    <td><a name="0.47x0.63_tx0.1v2"></a>
+        <img id="0.47x0.63_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('0.47x0.63_tx0.1v2')">0.47x0.63_tx0.1v2</a>
+        </code>
+        <div id="0.47x0.63_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/2 deg grid for atm/lnd with the v2 0.1-deg tripole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.47x0.63_tx0.1v2_070929.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.47x0.63_tx0.1v2_070929.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>f05_t12</td>
+  </tr>
+  <tr id="0.9x1.25_0.9x1.25_tr">
+    <td><a name="0.9x1.25_0.9x1.25"></a>
+        <img id="0.9x1.25_0.9x1.25_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('0.9x1.25_0.9x1.25')">0.9x1.25_0.9x1.25</a>
+        </code>
+        <div id="0.9x1.25_0.9x1.25_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1 deg grid for atm/lnd, gx1v6 mask. Normally used for CAM configuration with prescribed lnd, ocn and ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.0.9x1.25_gx1v6_090403.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.0.9x1.25_gx1v6_090403.nc </pre>
+        </div>
+    </td>
     <td>f09_f09</td>
   </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.9x1.25_gx1v6_tr">
+    <td><a name="0.9x1.25_gx1v6"></a>
+        <img id="0.9x1.25_gx1v6_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null')">a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('0.9x1.25_gx1v6')">0.9x1.25_gx1v6</a>
         </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="0.9x1.25_gx1v6_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID 1.9x2.5 
-  ICE_NX   144 
-  ICE_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-OCN_GRID 1.9x2.5 
-  OCN_NX   144 
-  OCN_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
+	     <pre>1 deg grid for atm/lnd, ocn/ice with the v6 1-deg Greenland pole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
         </div>
     </td>
-    <td>1.9x2.5_1.9x2.5</td>
-    <td>f19_f19</td>
-  </tr>
-  <tr id="a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null')">a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 2.5x3.33 
-  ATM_NX   108 
-  ATM_NY   72 
-   
-
-LND_GRID 2.5x3.33 
-  LND_NX   108 
-  LND_NY   72 
-   
-
-ICE_GRID 2.5x3.33 
-  ICE_NX   108 
-  ICE_NY   72 
-   
-
-OCN_GRID 2.5x3.33 
-  OCN_NX   108 
-  OCN_NY   72 
-   
-
-GLC_GRID 2.5x3.33 
-  GLC_NX   108 
-  GLC_NY   72 
-   
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>2.5x3.33_2.5x3.33</td>
-    <td>f25_f25</td>
-  </tr>
-  <tr id="a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null')">a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 4x5 
-  ATM_NX   72 
-  ATM_NY   46 
-  4x5 is FV 4-deg grid: 
-
-LND_GRID 4x5 
-  LND_NX   72 
-  LND_NY   46 
-  4x5 is FV 4-deg grid: 
-
-ICE_GRID 4x5 
-  ICE_NX   72 
-  ICE_NY   46 
-  4x5 is FV 4-deg grid: 
-
-OCN_GRID 4x5 
-  OCN_NX   72 
-  OCN_NY   46 
-  4x5 is FV 4-deg grid: 
-
-GLC_GRID 4x5 
-  GLC_NX   72 
-  GLC_NY   46 
-  4x5 is FV 4-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>4x5_4x5</td>
-    <td>f45_f45</td>
-  </tr>
-  <tr id="a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null_tr">
-    <td><a name="a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null"></a>
-        <img id="a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null')">a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null</a>
-        </code>
-        <div id="a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-MASK usgs 
-  USGS mask 
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 10x15 
-  ATM_NX   24 
-  ATM_NY   19 
-   
-
-LND_GRID 10x15 
-  LND_NX   24 
-  LND_NY   19 
-   
-
-ICE_GRID 10x15 
-  ICE_NX   24 
-  ICE_NY   19 
-   
-
-OCN_GRID 10x15 
-  OCN_NX   24 
-  OCN_NY   19 
-   
-
-GLC_GRID 10x15 
-  GLC_NX   24 
-  GLC_NY   19 
-   
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>10x15_10x15</td>
-    <td>f10_f10</td>
-  </tr>
-  <tr id="a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null')">a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne16np4 
-  ATM_NX   13826 
-  ATM_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-LND_GRID ne16np4 
-  LND_NX   13826 
-  LND_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-GLC_GRID ne16np4 
-  GLC_NX   13826 
-  GLC_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne16np4_gx3v7</td>
-    <td>ne16_g37</td>
-  </tr>
-  <tr id="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-LND_GRID ne30np4 
-  LND_NX   48602 
-  LND_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-GLC_GRID ne30np4 
-  GLC_NX   48602 
-  GLC_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne30np4_gx1v6</td>
-    <td>ne30_g16</td>
-  </tr>
-  <tr id="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne30np4_1.9x2.5_gx1v6</td>
-    <td>ne30_f19_g16</td>
-  </tr>
-  <tr id="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne30np4_0.9x1.25_gx1v6</td>
-    <td>ne30_f09_g16</td>
-  </tr>
-  <tr id="a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne60np4 
-  ATM_NX   194402 
-  ATM_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-LND_GRID ne60np4 
-  LND_NX   194402 
-  LND_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-GLC_GRID ne60np4 
-  GLC_NX   194402 
-  GLC_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne60np4_gx1v6</td>
-    <td>ne60_g16</td>
-  </tr>
-  <tr id="a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne120np4 
-  ATM_NX   777602 
-  ATM_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-LND_GRID ne120np4 
-  LND_NX   777602 
-  LND_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-GLC_GRID ne120np4 
-  GLC_NX   777602 
-  GLC_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne120np4_gx1v6</td>
-    <td>ne120_g16</td>
-  </tr>
-  <tr id="a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null')">a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne120np4 
-  ATM_NX   777602 
-  ATM_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-LND_GRID ne120np4 
-  LND_NX   777602 
-  LND_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-GLC_GRID ne120np4 
-  GLC_NX   777602 
-  GLC_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne120np4_tx0.1v2</td>
-    <td>ne120_t12</td>
-  </tr>
-  <tr id="a%ne120np4_l%0.9x1.25_oi%gx1v6r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne120np4_l%0.9x1.25_oi%gx1v6r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne120np4_l%0.9x1.25_oi%gx1v6r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne120np4_l%0.9x1.25_oi%gx1v6r%r05_m%gx1v6_g%null_w%null')">a%ne120np4_l%0.9x1.25_oi%gx1v6r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne120np4_l%0.9x1.25_oi%gx1v6r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID 0.9x1.25 
-  ICE_NX   288 
-  ICE_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-OCN_GRID 0.9x1.25 
-  OCN_NX   288 
-  OCN_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ATM_GRID ne120np4 
-  ATM_NX   777602 
-  ATM_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne120np4_0.9x1.25_gx1v6</td>
-    <td>ne120_f09_g16</td>
-  </tr>
-  <tr id="a%ne120np4_l%0.23x0.31_oi%tx0.1v2r%r05_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%ne120np4_l%0.23x0.31_oi%tx0.1v2r%r05_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%ne120np4_l%0.23x0.31_oi%tx0.1v2r%r05_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne120np4_l%0.23x0.31_oi%tx0.1v2r%r05_m%tx0.1v2_g%null_w%null')">a%ne120np4_l%0.23x0.31_oi%tx0.1v2r%r05_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%ne120np4_l%0.23x0.31_oi%tx0.1v2r%r05_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.23x0.31 
-  LND_NX   1152 
-  LND_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-ICE_GRID 0.23x0.31 
-  ICE_NX   1152 
-  ICE_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-OCN_GRID 0.23x0.31 
-  OCN_NX   1152 
-  OCN_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-GLC_GRID 0.23x0.31 
-  GLC_NX   1152 
-  GLC_NY   768 
-  0.23x0.31 is FV 1/4-deg grid: 
-
-ATM_GRID ne120np4 
-  ATM_NX   777602 
-  ATM_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne120np4_0.23x0.31_tx0.1v2</td>
-    <td>ne120_f02_t12</td>
-  </tr>
-  <tr id="a%ne240np4_l%ne240np4_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne240np4_l%ne240np4_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne240np4_l%ne240np4_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne240np4_l%ne240np4_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null')">a%ne240np4_l%ne240np4_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne240np4_l%ne240np4_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne240np4 
-  ATM_NX   3110402 
-  ATM_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-LND_GRID ne240np4 
-  LND_NX   3110402 
-  LND_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-GLC_GRID ne240np4 
-  GLC_NX   3110402 
-  GLC_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r01 
-  ROF_NX   3600 
-  ROF_NY   1800 
-  r01 is 1/10 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne240np4_gx1v6</td>
-    <td>ne240_g16</td>
-  </tr>
-  <tr id="a%ne240np4_l%ne240np4_oi%0.23x0.31_gx1v6_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne240np4_l%ne240np4_oi%0.23x0.31_gx1v6_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne240np4_l%ne240np4_oi%0.23x0.31_gx1v6_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne240np4_l%ne240np4_oi%0.23x0.31_gx1v6_r%r05_m%gx1v6_g%null_w%null')">a%ne240np4_l%ne240np4_oi%0.23x0.31_gx1v6_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne240np4_l%ne240np4_oi%0.23x0.31_gx1v6_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne240np4 
-  ATM_NX   3110402 
-  ATM_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-LND_GRID ne240np4 
-  LND_NX   3110402 
-  LND_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-GLC_GRID ne240np4 
-  GLC_NX   3110402 
-  GLC_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne240np4_0.23x0.31_gx1v6</td>
-    <td>ne240_f02_g16</td>
-  </tr>
-  <tr id="a%ne240np4_l%ne240np4_oi%0.23x0.31_tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%ne240np4_l%ne240np4_oi%0.23x0.31_tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%ne240np4_l%ne240np4_oi%0.23x0.31_tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne240np4_l%ne240np4_oi%0.23x0.31_tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null')">a%ne240np4_l%ne240np4_oi%0.23x0.31_tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%ne240np4_l%ne240np4_oi%0.23x0.31_tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne240np4 
-  ATM_NX   3110402 
-  ATM_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-LND_GRID ne240np4 
-  LND_NX   3110402 
-  LND_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-GLC_GRID ne240np4 
-  GLC_NX   3110402 
-  GLC_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne240np4_0.23x0.31_tx0.1v2</td>
-    <td>ne240_f02_t12</td>
-  </tr>
-  <tr id="a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_tr">
-    <td><a name="a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null"></a>
-        <img id="a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null')">a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</a>
-        </code>
-        <div id="a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne240np4 
-  ATM_NX   3110402 
-  ATM_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-LND_GRID ne240np4 
-  LND_NX   3110402 
-  LND_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-GLC_GRID ne240np4 
-  GLC_NX   3110402 
-  GLC_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-ICE_GRID tx0.1v2 
-  ICE_NX   3600 
-  ICE_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-OCN_GRID tx0.1v2 
-  OCN_NX   3600 
-  OCN_NY   2400 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-MASK tx0.1v2 
-  tx0.1v2 is tripole v2 1/10-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne240np4_tx0.1v2</td>
-    <td>ne240_t12</td>
-  </tr>
-  <tr id="a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null"></a>
-        <img id="a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null')">a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</a>
-        </code>
-        <div id="a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne16np4 
-  ATM_NX   13826 
-  ATM_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-LND_GRID ne16np4 
-  LND_NX   13826 
-  LND_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-ICE_GRID ne16np4 
-  ICE_NX   13826 
-  ICE_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-OCN_GRID ne16np4 
-  OCN_NX   13826 
-  OCN_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-GLC_GRID ne16np4 
-  GLC_NX   13826 
-  GLC_NY   1 
-  ne16np4 is Spectral Elem 2-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne16np4_ne16np4</td>
-    <td>ne16_ne16</td>
-  </tr>
-  <tr id="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null')">a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-LND_GRID ne30np4 
-  LND_NX   48602 
-  LND_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID ne30np4 
-  ICE_NX   48602 
-  ICE_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-OCN_GRID ne30np4 
-  OCN_NX   48602 
-  OCN_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-GLC_GRID ne30np4 
-  GLC_NX   48602 
-  GLC_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne30np4_ne30np4</td>
-    <td>ne30_ne30</td>
-  </tr>
-  <tr id="a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null')">a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne60np4 
-  ATM_NX   194402 
-  ATM_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-LND_GRID ne60np4 
-  LND_NX   194402 
-  LND_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-ICE_GRID ne60np4 
-  ICE_NX   194402 
-  ICE_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-OCN_GRID ne60np4 
-  OCN_NX   194402 
-  OCN_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-GLC_GRID ne60np4 
-  GLC_NX   194402 
-  GLC_NY   1 
-  ne60np4 is Spectral Elem 1/2-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne60np4_ne60np4</td>
-    <td>ne60_ne60</td>
-  </tr>
-  <tr id="a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null')">a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne120np4 
-  ATM_NX   777602 
-  ATM_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-LND_GRID ne120np4 
-  LND_NX   777602 
-  LND_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-ICE_GRID ne120np4 
-  ICE_NX   777602 
-  ICE_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-OCN_GRID ne120np4 
-  OCN_NX   777602 
-  OCN_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-GLC_GRID ne120np4 
-  GLC_NX   777602 
-  GLC_NY   1 
-  ne120np4 is Spectral Elem 1/4-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne120np4_ne120np4</td>
-    <td>ne120_ne120</td>
-  </tr>
-  <tr id="a%ne240np4_l%ne240np4_oi%ne240np4_r%r01_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne240np4_l%ne240np4_oi%ne240np4_r%r01_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne240np4_l%ne240np4_oi%ne240np4_r%r01_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne240np4_l%ne240np4_oi%ne240np4_r%r01_m%gx1v6_g%null_w%null')">a%ne240np4_l%ne240np4_oi%ne240np4_r%r01_m%gx1v6_g%null_w%null</a>
-        </code>
-        <div id="a%ne240np4_l%ne240np4_oi%ne240np4_r%r01_m%gx1v6_g%null_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne240np4 
-  ATM_NX   3110402 
-  ATM_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-LND_GRID ne240np4 
-  LND_NX   3110402 
-  LND_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-ICE_GRID ne240np4 
-  ICE_NX   3110402 
-  ICE_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-OCN_GRID ne240np4 
-  OCN_NX   3110402 
-  OCN_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-GLC_GRID ne240np4 
-  GLC_NX   3110402 
-  GLC_NY   1 
-  ne240np4 is Spectral Elem 1/8-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r01 
-  ROF_NX   3600 
-  ROF_NY   1800 
-  r01 is 1/10 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>ne240np4_ne240np4</td>
-    <td>ne240_ne240</td>
-  </tr>
-  <tr id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland10_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland10_w%null"></a>
-        <img id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland10_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland10_w%null')">a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland10_w%null</a>
-        </code>
-        <div id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland10_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID 48x96 
-  ICE_NX   96 
-  ICE_NY   48 
-  T31 is Gaussian grid: 
-
-OCN_GRID 48x96 
-  OCN_NX   96 
-  OCN_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T31_T31_gland10</td>
-    <td>T31_T31_gl10</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null')">a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID 1.9x2.5 
-  ICE_NX   144 
-  ICE_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-OCN_GRID 1.9x2.5 
-  OCN_NX   144 
-  OCN_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>1.9x2.5_1.9x2.5_gland10</td>
-    <td>f19_f19_gl10</td>
-  </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland10_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland10_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland10_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland10_w%null')">a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland10_w%null</a>
-        </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland10_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID 0.9x1.25 
-  ICE_NX   288 
-  ICE_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-OCN_GRID 0.9x1.25 
-  OCN_NX   288 
-  OCN_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.9x1.25_0.9x1.25_gland10</td>
-    <td>f09_f09_gl10</td>
-  </tr>
-  <tr id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null"></a>
-        <img id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null')">a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null</a>
-        </code>
-        <div id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T31_gx3v7_gland10</td>
-    <td>T31_g37_gl10</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%hc2b7_r%r05_m%gx1v6_g%gland10_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%hc2b7_r%r05_m%gx1v6_g%gland10_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%hc2b7_r%r05_m%gx1v6_g%gland10_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%hc2b7_r%r05_m%gx1v6_g%gland10_w%null')">a%1.9x2.5_l%1.9x2.5_oi%hc2b7_r%r05_m%gx1v6_g%gland10_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%hc2b7_r%r05_m%gx1v6_g%gland10_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>1.9x2.5_gx1v6_gland10</td>
-    <td>f19_g16_gl10</td>
-  </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null')">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null</a>
-        </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.9x1.25_gx1v6_gland10</td>
-    <td>f09_g16_gl10</td>
-  </tr>
-  <tr id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null"></a>
-        <img id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null')">a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</a>
-        </code>
-        <div id="a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID 48x96 
-  ICE_NX   96 
-  ICE_NY   48 
-  T31 is Gaussian grid: 
-
-OCN_GRID 48x96 
-  OCN_NX   96 
-  OCN_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T31_T31</td>
-    <td>T31_T31</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null')">a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID 1.9x2.5 
-  ICE_NX   144 
-  ICE_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-OCN_GRID 1.9x2.5 
-  OCN_NX   144 
-  OCN_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>1.9x2.5_1.9x2.5</td>
-    <td>f19_f19</td>
-  </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null')">a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null</a>
-        </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID 0.9x1.25 
-  ICE_NX   288 
-  ICE_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-OCN_GRID 0.9x1.25 
-  OCN_NX   288 
-  OCN_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.9x1.25_0.9x1.25</td>
-    <td>f09_f09</td>
-  </tr>
-  <tr id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null"></a>
-        <img id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null')">a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</a>
-        </code>
-        <div id="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>T31_gx3v7</td>
-    <td>T31_g37</td>
-  </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null')">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</a>
-        </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>1.9x2.5_gx1v6</td>
-    <td>f19_g16</td>
-  </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null')">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</a>
-        </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID r05 
-  ROF_NX   720 
-  ROF_NY   360 
-  r05 is 1/2 degree river routing grid: 
-</pre>
-        </div>
-    </td>
-    <td>0.9x1.25_gx1v6</td>
     <td>f09_g16</td>
   </tr>
-  <tr id="a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null"></a>
-        <img id="a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.9x1.25_gx1v6_r01_tr">
+    <td><a name="0.9x1.25_gx1v6_r01"></a>
+        <img id="0.9x1.25_gx1v6_r01_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null')">a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</a>
+             onclick="toggleHelp('0.9x1.25_gx1v6_r01')">0.9x1.25_gx1v6_r01</a>
         </code>
-        <div id="a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_help" style="display: none;
+        <div id="0.9x1.25_gx1v6_r01_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 48x96 
-  ATM_NX   96 
-  ATM_NY   48 
-  T31 is Gaussian grid: 
-
-LND_GRID 48x96 
-  LND_NX   96 
-  LND_NY   48 
-  T31 is Gaussian grid: 
-
-GLC_GRID 48x96 
-  GLC_NX   96 
-  GLC_NY   48 
-  T31 is Gaussian grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>1 deg grid for atm/lnd, ocn/ice with the v6 1-deg Greenland pole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
         </div>
     </td>
-    <td>T31_gx3v7_rx1</td>
-    <td>T31_g37_rx1</td>
+    <td>f09_g16_r01</td>
   </tr>
-  <tr id="a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_tr">
-    <td><a name="a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null"></a>
-        <img id="a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.9x1.25_gx1v6_gland10_tr">
+    <td><a name="0.9x1.25_gx1v6_gland10"></a>
+        <img id="0.9x1.25_gx1v6_gland10_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null')">a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</a>
+             onclick="toggleHelp('0.9x1.25_gx1v6_gland10')">0.9x1.25_gx1v6_gland10</a>
         </code>
-        <div id="a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null_help" style="display: none;
+        <div id="0.9x1.25_gx1v6_gland10_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 4x5 
-  ATM_NX   72 
-  ATM_NY   46 
-  4x5 is FV 4-deg grid: 
-
-LND_GRID 4x5 
-  LND_NX   72 
-  LND_NY   46 
-  4x5 is FV 4-deg grid: 
-
-GLC_GRID 4x5 
-  GLC_NX   72 
-  GLC_NY   46 
-  4x5 is FV 4-deg grid: 
-
-ICE_GRID gx3v7 
-  ICE_NX   100 
-  ICE_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-OCN_GRID gx3v7 
-  OCN_NX   100 
-  OCN_NY   116 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-MASK gx3v7 
-  gx3v7 is Greenland pole v7 3-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>1 deg grid for atm/lnd, ocn/ice with the v6 1-deg Greenland pole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
         </div>
     </td>
-    <td>4x5_gx3v7_rx1</td>
-    <td>f45_g37_rx1</td>
+    <td>f09_g16_gl10</td>
   </tr>
-  <tr id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null"></a>
-        <img id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.9x1.25_mp120v1_tr">
+    <td><a name="0.9x1.25_mp120v1"></a>
+        <img id="0.9x1.25_mp120v1_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null')">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('0.9x1.25_mp120v1')">0.9x1.25_mp120v1</a>
         </code>
-        <div id="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="0.9x1.25_mp120v1_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 1.9x2.5 
-  ATM_NX   144 
-  ATM_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>1 deg grid for atm/lnd, ocn/ice with mpas 120km v1 grid 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.9x1.25_mp120v1.111018.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_mp120v1.111018.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.mp120v1.111018.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.mp120v1.111018.nc </pre>
         </div>
     </td>
-    <td>1.9x2.5_gx1v6_rx1</td>
-    <td>f19_g16_rx1</td>
+    <td>f09_mp120v1</td>
   </tr>
-  <tr id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null"></a>
-        <img id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="0.9x1.25_mp120r10v1_tr">
+    <td><a name="0.9x1.25_mp120r10v1"></a>
+        <img id="0.9x1.25_mp120r10v1_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null')">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('0.9x1.25_mp120r10v1')">0.9x1.25_mp120r10v1</a>
         </code>
-        <div id="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="0.9x1.25_mp120r10v1_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID 0.9x1.25 
-  ATM_NX   288 
-  ATM_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>One deg grid for atm/lnd, ocn/ice with mpas 120kmr10 v1 grid 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv0.9x1.25_mp120r10v1.110123.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_mp120r10v1.110123.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.mp120r10v1.111023.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.mp120r10v1.111023.nc </pre>
         </div>
     </td>
-    <td>0.9x1.25_gx1v6_rx1</td>
-    <td>f09_g16_rx1</td>
+    <td>f09_mp120r10v1</td>
   </tr>
-  <tr id="a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1.9x2.5_1.9x2.5_tr">
+    <td><a name="1.9x2.5_1.9x2.5"></a>
+        <img id="1.9x2.5_1.9x2.5_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null')">a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('1.9x2.5_1.9x2.5')">1.9x2.5_1.9x2.5</a>
         </code>
-        <div id="a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="1.9x2.5_1.9x2.5_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-LND_GRID ne30np4 
-  LND_NX   48602 
-  LND_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-GLC_GRID ne30np4 
-  GLC_NX   48602 
-  GLC_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>2 deg grid for atm/lnd, gx1v6 mask. Normally used for CAM configuration using prescribed lnd, ocn and ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv1.9x2.5_gx1v6.090206.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv1.9x2.5_gx1v6.090206.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.1.9x2.5_gx1v6_090403.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.1.9x2.5_gx1v6_090403.nc </pre>
         </div>
     </td>
-    <td>ne30np4_gx1v6_rx1</td>
-    <td>ne30_g16_rx1</td>
+    <td>f19_f19</td>
   </tr>
-  <tr id="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1.9x2.5_gx1v6_tr">
+    <td><a name="1.9x2.5_gx1v6"></a>
+        <img id="1.9x2.5_gx1v6_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null')">a%ne30np4_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('1.9x2.5_gx1v6')">1.9x2.5_gx1v6</a>
         </code>
-        <div id="a%ne30np4_l%0.9x1.25_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="1.9x2.5_gx1v6_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 0.9x1.25 
-  LND_NX   288 
-  LND_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-GLC_GRID 0.9x1.25 
-  GLC_NX   288 
-  GLC_NY   192 
-  0.9x1.25 is FV 1-deg grid: 
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>2 deg grid for atm/lnd with the v6 1-deg Greenland pole ocn/ice grid. Normally used for fully coupled climate runs. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv1.9x2.5_gx1v6.090206.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv1.9x2.5_gx1v6.090206.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
         </div>
     </td>
-    <td>ne30np4_0.9x1.25_gx1v6_rx1</td>
-    <td>ne30_f09_g16_rx1</td>
+    <td>f19_g16</td>
   </tr>
-  <tr id="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_tr">
-    <td><a name="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null"></a>
-        <img id="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="1.9x2.5_tx1v1_tr">
+    <td><a name="1.9x2.5_tx1v1"></a>
+        <img id="1.9x2.5_tx1v1_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null')">a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</a>
+             onclick="toggleHelp('1.9x2.5_tx1v1')">1.9x2.5_tx1v1</a>
         </code>
-        <div id="a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null_help" style="display: none;
+        <div id="1.9x2.5_tx1v1_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-LND_GRID 1.9x2.5 
-  LND_NX   144 
-  LND_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-GLC_GRID 1.9x2.5 
-  GLC_NX   144 
-  GLC_NY   96 
-  1.9x2.5 is FV 2-deg grid: 
-
-ATM_GRID ne30np4 
-  ATM_NX   48602 
-  ATM_NY   1 
-  ne30np4 is Spectral Elem 1-deg grid: 
-
-ICE_GRID gx1v6 
-  ICE_NX   320 
-  ICE_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-OCN_GRID gx1v6 
-  OCN_NX   320 
-  OCN_NY   384 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-MASK gx1v6 
-  gx1v6 is Greenland pole v6 1-deg grid: 
-
-ROF_GRID rx1 
-  ROF_NX   360 
-  ROF_NY   180 
-  rx1 is 1 degree river routing grid: 
-</pre>
+	     <pre>2 deg grid for atm/lnd with the v1 1-deg tripole grid for ocn/ice. Note that the tx1v1 grid was developed as a testing proxy for high-resolution tripole ocean grids, but should not be used for scientific experiments; use the f19_g16 resolution instead. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv1.9x2.5_tx1v1_090713.nc 
+ 
+                       LND_DOMAIN_FILE:  
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx1v1.090122.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx1v1.090122.nc </pre>
         </div>
     </td>
-    <td>ne30np4_1.9x2.5_gx1v6_rx1</td>
-    <td>ne30_f19_g16_rx1</td>
+    <td>f19_s11</td>
   </tr>
-  <tr id="a%wus12_l%wus12_oi%wus12_r%null_m%reg_g%null_w%null_tr">
-    <td><a name="a%wus12_l%wus12_oi%wus12_r%null_m%reg_g%null_w%null"></a>
-        <img id="a%wus12_l%wus12_oi%wus12_r%null_m%reg_g%null_w%null_arrow" src="./images/arrow_right.gif">
+  <tr id="2.5x3.33_2.5x3.33_tr">
+    <td><a name="2.5x3.33_2.5x3.33"></a>
+        <img id="2.5x3.33_2.5x3.33_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%wus12_l%wus12_oi%wus12_r%null_m%reg_g%null_w%null')">a%wus12_l%wus12_oi%wus12_r%null_m%reg_g%null_w%null</a>
+             onclick="toggleHelp('2.5x3.33_2.5x3.33')">2.5x3.33_2.5x3.33</a>
         </code>
-        <div id="a%wus12_l%wus12_oi%wus12_r%null_m%reg_g%null_w%null_help" style="display: none;
+        <div id="2.5x3.33_2.5x3.33_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-MASK reg 
-  regional grid mask:  
-
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-WAV_GRID null 
-  WAV_NX   0 
-  WAV_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID wus12 
-  ATM_NX   341 
-  ATM_NY   337 
-  WRF 12-km Western US samegrid configuration 
-
-LND_GRID wus12 
-  LND_NX   341 
-  LND_NY   337 
-  WRF 12-km Western US samegrid configuration 
-
-ICE_GRID wus12 
-  ICE_NX   341 
-  ICE_NY   337 
-  WRF 12-km Western US samegrid configuration 
-
-OCN_GRID wus12 
-  OCN_NX   341 
-  OCN_NY   337 
-  WRF 12-km Western US samegrid configuration 
-
-GLC_GRID wus12 
-  GLC_NX   341 
-  GLC_NY   337 
-  WRF 12-km Western US samegrid configuration 
-</pre>
+	     <pre>3 deg grid for atm/lnd with the v7 3-deg tripole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv2.5x3.33_gx3v7.110223.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv2.5x3.33_gx3v7.110223.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.fv2.5x3.33_gx3v7_110223.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.fv2.5x3.33_gx3v7_110223.nc </pre>
+        </div>
+    </td>
+    <td>f25_f25</td>
+  </tr>
+  <tr id="4x5_4x5_tr">
+    <td><a name="4x5_4x5"></a>
+        <img id="4x5_4x5_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('4x5_4x5')">4x5_4x5</a>
+        </code>
+        <div id="4x5_4x5_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>4 deg grid for atm/lnd. Normally used for CAM configuration using prescribed lnd, ocn and ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv4x5_gx3v7.091218.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv4x5_gx3v7.091218.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.4x5_gx3v7_100120.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.4x5_gx3v7_100120.nc </pre>
+        </div>
+    </td>
+    <td>f45_f45</td>
+  </tr>
+  <tr id="4x5_gx3v7_tr">
+    <td><a name="4x5_gx3v7"></a>
+        <img id="4x5_gx3v7_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('4x5_gx3v7')">4x5_gx3v7</a>
+        </code>
+        <div id="4x5_gx3v7_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>4 deg grid for atm/lnd with the v7 3-deg Greenland pole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv4x5_gx3v7.091218.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv4x5_gx3v7.091218.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc </pre>
+        </div>
+    </td>
+    <td>f45_g37</td>
+  </tr>
+  <tr id="T62_gx3v7_tr">
+    <td><a name="T62_gx3v7"></a>
+        <img id="T62_gx3v7_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T62_gx3v7')">T62_gx3v7</a>
+        </code>
+        <div id="T62_gx3v7_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T62 gaussian grid with (94x192) grid for atm/lnd, with the v7 3-deg Greenland pole grid for ocn/ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T62_gx3v7.090911.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T62_gx3v7.090911.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc </pre>
+        </div>
+    </td>
+    <td>T62_g37</td>
+  </tr>
+  <tr id="T62_tx1v1_tr">
+    <td><a name="T62_tx1v1"></a>
+        <img id="T62_tx1v1_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T62_tx1v1')">T62_tx1v1</a>
+        </code>
+        <div id="T62_tx1v1_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T62 gaussian grid with (94x192) grid for active atm/lnd, with the v1 1-deg tripole grid for ocn/ice. Note that the tx1v1 grid was developed as a testing proxy for high-resolution tripole ocean grids, but should not be used for scientific experiments; use the T62_g16 resolution instead. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T62_tx1v1.090122.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T62_tx1v1.090122.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx1v1.090122.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx1v1.090122.nc </pre>
+        </div>
+    </td>
+    <td>T62_s11</td>
+  </tr>
+  <tr id="T62_tx0.1v2_tr">
+    <td><a name="T62_tx0.1v2"></a>
+        <img id="T62_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T62_tx0.1v2')">T62_tx0.1v2</a>
+        </code>
+        <div id="T62_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T62 gaussian grid with (94x192) grid for active atm/lnd, with the v2 1-deg tripole grid for ocn/ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T62_tx0.1v2_090623.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T62_tx0.1v2_090623.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>T62_t12</td>
+  </tr>
+  <tr id="T62_gx1v6_tr">
+    <td><a name="T62_gx1v6"></a>
+        <img id="T62_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T62_gx1v6')">T62_gx1v6</a>
+        </code>
+        <div id="T62_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T62 gaussian (94x192) grid for active atm/lnd, with the v6 Greenland pole 1-deg (320x384) pop grid for ocn/ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T62_gx1v6.090320.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T62_gx1v6.090320.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>T62_g16</td>
+  </tr>
+  <tr id="T31_T31_tr">
+    <td><a name="T31_T31"></a>
+        <img id="T31_T31_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T31_T31')">T31_T31</a>
+        </code>
+        <div id="T31_T31_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T31 gaussian (48x96) grid for atm/lnd, gx3v7 mask. Normally used for CAM configuration using prescribed lnd, ocn and ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T31_gx3v7.090928.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T31_gx3v7.090928.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.48x96_gx3v7_100114.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.48x96_gx3v7_100114.nc </pre>
+        </div>
+    </td>
+    <td>T31_T31</td>
+  </tr>
+  <tr id="T31_gx3v7_tr">
+    <td><a name="T31_gx3v7"></a>
+        <img id="T31_gx3v7_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T31_gx3v7')">T31_gx3v7</a>
+        </code>
+        <div id="T31_gx3v7_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T31 gaussian (48x96) grid for atm/lnd with the v7 3-deg Greenland pole grid for ocn/ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T31_gx3v7.090928.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T31_gx3v7.090928.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc </pre>
+        </div>
+    </td>
+    <td>T31_g37</td>
+  </tr>
+  <tr id="T42_T42_tr">
+    <td><a name="T42_T42"></a>
+        <img id="T42_T42_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T42_T42')">T42_T42</a>
+        </code>
+        <div id="T42_T42_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T42 gaussian (64x128) grid for atm/lnd, USGS mask. Normally used for CAM configuration using prescribed lnd, ocn and ice models. NOTE: This should be updated to use the gx1v6 land-mask rather than the USGS land-mask. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T42_USGS.111004.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T42_USGS.111004.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.camocn.64x128_USGS_070807.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.camocn.64x128_USGS_070807.nc </pre>
+        </div>
+    </td>
+    <td>T42_T42</td>
+  </tr>
+  <tr id="4x5_T42_gx3v7_tr">
+    <td><a name="4x5_T42_gx3v7"></a>
+        <img id="4x5_T42_gx3v7_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('4x5_T42_gx3v7')">4x5_T42_gx3v7</a>
+        </code>
+        <div id="4x5_T42_gx3v7_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>4 deg grid for atm, T42 gaussian (64x128) grid for lnd, and the v7 3-deg Greenland pole grid for ocn/ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv4x5_gx3v7.091218.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv4x5_gx3v7.091218.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx3v7.120323.nc </pre>
+        </div>
+    </td>
+    <td>f45_T42_g37</td>
+  </tr>
+  <tr id="10x15_10x15_tr">
+    <td><a name="10x15_10x15"></a>
+        <img id="10x15_10x15_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('10x15_10x15')">10x15_10x15</a>
+        </code>
+        <div id="10x15_10x15_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>10 deg grid for atm/lnd with same for ocn/ice. Normally used for CAM configuration using prescribed lnd, ocn, ice. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.fv10x15_USGS.110713.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv10x15_USGS.110713.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.camocn.10x15_USGS_070807.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.camocn.10x15_USGS_070807.nc </pre>
+        </div>
+    </td>
+    <td>f10_f10</td>
+  </tr>
+  <tr id="ne16np4_ne16np4_tr">
+    <td><a name="ne16np4_ne16np4"></a>
+        <img id="ne16np4_ne16np4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne16np4_ne16np4')">ne16np4_ne16np4</a>
+        </code>
+        <div id="ne16np4_ne16np4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>2 deg configuration with homme atm/lnd, gx3v7 mask. Normally used for a CAM configuration using prescribed lnd, ocn and ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne16np4_gx3v7.120406.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne16np4_gx3v7.120406.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ne16np4_gx3v7.120406.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ne16np4_gx3v7.120406.nc </pre>
+        </div>
+    </td>
+    <td>ne16_ne16</td>
+  </tr>
+  <tr id="ne16np4_gx3v7_tr">
+    <td><a name="ne16np4_gx3v7"></a>
+        <img id="ne16np4_gx3v7_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne16np4_gx3v7')">ne16np4_gx3v7</a>
+        </code>
+        <div id="ne16np4_gx3v7_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>2 deg configuration with homme atm/land grid, 3 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne16np4_gx3v7.120406.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne16np4_gx3v7.120406.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx3v7.120406.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx3v7.120406.nc </pre>
+        </div>
+    </td>
+    <td>ne16_g37</td>
+  </tr>
+  <tr id="ne30np4_ne30np4_tr">
+    <td><a name="ne30np4_ne30np4"></a>
+        <img id="ne30np4_ne30np4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne30np4_ne30np4')">ne30np4_ne30np4</a>
+        </code>
+        <div id="ne30np4_ne30np4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1 deg configuration with homme atm/lnd, gx1v6 mask. Normally used for a CAM configuration using prescribed lnd, ocn and ice models. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne30np4_gx1v6.110905.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne30np4_gx1v6.110905.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ne30np4_gx1v6_110217.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ne30np4_gx1v6_110217.nc </pre>
+        </div>
+    </td>
+    <td>ne30_ne30</td>
+  </tr>
+  <tr id="ne30np4_gx1v6_tr">
+    <td><a name="ne30np4_gx1v6"></a>
+        <img id="ne30np4_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne30np4_gx1v6')">ne30np4_gx1v6</a>
+        </code>
+        <div id="ne30np4_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1 deg configuration with homme atm/land grid, 1 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne30np4_gx1v6.110905.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne30np4_gx1v6.110905.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne30_g16</td>
+  </tr>
+  <tr id="ne30np4_0.9x1.25_gx1v6_tr">
+    <td><a name="ne30np4_0.9x1.25_gx1v6"></a>
+        <img id="ne30np4_0.9x1.25_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne30np4_0.9x1.25_gx1v6')">ne30np4_0.9x1.25_gx1v6</a>
+        </code>
+        <div id="ne30np4_0.9x1.25_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1 deg trigrid configuration with homme atm grid, 1 deg land, ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne30np4_gx1v6.110905.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne30_f09_g16</td>
+  </tr>
+  <tr id="ne30np4_1.9x2.5_gx1v6_tr">
+    <td><a name="ne30np4_1.9x2.5_gx1v6"></a>
+        <img id="ne30np4_1.9x2.5_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne30np4_1.9x2.5_gx1v6')">ne30np4_1.9x2.5_gx1v6</a>
+        </code>
+        <div id="ne30np4_1.9x2.5_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1 deg trigrid configuration with homme atm grid, 2 deg land grid, and 1 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne30np4_gx1v6.110905.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv1.9x2.5_gx1v6.090206.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne30_f19_g16</td>
+  </tr>
+  <tr id="ne60np4_ne60np4_tr">
+    <td><a name="ne60np4_ne60np4"></a>
+        <img id="ne60np4_ne60np4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne60np4_ne60np4')">ne60np4_ne60np4</a>
+        </code>
+        <div id="ne60np4_ne60np4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/2 deg HOMME atm/lnd/ice/ocn grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne60np4_gx1v6.120406.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne60np4_gx1v6.120406.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ne60np4_gx1v6.120406.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ne60np4_gx1v6.120406.nc </pre>
+        </div>
+    </td>
+    <td>ne60_ne60</td>
+  </tr>
+  <tr id="ne60np4_gx1v6_tr">
+    <td><a name="ne60np4_gx1v6"></a>
+        <img id="ne60np4_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne60np4_gx1v6')">ne60np4_gx1v6</a>
+        </code>
+        <div id="ne60np4_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/2 deg HOMME atm/lnd grid and 1 deg ocn/ice grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne60np4_gx1v6.120406.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne60np4_gx1v6.120406.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne60_g16</td>
+  </tr>
+  <tr id="ne240np4_gx1v6_tr">
+    <td><a name="ne240np4_gx1v6"></a>
+        <img id="ne240np4_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne240np4_gx1v6')">ne240np4_gx1v6</a>
+        </code>
+        <div id="ne240np4_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>High resolution homme trigrid, 1/8 deg homme atm/lnd grid 1 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111226.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111226.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne240_g16</td>
+  </tr>
+  <tr id="ne240np4_ne240np4_tr">
+    <td><a name="ne240np4_ne240np4"></a>
+        <img id="ne240np4_ne240np4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne240np4_ne240np4')">ne240np4_ne240np4</a>
+        </code>
+        <div id="ne240np4_ne240np4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/8 deg HOMME atm/lnd/ice/ocn grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111122.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111122.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ne240np4_gx1v6.111122.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ne240np4_gx1v6.111122.nc </pre>
+        </div>
+    </td>
+    <td>ne240_ne240</td>
+  </tr>
+  <tr id="ne240np4_0.23x0.31_gx1v6_tr">
+    <td><a name="ne240np4_0.23x0.31_gx1v6"></a>
+        <img id="ne240np4_0.23x0.31_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne240np4_0.23x0.31_gx1v6')">ne240np4_0.23x0.31_gx1v6</a>
+        </code>
+        <div id="ne240np4_0.23x0.31_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>High resolution homme trigrid, 1/8 deg homme atm grid, one-1/4 deg land grid, and 1 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111122.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_gx1v6.100517.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne240_f02_g16</td>
+  </tr>
+  <tr id="ne240np4_0.23x0.31_tx0.1v2_tr">
+    <td><a name="ne240np4_0.23x0.31_tx0.1v2"></a>
+        <img id="ne240np4_0.23x0.31_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne240np4_0.23x0.31_tx0.1v2')">ne240np4_0.23x0.31_tx0.1v2</a>
+        </code>
+        <div id="ne240np4_0.23x0.31_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>High resolution homme trigrid, 1/8 deg homme atm grid, one-1/4 deg land grid, and 1/10 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111120.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_tx0.1v2_070929.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>ne240_f02_t12</td>
+  </tr>
+  <tr id="ne240np4_tx0.1v2_tr">
+    <td><a name="ne240np4_tx0.1v2"></a>
+        <img id="ne240np4_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne240np4_tx0.1v2')">ne240np4_tx0.1v2</a>
+        </code>
+        <div id="ne240np4_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>High resolution homme trigrid, and 1/10 deg ocn/ice Greenland pole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111120.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne240np4_gx1v6.111120.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>ne240_t12</td>
+  </tr>
+  <tr id="T85_0.9x1.25_gx1v6_tr">
+    <td><a name="T85_0.9x1.25_gx1v6"></a>
+        <img id="T85_0.9x1.25_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T85_0.9x1.25_gx1v6')">T85_0.9x1.25_gx1v6</a>
+        </code>
+        <div id="T85_0.9x1.25_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Trigrid configuration with T85 atm grid, 1 deg land grid, and 1 deg ocn/ice grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T85_gx1v4.060403.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>T85_f09_g16</td>
+  </tr>
+  <tr id="T85_0.9x1.25_tx0.1v2_tr">
+    <td><a name="T85_0.9x1.25_tx0.1v2"></a>
+        <img id="T85_0.9x1.25_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T85_0.9x1.25_tx0.1v2')">T85_0.9x1.25_tx0.1v2</a>
+        </code>
+        <div id="T85_0.9x1.25_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Trigrid configuration with T85 atm grid, 1 deg land grid, and 0.1 deg ocn/ice tripole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T85_gx1v4.060403.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_tx0.1v2_070928.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>T85_f09_t12</td>
+  </tr>
+  <tr id="T85_T85_tr">
+    <td><a name="T85_T85"></a>
+        <img id="T85_T85_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T85_T85')">T85_T85</a>
+        </code>
+        <div id="T85_T85_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T85 gaussian (128x256) grid for atm/lnd/ice/ocn, USGS mask. Normally used for CAM configuration using prescribed lnd, ocn and ice models. NOTE: This should be updated to use the gx1v6 land-mask rather than the USGS land-mask. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T85_USGS.111004.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T85_USGS.111004.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.camocn.128x256_USGS_070807.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.camocn.128x256_USGS_070807.nc </pre>
+        </div>
+    </td>
+    <td>T85_T85</td>
+  </tr>
+  <tr id="T341_T341_tr">
+    <td><a name="T341_T341"></a>
+        <img id="T341_T341_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T341_T341')">T341_T341</a>
+        </code>
+        <div id="T341_T341_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>T341 gaussian (512x1024) grid for atm/lnd/ice/ocn. Not configured yet -
+this is a place holder. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.T341_gx1v6.111226.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.T341_gx1v6.111226.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.T341_gx1v6.111226.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.T341_gx1v6.111226.nc </pre>
+        </div>
+    </td>
+    <td>T341_T341</td>
+  </tr>
+  <tr id="T341_0.23x0.31_tx0.1v2_tr">
+    <td><a name="T341_0.23x0.31_tx0.1v2"></a>
+        <img id="T341_0.23x0.31_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('T341_0.23x0.31_tx0.1v2')">T341_0.23x0.31_tx0.1v2</a>
+        </code>
+        <div id="T341_0.23x0.31_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Trigrid configuration with T341 atm grid, 1/4 deg land grid, and 0.1 deg ocn/ice tripole grid. Not yet configured - this is a place holder. 
+ 
+                       ATM_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_tx0.1v2_070929.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>T341_f02_t12</td>
+  </tr>
+  <tr id="ne120np4_gx1v6_tr">
+    <td><a name="ne120np4_gx1v6"></a>
+        <img id="ne120np4_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne120np4_gx1v6')">ne120np4_gx1v6</a>
+        </code>
+        <div id="ne120np4_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/4 deg HOMME atm/lnd grid and 1 deg ocn/ice grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne120np4_gx1v6.110502.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne120np4_gx1v6.110502.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne120_g16</td>
+  </tr>
+  <tr id="ne120np4_tx0.1v2_tr">
+    <td><a name="ne120np4_tx0.1v2"></a>
+        <img id="ne120np4_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne120np4_tx0.1v2')">ne120np4_tx0.1v2</a>
+        </code>
+        <div id="ne120np4_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/4 deg HOMME atm/lnd grid and 0.1 deg ocn/ice grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne120np4_tx01v2.120412.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne120np4_tx01v2.120412.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>ne120_t12</td>
+  </tr>
+  <tr id="ne120np4_ne120np4_tr">
+    <td><a name="ne120np4_ne120np4"></a>
+        <img id="ne120np4_ne120np4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne120np4_ne120np4')">ne120np4_ne120np4</a>
+        </code>
+        <div id="ne120np4_ne120np4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>1/4 deg HOMME atm/lnd/ice/ocn grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne120np4_gx1v6.111226.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ne120np4_gx1v6.111226.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ne120np4_gx1v6.111226.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ne120np4_gx1v6.111226.nc </pre>
+        </div>
+    </td>
+    <td>ne120_ne120</td>
+  </tr>
+  <tr id="ne120np4_0.9x1.25_gx1v6_tr">
+    <td><a name="ne120np4_0.9x1.25_gx1v6"></a>
+        <img id="ne120np4_0.9x1.25_gx1v6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne120np4_0.9x1.25_gx1v6')">ne120np4_0.9x1.25_gx1v6</a>
+        </code>
+        <div id="ne120np4_0.9x1.25_gx1v6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Trigrid configuration with 1/4 deg HOMME atm grid, 1 deg land, and 1 deg ocn/ice grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne120np4_gx1v6.110502.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.9x1.25_gx1v6.090309.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.gx1v6.090206.nc </pre>
+        </div>
+    </td>
+    <td>ne120_f09_g16</td>
+  </tr>
+  <tr id="ne120np4_0.23x0.31_tx0.1v2_tr">
+    <td><a name="ne120np4_0.23x0.31_tx0.1v2"></a>
+        <img id="ne120np4_0.23x0.31_tx0.1v2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ne120np4_0.23x0.31_tx0.1v2')">ne120np4_0.23x0.31_tx0.1v2</a>
+        </code>
+        <div id="ne120np4_0.23x0.31_tx0.1v2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Trigrid configuration with 1/4 deg HOMME atm grid, 1/4 deg land grid, and 0.1 deg ocn/ice tripole grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ne120np4_tx01v2.120412.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.fv0.23x0.31_tx0.1v2_070929.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.tx0.1v2_090218.nc </pre>
+        </div>
+    </td>
+    <td>ne120_f02_t12</td>
+  </tr>
+  <tr id="wr50a_wr50a_tr">
+    <td><a name="wr50a_wr50a"></a>
+        <img id="wr50a_wr50a_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('wr50a_wr50a')">wr50a_wr50a</a>
+        </code>
+        <div id="wr50a_wr50a_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>wrf 50 km arctic samegrid configuration. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.wr50a_wr50a.090310.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.wr50a_wr50a.090310.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.wr50a.090309.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.wr50a.090309.nc </pre>
+        </div>
+    </td>
+    <td>w5a_w5a</td>
+  </tr>
+  <tr id="wus12_wus12_tr">
+    <td><a name="wus12_wus12"></a>
+        <img id="wus12_wus12_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('wus12_wus12')">wus12_wus12</a>
+        </code>
+        <div id="wus12_wus12_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>WRF 12-km Western US samegrid configuration. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.wus12_wus12.20101108.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.wus12_wus12.20101108.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.wus12.20100518.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.wus12.20100518.nc </pre>
         </div>
     </td>
     <td>wus12_wus12</td>
-    <td>wus12_wus12</td>
   </tr>
-  <tr id="a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a_tr">
-    <td><a name="a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a"></a>
-        <img id="a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a_arrow" src="./images/arrow_right.gif">
+  <tr id="us20_us20_tr">
+    <td><a name="us20_us20"></a>
+        <img id="us20_us20_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a')">a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a</a>
+             onclick="toggleHelp('us20_us20')">us20_us20</a>
         </code>
-        <div id="a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a_help" style="display: none;
+        <div id="us20_us20_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>
-ROF_GRID null 
-  ROF_NX   0 
-  ROF_NY   0 
-  null is no grid:  
-
-CISM_GRID null 
-  null is no grid:  
-
-ATM_GRID ww3a 
-  ATM_NX   90 
-  ATM_NY   50 
-  WW3 90 x 50 global grid 
-
-LND_GRID ww3a 
-  LND_NX   90 
-  LND_NY   50 
-  WW3 90 x 50 global grid 
-
-ICE_GRID ww3a 
-  ICE_NX   90 
-  ICE_NY   50 
-  WW3 90 x 50 global grid 
-
-OCN_GRID ww3a 
-  OCN_NX   90 
-  OCN_NY   50 
-  WW3 90 x 50 global grid 
-
-GLC_GRID ww3a 
-  GLC_NX   90 
-  GLC_NY   50 
-  WW3 90 x 50 global grid 
-
-WAV_GRID ww3a 
-  WAV_NX   90 
-  WAV_NY   50 
-  WW3 90 x 50 global grid 
-
-MASK ww3a 
-  WW3 90 x 50 global grid 
-</pre>
+	     <pre>WRF 20-km US samegrid configuration. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.us20_us20.20110426.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.us20_us20.20110426.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.us20.20110426.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.us20.20110426.nc </pre>
         </div>
     </td>
-    <td>ww3a_ww3a</td>
-    <td>ww3a_ww3a</td>
+    <td>us20_us20</td>
+  </tr>
+  <tr id="ar9v3_ar9v3_tr">
+    <td><a name="ar9v3_ar9v3"></a>
+        <img id="ar9v3_ar9v3_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ar9v3_ar9v3')">ar9v3_ar9v3</a>
+        </code>
+        <div id="ar9v3_ar9v3_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>pop 9 km arctic samegrid configuration version 3. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ar9v3_ar9v3.100622.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ar9v3_ar9v3.100622.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ar9v4.100920.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ar9v4.100920.nc </pre>
+        </div>
+    </td>
+    <td>a93_a93</td>
+  </tr>
+  <tr id="ar9v4_ar9v4_tr">
+    <td><a name="ar9v4_ar9v4"></a>
+        <img id="ar9v4_ar9v4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ar9v4_ar9v4')">ar9v4_ar9v4</a>
+        </code>
+        <div id="ar9v4_ar9v4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>pop 9 km extended grid arctic samegrid configuration of ar9v1. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.ar9v4_ar9v4.100623.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.ar9v4_ar9v4.100623.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ar9v4.100920.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ar9v4.100920.nc </pre>
+        </div>
+    </td>
+    <td>a94_a94</td>
+  </tr>
+  <tr id="wr50a_ar9v4_tr">
+    <td><a name="wr50a_ar9v4"></a>
+        <img id="wr50a_ar9v4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('wr50a_ar9v4')">wr50a_ar9v4</a>
+        </code>
+        <div id="wr50a_ar9v4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>wrf 50 km arctic grid coupled to the extended 9 km pop arctic extended grid. 
+ 
+                       ATM_DOMAIN_FILE: domain.lnd.wr50a_ar9v4.100920.nc 
+ 
+                       LND_DOMAIN_FILE: domain.lnd.wr50a_ar9v4.100920.nc 
+ 
+                       ICE_DOMAIN_FILE: domain.ocn.ar9v4.100920.nc 
+ 
+                       OCN_DOMAIN_FILE: domain.ocn.ar9v4.100920.nc </pre>
+        </div>
+    </td>
+    <td>w5a_a94</td>
   </tr>
 </table>
 </body>

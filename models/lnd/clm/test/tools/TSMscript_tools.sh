@@ -43,10 +43,26 @@ if [ $? -ne 0 ]; then
 fi
 cd ${rundir}
 
+# Copy any sample files so can use them
+cp $cfgdir/sample_* $rundir
+
 optfile=${4%^*}
 cfgfile=${4#*^}
 
-if [ "$optfile" != "$4" ]; then
+if [[ "$2" == "PTCLM" ]]; then
+  echo "TSMscript_tools.sh: calling TCBscripttools.sh to prepare executables for $2"
+  ${CLM_SCRIPTDIR}/TCBscripttools.sh $1 $2 $cfgfile
+  rc=$?
+  if [ $rc -ne 0 ]; then
+      echo "TSMscript_tools.sh: error from TCBscripttools.sh= $rc"
+      echo "FAIL.job${JOBID}" > TestStatus
+      exit 4
+  fi 
+  # Copy map files so we can use them
+  subdir=1x1pt_US-UMB
+  mkdir $rundir/$subdir
+  cp $CSMDATA/lnd/clm2/PTCLMmydatafiles/$subdir/map_* $rundir/$subdir
+elif [ "$optfile" != "$4" ]; then
   echo "TSMscript_tools.sh: calling TCBtools.sh to prepare $1 $2 executable"
   ${CLM_SCRIPTDIR}/TCBtools.sh $1 $2 $cfgfile
   rc=$?
@@ -60,7 +76,7 @@ else
   tcbtools="."
 fi
 
-scopts=`cat ${CLM_SCRIPTDIR}/nl_files/$optfile | sed -e "s|HOME|$HOME|g" | sed -e "s|CSMDATA|$CSMDATA|g" | sed -e "s|EXEDIR|$tcbtools|" | sed -e "s|CFGDIR|$cfgdir|g"`
+scopts=`cat ${CLM_SCRIPTDIR}/nl_files/$optfile | sed -e "s|CSMDATA|$CSMDATA|g" | sed -e "s|EXEDIR|$tcbtools|" | sed -e "s|CFGDIR|$cfgdir|g"`
 
 echo "TSMscript_tools.sh: running ${cfgdir}/$3 with $scopts; output in ${rundir}/test.log" 
 
@@ -83,6 +99,8 @@ fi
 if [ $rc -eq 0 ] && grep -ci "success" test.log > /dev/null; then
     echo "TSMscript_tools.sh: smoke test passed" 
     echo "$status" > TestStatus
+    # Copy files from subdirectories up...
+    cp */*/*.nc .
 else
     echo "TSMscript_tools.sh: error running $3, error= $rc" 
     echo "TSMscript_tools.sh: see ${CLM_TESTDIR}/${test_name}/test.log for details"

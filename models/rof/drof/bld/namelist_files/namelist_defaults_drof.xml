@@ -90,7 +90,7 @@ Currently the following streams are supported
   mask   mask
 </strm_domvar>
 <strm_datvar     stream="rof.diatren_ann_rx1">
-  runoff roff
+  runoff rofl
 </strm_datvar>
 
 <!-- =========================================  -->
@@ -117,7 +117,7 @@ Currently the following streams are supported
   mask   mask
 </strm_domvar>
 <strm_datvar     stream="rof.diatren_iaf_rx1">
-  runoff roff
+  runoff rofl
 </strm_datvar>
 
 <!-- =========================================  -->
@@ -143,8 +143,8 @@ Currently the following streams are supported
   mask    mask
 </strm_domvar>
 <strm_datvar     stream="rof.cplhist">
-  r2xacc_Forr_roff  roff
-  r2xacc_Forr_ioff  ioff
+  r2xacc_Forr_roff  rofl
+  r2xacc_Forr_ioff  rofi
 </strm_datvar>
 
 <!-- =========================================  -->

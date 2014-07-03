@@ -82,5 +82,15 @@ bli#2 TBLscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_ne
 smi59 TSMscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_if10
 bli59 TBLscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_if10
 
+sm684 TSMscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_clm4_0^buildtools
+bl684 TBLscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_clm4_0^buildtools
+
+smf84 TSMscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_clm4_5^buildtools
+blf84 TBLscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_clm4_5^buildtools
+smfc4 TSMscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_Cycle_clm4_5^buildtools
+blfc4 TBLscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_Cycle_clm4_5^buildtools
+smfg4 TSMscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_Global_clm4_5^buildtools
+blfg4 TBLscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_Global_clm4_5^buildtools
+
 smiS4 TSMscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional
 bliS4 TBLscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional

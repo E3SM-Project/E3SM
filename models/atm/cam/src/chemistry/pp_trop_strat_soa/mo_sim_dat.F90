@@ -180,9 +180,11 @@
                            820, 874, 917,1013,1085,1104,1130,1157,1197,1221, &
                           1241,1263 /)
 
-      extfrc_lst(:  5) = (/ 'NO              ','NO2             ','CO              ','SO2             ','CB1             ' /)
+      extfrc_lst(:  6) = (/ 'NO              ','NO2             ','CO              ','SO2             ','SO4             ', &
+                            'CB1             ' /)
 
-      frc_from_dataset(:  5) = (/ .true., .true., .true., .true., .true. /)
+      frc_from_dataset(:  6) = (/ .true., .true., .true., .true., .true., &
+                                  .true. /)
 
       inv_lst(:  3) = (/ 'M               ', 'N2              ', 'O2              ' /)
 

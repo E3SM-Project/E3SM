@@ -35,10 +35,11 @@ contains
     integer :: ierr, ns1, ns2, vid1
     type(var_t), pointer :: v1
     integer :: i, t, nvars, t1, t2, nt
-    integer :: idiff, ifilldiff, inotfound, vidnsteph
+    integer :: vidnsteph
     integer, allocatable :: nsteph(:)
     character(len=132) :: dimstr
     type(dim_t), pointer :: udim
+    logical :: file_has_unlimited_dim
     real(r8), parameter :: timeepsilon = 1.e-9 ! time diff less than this considered insignificant
 
 
@@ -68,10 +69,16 @@ contains
 
     nvars = size(file(1)%var)
     if (file(1)%unlimdimid == -1) then
-       write(6,*) 'ERROR cprnc cannot handle the case where unlimdimid = -1'
-       stop
+       file_has_unlimited_dim = .false.
+       if (.not. ignoretime) then
+          write(6,*) 'ERROR: For files without an unlimited dimension,'
+          write(6,*) 'ignore_time needs to be true (via setting the -m flag to cprnc)'
+          stop
+       end if
+    else
+       file_has_unlimited_dim = .true.
+       udim => file(1)%dim(file(1)%unlimdimid)
     endif
-    udim => file(1)%dim(file(1)%unlimdimid)
 
     ndiffs = 0
     nfilldiffs = 0
@@ -80,115 +87,131 @@ contains
     do i=1,nvars
        v1 => file(1)%var(i)
       
-       if(.not. any(v1%dimids == file(1)%unlimdimid)) then
+       if (.not. is_time_varying(v1, file_has_unlimited_dim, file(1)%unlimdimid)) then
           call get_dimname_str(v1%ndims,v1%dimids,file(1)%dim,dimstr)
           write(6,140) trim(v1%name),trim(dimstr)
           vtotal = vtotal+1
           
-          ! initialize output arguments of compare_var in case compare_var doesn't get called
-          idiff = 0
-          ifilldiff = 0
-          ierr = 0
-          inotfound = 0
+          call compare_one_var(v1=v1, numcases=n, file=file, varnum=i, &
+                               vnotfound=vnotfound, vfailed=vfailed, &
+                               ndiffs=ndiffs, nfilldiffs=nfilldiffs)
 
-          select case(v1%xtype)
-          case(nf90_int)
-             call compare_var_int(n,file,(/i,v1%matchid/), idiff, ifilldiff, ierr, inotfound)
-          case(nf90_float)
-             call compare_var_real(n,file,(/i,v1%matchid/), idiff, ifilldiff, ierr, inotfound)
-          case(nf90_double)
-             call compare_var_double(n,file,(/i,v1%matchid/), idiff, ifilldiff, ierr, inotfound)
-          case(nf90_char)
-             ierr = 1
-!             call compare_var_char(file1,file2,i,v1%matchid)
-          case default   
-             print *,'Type not recognized for variable: ', v1%name
-          end select
-          vnotfound = vnotfound+inotfound
-          vfailed = vfailed+ierr
-          ndiffs = ndiffs+idiff
-          nfilldiffs = nfilldiffs + ifilldiff
        end if
     end do
 
-    ierr = nf90_inq_varid(file(1)%fh, 'nsteph', vidnsteph)
-    if(ierr == NF90_NOERR) then
-       allocate(nsteph(udim%kount))
-       call checknf90(nf90_get_var(file(1)%fh, vidnsteph, nsteph))       
-    end if
+! Now look at variables that DO have unlimdim
+    if (file_has_unlimited_dim) then
+
+       ierr = nf90_inq_varid(file(1)%fh, 'nsteph', vidnsteph)
+       if(ierr == NF90_NOERR) then
+          allocate(nsteph(udim%kount))
+          call checknf90(nf90_get_var(file(1)%fh, vidnsteph, nsteph))       
+       end if
 
 
-    do t=1,udim%dimsize,udim%kount
-       t1 = t   ! need to find mathing times - assumed for now
-       t2 = t
+       do t=1,udim%dimsize,udim%kount
+          t1 = t   ! need to find mathing times - assumed for now
+          t2 = t
 
-       if(.not. ignoretime) then
-          tdiff = abs(time(t1,1) - time(t2,2))
-          do while(t1<=ns1 .and. t2<= ns2 .and. tdiff > timeepsilon) 
-             if(time(t1,1) < time(t2,2)) then
-                Write(6,*) 'Skipping a time sample on file 1'
-                t1=t1+1
-             else if(time(t1,1) > time(t2,2)) then
-                Write(6,*) 'Skipping a time sample on file 2'
-                t2=t2+1
+          if(.not. ignoretime) then
+             tdiff = abs(time(t1,1) - time(t2,2))
+             do while(t1<=ns1 .and. t2<= ns2 .and. tdiff > timeepsilon) 
+                if(time(t1,1) < time(t2,2)) then
+                   Write(6,*) 'Skipping a time sample on file 1'
+                   t1=t1+1
+                else if(time(t1,1) > time(t2,2)) then
+                   Write(6,*) 'Skipping a time sample on file 2'
+                   t2=t2+1
+                end if
+             end do
+             if(verbose) print *,__FILE__,__LINE__,tdiff,timeepsilon, t1, t2
+             if(tdiff< timeepsilon .and. t1/=t2) then
+                Write(6,*) 'Found common timesteps:', t1, t2
+             else if(tdiff > timeepsilon) then
+                Write(6,*) 'No matching time found.'
+                vfailed = nvars
+                return
+             end if
+             if(verbose) print *,__FILE__,__LINE__,time(t1,1),time(t2,2), t1, t2, time(:,:)
+          end if
+
+
+          if(allocated(nsteph)) then
+             print *,'NSTEPH: ',nsteph(t)
+             deallocate(nsteph)
+          end if
+
+          do i=1,nvars
+             v1 => file(1)%var(i)
+             if (is_time_varying(v1, file_has_unlimited_dim, file(1)%unlimdimid)) then
+                call get_dimname_str(v1%ndims,v1%dimids,file(1)%dim,dimstr)
+                vtotal = vtotal+1
+                write(6,145) trim(v1%name),trim(dimstr), t1, t2
+
+                call compare_one_var(v1=v1, numcases=n, file=file, varnum=i, &
+                                     vnotfound=vnotfound, vfailed=vfailed, &
+                                     ndiffs=ndiffs, nfilldiffs=nfilldiffs, &
+                                     tindex=(/t1, t2/))
+
              end if
           end do
-          if(verbose) print *,__FILE__,__LINE__,tdiff,timeepsilon, t1, t2
-          if(tdiff< timeepsilon .and. t1/=t2) then
-             Write(6,*) 'Found common timesteps:', t1, t2
-          else if(tdiff > timeepsilon) then
-             Write(6,*) 'No matching time found.'
-             vfailed = nvars
-             return
-          end if
-          if(verbose) print *,__FILE__,__LINE__,time(t1,1),time(t2,2), t1, t2, time(:,:)
-       end if
-       
-
-       if(allocated(nsteph)) then
-          print *,'NSTEPH: ',nsteph(t)
-          deallocate(nsteph)
-       end if
-
-       do i=1,nvars
-          v1 => file(1)%var(i)
-          if( any(v1%dimids == file(1)%unlimdimid)) then
-             call get_dimname_str(v1%ndims,v1%dimids,file(1)%dim,dimstr)
-             vtotal = vtotal+1
-             write(6,145) trim(v1%name),trim(dimstr), t1, t2
-
-             ! initialize output arguments of compare_var in case compare_var doesn't get called
-             idiff = 0
-             ifilldiff = 0
-             ierr = 0
-             inotfound = 0
-
-             select case(v1%xtype)
-             case(nf90_int)
-                call compare_var_int(n,file,(/i,v1%matchid/), idiff, ifilldiff, ierr, inotfound, (/t1, t2/))
-             case(nf90_float)
-                call compare_var_real(n,file,(/i,v1%matchid/), idiff, ifilldiff, ierr, inotfound, (/t1, t2/))
-             case(nf90_double)
-                call compare_var_double(n,file,(/i,v1%matchid/), idiff, ifilldiff, ierr, inotfound, (/t1, t2/))
-             case(nf90_char)
-                ierr = 1
-                !             call compare_var_char(file1,file2,i,v1(i)%matchid)
-             case default   
-                print *,'Type not recognized for variable: ', v1%name
-             end select
-             vnotfound=vnotfound+inotfound
-             vfailed = vfailed+ierr
-             ndiffs = ndiffs+idiff
-             nfilldiffs = nfilldiffs + ifilldiff
-          end if
        end do
-    end do
+    end if     ! if (file_has_unlimited_dim)
 
 140 format(1x,a,3x,a)
 145 format(1x,a,3x,a,'  t_index = ',2i6)
     
   end subroutine compare_vars
 
+
+  ! Compare a single variable, and update counts
+  ! For variables with multiple time slices, this just does comparisons for a single time slice
+  subroutine compare_one_var(v1, numcases, file, varnum, &
+                             vnotfound, vfailed, ndiffs, nfilldiffs, &
+                             tindex)
+    type(var_t) , intent(in) :: v1             ! variable info for the variable in file 1
+    integer     , intent(in) :: numcases
+    type(file_t), intent(in) :: file(numcases)
+    integer     , intent(in) :: varnum
+    integer  , intent(inout) :: vnotfound
+    integer  , intent(inout) :: vfailed
+    integer  , intent(inout) :: ndiffs
+    integer  , intent(inout) :: nfilldiffs
+    integer     , intent(in), optional :: tindex(numcases)
+
+    integer :: idiff, ifilldiff, ierr, inotfound
+
+    ! initialize output arguments of compare_var in case compare_var doesn't get called
+    idiff = 0
+    ifilldiff = 0
+    ierr = 0
+    inotfound = 0
+
+    select case(v1%xtype)
+    case(nf90_int)
+       call compare_var_int(numcases,file,(/varnum,v1%matchid/), &
+                            idiff, ifilldiff, ierr, inotfound, &
+                            tindex)
+    case(nf90_float)
+       call compare_var_real(numcases,file,(/varnum,v1%matchid/), &
+                             idiff, ifilldiff, ierr, inotfound, &
+                             tindex)
+    case(nf90_double)
+       call compare_var_double(numcases,file,(/varnum,v1%matchid/), &
+                               idiff, ifilldiff, ierr, inotfound, &
+                               tindex)
+    case(nf90_char)
+       ierr = 1
+       !             call compare_var_char(file1,file2,i,v1%matchid)
+    case default   
+       print *,'Type not recognized for variable: ', v1%name
+    end select
+
+    vnotfound = vnotfound+inotfound
+    vfailed = vfailed+ierr
+    ndiffs = ndiffs+idiff
+    nfilldiffs = nfilldiffs + ifilldiff
+  end subroutine compare_one_var
 
 
   ! TYPE real,int,double
@@ -207,6 +230,8 @@ contains
 
     {VTYPE}, pointer :: buf(:,:), vdiff(:)
     {VTYPE} :: fv1, fv2, rms, min_val(2), max_val(2), avgval(2), m1, rdmax
+    {VTYPE} :: rms_normalized          ! rms normalized by absolute values
+    {VTYPE} :: rms_normalized_denom    ! denominator for computing rms_normalized
     {VTYPE} :: rdsum                   ! sum of relative differences
     {VTYPE} :: rdlogsum                ! sum of negative log10 of relative differences
     {VTYPE} :: rdbar                   ! average of relative differences
@@ -320,8 +345,23 @@ contains
           vdiff = abs(buf(:,1)-buf(:,2))
           rms = sqrt(sum(vdiff**2,mask(:,1))/real(s2))
           diffcnt = count((vdiff>0) .and. mask(:,1))
-       
 
+          ! Compute normalized rms difference; normalize using the avg abs field
+          ! values. Note that this differs from the definition of normalized rms
+          ! difference found in some references (e.g., normalizing by [max - min], which
+          ! can be sensitive to outliers).
+          if (n1 > 0 .and. n2 > 0 .and. rms > 0) then
+             rms_normalized_denom = (avgval(1) + avgval(2)) / 2.0
+             rms_normalized = rms / rms_normalized_denom
+          else
+             ! don't try to compute rms_normalized in any of the following conditions:
+             ! n1 = 0 -- then we won't have avgval(1)
+             ! n2 = 0 -- then we won't have avgval(2)
+             ! rms = 0 -- then rms_normalized should be 0... but don't try to compute it
+             !            above in case we have a 0/0 condition
+             rms_normalized = 0
+          end if
+             
 
 !  diffcnt==0 implies only diffs are in missing values       
           if(diffcnt>0) then
@@ -330,11 +370,19 @@ contains
              l1 = maxloc(vdiff, mask=mask(:,1))
 
 
-             call get_dim_str(n1,translate_loc(n1,l1(1),start(1:n1,1),kount(1:n1,1),dsizes(1:n1,1)),dmax_str)       
+             if (n1>0) then
+                call get_dim_str(n1,translate_loc(n1,l1(1),start(1:n1,1),kount(1:n1,1),dsizes(1:n1,1)),dmax_str)       
+             else
+                dmax_str = ' '
+             end if
 
 #if ({ITYPE} != TYPEINT)
              call get_rdiff_stats(s1,buf(:,1),buf(:,2),vdiff,mask(:,1),rdsum, rdlogsum, rdmax, rdmaxloc)
-             call get_dim_str(n1,translate_loc(n1,rdmaxloc,start(1:n1,1),kount(1:n1,1),dsizes(1:n1,1)),rdmax_str)       
+             if (n1>0) then
+                call get_dim_str(n1,translate_loc(n1,rdmaxloc,start(1:n1,1),kount(1:n1,1),dsizes(1:n1,1)),rdmax_str)       
+             else
+                rdmax_str = ' '
+             end if
 #endif
 
              deallocate(vdiff)
@@ -343,7 +391,16 @@ contains
              rdlogbar = rdlogsum / real(diffcnt)
 
              if(n1==0) then
+                ! Note that NORMALIZED RMS is NOT computed in this case, so we simply
+                ! print 0 for that.
+#if ({ITYPE} == TYPEINT)
+                write(6,903) s2, buf(1,1), buf(2,1)
+                write(6,811) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', 0
+#else                
                 write(6,803) s2, buf(1,1), buf(2,1)
+                write(6,812) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', 0
+#endif
+
              else 
                 write(6,800) diffcnt, s1, trim(max_str(1)),trim(min_str(1)), trim(dmax_str), trim(rdmax_str)
 #if ({ITYPE} == TYPEINT)
@@ -351,13 +408,13 @@ contains
                      count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), buf(rdmaxloc,2)
                 write(6,810) s1, trim(max_str(2)), trim(min_str(2))
                 !          write(6,905) avgval(1), rms, rdbar, avgval(2), rdlogbar, log10(1./rdmax)
-                write(6,'(a,a32,i10,/)') ' RMS ', file(1)%var(vid(1))%name, rms
+                write(6,811) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', rms_normalized
 #else
                 write(6,803) s2, max_val(1), space(1:spacelen),min_val(1), m1, buf(l1(1),1), rdbar, buf(rdmaxloc,1), &
                      count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), buf(rdmaxloc,2)
                 write(6,810) s1, trim(max_str(2)), trim(min_str(2))
                 write(6,805) avgval(1), rms, rdbar, avgval(2), rdlogbar, log10(1./rdmax)
-                write(6,'(a,a32,1pe11.4,/)') ' RMS ', file(1)%var(vid(1))%name, rms
+                write(6,812) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', rms_normalized
 #endif
              endif
           endif
@@ -408,8 +465,11 @@ contains
  
 810 format(12x,i8,2x,a,1x,a)
 
-811   format(12x,     i8,2x,a,1x,a,11x,a,9x,a)
+! RMS for int
+811 format(a,a32,i10,11x,a,i10,/)
 
+! RMS for real
+812 format(a,a32,1pe11.4,11x,a,1pe11.4,/)
 
 814   format(12x,      i8,1x,e23.15,a,e23.15,/, &
              12x,      i8,1x,e23.15,a,e23.15)
@@ -535,6 +595,19 @@ contains
   end function translate_loc
 
 
+  function is_time_varying(var, file_has_unlimited_dim, unlimdimid)
+    type(var_t), intent(in) :: var                    ! variable of interest
+    logical    , intent(in) :: file_has_unlimited_dim ! true if the file has an unlimited dimension
+    integer    , intent(in) :: unlimdimid             ! the file's unlimited dim id (if it has one)
+
+    logical :: is_time_varying     ! true if the given variable is time-varying
+
+    if (file_has_unlimited_dim) then
+       is_time_varying = any(var%dimids == unlimdimid)
+    else
+       is_time_varying = .false.
+    end if
+  end function is_time_varying
 
 
 

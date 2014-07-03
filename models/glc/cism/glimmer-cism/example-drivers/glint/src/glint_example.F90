@@ -32,8 +32,9 @@ program glint_example
 
   !*FD This program demonstrates the use of GLIMMER. It loads in
   !*FD some example global fields and associated grid data,
-  !*FD Initialises the model, and then runs it for 1000 years.
+  !*FD initialises the model, and then runs it for 1000 years.
 
+  use glimmer_global, only: dp
   use glint_main
   use glimmer_log
   use glint_global_interp
@@ -56,28 +57,28 @@ program glint_example
 
   ! Arrays which hold the global fields used as input to GLIMMER ------------------------
 
-  real(rk),dimension(:,:),allocatable :: temp      ! Temperature     (degC)
-  real(rk),dimension(:,:),allocatable :: precip    ! Precipitation   (mm/s)
-  real(rk),dimension(:,:),allocatable :: orog      ! Orography       (m)
+  real(dp),dimension(:,:),allocatable :: temp      ! Temperature     (degC)
+  real(dp),dimension(:,:),allocatable :: precip    ! Precipitation   (mm/s)
+  real(dp),dimension(:,:),allocatable :: orog      ! Orography       (m)
 
   ! Arrays which hold information about the ice model instances -------------------------
 
-  real(rk),dimension(:,:),allocatable :: coverage ! Coverage map for normal global grid
-  real(rk),dimension(:,:),allocatable :: cov_orog ! Coverage map for orography grid
+  real(dp),dimension(:,:),allocatable :: coverage ! Coverage map for normal global grid
+  real(dp),dimension(:,:),allocatable :: cov_orog ! Coverage map for orography grid
 
   ! Arrays which hold output from the model ---------------------------------------------
   ! These are all on the normal global grid, except for the orography
 
-  real(rk),dimension(:,:),allocatable :: albedo   ! Fractional albedo
-  real(rk),dimension(:,:),allocatable :: orog_out ! Output orography (m)
-  real(rk),dimension(:,:),allocatable :: ice_frac ! Ice coverage fraction
-  real(rk),dimension(:,:),allocatable :: fw       ! Freshwater output flux (mm/s)
-  real(rk),dimension(:,:),allocatable :: fw_in    ! Freshwater input flux (mm/s)
+  real(dp),dimension(:,:),allocatable :: albedo   ! Fractional albedo
+  real(dp),dimension(:,:),allocatable :: orog_out ! Output orography (m)
+  real(dp),dimension(:,:),allocatable :: ice_frac ! Ice coverage fraction
+  real(dp),dimension(:,:),allocatable :: fw       ! Freshwater output flux (mm/s)
+  real(dp),dimension(:,:),allocatable :: fw_in    ! Freshwater input flux (mm/s)
 
   ! Arrays which hold information about the global grid ---------------------------------
 
-  real(rk),dimension(:),  allocatable :: lats_orog      ! Latitudes of global orography gridpoints
-  real(rk),dimension(:),  allocatable :: lons_orog      ! Longitudes of global oropraphy gridpoints
+  real(dp),dimension(:),  allocatable :: lats_orog      ! Latitudes of global orography gridpoints
+  real(dp),dimension(:),  allocatable :: lons_orog      ! Longitudes of global oropraphy gridpoints
 
   ! Scalars which hold information about the global grid --------------------------------
 
@@ -86,34 +87,34 @@ program glint_example
 
   ! Scalar model outputs ----------------------------------------------------------------
 
-  real(rk) :: twin     ! Timestep-integrated input water flux (kg)
-  real(rk) :: twout    ! Timestep-integrated output water flux (kg)
-  real(rk) :: ice_vol  ! Total ice volume (m^3)
+  real(dp) :: twin     ! Timestep-integrated input water flux (kg)
+  real(dp) :: twout    ! Timestep-integrated output water flux (kg)
+  real(dp) :: ice_vol  ! Total ice volume (m^3)
 
   ! Other variables ---------------------------------------------------------------------
 
   logical :: out    ! Outputs set flag
   integer :: i,j    ! Array index counters
   integer :: time   ! Current time (hours)
-  real(kind=dp) t1,t2
+  real(dp):: t1,t2
   integer clock,clock_rate
 
   ! fields passed to and from a GCM 
   ! (useful for testing the GCM subroutines in standalone mode)
 
-  real(rk),dimension(:,:,:), allocatable :: qsmb     ! surface mass balance (kg/m^2/s)
-  real(rk),dimension(:,:,:), allocatable :: tsfc     ! surface temperature (degC) 
-  real(rk),dimension(:,:,:), allocatable :: topo     ! surface elevation (m)
+  real(dp),dimension(:,:,:), allocatable :: qsmb     ! surface mass balance (kg/m^2/s)
+  real(dp),dimension(:,:,:), allocatable :: tsfc     ! surface temperature (degC) 
+  real(dp),dimension(:,:,:), allocatable :: topo     ! surface elevation (m)
 
-  real(rk),dimension(:,:,:), allocatable :: gfrac    ! fractional glacier area [0,1] 
-  real(rk),dimension(:,:,:), allocatable :: gtopo    ! glacier surface elevation (m) 
-  real(rk),dimension(:,:,:), allocatable :: grofi    ! ice runoff (calving) flux (kg/m^2/s)
-  real(rk),dimension(:,:,:), allocatable :: grofl    ! ice runoff (liquid) flux (kg/m^2/s)
-  real(rk),dimension(:,:,:), allocatable :: ghflx    ! heat flux from glacier interior, positive down (W/m^2)
+  real(dp),dimension(:,:,:), allocatable :: gfrac    ! fractional glacier area [0,1] 
+  real(dp),dimension(:,:,:), allocatable :: gtopo    ! glacier surface elevation (m) 
+  real(dp),dimension(:,:,:), allocatable :: ghflx    ! heat flux from glacier interior, positive down (W/m^2)
+  real(dp),dimension(:,:),   allocatable :: grofi    ! ice runoff (calving) flux (kg/m^2/s)
+  real(dp),dimension(:,:),   allocatable :: grofl    ! ice runoff (liquid) flux (kg/m^2/s)
 
   integer, parameter :: glc_nec = 10               ! number of elevation classes
 
-  real(rk), dimension(0:glc_nec) ::   &
+  real(dp), dimension(0:glc_nec) ::   &
       glc_topomax = (/ 0.d0,  200.d0,  400.d0,  700.d0, 1000.d0,  1300.d0,   &
                              1600.d0, 2000.d0, 2500.d0, 3000.d0, 10000.d0 /)  ! upper limit of each class (m)
 
@@ -156,14 +157,13 @@ program glint_example
   allocate(coverage(nx,ny),orog_out(nxo,nyo),albedo(nx,ny),ice_frac(nx,ny),fw(nx,ny))
   allocate(lats_orog(nyo),lons_orog(nxo),cov_orog(nxo,nyo),fw_in(nx,ny))
 
-  !TODO - Change to dp
   ! Initialize global arrays
 
-  temp     = 0.0
-  precip   = 0.0
-  albedo   = 0.0
-  orog_out = 0.0
-  orog     = real(climate%orog_clim)    ! Put orography where it belongs
+  temp     = 0.d0
+  precip   = 0.d0
+  albedo   = 0.d0
+  orog_out = 0.d0
+  orog     = real(climate%orog_clim,dp)    ! Put orography where it belongs
 
   ! Allocate and initialize GCM arrays
   
@@ -181,15 +181,15 @@ program glint_example
      ! output to GCM
      allocate(gfrac(nx,ny,glc_nec))
      allocate(gtopo(nx,ny,glc_nec))
-     allocate(grofi(nx,ny,glc_nec))
-     allocate(grofl(nx,ny,glc_nec))
      allocate(ghflx(nx,ny,glc_nec))
+     allocate(grofi(nx,ny))
+     allocate(grofl(nx,ny))
 
      gfrac(:,:,:) = 0.d0
      gtopo(:,:,:) = 0.d0
-     grofi(:,:,:) = 0.d0
-     grofl(:,:,:) = 0.d0
      ghflx(:,:,:) = 0.d0
+     grofi(:,:)   = 0.d0
+     grofl(:,:)   = 0.d0
 
   endif
 
@@ -198,13 +198,13 @@ program glint_example
   ! Calculate example orographic latitudes
 
   do j=1,nyo
-     lats_orog(j) = -(180.0/nyo)*j + 90.0 + (90.0/nyo)
+     lats_orog(j) = -(180.d0/nyo)*j + 90.d0 + (90.d0/nyo)
   enddo
 
   ! Calculate example orographic longitudes
 
   do i=1,nxo
-     lons_orog(i) = (360.0/nxo)*i - (180.0/nxo)
+     lons_orog(i) = (360.d0/nxo)*i - (180.d0/nxo)
   enddo
 
   ! Initialise the ice model
@@ -259,6 +259,9 @@ program glint_example
      endif
   endif
 
+!WHL - debug                                  
+    print*, 'Glint init done'
+
   ! Do timesteps ---------------------------------------------------------------------------
 
   !TODO - Timestepping as in simple_glide?  Initialize with time = 0, then update time right after 'do'
@@ -273,10 +276,13 @@ program glint_example
 
      ! get current temp and precip fields
 
-     call example_climate(climate, precip, temp, real(time,rk))
+     call example_climate(climate, precip, temp, real(time,dp))
 
      if (climate%gcm_smb) then   ! act as if we are receiving the SMB from a GCM
-                                  
+
+        !TODO - For some reason, the gcm code is much slower than the pdd code.
+        !       Figure out why.
+
         ! call a simple subroutine to estimate qsmb and tsfc in different elevation classes
 
         call compute_gcm_smb(temp,        precip,   &
@@ -307,8 +313,10 @@ program glint_example
                         topo,                              &
                         output_flag = output_flag,         &
                         ice_tstep = ice_tstep,             & 
-                        gfrac = gfrac,    gtopo = gtopo,   &
-                        grofi = grofi,    grofl = grofl,   &
+                        gfrac = gfrac,    &
+                        gtopo = gtopo,    &
+                        grofi = grofi,    &
+                        grofl = grofl,    &
                         ghflx = ghflx)
 
      else    ! standard Glint timestepping 
@@ -327,8 +335,7 @@ program glint_example
 
   if (GLC_DEBUG) then
      ! Print time so as to have something to watch while the code runs
-     if (mod(real(time),8760.) < 0.01)   &
-         print*, 'time (yr) =', real(time)/8760.
+     if (mod(real(time,dp),8760.d0) < 0.01) print*, 'time (yr) =', real(time,dp)/8760.d0
   end if
 
   ! Finalise/tidy up everything ------------------------------------------------------------

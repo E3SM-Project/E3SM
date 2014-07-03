@@ -422,11 +422,11 @@ build-namelist.
 
         add_default($nl, $var, 'noprepend'=>1)
 
-  5. Only include the namelist variable 'asthenosphere' in cism.config if a
-     value is given by the user in user_nl_cism; otherwise, use default
-     value given in the code
+  5. Only include the namelist variable 'calving_fraction' in cism.config if a
+     value is given by the user in user_nl_cism; otherwise, use default value
+     given in the code
 
-     (No references to asthenosphere in build-namelist)
+     (No references to calving_fraction in build-namelist)
 
 ============================================================================
 Handling multiple instances

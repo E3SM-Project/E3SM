@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --pftgrid --clmnmlusecase=1850-2100_rcp2.6_transient --cesm_root ../../../../../../.. -s US-Dk2 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/rcp26grd_file_creation 

@@ -29,6 +29,7 @@ $CODEROOT/atm/datm/bld/build-namelist \
     -infile $CASEBUILD/datmconf/cesm_namelist \
     -caseroot $CASEROOT \
     -scriptsroot $SCRIPTSROOT \
+    -user_xml_dir $CASEROOT/SourceMods/src.datm \
     -inst_string "$inst_string" || exit -2
 
 if (-d ${RUNDIR}) then

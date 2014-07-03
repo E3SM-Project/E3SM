@@ -1758,7 +1758,7 @@ contains
     call ncd_putatt(lnfid, ncd_global, 'version' , trim(version))
 
     str = &
-    '$Id: histFileMod.F90 47047 2013-05-10 23:19:07Z erik $'
+    '$Id: histFileMod.F90 57223 2014-02-09 01:26:21Z erik $'
     call ncd_putatt(lnfid, ncd_global, 'revision_id', trim(str))
     call ncd_putatt(lnfid, ncd_global, 'case_title', trim(ctitle))
     call ncd_putatt(lnfid, ncd_global, 'case_id', trim(caseid))
@@ -3386,7 +3386,8 @@ contains
        call ncd_inqdlen(ncid,dimid,ntapes_onfile, name='ntapes')
        if ( is_restart() .and. ntapes_onfile /= ntapes )then
           write(iulog,*) 'ntapes = ', ntapes, ' ntapes_onfile = ', ntapes_onfile
-          call endrun( trim(subname)//' ERROR: number of ntapes different than on restart file!, you can NOT change history options on restart!' )
+          call endrun( trim(subname)//' ERROR: number of ntapes different than on restart file!, '// &
+            ' you can NOT change history options on restart!' )
        end if
        if ( is_restart() .and. ntapes > 0 )then
           call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
@@ -3546,6 +3547,7 @@ contains
              case (namep)
                 num1d = nump
                 beg1d = begp
+                end1d = endp
              case default
                 write(iulog,*) trim(subname),' ERROR: read unknown 1d type=',type1d
                 call endrun ()

@@ -2,9 +2,9 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"  ; Load the NCL file th
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"  ; Load the NCL file that contains the
 begin
 
-;  nfile = "/global/scratch/sd/evanskj/higher-order/livv/data/newton_dome301.asc"
-;  lfile = "/global/scratch/sd/evanskj/higher-order/livv/data/fgmres_dome301.asc"
-;  PNG   = "/global/scratch/sd/evanskj/higher-order/livv/plots/dome30_iter"
+  nfile = "/global/scratch/sd/evanskj/higher-order/livv/data/newton_dome301.asc"
+  lfile = "/global/scratch/sd/evanskj/higher-order/livv/data/fgmres_dome301.asc"
+  PNG   = "/global/scratch/sd/evanskj/higher-order/livv/plots/dome30_iter"
 
   ndata = asciiread(nfile,(/10/),"integer"); replace 50 with -1 to have a variable end
   ldata = asciiread(lfile,(/10/),"integer"); replace 50 with -1 to have a variable end

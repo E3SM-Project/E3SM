@@ -1,0 +1,7 @@
+-spmd -nosmp
+-dyn fv
+-res 4x5
+-phys cam5
+-carma pmc_sulfate
+-debug
+-s

@@ -229,13 +229,36 @@
 !
 ! MPI_Op values
 !
-! (All are handled as no-op so no value is necessary)
+! (All are handled as no-op so no value is necessary; but provide one
+! anyway just in case.)
 !
 
-        INTEGER MPI_SUM, MPI_MAX, MPI_MIN, MPI_PROD, MPI_LAND, MPI_BAND
-        INTEGER MPI_LOR, MPI_BOR, MPI_LXOR, MPI_BXOR, MPI_MINLOC
+        INTEGER MPI_SUM
+        PARAMETER (MPI_SUM=0)
+        INTEGER MPI_MAX
+        PARAMETER (MPI_MAX=0)
+        INTEGER MPI_MIN
+        PARAMETER (MPI_MIN=0)
+        INTEGER MPI_PROD
+        PARAMETER (MPI_PROD=0)
+        INTEGER MPI_LAND
+        PARAMETER (MPI_LAND=0)
+        INTEGER MPI_BAND
+        PARAMETER (MPI_BAND=0)
+        INTEGER MPI_LOR
+        PARAMETER (MPI_LOR=0)
+        INTEGER MPI_BOR
+        PARAMETER (MPI_BOR=0)
+        INTEGER MPI_LXOR
+        PARAMETER (MPI_LXOR=0)
+        INTEGER MPI_BXOR
+        PARAMETER (MPI_BXOR=0)
+        INTEGER MPI_MINLOC
+        PARAMETER (MPI_MINLOC=0)
         INTEGER MPI_MAXLOC
+        PARAMETER (MPI_MAXLOC=0)
         INTEGER MPI_OP_NULL
+        PARAMETER (MPI_OP_NULL=0)
 
 !
 ! MPI_Wtime

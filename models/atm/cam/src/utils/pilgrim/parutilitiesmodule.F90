@@ -4979,7 +4979,7 @@
 !
 ! If ipe-1 is my id, then this is an entry ipe will receive from Pe
 !
-            if( pe /= oldpe .or. local /= OldLocal+1 ) then 
+            if ((pe /= -1) .and. ( pe /= oldpe .or. local /= OldLocal+1 )) then 
               sCount(pe+1) = sCount(pe+1) + 1
             endif
             oldpe = pe

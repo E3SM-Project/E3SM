@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! WARNING: this file was automatically generated on
-! Wed, 24 Apr 2013 18:24:59 +0000
+! Mon, 28 Apr 2014 16:25:16 +0000
 ! from ncdf_template.F90.in
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -185,7 +185,8 @@ contains
           call write_log('Adding restart variables has made the list of output variables too long for file ' // NCO%filename, GM_FATAL)
        else
           ! Expand the restart variable list 
-          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  ! Need to maintain a space at beginning and end of list
+          ! Need to maintain a space at beginning and end of list
+          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  
           ! Set the xtype to be double (required for an exact restart)
           outfile%default_xtype = NF90_DOUBLE   
        endif
@@ -264,6 +265,24 @@ contains
        end if
      end if
 
+    !     hflx_tavg -- heat flux to ice surface
+    pos = index(NCO%vars,' hflx_tavg ')
+    status = parallel_inq_varid(NCO%id,'hflx_tavg',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+9) = '         '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable hflx_tavg')
+       status = parallel_def_var(NCO%id,'hflx_tavg',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'heat flux to ice surface')
+       status = parallel_put_att(NCO%id, varid, 'units', 'W m-2')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
     !     inmask -- downscaling mask
     pos = index(NCO%vars,' inmask ')
     status = parallel_inq_varid(NCO%id,'inmask',varid)
@@ -332,6 +351,42 @@ contains
        status = parallel_put_att(NCO%id, varid, 'long_name', 'precipitation')
        status = parallel_put_att(NCO%id, varid, 'standard_name', 'lwe_precipitation_rate')
        status = parallel_put_att(NCO%id, varid, 'units', 'meter (water)/year')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     rofi_tavg -- solid calving flux
+    pos = index(NCO%vars,' rofi_tavg ')
+    status = parallel_inq_varid(NCO%id,'rofi_tavg',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+9) = '         '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable rofi_tavg')
+       status = parallel_def_var(NCO%id,'rofi_tavg',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'solid calving flux')
+       status = parallel_put_att(NCO%id, varid, 'units', 'kg m-2 s-1')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     rofl_tavg -- liquid runoff flux
+    pos = index(NCO%vars,' rofl_tavg ')
+    status = parallel_inq_varid(NCO%id,'rofl_tavg',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+9) = '         '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable rofl_tavg')
+       status = parallel_def_var(NCO%id,'rofl_tavg',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'liquid runoff flux')
+       status = parallel_put_att(NCO%id, varid, 'units', 'kg m-2 s-1')
        if (glimmap_allocated(model%projection)) then
           status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
           status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
@@ -421,6 +476,13 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
+    status = parallel_inq_varid(NCO%id,'hflx_tavg',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%hflx_tavg, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
     status = parallel_inq_varid(NCO%id,'inmask',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
@@ -446,6 +508,20 @@ contains
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
             data%prcp, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'rofi_tavg',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%rofi_tavg, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'rofl_tavg',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%rofl_tavg, (/1,1,outfile%timecounter/))
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
@@ -543,6 +619,22 @@ contains
     real(dp) :: scaling_factor
 
     ! read variables
+    status = parallel_inq_varid(NCI%id,'hflx_tavg',varid)
+    if (status .eq. nf90_noerr) then
+       call write_log('  Loading hflx_tavg')
+       status = distributed_get_var(NCI%id, varid, &
+            data%hflx_tavg, (/1,1,infile%current_time/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_get_att(NCI%id, varid,'scale_factor',scaling_factor)
+       if (status.ne.NF90_NOERR) then
+          scaling_factor = 1.0d0
+       end if
+       if (abs(scaling_factor-1.0d0).gt.1.d-17) then
+          call write_log("scaling hflx_tavg",GM_DIAGNOSTIC)
+          data%hflx_tavg = data%hflx_tavg*scaling_factor
+       end if
+    end if
+
     status = parallel_inq_varid(NCI%id,'outmask',varid)
     if (status .eq. nf90_noerr) then
        call write_log('  Loading outmask')
@@ -556,6 +648,38 @@ contains
        if (abs(scaling_factor-1.0d0).gt.1.d-17) then
           call write_log("scaling outmask",GM_DIAGNOSTIC)
           data%out_mask = data%out_mask*scaling_factor
+       end if
+    end if
+
+    status = parallel_inq_varid(NCI%id,'rofi_tavg',varid)
+    if (status .eq. nf90_noerr) then
+       call write_log('  Loading rofi_tavg')
+       status = distributed_get_var(NCI%id, varid, &
+            data%rofi_tavg, (/1,1,infile%current_time/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_get_att(NCI%id, varid,'scale_factor',scaling_factor)
+       if (status.ne.NF90_NOERR) then
+          scaling_factor = 1.0d0
+       end if
+       if (abs(scaling_factor-1.0d0).gt.1.d-17) then
+          call write_log("scaling rofi_tavg",GM_DIAGNOSTIC)
+          data%rofi_tavg = data%rofi_tavg*scaling_factor
+       end if
+    end if
+
+    status = parallel_inq_varid(NCI%id,'rofl_tavg',varid)
+    if (status .eq. nf90_noerr) then
+       call write_log('  Loading rofl_tavg')
+       status = distributed_get_var(NCI%id, varid, &
+            data%rofl_tavg, (/1,1,infile%current_time/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_get_att(NCI%id, varid,'scale_factor',scaling_factor)
+       if (status.ne.NF90_NOERR) then
+          scaling_factor = 1.0d0
+       end if
+       if (abs(scaling_factor-1.0d0).gt.1.d-17) then
+          call write_log("scaling rofl_tavg",GM_DIAGNOSTIC)
+          data%rofl_tavg = data%rofl_tavg*scaling_factor
        end if
     end if
 
@@ -685,7 +809,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%ablt
   end subroutine glint_get_ablt
@@ -696,7 +820,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%ablt = inarray
   end subroutine glint_set_ablt
@@ -707,7 +831,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%arng
   end subroutine glint_get_arng
@@ -718,7 +842,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%arng = inarray
   end subroutine glint_set_arng
@@ -729,7 +853,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%global_orog
   end subroutine glint_get_global_orog
@@ -740,7 +864,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%global_orog = inarray
   end subroutine glint_set_global_orog
@@ -751,7 +875,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%downs%lmask
   end subroutine glint_get_inmask
@@ -762,7 +886,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%downs%lmask = inarray
   end subroutine glint_set_inmask
@@ -773,7 +897,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%local_orog
   end subroutine glint_get_local_orog
@@ -784,7 +908,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%local_orog = inarray
   end subroutine glint_set_local_orog
@@ -795,7 +919,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%out_mask
   end subroutine glint_get_outmask
@@ -806,7 +930,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%out_mask = inarray
   end subroutine glint_set_outmask
@@ -817,7 +941,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%prcp
   end subroutine glint_get_prcp
@@ -828,7 +952,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%prcp = inarray
   end subroutine glint_set_prcp
@@ -839,7 +963,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%siced
   end subroutine glint_get_siced
@@ -850,7 +974,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%siced = inarray
   end subroutine glint_set_siced
@@ -861,7 +985,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%snowd
   end subroutine glint_get_snowd
@@ -872,7 +996,7 @@ contains
     use glint_type
     implicit none
     type(glint_instance) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%snowd = inarray
   end subroutine glint_set_snowd

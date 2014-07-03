@@ -31,7 +31,8 @@ contains
   !!
   !! @see CARMA_AddGas
   !! @see CARMAGAS_Destroy
-  subroutine CARMAGAS_Create(carma, igas, name, wtmol, ivaprtn, icomposition, rc, shortname, dgc_threshold, ds_threshold)
+  subroutine CARMAGAS_Create(carma, igas, name, wtmol, ivaprtn, icomposition, &
+       rc, shortname, dgc_threshold, ds_threshold)
     type(carma_type), intent(inout)       :: carma           !! the carma object
     integer, intent(in)                   :: igas            !! the gas index
     character(*), intent(in)              :: name            !! the gas name, maximum of 255 characters
@@ -40,8 +41,10 @@ contains
     integer, intent(in)                   :: icomposition    !! gas compound specification
     integer, intent(out)                  :: rc              !! return code, negative indicates failure
     character(*), optional, intent(in)    :: shortname       !! the gas shortname, maximum of 6 characters
-    real(kind=f), optional, intent(in)    :: dgc_threshold   !! convergence criteria for gas concentration [0 : off; > 0 : percentage change]
-    real(kind=f), optional, intent(in)    :: ds_threshold    !! convergence criteria for gas saturation [0 : off; > 0 : percentage change; < 0 : amount past 0 crossing]
+    real(kind=f), optional, intent(in)    :: dgc_threshold   !! convergence criteria for gas concentration
+                                                             !! [0 : off; > 0 : percentage change]
+    real(kind=f), optional, intent(in)    :: ds_threshold    !! convergence criteria for gas saturation
+                                                             !! [0 : off; > 0 : percentage change; < 0 : amount past 0 crossing]
 
     ! Assume success.
     rc = RC_OK

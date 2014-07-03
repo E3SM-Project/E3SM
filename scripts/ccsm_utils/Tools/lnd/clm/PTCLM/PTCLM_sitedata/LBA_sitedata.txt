@@ -1,3 +1,0 @@
-site_code,name,state,lon,lat,elev,startyear,endyear,alignyear
-BR-Sa3,"SantaremKM83",BRAZIL,-54.9714,-3.01803,130,2001,2003,1851
-BR-Sa1,"SantaremKM67",BRAZIL,-54.9589,-2.85667,130,2002,2004,1851

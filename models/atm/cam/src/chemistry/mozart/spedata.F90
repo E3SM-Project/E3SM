@@ -64,7 +64,7 @@ module spedata
 !----------------------------------------------------------------------- 
 
   type input_profile
-     real(r8), dimension(:), pointer :: data
+     real(r8), dimension(:), pointer :: data => null()
   endtype input_profile
 
 
@@ -91,8 +91,11 @@ module spedata
   character(len=shr_kind_cl) :: next_filename = ' '
   character(len=shr_kind_cl) :: spedata_file = ' '
   type(file_desc_t) :: curr_fileid, next_fileid     ! the pio id of the NetCDF file
-  type(var_desc_t), pointer :: currfnameid, nextfnameid  ! the id of the filename strings in the restart file
-  real(r8), pointer, dimension(:)  :: curr_data_times, next_data_times
+  ! IDs of the filename strings in the restart file.
+  type(var_desc_t), pointer :: currfnameid => null()
+  type(var_desc_t), pointer :: nextfnameid => null()
+  real(r8), pointer, dimension(:) :: curr_data_times => null()
+  real(r8), pointer, dimension(:) :: next_data_times => null()
   character(len=shr_kind_cl) :: filenames_list = ''
 
   character(len=16) :: calendar
@@ -595,7 +598,7 @@ contains
 
     character(*), intent(in) :: fname
     type(file_desc_t), intent(inout) :: fileid
-    real(r8), pointer :: times(:)
+    real(r8), pointer, intent(inout) :: times(:)
     logical, optional, intent(in) :: read_pressures
 
     character(len=shr_kind_cl) :: filen   

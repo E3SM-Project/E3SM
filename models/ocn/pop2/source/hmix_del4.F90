@@ -10,7 +10,7 @@
 !  diffusion of momentum and tracers.
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: hmix_del4.F90 26603 2011-01-28 23:09:02Z njn01 $
+!  SVN:$Id: hmix_del4.F90 55656 2013-11-26 22:01:15Z mlevy@ucar.edu $
 
 ! !USES:
 
@@ -308,44 +308,44 @@
 !
 !-----------------------------------------------------------------------
 
-      KXU = (eoshift(HUW(:,:,iblock),dim=1,shift=1) - &
+      KXU(:,:) = (eoshift(HUW(:,:,iblock),dim=1,shift=1) - &
              HUW(:,:,iblock))*UAREA_R(:,:,iblock)
       !*** KXU invalid in easternmost ghost cell
-      KYU = (eoshift(HUS(:,:,iblock),dim=2,shift=1) - &
+      KYU(:,:) = (eoshift(HUS(:,:,iblock),dim=2,shift=1) - &
              HUS(:,:,iblock))*UAREA_R(:,:,iblock)
       !*** KYU invalid in northernmost ghost cell
 
-      WORK1 = (HTE(:,:,iblock) -                         &
+      WORK1(:,:) = (HTE(:,:,iblock) -                    &
                eoshift(HTE(:,:,iblock),dim=1,shift=-1))* &
                TAREA_R(:,:,iblock)  ! KXT
       !*** WORK1 invalid in westernmost ghost cell
-      WORK2 = eoshift(WORK1,dim=1,shift=1) - WORK1
+      WORK2(:,:) = eoshift(WORK1,dim=1,shift=1) - WORK1
       !*** WORK2 invalid in both easternmost and
       !***                       westernmost ghost cell
 
-      DXKX = p5*(WORK2 + eoshift(WORK2,dim=2,shift=1))*DXUR(:,:,iblock)
+      DXKX(:,:) = p5*(WORK2 + eoshift(WORK2,dim=2,shift=1))*DXUR(:,:,iblock)
       !*** DXKX invalid in east/west/northernmost ghost cells
 
-      WORK2 = eoshift(WORK1,dim=2,shift=1) - WORK1
+      WORK2(:,:) = eoshift(WORK1,dim=2,shift=1) - WORK1
       !*** WORK2 invalid in west/northernmost ghost cells
 
-      DYKX = p5*(WORK2 + eoshift(WORK2,dim=1,shift=1))*DYUR(:,:,iblock)
+      DYKX(:,:) = p5*(WORK2 + eoshift(WORK2,dim=1,shift=1))*DYUR(:,:,iblock)
       !*** DYKX invalid in east/west/northernmost ghost cells
 
-      WORK1 = (HTN(:,:,iblock) -                         &
+      WORK1(:,:) = (HTN(:,:,iblock) -                    &
                eoshift(HTN(:,:,iblock),dim=2,shift=-1))* &
               TAREA_R(:,:,iblock)  ! KYT
       !*** WORK1 invalid in southernmost ghost cell
-      WORK2 = eoshift(WORK1,dim=2,shift=1) - WORK1
+      WORK2(:,:) = eoshift(WORK1,dim=2,shift=1) - WORK1
       !*** WORK2 invalid in north/southernmost ghost cells
 
-      DYKY = p5*(WORK2 + eoshift(WORK2,dim=1,shift=1))*DYUR(:,:,iblock)
+      DYKY(:,:) = p5*(WORK2 + eoshift(WORK2,dim=1,shift=1))*DYUR(:,:,iblock)
       !*** DYKY invalid in east/north/southernmost ghost cells
 
-      WORK2 = eoshift(WORK1,dim=1,shift=1) - WORK1
+      WORK2(:,:) = eoshift(WORK1,dim=1,shift=1) - WORK1
       !*** WORK2 invalid in east/southernmost ghost cells
 
-      DXKY = p5*(WORK2 + eoshift(WORK2,dim=2,shift=1))*DXUR(:,:,iblock)
+      DXKY(:,:) = p5*(WORK2 + eoshift(WORK2,dim=2,shift=1))*DXUR(:,:,iblock)
       !*** DYKY invalid in east/north/southernmost ghost cells
 
       DUM(:,:,iblock) = -(DXKX + DYKY + c2*(KXU**2 + KYU**2))

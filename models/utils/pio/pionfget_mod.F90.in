@@ -1,8 +1,8 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
 !>
 !! @file 
-!! $Revision: 788 $
-!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
+!! $Revision: 925 $
+!! $LastChangedDate: 2014-01-24 13:55:17 -0700 (Fri, 24 Jan 2014) $
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod
@@ -23,10 +23,15 @@ module pionfget_mod
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
   private
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #include <pnetcdf.inc>  /*  _EXTERNAL */
+#endif
 #endif
 #ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
@@ -124,9 +129,9 @@ CONTAINS
 #endif
 
 #ifdef _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -265,9 +270,9 @@ CONTAINS
                int(count,kind=PIO_OFFSET), ival, isize, {MPITYPE})
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -403,9 +408,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, {MPITYPE})
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)

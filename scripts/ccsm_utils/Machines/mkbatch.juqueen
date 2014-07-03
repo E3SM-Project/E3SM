@@ -1,0 +1,123 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+set max_tasks_per_node = $MAX_TASKS_PER_NODE
+set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+set mthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+
+if (${mthrds} > ${max_tasks_per_node}) then
+  echo "ERROR max threads greater than max tasks per node"
+  exit 1
+endif
+
+echo 'max_tasks_per_node ' $max_tasks_per_node
+@ nodes = (${ntasks} * ${mthrds}) / ${max_tasks_per_node}
+if ((${nodes} * ${max_tasks_per_node}) < (${ntasks} * ${mthrds})) then
+   @ nodes = ${nodes} + 1
+endif
+
+@ batchpes = ${nodes} * ${max_tasks_per_node}
+./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
+
+if ($?TESTMODE) then
+  set file = $CASEROOT/${CASE}.test
+else
+  set file = $CASEROOT/${CASE}.run
+endif
+
+set qname = batch
+set tlimit = "00:29:00"
+
+@ batchpes = ${nodes} * ${MAX_TASKS_PER_NODE}
+./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+cat >! $file << EOF1
+#!/bin/csh -f
+#===============================================================================
+# GENERIC_USER
+# This is where the batch submission is set.  The above code computes
+# the total number of tasks, nodes, and other things that can be useful
+# here.  Use PBS, BSUB, or whatever the local environment supports.
+#===============================================================================
+
+# @ job_type         = bluegene
+# @ job_name         = cesm
+# @ comment          = "cesm"
+# @ environment      = COPY_ALL;
+# @ error            = $jobname.\$(jobid).out
+# @ output           = $jobname.\$(jobid).out
+# @ notify_user      =  
+# @ notification     = never
+# @ wall_clock_limit = $tlimit
+# @ bg_connectivity  = Either
+# @ bg_size          = $nodes
+# @ queue
+
+setenv maxthrds $mthrds
+setenv max_tasks_per_node ${MAX_TASKS_PER_NODE}
+setenv maxtasks $batchpes
+
+
+EOF1
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+
+#echo 'Entering  the set_exe phase of mkbatch.juqueen'
+#
+source ./Tools/ccsm_getenv || exit -1
+set file = $CASEROOT/${CASE}.run
+#
+#set max_tasks_per_node = $MAX_TASKS_PER_NODE
+#set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+#set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+#set mthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+
+cat >> $file << EOF1
+
+# -------------------------------------------------------------------------
+# Run the model
+# -------------------------------------------------------------------------
+
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+#===============================================================================
+# GENERIC_USER
+# Launch the job here.  Some samples are commented out below
+#===============================================================================
+
+runjob --envs "XLSMPOPTS=stack=64000000, OMP_NUM_THREADS=\${maxthrds}, LOGNAME=${USER}" --ranks-per-node \${max_tasks_per_node} --np \${maxtasks} --exe ../bld/cesm.exe >&! cesm.log.\$LID
+
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+
+   #This is a place holder for a long-term archiving script
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "mkscripts.$mach"
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

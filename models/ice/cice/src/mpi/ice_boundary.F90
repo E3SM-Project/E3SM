@@ -1080,7 +1080,8 @@ contains
       lbufSizeSend,                &! buffer size for send messages
       lbufSizeRecv                  ! buffer size for recv messages
    logical (log_kind) :: &
-      tripoleTFlag           ! flag for processing tripole buffer as T-fold
+      tripoleTFlag,                &! flag for processing tripole buffer as T-fold
+      tmpflag                       ! temporary flag for if tests
 
 !-----------------------------------------------------------------------
 !
@@ -1141,7 +1142,17 @@ contains
          icel     = basehalo%sendAddr(1,n,nmsg)
          jcel     = basehalo%sendAddr(2,n,nmsg)
          nblock   = basehalo%sendAddr(3,n,nmsg)
-         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripSend(nmsg) /= 0) then
+
+! the following line fails bounds check for mask when tripSend /= 0
+!         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripSend(nmsg) /= 0) then
+         tmpflag = .false.
+         if (basehalo%tripSend(nmsg) /= 0) then
+            tmpflag = .true.
+         elseif (mask(icel,jcel,abs(nblock)) /= 0) then
+            tmpflag = .true.
+         endif
+         
+         if (tmpflag) then
             scnt = scnt + 1
             if (scnt == 1) then
                numMsgSend = numMsgSend + 1
@@ -1164,7 +1175,17 @@ contains
          icel     = basehalo%recvAddr(1,n,nmsg)
          jcel     = basehalo%recvAddr(2,n,nmsg)
          nblock   = basehalo%recvAddr(3,n,nmsg)
-         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripRecv(nmsg) /= 0) then
+
+! the following line fails bounds check for mask when tripSend /= 0
+!         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripRecv(nmsg) /= 0) then
+         tmpflag = .false.
+         if (basehalo%tripRecv(nmsg) /= 0) then
+            tmpflag = .true.
+         elseif (mask(icel,jcel,abs(nblock)) /= 0) then
+            tmpflag = .true.
+         endif
+
+         if (tmpflag) then
             scnt = scnt + 1
             if (scnt == 1) then
                numMsgRecv = numMsgRecv + 1

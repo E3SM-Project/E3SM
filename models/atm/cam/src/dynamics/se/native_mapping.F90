@@ -59,9 +59,13 @@ contains
           if(len_trim(native_mapping_outgrids(1))==0) exist=.false.
        end if
     end if
+#ifdef SPMD
     call mpibcast(exist, 1, mpi_logical, 0, mpicom)
+#endif
     if(.not. exist) return
+#ifdef SPMD
     call mpibcast(native_mapping_outgrids, maxoutgrids*shr_kind_cl, mpi_character, 0, mpicom)
+#endif
     do_native_mapping=.true.
   end subroutine native_mapping_readnl
 

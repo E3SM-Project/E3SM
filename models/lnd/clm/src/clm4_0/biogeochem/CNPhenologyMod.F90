@@ -246,8 +246,8 @@ subroutine CNPhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcrop
 !
 ! !USES:
    use clm_time_manager, only: get_days_per_year
-   use clm_time_manager, only: get_curr_date
-   use CropRestMod     , only: CropRestYear, CropRestIncYear
+   use clm_time_manager, only: get_curr_date, is_first_step
+   use CropRestMod     , only: CropRestYear
 !
 ! !ARGUMENTS:
    integer, intent(in) :: num_soilp       ! number of soil pfts in filter
@@ -284,7 +284,7 @@ subroutine CNPhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcrop
 ! !OTHER LOCAL VARIABLES:
    integer :: p                    ! indices
    integer :: fp                   ! lake filter pft index
-   integer, save :: nyrs = -999    ! number of years prognostic crop has run
+   integer :: nyrs                 ! number of years prognostic crop has run
    real(r8):: dayspyr              ! days per year (days)
    integer kyr                     ! current year
    integer kmo                     !         month of year  (1, ..., 12)
@@ -324,14 +324,10 @@ subroutine CNPhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcrop
    ! The following lines come from ibis's climate.f + stats.f
    ! gdd SUMMATIONS ARE RELATIVE TO THE PLANTING DATE (see subr. updateAccFlds)
 
-   if ( num_pcropp > 0 )then
+   if (num_pcropp > 0) then
       ! get time-related info
-      call get_curr_date (   kyr, kmo, kda, mcsec)
-      if ( nyrs == -999 ) then
-         nyrs = CropRestYear()
-      else
-         if (kmo == 1 .and. kda == 1 .and. mcsec == 0) call CropRestIncYear( nyrs )
-      end if
+      call get_curr_date(kyr, kmo, kda, mcsec)
+      nyrs = CropRestYear()
    end if
 
    do fp = 1,num_pcropp
@@ -1826,7 +1822,6 @@ subroutine CropPhenologyInit( begp, endp )
                                mnSHplantdate, mxNHplantdate,         &
                                mxSHplantdate
    use clm_time_manager, only: get_calday
-   use nanmod          , only: bigint
 !
 ! !ARGUMENTS:
    implicit none
@@ -1852,8 +1847,8 @@ subroutine CropPhenologyInit( begp, endp )
    jdayyrstart(inSH) = 182
 
    ! Convert planting dates into julian day
-   minplantjday(:,:) = bigint
-   maxplantjday(:,:) = bigint
+   minplantjday(:,:) = huge(1)
+   maxplantjday(:,:) = huge(1)
    do n = npcropmin, npcropmax
       minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
       maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )

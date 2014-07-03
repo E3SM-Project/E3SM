@@ -44,6 +44,7 @@ module carma_enums_mod
   integer, public, parameter :: I_ICEMELT           = 2048  !! Ice Melting
   integer, public, parameter :: I_HETNUC            = 4096  !! Heterogeneous Nucleation
   integer, public, parameter :: I_HOMNUC            = 8192  !! Binary homogeneous gas-to-particle nucleation
+  integer, public, parameter :: I_HETNUCSULF        = 16384 !! Binary homogeneous gas-to-particle nucleation
   
   !  Define values of flag used for collection process (icollec)
   integer, public, parameter :: I_COLLEC_CONST = 1   !! Constant Collection Efficiency
@@ -96,6 +97,7 @@ module carma_enums_mod
   ! Routines to calculate mie optical properties
   integer, public, parameter :: I_MIERTN_TOON1981      = 1   !! Shell/Core, Toon & Ackerman [1981]
   integer, public, parameter :: I_MIERTN_BOHREN1983    = 2   !! Homogeneous Sphere, Bohren & Huffman [1983]
+  integer, public, parameter :: I_MIERTN_BOTET1997     = 3   !! Fractal mean-field, Botet et al. [1997]
  
   ! Gas Composition  
   integer, public, parameter :: I_GCOMP_H2O             = 1   !! Water Vapor

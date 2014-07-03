@@ -2,9 +2,6 @@
 
 
 
-
-
-
       module mo_prod_loss
 
       use shr_kind_mod, only : r8 => shr_kind_r8
@@ -57,22 +54,22 @@
 !--------------------------------------------------------------------
 
 
-         loss(1) = ( + het_rates(1))* y(1)
+         loss(1) = ( + rxt(1) + rxt(3) + het_rates(1))* y(1)
          prod(1) = 0._r8
-         loss(2) = ( + het_rates(2))* y(2)
-         prod(2) = 0._r8
-         loss(3) = ( + het_rates(3))* y(3)
-         prod(3) = 0._r8
-         loss(4) = ( + het_rates(4))* y(4)
+         loss(3) = ( + rxt(4) + het_rates(2))* y(2)
+         prod(3) = (rxt(5) +.500_r8*rxt(6) +rxt(7))*y(4)
+         loss(2) = ( + het_rates(3))* y(3)
+         prod(2) =rxt(4)*y(2)
+         loss(4) = ( + rxt(5) + rxt(6) + rxt(7) + het_rates(4))* y(4)
          prod(4) = 0._r8
-         loss(5) = ( + rxt(1) + het_rates(7))* y(7)
+         loss(5) = ( + rxt(8) + het_rates(7))* y(7)
          prod(5) = 0._r8
          loss(6) = ( + het_rates(8))* y(8)
-         prod(6) =rxt(1)*y(7)
-         loss(7) = ( + rxt(2) + het_rates(5))* y(5)
+         prod(6) =rxt(8)*y(7)
+         loss(7) = ( + rxt(9) + het_rates(5))* y(5)
          prod(7) = 0._r8
          loss(8) = ( + het_rates(6))* y(6)
-         prod(8) =rxt(2)*y(5)
+         prod(8) =rxt(9)*y(5)
          loss(9) = ( + het_rates(9))* y(9)
          prod(9) = 0._r8
          loss(10) = ( + het_rates(10))* y(10)

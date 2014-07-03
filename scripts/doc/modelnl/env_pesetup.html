@@ -573,82 +573,6 @@ Valid Values: sequential,concurrent </pre>
     </td>
     <td>env_pesetup.xml</td>
   </tr>
-  <tr id="NTASKS_WAV_tr">
-    <td><a name="NTASKS_WAV"></a>
-        <img id="NTASKS_WAV_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('NTASKS_WAV')">NTASKS_WAV</a>
-        </code>
-        <div id="NTASKS_WAV_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>number of wav mpi tasks</pre>
-        </div>
-    </td>
-    <td>env_pesetup.xml</td>
-  </tr>
-  <tr id="NTHRDS_WAV_tr">
-    <td><a name="NTHRDS_WAV"></a>
-        <img id="NTHRDS_WAV_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('NTHRDS_WAV')">NTHRDS_WAV</a>
-        </code>
-        <div id="NTHRDS_WAV_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>number of wav mpi threads</pre>
-        </div>
-    </td>
-    <td>env_pesetup.xml</td>
-  </tr>
-  <tr id="ROOTPE_WAV_tr">
-    <td><a name="ROOTPE_WAV"></a>
-        <img id="ROOTPE_WAV_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('ROOTPE_WAV')">ROOTPE_WAV</a>
-        </code>
-        <div id="ROOTPE_WAV_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>root wav mpi task</pre>
-        </div>
-    </td>
-    <td>env_pesetup.xml</td>
-  </tr>
-  <tr id="NINST_WAV_tr">
-    <td><a name="NINST_WAV"></a>
-        <img id="NINST_WAV_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('NINST_WAV')">NINST_WAV</a>
-        </code>
-        <div id="NINST_WAV_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>Number of wave instances</pre>
-        </div>
-    </td>
-    <td>env_pesetup.xml</td>
-  </tr>
-  <tr id="NINST_WAV_LAYOUT_tr">
-    <td><a name="NINST_WAV_LAYOUT"></a>
-        <img id="NINST_WAV_LAYOUT_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('NINST_WAV_LAYOUT')">NINST_WAV_LAYOUT</a>
-        </code>
-        <div id="NINST_WAV_LAYOUT_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>Layout of wave instances
-Valid Values: sequential,concurrent </pre>
-        </div>
-    </td>
-    <td>env_pesetup.xml</td>
-  </tr>
   <tr id="PSTRID_ATM_tr">
     <td><a name="PSTRID_ATM"></a>
         <img id="PSTRID_ATM_arrow" src="./images/arrow_right.gif">
@@ -761,22 +685,6 @@ Valid Values: 1 </pre>
     </td>
     <td>env_pesetup.xml</td>
   </tr>
-  <tr id="PSTRID_WAV_tr">
-    <td><a name="PSTRID_WAV"></a>
-        <img id="PSTRID_WAV_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('PSTRID_WAV')">PSTRID_WAV</a>
-        </code>
-        <div id="PSTRID_WAV_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>stride of mpi tasks for wav comp - currently should always be set to 1
-Valid Values: 1 </pre>
-        </div>
-    </td>
-    <td>env_pesetup.xml</td>
-  </tr>
   <tr id="TOTALPES_tr">
     <td><a name="TOTALPES"></a>
         <img id="TOTALPES_arrow" src="./images/arrow_right.gif">
@@ -787,7 +695,7 @@ Valid Values: 1 </pre>
         <div id="TOTALPES_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>total number of tasks and threads (setup automatically - DO NOT EDIT)</pre>
+	     <pre>total number of pes (setup automatically - DO NOT EDIT)</pre>
         </div>
     </td>
     <td>env_pesetup.xml</td>
@@ -817,7 +725,7 @@ Valid Values: 1 </pre>
         <div id="MAX_TASKS_PER_NODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>maximum number of tasks/ threads allowed per node (integer)</pre>
+	     <pre>maximum number of mpi tasks per node</pre>
         </div>
     </td>
     <td>env_pesetup.xml</td>
@@ -832,22 +740,22 @@ Valid Values: 1 </pre>
         <div id="PES_PER_NODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>pes or cores per node for accounting purposes (integer)</pre>
+	     <pre>pes per node for cost scaling</pre>
         </div>
     </td>
     <td>env_pesetup.xml</td>
   </tr>
-  <tr id="COST_PES_tr">
-    <td><a name="COST_PES"></a>
-        <img id="COST_PES_arrow" src="./images/arrow_right.gif">
+  <tr id="BATCH_PES_tr">
+    <td><a name="BATCH_PES"></a>
+        <img id="BATCH_PES_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('COST_PES')">COST_PES</a>
+             onclick="toggleHelp('BATCH_PES')">BATCH_PES</a>
         </code>
-        <div id="COST_PES_help" style="display: none;
+        <div id="BATCH_PES_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</pre>
+	     <pre>pes requested at batch runtime</pre>
         </div>
     </td>
     <td>env_pesetup.xml</td>

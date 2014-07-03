@@ -8,16 +8,16 @@
 
 <sim_year_range>constant</sim_year_range>
 
-<stream_year_first_ndep bgc="cn"   ndepsrc="stream" >2000</stream_year_first_ndep>
-<stream_year_last_ndep  bgc="cn"   ndepsrc="stream" >2000</stream_year_last_ndep>
+<stream_year_first_ndep phys="clm4_0" bgc="cn"   ndepsrc="stream" >2000</stream_year_first_ndep>
+<stream_year_last_ndep phys="clm4_0" bgc="cn"   ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_ndep bgc="cndv" ndepsrc="stream" >2000</stream_year_first_ndep>
-<stream_year_last_ndep  bgc="cndv" ndepsrc="stream" >2000</stream_year_last_ndep>
+<stream_year_first_ndep phys="clm4_0" bgc="cndv" ndepsrc="stream" >2000</stream_year_first_ndep>
+<stream_year_last_ndep phys="clm4_0" bgc="cndv" ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_popdens  phys="clm4_5" bgc="cn"   ndepsrc="stream" >1850</stream_year_first_popdens>
-<stream_year_last_popdens   phys="clm4_5" bgc="cn"   ndepsrc="stream" >1850</stream_year_last_popdens>
+<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2000</stream_year_first_ndep>
+<stream_year_last_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_popdens  phys="clm4_5" bgc="cndv" ndepsrc="stream" >1850</stream_year_first_popdens>
-<stream_year_last_popdens   phys="clm4_5" bgc="cndv" ndepsrc="stream" >1850</stream_year_last_popdens>
+<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
+<stream_year_last_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
 
 </namelist_defaults>

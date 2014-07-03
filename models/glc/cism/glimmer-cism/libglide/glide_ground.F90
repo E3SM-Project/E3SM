@@ -35,7 +35,7 @@
 module glide_ground
 
   use glide_types
-  use glimmer_global
+  use glimmer_global, only: dp
   use parallel
 
   implicit none
@@ -54,15 +54,12 @@ contains
 
     ! Remove non-grounded ice according to one of several alternative methods
 
-    use glimmer_global, only : dp, sp
-
     implicit none
 
     !---------------------------------------------------------------------
     ! Subroutine arguments
     !---------------------------------------------------------------------
 
-!TODO: dp for calving_field, eus
 !TODO: Change mask to thkmask?
 
     integer,                intent(in)    :: which   !*FD Calving method option
@@ -74,8 +71,8 @@ contains
                                                      !*FD ice to be present. 
     real(dp), intent(in) :: calving_fraction         !*FD fraction of ice lost when calving; used with 
                                                      !*FD $\mathtt{which}=3$.
-    real, intent(in) :: eus                          !*FD eustatic sea level
-    real(sp),dimension(:,:),intent(out) :: calving_field ! thickness lost due to calving
+    real(dp), intent(in) :: eus                      !*FD eustatic sea level
+    real(dp),dimension(:,:),intent(out) :: calving_field ! thickness lost due to calving
     real(dp), intent(in) :: dew,dns
     integer, intent(in) ::  nsn,ewn
 
@@ -182,7 +179,7 @@ contains
     real(dp),dimension(:,:), intent(inout) :: gline_flux ! Grounding Line flux
     real(dp),dimension(:,:), intent(in) :: ubas          ! basal velocity in u-dir
     real(dp),dimension(:,:), intent(in) :: vbas          ! basal velocity in v-dir
-    real(dp),intent(in)                 :: dew           !gridspacing  
+    real(dp),intent(in)                 :: dew           ! grid spacing  
     integer :: ewn, nsn
 
     !TODO: get the grounding line flux on the velo grid - right now it seems
@@ -214,17 +211,17 @@ contains
      type(glide_grnd) :: ground        !*FD ground instance
      real(dp),dimension(:,:),intent(in)    :: topg    !*FD Present bedrock topography (scaled)
      real(dp),dimension(:,:),intent(in)    :: thck    !*FD Present thickness (scaled)
-     real, intent(in) :: eus                       !*FD eustatic sea level
-     real(dp), intent(in) ::  dew, dns
+     real(dp),intent(in) :: eus                       !*FD eustatic sea level
+     real(dp),intent(in) ::  dew, dns
      integer, intent(in) ::  ewn, nsn
      !JEFF remove pointer attribute integer, dimension(:,:),pointer :: mask    !*FD grid type mask
      integer, dimension(:,:) :: mask    !*FD grid type mask
      integer ew,ns,jns,jew,j1ns,j1ew
-     real(sp) :: xg                        !grounding line
+     real(dp) :: xg                        !grounding line
      !this is assuming the grounding line is the last grounded pt on the mask
      !reset grounding line data to zero
-     ground%gl_ew = 0.0
-     ground%gl_ns = 0.0
+     ground%gl_ew = 0.d0
+     ground%gl_ns = 0.d0
      do ns = 1,nsn
         do ew = 1,ewn
             if (GLIDE_IS_GROUNDING_LINE(mask(ew,ns))) then
@@ -270,7 +267,7 @@ contains
      integer, intent(in) :: ew1 !grounding line in ew direction
      integer, intent(in) :: ns2 !grounding line in ns direction
      integer, intent(in) :: ew2 !grounding line in ew direction
-     real(sp), intent(in) :: value !grounding line in ew direction
+     real(dp), intent(in) :: value !grounding line in ew direction
      integer slot_ew, slot_ns !integers to compute the min
      
      if (ns1 == ns2) then
@@ -286,24 +283,26 @@ contains
 
   !does the pattyn interpolation for the grounding line
 
-  real function lin_reg_xg(topg, thck, eus, dew, dns, ew, ns, j1ew, j1ns)
+!!  real function lin_reg_xg(topg, thck, eus, dew, dns, ew, ns, j1ew, j1ns)
+  function lin_reg_xg(topg, thck, eus, dew, dns, ew, ns, j1ew, j1ns)
 
      use glide_types
      use glimmer_physcon, only : rhoi, rhoo
+     real(dp) :: lin_reg_xg
      real(dp),dimension(:,:),intent(in)    :: topg    !*FD Present bedrock topography (scaled)
      real(dp),dimension(:,:),intent(in)    :: thck    !*FD Present thickness (scaled)
-     real, intent(in) :: eus                       !*FD eustatic sea level
+     real(dp), intent(in) :: eus                      !*FD eustatic sea level
      real(dp), intent(in) ::  dew, dns
      integer, intent(in) :: ns !grounding line in ns direction
      integer, intent(in) :: ew !grounding line in ew direction
      integer, intent(in) :: j1ns !ice shelf in ns direction
      integer, intent(in) :: j1ew !ice shelf line in ew direction
-     real(sp) ::  xg                     !grounding line
-     real(sp) ::  dx                      !distance between gridpts
-     real(sp) ::  xj                        !grounding line
-     real(sp) :: fj                        !f at grid pnt j
-     real(sp) :: fj_1                      !f evaluated at j (+/-) 1
-     real(sp) :: df                        !delta f of fj,jf_1
+     real(dp) ::  xg                     !grounding line
+     real(dp) ::  dx                      !distance between gridpts
+     real(dp) ::  xj                        !grounding line
+     real(dp) :: fj                        !f at grid pnt j
+     real(dp) :: fj_1                      !f evaluated at j (+/-) 1
+     real(dp) :: df                        !delta f of fj,jf_1
      
      if (ew == j1ew) then
         dx = dns 
@@ -330,23 +329,25 @@ contains
 
 !TODO - Is this needed?  Currently not called.
 
-  real function get_ground_thck(ground,topg,usrf,dew,dns,ew1,ns1,ew2,ns2)
+!!  real function get_ground_thck(ground,topg,usrf,dew,dns,ew1,ns1,ew2,ns2)
+  function get_ground_thck(ground,topg,usrf,dew,dns,ew1,ns1,ew2,ns2)
 
      use glide_types
      implicit none
+     real(dp) :: get_ground_thck
      type(glide_grnd) :: ground        !*FD ground instance
      real(dp),dimension(:,:),intent(in)    :: topg    !*FD Present bedrock topography (scaled)
      real(dp),dimension(:,:),intent(in)    :: usrf    !*FD surface height
      real(dp), intent(in) ::  dew, dns
      integer ns1,ew1,ns2,ew2,min_ns,min_ew,max_ns,max_ew !grounding line in ns/ew direction
-     real(sp) ::  xg                        !grounding line
-     real(sp) ::  tg                        !topographic height at grounding line
-     real(sp) ::  ig                        !ice height at grounding line
-     real(sp) ::  hg                        !thickness at the grounding line
-     real(sp) ::  x1                        !pts for linear interpolation
-     real(sp) ::  x0
-     real(sp) ::  y1                        
-     real(sp) ::  y0
+     real(dp) ::  xg                        !grounding line
+     real(dp) ::  tg                        !topographic height at grounding line
+     real(dp) ::  ig                        !ice height at grounding line
+     real(dp) ::  hg                        !thickness at the grounding line
+     real(dp) ::  x1                        !pts for linear interpolation
+     real(dp) ::  x0
+     real(dp) ::  y1                        
+     real(dp) ::  y0
      !using lin. interpolation to find top at grounding line
      if (ns1 == ns2) then
          min_ew = min(ew1,ew2)
@@ -387,13 +388,15 @@ contains
   ! the mask reference point.  dir is specifying 'ew' or 'ns', but can be 
   ! left null if there's only one option.
 
-  real function get_ground_line(ground,ew1,ns1,ew2,ns2)
+!!  real function get_ground_line(ground,ew1,ns1,ew2,ns2)
+  function get_ground_line(ground,ew1,ns1,ew2,ns2)
 
      use glide_types
      implicit none
+     real(dp) :: get_ground_line
      type(glide_grnd) :: ground       !*FD glide ground instance
      integer ns1,ew1,ns2,ew2,slot_ns,slot_ew !grounding line in ns/ew direction
-     real appr_ground !grounding line
+     real(dp) :: appr_ground !grounding line
      
      if (ns1 == ns2) then
          slot_ew = min(ew1,ew2)

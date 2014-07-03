@@ -1,0 +1,49 @@
+/glade/apps/opt/ncl/6.1.2/gnu/4.4.6/bin/ncl
+---------------- PTCLMmkdata version PTCLM2.0_scripts_trunk-----------------------------
+
+   ../PTCLMmkdata --cesm_root ../../../../../../.. -s US-CHATS -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/noopt_file_creation 
+
+   OPTIONS:
+
+Site name:						US-CHATS
+
+Root CLM directory:					/glade/p/work/erik/clm_transCO2
+** Surface data file will be built using site-level data when available unless otherwise specified ** 
+
+	Extract PFT data from gridded files:		False
+	Extract soil data from gridded files:		False
+
+Open Site data file: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
+
+CESM input data directory:				/glade/p/cesmdata/cseg/inputdata
+----------------------------------------------------------------
+
+Write /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/README.PTCLM with command line
+CLM Physics Version: clm4_5
+Run command: /bin/chmod +x /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/xmlchange_cmnds
+Making input files for the point (this may take a while if creating transient datasets)
+Creating map file for a point with no ocean
+lat=38.49
+Run command: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/mknoocnmap.pl -p 38.49,238.15 -name 1x1pt_US-CHATS > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/mknoocnmap.log
+mapfile = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-CHATS_noocean_to_1x1pt_US-CHATS_nomask_aave_da_140204.nc
+scripgridfile = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-CHATS_nomask_c140204.nc
+Creating data domain
+Run command: /glade/p/work/erik/clm_transCO2/tools/mapping/gen_domain_files/gen_domain -m /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-CHATS_noocean_to_1x1pt_US-CHATS_nomask_aave_da_140204.nc -o navy -l 1x1pt_US-CHATS -c 'Running gen_domain from PTCLMmkdata' > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/gen_domain.log
+domainfile = domain.lnd.1x1pt_US-CHATS_navy.140204.nc
+
+
+Re-create surface dataset:	
+
+
+Re-create mapping files for surface dataset:
+Run command: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/mkmapdata.sh --gridfile /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-CHATS_nomask_c140204.nc --res 1x1pt_US-CHATS --gridtype regional --phys clm4_5 > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/mkmapdata.log
+Replacing PFT information in surface data file
+Replacing soil information in surface data file
+ sandpct=10.0 claypct=35.0
+Run command: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/clm4_5/mksurfdata_map/mksurfdata.pl -res usrspec -usr_gname 1x1pt_US-CHATS -usr_gdate 140204 -usr_mapdir /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS -dinlc /glade/p/cesmdata/cseg/inputdata -y 2000 -rcp -999.9 -soil_cly 35.0 -soil_snd 10.0 -pft_frc "[100.0]" -pft_idx "[7]"  > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/mksurfdata_map.log
+surface file = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/surfdata_1x1pt_US-CHATS_simyr2000_140204.nc
+surface log file = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/surfdata_1x1pt_US-CHATS_simyr2000_140204.log
+Run command: /bin/mv -f /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/surfdata_1x1pt_US-CHATS_simyr2000_140204.nc surfdata_1x1pt_US-CHATS_simyr2000_clm4_5_c140204.nc
+Run command: /bin/mv -f /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS/surfdata_1x1pt_US-CHATS_simyr2000_140204.log surfdata_1x1pt_US-CHATS_simyr2000_clm4_5_c140204.log
+Data created successfully in /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/noopt_file_creation/1x1pt_US-CHATS
+

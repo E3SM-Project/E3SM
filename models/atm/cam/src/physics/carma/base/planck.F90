@@ -128,7 +128,9 @@ contains
     real(kind=f)                         :: planckBandIntensityWidger1976  !! Planck intensity (erg/s/cm2/sr/cm)
     
     ! Calculate the integral from the edges to 0 and subtract.
-    planckBandIntensityWidger1976 = (planckIntensityWidger1976(wvl + (dwvl / 2._f), temp, miniter) - planckIntensityWidger1976(wvl - (dwvl / 2._f), temp, miniter)) / dwvl
+    planckBandIntensityWidger1976 = &
+         (planckIntensityWidger1976(wvl + (dwvl / 2._f), temp, miniter) &
+         - planckIntensityWidger1976(wvl - (dwvl / 2._f), temp, miniter)) / dwvl
 
     return 
   end function

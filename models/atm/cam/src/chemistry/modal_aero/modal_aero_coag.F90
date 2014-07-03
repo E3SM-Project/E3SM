@@ -11,7 +11,6 @@
 
 ! !USES:
    use shr_kind_mod,    only:  r8 => shr_kind_r8
-   use shr_kind_mod,    only:  r4 => shr_kind_r4
    use chem_mods,       only:  gas_pcnst
    use modal_aero_data, only:  maxd_aspectype
 
@@ -71,7 +70,6 @@
    subroutine modal_aero_coag_sub(                               &
                         lchnk,    ncol,     nstep,               &
                         loffset,  deltat_main,                   &
-                        latndx,   lonndx,                        &
                         t,        pmid,     pdel,                &
                         q,                                       &
                         dgncur_a,           dgncur_awet,         &
@@ -104,7 +102,6 @@
    integer, intent(in)  :: ncol             ! number of columns in chunk
    integer, intent(in)  :: nstep            ! model step
    integer, intent(in)  :: loffset          ! offset applied to modal aero "pointers"
-   integer, intent(in)  :: latndx(pcols), lonndx(pcols) 
 
    real(r8), intent(in) :: deltat_main      ! model timestep (s)
 
@@ -193,20 +190,20 @@
 	if (npair_acoag <= 0) return
 
 !--------------------------------------------------------------------------------
-   if (ldiag1 > 0) then
-   if (nstep <= 3) then
-   do i = 1, ncol
-   if (lonndx(i) /= 37) cycle
-   if (latndx(i) /= 23) cycle
-   if (nstep > 3)       cycle
-   write( *, '(/a,i7,i5,2(2x,2i5))' )   &
-         '*** modal_aero_coag_sub -- nstep, iam, lat, lon, pcols, ncol =',   &
-         nstep, iam, latndx(i), lonndx(i), pcols, ncol
-   end do
-   end if
-!  if (ncol /= -999888777) return
-   if (nstep > 3) call endrun( 'modal_aero_coag_sub -- nstep>3 testing halt' )
-   end if   ! (ldiag1 > 0)
+!!$   if (ldiag1 > 0) then
+!!$   if (nstep <= 3) then
+!!$   do i = 1, ncol
+!!$   if (lonndx(i) /= 37) cycle
+!!$   if (latndx(i) /= 23) cycle
+!!$   if (nstep > 3)       cycle
+!!$   write( *, '(/a,i7,i5,2(2x,2i5))' )   &
+!!$         '*** modal_aero_coag_sub -- nstep, iam, lat, lon, pcols, ncol =',   &
+!!$         nstep, iam, latndx(i), lonndx(i), pcols, ncol
+!!$   end do
+!!$   end if
+!!$!  if (ncol /= -999888777) return
+!!$   if (nstep > 3) call endrun( 'modal_aero_coag_sub -- nstep>3 testing halt' )
+!!$   end if   ! (ldiag1 > 0)
 !--------------------------------------------------------------------------------
 
 	dotend(:) = .false.
@@ -339,60 +336,60 @@ main_ipair1: do ipair = 1, npair_acoag
 
 
 !   test diagnostics begin --------------------------------------------
- 	if (ldiag2 > 0) then
- 	if (nstep <= 3) then
- 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
- 	if ((mod(k-1,5) == 0) .or. (k>=23)) then
-
-	wetdgnum_frm = dgncur_awet(i,k,modefrm)
-	wetdgnum_too = dgncur_awet(i,k,modetoo)
-	wetdens_frm  = wetdens_a(i,k,modefrm)
-	wetdens_too  = wetdens_a(i,k,modetoo)
-	sg_frm   = sigmag_amode(modefrm)
-	sg_too   = sigmag_amode(modetoo)
-	lnsg_frm = alnsg_amode(modefrm)
-	lnsg_too = alnsg_amode(modetoo)
-
-        call getcoags_wrapper_f(                                       &
-          t(i,k), pmid(i,k),                                           &
-          wetdgnum_frm,                   wetdgnum_too,                &
-          sg_frm,                         sg_too,                      &
-          lnsg_frm,                       lnsg_too,                    &
-          wetdens_frm,                    wetdens_too,                 &
-          xbetaij0, xbetaij2i, xbetaij2j, xbetaij3,                    &
-          xbetaii0, xbetaii2,  xbetajj0,  xbetajj2                     )
-
-
- 	    write(lunout,9801)
- 	    write(lunout,9810) 'nstep,lat,lon,k,ipair   ',   &
- 		nstep, latndx(i), lonndx(i), k, ipair
- 	    write(lunout,9820) 'tk, pmb, aircon, pdel   ',   &
- 		t(i,k), pmid(i,k)*1.0e-2_r8, aircon, pdel(i,k)*1.0e-2_r8
- 	    write(lunout,9820) 'wetdens-cgs, sg      f/t',   &
- 		wetdens_frm*1.0e-3_r8, wetdens_too*1.0e-3_r8,   &
- 		sg_frm, sg_too
- 	    write(lunout,9820) 'dgnwet-um, dgndry-um f/t',   &
- 		1.0e6_r8*wetdgnum_frm, 1.0e6_r8*wetdgnum_too,   &
- 		1.0e6_r8*dgncur_a(i,k,modefrm), 1.0e6_r8*dgncur_a(i,k,modetoo)
- 	    write(lunout,9820) 'xbeta ij0, ij3, ii0, jj0',   &
- 		xbetaij0, xbetaij3, xbetaii0, xbetajj0
- 	    write(lunout,9820) 'xbeta ij2i & j, ii2, jj2',   &
- 		xbetaij2i, xbetaij2j, xbetaii2, xbetajj2
- 	    write(lunout,9820) 'numbii, numbjj, deltat  ',   &
- 		xnumbconc(modefrm), xnumbconc(modetoo), deltat
- 	    write(lunout,9820) 'loss ij3, ii0, jj0      ',   &
- 		(xbetaij3*xnumbconc(modetoo)*deltat),   &
- 		(xbetaij0*xnumbconc(modetoo)*deltat+    &
- 		 xbetaii0*xnumbconc(modefrm)*deltat),   &
- 		(xbetajj0*xnumbconc(modetoo)*deltat)
- 9801	format( / 72x, 'ACOAG' )
- 9810	format( 'ACOAG ', a, 2i8, 3i7, 3(1pe15.6) )
- 9820	format( 'ACOAG ', a, 4(1pe15.6) )
- 9830	format( 'ACOAG ', a, i1, a, 4(1pe15.6) )
- 	end if
- 	end if
- 	end if
- 	end if   ! (ldiag2 > 0)
+!!$ 	if (ldiag2 > 0) then
+!!$ 	if (nstep <= 3) then
+!!$ 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
+!!$ 	if ((mod(k-1,5) == 0) .or. (k>=23)) then
+!!$
+!!$	wetdgnum_frm = dgncur_awet(i,k,modefrm)
+!!$	wetdgnum_too = dgncur_awet(i,k,modetoo)
+!!$	wetdens_frm  = wetdens_a(i,k,modefrm)
+!!$	wetdens_too  = wetdens_a(i,k,modetoo)
+!!$	sg_frm   = sigmag_amode(modefrm)
+!!$	sg_too   = sigmag_amode(modetoo)
+!!$	lnsg_frm = alnsg_amode(modefrm)
+!!$	lnsg_too = alnsg_amode(modetoo)
+!!$
+!!$        call getcoags_wrapper_f(                                       &
+!!$          t(i,k), pmid(i,k),                                           &
+!!$          wetdgnum_frm,                   wetdgnum_too,                &
+!!$          sg_frm,                         sg_too,                      &
+!!$          lnsg_frm,                       lnsg_too,                    &
+!!$          wetdens_frm,                    wetdens_too,                 &
+!!$          xbetaij0, xbetaij2i, xbetaij2j, xbetaij3,                    &
+!!$          xbetaii0, xbetaii2,  xbetajj0,  xbetajj2                     )
+!!$
+!!$
+!!$ 	    write(lunout,9801)
+!!$ 	    write(lunout,9810) 'nstep,lat,lon,k,ipair   ',   &
+!!$ 		nstep, latndx(i), lonndx(i), k, ipair
+!!$ 	    write(lunout,9820) 'tk, pmb, aircon, pdel   ',   &
+!!$ 		t(i,k), pmid(i,k)*1.0e-2_r8, aircon, pdel(i,k)*1.0e-2_r8
+!!$ 	    write(lunout,9820) 'wetdens-cgs, sg      f/t',   &
+!!$ 		wetdens_frm*1.0e-3_r8, wetdens_too*1.0e-3_r8,   &
+!!$ 		sg_frm, sg_too
+!!$ 	    write(lunout,9820) 'dgnwet-um, dgndry-um f/t',   &
+!!$ 		1.0e6_r8*wetdgnum_frm, 1.0e6_r8*wetdgnum_too,   &
+!!$ 		1.0e6_r8*dgncur_a(i,k,modefrm), 1.0e6_r8*dgncur_a(i,k,modetoo)
+!!$ 	    write(lunout,9820) 'xbeta ij0, ij3, ii0, jj0',   &
+!!$ 		xbetaij0, xbetaij3, xbetaii0, xbetajj0
+!!$ 	    write(lunout,9820) 'xbeta ij2i & j, ii2, jj2',   &
+!!$ 		xbetaij2i, xbetaij2j, xbetaii2, xbetajj2
+!!$ 	    write(lunout,9820) 'numbii, numbjj, deltat  ',   &
+!!$ 		xnumbconc(modefrm), xnumbconc(modetoo), deltat
+!!$ 	    write(lunout,9820) 'loss ij3, ii0, jj0      ',   &
+!!$ 		(xbetaij3*xnumbconc(modetoo)*deltat),   &
+!!$ 		(xbetaij0*xnumbconc(modetoo)*deltat+    &
+!!$ 		 xbetaii0*xnumbconc(modefrm)*deltat),   &
+!!$ 		(xbetajj0*xnumbconc(modetoo)*deltat)
+!!$ 9801	format( / 72x, 'ACOAG' )
+!!$ 9810	format( 'ACOAG ', a, 2i8, 3i7, 3(1pe15.6) )
+!!$ 9820	format( 'ACOAG ', a, 4(1pe15.6) )
+!!$ 9830	format( 'ACOAG ', a, i1, a, 4(1pe15.6) )
+!!$ 	end if
+!!$ 	end if
+!!$ 	end if
+!!$ 	end if   ! (ldiag2 > 0)
 !   test diagnostics end ----------------------------------------------
 
 	ybetaij0(ipair) = xbetaij0
@@ -633,66 +630,66 @@ main_ipair2: do ipair = 1, npair_acoag
 
 
 !   test diagnostics begin --------------------------------------------
- 	if (ldiag3 > 0) then
- 	if (nstep <= 3) then
- 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
- 	if ((mod(k-1,5) == 0) .or. (k>=23)) then
- 	   if (pair_option_acoag == 3) then
- 		write(*,*)
- 		write(lunout,9820) 'xnumbconcavg ait,acc,pca', &
- 		    xnumbconcavg(mait), xnumbconcavg(macc), xnumbconcavg(mpca)
- 		write(lunout,9820) 'vshell, core            ', &
- 		    vol_shell, vol_core
- 		write(lunout,9820) 'dr_mono, dgn            ', &
- 		    dr_so4_monolayers_pcage, dgncur_a(i,k,mpca)
- 		write(lunout,9820) 'tmp1, tmp2              ', tmp1, tmp2
- 		write(lunout,9820) 'xferfrac_age            ', xferfrac_pcage
- 	   end if
-
- 	   do ipair = 1, npair_acoag
- 	   modefrm = modefrm_acoag(ipair)
- 	   modetoo = modetoo_acoag(ipair)
- 	   if (npair_acoag > 1) then
- 		write(lunout,*)
- 		write(lunout,9810) 'ipair =   ', ipair
- 	   end if
-
- 	   do iq = 1, nspecfrm_acoag(ipair)
- 	   lsfrm = lspecfrm_acoag(iq,ipair) - loffset
- 	   lstoo = lspectoo_acoag(iq,ipair) - loffset
- 	   if (lsfrm > 0) then
- 	   tmp_qold = q(i,k,lsfrm) - dqdt(i,k,lsfrm)*deltat_main
-!	   write(lunout,9820) 'm1 frm dqdt/q0,dqdt,q0/1',   &
- 	   write(lunout,9830) 'm', iq,   &
- 	                        ' frm dqdt/q0,dqdt,q0/1',   &
- 		dqdt(i,k,lsfrm)/tmp_qold, dqdt(i,k,lsfrm), tmp_qold, q(i,k,lsfrm)
- 	   end if
- 	   if (lstoo > 0) then
- 	   tmp_qold = q(i,k,lstoo) - dqdt(i,k,lstoo)*deltat_main
- 	   write(lunout,9830) 'm', iq,   &
- 	                        ' too dqdt/q0,dqdt,q0/1',   &
- 		dqdt(i,k,lstoo)/tmp_qold, dqdt(i,k,lstoo), tmp_qold, q(i,k,lstoo)
- 	   end if
- 	   end do   ! iq
-
- 	   lsfrm = numptr_amode(modefrm) - loffset
- 	   lstoo = numptr_amode(modetoo) - loffset
- 	   if (lsfrm > 0) then
- 	   tmp_qold = q(i,k,lsfrm) - dqdt(i,k,lsfrm)*deltat_main
- 	   write(lunout,9820) 'n  frm dqdt/q0,dqdt,q0/1',   &
- 		dqdt(i,k,lsfrm)/tmp_qold, dqdt(i,k,lsfrm), tmp_qold, q(i,k,lsfrm)
- 	   end if
- 	   if (lstoo > 0) then
- 	   tmp_qold = q(i,k,lstoo) - dqdt(i,k,lstoo)*deltat_main
- 	   write(lunout,9820) 'n  too dqdt/q0,dqdt,q0/1',   &
- 		dqdt(i,k,lstoo)/tmp_qold, dqdt(i,k,lstoo), tmp_qold, q(i,k,lstoo)
- 	   end if
-
- 	   end do   ! ipair
- 	end if
- 	end if
- 	end if
- 	end if   ! (ldiag3 > 0)
+!!$ 	if (ldiag3 > 0) then
+!!$ 	if (nstep <= 3) then
+!!$ 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) then
+!!$ 	if ((mod(k-1,5) == 0) .or. (k>=23)) then
+!!$ 	   if (pair_option_acoag == 3) then
+!!$ 		write(*,*)
+!!$ 		write(lunout,9820) 'xnumbconcavg ait,acc,pca', &
+!!$ 		    xnumbconcavg(mait), xnumbconcavg(macc), xnumbconcavg(mpca)
+!!$ 		write(lunout,9820) 'vshell, core            ', &
+!!$ 		    vol_shell, vol_core
+!!$ 		write(lunout,9820) 'dr_mono, dgn            ', &
+!!$ 		    dr_so4_monolayers_pcage, dgncur_a(i,k,mpca)
+!!$ 		write(lunout,9820) 'tmp1, tmp2              ', tmp1, tmp2
+!!$ 		write(lunout,9820) 'xferfrac_age            ', xferfrac_pcage
+!!$ 	   end if
+!!$
+!!$ 	   do ipair = 1, npair_acoag
+!!$ 	   modefrm = modefrm_acoag(ipair)
+!!$ 	   modetoo = modetoo_acoag(ipair)
+!!$ 	   if (npair_acoag > 1) then
+!!$ 		write(lunout,*)
+!!$ 		write(lunout,9810) 'ipair =   ', ipair
+!!$ 	   end if
+!!$
+!!$ 	   do iq = 1, nspecfrm_acoag(ipair)
+!!$ 	   lsfrm = lspecfrm_acoag(iq,ipair) - loffset
+!!$ 	   lstoo = lspectoo_acoag(iq,ipair) - loffset
+!!$ 	   if (lsfrm > 0) then
+!!$ 	   tmp_qold = q(i,k,lsfrm) - dqdt(i,k,lsfrm)*deltat_main
+!!$!	   write(lunout,9820) 'm1 frm dqdt/q0,dqdt,q0/1',   &
+!!$ 	   write(lunout,9830) 'm', iq,   &
+!!$ 	                        ' frm dqdt/q0,dqdt,q0/1',   &
+!!$ 		dqdt(i,k,lsfrm)/tmp_qold, dqdt(i,k,lsfrm), tmp_qold, q(i,k,lsfrm)
+!!$ 	   end if
+!!$ 	   if (lstoo > 0) then
+!!$ 	   tmp_qold = q(i,k,lstoo) - dqdt(i,k,lstoo)*deltat_main
+!!$ 	   write(lunout,9830) 'm', iq,   &
+!!$ 	                        ' too dqdt/q0,dqdt,q0/1',   &
+!!$ 		dqdt(i,k,lstoo)/tmp_qold, dqdt(i,k,lstoo), tmp_qold, q(i,k,lstoo)
+!!$ 	   end if
+!!$ 	   end do   ! iq
+!!$
+!!$ 	   lsfrm = numptr_amode(modefrm) - loffset
+!!$ 	   lstoo = numptr_amode(modetoo) - loffset
+!!$ 	   if (lsfrm > 0) then
+!!$ 	   tmp_qold = q(i,k,lsfrm) - dqdt(i,k,lsfrm)*deltat_main
+!!$ 	   write(lunout,9820) 'n  frm dqdt/q0,dqdt,q0/1',   &
+!!$ 		dqdt(i,k,lsfrm)/tmp_qold, dqdt(i,k,lsfrm), tmp_qold, q(i,k,lsfrm)
+!!$ 	   end if
+!!$ 	   if (lstoo > 0) then
+!!$ 	   tmp_qold = q(i,k,lstoo) - dqdt(i,k,lstoo)*deltat_main
+!!$ 	   write(lunout,9820) 'n  too dqdt/q0,dqdt,q0/1',   &
+!!$ 		dqdt(i,k,lstoo)/tmp_qold, dqdt(i,k,lstoo), tmp_qold, q(i,k,lstoo)
+!!$ 	   end if
+!!$
+!!$ 	   end do   ! ipair
+!!$ 	end if
+!!$ 	end if
+!!$ 	end if
+!!$ 	end if   ! (ldiag3 > 0)
 !   test diagnostics end ----------------------------------------------
 
 
@@ -994,901 +991,6 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
 	return
 	end subroutine modal_aero_coag_init
 
-
-!----------------------------------------------------------------------
-!----------------------------------------------------------------------
-	subroutine calc_coag_coef4(   &
-          dgni, dgnj, alnsgi, alnsgj, rhopi, rhopj,   &
-          wetddrydi, wetddrydj,   &
-          temp, presscgs, lunerr, lunout, iok,   &
-          betaij0, betaij2i, betaij2j, betaij3,   &
-          betaii0, betaii2, betajj0, betajj2 )
-!
-!   computes the following coagulation rate "coefficients"
-!   for lognormal modes
-!
-!   self coagulation
-!	dNi/dt = - betaii0*Ni*Ni
-!	dNj/dt = - betajj0*Nj*Nj
-!	dSi/dt = - betaii2*Si*Ni
-!	dSj/dt = - betajj2*Sj*Nj
-!
-!   modei-modej coagulation
-!	dNi/dt = - betaij0*Ni*Nj
-!	dNj/dt = 0.
-!	dSi/dt = - betaij2i*Si*Nj
-!	dSj/dt = + betaij2j*Si*Nj
-!	dVi/dt  = - betaij3*Vi*Nj == - dVj/dt
-!
-!   Ni, Nj are number  concentrations (particles/cm3)
-!   Si, Sj are surface concentrations (cm2/cm3)
-!   Vi, Vj are volume  concentrations (cm3/cm3)
-!   rates are (N,S,V)/s
-!
-!   mode i is the smaller mode (e.g., Aitken)
-!   mode j is the larger  mode (e.g., accumulation)
-!
-!   input arguments
-!	dgni, dgnj = DRY median diameters for number distribution (cm)
-!	alnsgi, alnsgj = ln of geometric standard deviations (dimensionless)
-!	rhopi, rhopj = WET density (g/cm3)
-!	wetddrydi, wetddrydj = (WET median diameter)/(DRY median diameter)
-!	temp = air temperature (K)
-!	presscgs = air pressure (dynes/cm2)
-!	lunerr, lunout = logical unit for error or diagnostic output
-!
-!   output arguments
-!	iok = status flag  (+1 = success, 0/negative = failure)
-!	beta--- = see above
-!
-
-	implicit none
-
-!   arguments
-	integer, intent(in)  :: lunerr, lunout
-	integer, intent(out) :: iok
-	real(r4), intent(in) ::   &
-          dgni, dgnj, alnsgi, alnsgj, rhopi, rhopj,   &
-          wetddrydi, wetddrydj,   &
-          temp, presscgs
-	real(r4), intent(out) ::   &
-          betaij0, betaij2i, betaij2j, betaij3,   &
-          betaii0, betaii2, betajj0, betajj2
-
-!   local variables
-	real(r4) airprs, airtemp
-	real(r4) dgacc, dgatk, pdensac, pdensat
-	real(r4) batat(2), batac(2), bacat(2), bacac(2), c3ij
-	real(r4) dp2bar_mks_i, dp2bar_mks_j, dp3bar_mks_i
-
-!   check for reasonable inputs
-	iok = -1
-	if ((dgni .lt. 1.e-8_r8) .or. (dgni .gt. 1._r8)) then
-	    write(lunerr,9100) 'dgni', dgni
-	    return
-	else if ((dgnj .lt. 1.e-8_r8) .or. (dgnj .gt. 1._r8)) then
-	    write(lunerr,9100) 'dgnj', dgnj
-	    return
-!	else if (dgni .gt. dgnj) then
-!	    write(lunerr,9110) dgni, dgnj
-!	    return
-	else if ((alnsgi .lt. 0.0_r8) .or. (alnsgi .gt. 2.3_r8)) then
-	    write(lunerr,9100) 'alnsgi', alnsgi
-	    return
-	else if ((alnsgj .lt. 0.0_r8) .or. (alnsgj .gt. 2.3_r8)) then
-	    write(lunerr,9100) 'alnsgj', alnsgj
-	    return
-	else if ((rhopi .lt. 0.01_r8) .or. (rhopi .gt. 100._r8)) then
-	    write(lunerr,9100) 'rhopi', rhopi
-	    return
-	else if ((rhopj .lt. 0.01_r8) .or. (rhopj .gt. 100._r8)) then
-	    write(lunerr,9100) 'rhopj', rhopj
-	    return
-	else if ((temp .lt. 10._r8) .or. (temp .gt. 370._r8)) then
-	    write(lunerr,9100) 'temp', temp
-	    return
-	else if ((presscgs .lt. 1.e2_r8) .or. (presscgs .gt. 1.5e6_r8)) then
-	    write(lunerr,9100) 'presscgs', presscgs
-	    return
-	end if
-9100	format( '*** subr. calc_coag_coef_4 - bad value for ', a,   &
-      		' = ', 1pe15.5 )
-!9110	format( '*** subr. calc_coag_coef_4 - dgni > dgnj -- ',
-!     +		2(1pe15.5) )
-	iok = +1
-
-!
-!   define mks variables
-!
-	airtemp = temp
-!   dyne/cm2 to pa
-	airprs = presscgs * 1.0e-1_r8
-
-!   cm to m
-	dgatk = dgni * 1.0e-2_r8
-	dgacc = dgnj * 1.0e-2_r8
-
-!   g/cm3 to kg/m3
-	pdensat = rhopi * 1.0e+3_r8
-	pdensac = rhopj * 1.0e+3_r8
-
-!
-!   call interace to binkowski routines
-!
-	call bink_coag_rates(   &
-          dgatk, dgacc, alnsgi, alnsgj, pdensat, pdensac,   &
-          wetddrydi, wetddrydj,   &
-          airtemp, airprs, lunerr, iok,   &
-          batat, batac, bacat, bacac, c3ij )
-
-!
-!   transfer the batat, batac, bacat, bacac values
-!   to the beta--- variables
-!
-
-!   self coagulation, number
-!	dNi/dt = - betaii0*Ni*Ni
-!	dNXi/dt = - batat(1)*NXi*NXi
-!   where Ni is (particles/cm3), NXi is (particles/m3)
-!   the first-order loss rates are just (1/s) and thus are equal
-!	d[ln(Ni)]/dt = d[ln(NXi)]/dt
-!   so
-!	betaii0 = batat(1) * (NXi/Ni)
-!   conversion factors are
-!	1.0e-20 to undo 1.0e+20 scaling done in intercoag & intracoag
-!	(NXi/Ni) = 1.0e6
-!
-	betaii0 = batat(1) * 1.0e-14_r8
-	betajj0 = bacac(1) * 1.0e-14_r8
-
-!   self coagulation, surface
-!	dSi/dt = - betaii2*Si*Ni
-!	dM2Xi/dt = - batat(1)*NXi*NXi
-!   where Si is surface in (cm2/cm3) and M2Xi is (surface/pi) in (m2/m3)
-!   the first-order loss rates are just (1/s) and thus are equal
-!	betaii2 = batat(2) * (NXi/M2Xi) * (NXi/Ni)
-!   conversion factors are
-!	1.0e-20 to undo 1.0e+20 scaling done in intercoag & intracoag
-!	(NXi/Ni) = 1.0e6
-!	(M2Xi/NXi) = dp2bar_mks_i/pi, where dp2bar_mks_i is the average
-!	    Dp**2 in m**2
-!
-	dp2bar_mks_j = (dgnj**2) * exp( 2.0_r8*alnsgj*alnsgj ) * 1.0e-4_r8
-
-	dp2bar_mks_i = (dgni**2) * exp( 2.0_r8*alnsgi*alnsgi ) * 1.0e-4_r8
-	dp3bar_mks_i = (dgni**3) * exp( 4.5_r8*alnsgi*alnsgi ) * 1.0e-6_r8
-
-	betaii2 = (batat(2) / dp2bar_mks_i) * 1.0e-14_r8
-	betajj2 = (bacac(2) / dp2bar_mks_j) * 1.0e-14_r8
-
-!   modei-modej coagulation, number
-!	dNi/dt = - betaij0*Ni*Nj
-!	dNj/dt = 0.
-!   conversions as for self coagulation
-!
-	betaij0  = batac(1) * 1.0e-14_r8
-
-!   modei-modej coagulation, surface
-!	dSi/dt = - betaij2i*Si*Nj
-!	dSj/dt = + betaij2j*Si*Nj
-!   conversions as for self coagulation
-!
-	betaij2i = (batac(2) / dp2bar_mks_i) * 1.0e-14_r8
-	betaij2j = (bacat(2) / dp2bar_mks_i) * 1.0e-14_r8
-
-!   modei-modej coagulation, volume
-!	dVi/dt  = - betaij3*Vi*Nj
-!	dM3Xi/dt = - c3ij*NXi*NXj
-!   where Vi is (cm3/cm3) and M3Xi is (volume*6/pi) in (m3/m3)
-!   the first-order loss rates are just (1/s) and thus are equal
-!	betaij3 = c3ij * (NXi/M3Xi) * (NXj/Nj)
-!   conversion factors are
-!	1.0e-20 to undo 1.0e+20 scaling done in intercoag & intracoag
-!	(NXj/Nj) = 1.0e6
-!	(M3Xi/NXi) = dp3bar_mks_i*(6/pi), where dp3bar_mks_i is the average
-!	    Dp**3 in m**3
-!
-	betaij3  = ( c3ij / dp3bar_mks_i ) * 1.0e-14_r8
-
-	return
-	end subroutine calc_coag_coef4
-
-
-
-!-----------------------------------------------------------------------
-	subroutine bink_coag_rates(   &
-          dgatk, dgacc, xxlsgat, xxlsgac, pdensat, pdensac,   &
-          wetddrydat, wetddrydac,   &
-          airtemp, airprs, lunerr, iok,   &
-          batat, batac, bacat, bacac, c3ij )
-
-!
-!   provides interface to F. Binkowski's intracoag and intercoag
-!
-!   this code was "cut" from F. Binkowski's aero_info_ae3.f & aero_subs3_ae3.f
-!
-!   computes the following coagulation rate "coefficients"
-!
-!   self coagulation
-!	dNXi/dt  = - (1.e-20*batat(1))*NXi*NXi
-!	dNXj/dt  = - (1.e-20*bacac(1))*NXj*NXj
-!	dM2Xi/dt = - (1.e-20*batat(2))*NXi*NXi
-!	dM2Xj/dt = - (1.e-20*bacac(2))*NXj*NXj
-!
-!   modei-modej coagulation
-!	dNXi/dt  = - (1.e-20*batac(1))*NXi*NXj
-!	dNXj/dt  = 0.
-!	dM2Xi/dt = - (1.e-20*batac(2))*NXi*NXj
-!	dM2Xj/dt = + (1.e-20*bacat(2))*NXi*NXj
-!	dM3Xi/dt =     - (1.e-20*c3ij)*NXi*NXj == - dM3Xj/dt
-!
-!   NXi,  NXj are number concentrations (particles/m3)
-!   M2Xi, M2Xj are 2nd moment (surface/pi)  concentrations (m2/m3)
-!   M3Xi, M3Xj are 2rd moment (volume*6/pi) concentrations (m3/m3)
-!
-!   in the above, mode i is aitken mode, mode j is accumulation mode
-!
-!   *** note that the batat, batac, bacat, bacac, c3ij
-!	all must be multiplied by 1.e-20 to undo the 1.e+20 scaling
-!	in the real*4 versions of intracoag and intercoag
-!
-!   input arguments
-!	dgatk, dgacc = DRY median diameters for number distribution (m)
-!	    for aitken (atk or at) and accumulation (acc or ac) modes
-!	xxlsgat, xxlsgac = ln of geometric standard deviations (dimensionless)
-!	pdensat, pdensac = WET density (kg/m3)
-!	wetddrydat, wetddrydac = (WET median diameter)/(DRY median diameter)
-!	airtemp = air temperature (K)
-!	airprs = air pressure (Pa)
-!	lunerr  = logical unit for error output
-!
-!   output arguments
-!	iok = status flag  (+1 = success, 0/negative = failure)
-!	batat, batac, bacat, bacac, c3ij = see above
-!
-	implicit none
-
-!   arguments
-	integer lunerr, iok
-	real(r4) dgatk, dgacc, xxlsgat, xxlsgac, pdensat, pdensac,   &
-          wetddrydat, wetddrydac,   &
-          airtemp, airprs
-	real(r4) batat(2), batac(2), bacat(2), bacac(2), c3ij
-
-! *** modal geometric mean diameters: [ m ]
-!     real dgatk   ! nuclei mode
-!     real dgacc   ! accumulation mode
-! *** log of modal geometric standard deviation
-!     real xxlsgat  ! aitken mode
-!     real xxlsgac  ! accumulation mode
-! *** average modal particle densities  [ kg/m**3 ]
-!     real pdensat         ! nuclei mode
-!     real pdensac         ! accumulation mode
-
-!     real airtemp   ! air temperature [ k ]
-!     real airprs    ! air pressure in [ pa ]
-
-
-!   local variables
-
-      real(r4)   two3
-      parameter( two3 = 2.0_r8/3.0_r8 )
-
-      real(r4)    avo      ! avogadro's constant [ 1/mol ]
-      parameter ( avo = 6.0221367e23_r8 )
-
-      real(r4)    rgasuniv ! universal gas constant [ j/mol-k ]
-      parameter ( rgasuniv = 8.314510_r8 )
-
-      real(r4)    boltz    ! boltzmann's constant [ j / k]
-      parameter ( boltz = rgasuniv / avo )
-
-      real(r4)    p0       !  starting standard surface pressure [ pa ]
-      parameter ( p0 = 101325.0_r8 )
-
-      real(r4)    t0       !  starting standard surface temperature [ k ]
-      parameter ( t0 = 288.15_r8 )
-
-      real(r4) xlm    ! atmospheric mean free path [ m ]
-      real(r4) amu    ! atmospheric dynamic viscosity [ kg/m s ]
-
-      real(r4) kfm, knc, lamda, sqrt_temp
-
-
-! fsb calculate the square root of the ambient
-!      temperature for later use
-
-! *** calculate mean free path [ m ]:
-! *** 6.6328e-8 is the sea level values given in table i.2.8
-! *** on page 10 of u.s. standard atmosphere 1962
-      xlm = 6.6328e-8_r8 * p0 * airtemp / ( t0 * airprs )
-
-! ***   calculate dynamic viscosity [ kg m**-1 s**-1 ]:
-! *** u.s. standard atmosphere 1962 page 14 expression
-!     for dynamic viscosity is:
-!     dynamic viscosity =  beta * t * sqrt(t) / ( t + s)
-!     where beta = 1.458e-6 [ kg sec^-1 k**-0.5 ], s = 110.4 [ k ].
-      sqrt_temp = sqrt( airtemp)
-      amu = 1.458e-6_r8 * airtemp * sqrt_temp / ( airtemp + 110.4_r8 )
-
-
-
-! *** coagulation
-! *** set up coagulation rates
-
-! *** moment independent factors
-            knc = two3 * boltz *  airtemp / amu
-            lamda = xlm
-
-! ***  calculate the coagulation coefficients for use
-!      in the  aitken (nuclei) & accumulation modes
-! ***  with gauss-hermite numerical quadrature
-!      using 10 abscissas.
-
-! *** aitken - aitken mode coagulation
-      kfm = sqrt( 3.0_r8 * boltz * airtemp / pdensat )
-      call  intracoag_gh(lamda,   &
-                         kfm, knc,   &
-                         dgatk,   &
-                         xxlsgat,   &
-                         wetddrydat,   &
-                         batat(2),   &
-                         batat(1) )
-
-! *** accumulation - accumulation mode coagulation
-      kfm = sqrt( 3.0_r8 * boltz * airtemp / pdensac )
-      call  intracoag_gh(lamda,   &
-                         kfm, knc,   &
-                         dgacc,   &
-                         xxlsgac,   &
-                         wetddrydac,   &
-                         bacac(2),   &
-                         bacac(1) )
-
-! *** aitken accumulation mode coagulation
-      bacat(1) = 0.0_r8 ! not used
-      kfm  = sqrt( 6.0_r8 * boltz * airtemp  /   &
-                             ( pdensat + pdensac ) )
-      call  intercoag_gh(lamda,   &
-                         kfm, knc,   &
-                         dgatk, dgacc ,   &
-                         xxlsgat, xxlsgac ,   &
-                         wetddrydat, wetddrydac,   &
-                         batac(2),   &
-                         bacat(2),   &
-                         batac(1),   &
-                         c3ij          )
-
-!     c30atac = c3ij * cblk( vac0 ) * cblk( vat0 )
-!     loss =  c30atac / cblk( vat3 )
-
-      return
-      end subroutine bink_coag_rates
-
-
-
-! ---------------------------------------------------------------------
-! fsb subrs to do gauss-hermite numerical quadrature
-
-      subroutine intracoag_gh( lamda, kfm, knc,   &
-           dg, xlnsig, wetddryd,   &
-           quads11, quadn11)
-
-!  fsb this version is for intramodal coagulation for number
-!       and second moment
-
-! fsb this version runs in real*4 arithmetic
-
-! *** this version calculates the coagulation coefficients
-!     using the harmonic mean approach for both fm and nc cases.
-! *** does gauss-hermite quadrature for intra-modal
-!      coagulation integrals for 2nd moment
-!     for a lognormal distribution
-!      defined by dg,xlnsig,
-! *** dg and xlnsig are the geometric mean diameters (meters)
-!      and the logarithms of the
-!     geometric standard deviations (dimensionless)
-!     whose meaning is defined below at the end of the routine
-!     ghxi, ghwi are the gauss-hermite weights and n is one-half the
-!     number of abscissas, since an even number of abscissas is used
-!
-!.......................................................................
-!   (following comments added by rc_easter)
-!
-!   computes the following coagulation rate "coefficients"
-!   for intramodal coagulation
-!	dNX/dt  = - (1.e-20*quadn11)*NX1*NX1
-!	dM2X/dt = - (1.e-20*quads11)*NX1*NX1
-!
-!   NX  is the mode's number concentration (particles/m3)
-!   M2X is the mode's 2nd moment (surface/pi) concentration (m2/m3)
-!
-!   input arguments
-!	lamda = mean free path (m)
-!	kfm, knc = constants used in free-molecular and near-continuum
-!	    calculations (see subr bink_coag_rates)
-!	dg = DRY median diameter for number distribution (m)
-!	xlnsig = ln of geometric standard deviation (dimensionless)
-!	wetddryd = (WET median diameter)/(DRY median diameter)
-!
-!   output arguments
-!	quads11, quadn11 = coagulation rate coefficients (see above)
-!
-!   *** note that the quads11, quadn11
-!	are all scaled by 1.e+20 to avoid underflow, and they
-!	must be multiplied by 1.e-20 when they are applied
-!
-!   *** wetddryd1 was added because MIRAGE treats N/S/V of
-!	the DRY size distribution, so the quadrature should be done
-!	over the DRY size distribution.  However, the coagulation kernel
-!	must be computed using actual (WET) particle sizes
-!
-!.......................................................................
-!
-      implicit none
-
-      integer i,j
-
-      real(r4) lamda ! mean free path
-      real(r4) kfm, knc
-      real(r4) dg, xlnsig, wetddryd
-      real(r4) quads11, quadn11
-      real(r4) pi
-      parameter( pi = 3.14159265358979_r8)
-      real(r4) two3rds
-      parameter( two3rds = 2.0_r8 /  3.0_r8 )
-      real(r4) sqrt2
-      parameter(sqrt2 = 1.41421356237309_r8 )
-      real(r4) sum1sfm, sum2sfm, sum1nfm, sum2nfm
-      real(r4) sum1snc, sum2snc, sum1nnc, sum2nnc
-      real(r4) xi, wxi, xf, dp1p,dp1m,dp1psq,dp1msq, dp1pwet, dp1mwet
-      real(r4) v1p,v1m, a2p,a2m,v2p,v2m
-      real(r4) yi,wyi,yf,dp2p,dp2m,dp2psq,dp2msq, dp2pwet, dp2mwet
-      real(r4) dspp,dsmp,dspm, dsmm
-      real(r4) bppfm,bmpfm,bpmfm,bmmfm
-      real(r4) bppnc,bmpnc,bpmnc,bmmnc
-      real(r4) xx1, xx2
-      real(r4) xbsfm, xbsnc, xbnfm, xbnnc
-      real(r4) betafm, betanc
-
-      real(r4)   a               ! approx cunningham corr. factor
-      parameter( a = 1.246_r8 )
-
-      real(r4)   twoa
-      parameter( twoa = 2.0_r8 * a )
-
-! *** has a fixed number of gauss-herimite abscissas (n)
-      integer n    ! one-half the number of abscissas
-      parameter ( n = 5 )
-      real(r4), save :: ghxi(n) ! gauss-hermite abscissas
-      real(r4), save :: ghwi(n) ! gauss-hermite weights
-
-! ** values from table 25.10 (page 924) of abramowitz and stegun,
-!    handbook of mathematical functions, national bureau of standards,
-!  december 1965.
-
-!    breaks in number to facilitate comparison with printed table
-
-! *** tests show that 10 point is adquate.
-
-      data ghxi/0.342901327223705_r8,   &
-                1.036610829789514_r8,   &
-                1.756683649299882_r8,   &
-                2.532731674232790_r8,   &
-                3.436159118837738_r8/
-
-      data ghwi/6.108626337353e-1_r8,   &
-                2.401386110823e-1_r8,   &
-                3.387439445548e-2_r8,   &
-                1.343645746781e-3_r8,   &
-                7.640432855233e-6_r8/
-
-! *** the following expressions are from binkowski & shanker
-!     jour. geophys. research. vol. 100,no. d12, pp 26,191-26,209
-!     december 20, 1995
-! ***  for free molecular eq. a5
-        betafm(xx1, xx2) = kfm *   &
-             sqrt(1.0_r8 / xx1**3  + 1.0_r8 / xx2**3 ) * (xx1 + xx2)**2
-
-! ***  for near continuum  eq. a6
-        betanc(xx1, xx2) =  knc * (xx1 + xx2) *   &
-                             ( 1.0_r8 / xx1 + 1.0_r8 / xx2  +   &
-                           twoa * lamda * ( 1.0_r8 / xx1 ** 2   &
-                                          + 1.0_r8 / xx2 **2 ) )
-
-
-      sum1sfm = 0.0_r8
-      sum1snc = 0.0_r8
-
-      sum1nfm = 0.0_r8
-      sum1nnc = 0.0_r8
-      do 1 i=1,n
-
-        sum2sfm = 0.0_r8
-        sum2snc = 0.0_r8
-        sum2nfm = 0.0_r8
-        sum2nnc = 0.0_r8
-
-        xi = ghxi(i)
-        wxi = ghwi(i)
-        xf = exp( sqrt2 * xi *xlnsig)
-        dp1p = dg*xf
-        dp1m = dg/xf
-        dp1psq = dp1p*dp1p
-        dp1msq = dp1m*dp1m
-        v1p = dp1p*dp1psq
-        v1m = dp1m*dp1msq
-
-        dp1pwet = dp1p * wetddryd
-        dp1mwet = dp1m * wetddryd
-
-      do 11 j=1,n
-        yi = ghxi(j)
-        wyi = ghwi(j)
-        yf = exp( sqrt2 * yi * xlnsig)
-        dp2p = dg*yf
-        dp2m = dg/yf
-        dp2psq = dp2p*dp2p
-        dp2msq = dp2m*dp2m
-        a2p = dp2psq
-        a2m = dp2msq
-        v2p =  dp2p*dp2psq
-        v2m =dp2m*dp2msq
-        dspp = 0.5_r8*(v1p+v2p)**two3rds - a2p
-        dsmp = 0.5_r8*(v1m+v2p)**two3rds - a2p
-        dspm = 0.5_r8*(v1p+v2m)**two3rds - a2m
-        dsmm = 0.5_r8*(v1m+v2m)**two3rds - a2m
-
-        dp2pwet = dp2p * wetddryd
-        dp2mwet = dp2m * wetddryd
-
-!   scale by 1.0e+20 to avoid underflow
-        bppfm = betafm(dp1pwet,dp2pwet) * 1.0e20_r8
-        bmpfm = betafm(dp1mwet,dp2pwet) * 1.0e20_r8
-        bpmfm = betafm(dp1pwet,dp2mwet) * 1.0e20_r8
-        bmmfm = betafm(dp1mwet,dp2mwet) * 1.0e20_r8
-
-        bppnc = betanc(dp1pwet,dp2pwet) * 1.0e20_r8
-        bmpnc = betanc(dp1mwet,dp2pwet) * 1.0e20_r8
-        bpmnc = betanc(dp1pwet,dp2mwet) * 1.0e20_r8
-        bmmnc = betanc(dp1mwet,dp2mwet) * 1.0e20_r8
-
-        sum2sfm = sum2sfm + wyi*(dspp * bppfm + dspm * bpmfm   &
-                     +   dsmp * bmpfm + dsmm * bmmfm )
-
-        sum2nfm = sum2nfm + wyi*(bppfm + bmpfm + bpmfm + bmmfm)
-
-        sum2snc = sum2snc + wyi*(dspp * bppnc + dspm * bpmnc   &
-                     +   dsmp * bmpnc + dsmm * bmmnc )
-        sum2nnc = sum2nnc + wyi*(bppnc + bmpnc + bpmnc + bmmnc)
-
-   11 continue
-      sum1sfm = sum1sfm + wxi * sum2sfm
-      sum1nfm = sum1nfm + wxi * sum2nfm
-
-      sum1snc = sum1snc + wxi * sum2snc
-      sum1nnc = sum1nnc + wxi * sum2nnc
-
-    1 continue
-
-      xbsfm   = -sum1sfm  / pi
-      xbsnc   = -sum1snc  / pi
-
-!     quads11 =  xbsfm * xbsnc / ( xbsfm + xbsnc )
-      quads11 =  ( max(xbsfm,xbsnc) / ( xbsfm + xbsnc ) )   &
-                 * min(xbsfm,xbsnc)
-
-! *** quads11 is the intra-modal coagulation term for 2nd moment
-
-      xbnfm   = 0.5_r8 * sum1nfm  / pi
-      xbnnc   = 0.5_r8 * sum1nnc  / pi
-
-
-!     quadn11 =  xbnfm * xbnnc / ( xbnfm + xbnnc )
-      quadn11 =  ( max(xbnfm,xbnnc) / ( xbnfm + xbnnc ) )   &
-                 * min(xbnfm,xbnnc)
-
-! *** quadn11 is the intra-modal coagulation term for number
-
-
-      return
-      end subroutine intracoag_gh
-
-
-! ---------------------------------------------------------------------
-       subroutine intercoag_gh( lamda, kfm, knc, dg1, dg2,   &
-           xlnsig1, xlnsig2,   &
-           wetddryd1, wetddryd2,   &
-           quads12, quads21, quadn12, quadv12 )
-
-!  fsb this version is for intermodal coagulation for number,
-!       second, and third moments
-! fsb this version runs in real*4 arithmetic
-
-! *** this version calculates the coagulation coefficients
-!     using the harmonic mean approach for both fm and nc cases.
-! *** does gauss-hermite quadrature for inter-modal
-!      coagulation integrals for 2nd moment
-!     for two lognormal distributions
-!      defined by dg1,xlnsig1, dg2,xlnsig2
-! *** dg and xlnsig are the geometric mean diameters (meters)
-!      and the logarithms of the
-!     geometric standard deviations (dimensionless)
-!     whose meaning is defined below at the end of the routine
-!     ghxi, ghwi are the gauss-hermite weights and n is one-half the
-!     number of abscissas, since an even number of abscissas is used
-!
-!.......................................................................
-!   (following comments added by rc_easter)
-!
-!   computes the following coagulation rate "coefficients"
-!   for mode1-mode2 coagulation
-!	dNX1/dt  = - (1.e-20*quadn12)*NX1*NX2
-!	dNX2/dt  = 0.
-!	dM2X1/dt = - (1.e-20*quads12)*NX1*NX2
-!	dM2X2/dt = + (1.e-20*quads21)*NX1*NX2
-!	dM3X1/dt = - (1.e-20*quads12)*NX1*NX2 == - dM3X2/dt
-!
-!   NX1,  NX2 are number concentrations (particles/m3)
-!   M2X1, M2X2 are 2nd moment (surface/pi)  concentrations (m2/m3)
-!   M3X1, M3X2 are 2rd moment (volume*6/pi) concentrations (m3/m3)
-!
-!   in the above, mode 1 is aitken mode, mode 2 is accumulation mode
-!
-!   input arguments
-!	lamda = mean free path (m)
-!	kfm, knc = constants used in free-molecular and near-continuum
-!	    calculations (see subr bink_coag_rates)
-!	dg1, dg2 = DRY median diameters for number distribution (m)
-!	    for aitken and accumulation modes
-!	xlnsig1, xlnsig2 = ln of geometric standard deviations (dimensionless)
-!	wetddryd1, wetddryd2 = (WET median diameter)/(DRY median diameter)
-!
-!   output arguments
-!	quads12, quads21, quadn12, quadv12 = coagulation rate
-!	    coefficients (see above)
-!
-!   *** note that the quads12, quads21, quadn12, quadv12
-!	are all scaled by 1.e+20 to avoid underflow, and they
-!	must be multiplied by 1.e-20 when they are applied
-!
-!   *** wetddryd1/2 were added because MIRAGE treats N/S/V of
-!	the DRY size distribution, so the quadrature should be done
-!	over the DRY size distribution.  However, the coagulation kernel
-!	must be computed using actual (WET) particle sizes
-!
-!.......................................................................
-
-      implicit none
-
-      integer i,j
-
-      real(r4) lamda ! mean free path
-      real(r4) kfm, knc
-      real(r4) dg1, xlnsig1, dg2, xlnsig2
-      real(r4) wetddryd1, wetddryd2
-      real(r4) quads12, quads21, quadn12, quadv12
-      real(r4) pi
-      parameter( pi = 3.14159265358979_r8)
-      real(r4) two3rds
-      parameter( two3rds = 2.0_r8 /  3.0_r8 )
-      real(r4) sqrt2
-      parameter(sqrt2 = 1.41421356237309_r8 )
-      real(r4) sum1s12fm, sum1s21fm, sum2s12fm, sum2s21fm
-      real(r4) sum1nfm, sum2nfm
-      real(r4) sum1vfm, sum2vfm
-      real(r4) sum1s12nc, sum1s21nc, sum2s12nc, sum2s21nc
-      real(r4) sum1nnc, sum2nnc
-      real(r4) sum1vnc, sum2vnc
-      real(r4) xi, wxi,xf, dp1p, dp1m, dp1psq, dp1msq, dp1pwet, dp1mwet
-      real(r4) a1p, a1m, v1p, v1m
-      real(r4) a2p, a2m, v2p, v2m
-      real(r4) yi, wyi, yf, dp2p, dp2m, dp2psq, dp2msq, dp2pwet, dp2mwet
-      real(r4) dspp, dsmp, dspm, dsmm
-      real(r4) bppfm, bmpfm, bpmfm, bmmfm
-      real(r4) bppnc, bmpnc, bpmnc, bmmnc
-      real(r4) xx1, xx2
-      real(r4) xbsfm, xbsnc, xbnfm, xbnnc, xbvfm, xbvnc
-      real(r4) betafm, betanc
-
-      real(r4)   a               ! approx cunningham corr. factor
-      parameter( a = 1.246_r8 )
-
-      real(r4)   twoa
-      parameter( twoa = 2.0_r8 * a )
-
-! *** has a fixed number of gauss-herimite abscissas (n)
-      integer n    ! one-half the number of abscissas
-      parameter ( n = 5 )
-      real(r4), save :: ghxi(n) ! gauss-hermite abscissas
-      real(r4), save :: ghwi(n) ! gauss-hermite weights
-
-! ** values from table 25.10 (page 924) of abramowitz and stegun,
-!    handbook of mathematical functions, national bureau of standards,
-!  december 1965.
-
-!    breaks in number to facilitate comparison with printed table
-
-! *** tests show that 10 point is adquate.
-
-      data ghxi/0.342901327223705_r8,   &
-                1.036610829789514_r8,   &
-                1.756683649299882_r8,   &
-                2.532731674232790_r8,   &
-                3.436159118837738_r8/    
-
-      data ghwi/6.108626337353e-1_r8,   &
-                2.401386110823e-1_r8,   &
-                3.387439445548e-2_r8,   &
-                1.343645746781e-3_r8,   &
-                7.640432855233e-6_r8/
-
-
-! *** the following expressions are from binkowski & shanker
-!     jour. geophys. research. vol. 100,no. d12, pp 26,191-26,209
-!     december 20, 1995
-
-! ***  for free molecular eq. a5
-        betafm(xx1, xx2) = kfm *   &
-             sqrt(1.0_r8 / xx1**3  + 1.0_r8 / xx2**3 ) * (xx1 + xx2)**2
-
-! ***  for near continuum  eq. a6
-        betanc(xx1, xx2) =  knc * (xx1 + xx2) *   &
-                             ( 1.0_r8 / xx1 + 1.0_r8 / xx2  +   &
-                           twoa * lamda * ( 1.0_r8 / xx1 ** 2   &
-                                          + 1.0_r8 / xx2 **2 ) )
-
-      sum1s12fm = 0.0_r8
-      sum1s12nc = 0.0_r8
-      sum1s21fm = 0.0_r8
-      sum1s21nc = 0.0_r8
-      sum1vnc = 0.0_r8
-      sum1vfm = 0.0_r8
-      sum1nfm = 0.0_r8
-      sum1nnc = 0.0_r8
-      do 1 i=1,n
-
-        sum2s12fm = 0.0_r8
-        sum2s12nc = 0.0_r8
-        sum2s21fm = 0.0_r8
-        sum2s21nc = 0.0_r8
-        sum2nfm = 0.0_r8
-        sum2nnc = 0.0_r8
-        sum2vnc = 0.0_r8
-        sum2vfm = 0.0_r8
-        xi = ghxi(i)
-        wxi = ghwi(i)
-        xf = exp( sqrt2 * xi *xlnsig1)
-        dp1p = dg1*xf
-        dp1m = dg1/xf
-        dp1psq = dp1p*dp1p
-        dp1msq = dp1m*dp1m
-        a1p = dp1psq
-        a1m = dp1msq
-        v1p = dp1p*dp1psq
-        v1m = dp1m*dp1msq
-
-        dp1pwet = dp1p * wetddryd1
-        dp1mwet = dp1m * wetddryd1
-
-      do 11 j=1,n
-        yi  = ghxi(j)
-        wyi = ghwi(j)
-        yf = exp( sqrt2 * yi * xlnsig2)
-        dp2p = dg2*yf
-        dp2m = dg2/yf
-        dp2psq = dp2p*dp2p
-        dp2msq = dp2m*dp2m
-        a2p  = dp2psq
-        a2m  = dp2msq
-        v2p  =  dp2p*dp2psq
-        v2m  = dp2m*dp2msq
-        dspp = (v1p+v2p)**two3rds - a2p
-        dsmp = (v1m+v2p)**two3rds - a2p
-        dspm = (v1p+v2m)**two3rds - a2m
-        dsmm = (v1m+v2m)**two3rds - a2m
-
-        dp2pwet = dp2p * wetddryd2
-        dp2mwet = dp2m * wetddryd2
-
-!   scale by 1.0e+20 to avoid underflow
-        bppfm = betafm(dp1pwet,dp2pwet) * 1.0e20_r8
-        bmpfm = betafm(dp1mwet,dp2pwet) * 1.0e20_r8
-        bpmfm = betafm(dp1pwet,dp2mwet) * 1.0e20_r8
-        bmmfm = betafm(dp1mwet,dp2mwet) * 1.0e20_r8
-
-        bppnc = betanc(dp1pwet,dp2pwet) * 1.0e20_r8
-        bmpnc = betanc(dp1mwet,dp2pwet) * 1.0e20_r8
-        bpmnc = betanc(dp1pwet,dp2mwet) * 1.0e20_r8
-        bmmnc = betanc(dp1mwet,dp2mwet) * 1.0e20_r8
-
-
-        sum2s12fm = sum2s12fm + wyi*(a1p * bppfm + a1p * bpmfm   &
-                     +   a1m * bmpfm + a1m * bmmfm )
-
-        sum2s21fm = sum2s21fm + wyi*(dspp * bppfm + dspm * bpmfm   &
-                     +   dsmp * bmpfm + dsmm * bmmfm )
-
-
-        sum2s12nc = sum2s12nc + wyi*(a1p * bppnc + a1p * bpmnc   &
-                     +   a1m * bmpnc + a1m * bmmnc )
-
-        sum2s21nc = sum2s21nc + wyi*(dspp * bppnc + dspm * bpmnc   &
-                     +   dsmp * bmpnc + dsmm * bmmnc )
-
-        sum2nfm = sum2nfm + wyi*(bppfm + bmpfm + bpmfm + bmmfm)
-
-        sum2nnc = sum2nnc + wyi*(bppnc + bmpnc + bpmnc + bmmnc)
-
-        sum2vfm = sum2vfm + wyi*(v1p*(bppfm + bpmfm) +   &
-                                 v1m*(bmpfm + bmmfm) )
-
-        sum2vnc = sum2vnc + wyi*(v1p*(bppnc + bpmnc) +   &
-                                 v1m*(bmpnc + bmmnc) )
-
-   11 continue
-
-      sum1s12fm = sum1s12fm + wxi * sum2s12fm
-      sum1s21fm = sum1s21fm + wxi * sum2s21fm
-      sum1nfm   = sum1nfm + wxi * sum2nfm
-      sum1vfm   = sum1vfm + wxi * sum2vfm
-
-      sum1s12nc = sum1s12nc + wxi * sum2s12nc
-      sum1s21nc = sum1s21nc + wxi * sum2s21nc
-      sum1nnc   = sum1nnc + wxi * sum2nnc
-      sum1vnc   = sum1vnc + wxi * sum2vnc
-
-    1 continue
-
-! *** second moment intermodal coagulation coefficients
-
-! fsb note: the transfer of second moment is not symmetric.
-!     see equations a3 & a4 of binkowski & shankar (1995)
-
-! ***  to accumulation mode from aitken mode
-
-      xbsfm   = sum1s21fm  / pi
-      xbsnc   = sum1s21nc  / pi
-
-!     quads21 =  xbsfm * xbsnc / ( xbsfm + xbsnc )
-      quads21 =  ( max(xbsfm,xbsnc) / ( xbsfm + xbsnc ) )   &
-                 * min(xbsfm,xbsnc)
-
-! *** from aitken mode to accumulation mode
-
-      xbsfm   = sum1s12fm  / pi
-      xbsnc   = sum1s12nc  / pi
-
-!     quads12 =  xbsfm * xbsnc / ( xbsfm + xbsnc )
-      quads12 =  ( max(xbsfm,xbsnc) / ( xbsfm + xbsnc ) )   &
-                 * min(xbsfm,xbsnc)
-
-
-
-      xbnfm   = sum1nfm  / pi
-      xbnnc   = sum1nnc  / pi
-
-!     quadn12 =  xbnfm * xbnnc / ( xbnfm + xbnnc )
-      quadn12 =  ( max(xbnfm,xbnnc) / ( xbnfm + xbnnc ) )   &
-                 * min(xbnfm,xbnnc)
-
-! *** quadn12 is the intermodal coagulation coefficient for number
-
-
-       xbvfm = sum1vfm / pi
-       xbvnc = sum1vnc / pi
-
-!     quadv12 = xbvfm * xbvnc / ( xbvfm + xbvnc )
-      quadv12 =  ( max(xbvfm,xbvnc) / ( xbvfm + xbvnc ) )   &
-                 * min(xbvfm,xbvnc)
-
-! *** quadv12 is the intermodal coagulation coefficient for 3rd moment
-
-
-      return
-      end subroutine intercoag_gh
-
-
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
       subroutine getcoags_wrapper_f(              &
@@ -1899,6 +1001,9 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
           pdensat, pdensac,                       &
           betaij0, betaij2i, betaij2j, betaij3,   &
           betaii0, betaii2, betajj0, betajj2      )
+        use physconst, only: p0 => pstd, &
+                             tmelt, &
+                             boltz
 !
 ! interface to subr. getcoags
 !
@@ -1929,11 +1034,7 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
 
 
 ! *** local parameters
-      real(r8), parameter :: p0 = 101325.0_r8         !  standard surface pressure [ pa ]
-      real(r8), parameter :: t0 = 288.15_r8           !  standard surface temperature [ k ]
-      real(r8), parameter :: avo = 6.0221367e23_r8    ! avogadro's constant [ 1/mol ]
-      real(r8), parameter :: rgasuniv = 8.314510_r8   ! universal gas constant [ j/mol-k ]
-      real(r8), parameter :: boltz = rgasuniv/avo  ! boltzmann's constant [ j / k]
+      real(r8) :: t0  ! standard surface temperature (15 deg C) [ k ]
       real(r8), parameter :: two3 = 2.0_r8/3.0_r8
 
 ! *** local variables
@@ -1962,7 +1063,7 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
 
       real(r8)    dumacc2, dumatk2, dumatk3
 
-
+      t0 = tmelt + 15._r8
 
       sqrt_temp = sqrt( airtemp)
 
@@ -2189,13 +1290,13 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
       real(r8) xm2at, xm3at, xm2ac, xm3ac
 
 ! *** correction factors for coagulation rates
-      real(r4), save :: bm0( 10 )          ! m0 intramodal fm - rpm values
-      real(r4), save :: bm0ij( 10, 10, 10 ) ! m0 intermodal fm
-      real(r4), save :: bm3i( 10, 10, 10 ) ! m3 intermodal fm- rpm values
-      real(r4), save :: bm2ii(10) ! m2 intramodal fm
-      real(r4), save :: bm2iitt(10) ! m2 intramodal total
-      real(r4), save :: bm2ij(10,10,10) ! m2 intermodal fm i to j
-      real(r4), save :: bm2ji(10,10,10) ! m2 total intermodal  j from i
+      real(r8), save :: bm0( 10 )          ! m0 intramodal fm - rpm values
+      real(r8), save :: bm0ij( 10, 10, 10 ) ! m0 intermodal fm
+      real(r8), save :: bm3i( 10, 10, 10 ) ! m3 intermodal fm- rpm values
+      real(r8), save :: bm2ii(10) ! m2 intramodal fm
+      real(r8), save :: bm2iitt(10) ! m2 intramodal total
+      real(r8), save :: bm2ij(10,10,10) ! m2 intermodal fm i to j
+      real(r8), save :: bm2ji(10,10,10) ! m2 total intermodal  j from i
 
 ! *** populate the arrays for the correction factors.
 

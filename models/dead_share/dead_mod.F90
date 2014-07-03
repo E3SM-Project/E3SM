@@ -86,6 +86,14 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
       call shr_sys_abort(subName//'invalid decomp_type')
    endif
 
+   if (nxg*nyg == 0) then
+      lsize = 0
+      allocate(gbuf(lsize,dead_grid_total))
+!      gbuf = -888.0_R8
+      if (mype == 0) &
+         write(logunit,*) subname,' grid size is zero, lsize = ',lsize
+      return
+   endif
 
    found = .false.
 

@@ -20,7 +20,7 @@
 <solar_data_type>SERIAL</solar_data_type>
 
 <!-- aerosol nl -->
-<soil_erod>atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod>
+<soil_erod_file>atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
 <dust_emis_fact>2.76D0</dust_emis_fact>
 
 <!-- Prescribed BAM data is from Jean-Francois Lamarque -->
@@ -44,7 +44,7 @@
 <gas_wetdep_method>NEU</gas_wetdep_method>
 
 <!-- fixed lower boundary data  -->
-<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c091214.nc</flbc_file>
+<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c120204.nc</flbc_file>
 <flbc_type>SERIAL</flbc_type>
 
 <!-- strat aerosol data  -->
@@ -63,7 +63,7 @@
 <avgflag_pertape> 'A','I','I'</avgflag_pertape>
 
 <fincl1>
-  'Q', 'U', 'V', 'OMEGA', 'T', 'PS', 'TROP_P','PBLH','PRECC','PRECL','PHIS', 'ORO', 'QFLX', 'SHFLX', 'TAUX', 'TAUY',
+  'Q', 'U', 'V', 'OMEGA', 'T', 'PS', 'TROP_P','PBLH','PRECC','PRECL','PHIS', 'QFLX', 'SHFLX', 'TAUX', 'TAUY',
   'O3', 'O', 'O1D', 'N2O', 'NO', 'NO2', 'NO3', 'HNO3', 'HO2NO2', 'N2O5', 'H2', 'OH', 'HO2', 'H2O2',
   'CH4', 'CO', 'CH3O2', 'CH3OOH', 'CH2O', 'CH3OH', 'C2H5OH', 'C2H4', 'EO', 'EO2', 'CH3COOH', 'GLYALD', 'C2H6',
   'C2H5O2', 'C2H5OOH', 'CH3CHO', 'CH3CO3', 'CH3COOOH', 'C3H6', 'C3H8', 'C3H7O2', 'C3H7OOH', 'PO2', 'POOH',
@@ -83,7 +83,7 @@
 <fincl2>
   'Q', 'O3', 'OH', 'N2O', 'NO', 'NO2', 'NO3', 'HNO3', 'HO2NO2', 'N2O5', 'H2', 'OH', 'HO2', 'H2O2',
   'PAN', 'CO','CO_SRF','O3_SRF','NO3', 'N2O5', 'HO2NO2', 'CH4', 'C2H4', 'C2H6', 'SO2', 'SO4', 'CB1',
-  'CB2', 'U', 'V', 'OMEGA', 'T', 'PS', 'PHIS', 'ORO', 'QFLX', 'SHFLX', 'TAUX', 'TAUY'
+  'CB2', 'U', 'V', 'OMEGA', 'T', 'PS', 'PHIS', 'QFLX', 'SHFLX', 'TAUX', 'TAUY'
 </fincl2>
 
 <fincl3>

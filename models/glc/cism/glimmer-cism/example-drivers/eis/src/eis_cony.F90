@@ -37,16 +37,17 @@ module eis_cony
   !*FD This module reproduces the continentality forcing used to drive the 
   !*FD Edinburgh Ice Sheet model. 
 
-  use searchcircle
+  use glimmer_searchcircle
+  use glimmer_global, only: dp
 
   type eis_cony_type
-     real :: period = 0.                          !*FD how often cony field should be updated, set to 0 to switch off
-     real :: cony_radius = 600000                 !*FD continentality radius
-     integer :: update_from_file = 0              !*FD load cony from file
-     real :: next_update                          !*FD when the next update occurs
-     real,dimension(:,:),pointer :: cony => null()!*FD cony field
-     real,dimension(:,:),pointer :: topo => null()!*FD topography mask
-     type(searchdata) :: sdata                    !*FD search circle structure
+     real(dp) :: period = 0.d0                        !*FD how often cony field should be updated, set to 0 to switch off
+     real(dp) :: cony_radius = 600000                 !*FD continentality radius
+     integer :: update_from_file = 0                  !*FD load cony from file
+     real(dp) :: next_update                          !*FD when the next update occurs
+     real(dp),dimension(:,:),pointer :: cony => null()!*FD cony field
+     real(dp),dimension(:,:),pointer :: topo => null()!*FD topography mask
+     type(searchdata) :: sdata                        !*FD search circle structure
   end type eis_cony_type
 
 contains  
@@ -61,12 +62,12 @@ contains
 
     call GetSection(config,section,'EIS CONY')
     if (associated(section)) then
-       cony%period=500.
+       cony%period = 500.d0
        call GetValue(section,'period',cony%period)
        call GetValue(section,'radius',cony%cony_radius)
        call GetValue(section,'file',cony%update_from_file)
        if (cony%update_from_file.eq.1) then
-          cony%period = 0
+          cony%period = 0.d0
        end if
     end if
   end subroutine eis_cony_config
@@ -107,9 +108,9 @@ contains
 
     ! allocate data
     allocate(cony%cony(model%general%ewn,model%general%nsn))
-    cony%cony = 0.
+    cony%cony = 0.d0
 
-    if (cony%period.gt.0) then
+    if (cony%period .gt. 0.d0) then
        allocate(cony%topo(model%general%ewn,model%general%nsn))
        ! initialise search circles
        radius = int(cony%cony_radius/sqrt(model%numerics%dew**2 + model%numerics%dns**2))
@@ -120,26 +121,26 @@ contains
   subroutine eis_continentality(cony,model,time)
     !*FD calculate continentality field
     use glide_types
-    use glimmer_global, only : rk
+    use glimmer_global, only : dp
     implicit none
     type(eis_cony_type)       :: cony  !*FD cony data
     type(glide_global_type)   :: model !*FD model instance
-    real(kind=rk), intent(in) :: time  !*FD current time
+    real(dp), intent(in) :: time  !*FD current time
     
-    if (cony%period.gt.0 .and. cony%next_update.ge.time) then
+    if (cony%period.gt.0.d0 .and. cony%next_update.ge.time) then
        
        where (.not. GLIDE_IS_OCEAN(model%geometry%thkmask) .and. .not. GLIDE_IS_FLOAT(model%geometry%thkmask))
-          cony%topo = 1.
+          cony%topo = 1.d0
        elsewhere
-          cony%topo = 0.
+          cony%topo = 0.d0
        end where
 
        call sc_search(cony%sdata,cony%topo,cony%cony)
 
-       where(cony%topo.eq.0.)
-          cony%cony = 0.
+       where(cony%topo.eq.0.d0)
+          cony%cony = 0.d0
        elsewhere
-          cony%cony =2.*max(cony%cony/cony%sdata%total_area-0.5,0.)
+          cony%cony =2.d0 * max(cony%cony/cony%sdata%total_area-0.5d0, 0.d0) 
        end where
 
        cony%next_update = cony%next_update+cony%period

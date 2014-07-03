@@ -51,7 +51,10 @@ subroutine calcrs(carma, cstate, ustar, tmp, radi, cc, vfall, rs, landidx, rc)
   real(kind=f)            :: eta                    ! kinematic viscosity of air [cm2/s] 
   real(kind=f), parameter :: xkar = 0.4_f           ! Von Karman's constant     
   real(kind=f), parameter :: eps0 = 3._f            ! empirical constant for rs, 3.0 in [Zhang, 2001], 1.0 in [Seinfeld and Pandis]
-  real(kind=f)            :: lam                    ! exponent in the eb dependence on sc, 2/3 in [Seinfeld and Pandis, 1998], 1/2 in [Lewis and Schwartz, 2004]
+
+  ! exponent in the eb dependence on sc, 2/3 in [Seinfeld and Pandis, 1998], 1/2 in [Lewis and Schwartz, 2004]
+  real(kind=f)            :: lam
+
   integer                 :: ibot
   
   if (igridv .eq. I_CART) then
@@ -62,7 +65,7 @@ subroutine calcrs(carma, cstate, ustar, tmp, radi, cc, vfall, rs, landidx, rc)
   
   ! Unit conversion   
   rhoadry = rhoa(ibot) / zmet(ibot) / xmet(ibot) / ymet(ibot)   ! [g/cm3] 
-  eta = rmu(ibot) / rhoadry                                     ! rmu, aerodynamic viscosity of air [g/cm/s]                                                                    
+  eta = rmu(ibot) / rhoadry                                     ! rmu, aerodynamic viscosity of air [g/cm/s]
 
   if (landidx .eq. 1)  then
     lam = 2._f / 3._f

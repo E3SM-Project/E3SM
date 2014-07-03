@@ -272,7 +272,6 @@ if [ "$phys" = "clm4_0" ]; then
 	   "5x5min_IGBP-GSDP"  \
 	   "5x5min_ISRIC-WISE" \
 	   "10x10min_nomask"   \
-	   "10x10min_IGBPmergeICESatGIS" \
 	   "3x3min_GLOBE-Gardner" \
 	   "3x3min_GLOBE-Gardner-mergeGIS" )
 

@@ -73,6 +73,49 @@ only matched variables.
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
+  <tr id="do_rtm_tr">
+    <td><a name="do_rtm"></a>
+        <img id="do_rtm_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('do_rtm')">do_rtm</a>
+        </code>
+        <div id="do_rtm_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If .true., turn on rtm river routing
+<br/>Default: .true.
+If the value of the xml variable ROF GRID in env_build.xml is set to 'null', then
+the RTM build-namelist will set do_rtm to .false.
+If do_rtm is set to .false., then RTM will send a flag of rof_prognostic = .false.
+back to the coupler on initialization. 
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>rtm_inparm</td>
+  </tr>
+  <tr id="do_rtmflood_tr">
+    <td><a name="do_rtmflood"></a>
+        <img id="do_rtmflood_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('do_rtmflood')">do_rtmflood</a>
+        </code>
+        <div id="do_rtmflood_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If .true., turn on rtm flooding back to clm
+<br/>Default: .false.
+Note that rtm flood is not supported in CESM1.1
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>rtm_inparm</td>
+  </tr>
   <tr id="finidat_rtm_tr">
     <td><a name="finidat_rtm"></a>
         <img id="finidat_rtm_arrow" src="./images/arrow_right.gif">
@@ -86,26 +129,6 @@ only matched variables.
 	     <pre>
 Full pathname of initial rtm file 
 <br/>Default: ' '
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>rtm_inparm</td>
-  </tr>
-  <tr id="flood_mode_tr">
-    <td><a name="flood_mode"></a>
-        <img id="flood_mode_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('flood_mode')">flood_mode</a>
-        </code>
-        <div id="flood_mode_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-If ACTIVE, turn on rtm flooding back to clm
-<br/>Default: NULL
-Note that rtm flood is not supported in CESM1.1
 </pre>
         </div>
     </td>
@@ -164,46 +187,6 @@ stream.
 	     <pre>
 Full pathname of master restart file for a branch run. (only used if RUN_TYPE=branch)
 (Set with xml variables RUN_REFCASE and RUN_REFDATE in env_run.xml)
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>rtm_inparm</td>
-  </tr>
-  <tr id="rtm_effvel_tr">
-    <td><a name="rtm_effvel"></a>
-        <img id="rtm_effvel_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rtm_effvel')">rtm_effvel</a>
-        </code>
-        <div id="rtm_effvel_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-If ACTIVE, calculate the effective velocity using slope.
-<br/>Default: NULL
-Note that flood_mode and rtm_effvel are not supported in CESM1.1
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>rtm_inparm</td>
-  </tr>
-  <tr id="rtm_mode_tr">
-    <td><a name="rtm_mode"></a>
-        <img id="rtm_mode_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rtm_mode')">rtm_mode</a>
-        </code>
-        <div id="rtm_mode_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-If ACTIVE, turn on rtm river routing
-<br/>Default: ACTIVE
-If the value rtm_mode is NULL, then rof_present will be set to false at runtime
 </pre>
         </div>
     </td>

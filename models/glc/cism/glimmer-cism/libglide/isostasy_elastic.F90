@@ -39,7 +39,7 @@ module isostasy_elastic
 
   implicit none
 
-  real, private, parameter :: r_lr = 6.0   ! influence of disk load at (0,0) is felt within a radius of rbel_r_lr*rbel_r
+  real(dp), private, parameter :: r_lr = 6.d0   ! influence of disk load at (0,0) is felt within a radius of rbel_r_lr*rbel_r
   
   private :: init_rbel, rbel_ow, rbel_iw
 
@@ -58,8 +58,8 @@ contains
     real(dp), intent(in) :: deltax        !*FD grid spacing
 
     ! local variables
-    real :: a     ! radius of disk
-    real :: r     ! distance from centre
+    real(dp) :: a     ! radius of disk
+    real(dp) :: r     ! distance from centre
     integer :: i,j
 
     ! calculate a so that a circle of radius a is equivalent to a square with size deltax
@@ -75,7 +75,7 @@ contains
     allocate(rbel%w(0:rbel%wsize,0:rbel%wsize))
 
     ! calculating points within disk
-    rbel%w(0,0) = rbel_iw(rbel,0.)
+    rbel%w(0,0) = rbel_iw(rbel,0.d0)
     r = deltax/rbel%lr
     rbel%w(0,1) = rbel_iw(rbel,r)
     rbel%w(1,0) = rbel%w(0,1)
@@ -167,9 +167,9 @@ contains
     use kelvin
     implicit none
     type(isos_elastic) :: rbel        !*FD structure holding elastic litho data
-    real, intent(in) :: a             !*FD radius of disk
+    real(dp), intent(in) :: a             !*FD radius of disk
 
-    real dummy_a
+    real(dp) :: dummy_a
 
     call set_kelvin(1.d-10,40)
 
@@ -191,8 +191,8 @@ contains
     use kelvin
     !*FD calculating deflection outside disk
     implicit none
-    real :: rbel_ow
-    real, intent(in) :: r          !*FD radius, r should be scaled with lr
+    real(dp) :: rbel_ow
+    real(dp), intent(in) :: r          !*FD radius, r should be scaled with lr
     type(isos_elastic) :: rbel     !*FD structure holding elastic litho data
     
     rbel_ow = rbel%cd3*ker(r) + rbel%cd4*kei(r)
@@ -204,11 +204,11 @@ contains
     use kelvin
     !*FD calculating deflection inside disk
     implicit none
-    real :: rbel_iw
-    real, intent(in) :: r          !*FD radius, r should be scaled with lr
-    type(isos_elastic) :: rbel     !*FD structure holding elastic litho data
+    real(dp) :: rbel_iw
+    real(dp), intent(in) :: r          !*FD radius, r should be scaled with lr
+    type(isos_elastic) :: rbel         !*FD structure holding elastic litho data
     
-    rbel_iw = 1.0 + rbel%c1*ber(r) + rbel%c2*bei(r)
+    rbel_iw = 1.d0 + rbel%c1*ber(r) + rbel%c2*bei(r)
   end function rbel_iw
 
 !-------------------------------------------------------------------------

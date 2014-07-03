@@ -44,11 +44,11 @@ module glint_pdd
   !*FD All precip and mass-balance amounts are as meters of water equivalent. PDD
   !*FD factors are no longer converted in the code.
 
-  use glimmer_global, only : dp,sp
+  use glimmer_global, only : dp
 
   implicit none
 
-  private :: dp, sp
+  private :: dp
 
   type glint_pdd_params
 
@@ -63,32 +63,34 @@ module glint_pdd
     integer  :: iy        = -50 !*FD Lower bound of $y$-axis ($^{\circ}$C)
     integer  :: nx        = 31  !*FD Number of values in x-direction
     integer  :: ny        = 71  !*FD Number of values in y-direction
-    real(sp) :: dailytemp = 0.0 
-    real(sp) :: tma       = 0.0
-    real(sp) :: tmj       = 0.0
-    real(sp) :: dtmj      = 0.0
-    real(sp) :: dd_sigma  = 5.0 !*FD Standard deviation of daily temperature (K)
+    real(dp) :: dailytemp = 0.d0 
+    real(dp) :: tma       = 0.d0
+    real(dp) :: tmj       = 0.d0
+    real(dp) :: dtmj      = 0.d0
+    real(dp) :: dd_sigma  = 5.d0 !*FD Standard deviation of daily temperature (K)
  
     ! The actual PDD table ---------------------------------------------
 
-    real(sp),dimension(:,:),pointer :: pddtab  => null() 
+    real(dp),dimension(:,:),pointer :: pddtab  => null() 
     
     !*FD PDD table - must be allocated with dimensions nx,ny.
 
     ! Parameters for the PDD calculation
 
-    real(sp) :: wmax        = 0.6   !*FD Fraction of melted snow that refreezes
-    real(dp) :: pddfac_ice  = 0.008 !*FD PDD factor for ice (m water day$^{-1}$ $^{\circ}C$^{-1}$)
-    real(dp) :: pddfac_snow = 0.003 !*FD PDD factor for snow (m water day$^{-1}$ $^{\circ}C$^{-1}$)
+    real(dp) :: wmax        = 0.6d0    !*FD Fraction of melted snow that refreezes
+!WHL real(dp) :: pddfac_ice  = 0.008   !*FD PDD factor for ice (m water day$^{-1}$ $^{\circ}C$^{-1}$)
+!    real(dp) :: pddfac_snow = 0.003   !*FD PDD factor for snow (m water day$^{-1}$ $^{\circ}C$^{-1}$)
+    real(dp) :: pddfac_ice  = 8.0d-3   !*FD PDD factor for ice (m water day$^{-1}$ $^{\circ}C$^{-1}$)
+    real(dp) :: pddfac_snow = 3.0d-3   !*FD PDD factor for snow (m water day$^{-1}$ $^{\circ}C$^{-1}$)
 
   end type glint_pdd_params
  	 
   ! Module parameters use for back-door message-passing
 
-  real(sp) :: dd_sigma            !*FD The value of $\sigma$ in the PDD integral
-  real(sp) :: t_a_prime           !*FD The value of $T'_{a}$ in the PDD integral
-  real(sp) :: mean_annual_temp    !*FD Mean annual temperature
-  real(sp) :: mean_july_temp      !*FD Mean july temperature
+  real(dp) :: dd_sigma            !*FD The value of $\sigma$ in the PDD integral
+  real(dp) :: t_a_prime           !*FD The value of $T'_{a}$ in the PDD integral
+  real(dp) :: mean_annual_temp    !*FD Mean annual temperature
+  real(dp) :: mean_july_temp      !*FD Mean july temperature
 
   private
   public :: glint_pdd_params, glint_pdd_init, glint_pdd_mbal
@@ -132,18 +134,18 @@ contains
     implicit none 
  
     type(glint_pdd_params),   intent(inout) :: params  !*FD The positive-degree-day parameters
-    real(sp), dimension(:,:), intent(in)    :: artm    !*FD Annual mean air-temperature 
+    real(dp), dimension(:,:), intent(in)    :: artm    !*FD Annual mean air-temperature 
                                                        !*FD ($^{\circ}$C)
-    real(sp), dimension(:,:), intent(in)    :: arng    !*FD Annual temperature half-range ($^{\circ}$C)
-    real(sp), dimension(:,:), intent(in)    :: prcp    !*FD Annual accumulated precipitation 
+    real(dp), dimension(:,:), intent(in)    :: arng    !*FD Annual temperature half-range ($^{\circ}$C)
+    real(dp), dimension(:,:), intent(in)    :: prcp    !*FD Annual accumulated precipitation 
                                                        !*FD (m water equivalent)
-    real(sp), dimension(:,:), intent(out)   :: ablt    !*FD Annual ablation (m water equivalent)
-    real(sp), dimension(:,:), intent(out)   :: acab    !*FD Annual mass-balance (m water equivalent)
+    real(dp), dimension(:,:), intent(out)   :: ablt    !*FD Annual ablation (m water equivalent)
+    real(dp), dimension(:,:), intent(out)   :: acab    !*FD Annual mass-balance (m water equivalent)
     logical,  dimension(:,:), intent(in)    :: landsea !*FD Land-sea mask (land is TRUE)
 
     ! Internal variables
 
-    real(sp) :: wfrac, pablt, tx, ty, pdd
+    real(dp) :: wfrac, pablt, tx, ty, pdd
     integer  :: ns,ew,nsn,ewn,kx,ky,jx,jy
 
     ! Get size of arrays. All arrays should be the same size as this.
@@ -196,10 +198,10 @@ contains
             
           ! this is done using a look-up table constructed earlier
 
-          pdd = params%pddtab(kx,ky)*(1.0-tx)*(1.0-ty) + &
-                params%pddtab(jx,ky) * tx * (1.0 - ty) + &
+          pdd = params%pddtab(kx,ky)*(1.d0-tx)*(1.d0-ty) + &
+                params%pddtab(jx,ky) * tx * (1.d0 - ty) + &
                 params%pddtab(jx,jy) * tx * ty +         &
-                params%pddtab(kx,jy) * (1.0 - tx) * ty
+                params%pddtab(kx,jy) * (1.d0 - tx) * ty
 
           ! this is the depth of superimposed ice that would need to be
           ! melted before runoff can occur
@@ -227,7 +229,7 @@ contains
           ! error spotted by jonathan 18-04-00
 
           if ( pablt <= wfrac ) then
-            ablt(ew,ns) = 0.0
+            ablt(ew,ns) = 0.d0
           else if(pablt > wfrac .and.pablt <= prcp(ew,ns)) then   
             ablt(ew,ns) = pablt - wfrac 
           else
@@ -239,8 +241,8 @@ contains
 
           acab(ew,ns) = prcp(ew,ns) - ablt(ew,ns)
          else
-            ablt(ew,ns)=prcp(ew,ns)
-            acab(ew,ns)=0.0
+            ablt(ew,ns) = prcp(ew,ns)
+            acab(ew,ns) = 0.d0
          endif
       end do
     end do
@@ -322,7 +324,8 @@ contains
 
     !*FD Initialises the positive-degree-day-table.
 
-    use glimmer_global, only: sp
+    use glimmer_global, only: dp
+    use glimmer_physcon, only: pi
     use glimmer_integrate
     use glimmer_log
 
@@ -332,8 +335,13 @@ contains
 
     ! Internal variables
 
-    real(sp)           :: tma,dtmj
-    real(sp),parameter :: twopi = 3.1416 * 2.0   !TODO - Change to 2.0 * pi 
+    real(dp)           :: tma,dtmj
+
+    !WHL - Note: By using a more accurate value of pi, instead of 3.1416,
+    !      we change answers in around the fifth decimal place 
+!    real(sp),parameter :: twopi = 3.1416 * 2.0   ! old sp value
+    real(dp),parameter :: twopi = pi * 2.d0
+
     integer  :: kx,ky, i,j
 
     !--------------------------------------------------------------------
@@ -348,24 +356,24 @@ contains
     do j=0,params%ny-1
        tma=params%iy + j*params%dy
 
-       ky = findgrid(tma,real(params%iy),real(params%dy))
+       ky = findgrid(tma, real(params%iy,dp), real(params%dy,dp))
 
        do i=0,params%nx-1
           dtmj = params%ix + i*params%dx
 
           mean_july_temp = tma + dtmj   
-          kx  = findgrid(dtmj,real(params%ix),real(params%dx)) 
+          kx  = findgrid(dtmj, real(params%ix,dp), real(params%dx,dp)) 
 
           ! need these lines to take account of the backdoor message passing used here
 
-          mean_annual_temp=tma
-          dd_sigma=params%dd_sigma
+          mean_annual_temp = tma
+          dd_sigma = params%dd_sigma
 
-          params%pddtab(kx,ky)=(1.0/(dd_sigma*sqrt(twopi)))*romberg_int(inner_integral,0.0,twopi)
+          params%pddtab(kx,ky)=(1.d0/(dd_sigma*sqrt(twopi)))*romberg_int(inner_integral,0.d0,twopi)
 
           ! convert to days     
 
-          params%pddtab(kx,ky) = 365.0 * params%pddtab(kx,ky) / twopi
+          params%pddtab(kx,ky) = 365.d0 * params%pddtab(kx,ky) / twopi
 
        end do
     end do
@@ -376,7 +384,7 @@ contains
 
 !-------------------------------------------------------------------------------
 
-  real(sp) function inner_integral(day)
+  real(dp) function inner_integral(day)
 
     !*FD Calculates the value of the inner integral, i.e.
     !*FD \begin{equation}
@@ -387,25 +395,25 @@ contains
 
     implicit none
 
-    real(sp), intent(in) :: day !*FD The `day', in radians, so that a year is $2\pi$ long.
+    real(dp), intent(in) :: day !*FD The `day', in radians, so that a year is $2\pi$ long.
 
-    real(sp) :: upper_limit
+    real(dp) :: upper_limit
 
-    t_a_prime=mean_annual_temp+(mean_july_temp-mean_annual_temp)*cos(day)
+    t_a_prime = mean_annual_temp+(mean_july_temp-mean_annual_temp)*cos(day)
 
     upper_limit=t_a_prime+2.5*dd_sigma
 
-    if (upper_limit<=0.0) then
-      inner_integral=0.0
+    if (upper_limit <= 0.d0) then
+      inner_integral = 0.d0
     else
-      inner_integral=romberg_int(pdd_integrand,0.0,upper_limit)
+      inner_integral = romberg_int(pdd_integrand,0.d0,upper_limit)
     endif
 
   end function inner_integral
 
 !-------------------------------------------------------------------------------
         
-  real(sp) function pdd_integrand(artm)
+  real(dp) function pdd_integrand(artm)
 
     !*FD The expression to be integrated in the calculation of the PDD table. The whole
     !*FD integral is:
@@ -416,9 +424,9 @@ contains
 
     implicit none
 
-    real(sp), intent(in) :: artm      !*FD The annual mean air temperature (degC)
+    real(dp), intent(in) :: artm      !*FD The annual mean air temperature (degC)
 
-     pdd_integrand = artm *  exp(- (artm - t_a_prime)**2 / (2.0 * dd_sigma**2))
+     pdd_integrand = artm *  exp(- (artm - t_a_prime)**2 / (2.d0 * dd_sigma**2))
 
   end function pdd_integrand
 
@@ -433,13 +441,13 @@ contains
     !*FD \] 
     !*RV The relevant array index.
 
-    use glimmer_global, only : sp
+    use glimmer_global, only : dp
     
     implicit none
     
-    real(sp), intent(in) :: rin  !*FD Value of axis variable at current point.
-    real(sp), intent(in) :: init !*FD Value of axis variable at first point.
-    real(sp), intent(in) :: step !*FD Grid spacing.
+    real(dp), intent(in) :: rin  !*FD Value of axis variable at current point.
+    real(dp), intent(in) :: init !*FD Value of axis variable at first point.
+    real(dp), intent(in) :: step !*FD Grid spacing.
     
     findgrid = (rin - init) / step + 1
 

@@ -1296,6 +1296,61 @@ to read and process &netcdf; data files).
 </caution>
 </sect3>
 
+<sect3 id="hist_snow_fields">
+<title>Outputting multi-layer snow history fields</title>
+<para>
+A number of history fields provide information about individual snow layers:
+<varname>SNO_ABS</varname>, <varname>SNO_T</varname>, <varname>SNO_GS</varname>,
+<varname>SNO_Z</varname>, <varname>SNO_LIQH2O</varname>,
+<varname>SNO_ICE</varname>, <varname>SNO_TK</varname>, and
+<varname>SNO_BW</varname>; there is also an auxiliary field to aid
+interpretation: <varname>SNO_EXISTENCE</varname> (described below). These fields
+are inactive by default, but can be enabled like other history fields. If the
+maximum number of snow layers is 5 (for example), then the layers of these
+fields are arranged on the history file so that layer 5 is closest to the
+ground, and layer 1 only exists if the snow is deep enough to support all
+layers.
+</para>
+<para>
+Because snow layers can come into and out of existence, these fields can be
+challenging to interpret. It is easiest to analyze these fields if you do output
+every time step, and do not average to the grid cell (i.e., <varname>dov2xy =
+.false.</varname>). Otherwise, a few principles should be kept in mind when
+working with these fields:
+<simplelist>
+<member>Temporal averages are taken only over times when a given snow layer exists</member>
+<member>Grid cell averages are taken only over columns in which a given snow layer exists</member>
+<member><varname>SNO_EXISTENCE</varname> gives the fraction of the averaging
+period in which a given snow layer existed. For grid cell averages, this gives
+the weighted spatial fraction of the columns in which a snow layer existed for
+this averaging period. This is most useful for subsetting grid cells for
+analysis. For example, grid cells that have <varname>SNO_EXISTENCE = 1</varname>
+for all snow layers can be analyzed most easily.</member>
+</simplelist>
+</para>
+<para>
+Here is a simple example illustrating this averaging; this considers a given
+snow layer, <varname>L</varname>:
+</para>
+<para>
+Assume a grid cell with 2 columns, with averaging done over 4 time steps. Column
+#1 has subgrid weight 0.2, and no snow in layer <varname>L</varname> in any time
+step. Column #2 has subgrid weight 0.8, and has snow in layer
+<varname>L</varname> in time steps 3 and 4; the snow field of interest has
+values 1.0 and 2.0 in these two time steps, for this layer.
+</para>
+<para>
+<varname>SNO_EXISTENCE</varname> is then 0.8*(2/4) = 0.4. The snow field's value
+would be 1.5 (note that times and columns with no snow in this layer are simply
+ignored).
+</para>
+<para>
+Finally, note that the <varname>SNOABS</varname> field is not computed for urban
+columns, so it will have a missing value if snow only exists over urban columns
+for a given snow layer.
+</para>
+</sect3>
+
 <sect3 id="nl_example_conclude">
 <title>Conclusion to namelist examples</title>
 <para>

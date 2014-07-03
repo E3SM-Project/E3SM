@@ -1,16 +1,17 @@
 This directory contains simple test inputs to test cprnc.
 
-The intention is that control.nc should be compared against each of
-the other files here; each of these comparisons will test different
-behavior of cprnc.
+All comparisons can be run by running the run_tests script in the
+parent directory. Suggestion: run this once from the baseline
+directory, then once from the new directory; compare against baselines
+with, e.g.:
 
-For example, run:
-
-    cprnc test_inputs/control.nc test_inputs/diffs_in_vals.nc > cprnc.out
+    baseline_out=/PATH/TO/BASELINE/OUTPUT
+    new_out=/PATH/TO/NEW/OUTPUT
+    for fl in $baseline_out/*; do echo $fl; diff -a $fl $new_out/`basename $fl`; done > diff_report
 
 The files here are:
 
-- control.nc: control file against which others should be compared
+--- FILES COMPARED AGAINST control.nc ---
 
 - copy.nc: copy of control file (i.e., no diffs)
 
@@ -73,3 +74,60 @@ The files here are:
   - avg rel diff: 0.000101 (printed as 1.0e-4)
   - avg decimal digits: 4.0
   - worst decimal digits: 3.0
+
+
+--- FILES COMPARED AGAINST control_multipleTimes_someTimeless.nc ---
+
+Note: This file has some variables with a time dimension, some
+without. The time dimension has multiple times, in order to make sure
+that the variables with vs. without the time dimension really are
+treated differently. Also, a variable without time appears first, in
+order to make sure that cprnc doesn't rely on there being a variable
+with time first.
+
+- multipleTimes_someTimeless_diffs_in_vals_and_fill.nc: one variable
+  with a time dimension has differences in both values and fill
+  pattern (in time 2); and one variable without a time dimension has
+  differences in both values and fill pattern. The differences are the
+  same for both variables (e.g., RMS errors should be the same for
+  both).
+
+--- FILES COMPARED AGAINST control_noTime.nc ---
+
+Note: This file has no time (unlimited) dimension.
+
+- noTime_diffs_in_vals_and_fill.nc: a single variable has differences
+  in both values and fill pattern
+
+--- FILES COMPARED AGAINST control_0d.nc ---
+
+Note: This file has two 0-d variables
+
+- diffs_0d.nc: diffs in both 0-d variables (int & real)
+
+
+--- FILES COMPARED AGAINST cpl.hi.subset.control.nc ---
+
+Note: This file is a subset of a standard cpl hist file (as of May, 2013).
+
+- cpl.hi.subset.test.nc: some variables are the same, some differ
+
+
+--- FILES COMPARED AGAINST clm2.h0.subset.control.nc ---
+
+Note: This file is a subset of a standard clm hist file (as of May, 2013).
+
+- clm2.h0.subset.test.nc: some variables are the same, some differ
+
+
+--- FILES COMPARED AGAINST clm2.h1.subset.control.nc ---
+
+Note: This file is a subset of a standard clm 1-d hist file
+(dov2xy=false) (as of May, 2013). Note that it also includes two
+times.
+
+- clm2.h1.subset.test.nc: some variables are the same, some
+  differ. Note that this includes identical & different integer
+  variables, identical & different real-valued variables, and
+  variables with different spatial dimensions (e.g., landunit, pft,
+  and lat x lon).

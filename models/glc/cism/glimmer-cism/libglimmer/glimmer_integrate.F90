@@ -31,7 +31,7 @@
 !> integration of functions using Romberg integration
 module glimmer_integrate
 
-  use glimmer_global, only : dp,sp
+  use glimmer_global, only : dp, sp
 
   implicit none
 
@@ -42,7 +42,13 @@ module glimmer_integrate
      module procedure sromberg_int, sromberg_int_prms, dromberg_int, dromberg_int_prms
   end interface
 
+!-------------------------------------------------------------
+
 contains
+
+!-------------------------------------------------------------
+
+  !TODO - Remove single-precision functions?
 
   !> single precision function to perform Romberg Integration on function. 
   !!
@@ -51,8 +57,8 @@ contains
   !!
   !! This routine is an implementation of ACM algorithm 60, by F. L. Bauer.
   !! (Comm. ACM, vol. 4, issue 6, June 1961).
-  recursive real(sp) function sromberg_int(fct,lgr,rgr)
 
+  recursive real(sp) function sromberg_int(fct,lgr,rgr)
 
     implicit none
 
@@ -102,6 +108,7 @@ contains
 
   end function sromberg_int
 
+!-------------------------------------------------------------
 
   !> single precision function to perform Romberg Integration on function. 
   !!
@@ -162,6 +169,8 @@ contains
 
   end function sromberg_int_prms
 
+!-------------------------------------------------------------
+
   !> double precision function to perform Romberg Integration on function. 
   !!
   !! The precision of the routine is 
@@ -169,6 +178,7 @@ contains
   !!
   !! This routine is an implementation of ACM algorithm 60, by F. L. Bauer.
   !! (Comm. ACM, vol. 4, issue 6, June 1961).
+
   recursive real(dp) function dromberg_int(fct,lgr,rgr)
 
     implicit none
@@ -219,6 +229,7 @@ contains
 
   end function dromberg_int
 
+!-------------------------------------------------------------
 
   !> double precision function to perform Romberg Integration on function. 
   !!
@@ -227,8 +238,8 @@ contains
   !!
   !! This routine is an implementation of ACM algorithm 60, by F. L. Bauer.
   !! (Comm. ACM, vol. 4, issue 6, June 1961).
-  recursive real(dp) function dromberg_int_prms(fct,lgr,rgr,params)
 
+  recursive real(dp) function dromberg_int_prms(fct,lgr,rgr,params)
 
     implicit none
 
@@ -280,4 +291,8 @@ contains
 
   end function dromberg_int_prms
 
+!-------------------------------------------------------------
+
 end module glimmer_integrate
+
+!-------------------------------------------------------------

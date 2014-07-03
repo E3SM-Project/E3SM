@@ -1,0 +1,154 @@
+module test_erf_r4
+
+use pfunit_mod
+
+use shr_kind_mod, only: &
+     r4 => shr_kind_r4
+
+use shr_spfn_mod, only: &
+     erf => shr_spfn_erf, &
+     erfc => shr_spfn_erfc, &
+     erfc_scaled => shr_spfn_erfc_scaled
+
+implicit none
+save
+
+! Approximately what (negative) number makes erfc_scaled overflow?
+real(r4), parameter :: erfc_scaled_overflow = 9._r4
+
+@Parameters = [test_point, erf_val, tol]
+type, extends(AbstractTestParameter) :: ErfR4Params
+   real(r4) :: test_point
+   real(r4) :: erf_val
+   real(r4) :: tol = 0._r4
+end type ErfR4Params
+
+@TestCase
+type, extends(ParameterizedTestCase) :: TestErfR4
+   real(r4) :: test_point
+   real(r4) :: erf_val
+   real(r4) :: tol
+   procedure(runMethod), pointer :: userMethod => null()
+ contains
+   procedure, nopass :: getParameters
+   procedure, pass(this) :: getParameterString
+   procedure, pass(this) :: runMethod
+end type TestErfR4
+
+interface TestErfR4
+   module procedure TestErfR4_ctr
+end interface
+
+contains
+
+function TestErfR4_ctr(name, method, test_point, erf_val, tol) &
+     result (test)
+
+  ! Name, method, and parameters provided by preprocessed code.
+  character(len=*), intent(in) :: name
+  procedure(runMethod) :: method
+  real(r4), intent(in) :: test_point
+  real(r4), intent(in) :: erf_val
+  real(r4), intent(in) :: tol
+
+  type(TestErfR4) :: test
+
+  call test%setName(name)
+  test%userMethod => method
+  test%test_point = test_point
+  test%erf_val = erf_val
+  test%tol = tol
+  
+end function TestErfR4_ctr
+
+function getParameters() result(params)
+  type(ErfR4Params), allocatable :: params(:)
+
+  params = [ &
+       ErfR4Params(0._r4, 0._r4), &
+       ErfR4Params(15._r4, 1._r4), &
+       ErfR4Params(-15._r4, -1._r4), &
+       ErfR4Params(1._r4, 0.842700792949714869341, tol=1.e-5_r4), &
+       ErfR4Params(-1._r4, -0.842700792949714869341, tol=1.e-5_r4) ]
+
+end function getParameters
+
+function getParameterString(this) result(string)
+  class(TestErfR4), intent(in) :: this
+  character(:), allocatable :: string
+
+  character(len=80) :: buffer
+
+  write(buffer, '(A,F8.4,A,F8.4,A)') &
+       "(point = ",this%test_point,", erf = ",this%erf_val,")"
+
+  string = trim(buffer)
+
+end function getParameterString
+
+subroutine runMethod(this)
+  class(TestErfR4), intent(inout) :: this
+  call this%userMethod()
+end subroutine runMethod
+
+! Check that the erf function gets the expected result.
+@Test
+subroutine erf_r4_has_correct_value(this)
+  class(TestErfR4), intent(inout) :: this
+  @assertEqual(this%erf_val, erf(this%test_point), tolerance=this%tol)
+end subroutine erf_r4_has_correct_value
+
+! Check that two runs of the erf function get identical results.
+@Test
+subroutine erf_r4_is_reproducible(this)
+  class(TestErfR4), intent(inout) :: this
+  @assertEqual(erf(this%test_point), erf(this%test_point))
+end subroutine erf_r4_is_reproducible
+
+! Check that erfc(x) = 1 - erf(x).
+@Test
+subroutine erfc_r4_has_correct_value(this)
+  class(TestErfR4), intent(inout) :: this
+  @assertEqual(1._r4 - this%erf_val, erfc(this%test_point), tolerance=this%tol)
+end subroutine erfc_r4_has_correct_value
+
+! Check that two runs of the erfc function get identical results.
+@Test
+subroutine erfc_r4_is_reproducible(this)
+  class(TestErfR4), intent(inout) :: this
+  @assertEqual(erfc(this%test_point), erfc(this%test_point))
+end subroutine erfc_r4_is_reproducible
+
+! Check that erfc_scaled(x) = exp(x**2) * (1 - erf(x)).
+@Test
+subroutine erfc_scaled_r4_has_correct_value(this)
+  class(TestErfR4), intent(inout) :: this
+  real(r4) :: erfc_scaled_expected
+
+  ! Distinguish between where the test point has a modest value, or is too
+  ! big to use a naive calculation.
+  if (abs(this%test_point) < erfc_scaled_overflow) then
+     erfc_scaled_expected = exp(this%test_point**2)*(1._r4 - this%erf_val)
+  else
+     ! For larger positive values, we could use an approximation, but this
+     ! is not trivial. Large negative values should overflow; the only
+     ! thing we could possibly check in that case would be to ensure that
+     ! the implementation throws a floating-point error.
+
+     ! For now, just automatically pass the test for large values.
+     return
+  end if
+
+  @assertEqual(erfc_scaled_expected, erfc_scaled(this%test_point), tolerance=this%tol)
+end subroutine erfc_scaled_r4_has_correct_value
+
+! Check that two runs of the erfc_scaled function get identical results.
+@Test
+subroutine erfc_scaled_r4_is_reproducible(this)
+  class(TestErfR4), intent(inout) :: this
+  ! Skip this if we overflow.
+  if (this%test_point < -erfc_scaled_overflow) return
+  @assertEqual(erfc_scaled(this%test_point), erfc_scaled(this%test_point))
+end subroutine erfc_scaled_r4_is_reproducible
+
+end module test_erf_r4

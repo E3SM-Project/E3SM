@@ -22,6 +22,7 @@ module molec_diff
   use physconst,    only : mbarv
   use constituents, only : pcnst
   use phys_control, only : waccmx_is             !WACCM-X runtime switch
+  use ref_pres,     only : nbot_molec, ntop_molec
 
   implicit none
   private       
@@ -31,8 +32,6 @@ module molec_diff
   public init_timestep_molec_diff
   public compute_molec_diff 
   public vd_lu_qdecomp
-  public ntop_molec
-  public nbot_molec
 
   ! ---------- !
   ! Parameters ! 
@@ -54,11 +53,6 @@ module molec_diff
   real(r8)              :: cpair
   real(r8)              :: kbtz                        ! Boltzman constant
 
-  ! Warning: it seems dangerous to set ntop_molec /= 1, since it is not respected by all relevant modules.
-  ! Top interface level to which molecular vertical diffusion is applied ( = 1 )
-  integer               :: ntop_molec
-  ! Bottom interface level to which molecular vertical diffusion is applied ( = pver )
-  integer               :: nbot_molec
   real(r8), allocatable :: mw_fac(:)                   ! sqrt(1/M_q + 1/M_d) in constituent diffusivity [  unit ? ]
   real(r8), allocatable :: alphath(:)                  ! Thermal diffusion factor, -0.38 for H, 0 for others
   
@@ -69,7 +63,7 @@ contains
   !============================================================================ !
 
   subroutine init_molec_diff( kind, ncnst, rair_in, mw_dry_in, n_avog_in, gravit_in, &
-                              cpair_in, kbtz_in, pref_mid, ntop_molec_out, nbot_molec_out, errstring)
+                              cpair_in, kbtz_in, errstring)
     
     use constituents,     only : cnst_mw, cnst_get_ind
     use upper_bc,         only : ubc_init
@@ -83,10 +77,6 @@ contains
     real(r8), intent(in)  :: gravit_in
     real(r8), intent(in)  :: cpair_in
     real(r8), intent(in)  :: kbtz_in        ! Boltzman constant
-    real(r8), intent(in)  :: pref_mid(:)    ! Reference pressures
-
-    integer,  intent(out) :: ntop_molec_out ! Top interface level to which molecular vertical diffusion is applied ( = 1 )
-    integer,  intent(out) :: nbot_molec_out ! Bottom interface level to which molecular vertical diffusion is applied.
 
     character(len=*), intent(out) :: errstring
     
@@ -96,8 +86,6 @@ contains
     integer               :: m              ! Constituent index
     integer               :: indx_H         ! Constituent index for H
     integer               :: ierr           ! Allocate error check
-
-    real(r8), parameter   :: nbot_molec_pres = 50._r8 ! Pressure above which molecular diffusion is turned off.
 
     errstring = ' '
     
@@ -113,22 +101,6 @@ contains
        return
     end if
 
-  ! ---------------------------------------------------------------------------------------- !
-  ! Molecular diffusion turned on above ~60 km (50 Pa) if model top is above ~90 km (.1 Pa). !
-  ! ---------------------------------------------------------------------------------------- !
-
-    ntop_molec = 1       ! Should always be 1
-    nbot_molec = 0       ! Should be set below about 70 km
-    molec_top_loop: do k = 1,size(pref_mid)
-       if (pref_mid(k) > nbot_molec_pres) then
-          nbot_molec = k-1
-          exit molec_top_loop
-       end if
-    end do molec_top_loop
-
-    ntop_molec_out = ntop_molec
-    nbot_molec_out = nbot_molec
-    
   ! Initialize upper boundary condition variables
 
     call ubc_init()
@@ -186,10 +158,11 @@ contains
 
   integer function compute_molec_diff( lchnk             ,                                          &
        pcols             , pver                , ncnst     , ncol     , t      , pmid   , pint   ,  &
-       zi                , ztodt               , kvm       , kvt      ,tint    , rhoi   , tmpi2  ,  &
-       kq_scal           , ubc_t               , ubc_mmr   , ubc_flux , dse_top, cc_top , cd_top , cnst_mw_out , &
-       cnst_fixed_ubc_out, cnst_fixed_ubflx_out, mw_fac_out, ntop_molec_out , nbot_molec_out )
-    
+       zi                , ztodt               , kvm       , kvt      , tint   , rhoi   , tmpi2  ,  &
+       kq_scal           , ubc_t               , ubc_mmr   , ubc_flux , dse_top, cc_top , cd_top ,  &
+       cnst_mw_out       , cnst_fixed_ubc_out  , cnst_fixed_ubflx_out , mw_fac_out      ,           &
+       ntop_molec_out    , nbot_molec_out      , kvt_returned )
+
     use upper_bc,        only : ubc_get_vals
     use constituents,    only : cnst_mw, cnst_fixed_ubc, cnst_fixed_ubflx
     use physconst,       only : cpairv, rairv, kmvis, kmcnd
@@ -197,7 +170,7 @@ contains
     ! --------------------- !
     ! Input-Output Argument !
     ! --------------------- !
-    
+
     integer,  intent(in)    :: pcols
     integer,  intent(in)    :: pver
     integer,  intent(in)    :: ncnst
@@ -225,10 +198,11 @@ contains
     real(r8), intent(out)   :: dse_top(pcols)            ! dse on top boundary
     real(r8), intent(out)   :: cc_top(pcols)             ! Lower diagonal at top interface
     real(r8), intent(out)   :: cd_top(pcols)             ! cc_top * dse ubc value
-    integer,  intent(out)   :: ntop_molec_out   
-    integer,  intent(out)   :: nbot_molec_out   
-    
-    ! --------------- ! 
+    integer,  intent(out)   :: ntop_molec_out
+    integer,  intent(out)   :: nbot_molec_out
+    logical,  intent(out)   :: kvt_returned              ! Whether we actually returned kvt (vs. kvh).
+
+    ! --------------- !
     ! Local variables !
     ! --------------- !
 
@@ -245,6 +219,9 @@ contains
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
+
+    ! We don't apply cpairv to kvt if WACCM-X is on.
+    kvt_returned = ( waccmx_is('ionosphere') .or. waccmx_is('neutral') )
 
   ! Get upper boundary values
 
@@ -344,11 +321,12 @@ contains
 
   integer function vd_lu_qdecomp( pcols , pver   , ncol       , fixed_ubc  , mw     , ubc_mmr , &
                                   kv    , kq_scal, mw_facm    , tmpi       , rpdel  ,           &
-                                  ca    , cc     , dnom       , ze         , rhoi   ,           &
+                                  decomp, rhoi   ,           &
                                   tint  , ztodt  , ntop_molec , nbot_molec , cd_top ,           &
                                   lchnk , pmid   , pint       , t          , m      )
 
     use infnan, only: nan, assignment(=)
+    use vdiff_lu_solver, only: lu_decomp
 
     !------------------------------------------------------------------------------ !
     ! Add the molecular diffusivity to the turbulent diffusivity for a consitutent. !
@@ -379,10 +357,8 @@ contains
     real(r8), intent(in)    :: tint(pcols,pver+1)    ! Interface temperature [ K ]
     real(r8), intent(in)    :: ztodt                 ! 2 delta-t [ s ]
 
-    real(r8), intent(inout) :: ca(pcols,pver)        ! -Upper diagonal
-    real(r8), intent(inout) :: cc(pcols,pver)        ! -Lower diagonal
-    real(r8), intent(inout) :: dnom(pcols,pver)      ! 1./(1. + ca(k) + cc(k) - cc(k)*ze(k-1)) , 1./(b(k) - c(k)*e(k-1))
-    real(r8), intent(inout) :: ze(pcols,pver)        ! Term in tri-diag. matrix system
+    ! LU decomposition information.
+    type(lu_decomp), intent(inout) :: decomp
 
     real(r8), intent(out)   :: cd_top(pcols)         ! Term for updating top level with ubc
 
@@ -490,8 +466,8 @@ contains
          wrk1(:ncol) = kmq(:ncol,kp1) * 0.5_r8 * rghd(:ncol,kp1)
        endif
      ! Add species separation term
-       ca(:ncol,k  )  = ( wrk0(:ncol) - wrk1(:ncol) ) * rpdel(:ncol,k)
-       cc(:ncol,kp1)  = ( wrk0(:ncol) + wrk1(:ncol) ) * rpdel(:ncol,kp1)
+       decomp%ca(:ncol,k  )  = ( wrk0(:ncol) - wrk1(:ncol) ) * rpdel(:ncol,k)
+       decomp%cc(:ncol,kp1)  = ( wrk0(:ncol) + wrk1(:ncol) ) * rpdel(:ncol,kp1)
     end do
     
     if( fixed_ubc ) then
@@ -502,9 +478,9 @@ contains
           wrk1(:ncol) = .5_r8 * (kmq(:ncol,ntop_molec) * rghd(:ncol,ntop_molec) &
                       - (kv(:ncol,ntop_molec) + kmq(:ncol,ntop_molec)) * gradm(:ncol,ntop_molec) &
                       - kmq(:ncol,ntop_molec) * gradt(:ncol,ntop_molec))
-          cc(:ncol,ntop_molec)  = (wrk0(:ncol) + wrk1(:ncol)) * rpdel(:ncol,ntop_molec)
+          decomp%cc(:ncol,ntop_molec)  = (wrk0(:ncol) + wrk1(:ncol)) * rpdel(:ncol,ntop_molec)
        else
-          cc(:ncol,ntop_molec) = kq_scal(:ncol,ntop_molec) * mw_facm(:ncol,ntop_molec) &
+          decomp%cc(:ncol,ntop_molec) = kq_scal(:ncol,ntop_molec) * mw_facm(:ncol,ntop_molec) &
                                * ( tmpi(:ncol,ntop_molec) + rghd(:ncol,ntop_molec) )   &
                                * rpdel(:ncol,ntop_molec)
        endif
@@ -515,7 +491,7 @@ contains
     do k = nbot_molec - 1, ntop_molec + 1, -1
        kp1 = k + 1
        if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then     
-          cb(:ncol,k) = 1._r8 + ca(:ncol,k) + cc(:ncol,k) &
+          cb(:ncol,k) = 1._r8 + decomp%ca(:ncol,k) + decomp%cc(:ncol,k) &
                       + rpdel(:ncol,k) * (kmq(:ncol,kp1)*rghd(:ncol,kp1) &
                       - kmq(:ncol,k)*rghd(:ncol,k) &
                       -(kv(:ncol,kp1)+kmq(:ncol,kp1)) * gradm(:ncol,kp1)  &
@@ -523,7 +499,7 @@ contains
                       -kmq(:ncol,kp1) *gradt(:ncol,kp1) &
                       +kmq(:ncol,k) *gradt(:ncol,k))
        else
-          cb(:ncol,k) = 1._r8 + ca(:ncol,k) + cc(:ncol,k)                   &
+          cb(:ncol,k) = 1._r8 + decomp%ca(:ncol,k) + decomp%cc(:ncol,k)     &
                       + rpdel(:ncol,k) * ( kmq(:ncol,kp1) * rghd(:ncol,kp1) &
                       - kmq(:ncol,k) * rghd(:ncol,k) )
        endif
@@ -533,7 +509,7 @@ contains
     kp1 = k + 1
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then     
        if( fixed_ubc ) then
-          cb(:ncol,k) = 1._r8 + ca(:ncol,k) + cc(:ncol,k) &
+          cb(:ncol,k) = 1._r8 + decomp%ca(:ncol,k) + decomp%cc(:ncol,k) &
                       + rpdel(:ncol,k) * (kmq(:ncol,kp1)*rghd(:ncol,kp1) &
                       - kmq(:ncol,k)*rghd(:ncol,k) &
                       -(kv(:ncol,kp1)+kmq(:ncol,kp1)) * gradm(:ncol,kp1)  &
@@ -541,32 +517,32 @@ contains
                       -kmq(:ncol,kp1) * gradt(:ncol,kp1)  &
                       +kmq(:ncol,k) * gradt(:ncol,k))
        else
-          cb(:ncol,k) = 1._r8 + ca(:ncol,k) &
+          cb(:ncol,k) = 1._r8 + decomp%ca(:ncol,k) &
                       + rpdel(:ncol,k) * (kmq(:ncol,kp1)*rghd(:ncol,kp1) &
                       - (kv(:ncol,kp1)+kmq(:ncol,kp1)) * gradm(:ncol,kp1) &
                       -kmq(:ncol,kp1) * gradt(:ncol,kp1))
        end if
     else
        if( fixed_ubc ) then
-          cb(:ncol,k) = 1._r8 + ca(:ncol,k)                                   &
+          cb(:ncol,k) = 1._r8 + decomp%ca(:ncol,k)                            &
                       + rpdel(:ncol,k) * kmq(:ncol,kp1) * rghd(:ncol,kp1)     &
                       + kq_scal(:ncol,ntop_molec) * mw_facm(:ncol,ntop_molec) &
                       * ( tmpi(:ncol,ntop_molec) - rghd(:ncol,ntop_molec) )   &
                       * rpdel(:ncol,ntop_molec)
        else
-          cb(:ncol,k) = 1._r8 + ca(:ncol,k) &
+          cb(:ncol,k) = 1._r8 + decomp%ca(:ncol,k) &
                       + rpdel(:ncol,k) * kmq(:ncol,kp1) * rghd(:ncol,kp1)
        end if
     endif
 
     k   = nbot_molec
-    cb(:ncol,k) = 1._r8 + cc(:ncol,k) + ca(:ncol,k) &
+    cb(:ncol,k) = 1._r8 + decomp%cc(:ncol,k) + decomp%ca(:ncol,k) &
                 - rpdel(:ncol,k) * kmq(:ncol,k)*rghd(:ncol,k)
 
   ! Compute term for updating top level mixing ratio for ubc
 
     if( fixed_ubc ) then
-        cd_top(:ncol) = cc(:ncol,ntop_molec) * ubc_mmr(:ncol)
+        cd_top(:ncol) = decomp%cc(:ncol,ntop_molec) * ubc_mmr(:ncol)
     end if
 
     !-------------------------------------------------------- !
@@ -576,11 +552,13 @@ contains
     !-------------------------------------------------------- !
 
     do k = nbot_molec, ntop_molec + 1, -1
-       dnom(:ncol,k) = 1._r8 / ( cb(:ncol,k) - ca(:ncol,k) * ze(:ncol,k+1) )
-       ze(:ncol,k)   = cc(:ncol,k) * dnom(:ncol,k)
+       decomp%dnom(:ncol,k) = 1._r8 / &
+            ( cb(:ncol,k) - decomp%ca(:ncol,k) * decomp%ze(:ncol,k+1) )
+       decomp%ze(:ncol,k)   = decomp%cc(:ncol,k) * decomp%dnom(:ncol,k)
     end do
     k = ntop_molec
-    dnom(:ncol,k) = 1._r8 / ( cb(:ncol,k) - ca(:ncol,k) * ze(:ncol,k+1) )
+    decomp%dnom(:ncol,k) = 1._r8 / &
+         ( cb(:ncol,k) - decomp%ca(:ncol,k) * decomp%ze(:ncol,k+1) )
 
     vd_lu_qdecomp = 1
     call t_stopf('vd_lu_qdecomp')

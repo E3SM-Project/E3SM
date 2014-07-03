@@ -4,7 +4,7 @@
 
 module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
-  use dimensions_mod, only : max_neigh_edges
+  use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
   use parallel_mod, only : haltmp
   use thread_mod, only: omp_get_num_threads, omp_get_thread_num
@@ -30,6 +30,9 @@ module edge_mod
      integer(kind=int_kind), pointer  :: getmapP(:) => null()
      integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
      integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
+     integer(kind=int_kind), pointer  :: globalID(:) => null()
+     integer(kind=int_kind), pointer  :: loc2buf(:) => null()
+     integer                          :: actual_neigh_edges
      logical(kind=log_kind), pointer  :: reverse(:) => null()
      type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges
      !  that must be rotated, and how
@@ -64,49 +67,128 @@ module edge_mod
   logical, private :: threadsafe=.true.
 
 
-  type, public :: GhostBuffer_t
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-  end type GhostBuffer_t
-  
-  type, public :: GhostBuffertr_t
+  type, public :: GhostBufferTR_t
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
-  end type GhostBuffertr_t
+  end type GhostBufferTR_t
   
-  type, public :: GhostBuffer3d_t
+  type, public :: GhostBuffer3D_t
      real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
      real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nhc  ! Number of layers of ghost cells
      integer :: np   ! Number of points in a cell
      integer :: nbuf ! size of the horizontal dimension of the buffers.
-  end type GhostBuffer3d_t
+     integer :: elem_size ! size of 2D array (first two dimensions of buf())
+  end type GhostBuffer3D_t
 
-  public :: initghostbufferfull
-  public :: FreeGhostBuffer
-  public :: FreeGhostBuffertr
-  public :: FreeGhostBuffer3d
-  public :: ghostVpackfull
-  public :: ghostVunpackfull
-  public :: ghostVpack
-  public :: ghostVunpack
-  public :: ghostVpackR
-  public :: ghostVunpackR
-  public :: ghostVpack2d
-  public :: ghostVunpack2d
-  public :: ghostVpack2d_single
-  public :: ghostVunpack2d_single
-  public :: ghostVpack2d_level
-  public :: ghostVunpack2d_level
-  public :: initGhostBuffer
-  public :: ghostVpack3d
-  public :: ghostVunpack3d
-  public :: initGhostBuffer3d
+! NOTE ON ELEMENT ORIENTATION
+! for the edge neighbors:  
+!    we set the "reverse" flag if two elements who share an edge use a 
+!    reverse orientation.  The data is reversed during the *pack* stage
+! For corner neighbors:  
+!    for edge buffers, there is no orientation because two corner neighbors
+!    only share a single point.
+!    For ghost cell data, there is a again two posible orientations. For
+!    this case, we set the "reverse" flag if the corner element is using 
+!    the reverse orientation.  In this case, the data is reversed during the
+!    *unpack* stage (not sure why)
+!
+! The edge orientation is set at startup.  The corner orientation is computed
+! at run time, via the call to compute_ghost_corner_orientation()
+! This routine only works for meshes with at most 1 corner element.  It's
+! not called and the corner orientation flag is not set for unstructured meshes
+
+
+!
+!
+! Mark Taylor
+! pack/unpack full element of data of size (nx,nx)  
+! user specifies the size when creating the buffer 
+! input/output arrays are cartesian, and will only unpack 1 corner element 
+! (even if there are more when running with an unstructured grid) 
+! This routine is used mostly for testing and to compute the orientation of
+! an elements corner neighbors
+!
+  public :: initGhostBuffer3D      ! init/free buffers used by pack/unpack full and 3D
+  public :: FreeGhostBuffer3D
+  public :: ghostVpackfull       
+  public :: ghostVunpackfull     
+  ! same as above, except orientation of element data is preserved
+  ! (so boundary data for two adjacent element may not match up)
+  public :: ghostVpack_unoriented   
+  public :: ghostVunpack_unoriented     
+
+
+!
+! James Overfelt
+! pack/unpack user specifed halo region "nhc".  
+! Does not include element edge data (assumes element edge data is C0)
+! (appropriate for continuous GLL data where the edge data does not need to be sent)
+! support for unstructed meshes via extra output arrays: sw,se,ne,nw
+! This routine is currently used by surfaces_mod.F90 to construct the GLL dual grid
+!
+  public :: ghostVpack3d          ! pack/unpack specifed halo size (up to 1 element)
+                                  ! should be identical to ghostVpack2d except for
+                                  ! shape of input array
+  public :: ghostVunpack3d        ! returns v including populating halo region of v
+                                  ! "extra" corner elements are returned in arrays
+                                  ! sw,se,ne,nw
+! MT TODO: this routine works for unstructed data (where the corner orientation flag is
+! not set).  So why dont we remove all the "reverse" checks in unpack?
+
+
+
+
+!
+! Christoph Erath
+! pack/unpack partial element of data of size (nx,nx) with user specifed halo size nh
+! user specifies the sizes when creating the buffer 
+! buffer has 1 extra dimension (as compared to subroutines above) for multiple tracers
+! input/output arrays are cartesian, and thus assume at most 1 element at each corner
+! hence currently only supports cube-sphere grids.
+!
+! TODO: GhostBufferTR should be removed - we only need GhostBuffer3D, if we can fix
+! ghostVpack2d below to pass vlyr*ntrac_d instead of two seperate arguments
+!
+  public :: initGhostBufferTR     ! ghostbufferTR_t
+  public :: FreeGhostBufferTR     ! ghostbufferTR_t
+
+
+! routines which including element edge data  
+! (used for FVM arrays where edge data is not shared by neighboring elements)
+! these routines pack/unpack element data with user specified halo size
+!
+! THESE ROUTINES SHOULD BE MERGED 
+!
+  public :: ghostVpack            ! input/output: 
+  public :: ghostVunpack          ! v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
+                                  
+  public :: ghostVpackR           ! used to pack/unpack SPELT "Rp".  What's this?
+  public :: ghostVunpackR         ! v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
+
+
+! routines which do NOT include element edge data
+! (used for SPELT arrays and GLL point arrays, where edge data is shared and does not need
+! to be sent/received.
+! these routines pack/unpack element data with user specifed halo size
+!
+! THESE ROUTINES CAN ALL BE REPLACED BY ghostVpack3D (if we make extra corner data arrays
+! an optional argument).  Or at least these should be merged to 1 routine
+  public :: ghostVpack2d          ! input/output:  
+  public :: ghostVunpack2d        ! v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
+                                   
+                                  ! used to pack/unpack SPELT%sga.  what's this?
+  public :: ghostVpack2d_single   ! input/output
+  public :: ghostVunpack2d_single !   v(1-nhc:npoints+nhc,1-nhc:npoints+nhc)
+                                  
+                                  ! used to pack/unpack FV vertex data (velocity/grid)
+  public :: ghostVpack2d_level    ! input/output
+  public :: ghostVunpack2d_level  ! v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr) 
+
+
 
   ! Wrap pointer so we can make an array of them.
   type :: wrap_ptr
@@ -157,6 +239,8 @@ contains
     edge%nlyr=nlyr
     edge%nbuf=nbuf
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
+
+!$OMP BARRIER
 
 !   only master thread should allocate the buffer
 #if (! defined ELEMENT_OPENMP)
@@ -226,7 +310,7 @@ contains
           call haltmp('ERROR: edge struct appears to be thread-private.')
        endif
 #if (! defined ELEMENT_OPENMP)
-       !$OMP ENDMASTER
+       !$OMP END MASTER
 #endif
     endif
 
@@ -1308,72 +1392,12 @@ contains
 
 
 
-  ! =========================================
-  ! initghostbufferfull:
-  !
-  ! create an Real based communication buffer
-  ! =========================================
-  subroutine initghostbufferfull(edge,nlyr,nc)
-    use dimensions_mod, only : nelemd, max_neigh_edges
-
-    implicit none
-    integer,intent(in)                :: nlyr,nc
-    type (Ghostbuffer_t),intent(out) :: edge
-
-    ! Local variables
-
-    integer :: nbuf
-
-    ! sanity check for threading
-    if (omp_get_num_threads()>1) then
-       call haltmp('ERROR: initghostbufferfull must be called before threaded region')
-    endif
-
-    nbuf=max_neigh_edges*nelemd
-#if (! defined ELEMENT_OPENMP)
-!$OMP MASTER
-#endif
-    edge%nlyr=nlyr
-    edge%nbuf=nbuf
-    allocate(edge%buf(nc,nc,nlyr,nbuf))
-    edge%buf=0
-
-    allocate(edge%receive(nc,nc,nlyr,nbuf))
-    edge%receive=0
-#if (! defined ELEMENT_OPENMP)
-!$OMP END MASTER
-!$OMP BARRIER
-#endif
-
-  end subroutine initghostbufferfull
   ! ===========================================
   !  FreeGhostBuffer:
   !  Author: Christoph Erath, Mark Taylor
   !  Freed an ghostpoints communication buffer
   ! =========================================
-  subroutine FreeGhostBuffer(ghost) 
-    implicit none
-    type (GhostBuffer_t),intent(inout) :: ghost
-
-#if (! defined ELEMENT_OPENMP)
-!$OMP BARRIER
-!$OMP MASTER
-#endif
-    ghost%nbuf=0
-    ghost%nlyr=0
-    deallocate(ghost%buf)
-    deallocate(ghost%receive)
-#if (! defined ELEMENT_OPENMP)
-!$OMP END MASTER
-#endif
-
-  end subroutine FreeGhostBuffer
-  ! ===========================================
-  !  FreeGhostBuffer:
-  !  Author: Christoph Erath, Mark Taylor
-  !  Freed an ghostpoints communication buffer
-  ! =========================================
-  subroutine FreeGhostBuffertr(ghost) 
+  subroutine FreeGhostBufferTR(ghost) 
     implicit none
     type (GhostBuffertr_t),intent(inout) :: ghost
 
@@ -1389,7 +1413,7 @@ contains
 !$OMP END MASTER
 #endif
 
-  end subroutine FreeGhostBuffertr 
+  end subroutine FreeGhostBufferTR 
   ! =========================================
 
   ! =========================================
@@ -1414,7 +1438,7 @@ contains
 
 
 
-    type (Ghostbuffer_t)                      :: edge
+    type (Ghostbuffer3D_t)                      :: edge
     integer,              intent(in)   :: vlyr
     integer,              intent(in)   :: nc1,nc2,nc,kptr
     real (kind=real_kind),intent(in)   :: v(nc1:nc2,nc1:nc2,vlyr)
@@ -1531,12 +1555,10 @@ contains
     ! of the corners, and this which (i,j) dimension maps to which dimension
 ! SWEST
     do l=swest, swest+max_corner_elem-1
-       if (l.ne.swest) call abortmp('ERROR1: swest ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
-             ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1,1 ,k)
              do e=1,nc
-                edge%buf(:,e,kptr+k,desc%putmapP_ghost(l))=v(:  ,e ,k)
+                edge%buf(:,e,kptr+k,desc%putmapP_ghost(l))=v(1:nc  ,e ,k)
              enddo
           end do
        end if
@@ -1544,12 +1566,10 @@ contains
     
 ! SEAST
     do l=swest+max_corner_elem, swest+2*max_corner_elem-1
-       if (l.ne.seast) call abortmp('ERROR1: seast ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
-             ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,1 ,k)
              do e=1,nc
-                edge%buf(e,:,kptr+k,desc%putmapP_ghost(l))=v(nc-e+1 ,: ,k)
+                edge%buf(e,:,kptr+k,desc%putmapP_ghost(l))=v(nc-e+1 ,1:nc ,k)
              enddo
           end do
        end if
@@ -1557,10 +1577,8 @@ contains
     
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-       if (l.ne.neast) call abortmp('ERROR1: neast ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
-             !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,nc,k)
              do e=1,nc
                 do i=1,nc
                    edge%buf(i,e,kptr+k,desc%putmapP_ghost(l))=v(nc-i+1,nc-e+1,k)
@@ -1572,12 +1590,10 @@ contains
     
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-       if (l.ne.nwest) call abortmp('ERROR1: nwest ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
-             !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1  ,nc,k)
              do e=1,nc
-                edge%buf(:,e,kptr+k,desc%putmapP_ghost(l))=v(:  ,nc-e+1,k)
+                edge%buf(:,e,kptr+k,desc%putmapP_ghost(l))=v(1:nc  ,nc-e+1,k)
              enddo
           end do
        end if
@@ -1593,7 +1609,7 @@ contains
   subroutine GhostVunpackfull(edge,v,nc1,nc2,nc,vlyr,kptr,desc)
     use dimensions_mod, only : max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    type (Ghostbuffer_t),         intent(in)  :: edge
+    type (Ghostbuffer3D_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr
     integer,               intent(in)  :: kptr,nc1,nc2,nc
@@ -1637,7 +1653,8 @@ contains
 ! SWEST
     do l=swest,swest+max_corner_elem-1
        ic = desc%getmapP_ghost(l)
-       if(ic /= -1) then 
+       if (ic /= -1 .and. l.eq.swest) then   ! unpack swest corner, IGNORE all other corners
+       !if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
              do k=1,vlyr
@@ -1664,7 +1681,8 @@ contains
 ! SEAST
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
        ic = desc%getmapP_ghost(l)
-       if(ic /= -1) then 
+       if (ic /= -1 .and. l.eq.seast) then   ! unpack seast corner, IGNORE all other corners
+       !if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
              do k=1,vlyr
@@ -1691,7 +1709,8 @@ contains
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
        ic = desc%getmapP_ghost(l)
-       if(ic /= -1) then 
+       if (ic /= -1 .and. l.eq.neast) then   ! unpack neast corner, IGNORE all other corners
+       !if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
              do k=1,vlyr
@@ -1718,7 +1737,8 @@ contains
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
        ic = desc%getmapP_ghost(l)
-       if(ic /= -1) then 
+       if (ic /= -1 .and. l.eq.nwest) then
+          ! unpack nwest corner, IGNORE all other corners
           reverse=desc%reverse(l)
           if (reverse) then
              do k=1,vlyr
@@ -1745,6 +1765,126 @@ contains
   end subroutine GhostVunpackfull
 
 
+
+
+
+
+  ! =========================================
+  !
+  !> @brief Pack edges of v into an edge buffer for boundary exchange.
+  !
+  !> This subroutine packs for one or more vertical layers into an edge 
+  !! buffer. If the buffer associated with edge is not large enough to 
+  !! hold all vertical layers you intent to pack, the method will 
+  !! halt the program with a call to parallel_mod::haltmp().
+  !! @param[in] edge Ghost Buffer into which the data will be packed.
+  !! This buffer must be previously allocated with initghostbufferfull().
+  !! @param[in] v The data to be packed.
+  !! @param[in] vlyr Number of vertical level coming into the subroutine
+  !! for packing for input v.
+  !! @param[in] kptr Vertical pointer to the place in the edge buffer where 
+  !! data will be located.
+  ! =========================================
+  subroutine GhostVpack_unoriented(edge,v,nc,vlyr,kptr,desc)
+    use dimensions_mod, only : max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+
+
+    type (Ghostbuffer3D_t)                      :: edge
+    integer,              intent(in)   :: vlyr
+    integer,              intent(in)   :: nc,kptr
+    real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
+    type (EdgeDescriptor_t),intent(in) :: desc
+
+    ! Local variables
+    integer :: i,k,ir,l,e, l_local
+    integer :: is,ie,in,iw
+
+    if(.not. threadsafe) then
+#if (! defined ELEMENT_OPENMP)
+!$OMP BARRIER
+#endif
+       threadsafe=.true.
+    end if
+
+#if 0
+    do l=1,max_neigh_edges
+       is = desc%putmapP_ghost(l)
+       if (is  /= -1) then       
+          do k=1,vlyr
+             edge%buf(:,:,kptr+k,is)   = v(:,:,k)
+          enddo
+       endif
+    end do
+#else
+    do l_local=1,desc%actual_neigh_edges
+       l=desc%loc2buf(l_local)
+       is = desc%putmapP_ghost(l)
+       do k=1,vlyr
+          edge%buf(:,:,kptr+k,is) =v(:,:,k)  
+       enddo
+    end do
+#endif
+
+  end subroutine GhostVpack_unoriented
+
+
+  ! ========================================
+  ! edgeVunpack:
+  !
+  ! Unpack edges from edge buffer into v...
+  ! ========================================
+  subroutine GhostVunpack_unoriented(edge,v,nc,vlyr,kptr,desc)
+    use dimensions_mod, only : max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    type (Ghostbuffer3D_t),         intent(in)  :: edge
+
+    integer,               intent(in)  :: vlyr
+    integer,               intent(in)  :: kptr,nc
+    real (kind=real_kind), intent(inout) :: v(nc,nc,vlyr,*)
+    type (EdgeDescriptor_t)            :: desc
+
+    ! Local
+    logical, parameter :: UseUnroll = .TRUE.
+    integer :: i,k,l,e,is
+    integer :: l_local
+
+
+    threadsafe=.false.
+#if 0
+    do l=1,max_neigh_edges
+       is = desc%getmapP_ghost(l)
+       if (is  /= -1) then       
+          l_local = l
+          do k=1,vlyr
+             v(:,:,k,l_local ) = edge%buf(:,:,kptr+k,is) 
+          enddo
+       endif
+    end do
+#endif
+
+    do l_local=1,desc%actual_neigh_edges
+       l=desc%loc2buf(l_local)
+       is = desc%getmapP_ghost(l)
+       do k=1,vlyr
+          v(:,:,k,l_local ) = edge%buf(:,:,kptr+k,is) 
+       enddo
+    end do
+
+
+  end subroutine GhostVunpack_unoriented
+
+
+
+
+
+
+
+
+
+
+
   ! =========================================
   ! initGhostBuffer:
   ! Author: Christoph Erath
@@ -1752,8 +1892,7 @@ contains
   ! npoints is the number of points on one side
   ! nhc is the deep of the ghost/halo zone
   ! =========================================
-  subroutine initGhostBuffer(ghost,nlyr,ntrac,nhc, npoints)
-    use dimensions_mod, only : nelemd, max_neigh_edges
+  subroutine initGhostBufferTR(ghost,nlyr,ntrac,nhc, npoints)
 
     implicit none
     integer,intent(in)                :: nlyr,ntrac,nhc, npoints
@@ -1792,7 +1931,7 @@ contains
 !$OMP BARRIER
 #endif
 
-  end subroutine initGhostBuffer
+  end subroutine initGhostBufferTR
 
 
 
@@ -3746,20 +3885,26 @@ end subroutine ghostVunpackR
   ! npoints is the number of points on one side
   ! nhc is the deep of the ghost/halo zone
   ! =========================================
-  subroutine initGhostBuffer3d(ghost,nlyr,np,nhc)
-    use dimensions_mod, only : nelemd, max_neigh_edges
+  subroutine initGhostBuffer3d(ghost,nlyr,np,nhc_in)
 
     implicit none
-    integer,intent(in)                  :: nlyr, nhc, np
+    integer,intent(in)                  :: nlyr, np
+    integer,intent(in),optional         :: nhc_in
     type (Ghostbuffer3d_t),intent(out)  :: ghost
 
     ! Local variables
 
-    integer :: nbuf
+    integer :: nbuf,nhc,i
 
     ! sanity check for threading
     if (omp_get_num_threads()>1) then
        call haltmp('ERROR: initGhostBuffer must be called before threaded region')
+    endif
+
+    if (present(nhc_in)) then
+       nhc=nhc_in
+    else
+       nhc = np-1
     endif
 
     nbuf=max_neigh_edges*nelemd
@@ -3770,14 +3915,19 @@ end subroutine ghostVunpackR
     ghost%nhc     = nhc
     ghost%np      = np
     ghost%nbuf    = nbuf
+    ghost%elem_size = np*(nhc+1)
     allocate(ghost%buf    (np,(nhc+1),nlyr,nbuf))
     allocate(ghost%receive(np,(nhc+1),nlyr,nbuf))
     ghost%buf=0
     ghost%receive=0
+
 #if (! defined ELEMENT_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
+
+    
+    
 
   end subroutine initGhostBuffer3d
 
@@ -3854,7 +4004,6 @@ end subroutine ghostVunpackR
           enddo
        end do
     end do
-
     !  This is really kludgy way to setup the index reversals
     !  But since it is so a rare event not real need to spend time optimizing
     !  Check if the edge orientation of the recieving element is different

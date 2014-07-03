@@ -136,7 +136,7 @@ MODULE ecosys_parms
   REAL(KIND=r8), PARAMETER :: &
        fe_scavenge_thres1 = 0.8e-3_r8,  & !upper thres. for Fe scavenging
        dust_fescav_scale  = 1.0e9,      & !dust scavenging scale factor
-       fe_max_scale2      = 600.0_r8      !unitless scaling coeff.
+       fe_max_scale2      = 1200.0_r8     !unitless scaling coeff.
 
   !---------------------------------------------------------------------
   !     Compute iron remineralization and flux out.
@@ -289,15 +289,15 @@ CONTAINS
     parm_z_mort2_0         = 0.4_r8 * dps
     parm_labile_ratio      = 0.85_r8
     parm_POMbury           = 1.4_r8         ! x1 default
-    parm_BSIbury           = 0.45_r8        ! x1 default
-    parm_fe_scavenge_rate0 = 1.3_r8         ! x1 default
+    parm_BSIbury           = 0.65_r8        ! x1 default
+    parm_fe_scavenge_rate0 = 3.0_r8         ! x1 default
     parm_f_prod_sp_CaCO3   = 0.055_r8       ! x1 default
     parm_POC_diss          = 88.0e2_r8
     parm_SiO2_diss         = 250.0e2_r8
     parm_CaCO3_diss        = 150.0e2_r8
 
     parm_scalelen_z    = (/ 130.0e2_r8, 290.0e2_r8, 670.0e2_r8, 1700.0e2_r8 /) ! x1 default
-    parm_scalelen_vals = (/     1.0_r8,     2.9_r8,     4.8_r8,      8.0_r8 /) ! x1 default
+    parm_scalelen_vals = (/     1.0_r8,     3.0_r8,     5.0_r8,      9.0_r8 /) ! x1 default
 
     auto_ind = sp_ind
     autotrophs(auto_ind)%sname         = 'sp'
@@ -445,6 +445,8 @@ CONTAINS
     CALL broadcast_array(parm_scalelen_vals, master_task)
 
     DO auto_ind = 1, autotroph_cnt
+       CALL broadcast_scalar(autotrophs(auto_ind)%sname, master_task)
+       CALL broadcast_scalar(autotrophs(auto_ind)%lname, master_task)
        CALL broadcast_scalar(autotrophs(auto_ind)%Nfixer, master_task)
        CALL broadcast_scalar(autotrophs(auto_ind)%imp_calcifier, master_task)
        CALL broadcast_scalar(autotrophs(auto_ind)%exp_calcifier, master_task)
@@ -502,6 +504,7 @@ CONTAINS
        WRITE (stdout,*) 'parm_scalelen_z        = ', parm_scalelen_z
        WRITE (stdout,*) 'parm_scalelen_vals     = ', parm_scalelen_vals
        DO auto_ind = 1, autotroph_cnt
+          WRITE (stdout,*) 'lname(', trim(autotrophs(auto_ind)%sname), ') = ', autotrophs(auto_ind)%lname
           WRITE (stdout,*) 'Nfixer(', trim(autotrophs(auto_ind)%sname), ') = ', autotrophs(auto_ind)%Nfixer
           WRITE (stdout,*) 'imp_calcifier(', trim(autotrophs(auto_ind)%sname), ') = ', autotrophs(auto_ind)%imp_calcifier
           WRITE (stdout,*) 'exp_calcifier(', trim(autotrophs(auto_ind)%sname), ') = ', autotrophs(auto_ind)%exp_calcifier

@@ -4021,9 +4021,9 @@ subroutine ovf_reg_avgs(time_level)
             if (eod) then
                k_p = (ovf(ovf_id)%adj_prd(m)%kmin+ovf(ovf_id)%adj_prd(m)%kmax)/2
                write(ovf_diag_unit,1234) tday,n,phi,1.e-12*Ms,1.e-12*Me,1.e-12*Mp,m,zt(k_p)/100.
-1234           format(' ovf_tr: ',f7.1,1x,i2,25x,f7.4,2x,3(f7.4,1x),1x,i2,1x,f8.1)
+1234           format(' ovf_tr: ',f9.1,1x,i2,25x,f7.4,2x,3(f7.4,1x),1x,i2,1x,f8.1)
                write(ovf_diag_unit,1235) tday, n,T_i,S_i*c1000,T_s,S_s*c1000,T_e,S_e*c1000,T_p,S_p*c1000
-1235           format(' ovf_TS: ',f7.1,1x,i2,1x,8(f7.4,1x))         
+1235           format(' ovf_TS: ',f9.1,1x,i2,1x,8(f7.4,1x))         
                call shr_sys_flush(ovf_diag_unit)
             endif ! eod - so print
 
@@ -4039,12 +4039,10 @@ subroutine ovf_reg_avgs(time_level)
                write(ovf_diag_unit,1234) myRecvBuff(loc),r_n, myRecvBuff(loc+2), &
                     myRecvBuff(loc+3),myRecvBuff(loc+4),myRecvBuff(loc+5), &
                     r_m, myRecvBuff(loc+7)
-1236           format(' ovf_tr: ',f7.1,1x,i2,25x,f7.4,2x,3(f7.4,1x),1x,i2,1x,f8.1)
                write(ovf_diag_unit,1235) myRecvBuff(loc), r_n, myRecvBuff(loc+8), &
                     myRecvBuff(loc+9),myRecvBuff(loc+10), myRecvBuff(loc+11), &
                     myRecvBuff(loc+12), myRecvBuff(loc+13), myRecvBuff(loc+14), &
                     myRecvBuff(loc+15)
-1237           format(' ovf_TS: ',f7.1,1x,i2,1x,8(f7.4,1x))         
                call shr_sys_flush(ovf_diag_unit)
             end if ! eod - so print
          end if
@@ -4158,7 +4156,7 @@ subroutine ovf_reg_avgs(time_level)
            
            k_p = (ovf(ovf_id)%adj_prd(m)%kmin+ovf(ovf_id)%adj_prd(m)%kmax)/2
            mySendBuff(loc) = tday
-           mySendBuff(loc+1) = real(n,r8)
+           mySendBuff(loc+1) = real(ovf_id,r8)
            mySendBuff(loc+2)  = phi
            mySendBuff(loc+3)  = 1.e-12*Ms
            mySendBuff(loc+4)  = 1.e-12*Me

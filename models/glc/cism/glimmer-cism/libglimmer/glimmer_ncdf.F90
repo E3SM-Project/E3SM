@@ -59,7 +59,7 @@ module glimmer_ncdf
      !*FD set to .TRUE. when we are in define mode
      logical :: just_processed = .FALSE.
      !*FD set to .TRUE. if the file was used during the last time step
-     real :: processsed_time = 0.0
+     real(dp) :: processsed_time = 0.d0
      !*FD the time when the file was last processed
      character(len=fname_length) :: filename = " "
      !*FD name of netCDF file
@@ -119,7 +119,7 @@ module glimmer_ncdf
 
      !TODO - Change default_xtype to dp?
      !       I'm unclear on how the default xtype is overridden
-     integer :: default_xtype = NF90_REAL                 !< the default external type for storing flointing point values
+     integer :: default_xtype = NF90_REAL                 !< the default external type for storing floating point values
      logical :: do_averages = .false.                     !< set to .true. if we need to handle averages
 
      type(glimmer_nc_meta) :: metadata

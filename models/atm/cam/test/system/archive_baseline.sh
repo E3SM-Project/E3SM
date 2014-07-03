@@ -12,7 +12,7 @@ cat << EOF1
 NAME
 
 	archive_baseline.sh - archive pretag baselines to set locations on
-                              frankfurt and yellowstone.
+                              goldbach and yellowstone.
 
 
 SYNOPSIS
@@ -24,14 +24,14 @@ SYNOPSIS
 ENVIROMENT VARIABLES
 
 	CAM_TESTDIR - Directory that contains the finished results you wish to archive.
-	CAM_FC      - Compiler used, only used on frankfurt (PGI,LAHEY), where the compiler
+	CAM_FC      - Compiler used, only used on goldbach (PGI,NAG), where the compiler
                       name is appended to the archive directory.
 
 
 BASELINE ARCHIVED LOCATION
 
-	frankfurt:    /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_pgi
-	              /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_lahey
+	goldbach:     /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_pgi
+	              /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_nag
         yellowstone:  /glade/p/cesm/cseg/models/atm/cam/pretag_bl/TAGNAME
 
 
@@ -43,7 +43,7 @@ HOW TO USE ARCHIVE BASELINES
 
 WORK FLOW
 
-	This is an example for frankfurt.
+	This is an example for goldbach.
 
 	Modify your sandbox with the changes you want.
         setenv CAM_FC PGI
@@ -80,12 +80,12 @@ fi
 hostname=`hostname`
 case $hostname in
 
-  fr*)
-    echo "server: frankfurt"
+  go*)
+    echo "server: goldbach"
     if [ -z "$CAM_FC" ]; then
-      CAM_FC="LAHEY"
+      CAM_FC="PGI"
     fi
-    test_file_list="tests_pretag_frankfurt_${CAM_FC,,}"
+    test_file_list="tests_pretag_goldbach_${CAM_FC,,}"
     baselinedir="/fs/cgd/csm/models/atm/cam/pretag_bl/$1_${CAM_FC,,}"
   ;;
   ys*)

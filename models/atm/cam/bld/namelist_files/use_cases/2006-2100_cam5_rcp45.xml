@@ -16,9 +16,9 @@
 <srf_emis_type>INTERP_MISSING_MONTHS</srf_emis_type>
 <dms_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_1849-2100_c111017.nc</dms_emis_file>
 <so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so2_surf_2000-2100_c20111116.nc</so2_emis_file>
-<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_soag_1.5_surf_2000-2100_c20111116.nc</soag_emis_file>
+<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_soag_1.5_surf_2000-2100_c20130424.nc</soag_emis_file>
 <bc_a1_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_bc_surf_2000-2100_c20111116.nc</bc_a1_emis_file>
-<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_oc_surf_2000-2100_c20111116.nc</pom_a1_emis_file>
+<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_pom_surf_2000-2100_c20130424.nc</pom_a1_emis_file>
 <so4_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so4_a1_surf_2000-2100_c20111116.nc</so4_a1_emis_file>
 <so4_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so4_a2_surf_2000-2100_c20111116.nc</so4_a2_emis_file>
 <num_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_num_a1_surf_2000-2100_c20111116.nc</num_a1_emis_file>
@@ -31,7 +31,7 @@
 <so4_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so4_a2_elev_2000-2100_c20111116.nc</so4_a2_ext_file>
 <num_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_num_a1_elev_2000-2100_c20111116.nc</num_a1_ext_file>
 <num_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_num_a2_elev_2000-2100_c20111116.nc</num_a2_ext_file>
-<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_oc_elev_2000-2100_c20111116.nc</pom_a1_ext_file>
+<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_pom_elev_2000-2100_c20130424.nc</pom_a1_ext_file>
 <bc_a1_ext_file    chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_bc_elev_2000-2100_c20111116.nc</bc_a1_ext_file>
 
 <!-- Volcanic aerosol from eruptions is from Caspar Ammann -->
@@ -57,7 +57,7 @@
 
 <!-- Output some diagnostics for monitoring time varying forcing -->
 <fincl1>
-'FSNT_d1','FSNTC_d1','FSNS_d1','FSNSC_d1','cb_ozone_c','TMSO2','TMso4_a1','TMso4_a2','TMso4_a3','UTGWORO'
+'cb_ozone_c','TMSO2','TMso4_a1','TMso4_a2','TMso4_a3','UTGWORO'
 </fincl1>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
@@ -69,8 +69,5 @@
 </fincl2>
 <mfilt>1,365,30,120,240</mfilt>
 <nhtfrq>0,-24,-24,-6,-3</nhtfrq>
-<rad_diag_1>
-'A:Q:H2O','N:O2:O2','N:CO2:CO2','N:ozone:O3','N:N2O:N2O','N:CH4:CH4','N:CFC11:CFC11','N:CFC12:CFC12'
-</rad_diag_1>
 
 </namelist_defaults>

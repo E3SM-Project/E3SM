@@ -38,13 +38,30 @@ The presaero stream, is associated with all modes
 
 Currently the following streams are supported (term definitions precede the streams)
 
-    CLM_QIAN     = Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
-    CLMCRUNCEP   = Run with the CLM CRU NCEP forcing valid from 1900 to 2010 (force CLM)
-    CLM1PT       = Run with supplied single point data (force CLM)
-    CORE2_NYF    = CORE2 normal year forcing (for forcing POP and CICE)
-    CORE2_IAF    = CORE2 intra-annual year forcing (for forcing POP and CICE)
-    CPLHIST3HrWx = Run with CESM 3-hourly coupler history output
-    presaero     = prescribed aerosol forcing 
+    CLM_QIAN        = Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
+    CLMCRUNCEP      = Run with the CLM CRU NCEP forcing valid from 1900 to 2010 (force CLM)
+    CLM1PT          = Run with supplied single point data (force CLM)
+    CORE2_NYF       = CORE2 normal year forcing (for forcing POP and CICE)
+    CORE2_IAF       = CORE2 intra-annual year forcing (for forcing POP and CICE)
+    CPLHIST3HrWx    = Run with CESM 3-hourly coupler history output
+    presaero        = Prescribed aerosol forcing 
+    co2tseries      = Time series of prescribed CO2 forcing
+    Anomaly.Forcing = Time series of correction terms
+    BC              = Bias Correction for a stream to a given set of observations
+    WW3             = Wave model forcing
+
+    Anomaly.Forcing.Humidity 
+    Anomaly.Forcing.Longwave 
+    Anomaly.Forcing.Precip
+    Anomaly.Forcing.Pressure
+    Anomaly.Forcing.Shortwave
+    Anomaly.Forcing.Temperature
+    Anomaly.Forcing.Uwind
+    Anomaly.Forcing.Vwind
+
+    BC.CRUNCEP.CMAP.Precip
+    BC.CRUNCEP.GPCP.Precip
+    BC.QIAN.Precip
 
     CLM1PT.1x1_brazil
     CLM1PT.1x1_camdenNJ
@@ -56,6 +73,7 @@ Currently the following streams are supported (term definitions precede the stre
     CLM1PT.1x1_smallvilleIA
     CLM1PT.5x5_amazon
     CLM1PT.1x1_urbanc_alpha
+    CLM1PT.CLM_USRDAT
 
     CPLHIST3Hrly.Solar
     CPLHIST3Hrly.Precip
@@ -68,6 +86,12 @@ Currently the following streams are supported (term definitions precede the stre
     CLMCRUNCEP.Solar
     CLMCRUNCEP.Precip
     CLMCRUNCEP.TPQW
+
+    co2tseries.20tr
+    co2tseries.rcp2.6
+    co2tseries.rcp4.5
+    co2tseries.rcp6.0
+    co2tseries.rcp8.5
 
     CORE2_NYF.GISS
     CORE2_NYF.GXGXS
@@ -107,6 +131,8 @@ Currently the following streams are supported (term definitions precede the stre
     presaero.rcp6.0
     presaero.rcp8.5
 
+    WW3
+
 -->
 
 <!-- =========================================  -->
@@ -132,7 +158,6 @@ Currently the following streams are supported (term definitions precede the stre
 <streamslist datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</streamslist>
 <streamslist datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</streamslist>
 <streamslist datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</streamslist>
-<streamslist datm_mode="WRF"      >WRF</streamslist>
 <streamslist datm_mode="WW3"      >WW3</streamslist>
 
 <!-- =========================================  -->
@@ -143,7 +168,7 @@ Currently the following streams are supported (term definitions precede the stre
 <vectors datm_mode="CLM_QIAN"      >null</vectors>
 <vectors datm_mode="CLMCRUNCEP"    >null</vectors>
 <vectors datm_mode="CLM1PT"        >null</vectors>
-<vectors datm_mode="CPLHIST3HrWx"  >u:v</vectors>
+<vectors datm_mode="CPLHIST3HrWx"  >null</vectors>
 <vectors datm_mode="CORE2_NYF"     >u:v</vectors>
 <vectors datm_mode="CORE2_IAF"     >u:v</vectors>
 <vectors datm_mode="WW3"           >u:v</vectors>
@@ -265,9 +290,9 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_year_align stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
 <strm_year_start stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_START</strm_year_start>
 <strm_year_end   stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_END</strm_year_end>
-<strm_domdir     stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT/atm/datm7/domain.clm</strm_domdir>
-<strm_domfil     stream="CLM1PT.CLM_USRDAT">domain.lnd.${CLM_USRDAT_NAME}_navy.nc</strm_domfil>
-<strm_datdir     stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/$CLM_USRDAT_NAME</strm_datdir>
+<strm_domdir     stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</strm_domdir>
+<strm_domfil     stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</strm_domfil>
+<strm_datdir     stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data</strm_datdir>
 <strm_datfil     stream="CLM1PT.CLM_USRDAT">%ym.nc</strm_datfil>
 <strm_offset     stream="CLM1PT.CLM_USRDAT">0</strm_offset>
 <strm_tintalgo   stream="CLM1PT.CLM_USRDAT">nearest</strm_tintalgo>
@@ -1498,106 +1523,6 @@ ncep.v_10.T62.2009.20120412.nc
   TarcFactor tarcf
 </strm_datvar>
 
-<!-- =========================================  -->
-<!-- WRF (wr50a)                                -->
-<!-- =========================================  -->
-
-<strm_year_start stream="WRF">1989</strm_year_start>
-<strm_year_end   stream="WRF">1993</strm_year_end>
-<strm_year_align stream="WRF">1989</strm_year_align>
-<strm_domdir     stream="WRF">$DIN_LOC_ROOT/atm/datm7/WRF_110603</strm_domdir>
-<strm_domfil     stream="WRF">wrf-wr50a-cordexgrid.nc</strm_domfil>
-<strm_datdir     stream="WRF">$DIN_LOC_ROOT/atm/datm7/WRF_110603</strm_datdir>
-<strm_datfil     stream="WRF">
-   wrf-198901-cf.nc
-   wrf-198902-cf.nc
-   wrf-198903-cf.nc
-   wrf-198904-cf.nc
-   wrf-198905-cf.nc
-   wrf-198906-cf.nc
-   wrf-198907-cf.nc
-   wrf-198908-cf.nc
-   wrf-198909-cf.nc
-   wrf-198910-cf.nc
-   wrf-198911-cf.nc
-   wrf-198912-cf.nc
-   wrf-199001-cf.nc
-   wrf-199002-cf.nc
-   wrf-199003-cf.nc
-   wrf-199004-cf.nc
-   wrf-199005-cf.nc
-   wrf-199006-cf.nc
-   wrf-199007-cf.nc
-   wrf-199008-cf.nc
-   wrf-199009-cf.nc
-   wrf-199010-cf.nc
-   wrf-199011-cf.nc
-   wrf-199012-cf.nc
-   wrf-199101-cf.nc
-   wrf-199102-cf.nc
-   wrf-199103-cf.nc
-   wrf-199104-cf.nc
-   wrf-199105-cf.nc
-   wrf-199106-cf.nc
-   wrf-199107-cf.nc
-   wrf-199108-cf.nc
-   wrf-199109-cf.nc
-   wrf-199110-cf.nc
-   wrf-199111-cf.nc
-   wrf-199112-cf.nc
-   wrf-199201-cf.nc
-   wrf-199202-cf.nc
-   wrf-199203-cf.nc
-   wrf-199204-cf.nc
-   wrf-199205-cf.nc
-   wrf-199206-cf.nc
-   wrf-199207-cf.nc
-   wrf-199208-cf.nc
-   wrf-199209-cf.nc
-   wrf-199210-cf.nc
-   wrf-199211-cf.nc
-   wrf-199212-cf.nc
-   wrf-199301-cf.nc
-   wrf-199302-cf.nc
-   wrf-199303-cf.nc
-   wrf-199304-cf.nc
-   wrf-199305-cf.nc
-   wrf-199306-cf.nc
-   wrf-199307-cf.nc
-   wrf-199308-cf.nc
-   wrf-199309-cf.nc
-   wrf-199310-cf.nc
-   wrf-199311-cf.nc
-   wrf-199312-cf.nc
-</strm_datfil>
-<strm_offset     stream="WRF">0</strm_offset>
-<strm_tintalgo   stream="WRF">linear</strm_tintalgo>
-<strm_domvar     stream="WRF">
-  time    time
-  xc      lon
-  yc      lat
-  area    area
-  mask    mask
-</strm_domvar>
-<strm_datvar     stream="WRF">
-  rho     dens
-  slp     pslv
-  p_sfc   pbot
-  q_2m    shum
-  T_2m    tbot
-  Th_2m   ptem
-  u_10m_tr  u
-  v_10m_tr  v
-  Z_sfc   z
-  LW_d    lwdn
-  SW_d    swdn
-  SW_u    swup
-  rain_c  rainc
-  rain_nc rainl
-  snow_c  snowc
-  snow_nc snowl
-</strm_datvar>
-
 <!-- == WW3 ==== -->
 
 <strm_year_start stream="WW3">2000</strm_year_start>
@@ -1620,6 +1545,389 @@ ncep.v_10.T62.2009.20120412.nc
   airSeaTempDiff tbot
 </strm_datvar>
 
+
+<!-- =========================================  -->
+<!-- CO2 time-series                            -->
+<!-- =========================================  -->
+
+<!-- 20th Century CO2 -->
+<strm_year_start stream="co2tseries.20tr">1850</strm_year_start>
+<strm_year_end   stream="co2tseries.20tr">2007</strm_year_end>
+<strm_year_align stream="co2tseries.20tr">1850</strm_year_align>
+<strm_domdir     stream="co2tseries.20tr">$DIN_LOC_ROOT/atm/datm7/CO2</strm_domdir>
+<strm_domfil     stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</strm_domfil>
+<strm_datdir     stream="co2tseries.20tr">$DIN_LOC_ROOT/atm/datm7/CO2</strm_datdir>
+<strm_datfil     stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</strm_datfil>
+<strm_offset     stream="co2tseries.20tr">0</strm_offset>
+<strm_tintalgo   stream="co2tseries.20tr">linear</strm_tintalgo>
+<strm_mapalgo    stream="co2tseries.20tr">nn</strm_mapalgo>
+<strm_domvar     stream="co2tseries.20tr">
+  time    time
+  lonc    lon
+  latc    lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="co2tseries.20tr">
+  CO2        co2diag
+</strm_datvar>
+<strm_taxmode    stream="co2tseries.20tr" >extend</strm_taxmode>
+
+<!-- rcp2.6 CO2 -->
+<strm_year_start stream="co2tseries.rcp2.6">2005</strm_year_start>
+<strm_year_end   stream="co2tseries.rcp2.6">2500</strm_year_end>
+<strm_year_align stream="co2tseries.rcp2.6">2005</strm_year_align>
+<strm_domdir     stream="co2tseries.rcp2.6">$DIN_LOC_ROOT/atm/datm7/CO2</strm_domdir>
+<strm_domfil     stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</strm_domfil>
+<strm_datdir     stream="co2tseries.rcp2.6">$DIN_LOC_ROOT/atm/datm7/CO2</strm_datdir>
+<strm_datfil     stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</strm_datfil>
+<strm_offset     stream="co2tseries.rcp2.6">0</strm_offset>
+<strm_tintalgo   stream="co2tseries.rcp2.6">linear</strm_tintalgo>
+<strm_mapalgo    stream="co2tseries.rcp2.6">nn</strm_mapalgo>
+<strm_domvar     stream="co2tseries.rcp2.6">
+  time    time
+  lonc    lon
+  latc    lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="co2tseries.rcp2.6">
+  CO2        co2diag
+</strm_datvar>
+<strm_taxmode    stream="co2tseries.rcp2.6" >extend</strm_taxmode>
+
+<!-- rcp4.5 CO2 -->
+<strm_year_start stream="co2tseries.rcp4.5">2005</strm_year_start>
+<strm_year_end   stream="co2tseries.rcp4.5">2500</strm_year_end>
+<strm_year_align stream="co2tseries.rcp4.5">2005</strm_year_align>
+<strm_domdir     stream="co2tseries.rcp4.5">$DIN_LOC_ROOT/atm/datm7/CO2</strm_domdir>
+<strm_domfil     stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</strm_domfil>
+<strm_datdir     stream="co2tseries.rcp4.5">$DIN_LOC_ROOT/atm/datm7/CO2</strm_datdir>
+<strm_datfil     stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</strm_datfil>
+<strm_offset     stream="co2tseries.rcp4.5">0</strm_offset>
+<strm_tintalgo   stream="co2tseries.rcp4.5">linear</strm_tintalgo>
+<strm_mapalgo    stream="co2tseries.rcp4.5">nn</strm_mapalgo>
+<strm_domvar     stream="co2tseries.rcp4.5">
+  time    time
+  lonc    lon
+  latc    lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="co2tseries.rcp4.5">
+  CO2        co2diag
+</strm_datvar>
+<strm_taxmode    stream="co2tseries.rcp4.5" >extend</strm_taxmode>
+
+<!-- rcp4.5 CO2 -->
+<strm_year_start stream="co2tseries.rcp6.0">2005</strm_year_start>
+<strm_year_end   stream="co2tseries.rcp6.0">2500</strm_year_end>
+<strm_year_align stream="co2tseries.rcp6.0">2005</strm_year_align>
+<strm_domdir     stream="co2tseries.rcp6.0">$DIN_LOC_ROOT/atm/datm7/CO2</strm_domdir>
+<strm_domfil     stream="co2tseries.rcp6.0">fco2_datm_rcp6.0_1765-2500_c130312.nc</strm_domfil>
+<strm_datdir     stream="co2tseries.rcp6.0">$DIN_LOC_ROOT/atm/datm7/CO2</strm_datdir>
+<strm_datfil     stream="co2tseries.rcp6.0">fco2_datm_rcp6.0_1765-2500_c130312.nc</strm_datfil>
+<strm_offset     stream="co2tseries.rcp6.0">0</strm_offset>
+<strm_tintalgo   stream="co2tseries.rcp6.0">linear</strm_tintalgo>
+<strm_mapalgo    stream="co2tseries.rcp6.0">nn</strm_mapalgo>
+<strm_domvar     stream="co2tseries.rcp6.0">
+  time    time
+  lonc    lon
+  latc    lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="co2tseries.rcp6.0">
+  CO2        co2diag
+</strm_datvar>
+<strm_taxmode    stream="co2tseries.rcp6.0" >extend</strm_taxmode>
+
+<!-- rcp8.5 CO2 -->
+<strm_year_start stream="co2tseries.rcp8.5">2005</strm_year_start>
+<strm_year_end   stream="co2tseries.rcp8.5">2500</strm_year_end>
+<strm_year_align stream="co2tseries.rcp8.5">2005</strm_year_align>
+<strm_domdir     stream="co2tseries.rcp8.5">$DIN_LOC_ROOT/atm/datm7/CO2</strm_domdir>
+<strm_domfil     stream="co2tseries.rcp8.5">fco2_datm_rcp8.5_1765-2500_c110919.nc</strm_domfil>
+<strm_datdir     stream="co2tseries.rcp8.5">$DIN_LOC_ROOT/atm/datm7/CO2</strm_datdir>
+<strm_datfil     stream="co2tseries.rcp8.5">fco2_datm_rcp8.5_1765-2500_c110919.nc</strm_datfil>
+<strm_offset     stream="co2tseries.rcp8.5">0</strm_offset>
+<strm_tintalgo   stream="co2tseries.rcp8.5">linear</strm_tintalgo>
+<strm_mapalgo    stream="co2tseries.rcp8.5">nn</strm_mapalgo>
+<strm_domvar     stream="co2tseries.rcp8.5">
+  time    time
+  lonc    lon
+  latc    lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="co2tseries.rcp8.5">
+  CO2        co2diag
+</strm_datvar>
+<strm_taxmode    stream="co2tseries.rcp8.5" >extend</strm_taxmode>
+
+<!-- =========================================  -->
+<!-- Time-varying bias correction               -->
+<!-- =========================================  -->
+<!-- QIAN               -->
+
+<strm_year_start stream="BC.QIAN.Precip">1979</strm_year_start>
+<strm_year_end   stream="BC.QIAN.Precip">2004</strm_year_end>
+<strm_year_align stream="BC.QIAN.Precip">1979</strm_year_align>
+<strm_domdir     stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</strm_domdir>
+<strm_domfil     stream="BC.QIAN.Precip">qian.bc.domain.c130531.nc</strm_domfil>
+<strm_datdir     stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</strm_datdir>
+<strm_datfil     stream="BC.QIAN.Precip">
+bias_correction.Prec.%y.nc  
+</strm_datfil>
+<strm_offset     stream="BC.QIAN.Precip">0</strm_offset>
+<strm_tintalgo   stream="BC.QIAN.Precip">linear</strm_tintalgo>
+<strm_domvar     stream="BC.QIAN.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="BC.QIAN.Precip">
+  BC_PREC  precsf
+</strm_datvar>
+
+<!-- =========================================  -->
+<!-- Time-varying bias correction               -->
+<!-- =========================================  -->
+<!-- CRUNCEP/GPCP               -->
+
+<strm_year_start stream="BC.CRUNCEP.GPCP.Precip">1979</strm_year_start>
+<strm_year_end   stream="BC.CRUNCEP.GPCP.Precip">2012</strm_year_end>
+<strm_year_align stream="BC.CRUNCEP.GPCP.Precip">1979</strm_year_align>
+<strm_domdir     stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</strm_domdir>
+<strm_domfil     stream="BC.CRUNCEP.GPCP.Precip">cruncep.bc.domain.0.9x1.25.nc</strm_domfil>
+<strm_datdir     stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</strm_datdir> 
+<strm_datfil     stream="BC.CRUNCEP.GPCP.Precip">
+bias_correction.Prec.%y.nc  
+</strm_datfil>
+<strm_offset     stream="BC.CRUNCEP.GPCP.Precip">0</strm_offset>
+<strm_tintalgo   stream="BC.CRUNCEP.GPCP.Precip">nearest</strm_tintalgo>
+<strm_domvar     stream="BC.CRUNCEP.GPCP.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="BC.CRUNCEP.GPCP.Precip">
+  BC_PREC  precsf
+</strm_datvar>
+
+<!-- CRUNCEP/CMAP               -->
+
+<strm_year_start stream="BC.CRUNCEP.CMAP.Precip">1979</strm_year_start>
+<strm_year_end   stream="BC.CRUNCEP.CMAP.Precip">2010</strm_year_end>
+<strm_year_align stream="BC.CRUNCEP.CMAP.Precip">1979</strm_year_align>
+<strm_domdir     stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</strm_domdir>
+<strm_domfil     stream="BC.CRUNCEP.CMAP.Precip">cruncep.bc.domain.c100429.nc</strm_domfil>
+<strm_datdir     stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</strm_datdir>
+<strm_datfil     stream="BC.CRUNCEP.CMAP.Precip">
+bias_correction.Prec.%y.nc  
+</strm_datfil>
+<strm_offset     stream="BC.CRUNCEP.CMAP.Precip">0</strm_offset>
+<strm_tintalgo   stream="BC.CRUNCEP.CMAP.Precip">nearest</strm_tintalgo>
+<strm_domvar     stream="BC.CRUNCEP.CMAP.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="BC.CRUNCEP.CMAP.Precip">
+  BC_PREC  precsf
+</strm_datvar>
+
+<!-- ANOMALY FORCING / Precip              -->
+
+<strm_year_start stream="Anomaly.Forcing.Precip">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Precip">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Precip">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Precip">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Precip">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Precip">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Precip">
+af.pr.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Precip">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Precip">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Precip">
+  pr  prec_af
+</strm_datvar>
+
+<!-- ANOMALY FORCING / Surface Temperature              -->
+<strm_year_start stream="Anomaly.Forcing.Temperature">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Temperature">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Temperature">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Temperature">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Temperature">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Temperature">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Temperature">
+af.tas.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Temperature">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Temperature">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Temperature">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Temperature">
+  tas  tbot_af
+</strm_datvar>
+
+<!-- ANOMALY FORCING / Surface Pressure              -->
+
+<strm_year_start stream="Anomaly.Forcing.Pressure">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Pressure">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Pressure">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Pressure">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Pressure">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Pressure">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Pressure">
+af.ps.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Pressure">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Pressure">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Pressure">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Pressure">
+  ps  pbot_af
+</strm_datvar>
+<!-- ANOMALY FORCING / Surface Humidity              -->
+
+<strm_year_start stream="Anomaly.Forcing.Humidity">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Humidity">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Humidity">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Humidity">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Humidity">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Humidity">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Humidity">
+af.huss.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Humidity">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Humidity">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Humidity">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Humidity">
+  huss  shum_af
+</strm_datvar>
+<!-- ANOMALY FORCING / Wind Speed - U              -->
+
+<strm_year_start stream="Anomaly.Forcing.Uwind">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Uwind">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Uwind">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Uwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Uwind">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Uwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Uwind">
+af.uas.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Uwind">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Uwind">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Uwind">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Uwind">
+  uas  u_af
+</strm_datvar>
+<!-- ANOMALY FORCING / Wind Speed - V              -->
+
+<strm_year_start stream="Anomaly.Forcing.Vwind">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Vwind">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Vwind">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Vwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Vwind">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Vwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Vwind">
+af.vas.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Vwind">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Vwind">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Vwind">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Vwind">
+  vas  v_af
+</strm_datvar>
+<!-- ANOMALY FORCING / Downwelling Shortwave             -->
+
+<strm_year_start stream="Anomaly.Forcing.Shortwave">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Shortwave">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Shortwave">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Shortwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Shortwave">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Shortwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Shortwave">
+af.rsds.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Shortwave">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Shortwave">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Shortwave">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Shortwave">
+  rsds  swdn_af
+</strm_datvar>
+<!-- ANOMALY FORCING / Downwelling Longwave             -->
+
+<strm_year_start stream="Anomaly.Forcing.Longwave">2006</strm_year_start>
+<strm_year_end   stream="Anomaly.Forcing.Longwave">2300</strm_year_end>
+<strm_year_align stream="Anomaly.Forcing.Longwave">2006</strm_year_align>
+<strm_domdir     stream="Anomaly.Forcing.Longwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_domdir>
+<strm_domfil     stream="Anomaly.Forcing.Longwave">domain.permafrostRCN_P2.c2013.nc</strm_domfil>
+<strm_datdir     stream="Anomaly.Forcing.Longwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</strm_datdir>
+<strm_datfil     stream="Anomaly.Forcing.Longwave">
+af.rlds.ccsm4.rcp45.2006-2300.nc
+</strm_datfil>
+<strm_offset     stream="Anomaly.Forcing.Longwave">0</strm_offset>
+<strm_tintalgo   stream="Anomaly.Forcing.Longwave">nearest</strm_tintalgo>
+<strm_domvar     stream="Anomaly.Forcing.Longwave">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="Anomaly.Forcing.Longwave">
+  rlds  lwdn_af
+</strm_datvar>
 
 <!-- =========================================  -->
 <!-- Presaero (Aerosol deposition )             -->
@@ -1830,19 +2138,31 @@ ncep.v_10.T62.2009.20120412.nc
 <!-- Other stream variables                     -->
 <!-- =========================================  -->
 
+<strm_offset>0</strm_offset>
+
+<strm_tintalgo>linear</strm_tintalgo>
+
 <strm_fillalgo>nn</strm_fillalgo>
 
 <strm_fillmask>nomask</strm_fillmask>
 
 <strm_mapmask>nomask</strm_mapmask>
 
+<strm_domvar>
+   time    time
+   xc      lon
+   yc      lat
+   area    area
+   mask    mask
+</strm_domvar>
+
 <strm_mapalgo>bilinear</strm_mapalgo>
 <strm_mapalgo datm_mode="CLM1PT">nn</strm_mapalgo>
 <strm_mapalgo datm_mode="CLM1PT" presaero_mode="pt1_pt1">nn</strm_mapalgo>
 
-<strm_taxmode                   >cycle</strm_taxmode>
-<strm_taxmode grid="CLM_USRDAT" >cycle</strm_taxmode>
-<strm_taxmode datm_mode="CLM1PT">extend</strm_taxmode>
+<strm_taxmode                          >cycle</strm_taxmode>
+<strm_taxmode grid="CLM_USRDAT"        >cycle</strm_taxmode>
+<strm_taxmode datm_mode="CLM1PT"       >extend</strm_taxmode>
 
 <!-- =========================================  -->
 <!-- Non-stream variables                       -->

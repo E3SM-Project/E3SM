@@ -133,9 +133,9 @@
                            430, 438, 451, 464, 482, 501, 517, 558, 634, 685, &
                            716, 746, 767, 801, 824 /)
 
-      extfrc_lst(:  3) = (/ 'NO              ','CO              ','SO2             ' /)
+      extfrc_lst(:  4) = (/ 'NO              ','CO              ','SO2             ','SO4             ' /)
 
-      frc_from_dataset(:  3) = (/ .true., .true., .true. /)
+      frc_from_dataset(:  4) = (/ .true., .true., .true., .true. /)
 
       inv_lst(:  4) = (/ 'M               ', 'N2              ', 'O2              ', 'H2O             ' /)
 

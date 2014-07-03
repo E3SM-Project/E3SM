@@ -1,32 +1,69 @@
 ================================================================================
-SVN $Id: README 46983 2013-05-09 22:08:12Z tcraig $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/runoff_to_ocn/README $
+SVN $Id: README 48887 2013-07-10 17:20:49Z mlevy@ucar.edu $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/gen_mapping_files/runoff_to_ocn/README $
 ===============================================================================
 
-           How to create a runoff map for CCSM4
+===============
+ABOUT THIS TOOL
+===============
 
+The src/ directory here contains F90 files and a Makefile to produce the
+runoff_map executable, which reads in a runoff file and an ocean grid file
+and outputs a map from the former to the latter:
 
-----------------------------------------------------------------------
-This computes an initial nearest neighbor mapping from the rof grid
-  cells to active ocean grid cells.
-Then a smoothing matrix is computed on the ocean grid.
-The two matrices are multipled together and a final mapping file is
-  produced.
+1) Computes an initial nearest neighbor mapping from the rof grid cells to 
+   active ocean grid cells.
+2) Computes a smoothing matrix on the ocean grid.
+3) The two matrices are multipled together to generate the final mapping file.
 
-In this directory:
- Build
- Setup a namelist file
- Run
+====================
+HOW TO USE THIS TOOL
+====================
 
-----------------------------------------------------------------------
-Build:
+1) Build (in the src/ directory)
+2) Setup a namelist file (runoff.nml)
+3) Run ./runoff_map
 
-run build.yellowstone.csh on yellowstone (or adapt this for your machine)
+============
+HOW TO BUILD
+============
 
-the build generates a runoff_map executable.
+Prior to building, you must make sure $CCSMROOT is set.
 
-----------------------------------------------------------------------
-Setup a namelist file:
+$ cd src
+$ $CCSMROOT/scripts/ccsm_utils/Machines/configure -mach [machine name]
+$ ./build.csh
+
+Note: in the second step, replace [machine name] with the machine you are
+building on. Also, some machines (such as janus) have dedicated build nodes,
+so you might need to SSH to another node before the 'build.csh' step.
+
+==================================
+COMMON BUILD / RUN ISSUES ON JANUS
+==================================
+
+1) As hinted at in the "How to Build" section, you can not build on the login
+  nodes on janus. If you see the error
+
+  ld: cannot find -lrdmacm
+  ld: cannot find -libverbs
+
+  you are still on the headnode and need to SSH to node0001.
+
+2) At present, the netCDF libraries available on janus have all been built
+   with mpif90, which means that everything linking with netCDF must also
+   be built in parallel. Unfortunately, this means you can not run map_fields
+   from the head node -- you either need to push it through the queue or just
+   run it from node0001. Running on node0001 is easier, but to run from the
+   queue, edit map_field.janus.run (both the header info to set the requested
+   walltime and the body of the script to point to the correct mapping file and
+   name the domain files appropriately), and then run
+
+   qsub map_field.janus.run
+
+====================
+NAMELIST FILE FORMAT
+====================
 
 The namelist file must be called "runoff_map.nml".  That name is hardwired
 into the executable.
@@ -74,16 +111,10 @@ Output fields:
   file_new    = combined file
 
 
-----------------------------------------------------------------------
-Run:
+==========
+HOW TO RUN
+==========
 
-on yellowstone, login to geyser, 
-
-  bsub -Is -q geyser -W 20:00 -n 1 -P P???????? tcsh
-
-then execute the binary.
-
-  ./runoff_map
-
-----------------------------------------------------------------------
+Execute the binary ./runoff_map (again, this will read the runoff_map.nml
+namelist file - see bove section for tips on creating the file)
 

@@ -1354,8 +1354,11 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
   else
     ibaseref=iref-2  
   end if
-
-  point=point-gnom1d(ibaseref)
+  if (ibaseref < 1-nhc ) then
+     print *,'ERROR: ibaseref out of range: ',ibaseref,ida,ide,iref
+  else
+     point=point-gnom1d(ibaseref)
+  endif
   
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!

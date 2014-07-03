@@ -24,7 +24,6 @@ endif
 set walltime = "00:45:00"
 if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
 if ($CCSM_ESTCOST > 3 || $DEBUG == "TRUE") set walltime = "02:00:00"
-set widow=`ls -l $SYSTEM_USERDIR | sed -e 's/.*\/lustre\///' | sed -e 's/\/.*$//'`
 
 if ($?TESTMODE) then
  set file = $CASEROOT/${CASE}.test 
@@ -41,7 +40,6 @@ cat >! $file << EOF1
 #PBS -l walltime=${walltime}
 #PBS -j oe
 #PBS -S /bin/csh -V
-#PBS -l gres=${widow}
 EOF1
 
 #################################################################################

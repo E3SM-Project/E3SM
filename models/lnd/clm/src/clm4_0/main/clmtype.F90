@@ -1966,11 +1966,6 @@ type, public :: gridcell_type
    real(r8), pointer :: lon(:)          !longitude (radians)
    real(r8), pointer :: latdeg(:)       !latitude (degrees)
    real(r8), pointer :: londeg(:)       !longitude (degrees)
-   integer , pointer :: gindex_a(:)     !"atm" global index
-   real(r8), pointer :: lat_a(:) 	!"atm" latitude (radians) for albedo
-   real(r8), pointer :: lon_a(:)        !"atm" longitude (radians) for albedo
-   real(r8), pointer :: latdeg_a(:)     !"atm" latitude (degrees) for albedo
-   real(r8), pointer :: londeg_a(:)     !"atm" longitude (degrees) for albedo
    real(r8), pointer :: gris_mask(:)    !Greenland ice sheet mask 
    real(r8), pointer :: gris_area(:)    !Greenland ice-covered area per gridcell (km^2)
    real(r8), pointer :: aais_mask(:)    !Antarctic ice sheet mask 

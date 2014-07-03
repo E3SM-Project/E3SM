@@ -94,6 +94,8 @@ cp ${CAM_TESTDIR}/TSM.$1.$2.${initial_length}${stop_flag}/*cam* ${rundir}/.
 cp ${CAM_TESTDIR}/TSM.$1.$2.${initial_length}${stop_flag}/*clm* ${rundir}/.
 cp ${CAM_TESTDIR}/TSM.$1.$2.${initial_length}${stop_flag}/*drv* ${rundir}/.
 cp ${CAM_TESTDIR}/TSM.$1.$2.${initial_length}${stop_flag}/rpointer* ${rundir}/.
+# CARMA RRTMG files are not re-written on restart.
+cp ${CAM_TESTDIR}/TSM.$1.$2.${initial_length}${stop_flag}/*CR*_rrtmg.nc ${rundir}/.
 
 use_case=${2#*+}
 nl_file=${2%+*}

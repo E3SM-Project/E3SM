@@ -27,8 +27,8 @@ module cloud_diagnostics
    public :: cloud_diagnostics_register
 
 ! Local variables
-   integer :: i_dei, i_mu, i_lambda, i_iciwp, i_iclwp, i_cld  ! index into pbuf for cloud fields
-   integer :: i_ciwp, i_clwp, i_rei, i_rel
+   integer :: dei_idx, mu_idx, lambda_idx, iciwp_idx, iclwp_idx, cld_idx  ! index into pbuf for cloud fields
+   integer :: ixcldice, ixcldliq, rei_idx, rel_idx
 
    logical :: do_cld_diag, mg_clouds, rk_clouds, camrt_rad
    integer :: conv_water_in_rad
@@ -39,6 +39,10 @@ module cloud_diagnostics
    integer :: cldtau_idx = -1
    integer :: nmxrgn_idx = -1
    integer :: pmxrgn_idx = -1
+
+   ! Index fields for precipitation efficiency.
+   integer :: acpr_idx, acgcme_idx, acnum_idx
+
 
 contains
 
@@ -64,6 +68,11 @@ contains
 
        call pbuf_add_field('PMXRGN', 'physpkg', dtype_r8,(/pcols,pverp/), pmxrgn_idx)
        call pbuf_add_field('NMXRGN', 'physpkg', dtype_i4,(/pcols /),      nmxrgn_idx)
+    else if (mg_clouds) then
+       ! In cloud ice water path for radiation
+       call pbuf_add_field('ICIWP',      'global', dtype_r8,(/pcols,pver/), iciwp_idx)
+       ! In cloud liquid water path for radiation
+       call pbuf_add_field('ICLWP',      'global', dtype_r8,(/pcols,pver/), iclwp_idx)
     endif
   end subroutine cloud_diagnostics_register
 
@@ -76,36 +85,53 @@ contains
     use cloud_cover_diags, only: cloud_cover_diags_init
 
     implicit none
+
 !-----------------------------------------------------------------------
 
     character(len=16) :: wpunits, sampling_seq
     logical           :: history_amwg                  ! output the variables used by the AMWG diag package
 
-    i_cld    = pbuf_get_index('CLD')
+
+    !-----------------------------------------------------------------------
+
+    cld_idx    = pbuf_get_index('CLD')
 
     if (mg_clouds) then
 
-       i_iciwp  = pbuf_get_index('ICIWP')
-       i_iclwp  = pbuf_get_index('ICLWP')
+       call addfld ('ICWMR    ', 'kg/kg   ', pver, 'A', 'Prognostic in-cloud water mixing ratio'                  ,phys_decomp)
+       call addfld ('ICIMR    ', 'kg/kg   ', pver, 'A', 'Prognostic in-cloud ice mixing ratio'                    ,phys_decomp)
+       call addfld ('IWC      ', 'kg/m3   ', pver, 'A', 'Grid box average ice water content'                      ,phys_decomp)
+       call addfld ('LWC      ', 'kg/m3   ', pver, 'A', 'Grid box average liquid water content'                   ,phys_decomp)
 
-       i_dei    = pbuf_get_index('DEI')
-       i_mu     = pbuf_get_index('MU')
-       i_lambda = pbuf_get_index('LAMBDAC')
+       ! determine the add_default fields
+       call phys_getopts(history_amwg_out           = history_amwg) 
+
+       if (history_amwg) then
+          call add_default ('ICWMR', 1, ' ')
+          call add_default ('ICIMR', 1, ' ')
+          call add_default ('IWC      ', 1, ' ')
+       end if
+
+       dei_idx    = pbuf_get_index('DEI')
+       mu_idx     = pbuf_get_index('MU')
+       lambda_idx = pbuf_get_index('LAMBDAC')
 
     elseif (rk_clouds) then
 
-       i_rei    = pbuf_get_index('REI')
-       i_rel    = pbuf_get_index('REL')
-
-       call cnst_get_ind('CLDICE', i_ciwp)
-       call cnst_get_ind('CLDLIQ', i_clwp)
+       rei_idx    = pbuf_get_index('REI')
+       rel_idx    = pbuf_get_index('REL')
 
     endif
+
+    call cnst_get_ind('CLDICE', ixcldice)
+    call cnst_get_ind('CLDLIQ', ixcldliq)
 
     do_cld_diag = rk_clouds .or. mg_clouds
 
     if (.not.do_cld_diag) return
     
+    call phys_getopts(conv_water_in_rad_out=conv_water_in_rad)
+
     if (rk_clouds) then 
        wpunits = 'gram/m2'
        sampling_seq='rad_lwsw'
@@ -136,7 +162,6 @@ contains
     if(rk_clouds) then
        call addfld ('rel_cloud','1/meter',pver,'I','effective radius of liq in cloud', phys_decomp, sampling_seq=sampling_seq)
        call addfld ('rei_cloud','1',pver,'I','effective radius of ice in cloud', phys_decomp, sampling_seq=sampling_seq)
-       call phys_getopts(conv_water_in_rad_out=conv_water_in_rad)
     endif
 
     call addfld ('SETLWP  ','gram/m2 ',pver, 'A','Prescribed liquid water path'          ,phys_decomp, sampling_seq=sampling_seq)
@@ -186,6 +211,8 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     use radiation,     only: radiation_do
     use cloud_cover_diags, only: cloud_cover_diags_out
 
+    use ref_pres,       only: top_lev=>trop_cloud_top_lev
+
     implicit none
 
 ! Arguments
@@ -195,8 +222,8 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 ! Local variables
 
     real(r8), pointer :: cld(:,:)       ! cloud fraction
-    real(r8), pointer :: iciwpth(:,:)   ! in-cloud cloud ice water path
-    real(r8), pointer :: iclwpth(:,:)   ! in-cloud cloud liquid water path
+    real(r8), pointer :: iciwp(:,:)   ! in-cloud cloud ice water path
+    real(r8), pointer :: iclwp(:,:)   ! in-cloud cloud liquid water path
     real(r8), pointer :: dei(:,:)       ! effective radiative diameter of ice
     real(r8), pointer :: mu(:,:)        ! gamma distribution for liq clouds
     real(r8), pointer :: lambda(:,:)    ! gamma distribution for liq clouds
@@ -211,7 +238,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     integer,  pointer :: nmxrgn(:)      ! Number of maximally overlapped regions
     real(r8), pointer :: pmxrgn(:,:)    ! Maximum values of pressure for each
 
-    integer :: itim
+    integer :: itim_old
 
     real(r8) :: cwp   (pcols,pver)      ! in-cloud cloud (total) water path
     real(r8) :: gicewp(pcols,pver)      ! grid-box cloud ice water path
@@ -222,6 +249,11 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     real(r8) :: tgwp   (pcols)          ! Vertically integrated (total) cloud water path
 
     real(r8) :: ficemr (pcols,pver)     ! Ice fraction from ice and liquid mixing ratios
+
+    real(r8) :: icimr(pcols,pver)       ! In cloud ice mixing ratio
+    real(r8) :: icwmr(pcols,pver)       ! In cloud water mixing ratio
+    real(r8) :: iwc(pcols,pver)         ! Grid box average ice water content
+    real(r8) :: lwc(pcols,pver)         ! Grid box average liquid water content
 
 ! old data
     real(r8) :: tpw    (pcols)          ! total precipitable water
@@ -242,6 +274,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 !-----------------------------------------------------------------------
     if (.not.do_cld_diag) return
 
+
     if(rk_clouds) then
        dosw     = radiation_do('sw')      ! do shortwave heating calc this timestep?
        dolw     = radiation_do('lw')      ! do longwave heating calc this timestep?
@@ -255,16 +288,16 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     ncol  = state%ncol
     lchnk = state%lchnk
 
-    itim = pbuf_old_tim_idx()
-    call pbuf_get_field(pbuf, i_cld, cld, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+    itim_old = pbuf_old_tim_idx()
+    call pbuf_get_field(pbuf, cld_idx, cld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
     if(mg_clouds)then
 
-       call pbuf_get_field(pbuf, i_iclwp, iclwpth )
-       call pbuf_get_field(pbuf, i_iciwp, iciwpth )
-       call pbuf_get_field(pbuf, i_dei, dei )
-       call pbuf_get_field(pbuf, i_mu, mu )
-       call pbuf_get_field(pbuf, i_lambda, lambda )
+       call pbuf_get_field(pbuf, iclwp_idx, iclwp )
+       call pbuf_get_field(pbuf, iciwp_idx, iciwp )
+       call pbuf_get_field(pbuf, dei_idx, dei )
+       call pbuf_get_field(pbuf, mu_idx, mu )
+       call pbuf_get_field(pbuf, lambda_idx, lambda )
 
        call outfld('dei_cloud',dei(:,:),pcols,lchnk)
        call outfld('mu_cloud',mu(:,:),pcols,lchnk)
@@ -272,8 +305,8 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 
     elseif(rk_clouds) then
 
-       call pbuf_get_field(pbuf, i_rei, rei )
-       call pbuf_get_field(pbuf, i_rel, rel )
+       call pbuf_get_field(pbuf, rei_idx, rei )
+       call pbuf_get_field(pbuf, rel_idx, rel )
 
        call outfld('rel_cloud', rel, pcols, lchnk)
        call outfld('rei_cloud', rei, pcols, lchnk)
@@ -317,23 +350,64 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 ! Compute liquid and ice water paths
     if(mg_clouds) then
 
+       ! ----------------------------------------------------------- !
+       ! Adjust in-cloud water values to take account of convective  !
+       ! in-cloud water. It is used to calculate the values of       !
+       ! iclwp and iciwp to pass to the radiation.                   !
+       ! ----------------------------------------------------------- !
+       if( conv_water_in_rad /= 0 ) then
+          allcld_ice(:ncol,:) = 0._r8 ! Grid-avg all cloud liquid
+          allcld_liq(:ncol,:) = 0._r8 ! Grid-avg all cloud ice
+    
+          call conv_water_4rad( state, pbuf, conv_water_in_rad, allcld_liq, allcld_ice )
+       else
+          allcld_liq(:ncol,top_lev:pver) = state%q(:ncol,top_lev:pver,ixcldliq)  ! Grid-ave all cloud liquid
+          allcld_ice(:ncol,top_lev:pver) = state%q(:ncol,top_lev:pver,ixcldice)  !           "        ice
+       end if
+
+       ! ------------------------------------------------------------ !
+       ! Compute in cloud ice and liquid mixing ratios                !
+       ! Note that 'iclwp, iciwp' are used for radiation computation. !
+       ! ------------------------------------------------------------ !
+
+
+       iciwp = 0._r8
+       iclwp = 0._r8
+       icimr = 0._r8
+       icwmr = 0._r8
+       iwc = 0._r8
+       lwc = 0._r8
+
+       do k = top_lev, pver
+          do i = 1, ncol
+             ! Limits for in-cloud mixing ratios consistent with MG microphysics
+             ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
+             icimr(i,k)     = min( allcld_ice(i,k) / max(0.0001_r8,cld(i,k)),0.005_r8 )
+             icwmr(i,k)     = min( allcld_liq(i,k) / max(0.0001_r8,cld(i,k)),0.005_r8 )
+             iwc(i,k)       = allcld_ice(i,k) * state%pmid(i,k) / (287.15_r8*state%t(i,k))
+             lwc(i,k)       = allcld_liq(i,k) * state%pmid(i,k) / (287.15_r8*state%t(i,k))
+             ! Calculate total cloud water paths in each layer
+             iciwp(i,k)     = icimr(i,k) * state%pdel(i,k) / gravit
+             iclwp(i,k)     = icwmr(i,k) * state%pdel(i,k) / gravit
+          end do
+       end do
+
        do k=1,pver
           do i = 1,ncol
-             gicewp(i,k) = iciwpth(i,k)*cld(i,k)
-             gliqwp(i,k) = iclwpth(i,k)*cld(i,k)
-             cicewp(i,k) = iciwpth(i,k)
-             cliqwp(i,k) = iclwpth(i,k)
+             gicewp(i,k) = iciwp(i,k)*cld(i,k)
+             gliqwp(i,k) = iclwp(i,k)*cld(i,k)
+             cicewp(i,k) = iciwp(i,k)
+             cliqwp(i,k) = iclwp(i,k)
           end do
        end do
 
     elseif(rk_clouds) then
 
        if (conv_water_in_rad /= 0) then
-          call conv_water_4rad(lchnk,ncol,pbuf,conv_water_in_rad,rei,state%pdel, &
-                               state%q(:,:,i_clwp),state%q(:,:,i_ciwp),allcld_liq,allcld_ice)
+          call conv_water_4rad(state,pbuf,conv_water_in_rad,allcld_liq,allcld_ice)
        else
-          allcld_liq = state%q(:,:,i_clwp)
-          allcld_ice = state%q(:,:,i_ciwp)
+          allcld_liq = state%q(:,:,ixcldliq)
+          allcld_ice = state%q(:,:,ixcldice)
        end if
     
        do k=1,pver
@@ -385,6 +459,17 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
        else
           call outfld('EMISCLD' ,cldemis, pcols,lchnk)
        endif
+
+    else if (mg_clouds) then
+
+       ! --------------------------------------------- !
+       ! General outfield calls for microphysics       !
+       ! --------------------------------------------- !
+
+       call outfld( 'IWC'      , iwc,         pcols, lchnk )
+       call outfld( 'LWC'      , lwc,         pcols, lchnk )
+       call outfld( 'ICIMR'    , icimr,       pcols, lchnk )
+       call outfld( 'ICWMR'    , icwmr,       pcols, lchnk )
 
     endif
 

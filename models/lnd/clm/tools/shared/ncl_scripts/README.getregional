@@ -1,0 +1,36 @@
+README.getregional                            Erik Kluzek
+                                              11/21/2013
+
+Information on the getregional_datasets script.
+
+The getregional_datasets.pl script operates on global datasets and 
+extracts out a regional box (or single point) within it.
+
+
+QUICKSTART:
+
+
+Here is how you would use the script to run a setup a simple case.
+
+1.) Create list of input global files you want to extract from.
+
+A sample file is: sample_inlist
+
+2.) Create list of regional files that will be created.
+
+A sample file is: sample_outlist
+
+3.) Run getregional
+
+setenv DIR=`pwd`
+./getregional_datasets.pl -ne 74,221 -sw 51,189 -i sample_inlist -o sample_outlist
+
+4.) Make sure the user_nl_clm and xmlchange_cmnds files are correct.
+
+getregional will create a user_nl_clm file and a xmlchange_cmnds script to set
+needed env_run settings.
+
+3.) Create your case using the user_mods_dir option and CLM_USRDAT resolution
+
+./create_newcase -res CLM_USRDAT -user_mods_dir $DIR -mach yellowstone_intel \
+-case testAlaska -compset ICLM45BGC

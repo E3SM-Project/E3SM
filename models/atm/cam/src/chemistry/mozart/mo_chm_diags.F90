@@ -33,7 +33,7 @@ module mo_chm_diags
   integer :: toth_species(3)
   integer :: sox_species(3)
   integer :: nhx_species(3)
-  integer :: aer_species(gas_pcnst), cam_aerosols(8)
+  integer :: aer_species(gas_pcnst)
 
   character(len=fieldname_len) :: dtchem_name(gas_pcnst)
   character(len=fieldname_len) :: depvel_name(gas_pcnst)
@@ -57,9 +57,7 @@ contains
     use constituents, only : cnst_get_ind, cnst_longname
     use dyn_grid,     only : get_dyn_grid_parm, get_horiz_grid_d
     use phys_control, only: phys_getopts
-#if (defined MODAL_AERO)
-    use modal_aero_data, only: cnst_name_cw
-#endif
+
     implicit none
 
     integer :: i, j, k, m, n
@@ -196,9 +194,6 @@ contains
        endif
     enddo
 
-    cam_aerosols = (/ id_dst01, id_dst02, id_dst03, id_dst04, &
-                      id_sslt01, id_sslt02, id_sslt03, id_sslt04 /)
-
     toth_species = (/ id_ch4, id_h2o, id_h2 /)
 
     call addfld( 'NOX', 'mol/mol', pver, 'A', 'nox volume mixing ratio',  phys_decomp )
@@ -274,13 +269,11 @@ contains
        if (spc_name(1:3) == 'num') then
           unit_basename = ' 1'
        else
-          unit_basename = 'kg'  
+          unit_basename = 'kg'
        endif
 
-       if ( (any( aer_species == m )).or.(trim(chempkg) == 'trop_mam3') ) then
-          if ( .not. any ( cam_aerosols == m ) ) then
-             call addfld( spc_name, unit_basename//'/kg ',   pver, 'A', trim(attr)//' concentration', phys_decomp)
-          endif
+       if ( any( aer_species == m ) ) then
+          call addfld( spc_name, unit_basename//'/kg ',   pver, 'A', trim(attr)//' concentration', phys_decomp)
           call addfld( trim(spc_name)//'_SRF', unit_basename//'/kg', 1, 'A', trim(attr)//" in bottom layer", phys_decomp)    
        else
           call addfld( spc_name, 'mol/mol ', pver, 'A', trim(attr)//' concentration', phys_decomp)
@@ -296,52 +289,6 @@ contains
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
           endif
        endif
-
-#if (defined MODAL_AERO)
-
-! add cloud borne aerosol
-       if ( n>0 ) then
-          if( .not. (cnst_name_cw(n) == ' ') ) then
-
-             if (cnst_name_cw(n)(1:3) == 'num') then
-                unit_basename = ' 1'
-             else
-                unit_basename = 'kg'  
-             endif
-
-             call addfld( cnst_name_cw(n),                unit_basename//'/kg ', pver, 'A', &
-                  trim(cnst_name_cw(n))//' in cloud water',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'SFWET', unit_basename//'/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(n))//' wet deposition flux at surface',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'SFSIC', unit_basename//'/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(n))//' wet deposition flux (incloud, convective) at surface',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'SFSIS', unit_basename//'/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(n))//' wet deposition flux (incloud, stratiform) at surface',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'SFSBC', unit_basename//'/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(n))//' wet deposition flux (belowcloud, convective) at surface',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'SFSBS', unit_basename//'/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(n))//' wet deposition flux (belowcloud, stratiform) at surface',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'DDF',   unit_basename//'/m2/s ',   1, 'A', &
-                  trim(cnst_name_cw(n))//' dry deposition flux at bottom (grav + turb)',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'TBF',   unit_basename//'/m2/s ',   1, 'A', &
-                  trim(cnst_name_cw(n))//' turbulent dry deposition flux',phys_decomp)
-             call addfld (trim(cnst_name_cw(n))//'GVF',   unit_basename//'/m2/s ',   1, 'A', &
-                  trim(cnst_name_cw(n))//' gravitational dry deposition flux',phys_decomp)     
-
-             if ( history_aerosol ) then 
-                call add_default( cnst_name_cw(n), 1, ' ' )
-                call add_default (trim(cnst_name_cw(n))//'GVF', 1, ' ')
-                call add_default (trim(cnst_name_cw(n))//'SFWET', 1, ' ') 
-                call add_default (trim(cnst_name_cw(n))//'TBF', 1, ' ')
-                call add_default (trim(cnst_name_cw(n))//'DDF', 1, ' ')
-                call add_default (trim(cnst_name_cw(n))//'SFSBS', 1, ' ')      
-                call add_default (trim(cnst_name_cw(n))//'SFSIC', 1, ' ')
-                call add_default (trim(cnst_name_cw(n))//'SFSBC', 1, ' ')
-                call add_default (trim(cnst_name_cw(n))//'SFSIS', 1, ' ')
-             endif
-          endif
-       endif
-#endif
 
     enddo
 
@@ -368,9 +315,6 @@ contains
     use constituents, only : pcnst
     use constituents, only : cnst_get_ind
     use phys_grid,    only : get_area_all_p, pcols
-#if (defined MODAL_AERO)
-    use modal_aero_data,       only : cnst_name_cw, qqcw_get_field
-#endif
     use physics_buffer, only : physics_buffer_desc
     
     implicit none
@@ -487,26 +431,13 @@ contains
           vmr_toth(:ncol,:) = vmr_toth(:ncol,:) +  wgt * vmr(:ncol,:,m)
        endif
        
-       if ( (any( aer_species == m )).or.(trim(chempkg) == 'trop_mam3') ) then
-          if ( .not. any ( cam_aerosols == m ) ) then
-             call outfld( solsym(m), mmr(:ncol,:,m), ncol ,lchnk )
-          endif
+       if ( any( aer_species == m ) ) then
+          call outfld( solsym(m), mmr(:ncol,:,m), ncol ,lchnk )
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
        else
           call outfld( solsym(m), vmr(:ncol,:,m), ncol ,lchnk )
           call outfld( trim(solsym(m))//'_SRF', vmr(:ncol,pver,m), ncol ,lchnk )
        endif
-
-#if (defined MODAL_AERO)
-       ! output cloud borne aerosol
-       spc_name = trim(solsym(m))
-       call cnst_get_ind(spc_name, n, abort=.false. )
-       if ( n>0 ) then
-          if( .not. (cnst_name_cw(n) == ' ') ) then
-             call outfld( cnst_name_cw(n), qqcw_get_field(pbuf, n,lchnk), pcols ,lchnk )   ! output as mmr (kg/kg)
-          end if
-       end if
-#endif
 
        call outfld( depvel_name(m), depvel(:ncol,m), ncol ,lchnk )
        call outfld( depflx_name(m), depflx(:ncol,m), ncol ,lchnk )

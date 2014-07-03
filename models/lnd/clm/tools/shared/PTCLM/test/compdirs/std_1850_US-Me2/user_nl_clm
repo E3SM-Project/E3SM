@@ -1,0 +1,5 @@
+! user_nl_clm namelist options written by PTCLMmkdata:
+! ../PTCLMmkdata --verbose --clmnmlusecase=1850_control --cesm_root ../../../../../../.. -s US-Me2 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/std1850_file_creation 
+ fsurdat = '/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/std1850_file_creation/1x1pt_US-Me2/surfdata_1x1pt_US-Me2_simyr1850_clm4_5_c140204.nc'
+ hist_nhtfrq = 0
+ hist_mfilt  = 1200

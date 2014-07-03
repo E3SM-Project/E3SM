@@ -189,24 +189,31 @@ module carma_model_mod
   ! cold temperatures. This fit is from eq. 7 of Heymsfield and Schmitt [2010]. The Jensen
   ! fit used above is similar to the cold end of this range.
   character(len=12), parameter    :: carma_dice_method    = "dist_hym2010"
-!  real(kind=f), parameter         :: dist_hym2010_alpha   = 14.26_f       !! alpha (stratiform) from eq 7 in Heymsefield & Schmitt [2010] (cm -1)
-!  real(kind=f), parameter         :: dist_hym2010_beta    = -0.0538_f     !! beta (stratiform)  from eq 7 in Heymsefield & Schmitt [2010] (cm -1)
-  real(kind=f), parameter         :: dist_hym2010_alpha   = 2.425_f       !! alpha (convective) from eq 7 in Heymsefield & Schmitt [2010] (cm -1)
-  real(kind=f), parameter         :: dist_hym2010_beta    = -0.088_f      !! beta (convective)  from eq 7 in Heymsefield & Schmitt [2010] (cm -1)
+
+  ! From eq 7 in Heymsefield & Schmitt [2010] (cm -1)
+!  real(kind=f), parameter         :: dist_hym2010_alpha   = 14.26_f       !! alpha (stratiform)
+!  real(kind=f), parameter         :: dist_hym2010_beta    = -0.0538_f     !! beta (stratiform)
+  real(kind=f), parameter         :: dist_hym2010_alpha   = 2.425_f       !! alpha (convective)
+  real(kind=f), parameter         :: dist_hym2010_beta    = -0.088_f      !! beta (convective)
 
   real(kind=f)                    :: dice_snow_rmass(NDTEMP)              !! snow particle mass (kg)
   real(kind=f)                    :: dice_snow_fraction(NDTEMP)           !! detrained mass fraction, snow
   real(kind=f)                    :: dice_bin_fraction(NBIN, NDTEMP)      !! detrained mass fraction, ice bin
 
   logical, public, parameter      :: carma_do_mass_check  = .false.  ! If .true. then CARMA will check for mass loss by CARMA
-  logical, public, parameter      :: carma_do_mass_check2 = .false.  ! If .true. then CARMA will check for mass loss (internal steps, e.g. detrain, diagnoseBIns, ...)
-  logical, public, parameter      :: carma_do_mass_check3 = .false.  ! If .true. then CARMA will check for incoming mass loss (CAM -> CARMA)
-  logical, public, parameter      :: carma_do_mass_fix    = .true.   ! If .true. then CARMA will fix for mass loss between cldice and ice bins
+  logical, public, parameter      :: carma_do_mass_check2 = .false.  ! If .true. then CARMA will check for mass loss
+                                                                     ! (internal steps, e.g. detrain, diagnoseBIns, ...)
+  logical, public, parameter      :: carma_do_mass_check3 = .false.  ! If .true. then CARMA will check for incoming mass loss
+                                                                     ! (CAM -> CARMA)
+  logical, public, parameter      :: carma_do_mass_fix    = .true.   ! If .true. then CARMA will fix for mass loss
+                                                                     ! between cldice and ice bins
   logical, public, parameter      :: carma_do_print_fix   = .false.  ! If .true. then CARMA will print the value of the mass fix
 
-  logical, public, parameter      :: carma_do_initice    = .true.   ! If .true. then CARMA carma prognositic bins are set from the bulk ice on the first timestep
+  logical, public, parameter      :: carma_do_initice    = .true.   ! If .true. then CARMA carma prognositic bins are set from
+                                                                    ! the bulk ice on the first timestep
   logical, public, parameter      :: carma_do_bulk_tend  = .true.   ! If .true. then update CAM bulk tendencies
-  logical, public, parameter      :: carma_do_autosnow    = .false.  ! If .true. then the largest ice bin is autoconverted to snow at the end of the timestep.
+  logical, public, parameter      :: carma_do_autosnow    = .false. ! If .true. then the largest ice bin is autoconverted to snow
+                                                                    ! at the end of the timestep.
 
   integer                         :: ixcldice
   integer                         :: ixnumice
@@ -332,7 +339,8 @@ contains
           if (wave(i) <= warren_wave(j)) then
             if ((j > 1) .and. (wave(i) /= warren_wave(j))) then
               interp = (wave(i) - warren_wave(j-1)) / (warren_wave(j) - warren_wave(j-1))
-              refidx_ice(i) = cmplx(warren_real(j-1) + interp*(warren_real(j) - warren_real(j-1)), warren_imag(j-1) + interp*(warren_imag(j) - warren_imag(j-1)))
+              refidx_ice(i) = cmplx(warren_real(j-1) + interp*(warren_real(j) - warren_real(j-1)), &
+                   warren_imag(j-1) + interp*(warren_imag(j) - warren_imag(j-1)))
             else
               refidx_ice(i) = cmplx(warren_real(j), warren_imag(j))
             endif
@@ -398,7 +406,8 @@ contains
 !    call CARMAGROUP_Create(carma, I_GRP_CRSICE, "In-situ Ice", rmin_ice, vmrat, I_HEXAGON, 1._f / 6._f, .true., &
     call CARMAGROUP_Create(carma, I_GRP_CRSICE, "In-situ Ice", rmin_ice, vmrat, I_HEXAGON, 1._f / 3._f, .true., &
                            rc, shortname="CRSICE", rmassmin=rmassmin, do_mie=carma_do_pheat, refidx=refidx_ice, &
-                           ifallrtn=I_FALLRTN_HEYMSFIELD2010, imiertn=I_MIERTN_BOHREN1983, is_cloud=(.not. carma_do_clearsky), maxbin=maxbin)
+                           ifallrtn=I_FALLRTN_HEYMSFIELD2010, imiertn=I_MIERTN_BOHREN1983, &
+                           is_cloud=(.not. carma_do_clearsky), maxbin=maxbin)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAGROUP_Create failed.')
     is_convtran1(3) = .true.
 
@@ -414,7 +423,8 @@ contains
     !
     ! NOTE: For CAM, the optional shortname needs to be provided for the group. These names
     ! should be 6 characters or less and without spaces.
-    call CARMAELEMENT_Create(carma, I_ELEM_CRCN, I_GRP_CRCN, "Sulfate CN", RHO_CN, I_INVOLATILE, I_H2SO4, rc, shortname="CRCN", isolute=I_SOL_CRH2SO4)
+    call CARMAELEMENT_Create(carma, I_ELEM_CRCN, I_GRP_CRCN, "Sulfate CN", RHO_CN, &
+         I_INVOLATILE, I_H2SO4, rc, shortname="CRCN", isolute=I_SOL_CRH2SO4)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
 
     ! The density of ice is changed based on the maximum dimensions of ice particles
@@ -423,29 +433,35 @@ contains
     call rhoice_heymsfield2010(carma, RHO_I, I_GRP_CRDICE, "warm", rhoelem, arat, rc)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::rhoice_heymsfield2010 failed.')
     
-    call CARMAELEMENT_Create(carma, I_ELEM_CRDICE, I_GRP_CRDICE, "Detrained Ice", RHO_I, I_VOLATILE, I_ICE, rc, shortname="CRDICE", rhobin=rhoelem, arat=arat)
+    call CARMAELEMENT_Create(carma, I_ELEM_CRDICE, I_GRP_CRDICE, "Detrained Ice", RHO_I, &
+         I_VOLATILE, I_ICE, rc, shortname="CRDICE", rhobin=rhoelem, arat=arat)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
     
 
-    call CARMAELEMENT_Create(carma, I_ELEM_CRSICE, I_GRP_CRSICE, "In-situ Ice", RHO_I, I_VOLATILE, I_ICE, rc, shortname="CRSICE")
+    call CARMAELEMENT_Create(carma, I_ELEM_CRSICE, I_GRP_CRSICE, "In-situ Ice", RHO_I, &
+         I_VOLATILE, I_ICE, rc, shortname="CRSICE")
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
 
 
-    call CARMAELEMENT_Create(carma, I_ELEM_CRCORE, I_GRP_CRSICE, "Core Mass", RHO_CN, I_COREMASS, I_H2SO4, rc, shortname="CRCORE", isolute=I_SOL_CRH2SO4)
+    call CARMAELEMENT_Create(carma, I_ELEM_CRCORE, I_GRP_CRSICE, "Core Mass", RHO_CN, &
+         I_COREMASS, I_H2SO4, rc, shortname="CRCORE", isolute=I_SOL_CRH2SO4)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
 
 
-    call CARMAELEMENT_Create(carma, I_ELEM_CRLIQ, I_GRP_CRLIQ, "Water Drop", RHO_W, I_VOLATILE, I_WATER, rc, shortname="CRLIQ")
+    call CARMAELEMENT_Create(carma, I_ELEM_CRLIQ, I_GRP_CRLIQ, "Water Drop", RHO_W, &
+         I_VOLATILE, I_WATER, rc, shortname="CRLIQ")
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAElement_Create failed.')
 
 
     ! Define the Solutes
-    call CARMASOLUTE_Create(carma, I_SOL_CRH2SO4, "Sulfuric Acid", 2, 98._f, 1.38_f, rc, shortname="CRH2SO4")
+    call CARMASOLUTE_Create(carma, I_SOL_CRH2SO4, "Sulfuric Acid", 2, &
+         98._f, 1.38_f, rc, shortname="CRH2SO4")
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMASOLUTE_Create failed.')
 
     
     ! Define the Gases
-    call CARMAGAS_Create(carma, I_GAS_H2O, "Water Vapor", WTMOL_H2O, I_VAPRTN_H2O_MURPHY2005, I_GCOMP_H2O, rc, shortname="Q", ds_threshold=-0.2_f)
+    call CARMAGAS_Create(carma, I_GAS_H2O, "Water Vapor", WTMOL_H2O, &
+         I_VAPRTN_H2O_MURPHY2005, I_GCOMP_H2O, rc, shortname="Q", ds_threshold=-0.2_f)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAGAS_Create failed.')
  
     
@@ -455,10 +471,12 @@ contains
     call CARMA_AddGrowth(carma, I_ELEM_CRDICE, I_GAS_H2O, rc)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMA_AddGrowth failed.')
 
-    call CARMA_AddNucleation(carma, I_ELEM_CRDICE, I_ELEM_CRLIQ, I_ICEMELT, -latice*1e4_f, rc)
+    call CARMA_AddNucleation(carma, I_ELEM_CRDICE, I_ELEM_CRLIQ, I_ICEMELT, &
+         -latice*1e4_f, rc)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMA_AddNucleation failed.')
 
-    call CARMA_AddCoagulation(carma, I_GRP_CRDICE, I_GRP_CRDICE, I_GRP_CRDICE, I_COLLEC_DATA, rc)
+    call CARMA_AddCoagulation(carma, I_GRP_CRDICE, I_GRP_CRDICE, I_GRP_CRDICE, &
+         I_COLLEC_DATA, rc)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMA_AddCoagulation failed.')
 
 
@@ -473,7 +491,8 @@ contains
     ! include any latent heat from the freezing of the sulfate liquid. The latent heat of
     ! the gas associated with nucleation is accounted for.
     call CARMA_AddNucleation(carma, 1, 4, I_AERFREEZE + I_AF_KOOP_2000, 0._f, rc, igas=1, ievp2elem=1)
-!    call CARMA_AddNucleation(carma, I_ELEM_CRCN, I_ELEM_CRCORE, I_AERFREEZE + I_AF_KOOP_2000 + I_AF_MURRAY_2010, 0._f, rc, igas=I_GAS_H2O, ievp2elem=I_ELEM_CRCN)
+!    call CARMA_AddNucleation(carma, I_ELEM_CRCN, I_ELEM_CRCORE, &
+!         I_AERFREEZE + I_AF_KOOP_2000 + I_AF_MURRAY_2010, 0._f, rc, igas=I_GAS_H2O, ievp2elem=I_ELEM_CRCN)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMA_AddNucleation failed.')
 
     call CARMA_AddNucleation(carma, I_ELEM_CRSICE, I_ELEM_CRLIQ, I_ICEMELT, -latice*1e4_f, rc)
@@ -692,7 +711,9 @@ contains
   !!  @version July-2009 
   !!  @author  Chuck Bardeen 
   subroutine CARMA_DiagnoseBins(carma, cstate, state, pbuf, icol, dt, rc, rliq, prec_str, snow_str)
-    use time_manager,     only: is_first_step
+    use time_manager,   only: is_first_step
+    use micro_mg_utils, only: size_dist_param_basic, size_dist_param_liq, &
+         mg_ice_props, mg_liq_props
 
     implicit none
     
@@ -719,7 +740,12 @@ contains
     integer                               :: ielem        ! element index
     integer                               :: ibin         ! bin index
     integer                               :: k            ! vertical index
-    
+
+    ! This buffer exists purely to work around the fact that "state" is
+    ! intent(in), but the size_dist_param function will try to change the
+    ! input number concentrations.
+    real(r8)                              :: limNumber(pver)
+
     real(r8)                              :: iceMass(pver)      ! ice mass mixing ratio (kg/kg)
     real(r8)                              :: iceNumber(pver)    ! ice number mixing ratio (#/kg)
     real(r8)                              :: snowMass(pver)     ! snow mass mixing ratio (kg/kg)
@@ -751,8 +777,7 @@ contains
     real(r8)                              :: lon
 
     real(r8), pointer, dimension(:, :)    :: sulf               ! last saturation wrt ice
-    integer                               :: lchnk              ! chunk identifier
-    integer                               :: itim
+    integer                               :: itim_old
     
     character(len=8)                      :: c_name             ! constituent name
     
@@ -796,10 +821,9 @@ contains
         ! Get the index for the prescribed sulfates. This gives the mmr that should be
         ! present at this location. Use this to scale the size distribution that CARMA
         ! will generate.
-        lchnk = state%lchnk
-        itim  = pbuf_old_tim_idx()
+        itim_old  = pbuf_old_tim_idx()
 
-        call pbuf_get_field(pbuf, pbuf_get_index('sulf'), sulf, (/1,1,itim/),(/pcols,pver,1/))
+        call pbuf_get_field(pbuf, pbuf_get_index('sulf'), sulf, (/1,1,itim_old/),(/pcols,pver,1/))
       end if
     end if
     
@@ -823,11 +847,10 @@ contains
       ! and the size distribution.
       if (carma_sulfate_method == "carma") then
         ! Get the index for the prescribed sulfates.
-        lchnk = state%lchnk
-        itim  = pbuf_old_tim_idx()
+        itim_old  = pbuf_old_tim_idx()
         write(c_name, '(A, I2.2)') "CRCN", ibin
 
-        call pbuf_get_field(pbuf, pbuf_get_index(c_name), sulf, (/1,1,itim/),(/pcols,pver,1/))
+        call pbuf_get_field(pbuf, pbuf_get_index(c_name), sulf, (/1,1,itim_old/),(/pcols,pver,1/))
         mmr(ibin, :) = sulf(icol, :)
       end if
       
@@ -855,14 +878,20 @@ contains
       
       call CARMAGROUP_Get(carma, igroup, rc, r=r, dr=dr, rmass=rmass)
       if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMAGROUP_Get failed.')
+
+      ! Have to copy this, because size_dist_param_basic has an intent(inout)
+      ! argument, but state is intent(in).
+      limNumber = state%q(icol, :, ixnumice)
+
+      ! Subroutine from MG utilities.
+      call size_dist_param_basic(mg_ice_props, state%q(icol, :, ixcldice), &
+           limNumber, lambda(:))
+      ! For ice, assume mu is 0.
+      mu = 0._r8
   
-      ! Need to determine the shape parameters for the size distribution. It
-      ! would be nice if these routines came from the MG microphysics module,
-      ! but until then their code with be duplicated here.
-      call CARMA_GetGammaParmsForIce(carma, state%q(icol, :, ixcldice), state%q(icol, :, ixnumice), rhoa_wet(:), mu(:), lambda(:), rc)
-      if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMA_GetGammaParmsForIce failed.')
-  
-      call CARMA_GetMmrFromGamma(carma, r(:), dr(:), rmass(:), state%q(icol, :, ixcldice), state%q(icol, :, ixnumice), mu(:), lambda(:), mmr(:, :), rc)
+      call CARMA_GetMmrFromGamma(carma, r(:), dr(:), rmass(:), &
+           state%q(icol, :, ixcldice), limNumber, mu(:), &
+           lambda(:), mmr(:, :), rc)
       if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMA_GetMmrFromGamma failed.')
     
       do ibin = 1, NBIN
@@ -924,7 +953,11 @@ contains
               prec_str(icol) = prec_str(icol) + diff
               
               if (carma_do_print_fix) then
-                if (do_print) write(LUNOPRT,*) "  CARMA_DiagnoseBins::WARNING - Adjusting prec_str for ice mass difference", icol, k, (state%q(icol, k, ixcldice) - (iceMass(k) + snowMass(k)))
+                if (do_print) then
+                   write(LUNOPRT,*) "  CARMA_DiagnoseBins::&
+                        &WARNING - Adjusting prec_str for ice mass difference", &
+                        icol, k, (state%q(icol, k, ixcldice) - (iceMass(k) + snowMass(k)))
+                end if
               end if
             end if
           end if
@@ -943,15 +976,16 @@ contains
     call CARMAGROUP_Get(carma, igroup, rc, r=r, dr=dr, rmass=rmass)
     if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMAGROUP_Get failed.')
 
-    ! Need to determine the shape parameters for the size distribution. It
-    ! would be nice if these routines came from the MG microphysics module,
-    ! but until then their code with be duplicated here.
-    call CARMA_GetGammaParmsForLiq(carma, state%q(icol, :, ixcldliq), state%q(icol, :, ixnumliq), &
-      rhoa_wet(:), mu(:), lambda(:), rc)
-    if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMA_GetGammaParmsForLiq failed.')
+    ! Prevent size_dist_param from trying to change state by passing it a
+    ! copy of the number concentration.
+    limNumber = state%q(icol, :, ixnumliq)
+
+    ! Subroutine from MG utilities.
+    call size_dist_param_liq(mg_liq_props, state%q(icol, :, ixcldliq), &
+         limNumber, rhoa_wet(:), mu(:), lambda(:))
 
     call CARMA_GetMmrFromGamma(carma, r(:), dr(:), rmass(:), state%q(icol, :, ixcldliq), &
-      state%q(icol, :, ixnumliq), mu(:), lambda(:), mmr(:, :), rc)
+         limNumber, mu(:), lambda(:), mmr(:, :), rc)
     if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMA_GetMmrFromGamma failed.')
   
     do ibin = 1, NBIN
@@ -1056,7 +1090,6 @@ contains
     integer                              :: icore     ! core index
     integer                              :: icorelem(NELEM) ! core indexes for group
     integer                              :: ncore     ! number of core elements
-    integer                              :: itim
     
     real(kind=f)                         :: iceMass(pver)      ! ice mass mixing ratio (kg/kg)
     real(kind=f)                         :: iceNumber(pver)    ! ice number mixing ratio (#/kg)
@@ -1097,7 +1130,8 @@ contains
     ! Ice particles in the largest bin are treated as snow rather than ice.
     
     ! Get the total ice.
-    call CARMA_GetTotalIceAndSnow(carma, cstate, .true., iceMass, iceNumber, snowMass, snowNumber, snowSurface, rc, iceRe=iceRe)    
+    call CARMA_GetTotalIceAndSnow(carma, cstate, .true., iceMass, iceNumber, &
+         snowMass, snowNumber, snowSurface, rc, iceRe=iceRe)
     
     ! Calculate the tendencies on CLDICE, NUMICE, QSNOW and NSNOW
     if (carma_do_bulk_tend) then
@@ -1190,7 +1224,8 @@ contains
     implicit none
     
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     integer                            :: ibin                  ! bin index
@@ -1222,7 +1257,8 @@ contains
     ! Default return code.
     rc = 0
     
-    call CARMA_Get(carma, rc, do_print_init=do_print_init, LUNOPRT=LUNOPRT, do_grow=do_grow, do_detrain=do_detrain, do_thermo=do_thermo)
+    call CARMA_Get(carma, rc, do_print_init=do_print_init, LUNOPRT=LUNOPRT, &
+         do_grow=do_grow, do_detrain=do_detrain, do_thermo=do_thermo)
     if (rc < RC_OK) call endrun('CARMA_CheckMassAndEnergy::CARMA_Get failed.') 
     
     ! Lookup indices to other constituents that are needed.
@@ -1432,7 +1468,11 @@ contains
     ! Log a warning message if doing growth or detrainment and not doing
     ! thermodynamics. This will cause an energy error to be reported by CAM.
     if ((do_grow .or. do_detrain) .and. .not. do_thermo) then
-      if (do_print_init) write(LUNOPRT,*) "CARMA_InitializeModel:WARNING - do_grow and/or do_detrain are selected without do_thermo which may result in energy conservation errors."
+      if (do_print_init) then
+         write(LUNOPRT,*) "CARMA_InitializeModel:&
+              &WARNING - do_grow and/or do_detrain are selected without &
+              &do_thermo which may result in energy conservation errors."
+      end if
     end if
 
     return
@@ -1449,7 +1489,6 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_lon_all_p, get_lat_all_p, get_rlat_all_p
     use time_manager,  only: get_curr_date, get_perp_date, get_curr_calday, &
                              is_perpetual
     use camsrfexch,       only: cam_in_t
@@ -1467,23 +1506,11 @@ contains
     real(r8), intent(out)              :: surfaceFlux(pcols)    !! constituent surface flux (kg/m^2/s)
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
-    integer      :: lat(pcols)              ! latitude index 
-    integer      :: lon(pcols)              ! longitude index
-    real(r8)     :: clat(pcols)             ! latitude 
-    integer      :: lchnk                   ! chunk identifier
     integer      :: ncol                    ! number of columns in chunk
-    integer      :: icol                    ! column index
-    real(r8)     :: calday                  ! current calendar day
-    integer      :: yr                      ! year
-    integer      :: mon                     ! month
-    integer      :: day                     ! day of month
-    integer      :: ncsec                   ! time of day (seconds)
-    integer      :: doy                     ! day of year
 
     ! Default return code.
     rc = RC_OK
 
-    ! Determine the latitude and longitude of each column.
     ncol = state%ncol    
     
     ! Add any surface flux here.
@@ -1527,90 +1554,6 @@ contains
     return
   end subroutine CARMA_InitializeParticle
   
-  
-  !! This routine is used to determine the shape parameters (pgam and lamc) for
-  !! cloud ice.
-  !!
-  !! This code is taken from cldwat2m.F90, and ideally, there would be a routine
-  !! in the cldwat2m module available for this purpose rather than duplicating the
-  !! code and the parameters here.
-  subroutine CARMA_GetGammaParmsForIce(carma, qiic, niic, rho, pgam, lami, rc)
-    use shr_spfn_mod, only           : gamma => shr_spfn_gamma_nonintrinsic
-
-    implicit none
-    
-    type(carma_type), intent(in)       :: carma         !! the carma object
-    real(r8), intent(in)               :: qiic(pver)    !! in-cloud cloud liquid mixing ratio
-    real(r8), intent(in)               :: niic(pver)    !! in-cloud droplet number conc
-    real(r8), intent(in)               :: rho(pver)     !! air density (kg m-3)
-    real(r8), intent(out)              :: pgam(pver)    !! spectral width parameter of droplet size distr
-    real(r8), intent(out)              :: lami(pver)    !! slope of cloud liquid size distr
-    integer, intent(out)               :: rc            !! return code, negative indicates failure
-
-
-    real(r8), parameter                :: qsmall     = 1.e-36_r8     ! min mixing ratio 
-!    real(r8), parameter                :: qsmall     = 1.e-18_r8     ! min mixing ratio 
-    real(r8), parameter                :: pi         = 3.1415927_r8
-    real(r8), parameter                :: dcs        = 250.e-6_r8    ! autoconversion size threshold for cloud ice to snow (m)
-    real(r8), parameter                :: rhoi       = 500._r8       ! bulk density ice
-
-    ! cloud ice mass-diameter relationship
-    real(r8), parameter                :: ci = rhoi*pi/6._r8  
-    real(r8), parameter                :: di = 3._r8
-    
-    integer                            :: k
-    real(r8)                           :: n0i(pver)     ! intercept of cloud ice size distr
-    real(r8)                           :: lammax        ! maximum allowed slope of size distr
-    real(r8)                           :: lammin        ! minimum allowed slope of size distr
-    real(r8)                           :: nc(pver)      ! in-cloud droplet number conc
-
-
-    ! Default return code.
-    rc = RC_OK
-    
-
-   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    ! get size distribution parameters based on in-cloud cloud water/ice 
-    ! these calculations also ensure consistency between number and mixing ratio
-    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    
-    ! NOTE: For ice, pgam is assumed to be 0.
-    pgam(:) = 0._r8
-
-    ! check for slope
-    lammax = 1._r8/10.e-6_r8
-    lammin = 1._r8/(2._r8*dcs)
-
-    do k = 1, pver
-  
-      if (qiic(k).ge.qsmall) then
-
-        ! add upper limit to in-cloud number concentration to prevent numerical error
-        nc(k)=min(niic(k),qiic(k)*1.e20_r8)
-  
-        lami(k) = (gamma(1._r8+di)*ci*nc(k)/qiic(k))**(1._r8/di)
-        n0i(k) = nc(k)*lami(k)
-
-        ! adjust vars
-        if (lami(k).lt.lammin) then
-  
-          lami(k) = lammin
-          n0i(k) = lami(k)**(di+1._r8)*qiic(k)/(ci*gamma(1._r8+di))
-          nc(k) = n0i(k)/lami(k)
-        else if (lami(k).gt.lammax) then
-          lami(k) = lammax
-          n0i(k) = lami(k)**(di+1._r8)*qiic(k)/(ci*gamma(1._r8+di))
-          nc(k) = n0i(k)/lami(k)
-        end if
-      else
-        lami(k) = 0._r8
-        n0i(k)  = 0._r8
-      end if
-    end do
-
-    return
-  end subroutine CARMA_GetGammaParmsForIce
-  
     
   !!  Called after wet deposition has been performed. Allows the specific model to add
   !!  wet deposition of CARMA aerosols to the aerosols being communicated to the surface.
@@ -1636,106 +1579,12 @@ contains
     rc = RC_OK
     
     return
-  end subroutine CARMA_WetDeposition 
-
-  
-  !! This routine is used to determine the shape parameters (pgam and lamc) for
-  !! cloud water.
-  !!
-  !! This code is taken from cldwat2m.F90, and ideally, there would be a routine
-  !! in the cldwat2m module available for this purpose rather than duplicating the
-  !! code and the parameters here.
-  subroutine CARMA_GetGammaParmsForLiq(carma, qcic, ncic, rho, pgam, lamc, rc)
-    use shr_spfn_mod, only           : gamma => shr_spfn_gamma_nonintrinsic
-
-    implicit none
-    
-    type(carma_type), intent(in)       :: carma         !! the carma object
-    real(r8), intent(in)               :: qcic(pver)    !! in-cloud cloud liquid mixing ratio
-    real(r8), intent(in)               :: ncic(pver)    !! in-cloud droplet number conc
-    real(r8), intent(in)               :: rho(pver)     !! air density (kg m-3)
-    real(r8), intent(out)              :: pgam(pver)    !! spectral width parameter of droplet size distr
-    real(r8), intent(out)              :: lamc(pver)    !! slope of cloud liquid size distr
-    integer, intent(out)               :: rc            !! return code, negative indicates failure
-
-
-    real(r8), parameter                :: rhow       = 1000._r8      ! bulk density liquid (kg/m3)
-!    real(r8), parameter                :: qsmall     = 1.e-18_r8     ! min mixing ratio 
-    real(r8), parameter                :: qsmall     = 1.e-36_r8     ! min mixing ratio 
-    real(r8), parameter                :: pi         = 3.1415927_r8
-    real(r8), parameter                :: cdnl       = 0.e6_r8    ! cloud droplet number limiter
-    
-    integer                            :: k
-    real(r8)                           :: n0c(pver)     ! intercept of cloud liquid size distr
-    real(r8)                           :: lams(pver)    ! slope of snow size distr
-    real(r8)                           :: n0s(pver)     ! intercept of snow size distr
-    real(r8)                           :: lamr(pver)    ! slope of rain size distr
-    real(r8)                           :: n0r(pver)     ! intercept of rain size distr
-    real(r8)                           :: lammax        ! maximum allowed slope of size distr
-    real(r8)                           :: lammin        ! minimum allowed slope of size distr
-    real(r8)                           :: cdist1(pver)  ! size distr parameter to calculate droplet freezing
-    real(r8)                           :: nc(pver)      ! in-cloud droplet number conc
-
-
-    ! Default return code.
-    rc = RC_OK
-    
-
-   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    ! get size distribution parameters based on in-cloud cloud water/ice 
-    ! these calculations also ensure consistency between number and mixing ratio
-    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    do k = 1, pver
-  
-      if (qcic(k).ge.qsmall) then
-  
-        ! add upper limit to in-cloud number concentration to prevent numerical error
-        nc(k) = min(ncic(k),qcic(k)*1.e20_r8)
-        nc(k)=max(nc(k),cdnl/rho(k)) ! sghan minimum in #/cm  
-    
-        ! get pgam from fit to observations of martin et al. 1994    
-        pgam(k) = 0.0005714_r8*(nc(k)/1.e6_r8*rho(k))+0.2714_r8
-        pgam(k) = 1._r8/(pgam(k)**2)-1._r8
-        pgam(k) = max(pgam(k),2._r8)
-        pgam(k) = min(pgam(k),15._r8)
-    
-        ! calculate lamc
-        lamc(k) = (pi/6._r8*rhow*nc(k)*gamma(pgam(k)+4._r8) / &
-                  (qcic(k)*gamma(pgam(k)+1._r8)))**(1._r8/3._r8)
-    
-        ! lammin, 50 micron diameter max mean size
-        lammin = (pgam(k)+1._r8)/50.e-6_r8
-        lammax = (pgam(k)+1._r8)/2.e-6_r8
-    
-        if (lamc(k).lt.lammin) then
-          lamc(k) = lammin
-          nc(k) = 6._r8*lamc(k)**3*qcic(k)* &
-                    gamma(pgam(k)+1._r8)/ &
-                    (pi*rhow*gamma(pgam(k)+4._r8))
-        else if (lamc(k).gt.lammax) then
-          lamc(k) = lammax
-          nc(k) = 6._r8*lamc(k)**3*qcic(k)* &
-                    gamma(pgam(k)+1._r8)/ &
-                    (pi*rhow*gamma(pgam(k)+4._r8))
-        end if    
-    
-        ! parameter to calculate droplet freezing
-        cdist1(k) = nc(k)/gamma(pgam(k)+1._r8) 
-        
-      else
-        pgam(k)   = 0._r8
-        lamc(k)   = 0._r8
-        cdist1(k) = 0._r8
-      end if
-    end do
-    
-    return
-  end subroutine CARMA_GetGammaParmsForLiq
+  end subroutine CARMA_WetDeposition
   
   
   ! Using the specified parameters for the gamma distribution, determine the mass mixing ratio of particles
   subroutine CARMA_GetMmrFromGamma(carma, r, dr, rmass, qic, nic, mu, lambda, mmr, rc)
-    use shr_spfn_mod, only           : gamma => shr_spfn_gamma_nonintrinsic
+    use shr_spfn_mod, only           : gamma => shr_spfn_gamma
 
     implicit none
     
@@ -2107,7 +1956,8 @@ contains
   
 
 
-  subroutine CARMA_CheckMassAndEnergy(carma, cstate, madeSnow, name, state, icol, dt, rliq, prec_str, snow_str, waterMass, iceMass, snowMass, rc)
+  subroutine CARMA_CheckMassAndEnergy(carma, cstate, madeSnow, name, state, &
+       icol, dt, rliq, prec_str, snow_str, waterMass, iceMass, snowMass, rc)
     implicit none
     
     type(carma_type), intent(in)         :: carma            !! the carma object
@@ -2152,7 +2002,12 @@ contains
     totalMass = totalMass + sum(state%q(icol, :, 1) * (state%pdel(icol, :) / gravit))
         
     if (abs((totalMass - state%tw_cur(icol))) / state%tw_cur(icol) > 1e14_f) then
-      if (do_print) write(LUNOPRT,*) "CARMA_CheckMassAndEnergy::WARNING Total water not conserved, ", totalMass, state%tw_cur, (totalMass - state%tw_cur(icol)), (totalMass - state%tw_cur(icol)) / state%tw_cur(icol)
+      if (do_print) then
+         write(LUNOPRT,*) "CARMA_CheckMassAndEnergy::&
+              &WARNING Total water not conserved, ", &
+              totalMass, state%tw_cur, (totalMass - state%tw_cur(icol)), &
+              (totalMass - state%tw_cur(icol)) / state%tw_cur(icol)
+      end if
     end if
     
     
@@ -2184,7 +2039,8 @@ contains
             call CARMASTATE_Get(cstate, rc, lat=lat, lon=lon)
             if (rc < RC_OK) call endrun('CARMA_DiagnoseBins::CARMASTATE_Get failed.')
 
-            write(LUNOPRT,1) name, icol, lat, lon, totalMass, totalMass2, totalMass2-TotalMass, (totalMass - totalMass2) / totalMass
+            write(LUNOPRT,1) name, icol, lat, lon, totalMass, totalMass2, &
+                 totalMass2-TotalMass, (totalMass - totalMass2) / totalMass
 
             write(LUNOPRT,*) "  state tw :  ", state%tw_cur(icol)
             write(LUNOPRT,*) ""

@@ -1,0 +1,214 @@
+module dynVarTimeInterpMod
+
+#include "shr_assert.h" 
+
+  !---------------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Contains a derived type and associated methods that extend the base class,
+  ! dyn_var_type. The type defined here is for variables that SHOULD be interpolated in
+  ! time. For variables of this type, the data have the value given on year Y of the file
+  ! at midnight on Jan. 1 at the start of year Y. The value then gets linearly
+  ! interpolated over the year, so that by Dec. 31 of year Y, the value is close to the
+  ! file's value at year Y+1. Before the start of the time series, the data are fixed at
+  ! their value from the first year in the file; after the end of the time series, the
+  ! data are fixed at their value from the last year in the file. If the last year on the
+  ! file is X, then the data are fixed at this last value (and thus do not vary)
+  ! throughout year X.
+  !
+  ! !USES:
+  use shr_kind_mod   , only : r8 => shr_kind_r8
+  use dynVarMod      , only : dyn_var_type
+
+  implicit none
+  private
+  save
+
+  ! !PUBLIC TYPES:
+  public :: dyn_var_time_interp_type
+
+  type, extends(dyn_var_type) :: dyn_var_time_interp_type
+     private
+     ! Note that data are stored as 1-d, then converted to the appropriate dimensionality
+     ! as needed
+     real(r8), allocatable :: data_nt1(:)  ! data at time nt1
+     real(r8), allocatable :: data_nt2(:)  ! data at time nt2
+
+     integer :: nt1  ! current nt1 curresponding to data_nt1
+     integer :: nt2  ! current nt2 curresponding to data_nt2
+   contains
+     generic :: get_current_data => &      ! Get the current value of the data
+          get_current_data_1d, get_current_data_2d
+     procedure :: get_current_data_1d  ! Get the current value of the data, for a 1-d variable
+     procedure :: get_current_data_2d  ! Get the current value of the data, for a 2-d variable
+     procedure :: read_data_if_needed  ! Read the next time slice of data, if necessary
+  end type dyn_var_time_interp_type
+
+  interface dyn_var_time_interp_type
+     module procedure constructor  ! initialize a new dyn_var_time_interp object
+  end interface dyn_var_time_interp_type
+
+contains
+
+  ! ======================================================================
+  ! Constructors
+  ! ======================================================================
+
+  !-----------------------------------------------------------------------
+  type(dyn_var_time_interp_type) function constructor( &
+       dyn_file, varname, dim1name, conversion_factor, &
+       do_check_sums_equal_1, data_shape)
+    !
+    ! !DESCRIPTION:
+    ! Creates an object of type dyn_var_time_interp_type. This also reads the first
+    ! set of data.
+    !
+    ! Assumes that dyn_file has already been initialized.
+    !
+    ! !USES:
+    use dynFileMod     , only : dyn_file_type
+    !
+    ! !ARGUMENTS:
+    type(dyn_file_type), target, intent(in) :: dyn_file ! file containing this variable
+    character(len=*), intent(in) :: varname             ! variable name on file
+    character(len=*), intent(in) :: dim1name            ! dim1name on file
+    real(r8), intent(in) :: conversion_factor           ! data are DIVIDED by conversion_factor immediately after reading them
+
+     ! Only relevant for 2-d variables: should we check to make sure that all sums equal 1?
+    logical, intent(in) :: do_check_sums_equal_1
+    
+    ! Shape of data; max number of dimensions is given by dyn_var_max_dims in dynVarMod.
+    ! First dimension is the spatial dimension.
+    integer, intent(in) :: data_shape(:)
+    !-----------------------------------------------------------------------
+
+    ! Set metadata common to all dyn_var_type objects
+    call constructor%set_metadata( &
+         dyn_file=dyn_file, &
+         varname=varname, &
+         dim1name=dim1name, &
+         conversion_factor=conversion_factor, &
+         do_check_sums_equal_1=do_check_sums_equal_1, &
+         data_shape=data_shape)
+
+    ! Allocate space for data
+    allocate(constructor%data_nt1(product(data_shape)))
+    allocate(constructor%data_nt2(product(data_shape)))
+
+    ! Read first set of data
+    constructor%nt1 = dyn_file%get_nt1()
+    constructor%nt2 = dyn_file%get_nt2()
+    call constructor%read_variable(constructor%nt1, constructor%data_nt1)
+    call constructor%read_variable(constructor%nt2, constructor%data_nt2)
+  end function constructor
+
+  ! ======================================================================
+  ! Public methods
+  ! ======================================================================
+
+  ! The following specific procedures are NOT actually public, but they can be accessed
+  ! via the generic type-bound procedure, get_current_data
+
+  ! DIMS 1,2
+  !-----------------------------------------------------------------------
+  subroutine get_current_data_{DIMS}d(this, cur_data)
+    !
+    ! !DESCRIPTION:
+    ! Get the current, interpolated value of the data, in cur_data. cur_data should have
+    ! the same dimensionality as the underlying data, as given by the data_shape argument
+    ! that was passed to the constructor.
+    ! 
+    ! If necessary, new data are read from the file.
+    !
+    ! Should be called once per time step, AFTER calling update_time_info on the
+    ! underlying dyn_file variable
+    !
+    ! !USES:
+    use clm_time_manager, only : get_curr_yearfrac
+    !
+    ! !ARGUMENTS:
+    class(dyn_var_time_interp_type) , intent(inout) :: this             ! this object
+    real(r8)                        , intent(out)   :: cur_data{DIMSTR} ! current value of data
+    !
+    ! !LOCAL VARIABLES:
+    integer               :: ndims          ! ndims of data in 'this'
+    real(r8)              :: wt1            ! weight of time1 (the left-hand time point)
+    real(r8), allocatable :: cur_data_1d(:) ! 1-d version of data at the current time
+    character(len=*), parameter :: subname = 'get_current_data_{DIMS}d'
+    !-----------------------------------------------------------------------
+
+    ! Do some error checking
+    ndims = size(this%get_data_shape())
+    SHR_ASSERT({DIMS} == ndims, subname//' ERROR: # dims of output argument must match ndims')
+    SHR_ASSERT_ALL((shape(cur_data) == this%get_data_shape()), subname//' ERROR: shape of cur_data must match shape of data')
+
+    ! Get current data, using a temporal weighting of the data at time 1 and the data at
+    ! time 2
+    call this%read_data_if_needed()
+    allocate(cur_data_1d(size(this%data_nt1)))
+    wt1 = 1.0_r8 - get_curr_yearfrac()
+    cur_data_1d(:) = this%data_nt2(:) + wt1*(this%data_nt1(:) - this%data_nt2(:))
+    cur_data = reshape(cur_data_1d, shape(cur_data))
+    deallocate(cur_data_1d)
+
+  end subroutine get_current_data_{DIMS}d
+
+  ! ======================================================================
+  ! Private methods
+  ! ======================================================================
+
+  !-----------------------------------------------------------------------
+  subroutine read_data_if_needed(this)
+    !
+    ! !DESCRIPTION:
+    ! Determine if new data need to be read from the file; if so, read them.
+    ! 
+    ! We need to read new data (or at least copy them) if the current time on dyn_file
+    ! disagrees with the time for which we currently have stored data, for either time nt1
+    ! or time nt2
+    !
+    ! !USES:
+    use dynFileMod, only : dyn_file_type
+    !
+    ! !ARGUMENTS:
+    class(dyn_var_time_interp_type), intent(inout) :: this   ! this object
+    !
+    ! !LOCAL VARIABLES:
+    type(dyn_file_type), pointer :: dyn_file ! the dyn_file of this object
+    integer :: nt1_cur                       ! current value of nt1 on dyn_fileb
+    integer :: nt2_cur                       ! current value of nt2 on dyn_fileb
+    
+    character(len=*), parameter :: subname = 'read_data_if_needed'
+    !-----------------------------------------------------------------------
+
+    dyn_file => this%get_dyn_file()
+    nt1_cur = dyn_file%get_nt1()
+    nt2_cur = dyn_file%get_nt2()
+
+    ! If nt1 time has changed, get a new set of data for time nt1
+    if (nt1_cur /= this%nt1) then
+
+       ! The typical case is that we have moved forward by a single time; thus we can
+       ! avoid an extra read by simply setting the new data at nt1 equal to the old data
+       ! at nt2
+       if (nt1_cur == this%nt2) then
+          this%data_nt1(:) = this%data_nt2(:)
+
+       ! Otherwise, handle the general (but atypical) case where we have not moved
+       ! forward by a single time
+       else
+          call this%read_variable(nt1_cur, this%data_nt1)
+       end if
+
+       this%nt1 = nt1_cur
+    end if
+
+    ! If nt2 time has changed, read a new set of data for time nt2
+    if (nt2_cur /= this%nt2) then
+       call this%read_variable(nt2_cur, this%data_nt2)
+       this%nt2 = nt2_cur
+    end if
+
+  end subroutine read_data_if_needed
+
+
+end module dynVarTimeInterpMod

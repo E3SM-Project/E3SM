@@ -1,0 +1,55 @@
+---------------- PTCLMmkdata version PTCLM2.0_scripts_trunk-----------------------------
+
+   ../PTCLMmkdata --list --cesm_root ../../../../../../.. -s test -d /glade/p/cesmdata/cseg/inputdata --debug 
+
+   OPTIONS:
+
+Site name:						list
+
+Root CLM directory:					/glade/p/work/erik/clm_transCO2
+** Surface data file will be built using site-level data when available unless otherwise specified ** 
+
+	Extract PFT data from gridded files:		False
+	Extract soil data from gridded files:		False
+
+Open Site data file: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
+
+ site = site_code name: name                                                    Region:        state Campaign: campaign
+ site =  US-CHATS name: Cilker Chandler walnut orchard                          Region:           CA Campaign: CHATS
+ site =    US-FPe name: Fort Peck                                               Region:           MT Campaign: AmeriFlux
+ site =    CA-Let name: Lethbridge                                              Region:          CAN Campaign: Fluxnet-Canada
+ site =    US-NR1 name: Niwot Ridge                                             Region:           CO Campaign: AmeriFlux
+ site =    CA-Man name: BOREAS NSA - Old Black Spruce                           Region:          CAN Campaign: Fluxnet-Canada
+ site =    BR-Sa1 name: SantaremKM67                                            Region:       BRAZIL Campaign: LBA
+ site =    BR-Sa3 name: SantaremKM83                                            Region:       BRAZIL Campaign: LBA
+ site =    ES-ES1 name: ElSaler                                                 Region:        SPAIN Campaign: CarboEurope
+ site =    FL-Hyy name: Hyytiala                                                Region:      FINLAND Campaign: CarboEurope
+ site =    FL-Kaa name: Kaamanen                                                Region:      FINLAND Campaign: CarboEurope
+ site =    IT-Col name: Collelongo                                              Region:        ITALY Campaign: CarboEurope
+ site =    IT-Cpz name: CastelPorziano                                          Region:        ITALY Campaign: CarboEurope
+ site =    DE-Tha name: Tharandt                                                Region:      GERMANY Campaign: CarboEurope
+ site =    US-Brw name: Barrow                                                  Region:           AK Campaign: AmeriFlux
+ site =    BE-Vie name: Vielsalm                                                Region:      BELGIUM Campaign: CarboEurope
+ site =    US-ARM name: ARM SGP Main                                            Region:           OK Campaign: AmeriFlux
+ site =    US-Var name: Vaira Ranch                                             Region:           CA Campaign: AmeriFlux
+ site =    US-UMB name: UMBS                                                    Region:           MI Campaign: AmeriFlux
+ site =    US-Ha1 name: Harvard Forest                                          Region:           MA Campaign: AmeriFlux
+ site =    US-Ho1 name: Howland Forest Main                                     Region:           ME Campaign: AmeriFlux
+ site =    US-MMS name: Morgon Monroe State Forest                              Region:           IN Campaign: AmeriFlux
+ site =    US-Bo1 name: Bondville                                               Region:           IL Campaign: AmeriFlux
+ site =    CA-Ca1 name: British Columbia- Campbell River - Mature Forest Site   Region:          CAN Campaign: Fluxnet-Canada
+ site =    CA-Oas name: Sask.- SSA Old Aspen                                    Region:          CAN Campaign: Fluxnet-Canada
+ site =    CA-Obs name: Sask.- SSA Old Black Spruce                             Region:          CAN Campaign: Fluxnet-Canada
+ site =    CA-Ojp name: Sask.- SSA Old Jack Pine                                Region:          CAN Campaign: Fluxnet-Canada
+ site =    CA-Qfo name: Quebec Mature Boreal Forest Site                        Region:          CAN Campaign: Fluxnet-Canada
+ site =    US-Dk2 name: Duke Forest Hardwoods                                   Region:           NC Campaign: AmeriFlux
+ site =    US-Dk3 name: Duke Forest Loblolly Pine                               Region:           NC Campaign: AmeriFlux
+ site =    US-IB1 name: Fermi Agricultural                                      Region:           IL Campaign: AmeriFlux
+ site =    US-Me4 name: Metolius Old Pine                                       Region:           OR Campaign: AmeriFlux
+ site =    US-Me2 name: Metolius Intermediate Pine                              Region:           OR Campaign: AmeriFlux
+ site =    US-MOz name: Missouri Ozark Site                                     Region:           MO Campaign: AmeriFlux
+ site =    US-Ne3 name: Mead Rainfed                                            Region:           NE Campaign: AmeriFlux
+ site =    US-WCr name: Willow Creek                                            Region:           WI Campaign: AmeriFlux
+ site =    TS-Ts1 name: Test short yrs                                          Region:         TEST Campaign: PTCLMTestSite
+ site =    TS-Ts2 name: Test short yrs start on leap-year                       Region:         TEST Campaign: PTCLMTestSite
+ site =    TS-Ts3 name: Test long yrs                                           Region:         TEST Campaign: PTCLMTestSite

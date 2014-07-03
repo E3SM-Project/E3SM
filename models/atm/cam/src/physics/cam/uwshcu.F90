@@ -1,7 +1,7 @@
   module uwshcu
 
   use cam_history,    only: outfld, addfld, phys_decomp
-  use shr_spfn_mod,   only: erfc => shr_spfn_erfc_nonintrinsic
+  use shr_spfn_mod,   only: erfc => shr_spfn_erfc
   use cam_logfile,    only: iulog
   use ppgrid,         only: pcols, pver, pverp
   use abortutils,     only: endrun
@@ -472,9 +472,6 @@ end subroutine uwshcu_readnl
  
     use cam_history,     only : outfld, addfld, phys_decomp
     use constituents,    only : qmin, cnst_get_type_byind, cnst_get_ind
-#ifdef MODAL_AERO
-    use modal_aero_data, only : ntot_amode, numptr_amode
-#endif
     use wv_saturation,   only : findsp_vc
 
     implicit none
@@ -3987,15 +3984,6 @@ end subroutine uwshcu_readnl
        if( m .ne. ixnumliq .and. m .ne. ixnumice ) then
 
           trmin = qmin(m)
-#ifdef MODAL_AERO
-          do mm = 1, ntot_amode
-             if( m .eq. numptr_amode(mm) ) then
-                 trmin = 1.e-5_r8
-                 goto 55
-             endif              
-          enddo
-       55 continue
-#endif 
           trflx_d(0:mkx) = 0._r8
           trflx_u(0:mkx) = 0._r8           
           do k = 1, mkx-1

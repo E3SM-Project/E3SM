@@ -2,8 +2,8 @@
 !! @file 
 !! @brief User interface Module for PIO, this is the only file a user program should 'use'
 !! 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 856 $
+!! $LastChangedDate: 2013-11-19 14:48:54 -0700 (Tue, 19 Nov 2013) $
 !<
 
 module pio
@@ -27,8 +27,9 @@ module pio
 	pio_global, pio_char, pio_write, pio_nowrite, pio_clobber, pio_noclobber, &
 	pio_max_name, pio_max_var_dims, pio_rearr_none, &
 #if defined(_NETCDF) || defined(_PNETCDF)
-	pio_nofill, pio_unlimited, pio_64bit_offset, &
+	pio_nofill, pio_unlimited, &
 #endif
+	pio_64bit_offset, pio_64bit_data, &
 	pio_iotype_vdc2, &
         pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
 

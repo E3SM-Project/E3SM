@@ -1,117 +1,73 @@
 module H2OSfcMod
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: H2OSfcMod
-!
-! !DESCRIPTION:
-! Calculate surface water hydrology
-!
-! !PUBLIC TYPES:
+#include "shr_assert.h"
+
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Calculate surface water hydrology
+  !
+  ! !USES:
+  use shr_log_mod   , only : errMsg => shr_log_errMsg
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! !PUBLIC MEMBER FUNCTIONS:
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
   public :: FracH2oSfc     ! Calculate fraction of land surface that is wet
-!
-! !REVISION HISTORY:
-! Created by 09/15/07 Sean Swenson
-!
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: FracH2oSfc
-!
-! !INTERFACE:
-  subroutine FracH2oSfc(lbc, ubc, num_h2osfc, filter_h2osfc,frac_h2osfc,no_update)
-!
-! !DESCRIPTION:
-! Determine fraction of land surfaces which are submerged  
-! based on surface microtopography and surface water storage.
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  subroutine FracH2oSfc(bounds, num_h2osfc, filter_h2osfc, frac_h2osfc, no_update)
+    !
+    ! !DESCRIPTION:
+    ! Determine fraction of land surfaces which are submerged  
+    ! based on surface microtopography and surface water storage.
+    !
+    ! !USES:
     use shr_kind_mod, only: r8 => shr_kind_r8
     use clmtype
-    use shr_const_mod       , only : shr_const_pi
-    use clm_varcon          , only : istsoil, istcrop
-    use clm_varctl,   only: iulog
-!
-! !ARGUMENTS:
+    use shr_const_mod, only : shr_const_pi
+    use shr_spfn_mod , only : erf => shr_spfn_erf
+    use clm_varcon   , only : istsoil, istcrop
+    use decompMod    , only : bounds_type
+    !
+    ! !ARGUMENTS:
     implicit none
-    integer , intent(in) :: lbc, ubc                  ! column bounds
-    integer , intent(in) :: num_h2osfc                ! number of column points in column filter
-    integer , intent(in) :: filter_h2osfc(ubc-lbc+1)  ! column filter 
-    real(r8), intent(inout) :: frac_h2osfc(lbc:ubc)   ! fractional surface water (mm)
-    integer , intent(in), optional :: no_update       ! flag to make calculation w/o updating variables
-!
-! !CALLED FROM:
-! subroutine Hydrology1 in module Hydrology1Mod
-!
-! !REVISION HISTORY:
-! 09/24/07 Created by S. Swenson 
-!
-! !LOCAL VARIABLES:
-!
-! local pointers to implicit in arguments
-!
-    real(r8), pointer :: h2osfc(:)         ! surface water (mm)
-!
-! local pointers to implicit out arguments
-!
-    real(r8), pointer :: micro_sigma(:)    ! microtopography pdf sigma (m)
-    real(r8), pointer :: frac_sno(:)       ! fraction of ground covered by snow (0 to 1)
-    real(r8), pointer :: frac_sno_eff(:)       ! eff. fraction of ground covered by snow (0 to 1)
-    integer , pointer :: snl(:)            ! minus number of snow layers
-    real(r8), pointer :: h2osno(:)         ! snow water (mm H2O)
-    real(r8), pointer :: h2osoi_liq(:,:)   ! liquid water (col,lyr) [kg/m2]
-    real(r8), pointer :: topo_slope(:)     ! topographic slope
-    real(r8), pointer :: topo_ndx(:)       ! topographic slope
-    integer , pointer :: ltype(:)          ! landunit type
-    integer , pointer :: clandunit(:)      ! columns's landunit
-
-    !intrinsic :: derf
-    real(r8)  :: derf
-!
-!EOP
-!
-! !OTHER LOCAL VARIABLES:
-!
-    integer  :: c,f,l         ! indices
+    type(bounds_type), intent(in)  :: bounds                      ! bounds
+    integer , intent(in)           :: num_h2osfc                  ! number of column points in column filter
+    integer , intent(in)           :: filter_h2osfc(:)            ! column filter 
+    real(r8), intent(inout)        :: frac_h2osfc( bounds%begc: ) ! fractional surface water (mm) [col]
+    integer , intent(in), optional :: no_update                   ! flag to make calculation w/o updating variables
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,f,l          ! indices
     real(r8):: d,fd,dfdd      ! temporary variable for frac_h2oscs iteration
     real(r8):: sigma          ! microtopography pdf sigma in mm
-    real(r8):: min_h2osfc,minslope,maxslope,temp_norm,slopemax
+    real(r8):: min_h2osfc
+    !-----------------------------------------------------------------------
 
-!-----------------------------------------------------------------------
+   SHR_ASSERT_ALL((ubound(frac_h2osfc) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
-! Assign local pointers to derived subtypes components (column-level)
-
-    h2osoi_liq          => clm3%g%l%c%cws%h2osoi_liq
-    h2osfc              => clm3%g%l%c%cws%h2osfc
-    micro_sigma         => clm3%g%l%c%cps%micro_sigma
-    topo_slope          => clm3%g%l%c%cps%topo_slope
-    topo_ndx            => clm3%g%l%c%cps%topo_ndx
-    ltype               => clm3%g%l%itype
-    clandunit           => clm3%g%l%c%landunit
-
-    frac_sno            => clm3%g%l%c%cps%frac_sno 
-    frac_sno_eff        => clm3%g%l%c%cps%frac_sno_eff
-    snl                 => clm3%g%l%c%cps%snl
-    h2osno              => clm3%g%l%c%cws%h2osno
+   associate(& 
+   h2osfc        =>  cws%h2osfc        , & ! Input:  [real(r8) (:)]  surface water (mm)                                
+   h2osno        =>  cws%h2osno        , & ! Input:  [real(r8) (:)]  snow water (mm H2O)                               
+   micro_sigma   =>  cps%micro_sigma   , & ! Input:  [real(r8) (:)]  microtopography pdf sigma (m)                     
+   h2osoi_liq    =>  cws%h2osoi_liq    , & ! Output: [real(r8) (:,:)]  liquid water (col,lyr) [kg/m2]                  
+   frac_sno      =>  cps%frac_sno      , & ! Output: [real(r8) (:)]  fraction of ground covered by snow (0 to 1)       
+   frac_sno_eff  =>  cps%frac_sno_eff    & ! Output: [real(r8) (:)]  eff. fraction of ground covered by snow (0 to 1)  
+   )
  
     ! arbitrary lower limit on h2osfc for safer numerics...
     min_h2osfc=1.e-8_r8
 
     do f = 1, num_h2osfc
        c = filter_h2osfc(f)
-       l = clandunit(c)
+       l = col%landunit(c)
        ! h2osfc only calculated for soil vegetated land units
-       if (ltype(l) == istsoil .or. ltype(l) == istcrop) then
+       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
 
           !  Use newton-raphson method to iteratively determine frac_h20sfc
           !  based on amount of surface water storage (h2osfc) and 
@@ -122,15 +78,15 @@ contains
 
              sigma=1.0e3*micro_sigma(c) ! convert to mm
              do l=1,10
-                fd = 0.5*d*(1.0_r8+derf(d/(sigma*sqrt(2.0)))) &
+                fd = 0.5*d*(1.0_r8+erf(d/(sigma*sqrt(2.0)))) &
                         +sigma/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*sigma**2)) &
                         -h2osfc(c)
-                dfdd = 0.5*(1.0_r8+derf(d/(sigma*sqrt(2.0))))
+                dfdd = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
                 
                 d = d - fd/dfdd
              enddo
              !--  update the submerged areal fraction using the new d value
-             frac_h2osfc(c) = 0.5*(1.0_r8+derf(d/(sigma*sqrt(2.0))))
+             frac_h2osfc(c) = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
 
           else
              frac_h2osfc(c) = 0._r8
@@ -141,7 +97,6 @@ contains
           if (.not. present(no_update)) then
 
              ! adjust fh2o, fsno when sum is greater than zero
-             ! energy balance error when h2osno > 0 and snl = 0
              if (frac_sno(c) > (1._r8 - frac_h2osfc(c)) .and. h2osno(c) > 0) then
 
                 if (frac_h2osfc(c) > 0.01_r8) then             
@@ -162,6 +117,7 @@ contains
 
     end do
        
+    end associate 
   end subroutine FracH2oSfc
 
 end module H2OSfcMod

@@ -27,7 +27,7 @@ n is the configuration type:
 3 -- mkprocdata_map clm4.0
 4 -- mkmapgrids     clm4.0
 5 -- gen_domain     clm4.0
-6 -- unused
+6 -- PTCLM          clm4.0
 7 -- mksurfdata_map clm4.0
 8 -- interpinic     clm4.0
 9 -- tools scripts  clm4.0
@@ -37,7 +37,7 @@ b -- unused
 c -- mkprocdata_map clm4.5
 d -- mkmapgrids     clm4.5
 e -- gen_domain     clm4.5
-f -- unused
+f -- PTCLM          clm4.5
 g -- mksurfdata_map clm4.5
 h -- interpinic     clm4.5
 i -- tools scripts  clm4.5
@@ -47,7 +47,10 @@ m is the resolution
 1 -- 48x96
 5 -- 10x15
 7 -- 1x1 brazil
+8 -- US-UMB
 9 -- 4x5
+c -- US-UMB with cycling on forcing and transient use-case
+g -- US-UMB with global forcing and grid PFT and soil
 y -- 1.9x2.5 with transient 1850-2100 for rcp=2.6 and glacier-MEC on
 Z -- 10x15 with crop on
 @ -- ne120np4

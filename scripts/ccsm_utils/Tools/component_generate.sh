@@ -56,19 +56,19 @@ function Usage {
     echo "     (this may be blank, but the colon will still be present)"
     echo ""
     echo "     Possible values for STATUS are:"
-    echo "     UNDEF : undefined result; this includes incorrect usage"
-    echo "     BFAIL1: no history file in test case"
-    echo "       (note that BFAIL1 is only a problem if it occurs for all possible"
+    echo "     UNDEF   : undefined result; this includes incorrect usage"
+    echo "     BFAIL_NA: no history file in test case"
+    echo "       (note that BFAIL_NA is only a problem if it occurs for all possible"
     echo "       history extensions for a given component)"
-    echo "     BFAIL2: error creating baseline directory or copying baseline file into place"
-    echo "     PASS  : success"
+    echo "     BFAIL   : error creating baseline directory or copying baseline file into place"
+    echo "     PASS    : success"
     echo ""
     echo "OPTIONS"
     echo "     -baseline_dir <name>   Full path to the baseline directory for this test (required)"
     echo "     -baseline_hist <name>  Name used for history file in the baseline directory (required)"
     echo "     -test_dir <name>       Full path to the directory containing history files for this test (required)"
     echo "     -test_hist <name>      Name of history file in the test directory (required)"
-    echo "                            (it is NOT an error for this to be an empty string, but this will generate a BFAIL1;"
+    echo "                            (it is NOT an error for this to be an empty string, but this will generate a BFAIL_NA;"
     echo "                            this will be the case when there are no history files for a component in the test directory)"
     echo "     -help                  Print this help message and exit"
     echo ""
@@ -87,7 +87,7 @@ function Usage {
     echo "       -baseline_hist clm.h.nc"
     echo "       -test_dir /glade/scratch/\$USER/\$CASE/run"
     echo "       -test_hist ''"
-    echo "     This will generate a BFAIL1 because there is no history file to copy to the baseline directory"
+    echo "     This will generate a BFAIL_NA because there is no history file to copy to the baseline directory"
     echo ""
 }
 
@@ -198,7 +198,7 @@ fi
 # Make sure there is a history file in the test case
 #----------------------------------------------------------------------
 if [ -z "$test_hist" ]; then
-    status="BFAIL1"
+    status="BFAIL_NA"
     info="no history file in test case"
     print_result $status "$info"
     exit 0
@@ -209,7 +209,7 @@ fi
 #----------------------------------------------------------------------
 mkdir -p $baseline_dir
 if [ $? -ne 0 ]; then
-    status="BFAIL2"
+    status="BFAIL"
     info="error creating baseline directory"
     print_result $status "$info"
     exit 0
@@ -222,7 +222,7 @@ chmod ug+w,a+rx $baseline_dir/..
 #----------------------------------------------------------------------
 cp $test_dir/$test_hist $baseline_dir/$baseline_hist
 if [ $? -ne 0 ]; then
-    status="BFAIL2"
+    status="BFAIL"
     info="error copying history file to baseline directory"
     print_result $status "$info"
     exit 0

@@ -12,10 +12,11 @@ CLEANFILES = $(BUILT_SOURCES) f90_dep.mak $(wildcard *.mod)
 
 libglint_la_SOURCES = glint_daily_pdd.F90 glint_pdd.F90 glint_constants.F90 \
                       glint_type.F90 glint_initialise.F90 glint_io.F90 \
+                      glint_downscale.F90 glint_upscale.F90 \
                       glint_timestep.F90 glint_main.F90 \
                       glint_interp.F90 glint_global_interp.F90 \
                       glint_global_grid.F90 glint_routing.F90 \
-                      glint_precip_param.F90 glint_ebm.F90 \ 
+                      glint_precip_param.F90 glint_ebm.F90 \
                       glint_mbal.F90 glint_mbal_coupling.F90 glint_mbal_io.F90 \
                       glint_mpinterp.F90 glint_commandline.F90 \
                       glint_example_clim.F90

@@ -5,7 +5,7 @@
 <title>Porting Overview </title>
 
 <para> One of the first steps many users will have to address is
-getting the CESM1 model running on their local machine.  This section
+getting the CESM model running on their local machine.  This section
 will describe the process of going about that.  In short, you should
 first call <command>create_newcase</command> using a "userdefined"
 machine name and get that case running. Second, you should take the
@@ -169,9 +169,9 @@ NETCDF_PATH:= $(NETCDF_DIR)
 
 <para>
 So in this example the system module defines a variable NETCDF_DIR, 
-but CESM1.1 expects NETCDF_PATH to be set and that copy is made in the Macros file.
+but CESM expects NETCDF_PATH to be set and that copy is made in the Macros file.
 
-While CESM1.1 supports use of pnetcdf in PIO (which requires setting
+While CESM supports use of pnetcdf in PIO (which requires setting
 PNETCDF_PATH in Macros), it is generally best to ignore that feature
 during initial porting. PIO works well with standard NetCDF.
 </para>
@@ -228,7 +228,7 @@ through step 1 above.  Basically, you will need to add files and
 modify files in the directory
 <filename>$CCSMROOT/scripts/ccsm_utils/Machines</filename> to support
 your machine out-of-the-box.  This section describes how to add
-support for your machine to the CESM1 scripts in order to support your
+support for your machine to the CESM scripts in order to support your
 machine out-of-the box. </para>
 
 <orderedlist>

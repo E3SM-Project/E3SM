@@ -66,9 +66,6 @@ contains
     use mo_exp_sol,        only : exp_sol_inti
     use spmd_utils,        only : iam
     use mo_fstrat,         only : fstrat_inti
-    use mo_aerosols,       only : aerosols_inti
-    use mo_setsoa,         only : soa_inti
-    use mo_setsox,         only : sox_inti
     use m_types,           only : time_ramp
     use abortutils,        only : endrun
     use pmgrid,            only : plev           
@@ -282,13 +279,6 @@ contains
        call synoz_inti( )
        ! over ride the ozone constituent used for radiation feedbacks
     end if
-
-    !
-    ! initialize the various aerosols components
-    !
-    call aerosols_inti()
-    call soa_inti(pbuf2d)
-    call sox_inti()
 
     !-----------------------------------------------------------------------
     !	... initialize ion production

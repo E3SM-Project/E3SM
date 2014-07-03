@@ -1,0 +1,118 @@
+module test_gamma_factorial
+
+use pfunit_mod
+
+use shr_kind_mod, only: &
+     r8 => shr_kind_r8, &
+     i8 => shr_kind_i8
+
+use shr_spfn_mod, only: &
+     gamma => shr_spfn_gamma, &
+     igamma => shr_spfn_igamma
+
+implicit none
+save
+
+real(r8), parameter :: relative_error_tolerance = 1.e-12_r8
+
+@Parameters = [test_int]
+type, extends(AbstractTestParameter) :: GammaTestInt
+   integer :: test_int
+end type GammaTestInt
+
+@TestCase
+type, extends(ParameterizedTestCase) :: TestGammaFac
+   real(r8) :: input_int
+   real(r8) :: test_factorial
+   procedure(runMethod), pointer :: userMethod => null()
+ contains
+   procedure, nopass :: getParameters
+   procedure, pass(this) :: getParameterString
+   procedure, pass(this) :: runMethod
+end type TestGammaFac
+
+interface TestGammaFac
+   module procedure TestGammaFac_ctr
+end interface
+
+contains
+
+function TestGammaFac_ctr(name, method, test_int) result (test)
+
+  ! Name, method, and parameters provided by preprocessed code.
+  character(len=*), intent(in) :: name
+  procedure(runMethod) :: method
+  integer, intent(in) :: test_int
+
+  type(TestGammaFac) :: test
+
+  call test%setName(name)
+  test%userMethod => method
+  test%input_int = real(test_int,r8)
+
+  ! A curious fact; because the factorial contains so many powers of 2, 20!
+  ! is exactly representable in an 8 byte double even though it is bigger
+  ! than 1/epsilon.
+  test%test_factorial = real(factorial(test_int-1),r8)
+
+contains
+
+  function factorial(n)
+    integer, intent(in) :: n
+    integer(i8) :: factorial
+    integer(i8) :: i
+    factorial = product([( i, i = 1, n )])
+  end function factorial
+
+end function TestGammaFac_ctr
+
+function getParameters() result(params)
+  type(GammaTestInt), allocatable :: params(:)
+
+  integer :: i
+
+  params = [( GammaTestInt(i), i = 1, 21 )]
+
+end function getParameters
+
+function getParameterString(this) result(string)
+  class(TestGammaFac), intent(in) :: this
+  character(:), allocatable :: string
+
+  character(len=80) :: buffer
+
+  write(buffer, '(A,F8.4,A,F24.4,A)') &
+       "(n = ",this%input_int,", factorial(n-1) = ",this%test_factorial,")"
+
+  string = trim(buffer)
+
+end function getParameterString
+
+subroutine runMethod(this)
+  class(TestGammaFac), intent(inout) :: this
+  call this%userMethod()
+end subroutine runMethod
+
+@Test
+subroutine gamma_is_factorial(this)
+  class(TestGammaFac), intent(inout) :: this
+
+  real(r8) :: tol
+
+  tol = relative_error_tolerance * this%test_factorial
+
+  @assertEqual(this%test_factorial, gamma(this%input_int), tolerance=tol)
+end subroutine gamma_is_factorial
+
+@Test
+subroutine igamma_is_factorial(this)
+  class(TestGammaFac), intent(inout) :: this
+
+  real(r8) :: tol
+
+  tol = relative_error_tolerance * this%test_factorial
+
+  @assertEqual(this%test_factorial, igamma(this%input_int,0._r8), tolerance=tol)
+end subroutine igamma_is_factorial
+
+end module test_gamma_factorial

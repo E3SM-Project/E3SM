@@ -70,8 +70,8 @@ echo "ref1: doing a ${stopn1} ${STOP_OPTION} initial startup from ${start1}" >>&
 #--- run ref1 case
 ./$CASE.run
 
-gunzip ${DOUT_S_ROOT}/cpl/logs/cpl.log*.gz
-set CplLogFile = `ls -1t ${DOUT_S_ROOT}/cpl/logs/cpl.log* | head -1`
+gunzip ${CASERR1}/logs/cpl.log*.gz
+set CplLogFile = `ls -1t ${CASERR1}/logs/cpl.log* | head -1`
 setenv CPLLOG_INIT $CplLogFile
 setenv BASEGEN_FILE01 $CplLogFile
 
@@ -117,8 +117,8 @@ ln -s ${DOUTSR1}/rest/${refdate3}-00000/*${refdate3}* $RUNDIR/.
 cp    ${DOUTSR1}/rest/${refdate3}-00000/*rpointer*    $RUNDIR/.
 ./$CASE.run
 
-gunzip ${DOUT_S_ROOT}/cpl/logs/cpl.log*.gz
-set CplLogFile = `ls -1t ${DOUT_S_ROOT}/cpl/logs/cpl.log* | head -1`
+gunzip ${CASER0}/logs/cpl.log*.gz
+set CplLogFile = `ls -1t ${CASER0}/logs/cpl.log* | head -1`
 setenv CPLLOG_BRCH    $CplLogFile
 setenv BASEGEN_FILE03 $CplLogFile
 
@@ -152,8 +152,8 @@ echo "doing a {stopn4} ${STOP_OPTION} continue restart test" >>& $TESTSTATUS_LOG
 
 ./$CASE.run
 
-gunzip $RUNDIR/cpl.log*.gz
-set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+gunzip $CASEROOT/logs/cpl.log*.gz
+set CplLogFile = `ls -1t $CASEROOT/logs/cpl.log* | head -1`
 setenv CPLLOG_REST $CplLogFile
 setenv BASEGEN_FILE04 $CplLogFile
 
@@ -177,7 +177,7 @@ set basestatus = "UNDEF"
 
 if ( $?CPLLOG_INIT ) then
   echo "Checking successful completion in init cpl log file" >>& $TESTSTATUS_LOG
-  set pass = `grep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
+  set pass = `zgrep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
   if ( $pass != 0 ) then
     set basestatus = "PASS "
   else

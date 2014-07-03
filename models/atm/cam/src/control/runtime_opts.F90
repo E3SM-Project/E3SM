@@ -267,22 +267,6 @@ integer :: irad_always   ! Specifies length of time in timesteps (positive)
                          ! from the start of an initial run.  Default: 0
 logical :: spectralflux  ! calculate fluxes (up and down) per band. Default: FALSE
 
-#if (defined WACCM_PHYS)
-! iondrag / efield
-character(len=256) :: efield_lflux_file
-character(len=256) :: efield_hflux_file
-character(len=256) :: efield_wei96_file
-! waccm qbo data variables
-character(len=256) :: qbo_forcing_file
-logical            :: qbo_use_forcing
-logical            :: qbo_cyclic
-#endif
-
-! Upper atmosphere radiative processes (waccm phys)
-logical :: nlte_use_mo              ! Determines which constituents are used from NLTE calculations
-                                    !  = .true. uses MOZART constituents
-                                    !  = .false. uses constituents from bnd dataset cftgcm
-
 ! SCM Options
 logical  :: single_column
 real(r8) :: scmlat,scmlon
@@ -329,18 +313,11 @@ contains
    ! TBH  9/8/03 
    !
    use phys_grid,        only: phys_grid_defaultopts, phys_grid_setopts
-   
-#if (defined WACCM_PHYS)
-   use iondrag,          only: iondrag_defaultopts, iondrag_setopts
-   use qbo,              only: qbo_defaultopts, qbo_setopts
-   use waccm_forcing,    only: waccm_forcing_readnl
-#endif
 
    use chem_surfvals,    only: chem_surfvals_readnl
    use check_energy,     only: check_energy_defaultopts, check_energy_setopts
    use radiation,        only: radiation_defaultopts, radiation_setopts, radiation_printopts
    use cam_restart,      only: restart_defaultopts, restart_setopts, restart_printopts
-   use radheat,          only: radheat_defaultopts, radheat_setopts
    use carma_flags_mod,  only: carma_readnl
    use co2_cycle,        only: co2_cycle_readnl
    use shr_string_mod,   only: shr_string_toUpper
@@ -357,6 +334,7 @@ contains
    use macrop_driver,       only: macrop_driver_readnl
    use microp_driver,       only: microp_driver_readnl
    use microp_aero,         only: microp_aero_readnl
+   use subcol,              only: subcol_readnl
    use cloud_fraction,      only: cldfrc_readnl
    use cldwat,              only: cldwat_readnl
    use zm_conv,             only: zmconv_readnl
@@ -364,6 +342,8 @@ contains
    use uwshcu,              only: uwshcu_readnl
    use pkg_cld_sediment,    only: cld_sediment_readnl
    use gw_drag,             only: gw_drag_readnl
+   use qbo,                 only: qbo_readnl
+   use iondrag,             only: iondrag_readnl
    use phys_debug_util,     only: phys_debug_readnl
    use rad_constituents,    only: rad_cnst_readnl
    use radiation_data,      only: rad_data_readnl
@@ -383,6 +363,7 @@ contains
    use vertical_diffusion,  only: vd_readnl
    use cam_history_support, only: fieldname_len, fieldname_lenp2
    use cam_diagnostics,     only: diag_readnl
+   use radheat,             only: radheat_readnl
 #if ( defined OFFLINE_DYN )
    use metdata,             only: metdata_readnl
 #endif
@@ -476,16 +457,6 @@ contains
   ! radiative heating calculation options
   namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always, spectralflux
 
-#if (defined WACCM_PHYS)
-  ! iondrag / efield options
-  namelist /cam_inparm/ efield_lflux_file, efield_hflux_file, efield_wei96_file
-  ! waccm qbo namelist variables
-  namelist /cam_inparm/ qbo_use_forcing, qbo_forcing_file, qbo_cyclic
-#endif
-
-  ! upper atmosphere radiative processes
-  namelist /cam_inparm/ nlte_use_mo
-
   ! scam
   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
                         scm_diurnal_avg,scm_crm_mode, scm_clubb_iop_name
@@ -526,22 +497,6 @@ contains
       iradae_out      = iradae,     &
       irad_always_out = irad_always, &
       spectralflux_out = spectralflux )
-
-#if (defined WACCM_PHYS)
-   ! iondrag / efield
-   call iondrag_defaultopts( &
-      efield_lflux_file_out =efield_lflux_file, &
-      efield_hflux_file_out =efield_hflux_file, &
-      efield_wei96_file_out =efield_wei96_file )
-   ! qbo forcing
-   call qbo_defaultopts( &
-      qbo_use_forcing_out  = qbo_use_forcing, &
-      qbo_forcing_file_out = qbo_forcing_file,&
-      qbo_cyclic_out       = qbo_cyclic       )
-#endif
-
-   ! Upper atmosphere radiative processes
-   call radheat_defaultopts( nlte_use_mo_out =nlte_use_mo )
 
    if (present(single_column_in)) then
       call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
@@ -629,11 +584,10 @@ contains
          fincllonlat(f, 5) = fincl5lonlat(f)
          fincllonlat(f, 6) = fincl6lonlat(f)
          if(dycore_is('UNSTRUCTURED') ) then
-            do i=1,6
-               if (fincllonlat(f,i) .ne. ' ') then
-                  call endrun('READ_NAMELIST: Column output is not supported in Unstructered Grids')
-               end if
-            end do
+            if (any(fincllonlat(f,:) /= ' ')) then
+               call endrun('READ_NAMELIST: Column output is not supported &
+                    &in unstructured grids.')
+            end if
          end if
 
 
@@ -732,21 +686,6 @@ contains
       irad_always_in = irad_always, &
       spectralflux_in = spectralflux )
 
-#if (defined WACCM_PHYS)
-   ! iondrag / efield
-   call iondrag_setopts( &
-        efield_lflux_file_in =efield_lflux_file, &
-        efield_hflux_file_in =efield_hflux_file, &
-        efield_wei96_file_in =efield_wei96_file)
-   ! qbo forcing
-   call qbo_setopts( &
-        qbo_use_forcing_in  = qbo_use_forcing, &
-        qbo_forcing_file_in = qbo_forcing_file,&
-        qbo_cyclic_in       = qbo_cyclic       )
-#endif
-
-   ! Upper atmosphere radiative processes
-   call radheat_setopts( nlte_use_mo_in =nlte_use_mo )
 ! 
 ! Set runtime options for single column mode
 !
@@ -787,6 +726,7 @@ contains
    call macrop_driver_readnl(nlfilename)
    call microp_driver_readnl(nlfilename)
    call microp_aero_readnl(nlfilename)
+   call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
    call zmconv_readnl(nlfilename)
    call cldwat_readnl(nlfilename)
@@ -794,6 +734,8 @@ contains
    call uwshcu_readnl(nlfilename)
    call cld_sediment_readnl(nlfilename)
    call gw_drag_readnl(nlfilename)
+   call qbo_readnl(nlfilename)
+   call iondrag_readnl(nlfilename)
    call phys_debug_readnl(nlfilename)
    call rad_cnst_readnl(nlfilename)
    call rad_data_readnl(nlfilename)
@@ -813,9 +755,7 @@ contains
    call cospsimulator_intr_readnl(nlfilename)
    call sat_hist_readnl(nlfilename, hfilename_spec, mfilt, fincl, nhtfrq, avgflag_pertape)
    call diag_readnl(nlfilename)
-#if (defined WACCM_PHYS)
-   call waccm_forcing_readnl(nlfilename)
-#endif
+   call radheat_readnl(nlfilename)
    call vd_readnl(nlfilename)
 #if ( defined OFFLINE_DYN )
    call metdata_readnl(nlfilename)
@@ -998,19 +938,6 @@ subroutine distnl
    call mpibcast (iradae,     1, mpiint, 0, mpicom)
    call mpibcast (irad_always,1, mpiint, 0, mpicom)
    call mpibcast (spectralflux,1, mpilog, 0, mpicom)
-
-#if (defined WACCM_PHYS)
-   ! iondrag / efield options
-   call mpibcast (efield_lflux_file, len(efield_lflux_file), mpichar, 0, mpicom)
-   call mpibcast (efield_hflux_file, len(efield_hflux_file), mpichar, 0, mpicom)
-   call mpibcast (efield_wei96_file, len(efield_wei96_file), mpichar, 0, mpicom)
-   ! qbo variables
-   call mpibcast (qbo_forcing_file,  len(qbo_forcing_file ), mpichar, 0, mpicom)
-   call mpibcast (qbo_use_forcing,   1,                      mpilog,  0, mpicom)
-   call mpibcast (qbo_cyclic,        1,                      mpilog,  0, mpicom)
-#endif
-
-   call mpibcast (nlte_use_mo,            1,  mpilog, 0, mpicom)
 
 end subroutine distnl
 #endif

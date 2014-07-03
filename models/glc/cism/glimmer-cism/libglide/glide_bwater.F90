@@ -30,7 +30,7 @@
 
 module glide_bwater
 
-   use glimmer_global, only: rk, sp
+   use glimmer_global, only: dp
    use glide_types
 
    implicit none
@@ -40,7 +40,6 @@ contains
   subroutine calcbwat(model, which, bmlt, bwat, bwatflx, thck, topg, btem, floater, wphi)
 
     use parallel
-    use glimmer_global, only : dp 
     use glimmer_paramets, only : thk0
     use glide_grid_operators, only: stagvarb
 
@@ -206,21 +205,21 @@ contains
 
     implicit none
 
-    real(rk),dimension(:,:),intent(in)  :: wphi    !*FD Input potential surface
-    real(rk),dimension(:,:),intent(in)  :: melt    !*FD Input melting field
-    real(rk),               intent(in)  :: dx      !*FD Input $x$ grid-spacing
-    real(rk),               intent(in)  :: dy      !*FD Input $y$ grid-spacing
-    real(rk),dimension(:,:),intent(out) :: flux    !*FD Output flux field
-    real(rk),dimension(:,:),intent(out) :: lakes   !*FD Output lakes field
+    real(dp),dimension(:,:),intent(in)  :: wphi    !*FD Input potential surface
+    real(dp),dimension(:,:),intent(in)  :: melt    !*FD Input melting field
+    real(dp),               intent(in)  :: dx      !*FD Input $x$ grid-spacing
+    real(dp),               intent(in)  :: dy      !*FD Input $y$ grid-spacing
+    real(dp),dimension(:,:),intent(out) :: flux    !*FD Output flux field
+    real(dp),dimension(:,:),intent(out) :: lakes   !*FD Output lakes field
 
     ! Internal variables --------------------------------------
 
     integer :: nx,ny,k,nn,cx,cy,px,py,x,y
     integer, dimension(:,:),allocatable :: mask    !*FD Masked points
     integer, dimension(:,:),allocatable :: sorted
-    real(rk),dimension(:,:),allocatable :: flats,potcopy
-    real(rk),dimension(-1:1,-1:1) :: slopes
-    real(rk),dimension(-1:1,-1:1) :: dists
+    real(dp),dimension(:,:),allocatable :: flats,potcopy
+    real(dp),dimension(-1:1,-1:1) :: slopes
+    real(dp),dimension(-1:1,-1:1) :: dists
     logical :: flag
 
     ! Set up grid dimensions ----------------------------------
@@ -343,7 +342,7 @@ contains
     real(dp),dimension(:,:),intent(out)::  bwat     ! Water Depth
 
     ! Internal variables 
-    real(rk),dimension(:,:),allocatable :: grad_wphi, dwphidx, dwphidy
+    real(dp),dimension(:,:),allocatable :: grad_wphi, dwphidx, dwphidy
 
     integer nx,ny,nn
 
@@ -416,17 +415,17 @@ contains
 
     implicit none
 
-    real(rk),dimension(:,:),intent(inout) :: phi
-    real(rk),dimension(:,:),intent(inout) :: flats
+    real(dp),dimension(:,:),intent(inout) :: phi
+    real(dp),dimension(:,:),intent(inout) :: flats
     integer, dimension(:,:),intent(in)    :: mask
 
     ! Internal variables --------------------------------------
 
-    real(rk),allocatable,dimension(:,:) :: old_phi
+    real(dp),allocatable,dimension(:,:) :: old_phi
     integer, allocatable,dimension(:,:) :: pool
 
-    real(rk) :: pvs(9), max_val
-    real(rk), parameter :: null = 1e+20
+    real(dp) :: pvs(9), max_val
+    real(dp), parameter :: null = 1e+20
     integer :: flag,nx,ny,i,j
 
     ! ---------------------------------------------------------
@@ -493,11 +492,11 @@ contains
 
   subroutine heights_sort(wphi,sorted)
 
-    real(rk),dimension(:,:) :: wphi
+    real(dp),dimension(:,:) :: wphi
     integer,dimension(:,:) :: sorted
 
     integer :: nx,ny,nn,i,j,k
-    real(rk),dimension(:),allocatable :: vect
+    real(dp),dimension(:),allocatable :: vect
     integer,dimension(:),allocatable :: ind
 
     nx=size(wphi,1) ; ny=size(wphi,2)
@@ -556,7 +555,7 @@ contains
     !*FD in C, and issued under the GNU General Public License. The conversion to 
     !*FD Fortran 90, and modification to do an index sort was done by Ian Rutt.
 
-    real(rk),dimension(:) :: array !*FD Array to be indexed.
+    real(dp),dimension(:) :: array !*FD Array to be indexed.
     integer, dimension(:) :: index !*FD Index of elements of \texttt{array}.
     integer :: i
 
@@ -586,13 +585,13 @@ contains
 
     implicit none
 
-    real(rk),dimension(:) :: numbers !*FD Numbers being sorted
+    real(dp),dimension(:) :: numbers !*FD Numbers being sorted
     integer, dimension(:) :: index   !*FD Returned index
     integer :: left, right           !*FD Limit of sort region
 
     integer :: ll,rr
     integer :: pv_int,l_hold, r_hold,pivpos
-    real(rk) :: pivot
+    real(dp) :: pivot
 
     ll=left
     rr=right

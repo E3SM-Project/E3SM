@@ -1,0 +1,1 @@
+../PTCLMmkdata --pftgrid --soilgrid --verbose --donot_use_tower_yrs --clmnmlusecase=20thC_transient --cesm_root ../../../../../../.. -s US-UMB -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/global_surfdata_create 

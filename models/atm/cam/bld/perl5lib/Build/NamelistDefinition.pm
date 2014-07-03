@@ -470,6 +470,12 @@ sub _initialize
 	    my @dims = split /,/, $1;  #/
             $arr_len = 1;
 	    foreach my $dim (@dims) {
+                # If any of the array dimensions are variables, turn array
+                # size checking off via a hack (set limit to a big number).
+                if ($dim =~ m/[a-zA-Z_]/ ) {
+                    $arr_len = 1000000;
+                    last;
+                }
 		$arr_len *= $dim;
 	    }
 	}
@@ -634,7 +640,9 @@ sub _get_datatype
     }
     # Arrays
     if ( $type_def =~ /\(/ ) {
-      if ( $type_def =~ /\(([0-9, ]+)\)$/ ) {
+      # Note: This used to only allow [0-9, ], but since some sizes can be
+      # determined at configure time, allow variable names too.
+      if ( $type_def =~ /\(([a-zA-Z0-9_, ]+)\)$/ ) {
         my @dimSizes = split( /,[ ]*/, $1 );
         $datatype{'arrayNDims'} = $#dimSizes + 1;
         $datatype{'arrayDims'}  = \@dimSizes;

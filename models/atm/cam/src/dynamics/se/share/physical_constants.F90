@@ -15,7 +15,7 @@ module physical_constants
                         omega, &
                         Rgas => rair, &
                         cpair, &
-                        pstd, &
+                        p0 => pstd, &
                         MWDAIR => mwdry, &
                         Rwater_vapor => rh2o, &
                         Cpwater_vapor => cpwv, &
@@ -36,7 +36,7 @@ module physical_constants
   public                                   :: omega          ! s^-1
   public                                   :: Rgas
   real (kind=real_kind), public, parameter :: Cp           = cpair
-  real (kind=real_kind), public, parameter :: p0           = pstd/100.0_real_kind ! surface pressure (mbar)
+  public                                   :: p0             ! Pa
   public                                   :: MWDAIR
   public                                   :: Rwater_vapor
   public                                   :: Cpwater_vapor
@@ -48,16 +48,12 @@ module physical_constants
   real (kind=real_kind), public, parameter :: DD_PI = 3.141592653589793238462643383279_real_kind
   real (kind=longdouble_kind), public, parameter :: QQ_PI = 3.141592653589793238462643383279_longdouble_kind
 
-
-#ifdef JUPITER
-  real (kind=real_kind), public, parameter :: rearth       = 7e7             ! m
-  real (kind=real_kind), public, parameter :: omega        = 2e-4            ! radians/s  1 revolution takes 8.7hours = .36days
-  real (kind=real_kind), public, parameter :: g            = 23.0            ! m s^-2
-#else
+  ! to run Held-Suarez in JUPITER mode: 
+  ! make rearth,g,omega namelist variables and set to:
+  ! omega = 2e-4, rearth=7e7, g=23.0
   real (kind=real_kind), public, parameter :: rearth       = 6.376D6         ! m
-  real (kind=real_kind), public, parameter :: omega        = 7.292D-5        ! radians/s
   real (kind=real_kind), public, parameter :: g            = 9.80616D0         ! m s^-2
-#endif
+  real (kind=real_kind), public            :: omega        = 7.292D-5        ! radians/s
   real (kind=real_kind), public, parameter :: Rgas         = 287.04D0        
   real (kind=real_kind), public, parameter :: Cp           = 1005.0D0
   real (kind=real_kind), public, parameter :: p0           = 100000.0D0        ! surface pressure (mbar)

@@ -35,6 +35,7 @@ program testconfig
   !*FD written by Magnus Hagdorn, May 2004
   !*FD extended by Ian Rutt, August 2004
   use glimmer_config
+  use glimmer_global, only: dp
   implicit none
 
   character(len=30) fname,sname,vname,vtype
@@ -42,8 +43,8 @@ program testconfig
 
   character(len=100) :: charval
   integer :: intval
-  real :: realval
-  real, dimension(:), pointer :: realarray
+  real(dp) :: realval
+  real(dp), dimension(:), pointer :: realarray
 
   write(*,*) 'Enter name of configuration file'
   read(*,*) fname

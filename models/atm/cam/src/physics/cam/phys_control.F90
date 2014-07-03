@@ -26,8 +26,7 @@ public :: &
    phys_do_flux_avg,  &! return true to average surface fluxes
    cam_physpkg_is,    &! query for the name of the physics package
    cam_chempkg_is,    &! query for the name of the chemistry package
-   do_waccm_phys,     &! WACCM physics is on
-   waccmx_is           ! query for the WACCM-X option
+   waccmx_is
 
 ! Private module data
 
@@ -58,6 +57,7 @@ logical           :: use_subcol_microp    = .false.    ! if .true. then use sub-
 logical           :: atm_dep_flux         = .true.     ! true => deposition fluxes will be provided
                                                        ! to the coupler
 logical           :: history_amwg         = .true.     ! output the variables used by the AMWG diag package
+logical           :: history_vdiag        = .false.    ! output the variables used by the AMWG variability diag package
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
 logical           :: history_eddy         = .false.    ! output the eddy variables
@@ -65,12 +65,21 @@ logical           :: history_budget       = .false.    ! output tendencies and s
                                                        ! temperature, water vapor, cloud ice and cloud
                                                        ! liquid budgets.
 integer           :: history_budget_histfile_num = 1   ! output history file number for budget fields
+logical           :: history_waccm        = .true.     ! output variables of interest for WACCM runs
 logical           :: do_clubb_sgs
 logical           :: do_tms
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
 
 logical :: prog_modal_aero ! determines whether prognostic modal aerosols are present in the run.
+
+! Which gravity wave sources are used?
+! Orographic
+logical, public, protected :: use_gw_oro = .true.
+! Frontogenesis
+logical, public, protected :: use_gw_front = .false.
+! Convective
+logical, public, protected :: use_gw_convect = .false.
 
 !======================================================================= 
 contains
@@ -90,9 +99,10 @@ subroutine phys_ctl_readnl(nlfile)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
-      use_subcol_microp, atm_dep_flux, history_amwg, history_aerosol, history_aero_optics, &
-      history_eddy, history_budget,  history_budget_histfile_num, & 
-      conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks
+      use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
+      history_eddy, history_budget,  history_budget_histfile_num, history_waccm, & 
+      conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks, &
+      use_gw_oro, use_gw_front, use_gw_convect
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -124,15 +134,20 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_subcol_microp,               1 , mpilog,  0, mpicom)
    call mpibcast(atm_dep_flux,                    1 , mpilog,  0, mpicom)
    call mpibcast(history_amwg,                    1 , mpilog,  0, mpicom)
+   call mpibcast(history_vdiag,                   1 , mpilog,  0, mpicom)
    call mpibcast(history_eddy,                    1 , mpilog,  0, mpicom)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
    call mpibcast(history_budget_histfile_num,     1 , mpiint,  0, mpicom)
+   call mpibcast(history_waccm,                   1 , mpilog,  0, mpicom)
    call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
+   call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
+   call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
+   call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
 #endif
 
    ! Error checking:
@@ -226,16 +241,6 @@ end function cam_chempkg_is
 
 !===============================================================================
 
-logical function do_waccm_phys()
-#ifdef WACCM_PHYS
-  do_waccm_phys = .true.
-#else
-  do_waccm_phys = .false.
-#endif
-end function do_waccm_phys
-
-!===============================================================================
-
 logical function waccmx_is(name)
 
    ! query for the name of the waccmx run option
@@ -249,10 +254,10 @@ end function waccmx_is
 
 subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, microp_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
-                        history_amwg_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
-                        history_budget_out, history_budget_histfile_num_out, conv_water_in_rad_out, &
-                        cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, do_clubb_sgs_out, &
-                        do_tms_out, state_debug_checks_out )
+                        history_amwg_out, history_vdiag_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
+                        history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
+                        conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
+                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out )
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
 !          deep_scheme_out   : deep convection scheme
@@ -271,11 +276,13 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: use_subcol_microp_out
    logical,           intent(out), optional :: atm_dep_flux_out
    logical,           intent(out), optional :: history_amwg_out
+   logical,           intent(out), optional :: history_vdiag_out
    logical,           intent(out), optional :: history_eddy_out
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
    logical,           intent(out), optional :: history_budget_out
    integer,           intent(out), optional :: history_budget_histfile_num_out
+   logical,           intent(out), optional :: history_waccm_out
    logical,           intent(out), optional :: do_clubb_sgs_out
    integer,           intent(out), optional :: conv_water_in_rad_out
    character(len=32), intent(out), optional :: cam_chempkg_out
@@ -296,8 +303,10 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics
    if ( present(history_budget_out      ) ) history_budget_out       = history_budget
    if ( present(history_amwg_out        ) ) history_amwg_out         = history_amwg
+   if ( present(history_vdiag_out       ) ) history_vdiag_out        = history_vdiag
    if ( present(history_eddy_out        ) ) history_eddy_out         = history_eddy
    if ( present(history_budget_histfile_num_out ) ) history_budget_histfile_num_out = history_budget_histfile_num
+   if ( present(history_waccm_out       ) ) history_waccm_out        = history_waccm
    if ( present(do_clubb_sgs_out        ) ) do_clubb_sgs_out         = do_clubb_sgs
    if ( present(conv_water_in_rad_out   ) ) conv_water_in_rad_out    = conv_water_in_rad
    if ( present(cam_chempkg_out         ) ) cam_chempkg_out          = cam_chempkg

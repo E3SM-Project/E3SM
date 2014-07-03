@@ -101,14 +101,19 @@ sub compare{
   my $good_cnt=0;
   my $bad_cnt=0;
   foreach $line1 (<F1>){
-      $line2 = shift @line2;
       chomp $line1;
-      chomp $line2;
       if($line1 =~ /model date =\s+(\d+)\s+(\d+) wall/){
 	  $curdate = $1;
 	  $curtime = $2;
       }
       next unless ($line1 =~ /comm_diag/);
+      $line2 = shift @line2;
+      chomp $line2;
+      while ($line2 !~ /comm_diag/) {
+        #print "skip line2 $line2\n";
+        $line2 = shift @line2;
+        chomp $line2;
+      }
       if($line1 eq $line2) {
 	  $good_cnt++;
       }
@@ -123,7 +128,7 @@ sub compare{
   if($bad_cnt>0){
       print "FAIL \n";
   }
-  elsif($good_cnt==0){
+  elsif($good_cnt==0 && !($ENV{CASEBASEID} =~ /\.S\./)){
       print "ERROR: No lines compared\n";
       print "FAIL \n";
   }

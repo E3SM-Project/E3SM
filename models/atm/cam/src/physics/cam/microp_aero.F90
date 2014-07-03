@@ -29,8 +29,8 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_id
 use phys_control,     only: phys_getopts
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_num, rad_cnst_get_mode_props
-use shr_spfn_mod,     only: erf => shr_spfn_erf_nonintrinsic, &
-                            erfc => shr_spfn_erfc_nonintrinsic
+use shr_spfn_mod,     only: erf => shr_spfn_erf, &
+                            erfc => shr_spfn_erfc
 use wv_saturation,    only: qsat_water
 use nucleate_ice,     only: nucleati
 use ndrop,            only: ndrop_init, dropmixnuc
@@ -358,7 +358,7 @@ subroutine microp_aero_run ( &
    ! all units mks unless otherwise stated
 
    integer :: i, k, m
-   integer :: itim
+   integer :: itim_old
    integer :: lchnk
    integer :: ncol
    integer :: nmodes
@@ -460,8 +460,8 @@ subroutine microp_aero_run ( &
    zm    => state%zm
    omega => state%omega
 
-   itim = pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   itim_old = pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
    liqcldf(:ncol,:pver) = ast(:ncol,:pver)
    icecldf(:ncol,:pver) = ast(:ncol,:pver)
@@ -474,9 +474,9 @@ subroutine microp_aero_run ( &
 
    if (clim_modal_aero) then
 
-      itim = pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, ast_idx,  cldn, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-      call pbuf_get_field(pbuf, cldo_idx, cldo, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+      itim_old = pbuf_old_tim_idx()
+      call pbuf_get_field(pbuf, ast_idx,  cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      call pbuf_get_field(pbuf, cldo_idx, cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
       call rad_cnst_get_info(0, nmodes=nmodes)
       call pbuf_get_field(pbuf, dgnum_idx,    dgnum,    start=(/1,1,1/), kount=(/pcols,pver,nmodes/) )
@@ -544,8 +544,8 @@ subroutine microp_aero_run ( &
    case ('diag_TKE')
       call pbuf_get_field(pbuf, tke_idx, tke)
    case ('CLUBB_SGS')
-      itim = pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, wp2_idx, wp2, start=(/1,1,itim/),kount=(/pcols,pverp,1/))
+      itim_old = pbuf_old_tim_idx()
+      call pbuf_get_field(pbuf, wp2_idx, wp2, start=(/1,1,itim_old/),kount=(/pcols,pverp,1/))
       allocate(tke(pcols,pverp))
       tke(:ncol,:) = (3._r8/2._r8)*wp2(:ncol,:)
    case default

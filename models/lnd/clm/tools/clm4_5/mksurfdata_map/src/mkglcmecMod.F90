@@ -29,6 +29,10 @@ module mkglcmecMod
 !
   integer, public       :: nglcec         = 10   ! number of elevation classes for glaciers
   real(r8), pointer     :: elevclass(:)          ! elevation classes
+!
+! !PRIVATE MEMBER FUNCTIONS:
+  private get_elevclass      ! get elevation class index
+  private mean_elevation_vc  ! get the elevation of a virtual column
 !EOP
 !===============================================================
 contains
@@ -123,7 +127,6 @@ end subroutine mkglcmecInit
 ! !INTERFACE:
 subroutine mkglcmec(ldomain, mapfname, &
                     datfname_fglacier, ndiag, &
-                    pctglac_o, pctglac_o_uncorrected, &
                     pctglcmec_o, topoglcmec_o, &
                     pctglcmec_gic_o, pctglcmec_icesheet_o, &
                     pctglc_gic_o, pctglc_icesheet_o)
@@ -140,6 +143,10 @@ subroutine mkglcmec(ldomain, mapfname, &
 ! to the appropriate elevation class in the output data, as well as determining the mean
 ! topographic height of each elevation class in the output data.
 !
+! Note that the various percentages computed here are given as % of the glc_mec landunit.
+! If the input glacier area is 0 for a given grid cell, this requires setting these %
+! variables in an arbitrary way.
+!
 ! Does nothing if nglcec==0.
 !
 ! !USES:
@@ -152,17 +159,15 @@ subroutine mkglcmec(ldomain, mapfname, &
 ! !ARGUMENTS:
   implicit none
   type(domain_type) , intent(in) :: ldomain
-  character(len=*)  , intent(in) :: mapfname           ! input mapping file name
-  character(len=*)  , intent(in) :: datfname_fglacier  ! raw glacier data
-  integer           , intent(in) :: ndiag              ! unit number for diag out
-  real(r8)          , intent(in) :: pctglac_o(:)       ! % glac on output glacier grid
-  real(r8)          , intent(in) :: pctglac_o_uncorrected(:) ! % glac on output glacier grid, before any corrections were done
-  real(r8)          , intent(out):: pctglcmec_o (:,:)  ! % for each elevation class on output glacier grid
-  real(r8)          , intent(out):: topoglcmec_o(:,:)  ! mean elevation for each elevation classs on output glacier grid
-  real(r8)          , intent(out):: pctglcmec_gic_o(:,:)      ! % glc gic on output grid, by elevation class
-  real(r8)          , intent(out):: pctglcmec_icesheet_o(:,:) ! % glc ice sheet on output grid, by elevation class
-  real(r8)          , intent(out):: pctglc_gic_o(:)           ! % glc gic on output grid, summed across elevation classes
-  real(r8)          , intent(out):: pctglc_icesheet_o(:)      ! % glc ice sheet on output grid, summed across elevation classes
+  character(len=*)  , intent(in) :: mapfname                  ! input mapping file name
+  character(len=*)  , intent(in) :: datfname_fglacier         ! raw glacier data
+  integer           , intent(in) :: ndiag                     ! unit number for diag out
+  real(r8)          , intent(out):: pctglcmec_o (:,:)         ! % for each elevation class on output glacier grid (% of landunit)
+  real(r8)          , intent(out):: topoglcmec_o(:,:)         ! mean elevation for each elevation classs on output glacier grid
+  real(r8)          , intent(out):: pctglcmec_gic_o(:,:)      ! % glc gic on output grid, by elevation class (% of landunit)
+  real(r8)          , intent(out):: pctglcmec_icesheet_o(:,:) ! % glc ice sheet on output grid, by elevation class (% of landunit)
+  real(r8)          , intent(out):: pctglc_gic_o(:)           ! % glc gic on output grid, summed across elevation classes (% of landunit)
+  real(r8)          , intent(out):: pctglc_icesheet_o(:)      ! % glc ice sheet on output grid, summed across elevation classes (% of landunit)
 !
 ! !CALLED FROM:
 ! subroutine mksrfdat in module mksrfdatMod
@@ -182,6 +187,7 @@ subroutine mkglcmec(ldomain, mapfname, &
   real(r8), allocatable :: pctglc_gic_i(:)      ! input GIC percentage for a single level
   real(r8), allocatable :: pctglc_icesheet_i(:) ! input icesheet percentage for a single level
   real(r8), allocatable :: topoglcmec_unnorm_o(:,:) ! same as topoglcmec_o, but unnormalized
+  real(r8), allocatable :: pctglc_tot_o(:)      ! total glacier cover for the grid cell
   real(r8) :: topoice_i                         ! topographic height of this level
   real(r8) :: pctglc_i                          ! input total pct glacier for a single level & single point
   real(r8) :: wt, frac                          ! weighting factors for remapping
@@ -195,7 +201,11 @@ subroutine mkglcmec(ldomain, mapfname, &
   real(r8) :: glc_sum                           ! temporary
   integer  :: ier                               ! error status
   logical  :: errors                            ! error status
-  real(r8), parameter :: minglac = 1.e-6_r8     ! Minimum glacier amount
+
+  real(r8), parameter :: eps = 2.e-5_r8         ! epsilon for error checks (note that we use a large-ish value
+                                                ! because data are stored as single-precision floats in the
+                                                ! raw dataset)
+  real(r8), parameter :: eps_small = 1.e-12_r8  ! epsilon for error checks that expect close match
   character(len=32) :: subname = 'mkglcmec'
 !-----------------------------------------------------------------------
 
@@ -213,13 +223,8 @@ subroutine mkglcmec(ldomain, mapfname, &
   ns_o = ldomain%ns
 
   ! -----------------------------------------------------------------
-  ! Exit early, if no glaciers exist
+  ! Exit early, if no elevation class info is requested
   ! -----------------------------------------------------------------
-  if ( all(pctglac_o < minglac ) )then
-     write (6,*) 'No glaciers exist, set glcmec to zero as well'
-     return
-  end if
-
   if ( nglcec == 0 )then
      write (6,*) 'Number of glacier elevation classes is zero ',&
           '-- set glcmec to zero as well'
@@ -318,11 +323,9 @@ subroutine mkglcmec(ldomain, mapfname, &
         ! fraction of this destination cell that is covered by source cells that are within the source landmask
         frac = tgridmap%frac_dst(no)
 
-        ! We don't bother with the following if pctglac_o(no) <= minglac, because the
-        ! pctglcmec_o values will end up being <= minglac.
-        ! Also, if frac == 0, then we can't do this, to avoid divide by 0. In this case, the
+        ! If frac == 0, then we can't do this, to avoid divide by 0. In this case, the
         ! outputs remain equal to 0 (their initialized value).
-        if (pctglac_o(no) > minglac .and. frac > 0) then
+        if (frac > 0) then
            pctglc_i = pctglc_gic_i(ni) + pctglc_icesheet_i(ni)
            pctglcmec_o(no,m)          = pctglcmec_o(no,m)          + wt*pctglc_i / frac
            pctglcmec_gic_o(no,m)      = pctglcmec_gic_o(no,m)      + wt*pctglc_gic_i(ni) / frac
@@ -336,25 +339,24 @@ subroutine mkglcmec(ldomain, mapfname, &
      end do
   end do
 
+  ! Note: at this point, the various percentages are given as % of grid cell; below, we
+  ! renormalize these to be given as % of landunit.
+
   ! advance to next line (needed because of 'advance=no' writes above)
   write(6,*) ' ' 
 
   ! Close glacier input file
   call check_ret(nf_close(ncid), subname)
 
-  ! Now pctglcmec_o, pctglcmec_gic_o and pctglcmec_icesheet_o are already normalized
-  ! appropriately, because for destarea normalization, the sum of the wovr values for a
-  ! given destination grid cell should equal frac_dst, so sum(wt/frac) = 1 for each
-  ! destination grid cell.
-  !
-  ! However, we need to normalize topoglcmec_o. To do this, note that pctglcmec_o(n,m) is
-  ! equal to the sum of the weights used in doing the weighted average of topoice_i
-  ! (weight = wt*pctglc_i/frac); hence pctglcmec_o(n,m) is the correct normalization
-  ! factor
+  ! Normalize topoglcmec_o. To do this, note that pctglcmec_o(n,m) is equal to the sum of
+  ! the weights used in doing the weighted average of topoice_i (weight =
+  ! wt*pctglc_i/frac); hence pctglcmec_o(n,m) is the correct normalization factor
   do no = 1,ns_o
      do m = 1,nglcec
         if (pctglcmec_o(no,m) > 0) then
            topoglcmec_o(no,m) = topoglcmec_unnorm_o(no,m) / pctglcmec_o(no,m)
+        else
+           topoglcmec_o(no,m) = mean_elevation_vc(m)
         end if
 
         ! Correct for rounding errors that put topoglcmec_o(no,m) slightly outside the
@@ -373,43 +375,25 @@ subroutine mkglcmec(ldomain, mapfname, &
      end do
   end do
 
-  ! We want the sum of pctglcmec_o across elevation classes to equal pctglac_o for each
-  ! grid cell. This should be approximately true at this point, but there have been a
-  ! number of adjustments to pctglac_o since its original remapping (e.g., setting values
-  ! < 1 to 0, and rescaling all percentages so that the total landcover is equal to
-  ! 100%). We need to essentially apply these same adjustments to pctglcmec_o.
-  ! 
-  ! To do this, we use the stored, uncorrected values of pctglac_o. In theory, we could do
-  ! this renormalization without reference to these uncorrected values, since
-  ! pctglac_o_uncorrected should equal the sum of pctglcmec_o across elevation classes for
-  ! each grid cell. However, pctglac_o_uncorrected is helpful for error checking: it
-  ! allows us to verify that the pctglcmec sums are correct (this check is done below).
-  ! 
-  ! Here we also rescale pctglcmec_gic_o and pctglcmec_icesheet_o similarly, to
-  ! achieve the same thing (i.e., we want sums to add up to pct_glacier)
+  ! Renormalize percentages to be given as % of landunit rather than % of grid cell.
+
+  allocate(pctglc_tot_o(ns_o), stat=ier)
+  if (ier/=0) call abort()  
+
   do no = 1,ns_o
-     if (pctglac_o_uncorrected(no) > 0) then
-        pctglcmec_o(no,:)          = pctglcmec_o(no,:)          * (pctglac_o(no) / pctglac_o_uncorrected(no))
-        pctglcmec_gic_o(no,:)      = pctglcmec_gic_o(no,:)      * (pctglac_o(no) / pctglac_o_uncorrected(no))
-        pctglcmec_icesheet_o(no,:) = pctglcmec_icesheet_o(no,:) * (pctglac_o(no) / pctglac_o_uncorrected(no))
-
-     else if (pctglac_o_uncorrected(no) == 0 .and. pctglac_o(no) > 0) then
-        ! There isn't a clear way to handle the case when pctglac_o_uncorrected==0 (and
-        ! hence pctglcmec_o==0 for all elevation classes) but pctglac_o==0. Fortunately,
-        ! this should never happen: the only place where there is a potential for this is
-        ! over the south pole, where pctglac_o is set to 100%.
-
-        write(6,*) 'ERROR in ', subname
-        write(6,*) 'pctglac_o_uncorrected==0 but pctglac_o > 0'
-        write(6,*) 'no = ', no
-        write(6,*) 'lon = ', tgridmap%xc_dst(no)
-        write(6,*) 'lat = ', tgridmap%yc_dst(no)
-        call abort()
+     pctglc_tot_o(no) = sum(pctglcmec_o(no,:))
+     
+     if (pctglc_tot_o(no) > 0._r8) then
+        pctglcmec_o(no,:)          = pctglcmec_o(no,:) / pctglc_tot_o(no) * 100._r8
+        pctglcmec_gic_o(no,:)      = pctglcmec_gic_o(no,:) / pctglc_tot_o(no) * 100._r8
+        pctglcmec_icesheet_o(no,:) = pctglcmec_icesheet_o(no,:) / pctglc_tot_o(no) * 100._r8
+        
+     else
+        ! Division of landunit is ambiguous. Apply the rule that all area is assigned to
+        ! the lowest elevation class, and all GIC.
+        pctglcmec_o(no,1) = 100._r8
+        pctglcmec_gic_o(no,1) = 100._r8
      end if
-
-     ! The only other possibility is that (pctglac_o_uncorrected(no) == 0 .and.
-     ! pctglac_o(no) == 0); but in this case, all pctglcmec_o(no,:) values should be 0
-     ! and can remain 0 (and similarly for pctglc_gic, pctglc_icesheet, etc.)
   end do
 
   ! Set pctglc_gic_o to sum of pctglcmec_gic_o across elevation classes, and similarly for pctglc_icesheet_o
@@ -422,68 +406,48 @@ subroutine mkglcmec(ldomain, mapfname, &
 
   errors = .false.
 
-  ! Check that sum over pctglcmec_o (from 1 to nglcec) is equal to pctglac_o(no)
-  !
-  ! Note: We use a threshold of 2e-5 rather than 1e-6 or smaller because there is single-
-  ! precision roundoff error in the storage of the flat (i.e., non-multi-level)
-  ! PCT_GLACIER variable on the input dataset (which is used to compute pctglac_o) (since
-  ! the input dataset uses single-precision floats)
+  ! Confirm that the sum over pctglcmec_o (from 1 to nglcec) is 100%
   do no = 1,ns_o
-     glc_sum = 0.
-     do m = 1,nglcec
-        glc_sum = glc_sum + pctglcmec_o(no,m)
-     end do
-     if (abs(glc_sum - pctglac_o(no)) > 2.e-5) then
-        write(6,*)'no,pctglc,pctglac= ',no,glc_sum,pctglac_o(no)
+     glc_sum = sum(pctglcmec_o(no,:))
+     if (abs(glc_sum - 100._r8) > eps_small) then
+        write(6,*)'glc_sum differs from 100% at no,pctglc= ',no,glc_sum
         errors = .true.
      end if
   end do
-
-  ! Check that GIC + ICESHEET = total glacier, for variables summed over elevation classes
-  !
-  ! Note: We use a threshold of 2e-5 rather than 1e-6 or smaller because there is single-
-  ! precision roundoff error in the storage of the flat (i.e., non-multi-level)
-  ! PCT_GLACIER variable on the input dataset (which is used to compute pctglac_o) (since
-  ! the input dataset uses single-precision floats)
+     
+  ! Confirm that GIC + ICESHEET = 100%
   do no = 1,ns_o
-     if (abs((pctglc_gic_o(no) + pctglc_icesheet_o(no)) - pctglac_o(no)) > 2.e-5) then
-        write(6,*)'no,pctglc_gic,pctglc_icesheet,pctglac,pctglac_uncorrected,lon,lat=',no,pctglc_gic_o(no),&
-             pctglc_icesheet_o(no),pctglac_o(no),pctglac_o_uncorrected(no),tgridmap%&
-             xc_dst(no),tgridmap%yc_dst(no)
+     if (abs((pctglc_gic_o(no) + pctglc_icesheet_o(no)) - 100._r8) > eps) then
+        write(6,*)'GIC + ICESHEET differs from 100% at no,pctglc_gic,pctglc_icesheet,lon,lat=', &
+             no,pctglc_gic_o(no),pctglc_icesheet_o(no),&
+             tgridmap%xc_dst(no),tgridmap%yc_dst(no)
         errors = .true.
      end if
   end do
-
-  ! Check that GIC + ICESHEET = total glacier, for each elevation class
-  do m = 1,nglcec
+     
+  ! Check that GIC + ICESHEET = total glacier at each elevation class
+  do m = 1, nglcec
      do no = 1,ns_o
-        if (abs((pctglcmec_gic_o(no,m) + pctglcmec_icesheet_o(no,m)) - pctglcmec_o(no,m)) > 1.e-6) then
-           write(6,*)'no,m,pctglcmec_gic,pctglcmec_icesheet,pctglcmec,lat,lon=',no,m,&
-                pctglcmec_gic_o(no,m),pctglcmec_icesheet_o(no,m),pctglcmec_o(no,m),&
-                tgridmap%xc_dst(no),tgridmap%yc_dst(no)
+        if (abs((pctglcmec_gic_o(no,m) + pctglcmec_icesheet_o(no,m)) - &
+                pctglcmec_o(no,m)) > eps) then
+           write(6,*)'GIC + ICESHEET differs from total GLC '
+           write(6,*)'at no,m,pctglcmec,pctglcmec_gic,pctglcmec_icesheet = '
+           write(6,*) no,m,pctglcmec_o(no,m),pctglcmec_gic_o(no,m),pctglcmec_icesheet_o(no,m)
            errors = .true.
         end if
      end do
   end do
 
+
   ! Error check: are all elevations within elevation class range
   do no = 1,ns_o
-     if (pctglac_o(no) .gt. minglac) then 
-        do m = 1,nglcec
-           ! WJS (7-12-11): the original check was ((topo outside range) and (topo .ne.
-           ! 0)). I think that the second condition is meant to essentially check whether
-           ! pctglcmec_o(no,m) > 0. So I think we could just check whether ((topo outside
-           ! range) and (pctglcmec_o(no,m) > 0). However, I am keeping a warning message
-           ! if ((topo outside range) and (topo .ne. 0)) as well, because I don't want to
-           ! get rid of error checks.
-           if ( (topoglcmec_o(no,m) .lt. elevclass(m) .or. topoglcmec_o(no,m) .gt. elevclass(m+1)) &
-                .and. (pctglcmec_o(no,m) .gt. 0 .or. topoglcmec_o(no,m) .ne. 0)) then
-              write(6,*) 'Error: mean elevation does not fall within elevation class '
-              write(6,*) elevclass(m),elevclass(m+1),topoglcmec_o(no,m),pctglcmec_o(no,m),m,no
-              errors = .true.
-           endif
-        end do
-     end if
+     do m = 1,nglcec
+        if (topoglcmec_o(no,m) < elevclass(m) .or. topoglcmec_o(no,m) > elevclass(m+1)) then
+           write(6,*) 'Error: mean elevation does not fall within elevation class '
+           write(6,*) elevclass(m),elevclass(m+1),topoglcmec_o(no,m),m,no
+           errors = .true.
+        endif
+     end do
   end do
 
   if (errors) then
@@ -496,6 +460,7 @@ subroutine mkglcmec(ldomain, mapfname, &
   call gridmap_clean(tgridmap)
   deallocate(pctglc_gic_i, pctglc_icesheet_i)
   deallocate(topoglcmec_unnorm_o)
+  deallocate(pctglc_tot_o)
   deallocate(starts, counts)
 
   write (6,*) 'Successfully made percent elevation class and mean elevation for glaciers'
@@ -510,7 +475,7 @@ end subroutine mkglcmec
 ! !IROUTINE: mkglacier
 !
 ! !INTERFACE:
-subroutine mkglacier(ldomain, mapfname, datfname, ndiag, zero_out, glac_o, glac_uncorrected)
+subroutine mkglacier(ldomain, mapfname, datfname, ndiag, zero_out, glac_o)
 !
 ! !DESCRIPTION:
 ! make percent glacier
@@ -541,8 +506,6 @@ subroutine mkglacier(ldomain, mapfname, datfname, ndiag, zero_out, glac_o, glac_
   integer           , intent(in) :: ndiag     ! unit number for diag out
   logical           , intent(in) :: zero_out  ! if should zero glacier out
   real(r8)          , intent(out):: glac_o(:) ! output grid: %glacier
-  real(r8)          , intent(out):: glac_uncorrected(:) ! output grid: %glacier before any
-                                                        ! corrections are done
 !
 ! !CALLED FROM:
 ! subroutine mksrfdat in module mksrfdatMod
@@ -610,10 +573,6 @@ subroutine mkglacier(ldomain, mapfname, datfname, ndiag, zero_out, glac_o, glac_
 
      call gridmap_areaave(tgridmap, glac_i, glac_o, nodata=0._r8)
      
-     ! Save a copy of glac_o before any corrections are done. This is needed for
-     ! normalization in mkglcmec
-     glac_uncorrected(:) = glac_o(:)
-
      do no = 1, ldomain%ns
         if (glac_o(no) < 1.) glac_o(no) = 0.
      enddo
@@ -748,7 +707,7 @@ integer function get_elevclass(topo, writewarn)
 !EOP
    integer :: m
    logical :: my_writewarn
-   character(len=32) :: subname = 'mkglcmec'
+   character(len=32) :: subname = 'get_elevclass'
 !-----------------------------------------------------------------------
    
    if (present(writewarn)) then
@@ -788,5 +747,46 @@ integer function get_elevclass(topo, writewarn)
 end function get_elevclass
          
 !-----------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: mean_elevation_vc
+!
+! !INTERFACE:
+real(r8) function mean_elevation_vc(class)
+!
+! !DESCRIPTION:
+! For a virtual column (thus, a column that has no true elevation data), return the
+! "mean" elevation of the given elevation class.
+!
+! !ARGUMENTS:
+  implicit none
+  integer, intent(in) :: class  ! elevation class
+!
+! !REVISION HISTORY:
+! Author: Bill Sacks
+!
+! !LOCAL VARIABLES:
+!EOP
+  character(len=32) :: subname = 'mean_elevation_vc'
+!-----------------------------------------------------------------------
+
+  if (class < nglcec) then
+     mean_elevation_vc = 0.5_r8 * (elevclass(class) + elevclass(class+1))
+  else if (class == nglcec) then
+     ! In the top elevation class; in this case, assignment of a "mean" elevation is
+     ! somewhat arbitrary
+
+     if (nglcec > 1) then
+        mean_elevation_vc = 2.0_r8*elevclass(class) - elevclass(class-1)
+     else
+        ! entirely arbitrary
+        mean_elevation_vc = 1000._r8
+     end if
+  else
+     write(6,*) 'ERROR in ', trim(subname), ': class out of bounds= ', class
+     call abort()
+  end if
+
+end function mean_elevation_vc
 
 end module mkglcmecMod

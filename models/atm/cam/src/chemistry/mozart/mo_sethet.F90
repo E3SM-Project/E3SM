@@ -6,9 +6,10 @@ module mo_sethet
 !                   HCN, CH3CN have new Henry's Law coefficients, HCOOH is set to CH3COOH
 ! LKE (10/18/2010): SO2 washout corrected based on recommendation of R.Easter, PNNL
 !
-
-  use cam_logfile, only: iulog
+  use shr_kind_mod,    only: r8 => shr_kind_r8
+  use cam_logfile,     only: iulog
   use gas_wetdep_opts, only: gas_wetdep_cnt, gas_wetdep_method, gas_wetdep_list
+  use phys_control,    only: phys_getopts
 
   private
   public :: sethet_inti, sethet
@@ -34,6 +35,9 @@ module mo_sethet
   integer :: sogm_ndx, sogi_ndx, sogt_ndx, sogb_ndx, sogx_ndx
   logical :: do_wetdep
 
+  ! prognostic modal aerosols
+  logical :: prog_modal_aero
+
 contains
 
   subroutine sethet_inti
@@ -49,6 +53,8 @@ contains
     
     do_wetdep = gas_wetdep_cnt>0 .and. gas_wetdep_method=='MOZ'
     if ( .not. do_wetdep) return
+
+    call phys_getopts( prog_modal_aero_out = prog_modal_aero )
 
     allocate( wetdep_map(gas_wetdep_cnt))
 
@@ -148,17 +154,17 @@ contains
 
   subroutine sethet( het_rates, press, zmid,  phis, tfld, &
                      cmfdqr, nrain, nevapr, delt, xhnm, &
-                     qin, ncol, lchnk, modal )
+                     qin, ncol, lchnk )
     !-----------------------------------------------------------------------      
     !       ... compute rainout loss rates (1/s)
     !-----------------------------------------------------------------------      
 
-    use shr_kind_mod, only : r8 => shr_kind_r8
     use physconst,    only : rga,pi
     use chem_mods,    only : gas_pcnst
     use ppgrid,       only : pver, pcols
     use phys_grid,    only : get_rlat_all_p
     use abortutils,   only : endrun
+    use mo_constants, only : avo => avogadro, boltz_cgs
 
     implicit none
     !-----------------------------------------------------------------------      
@@ -176,14 +182,11 @@ contains
     real(r8), intent(in)  ::    phis(pcols)                 ! surf geopot
     real(r8), intent(in)  ::    tfld(pcols,pver)            ! temperature (k)
     real(r8), intent(in)  ::    xhnm(ncol,pver)             ! total atms density ( /cm^3)
-    logical,  intent(in)  ::    modal
     real(r8), intent(out) ::    het_rates(ncol,pver,gas_pcnst) ! rainout loss rates
 
     !-----------------------------------------------------------------------      
     !       ... local variables
     !-----------------------------------------------------------------------      
-    real(r8), parameter ::  boltz = 1.38044e-16_r8      ! erg/K
-    real(r8), parameter ::  avo   = 6.023e23_r8         ! 1/mol
     real(r8), parameter ::  xrm   = .189_r8             ! mean diameter of rain drop (cm)
     real(r8), parameter ::  xum   = 748._r8             ! mean rain drop terminal velocity (cm/s)
     real(r8), parameter ::  xvv   = 6.18e-2_r8          ! kinetic viscosity (cm^2/s)
@@ -195,7 +198,7 @@ contains
     real(r8), parameter ::  satf_so2   = .016_r8        ! saturation factor for so2 in clouds 
     real(r8), parameter ::  satf_ch2o  = .1_r8          ! saturation factor for ch2o in clouds 
     real(r8), parameter ::  satf_sog  =  .016_r8        ! saturation factor for sog in clouds
-    real(r8), parameter ::  const0   = boltz * 1.e-6_r8 ! (atmospheres/deg k/cm^3)
+    real(r8), parameter ::  const0   = boltz_cgs * 1.e-6_r8 ! (atmospheres/deg k/cm^3)
     real(r8), parameter ::  hno3_diss = 15.4_r8         ! hno3 dissociation constant
     real(r8), parameter ::  geo_fac  = 6._r8            ! geometry factor (surf area/volume = geo_fac/diameter)
     real(r8), parameter ::  mass_air = 29._r8           ! mass of background atmosphere (amu)
@@ -733,15 +736,11 @@ contains
              work3(i) = satf_h2o2 * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_h2o2(i,k)*work2(i)))),0._r8 )    
              het_rates(i,k,h2o2_ndx) =  work3(i) + tmp_hetrates(i,k,1)
           end if
-          if ( modal ) then
-             if( so2_ndx > 0 ) then
-                het_rates(i,k,so2_ndx) = het_rates(i,k,h2o2_ndx)
-             end if
-          else
-             if( so2_ndx > 0 ) then
-                work3(i) = satf_so2 * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_so2( i,k)*work2(i)))),0._r8 )    
-                het_rates(i,k,so2_ndx ) =  work3(i) + tmp_hetrates(i,k,3)
-             end if
+          if ( prog_modal_aero .and. so2_ndx>0 .and. h2o2_ndx>0 ) then
+             het_rates(i,k,so2_ndx) = het_rates(i,k,h2o2_ndx)
+          elseif( so2_ndx > 0 ) then
+             work3(i) = satf_so2 * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_so2( i,k)*work2(i)))),0._r8 )    
+             het_rates(i,k,so2_ndx ) =  work3(i) + tmp_hetrates(i,k,3)
           endif
 !
           work3(i) = satf_sog * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_sog(i,k)*work2(i)))),0._r8 )

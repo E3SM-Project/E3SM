@@ -1,5 +1,375 @@
-SVN $Id: ChangeLog 47361 2013-05-21 20:54:30Z mlevy@ucar.edu $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20130521/ChangeLog $
+SVN $Id: ChangeLog 60240 2014-05-14 20:42:00Z mlevy@ucar.edu $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/trunk_tags/cesm_pop_2_1_20140514/ChangeLog $
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy, klindsay
+Tag Date:    14 May 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140514
+Tag Summary: OMP loop in ecosys_mod missing some private variable declarations
+
+Files Modified:
+M       source/ecosys_mod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy, klindsay
+Tag Date:    7 May 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140507
+Tag Summary: "if (b4b_flag)" was being used rather than "if (.not. b4b_flag)"
+             in 3 places leading to the wrong global reduction being used
+
+Files Modified:
+M       mpi/global_reductions.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    1 May 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140501
+Tag Summary: Add default values to ecosys and ecosys_parms namelist variables
+             (for documentation). Note that this still needs variable
+             descriptions.
+
+Files Modified:
+M       bld/namelist_files/namelist_definition_pop2.xml
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay, mlevy
+Tag Date:    29 Apr 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140429
+Tag Summary: Add support for RCP4.5 and RCP8.5 ocean transients and set
+             namelist defaults for BRCP45BDRD, BRCP85BDRD, and BRCP85BPRP
+             compsets
+
+Files Modified:
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_pop2.xml
+===============================================================================
+Tag Creator: mlevy
+Developers:  njn01, mlevy
+Tag Date:    20 Apr 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140420a
+Tag Summary: Update restart.F90 to allow POP to right restart mid-day
+
+Files Modified:
+M       source/restart.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    20 Apr 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140420
+Tag Summary: Cleaned up whitespace in pop2.buildnml.csh (proper indentation to
+             make script easier to read)
+
+Files Modified:
+M       bld/pop2.buildnml.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy, thoar
+Tag Date:    14 Mar 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140314
+Tag Summary: There was some un-necessary code for handling rpointer files in
+             multi-instance cases. This tag also cleans up how the variable
+             inst_string is determined (single print statement instead of
+             several if statements to prepend 0s)
+
+Files Modified:
+M       bld/pop2.buildnml.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  gokhan, ytseng
+Tag Date:    1 Mar 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140301
+Tag Summary: Units attribute of potential vorticity was incorrect in history
+             files
+
+Files Modified:
+M       source/advection.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    28 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140228
+Tag Summary: Despite fix in 20140227a tag, P_iron remin is still not always
+             computed correctly (there was a bug in my bug fix)
+
+Files Modified:
+M       source/ecosys_mod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    27 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140227e
+Tag Summary: New ecosys module wasn't broadcasting everything after reading
+             namelist (also wasn't writing everything to screen)
+
+Files Modified:
+M       source/ecosys_parms.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    27 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140227d
+Tag Summary: call to tfreez should be threaded (tfreez takes single block as
+             input)
+
+Files Modified:
+M       source/forcing.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  abaker, klindsay
+Tag Date:    27 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140227c
+Tag Summary: Diagnostic output in overflows wasn't printing proper overflow
+             index
+
+Files Modified:
+M       source/overflows.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    27 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140227b
+Tag Summary: overflows had a text field that was outputting ******* instead of
+             proper diagnostic values
+
+Files Modified:
+M       source/overflows.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    27 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140227a
+Tag Summary: P_iron remin is not always computed correctly
+
+Files Modified:
+M       source/ecosys_mod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    27 Feb 2014
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20140227
+Tag Summary: Ecosys diagnostics didn't initialize P_iron%sed_loss to zero and
+             had incorrect units for pfeToSed variable.
+
+Files Modified:
+M       source/ecosys_mod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  santos
+Tag Date:    20 Dec 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131220
+Tag Summary: Another bugfix related to updated compilers
+
+Files Modified:
+M       source/cfc_mod.F90
+M       source/cfc11_mod.F90
+M       source/tavg.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    5 Dec 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131205
+Tag Summary: Fix a bug in the creation of pop2.input_data_list -- there is one
+             binary file in the inputdata repository that requires a .hdr file
+             and now the hdr file is pulled from the repository (when needed)
+             by the check_input_data_script
+
+Files Modified:
+M       bld/build-namelist
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    2 Dec 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131202
+Tag Summary: Update default values for ecosys
+
+Files Modified:
+M       source/ecosys_parms.F90
+M       bld/namelist_files/namelist_defaults_pop2.xml
+===============================================================================
+Tag Creator: mlevy
+Developers:  santos
+Tag Date:    26 Nov 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131126
+Tag Summary: Getting POP ready for the xlf2003 compiler
+
+Files Modified:
+M       source/hmix_del2.F90
+M       source/hmix_del4.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    21 Nov 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131121a
+Tag Summary: Bugfix in ecosys module (see bugzilla #1866): Fe input was
+             over-writing the atmospheric Fe flux instead of being added.
+
+Files Modified:
+M       source/ecosys_mod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  njn01
+Tag Date:    21 Nov 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131121
+Tag Summary: Splitting the option to use reduced Arctic diffusivity out of the
+             near-interial wave mixing (use the larctic_bckgrnd_vdc namelist
+             variable, default is .false.)
+
+Files Modified:
+M       source/vmix_kpp.F90
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_pop2.xml
+M       bld/namelist_files/namelist_definition_pop2.xml
+===============================================================================
+Tag Creator: tcraig
+Developers:  tcraig
+Tag Date:    01 Nov 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131101
+Tag Summary: Fix rpointer permissions on 20131028 modification
+
+Files Modified:
+M       bld/pop2.buildnml.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  tcraig
+Tag Date:    28 Oct 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131028
+Tag Summary: Bugfix for re-running multi-instance from start of run (rather
+             than from restart file) -- pointer files were not always set
+             correctly.
+
+Files Modified:
+M       bld/pop2.buildnml.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  klindsay
+Tag Date:    25 Oct 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131025
+Tag Summary: Bugfixes in ecosys params. In bugz, see
+             1802 -- global Si balance
+             1803 -- scale length inconsistency
+
+             Also fixed some inconsistencies between default values set in POP
+             in ecosys_parms.F90 and the default values build-namelist puts in
+             pop2_in (the values in source have been modified to match the
+             namelist defaults)
+
+Files Modified:
+M       source/ecosys_mod.F90
+M       source/ecosys_parms.F90
+M       bld/namelist_files/namelist_defaults_pop2.xml
+===============================================================================
+Tag Creator: mlevy
+Developers:  mvertens
+Tag Date:    3 Oct 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20131003
+Tag Summary: Removal of mct2esmf calls and bug fixes for the BPRP and BDRD
+             compsets.
+
+Files Modified:
+M       drivers/cpl/ocn_comp_esmf.F90
+M       drivers/cpl/ocn_comp_mct.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mvertens
+Tag Date:    25 Sept 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130925
+Tag Summary: Merge comptype branch, which updates the driver to reduce code
+             reuse between the ESMF and MCT versions of the driver.
+
+Files Modified:
+ M      .
+M       bld/pop2.buildexe.csh
+D       drivers/cpl_share
+D       drivers/cpl_share/POP_CplIndices.F90
+D       drivers/cpl_mct
+D       drivers/cpl_mct/POP_FinalMod.F90
+D       drivers/cpl_mct/POP_MCT_vars_mod.F90
+D       drivers/cpl_mct/ocn_communicator.F90
+D       drivers/cpl_mct/ocn_comp_mct.F90
+D       drivers/cpl_mct/POP_InitMod.F90
+D       drivers/cpl_esmf
+D       drivers/cpl_esmf/POP_FinalMod.F90
+D       drivers/cpl_esmf/ocn_comp_esmf.F90
+D       drivers/cpl_esmf/POP_MCT_vars_mod.F90
+D       drivers/cpl_esmf/ocn_communicator.F90
+D       drivers/cpl_esmf/ocn_comp_mct.F90
+D       drivers/cpl_esmf/POP_InitMod.F90
+ M      drivers/cpl_none
+A  +    drivers/cpl
+A  +    drivers/cpl/POP_FinalMod.F90
+A  +    drivers/cpl/ocn_comp_esmf.F90
+A  +    drivers/cpl/ocn_import_export.F90
+A  +    drivers/cpl/POP_CplIndices.F90
+A  +    drivers/cpl/POP_MCT_vars_mod.F90
+A  +    drivers/cpl/ocn_communicator.F90
+A  +    drivers/cpl/ocn_comp_mct.F90
+A  +    drivers/cpl/POP_InitMod.F90
+===============================================================================
+Tag Creator: tcraig
+Developers:  tcraig
+Tag Date:    05 Sept 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130905
+Tag Summary: Merge cplupa branch, ifdef ESMF attributes, rename coupling
+             runoff fields, modify intent of coupling interface.
+
+Files Modified:
+M       drivers/cpl_share/POP_CplIndices.F90
+ M      drivers/cpl_mct
+M       drivers/cpl_mct/ocn_comp_mct.F90
+M       drivers/cpl_esmf/ocn_comp_esmf.F90
+ M      drivers/cpl_none
+M       drivers/cpl_none/POP_CouplingMod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  jedwards
+Tag Date:    18 July 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130718b
+Tag Summary: Change in how build-namelist expands environment variables
+
+Files Modified:
+M            49248   bld/build-namelist
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    18 July 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130718a
+Tag Summary: Change to build-namelist to handle $OCN_TRACER_MODULE as an array
+             rather than one big string.
+
+Files Modified:
+M            49243   bld/build-namelist
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    18 July 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130718
+Tag Summary: Fix to allow changes to domain_size.F90 and POP_DomainSizeMod.F90
+             in SourceMods/src.pop2
+
+Files Modified:
+M            49241   bld/pop2.buildexe.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  santos
+Tag Date:    9 July 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130709a
+Tag Summary: Three small changes to allow POP to build with intel's "-check
+             bounds" flag (checking for out of bounds memory access)
+
+Files Modified:
+M            48833   source/vmix_kpp.F90
+M            48833   source/hmix_gm.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy, klindsay
+Tag Date:    9 July 2013
+Tag Name:    pop2/trunk_tags/cesm_pop_2_1_20130709
+Tag Summary: Update to cfc fix implemented on Jan 28, 2013... that fix did not
+             handle branch runs correctly (based iinit_cfc_option on STARTDATE
+             rather than REFDATE)
+
+Files Modified:
+M            48822   bld/build-namelist
 ===============================================================================
 Tag Creator: mlevy
 Developers:  klindsay

@@ -50,10 +50,8 @@ program eismint3_glide
   type(glide_global_type) :: model        ! model instance
   type(eismint3_climate) :: climate
   type(ConfigSection), pointer :: config  ! configuration stuff
-!WHLTSTEP
-!  real(kind=rk) time
-  real(kind=dp) time
-  real(kind=dp) t1,t2
+  real(dp) time
+  real(dp) t1,t2
   integer clock,clock_rate
 
   call glimmer_GetCommandline()

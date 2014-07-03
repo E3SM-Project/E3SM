@@ -1,6 +1,4 @@
-
 program ccsm_driver
-
 
 !-------------------------------------------------------------------------------
 !
@@ -27,9 +25,7 @@ program ccsm_driver
    use ESMF
    use ccsm_comp_mod
 
-
    implicit none
-
 
    !--------------------------------------------------------------------------
    ! Local Variables
@@ -37,14 +33,14 @@ program ccsm_driver
    integer                    :: localrc
 #ifdef USE_ESMF_LIB
    character(len=ESMF_MAXSTR) :: compName
-   type(ESMF_CplComp)         :: ccsmComp
+   type(ESMF_CplComp)         :: drvcomp
 #endif
 
 
    !--------------------------------------------------------------------------
    ! Setup and initialize the communications and logging.  
    !--------------------------------------------------------------------------
-   call ccsm_pre_init()
+   call ccsm_pre_init1()
 
    !--------------------------------------------------------------------------
    ! Initialize ESMF.  This is done outside of the ESMF_INTERFACE ifdef
@@ -52,6 +48,11 @@ program ccsm_driver
    ! is not used.
    !--------------------------------------------------------------------------
    call ESMF_Initialize()
+
+   !--------------------------------------------------------------------------
+   ! Read in the configuration information and initialize the time manager.
+   !--------------------------------------------------------------------------
+   call ccsm_pre_init2()
 
 #ifdef USE_ESMF_LIB
 
@@ -61,24 +62,25 @@ program ccsm_driver
    ! finalize routines for this component are set.
    !--------------------------------------------------------------------------
    compName = "CESM_Component"
-   ccsmComp = ESMF_CplCompCreate(name=compName, rc=localrc)
+   drvcomp = ESMF_CplCompCreate(name=compName, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to create CESM Component')
 
-   call ESMF_CplCompSetServices(ccsmComp, userRoutine=ccsm_comp_register, &
-                                rc=localrc)
+   call ESMF_CplCompSetServices(drvcomp, userRoutine=ccsm_comp_register, &
+        rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to set services for CESM Comp')
 
    !--------------------------------------------------------------------------
    ! Call the initialize, run and finalize routines registered with the
    ! cap component.
    !--------------------------------------------------------------------------
-   call ESMF_CplCompInitialize(ccsmComp, rc=localrc)
+
+   call ESMF_CplCompInitialize(drvcomp, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to esmf initialize')
 
-   call ESMF_CplCompRun(ccsmComp, rc=localrc)
+   call ESMF_CplCompRun(drvcomp, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to esmf run')
 
-   call ESMF_CplCompFinalize(ccsmComp, rc=localrc)
+   call ESMF_CplCompFinalize(drvcomp, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to esmf finalize')
 
 #else

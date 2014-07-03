@@ -1,104 +1,53 @@
-
 module CNDVLightMod
-
-#if (defined CNDV)
-
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: LightMod
-!
-! !DESCRIPTION:
-! Calculate light competition
-! Update fpc for establishment routine
-! Called once per year
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Calculate light competition
+  ! Update fpc for establishment routine
+  ! Called once per year
+  !
+  ! !USES:
   use shr_kind_mod, only: r8 => shr_kind_r8
   use shr_const_mod, only : SHR_CONST_PI
-!
-! !PUBLIC TYPES:
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! !PUBLIC MEMBER FUNCTIONS:
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
   public :: Light
-!
-! !REVISION HISTORY:
-! Module created by Sam Levis following DGVMLightMod by Mariana Vertenstein
-!
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: Light
-!
-! !INTERFACE:
-  subroutine Light(lbg, ubg, lbp, ubp, num_natvegp, filter_natvegp)
-!
-! !DESCRIPTION:
-! Calculate light competition
-! Update fpc for establishment routine
-! Called once per year
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  subroutine Light(bounds, num_natvegp, filter_natvegp)
+    !
+    ! !DESCRIPTION:
+    ! Calculate light competition
+    ! Update fpc for establishment routine
+    ! Called once per year
+    !
+    ! !USES:
     use clmtype
-!
-! !ARGUMENTS:
+    use decompMod   , only : bounds_type
+    !
+    ! !ARGUMENTS:
     implicit none
-    integer, intent(in) :: lbg, ubg                  ! gridcell bounds
-    integer, intent(in) :: lbp, ubp                  ! pft bounds
-    integer, intent(in) :: num_natvegp               ! number of naturally-vegetated pfts in filter
-    integer, intent(in) :: filter_natvegp(ubp-lbp+1) ! pft filter for naturally-vegetated points
-!
-! !CALLED FROM:
-! subroutine dv in module CNDVMod
-!
-! !REVISION HISTORY:
-! Author: Sam Levis (adapted from Stephen Sitch's LPJ subroutine light)
-! 3/4/02, Peter Thornton: Migrated to new data structures.
-! 2005.10: Sam Levis updated to work with CN
-!
-! !LOCAL VARIABLES:
-!
-! local pointers to implicit in arguments
-!
-    integer , pointer :: ivt(:)       ! pft vegetation type
-    integer , pointer :: pgridcell(:) ! gridcell index of corresponding pft
-    integer , pointer :: tree(:)      ! ecophys const - tree pft or not
-    real(r8), pointer :: slatop(:)    !specific leaf area at top of canopy, projected area basis [m^2/gC]
-    real(r8), pointer :: dsladlai(:)  !dSLA/dLAI, projected area basis [m^2/gC]
-    real(r8), pointer :: woody(:)     ! ecophys const - woody pft or not
-    real(r8), pointer :: leafcmax(:)  ! (gC/m2) leaf C storage
-    real(r8), pointer :: deadstemc(:)     ! (gC/m2) dead stem C
-    real(r8), pointer :: dwood(:)         ! ecophys const - wood density (gC/m3)
-    real(r8), pointer :: reinickerp(:)    ! ecophys const - parameter in allomet
-    real(r8), pointer :: crownarea_max(:) ! ecophys const - tree maximum crown a
-    real(r8), pointer :: allom1(:)        ! ecophys const - parameter in allomet
-
-! local pointers to implicit inout arguments
-!
-    real(r8), pointer :: crownarea(:) ! area that each individual tree takes up (m^2)
-    real(r8), pointer :: fpcgrid(:)   ! foliar projective cover on gridcell (fraction)
-    real(r8), pointer :: nind(:)      ! number of individuals
-!
-!EOP
-!
-! !OTHER LOCAL VARIABLES:
+    type(bounds_type), intent(in) :: bounds  ! bounds
+    integer, intent(in) :: num_natvegp       ! number of naturally-vegetated pfts in filter
+    integer, intent(in) :: filter_natvegp(:) ! pft filter for naturally-vegetated points
+    !
+    ! !LOCAL VARIABLES:
     real(r8), parameter :: fpc_tree_max = 0.95_r8 !maximum total tree FPC
     integer  :: p,fp, g                           ! indices
-    real(r8) :: fpc_tree_total(lbg:ubg)
-    real(r8) :: fpc_inc_tree(lbg:ubg)
-    real(r8) :: fpc_inc(lbp:ubp)                  ! foliar projective cover increment (fraction)
-    real(r8) :: fpc_grass_total(lbg:ubg)
-    real(r8) :: fpc_shrub_total(lbg:ubg)
-    real(r8) :: fpc_grass_max(lbg:ubg)
-    real(r8) :: fpc_shrub_max(lbg:ubg)
-    integer  :: numtrees(lbg:ubg)
+    real(r8) :: fpc_tree_total(bounds%begg:bounds%endg)
+    real(r8) :: fpc_inc_tree(bounds%begg:bounds%endg)
+    real(r8) :: fpc_inc(bounds%begp:bounds%endp)                  ! foliar projective cover increment (fraction)
+    real(r8) :: fpc_grass_total(bounds%begg:bounds%endg)
+    real(r8) :: fpc_shrub_total(bounds%begg:bounds%endg)
+    real(r8) :: fpc_grass_max(bounds%begg:bounds%endg)
+    real(r8) :: fpc_shrub_max(bounds%begg:bounds%endg)
+    integer  :: numtrees(bounds%begg:bounds%endg)
     real(r8) :: excess
     real(r8) :: nind_kill
     real(r8) :: lai_ind
@@ -108,32 +57,31 @@ contains
     real(r8) :: stemdiam                          ! stem diameter
     real(r8) :: stocking                          ! #stems / ha (stocking density)
     real(r8) :: taper                             ! ratio of height:radius_breast_height (tree allometry)
+    !-----------------------------------------------------------------------
 
-!-----------------------------------------------------------------------
-
-    ! Assign local pointers to derived type scalar members
-
-    ivt           => clm3%g%l%c%p%itype
-    pgridcell     => clm3%g%l%c%p%gridcell
-    nind          => clm3%g%l%c%p%pdgvs%nind
-    fpcgrid       => clm3%g%l%c%p%pdgvs%fpcgrid
-    leafcmax      => clm3%g%l%c%p%pcs%leafcmax
-    deadstemc     => clm3%g%l%c%p%pcs%deadstemc
-    crownarea     => clm3%g%l%c%p%pdgvs%crownarea
-    crownarea_max => dgv_pftcon%crownarea_max
-    reinickerp    => dgv_pftcon%reinickerp
-    allom1        => dgv_pftcon%allom1
-    dwood         => pftcon%dwood
-    slatop        => pftcon%slatop
-    dsladlai      => pftcon%dsladlai
-    woody         => pftcon%woody
-    tree          => pftcon%tree
+   associate(& 
+   ivt           =>    pft%itype                 , & ! Input:  [integer (:)]  pft vegetation type                                
+   pgridcell     =>    pft%gridcell              , & ! Input:  [integer (:)]  gridcell index of corresponding pft                
+   nind          =>    pdgvs%nind                , & ! Input:  [real(r8) (:)]  number of individuals                             
+   fpcgrid       =>    pdgvs%fpcgrid             , & ! Input:  [real(r8) (:)]  foliar projective cover on gridcell (fraction)    
+   leafcmax      =>    pcs%leafcmax              , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C storage                            
+   deadstemc     =>    pcs%deadstemc             , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C                               
+   crownarea     =>    pdgvs%crownarea           , & ! Input:  [real(r8) (:)]  area that each individual tree takes up (m^2)     
+   crownarea_max =>    dgv_pftcon%crownarea_max  , & ! Input:  [real(r8) (:)]  ecophys const - tree maximum crown a              
+   reinickerp    =>    dgv_pftcon%reinickerp     , & ! Input:  [real(r8) (:)]  ecophys const - parameter in allomet              
+   allom1        =>    dgv_pftcon%allom1         , & ! Input:  [real(r8) (:)]  ecophys const - parameter in allomet              
+   dwood         =>    pftcon%dwood              , & ! Input:  [real(r8) (:)]  ecophys const - wood density (gC/m3)              
+   slatop        =>    pftcon%slatop             , & ! Input:  [real(r8) (:)] specific leaf area at top of canopy, projected area basis [m^2/gC]
+   dsladlai      =>    pftcon%dsladlai           , & ! Input:  [real(r8) (:)] dSLA/dLAI, projected area basis [m^2/gC]           
+   woody         =>    pftcon%woody              , & ! Input:  [real(r8) (:)]  ecophys const - woody pft or not                  
+   tree          =>    pftcon%tree                 & ! Input:  [integer (:)]  ecophys const - tree pft or not                    
+   )
 
     taper = 200._r8 ! make a global constant; used in Establishment + ?
 
     ! Initialize gridcell-level metrics
 
-    do g = lbg, ubg
+    do g = bounds%begg, bounds%endg
        fpc_tree_total(g) = 0._r8
        fpc_inc_tree(g) = 0._r8
        fpc_grass_total(g) = 0._r8
@@ -191,7 +139,7 @@ contains
        end if
     end do
 
-    do g = lbg, ubg
+    do g = bounds%begg, bounds%endg
        fpc_grass_max(g) = 1._r8 - min(fpc_tree_total(g), fpc_tree_max)
        fpc_shrub_max(g) = max(0._r8, fpc_grass_max(g) - fpc_grass_total(g))
     end do
@@ -271,8 +219,7 @@ contains
 
     end do
 
-  end subroutine Light
-
-#endif
+    end associate 
+   end subroutine Light
 
 end module CNDVLightMod

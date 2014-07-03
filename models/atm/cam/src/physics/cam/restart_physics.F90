@@ -69,6 +69,8 @@ module restart_physics
     use prescribed_ghg,      only: init_prescribed_ghg_restart
     use prescribed_aero,     only: init_prescribed_aero_restart
     use prescribed_volcaero, only: init_prescribed_volcaero_restart
+    use subcol_utils,        only: is_subcol_on
+    use subcol,              only: subcol_init_restart
 
     type(file_desc_t), intent(inout) :: file
     type(cam_out_t),   intent(in)    :: cam_out(begchunk:endchunk)
@@ -193,6 +195,9 @@ module restart_physics
       ierr = pio_def_var(File, 'cosp_cnt_init', pio_int, cospcnt_desc)
     end if
 
+    if (is_subcol_on()) then
+      call subcol_init_restart(file, hdimids)
+    end if
       
   end subroutine init_restart_physics
 
@@ -210,6 +215,8 @@ module restart_physics
       use radiation,          only: radiation_do
       use cam_pio_utils,      only: get_phys_decomp, fillvalue
       use spmd_utils,         only: iam
+      use subcol_utils,       only: is_subcol_on
+      use subcol,             only: subcol_write_restart
       !
       ! Input arguments
       !
@@ -230,6 +237,9 @@ module restart_physics
       !-----------------------------------------------------------------------
 
       ! Physics buffer
+      if (is_subcol_on()) then
+         call subcol_write_restart(File)
+      end if
 
       call pbuf_write_restart(File, pbuf2d)
 
@@ -242,7 +252,7 @@ module restart_physics
          call write_prescribed_ghg_restart(File)
          call write_prescribed_aero_restart(File)
          call write_prescribed_volcaero_restart(File)
-
+ 
 	 do i=begchunk,endchunk
             ncol = cam_out(i)%ncol
             if(ncol<pcols) then
@@ -486,6 +496,8 @@ module restart_physics
      use prescribed_ghg,     only: read_prescribed_ghg_restart
      use prescribed_aero,    only: read_prescribed_aero_restart
      use prescribed_volcaero,only: read_prescribed_volcaero_restart
+     use subcol_utils,       only: is_subcol_on
+     use subcol,             only: subcol_read_restart
      !
      ! Arguments
      !
@@ -512,6 +524,11 @@ module restart_physics
      call initialize_radbuffer()
 
      ! Physics buffer
+
+     ! subcol_read_restart must be called before pbuf_read_restart
+     if (is_subcol_on()) then
+        call subcol_read_restart(File)
+     end if
 
      call pbuf_read_restart(File, pbuf2d)
 

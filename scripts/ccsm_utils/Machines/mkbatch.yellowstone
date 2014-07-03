@@ -8,8 +8,6 @@ source ./Tools/ccsm_getenv || exit -1
 
 # Determine tasks and threads for batch queue 
 
-
-
 set maxthrds = 0
 set minthrds = $MAX_TASKS_PER_NODE
 @ n = 0
@@ -110,11 +108,9 @@ cat >! $file << EOF1
 #BSUB -J $CASE
 #BSUB -W ${time_limit}
 #BSUB -P ${account_name}
-
-setenv OMP_NUM_THREADS $maxthrds
-if($maxthrds>1) then
-  setenv MP_TASK_AFFINITY core:$maxthrds
-endif
+set maxthrds = $maxthrds
+source /glade/apps/opt/lmod/lmod/init/csh
+module load perlmods
 EOF1
 if ($?task_geo) then
 cat >> $file << EOF2
@@ -133,15 +129,23 @@ cat >> ${CASEROOT}/${CASE}.run << EOF1
 # -------------------------------------------------------------------------
 
 cd \$RUNDIR
-echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
-
-
-setenv MP_LABELIO yes
 sleep 10
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+setenv MP_LABELIO yes
+setenv OMP_NUM_THREADS \$maxthrds
 if ( "\$MPILIB" == "mpi-serial" ) then
     \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 else
-   mpirun.lsf  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+#   mpirun.lsf  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+    if( \$maxthrds > 1 ) then
+      unsetenv MP_PE_AFFINITY
+      unsetenv MP_TASK_AFFINITY
+      unsetenv MP_CPU_BIND_LIST 
+      mpirun.lsf \$CESMDATAROOT/tools/bin/hybrid_launch  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+    else
+      setenv TARGET_PROCESSOR_LIST AUTO_SELECT
+      mpirun.lsf \$CESMDATAROOT/tools/bin/launch  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+   endif
 endif
 
 wait
@@ -191,21 +195,34 @@ cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #-----------------------------------------------------------------------
 
 cd $CASEROOT 
-
+source /glade/apps/opt/lmod/lmod/init/csh
+module load perlmods
 source ./Tools/ccsm_getenv || exit -1
 
 #----------------------------------------------
-# compress ice and ocn history files
+# Compress selected history files
+#   1. Uncomment the following block of code
+#   2. Set complist to desired components
 #----------------------------------------------
-if (-e /glade/apps/opt/bin/pigz) then
-   set cmd = /glade/apps/opt/bin/pigz
-else
-   set cmd = gzip
-endif
-cd \$DOUT_S_ROOT/ice/hist
-\$cmd *
-cd \$DOUT_S_ROOT/ocn/hist
-\$cmd *
+# set complist="atm cpl ice lnd rof ocn"
+# date
+# echo ""
+# echo "Compression Timing" 
+# echo "------------------"
+# if (-e /glade/apps/opt/bin/pigz) then
+#    set cmd = /glade/apps/opt/bin/pigz
+# else
+#    set cmd = gzip
+# endif
+# set time=(3600 "%E %P %Uu %Ss")
+# foreach comp ( \$complist )
+#    cd \$DOUT_S_ROOT/\$comp/hist
+#    echo -n " \${comp}: "
+#    time \$cmd *
+# end
+# unset time
+# echo ""
+
 
 #----------------------------------------------
 # run the long term archiver

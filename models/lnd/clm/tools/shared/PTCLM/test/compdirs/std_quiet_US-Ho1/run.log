@@ -1,0 +1,7 @@
+/glade/apps/opt/ncl/6.1.2/gnu/4.4.6/bin/ncl
+lat=45.2041
+mapfile = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-Ho1_noocean_to_1x1pt_US-Ho1_nomask_aave_da_140204.nc
+scripgridfile = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-Ho1_nomask_c140204.nc
+domainfile = domain.lnd.1x1pt_US-Ho1_navy.140204.nc
+surface file = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/stdquiet_file_creation/1x1pt_US-Ho1/surfdata_1x1pt_US-Ho1_simyr2000_140204.nc
+surface log file = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/stdquiet_file_creation/1x1pt_US-Ho1/surfdata_1x1pt_US-Ho1_simyr2000_140204.log

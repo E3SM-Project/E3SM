@@ -33,7 +33,7 @@ module glimmer_sparse
   ! This module used to be a wrapper for the umfpack and pardiso solvers.
   ! These have been removed, and now it is just a wrapper for the slap solver.
 
-  use glimmer_global, only: sp, dp
+  use glimmer_global, only: dp
   use glimmer_sparse_type
   use glimmer_sparse_slap
 

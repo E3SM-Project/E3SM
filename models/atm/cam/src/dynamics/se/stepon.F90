@@ -74,7 +74,7 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
   use cam_history,    only: phys_decomp, addfld, add_default, dyn_decomp
   use control_mod,    only: smooth_phis_numcycle
   use gravity_waves_sources, only: gws_init
-  use phys_control,   only: do_waccm_phys
+  use phys_control,   only: use_gw_front
 
 ! !OUTPUT PARAMETERS
 !
@@ -94,10 +94,12 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 !-----------------------------------------------------------------------
 !BOC
 
+  ! This is not done in dyn_init due to a circular dependency issue.
   if(iam < par%nprocs) then
      call initEdgeBuffer(edgebuf, (3+pcnst)*nlev)
-     if (do_waccm_phys()) call gws_init
+     if (use_gw_front) call gws_init
   end if
+
   etamid(:) = hyam(:) + hybm(:)
 
 
@@ -272,7 +274,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
-      dyn_ps0=ps0/100.D0     
+      dyn_ps0=ps0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=2:  apply forcing to Q,ps.  Return dynamics tendencies

@@ -33,8 +33,8 @@
 module glint_global_interp
 
   use glint_global_grid
-  use glimmer_global
-
+  use glimmer_global, only: dp
+  use glimmer_physcon, only: pi
   implicit none
 
 contains
@@ -108,12 +108,12 @@ contains
     ! --------------------------------------------------------
 
     type(global_grid)                              :: in_grid
-    real(rk),dimension(:,:),         intent(in)    :: a
+    real(dp),dimension(:,:),         intent(in)    :: a
     type(global_grid)                              :: out_grid
-    real(rk),dimension(:,:),         intent(out)   :: ao
+    real(dp),dimension(:,:),         intent(out)   :: ao
     logical, dimension(:,:),optional,intent(inout) :: in_mask
     logical, dimension(:,:),optional,intent(inout) :: out_mask
-    real(rk),               optional,intent(in)    :: missing
+    real(dp),               optional,intent(in)    :: missing
     integer,                optional,intent(out)   :: error
 
     ! --------------------------------------------------------
@@ -122,20 +122,19 @@ contains
 
     logical, dimension(size(a,1) ,size(a,2))  :: mask
     logical, dimension(size(ao,1),size(ao,2)) :: masko
-    real(rk),dimension(size(a,1)+1)  :: alon
-    real(rk),dimension(size(a,2)+1)  :: alat
-    real(rk),dimension(size(ao,1)+1) :: alono
-    real(rk),dimension(size(ao,2)+1) :: alato
+    real(dp),dimension(size(a,1)+1)  :: alon
+    real(dp),dimension(size(a,2)+1)  :: alat
+    real(dp),dimension(size(ao,1)+1) :: alono
+    real(dp),dimension(size(ao,2)+1) :: alato
 
     ! --------------------------------------------------------
     ! Internal variables
     ! --------------------------------------------------------
 
     integer  :: idl,il,jl,idlo,ilo,jlo,ier
-    real(rk) :: api=3.1415926536
-    real(rk) :: amm,almx,almn,sgn,al,dln,almxo,almno,dlno,amnlto
-    real(rk) :: amxlto,amnlt,amxlt,amnlno,amxlno,amnln,amxln,wt,avg
-    real(rk) :: slatmx,wlat,slatmn,slon,slonp,slonmx,slonmn,delon
+    real(dp) :: amm,almx,almn,sgn,al,dln,almxo,almno,dlno,amnlto
+    real(dp) :: amxlto,amnlt,amxlt,amnlno,amxlno,amnln,amxln,wt,avg
+    real(dp) :: slatmx,wlat,slatmn,slon,slonp,slonmx,slonmn,delon
     integer  :: i,j,iil,iilo,j1,j2,jj,i1,i2,k,ii,iii,iip
 
     ! --------------------------------------------------------
@@ -400,7 +399,7 @@ contains
           do jj=j1,j2
              slatmx=max(alat(jj),alat(jj+1))
              slatmn=min(alat(jj),alat(jj+1))
-             wlat=max(sin(min(amxlto,slatmx)*api/180.)-sin(max(amnlto,slatmn)*api/180.),0.d0)
+             wlat=max(sin(min(amxlto,slatmx)*pi/180.d0)-sin(max(amnlto,slatmn)*pi/180.d0),0.d0)
              if (wlat /= 0.0) then
                 do iii=i1,i2
                    slon=dln

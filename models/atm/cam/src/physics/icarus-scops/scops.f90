@@ -95,8 +95,11 @@
       REAL ran(npoints)                 ! vector of random numbers
 
       INTEGER i8,irand,i2_16,huge32,overflow_32  ! variables for RNG
+      logical bigendian
       PARAMETER(huge32=2147483647)
       PARAMETER(i8 = selected_int_kind(13))
+
+      bigendian = (transfer(1_i8, 1) == 0)
       i2_16=65536
 
       do ibox=1,ncol
@@ -175,7 +178,7 @@
               enddo
           ELSE
               DO ibox=1,ncol
-                include 'congvec.f'
+                include 'congvec.inc'
                 ! select random pixels from the non-convective
                 ! part the gridbox ( some will be converted into
                 ! convective pixels below )
@@ -244,7 +247,7 @@
     
           ! Reset threshold 
 
-          include 'congvec.f'
+          include 'congvec.inc'
 
           do j=1,npoints
             threshold(j,ibox)=

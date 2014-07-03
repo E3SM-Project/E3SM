@@ -72,6 +72,7 @@ my %opts = (
 	       outnc_double=>undef,
 	       outnc_dims=>"2",     
                usrname=>"",
+               usr_mapdir=>"../../shared/mkmapdata",
                dynpft=>undef,
                csmdata=>$CSMDATA,
            );
@@ -97,6 +98,8 @@ SYNOPSIS
                                    NOTE: all mapping files are assumed to be in mkmapdata
                                     - and the user needs to have invoked mkmapdata in 
                                       that directory first
+        -usr_mapdir "mapdirectory" Directory where the user-supplied mapping files are
+                                   Default: $opts{'usr_mapdir'}
 
 OPTIONS
      -allownofile                  Allow the script to run even if one of the input files
@@ -243,6 +246,7 @@ sub trim($)
         "r|res=s"      => \$opts{'hgrid'},
         "usr_gname=s"  => \$opts{'usr_gname'},
         "usr_gdate=s"  => \$opts{'usr_gdate'},
+        "usr_mapdir=s" => \$opts{'usr_mapdir'},
         "crop"         => \$opts{'crop'},
         "irrig"        => \$opts{'irrig'},
         "hires"        => \$opts{'hires'},
@@ -418,7 +422,7 @@ EOF
          $hgrd{$typ} = $hgrid;
          $lmsk{$typ} = $lmask;
 	 if ( $opts{'hgrid'} eq "usrspec" ) {
-	     $map{$typ} = "../../shared/mkmapdata/map_${hgrid}_${lmask}_to_${res}_nomask_aave_da_c${mapdate}\.nc";
+	     $map{$typ} = $opts{'usr_mapdir'}."/map_${hgrid}_${lmask}_to_${res}_nomask_aave_da_c${mapdate}\.nc";
 	 } else {
 	     $map{$typ} = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts -namelist clmexp -options frm_hgrid=$hgrid,frm_lmask=$lmask,to_hgrid=$res,to_lmask=nomask -var map`;
 	 }	     
@@ -778,7 +782,7 @@ EOF
                   }
                }
    
-            } else {
+            } elsif( ! $opts{'debug'} ) {
               die "ERROR files were NOT created: nc=$ncfiles[0] log=$lfiles[0]\n";
             }
             if ( (! $opts{'debug'}) && $opts{'mv'} && (-f "$ncfiles[0]" || -f "$lfiles[0]") ) {

@@ -1,105 +1,62 @@
 module CNDVMod
-
-#if (defined CNDV)
-
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: CNDVMod
-!
-! !DESCRIPTION:
-! Module containing routines to drive the annual dynamic vegetation
-! that works with CN, reset related variables,
-! and initialize/reset time invariant variables
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Module containing routines to drive the annual dynamic vegetation
+  ! that works with CN, reset related variables,
+  ! and initialize/reset time invariant variables
+  !
+  ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use abortutils          , only : endrun
   use CNVegStructUpdateMod, only : CNVegStructUpdate
-!
-! !PUBLIC TYPES:
+  use decompMod           , only : bounds_type
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  !
+  ! !PUBLIC TYPES:
   implicit none
   private
   save
-!
-! !PUBLIC MEMBER FUNCTIONS:
-  public dv                 ! Drives the annual dynamic vegetation that
-                            ! works with CN
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public dv                 ! Drives the annual dynamic vegetation that  works with CN
   public histCNDV           ! Output CNDV history file
-!
-! !REVISION HISTORY:
-! Module modified by Sam Levis from similar module DGVMMod
-! created by Mariana Vertenstein
-!
-!EOP
-!-----------------------------------------------------------------------
+  !
+  ! !PRIVATE MEMBER FUNCTIONS:
+  private set_dgvm_filename
+  private buildnatvegfilter
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: dv
-!
-! !INTERFACE:
-  subroutine dv(lbg, ubg, lbp, ubp, num_natvegp, filter_natvegp, kyr)
-!
-! !DESCRIPTION:
-! Drives the annual dynamic vegetation that works with CN
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  subroutine dv(bounds, num_natvegp, filter_natvegp, kyr)
+    !
+    ! !DESCRIPTION:
+    ! Drives the annual dynamic vegetation that works with CN
+    !
+    ! !USES:
     use clmtype
     use CNDVLightMod        , only : Light
     use CNDVEstablishmentMod, only : Establishment
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
-    integer, intent(in) :: lbg, ubg       ! gridcell bounds
-    integer, intent(in) :: lbp, ubp       ! pft bounds
-    integer, intent(inout) :: num_natvegp ! number of naturally-vegetated
-                                          ! pfts in filter
-    integer, intent(inout) :: filter_natvegp(ubp-lbp+1) ! filter for
-                                          ! naturally-vegetated pfts
-    integer, intent(in) :: kyr            ! used in routine climate20 below
-!
-! !CALLED FROM:
-!
-! !REVISION HISTORY:
-! Author: Sam Levis
-!
-! !LOCAL VARIABLES:
-!
-! local pointers to implicit in arguments
-!
-   integer , pointer :: mxy(:)         ! pft m index (for laixy(i,j,m),etc.)
-   integer , pointer :: pgridcell(:)   ! gridcell of corresponding pft
-   real(r8), pointer :: fpcgrid(:)     ! foliar projective cover on gridcell (fraction)
-   real(r8), pointer :: agdd(:)        ! accumulated growing degree days above 5
-   real(r8), pointer :: t_mo_min(:)    ! annual min of t_mo (Kelvin)
-!
-! local pointers to implicit inout arguments
-!
-   real(r8), pointer :: tmomin20(:)         ! 20-yr running mean of tmomin
-   real(r8), pointer :: agdd20(:)           ! 20-yr running mean of agdd
-!
-!EOP
-!
-! !LOCAL VARIABLES:
-    integer  :: g,p                    ! indices
-!-----------------------------------------------------------------------
+    type(bounds_type), intent(in) :: bounds     ! bounds
+    integer, intent(inout) :: num_natvegp       ! number of naturally-vegetated pfts in filter
+    integer, intent(inout) :: filter_natvegp(:) ! filter for naturally-vegetated pfts
+    integer, intent(in) :: kyr                  ! used in routine climate20 below
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p                    ! pft index
+    !-----------------------------------------------------------------------
 
-    ! Assign local pointers to derived type members (gridcell-level)
-
-    agdd20    => clm3%g%gdgvs%agdd20
-    tmomin20  => clm3%g%gdgvs%tmomin20
-
-    ! Assign local pointers to derived type members (pft-level)
-
-    mxy       => clm3%g%l%c%p%mxy
-    pgridcell => clm3%g%l%c%p%gridcell
-    fpcgrid   => clm3%g%l%c%p%pdgvs%fpcgrid
-    t_mo_min  => clm3%g%l%c%p%pdgvs%t_mo_min
-    agdd      => clm3%g%l%c%p%pdgvs%agdd
+   associate(& 
+   agdd20      => pdgvs%agdd20   , & ! InOut: [real(r8) (:)]  20-yr running mean of agdd                        
+   tmomin20    => pdgvs%tmomin20 , & ! InOut: [real(r8) (:)]  20-yr running mean of tmomin                      
+   fpcgrid     => pdgvs%fpcgrid  , & ! Input:  [real(r8) (:)]  foliar projective cover on gridcell (fraction)    
+   t_mo_min    => pdgvs%t_mo_min , & ! Input:  [real(r8) (:)]  annual min of t_mo (Kelvin)                       
+   agdd        => pdgvs%agdd       & ! Input:  [real(r8) (:)]  accumulated growing degree days above 5           
+   )
 
     ! *************************************************************************
     ! S. Levis version of LPJ's routine climate20: 'Returns' tmomin20 & agdd20
@@ -108,54 +65,48 @@ contains
     ! use 20-yr running mean of minimum 10-day running mean
     ! *************************************************************************
 
-    do p = lbp,ubp
-       g = pgridcell(p)
+    do p = bounds%begp, bounds%endp
        if (kyr == 2) then ! slevis: add ".and. start_type==arb_ic" here?
-          tmomin20(g) = t_mo_min(p) ! NO, b/c want to be able to start dgvm
-          agdd20(g) = agdd(p)       ! w/ clmi file from non-dgvm simulation
+          tmomin20(p) = t_mo_min(p) ! NO, b/c want to be able to start dgvm
+          agdd20(p) = agdd(p)       ! w/ clmi file from non-dgvm simulation
        end if
-       tmomin20(g) = (19._r8 * tmomin20(g) + t_mo_min(p)) / 20._r8
-       agdd20(g)   = (19._r8 * agdd20(g)   + agdd(p)    ) / 20._r8
+       tmomin20(p) = (19._r8 * tmomin20(p) + t_mo_min(p)) / 20._r8
+       agdd20(p)   = (19._r8 * agdd20(p)   + agdd(p)    ) / 20._r8
     end do
 
     ! Rebuild filter of present natually-vegetated pfts after Kill()
 
-    call BuildNatVegFilter(lbp, ubp, num_natvegp, filter_natvegp)
+    call BuildNatVegFilter(bounds, num_natvegp, filter_natvegp)
 
     ! Returns fpcgrid and nind
 
-    call Light(lbg, ubg, lbp, ubp, num_natvegp, filter_natvegp)
+    call Light(bounds, num_natvegp, filter_natvegp)
 
     ! Returns updated fpcgrid, nind, crownarea, and present. Due to updated
     ! present, we do not use the natveg filter in this subroutine.
 
-    call Establishment(lbg, ubg, lbp, ubp)
+    call Establishment(bounds)
 
     ! Reset dgvm variables needed in next yr (too few to keep subr. dvreset)
 
-    do p = lbp,ubp
-       clm3%g%l%c%p%pcs%leafcmax(p) = 0._r8
-       clm3%g%l%c%p%pdgvs%t_mo_min(p) = 1.0e+36_r8
+    do p = bounds%begp,bounds%endp
+       pcs%leafcmax(p) = 0._r8
+       pdgvs%t_mo_min(p) = 1.0e+36_r8
     end do
+    end associate 
   end subroutine dv
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: histCNDV
-!
-! !INTERFACE:
-  subroutine histCNDV()
-!
-! !DESCRIPTION:
-! Create CNDV history file
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  subroutine histCNDV(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Create CNDV history file
+    !
+    ! !USES:
     use clmtype
-    use decompMod       , only : get_proc_bounds, get_proc_global
     use clm_varpar      , only : maxpatch_pft
     use domainMod       , only : ldomain
-    use clm_varctl      , only : caseid, ctitle, finidat, fsurdat, fpftcon, iulog
+    use clm_varctl      , only : caseid, ctitle, finidat, fsurdat, paramfile, iulog
     use clm_varcon      , only : spval
     use clm_time_manager, only : get_ref_date, get_nstep, get_curr_date, get_curr_time
     use fileutils       , only : get_filename
@@ -163,37 +114,16 @@ contains
     use spmdMod         , only : masterproc
     use shr_const_mod   , only : SHR_CONST_CDAY
     use ncdio_pio
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
-!
-! !CALLED FROM:
-!
-! !REVISION HISTORY:
-! Author: Sam Levis
-!
-! !LOCAL VARIABLES:
-!
-! local pointers to implicit in arguments
-!
-   logical , pointer :: ifspecial(:)        ! true=>landunit is not vegetated (landunit-level)
-   integer , pointer :: pgridcell(:)        ! gridcell index of corresponding pft (pft-level)
-   integer , pointer :: plandunit(:)        ! landunit index of corresponding pft (pft-level)
-   integer , pointer :: mxy(:)              ! pft m index (for laixy(i,j,m),etc.)
-   real(r8), pointer :: fpcgrid(:)          ! foliar projective cover on gridcell (fraction)
-   real(r8), pointer :: nind(:)             ! number of individuals (#/m**2)
-!
-!EOP
-!
-! !LOCAL VARIABLES:
+    type(bounds_type), intent(in) :: bounds  ! bounds
+    !
+    ! !LOCAL VARIABLES:
     character(len=256) :: dgvm_fn      ! dgvm history filename
     type(file_desc_t)  :: ncid         ! netcdf file id
     integer :: ncprec                  ! output precision
     integer :: g,p,l                   ! indices
-    integer :: begp, endp              ! per-proc beginning and ending pft indices
-    integer :: begc, endc              ! per-proc beginning and ending column indices
-    integer :: begl, endl              ! per-proc beginning and ending landunit indices
-    integer :: begg, endg              ! per-proc gridcell ending gridcell indices
     integer :: ier                     ! error status
     integer :: mdcur, mscur, mcdate    ! outputs from get_curr_time
     integer :: yr,mon,day,mcsec        ! outputs from get_curr_date
@@ -207,32 +137,18 @@ contains
     character(len=  8) :: curtime      ! current time
     character(len= 10) :: basedate     ! base date (yyyymmdd)
     character(len=  8) :: basesec      ! base seconds
-    real(r8), pointer :: rbuf2dg(:,:)  ! temporary
+    real(r8) , pointer :: rbuf2dg (:,:)   ! Input:  [real(r8) (:,:)]  temporary 
     character(len=32) :: subname='histCNDV'
-!-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
 
-    ! Assign local pointers to derived type members (gridcell-level)
+   associate(& 
+   fpcgrid => pdgvs%fpcgrid , & ! Input:  [real(r8) (:)]  foliar projective cover on gridcell (fraction)    
+   nind    => pdgvs%nind      & ! Input:  [real(r8) (:)]  number of individuals (#/m**2)                    
+   )
 
-    ! NONE
-
-    ! Assign local pointers to derived type members (landunit-level)
-
-    ifspecial  => clm3%g%l%ifspecial
-
-    ! Assign local pointers to derived subtypes components (pft-level)
-
-    mxy       => clm3%g%l%c%p%mxy
-    pgridcell => clm3%g%l%c%p%gridcell
-    plandunit => clm3%g%l%c%p%landunit
-    fpcgrid   => clm3%g%l%c%p%pdgvs%fpcgrid
-    nind      => clm3%g%l%c%p%pdgvs%nind
-
-    ! Determine subgrid bounds for this processor and allocate dynamic memory
-
-    call get_proc_bounds(begg, endg, begl, endl, begc, endc, begp, endp)
-
-    allocate(rbuf2dg(begg:endg,maxpatch_pft), stat=ier)
-    if (ier /= 0) call endrun('histCNDV: allocation error for rbuf2dg')
+    allocate(rbuf2dg(bounds%begg:bounds%endg,maxpatch_pft), stat=ier)
+    if (ier /= 0) call endrun(msg='histCNDV: allocation error for rbuf2dg'//&
+         errMsg(__FILE__, __LINE__))
 
     ! Set output precision
 
@@ -257,7 +173,8 @@ contains
     call ncd_putatt(ncid, ncd_global,'history', trim(str))
     
     call shr_sys_getenv('LOGNAME', str, ier)
-    if (ier /= 0) call endrun('error: LOGNAME environment variable not defined')
+    if (ier /= 0) call endrun(msg='error: LOGNAME environment variable not defined'//&
+         errMsg(__FILE__, __LINE__))
        
     call ncd_putatt (ncid, ncd_global, 'logname', trim(str))
        
@@ -286,7 +203,7 @@ contains
     if (finidat /= ' ') str = get_filename(finidat)
     call ncd_putatt(ncid, ncd_global, 'Initial_conditions_dataset',  trim(str))
 
-    str = get_filename(fpftcon)
+    str = get_filename(paramfile)
     call ncd_putatt(ncid, ncd_global, 'PFT_physiological_constants_dataset', trim(str))
 
     ! -----------------------------------------------------------------------
@@ -434,20 +351,20 @@ contains
     ! The if .not. ifspecial statment below guarantees that the m index will
     ! always lie between 1 and maxpatch_pft
 
-    rbuf2dg(:,:) = 0._r8
-    do p = begp,endp
-       g = pgridcell(p)
-       l = plandunit(p)
-       if (.not. ifspecial(l)) rbuf2dg(g,mxy(p)) = fpcgrid(p)*100._r8
+    rbuf2dg(bounds%begg : bounds%endg, :) = 0._r8
+    do p = bounds%begp,bounds%endp
+       g = pft%gridcell(p)
+       l = pft%landunit(p)
+       if (.not. lun%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = fpcgrid(p)*100._r8
     end do
     call ncd_io(ncid=ncid, varname='FPCGRID', dim1name=grlnd, data=rbuf2dg, &
          nt=1, flag='write')
 
-    rbuf2dg(:,:) = 0._r8
-    do p = begp,endp
-       g = pgridcell(p)
-       l = plandunit(p)
-       if (.not. ifspecial(l)) rbuf2dg(g,mxy(p)) = nind(p)
+    rbuf2dg(bounds%begg : bounds%endg, :) = 0._r8
+    do p = bounds%begp,bounds%endp
+       g = pft%gridcell(p)
+       l = pft%landunit(p)
+       if (.not. lun%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = nind(p)
     end do
     call ncd_io(ncid=ncid, varname='NIND', dim1name=grlnd, data=rbuf2dg, &
          nt=1, flag='write')
@@ -467,40 +384,29 @@ contains
             trim(dgvm_fn), 'at nstep = ',get_nstep()
     end if
 
+    end associate 
   end subroutine histCNDV
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: set_dgvm_filename
-!
-! !INTERFACE:
+  !-----------------------------------------------------------------------
   character(len=256) function set_dgvm_filename ()
-!
-! !DESCRIPTION:
-! Determine initial dataset filenames
-!
-! !USES:
+    !
+    ! !DESCRIPTION:
+    ! Determine initial dataset filenames
+    !
+    ! !USES:
     use clm_varctl       , only : caseid, inst_suffix
     use clm_time_manager , only : get_curr_date
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
-!
-! !CALLED FROM:
-!
-! !REVISION HISTORY:
-! Author: Mariana Vertenstein
-!
-!EOP
-!
-! !LOCAL VARIABLES:
+    !
+    ! !LOCAL VARIABLES:
     character(len=256) :: cdate       !date char string
     integer :: day                    !day (1 -> 31)
     integer :: mon                    !month (1 -> 12)
     integer :: yr                     !year (0 -> ...)
     integer :: sec                    !seconds into current day
-!-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
 
     call get_curr_date (yr, mon, day, sec)
     write(cdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr,mon,day,sec
@@ -509,54 +415,33 @@ contains
 
   end function set_dgvm_filename
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: BuildNatVegFilter
-!
-! !INTERFACE:
-  subroutine BuildNatVegFilter(lbp, ubp, num_natvegp, filter_natvegp)
-!
-! !DESCRIPTION:
-! Reconstruct a filter of naturally-vegetated PFTs for use in DGVM
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  subroutine BuildNatVegFilter(bounds, num_natvegp, filter_natvegp)
+    !
+    ! !DESCRIPTION:
+    ! Reconstruct a filter of naturally-vegetated PFTs for use in DGVM
+    !
+    ! !USES:
     use clmtype
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
-    integer, intent(in)  :: lbp, ubp                   ! pft bounds
-    integer, intent(out) :: num_natvegp                ! number of pfts in naturally-vegetated filter
-    integer, intent(out) :: filter_natvegp(ubp-lbp+1)  ! pft filter for naturally-vegetated points
-!
-! !CALLED FROM:
-! subroutine lpj in this module
-!
-! !REVISION HISTORY:
-! Author: Forrest Hoffman
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in arguments
-    logical , pointer :: present(:)     ! whether this pft present in patch
-!EOP
-!
-! !LOCAL VARIABLES:
+    type(bounds_type), intent(in) :: bounds   ! bounds
+    integer, intent(out) :: num_natvegp       ! number of pfts in naturally-vegetated filter
+    integer, intent(out) :: filter_natvegp(:) ! pft filter for naturally-vegetated points
+    !
+    ! !LOCAL VARIABLES:
     integer :: p
-!-----------------------------------------------------------------------
-
-    ! Assign local pointers to derived type members (pft-level)
-    present   => clm3%g%l%c%p%pdgvs%present
+    !-----------------------------------------------------------------------
 
     num_natvegp = 0
-    do p = lbp,ubp
-       if (present(p)) then
+    do p = bounds%begp,bounds%endp
+       if (pdgvs%present(p)) then
           num_natvegp = num_natvegp + 1
           filter_natvegp(num_natvegp) = p
        end if
     end do
 
   end subroutine BuildNatVegFilter
-
-#endif
 
 end module CNDVMod

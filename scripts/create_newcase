@@ -15,6 +15,25 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 
+# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
+# If not found, print a warning message then exit. 
+eval {
+    require XML::LibXML;
+    XML::LibXML->import();
+};
+if($@)
+{
+    my $warning = <<END;
+WARNING:
+    The perl module XML::LibXML is needed for XML parsing in the CESM script system.  
+	Please contact your local systems administrators or IT staff and have them install it for 
+	you, or install the module locally.  
+
+END
+	print "$warning\n";
+    exit(1);
+}
+
 
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
@@ -29,8 +48,8 @@ use IO::Handle;
 
 (my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
 my $ProgDir = $1;                      # name of directory containing this script -- may be a
-                                       # relative or absolute path, or null if the script is in
-                                       # the user's PATH
+# relative or absolute path, or null if the script is in
+# the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
@@ -46,8 +65,8 @@ EOF
 
 
 #-----------------------------------------------------------------------------------------------
-if ($#ARGV == -1) {
-    usage();
+    if ($#ARGV == -1) {
+	usage();
 }
 my $machdir="$cfgdir/ccsm_utils/Machines";
 
@@ -55,71 +74,68 @@ my $machdir="$cfgdir/ccsm_utils/Machines";
 
 sub usage {
     die <<EOF;
-SYNOPSIS
-     create_newcase [options]
-OPTIONS
-     User supplied values are denoted in angle brackets (<>).  Any value that contains
-     white-space must be quoted.  Long option names may be supplied with either single
-     or double leading dashes.  A consequence of this is that single letter options may
-     NOT be bundled.
+    SYNOPSIS
+	create_newcase [options]
+	OPTIONS
+	User supplied values are denoted in angle brackets (<>).  Any value that contains
+	white-space must be quoted.  Long option names may be supplied with either single
+	or double leading dashes.  A consequence of this is that single letter options may
+	NOT be bundled.
 
-     -case <name>         Specifies the case name (required).
-     -compset <name>      Specify a CESM compset (required).
-     -res <name>          Specify a CESM grid resolution (required).
-     -mach <name>         Specify a CESM machine (required).
-     -compiler <name>     Specify a compiler for the target machine (optional)
-                          default: default compiler for the target machine
-     -mpilib <name>       Specify a mpi library for the target machine (optional)
-                          default: default mpi library for the target machine
-                          allowed: openmpi, mpich, ibm, mpi-serial, etc
-                          redundant with _M confopts setting
-     -mach_dir <path>     Specify the locations of the Machines directory (optional).
-                          default: $machdir
-     -confopts <value>    Specify some addition configuration options (optional)
-                          _AOA = aoflux on atm grid
-                          _AOE = aoflux on exch grid
-                          _CG  = gregorian calendar
-                          _D   = debug
-                          _E   = esmf interfaces
-                          _IOP*= PnetCDF IO test where * is 
-			         A(atm), C(cpl), G(glc) , I(ice), L(clm), O(ocn), 
-			         W(wav) or blank (all components)
-                          _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
+	-case <name>         Specifies the case name (required).
+	-compset <name>      Specify a CESM compset (required).
+	-res <name>          Specify a CESM grid resolution (required).
+	-mach <name>         Specify a CESM machine (required).
+	-compiler <name>     Specify a compiler for the target machine (optional)
+      default: default compiler for the target machine
+      -mpilib <name>       Specify a mpi library for the target machine (optional)
+    default: default mpi library for the target machine
+  allowed: openmpi, mpich, ibm, mpi-serial, etc
+  redundant with _M confopts setting
+  -mach_dir <path>     Specify the locations of the Machines directory (optional).
+ default: $machdir
+ -user_mods_dir <path>Path to directory with user_nl_* files and xmlchange_cmnds to use (optional).
+ -confopts <value>    Specify some addition configuration options (optional)
+ _AOA = aoflux on atm grid
+ _AOE = aoflux on exch grid
+ _CG  = gregorian calendar
+ _D   = debug
+ _E   = esmf interfaces
+ _IOP*= PnetCDF IO test where * is 
+ A(atm), C(cpl), G(glc) , I(ice), L(clm), O(ocn), 
+ W(wav) or blank (all components)
+ _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
                           _M*  = set the mpilib where * is default, mpi-serial, mpich, etc
                           _N*  = set NINST_ env value to * where * is an integer
                           _P*  = set pecount to specific values include T,S,M,L,X,1,1x1,16,16x1,4x4, etc
-                          _R*  = PTS_MODE test case, valid values are LA, LB, OA, OB
-     -pecount <name>      Value of S,M,L,X1,X2 (optional). 
-                          default: M, partially redundant with confopts _P
-     -pes_file <name>     Full pathname of pes file to use (will overwrite default settings) (optional).
-                          See sample_pes_file.xml for an example.
-     -user_compset        Long name for new user compset to use (optional)
-                          This assumes that all of the compset settings in the long name have been defined
-			  in ccsm_utils/Case.template/config_compsets.xml
-     -user_grid_file <name>  Full pathname of grid file to use (optional)
-                          This should be a "copy" of ccsm_utils/Case.template/config_grid.xml with the
-                          new user grid changes added to it
-     -help [or -h]        Print usage to STDOUT (optional).
-     -list <type>         Only list valid values, type can be [compsets, grids, machines] (optional).
-     -testlist            List valid values for tests [normally only invoked by create_test] (optional).
-     -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
-     -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
-     -xmlmode <name>      Sets format of xml files; normal or expert (optional). (default is normal) 
-     -nowarning           Turns off checking of the known_problems repository. (default is on)
+			  -pecount <name>      Value of S,M,L,X1,X2 (optional). 
+			default: M, partially redundant with confopts _P
+			-pes_file <name>     Full pathname of pes file to use (will overwrite default settings) (optional).
+			See sample_pes_file.xml for an example.
+			-user_compset        Long name for new user compset to use (optional)
+			This assumes that all of the compset settings in the long name have been defined
+			in ccsm_utils/Case.template/config_compsets.xml
+			-user_grid_file <name>  Full pathname of grid file to use (optional)
+			This should be a "copy" of ccsm_utils/Case.template/config_grid.xml with the
+			new user grid changes added to it
+			-help [or -h]        Print usage to STDOUT (optional).
+			-list <type>         Only list valid values, type can be [compsets, grids, machines] (optional).
+			-testlist            List valid values for tests [normally only invoked by create_test] (optional).
+			-silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
+			-verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
+			-xmlmode <name>      Sets format of xml files; normal or expert (optional). (default is normal) 
+			-nowarning           Turns off checking of the known_problems repository. (default is on)
+			-sharedlibroot       Used for re-using build components when building multiple CESM cases, default is \$EXEROOT
 
-     The following two arguments turn on single point mode. If one is given -- both MUST be given.
+			The following two arguments turn on single point mode. If one is given -- both MUST be given.
 
-     -pts_lat <value>     Latitude of single point to operate on (optional)
-     -pts_lon <value>     Longitude of single point to operate on (optional)
+			EXAMPLES
 
-EXAMPLES
-
-  ./create_newcase -case mycase1 -res f19_g16 -compset B1850CN -mach bluefire 
-  ./create_newcase -case mycase2 -res f19_g16 -compset B1850CN -mach bluefire -confopts _D_P16
-  ./create_newcase -case mycase3 -res f19_g16 -compset B1850CN -mach bluefire -pts_lon -160 -pts_lat 40
-  ./create_newcase -case mycase4 -res f19_g16 -compset MYCOMP -compset_file mycompset_file -mach bluefire 
-  ./create_newcase -case mycase5 -res f19_g16 -compset B1850CN -mach bluefire -confopts _CG_E -pes_file mypes_file
-/
+			./create_newcase -case mycase1 -res f19_g16 -compset B1850CN -mach yellowstone
+  ./create_newcase -case mycase2 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _D_P16
+  ./create_newcase -case mycase4 -res f19_g16 -compset MYCOMP -compset_file mycompset_file -mach yellowstone
+  ./create_newcase -case mycase5 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _CG_E -pes_file mypes_file
+  /
 EOF
 }
 
@@ -130,10 +146,9 @@ my $commandline = "create_newcase @ARGV";
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
 my %opts = (
-              pts_lat => undef,
-              pts_lon => undef,
-              mach_dir => $machdir,
-	    );
+    mach_dir => $machdir,
+    user_mods_dir => undef,
+    );
 GetOptions(
     "case=s"                    => \$opts{'case'},
     "compset=s"                 => \$opts{'compset'},
@@ -145,6 +160,7 @@ GetOptions(
     "list=s"                    => \$opts{'list'},
     "mach=s"                    => \$opts{'mach'},
     "mach_dir=s"                => \$opts{'mach_dir'},
+    "user_mods_dir=s"           => \$opts{'user_mods_dir'},
     "pecount=s"                 => \$opts{'pecount'},
     "pes_file=s"                => \$opts{'pes_file'}, 
     "compset_file=s"            => \$opts{'compset_file'},
@@ -154,15 +170,13 @@ GetOptions(
     "testlist"                  => \$opts{'testlist'},
     "v|verbose"                 => \$opts{'verbose'},
     "xmlmode=s"                 => \$opts{'xmlmode'},
-    "pts_lat=s"                 => \$opts{'pts_lat'},
-    "pts_lon=s"                 => \$opts{'pts_lon'},
-    "nowarning"			=> \$opts{'nowarning'},
+    "nowarning"         => \$opts{'nowarning'},
     "user_compset=s"            => \$opts{'user_compset'},
-)  or usage();
+    "sharedlibroot=s"   => \$opts{'sharedlibroot'},
+    )  or usage();
 
 # Give usage message.
 usage() if $opts{'help'};
-
 
 # Check for unparsed argumentss
 if (@ARGV) {
@@ -170,15 +184,6 @@ if (@ARGV) {
     usage();
 }
 
-# Check that points mode is set correctly
-if ( defined($opts{'pts_lat'}) && ! defined(($opts{'pts_lon'}) ) ) {
-    print "ERROR: if pts_lat set -- pts_lon must also be set:  @ARGV\n";
-    usage();
-}
-if ( defined($opts{'pts_lon'}) && ! defined(($opts{'pts_lat'}) ) ) {
-    print "ERROR: if pts_lon set -- pts_lat must also be set:  @ARGV\n";
-    usage();
-}
 
 # Check for manditory case input if not just listing valid values
 
@@ -216,8 +221,8 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
 	    die "ERROR: create_newcase must include the input argument, -compset or user_compset\n";
 	}
     }
-    
-    # Check for manditory grid input
+
+    # Check for mandatory grid input
     if ($opts{'res'}) {
 	$grid = $opts{'res'};
     } else {
@@ -239,7 +244,7 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     # Check if machine mpilib option is given
     $mpilib = 'unset';
     if ($opts{'mpilib'}) {
-       $mpilib = $opts{'mpilib'};
+	$mpilib = $opts{'mpilib'};
     }
 
     # Check for pecount setting
@@ -258,6 +263,9 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
 # Set machdir to default or value sent in on command line
 $machdir=$opts{'mach_dir'};
 
+# Set user_mods_dir to default or value sent in on command line
+my $user_mods_dir=$opts{'user_mods_dir'};
+
 # Define 3 print levels:
 # 0 - only issue fatal error messages
 # 1 - only informs what files are created (default)
@@ -274,9 +282,14 @@ my %cfg = ();           # build configuration
 # 
 
 (-d "$machdir")   or  die <<"EOF";
-** Cannot find ccsm Machines directory \"$machdir\" **
+** Cannot find cesm Machines directory \"$machdir\" **
 EOF
 
+    if ( defined($user_mods_dir) ) {
+	(-d "$user_mods_dir")   or  die <<"EOF";
+	** Cannot find user_mods_dir directory \"$user_mods_dir\" **
+EOF
+}
 
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules and configuration files.
@@ -290,30 +303,30 @@ my $config_def_file = "config_definition.xml";
 EOF
 
 # Compset definition file.
-my $compset_file="";
+    my $compset_file="";
 if (defined $opts{'compset_file'}){
-  $compset_file = $opts{'compset_file'};
-  (-f $compset_file)  or  die <<"EOF";
-  ** Cannot find user specified compset parameters file \"$compset_file\"  **
+    $compset_file = $opts{'compset_file'};
+    (-f $compset_file)  or  die <<"EOF";
+    ** Cannot find user specified compset parameters file \"$compset_file\"  **
 EOF
 } else {
-  $compset_file = "$cfgdir/ccsm_utils/Case.template/config_compsets.xml";
-  (-f $compset_file)  or  die <<"EOF";
-  ** Cannot find default compset parameters file \"$compset_file\"  **
+    $compset_file = "$cfgdir/ccsm_utils/Case.template/config_compsets.xml";
+    (-f $compset_file)  or  die <<"EOF";
+    ** Cannot find default compset parameters file \"$compset_file\"  **
 EOF
 }
 
 # Grid definition file.
 my $grid_file = "";
 if (defined $opts{'user_grid_file'}){
-  $grid_file = $opts{'user_grid_file'};
-  (-f $grid_file)  or  die <<"EOF";
-  ** Cannot find user specified grid definition file \"$grid_file\"  **
+    $grid_file = $opts{'user_grid_file'};
+    (-f $grid_file)  or  die <<"EOF";
+    ** Cannot find user specified grid definition file \"$grid_file\"  **
 EOF
 } else {
-  $grid_file = "$cfgdir/ccsm_utils/Case.template/config_grid.xml";
-  (-f $grid_file)  or  die <<"EOF";
-  ** Cannot find default grid definition file \"$grid_file\"  **
+    $grid_file = "$cfgdir/ccsm_utils/Case.template/config_grid.xml";
+    (-f $grid_file)  or  die <<"EOF";
+    ** Cannot find default grid definition file \"$grid_file\"  **
 EOF
 }
 
@@ -325,14 +338,14 @@ my $machine_file = 'config_machines.xml';
 EOF
 
 # Machines definition file.
-my $compiler_file = 'config_compilers.xml';
+    my $compiler_file = 'config_compilers.xml';
 (-f "$machdir/$compiler_file")  or  die <<"EOF";
 ** Cannot find compiler parameters file \"$compiler_file\" in directory 
     \"$machdir\" **
 EOF
 
 # Tests file
-my $tests_file = 'config_tests.xml';
+    my $tests_file = 'config_tests.xml';
 (-f "$cfgdir/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
 ** Cannot find test parameters file \"$tests_file\" in directory 
     \"$cfgdir/ccsm_utils/Testcases\" **
@@ -350,7 +363,7 @@ EOF
     \"$cfgdir/ccsm_utils/Case.template\" **
 EOF
 
-if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
+    if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 
 
 #-----------------------------------------------------------------------------------------------
@@ -387,7 +400,7 @@ if ($opts{'list'}) {
 #-----------------------------------------------------------------------------------------------
 
 {
-	&check_known_problems; 
+    &check_known_problems; 
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -410,7 +423,7 @@ if ($opts{'user_compset'}) {
     my $user_compset = $opts{'user_compset'};
     ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname) = 
 	set_compset($compset_file, $user_compset, $grid_file, $grid, $cfg_ref, $caseroot,
-	$user_compset);
+		    $user_compset);
 } else {
     ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname) = 
 	set_compset($compset_file, $compset, $grid_file, $grid, $cfg_ref, $caseroot);
@@ -488,39 +501,10 @@ if (defined $opts{'confopts'}) {
 }
 
 #-----------------------------------------------------------------------------------------------
-# (7) Points mode settings on command line
-#-----------------------------------------------------------------------------------------------
-
-if ( defined($opts{'pts_lat'}) && defined($opts{'pts_lon'}) ) {
-   $cfg_ref->set('PTS_MODE', "TRUE" );
-   $cfg_ref->set('PTS_LAT',  $opts{'pts_lat'} );
-   $cfg_ref->set('PTS_LON',  $opts{'pts_lon'} );
-   $cfg_ref->set('ATM_NX', 0);
-   $cfg_ref->set('ATM_NY', 0);
-   $cfg_ref->set('LND_NX', 0);
-   $cfg_ref->set('LND_NY', 0);
-   $cfg_ref->set('ICE_NX', 0);
-   $cfg_ref->set('ICE_NY', 0);
-   $cfg_ref->set('OCN_NX', 0);
-   $cfg_ref->set('OCN_NY', 0);
-   $cfg_ref->set('ROF_NX', 0);
-   $cfg_ref->set('ROF_NY', 0);
-   $cfg_ref->set('WAV_NX', 0);
-   $cfg_ref->set('WAV_NY', 0);
-}
-
-#-----------------------------------------------------------------------------------------------
 # (8) Determine pes for machine
 #-----------------------------------------------------------------------------------------------
 
 # Always match on the full grid name and input compset name
-
-my $pmode  = $cfg_ref->get('PTS_MODE'); 
-if ( $pmode eq "TRUE" ) {
-   $pecount = 1;
-}
-
-##print "pes_match $match_grid $match_compset $mach $pecount \n";
 
 my %decomp = (NTASKS_ATM=>16, NTHRDS_ATM=>1, ROOTPE_ATM=>0, NINST_ATM=>1,
 	      NTASKS_LND=>16, NTHRDS_LND=>1, ROOTPE_LND=>0, NINST_LND=>1,
@@ -530,16 +514,16 @@ my %decomp = (NTASKS_ATM=>16, NTHRDS_ATM=>1, ROOTPE_ATM=>0, NINST_ATM=>1,
 	      NTASKS_GLC=>16, NTHRDS_GLC=>1, ROOTPE_GLC=>0, NINST_GLC=>1,
 	      NTASKS_ROF=>16, NTHRDS_ROF=>1, ROOTPE_ROF=>0, NINST_ROF=>1,
 	      NTASKS_WAV=>16, NTHRDS_WAV=>1, ROOTPE_WAV=>0, NINST_WAV=>1,
-              PIO_NUMTASKS=>-1, PIO_STRIDE=>-1, PIO_TYPENAME=>'netcdf',PIO_ROOT=>1,PIO_DEBUG_LEVEL=>0,
-              ATM_PIO_NUMTASKS=>-99, ATM_PIO_STRIDE=>-99, ATM_PIO_TYPENAME=>'nothing',ATM_PIO_ROOT=>-99,
-              LND_PIO_NUMTASKS=>-99, LND_PIO_STRIDE=>-99, LND_PIO_TYPENAME=>'nothing',LND_PIO_ROOT=>-99,
-              ICE_PIO_NUMTASKS=>-99, ICE_PIO_STRIDE=>-99, ICE_PIO_TYPENAME=>'nothing',ICE_PIO_ROOT=>-99,
-              OCN_PIO_NUMTASKS=>-99, OCN_PIO_STRIDE=>-99, OCN_PIO_TYPENAME=>'nothing',OCN_PIO_ROOT=>0,
-              CPL_PIO_NUMTASKS=>-99, CPL_PIO_STRIDE=>-99, CPL_PIO_TYPENAME=>'nothing',CPL_PIO_ROOT=>-99,
-              GLC_PIO_NUMTASKS=>-99, GLC_PIO_STRIDE=>-99, GLC_PIO_TYPENAME=>'nothing',GLC_PIO_ROOT=>-99,
-              ROF_PIO_NUMTASKS=>-99, ROF_PIO_STRIDE=>-99, ROF_PIO_TYPENAME=>'nothing',ROF_PIO_ROOT=>-99,
-              WAV_PIO_NUMTASKS=>-99, WAV_PIO_STRIDE=>-99, WAV_PIO_TYPENAME=>'nothing',WAV_PIO_ROOT=>-99,
-              PES_LEVEL=>0,PIO_BUFFER_SIZE_LIMIT=>-1);
+	      PIO_NUMTASKS=>-1, PIO_STRIDE=>-1, PIO_TYPENAME=>'netcdf',PIO_ROOT=>1,PIO_DEBUG_LEVEL=>0,
+	      ATM_PIO_NUMTASKS=>-99, ATM_PIO_STRIDE=>-99, ATM_PIO_TYPENAME=>'nothing',ATM_PIO_ROOT=>-99,
+	      LND_PIO_NUMTASKS=>-99, LND_PIO_STRIDE=>-99, LND_PIO_TYPENAME=>'nothing',LND_PIO_ROOT=>-99,
+	      ICE_PIO_NUMTASKS=>-99, ICE_PIO_STRIDE=>-99, ICE_PIO_TYPENAME=>'nothing',ICE_PIO_ROOT=>-99,
+	      OCN_PIO_NUMTASKS=>-99, OCN_PIO_STRIDE=>-99, OCN_PIO_TYPENAME=>'nothing',OCN_PIO_ROOT=>0,
+	      CPL_PIO_NUMTASKS=>-99, CPL_PIO_STRIDE=>-99, CPL_PIO_TYPENAME=>'nothing',CPL_PIO_ROOT=>-99,
+	      GLC_PIO_NUMTASKS=>-99, GLC_PIO_STRIDE=>-99, GLC_PIO_TYPENAME=>'nothing',GLC_PIO_ROOT=>-99,
+	      ROF_PIO_NUMTASKS=>-99, ROF_PIO_STRIDE=>-99, ROF_PIO_TYPENAME=>'nothing',ROF_PIO_ROOT=>-99,
+	      WAV_PIO_NUMTASKS=>-99, WAV_PIO_STRIDE=>-99, WAV_PIO_TYPENAME=>'nothing',WAV_PIO_ROOT=>-99,
+	      PES_LEVEL=>0,PIO_BUFFER_SIZE_LIMIT=>-1);
 
 # Reset the pes if a pes file is specified
 if (defined $opts{'pes_file'}) {
@@ -547,38 +531,42 @@ if (defined $opts{'pes_file'}) {
     (-f "$pes_file")  or  die "** Cannot find pes_file \"$pes_file\" ***\n";
     $cfg_ref->reset_setup("$pes_file");    
 } else {
-    
+
     if ($pecount =~ m!^([0-9]+)$!) {
-      my $ntasks = $1;
-      my $nthrds = 1;
-      $decomp{NTASKS_ATM} = $ntasks; $decomp{NTHRDS_ATM} = $nthrds;
-      $decomp{NTASKS_LND} = $ntasks; $decomp{NTHRDS_LND} = $nthrds;
-      $decomp{NTASKS_OCN} = $ntasks; $decomp{NTHRDS_OCN} = $nthrds;
-      $decomp{NTASKS_ICE} = $ntasks; $decomp{NTHRDS_ICE} = $nthrds;
-      $decomp{NTASKS_GLC} = $ntasks; $decomp{NTHRDS_GLC} = $nthrds;
-      $decomp{NTASKS_ROF} = $ntasks; $decomp{NTHRDS_ROF} = $nthrds;
-      $decomp{NTASKS_WAV} = $ntasks; $decomp{NTHRDS_WAV} = $nthrds;
-      $decomp{NTASKS_CPL} = $ntasks; $decomp{NTHRDS_CPL} = $nthrds;
+	my $ntasks = $1;
+	my $nthrds = 1;
+	$decomp{NTASKS_ATM} = $ntasks; $decomp{NTHRDS_ATM} = $nthrds;
+	$decomp{NTASKS_LND} = $ntasks; $decomp{NTHRDS_LND} = $nthrds;
+	$decomp{NTASKS_OCN} = $ntasks; $decomp{NTHRDS_OCN} = $nthrds;
+	$decomp{NTASKS_ICE} = $ntasks; $decomp{NTHRDS_ICE} = $nthrds;
+	$decomp{NTASKS_GLC} = $ntasks; $decomp{NTHRDS_GLC} = $nthrds;
+	$decomp{NTASKS_ROF} = $ntasks; $decomp{NTHRDS_ROF} = $nthrds;
+	$decomp{NTASKS_WAV} = $ntasks; $decomp{NTHRDS_WAV} = $nthrds;
+	$decomp{NTASKS_CPL} = $ntasks; $decomp{NTHRDS_CPL} = $nthrds;
     } elsif ($pecount =~ m!^([0-9]+)x([0-9]+)$!) {
-      my $ntasks = $1;
-      my $nthrds = $2;
-      $decomp{NTASKS_ATM} = $ntasks; $decomp{NTHRDS_ATM} = $nthrds;
-      $decomp{NTASKS_LND} = $ntasks; $decomp{NTHRDS_LND} = $nthrds;
-      $decomp{NTASKS_OCN} = $ntasks; $decomp{NTHRDS_OCN} = $nthrds;
-      $decomp{NTASKS_ICE} = $ntasks; $decomp{NTHRDS_ICE} = $nthrds;
-      $decomp{NTASKS_GLC} = $ntasks; $decomp{NTHRDS_GLC} = $nthrds;
-      $decomp{NTASKS_WAV} = $ntasks; $decomp{NTHRDS_WAV} = $nthrds;
-      $decomp{NTASKS_ROF} = $ntasks; $decomp{NTHRDS_ROF} = $nthrds;
-      $decomp{NTASKS_CPL} = $ntasks; $decomp{NTHRDS_CPL} = $nthrds;
+	my $ntasks = $1;
+	my $nthrds = $2;
+	$decomp{NTASKS_ATM} = $ntasks; $decomp{NTHRDS_ATM} = $nthrds;
+	$decomp{NTASKS_LND} = $ntasks; $decomp{NTHRDS_LND} = $nthrds;
+	$decomp{NTASKS_OCN} = $ntasks; $decomp{NTHRDS_OCN} = $nthrds;
+	$decomp{NTASKS_ICE} = $ntasks; $decomp{NTHRDS_ICE} = $nthrds;
+	$decomp{NTASKS_GLC} = $ntasks; $decomp{NTHRDS_GLC} = $nthrds;
+	$decomp{NTASKS_WAV} = $ntasks; $decomp{NTHRDS_WAV} = $nthrds;
+	$decomp{NTASKS_ROF} = $ntasks; $decomp{NTHRDS_ROF} = $nthrds;
+	$decomp{NTASKS_CPL} = $ntasks; $decomp{NTHRDS_CPL} = $nthrds;
     } else {
-      $cfg_ref->set_pes("$machdir/config_pes.xml", \%decomp, $pecount, $print);
+	# Need the test name with the options passed to ConfigCase->set_pes
+	# so that if we want to exclude or include a PE layout for a test, we 
+	# can match on the test name. 
+	my $testwithopts = $opts{'testname'} . $opts{'confopts'};
+	$cfg_ref->set_pes("$machdir/config_pes.xml", \%decomp, $pecount, $print, $testwithopts);
     }
 
     if ($decomp{NTASKS_ATM} == 1 && $decomp{NTASKS_LND} == 1 &&
-        $decomp{NTASKS_OCN} == 1 && $decomp{NTASKS_ICE} == 1 &&
-        $decomp{NTASKS_ROF} == 1 && $decomp{NTASKS_GLC} == 1 &&
-        $decomp{NTASKS_WAV} == 1 && $decomp{NTASKS_CPL} == 1 &&
-        $mpilib =~ 'unset') { $mpilib = "mpi-serial"; }
+	$decomp{NTASKS_OCN} == 1 && $decomp{NTASKS_ICE} == 1 &&
+	$decomp{NTASKS_ROF} == 1 && $decomp{NTASKS_GLC} == 1 &&
+	$decomp{NTASKS_WAV} == 1 && $decomp{NTASKS_CPL} == 1 &&
+	$mpilib =~ 'unset') { $mpilib = "mpi-serial"; }
 
     $cfg_ref->set('NTASKS_ATM', $decomp{'NTASKS_ATM'});
     $cfg_ref->set('NTASKS_LND', $decomp{'NTASKS_LND'});
@@ -588,7 +576,7 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->set('NTASKS_GLC', $decomp{'NTASKS_GLC'});
     $cfg_ref->set('NTASKS_WAV', $decomp{'NTASKS_WAV'});
     $cfg_ref->set('NTASKS_ROF', $decomp{'NTASKS_ROF'});
-    
+
     $cfg_ref->set('NTHRDS_ATM', $decomp{'NTHRDS_ATM'});
     $cfg_ref->set('NTHRDS_LND', $decomp{'NTHRDS_LND'});
     $cfg_ref->set('NTHRDS_ICE', $decomp{'NTHRDS_ICE'});
@@ -597,7 +585,7 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->set('NTHRDS_GLC', $decomp{'NTHRDS_GLC'});
     $cfg_ref->set('NTHRDS_WAV', $decomp{'NTHRDS_WAV'});
     $cfg_ref->set('NTHRDS_ROF', $decomp{'NTHRDS_ROF'});
-   
+
     $cfg_ref->set('ROOTPE_ATM', $decomp{'ROOTPE_ATM'});
     $cfg_ref->set('ROOTPE_LND', $decomp{'ROOTPE_LND'});
     $cfg_ref->set('ROOTPE_ICE', $decomp{'ROOTPE_ICE'});
@@ -606,16 +594,6 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->set('ROOTPE_GLC', $decomp{'ROOTPE_GLC'});
     $cfg_ref->set('ROOTPE_WAV', $decomp{'ROOTPE_WAV'});
     $cfg_ref->set('ROOTPE_ROF', $decomp{'ROOTPE_ROF'});
-
-    # tcraig, assume NINST is not set in config_pes.xml so it can be
-    # set by _N, but a pes_file could override above
-    # $cfg_ref->set('NINST_ATM', $decomp{'NINST_ATM'});
-    # $cfg_ref->set('NINST_LND', $decomp{'NINST_LND'});
-    # $cfg_ref->set('NINST_ICE', $decomp{'NINST_ICE'});
-    # $cfg_ref->set('NINST_OCN', $decomp{'NINST_OCN'});
-    # $cfg_ref->set('NINST_GLC', $decomp{'NINST_GLC'});
-    # $cfg_ref->set('NINST_WAV', $decomp{'NINST_WAV'});
-    # $cfg_ref->set('NINST_ROF', $decomp{'NINST_ROF'});
 
     $cfg_ref->set('PIO_TYPENAME'    , $decomp{'PIO_TYPENAME'});
     $cfg_ref->set('PIO_BUFFER_SIZE_LIMIT'    , $decomp{'PIO_BUFFER_SIZE_LIMIT'});
@@ -632,7 +610,7 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->set('PIO_STRIDE',       $decomp{'PIO_STRIDE'});
     $cfg_ref->set('PIO_ROOT',         $decomp{'PIO_ROOT'});
     $cfg_ref->set('PIO_DEBUG_LEVEL',  $decomp{'PIO_DEBUG_LEVEL'});
-    
+
     $cfg_ref->set('ATM_PIO_NUMTASKS', $decomp{'ATM_PIO_NUMTASKS'});
     $cfg_ref->set('ATM_PIO_STRIDE',   $decomp{'ATM_PIO_STRIDE'});
     $cfg_ref->set('ATM_PIO_ROOT',     $decomp{'ATM_PIO_ROOT'});
@@ -640,19 +618,19 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->set('LND_PIO_NUMTASKS', $decomp{'LND_PIO_NUMTASKS'});
     $cfg_ref->set('LND_PIO_STRIDE',   $decomp{'LND_PIO_STRIDE'});
     $cfg_ref->set('LND_PIO_ROOT',     $decomp{'LND_PIO_ROOT'});
-    
+
     $cfg_ref->set('OCN_PIO_NUMTASKS', $decomp{'OCN_PIO_NUMTASKS'});
     $cfg_ref->set('OCN_PIO_STRIDE',   $decomp{'OCN_PIO_STRIDE'});
     $cfg_ref->set('OCN_PIO_ROOT',     $decomp{'OCN_PIO_ROOT'});
-    
+
     $cfg_ref->set('ICE_PIO_NUMTASKS', $decomp{'ICE_PIO_NUMTASKS'});
     $cfg_ref->set('ICE_PIO_STRIDE',   $decomp{'ICE_PIO_STRIDE'});
     $cfg_ref->set('ICE_PIO_ROOT',     $decomp{'ICE_PIO_ROOT'});
-    
+
     $cfg_ref->set('CPL_PIO_NUMTASKS', $decomp{'CPL_PIO_NUMTASKS'});
     $cfg_ref->set('CPL_PIO_STRIDE',   $decomp{'CPL_PIO_STRIDE'});
     $cfg_ref->set('CPL_PIO_ROOT',     $decomp{'CPL_PIO_ROOT'});
-    
+
     $cfg_ref->set('GLC_PIO_NUMTASKS', $decomp{'GLC_PIO_NUMTASKS'});
     $cfg_ref->set('GLC_PIO_STRIDE',   $decomp{'GLC_PIO_STRIDE'});
     $cfg_ref->set('GLC_PIO_ROOT',     $decomp{'GLC_PIO_ROOT'});
@@ -664,7 +642,7 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->set('ROF_PIO_NUMTASKS', $decomp{'ROF_PIO_NUMTASKS'});
     $cfg_ref->set('ROF_PIO_STRIDE',   $decomp{'ROF_PIO_STRIDE'});  
     $cfg_ref->set('ROF_PIO_ROOT',     $decomp{'ROF_PIO_ROOT'});    
-    
+
     $cfg_ref->set('PES_LEVEL' , $decomp{'PES_LEVEL'});
 }
 
@@ -675,38 +653,31 @@ my $mpilibs = $cfg_ref->get('MPILIBS');
 my @mpilibs = split ",", $mpilibs, -1;
 
 if ( $mpilib =~ 'default' || $mpilib =~ m/^\s*$/ ) {
-   $mpilib = $mpilibs[0];
+    $mpilib = $mpilibs[0];
 }
 
 if (! ($mpilib =~ 'unset')) {
-    # check that mpilib request for target machine matches a supported value
-#    if ($mach =~ "userdefined"){
-#       unless (defined($ENV{MPI_PATH})){
-#	    print "\nSet environment variable MPI_PATH prior to building case\n\n";
-#	}
-#    }else{
-	my $found = 0;
-	foreach my $mpi (@mpilibs) {
-	    if ($mpilib eq $mpi) {
-		$found = 1;
-	    }
+    my $found = 0;
+    foreach my $mpi (@mpilibs) {
+	if ($mpilib eq $mpi) {
+	    $found = 1;
 	}
-	if (!$found) {
-	    my $sysmod = "rm -rf $caseroot";
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	    die "ERROR: mpilib setting of $mpilib does not match supported values of $mpilibs \n";
-	}
-#    }
+    }
+    if (!$found) {
+	my $sysmod = "rm -rf $caseroot";
+	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	die "ERROR: mpilib setting of $mpilib does not match supported values of $mpilibs \n";
+    }
 } else {
     if ($mach =~ /userdefined/){
-       $mpilib = "USERDEFINED_required_build";
+	$mpilib = "USERDEFINED_required_build";
     }else{
-       $mpilib = $mpilibs[0];
+	$mpilib = $mpilibs[0];
     }
 }    
 $cfg_ref->set('MPILIB', "$mpilib");
 if ($print>=2) { print "Machine mpilib specifier: $mpilib.$eol"; }
-  
+
 # resolve the dollar referenced values for the pe stuff
 # allow up to 4 depths then stop
 # so, check the var value, if it starts with dollar, remove
@@ -714,21 +685,21 @@ if ($print>=2) { print "Machine mpilib specifier: $mpilib.$eol"; }
 #     non dollar value is found up to max depths.
 
 my @xvars = qw(NTASKS_ATM NTHRDS_ATM ROOTPE_ATM NINST_ATM
-	       NTASKS_LND NTHRDS_LND ROOTPE_LND NINST_LND
-	       NTASKS_ICE NTHRDS_ICE ROOTPE_ICE NINST_ICE
-	       NTASKS_OCN NTHRDS_OCN ROOTPE_OCN NINST_OCN
-	       NTASKS_GLC NTHRDS_GLC ROOTPE_GLC NINST_GLC
-               NTASKS_WAV NTHRDS_WAV ROOTPE_WAV NINST_WAV
-	       NTASKS_ROF NTHRDS_ROF ROOTPE_ROF NINST_ROF
-	       NTASKS_CPL NTHRDS_CPL ROOTPE_CPL
-               ATM_PIO_NUMTASKS ATM_PIO_STRIDE ATM_PIO_TYPENAME ATM_PIO_ROOT
-               LND_PIO_NUMTASKS LND_PIO_STRIDE LND_PIO_TYPENAME LND_PIO_ROOT
-               ICE_PIO_NUMTASKS ICE_PIO_STRIDE ICE_PIO_TYPENAME ICE_PIO_ROOT
-               OCN_PIO_NUMTASKS OCN_PIO_STRIDE OCN_PIO_TYPENAME OCN_PIO_ROOT
-               CPL_PIO_NUMTASKS CPL_PIO_STRIDE CPL_PIO_TYPENAME CPL_PIO_ROOT
-               GLC_PIO_NUMTASKS GLC_PIO_STRIDE GLC_PIO_TYPENAME GLC_PIO_ROOT
-               WAV_PIO_NUMTASKS WAV_PIO_STRIDE WAV_PIO_TYPENAME WAV_PIO_ROOT
-               ROF_PIO_NUMTASKS ROF_PIO_STRIDE ROF_PIO_TYPENAME ROF_PIO_ROOT);
+NTASKS_LND NTHRDS_LND ROOTPE_LND NINST_LND
+NTASKS_ICE NTHRDS_ICE ROOTPE_ICE NINST_ICE
+NTASKS_OCN NTHRDS_OCN ROOTPE_OCN NINST_OCN
+NTASKS_GLC NTHRDS_GLC ROOTPE_GLC NINST_GLC
+NTASKS_WAV NTHRDS_WAV ROOTPE_WAV NINST_WAV
+NTASKS_ROF NTHRDS_ROF ROOTPE_ROF NINST_ROF
+NTASKS_CPL NTHRDS_CPL ROOTPE_CPL
+ATM_PIO_NUMTASKS ATM_PIO_STRIDE ATM_PIO_TYPENAME ATM_PIO_ROOT
+LND_PIO_NUMTASKS LND_PIO_STRIDE LND_PIO_TYPENAME LND_PIO_ROOT
+ICE_PIO_NUMTASKS ICE_PIO_STRIDE ICE_PIO_TYPENAME ICE_PIO_ROOT
+OCN_PIO_NUMTASKS OCN_PIO_STRIDE OCN_PIO_TYPENAME OCN_PIO_ROOT
+CPL_PIO_NUMTASKS CPL_PIO_STRIDE CPL_PIO_TYPENAME CPL_PIO_ROOT
+GLC_PIO_NUMTASKS GLC_PIO_STRIDE GLC_PIO_TYPENAME GLC_PIO_ROOT
+WAV_PIO_NUMTASKS WAV_PIO_STRIDE WAV_PIO_TYPENAME WAV_PIO_ROOT
+ROF_PIO_NUMTASKS ROF_PIO_STRIDE ROF_PIO_TYPENAME ROF_PIO_ROOT);
 my $xvarf;
 my $xvar1;
 my $xvar2;
@@ -742,29 +713,29 @@ foreach my $xvar ( @xvars ) {
     $xvarf = $xvar1;
     if ($xvarf =~ m/^\$.+$/) {
 	$xvar2 = $xvarf;
-        $xvar2 =~ s/^\$(.+$)/$1/ ;
+	$xvar2 =~ s/^\$(.+$)/$1/ ;
 	$xvar2 = $cfg_ref->get("$xvar2");
 	$xvarf = $xvar2;
-        if ($xvarf =~ m/^\$.+$/) {
-   	   $xvar3 = $xvarf;
-           $xvar3 =~ s/^\$(.+$)/$1/;
-           $xvar3 = $cfg_ref->get("$xvar3");
-	   $xvarf = $xvar3;
-           if ($xvarf =~ m/^\$.+$/) {
-      	      $xvar4 = $xvarf;
-              $xvar4 =~ s/^\$(.+$)/$1/ ;
-              $xvar4 = $cfg_ref->get("$xvar4");
-	      $xvarf = $xvar4;
-              if ($xvar4 =~ m/^\$.+$/) {
-		  die "xvar recursive search failed $xvar $xvar1 $xvar2 $xvar3 $xvar4 \n";
-              }
-           }
-        }
+	if ($xvarf =~ m/^\$.+$/) {
+	    $xvar3 = $xvarf;
+	    $xvar3 =~ s/^\$(.+$)/$1/;
+	    $xvar3 = $cfg_ref->get("$xvar3");
+	    $xvarf = $xvar3;
+	    if ($xvarf =~ m/^\$.+$/) {
+		$xvar4 = $xvarf;
+		$xvar4 =~ s/^\$(.+$)/$1/ ;
+		$xvar4 = $cfg_ref->get("$xvar4");
+		$xvarf = $xvar4;
+		if ($xvar4 =~ m/^\$.+$/) {
+		    die "xvar recursive search failed $xvar $xvar1 $xvar2 $xvar3 $xvar4 \n";
+		}
+	    }
+	}
     }
-   $cfg_ref->set("$xvar", "$xvarf");
+    $cfg_ref->set("$xvar", "$xvarf");
 }
 
-		
+
 #-----------------------------------------------------------------------------------------------
 # (9) Set key xml variables 
 #-----------------------------------------------------------------------------------------------
@@ -786,7 +757,15 @@ my @repotag = split(/ /,$repotag);
 $repotag = $repotag[2]; 
 chomp($repotag);
 $cfg_ref->set('CCSM_REPOTAG', $repotag);
-			
+
+#-----------------------------------------------------------------------------------------------
+# Set the sharedlibroot for building shard CESM components
+#-----------------------------------------------------------------------------------------------
+if(defined $opts{'sharedlibroot'})
+{
+    $cfg_ref->set('SHAREDLIBROOT', $opts{'sharedlibroot'});
+}
+
 #-----------------------------------------------------------------------------------------------
 # (10) Create the $caseroot directory tree
 #-----------------------------------------------------------------------------------------------
@@ -802,17 +781,18 @@ foreach my $mkdir ( @mkdirs ) {
     $sysmod = "mkdir -p $caseroot/$mkdir"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
-			
+
 # Copy relevant files into $caseroot
 my @files = (
-             "$scriptsroot/ccsm_utils/Tools/cesm_setup", 
-	     "$scriptsroot/ccsm_utils/Tools/check_input_data", 
-	     "$scriptsroot/ccsm_utils/Tools/archive_metadata.sh", 
-	     "$scriptsroot/ccsm_utils/Tools/check_case", 
-	     "$scriptsroot/ccsm_utils/Tools/create_production_test", 
-	     "$scriptsroot/ccsm_utils/Tools/xmlchange",
-	     "$scriptsroot/ccsm_utils/Tools/xmlquery",
-            ); 
+    "$scriptsroot/ccsm_utils/Tools/cesm_setup", 
+    "$scriptsroot/ccsm_utils/Tools/check_input_data", 
+    "$scriptsroot/ccsm_utils/Tools/archive_metadata.sh", 
+    "$scriptsroot/ccsm_utils/Tools/check_case", 
+    "$scriptsroot/ccsm_utils/Tools/create_production_test", 
+    "$scriptsroot/ccsm_utils/Tools/xmlchange",
+    "$scriptsroot/ccsm_utils/Tools/xmlquery",
+    "$scriptsroot/ccsm_utils/Tools/st_archive", 
+    ); 
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -829,10 +809,9 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$scriptsroot/ccsm_utils/Tools/cesm_buildexe", 
 	  "$scriptsroot/ccsm_utils/Tools/ccsm_getenv", 
 	  "$scriptsroot/ccsm_utils/Tools/ccsm_check_lockedfiles", 
-	  "$scriptsroot/ccsm_utils/Tools/taskmaker.pl", 
 	  "$scriptsroot/ccsm_utils/Tools/xml2env",
 	  "$scriptsroot/ccsm_utils/Tools/lt_archive.sh", 
-	  "$scriptsroot/ccsm_utils/Tools/st_archive.sh", 
+	  "$scriptsroot/ccsm_utils/Tools/st_archive", 
 	  "$scriptsroot/ccsm_utils/Tools/user_nlcreate", 
 	  "$scriptsroot/ccsm_utils/Tools/user_nl_add",
 	  "$scriptsroot/ccsm_utils/Tools/timing/getTiming.csh", 
@@ -840,13 +819,16 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$scriptsroot/ccsm_utils/Case.template/config_definition.xml",
 	  "$scriptsroot/ccsm_utils/Case.template/config_grid.xml",
 	  "$scriptsroot/ccsm_utils/Case.template/config_compsets.xml",
+	  "$scriptsroot/ccsm_utils/Case.template/config_archive.xml",
+	  "$scriptsroot/ccsm_utils/Case.template/config_archive.xsd",
 	  "$scriptsroot/ccsm_utils/Case.template/ConfigCase.pm",
 	  "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
 	  "$scriptsroot/ccsm_utils/Tools/compare_namelists.pl",
-	  "$scriptsroot/ccsm_utils/Machines/Makefile",
-	  "$scriptsroot/ccsm_utils/Machines/mkSrcfiles", 
-	  "$scriptsroot/ccsm_utils/Machines/mkDepends", 
-	  "$scriptsroot/ccsm_utils/Machines/mkbatch.$mach");
+	  "$machdir/taskmaker.pl", 
+	  "$machdir/Makefile",
+	  "$machdir/mkSrcfiles", 
+	  "$machdir/mkDepends", 
+	  "$machdir/mkbatch.$mach");
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot/Tools/."; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -912,10 +894,10 @@ foreach my $comp (@comps)  {
 	    if ($model eq 'COMP_ICE') {$blddir = "$ccsmroot/models/ice/$comp/bld"}; 
 	    if ($model eq 'COMP_OCN') {$blddir = "$ccsmroot/models/ocn/$comp/bld"}; 
 	    if ($model eq 'COMP_GLC') {$blddir = "$ccsmroot/models/glc/$comp/bld"}; 
-            if ($model eq 'COMP_WAV') {$blddir = "$ccsmroot/models/wav/$comp/bld"};
+	    if ($model eq 'COMP_WAV') {$blddir = "$ccsmroot/models/wav/$comp/bld"};
 	    if ($model eq 'COMP_ROF') {$blddir = "$ccsmroot/models/rof/$comp/bld"}; 
 	    $sysmod = "cp -p $blddir/*build*.csh $buildconf/.";
-            system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	    if (-f "$blddir/$comp.template" || -f "$blddir/$comp.cpl7.template") {
 		$sysmod = "cp -p $blddir/${comp}*template $buildconf/${comp}.user_nl.csh";
 		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -962,11 +944,11 @@ foreach my $comp (@comps)  {
 		$sysmod = "mkdir $moddir/src.$comp/glimmer-cism";
 		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 		open(README, ">", "$moddir/src.$comp/README") or
-		   die "cannot open > $moddir/src.$comp/README: $!";
+		    die "cannot open > $moddir/src.$comp/README: $!";
 		print README
-		   "Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
-		   "This includes any files that are in the glimmer-cism subdirectory of models/glc/cism.\n\n",
-		   "Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
+		    "Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
+		    "This includes any files that are in the glimmer-cism subdirectory of models/glc/cism.\n\n",
+		    "Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
 		close(README);
 	    }
 	}
@@ -981,20 +963,20 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create machine specific environment file (env_mach_specific)
 if(-e "$machdir/env_mach_specific.$mach" ) {
-  $sysmod = "cp $machdir/env_mach_specific.$mach $caseroot/env_mach_specific";
+    $sysmod = "cp $machdir/env_mach_specific.$mach $caseroot/env_mach_specific";
 }else{
-  $sysmod = "touch $caseroot/env_mach_specific";
+    $sysmod = "touch $caseroot/env_mach_specific";
 }
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Copy Depends files if they exist
 if( -e "$machdir/Depends.$mach" ) {
-  $sysmod = "cp $machdir/Depends.$mach $caseroot/";
-  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "cp $machdir/Depends.$mach $caseroot/";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 if( -e "$machdir/Depends.$compiler" ) {
-  $sysmod = "cp $machdir/Depends.$compiler $caseroot/";
-  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "cp $machdir/Depends.$compiler $caseroot/";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Write the xml files
@@ -1006,6 +988,8 @@ $cfg_ref->write_file("$caseroot/env_build.xml"  , "xml");
 print "Created $caseroot/env_build.xml \n";
 $cfg_ref->write_file("$caseroot/env_run.xml"    , "xml");
 print "Created $caseroot/env_run.xml \n";
+$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/ccsm_utils/Case.template");
+print "Created $caseroot/env_archive.xml \n";
 
 # Copy env_case.xml in to locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
@@ -1020,6 +1004,61 @@ $year = 1900+$year;
 $mon = 1+$mon;
 print $fh "$commandline\n";
 printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hour,$min,$sec);
+
+# Copy the user_mods_dir files in and apply them
+if ( defined($user_mods_dir) ) {
+    my @user_nl_files = glob("$user_mods_dir/user_nl*");
+    my @xmlchange_cmnds_file = "$user_mods_dir/xmlchange_cmnds";
+    my @source_mods_dir = glob("$user_mods_dir/SourceMods/*");
+
+    if(! @user_nl_files && ! @xmlchange_cmnds_file && ! @source_mods_dir)
+    {
+	die "ERROR: There are no user_nl files, xmlchange_cmds file, or SourceMods directories";
+    }
+    else
+    {
+	# Copy the user_nl_* files over
+	foreach my $file(@user_nl_files)
+	{
+	    if (-f "$file") {
+		if ($print>=2) { print "Copy $file over.$eol"; }
+		my $copy = "cp $file $caseroot";
+		system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+	    }
+	}
+	# Copy the xmlchange_cmnds file over and execute it
+	foreach my $file(@xmlchange_cmnds_file)
+	{
+	    if (-f "$file") {
+		if ($print>=2) { print "Copy $file over.$eol"; }
+		my $copy = "cp $file $caseroot";
+		system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+		chmod 0777, "$caseroot/xmlchange_cmnds";
+		my $cwd = getcwd(); # current working directory
+		chdir "$caseroot";
+		if ($print>=2) { print "Execute $file.$eol"; }
+		system ("./xmlchange_cmnds");
+		chdir "$cwd";
+	    }
+	}
+	# Copy any files in SourceMods over provided the same directory exists in the case
+	foreach my $dir(@source_mods_dir)
+	{
+	    if ($print>=2) { print "Copy $dir over.$eol"; }
+	    if ( $dir =~ m/(SourceMods\/.+)/ ) {
+		my $mydir = "$caseroot/$1";
+		if (-d "$dir" && -d "$mydir" ) {
+		    foreach my $file( glob("$dir/*") )
+		    {
+			if ($print>=2) { print "Copy $file over.$eol"; }
+			my $copy = "cp $file $mydir";
+			system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+		    }
+		}
+	    }
+	}
+    }
+}
 
 #-----------------------------------------------------------------------------------------------
 # (11) Create $caseroot run setup scripts (other than batch)
@@ -1036,93 +1075,93 @@ exit 0;
 #-----------------------------------------------------------------------------------------------
 
 sub absolute_path {
-#
+    #
 # Convert a pathname into an absolute pathname, expanding any . or .. characters.
 # Assumes pathnames refer to a local filesystem.
 # Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
+    #
+    my $path = shift;
+    my $cwd = getcwd();  # current working directory
+    my $abspath;         # resulting absolute pathname
 
 # Strip off any leading or trailing whitespace.  (This pattern won't match if
 # there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
+    $path =~ s!^\s*(\S*)\s*$!$1!;
 
 # Convert relative to absolute path.
 
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /^\.\.$/ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
+    if ($path =~ m!^\.$!) {          # path is "."
+	return $cwd;
+    } elsif ($path =~ m!^\./!) {     # path starts with "./"
+	$path =~ s!^\.!$cwd!;
+    } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+	$path = "$cwd/..";
+    } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+	$path = "$cwd/$path";
+    } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+	$path = "$cwd/$path";
     }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
+
+    my ($dir, @dirs2);
+    my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+    # This enables correct processing of the input "/".
+
+    # Remove any "" that are not leading.
+    for (my $i=0; $i<=$#dirs; ++$i) {
+	if ($i == 0 or $dirs[$i] ne "") {
+	    push @dirs2, $dirs[$i];
+	}
+    }
+    @dirs = ();
+
+    # Remove any "."
+    foreach $dir (@dirs2) {
+	unless ($dir eq ".") {
+	    push @dirs, $dir;
+	}
+    }
+    @dirs2 = ();
+
+    # Remove the "subdir/.." parts.
+    foreach $dir (@dirs) {
+	if ( $dir !~ /^\.\.$/ ) {
+	    push @dirs2, $dir;
+	} else {
+	    pop @dirs2;   # remove previous dir when current dir is ..
+	}
+    }
+    if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+    $abspath = join '/', @dirs2;
+    return( $abspath );
 }
 
 #-------------------------------------------------------------------------------
 
 sub subst_env_path {
-#
-# Substitute for any environment variables contained in a pathname.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $newpath;         # resulting pathname
+    #
+    # Substitute for any environment variables contained in a pathname.
+    # Assumes the directory separator is "/".
+    #
+    my $path = shift;
+    my $newpath;         # resulting pathname
 
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
+    # Strip off any leading or trailing whitespace.  (This pattern won't match if
+    # there's embedded whitespace.
+    $path =~ s!^\s*(\S*)\s*$!$1!;
 
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
+    my ($dir, @dirs2);
+    my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+    # This enables correct processing of the input "/".
 
-  foreach $dir (@dirs) {
-    if ( $dir =~ /^\$(.+)$/ ) {
-        push @dirs2, $ENV{$1};
-    } else {
-        push @dirs2, $dir;
+    foreach $dir (@dirs) {
+	if ( $dir =~ /^\$(.+)$/ ) {
+	    push @dirs2, $ENV{$1};
+	} else {
+	    push @dirs2, $dir;
+	}
     }
-  }
-  $newpath = join '/', @dirs2;
-  return( $newpath );
+    $newpath = join '/', @dirs2;
+    return( $newpath );
 }
 
 #-------------------------------------------------------------------------------
@@ -1139,7 +1178,7 @@ sub get_option {
 	--$max_tries;
 	$ans =~ s/^\s+//;
 	$ans =~ s/\s+$//;
-	# Check for null response which indicates that default is accepted.
+# Check for null response which indicates that default is accepted.
 	unless ($ans) { return ""; }
 	foreach $expect (@expect) {
 	    if ($ans =~ /^$expect$/i) { return $expect; }
@@ -1167,10 +1206,10 @@ sub print_hash {
 
 sub set_compset
 {
-    # Set the parameters for the specified compset and grid.  
-    # The parameters are read from an input file, and if no compset/grid matches are
-    # found then issue error message.
-    # This routine uses the configuration defined at the package level ($cfg_ref).
+# Set the parameters for the specified compset and grid.  
+# The parameters are read from an input file, and if no compset/grid matches are
+# found then issue error message.
+# This routine uses the configuration defined at the package level ($cfg_ref).
 
     my ($compset_file, $compset, $grid_file, $grid, $cfg_ref, $caseroot, $user_compset) = @_;
 
@@ -1186,7 +1225,7 @@ sub set_compset
     $name eq "config_compset" or die
 	"file $compset_file is not a compset parameters file\n";
 
-    # Strip any leading or trailing whitespace 
+# Strip any leading or trailing whitespace 
     $grid = clean($grid);
     $compset = clean($compset);
 
@@ -1205,9 +1244,9 @@ sub set_compset
     my @e;
     my %attr = ();
 
-    # ========================================================
-    # Determine compset longname
-    # ========================================================
+# ========================================================
+# Determine compset longname
+# ========================================================
 
     if ($user_compset) {
 	$compset_shortname = ' ';
@@ -1215,7 +1254,7 @@ sub set_compset
     } else {
 	$found = 0;
 	@e = $xml_comp->elements_by_name( "COMPSET" );
-      NAME:
+NAME:
 	while ( my $e = shift @e ) {
 	    $found = 0;
 	    my $sname, my $alias; my $lname;
@@ -1224,7 +1263,7 @@ sub set_compset
 	    if ($attr{'sname'}) {
 		$sname = clean($attr{'sname'}); 
 		if ($attr{'alias'}) {$alias = clean($attr{'alias'})}; 
-	    } else { 	    
+	    } else {       
 		die "set_compset: config_compsets.xml must have COMPSET element and SNAME attribute \n";
 	    }
 	    if ($compset =~ /$lname/ || $compset eq "$sname" || $compset eq "$alias") {
@@ -1246,19 +1285,19 @@ sub set_compset
 	}
     }
 
-    # ========================================================
-    # Determine grid longname 
-    # - only use this name for matches later on
-    # ========================================================
+# ========================================================
+# Determine grid longname 
+# - only use this name for matches later on
+# ========================================================
 
     my $atm_grid, my $lnd_grid, my $ice_grid, my $ocn_grid;
     my $rof_grid, my $glc_grid, my $wav_grid;
     my $cism_grid, my $mask_grid; 
 
-    # first determine if there is any compset attribute for this grid
+# first determine if there is any compset attribute for this grid
     $found = 0;
     @e = $xml_comp->elements_by_name( "COMPSET" );
-  NAME:
+NAME:
     @e = $xml_grid->elements_by_name( "GRID" );
     while ( my $e = shift @e ) {
 	my $sname, my $alias;
@@ -1279,7 +1318,7 @@ sub set_compset
 	}
     }
 
-    # if not found - determine if there is any other match for this grid
+# if not found - determine if there is any other match for this grid
     if ($found == 0) {
 	@e = $xml_grid->elements_by_name( "GRID" );
 	while ( my $e = shift @e ) {
@@ -1290,7 +1329,7 @@ sub set_compset
 	    $alias = clean($attr{'alias'});
 	    if ($grid =~ /$lname/ || $grid eq $sname || $grid eq $alias)  {
 		if ($attr{'compset'}) { 
-		    # do nothing
+# do nothing
 		} else {
 		    print " grid longname is $grid_longname \n";
 		    $grid_longname  = $lname;
@@ -1303,7 +1342,7 @@ sub set_compset
 	}
     }
 
-    # quit if nothing was found
+# quit if nothing was found
     unless ($found) { 
 	print "set_compset: no match for grid $grid_longname \n";
 	print "             to see supported grids issue - \n";
@@ -1321,10 +1360,10 @@ sub set_compset
     if ($cism_grid ne 'null') {
 	$cfg_ref->set('CISM_GRID',$cism_grid);
     }
-    
-    # ========================================================
-    # check that compset is supported for target grid
-    # ========================================================
+
+# ========================================================
+# check that compset is supported for target grid
+# ========================================================
 
     @e = $xml_comp->elements_by_name( "COMPSET" );
     while ( my $e = shift @e ) {
@@ -1334,10 +1373,10 @@ sub set_compset
 	    my $compset_grid = clean($attr{'grid'});
 	    if ($compset_grid) {
 		if ($grid_longname =~ /$compset_grid/) {
-		    # do nothing
+# do nothing
 		} else {
 		    if ($grid_longname =~ /CLM_USRDAT/) {
-			# do nothing 
+# do nothing 
 		    } else {
 			die "ERROR: $compset_longname \n is not supported for \n $grid_longname \n";
 		    }
@@ -1346,9 +1385,9 @@ sub set_compset
 	}
     }
 
-    # ========================================================
-    # set component grid sizes and grid name
-    # ========================================================
+# ========================================================
+# set component grid sizes and grid name
+# ========================================================
 
     @e = $xml_grid->elements_by_name( "gridhorz" );
     while ( my $e = shift @e ) {
@@ -1365,7 +1404,7 @@ sub set_compset
 	    if ($name eq 'desc') {
 		if ($grid_longname =~ /$hgrid/) {
 		    if ($desc_grid =~ m/$val/) {
-			# do nothing
+# do nothing
 		    } else {
 			$desc_grid = $desc_grid . " $val";
 		    }
@@ -1429,9 +1468,9 @@ sub set_compset
     if ($glc_grid =~ 'UNSET') {die "glc_grid in $grid_longname is not supported \n";}
     if ($mask_grid =~ 'UNSET') {die "mask_grid in $grid_longname is not supported \n";}
 
-    # ========================================================
-    # Set grid domain files
-    # ========================================================
+# ========================================================
+# Set grid domain files
+# ========================================================
 
     @e = $xml_grid->elements_by_name( "griddom" );
     while ( my $e = shift @e ) {
@@ -1480,9 +1519,9 @@ sub set_compset
 	}
     }
 
-    # ========================================================
-    # Set grid mapping files
-    # ========================================================
+# ========================================================
+# Set grid mapping files
+# ========================================================
 
     @e = $xml_grid->elements_by_name( "gridmap" );
     while ( my $e = shift @e ) {
@@ -1546,7 +1585,7 @@ sub set_compset
 		if ($ocn_grid =~ /$attr{'ocn_grid'}/) {
 		    $cfg_ref->set($id, $val);
 		}
-	    }		
+	    }    
 	}
     }
 
@@ -1584,7 +1623,7 @@ sub set_compset
 			    $cfg_ref->set($id, $newval);
 			}
 		    }
-		    
+
 		    # For CONFIG_OPTS and *_NAMELIST_OPTS want to merge, not replace, options.
 		    if (($name =~ m/\s*_CONFIG_OPTS/) || ($name =~ m/\s*_NAMELIST_OPTS/))   {
 			if ($curval !~ m/^\s*$/)  { 
@@ -1628,7 +1667,7 @@ sub set_compset
 	    }
 	}
     }
-	
+
     # Special case - if land and river grids are different AND 
     # there is no mapping files between  land and river then 
     # set the river mode to null
@@ -1636,7 +1675,7 @@ sub set_compset
 	my $map_lnd2rof = $cfg_ref->get('LND2ROF_FMAPNAME');
 	if ($map_lnd2rof eq 'idmap') {
 	    print "No lnd2rof_fmapname exists - RTM mode set to null \n";
-	    $cfg_ref->set('RTM_MODE', 'NULL');	    
+	    $cfg_ref->set('RTM_MODE', 'NULL');     
 	    $newout{"RTM_MODE"} = 'NULL'; 
 	}
     }
@@ -1655,7 +1694,7 @@ sub set_compset
     if ($compset_longname =~ /(.+CLMUSRDAT%)(.*)/){
 	$cfg_ref->set('CLM_USRDAT_NAME',$2);
 	$newout{"CLM_USR_DATNAME"} = $2;
-    }	
+    } 
 
     # ========================================================
     # Generate compset description
@@ -1704,7 +1743,7 @@ sub set_compset
     my $nxg, my $nyg, my $grg;
     my $nxr, my $nyr, my $grr;
     my $nxw, my $nyw, my $grw;
-    
+
     $nxa = $cfg_ref->get('ATM_NX'); $nya= $cfg_ref->get('ATM_NY');  
     $gra = $cfg_ref->get('ATM_GRID');
     $nxl = $cfg_ref->get('LND_NX'); $nyl= $cfg_ref->get('LND_NY'); 
@@ -1749,7 +1788,7 @@ sub set_compset
     my @ids = keys %newout;
     foreach my $id (sort @ids) {
 	print     "  $id: $newout{$id} \n";
-    }	
+    } 
     print "\n";
 
     # output to README.case
@@ -1778,7 +1817,7 @@ sub set_compset
     my @ids = keys %newout;
     foreach my $id (sort @ids) {
 	print $fh "  $id: $newout{$id} \n";
-    }	
+    } 
 
     return ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname); 
 }
@@ -1831,9 +1870,9 @@ sub check_grid
 		# do nothing
 	    } else {
 		die <<"EOF";
-*** Invalid compset - $compset - for grid - $grid ***
-*** Only valid compsets for this grid must match $valid_grid_match ***
-*** Invoke create_newcase again with a vaid compset for this grid ***
+		*** Invalid compset - $compset - for grid - $grid ***
+		    *** Only valid compsets for this grid must match $valid_grid_match ***
+		    *** Invoke create_newcase again with a vaid compset for this grid ***
 EOF
 	    }
 	}
@@ -1890,18 +1929,18 @@ sub set_test
     # attributed is defined in the testname hash, then reset the cfg_ref object to
     # that value
 
-     my @ids = keys %$cfg_ref;
-     foreach my $id (sort @ids) {
-	 foreach my $attr (keys %a) {
-             if ( ! $cfg_ref->is_valid_name($attr) ) { 
-                die "set_test: invalid id $attr in test $testname in file $test_file exiting\n"; 
-             }
-	     if ($attr eq $id) {
-	         my $value = $a{$attr};
-	         $cfg_ref->set($id, $value);
-             }
-	 }
-  }
+    my @ids = keys %$cfg_ref;
+    foreach my $id (sort @ids) {
+	foreach my $attr (keys %a) {
+	    if ( ! $cfg_ref->is_valid_name($attr) ) { 
+		die "set_test: invalid id $attr in test $testname in file $test_file exiting\n"; 
+	    }
+	    if ($attr eq $id) {
+		my $value = $a{$attr};
+		$cfg_ref->set($id, $value);
+	    }
+	}
+    }
 }
 
 #-------------------------------------------------------------------------------
@@ -1915,49 +1954,49 @@ sub set_confopts
     print "  confopts = $coptions\n";
     if ($coptions =~ "_D" || $coptions =~ "_ED") {
 	$cfg_ref->set('DEBUG', "TRUE");
-        print "    confopts DEBUG ON \n";
+	print "    confopts DEBUG ON \n";
     }
     if ($coptions =~ "_E" || $coptions =~ "_DE") {
 	$cfg_ref->set('USE_ESMF_LIB', "TRUE");
 	$cfg_ref->set('COMP_INTERFACE', "ESMF");
-        print "    confopts COMP_INTERFACE ESMF set \n";
+	print "    confopts COMP_INTERFACE ESMF set \n";
     }
 
     if ($coptions =~ "_P") {
-        my $popt = $coptions;
-        $popt =~ s/.*_P([A-Za-z0-9]*)_?.*/$1/;
-        $pecount = $popt;
-        print "    confopts pecount set to $pecount \n";
+	my $popt = $coptions;
+	$popt =~ s/.*_P([A-Za-z0-9]*)_?.*/$1/;
+	$pecount = $popt;
+	print "    confopts pecount set to $pecount \n";
     }
     if ($coptions =~ "_M") {
-        my $mopt = $coptions;
-        $mopt =~ s/.*_M([A-Za-z0-9\-]*)_?.*/$1/;
-        $mpilib = $mopt;
-        print "    mpilib set to $mpilib \n";
+	my $mopt = $coptions;
+	$mopt =~ s/.*_M([A-Za-z0-9\-]*)_?.*/$1/;
+	$mpilib = $mopt;
+	print "    mpilib set to $mpilib \n";
     }
     if ($coptions =~ "_L") {
-        my $lopt = $coptions;
-        $lopt =~ s/.*_L([A-Za-z0-9]*)_?.*/$1/;
-        my $loptc = substr($lopt,0,1);
-        my $lopti = substr($lopt,1);
-        my $lopts = 'unknown';
-        if ($loptc =~ "y") {$lopts = 'nyears'}
-        if ($loptc =~ "m") {$lopts = 'nmonths'}
-        if ($loptc =~ "d") {$lopts = 'ndays'}
-        if ($loptc =~ "h") {$lopts = 'nhours'}
-        if ($loptc =~ "s") {$lopts = 'nseconds'}
-        if ($loptc =~ "n") {$lopts = 'nsteps'}
-        if ($lopts =~ "unknown") {
+	my $lopt = $coptions;
+	$lopt =~ s/.*_L([A-Za-z0-9]*)_?.*/$1/;
+	my $loptc = substr($lopt,0,1);
+	my $lopti = substr($lopt,1);
+	my $lopts = 'unknown';
+	if ($loptc =~ "y") {$lopts = 'nyears'}
+	if ($loptc =~ "m") {$lopts = 'nmonths'}
+	if ($loptc =~ "d") {$lopts = 'ndays'}
+	if ($loptc =~ "h") {$lopts = 'nhours'}
+	if ($loptc =~ "s") {$lopts = 'nseconds'}
+	if ($loptc =~ "n") {$lopts = 'nsteps'}
+	if ($lopts =~ "unknown") {
 	    print "$0 _L confopts run length undefined, only y m d h s n allowed\n\n";
 	    exit -1;
 	}
 	$cfg_ref->set('STOP_OPTION', $lopts);
 	$cfg_ref->set('STOP_N', $lopti);
-        print "    confopts run length set to $lopt . $lopts . $lopti \n";
+	print "    confopts run length set to $lopt . $lopts . $lopti \n";
     }
     if ($coptions =~ "_N") {
-        my $nopt = $coptions;
-        $nopt =~ s/.*_N([0-9]*)_?.*/$1/;
+	my $nopt = $coptions;
+	$nopt =~ s/.*_N([0-9]*)_?.*/$1/;
 	$cfg_ref->set('NINST_ATM', $nopt);
 	$cfg_ref->set('NINST_LND', $nopt);
 	$cfg_ref->set('NINST_OCN', $nopt);
@@ -1965,71 +2004,19 @@ sub set_confopts
 	$cfg_ref->set('NINST_GLC', $nopt);
 	$cfg_ref->set('NINST_ROF', $nopt);
 	$cfg_ref->set('NINST_WAV', $nopt);
-        print "    confopts instances set to $nopt \n";
+	print "    confopts instances set to $nopt \n";
     }
     if ($coptions =~ "_CG") {
 	$cfg_ref->set('CALENDAR', "GREGORIAN");
-        print "    confopts CALENDAR set to GREGORIAN \n";
+	print "    confopts CALENDAR set to GREGORIAN \n";
     }
     if ($coptions =~ "_AOA") {
 	$cfg_ref->set('AOFLUX_GRID', "atm");
-        print "    confopts AOFLUX_GRID set to atm \n";
+	print "    confopts AOFLUX_GRID set to atm \n";
     }
     if ($coptions =~ "_AOE") {
 	$cfg_ref->set('AOFLUX_GRID', "exch");
-        print "    confopts AOFLUX_GRID set to exch \n";
-    }
-
-    if ($coptions =~ "_R") {
-	if($cfg_ref->get('OS') eq 'BGP'){
-	    print "$0 single_point cases not supported on bluegene systems\n\n";
-	    exit -1;
-	}
-        my $ptsmode = "undef";
-        if ($coptions =~ "_RLA" ) {
-           $cfg_ref->set('PTS_LAT',  42 );
-           $cfg_ref->set('PTS_LON',  260 );
-           my $ptsmode = "valid";
-           print "    confopts single point mode set to RLA \n";
-        }
-        if ($coptions =~ "_RLB" ) {
-           $cfg_ref->set('PTS_LAT',  -5 );
-           $cfg_ref->set('PTS_LON',  290 );
-           my $ptsmode = "valid";
-           print "    confopts single point mode set to RLB \n";
-        }
-        if ($coptions =~ "_ROA" ) {
-           $cfg_ref->set('PTS_LAT',  30 );
-           $cfg_ref->set('PTS_LON',  315 );
-           my $ptsmode = "valid";
-           print "    confopts single point mode set to ROA \n";
-        }
-        if ($coptions =~ "_ROB" ) {
-           $cfg_ref->set('PTS_LAT',  0 );
-           $cfg_ref->set('PTS_LON',  160 );
-           my $ptsmode = "valid";
-           print "    confopts single point mode set to ROB \n";
-        }
-        if ($ptsmode ==  "valid" ) {
-           $cfg_ref->set('PTS_MODE', "TRUE" );
-           $cfg_ref->set('ATM_NX', 0);
-           $cfg_ref->set('ATM_NY', 0);
-           $cfg_ref->set('LND_NX', 0);
-           $cfg_ref->set('LND_NY', 0);
-           $cfg_ref->set('ICE_NX', 0);
-           $cfg_ref->set('ICE_NY', 0);
-           $cfg_ref->set('OCN_NX', 0);
-           $cfg_ref->set('OCN_NY', 0);
-           $cfg_ref->set('ROF_NX', 0);
-           $cfg_ref->set('ROF_NY', 0);
-           $cfg_ref->set('GLC_NX', 0);
-           $cfg_ref->set('GLC_NY', 0);
-           $cfg_ref->set('WAV_NX', 0);
-           $cfg_ref->set('WAV_NY', 0);
-        } else {
-	   print "create_newcase exited on invalid _R confopts setting\n\n";
-           exit -1;
-        }
+	print "    confopts AOFLUX_GRID set to exch \n";
     }
 }
 
@@ -2055,7 +2042,7 @@ sub list_grids
     print "\n";
     # Component grids
     print "======================================================\n";
-    print ("Component Grids:  name (alias) \n");
+    print ("Component Grids:  name\t(alias)\t(desc)\t(nx)\t(ny) \n");
     print "======================================================\n";
     my @e = $xml->elements_by_name( "gridhorz" );
     my %a = ();
@@ -2064,26 +2051,41 @@ sub list_grids
 	my $hgrid = clean($attr{'name'});
 	my $alias = clean($attr{'alias'});
 	my $gridname;
-	if ($alias) {
-	    print "    $hgrid ($alias)  \n";
-	} else {
-	    print "    $hgrid \n";
+	printf "    %-20s ", $hgrid;
+	foreach my $item ( "alias" ) {
+	    if ($attr{$item}) {
+		print " ($item: $attr{$item})";
+	    }
 	}
+	my @children = $e->get_children();
+	my %elements = undef;
+	foreach my $child (@children) {
+	    my $name = clean($child->get_name());
+	    $elements{$name} = clean($child->get_text());
+	}
+	foreach my $item ( "desc", "nx", "ny" ) {
+	    if ($elements{$item}) {
+		print " ($item: $elements{$item})";
+	    }
+	}
+	print " \n";
     }
     print ("  \n");
     # Model grids
     print "======================================================\n";
-    print ("Model Grids:  name (alias) \n");
+    print ("Model Grids:  name\t(alias)\t(compset) \n");
     print "======================================================\n";
     my @e = $xml->elements_by_name( "GRID" );
     while ( my $e = shift @e ) {
 	my %attr = $e->get_attributes();
 	my $text = clean($e->get_text());
-	if ($attr{'alias'}) {
-	    print "model grid: $text (alias $attr{'alias'})\n";
-	} else {
-	    print "model grid: $text \n";
+	printf "%s %-87s ", "model grid: ", $text;
+	foreach my $item ( "alias", "compset" ) {
+	    if ($attr{$item}) {
+		print " ($item: $attr{$item})";
+	    }
 	}
+	print "\n";
     }    
     print " \n";
 
@@ -2116,8 +2118,10 @@ sub list_compsets
     while ( my $e = shift @e ) {
 	my %attr = $e->get_attributes();
 	my $text = clean($e->get_text());
-#	print "compset: $text (alias $attr{'alias'})\n";
-	printf("alias: %-25s longname: %-96s \n", clean($attr{'alias'}),clean($text));
+	printf("alias: %-25s shortname: %-50s \n",
+	       clean($attr{'alias'}),clean($attr{'sname'}));
+	printf("                                 longname: %-96s \n",
+	       clean($text));
     }    
     print " \n";
     my @e = $xml_comp->elements_by_name( "help" );
@@ -2144,7 +2148,7 @@ sub print_tests
 
     print ("  \n");
     print ("  TESTS:  name (description) \n");
-    
+
     my @e = $xml->elements_by_name( "ccsmtest" );
     my %a = ();
     while ( my $e = shift @e ) {

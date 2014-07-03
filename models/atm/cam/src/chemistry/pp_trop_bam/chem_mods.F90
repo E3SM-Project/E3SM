@@ -3,7 +3,6 @@
 
 
 
-
       module chem_mods
 !--------------------------------------------------------------
 ! ... Basic chemistry parameters and arrays
@@ -15,15 +14,15 @@
 
       save
 
-      integer, parameter :: phtcnt = 0, & ! number of photolysis reactions
-                            rxntot = 2, & ! number of total reactions
-                            gascnt = 2, & ! number of gas phase reactions
+      integer, parameter :: phtcnt = 1, & ! number of photolysis reactions
+                            rxntot = 9, & ! number of total reactions
+                            gascnt = 8, & ! number of gas phase reactions
                             nabscol = 2, & ! number of absorbing column densities
                             gas_pcnst = 16, & ! number of "gas phase" species
-                            nfs = 7, & ! number of "fixed" species
+                            nfs = 8, & ! number of "fixed" species
                             relcnt = 0, & ! number of relationship species
                             grpcnt = 0, & ! number of group members
-                            nzcnt = 18, & ! number of non-zero matrix entries
+                            nzcnt = 20, & ! number of non-zero matrix entries
                             extcnt = 2, & ! number of species with external forcing
                             clscnt1 = 0, & ! number of species in explicit class
                             clscnt2 = 0, & ! number of species in hov class
@@ -31,9 +30,9 @@
                             clscnt4 = 16, & ! number of species in implicit class
                             clscnt5 = 0, & ! number of species in rodas class
                             indexm = 1, & ! index of total atm density in invariant array
-                            indexh2o = 0, & ! index of water vapor density
+                            indexh2o = 4, & ! index of water vapor density
                             clsze = 1, & ! loop length for implicit chemistry
-                            rxt_tag_cnt = 0, &
+                            rxt_tag_cnt = 4, &
                             nslvd = 0
 
       integer :: clscnt(5) = 0

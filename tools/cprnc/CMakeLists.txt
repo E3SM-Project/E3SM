@@ -6,13 +6,18 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
-find_package(Netcdf REQUIRED)
+# Defining Netcdf_LIBRARIES and Netcdf_INCLUDE_DIR enables bypassing
+#   the search for Netcdf
+IF(NOT DEFINED Netcdf_LIBRARIES OR NOT DEFINED Netcdf_INCLUDE_DIR)
+  FIND_PACKAGE(Netcdf REQUIRED)
+ENDIF ()
 
 ADD_CUSTOM_COMMAND(
   OUTPUT ${CMAKE_BINARY_DIR}/compare_vars_mod.F90
   COMMAND perl ${CMAKE_SOURCE_DIR}/genf90/genf90.pl
     ${CMAKE_SOURCE_DIR}/compare_vars_mod.F90.in > ${CMAKE_BINARY_DIR}/compare_vars_mod.F90
 )
+ADD_CUSTOM_TARGET(COMPARE_VARS DEPENDS ${CMAKE_BINARY_DIR}/compare_vars_mod.F90)
 
 # Support extended line lengths
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
@@ -38,7 +43,7 @@ SET (CPRNC_SRCS
 )
 
 ADD_EXECUTABLE(cprnc ${CPRNC_SRCS})
-ADD_DEPENDENCIES(cprnc ${CMAKE_BINARY_DIR}/compare_vars_mod.F90)
+ADD_DEPENDENCIES(cprnc COMPARE_VARS)
 
 TARGET_LINK_LIBRARIES(cprnc ${Netcdf_LIBRARIES})
 

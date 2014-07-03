@@ -1,5 +1,7 @@
 module RtmMod
 
+#include "shr_assert.h"
+
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -32,7 +34,6 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, runoff
   use RtmIO
   use mct_mod
   use perf_mod
@@ -104,6 +105,7 @@ contains
 ! Initialize RTM grid, mask, decomp
 !
 ! !USES:
+  use RunoffMod       , only : RunoffInit, runoff
 !
 ! !ARGUMENTS:
     implicit none
@@ -915,8 +917,13 @@ contains
     !   this will place the fthresh and evel initialization in
     !   a consistent location for extensibility.
     !-------------------------------------------------------
-    call RtmFloodInit (frivinp_rtm, begr, endr, runoff%fthresh, evel, &
-        flood_active, effvel_active)
+    call RtmFloodInit (frivinp_rtm, begr, endr, nt_rtm, &
+         runoff%fthresh(begr:endr),                     &
+         evel(begr:endr, :),                            &
+         runoff%gindex(begr:endr),                      &
+         runoff%lnumr,                                  &
+         flood_active,                                  &
+         effvel_active)
 
     !-------------------------------------------------------
     ! Compute timestep and subcycling number
@@ -988,6 +995,7 @@ contains
 ! Outputs are dvolrdt\_r, dvolrdt\_lnd\_r, dvolrdt\_ocn\_r, flxocn\_r, flxlnd\_r.
 !
 ! !USES:
+  use RunoffMod       , only : RunoffInit, runoff
 !
 ! !ARGUMENTS:
     implicit none
@@ -1299,25 +1307,32 @@ contains
   !=======================================================================
   !
   !=======================================================================
-  subroutine RtmFloodInit(frivinp, begr, endr, fthresh, evel, &
-                          is_rtmflood_on, is_effvel_on )
+  subroutine RtmFloodInit(frivinp, begr, endr, nt_rtm, fthresh, evel, &
+                          gindex , &
+                          lnumr , &
+                          is_rtmflood_on, &
+                          is_effvel_on )
 
 
     !-----------------------------------------------------------------------
     ! Uses
     use pio
-    use RtmVar, only :  spval 
+    use RtmVar          , only : spval 
+    use shr_log_mod     , only : errMsg => shr_log_errMsg
 
     ! Subroutine arguments 
     ! in mode arguments
     character(len=*), intent(in) :: frivinp
-    integer ,         intent(in) :: begr, endr
+    integer ,         intent(in) :: begr, endr, nt_rtm
     logical ,         intent(in) :: is_rtmflood_on  !control flooding
     logical ,         intent(in) :: is_effvel_on    !control eff. velocity 
+    integer ,         intent(in) :: gindex( begr: )  ! global index [begr:endr]
+    integer ,         intent(in) :: lnumr            ! local number of cells
 
     ! out mode arguments
-    real(r8), intent(out) :: fthresh(begr:endr)
-    real(r8), intent(out) :: evel(begr:endr,nt_rtm) 
+    real(r8), intent(out) :: fthresh( begr: )  ! Rtm water flood threshold
+                                               ! [begr:endr]
+    real(r8), intent(out) :: evel( begr: , 1: )! effective velocity [begr:endr, nt_rtm] 
 
     ! Local dynamically alloc'd variables
     real(r8) , allocatable :: rslope(:)   
@@ -1337,14 +1352,21 @@ contains
     character(len=256) :: locfn      ! local file name
 
     !Rtm Flood constants for spatially varying celerity
-    real(r8),parameter :: effvel4_0(nt_rtm) = 0.35_r8   ! downstream velocity (m/s)
-
-    real(r8),parameter :: effvel4_5(nt_rtm) = 1.0_r8   ! downstream velocity (m/s)
-    real(r8),parameter :: min_ev4_5(nt_rtm) = 0.05_r8  ! minimum downstream velocity (m/s)
+    real(r8) :: effvel4_0(nt_rtm)    ! downstream velocity (m/s)
+    real(r8) :: effvel4_5(nt_rtm)    ! downstream velocity (m/s)
+    real(r8) :: min_ev4_5(nt_rtm)    ! minimum downstream velocity (m/s)
 
     ! name of this subroutine for logging
     character(*),parameter :: subname = '(RtmFloodInit) '
     !-----------------------------------------------------------------------
+
+    SHR_ASSERT_ALL((ubound(fthresh) == (/endr/)),         errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(gindex)  == (/endr/)),         errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(evel)    == (/endr, nt_rtm/)), errMsg(__FILE__, __LINE__))
+
+    effvel4_0(:) = 0.35_r8  ! downstream velocity (m/s)
+    effvel4_5(:) = 1.0_r8   ! downstream velocity (m/s)
+    min_ev4_5(:) = 0.05_r8  ! minimum downstream velocity (m/s)
 
     !----------------------
     ! if either is_rtmflood_on = .true. or is_effvel_on is .true. then do 
@@ -1385,11 +1407,11 @@ contains
        ier = pio_inq_vardimid(ncid, vardesc1, dids)
        ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
        ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
-       allocate(compdof(runoff%lnumr))
+       allocate(compdof(lnumr))
        cnt = 0
-       do n = runoff%begr,runoff%endr
+       do n = begr,endr
           cnt = cnt + 1
-          compdof(cnt) = runoff%gindex(n)
+          compdof(cnt) = gindex(n)
        enddo
        call pio_initdecomp(pio_subsystem, pio_double, dsizes, compdof, iodesc)
        deallocate(compdof)
@@ -1411,8 +1433,6 @@ contains
              fthresh(n) = max_volr(n)*max(0.005_r8 , 3. * rslope(n))
           end do
        end do
-    else
-       runoff%fthresh(:) = spval
     endif
 
     if (is_effvel_on) then

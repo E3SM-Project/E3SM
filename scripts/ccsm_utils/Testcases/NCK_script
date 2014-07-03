@@ -162,7 +162,7 @@ rm -f $cfile2
 grep -i comm_diag $CPLLOG_INIT1                                   >! $cfile1
 grep -i comm_diag $CPLLOG_INIT2 | grep -i _0002 | sed 's/_0002//' >! $cfile2
 
-set pass = `diff cfile1 cfile2 | grep -i comm_diag | wc -l`
+set pass = `diff $cfile1 $cfile2 | grep -i comm_diag | wc -l`
 if ($pass != 0) set basestatus = "FAIL "
 
 echo "$basestatus " >>& $TESTSTATUS_LOG

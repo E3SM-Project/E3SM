@@ -1,4 +1,4 @@
-models/lnd/clm/tools/README					Jun/04/2013
+models/lnd/clm/tools/README					May/07/2013
 
 CLM tools for analysis of CLM history files -- or for creation or
 modification of CLM input files.
@@ -20,7 +20,7 @@ I.  General directory structure:
                            (deprecated)
         mkmapdata -------- Create SCRIP mapping data from SCRIP grid files (uses ESMF)
         gen_domain ------- Create data model domain datasets from SCRIP mapping datasets.
-                           (also in the top level mapping directory [../../../../tools/mapping])
+                           (also in the top level mapping directory [../../../../mapping])
         mkprocdata_map --- Convert output unstructured grids into a 2D format that
                            can be plotted easily
         ncl_scripts ------ NCL post or pre processing scripts.
@@ -38,24 +38,27 @@ II. Notes on building/running for each of the above tools:
 
     Each tool that has FORTRAN source code has the following files:
 
-	README -------------- Specific help for using the specific tool and help on specific 
-                              files in that directory.
-	src/Filepath -------- List of directories needed to build the tool 
-                              (some files in ../src directories are required).
-	src/Makefile -------- Customization of the make for the particular tool in question
-	src/Makefile.common - General GNU Makefile for creating FORTRAN tools
-                              (these are identical between tools).
-	src/Srcfiles -------- List of source files that are needed.
-        src/Mkdepends ------- Dependency generator program
+	README ------- Specific help for using the specific tool and help on specific 
+                       files in that directory.
+	src/Filepath ----- List of directories needed to build the tool 
+                           (some files in ../src directories are required).
+	src/Makefile ----- GNU Makefile to build the tool 
+                           (these are identical between tools.
+	src/Macros.custom  Customization of make macros for the particular tool in question
+	src/Srcfiles ----- List of source files that are needed.
+        src/Mkdepends ---- Dependency generator program
 
     mkmapdata and ncl_scripts only contain scripts so don't have the above build files.
 
     Most tools have copies of files from other directories -- see the README.filecopies
     file for more information on this.
 
-    Tools may also have files with the directory name followed by: namelist, or runoptions. 
+    Tools may also have files with the directory name followed by: namelist, runoptions, 
+    regional, or singlept these are sample namelists:
 
 	<directory>.namelist ------ Namelist to create a global file.
+	<directory>.regional ------ Namelist to create a regional file.
+	<directory>.singlept ------ Namelist to create a single-point file.
 	<directory>.runoptions ---- Command line options to use the given tool.
 
     These files are also used by the test scripts to test the tools (see the
@@ -81,7 +84,7 @@ II. Notes on building/running for each of the above tools:
    gmake OPT=TRUE  (by default already on for interpinic and mksurfdata_map)
 
       Also some of the tools allow for OpenMP shared memory parallelism 
-      (such as interpinic) with
+      (such as interpinic and mksurfdata) with
 
    gmake SMP=TRUE
 
@@ -124,7 +127,12 @@ use CLM4.0, you will need to do the following:
            cd shared/mkmapdata
            ./mknoocnmap.pl -p 40,255 -n 1x1_boulderCO
 
-       c.) General case
+       c.) To convert from CLM or CAM grid files
+
+        To convert CLM grid files or CAM grid files to SCRIP grid files use
+        the deprecated mkgriddata program if you have to.
+
+       d.) General case
 
         You'll need to convert or create SCRIP grid files on your own (using scripts
         or other tools) for the general case where you have an unstructured grid, or 
@@ -163,13 +171,13 @@ use CLM4.0, you will need to do the following:
 
         c.) New atmosphere or ocean resolution
 
-        If the region DOES include ocean, use gen_domain to create a 
+        If the region DOES include ocean, use gen_domain/gen_maps.sh to create a 
         mapping file for it.
 
     Example:
 
-    cd ../../../../tools/mapping/gen_domain_files/src
-    ./gen_domain -m $MAPFILE -o $OCNGRIDNAME -l $ATMGRIDNAME
+    cd shared/gen_domain
+    ./gen_maps.sh -focn <ocngrid> -fatm <atmgrid> -nocn <ocnname> -natm <atmname>
 
 
     3.) Add SCRIP grid file(s) created in (1) into XML database in CLM (optional)
@@ -207,13 +215,13 @@ use CLM4.0, you will need to do the following:
        and file creation dates to mksurfdata_map in step (5) below.
 
     6.) Convert map of ocean to atm for use by DATM and CLM with gen_domain
-        (See tools/mapping/README for more help on doing this)
+        (See mapping/README for more help on doing this)
 
        - gen_domain uses the map from step (2) (or previously created CESM maps)
 
        Example:
 
-        cd ../../../../tools/mapping/gen_domain_files/src
+        cd ../../../../mapping/src
         gmake
         cd ..
         setenv CDATE       090206
@@ -249,9 +257,6 @@ use CLM4.0, you will need to do the following:
 
     8.) Interpolate initial conditions using interpinic (optional)
         (See interpinic/README for more help on doing this)
-        IMPORTANT NOTE on interpinic!!!:: BE SURE TO USE NetCDF4.3 WHEN BUILDING!
-           If your template file was written using pnetcdf -- interpinic will corrupt
-           the resulting file and make it unusable!
 
     9.) Add new files to XML data or using user_nl_clm (optional)
 
@@ -283,13 +288,12 @@ IV. Example of creating single-point datasets without entering into XML database
        cd ..
     5.) skip
     6.) Generate domain file for datm and CLM
-        cd ../../../../tools/mapping/gen_domain_files/src
+        cd ../../../../../../mapping/src
         gmake
         cd ..
         setenv OCNDOM domain.ocn_noocean.nc
         setenv ATMDOM domain.lnd.{$GRIDNAME}_noocean.nc
         ./gen_domain -m $MAPFILE -o $OCNDOM -l $ATMDOM
-        cd ../../../../lnd/clm/tools
     7.) Create surface dataset for CLM
        cd clm4_5/mksurfdata_map/src
        gmake
@@ -304,7 +308,5 @@ V.  Notes on which input datasets are needed for CLM
          - need fsurdata and fatmlndfrc
 
       fsurdata ---- from mksurfdata_map in step (III.7)
-      fatmlndfrc -- use the domain.lnd file from gen_domain in step (III.6) 
-      (NOTE: THIS FILE IS POINTED TO USING ATM_DOMAIN_PATH/ATM_DOMAIN_FILE/LND_DOMAIN_PATH/LND_DOMAIN_FILE
-             env_run.xml variables -- do NOT simply add this to your user_nl_clm as it will fail)
+      fatmlndfrc -- use the domain.lnd file from gen_domain in step (III.6)
 

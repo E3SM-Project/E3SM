@@ -96,8 +96,23 @@ for compare_file in ${files_to_compare}; do
     if [ $rc -eq 0 ]; then
         echo "TBLscript_tools.sh: comparison successful; output in ${rundir}/cprnc.${compare_file}.out"
     else
-        echo "TBLscript_tools.sh: error from CLM_compare.sh= $rc; see ${rundir}/cprnc.${compare_file}.out for details
-"
+        echo "TBLscript_tools.sh: error from CLM_compare.sh= $rc; see ${rundir}/cprnc.${compare_file}.out for details"
+        all_comparisons_good="FALSE"
+    fi
+done
+# Compare text files for PTCLM if they exist
+files_to_compare=`cd ${CLM_TESTDIR}/TSMscript_tools.$1.$2.$3.$4; ls README*`
+for compare_file in ${files_to_compare}; do
+
+    diff   \
+        ${BL_TESTDIR}/TSMscript_tools.$1.$2.$3.$4/${compare_file} \
+        ${CLM_TESTDIR}/TSMscript_tools.$1.$2.$3.$4/${compare_file} \
+        > diff.${compare_file}.out
+    rc=$?
+    if [ $rc -eq 0 ]; then
+        echo "TBLscript_tools.sh: comparison successful; output in ${rundir}/diff.${compare_file}.out"
+    else
+        echo "TBLscript_tools.sh: error from CLM_compare.sh= $rc; see ${rundir}/diff.${compare_file}.out for details"
         all_comparisons_good="FALSE"
     fi
 done

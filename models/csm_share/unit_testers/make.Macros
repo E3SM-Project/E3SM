@@ -119,12 +119,12 @@ endif
 ifeq ($(UNAMES),Linux)
 
 ifeq ($(FC),f77)
-  FC := pgf90
+  FC := pgfortran
 endif
 
 CFLAGS      :=
 LDFLAGS     :=
-ifeq ($(FC),pgf90)
+ifeq ($(FC),pgfortran)
    CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_ -DCPRPGI
    ifeq ($(INC_MPI),$(null))
       INC_MPI    := /usr/local/mpich-1.2.7p1-pgi-pgcc-pghf-6.1-3/include
@@ -152,30 +152,6 @@ ifeq ($(FC),pgf90)
       FFLAGS    += -Ktrap=fp
    endif
    LDFLAGS      += -Bstatic
-endif
-ifeq ($(FC),lf95)
-   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_ -DCPRLAHEY
-   CC         := cc
-   INC_MPI    := /usr/local/mpich-1.2.7p1-gcc-g++-4.0.2-8-lf9562/include
-   LIB_MPI    := /usr/local/mpich-1.2.7p1-gcc-g++-4.0.2-8-lf9562/lib
-   INC_NETCDF := /usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/include
-   LIB_NETCDF := /usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
-   ifeq ($(SPMD),TRUE)
-      ESMF_ARCH  := Linux.lahey.32.mpich.default
-   else
-      ESMF_ARCH  := Linux.lahey.32.mpiuni.default
-   endif
-   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) \
-		   $(cpp_path) -I$(INC_NETCDF) \
-		   -g --chk a,e,s -I$(INC_MPI)
-   ifneq ($(FLTTRAP),FALSE)
-       FFLAGS   += --trap --chk u --trace
-       LDFLAGS  += --trap --trace
-   else
-       FFLAGS   += --ntrap --ntrace
-       LDFLAGS  += --ntrap --ntrace
-   endif
-   LDFLAGS      += -static
 endif
 ifeq ($(FC),nagfor)
    CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_ -DCPRNAG
@@ -256,7 +232,7 @@ ifeq ($(FC),ifort)
    LDFLAGS     += -m64
 endif
 ifeq ($(FC),gfortran)
-  CPPDEF      += -DLINUX -DFORTRAN_SAME
+  CPPDEF      += -DLINUX -DFORTRAN_SAME -DCPRGNU
   CC       := cc
   FFLAGS   := -fno-underscoring $(CPPDEF) $(cpp_path) -I$(INC_NETCDF) \
           $(FPPFLAGS) -g -fbounds-check -fno-range-check -m64
@@ -279,16 +255,17 @@ ifeq ($(FC),g95)
      FFLAGS   += -ffpe-trap=invalid,zero,overflow
   endif
 endif
-ifeq ($(FC),xlf90)
-  CPPDEF += -DBGP -DAIX
-  ESMF_ARCH := AIX.default.64.mpiuni.default
-  NETCDF_PATH   := $(NETCDF)
-  INC_NETCDF    := $(NETCDF_PATH)/include
-  LIB_NETCDF    := $(NETCDF_PATH)/lib
-  MOD_NETCDF    := $(NETCDF_PATH)/include
-  CPPDEF      += -DFORTRAN_SAME
+ifeq ($(FC),xlf2003_r)
+  CPPDEF += -DLINUX -DFORTRAN_SAME -DCPRIBM
   AIX_CPPDEF := $(patsubst -D%,$(cpre)%,$(CPPDEF))
   FPPFLAGS := -WF,-P,$(AIX_CPPDEF)
+  ESMF_ARCH := AIX.default.64.mpiuni.default
+  ifeq ($(INC_NETCDF),$(null))
+     INC_NETCDF := /soft/libraries/netcdf/4.2.1.1/cnk-xl/V1R2M0-20130417/include
+  endif
+  ifeq ($(LIB_NETCDF),$(null))
+     LIB_NETCDF := /soft/libraries/netcdf/4.2.1.1/cnk-xl/V1R2M0-20130417/lib
+  endif
   FREEFLAGS  := -qsuffix=f=f90:cpp=F90
   FFLAGS   := $(FREEFLAGS) $(cpp_path)  -I$(INC_NETCDF) -I$(LIB_NETCDF) $(FPPFLAGS) \
 	  -qarch=auto -qspillsize=2500 \
@@ -299,7 +276,7 @@ ifeq ($(FC),xlf90)
   ifneq ($(FLTTRAP),FALSE)
      FFLAGS   += -qinitauto=FF911299 -qflttrap=ov:zero:inv:en -qhalt=w
   endif
-  ifeq ($(FC),mpxlf90_r)
+  ifeq ($(SPMD),TRUE)
     LDFLAGS    += -lmpi_r
   endif
   ifeq ($(SMP),TRUE)

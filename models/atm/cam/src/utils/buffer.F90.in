@@ -60,6 +60,7 @@ module buffer
   end interface
 
   public :: buffer_field_deallocate, buffer_field_allocate, buffer_set_field, buffer_get_field_ptr, buffer_field_default_type
+  public :: buffer_field_is_alloc
 
   
 CONTAINS
@@ -83,6 +84,13 @@ CONTAINS
     nullify(bfg%data)
 
   end subroutine buffer_field_deallocate_{TYPE}
+
+  logical function buffer_field_is_alloc(bfg)
+    type(buffer_field_default_type),intent(in) :: bfg
+
+    buffer_field_is_alloc = associated(bfg%data) 
+
+  end function buffer_field_is_alloc
 
 
 ! TYPE int,double,real

@@ -62,11 +62,19 @@ subroutine gasexchange(carma, cstate, iz, rc)
 
           do i = 1,NBIN
       
-            i2 = inuc2bin(i,igroup,ig2)            ! target bin
-
+            ! If there is no place for the nucleating particle bin to fit in the
+            ! nucleated particle, then just skip it. 
+            !
+            ! This could be an error if significant nucleation really happens from
+            ! these bins, but also more flexibility in setting up particle grids.
             gprod_nuc(igroup,igas) = gprod_nuc(igroup,igas) - &
-              pc(iz,i,ielem) * rnuclg(i,igroup,ig2) * &
-              diffmass(i2,ig2,i,igroup) - rhompe(i,ielem) * rmass(i,igroup)
+              rhompe(i,ielem) * rmass(i,igroup)
+
+            i2 = inuc2bin(i,igroup,ig2)            ! target bin
+            if (i2 /= 0) then
+              gprod_nuc(igroup,igas) = gprod_nuc(igroup,igas) - &
+                pc(iz,i,ielem) * rnuclg(i,igroup,ig2) * diffmass(i2,ig2,i,igroup)
+            end if
           enddo    
 
           ! Latent heating rate from condensing gas: <rlh> is latent heat of evaporation 

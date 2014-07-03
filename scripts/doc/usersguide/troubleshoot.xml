@@ -196,4 +196,14 @@ consistently in the same place before filing a bug report with CESM1.
 
 </sect1>
 
+<!-- ======================================================================= -->
+<sect1 id="troubleshooting_erik">
+<title>Additional Troubleshooting Information </title>
+
+<para>
+The <ulink url="http://www.cesm.ucar.edu/models/cesm1.2/clm/models/lnd/clm/doc/UsersGuide/c12493.html">Community Land Model (CLM) documentation, Chapter 6.</ulink>, provides some additional trouble shooting tips 
+that may be useful beyond those listed here. 
+</para>
+
+</sect1>
 </chapter>

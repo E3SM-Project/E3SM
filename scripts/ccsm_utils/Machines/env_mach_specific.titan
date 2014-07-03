@@ -10,14 +10,31 @@
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
-  module switch pgi       pgi/12.10.0       
-  module switch xt-libsci xt-libsci/11.1.01
-  module switch xt-asyncpe xt-asyncpe/5.16
-  module switch cray-mpich2 cray-mpich2/5.5.5
-  module load szip/2.1
-  module load hdf5/1.8.7
-  module load netcdf/4.2.0
-  module load p-netcdf/1.3.1
+  if ($COMPILER == "pgicuda") then
+    module add cudatoolkit
+    setenv CRAY_CUDA_PROXY 1
+  endif  
+
+  module switch pgi       pgi/14.2.0   
+  module rm cray-mpich2  
+  module rm cray-mpich
+  module rm cray-libsci
+  module rm xt-libsci
+  module rm cray-netcdf
+  module rm cray-netcdf-hdf5parallel
+  module rm cray-parallel-netcdf
+  
+  module load cray-mpich/6.3.0
+  module load cray-libsci/12.1.3
+  module switch xt-asyncpe xt-asyncpe/5.24
+
+  if ( $MPILIB == "mpi-serial") then
+    module load cray-netcdf/4.3.0
+  else
+    module load cray-netcdf-hdf5parallel/4.3.0
+    module load cray-parallel-netcdf/1.3.1.1
+  endif
+
   module load esmf/5.2.0rp2
   module load subversion
   module load cmake/2.8.6

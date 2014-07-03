@@ -114,12 +114,6 @@ Default: 0 for unstructured grid dycores, 1 for lat/lon grid dycores
 
 <!-- Diagnostics -->
 
-<entry id="history_amwg" type="logical"  category="diagnostics"
-       group="phys_ctl_nl" valid_values="" >
-Switch for diagnostic output of AMWG diag package variables
-Default: .true.
-</entry>
-
 <entry id="diag_cnst_conv_tend" type="char*8"  category="diagnostics"
        group="cam_diag_opts" valid_values="none,q_only,all" >
 Output constituent tendencies due to convection.  Set to
@@ -130,7 +124,12 @@ Default: 'q_only', but 'none' for WACCM configurations.
 <entry id="do_circulation_diags" type="logical"  category="diagnostics"
        group="circ_diag_nl" valid_values="" >
 Turns on TEM circulation diagnostics history output.  Only valid for FV dycore.
-Default: FALSE
+
+do_circulation_diags MUST be .true. in all FV cases with WACCM's QBO forcing
+enabled. Cases with qbo_use_forcing = .true. and do_circulation_diags =
+.false. will produce invalid output.
+
+Default: .true. for WACCM, otherwise .false.
 </entry>
 
 <entry id="print_energy_errors" type="logical"  category="diagnostics"
@@ -675,9 +674,84 @@ Default: 5
 
 <!-- Gravity Wave Drag -->
 
+<entry id="use_gw_oro" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable gravity waves produced by orography.
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_gw_front" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable gravity waves produced by frontogenesis.
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_gw_convect" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable gravity waves produced by convection.
+Default: set by build-namelist.
+</entry>
+
+<entry id="pgwv" type="integer" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Gravity wave spectrum dimension (wave numbers are from -pgwv to pgwv).
+Default: set by build-namelist.
+</entry>
+
+<entry id="gw_dc" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Width of speed bins (delta c) for gravity wave spectrum (reference wave
+speeds are from -pgwv*dc to pgwv*dc).
+Default: set by build-namelist.
+</entry>
+
+<entry id="tau_0_ubc" type="logical" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Force the stress due to gravity waves to be zero at the top of the model.
+In the low-top model, this helps to conserve momentum and produce a QBO.
+Default: set by build-namelist.
+</entry>
+
+<entry id="effgw_beres" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Efficiency associated with convective gravity waves from the Beres
+scheme.
+Default: set by build-namelist.
+</entry>
+
+<entry id="effgw_cm" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Efficiency associated with gravity waves from frontogenesis.
+Default: set by build-namelist.
+</entry>
+
+<entry id="effgw_oro" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Efficiency associated with orographic gravity waves.
+Default: set by build-namelist.
+</entry>
+
 <entry id="fcrit2" type="real"  category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Critical Froude number squared.
+Default: set by build-namelist.
+</entry>
+
+<entry id="frontgfc" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Frontogenesis function critical threshold.
+Default: set by build-namelist.
+</entry>
+
+<entry id="gw_drag_file" type="char*256" input_pathname="abs" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Full pathname of Beres lookup table data file for gravity waves.
+Default: set by build-namelist.
+</entry>
+
+<entry id="taubgnd" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Background source strength (used for waves from frontogenesis).
 Default: set by build-namelist.
 </entry>
 
@@ -785,16 +859,18 @@ Default: 0
 </entry>
 
 <entry id="scenario_ghg" type="char*16"  category="ghg_cam"
-       group="chem_surfvals_nl" valid_values="FIXED,RAMPED,RAMP_CO2_ONLY" >
+       group="chem_surfvals_nl" valid_values="FIXED,RAMPED,RAMP_CO2_ONLY,CHEM_LBC_FILE" >
 Controls treatment of prescribed co2, ch4, n2o, cfc11, cfc12 volume mixing
-ratios.  May be set to 'FIXED' or 'RAMPED' or 'RAMP_CO2_ONLY'.
+ratios.  May be set to 'FIXED', 'RAMPED', 'RAMP_CO2_ONLY', or 'CHEM_LBC_FILE'.
 FIXED =&gt; volume mixing ratios are fixed and have either default or namelist
          input values.
 RAMPED =&gt; volume mixing ratios are time interpolated from the dataset
           specified by <varname>bndtvghg</varname>.
 RAMP_CO2_ONLY =&gt; only co2 mixing ratios are ramped at a rate determined by
-                 the variables <varname>ramp_co2_annual_rate</varname>, <varname>ramp_co2_cap</varname>,
-                 and <varname>ramp_co2_start_ymd</varname>.
+                    the variables <varname>ramp_co2_annual_rate</varname>, <varname>ramp_co2_cap</varname>,
+                    and <varname>ramp_co2_start_ymd</varname>.
+CHEM_LBC_FILE =&gt; volume mixing ratios are set from the chemistry lower boundary
+                    conditions dataset specified by <varname>flbc_file</varname>.
 Default: FIXED
 </entry>
 
@@ -1564,6 +1640,13 @@ cloud liquid (cldliq).
 Default: .true.
 </entry>
 
+<entry id="microp_uniform" type="logical" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Switch to control whether MG microphysics performs a uniform calculation or not
+(useful for sub-columns)
+Default: .false.
+</entry>
+
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="conv"
        group="microp_aero_nl" valid_values="" >
@@ -1715,10 +1798,86 @@ Default: GoffGratch
 
 <entry id="use_subcol_microp" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="" >
-Control use of sub-columns within microphysics;
+Control use of sub-columns within macro/micro physics;
 'false' for no subcolumns.
 Default: 'false'
 </entry>
+
+<entry id="subcol_scheme" type="char*16" category="conv"
+       group="subcol_nl" valid_values="SILHS,CloudObj,tstcp,vamp,off" >
+Type of sub-column generator scheme employed.  'SIHLS' Sub-columns generated with Latin Hypercube sampling of the CLUBB PDF;
+Type of sub-column generator scheme employed.  'CloudObj' Create sub-columns where most water is assigned to cloud sub-columns;
+Type of sub-column generator scheme employed.  'tstcp'    testing;
+Type of sub-column generator scheme employed.  'vamp' Variation Across Microphysics Profiles simple deterministic scheme;
+'off' for none.
+Default: 'off'
+</entry>
+
+<entry id="subcol_tstcp_noAvg" type="logical" category="conv"
+       group="subcol_tstcp_nl" valid_values="" >
+Turns off averaging and assigns first subcolumn back to grid.  Needed for BFB comparisons
+'true' for no averaging.
+Default: '.false.'
+</entry>
+
+<entry id="subcol_tstcp_filter" type="logical" category="conv"
+       group="subcol_tstcp_nl" valid_values="" >
+Turns on/off filtering during averaing in tstcp
+'true' to use filtering.
+Default: '.false.'
+</entry>
+
+<entry id="subcol_tstcp_weight" type="logical" category="conv"
+       group="subcol_tstcp_nl" valid_values="" >
+Turns on/off use of weights during averaging in tstcp
+'true' to use weights.
+Default: '.false.'
+</entry>
+
+<entry id="subcol_tstcp_perturb" type="logical" category="conv"
+       group="subcol_tstcp_nl" valid_values="" >
+Perturbs the temperatures in state after copying for testing purposes
+'true' to perturb temperatures.
+Default: '.false.'
+</entry>
+
+<entry id="subcol_silhs_weight" type="logical" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Turns on/off use of weights during averaging in tstcp
+'true' to use weights.
+Default: '.true.'
+</entry>
+
+<entry id="subcol_silhs_numsubcol" type="integer" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Number of subcolumns/samples to use in this simulation. Must be less than psubcols.
+Default: 4
+</entry>
+
+<!-- VAMP Sub-Column Generator -->
+
+<entry id="subcol_vamp_ctyp" type="integer" category="conv"
+       group="subcol_vamp_nl" valid_values="" >
+Type of condensate to assume in VAMP Generator
+1 Uniform Condensate
+2 Variable Condensate Uniform Number
+3 Variable Condensate Variable Number
+Default: 3
+</entry>
+
+<entry id="subcol_vamp_otyp" type="integer" category="conv"
+       group="subcol_vamp_nl" valid_values="" >
+Type of overlap to assume in VAMP Generator 1 Maximum
+Default: 1
+</entry>
+
+<entry id="subcol_vamp_nsubc" type="integer" category="conv"
+       group="subcol_vamp_nl" valid_values="" >
+Number of subcolumns in VAMP Generator
+Default: 10
+</entry>
+
+
 
 <!-- Moist Convection and Microphysics -->
 
@@ -2071,6 +2230,75 @@ for sub-grid scale in-cloud saturation.
 Default: 1.0
 </entry>
 
+<!-- CARMA model - meteor impact -->
+
+<entry id="carma_emis_dust" type="real" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Global mass of dust emission for the event.
+Default: 0. (kg)
+</entry>
+
+<entry id="carma_emis_soot" type="real" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Global mass of dust emission for the event.
+Default: 0. (kg)
+</entry>
+
+<entry id="carma_emis_startdate" type="integer" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Starting date for emissions in the form of (yyyyddd) where yyyy is a year and
+ddd is a day of year.
+Default: 1 (yyyyddd)
+</entry>
+
+<entry id="carma_emis_starttime" type="integer" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Starting time for the emission event in GMT.
+Default: 0. (s Z)
+</entry>
+
+<entry id="carma_emis_stopdate" type="integer" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Stopping date for emissions in the form of (yyyyddd) where yyyy is a year and
+ddd is a day of year.
+Default: 1 (yyyyddd)
+</entry>
+
+<entry id="carma_emis_stoptime" type="integer" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Stoping time for the emission event in GMT.
+Default: 0. (s)
+</entry>
+
+<entry id="carma_emis_minlat" type="real" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Minimum latitude of the area for emssions from the event.
+Default: -90. (degrees north)
+</entry>
+
+<entry id="carma_emis_maxlat" type="real" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Maximum latitude of the area for emssions from the event.
+Default: 90. (degrees north)
+</entry>
+
+<entry id="carma_emis_minlon" type="real" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Minimum longitude of the area for emssions from the event.
+Default: 0. (degrees east)
+</entry>
+
+<entry id="carma_emis_maxlon" type="real" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Maximum longitude of the area for emssions from the event.
+Default: 360. (degrees east)
+</entry>
+
+<entry id="carma_fractal_soot" type="logical" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Are the soot particles treated as fractals?
+Default: FALSE
+</entry>
 
 <!-- CARMA model - meteor smoke & pmc -->
 
@@ -2115,6 +2343,14 @@ the rate is a column mass (kg/m2/s) and a negative value indicate that it is a m
 mixing ratio (kg/kg/s).
 Default: 1e-9
 </entry>
+
+<entry id="carma_neutral_h2so4" type="logical" category="carma_model"
+       group="carma_model_nl" valid_values="" >
+Flag indicating that h2so4 vapor pressures should be calculated as if they were
+over sulfates that have been totally neutralized. 
+Default: FALSE
+</entry>
+
 
 <!-- CARMA model - cirrus -->
 
@@ -2362,6 +2598,20 @@ MAM affects climate only below the top defined by this pressure (Pa).
 Default: 0 for non-MAM cases, otherwise set by build-namelist
 </entry>
 
+<entry id="do_molec_press" type="real" category="press_lim"
+       group="ref_pres_nl" valid_values="" >
+Molecular diffusion will be done only if the lowest pressure is
+below this limit (Pa).
+Default: 0.1
+</entry>
+
+<entry id="molec_diff_bot_press" type="real" category="press_lim"
+       group="ref_pres_nl" valid_values="" >
+The level closest to this pressure (Pa) is the bottom of the region
+where molecular diffusion is done.
+Default: 50.
+</entry>
+
 <!-- Physics Debugging -->
 
 <entry id="phys_debug_lat" type="real"  category="phys_debug"
@@ -2406,6 +2656,18 @@ Default: 'HB'
 
 <!-- Diagnostics -->
 
+<entry id="history_amwg" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Produce output for the AMWG diagnostic package.
+Default: .true.
+</entry>
+
+<entry id="history_vdiag" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Produce output for the AMWG variability diagnostics.
+Default: .false.
+</entry>
+
 <entry id="history_aerosol" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output of the aerosol tendencies
@@ -2434,6 +2696,12 @@ Default: .false.
        group="phys_ctl_nl" valid_values="1,2,3,4,5,6" >
 History tape number T/Q budget output is written to.
 Default: 1
+</entry>
+
+<entry id="history_waccm" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output used primarily for WACCM runs.
+Default: .true. if WACCM physics is on, .false. otherwise.
 </entry>
 
 <!-- Radiation -->
@@ -2503,14 +2771,14 @@ rad_diag_* variables.
 Default: set by build-namelist
 </entry>
 
-<entry id="rad_climate" type="char*256(30)"  category="radiation"
+<entry id="rad_climate" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 A list of the radiatively active species, i.e., species that affect the
 climate simulation via the radiative heating rate calculation.
 Default: set by build-namelist
 </entry>
 
-<entry id="rad_diag_1" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_1" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 A list of species to be used in the first diagnostic radiative heating rate
 calculation.  These species are not the ones affecting the climate
@@ -2518,65 +2786,60 @@ simulation.  This is a hook for performing radiative forcing calculations.
 Default: none
 </entry>
 
-<entry id="rad_diag_2" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_2" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 2nd diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_3" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_3" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 3rd diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_4" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_4" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 4th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_5" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_5" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 5th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_6" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_6" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 6th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_7" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_7" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 7th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_8" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_8" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 8th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_9" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_9" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 9th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="rad_diag_10" type="char*256(30)"  category="radiation"
+<entry id="rad_diag_10" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Analogous to rad_diag_1, but for the 10th diagnostic calculation.
 Default: none
 </entry>
 
-<entry id="aer_drydep_list" type="char*16(1000)" category="cam_chem"
-       group="chem_inparm" valid_values="" >
-List of aerosol species that undergo dry deposition.
-Default: set by build-namelist.
-</entry>
 
 <entry id="rad_data_output" type="logical"   category="radiation"
        group="rad_data_nl" valid_values="" >
@@ -2847,13 +3110,19 @@ Default: NONE
 </entry>
 
 <entry id="aer_wetdep_list" type="char*16(1000)" category="cam_chem"
-       group="chem_inparm" valid_values="" >
+       group="aerosol_nl" valid_values="" >
 List of aerosol species that undergo wet deposition.
 Default: set by build-namelist.
 </entry>
 
+<entry id="aer_drydep_list" type="char*16(1000)" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+List of aerosol species that undergo sediment (dry deposition).
+Default: set by build-namelist.
+</entry>
+
 <entry id="sol_facti_cloud_borne" type="real" category="cam_chem"
-       group="chem_inparm" valid_values="" >
+       group="aerosol_nl" valid_values="" >
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
@@ -2893,27 +3162,27 @@ Default: set by build-namelist.
 </entry>
 
 <entry id="dust_emis_fact" type="real" category="cam_chem"
-       group="aerosol_nl" valid_values="" >
+       group="dust_nl" valid_values="" >
 Tuning parameter for dust emissions.
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_hflux_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="iondrag_nl" valid_values="" >
 Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
 for high solar fluxes from the Scherliess low latitude electric potential model.
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_lflux_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="iondrag_nl" valid_values="" >
 Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
 for low solar fluxes from the Scherliess low latitude electric potential model.
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_wei96_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="iondrag_nl" valid_values="" >
 Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
 from the Weimer96 high latitude electric potential model.
 Default: set by build-namelist.
@@ -3148,7 +3417,7 @@ Default: set by build-namelist.
 Switch used to indicate which type of aerosols are prescribed -- bulk or modal.
 This is used to set the default <varname>prescribed_aero_specifier</varname> and 
 <varname>aerodep_flx_specifier</varname> namelist variables.
-Default: bulk
+Default: set by build-namelist
 </entry>
 
 <entry id="prescribed_aero_file" type="char*256" input_pathname="rel:prescribed_aero_datapath" category="cam_chem"
@@ -3518,8 +3787,8 @@ to calculate its upper boundary concentration.
 Default: set by build-namelist.
 </entry>
 
-<entry id="soil_erod" type="char*256" input_pathname="abs" category="cam_chem"
-       group="aerosol_nl" valid_values="" >
+<entry id="soil_erod_file" type="char*256" input_pathname="abs" category="cam_chem"
+       group="dust_nl" valid_values="" >
 Full pathname of boundary dataset for soil erodibility factors.
 Default: set by build-namelist.
 </entry>
@@ -3528,12 +3797,6 @@ Default: set by build-namelist.
        group="chem_inparm" valid_values="" >
 Full pathname of time-variant boundary dataset for the time-dependent proxies for 
 solar and geomagnetic activity( F10.7, F10.7a, Kp, Ap ).
-Default: set by build-namelist.
-</entry>
-
-<entry id="gw_drag_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="gw_drag_nl" valid_values="" >
-Full pathname of Bers lookup table data file for gravity waves.
 Default: set by build-namelist.
 </entry>
 
@@ -3823,12 +4086,6 @@ if <varname>tracer_srcs_type</varname> is 'FIXED'.
 Default: 0 seconds
 </entry>
 
-<entry id="use_cam_sulfchem" type="logical"  category="cam_chem"
-       group="chem_inparm" valid_values="" >
-If TRUE use CAM sulfur chemistry driver rather than mo_setsox.
-Default: FALSE
-</entry>
-
 <entry id="xactive_prates" type="logical" category="cam_chem"
        group="chem_inparm" valid_values="" >
 If TRUE then use the FTUV method to calculate the photolysis reactions rates,
@@ -3982,7 +4239,7 @@ Default: false
 </entry>
 
 <entry id="nlte_use_mo" type="logical" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="radheat_nl" valid_values="" >
 Determines which constituents are used from NLTE calculations.
 TRUE implies use prognostic constituents.
 FALSE implies use constituents from dataset specified by <varname>waccm_forcing_file</varname>.
@@ -3990,19 +4247,19 @@ Default: TRUE for full WACCM code; FALSE for WACCM_GHG.
 </entry>
 
 <entry id="qbo_cyclic" type="logical" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="qbo_nl" valid_values="" >
 TRUE implies assume cyclic qbo data.
 Default: FALSE
 </entry>
 
 <entry id="qbo_forcing_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="qbo_nl" valid_values="" >
 Filepath for qbo forcing dataset.
 Default: Set by build-namelist.
 </entry>
 
 <entry id="qbo_use_forcing" type="logical" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="qbo_nl" valid_values="" >
 TRUE implies qbo package is active.
 Default: FALSE
 </entry>
@@ -4145,6 +4402,19 @@ If rsplit=0, vertically lagrangian code is off.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="tstep_type" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Time stepping method for SE dycore
+tstep_type=0  pure Leapfrog except for very first timestep
+tstep_type=1  RK2 followed by qsplit-1 Leapfrog steps; second-order accurate in time (CESM1.2.0 setting)
+tstep_type=2  RK2-SSP 3 stage (as used by tracers)
+tstep_type=3  classic Runga-Kutta (RK) 3 stage
+tstep_type=4  Kinnmark&Gray Runga-Kutta (RK) 4 stage
+tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
+Default: Set by build-namelist.
+</entry>
+
+
 <entry id="hypervis_order" type="integer" category="se"
        group="ctl_nl" valid_values="2" >
 Hyperviscosity operator is the Laplacian^hypervis_order.
@@ -4165,14 +4435,6 @@ The only supported value in CAM is 1.
 Default: Set by build-namelist.
 </entry>
 
-<entry id="energy_fixer" type="integer" category="se"
-       group="ctl_nl" valid_values="-1,1,4" >
-Energy fixer mode.
--1: Disabled.
- 1: Enable energy fixer.
- 4: Deprecated option to enable (for backwards compatibility).
-Default: Set by build-namelist (probably -1).
-</entry>
 
 <entry id="nu" type="real" category="se"
        group="ctl_nl" valid_values="" >
@@ -4912,9 +5174,9 @@ Default: 'unknown'
 </entry>
 
 <entry id="vect_map" type="char*8"  category="driver"
-       group="seq_infodata_inparm" valid_values="none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag" >
+       group="seq_infodata_inparm" valid_values="none,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag" >
 Invoke vector mapping option
-Default: 'npfix'
+Default: 'cart3d'
 </entry>
 
 <!-- Reproducible Distributed Sum Calculation -->
@@ -5429,27 +5691,6 @@ Default: 1.0 for CAM, set by build-namelist for WACCM, T31
 Factor determining z_0 from orographic standard deviation [ no unit ] 
 Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varname>.
 set by build-namelist for WACCM, T31
-</entry>
-
-<!-- for offine unit drivers -->
-
-<entry id="offline_driver_infile" type="char*256" input_pathname="abs" category="offline_unit_driver"
-       group="offline_driver_nl" valid_values="" >
-Filepath for dataset for offline unit driver.
-Default: none
-</entry>
-
-<entry id="offline_driver_fileslist" type="char*256" input_pathname="abs" category="offline_unit_driver"
-       group="offline_driver_nl" valid_values="" >
-List of filepaths for dataset for offline unit driver.
-Default: none
-</entry>
-
-<entry id="offline_driver_do_fdh" type="logical"  category="offline_unit_driver"
-       group="offline_driver_nl" valid_values="" >
-Switch to turn on Fixed Dynamical Heating in the offline radiation tool (PORT).
-This is implemented for CAMRT only.
-Default: false
 </entry>
 
 </namelist_definition>

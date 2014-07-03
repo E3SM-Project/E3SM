@@ -3,12 +3,11 @@ module interpolate_data
 !   Routines for interpolation of data in latitude, longitude and time.
 !
 ! Author: Gathered from a number of places and put into the current format by Jim Edwards
-!   
+!
 ! Modules Used:
 !
   use shr_kind_mod,   only: r8 => shr_kind_r8
   use abortutils,     only: endrun
-  use scamMod,        only: single_column
   use cam_logfile,    only: iulog
   implicit none
   private
@@ -32,7 +31,10 @@ module interpolate_data
      module procedure lininterp2d1d
      module procedure lininterp3d2d
   end interface
-  
+
+integer, parameter, public :: extrap_method_zero = 0
+integer, parameter, public :: extrap_method_bndry = 1
+integer, parameter, public :: extrap_method_cycle = 2
 
 contains
   subroutine lininterp_full1d (arrin, yin, nin, arrout, yout, nout)
@@ -41,7 +43,7 @@ contains
     real(r8), intent(out) :: arrout(nout)
     type (interp_type) :: interp_wgts
 
-    call lininterp_init(yin, nin, yout, nout, 1, interp_wgts)
+    call lininterp_init(yin, nin, yout, nout, extrap_method_bndry, interp_wgts)
     call lininterp1d(arrin, nin, arrout, nout, interp_wgts)
     call lininterp_finish(interp_wgts)
 
@@ -53,15 +55,15 @@ contains
 ! Description:
 !   Initialize a variable of type(interp_type) with weights for linear interpolation.
 !       this variable can then be used in calls to lininterp1d and lininterp2d.
-!   yin is a 1d array of length nin of locations to interpolate from - this array must 
+!   yin is a 1d array of length nin of locations to interpolate from - this array must
 !       be monotonic but can be increasing or decreasing
 !   yout is a 1d array of length nout of locations to interpolate to, this array need
 !       not be ordered
 !   extrap_method determines how to handle yout points beyond the bounds of yin
-!       if 0 set values outside output grid to 0 
+!       if 0 set values outside output grid to 0
 !       if 1 set to boundary value
 !       if 2 set to cyclic boundaries
-!         optional values cyclicmin and cyclicmax can be used to set the bounds of the 
+!         optional values cyclicmin and cyclicmax can be used to set the bounds of the
 !         cyclic mapping - these default to 0 and 360.
 !
 
@@ -69,7 +71,7 @@ contains
     integer, intent(in) :: nout
     real(r8), intent(in) :: yin(:)           ! input mesh
     real(r8), intent(in) :: yout(:)         ! output mesh
-    integer, intent(in) :: extrap_method       ! if 0 set values outside output grid to 0 
+    integer, intent(in) :: extrap_method       ! if 0 set values outside output grid to 0
                                                ! if 1 set to boundary value
                                                ! if 2 set to cyclic boundaries
     real(r8), intent(in), optional :: cyclicmin, cyclicmax
@@ -136,7 +138,8 @@ contains
     jjp = 0
 
     extrap = 0._r8
-    if(extrap_method.eq.0) then
+    select case (extrap_method)
+    case (extrap_method_zero)
        !
        ! For values which extend beyond boundaries, set weights
        ! such that values will be 0.
@@ -172,7 +175,7 @@ contains
              end if
           end if
        end do
-    else if(extrap_method.eq.1) then
+    case (extrap_method_bndry)
        !
        ! For values which extend beyond boundaries, set weights
        ! such that values will just be copied.
@@ -208,10 +211,10 @@ contains
              end if
           end if
        end do
-    else if(extrap_method.eq.2) then
+    case (extrap_method_cycle)
        !
        ! For values which extend beyond boundaries, set weights
-       ! for circular boundaries 
+       ! for circular boundaries
        !
        dyinwrap = yin(1) + (cmax-cmin) - yin(nin)
        avgdyin = abs(yin(nin)-yin(1))/(nin-1._r8)
@@ -250,7 +253,7 @@ contains
 
           endif
        end do
-    end if
+    end select
 
     !
     ! Loop though output indices finding input indices and weights
@@ -280,19 +283,6 @@ contains
           end do
        end do
     end if
-
-#ifndef SPMD
-    !
-    ! Check grid overlap
-    !
-    extrap = 100._r8*extrap/real(nout,r8)
-    if (extrap.gt.50._r8 .and. .not. single_column) then
-       write(iulog,*) 'interpolate_data:','yout=',minval(yout),maxval(yout),increasing,nout
-       write(iulog,*) 'interpolate_data:','yin=',yin(1),yin(nin)
-       write(iulog,*) 'interpolate_data:',extrap,' % of output grid will have to be extrapolated'
-       call endrun('interpolate_data: ')
-    end if
-#endif
 
     !
     ! Check that interp/extrap points have been found for all outputs
@@ -330,37 +320,37 @@ contains
     !
     integer, intent(in) :: n1                 ! number of input latitudes
     integer, intent(in) :: m1                ! number of output latitudes
-                                                                                                  
+
     real(r8), intent(in) :: arrin(n1)    ! input array of values to interpolate
     type(interp_type), intent(in) :: interp_wgts
     real(r8), intent(out) :: arrout(m1) ! interpolated array
-                                                                                                  
+
     !
     ! Local workspace
     !
     integer j                ! latitude indices
     integer, pointer :: jjm(:)
     integer, pointer :: jjp(:)
-                                                                                                  
+
     real(r8), pointer :: wgts(:)
     real(r8), pointer :: wgtn(:)
-                                                                                                  
-                                                                                                  
+
+
     jjm => interp_wgts%jjm
     jjp => interp_wgts%jjp
     wgts =>  interp_wgts%wgts
     wgtn =>  interp_wgts%wgtn
-                                                                                                  
+
     !
     ! Do the interpolation
     !
     do j=1,m1
       arrout(j) = arrin(jjm(j))*wgts(j) + arrin(jjp(j))*wgtn(j)
     end do
-                                                                                                  
+
     return
   end subroutine lininterp1d
-                                                                                                  
+
   subroutine lininterp2d2d(arrin, n1, n2, arrout, m1, m2, wgt1, wgt2)
     implicit none
     !-----------------------------------------------------------------------
@@ -377,18 +367,18 @@ contains
     integer i,j                ! indices
     integer, pointer :: iim(:), jjm(:)
     integer, pointer :: iip(:), jjp(:)
-                                                                                                  
+
     real(r8), pointer :: wgts1(:), wgts2(:)
     real(r8), pointer :: wgtn1(:), wgtn2(:)
-                                                                                                  
+
     real(r8) :: arrtmp(n1,m2)
-                                                                                                  
-                                                                                                  
+
+
     jjm => wgt2%jjm
     jjp => wgt2%jjp
     wgts2 => wgt2%wgts
     wgtn2 => wgt2%wgtn
-                                                                                                  
+
     iim => wgt1%jjm
     iip => wgt1%jjp
     wgts1 => wgt1%wgts
@@ -405,7 +395,7 @@ contains
         arrout(i,j) = arrtmp(iim(i),j)*wgts1(i) + arrtmp(iip(i),j)*wgtn1(i)
       end do
     end do
-                                                                                                  
+
   end subroutine lininterp2d2d
   subroutine lininterp2d1d(arrin, n1, n2, arrout, m1, wgt1, wgt2, fldname)
     implicit none
@@ -424,7 +414,7 @@ contains
     integer i                ! indices
     integer, pointer :: iim(:), jjm(:)
     integer, pointer :: iip(:), jjp(:)
-                                                                                                  
+
     real(r8), pointer :: wgts(:), wgte(:)
     real(r8), pointer :: wgtn(:), wgtw(:)
 
@@ -432,7 +422,7 @@ contains
     jjp => wgt2%jjp
     wgts => wgt2%wgts
     wgtn => wgt2%wgtn
-                                                                                                  
+
     iim => wgt1%jjm
     iip => wgt1%jjp
     wgtw => wgt1%wgts
@@ -443,7 +433,7 @@ contains
                    arrin(iim(i),jjp(i))*wgtw(i)*wgtn(i)+arrin(iip(i),jjp(i))*wgte(i)*wgtn(i)
     end do
 
-                                                                                                  
+
   end subroutine lininterp2d1d
   subroutine lininterp3d2d(arrin, n1, n2, n3, arrout, m1, len1, wgt1, wgt2)
     implicit none
@@ -451,7 +441,7 @@ contains
     !
     ! Arguments
     !
-    integer, intent(in) :: n1, n2, n3, m1, len1   ! m1 is to len1 as ncols is to pcols 
+    integer, intent(in) :: n1, n2, n3, m1, len1   ! m1 is to len1 as ncols is to pcols
     real(r8), intent(in) :: arrin(n1,n2,n3)    ! input array of values to interpolate
     type(interp_type), intent(in) :: wgt1, wgt2
     real(r8), intent(out) :: arrout(len1, n3) ! interpolated array
@@ -462,7 +452,7 @@ contains
     integer i, k               ! indices
     integer, pointer :: iim(:), jjm(:)
     integer, pointer :: iip(:), jjp(:)
-                                                                                                  
+
     real(r8), pointer :: wgts(:), wgte(:)
     real(r8), pointer :: wgtn(:), wgtw(:)
 
@@ -470,7 +460,7 @@ contains
     jjp => wgt2%jjp
     wgts => wgt2%wgts
     wgtn => wgt2%wgtn
-                                                                                                  
+
     iim => wgt1%jjm
     iip => wgt1%jjp
     wgtw => wgt1%wgts
@@ -482,9 +472,9 @@ contains
                arrin(iim(i),jjp(i),k)*wgtw(i)*wgtn(i)+arrin(iip(i),jjp(i),k)*wgte(i)*wgtn(i)
        end do
     end do
-                                                                                                  
+
   end subroutine lininterp3d2d
-                                                                                                  
+
 
 
 
@@ -504,15 +494,15 @@ contains
 
   subroutine lininterp_original (arrin, yin, nlev, nlatin, arrout, &
        yout, nlatout)
-    !----------------------------------------------------------------------- 
-    ! 
+    !-----------------------------------------------------------------------
+    !
     ! Purpose: Do a linear interpolation from input mesh defined by yin to output
     !          mesh defined by yout.  Where extrapolation is necessary, values will
     !          be copied from the extreme edge of the input grid.  Vectorization is over
     !          the vertical (nlev) dimension.
-    ! 
+    !
     ! Method: Check validity of input, then determine weights, then do the N-S interpolation.
-    ! 
+    !
     ! Author: Jim Rosinski
     ! Modified: Jim Edwards so that there is no requirement of monotonacity on the yout array
     !
@@ -636,22 +626,22 @@ contains
   subroutine bilin (arrin, xin, yin, nlondin, nlonin, &
        nlevdin, nlev, nlatin, arrout, xout, &
        yout, nlondout, nlonout, nlevdout, nlatout)
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     !
     ! Do a bilinear interpolation from input mesh defined by xin, yin to output
     ! mesh defined by xout, yout.  Circularity is assumed in the x-direction so
     ! input x-grid must be in degrees east and must start from Greenwich.  When
-    ! extrapolation is necessary in the N-S direction, values will be copied 
+    ! extrapolation is necessary in the N-S direction, values will be copied
     ! from the extreme edge of the input grid.  Vectorization is over the
     ! longitude dimension.  Input grid is assumed rectangular. Output grid
     ! is assumed ragged, i.e. xout is a 2-d mesh.
-    ! 
+    !
     ! Method: Interpolate first in longitude, then in latitude.
-    ! 
+    !
     ! Author: Jim Rosinski
-    ! 
+    !
     !-----------------------------------------------------------------------
     use shr_kind_mod, only: r8 => shr_kind_r8
     use abortutils,   only: endrun
@@ -810,15 +800,6 @@ contains
        call endrun
     end if
     !
-    ! Check grid overlap
-    ! Do not do on spmd since distributed output grid may be expected to fail this test
-#ifndef SPMD
-    extrap = 100._r8*((js - 1._r8) + real(nlatout - jn,r8))/nlatout
-    if (extrap > 20._r8) then
-       write(iulog,*)'BILIN:',extrap,' % of N/S output grid will have to be extrapolated'
-    end if
-#endif
-    !
     ! Check that interp/extrap points have been found for all outputs, and that
     ! they are reasonable (i.e. within 32-bit roundoff)
     !
@@ -915,16 +896,16 @@ contains
 
   subroutine vertinterp(ncol, ncold, nlev, pmid, pout, arrin, arrout)
 
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     ! Vertically interpolate input array to output pressure level
-    ! Copy values at boundaries.  
-    ! 
-    ! Method: 
-    ! 
-    ! Author: 
-    ! 
+    ! Copy values at boundaries.
+    !
+    ! Method:
+    !
+    ! Author:
+    !
     !-----------------------------------------------------------------------
 
     implicit none
@@ -933,8 +914,8 @@ contains
     integer , intent(in)  :: ncol              ! column dimension
     integer , intent(in)  :: ncold             ! declared column dimension
     integer , intent(in)  :: nlev              ! vertical dimension
-    real(r8), intent(in)  :: pmid(ncold,nlev)  ! input level pressure levels 
-    real(r8), intent(in)  :: pout              ! output pressure level 
+    real(r8), intent(in)  :: pmid(ncold,nlev)  ! input level pressure levels
+    real(r8), intent(in)  :: pout              ! output pressure level
     real(r8), intent(in)  :: arrin(ncold,nlev) ! input  array
     real(r8), intent(out) :: arrout(ncold)     ! output array (interpolated)
     !--------------------------------------------------------------------------
@@ -945,7 +926,7 @@ contains
     real(r8) dpu              ! upper level pressure difference
     real(r8) dpl              ! lower level pressure difference
     logical found(ncold)      ! true if input levels found
-    logical error             ! error flag 
+    logical error             ! error flag
     !-----------------------------------------------------------------
     !
     ! Initialize index array and logical flags
@@ -955,11 +936,11 @@ contains
        kupper(i) = 1
     end do
     error = .false.
-    !     
-    ! Store level indices for interpolation. 
-    ! If all indices for this level have been found, 
-    ! do the interpolation 
-    !     
+    !
+    ! Store level indices for interpolation.
+    ! If all indices for this level have been found,
+    ! do the interpolation
+    !
     do k=1,nlev-1
        do i=1,ncol
           if ((.not. found(i)) .and. pmid(i,k)<pout .and. pout<=pmid(i,k+1)) then
@@ -986,7 +967,7 @@ contains
           error = .true.
        end if
     end do
-    !     
+    !
     ! Error check
     !
     if (error) then
@@ -1005,13 +986,13 @@ contains
     !
     ! Method:  Assume 365 days per year.  Output variable fact1 will be the weight to
     !          apply to data at calendar time "cdayminus", and fact2 the weight to apply
-    !          to data at time "cdayplus".  Combining these values will produce a result 
-    !          valid at time "cday".  Output arguments fact1 and fact2 will be between 
+    !          to data at time "cdayplus".  Combining these values will produce a result
+    !          valid at time "cday".  Output arguments fact1 and fact2 will be between
     !          0 and 1, and fact1 + fact2 = 1 to roundoff.
     !
     ! Author:  Jim Rosinski
     !
-    !--------------------------------------------------------------------------- 
+    !---------------------------------------------------------------------------
     implicit none
     !
     ! Arguments
@@ -1055,7 +1036,7 @@ contains
        end if
     end if
     !
-    ! Determine time interpolation factors.  Account for December-January 
+    ! Determine time interpolation factors.  Account for December-January
     ! interpolation if dataset is being cycled yearly.
     !
     if (cycflag .and. np1 == 1) then                     ! Dec-Jan interpolation

@@ -95,11 +95,11 @@ contains
   subroutine eis_climate(climate,model,time)
     !*FD do the EIS climate forcing
     use glide_types
-    use glimmer_global, only : rk    
+    use glimmer_global, only : dp   
     implicit none
     type(eis_climate_type) :: climate  !*FD structure holding EIS climate
     type(glide_global_type)   :: model !*FD model instance
-    real(kind=rk), intent(in) :: time  !*FD current time
+    real(dp), intent(in) :: time  !*FD current time
     
     call eis_eus(climate%slc,model,time)
     call eis_continentality(climate%cony,model,time)

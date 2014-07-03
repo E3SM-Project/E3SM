@@ -9,9 +9,8 @@ module domainMod
 !
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use nanMod
+  use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
-  use abortutils  , only : endrun
   use clm_varctl  , only : iulog
 !
 ! !PUBLIC TYPES:
@@ -36,6 +35,7 @@ module domainMod
      integer ,pointer :: pftm(:)    ! pft mask: 1=real, 0=fake, -1=notset
      integer ,pointer :: glcmask(:) ! glc mask: 1=sfc mass balance required by GLC component
                                     ! 0=SMB not required (default)
+                                    ! (glcmask is just a guess at the appropriate mask, known at initialization - in contrast to icemask, which is the true mask obtained from glc)
      character*16     :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
   end type domain_type
@@ -67,6 +67,7 @@ contains
 !
 ! !INTERFACE:
   subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,clmlevel)
+    use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
 !
 ! !DESCRIPTION:
 ! This subroutine allocates and nans the domain type
@@ -108,8 +109,7 @@ contains
              domain%pftm(nb:ne),domain%area(nb:ne),domain%lonc(nb:ne), &
              domain%topo(nb:ne),domain%glcmask(nb:ne),stat=ier)
     if (ier /= 0) then
-       write(iulog,*) 'domain_init ERROR: allocate mask, frac, lat, lon, area '
-       call endrun()
+       call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
 
     if (present(clmlevel)) then
@@ -151,8 +151,6 @@ end subroutine domain_init
 ! !DESCRIPTION:
 ! This subroutine deallocates the domain type
 !
-! !USES:
-!
 ! !ARGUMENTS:
     implicit none
     type(domain_type) :: domain        ! domain datatype
@@ -174,8 +172,7 @@ end subroutine domain_init
                   domain%lonc,domain%area,domain%pftm, &
                   domain%topo,domain%glcmask,stat=ier)
        if (ier /= 0) then
-          write(iulog,*) 'domain_clean ERROR: deallocate mask, frac, lat, lon, area '
-          call endrun()
+          call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
     else
        if (masterproc) then
@@ -184,11 +181,11 @@ end subroutine domain_init
     endif
 
     domain%clmlevel   = unset
-    domain%ns         = bigint
-    domain%ni         = bigint
-    domain%nj         = bigint
-    domain%nbeg       = bigint
-    domain%nend       = bigint
+    domain%ns         = huge(1)
+    domain%ni         = huge(1)
+    domain%nj         = huge(1)
+    domain%nbeg       = huge(1)
+    domain%nend       = huge(1)
     domain%set        = unset
     domain%decomped   = .true.
 

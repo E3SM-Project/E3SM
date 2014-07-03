@@ -41,7 +41,7 @@ module micro_mg1_0
 ! 4) svp over ice
 
 #ifndef HAVE_GAMMA_INTRINSICS
-use shr_spfn_mod, only: gamma => shr_spfn_gamma_nonintrinsic
+use shr_spfn_mod, only: gamma => shr_spfn_gamma
 #endif
 
   use wv_sat_methods, only: &
@@ -96,25 +96,16 @@ real(r8) :: pi       ! pi
 ! Additional constants to help speed up code
 
 real(r8) :: cons1
-real(r8) :: cons2
-real(r8) :: cons3
 real(r8) :: cons4
 real(r8) :: cons5
 real(r8) :: cons6
 real(r8) :: cons7
 real(r8) :: cons8
-real(r8) :: cons9
-real(r8) :: cons10
 real(r8) :: cons11
-real(r8) :: cons12
 real(r8) :: cons13
 real(r8) :: cons14
-real(r8) :: cons15
 real(r8) :: cons16
 real(r8) :: cons17
-real(r8) :: cons18
-real(r8) :: cons19
-real(r8) :: cons20
 real(r8) :: cons22
 real(r8) :: cons23
 real(r8) :: cons24
@@ -346,7 +337,7 @@ subroutine micro_mg_tend ( &
      tn, qn, qc, qi, nc,                              &
      ni, p, pdel, cldn, liqcldf,                      &
      relvar, accre_enhan,                             &
-     icecldf, cldo, rate1ord_cw2pr_st, naai, npccnin, &
+     icecldf, rate1ord_cw2pr_st, naai, npccnin,       &
      rndst, nacon, tlat, qvlat, qctend,               &
      qitend, nctend, nitend, effc, effc_fn,           &
      effi, prect, preci, nevapr, evapsnow,            &
@@ -387,7 +378,6 @@ real(r8), intent(in) :: pdel(pcols,pver)     ! pressure difference across level 
 real(r8), intent(in) :: cldn(pcols,pver)     ! cloud fraction
 real(r8), intent(in) :: icecldf(pcols,pver)  ! ice cloud fraction   
 real(r8), intent(in) :: liqcldf(pcols,pver)  ! liquid cloud fraction
-real(r8), intent(inout) :: cldo(pcols,pver)  ! old cloud fraction
 
 real(r8), intent(out) :: rate1ord_cw2pr_st(pcols,pver) ! 1st order rate for direct cw to precip conversion 
 ! used for scavenging
@@ -486,6 +476,17 @@ character(128),   intent(out) :: errstring       ! Output status (non-blank for 
 
 ! local workspace
 ! all units mks unless otherwise stated
+
+! Additional constants to help speed up code
+real(r8) :: cons2
+real(r8) :: cons3
+real(r8) :: cons9
+real(r8) :: cons10
+real(r8) :: cons12
+real(r8) :: cons15
+real(r8) :: cons18
+real(r8) :: cons19
+real(r8) :: cons20
 
 ! temporary variables for sub-stepping 
 real(r8) :: t1(pcols,pver)
@@ -1235,7 +1236,6 @@ do k=top_lev,pver
 end do ! k loop
 
 
-cldo(:ncol,:)=cldn(:ncol,:)
 !! initialize sub-step precip flux variables
 do i=1,ncol
    !! flux is zero at top interface, so these should stay as 0.
@@ -3250,7 +3250,8 @@ do i=1,ncol
          lamc(k) = (pi/6._r8*rhow*dumnc(i,k)*gamma(pgam(k)+4._r8)/ &
               (dumc(i,k)*gamma(pgam(k)+1._r8)))**(1._r8/3._r8)
          lammin = (pgam(k)+1._r8)/50.e-6_r8
-         lammax = (pgam(k)+1._r8)/2.e-6_r8
+         ! Multiply by omsm to fit within RRTMG's table.
+         lammax = (pgam(k)+1._r8)*omsm/2.e-6_r8
          if (lamc(k).lt.lammin) then
             lamc(k) = lammin
             ncic(i,k) = 6._r8*lamc(k)**3*dumc(i,k)* &

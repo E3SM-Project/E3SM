@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: seq_diag_mct.F90 46244 2013-04-23 16:51:27Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_33/driver/seq_diag_mct.F90 $
+! SVN $Id: seq_diag_mct.F90 59750 2014-05-01 15:17:20Z sacks $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_12/driver/seq_diag_mct.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -43,8 +43,8 @@ module seq_diag_mct
    use esmf
 
    use seq_comm_mct  ! mpi comm groups & related
-   use seq_cdata_mod
    use seq_timemgr_mod
+   use component_type_mod
 
    implicit none
    save
@@ -59,7 +59,8 @@ module seq_diag_mct
    public seq_diag_zero_mct
    public seq_diag_atm_mct
    public seq_diag_lnd_mct
-   public seq_diag_rtm_mct
+   public seq_diag_rof_mct
+   public seq_diag_glc_mct
    public seq_diag_ocn_mct
    public seq_diag_ice_mct
    public seq_diag_accum_mct
@@ -82,7 +83,7 @@ module seq_diag_mct
    !--- C for component ---
    !--- "r" is recieve in the coupler, "s" is send from the coupler
 
-   integer(in),parameter :: c_size = 20
+   integer(in),parameter :: c_size = 22
 
    integer(in),parameter :: c_atm_as   = 1 ! model index: atm
    integer(in),parameter :: c_atm_ar   = 2 ! model index: atm
@@ -94,21 +95,24 @@ module seq_diag_mct
    integer(in),parameter :: c_lnd_lr   = 8 ! model index: lnd
    integer(in),parameter :: c_ocn_os   = 9 ! model index: ocn
    integer(in),parameter :: c_ocn_or   =10 ! model index: ocn
-   integer(in),parameter :: c_rof_rs   =11 ! model index: lnd
-   integer(in),parameter :: c_rof_rr   =12 ! model index: lnd
+   integer(in),parameter :: c_rof_rs   =11 ! model index: rof
+   integer(in),parameter :: c_rof_rr   =12 ! model index: rof
+   integer(in),parameter :: c_glc_gs   =13 ! model index: glc
+   integer(in),parameter :: c_glc_gr   =14 ! model index: glc
    ! --- on atm grid ---
-   integer(in),parameter :: c_inh_as   =13 ! model index: ice, northern
-   integer(in),parameter :: c_inh_ar   =14 ! model index: ice, northern
-   integer(in),parameter :: c_ish_as   =15 ! model index: ice, southern
-   integer(in),parameter :: c_ish_ar   =16 ! model index: ice, southern
-   integer(in),parameter :: c_lnd_as   =17 ! model index: lnd
-   integer(in),parameter :: c_lnd_ar   =18 ! model index: lnd
-   integer(in),parameter :: c_ocn_as   =19 ! model index: ocn
-   integer(in),parameter :: c_ocn_ar   =20 ! model index: ocn
+   integer(in),parameter :: c_inh_as   =15 ! model index: ice, northern
+   integer(in),parameter :: c_inh_ar   =16 ! model index: ice, northern
+   integer(in),parameter :: c_ish_as   =17 ! model index: ice, southern
+   integer(in),parameter :: c_ish_ar   =18 ! model index: ice, southern
+   integer(in),parameter :: c_lnd_as   =19 ! model index: lnd
+   integer(in),parameter :: c_lnd_ar   =20 ! model index: lnd
+   integer(in),parameter :: c_ocn_as   =21 ! model index: ocn
+   integer(in),parameter :: c_ocn_ar   =22 ! model index: ocn
 
    character(len=8),parameter :: cname(c_size) = &
       (/' c2a_atm',' a2c_atm',' c2i_inh',' i2c_inh',' c2i_ish',' i2c_ish', &
         ' c2l_lnd',' l2c_lnd',' c2o_ocn',' o2c_ocn',' c2r_rof',' r2c_rof', &
+        ' c2g_glc',' g2c_glc', &
         ' c2a_inh',' a2c_inh',' c2a_ish',' a2c_ish', &
         ' c2a_lnd',' a2c_lnd',' c2a_ocn',' a2c_ocn' /)
 
@@ -194,8 +198,8 @@ module seq_diag_mct
    integer :: index_l2x_Fall_lat
    integer :: index_l2x_Fall_sen
    integer :: index_l2x_Fall_evap
-   integer :: index_l2x_Flrl_rofliq
-   integer :: index_l2x_Flrl_rofice
+   integer :: index_l2x_Flrl_rofl
+   integer :: index_l2x_Flrl_rofi
 
    integer :: index_x2l_Faxa_lwdn
    integer :: index_x2l_Faxa_rainc
@@ -204,12 +208,13 @@ module seq_diag_mct
    integer :: index_x2l_Faxa_snowl
    integer :: index_x2l_Flrr_flood
 
-   integer :: index_r2x_Forr_roff
-   integer :: index_r2x_Forr_ioff
+   integer :: index_r2x_Forr_rofl
+   integer :: index_r2x_Forr_rofi
+   integer :: index_r2x_Firr_rofi
    integer :: index_r2x_Flrr_flood
 
-   integer :: index_x2r_Flrl_rofliq
-   integer :: index_x2r_Flrl_rofice
+   integer :: index_x2r_Flrl_rofl
+   integer :: index_x2r_Flrl_rofi
 
    integer :: index_o2x_Fioo_q
 
@@ -218,12 +223,18 @@ module seq_diag_mct
    integer :: index_xao_Faox_sen
    integer :: index_xao_Faox_evap
 
-   integer :: index_x2o_Fioi_melth
-   integer :: index_x2o_Fioi_meltw
+   integer :: index_x2o_Foxx_lwup
+   integer :: index_x2o_Foxx_lat
+   integer :: index_x2o_Foxx_sen
+   integer :: index_x2o_Foxx_evap
    integer :: index_x2o_Foxx_swnet
+   integer :: index_x2o_Foxx_rofl
+   integer :: index_x2o_Foxx_rofi
    integer :: index_x2o_Faxa_lwdn
    integer :: index_x2o_Faxa_rain
    integer :: index_x2o_Faxa_snow
+   integer :: index_x2o_Fioi_melth
+   integer :: index_x2o_Fioi_meltw
 
    integer :: index_i2x_Fioi_melth
    integer :: index_i2x_Fioi_meltw
@@ -238,6 +249,11 @@ module seq_diag_mct
    integer :: index_x2i_Faxa_rain
    integer :: index_x2i_Faxa_snow
    integer :: index_x2i_Fioo_q
+   integer :: index_x2i_Fixx_rofi
+
+   integer :: index_g2x_Fogg_rofl
+   integer :: index_g2x_Fogg_rofi
+   integer :: index_g2x_Figg_rofi
 
 !===============================================================================
 contains
@@ -421,25 +437,28 @@ end subroutine seq_diag_sum0_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_atm_mct( dom_a, frac_a, a2x_a, x2a_a )
+subroutine seq_diag_atm_mct( atm, frac_a, do_a2x, do_x2a )
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(mct_gGrid),intent(in)          ::  dom_a ! model domain
-   type(mct_aVect),intent(in)          :: frac_a ! domain fractions
-   type(mct_aVect),intent(in),optional ::  a2x_a ! model to drv bundle
-   type(mct_aVect),intent(in),optional ::  x2a_a ! drv to model bundle
+   type(component_type), intent(in) :: atm    ! component type for instance1
+   type(mct_aVect)     , intent(in) :: frac_a ! frac bundle
+   logical, optional   , intent(in) :: do_a2x             
+   logical, optional   , intent(in) :: do_x2a             
 
 !EOP
 
    !----- local -----
-   integer(in)      :: k,n,ic,if,ip      ! generic index
-   integer(in)      :: kArea             ! index of area field in aVect
-   integer(in)      :: kLat              ! index of lat field in aVect
-   integer(in)      :: kl,ka,ko,ki       ! fraction indices
-   integer(in)      :: lSize             ! size of aVect
-   real(r8)         :: da,di,do,dl       ! area of a grid cell
-   logical,save     :: first_time = .true.
+   type(mct_aVect), pointer :: a2x_a        ! model to drv bundle
+   type(mct_aVect), pointer :: x2a_a        ! drv to model bundle
+   type(mct_ggrid), pointer :: dom_a
+   integer(in)              :: k,n,ic,if,ip      ! generic index
+   integer(in)              :: kArea             ! index of area field in aVect
+   integer(in)              :: kLat              ! index of lat field in aVect
+   integer(in)              :: kl,ka,ko,ki       ! fraction indices
+   integer(in)              :: lSize             ! size of aVect
+   real(r8)                 :: da,di,do,dl       ! area of a grid cell
+   logical,save             :: first_time = .true.
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_atm_mct) '
@@ -448,9 +467,9 @@ subroutine seq_diag_atm_mct( dom_a, frac_a, a2x_a, x2a_a )
 !
 !-------------------------------------------------------------------------------
 
-   if (.not. present(a2x_a) .and. .not. present(x2a_a)) then
-      call shr_sys_abort(subName//"ERROR: must input a bundle")
-   end if
+   dom_a => component_get_dom_cx(atm)
+   a2x_a => component_get_c2x_cx(atm)  
+   x2a_a => component_get_x2c_cx(atm)  
 
    kArea = mct_aVect_indexRA(dom_a%data,afldname)
    kLat  = mct_aVect_indexRA(dom_a%data,latname)
@@ -465,7 +484,7 @@ subroutine seq_diag_atm_mct( dom_a, frac_a, a2x_a, x2a_a )
 
    ip = p_inst
 
-   if (present(a2x_a)) then
+   if (present(do_a2x)) then
       if (first_time) then
          index_a2x_Faxa_swnet  = mct_aVect_indexRA(a2x_a,'Faxa_swnet')
          index_a2x_Faxa_lwdn   = mct_aVect_indexRA(a2x_a,'Faxa_lwdn')
@@ -514,7 +533,7 @@ subroutine seq_diag_atm_mct( dom_a, frac_a, a2x_a, x2a_a )
       ic = c_ish_ar;  budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
    end if
 
-   if (present(x2a_a)) then
+   if (present(do_x2a)) then
       if (first_time) then
          index_x2a_Faxx_lwup   = mct_aVect_indexRA(x2a_a,'Faxx_lwup')
          index_x2a_Faxx_lat    = mct_aVect_indexRA(x2a_a,'Faxx_lat')
@@ -571,23 +590,26 @@ end subroutine seq_diag_atm_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_lnd_mct( dom_l, frac_l, l2x_l, x2l_l)
+subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
 
-   type(mct_gGrid),intent(in)          ::  dom_l ! model domain
-   type(mct_aVect),intent(in)          :: frac_l ! frac bundle
-   type(mct_aVect),intent(in),optional ::  l2x_l ! model to drv bundle
-   type(mct_aVect),intent(in),optional ::  x2l_l ! drv to model bundle
+   type(component_type), intent(in) :: lnd    ! component type for instance1
+   type(mct_aVect)     , intent(in) :: frac_l ! frac bundle
+   logical, optional   , intent(in) :: do_l2x             
+   logical, optional   , intent(in) :: do_x2l             
 
 !EOP
 
    !----- local -----
-   integer(in)      :: k,n,ic,if,ip      ! generic index
-   integer(in)      :: kArea             ! index of area field in aVect
-   integer(in)      :: kLat              ! index of lat field in aVect
-   integer(in)      :: kl,ka,ko,ki       ! fraction indices
-   integer(in)      :: lSize             ! size of aVect
-   real(r8)         :: da,di,do,dl       ! area of a grid cell
-   logical,save     :: first_time = .true.
+   type(mct_aVect), pointer :: l2x_l        ! model to drv bundle
+   type(mct_aVect), pointer :: x2l_l        ! drv to model bundle
+   type(mct_ggrid), pointer :: dom_l
+   integer(in)              :: k,n,ic,if,ip ! generic index
+   integer(in)              :: kArea        ! index of area field in aVect
+   integer(in)              :: kLat         ! index of lat field in aVect
+   integer(in)              :: kl,ka,ko,ki  ! fraction indices
+   integer(in)              :: lSize        ! size of aVect
+   real(r8)                 :: da,di,do,dl  ! area of a grid cell
+   logical,save             :: first_time = .true.
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_lnd_mct) '
@@ -596,28 +618,28 @@ subroutine seq_diag_lnd_mct( dom_l, frac_l, l2x_l, x2l_l)
 !
 !-------------------------------------------------------------------------------
 
-   if (.not. present(l2x_l) .and. .not. present(x2l_l)) then
-      call shr_sys_abort(subName//"ERROR: must input a bundle")
-   end if
-
    !---------------------------------------------------------------------------
    ! add values found in this bundle to the budget table
    !---------------------------------------------------------------------------
+
+   dom_l => component_get_dom_cx(lnd)
+   l2x_l => component_get_c2x_cx(lnd)  
+   x2l_l => component_get_x2c_cx(lnd)  
 
    ip = p_inst
 
    kArea = mct_aVect_indexRA(dom_l%data,afldname)
    kl    = mct_aVect_indexRA(frac_l,lfracname)
 
-   if (present(l2x_l)) then
+   if (present(do_l2x)) then
       if (first_time) then
          index_l2x_Fall_swnet  = mct_aVect_indexRA(l2x_l,'Fall_swnet')
          index_l2x_Fall_lwup   = mct_aVect_indexRA(l2x_l,'Fall_lwup')
          index_l2x_Fall_lat    = mct_aVect_indexRA(l2x_l,'Fall_lat')
          index_l2x_Fall_sen    = mct_aVect_indexRA(l2x_l,'Fall_sen')
          index_l2x_Fall_evap   = mct_aVect_indexRA(l2x_l,'Fall_evap')
-         index_l2x_Flrl_rofliq = mct_aVect_indexRA(l2x_l,'Flrl_rofliq')
-         index_l2x_Flrl_rofice = mct_aVect_indexRA(l2x_l,'Flrl_rofice')
+         index_l2x_Flrl_rofl   = mct_aVect_indexRA(l2x_l,'Flrl_rofl')
+         index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
       end if
 
       lSize = mct_avect_lSize(l2x_l)
@@ -630,13 +652,13 @@ subroutine seq_diag_lnd_mct( dom_l, frac_l, l2x_l, x2l_l)
          if = f_hlatv ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_lat,n)
          if = f_hsen  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_sen,n)
          if = f_wevap ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_evap,n)
-         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofliq,n)
-         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofice,n)
+         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofl,n)
+         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
       end do
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
    end if
 
-   if (present(x2l_l)) then
+   if (present(do_x2l)) then
       if (first_time) then
          index_x2l_Faxa_lwdn   = mct_aVect_indexRA(x2l_l,'Faxa_lwdn')
          index_x2l_Faxa_rainc  = mct_aVect_indexRA(x2l_l,'Faxa_rainc')
@@ -668,36 +690,37 @@ end subroutine seq_diag_lnd_mct
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: seq_diag_rtm_mct - compute global rtm input/output flux diagnostics
+! !IROUTINE: seq_diag_rof_mct - compute global rof input/output flux diagnostics
 !
 ! !DESCRIPTION:
-!     Compute global rtm input/output flux diagnostics
+!     Compute global rof input/output flux diagnostics
 !
 ! !REVISION HISTORY:
 !    2008-jul-10 - T. Craig - update
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_rtm_mct( dom_r, frac_r, r2x_r, x2r_r)
+subroutine seq_diag_rof_mct( rof, frac_r)
 
-   type(mct_gGrid),intent(in)          ::  dom_r ! model domain
-   type(mct_aVect),intent(in)          ::  frac_r ! rtm fractions
-   type(mct_aVect),intent(in)          ::  r2x_r ! model to drv bundle
-   type(mct_aVect),intent(in)          ::  x2r_r ! drv to model bundle
+   type(component_type), intent(in) :: rof    ! component type for instance1
+   type(mct_aVect)     , intent(in) :: frac_r ! frac bundle
 
 !EOP
 
    !----- local -----
-   integer(in)      :: k,n,ic,if,ip      ! generic index
-   integer(in)      :: kArea             ! index of area field in aVect
-   integer(in)      :: kLat              ! index of lat field in aVect
-   integer(in)      :: kl,ka,ko,ki,kr    ! fraction indices
-   integer(in)      :: lSize             ! size of aVect
-   real(r8)         :: da,di,do,dl,dr    ! area of a grid cell
-   logical,save     :: first_time = .true.
+   type(mct_aVect), pointer :: r2x_r
+   type(mct_aVect), pointer :: x2r_r
+   type(mct_ggrid), pointer :: dom_r
+   integer(in)              :: k,n,ic,if,ip      ! generic index
+   integer(in)              :: kArea             ! index of area field in aVect
+   integer(in)              :: kLat              ! index of lat field in aVect
+   integer(in)              :: kl,ka,ko,ki,kr    ! fraction indices
+   integer(in)              :: lSize             ! size of aVect
+   real(r8)                 :: da,di,do,dl,dr    ! area of a grid cell
+   logical,save             :: first_time = .true.
 
    !----- formats -----
-   character(*),parameter :: subName = '(seq_diag_rtm_mct) '
+   character(*),parameter :: subName = '(seq_diag_rof_mct) '
 
 !-------------------------------------------------------------------------------
 !
@@ -707,9 +730,13 @@ subroutine seq_diag_rtm_mct( dom_r, frac_r, r2x_r, x2r_r)
    ! add values found in this bundle to the budget table
    !---------------------------------------------------------------------------
 
+   dom_r => component_get_dom_cx(rof)
+   r2x_r => component_get_c2x_cx(rof)  
+   x2r_r => component_get_x2c_cx(rof)  
+
    if (first_time) then
-      index_x2r_Flrl_rofliq  = mct_aVect_indexRA(x2r_r,'Flrl_rofliq')
-      index_x2r_Flrl_rofice  = mct_aVect_indexRA(x2r_r,'Flrl_rofice')
+      index_x2r_Flrl_rofl  = mct_aVect_indexRA(x2r_r,'Flrl_rofl')
+      index_x2r_Flrl_rofi  = mct_aVect_indexRA(x2r_r,'Flrl_rofi')
    end if
 
    ip = p_inst
@@ -718,14 +745,15 @@ subroutine seq_diag_rtm_mct( dom_r, frac_r, r2x_r, x2r_r)
    lSize = mct_avect_lSize(x2r_r)
    do n=1,lSize
       dr =  dom_r%data%rAttr(kArea,n)
-      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofliq,n)
-      if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofice,n)
+      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofl,n)
+      if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofi,n)
    end do
    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
    if (first_time) then
-      index_r2x_Forr_roff   = mct_aVect_indexRA(r2x_r,'Forr_roff')
-      index_r2x_Forr_ioff   = mct_aVect_indexRA(r2x_r,'Forr_ioff')
+      index_r2x_Forr_rofl   = mct_aVect_indexRA(r2x_r,'Forr_rofl')
+      index_r2x_Forr_rofi   = mct_aVect_indexRA(r2x_r,'Forr_rofi')
+      index_r2x_Firr_rofi   = mct_aVect_indexRA(r2x_r,'Firr_rofi')
       index_r2x_Flrr_flood  = mct_aVect_indexRA(r2x_r,'Flrr_flood')
    end if
 
@@ -735,15 +763,85 @@ subroutine seq_diag_rtm_mct( dom_r, frac_r, r2x_r, x2r_r)
    lSize = mct_avect_lSize(r2x_r)
    do n=1,lSize
       dr =  dom_r%data%rAttr(kArea,n)
-      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dr*r2x_r%rAttr(index_r2x_Forr_roff,n)
-      if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dr*r2x_r%rAttr(index_r2x_Forr_ioff,n)
-      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*r2x_r%rAttr(index_r2x_Flrr_flood,n)
+      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dr*r2x_r%rAttr(index_r2x_Forr_rofl,n) &
+                                                                + dr*r2x_r%rAttr(index_r2x_Flrr_flood,n)
+      if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dr*r2x_r%rAttr(index_r2x_Forr_rofi,n) &
+                                                                - dr*r2x_r%rAttr(index_r2x_Firr_rofi,n)
    end do
    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
    first_time = .false.
 
-end subroutine seq_diag_rtm_mct
+end subroutine seq_diag_rof_mct
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: seq_diag_glc_mct - compute global glc input/output flux diagnostics
+!
+! !DESCRIPTION:
+!     Compute global glc input/output flux diagnostics
+!
+! !REVISION HISTORY:
+!    2008-jul-10 - T. Craig - update
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine seq_diag_glc_mct( glc, frac_g)
+
+   type(component_type), intent(in) :: glc    ! component type for instance1
+   type(mct_aVect)     , intent(in) :: frac_g ! frac bundle
+
+!EOP
+
+   !----- local -----
+   type(mct_aVect), pointer :: g2x_g
+   type(mct_aVect), pointer :: x2g_g
+   type(mct_ggrid), pointer :: dom_g
+   integer(in)              :: k,n,ic,if,ip      ! generic index
+   integer(in)              :: kArea             ! index of area field in aVect
+   integer(in)              :: kLat              ! index of lat field in aVect
+   integer(in)              :: kl,ka,ko,ki,kr,kg ! fraction indices
+   integer(in)              :: lSize             ! size of aVect
+   real(r8)                 :: da,di,do,dl,dr,dg ! area of a grid cell
+   logical,save             :: first_time = .true.
+
+   !----- formats -----
+   character(*),parameter :: subName = '(seq_diag_glc_mct) '
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   !---------------------------------------------------------------------------
+   ! add values found in this bundle to the budget table
+   !---------------------------------------------------------------------------
+
+   dom_g => component_get_dom_cx(glc)
+   g2x_g => component_get_c2x_cx(glc)  
+   x2g_g => component_get_x2c_cx(glc)  
+
+   if (first_time) then
+      index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
+      index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
+      index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
+   end if
+
+   ip = p_inst
+   ic = c_glc_gs
+   kArea = mct_aVect_indexRA(dom_g%data,afldname)
+   lSize = mct_avect_lSize(g2x_g)
+   do n=1,lSize
+      dg =  dom_g%data%rAttr(kArea,n)
+      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dg*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
+      if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dg*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
+                                                                - dg*g2x_g%rAttr(index_g2x_Figg_rofi,n)
+   end do
+   budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+
+   first_time = .false.
+
+end subroutine seq_diag_glc_mct
 
 !BOP ===========================================================================
 !
@@ -757,25 +855,28 @@ end subroutine seq_diag_rtm_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
+subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
 
-   type(mct_gGrid),intent(in)          ::  dom_o ! model domain
-   type(mct_aVect),intent(in)          :: frac_o ! frac bundle
-   type(mct_aVect),intent(in),optional ::  o2x_o ! model to drv bundle
-   type(mct_aVect),intent(in),optional ::  x2o_o ! drv to model bundle
-   type(mct_aVect),intent(in),optional ::  xao_o ! drv to model bundle
-   type(mct_aVect),intent(in),optional ::  r2x_o ! roff to drv bundle
+   type(component_type) , intent(in)          :: ocn    ! component type for instance1
+   type(mct_aVect)      , intent(in)          :: frac_o ! frac bundle
+   type(mct_aVect)      , intent(in)          :: xao_o  
+   logical              , intent(in),optional :: do_o2x
+   logical              , intent(in),optional :: do_x2o
+   logical              , intent(in),optional :: do_xao
 
 !EOP
 
    !----- local -----
-   integer(in)      :: k,n,if,ic,ip      ! generic index
-   integer(in)      :: kArea             ! index of area field in aVect
-   integer(in)      :: kLat              ! index of lat field in aVect
-   integer(in)      :: kl,ka,ko,ki       ! fraction indices
-   integer(in)      :: lSize             ! size of aVect
-   real(r8)         :: da,di,do,dl       ! area of a grid cell
-   logical,save     :: first_time = .true.
+   type(mct_aVect), pointer :: o2x_o        ! model to drv bundle
+   type(mct_aVect), pointer :: x2o_o        ! drv to model bundle
+   type(mct_ggrid), pointer :: dom_o
+   integer(in)              :: k,n,if,ic,ip ! generic index
+   integer(in)              :: kArea        ! index of area field in aVect
+   integer(in)              :: kLat         ! index of lat field in aVect
+   integer(in)              :: kl,ka,ko,ki  ! fraction indices
+   integer(in)              :: lSize        ! size of aVect
+   real(r8)                 :: da,di,do,dl  ! area of a grid cell
+   logical,save             :: first_time = .true.
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ocn_mct) '
@@ -784,7 +885,9 @@ subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
 !
 !-------------------------------------------------------------------------------
 
-   if (.not. present(o2x_o) .and. .not. present(x2o_o) .and. .not. present(xao_o)) then
+   if (.not. present(do_o2x) .and. &
+       .not. present(do_x2o) .and. &
+       .not. present(do_xao)) then
       call shr_sys_abort(subName//"ERROR: must input a bundle")
    end if
 
@@ -792,13 +895,17 @@ subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
    ! add values found in this bundle to the budget table
    !---------------------------------------------------------------------------
 
+   dom_o => component_get_dom_cx(ocn)
+   o2x_o => component_get_c2x_cx(ocn)  
+   x2o_o => component_get_x2c_cx(ocn)  
+
    ip = p_inst
 
    kArea = mct_aVect_indexRA(dom_o%data,afldname)
    ko    = mct_aVect_indexRA(frac_o,ofracname)
    ki    = mct_aVect_indexRA(frac_o,ifracname)
 
-   if (present(o2x_o)) then
+   if (present(do_o2x)) then
       if (first_time) then
          index_o2x_Fioo_q      = mct_aVect_indexRA(o2x_o,'Fioo_q')
       end if
@@ -814,7 +921,7 @@ subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
       budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
    end if
 
-   if (present(xao_o)) then
+   if (present(do_xao)) then
       if (first_time) then
          index_xao_Faox_lwup   = mct_aVect_indexRA(xao_o,'Faox_lwup') 
          index_xao_Faox_lat    = mct_aVect_indexRA(xao_o,'Faox_lat')  
@@ -833,7 +940,7 @@ subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
       end do
    end if
 
-   if (present(x2o_o)) then
+   if (present(do_x2o)) then
       if (first_time) then
          index_x2o_Fioi_melth  = mct_aVect_indexRA(x2o_o,'Fioi_melth')  
          index_x2o_Fioi_meltw  = mct_aVect_indexRA(x2o_o,'Fioi_meltw') 
@@ -841,7 +948,28 @@ subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
          index_x2o_Faxa_lwdn   = mct_aVect_indexRA(x2o_o,'Faxa_lwdn')
          index_x2o_Faxa_rain   = mct_aVect_indexRA(x2o_o,'Faxa_rain') 
          index_x2o_Faxa_snow   = mct_aVect_indexRA(x2o_o,'Faxa_snow')  
+         index_x2o_Foxx_lwup   = mct_aVect_indexRA(x2o_o,'Foxx_lwup') 
+         index_x2o_Foxx_lat    = mct_aVect_indexRA(x2o_o,'Foxx_lat')  
+         index_x2o_Foxx_sen    = mct_aVect_indexRA(x2o_o,'Foxx_sen') 
+         index_x2o_Foxx_evap   = mct_aVect_indexRA(x2o_o,'Foxx_evap')  
+         index_x2o_Foxx_rofl   = mct_aVect_indexRA(x2o_o,'Foxx_rofl')
+         index_x2o_Foxx_rofi   = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
       end if
+
+      if (.not. present(do_xao)) then
+         ! these are in x2o but they really are the atm/ocean flux 
+         ! computed in the coupler and are "like" an o2x
+         lSize = mct_avect_lSize(x2o_o)
+         ic = c_ocn_or
+         do n=1,lSize
+            do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
+            di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
+            if = f_hlwup; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_lwup,n)
+            if = f_hlatv; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_lat,n)
+            if = f_hsen ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_sen,n)
+            if = f_wevap; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_evap,n)
+         end do
+      endif
 
       lSize = mct_avect_lSize(x2o_o)
       ic = c_ocn_os
@@ -855,24 +983,10 @@ subroutine seq_diag_ocn_mct( dom_o, frac_o, o2x_o, x2o_o, xao_o, r2x_o)
          if = f_hlwdn ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_lwdn,n)
          if = f_wrain ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain,n)
          if = f_wsnow ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow,n)
+         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl,n)
+         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi,n)
       end do
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
-   end if
-
-   if (present(r2x_o)) then
-      if (first_time) then
-         index_r2x_Forr_roff   = mct_aVect_indexRA(r2x_o,'Forr_roff')
-         index_r2x_Forr_ioff   = mct_aVect_indexRA(r2x_o,'Forr_ioff')
-      end if
-
-      lSize = mct_avect_lSize(r2x_o)
-      ic = c_ocn_os
-      do n=1,lSize
-         do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
-         di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
-         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*r2x_o%rAttr(index_r2x_Forr_roff,n)
-         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*r2x_o%rAttr(index_r2x_Forr_ioff,n)
-      end do
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
    end if
 
@@ -893,23 +1007,26 @@ end subroutine seq_diag_ocn_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_diag_ice_mct( dom_i, frac_i, i2x_i, x2i_i)
+subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
 
-   type(mct_gGrid),intent(in)          ::  dom_i ! model domain
-   type(mct_aVect),intent(in)          :: frac_i ! frac bundle
-   type(mct_aVect),intent(in),optional ::  i2x_i ! model to drv bundle
-   type(mct_aVect),intent(in),optional ::  x2i_i ! drv to model bundle
+   type(component_type), intent(in)           :: ice    ! component type for instance1
+   type(mct_aVect)     , intent(in)           :: frac_i ! frac bundle
+   logical             , intent(in), optional :: do_i2x
+   logical             , intent(in), optional :: do_x2i
 
 !EOP
 
    !----- local -----
-   integer(in)      :: k,n,ic,if,ip      ! generic index
-   integer(in)      :: kArea             ! index of area field in aVect
-   integer(in)      :: kLat              ! index of lat field in aVect
-   integer(in)      :: kl,ka,ko,ki       ! fraction indices
-   integer(in)      :: lSize             ! size of aVect
-   real(r8)         :: da,di,do,dl       ! area of a grid cell
-   logical,save     :: first_time = .true.
+   type(mct_aVect), pointer :: i2x_i        ! model to drv bundle
+   type(mct_aVect), pointer :: x2i_i        ! drv to model bundle
+   type(mct_ggrid), pointer :: dom_i
+   integer(in)              :: k,n,ic,if,ip ! generic index
+   integer(in)              :: kArea        ! index of area field in aVect
+   integer(in)              :: kLat         ! index of lat field in aVect
+   integer(in)              :: kl,ka,ko,ki  ! fraction indices
+   integer(in)              :: lSize        ! size of aVect
+   real(r8)                 :: da,di,do,dl  ! area of a grid cell
+   logical,save             :: first_time = .true.
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ice_mct) '
@@ -918,13 +1035,13 @@ subroutine seq_diag_ice_mct( dom_i, frac_i, i2x_i, x2i_i)
 !
 !-------------------------------------------------------------------------------
 
-   if (.not. present(i2x_i) .and. .not. present(x2i_i)) then
-      call shr_sys_abort(subName//"ERROR: must input a bundle")
-   end if
-
    !---------------------------------------------------------------------------
    ! add values found in this bundle to the budget table
    !---------------------------------------------------------------------------
+
+   dom_i => component_get_dom_cx(ice)
+   i2x_i => component_get_c2x_cx(ice)  
+   x2i_i => component_get_x2c_cx(ice)  
 
    ip = p_inst
 
@@ -933,7 +1050,7 @@ subroutine seq_diag_ice_mct( dom_i, frac_i, i2x_i, x2i_i)
    ki    = mct_aVect_indexRA(frac_i,ifracname)
    ko    = mct_aVect_indexRA(frac_i,ofracname)
 
-   if (present(i2x_i)) then
+   if (present(do_i2x)) then
          index_i2x_Fioi_melth  = mct_aVect_indexRA(i2x_i,'Fioi_melth')
          index_i2x_Fioi_meltw  = mct_aVect_indexRA(i2x_i,'Fioi_meltw')
          index_i2x_Fioi_swpen  = mct_aVect_indexRA(i2x_i,'Fioi_swpen')
@@ -950,6 +1067,7 @@ subroutine seq_diag_ice_mct( dom_i, frac_i, i2x_i, x2i_i)
          else
             ic = c_ish_ir
          endif
+         do =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ko,n)
          di =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ki,n)
          if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di
          if = f_hmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_melth,n)
@@ -963,12 +1081,13 @@ subroutine seq_diag_ice_mct( dom_i, frac_i, i2x_i, x2i_i)
       end do
    end if
 
-   if (present(x2i_i)) then
+   if (present(do_x2i)) then
       if (first_time) then
          index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn') 
          index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')  
          index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')  
          index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')  
+         index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
       end if
 
       lSize = mct_avect_lSize(x2i_i)
@@ -980,17 +1099,20 @@ subroutine seq_diag_ice_mct( dom_i, frac_i, i2x_i, x2i_i)
          endif
          do =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ko,n)
          di =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ki,n)
-         if  = f_area ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di
-         if  = f_hlwdn; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_lwdn,n)
-         if  = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_rain,n)
-         if  = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
-         if  = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
+         if = f_area ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di
+         if = f_hlwdn; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_lwdn,n)
+         if = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_rain,n)
+         if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
+         if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
+         if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
       end do
       ic = c_inh_is  
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
+      budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       ic = c_ish_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
+      budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
    end if
 
@@ -1010,22 +1132,22 @@ end subroutine seq_diag_ice_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_diag_print_mct(EClock,stop_alarm, &
-   budg_print_inst, budg_print_daily, budg_print_month, &
-   budg_print_ann, budg_print_ltann, budg_print_ltend)
+SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
+     budg_print_inst,  budg_print_daily,  budg_print_month,  &
+     budg_print_ann,  budg_print_ltann,  budg_print_ltend)
 
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(ESMF_Clock), intent(in) :: EClock
-   logical,intent(in)           :: stop_alarm
-   integer,intent(in)           :: budg_print_inst
-   integer,intent(in)           :: budg_print_daily
-   integer,intent(in)           :: budg_print_month
-   integer,intent(in)           :: budg_print_ann
-   integer,intent(in)           :: budg_print_ltann
-   integer,intent(in)           :: budg_print_ltend
+   type(ESMF_Clock) , intent(in) :: EClock
+   logical          , intent(in) :: stop_alarm
+   integer          , intent(in) :: budg_print_inst
+   integer          , intent(in) :: budg_print_daily
+   integer          , intent(in) :: budg_print_month
+   integer          , intent(in) :: budg_print_ann
+   integer          , intent(in) :: budg_print_ltann
+   integer          , intent(in) :: budg_print_ltend
 
 !EOP
 
@@ -1049,10 +1171,10 @@ SUBROUTINE seq_diag_print_mct(EClock,stop_alarm, &
 
    !----- formats -----
    character(*),parameter :: FAH="(4a,i9,i6)"
-   character(*),parameter :: FA0="('    ',8x,6(6x,a8,1x))"
-   character(*),parameter :: FA1="('    ',a8,6f15.8)"
-   character(*),parameter :: FA0r="('    ',8x,7(6x,a8,1x))"
-   character(*),parameter :: FA1r="('    ',a8,7f15.8)"
+   character(*),parameter :: FA0= "('    ',8x,6(6x,a8,1x))"
+   character(*),parameter :: FA1= "('    ',a8,6f15.8)"
+   character(*),parameter :: FA0r="('    ',8x,8(6x,a8,1x))"
+   character(*),parameter :: FA1r="('    ',a8,8f15.8)"
 
 !-------------------------------------------------------------------------------
 ! print instantaneous budget data
@@ -1254,63 +1376,71 @@ SUBROUTINE seq_diag_print_mct(EClock,stop_alarm, &
 
       write(logunit,*) ' '
       write(logunit,FAH) subname,'NET HEAT BUDGET (W/m2): period = ',trim(pname(ip)),': date = ',cdate,sec
-      write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh',' *SUM*  '
+      write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
       do if = f_h, f_w-1
-         write(logunit,FA1r)    fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
+         write(logunit,FA1r)   fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
                                          dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip), &
                                          dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip), &
                                          dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip), &
                                          dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip), &
                                          dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip), &
+                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip), &
                                          dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip)+ &
                                          dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip)+ &
                                          dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip)+ &
                                          dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip)+ &
                                          dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip)+ &
-                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)
+                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)+ &
+                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip)
       enddo
-      write(logunit,FA1r) '   *SUM*',sum(dataGpr(f_h:f_w-1,c_atm_ar,ip))+sum(dataGpr(f_h:f_w-1,c_atm_as,ip)), &
+      write(logunit,FA1r)'   *SUM*',sum(dataGpr(f_h:f_w-1,c_atm_ar,ip))+sum(dataGpr(f_h:f_w-1,c_atm_as,ip)), &
                                     sum(dataGpr(f_h:f_w-1,c_lnd_lr,ip))+sum(dataGpr(f_h:f_w-1,c_lnd_ls,ip)), &
                                     sum(dataGpr(f_h:f_w-1,c_rof_rr,ip))+sum(dataGpr(f_h:f_w-1,c_rof_rs,ip)), &
                                     sum(dataGpr(f_h:f_w-1,c_ocn_or,ip))+sum(dataGpr(f_h:f_w-1,c_ocn_os,ip)), &
                                     sum(dataGpr(f_h:f_w-1,c_inh_ir,ip))+sum(dataGpr(f_h:f_w-1,c_inh_is,ip)), &
                                     sum(dataGpr(f_h:f_w-1,c_ish_ir,ip))+sum(dataGpr(f_h:f_w-1,c_ish_is,ip)), &
+                                    sum(dataGpr(f_h:f_w-1,c_glc_gr,ip))+sum(dataGpr(f_h:f_w-1,c_glc_gs,ip)), &
                                     sum(dataGpr(f_h:f_w-1,c_atm_ar,ip))+sum(dataGpr(f_h:f_w-1,c_atm_as,ip))+ &
                                     sum(dataGpr(f_h:f_w-1,c_lnd_lr,ip))+sum(dataGpr(f_h:f_w-1,c_lnd_ls,ip))+ &
                                     sum(dataGpr(f_h:f_w-1,c_rof_rr,ip))+sum(dataGpr(f_h:f_w-1,c_rof_rs,ip))+ &
                                     sum(dataGpr(f_h:f_w-1,c_ocn_or,ip))+sum(dataGpr(f_h:f_w-1,c_ocn_os,ip))+ &
                                     sum(dataGpr(f_h:f_w-1,c_inh_ir,ip))+sum(dataGpr(f_h:f_w-1,c_inh_is,ip))+ &
-                                    sum(dataGpr(f_h:f_w-1,c_ish_ir,ip))+sum(dataGpr(f_h:f_w-1,c_ish_is,ip))
+                                    sum(dataGpr(f_h:f_w-1,c_ish_ir,ip))+sum(dataGpr(f_h:f_w-1,c_ish_is,ip))+ &
+                                    sum(dataGpr(f_h:f_w-1,c_glc_gr,ip))+sum(dataGpr(f_h:f_w-1,c_glc_gs,ip))
 
       write(logunit,*) ' '
       write(logunit,FAH) subname,'NET WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
-      write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh',' *SUM*  '
+      write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
       do if = f_w, f_size
-         write(logunit,FA1r)    fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
+         write(logunit,FA1r)   fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
                                          dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip), &
                                          dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip), &
                                          dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip), &
                                          dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip), &
                                          dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip), &
+                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip), &
                                          dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip)+ &
                                          dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip)+ &
                                          dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip)+ &
                                          dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip)+ &
                                          dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip)+ &
-                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)
+                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)+ &
+                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip)
       enddo
-      write(logunit,FA1r) '   *SUM*',sum(dataGpr(f_w:f_size,c_atm_ar,ip))+sum(dataGpr(f_w:f_size,c_atm_as,ip)), &
+      write(logunit,FA1r)'   *SUM*',sum(dataGpr(f_w:f_size,c_atm_ar,ip))+sum(dataGpr(f_w:f_size,c_atm_as,ip)), &
                                     sum(dataGpr(f_w:f_size,c_lnd_lr,ip))+sum(dataGpr(f_w:f_size,c_lnd_ls,ip)), &
                                     sum(dataGpr(f_w:f_size,c_rof_rr,ip))+sum(dataGpr(f_w:f_size,c_rof_rs,ip)), &
                                     sum(dataGpr(f_w:f_size,c_ocn_or,ip))+sum(dataGpr(f_w:f_size,c_ocn_os,ip)), &
                                     sum(dataGpr(f_w:f_size,c_inh_ir,ip))+sum(dataGpr(f_w:f_size,c_inh_is,ip)), &
                                     sum(dataGpr(f_w:f_size,c_ish_ir,ip))+sum(dataGpr(f_w:f_size,c_ish_is,ip)), &
+                                    sum(dataGpr(f_w:f_size,c_glc_gr,ip))+sum(dataGpr(f_w:f_size,c_glc_gs,ip)), &
                                     sum(dataGpr(f_w:f_size,c_atm_ar,ip))+sum(dataGpr(f_w:f_size,c_atm_as,ip))+ &
                                     sum(dataGpr(f_w:f_size,c_lnd_lr,ip))+sum(dataGpr(f_w:f_size,c_lnd_ls,ip))+ &
                                     sum(dataGpr(f_w:f_size,c_rof_rr,ip))+sum(dataGpr(f_w:f_size,c_rof_rs,ip))+ &
                                     sum(dataGpr(f_w:f_size,c_ocn_or,ip))+sum(dataGpr(f_w:f_size,c_ocn_os,ip))+ &
                                     sum(dataGpr(f_w:f_size,c_inh_ir,ip))+sum(dataGpr(f_w:f_size,c_inh_is,ip))+ &
-                                    sum(dataGpr(f_w:f_size,c_ish_ir,ip))+sum(dataGpr(f_w:f_size,c_ish_is,ip))
+                                    sum(dataGpr(f_w:f_size,c_ish_ir,ip))+sum(dataGpr(f_w:f_size,c_ish_is,ip))+ &
+                                    sum(dataGpr(f_w:f_size,c_glc_gr,ip))+sum(dataGpr(f_w:f_size,c_glc_gs,ip))
 
    endif
 
@@ -1333,7 +1463,7 @@ end subroutine seq_diag_print_mct
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_diag_avect_mct(cdata,AV,comment)
+SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 
    use seq_infodata_mod
 
@@ -1341,43 +1471,42 @@ SUBROUTINE seq_diag_avect_mct(cdata,AV,comment)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_cdata) , intent(in) :: cdata
-   type(mct_aVect) , intent(in) :: AV
-   character(len=*), intent(in), optional :: comment
+   type(seq_infodata_type) , intent(in)           :: infodata
+   integer(in)             , intent(in)           :: ID
+   type(mct_aVect)         , intent(in)           :: av
+   type(mct_gGrid)         , pointer              :: dom
+   type(mct_gsMap)         , pointer              :: gsmap
+   character(len=*)        , intent(in), optional :: comment
 
 !EOP
 
    !--- local ---
-   type(mct_gGrid)   ,pointer :: dom
-   type(seq_infodata_type),pointer :: infodata
-   type(mct_gsMap)   ,pointer :: gsmap
-   integer(in)      :: ID
-   logical          :: bfbflag
-   integer(in)      :: n,k         ! counters
-   integer(in)      :: npts,nptsg  ! number of local/global pts in AV
-   integer(in)      :: kflds       ! number of fields in AV
-   real(r8),pointer :: sumbuf (:)  ! sum buffer
-   real(r8),pointer :: minbuf (:)  ! min buffer
-   real(r8),pointer :: maxbuf (:)  ! max buffer
-   real(r8),pointer :: sumbufg(:)  ! sum buffer reduced
-   real(r8),pointer :: minbufg(:)  ! min buffer reduced
-   real(r8),pointer :: maxbufg(:)  ! max buffer reduced
-   integer(i8),pointer :: isumbuf (:) ! integer local sum
-   integer(i8),pointer :: isumbufg(:) ! integer global sum
-   integer(i8)      :: ihuge       ! huge
-   integer(in)      :: mpicom      ! mpi comm
-   integer(in)      :: iam         ! pe number
-   integer(in)      :: km,ka       ! field indices
-   integer(in)      :: ns          ! size of local AV
-   integer(in)      :: rcode       ! error code
-   real(r8),pointer :: weight(:)   ! weight
-   type(mct_string) :: mstring     ! mct char type
-   character(CL)    :: lcomment    ! should be long enough
-   character(CL)    :: itemc       ! string converted to char
+   logical                          :: bfbflag
+   integer(in)                      :: n,k         ! counters
+   integer(in)                      :: npts,nptsg  ! number of local/global pts in AV
+   integer(in)                      :: kflds       ! number of fields in AV
+   real(r8),                pointer :: sumbuf (:)  ! sum buffer
+   real(r8),                pointer :: minbuf (:)  ! min buffer
+   real(r8),                pointer :: maxbuf (:)  ! max buffer
+   real(r8),                pointer :: sumbufg(:)  ! sum buffer reduced
+   real(r8),                pointer :: minbufg(:)  ! min buffer reduced
+   real(r8),                pointer :: maxbufg(:)  ! max buffer reduced
+   integer(i8),             pointer :: isumbuf (:) ! integer local sum
+   integer(i8),             pointer :: isumbufg(:) ! integer global sum
+   integer(i8)                      :: ihuge       ! huge
+   integer(in)                      :: mpicom      ! mpi comm
+   integer(in)                      :: iam         ! pe number
+   integer(in)                      :: km,ka       ! field indices
+   integer(in)                      :: ns          ! size of local AV
+   integer(in)                      :: rcode       ! error code
+   real(r8),                pointer :: weight(:)   ! weight
+   type(mct_string)                 :: mstring     ! mct char type
+   character(CL)                    :: lcomment    ! should be long enough
+   character(CL)                    :: itemc       ! string converted to char
 
-   type(mct_avect)  :: AV1         ! local avect with one field
-   type(mct_avect)  :: AVr1        ! avect on root with one field
-   type(mct_avect)  :: AVr2        ! avect on root with one field
+   type(mct_avect)                  :: AV1         ! local avect with one field
+   type(mct_avect)                  :: AVr1        ! avect on root with one field
+   type(mct_avect)                  :: AVr2        ! avect on root with one field
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_avect_mct) '
@@ -1387,9 +1516,11 @@ SUBROUTINE seq_diag_avect_mct(cdata,AV,comment)
 ! print instantaneous budget data
 !-------------------------------------------------------------------------------
 
-   call seq_cdata_setptrs(cdata,ID=ID,infodata=infodata,dom=dom,gsmap=gsmap)
-   call seq_comm_setptrs(ID,mpicom=mpicom,iam=iam)
-   call seq_infodata_GetData(infodata,bfbflag=bfbflag)
+   call seq_comm_setptrs(ID,&
+        mpicom=mpicom, iam=iam)
+
+   call seq_infodata_GetData(infodata,&
+        bfbflag=bfbflag)
 
    lcomment = ''
    if (present(comment)) then
@@ -1468,60 +1599,6 @@ SUBROUTINE seq_diag_avect_mct(cdata,AV,comment)
       deallocate(maxbuf,maxbufg)
       deallocate(isumbuf,isumbufg)
 
-#if (1 == 0)
-! OLD VERSION
-      call mct_aVect_init(AV1,rList='varf1',lsize=ns)
-
-      AV1%rAttr(1,1:ns) = dom%data%rAttr(km,1:ns)           ! mask = AVr1
-      call mct_aVect_gather(AV1,AVr1,gsmap,0,mpicom,rcode)
-      AV1%rAttr(1,1:ns) = dom%data%rAttr(ka,1:ns)           ! area = AVr2
-      call mct_aVect_gather(AV1,AVr2,gsmap,0,mpicom,rcode)
-
-      ! --- compute weight on root pe
-
-      if (iam == 0) then
-         npts = mct_aVect_lsize(AVr1)
-         allocate(weight(npts))
-         weight(:) = 1.0_r8 
-         do n = 1,npts
-            if (AVr1%rAttr(1,n) <= 1.0e-06_R8) then
-               weight(n) = 0.0_r8
-            else
-               weight(n) = AVr2%rAttr(1,n)*shr_const_rearth*shr_const_rearth
-            endif
-         enddo
-!         write(logunit,*) trim(subname),'tcx1 ',ns,npts,km,ka,kflds,minval(AVr2%rAttr),maxval(AVr2%rAttr)
-!         write(logunit,*) trim(subname),'tcx2 ',size(AVr1%rAttr),size(AVr2%rAttr),minval(AVr1%rAttr),maxval(AVr1%rAttr)
-      endif
-
-      ! --- gather and compute stats one field at a time (to minimize memory)
-
-      do k = 1,kflds
-         AV1%rAttr(1,1:ns) = AV%rAttr(k,1:ns)           ! fld k = AVr2
-         call mct_aVect_gather(AV1,AVr2,gsmap,0,mpicom,rcode)
-         if (iam == 0) then
-            npts = mct_aVect_lsize(AVr2)
-!            write(logunit,*) trim(subname),'tcx3 ',ns,npts,k,size(AVr2%rAttr),minval(AVr2%rAttr),maxval(AVr2%rAttr)
-!            write(logunit,*) trim(subname),'tcx4 ',size(weight),minval(weight),maxval(weight)
-            do n = 1,npts
-               if (AVr2%rAttr(1,n) > 1.01_r8*shr_const_spval .or. &
-                   AVr2%rAttr(1,n) < 0.99_r8*shr_const_spval) then
-                   sumbuf(k) = sumbuf(k) + AVr2%rAttr(1,n)*weight(n)
-               endif
-            enddo
-         endif
-      enddo
-
-      ! --- local copy, relevant only on root pe
-      sumbufg = sumbuf
-
-      call mct_avect_clean(AV1)
-      if (iam == 0) then
-         call mct_aVect_clean(AVr1)
-         call mct_aVect_clean(AVr2)
-      endif
-#endif
-
    else
 
       npts = mct_aVect_lsize(AV)
@@ -1552,7 +1629,7 @@ SUBROUTINE seq_diag_avect_mct(cdata,AV,comment)
    endif
 
    if (iam == 0) then
-!      write(logunit,*) 'sdAV: *** writing ',trim(lcomment),': k fld min/max/sum ***'
+      !      write(logunit,*) 'sdAV: *** writing ',trim(lcomment),': k fld min/max/sum ***'
       do k = 1,kflds
          call mct_aVect_getRList(mstring,k,AV)
          itemc = mct_string_toChar(mstring)

@@ -34,17 +34,18 @@ module eis_temp
   !*FD temperature forcing
 
   use glimmer_ts
-  use glimmer_global, only : fname_length
+  use glimmer_global, only : fname_length, dp
 
   type eis_temp_type
-     real :: lapse_rate  = -0.008                !*FD lapse rate
+     real(dp) :: lapse_rate  = -0.008d0          !*FD lapse rate
+                                                 !TODO - lapse_rate has the opposite sign convention in Glint; change sign?
      character(len=fname_length) :: fname=''     !*FD name of file containing temperature ts
      integer :: lat_type = 0                     !*FD type of lat dependend function (0 polynomial,
                                                  !*FD 1 exponential: a+b*exp(c*(lat-lat0))
-     real :: lat0 = 44.95                        !*FD parameter used for exponential function
+     real(dp) :: lat0 = 44.95                    !*FD parameter used for exponential function
      integer :: torder = 2                       !*FD order of temperature polynomial
      type(glimmer_tseries) :: temp_ts            !*FD temperature time series 
-     real, dimension(:),pointer :: tvalue        !*FD temperature value
+     real(dp), dimension(:),pointer :: tvalue    !*FD temperature value
   end type eis_temp_type
 
 contains
@@ -119,15 +120,15 @@ contains
   subroutine eis_surftemp(temp,model,time)
     !*FD calculate surface temperature
     use glide_types
-    use glimmer_global, only : rk
+    use glimmer_global, only : dp
     implicit none
     type(eis_temp_type)       :: temp  !*FD temperature data
     type(glide_global_type)   :: model !*FD model instance
-    real(kind=rk), intent(in) :: time  !*FD current time
+    real(dp), intent(in)      :: time  !*FD current time
 
     integer i
 
-    call glimmer_ts_step(temp%temp_ts,real(time),temp%tvalue)
+    call glimmer_ts_step(temp%temp_ts, time, temp%tvalue)
     ! spatial temp distrib
     model%climate%artm = temp%tvalue(1)
     if (temp%lat_type.eq.1) then

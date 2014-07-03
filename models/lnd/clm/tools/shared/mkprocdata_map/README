@@ -1,4 +1,4 @@
-models/lnd/clm/tools/shared/mkprocdata_map/README                Jun/04/2013
+models/lnd/clm/tools/mkprocdata_map/clm/README                Oct 30, 2012
 
 This directory contains scripts for regridding CLM output from an
 unstructured grid (1-d output using the lndgrid dimension) to a 2-d
@@ -6,10 +6,6 @@ unstructured grid (1-d output using the lndgrid dimension) to a 2-d
 
 The following steps provide a method to create the necessary inputs to
 this script, produce an executable, and regrid output:
-
-------------------------------------------------------------------------
-I. Step by step instructions
-------------------------------------------------------------------------
 
 In the following instructions, the "original" resolution is the
 resolution of the run on an unstructured grid, and the "target"
@@ -30,7 +26,7 @@ the output.
     to the resolution of the CLM run. For example, when running CLM at
     ne30_np4 resolution, a good target resolution is 0.9x1.25 (i.e.,
     finite volume 1 degree: f09); when running CLM at ne120_np4
-    resolution, a good target resolution is 0.23x0.31 (i.e., finite
+    resolution, a good target resolution is 0.23x0.31 (i.e., finitev
     volume 1/4 degree: f02).
 
 (2) Perform a short CLM run at the target resolution, producing at
@@ -130,8 +126,9 @@ the output.
       script, including the '-l' option described in (a), above. Run
       'mkprocdata_map_all -h' for full usage.
     
+
 ------------------------------------------------------------------------
-II. Some miscellaneous notes on the scripts contained here
+Some miscellaneous notes on the scripts contained here
 ------------------------------------------------------------------------
 
 - area vs. area_regridded in the output of mkprocdata_map_wrap and
@@ -153,19 +150,3 @@ II. Some miscellaneous notes on the scripts contained here
   grid cell over which the field applies. However, doing this would
   require metadata about each field that is not currently
   available.
-
-------------------------------------------------------------------------
-III. General Directory Structure:
-------------------------------------------------------------------------
-
-mkprocdata_map_all ------------ Run mapping on all files matching a given pattern
-mkprocdata_map_wrap ----------- Run mapping for a single history file
-
-mkprocdata_map_in ------------- Sample namelist
-mkprocdata_map_functions.bash - utility functions used by other scripts
-
-Sample files for mapping
-
-clm4054_f19g16_I2000.clm2.h0.2000-01_c121107.nc ----------- Sample output f19 resolution history file
-clm4054_ne30g16_I2000.clm2.h0.2000-01_c121107.nc ---------- Sample input ne30 resolution history file
-map_ne30np4_nomask_to_fv1.9x2.5_nomask_aave_da_c121107.nc - Mapping file from ne30 to f19 resolution

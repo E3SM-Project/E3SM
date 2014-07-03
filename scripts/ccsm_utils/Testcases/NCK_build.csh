@@ -4,6 +4,7 @@
 source ./Tools/ccsm_getenv     || exit -2
 
 cd $CASEROOT
+./$CASE.clean_build
 
 ./xmlchange -file env_mach_pes.xml -id NINST_ATM  -val 1
 ./xmlchange -file env_mach_pes.xml -id NINST_LND  -val 1
@@ -40,7 +41,6 @@ if ( $NTASKS_GLC > 1 ) then
   @ ntask = $NTASKS_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
 endif
-rm -r -f $EXEROOT/csm_share/seq_comm_mct.*
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 ./cesm_setup -clean
 ./cesm_setup
@@ -49,6 +49,8 @@ rm -r -f $EXEROOT/csm_share/seq_comm_mct.*
 mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.nck1  || exit -9
 cp -f env_mach_pes.xml env_mach_pes.xml.nck1
 cp -f env_build.xml env_build.xml.nck1
+
+./$CASE.clean_build 
 
 source ./Tools/ccsm_getenv     || exit -2
 ./xmlchange -file env_mach_pes.xml -id NINST_ATM  -val 2
@@ -73,7 +75,6 @@ source ./Tools/ccsm_getenv     || exit -2
 @ ntask = $NTASKS_GLC * 2
 ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
 
-rm -r -f $EXEROOT/csm_share/seq_comm_mct.*
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 ./cesm_setup -clean
 ./cesm_setup

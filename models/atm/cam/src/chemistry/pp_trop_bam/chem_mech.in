@@ -1,21 +1,23 @@
-      SPECIES
+* Bulk Aerosol Model (BAM)
+ 
+     SPECIES
 
       Solution
-    H2O2, SO2, SO4, DMS -> CH3SCH3
-    OC1 -> C, OC2 -> C
-    CB1 -> C, CB2 -> C
-    SSLT01 -> NaCl, SSLT02 -> NaCl, SSLT03 -> NaCl, SSLT04 -> NaCl
-    DST01 -> AlSiO5, DST02 -> AlSiO5, DST03 -> AlSiO5, DST04 -> AlSiO5
+        H2O2, SO2, SO4, DMS -> CH3SCH3
+        OC1 -> C, OC2 -> C
+        CB1 -> C, CB2 -> C
+        SSLT01 -> NaCl, SSLT02 -> NaCl, SSLT03 -> NaCl, SSLT04 -> NaCl
+        DST01 -> AlSiO5, DST02 -> AlSiO5, DST03 -> AlSiO5, DST04 -> AlSiO5
       End Solution
 
       Fixed
-    M, N2, O2
-    O3, OH, NO3, HO2
+        M, N2, O2, H2O
+        O3, OH, NO3, HO2
       End Fixed
 
       Col-int
- O3 = 0.
- O2 = 0.
+        O3 = 0.
+        O2 = 0.
       End Col-int
 
    End SPECIES
@@ -24,26 +26,33 @@
       Explicit
       End Explicit
       Implicit
-    H2O2, SO2, SO4, DMS
-    CB1, CB2
-    OC1, OC2
-    SSLT01, SSLT02, SSLT03, SSLT04
-    DST01, DST02, DST03, DST04
+        H2O2, SO2, SO4, DMS
+        CB1, CB2
+        OC1, OC2
+        SSLT01, SSLT02, SSLT03, SSLT04
+        DST01, DST02, DST03, DST04
       End Implicit
    End Solution Classes
 
  CHEMISTRY
       Photolysis
+        [jh2o2]       H2O2 + hv -> 2*OH
       End Photolysis
 
       Reactions
-    CB1 -> CB2    ; 1.006e-05 
-    OC1 -> OC2    ; 1.006e-05 
+        [usr_HO2_HO2] HO2 + HO2 -> H2O2 + O2
+                      H2O2 + OH -> H2O + HO2                     ; 2.9e-12, -160
+        [usr_SO2_OH]  SO2 + OH -> SO4
+                      DMS + OH -> SO2                            ; 9.6e-12,-234.
+        [usr_DMS_OH]  DMS + OH -> .5 * SO2
+                      DMS + NO3 -> SO2                           ; 1.9e-13, 520.
+        CB1 -> CB2    ; 1.006e-05 
+        OC1 -> OC2    ; 1.006e-05 
       End Reactions
 
       Ext Forcing
-    SO2 <- dataset
-    SO4 <- dataset
+        SO2 <- dataset
+        SO4 <- dataset
       End Ext Forcing
 
    END CHEMISTRY

@@ -4,6 +4,7 @@
 source ./Tools/ccsm_getenv     || exit -2
 
 cd $CASEROOT
+./$CASE.clean_build
 
 ./xmlchange -file env_build.xml -id COMP_INTERFACE -val MCT
 ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val TRUE

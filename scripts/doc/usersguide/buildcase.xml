@@ -7,7 +7,7 @@
 <title> How do I build my model?</title>
 
 <para> After calling <command>cesm_setup</command>, you can build the  model executable 
-by running <command>$CASE.build</command>. Running this will:
+by running <command>./$CASE.build</command>. Running this will:
 </para>
 
 <orderedlist>
@@ -55,14 +55,14 @@ The <ulink url="../modelnl/env_build.html">&env_build.xml;
 variables</ulink>, control various aspects of building the model
 executable. Most of the variables should not be modified by users.
 Among the variables that you can modify are EXEROOT, RUNDIR,
-BUILD_THREADED, DEBUG and GMAKE_J.  A full documentation for each
+BUILD_THREADED, DEBUG and GMAKE_J.  Full documentation for each
 variable is provided in The <ulink
 url="../modelnl/env_build.html">&env_build.xml; variables</ulink>.
 </para>
 
 <screen>
 > cd $CASEROOT
-> $CASE.build
+> ./$CASE.build
 </screen>
 
 <para>
@@ -85,10 +85,10 @@ CCSM PRESTAGE SCRIPT HAS FINISHED SUCCESSFULLY
 
 <para>
 Finally, the build script generates the utility and component
-libraries and the model executable. There should be a line for the mct
-and pio libraries, as well as each of the components. Each is date
+libraries and the model executable. There should be a line for the mct,
+pio, and gptl libraries, as well as each of the components. Each is date
 stamped, and a pointer to the build log file for that library or
-component is created. Successful completion is indicated by:
+component is shown. Successful completion is indicated by:
 </para>
 
 <screen>
@@ -130,7 +130,7 @@ with the mct/mpeu, pio, gptl, and csm_share libraries. Special include
 modules are also placed in lib/include. The model executable
 'cesm.exe' is placed directly in $&EXEROOT;.  On the other hand,
 component namelists, component logs, output datasets, and restart
-files are placed in $&RUNDIR;. It is important to note that in CESM1.1
+files are placed in $&RUNDIR;. It is important to note that in CESM
 $&RUNDIR; and $&EXEROOT; are independent variables which are set in
 the file <filename>config_machines.xml</filename> in the directory
 $<filename>CCSMROOT/scripts/ccsm_utils/Machines/</filename>.
@@ -147,9 +147,9 @@ $<filename>CCSMROOT/scripts/ccsm_utils/Machines/</filename>.
 <para> All active and data components use input datasets. A local disk
 needs $<envar>DIN_LOC_ROOT</envar> to be populated with input data in order to run
 &cesm;with these components. For all machines, input data is provided
-as part of the release via data from a subversion input data
+as part of the release via data from the CESM subversion input data
 server. However, on supported machines (and some non-supported
-machines), data already exists in the default local-disk input data
+machines), data already exists in the default local filesystem input data
 area as specified by $<envar>DIN_LOC_ROOT</envar> (see below).</para>
 
 <para> Input data is handled by the build process as follows:</para>
@@ -196,7 +196,7 @@ for usage.
 
 <screen>
 > cd $CCSMROOT/scripts 
-> link_dirtree -h
+> ./link_dirtree -h
 </screen>
 
 <para>
@@ -276,8 +276,8 @@ build and rebuild from scratch as follows,
 
 <screen>
 > cd $CASEROOT
-> $CASE.clean_build
-> $CASE.build
+> ./$CASE.clean_build
+> ./$CASE.build
 </screen>
 
 <para> If you have ONLY modified the PE layout in &env_mach_pes.xml;
@@ -298,7 +298,7 @@ the following error</para>
     SMP_VALUE = a1l0i0o0g0c0
     A manual clean of your obj directories is strongly recommendend
     You should execute the following:
-      ./b39pA1.bluefire.clean_build
+      ./b39pA1.yellowstone.clean_build
     Then rerun the build script interactively
     ---- OR ----
     You can override this error message at your own risk by executing

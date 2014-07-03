@@ -22,10 +22,12 @@ module sat_hist
 #ifdef SPMD
   use mpishorthand,  only: mpichar, mpiint
 #endif
+   use physconst, only: pi 
   
   implicit none
 
   private
+  save
 
   public :: sat_hist_readnl
   public :: sat_hist_init
@@ -34,7 +36,7 @@ module sat_hist
   public :: is_satfile
 
   character(len=max_string_len)  :: sathist_track_infile
-  type(file_desc_t), save :: infile
+  type(file_desc_t) :: infile
 
   integer :: half_step
   logical :: has_sat_hist = .false.
@@ -77,6 +79,8 @@ module sat_hist
   type(var_desc_t) :: out_occ_type_vid
 
   logical, parameter :: debug = .false.
+
+  real(r8), parameter :: rad2deg = 180._r8/pi            ! degrees per radian
 
 contains
   
@@ -193,7 +197,6 @@ contains
 
     character(len=max_string_len)  :: locfn       ! Local filename
     integer :: ierr, dimid, i
-    integer :: num_iotasks, io_stride
 
     character(len=128) :: date_format
 
@@ -261,9 +264,6 @@ contains
 
     time_ndx = 1
     half_step = get_step_size()*0.5_r8
-
-    num_iotasks = 1
-    io_stride = npes
 
   end subroutine sat_hist_init
 
@@ -428,12 +428,11 @@ contains
     real(r8),allocatable :: mlats(:)
     real(r8),allocatable :: mlons(:)
     real(r8),allocatable :: phs_dists(:)
-    real(r8),allocatable :: dyn_dists(:)
 
     integer :: coldim
 
     integer :: io_type
-
+    logical :: has_dyn_flds
 
     if (.not.has_sat_hist) return
 
@@ -442,7 +441,6 @@ contains
     if ( ncols < 1 ) return
 
     call t_startf ('sat_hist_write')
-
 
     ! The n closest columns to the observation will be output,
     ! so increase the size of the columns used for output/
@@ -457,10 +455,17 @@ contains
     allocate( mlats(nocols) )
     allocate( mlons(nocols) )
     allocate( phs_dists(nocols) )
-    allocate( dyn_dists(nocols) )
 
-    call get_indices( obs_lats, obs_lons, ncols, nocols, col_ndxs, chk_ndxs, &
-         fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners, mlats, mlons, phs_dists, dyn_dists )
+    has_dyn_flds = .false.
+    dyn_flds_loop: do f=1,nflds
+       if ( tape%hlist(f)%field%decomp_type == dyn_decomp ) then
+          has_dyn_flds = .true.
+          exit dyn_flds_loop
+       endif
+    enddo dyn_flds_loop
+
+    call get_indices( obs_lats, obs_lons, ncols, nocols, has_dyn_flds, col_ndxs, chk_ndxs, &
+         fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners, mlats, mlons, phs_dists )
 
     if ( .not. pio_file_is_open(tape%File) ) then
        call endrun('sat file not open')
@@ -472,7 +477,7 @@ contains
     ierr = pio_inq_varid(tape%File, 'lon', out_lonid )
     ierr = pio_inq_varid(tape%File, 'distance', out_dstid )
 
-    call write_record_coord( tape, mlats(:), mlons(:), dyn_dists(:), ncols, nfils )
+    call write_record_coord( tape, mlats(:), mlons(:), phs_dists(:), ncols, nfils )
 
     do f=1,nflds
 
@@ -486,7 +491,7 @@ contains
     enddo
 
     deallocate( col_ndxs, chk_ndxs, fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners )
-    deallocate( mlons, mlats, dyn_dists, phs_dists )
+    deallocate( mlons, mlats, phs_dists )
     deallocate( obs_lons, obs_lats )
 
     nfils = nfils + nocols
@@ -497,7 +502,7 @@ contains
 
 !-------------------------------------------------------------------------------
   subroutine dump_columns( File, hitem, ncols, nfils, fdims, ldims, owners  )
-    use cam_history_support,  only: field_info, hentry, hist_mdims
+    use cam_history_support,  only: field_info, hentry, hist_coords
     use pionfwrite_mod, only: write_nf
     use cam_pio_utils, only : fillvalue
     use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_offset, pio_iam_iotask, pio_setdebuglevel
@@ -521,7 +526,7 @@ contains
     integer,  allocatable :: dof(:)
     integer :: i,k, cnt
 
-    call t_startf ('dump_columns')
+    call t_startf ('sat_hist::dump_columns')
 
     sat_iosystem => File%iosystem
     field => hitem%field
@@ -538,7 +543,7 @@ contains
     dimlens(ndims)=ncols
     if(ndims>2) then
        do i=1,ndims-1
-          dimlens(i)=hist_mdims(field%mdims(i))%value
+          dimlens(i)=hist_coords(field%mdims(i))%dimsize
        enddo
     else if(field%numlev>1) then
        dimlens(1) = field%numlev
@@ -576,7 +581,7 @@ contains
     deallocate( dof )
     deallocate( dimlens )
 
-    call t_stopf ('dump_columns')
+    call t_stopf ('sat_hist::dump_columns')
 
   end subroutine dump_columns
 
@@ -614,7 +619,7 @@ contains
        return
     endif
 
-    call t_startf ('read_next_position')
+    call t_startf ('sat_hist::read_next_position')
 
     beg_ndx = -99
     end_ndx = -99
@@ -650,7 +655,7 @@ contains
 
     endif
 
-    call t_stopf ('read_next_position')
+    call t_stopf ('sat_hist::read_next_position')
   end subroutine read_next_position
   
 !-------------------------------------------------------------------------------
@@ -681,7 +686,7 @@ contains
     real(r8), allocatable :: out_lats(:)
     real(r8), allocatable :: out_lons(:)
 
-    call t_startf ('write_record_coord')
+    call t_startf ('sat_hist::write_record_coord')
 
     nstep = get_nstep()
     call get_curr_date(yr, mon, day, ncsec)
@@ -754,24 +759,23 @@ contains
        ierr = copy_data( infile, in_doy_vid, tape%File, out_doy_vid, in_start_col, nfils, ncols )
     endif
 
-    call t_stopf ('write_record_coord')
+    call t_stopf ('sat_hist::write_record_coord')
   end subroutine write_record_coord
 
 !-------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------
 
-  subroutine get_indices( lats, lons, ncols, nocols, col_ndxs, chk_ndxs, &
-       fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners, mlats, mlons, phs_dists, dyn_dists )
+  subroutine get_indices( lats, lons, ncols, nocols, has_dyn_flds, col_ndxs, chk_ndxs, &
+       fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners, mlats, mlons, phs_dists )
 
-    use phys_grid, only : phys_grid_find_cols
-    use physconst, only: pi 
-    use dyn_grid,  only: dyn_grid_find_gcols
+    use dyn_grid, only : dyn_grid_get_colndx
     use phys_grid, only: get_rlat_p, get_rlon_p
 
     integer,  intent(in)  :: ncols
     real(r8), intent(in)  :: lats(ncols)
     real(r8), intent(in)  :: lons(ncols)
     integer,  intent(in)  :: nocols
+    logical,  intent(in)  :: has_dyn_flds
     integer,  intent(out) :: col_ndxs(nocols)
     integer,  intent(out) :: chk_ndxs(nocols)
     integer,  intent(out) :: fdyn_ndxs(nocols)
@@ -781,21 +785,21 @@ contains
     real(r8), intent(out) :: mlats(nocols)
     real(r8), intent(out) :: mlons(nocols)
     real(r8), intent(out) :: phs_dists(nocols)
-    real(r8), intent(out) :: dyn_dists(nocols)
-    
+
     integer :: i, j, ndx
     real(r8) :: lat, lon
-    real(r8), parameter :: rad2deg = 180._r8/pi
     
     integer,  allocatable :: ichks(:),icols(:),idyn1s(:),idyn2s(:), iphs_owners(:), idyn_owners(:)
-    real(r8), allocatable :: rlats(:), rlons(:), plats(:), plons(:), iphs_dists(:), idyn_dists(:)
+    real(r8), allocatable :: rlats(:), rlons(:), plats(:), plons(:), iphs_dists(:)
 
-    call t_startf ('get_indices')
+    integer :: gcols(sathist_nclosest)
+
+    call t_startf ('sat_hist::get_indices')
 
     allocate(ichks(sathist_nclosest),icols(sathist_nclosest),idyn1s(sathist_nclosest), &
          idyn2s(sathist_nclosest),iphs_owners(sathist_nclosest),idyn_owners(sathist_nclosest))
     allocate(rlats(sathist_nclosest), rlons(sathist_nclosest), plats(sathist_nclosest), &
-         plons(sathist_nclosest), iphs_dists(sathist_nclosest), idyn_dists(sathist_nclosest))
+         plons(sathist_nclosest), iphs_dists(sathist_nclosest) )
 
     col_ndxs = -1
     chk_ndxs = -1
@@ -804,7 +808,6 @@ contains
     phs_owners = -1
     dyn_owners = -1
     phs_dists = -1
-    dyn_dists = -1
 
     ndx = 0
     do i = 1,ncols
@@ -827,10 +830,12 @@ contains
           call endrun('sat_hist::get_indices : lon must be between 0 and 360 degrees (0<=lon<360)')
        endif
        
-       call dyn_grid_find_gcols( lat, lon, sathist_nclosest, idyn_owners(:), idyn1s(:), idyn2s(:), &
-            rlats(:), rlons(:), idyn_dists(:) )
+       call find_cols( lat, lon, sathist_nclosest, iphs_owners, ichks, icols, &
+                       gcols, iphs_dists, plats, plons )
 
-       call phys_grid_find_cols( lat, lon, sathist_nclosest, iphs_owners(:), ichks(:), icols(:), iphs_dists(:), plats(:), plons(:) )
+       if (has_dyn_flds) then
+          call dyn_grid_get_colndx( gcols, sathist_nclosest, idyn_owners, idyn1s, idyn2s )
+       endif
 
        do j = 1, sathist_nclosest
           
@@ -853,19 +858,18 @@ contains
           col_ndxs(ndx)   = icols(j)
           fdyn_ndxs(ndx)  = idyn1s(j)
           ldyn_ndxs(ndx)  = idyn2s(j)
-          mlats(ndx)      = rlats(j)
-          mlons(ndx)      = rlons(j)
+          mlats(ndx)      = plats(j)
+          mlons(ndx)      = plons(j)
           phs_owners(ndx) = iphs_owners(j)
           dyn_owners(ndx) = idyn_owners(j)
           phs_dists(ndx)  = iphs_dists(j)
-          dyn_dists(ndx)  = idyn_dists(j)
        enddo
     enddo
 
     deallocate(ichks, icols, idyn1s, idyn2s, iphs_owners, idyn_owners)
-    deallocate(rlats, rlons, plats, plons, iphs_dists, idyn_dists)
+    deallocate(rlats, rlons, plats, plons, iphs_dists )
 
-    call t_stopf ('get_indices')
+    call t_stopf ('sat_hist::get_indices')
   end subroutine get_indices
 
 !-------------------------------------------------------------------------------
@@ -952,5 +956,127 @@ contains
 
 
   end function copy_att
+  
+  !-------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------
+  subroutine find_cols(lat, lon, nclosest, owner, lcid, icol, gcol, distmin, mlats, mlons)
+    use physconst,  only: rearth
+    use phys_grid,  only: get_rlon_all_p, get_rlat_all_p, get_gcol_p, get_ncols_p
+    use spmd_utils, only: iam, npes, mpi_integer, mpi_real8, mpicom
+
+    real(r8),intent(in)  :: lat, lon            ! requested location in degrees
+    integer, intent(in)  :: nclosest            ! number of closest points to find
+    integer, intent(out) :: owner(nclosest)     ! rank of chunk owner
+    integer, intent(out) :: lcid(nclosest)      ! local chunk index
+    integer, intent(out) :: icol(nclosest)      ! column index within the chunk
+    integer, intent(out) :: gcol(nclosest)      ! global column index 
+    real(r8),intent(out) :: distmin(nclosest)   ! the distance (m) of the closest column(s)
+    real(r8),intent(out) :: mlats(nclosest)     ! the latitude of the closest column(s)
+    real(r8),intent(out) :: mlons(nclosest)     ! the longitude of the closest column(s)
+
+    real(r8) :: dist
+    real(r8) :: rlats(pcols), rlons(pcols)
+    real(r8) :: latr, lonr
+
+    integer :: my_owner(nclosest)
+    integer :: my_lcid(nclosest)
+    integer :: my_icol(nclosest)
+    integer :: my_gcol(nclosest)
+    real(r8) :: my_distmin(nclosest)
+    real(r8) :: my_mlats(nclosest)
+    real(r8) :: my_mlons(nclosest)
+
+    integer  :: c, i, j, k, ierr, ncols, mindx(1)
+    real(r8) :: sendbufr(3)
+    real(r8) :: recvbufr(3,npes)
+    integer  :: sendbufi(4)
+    integer  :: recvbufi(4,npes)
+
+    call t_startf ('sat_hist::find_cols')
+
+    latr = lat/rad2deg              ! to radians
+    lonr = lon/rad2deg              ! to radians
+    
+    my_owner(:)   = -999
+    my_lcid(:)    = -999
+    my_icol(:)    = -999
+    my_gcol(:)    = -999
+    my_mlats(:)   = -999
+    my_mlons(:)   = -999
+    my_distmin(:) = 1.e10_r8
+
+    chk_loop: do c=begchunk,endchunk
+       ncols = get_ncols_p(c)
+       call get_rlat_all_p(c, pcols, rlats)
+       call get_rlon_all_p(c, pcols, rlons)
+
+       col_loop: do i = 1,ncols
+          ! Use the Spherical Law of Cosines to find the great-circle distance.
+          dist = acos(sin(latr) * sin(rlats(i)) + cos(latr) * cos(rlats(i)) * cos(rlons(i) - lonr)) * rearth       
+
+          closest_loop: do j = nclosest, 1, -1
+             if (dist < my_distmin(j)) then
+
+                if (j < nclosest) then
+                   my_distmin(j+1) = my_distmin(j)
+                   my_owner(j+1)   = my_owner(j)
+                   my_lcid(j+1)    = my_lcid(j)
+                   my_icol(j+1)    = my_icol(j)
+                   my_gcol(j+1)    = my_gcol(j)
+                   my_mlats(j+1)   = my_mlats(j)
+                   my_mlons(j+1)   = my_mlons(j)
+                end if
+
+                my_distmin(j) = dist
+                my_owner(j)   = iam
+                my_lcid(j)    = c
+                my_icol(j)    = i
+                my_gcol(j)    = get_gcol_p(c,i)
+                my_mlats(j)   = rlats(i) * rad2deg
+                my_mlons(j)   = rlons(i) * rad2deg
+             else
+                exit 
+             end if
+          enddo closest_loop
+
+       enddo col_loop
+    enddo chk_loop
+
+    k = 1
+
+    do j = 1, nclosest
+
+       sendbufr(1) = my_distmin(k)
+       sendbufr(2) = my_mlats(k)
+       sendbufr(3) = my_mlons(k)
+
+       call mpi_allgather( sendbufr, 3, mpi_real8, recvbufr, 3, mpi_real8, mpicom, ierr )
+
+       mindx = minloc(recvbufr(1,:))
+       distmin(j) = recvbufr(1,mindx(1))
+       mlats(j)   = recvbufr(2,mindx(1))
+       mlons(j)   = recvbufr(3,mindx(1))
+
+       sendbufi(1) = my_owner(k)
+       sendbufi(2) = my_lcid(k)
+       sendbufi(3) = my_icol(k)
+       sendbufi(4) = my_gcol(k)
+
+       call mpi_allgather( sendbufi, 4, mpi_integer, recvbufi, 4, mpi_integer, mpicom, ierr )
+
+       owner(j)   = recvbufi(1,mindx(1))
+       lcid(j)    = recvbufi(2,mindx(1))
+       icol(j)    = recvbufi(3,mindx(1))
+       gcol(j)    = recvbufi(4,mindx(1))
+
+       if ( iam == owner(j) ) then
+          k = k+1
+       endif
+
+    enddo
+
+    call t_stopf ('sat_hist::find_cols')
+
+  end subroutine find_cols
 
 end module sat_hist

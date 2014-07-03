@@ -1,21 +1,7 @@
-models/lnd/clm/tools/clm4_0/interpinic/README				Jun/04/2013
+models/lnd/clm/tools/interpinic/README				May/25/2011
 
 Tool to interpolate initial datasets to a different resolution or
 mask.
-
-=====================================================================================
-IMPORTANT NOTE!!!:: BE SURE TO USE NetCDF4.3 WHEN BUILDING!
-   If your template file was written using pnetcdf -- interpinic will corrupt
-   the resulting file and make it unusable!
-
-   On yellowstone with csh this means doing the following...
-
-          > module load netcdf/4.3.0-rc4
-
-          > setenv INC_NETCDF $NETCDF/include
-          > setenv LIB_NETCDF $NETCDF/lib
-
-=====================================================================================
 
 
 Running gnumake in this directory will create an executable named
@@ -51,8 +37,8 @@ See Also: See the models/lnd/clm/tools/README file for more notes about setting
 
 Files:
 
-src/Makefile --------------------------------------- GNU makefile with customization for this tool.
-src/Makefile.common -------------------------------- Tools GNU makefile common to all CLM tools.
+src/Makefile --------------------------------------- GNU makefile
+src/Macros.custom ---------------------------------- Customization of make macros for interpinic
 
 src/Mkdepends -------------------------------------- Tool for Makefile to figure out
                                                      code dependencies.
@@ -66,4 +52,8 @@ clmi.BCN.1949-01-01_10x15_USGS_simyr1850_c100322.nc- Sample 10x15 resolution dat
                                                      you can interpolate to
 
 interpinic.runoptions ------------------------------ Example runoptions using the above file.
+
+runinit_ibm.csh ------------------------------------ Script to run interpinic for multiple
+                                                     resolutions, also runs clm to create
+                                                     template files to do so.
 

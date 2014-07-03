@@ -23,9 +23,9 @@ our $VERSION = 1.00;
 #-------------------------------------------------------------------------------
 sub set_dep_lists
 {
-    my ( $cfgdir, $chem_pkg, $chem_proc_src, $chem_src_dir, $print_lvl ) = @_;
+    my ( $cfgdir, $chem_proc_src, $chem_src_dir, $print_lvl ) = @_;
 
-    my ( $gas_wetdep_list, $aer_wetdep_list, $drydep_list, $mam_drydep_list ) ;
+    my ( $gas_wetdep_list, $aer_wetdep_list, $aer_drydep_list, $gas_drydep_list ) ;
 
     my @species_list ;
     if ($chem_proc_src) {
@@ -47,37 +47,22 @@ sub set_dep_lists
 
     $gas_wetdep_list = get_gas_wetdep_list( $cfgdir, $print_lvl, @species_list );
 
-    # kludge to avoid changing answers in trop_mam for the moment
-    if ( $chem_pkg eq 'trop_mam3' ) {
-	$gas_wetdep_list =~ s/\'H2SO4\',?//;
-    }
-
     $aer_wetdep_list = get_aer_wetdep_list( $cfgdir, $print_lvl, @species_list );
 
-    $drydep_list = get_drydep_list( $cfgdir, $print_lvl, @species_list );
+    $gas_drydep_list = get_gas_drydep_list( $cfgdir, $print_lvl, @species_list );
 
-    if ($chem_pkg =~ '_mam') {
+    $aer_drydep_list = get_aer_drydep_list( $cfgdir, $print_lvl, @species_list );
 
-	$mam_drydep_list = get_mamdep_list( $cfgdir, $print_lvl, @species_list );
-
-	if (length($aer_wetdep_list)>2) {
-	    $aer_wetdep_list = $aer_wetdep_list . "," . $mam_drydep_list;
-	} else {
-	    $aer_wetdep_list = $mam_drydep_list;
-	}
-
-    }
-
-    return (  $gas_wetdep_list, $aer_wetdep_list, $drydep_list, $mam_drydep_list );
+    return (  $gas_wetdep_list, $aer_wetdep_list, $aer_drydep_list, $gas_drydep_list );
 }
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-sub get_drydep_list
+sub get_gas_drydep_list
 {
     my ($cfg_dir,$print_lvl,@species_list) = @_;
 
-    my $master_file = "$cfg_dir/namelist_files/master_drydep_list.xml";
+    my $master_file = "$cfg_dir/namelist_files/master_gas_drydep_list.xml";
 
     my $list = get_dep_list($master_file,$print_lvl,@species_list);
 
@@ -86,6 +71,19 @@ sub get_drydep_list
     return ($list);
 }
 
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+sub get_aer_drydep_list
+{
+    my ($cfg_dir,$print_lvl,@species_list) = @_;
+
+    my $master_file = "$cfg_dir/namelist_files/master_aer_drydep_list.xml";
+
+    my $list = get_dep_list($master_file,$print_lvl,@species_list);
+
+    if ($print_lvl>=2) {print " aer drydep list : $list  \n" ;}
+    return ($list);
+}
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 sub get_aer_wetdep_list
@@ -114,20 +112,6 @@ sub get_gas_wetdep_list
     return ($list);
 }
 #-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-sub get_mamdep_list
-{
-    my ($cfg_dir,$print_lvl,@species_list) = @_;
-
-    my $master_file = "$cfg_dir/namelist_files/master_mam_dep_list.xml";
-
-    my $list = get_dep_list($master_file,$print_lvl,@species_list);
-
-    if ($print_lvl>=2) {print " gas MAM dep list : $list  \n" ;}
-
-    return ($list);
-}
-
 #-------------------------------------------------------------------------------
 sub get_dep_list
 {

@@ -1,5 +1,28 @@
 ==================================================
 Originator: jedwards
+Date: April 16, 2014
+Model: aquap
+Version: aquap_140416
+One-line summary: Change INCLDIR to USER_INCLDIR so that other include flags
+are not overwritten
+
+M    aquap.buildexe.csh
+
+
+==================================================
+Originator: mvertens
+Date: 09/24/2013
+Model: aquap
+Version: aquap_130924
+One-line summary: Return 0 status from buildnml script
+
+Changed bld to reference cam/src/utils/cam_aqua/cpl rather
+than cam_aqua_cpl/cpl_$comp
+This was changed in branch tag comptype_tags/comptype01_cam3_5_10
+and will go into cesm1_3_beta04.
+	
+==================================================
+Originator: jedwards
 Date: 05/03/2013
 Model: aquap
 Version: aquap_130503

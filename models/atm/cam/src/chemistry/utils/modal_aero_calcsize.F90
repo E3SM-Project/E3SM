@@ -50,6 +50,7 @@ private
 save
 
 public modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
+public :: modal_aero_calcsize_reg
 
 logical :: do_adjust_default
 logical :: do_aitacc_transfer_default
@@ -60,7 +61,24 @@ integer :: dgnum_idx = -1
 contains
 !===============================================================================
 
-subroutine modal_aero_calcsize_init()
+subroutine modal_aero_calcsize_reg()
+  use physics_buffer,   only: pbuf_add_field, dtype_r8
+  use rad_constituents, only: rad_cnst_get_info
+
+  integer :: nmodes
+  
+  call rad_cnst_get_info(0, nmodes=nmodes)
+
+  call pbuf_add_field('DGNUM', 'global',  dtype_r8, (/pcols, pver, nmodes/), dgnum_idx)    
+
+end subroutine modal_aero_calcsize_reg
+
+!===============================================================================
+!===============================================================================
+
+subroutine modal_aero_calcsize_init(pbuf2d)
+   use time_manager,  only: is_first_step
+   use physics_buffer,only: pbuf_set_field
 
    !-----------------------------------------------------------------------
    !
@@ -72,6 +90,8 @@ subroutine modal_aero_calcsize_init()
    ! Author: R. Easter
    !
    !-----------------------------------------------------------------------
+
+   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
    ! local
    integer  :: ipair, iq
@@ -90,7 +110,10 @@ subroutine modal_aero_calcsize_init()
 
    ! init entities required for both prescribed and prognostic modes
 
-   dgnum_idx = pbuf_get_index('DGNUM')    
+   if (is_first_step()) then
+      ! initialize fields in physics buffer
+      call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
+   endif
 
 #ifndef MODAL_AERO
    do_adjust_default          = .false.

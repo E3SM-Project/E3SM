@@ -11,7 +11,6 @@ module subgridMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use spmdMod     , only : masterproc
-  use nanMod      , only : bigint,nan
   use abortutils  , only : endrun
 
   implicit none

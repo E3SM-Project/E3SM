@@ -153,23 +153,24 @@
                          ice_tstep = ice_tstep,             & 
                          gfrac = gfrac,    gtopo = gtopo,   &
                          grofi = grofi,    grofl = grofl,   &
-                         ghflx = ghflx)
+                         ghflx = ghflx,                     &
+                         ice_sheet_grid_mask=ice_sheet_grid_mask)
 
          if (verbose .and. my_task==master_task) then
 !            write(stdout,*) ' '
 !            write(stdout,*) 'Global fields from GLINT to CLM:'
              !TODO - Make sure iglint_global and jglint_global are defined appropriately for the global grid
+!            i = iglint_global
+!            j = jglint_global   ! N to S global indexing as in GLINT
 !            do n = 1, glc_nec
-!               i = iglint_global
-!               j = jglint_global   ! N to S global indexing as in GLINT
 !               write(stdout,*) ' '
 !               write(stdout,*) 'i, j, n =', i, j, n
 !               write(stdout,*) 'gfrac(n) =', gfrac(i,j,n)
 !               write(stdout,*) 'gtopo(n) =', gtopo(i,j,n)
-!               write(stdout,*) 'grofi(n) =', grofi(i,j,n)
-!               write(stdout,*) 'grofl(n) =', grofl(i,j,n)
 !               write(stdout,*) 'ghflx(n) =', ghflx(i,j,n)
 !            enddo
+!            write(stdout,*) 'grofi =', grofi(i,j)
+!            write(stdout,*) 'grofl =', grofl(i,j)
          endif
 
      else    ! use PDD scheme

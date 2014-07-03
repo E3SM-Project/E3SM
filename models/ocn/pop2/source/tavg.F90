@@ -9,7 +9,7 @@
 !  time-averages of selected fields and writing this data to files.
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: tavg.F90 46405 2013-04-26 05:24:34Z mlevy@ucar.edu $
+!  SVN:$Id: tavg.F90 56176 2013-12-20 18:35:46Z mlevy@ucar.edu $
 !  
 
 ! !USES:
@@ -2588,7 +2588,7 @@
 
                case(field_loc_center)
                   do k=1,km
-                     RMASK = merge(c1, c0, k <= KMT(:,:,iblock)) 
+                     RMASK(:,:) = merge(c1, c0, k <= KMT(:,:,iblock)) 
                      WORK(:,:,iblock) = WORK(:,:,iblock) + dz(k)* &
                                         TAVG_BUF_3D(:,:,k,iblock,ifield)* &
                                         TAREA(:,:,iblock)*RMASK
@@ -2596,7 +2596,7 @@
 
                case(field_loc_NEcorner)
                   do k=1,km
-                     RMASK = merge(c1, c0, k <= KMU(:,:,iblock)) 
+                     RMASK(:,:) = merge(c1, c0, k <= KMU(:,:,iblock)) 
                      WORK(:,:,iblock) = WORK(:,:,iblock) + dz(k)* &
                                         TAVG_BUF_3D(:,:,k,iblock,ifield)* &
                                         UAREA(:,:,iblock)*RMASK
@@ -2604,7 +2604,7 @@
 
                case default ! make U cell the default for all other cases
                   do k=1,km
-                     RMASK = merge(c1, c0, k <= KMU(:,:,iblock)) 
+                     RMASK(:,:) = merge(c1, c0, k <= KMU(:,:,iblock)) 
                      WORK(:,:,iblock) = WORK(:,:,iblock) + dz(k)* &
                                         TAVG_BUF_3D(:,:,k,iblock,ifield)* &
                                         UAREA(:,:,iblock)*RMASK
@@ -4428,7 +4428,7 @@
  call add_attrib_file(tavg_file_desc, 'contents', 'Diagnostic and Prognostic Variables')
  call add_attrib_file(tavg_file_desc, 'source', 'CCSM POP2, the CCSM Ocean Component')
  call add_attrib_file(tavg_file_desc, 'revision', &
-   '$Id: tavg.F90 46405 2013-04-26 05:24:34Z mlevy@ucar.edu $')
+   '$Id: tavg.F90 56176 2013-12-20 18:35:46Z mlevy@ucar.edu $')
 
  if (allow_leapyear) then
     write(calendar,'(a,i5,a,i5,a)') &

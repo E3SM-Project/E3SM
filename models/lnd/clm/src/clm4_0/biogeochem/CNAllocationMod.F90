@@ -61,7 +61,7 @@ subroutine CNAllocationInit ( lbc, ubc, lbp, ubp )
    use clm_time_manager, only: get_step_size
    use surfrdMod       , only: crop_prog
    use clm_varctl      , only: iulog, use_c13
-   use nanMod          , only: nan
+   use shr_infnan_mod  , only: nan => shr_infnan_nan, assignment(=)
 ! !ARGUMENTS:
    implicit none
    integer, intent(in) :: lbc, ubc        ! column-index bounds

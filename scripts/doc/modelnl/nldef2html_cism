@@ -105,6 +105,7 @@ my @categories = qw/
 cism
 grid
 time
+overrides
 cism_config_grid
 cism_config_sigma
 cism_config_climate
@@ -115,13 +116,13 @@ cism_config_parameters
 cism_config_ho_options
 cism_config_gthf
 cism_config_isostasy
-cism_config_elastic_lithosphere
 /;
 
 my %cat_heading = (
     'cism'        		      => 'CISM:  General Settings',
     'grid'        		      => 'CISM:  Grid Settings',
     'time'        		      => 'CISM:  Time Manager Settings',
+    'overrides'                       => 'CISM:  GLC Overrides For Testing',
     'cism_config_grid'                => 'CISM:  cism.config Grid Settings',
     'cism_config_sigma'               => 'CISM:  cism.config Sigma Settings',
     'cism_config_climate'             => 'CISM:  cism.config Climate Settings',
@@ -132,7 +133,6 @@ my %cat_heading = (
     'cism_config_ho_options'          => 'CISM:  cism.config Higher-Order Options',
     'cism_config_gthf'                => 'CISM:  cism.config Geothermal Heat Flux Settings',
     'cism_config_isostasy'            => 'CISM:  cism.config Isostasy Settings',
-    'cism_config_elastic_lithosphere' => 'CISM:  cism.config Elastic Lithosphere Settings'
     );
 
 foreach my $cat (@categories) {

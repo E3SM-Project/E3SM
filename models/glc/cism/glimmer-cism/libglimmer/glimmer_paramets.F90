@@ -32,7 +32,7 @@
 !> model scaling constants
 module glimmer_paramets
 
-  use glimmer_global, only : sp, dp
+  use glimmer_global, only : dp
   use glimmer_physcon, only : scyr, rhoi, grav, gn
 
   implicit none
@@ -85,7 +85,7 @@ module glimmer_paramets
 ! The following are the old Glimmer scaling parameters. These are to be deprecated.
   real(dp), parameter :: thk0 = 2000.0d0        ! m 
   real(dp), parameter :: len0 = 200.0d3         ! m 
-  real(dp), parameter :: vel0 = 500.0 / scyr    ! m yr^{-1} converted to S.I. units
+  real(dp), parameter :: vel0 = 500.d0 / scyr   ! m yr^{-1} converted to S.I. units
 !!  real(dp), parameter :: vis0 = 5.70d-18 / scyr  ! yr^{-1} Pa^{-3} converted to S.I. units
 #else
 ! (no rescaling)

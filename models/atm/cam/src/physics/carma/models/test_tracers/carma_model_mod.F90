@@ -356,7 +356,6 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_rlon_all_p, get_rlat_all_p
     use time_manager,  only: get_curr_date, get_perp_date, get_curr_calday, &
                              is_perpetual
     use camsrfexch,    only: cam_in_t
@@ -375,10 +374,8 @@ contains
     real(r8), intent(out)              :: surfaceFlux(pcols)    !! constituent surface flux (kg/m^2/s)
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
-    real(r8)     :: lat(pcols)              ! latitude index 
-    real(r8)     :: lon(pcols)              ! longitude index
-    real(r8)     :: clat(pcols)             ! latitude 
-    integer      :: lchnk                   ! chunk identifier
+    real(r8)     :: lat(state%ncol)         ! latitude (degrees)
+    real(r8)     :: lon(state%ncol)         ! longitude (degrees)
     integer      :: ncol                    ! number of columns in chunk
     integer      :: icol                    ! column index
     real(r8)     :: calday                  ! current calendar day
@@ -408,7 +405,6 @@ contains
     elapsed = doy - carma_launch_doy
 
     ! Determine the latitude and longitude of each column.
-    lchnk = state%lchnk
     ncol = state%ncol
 
     surfaceFlux(:ncol)      = 0.0_f
@@ -416,14 +412,10 @@ contains
 
     ! Is this a day to launch more material?
     if ((elapsed + 1) == ibin) then
-      
-      
-      call get_rlat_all_p(lchnk, ncol, lat)
-      call get_rlon_all_p(lchnk, ncol, lon)
-      
-      lat = lat / DEG2RAD
-      lon = lon / DEG2RAD
-      
+
+      lat = state%lat(:ncol) / DEG2RAD
+      lon = state%lon(:ncol) / DEG2RAD
+
       do icol = 1, ncol
 
         ! Determine the region based upon latitude and longitude. The last region is
@@ -513,7 +505,8 @@ contains
     implicit none
     
     type(carma_type), intent(inout)    :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     ! Default return code.

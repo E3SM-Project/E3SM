@@ -574,7 +574,8 @@ sub validate_variable_value
   }
   # Check that array size not exceeded
   my $arr_ref = $$type_ref{'arrayDims'};
-  if ( $#values > $$arr_ref[0] ) {
+  # Check only if this is an integer and not a variable.
+  if ( $$arr_ref[0] =~ m/^-?\d+$/ and $#values > $$arr_ref[0] ) {
      die "ERROR: in $nm (package $pkg_nm): Variable name $var has exceeded " . 
          "the dimension size of the array.\n";
   }

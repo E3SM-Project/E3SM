@@ -1,7 +1,7 @@
 #!/bin/csh
 #===============================================================================
 # SVN $Id: build.yellowstone.csh 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
-# SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/runoff_to_ocn/build.yellowstone.csh $
+# SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/gen_mapping_files/runoff_to_ocn/build.yellowstone.csh $
 #===============================================================================
 # 
 # Notes:

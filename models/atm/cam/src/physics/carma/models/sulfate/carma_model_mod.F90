@@ -136,7 +136,8 @@ contains
     !
     ! NOTE: For CAM, the optional shortname needs to be provided for the group. These names
     ! should be 6 characters or less and without spaces.
-    call CARMAELEMENT_Create(carma, I_ELEM_SULFATE, I_GRP_SULFATE, "Sulfate", RHO_SULFATE, I_VOLATILE, I_H2SO4, rc, shortname="PURSUL")
+    call CARMAELEMENT_Create(carma, I_ELEM_SULFATE, I_GRP_SULFATE, "Sulfate", RHO_SULFATE, &
+         I_VOLATILE, I_H2SO4, rc, shortname="PURSUL")
     if (rc < 0) call endrun('CARMA_DefineModel::CARMA_AddElement failed.')
         
     ! Define the Solutes
@@ -312,7 +313,6 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_lon_all_p, get_lat_all_p, get_rlat_all_p
     use time_manager,  only: get_curr_date, get_perp_date, get_curr_calday, &
                              is_perpetual
     use camsrfexch,       only: cam_in_t
@@ -353,7 +353,8 @@ contains
     implicit none
 
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
      
     ! Default return code.

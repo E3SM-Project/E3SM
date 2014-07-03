@@ -58,7 +58,7 @@ contains
 
     ! set up vertical grid
     do k=1,model%lithot%nlayer
-       model%lithot%deltaz(k) = (1-glide_calc_sigma(1D0*real(model%lithot%nlayer-k)/real(model%lithot%nlayer-1),2D0)) &
+       model%lithot%deltaz(k) = (1.d0 - glide_calc_sigma(real((model%lithot%nlayer-k),dp)/real((model%lithot%nlayer-1),dp), 2.d0)) &
             *model%lithot%rock_base
     end do
 

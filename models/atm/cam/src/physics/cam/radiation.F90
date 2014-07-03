@@ -332,6 +332,7 @@ end function radiation_nextsw_cday
 
     integer :: nstep                       ! current timestep number
     logical :: history_amwg                ! output the variables used by the AMWG diag package
+    logical :: history_vdiag               ! output the variables used by the AMWG variability diag package
     logical :: history_budget              ! output tendencies and state variables for CAM4
                                            ! temperature, water vapor, cloud ice and cloud
                                            ! liquid budgets.
@@ -339,6 +340,7 @@ end function radiation_nextsw_cday
     !-----------------------------------------------------------------------
 
     call radconstants_init()
+    call init_rad_data()
 
     call radsw_init(gravit)
     call radlw_init(gravit, stebol)
@@ -401,7 +403,6 @@ end function radiation_nextsw_cday
             phys_decomp, sampling_seq='rad_lwsw')
     call addfld ('FSNRTOAS','W/m2    ',1,    'A','Net near-infrared flux (>= 0.7 microns) at top of atmosphere',phys_decomp, &
                                                                                                         sampling_seq='rad_lwsw')
-    call addfld ('FSNR    ','W/m2    ',1,    'A','Net solar flux at tropopause',phys_decomp, sampling_seq='rad_lwsw')
     call addfld ('SWCF    ','W/m2    ',1,    'A','Shortwave cloud forcing',phys_decomp, sampling_seq='rad_lwsw')
 
     call addfld ('TOT_CLD_VISTAU    ','1',pver,    'A','Total gbx cloud visible sw optical depth',phys_decomp, &
@@ -425,7 +426,6 @@ end function radiation_nextsw_cday
     call addfld ('FLNTC   ','W/m2    ',1,    'A','Clearsky net longwave flux at top of model',phys_decomp, sampling_seq='rad_lwsw')
     call addfld ('FLN200  ','W/m2    ',1,    'A','Net longwave flux at 200 mb',phys_decomp, sampling_seq='rad_lwsw')
     call addfld ('FLN200C ','W/m2    ',1,    'A','Clearsky net longwave flux at 200 mb',phys_decomp, sampling_seq='rad_lwsw')
-    call addfld ('FLNR    ','W/m2    ',1,    'A','Net longwave flux at tropopause',phys_decomp, sampling_seq='rad_lwsw')
     call addfld ('FLNSC   ','W/m2    ',1,    'A','Clearsky net longwave flux at surface',phys_decomp, sampling_seq='rad_lwsw')
     call addfld ('FLDSC   ','W/m2    ',1,    'A','Clearsky downwelling longwave flux at surface',phys_decomp, &
                                                                                        sampling_seq='rad_lwsw')
@@ -439,7 +439,8 @@ end function radiation_nextsw_cday
     call addfld ('HR      ','K/s     ',pver, 'A','Heating rate needed for d(theta)/dt computation',phys_decomp)
    
    ! determine default variables
-    call phys_getopts(history_amwg_out   = history_amwg  , &
+    call phys_getopts(history_amwg_out   = history_amwg,   &
+                      history_vdiag_out  = history_vdiag,  &
                       history_budget_out = history_budget, &
                       history_budget_histfile_num_out = history_budget_histfile_num)
 
@@ -487,15 +488,18 @@ end function radiation_nextsw_cday
        call add_default ('QRL     ', history_budget_histfile_num, ' ')
        call add_default ('QRS     ', history_budget_histfile_num, ' ')
     end if
-
+ 
+    if (history_vdiag) then
+       call add_default('FLUT',2,' ')
+       call add_default('FLUT',3,' ')
+    end if
+   
     cicewp_idx = pbuf_get_index('CICEWP')
     cliqwp_idx = pbuf_get_index('CLIQWP')
     cldemis_idx= pbuf_get_index('CLDEMIS')
     cldtau_idx = pbuf_get_index('CLDTAU')
     nmxrgn_idx = pbuf_get_index('NMXRGN')
     pmxrgn_idx = pbuf_get_index('PMXRGN')
-
-    call init_rad_data()
 
   end subroutine radiation_init
 
@@ -527,8 +531,7 @@ end function radiation_nextsw_cday
     
     use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
     use physics_types,   only: physics_state, physics_ptend
-    use cospsimulator_intr, only: docosp, cospsimulator_intr_run
-    use cosp_share,      only: cosp_nradsteps
+    use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
     use time_manager,    only: get_curr_calday
     use camsrfexch,      only: cam_out_t, cam_in_t    
     use cam_history,     only: outfld
@@ -545,7 +548,6 @@ end function radiation_nextsw_cday
     use interpolate_data, only: vertinterp
     use radiation_data,   only: output_rad_data
     use cloud_cover_diags,only: cloud_cover_diags_out
-    use tropopause,       only: tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE
 
 
     ! Arguments
@@ -588,7 +590,7 @@ end function radiation_nextsw_cday
 
     real(r8) :: ftem(pcols,pver)               ! Temporary workspace for outfld variables
 
-    integer :: itim
+    integer :: itim_old
     real(r8), pointer, dimension(:,:) :: rel     ! liquid effective drop radius (microns)
     real(r8), pointer, dimension(:,:) :: rei     ! ice effective drop size (microns)
     real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
@@ -674,13 +676,6 @@ end function radiation_nextsw_cday
     integer, dimension(pcols) :: IdxNite ! Indicies of night coumns
 
     character(*), parameter :: name = 'radiation_tend'
-
-    ! tropopause diagnostic
-    integer :: troplev(pcols)
-    real(r8):: fsnr(pcols)
-    real(r8):: flnr(pcols)
-    real(r8):: p_trop(pcols)
-
 !----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -688,9 +683,9 @@ end function radiation_nextsw_cday
 
     calday = get_curr_calday()
 
-    itim = pbuf_old_tim_idx()
-    call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-    call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+    itim_old = pbuf_old_tim_idx()
+    call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+    call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
     call pbuf_get_field(pbuf, qrs_idx,qrs)
     call pbuf_get_field(pbuf, qrl_idx,qrl)
@@ -709,6 +704,8 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol)
+
+    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
@@ -759,8 +756,6 @@ end function radiation_nextsw_cday
 
        ! Solar radiation computation
 
-       call tropopause_find(state, troplev, tropP=p_trop, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
-
        if (dosw) then
 
           call t_startf('rad_sw')
@@ -792,10 +787,6 @@ end function radiation_nextsw_cday
           !  Output net fluxes at 200 mb
           call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
           call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fns, fsn200)
-          do i = 1,ncol
-             call vertinterp(1, 1, pverp, state%pint(i,:), p_trop(i), fns(i,:), fsnr(i))
-          enddo
-
 
           !
           ! Convert units of shortwave fields needed by rest of model from CGS to MKS
@@ -817,7 +808,6 @@ end function radiation_nextsw_cday
              fsntoac(i)=fsntoac(i)*cgs2mks
              fsn200(i)  = fsn200(i)*cgs2mks
              fsn200c(i) = fsn200c(i)*cgs2mks
-             fsnr(i)= fsnr(i)*cgs2mks
              swcf(i)=fsntoa(i) - fsntoac(i)
           end do
           ftem(:ncol,:pver) = qrs(:ncol,:pver)/cpair
@@ -847,7 +837,6 @@ end function radiation_nextsw_cday
           call outfld('SOLLD   ',cam_out%solld ,pcols,lchnk)
           call outfld('FSN200  ',fsn200,pcols,lchnk)
           call outfld('FSN200C ',fsn200c,pcols,lchnk)
-          call outfld('FSNR    ',fsnr  ,pcols,lchnk)
           call outfld('SWCF    ',swcf  ,pcols,lchnk)
 
 
@@ -915,10 +904,6 @@ end function radiation_nextsw_cday
           !  Output fluxes at 200 mb
           call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fnl, fln200)
           call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcnl, fln200c)
-          do i = 1,ncol
-             call vertinterp(1, 1, pverp, state%pint(i,:), p_trop(i), fnl(i,:), flnr(i))
-          enddo
-
           !
           ! Convert units of longwave fields needed by rest of model from CGS to MKS
           !
@@ -932,7 +917,6 @@ end function radiation_nextsw_cday
              flntc(i) = flntc(i)*cgs2mks
              fln200(i)  = fln200(i)*cgs2mks
              fln200c(i) = fln200c(i)*cgs2mks
-             flnr(i)  = flnr(i)*cgs2mks
              flnsc(i) = flnsc(i)*cgs2mks
              cam_out%flwds(i) = cam_out%flwds(i)*cgs2mks
              lwcf(i)=flutc(i) - flut(i)
@@ -952,7 +936,6 @@ end function radiation_nextsw_cday
           call outfld('LWCF    ',lwcf  ,pcols,lchnk)
           call outfld('FLN200  ',fln200,pcols,lchnk)
           call outfld('FLN200C ',fln200c,pcols,lchnk)
-          call outfld('FLNR    ',flnr  ,pcols,lchnk)
 
        end if  !dolw
 
@@ -992,9 +975,6 @@ end function radiation_nextsw_cday
        end if
 
     end if   !  if (dosw .or. dolw) then
-
-    ! output rad inputs and resulting heating rates
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Compute net radiative heating tendency
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &

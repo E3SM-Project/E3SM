@@ -4,6 +4,1380 @@ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/ChangeLog $
 
 This file describes what tags were created and why
 =================================================================================
+Originator: jedwards
+Date: May 14, 2014
+Model: Machines
+Version: Machines_140514a
+One-line:  Fix some pe layouts
+
+M   config_pes.xml
+
+=================================================================================
+Originator: jedwards
+Date: May 14, 2014
+Model: Machines
+Version: Machines_140514
+One-line: Updates for EOS 
+
+M   config_machines.xml
+M   mkbatch.eos
+
+=================================================================================
+Originator: jedwards
+Date: May 13, 2014
+Model: Machines
+Version: Machines_140513
+One-line: fix issues with csm_share shared build path
+
+M      Makefile
+M      buildlib.csm_share
+
+
+=================================================================================
+Originator: jedwards
+Date: May 9, 2014
+Model: Machines
+Version: Machines_140509
+One-line: Updates for Bluewaters
+
+M        env_mach_specific.bluewaters
+A        Depends.bluewaters
+
+
+=================================================================================
+Originator: jshollen
+Date: May 8, 2014
+Model: Machines
+Version: Machines_140508
+One-line: dial down GMAKE_J to 8 on Edison
+
+M       config_machines.xml
+
+=================================================================================
+Originator: jedwards
+Date: May 7, 2014
+Model: Machines
+Version: Machines_140507b
+One-line: allow each component to build smp or not (requires scripts4_140507)
+
+M   Makefile
+
+
+=================================================================================
+Originator: jedwards
+Date: May 7, 2014
+Model: Machines
+Version: Machines_140507a
+One-line: updates for hopper (fixes esmf issue and removes unneeded nf-config) 
+
+M  config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: May 7, 2014
+Model: Machines
+Version: Machines_140507
+One-line: updates for titan
+
+M env_mach_specific.titan
+
+=================================================================================
+Originator: jedwards
+Date: May 6, 2014
+Model: Machines
+Version: Machines_140506
+One-line: bulk change of pelayouts for stampede 
+
+M        config_pes.xml
+
+=================================================================================
+Originator: jshollen
+Date: 29 April 2014
+Model: Machines
+Version: Machines_140429
+One-line: improve mpi-serial handling for mct build
+
+M       buildlib.mct
+
+=================================================================================
+Originator: jedwards
+Date: 24 April 2014
+Model: Machines
+Version: Machines_140424
+One-line: improve Makefile for .F90.in files, fix module issue on yellowstone
+
+M     Makefile
+M     mkbatch.yellowstone
+
+=================================================================================
+Originator: jedwards
+Date: 18 April 2014
+Model: Machines
+Version: Machines_140418a
+One-line: fix link step for mpi-serial
+
+M      Makefile
+
+
+=================================================================================
+Originator: santos
+Date: 18 April 2014
+Model: Machines
+Version: Machines_140418
+One-line: Add include of csm_share directory to Makefile.
+
+M       Makefile
+         - csm_share now contains shr_assert.h, which is included by
+           component code, so we have to add a -I flag for csm_share/shr.
+
+=================================================================================
+Originator: jedwards
+Date: 17 April 2014
+Model: Machines
+Version: Machines_140417
+One-line: Further cleanup of Makefile and direct processing of .F90.in files
+
+M          Makefile
+M          mkSrcfiles
+M          mkDepends
+
+
+
+=================================================================================
+Originator: jshollen
+Date: 16 April 2014
+Model: Machines
+Version: Machines_140416b
+One-line: pop USE_FLOW_CONTROL on for all yellowstone compilers, add
+COMPILER_PATH variable for Nag Debug builds. 
+
+M       ChangeLog
+M       config_compilers.xml
+M       Makefile
+
+=================================================================================
+Originator: jshollen
+Date: 16 April 2014
+Model: Machines
+Version: Machines_140416a
+One-line: With Jim's help, shared build fixes to the Makefile and buildlib scripts. 
+Also swaps SCRATCHROOT for CESMSCRATCHROOT
+
+M       Makefile
+M       ChangeLog
+M       buildlib.csm_share
+M       buildlib.mct
+M       buildlib.pio
+M       buildlib.gptl
+M       config_machines.xml
+
+=================================================================================
+Originator: jedwards
+Date: 16 April 2014
+Model: Machines
+Version: Machines_140416
+One-line: make sure that pgi openmp settings work
+
+M   config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: 11 April 2014
+Model: Machines
+Version: Machines_140411
+One-line: Fix  load of cray-libsci on hopper
+
+M       env_mach_specific.hopper
+
+
+=================================================================================
+Originator: erik
+Date: 10 April 2014
+Model: Machines
+Version: Machines_140410
+One-line: Fix perl path on janus to a general location rather than one specific for jay
+
+M       env_mach_specific.janus
+
+=================================================================================
+Originator: jedwards
+Date: 04 April 2014
+Model: Machines
+Version: Machines_140404
+One-line: cleanup, removal of obsolete machines
+
+M            58847   config_compilers.xml
+D            58847   Depends.intrepid
+D            58847   env_mach_specific.intrepid
+D            58847   env_mach_specific.lynx
+D            58847   env_mach_specific.frankfurt
+M            58847   ChangeLog
+D            58847   Depends.frankfurt
+D            58847   mkbatch.intrepid
+D            58847   mkbatch.lynx
+D            58847   mkbatch.frankfurt
+M            58847   config_machines.xml
+
+=================================================================================
+Originator: srinathv
+Date: 03 April 2014
+Model: Machines
+Version: Machines_140403c
+One-line: changed location of netcdf lib libraries for intel 13 compiler
+
+M       config_compilers.xml
+M       env_mach_specific.stampede
+ M      config_pes.xml
+
+=================================================================================
+Originator: aliceb
+Date: 03 April 2014
+Model: Machines
+Version: Machines_140403b
+One-line: removed reference to DOUT_S_SAVE_ROOT from config_machines.xml
+
+M  config_machines.xml
+
+=================================================================================
+Originator: jedwards
+Date: 03 April 2014
+Model: Machines
+Version: Machines_140403a
+One-line: implement modules on goldbach, update esmf on yellowstone_intel, add
+gnu compiler on goldbach
+
+M  env_mach_specific.goldbach
+M  env_mach_specific.yellowstone
+M  config_machines.xml
+
+=================================================================================
+Originator: srinathv
+Date: 03 April 2014
+Model: Machines
+Version: Machines_140403
+One-line: refactored and builds intel<mic><14> with cesm1_3_beta07
+
+M       config_compilers.xml
+M       env_mach_specific.stampede
+=================================================================================
+Originator: srinathv
+Date: 02 Aprim 2014
+Model: Machines
+Version: Machines_140402b
+One-line: config_machines.xml was missing SCRATCHROOT due to incorrect merge
+
+M       config_machines.xml
+
+=================================================================================
+Originator: srinathv
+Date: 02 Aprim 2014
+Model: Machines
+Version: Machines_140402a
+One-line: Added module load perl to get correct perl for new scripts.
+
+M     env_mach_specific.stampede
+
+===============================================================================
+Originator: jshollen
+Date: 02 Apr 2014
+Model: Machines
+Version: Machines_140402
+One-line: Shared builds will now use SCRATCHROOT, multi-instance builds fixed.  
+
+M       Makefile
+
+================================================================================
+Originator: jshollen
+Date: 02 Apr 2014
+Model: Machines
+Version: Machines_140402
+One-line: Shared builds will now use SCRATCHROOT, multi-instance builds fixed.  
+
+M       Makefile
+
+================================================================================
+Originator: jedwards
+Date: 31 Mar 2014
+Model: Machines
+Version: Machines_140331
+One-line: Add a pelayout for f09_g16 on edison, remove intrepid references from config_pes
+
+M     config_pes.xml
+
+
+================================================================================
+Originator: jshollen
+Date: 28 Mar 2014
+Model: Machines
+Version: Machines_140328
+One-line: Update to deal with shared build bug in csm_share. 
+
+M       Makefile
+
+================================================================================
+Originator: santos
+Date: 26 Mar 2014
+Model: Machines
+Version: Machines_140326
+One-line: Define NDEBUG for non-debugging runs.
+
+M       Makefile
+
+================================================================================
+Originator: srinathv
+Date: 19 Mar 2014
+Model: Machines
+Version: Machines_140319
+One-line: Allows for use of Intel 14.0.1 compiler on Stampede
+
+M config_compilers.xml
+M env_mach_specific.stampede
+M ChangeLog
+A Depends.intel14
+M env_mach_specific.goldbach
+A Depends.intelmic14
+M config_machines.xml
+M .
+===============================================================================
+Originator: jshollen
+Date: 18 Mar 2014
+Model: Machines
+Version: Machines_140318
+One-line: Update Goldbach PGI compiler to 14.1
+
+M       env_mach_specific.goldbach
+
+================================================================================
+Originator: jshollen
+Date: 18 Mar 2014
+Model: Machines
+Version: Machines_140318
+One-line: Update Goldbach PGI compiler to 14.1
+
+M       env_mach_specific.goldbach
+
+================================================================================
+Originator: jshollen
+Date: 17 Mar 2014
+Model: Machines
+Version: Machines_140317
+One-line: Bug fixes for CESM shared library builds, fixes mixed
+threaded/non-threaded builds as well as mpi-serial.  
+
+M       buildlib.csm_share
+M       buildlib.pio
+M       buildlib.gptl
+M       Makefile
+M       buildlib.mct
+
+================================================================================
+Originator: jshollen
+Date: 11 Mar 2014
+Model: Machines
+Version: Machines_140311
+One-line: CESM library builds (mct, gptl, pio, csm_share) can now be shared, 
+needs scripts4_140311
+
+M       buildlib.csm_share
+M       buildlib.pio
+M       buildlib.gptl
+M       Makefile
+M       buildlib.mct
+
+================================================================================
+Originator: jshollen
+Date: 27 Feb 2014
+Model: Machines
+Version: Machines_140227
+One-line: use /projects instead of /gpfs/mira-fs0/projects for Mira, fix typo in
+mkbatch.mira
+
+M       mkbatch.mira
+M       config_machines.xml
+
+================================================================================
+=======
+Originator: jshollen
+Date: 17 Mar 2014
+Model: Machines
+Version: Machines_140317
+One-line: Bug fixes for CESM shared library builds, fixes mixed
+threaded/non-threaded builds as well as mpi-serial.  
+
+M       buildlib.csm_share
+M       buildlib.pio
+M       buildlib.gptl
+M       Makefile
+M       buildlib.mct
+
+================================================================================
+Originator: jshollen
+Date: 11 Mar 2014
+Model: Machines
+Version: Machines_140311
+One-line: CESM library builds (mct, gptl, pio, csm_share) can now be shared, 
+needs scripts4_140311
+
+M       buildlib.csm_share
+M       buildlib.pio
+M       buildlib.gptl
+M       Makefile
+M       buildlib.mct
+
+================================================================================
+Originator: jshollen
+Date: 27 Feb 2014
+Model: Machines
+Version: Machines_140227
+One-line: use /projects instead of /gpfs/mira-fs0/projects for Mira, fix typo in
+mkbatch.mira
+
+M       mkbatch.mira
+M       config_machines.xml
+
+================================================================================
+Originator: santos
+Date: 25 Feb 2014
+Model: Machines
+Version: Machines_140225
+One-line: Work around Perl + LibXml issue on yellowstone.
+
+M       mkbatch.yellowstone
+         - Load perlmods immediately after starting the run script, so that
+           LibXml can be used in scripts run before env_mach_specific is
+           sourced. (This should remove the need to load the module in the
+           user's .cshrc or equivalent.)
+
+================================================================================
+Originator: fvitt
+Date: 18 Feb 2014
+Model: Machines
+Version: Machines_140218
+One-line: pleiades updates
+	
+M       env_mach_specific.pleiades-ivy
+ - load cmake module
+
+M       env_mach_specific.pleiades-san
+ - load cmake module
+
+M       env_mach_specific.pleiades-wes
+ - updates on mpi lib and ifort compiler
+ - load cmake module
+
+================================================================================
+Originator: santos
+Date: 14 Feb 2014
+Model: Machines
+Version: Machines_140214c
+One-line: goldbach performance tweak.
+
+M       mkbatch.goldbach
+         - Remove "--mca btl openib" option. This option is not necessary
+           to enable Infiniband, and can actually reduce performance by
+           disabling faster means of communication for tasks that share
+           memory.
+
+================================================================================
+Originator: santos
+Date: 14 Feb 2014
+Model: Machines
+Version: Machines_140214b
+One-line: NAG/goldbach path tweaks
+
+M       env_mach_specific.goldbach
+M       config_compilers.xml
+         - Switch to system default paths (including
+           /usr/local/openmpi-gcc-nag).
+
+================================================================================
+Originator: santos
+Date: 14 Feb 2014
+Model: Machines
+Version: Machines_140214a
+One-line: Changes to goldbach port (remove MPICH, fix NAG).
+
+M       mkbatch.goldbach
+M       env_mach_specific.goldbach
+M       config_machines.xml
+M       config_compilers.xml
+         - Remove MPICH from list of goldbach MPI implementations.
+         - Change NAG paths to pick up new OpenMPI/netCDF libraries.
+         - Cleanup and cosmetic changes.
+
+=================================================================================
+Originator: muszala
+Date: 14 Feb 2014
+Model: Machines
+Version: Machines_140214
+One-line: PIO_BUFFER_LIMIT_SIZE fix for bug 1730 and pio_1_8_9
+
+M       config_pes.xml
+
+=================================================================================
+Originator: sacks
+Date: 13 Feb 2014
+Model: Machines
+Version: Machines_140213
+One-line: Fix pgi on yellowstone
+
+Need to put in a temporary workaround for a problem with pgi on yellowstone
+(setting MP_COMPILER to gnu), and remove an old temporary workaround that no
+longer works (setting LD_PRELOAD to
+/opt/ibmhpc/pe1304/ppe.pami/gnu/lib64/pami64/libpami.so)
+
+M       env_mach_specific.yellowstone
+
+=================================================================================
+Originator: jshollen
+Date: 12 Feb 2014
+Model: Machines
+Version: Machines_140212
+One-line: Reverted goldbach cprnc back to /fs/cgd/csm/tools/cprnc_64
+
+M       config_machines.xml
+
+=================================================================================
+Originator: jshollen
+Date: 11 Feb 2014
+Model: Machines
+Version: Machines_140211
+One-line: unlimited stacksize on goldbach, Perl module fixes on janus. 
+
+M       env_mach_specific.goldbach
+M       env_mach_specific.janus
+
+=================================================================================
+Originator: jshollen
+Date: 07 Feb 2014
+Model: Machines
+Version: Machines_140207a
+One-line: added module load perlmods for Yellowstone
+
+M       env_mach_specific.yellowstone
+
+=================================================================================
+Originator: srinathv
+Date: 07 Feb 2014
+Model: Machines
+Version: Machines_140207
+One-line: port to Stampede and Pronghorn
+
+
+M       config_compilers.xml
+A       mkbatch.pronghorn
+A       env_mach_specific.pronghorn
+M       config_machines.xml
+M       config_pes.xml
+===============================================================================
+Originator: jshollen
+Date: 03 Feb 2014
+Model: Machines
+Version: Machines_140203
+One-line: port to goldbach
+
+A       mkbatch.goldbach
+A       env_mach_specific.goldbach
+M       config_machines.xml
+M       config_compilers.xml
+A       Depends.goldbach
+
+================================================================================
+Originator: jedwards
+Date: 30 Jan 2014
+Model: Machines
+Version: Machines_140130
+One-line: minor module patch and move EXEROOT for titan (putting your case on home speeds compliation significantly)
+
+M   env_mach_specific.titan
+M   config_machines.xml
+
+================================================================================
+Originator: jshollen
+Date: 24 Jan 2014
+Model: Machines
+Version: Machines_140124
+One-line: Remove gres=widow for titan, PBS -m ae directive for frankfurt batch
+scripts
+
+M       mkbatch.titan
+M       mkbatch.frankfurt
+
+================================================================================
+
+Originator: jedwards
+Date: 16 Jan 2014
+Model: Machines
+Version: Machines_140116a
+One-line: new netcdf lib on mira, new pelayout for ne30 F cases
+
+M   config_compilers.xml
+M   config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 16 Jan 2014
+Model: Machines
+Version: Machines_140116
+One-line: change titan scratch directory, update netcdf module on janus
+
+M env_mach_specific.janus
+M config_machines.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 07 Jan 2014
+Model: Machines
+Version: Machines_140107a
+One-line: correct netcdf modules on hopper
+
+M env_mach_specific.hopper
+
+
+================================================================================
+Originator: sacks
+Date: 07 Jan 2014
+Model: Machines
+Version: Machines_140107
+One-line: Update pgi compiler version on yellowstone and hopper
+
+Update from 13.3 -> 13.9 on yellowstone, 13.3 -> 13.6 on hopper
+
+This is needed to address a compiler bug that affects CLM4.5; it was fixed in 13.6.
+
+M       env_mach_specific.hopper
+M       env_mach_specific.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 26 Dec 2013
+Model: Machines
+Version: Machines_131226
+One-line: Increase optimization for intel compiler in cam
+
+M  Depends.intel
+
+================================================================================
+Originator: jshollen
+Date: 19 Dec 2013
+Model: Machines
+Version: Machines_131219
+One-line: Added rpath linking for Intel, PGI netCDF libraries.
+
+M       config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: 14 Dec 2013
+Model: Machines
+Version: Machines_131214
+One-line: better ne120 pe-layout for yellowstone, add new compiler arg in
+configure
+
+M    configure
+M    config_pes.xml
+
+================================================================================
+Originator: santos
+Date: 13 Dec 2013
+Model: Machines
+Version: Machines_131213
+One-line: More Fortran 2003 compatibility compiler options.
+
+M       config_compilers.xml
+         - Add "-assume realloc_lhs" to ifort options.
+         - Change all xlf95 compilers to xlf2003.
+
+================================================================================
+Originator: jedwards
+Date: 11 Dec 2013
+Model: Machines
+Version: Machines_131211
+One-line:further build updates for pio
+
+M  Makefile
+M  buildlib.pio
+
+================================================================================
+Originator: jedwards
+Date: 06 Dec 2013
+Model: Machines
+Version: Machines_131206c
+One-line: minor change in the way NETCDF_DIR is passed to pio
+
+M   Makefile
+
+================================================================================
+Originator: jedwards
+Date: 06 Dec 2013
+Model: Machines
+Version: Machines_131206b
+One-line: only load netcdf parallel when mpilib is not mpi-serial
+
+M            env_mach_specific.hopper
+M            env_mach_specific.yellowstone
+M            env_mach_specific.eos
+M            env_mach_specific.bluewaters
+M            env_mach_specific.titan
+M            env_mach_specific.edison
+
+
+================================================================================
+Originator: mickelso 
+Date: 06 Dec 2013
+Model: Machines
+Version: Machines_131206a
+One-line: added hdf5 flags for mira
+
+M       config_compilers.xml
+
+================================================================================
+Originator: jedwards  
+Date: 06 Dec 2013
+Model: Machines
+Version: Machines_131206
+One-line: fix typo for titan, add pgicuda compiler support on titan
+ 
+M config_machines.xml
+M config_compilers.xml
+M env_mach_specific.titan
+
+================================================================================
+Originator: jedwards  
+Date: 04 Dec 2013
+Model: Machines
+Version: Machines_131204
+One-line: titan filesystem changes
+
+M config_machines.xml
+
+================================================================================
+Originator: jedwards  
+Date: 03 Dec 2013
+Model: Machines
+Version: Machines_131203a
+One-line: Add juqueen bluegene-Q port
+
+M config_machines.xml
+M config_compilers.xml
+A env_mach_specific.juqueen
+A mkbatch.juqueen
+
+================================================================================
+Originator: jedwards  
+Date: 03 Dec 2013
+Model: Machines
+Version: Machines_131203
+One-line: Fix mpi-serial build on yellowstone
+
+M     config_compilers.xml
+M     env_mach_specific.yellowstone
+
+================================================================================
+Originator: jshollen   
+Date: 27 Nov 2013
+Model: Machines
+Version: Machines_131127
+One-line: Added documentation to config_pes.xml explaining the use of the TEST 
+attribute for allowing/disallowing pe layouts for specific tests. 
+
+M       config_pes.xml
+
+================================================================================
+Originator: jshollen   
+Date: 26 Nov 2013
+Model: Machines
+Version: Machines_131126
+One-line: add -DNO_C_SIZEOF for frankfurt nag
+
+M       config_compilers.xml
+
+================================================================================
+Originator: jshollen   
+Date: 25 Nov 2013
+Model: Machines
+Version: Machines_131125a
+One-line: add -DNO_C_SIZEOF for yellowstone gnu
+
+M       config_compilers.xml
+
+================================================================================
+Originator: jedwards   
+Date: 25 Nov 2013
+Model: Machines
+Version: Machines_131125
+One-line: fix frankfurt pgi build issue
+	M config_compilers.xml
+	M Makefile
+	
+================================================================================
+Originator: jedwards   
+Date: 24 Nov 2013
+Model: Machines
+Version: Machines_131124
+One-line: removed debug code 
+
+M  env_mach_specific.yellowstone
+
+================================================================================
+Originator:  jshollen   
+Date: 22 Nov 2013
+Model: Machines
+Version: Machines_131122a
+One-line: Yellowstone pio build updates, change pgi threaded=false compile flags
+to -nomp
+
+M       config_compilers.xml
+M       env_mach_specific.yellowstone
+
+================================================================================
+Originator: fvitt
+Date: 22 Nov 2013
+Model: Machines
+Version: Machines_131122
+One-line: Updates for pleiades
+	   - replaced "pleiades-har" with "pleiades-ivy"
+           - ifort compiler updated to version 13.1.3
+
+M       config_compilers.xml
+A  +    env_mach_specific.pleiades-ivy
+D       env_mach_specific.pleiades-har
+M       taskmaker.pl
+M       mkbatch.pleiades-san
+M       mkbatch.pleiades-wes
+M       env_mach_specific.pleiades-san
+A  +    mkbatch.pleiades-ivy
+D       mkbatch.pleiades-har
+M       config_machines.xml
+M       config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 20 Nov 2013
+Model: Machines
+Version: Machines_131120
+One-line: use different launch script on yellowstone when threads are not used
+
+M       mkbatch.yellowstone
+
+================================================================================
+Originator: santos
+Date: 19 Nov 2013
+Model: Machines
+Version: Machines_131119b
+One-line: config_compilers updates from unit testing development.
+
+M    config_compilers.xml
+     - Remove instances of "--" from comments, since this is not really
+       valid XML.
+     - Remove some workarounds for NAG/OpenMP, since these complicate
+       parsing of this file and don't get OpenMP working on NAG yet
+       anyway.
+     - Add paths to pFUnit install on machines where it is set up.
+
+================================================================================
+Originator: jedwards
+Date: 19 Nov 2013
+Model: Machines
+Version: Machines_131119
+One-line: Fix machine and compiler issues with pio build
+
+U    config_compilers.xml
+U    Makefile
+U    env_mach_specific.bluewaters
+U    env_mach_specific.titan
+U    env_mach_specific.edison
+
+
+
+================================================================================
+Originator: jedwards
+Date: 14 Nov 2013
+Model: Machines
+Version: Machines_131114
+One-line: Convert pio build to cmake - Requires pio 1.8.0 or newer
+
+M               config_compilers.xml
+M               env_mach_specific.yellowstone
+M               Makefile
+M               buildlib.pio
+
+
+================================================================================
+Originator: jshollen 
+Date: 12 Nov 2013
+Model: Machines
+Version: Machines_131112
+One-line: updated torque module for bluewaters
+
+M       env_mach_specific.bluewaters
+
+================================================================================
+Originator: jshollen 
+Date: 11 Nov 2013
+Model: Machines
+Version: Machines_131111a
+One-line: New layout for T62_g16 CECO titan
+M       config_pes.xml
+
+================================================================================
+Originator: mickelso 
+Date: 11 Nov 2013
+Model: Machines
+Version: Machines_131111
+One-line: Added a new layout for edison. 
+
+M       config_pes.xml
+
+================================================================================
+Originator: mickelso 
+Date: 08 Nov 2013
+Model: Machines
+Version: Machines_131108
+One-line: Updated compiler version on Mira. 
+
+M       env_mach_specific.mira
+
+================================================================================
+Originator: mickelso 
+Date: 30 Oct 2013
+Model: Machines
+Version: Machines_131030
+One-line: Added new mira layout 
+
+M       config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 23 Oct 2013
+Model: Machines
+Version: Machines_131023a
+One-line: Corrected mkbatch update for yellowstone 
+
+M             mkbatch.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 23 Oct 2013
+Model: Machines
+Version: Machines_131023
+One-line:  Updates for yellowstone, fix gptl build for mpi-serial
+
+M             config_compilers.xml
+M             env_mach_specific.yellowstone
+M             buildlib.gptl
+M             mkbatch.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 17 Oct 2013
+Model: Machines
+Version: Machines_131017
+One-line:  port to new ornl machine eos, note this machine port requires an environment 
+	variable PROJECT which is your project name in lowercase. 
+
+A            env_mach_specific.eos
+M            config_pes.xml
+M            config_machines.xml
+A            mkbatch.eos
+
+
+================================================================================
+Originator: jedwards
+Date: 14 Oct 2013
+Model: Machines
+Version: Machines_131014
+One-line:  Add include path, cray compiler needs this (though the others do not)
+
+M  buildlib.gptl 
+
+================================================================================
+Originator: mickelso
+Date: 05 Oct 2013
+Model: Machines
+Version: Machines_131005
+One-line:  Removed extra BGQ flags 
+
+M       config_compilers.xml
+
+================================================================================
+Originator: mickelso
+Date: 04 Oct 2013
+Model: Machines
+Version: Machines_131004
+One-line:  needed to modify the mira build because of compiler bugs 
+
+A       Depends.mira
+M       config_compilers.xml
+
+================================================================================
+Originator: sacks
+Date: 30 Sep 2013
+Model: Machines
+Version: Machines_130930b
+One-line: point to new cprnc on edison
+
+Note that we need a different cprnc on edison than on hopper - a build on
+edison doesn't run on hopper (a build on hopper seems to run on
+edison, but I can't manage to rebuild cprnc on hopper).
+
+M       config_machines.xml
+
+================================================================================
+Originator: sacks
+Date: 30 Sep 2013
+Model: Machines
+Version: Machines_130930a
+One-line: module rm netcdf on edison
+
+This is needed if the user has loaded a netcdf module in their environment
+
+M       env_mach_specific.edison
+
+================================================================================
+Originator: sacks
+Date: 30 Sep 2013
+Model: Machines
+Version: Machines_130930
+One-line: fix mkl on edison, fix cam-se build on frankfurt
+
+*** Add definition of MKL environment variable; this is needed to fix the CLM4.5 build on edison
+M       env_mach_specific.edison
+
+*** Change from Jim Edwards, needed for CAM-SE dycore to run on frankfurt
+A       Depends.frankfurt
+
+================================================================================
+Originator: sacks
+Date: 27 Sep 2013
+Model: Machines
+Version: Machines_130927
+One-line: use latest cmake on edison
+
+This is needed to get the cism build to work; with the old cmake, it
+died during compiler tests because it tried to include '-rdynamic' on
+the link line.
+	
+M       env_mach_specific.edison
+
+================================================================================
+Originator: jshollen
+Date: 25 Sep 2013
+Model: Machines
+Version: Machines_130925a
+One-line: escaped variables in commented code for mkbatch.yellowstone
+
+M       mkbatch.yellowstone
+
+================================================================================
+Originator: mai
+Date: 25 Sep 2013
+Model: Machines
+Version: Machines_130925
+One-line: add option to keep data on disk when running long-term archiver
+
+M            51591   mkbatch.yellowstone
+M            51591   config_machines.xml
+
+=================================================================================
+Originator: sacks
+Date: 24 Sep 2013
+Model: Machines
+Version: Machines_130924
+One-line: Change threading rules for CLM
+
+Get rid of clause that turns threading off for CLM4.5 (because now threading
+works in CLM4.5!). But add a clause that turns threading off for I compsets,
+because performance is generally better without threading.
+
+M       config_pes.xml
+
+=================================================================================
+Originator: jedwards
+Date:19 Sep 2013
+Model: Machines
+Version: Machines_130919
+One-line: Fix type in config_pes for edison
+
+A   taskmaker.pl
+M   config_pes.xml
+M   mkbatch.edison
+M   env_mach_specific.edison
+
+=================================================================================
+Originator: jedwards
+Date:17 Sep 2013
+Model: Machines
+Version: Machines_130917
+One-line: Updates for edison 
+
+M     config_pes.xml
+M     mkbatch.edison
+M     env_mach_specific.edison
+
+=================================================================================
+Originator: mickelso
+Date: 05 Sep 2013
+Model: Machines
+Version: Machines_130905
+One-line: Updates for edison and mira
+
+M       env_mach_specific.mira
+M       config_machines.xml
+
+
+=================================================================================
+Originator: jedwards
+Date: 03 Sep 2013
+Model: Machines
+Version: Machines_130903
+One-line: Updates for bluewaters
+
+M  env_mach_specific.bluewaters
+M  mkbatch.bluewaters
+
+
+=================================================================================
+Originator: jedwards
+Date: 30 Aug 2013
+Model: Machines
+Version: Machines_130830
+One-line:  reduce optimization level for pgi
+
+M config_compilers.xml
+
+
+=================================================================================
+Originator: mickelson
+Date: 29 Aug 2013
+Model: Machines
+Version: Machines_130829a
+One-line:  add compiler flag for mira
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: jshollen
+Date: 29 Aug 2013
+Model: Machines
+Version: Machines_130829
+One-line:  fix slow pgi compilation times on yellowstone (fix from Jim)
+
+M       env_mach_specific.yellowstone
+
+=================================================================================
+Originator: jshollen
+Date: 28 Aug 2013
+Model: Machines
+Version: Machines_130828c
+One-line:  nag netCDF update and fix for frankfurt
+
+M       config_compilers.xml
+M       env_mach_specific.frankfurt
+
+=================================================================================
+Originator: jedwards
+Date: 28 Aug 2013
+Model: Machines
+Version: Machines_130828b
+One-line:  pgi compiler fix on yellowstone
+
+M env_mach_specific.yellowstone
+
+=================================================================================
+Originator: jedwards
+Date: 28 Aug 2013
+Model: Machines
+Version: Machines_130828a
+One-line: mpi mod on yellowstone, pe-layout on edison
+
+M config_pes.xml
+M config_compilers.xml
+M mkbatch.edison
+
+
+=================================================================================
+Originator: jshollen
+Date: 28 Aug 2013
+Model: Machines
+Version: Machines_130828
+One-line: intel -> 2013.4.183, netcdf -> 4.3.0 for pgi/intel, 
+set 'long' as default queue. 
+
+M       config_compilers.xml
+M       env_mach_specific.frankfurt
+M       mkbatch.frankfurt
+
+=================================================================================
+Originator: jedwards
+Date: 27 Aug 2013
+Model: Machines
+Version: Machines_130827
+One-line: backoff to pgi 12.9.0 - threading problem in 13.x
+
+M env_mach_specific.titan
+
+=================================================================================
+Originator: jshollen
+Date: 26 Aug 2013
+Model: Machines
+Version: Machines_130826
+One-line: Update pgi to 13.7 for frankfurt
+
+M       env_mach_specific.frankfurt
+
+=================================================================================
+Originator: jedwards
+Date: 23 Aug 2013
+Model: Machines
+Version: Machines_130823
+One-line: Update Titan pgi configuration (may affect other machines)
+
+M   config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: 09 Aug 2013
+Model: Machines
+Version: Machines_130809
+One-line: Update Edison configuration
+
+M              config_compilers.xml
+M              mkbatch.edison
+M              env_mach_specific.edison
+M              config_machines.xml
+M              config_pes.xml
+
+
+=================================================================================
+Originator: jedwards
+Date: 07 Aug 2013
+Model: Machines
+Version: Machines_130807a
+One-line: Update Stampede configuration
+
+M            config_compilers.xml
+M            env_mach_specific.stampede
+M            config_machines.xml
+
+
+=================================================================================
+Originator: mickelso
+Date: 07 Aug 2013
+Model: Machines
+Version: Machines_130807
+One-line: Modified Mira layouts to use threads.
+
+M       config_machines.xml
+M       config_pes.xml
+
+=================================================================================
+Originator: erik
+Date: 02 Aug 2013
+Model: Machines
+Version: Machines_130802
+One-line: Add support for rosa from Edouard Davin
+
+Only tested for CLM "I" compsets by Edouard. He did his testing with cesm1_2_0.
+
+A       mkbatch.rosa
+A       env_mach_specific.rosa
+M       config_machines.xml
+
+=================================================================================
+Originator: santos
+Date: 21 Jul 2013
+Model: Machines
+Version: Machines_130721
+One-line: Turn on bounds checking for Intel DEBUG cases.
+
+M   config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: 19 Jul 2013
+Model: Machines
+Version: Machines_130719b
+One-line: Hopper modules update
+
+M   env_mach_specific.hopper
+
+=================================================================================
+Originator: jedwards
+Date: 19 Jul 2013
+Model: Machines
+Version: Machines_130719a
+One-line: Janus modules update
+
+M   env_mach_specific.janus
+
+=================================================================================
+Originator: jedwards
+Date: 19 Jul 2013
+Model: Machines
+Version: Machines_130719
+One-line: Titan modules update
+
+M   env_mach_specific.titan
+
+	
+=================================================================================
+Originator: sacks
+Date: 12 Jul 2013
+Model: Machines
+Version: Machines_130712
+One-line: for intel and pgi, use -O0 when building in debug mode
+
+Purpose is so debuggers have more information
+
+Note that this will change answers for all _D tests compiled with
+intel or pgi
+
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: 09 Jul 2013
+Model: Machines
+Version: Machines_130709
+One-line: port to stampede
+
+M config_machines.xml
+M mkbatch.stampede
+M env_mach_specific.stampede
+
+=================================================================================
+Originator: jedwards
+Date: 27 Jun 2013
+Model: Machines
+Version: Machines_130627
+One-line: Modify PE-layout for T31_g37 compsets
+
+M           config_pes.xml
+	
+=================================================================================
+Originator: jedwards
+Date: 25 Jun 2013
+Model: Machines
+Version: Machines_130625
+One-line: Modify Makefile to build CAM/COSP as a separate library
+
+M         Makefile
+
+=================================================================================
+Originator: santos
+Date: 12 Jun 2013
+Model: Machines
+Version: Machines_130612
+One-line: On Frankfurt, check MPILIB instead of COMPILER for run command
+
+M       mkbatch.frankfurt
+         - Instead of assuming that NAG uses MPICH and Intel and PGI use
+           OpenMPI, check MPILIB.
+
+=================================================================================
 Originator: erik
 Date: 05 Jun 2013
 Model: Machines

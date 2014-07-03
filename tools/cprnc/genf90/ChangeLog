@@ -5,6 +5,29 @@ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/genf90/trunk/ChangeLog $
 This file describes what tags were created and why
 ===========================
 Originator: jedwards
+Date: Nov 20, 2013
+Model: genf90
+Version: genf90_131120
+One-line summary: Added a documentation header and a logical type
+
+===========================
+Originator: jedwards
+Date: Nov 14, 2013
+Model: genf90
+Version: genf90_131114
+One-line summary: minor change to avoid undefined variable 
+
+===========================
+Originator: jedwards
+Date: Nov 13, 2013
+Model: genf90
+Version: genf90_131113
+One-line summary: handles derived types and interface blocks better (Sean
+Santos)
+
+
+===========================
+Originator: jedwards
 Date: Apr 02, 2013
 Model: genf90
 Version: genf90_130402

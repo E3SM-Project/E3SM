@@ -73,6 +73,7 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   integer                              :: IFLAG
   integer                              :: IACAP
   
+  ! FNAP, FNBP  ARE THE PRECEDING VALUES OF FNA, FNB RESPECTIVELY.
   complex(kind=f) :: FNAP,   FNBP,   &
                      FNA,    FNB,    RF,       RRF, &
                      RRFX,   WM1,    FN1,      FN2, &
@@ -87,18 +88,11 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
  
   ! TA(1): REAL PART OF WFN(1).  TA(2): IMAGINARY PART OF WFN(1).
   ! TA(3): REAL PART OF WFN(2).  TA(4): IMAGINARY PART OF WFN(2).
-  ! TB(1): REAL PART OF FNA.     TB(2): IMAGINARY PART OF FNA.
-  ! TC(1): REAL PART OF FNB.     TC(2): IMAGINARY PART OF FNB.
-  ! TD(1): REAL PART OF FNAP.    TD(2): IMAGINARY PART OF FNAP.
-  ! TE(1): REAL PART OF FNBP.    TE(2): IMAGINARY PART OF FNBP.
-  ! FNAP, FNBP  ARE THE PRECEDING VALUES OF FNA, FNB RESPECTIVELY.
-  real(kind=f) :: T(5), TA(4), TB(2), TC(2), TD(2), TE(2), &
+  real(kind=f) :: T(5), TA(4), &
                   PI(3,IT), TAU(3,IT), CSTHT(IT), SI2THT(IT), &  
                   X, X1, X4, Y1, Y4, RX, SINX1, SINX4, COSX1, COSX4, &
                   EY1, E2Y1, EY4, EY1MY4, EY1PY4, AA, BB, CC, DD, DENOM, &
                   REALP, AMAGP, QBSR, QBSI, RMM, PIG, RXP4
-
-  equivalence (FNA,TB(1)),(FNB,TC(1)),(FNAP,TD(1)),(FNBP,TE(1))
   
   !! ELTRMX(I,J,K): ELEMENTS OF THE TRANSFORMATION MATRIX F,V.D.HULST,P.34,45 ' 125.
   !!   I=1: ELEMENT M SUB 2..I=2: ELEMENT M SUB 1..
@@ -107,24 +101,27 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   !!   THE ANGLE THETD(J).. ELTRMX(I,J,2) REPRESENTS THE ITH ELEMENT
   !!   OF THE MATRIX FOR THE ANGLE 180.0 - THETD(J) ..
   real(kind=f)                         :: ELTRMX(4,IT,2)
-
+  
 
   ! IF THE CORE IS SMALL SCATTERING IS COMPUTED FOR THE SHELL ONLY
   IFLAG = 1
   if ( R/RO .LT. 1.e-6_f ) IFLAG = 2
   
   if ( JX .gt. IT ) then
-    if (do_print) write(LUNOPRT, '(a,i3,a)') "miess:: The value of the argument JX=", JX, " is greater than IT."
+    if (do_print) then
+       write(LUNOPRT, '(a,i3,a)') "miess:: The value of the argument JX=", &
+            JX, " is greater than IT."
+    end if
     rc = RC_ERROR
     return
   endif
       
-  RF =  CMPLX( RFR,  -RFI )
-  RCR =  CMPLX( RE2, -TMAG2 )
+  RF =  CMPLX( RFR,  -RFI, kind=f )
+  RCR =  CMPLX( RE2, -TMAG2, kind=f )
   X  =  RO * WVNO
   K1 =  RCR * WVNO
   K2 =  RF * WVNO
-  K3 =  CMPLX( WVNO, 0.0_f )
+  K3 =  CMPLX( WVNO, 0.0_f, kind=f )
   Z(1) =  K2 * RO
   Z(2) =  K3 * RO
   Z(3) =  K1 * R
@@ -189,7 +186,10 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
       CSTHT(J)  =  0.0_f
       SI2THT(J) =  1.0_f
     else 
-      if (do_print) write(LUNOPRT, '(a,i3)') "miess:: The value of the scattering angle is greater than 90.0 Degrees. It is .", THETD(J)
+      if (do_print) then
+         write(LUNOPRT, '(a,i3)') "miess:: The value of the scattering angle &
+              &is greater than 90.0 Degrees. It is .", THETD(J)
+      end if
       rc = RC_ERROR
       return
     end if
@@ -205,8 +205,8 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   ! INITIALIZATION OF HOMOGENEOUS SPHERE
   T(1)   =  COS(X)
   T(2)   =  SIN(X)
-  WM1    =  CMPLX( T(1),-T(2) )
-  WFN(1) =  CMPLX( T(2), T(1) )
+  WM1    =  CMPLX( T(1),-T(2), kind=f )
+  WFN(1) =  CMPLX( T(2), T(1), kind=f )
   TA(1)  =  T(2)
   TA(2)  =  T(1)
   WFN(2) =  RX * WFN(1) - WM1
@@ -234,15 +234,15 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
     DENOM   =  1.0_f  +  E2Y1 * ( 4.0_f * SINX1 * SINX1 - 2.0_f + E2Y1 )
     REALP   =  ( AA * CC  +  BB * DD ) / DENOM
     AMAGP   =  ( BB * CC  -  AA * DD ) / DENOM
-    DUMMY   =  CMPLX( REALP, AMAGP )
+    DUMMY   =  CMPLX( REALP, AMAGP, kind=f )
     AA  =  SINX4 * SINX4 - 0.5_f
     BB  =  COSX4 * SINX4
-    P24H24  =  0.5_f + CMPLX( AA,BB ) * EY4 * EY4
+    P24H24  =  0.5_f + CMPLX( AA,BB, kind=f ) * EY4 * EY4
     AA  =  SINX1 * SINX4  -  COSX1 * COSX4
     BB  =  SINX1 * COSX4  +  COSX1 * SINX4
     CC  =  SINX1 * SINX4  +  COSX1 * COSX4
     DD  = -SINX1 * COSX4  +  COSX1 * SINX4
-    P24H21  =  0.5_f * CMPLX( AA,BB ) * EY1 * EY4  + 0.5_f * CMPLX( CC,DD ) * EY1MY4
+    P24H21  =  0.5_f * CMPLX( AA,BB, kind=f ) * EY1 * EY4  + 0.5_f * CMPLX( CC,DD, kind=f ) * EY1MY4
     DH4  =  Z(4) / ( 1.0_f + ( 0.0_f, 1.0_f ) * Z(4) )  -  1.0_f / Z(4)
     DH1  =  Z(1) / ( 1.0_f + ( 0.0_f, 1.0_f ) * Z(1) )  -  1.0_f / Z(1)
     DH2  =  Z(2) / ( 1.0_f + ( 0.0_f, 1.0_f ) * Z(2) )  -  1.0_f / Z(2)
@@ -295,27 +295,31 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   ! ELTRMX(4,J,K): IMAGINARY PART OF THE SECOND COMPLEX AMPLITUDE.
   ! K = 1 : FOR THETD(J) AND K = 2 : FOR 180.0 - THETD(J)
   ! DEFINITION OF THE COMPLEX AMPLITUDE: VAN DE HULST,P.125.
-  TB(1) = T(1) * TB(1)
-  TB(2) = T(1) * TB(2)
-  TC(1) = T(1) * TC(1)
-  TC(2) = T(1) * TC(2)
+  FNA = T(1) * FNA
+  FNB = T(1) * FNB
   
   do J = 1,JX
-    ELTRMX(1,J,1) = TB(1) * PI(2,J) + TC(1) * TAU(2,J)
-    ELTRMX(2,J,1) = TB(2) * PI(2,J) + TC(2) * TAU(2,J)
-    ELTRMX(3,J,1) = TC(1) * PI(2,J) + TB(1) * TAU(2,J)
-    ELTRMX(4,J,1) = TC(2) * PI(2,J) + TB(2) * TAU(2,J)
-    ELTRMX(1,J,2) = TB(1) * PI(2,J) - TC(1) * TAU(2,J)
-    ELTRMX(2,J,2) = TB(2) * PI(2,J) - TC(2) * TAU(2,J)
-    ELTRMX(3,J,2) = TC(1) * PI(2,J) - TB(1) * TAU(2,J)
-    ELTRMX(4,J,2) = TC(2) * PI(2,J) - TB(2) * TAU(2,J)
+    TC1 = FNA * PI(2,J) + FNB * TAU(2,J)
+    TC2 = FNB * PI(2,J) + FNA * TAU(2,J)
+    ELTRMX(1,J,1) =  real(TC1)
+    ELTRMX(2,J,1) = aimag(TC1)
+    ELTRMX(3,J,1) =  real(TC2)
+    ELTRMX(4,J,1) = aimag(TC2)
+    TC1 = FNA * PI(2,J) - FNB * TAU(2,J)
+    TC2 = FNB * PI(2,J) - FNA * TAU(2,J)
+    ELTRMX(1,J,2) =  real(TC1)
+    ELTRMX(2,J,2) = aimag(TC1)
+    ELTRMX(3,J,2) =  real(TC2)
+    ELTRMX(4,J,2) = aimag(TC2)
   enddo
 
-  QEXT   = 2.0_f * ( TB(1) + TC(1))
-  QSCAT  = ( TB(1)**2 + TB(2)**2 + TC(1)**2 + TC(2)**2 ) / 0.75_f
+  QEXT   = 2.0_f * ( real(FNA) + real(FNB) )
+  QSCAT  = ( real(FNA)**2 + aimag(FNA)**2 + &
+             real(FNB)**2 + aimag(FNB)**2 ) / 0.75_f
   CTBRQS = 0.0_f
-  QBSR   = -2.0_f*(TC(1) - TB(1))
-  QBSI   = -2.0_f*(TC(2) - TB(2))
+  TC1 = -2.0_f * (FNB - FNA)
+  QBSR   =  real(TC1)
+  QBSI   = aimag(TC1)
   RMM    = -1.0_f
   N = 2
   
@@ -397,39 +401,47 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
     T(4)  =  T(1) / ( T(5) * T(2) )
     T(2)  =  (  T(2) * ( T(5) + 1.0_f )  ) / T(5)
   
-    CTBRQS  =  CTBRQS  +  T(2) * ( TD(1) * TB(1)  +  TD(2) * TB(2) &
-                      +           TE(1) * TC(1)  +  TE(2) * TC(2) ) &
-                      +  T(4) * ( TD(1) * TE(1)  +  TD(2) * TE(2) )
-    QEXT    =   QEXT  +  T(3) * ( TB(1) + TC(1) )
+    CTBRQS  =  CTBRQS  +  T(2) * ( real(FNAP) * real(FNA)  +  &
+                                  aimag(FNAP) *aimag(FNA) &
+                      +            real(FNBP) * real(FNB)  +  &
+                                  aimag(FNBP) *aimag(FNB) ) &
+                      +  T(4) * ( real(FNAP) * real(FNBP)  +  &
+                                 aimag(FNAP) *aimag(FNBP) )
+    QEXT    =   QEXT  +  T(3) * ( real(FNA) + real(FNB) )
     
-    !     $        T(3), TB(1), TC(1), QEXT
-    T(4)    =  TB(1)**2 + TB(2)**2 + TC(1)**2 + TC(2)**2
+    !     $        T(3), real(FNA), real(FNB), QEXT
+    T(4)    =  real(FNA)**2 + aimag(FNA)**2 + &
+               real(FNB)**2 + aimag(FNB)**2
     QSCAT   =  QSCAT  +  T(3) * T(4)
     RMM     =  -RMM
-    QBSR    =  QBSR + T(3)*RMM*(TC(1) - TB(1))
-    QBSI    =  QBSI + T(3)*RMM*(TC(2) - TB(2))
+    TC1     =  T(3)*RMM*(FNB - FNA)
+    QBSR    =  QBSR +  real(TC1)
+    QBSI    =  QBSI + aimag(TC1)
   
     T(2)    =  N * (N+1)
     T(1)    =  T(3) / T(2)
     K = (N/2)*2
     
     do J = 1,JX
-      ELTRMX(1,J,1) = ELTRMX(1,J,1)+T(1)*(TB(1)*PI(3,J)+TC(1)*TAU(3,J))
-      ELTRMX(2,J,1) = ELTRMX(2,J,1)+T(1)*(TB(2)*PI(3,J)+TC(2)*TAU(3,J))
-      ELTRMX(3,J,1) = ELTRMX(3,J,1)+T(1)*(TC(1)*PI(3,J)+TB(1)*TAU(3,J))
-      ELTRMX(4,J,1) = ELTRMX(4,J,1)+T(1)*(TC(2)*PI(3,J)+TB(2)*TAU(3,J))
+      TC1 = FNA * PI(3,J) + FNB * TAU(3,J)
+      TC2 = FNB * PI(3,J) + FNA * TAU(3,J)
+      ELTRMX(1,J,1) = ELTRMX(1,J,1)+T(1)* real(TC1)
+      ELTRMX(2,J,1) = ELTRMX(2,J,1)+T(1)*aimag(TC1)
+      ELTRMX(3,J,1) = ELTRMX(3,J,1)+T(1)* real(TC2)
+      ELTRMX(4,J,1) = ELTRMX(4,J,1)+T(1)*aimag(TC2)
       
       IF ( K .EQ. N )  THEN
-       ELTRMX(1,J,2) = ELTRMX(1,J,2)+T(1)*(-TB(1)*PI(3,J)+TC(1)*TAU(3,J))
-       ELTRMX(2,J,2) = ELTRMX(2,J,2)+T(1)*(-TB(2)*PI(3,J)+TC(2)*TAU(3,J))
-       ELTRMX(3,J,2) = ELTRMX(3,J,2)+T(1)*(-TC(1)*PI(3,J)+TB(1)*TAU(3,J))
-       ELTRMX(4,J,2) = ELTRMX(4,J,2)+T(1)*(-TC(2)*PI(3,J)+TB(2)*TAU(3,J))
+       TC1 = -FNA * PI(3,J) + FNB * TAU(3,J)
+       TC2 = -FNB * PI(3,J) + FNA * TAU(3,J)
       ELSE
-       ELTRMX(1,J,2) = ELTRMX(1,J,2)+T(1)*(TB(1)*PI(3,J)-TC(1)*TAU(3,J))
-       ELTRMX(2,J,2) = ELTRMX(2,J,2)+T(1)*(TB(2)*PI(3,J)-TC(2)*TAU(3,J))
-       ELTRMX(3,J,2) = ELTRMX(3,J,2)+T(1)*(TC(1)*PI(3,J)-TB(1)*TAU(3,J))
-       ELTRMX(4,J,2) = ELTRMX(4,J,2)+T(1)*(TC(2)*PI(3,J)-TB(2)*TAU(3,J))
+       TC1 = FNA * PI(3,J) - FNB * TAU(3,J)
+       TC2 = FNB * PI(3,J) - FNA * TAU(3,J)
       END IF
+      ELTRMX(1,J,2) = ELTRMX(1,J,2)+T(1)* real(TC1)
+      ELTRMX(2,J,2) = ELTRMX(2,J,2)+T(1)*aimag(TC1)
+      ELTRMX(3,J,2) = ELTRMX(3,J,2)+T(1)* real(TC2)
+      ELTRMX(4,J,2) = ELTRMX(4,J,2)+T(1)*aimag(TC2)
+
     enddo
   
     if ( T(4) .ge. EPSILON_MIE ) then

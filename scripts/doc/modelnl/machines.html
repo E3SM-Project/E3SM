@@ -119,29 +119,68 @@ in the CASEROOT directory. A summary follows:
  EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
 
  DESC: User Defined Machine 
- OS: USERDEFINED_required_macros 
+ OS: userdefined_required_macros 
  COMPILERS: intel,ibm,pgi,pathscale,gnu,cray,lahey 
- MPILIBS: openmpi,mpich,mpt,mpt,ibm,mpi-serial 
- RUNDIR: USERDEFINED_required_build 
- EXEROOT: USERDEFINED_required_build 
- DIN_LOC_ROOT: USERDEFINED_required_build 
- DIN_LOC_ROOT_CLMFORC: USERDEFINED_optional_build 
- DOUT_S: FALSE 
- DOUT_S_ROOT: USERDEFINED_optional_run 
- DOUT_L_MSROOT: USERDEFINED_optional_run 
- CCSM_BASELINE: USERDEFINED_optional_run 
- CCSM_CPRNC: USERDEFINED_optional_test 
- BATCHQUERY: USERDEFINED_optional_run 
- BATCHSUBMIT: USERDEFINED_optional_run 
- SUPPORTED_BY: USERDEFINED_optional 
+ MPILIBS: openmpi,mpich,mpt,mpt,mpiserial 
+ RUNDIR: userdefined_required_build 
+ EXEROOT: userdefined_required_build 
+ DIN_LOC_ROOT: userdefined_required_build 
+ DIN_LOC_ROOT_CLMFORC: userdefined_optional_build 
+ DOUT_S_ROOT: userdefined_required_run 
+ DOUT_L_MSROOT: userdefined_optional_run 
+ CCSM_BASELINE: userdefined_optional_run 
+ CCSM_CPRNC: userdefined_optional_test 
+ BATCHQUERY: userdefined_required_run 
+ BATCHSUBMIT: userdefined_required_run 
+ SUPPORTED_BY: userdefined_optional 
  GMAKE_J: 1 
- MAX_TASKS_PER_NODE: USERDEFINED_required_build 
+ MAX_TASKS_PER_NODE: 1 
+ PES_PER_NODE: 1 
 </pre>
         </div>
     </td>
-    <td>USERDEFINED_required_macros</td>
+    <td>userdefined_required_macros</td>
     <td>intel,ibm,pgi,pathscale,gnu,cray,lahey</td>
-    <td>openmpi,mpich,mpt,mpt,ibm,mpi-serial</td>
+    <td>openmpi,mpich,mpt,mpt,mpiserial</td>
+  </tr>
+  <tr id="bluefire_tr">
+    <td><a name="bluefire"></a>
+        <img id="bluefire_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('bluefire')">bluefire</a>
+        </code>
+        <div id="bluefire_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre> All xml variables are in env_run.xml OTHER than 
+ MAX_TASKS_PER_NODE (env_pesetup.xml),
+ EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
+
+ DESC: NCAR IBM p6, os is AIX, 32 pes/node, batch system is LSF 
+ OS: AIX 
+ COMPILERS: ibm 
+ MPILIBS: ibm,mpi-serial 
+ RUNDIR: /ptmp/$CCSMUSER/$CASE/run 
+ EXEROOT: /ptmp/$CCSMUSER/$CASE/bld 
+ DIN_LOC_ROOT: /glade/proj3/cseg/inputdata 
+ DIN_LOC_ROOT_CLMFORC: /glade/proj2/cgd/tss 
+ DOUT_S_ROOT: /ptmp/$CCSMUSER/archive/$CASE 
+ DOUT_L_MSROOT: csm/$CASE 
+ CCSM_BASELINE: /glade/proj3/cseg/ccsm_baselines 
+ CCSM_CPRNC: /glade/proj3/cseg/tools/cprnc/cprnc 
+ BATCHQUERY: bjobs -w 
+ BATCHSUBMIT: bsub &lt; 
+ SUPPORTED_BY: cseg 
+ GMAKE_J: 32 
+ MAX_TASKS_PER_NODE: 64 
+ PES_PER_NODE: 32 
+</pre>
+        </div>
+    </td>
+    <td>AIX</td>
+    <td>ibm</td>
+    <td>ibm,mpi-serial</td>
   </tr>
   <tr id="bluewaters_tr">
     <td><a name="bluewaters"></a>
@@ -157,28 +196,28 @@ in the CASEROOT directory. A summary follows:
  MAX_TASKS_PER_NODE (env_pesetup.xml),
  EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
 
- DESC: ORNL XE6, os is CNL, 32 pes/node, batch system is PBS 
- COMPILERS: pgi,cray,gnu 
+ DESC: ORNL XE6, os is CNL, 16 pes/node, batch system is PBS 
+ COMPILERS: cray,pgi,gnu 
  MPILIBS: mpich,mpi-serial 
- RUNDIR: /scratch/sciteam/$CCSMUSER/$CASE/run 
- EXEROOT: /scratch/sciteam/$CCSMUSER/$CASE/bld 
- DIN_LOC_ROOT: /projects/sciteam/jng/cesm/inputdata 
- DIN_LOC_ROOT_CLMFORC: /projects/sciteam/jng/cesm/inputdata/atm/datm7 
- DOUT_S_ROOT: /scratch/sciteam/$CCSMUSER/archive/$CASE 
+ RUNDIR: /scratch/$CCSMUSER/$CASE/run 
+ EXEROOT: /scratch/$CCSMUSER/$CASE/bld 
+ DIN_LOC_ROOT: /scratch/jedwards/cesm/inputdata 
+ DIN_LOC_ROOT_CLMFORC: /scratch/jedwards/cesm/inputdata/atm/datm7 
+ DOUT_S_ROOT: /scratch/$CCSMUSER/archive/$CASE 
  DOUT_L_MSROOT: csm/$CASE 
- CCSM_BASELINE: /projects/sciteam/jng/cesm/ccsm_baselines 
- CCSM_CPRNC: /projects/sciteam/jng/cesm/tools/ccsm_cprnc/cprnc 
+ CCSM_BASELINE: /scratch/jedwards/cesm/ccsm_baselines 
+ CCSM_CPRNC: /scratch/jedwards/cesm/tools/ccsm_cprnc/cprnc 
  OS: CNL 
  BATCHQUERY: qstat -f 
  BATCHSUBMIT: qsub 
- SUPPORTED_BY: jedwards -at- ucar.edu 
+ SUPPORTED_BY: jedwards@ucar.edu 
  GMAKE_J:  8 
- MAX_TASKS_PER_NODE: 32 
+ MAX_TASKS_PER_NODE: 16 
 </pre>
         </div>
     </td>
     <td>CNL</td>
-    <td>pgi,cray,gnu</td>
+    <td>cray,pgi,gnu</td>
     <td>mpich,mpi-serial</td>
   </tr>
   <tr id="brutus_tr">
@@ -209,7 +248,7 @@ in the CASEROOT directory. A summary follows:
  CCSM_CPRNC: /cluster/work/uwis/ccsm/tools/cprnc/cprnc 
  BATCHQUERY: bjobs -w 
  BATCHSUBMIT: bsub &lt; 
- SUPPORTED_BY: tcraig -at- ucar.edu 
+ SUPPORTED_BY: tcraig@ucar.edu 
  GMAKE_J: 1 
  MAX_TASKS_PER_NODE: 16 
 </pre>
@@ -247,53 +286,16 @@ in the CASEROOT directory. A summary follows:
  CCSM_CPRNC: /lustre/tcraig/IRESM/tools/cprnc/cprnc 
  BATCHQUERY: squeue 
  BATCHSUBMIT: sbatch 
- SUPPORTED_BY: tcraig -at- ucar.edu 
+ SUPPORTED_BY: tcraig@ucar.edu 
  GMAKE_J: 8 
  MAX_TASKS_PER_NODE: 12 
+ PES_PER_NODE: 12 
 </pre>
         </div>
     </td>
     <td>LINUX</td>
     <td>pgi</td>
     <td>mpich</td>
-  </tr>
-  <tr id="edison_tr">
-    <td><a name="edison"></a>
-        <img id="edison_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('edison')">edison</a>
-        </code>
-        <div id="edison_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre> All xml variables are in env_run.xml OTHER than 
- MAX_TASKS_PER_NODE (env_pesetup.xml),
- EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
-
- DESC: NERSC XC30, os is CNL, 16 pes/node, batch system is PBS 
- COMPILERS: intel,gnu,cray 
- MPILIBS: mpt,mpi-serial 
- RUNDIR: /scratch1/scratchdirs/$CCSMUSER/$CASE/run 
- EXEROOT: /scratch1/scratchdirs/$CCSMUSER/$CASE/bld 
- DIN_LOC_ROOT: /project/projectdirs/ccsm1/inputdata 
- DIN_LOC_ROOT_CLMFORC: /project/projectdirs/ccsm1/inputdata/atm/datm7 
- DOUT_S_ROOT: /scratch1/scratchdirs/$CCSMUSER/archive/$CASE 
- DOUT_L_MSROOT: csm/$CASE 
- CCSM_BASELINE: /project/projectdirs/ccsm1/ccsm_baselines 
- CCSM_CPRNC: /project/projectdirs/ccsm1/tools/cprnc/cprnc 
- OS: CNL 
- BATCHQUERY: qstat -f 
- BATCHSUBMIT: qsub 
- SUPPORTED_BY: cseg 
- GMAKE_J: 4 
- MAX_TASKS_PER_NODE: 16 
-</pre>
-        </div>
-    </td>
-    <td>CNL</td>
-    <td>intel,gnu,cray</td>
-    <td>mpt,mpi-serial</td>
   </tr>
   <tr id="erebus_tr">
     <td><a name="erebus"></a>
@@ -323,7 +325,7 @@ in the CASEROOT directory. A summary follows:
  CCSM_CPRNC: $ENV{CESMDATAROOT}/tools/cprnc/cprnc 
  BATCHQUERY: bjobs -w 
  BATCHSUBMIT: bsub &lt; 
- SUPPORTED_BY: jedwards -at- ucar.edu 
+ SUPPORTED_BY: jedwards@ucar.edu 
  GMAKE_J: 16 
  MAX_TASKS_PER_NODE: 32 
  PES_PER_NODE: 16 
@@ -362,9 +364,10 @@ in the CASEROOT directory. A summary follows:
  CCSM_CPRNC: /data/eg_nfs/tcraig/IRESM/tools/cprnc/cprnc 
  BATCHQUERY: showq 
  BATCHSUBMIT: qsub 
- SUPPORTED_BY: tcraig -at- ucar.edu 
+ SUPPORTED_BY: tcraig@ucar.edu 
  GMAKE_J: 8 
  MAX_TASKS_PER_NODE: 12 
+ PES_PER_NODE: 12 
 </pre>
         </div>
     </td>
@@ -387,7 +390,7 @@ in the CASEROOT directory. A summary follows:
  EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
 
  DESC: "NCAR CGD Linux Cluster 16 pes/node, batch system is PBS" 
- COMPILERS: pgi,intel,nag 
+ COMPILERS: pgi,intel 
  MPILIBS: openmpi,mpich,mpi-serial 
  RUNDIR: /scratch/cluster/$CCSMUSER/$CASE/run 
  EXEROOT: /scratch/cluster/$CCSMUSER/$CASE/bld 
@@ -408,46 +411,8 @@ in the CASEROOT directory. A summary follows:
         </div>
     </td>
     <td>LINUX</td>
-    <td>pgi,intel,nag</td>
+    <td>pgi,intel</td>
     <td>openmpi,mpich,mpi-serial</td>
-  </tr>
-  <tr id="gaea_tr">
-    <td><a name="gaea"></a>
-        <img id="gaea_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('gaea')">gaea</a>
-        </code>
-        <div id="gaea_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre> All xml variables are in env_run.xml OTHER than 
- MAX_TASKS_PER_NODE (env_pesetup.xml),
- EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
-
- DESC: NOAA XE6, os is CNL, 24 pes/node, batch system is PBS 
- COMPILERS: pgi 
- MPILIBS: mpich,mpi-serial 
- RUNDIR: /lustre/fs/scratch/Julio.T.Bacmeister/$CASE/run 
- EXEROOT: /lustre/fs/scratch/Julio.T.Bacmeister/$CASE/bld 
- DIN_LOC_ROOT: /lustre/fs/scratch/Julio.T.Bacmeister/inputdata 
- DIN_LOC_ROOT_CLMFORC: /lustre/fs/scratch/Julio.T.Bacmeister/inputdata 
- DOUT_S_ROOT: /lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE 
- DOUT_L_MSROOT: UNSET 
- CCSM_BASELINE: UNSET 
- CCSM_CPRNC: UNSET 
- OS: CNL 
- BATCHQUERY: showq 
- BATCHSUBMIT: msub 
- SUPPORTED_BY: julio -at- ucar.edu 
- GMAKE_J:  8 
- MAX_TASKS_PER_NODE: 32 
-</pre>
-        </div>
-    </td>
-    <td>CNL</td>
-    <td>pgi</td>
-    <td>mpich,mpi-serial</td>
   </tr>
   <tr id="hera_tr">
     <td><a name="hera"></a>
@@ -466,19 +431,18 @@ in the CASEROOT directory. A summary follows:
  DESC: LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Moab 
  COMPILERS: pgi 
  MPILIBS: mpich,mpi-serial 
+ OS: LINUX 
  RUNDIR: /p/lscratchd/$CCSMUSER/$CASE/run 
  EXEROOT: /p/lscratchd/$CCSMUSER/$CASE/bld 
  DIN_LOC_ROOT: /p/lscratchd/mirin/ccsm3data/inputdata 
  DIN_LOC_ROOT_CLMFORC: /p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7 
  DOUT_S_ROOT: /p/lscratchd/$CCSMUSER/archive/$CASE 
- DOUT_L_HTAR: FALSE 
  DOUT_L_MSROOT: UNSET 
  CCSM_BASELINE: /p/lscratchd/$CCSMUSER/ccsm_baselines 
  CCSM_CPRNC: /p/lscratchd/mirin/ccsm3data/tools/cprnc/cprnc 
- OS: LINUX 
  BATCHQUERY: mshow 
  BATCHSUBMIT: msub 
- SUPPORTED_BY: mirin1 -at- llnl.gov 
+ SUPPORTED_BY: mirin1@llnl.gov 
  GMAKE_J: 8 
  MAX_TASKS_PER_NODE: 16 
 </pre>
@@ -640,44 +604,6 @@ in the CASEROOT directory. A summary follows:
     <td>pgi,intel,pathscale,gnu,cray</td>
     <td>mpich,mpi-serial</td>
   </tr>
-  <tr id="mira_tr">
-    <td><a name="mira"></a>
-        <img id="mira_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('mira')">mira</a>
-        </code>
-        <div id="mira_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre> All xml variables are in env_run.xml OTHER than 
- MAX_TASKS_PER_NODE (env_pesetup.xml),
- EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
-
- DESC: ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt 
- COMPILERS: ibm 
- MPILIBS: ibm 
- RUNDIR: /gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/run 
- EXEROOT: /gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/bld 
- DIN_LOC_ROOT: /gpfs/mira-fs0/projects/ccsm/inputdata 
- DIN_LOC_ROOT_CLMFORC: /gpfs/mira-fs0/projects/ccsm/inputdata/atm/datm7 
- DOUT_S_ROOT: /gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/archive/$CASE 
- DOUT_L_MSROOT: /home/$CCSMUSER/csm/$CASE/ 
- CCSM_BASELINE: /gpfs/mira-fs0/projects/ccsm/ccsm_baselines/ 
- CCSM_CPRNC: /gpfs/mira-fs0/projects/ccsm/tools/cprnc/cprnc 
- OS: BGQ 
- BATCHQUERY: qstat 
- BATCHSUBMIT: csh 
- SUPPORTED_BY:    mickelso -at- mcs.anl.gov 
- GMAKE_J: 2 
- MAX_TASKS_PER_NODE: 16 
-</pre>
-        </div>
-    </td>
-    <td>BGQ</td>
-    <td>ibm</td>
-    <td>ibm</td>
-  </tr>
   <tr id="olympus_tr">
     <td><a name="olympus"></a>
         <img id="olympus_arrow" src="./images/arrow_right.gif">
@@ -706,9 +632,10 @@ in the CASEROOT directory. A summary follows:
  CCSM_CPRNC: /pic/scratch/tcraig/IRESM/tools/cprnc/cprnc 
  BATCHQUERY: squeue 
  BATCHSUBMIT: sbatch 
- SUPPORTED_BY: tcraig -at- ucar.edu 
+ SUPPORTED_BY: tcraig@ucar.edu 
  GMAKE_J: 8 
  MAX_TASKS_PER_NODE: 32 
+ PES_PER_NODE: 32 
 </pre>
         </div>
     </td>
@@ -716,14 +643,14 @@ in the CASEROOT directory. A summary follows:
     <td>pgi</td>
     <td>mpich</td>
   </tr>
-  <tr id="pleiades-har_tr">
-    <td><a name="pleiades-har"></a>
-        <img id="pleiades-har_arrow" src="./images/arrow_right.gif">
+  <tr id="pleiades_tr">
+    <td><a name="pleiades"></a>
+        <img id="pleiades_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('pleiades-har')">pleiades-har</a>
+             onclick="toggleHelp('pleiades')">pleiades</a>
         </code>
-        <div id="pleiades-har_help" style="display: none;
+        <div id="pleiades_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre> All xml variables are in env_run.xml OTHER than 
@@ -742,8 +669,8 @@ in the CASEROOT directory. A summary follows:
  DOUT_L_MSROOT: csm/$CASE 
  BATCHQUERY: qstat 
  BATCHSUBMIT: qsub 
- SUPPORTED_BY: fvitt -at- ucar.edu 
- GMAKE_J: 8 
+ SUPPORTED_BY: fvitt@ucar.edu 
+ GMAKE_J: 4 
  MAX_TASKS_PER_NODE: 8 
 </pre>
         </div>
@@ -752,14 +679,14 @@ in the CASEROOT directory. A summary follows:
     <td>intel</td>
     <td>mpich,mpi-serial</td>
   </tr>
-  <tr id="pleiades-wes_tr">
-    <td><a name="pleiades-wes"></a>
-        <img id="pleiades-wes_arrow" src="./images/arrow_right.gif">
+  <tr id="pleiades-westmere_tr">
+    <td><a name="pleiades-westmere"></a>
+        <img id="pleiades-westmere_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('pleiades-wes')">pleiades-wes</a>
+             onclick="toggleHelp('pleiades-westmere')">pleiades-westmere</a>
         </code>
-        <div id="pleiades-wes_help" style="display: none;
+        <div id="pleiades-westmere_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre> All xml variables are in env_run.xml OTHER than 
@@ -778,45 +705,9 @@ in the CASEROOT directory. A summary follows:
  DOUT_L_MSROOT: csm/$CASE 
  BATCHQUERY: qstat 
  BATCHSUBMIT: qsub 
- SUPPORTED_BY: fvitt -at- ucar.edu 
- GMAKE_J: 8 
+ SUPPORTED_BY: fvitt@ucar.edu 
+ GMAKE_J: 4 
  MAX_TASKS_PER_NODE: 12 
-</pre>
-        </div>
-    </td>
-    <td>LINUX</td>
-    <td>intel</td>
-    <td>mpich,mpi-serial</td>
-  </tr>
-  <tr id="pleiades-san_tr">
-    <td><a name="pleiades-san"></a>
-        <img id="pleiades-san_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('pleiades-san')">pleiades-san</a>
-        </code>
-        <div id="pleiades-san_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre> All xml variables are in env_run.xml OTHER than 
- MAX_TASKS_PER_NODE (env_pesetup.xml),
- EXEROOT,GMAKE_J,COMPILERS,OS,MPILIBS  (env_build.xml) 
-
- DESC: NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.6 GHz Sandy Bridge processors, 16 cores/node and 32 GB of memory, batch system is PBS 
- COMPILERS: intel 
- MPILIBS: mpich,mpi-serial 
- OS: LINUX 
- RUNDIR: /nobackup/$CCSMUSER/$CASE/run 
- EXEROOT: /nobackup/$CCSMUSER/$CASE/bld 
- DIN_LOC_ROOT: /nobackup/mjmills2/ccsmdata/inputdata 
- DIN_LOC_ROOT_CLMFORC: /nobackup/mjmills2/ccsmdata/inputdata/atm/datm7 
- DOUT_S_ROOT: /nobackup/$CCSMUSER/archive/$CASE 
- DOUT_L_MSROOT: csm/$CASE 
- BATCHQUERY: qstat 
- BATCHSUBMIT: qsub 
- SUPPORTED_BY: fvitt -at- ucar.edu 
- GMAKE_J: 8 
- MAX_TASKS_PER_NODE: 16 
 </pre>
         </div>
     </td>
@@ -841,19 +732,19 @@ in the CASEROOT directory. A summary follows:
  DESC: LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab 
  COMPILERS: pgi 
  MPILIBS: mpich,mpi-serial 
- RUNDIR: /p/lscratchd/$CCSMUSER/$CASE/run 
- EXEROOT: /p/lscratchd/$CCSMUSER/$CASE/bld 
- DIN_LOC_ROOT: /p/lscratchd/mirin/ccsm3data/inputdata 
- DIN_LOC_ROOT_CLMFORC: /p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7 
- DOUT_S_ROOT: /p/lscratchd/$CCSMUSER/archive/$CASE 
+ RUNDIR: /p/lscratchc/$CCSMUSER/$CASE/run 
+ EXEROOT: /p/lscratchc/$CCSMUSER/$CASE/bld 
+ DIN_LOC_ROOT: /p/lscratchc/mirin/ccsm3data/inputdata 
+ DIN_LOC_ROOT_CLMFORC: /p/lscratchc/mirin/ccsm3data/inputdata/atm/datm7/atm_forcing.datm7.Qian.T62.c080727 
+ DOUT_S_ROOT: /p/lscratchc/$CCSMUSER/archive/$CASE 
  DOUT_L_HTAR: FALSE 
  DOUT_L_MSROOT: UNSET 
- CCSM_BASELINE: /p/lscratchd/$CCSMUSER/ccsm_baselines 
- CCSM_CPRNC: /p/lscratchd/mirin/ccsm3data/tools/cprnc/cprnc 
+ CCSM_BASELINE: /p/lscratchc/$CCSMUSER/ccsm_baselines 
+ CCSM_CPRNC: /p/lscratchc/mirin/ccsm3data/tools/cprnc/cprnc 
  OS: LINUX 
  BATCHQUERY: mshow 
  BATCHSUBMIT: msub 
- SUPPORTED_BY: mirin1 -at- llnl.gov 
+ SUPPORTED_BY: mirin1@llnl.gov 
  GMAKE_J: 8 
  MAX_TASKS_PER_NODE: 12 
 </pre>
@@ -922,7 +813,7 @@ in the CASEROOT directory. A summary follows:
  RUNDIR: /glade/scratch/$CCSMUSER/$CASE/run 
  EXEROOT: /glade/scratch/$CCSMUSER/$CASE/bld 
  DIN_LOC_ROOT: $ENV{CESMDATAROOT}/inputdata 
- DIN_LOC_ROOT_CLMFORC: /glade/p/cesm/lmwg 
+ DIN_LOC_ROOT_CLMFORC: $ENV{CESMDATAROOT}/tss 
  DOUT_S_ROOT: /glade/scratch/$CCSMUSER/archive/$CASE 
  DOUT_L_MSROOT: csm/$CASE 
  CCSM_BASELINE: $ENV{CESMDATAROOT}/ccsm_baselines 
@@ -931,7 +822,7 @@ in the CASEROOT directory. A summary follows:
  BATCHSUBMIT: bsub &lt; 
  SUPPORTED_BY: cseg 
  GMAKE_J: 8 
- MAX_TASKS_PER_NODE: 30 
+ MAX_TASKS_PER_NODE: 32 
  PES_PER_NODE: 16 
 </pre>
         </div>

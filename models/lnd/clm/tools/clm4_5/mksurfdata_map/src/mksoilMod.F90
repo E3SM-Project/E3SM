@@ -135,7 +135,7 @@ end subroutine mksoiltexInit
 ! !IROUTINE: mksoiltex
 !
 ! !INTERFACE:
-subroutine mksoiltex(ldomain, mapfname, datfname, ndiag, pctglac_o, sand_o, clay_o)
+subroutine mksoiltex(ldomain, mapfname, datfname, ndiag, sand_o, clay_o)
 !
 ! !DESCRIPTION:
 ! make %sand and %clay from IGBP soil data, which includes
@@ -154,7 +154,6 @@ subroutine mksoiltex(ldomain, mapfname, datfname, ndiag, pctglac_o, sand_o, clay
   character(len=*)  , intent(in) :: mapfname      ! input mapping file name
   character(len=*)  , intent(in) :: datfname      ! input data file name
   integer           , intent(in) :: ndiag         ! unit number for diag out
-  real(r8)          , intent(in) :: pctglac_o(:)  ! % glac (output grid)
   real(r8)          , intent(out):: sand_o(:,:)   ! % sand (output grid)
   real(r8)          , intent(out):: clay_o(:,:)   ! % clay (output grid)
 !
@@ -351,44 +350,35 @@ subroutine mksoiltex(ldomain, mapfname, datfname, ndiag, pctglac_o, sand_o, clay
      end if
 
      ! Set soil texture as follows:
-     ! If land grid cell is ocean or 100% glacier: cell has no soil
-     ! Otherwise, grid cell needs soil:
      !   a. Use dominant igbp soil mapunit based on area of overlap unless
      !     'no data' is dominant
      !   b. In this case use second most dominant mapunit if it has data
      !   c. If this has no data or if there isn't a second most dominant
      !      mapunit, use loam for soil texture
 
-     if (abs(pctglac_o(no)-100.) < 1.e-06) then    !---glacier
+     if (soil_sand/=unset .and. soil_clay/=unset) then  !---soil texture is input
         do l = 1, nlay
-           sand_o(no,l) = 0.
-           clay_o(no,l) = 0.
+           sand_o(no,l) = soil_sand
+           clay_o(no,l) = soil_clay
         end do
-     else                                     !---need soil
-        if (soil_sand/=unset .and. soil_clay/=unset) then  !---soil texture is input
+     else if (k1 /= 0) then           !---not 'no data'
+        do l = 1, nlay
+           sand_o(no,l) = sand_i(k1,l)
+           clay_o(no,l) = clay_i(k1,l)
+        end do
+     else                                  !---if (k1 == 0) then
+        if (k2 == 0 .or. k2 == miss) then     !---no data
            do l = 1, nlay
-              sand_o(no,l) = soil_sand
-              clay_o(no,l) = soil_clay
+              sand_o(no,l) = 43.           !---use loam
+              clay_o(no,l) = 18.
            end do
-        else if (k1 /= 0) then           !---not 'no data'
+        else                               !---if (k2 /= 0 and /= miss)
            do l = 1, nlay
-              sand_o(no,l) = sand_i(k1,l)
-              clay_o(no,l) = clay_i(k1,l)
+              sand_o(no,l) = sand_i(k2,l)
+              clay_o(no,l) = clay_i(k2,l)
            end do
-        else                                  !---if (k1 == 0) then
-           if (k2 == 0 .or. k2 == miss) then     !---no data
-              do l = 1, nlay
-                 sand_o(no,l) = 43.           !---use loam
-                 clay_o(no,l) = 18.
-              end do
-           else                               !---if (k2 /= 0 and /= miss)
-              do l = 1, nlay
-                 sand_o(no,l) = sand_i(k2,l)
-                 clay_o(no,l) = clay_i(k2,l)
-              end do
-           end if       !---end of k2 if-block
-        end if          !---end of k1 if-block
-     end if             !---end of land/ocean if-block
+        end if       !---end of k2 if-block
+     end if          !---end of k1 if-block
 
   enddo
 
@@ -574,7 +564,7 @@ end subroutine mksoilcolInit
 !
 ! !INTERFACE:
 subroutine mksoilcol(ldomain, mapfname, datfname, ndiag, &
-                    pctglac_o, soil_color_o, nsoicol)
+                    soil_color_o, nsoicol)
 !
 ! !DESCRIPTION:
 ! make %sand and %clay from IGBP soil data, which includes
@@ -593,7 +583,6 @@ subroutine mksoilcol(ldomain, mapfname, datfname, ndiag, &
   character(len=*)  , intent(in) :: mapfname           ! input mapping file name
   character(len=*)  , intent(in) :: datfname           ! input data file name
   integer           , intent(in) :: ndiag              ! unit number for diag out
-  real(r8)          , intent(in) :: pctglac_o(:)       ! % glac (output grid)
   integer           , intent(out):: soil_color_o(:)    ! soil color classes
   integer           , intent(out):: nsoicol            ! number of soil colors 
 !
@@ -759,11 +748,6 @@ subroutine mksoilcol(ldomain, mapfname, datfname, ndiag, &
            if (soil_color_o(no)==0) soil_color_o(no) = 15
         end if
         
-        ! Set color for grid cells that are 100% glacier to zero. Otherwise,
-        ! must have a soil color for the non-glacier portion of grid cell.
-        
-        if (abs(pctglac_o(no)-100.)<1.e-06) soil_color_o(no)=0
-
         ! Error checks
 
         if (soil_color_o(no) < 0 .or. soil_color_o(no) > nsoicol) then

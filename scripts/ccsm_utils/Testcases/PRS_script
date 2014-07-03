@@ -1,0 +1,171 @@
+
+#======================================================================
+# Clear coupler log files for comparison tests
+#======================================================================
+
+unsetenv CPLLOG_INIT
+unsetenv CPLLOG_REST
+# turn on memory leak check and baseline memory compare
+setenv DETECT_MEMORY_LEAK
+# if comparing with baseline also compare memory highwater mark from baseline 
+if ($?COMPARE_BASELINE ) then
+  setenv COMPARE_MEMORY
+  setenv COMPARE_THROUGHPUT
+endif
+
+if (${STOP_N} < 3) then
+  echo "ERROR in ${0}:  stop_n too short" >>& $TESTSTATUS_LOG
+  echo "TFAIL ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  exit -1
+endif
+
+@ stopn1 = ${STOP_N}
+@ restn1 = ${stopn1} / 2 + 1
+@ histn  = ${stopn1}
+@ stopn2 = $stopn1 - $restn1
+
+#======================================================================
+# do an initial run test
+#======================================================================
+
+cd $CASEROOT
+echo "doing a ${stopn1} ${STOP_OPTION} initial test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
+./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+rm $EXEROOT/cesm.exe >& /dev/null
+cp -f $EXEROOT/cesm.exe.prs1 $EXEROOT/cesm.exe || exit -9
+cp -f env_mach_pes.xml.prs1 env_mach_pes.xml
+cp -f env_build.xml.prs1 env_build.xml
+./cesm_setup -clean
+./cesm_setup
+cp -f env_mach_pes.xml.prs1 env_mach_pes.xml
+cp -f env_build.xml.prs1 env_build.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_build.xml LockedFiles/env_build.xml.locked
+
+./$CASE.run
+
+gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+setenv CPLLOG_INIT $CplLogFile
+setenv BASEGEN_FILE01 $CplLogFile
+set cplhist_init = `ls -1t $RUNDIR/*.cpl.hi.*.nc | head -1`
+mv ${cplhist_init} ${cplhist_init}.base
+set cplhist_init = ${cplhist_init}.base
+
+if (-e $CplLogFile) then
+   set pass = `grep "SUCCESSFUL TERMINATION OF CPL7-CCSM" $CplLogFile | wc -l`
+   echo "pass = $pass" >>& $TESTSTATUS_LOG
+   if ($pass != 1) then
+      echo "initial run failed."
+      echo "ERROR in ${0}: coupler log indicates that inital model run failed" >>& $TESTSTATUS_LOG
+      exit -1;
+    endif
+else
+      echo "ERROR in ${0}: no coupler log created, inital model run failed" >>& $TESTSTATUS_LOG
+      exit -1;
+endif
+
+#======================================================================
+# do a restart run
+#======================================================================
+
+cd $CASEROOT
+echo "doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn2}
+./xmlchange -file env_run.xml -id REST_OPTION  -val never
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+rm $EXEROOT/cesm.exe >& /dev/null
+cp -f $EXEROOT/cesm.exe.prs2 $EXEROOT/cesm.exe || exit -9
+cp -f env_mach_pes.xml.prs2 env_mach_pes.xml
+cp -f env_build.xml.prs2 env_build.xml
+./cesm_setup -clean
+./cesm_setup
+cp -f env_mach_pes.xml.prs2 env_mach_pes.xml
+cp -f env_build.xml.prs2 env_build.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_build.xml LockedFiles/env_build.xml.locked
+
+./$CASE.run
+
+gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+setenv CPLLOG_REST $CplLogFile
+setenv BASEGEN_FILE02 $CplLogFile
+set cplhist_rest = `ls -1t $RUNDIR/*.cpl.hi.*.nc | head -1`
+
+#======================================================================
+# runs complete, reset
+#======================================================================
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+setenv CPLLOG_GENCMP $CPLLOG_REST
+echo "Initial Test log is $CPLLOG_INIT" >>& $TESTSTATUS_LOG 
+echo "Restart Test log is $CPLLOG_REST" >>& $TESTSTATUS_LOG 
+echo "Initial Test hist is $cplhist_init" >>& $TESTSTATUS_LOG 
+echo "Restart Test hist is $cplhist_rest" >>& $TESTSTATUS_LOG 
+
+#======================================================================
+# Check case validation first
+#======================================================================
+
+set basestatus = "UNDEF"
+
+if ( $?CPLLOG_INIT ) then
+  if ( $?CPLLOG_REST ) then
+    echo "Comparing initial log file with second log file" >>& $TESTSTATUS_LOG
+    $CASETOOLS/check_exactrestart.pl $CPLLOG_INIT $CPLLOG_REST >>& $TESTSTATUS_LOG
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    if ( $pass != 0 ) then
+      set basestatus = "PASS "
+    else
+      set basestatus = "FAIL "
+    endif
+  else
+    echo "ERROR in ${0}:  restart coupler log file NOT set" >>& $TESTSTATUS_LOG
+    set basestatus = "ERROR"
+  endif
+else
+  echo "ERROR in ${0}:  initial coupler log file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+endif
+
+if ($basestatus == "PASS") then
+if ( $?cplhist_init ) then
+  if ( $?cplhist_rest ) then
+    echo "Comparing initial hist file with second hist file" >>& $TESTSTATUS_LOG
+    cd $RUNDIR
+    $CASETOOLS/hist_compare.csh $cplhist_init $cplhist_rest >>& $TESTSTATUS_LOG
+    cd $CASEROOT
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    if ( $pass != 0 ) then
+      set basestatus = "PASS "
+    else
+      set basestatus = "FAIL "
+    endif
+  else
+    echo "ERROR in ${0}:  restart coupler hist file NOT set" >>& $TESTSTATUS_LOG
+    set basestatus = "ERROR"
+  endif
+else
+  echo "ERROR in ${0}:  initial coupler hist file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+endif
+endif
+
+echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+

@@ -18,8 +18,12 @@ module spmdMod
   use shr_kind_mod, only: r8 => shr_kind_r8
   use clm_varctl  , only: iulog
   implicit none
-  save
+
   private
+
+#include <mpif.h>
+
+  save
 
   ! Default settings valid even if there is no spmd 
 
@@ -49,8 +53,6 @@ module spmdMod
   public :: MPI_CHARACTER
   public :: MPI_COMM_WORLD
   public :: MPI_MAX_PROCESSOR_NAME
-
-#include <mpif.h>  
 
 contains
 

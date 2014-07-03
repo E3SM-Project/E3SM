@@ -32,11 +32,6 @@ Switch to turn on waccm physics: 0 => no, 1 => yes.
 <entry id="offline_dyn" valid_values="0,1" value="0">
 Switch to turn on FV offline driver: 0 => no, 1 => yes.
 </entry>
-<entry id="offline_drv" valid_values="rad,stub" value="">
- Offline unit driver:
-  rad : radiation offline unit driver
-  stub : stub offline unit driver
-</entry>
 <entry id="waccmx" valid_values="0,1" value="0">
 Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 </entry>
@@ -60,11 +55,13 @@ PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
 Radiative transfer calculation: 
 camrt (CAM3 and CAM4 RT package), rrtmg (RRTMG package from AER).
 </entry>
-<entry id="carma" valid_values="none,bc_strat,cirrus,dust,meteor_smoke,pmc,sea_salt,sulfate,test_detrain,test_growth,test_passive,test_radiative,test_swelling,test_tracers" value="none">
+<entry id="carma" valid_values="none,bc_strat,cirrus,cirrus_dust,dust,meteor_impact,meteor_smoke,mixed_sulfate,pmc,pmc_sulfate,sea_salt,sulfate,tholin,test_detrain,test_growth,test_passive,test_radiative,test_swelling,test_tracers,test_tracers2" value="none">
 CARMA sectional microphysics: 
-none (disabled), bc_strat (Stratospheric Black Carbon), cirrus (Cirrus Clouds), dust (Dust), meteor_smoke (Meteor Smoke), pmc (Polar Mesospheric Clouds), sea_salt (Sea Salt),
-sulfate (Sulfate Aerosols), test_detrain (Detrainment), test_growth (Particle Growth), test_passive (Passive Dust), 
-test_radiative (Radiatively Active Dust), test_swelling (Sea Salt), test_tracers (age trajectories).
+none (disabled), bc_strat (Stratospheric Black Carbon), cirrus (Cirrus Clouds),
+cirrus_dust (Cirrus Clouds with dust), dust (Dust), meteor_impact (Meteor Impact), 
+meteor_smoke (Meteor Smoke), mixed_sulfate (Meteor Smoke and Sulfate), pmc (Polar Mesospheric Clouds), pmc_sulfate (PMC and Sulfate), sea_salt (Sea Salt),
+sulfate (Sulfate Aerosols), tholin (early earth haze), test_detrain (Detrainment), test_growth (Particle Growth), test_passive (Passive Dust), 
+test_radiative (Radiatively Active Dust), test_swelling (Sea Salt), test_tracers (Asian Monsoon), test_tracers2 (Guam).
 </entry>
 <entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam7,none"
  value="">
@@ -164,6 +161,10 @@ Total number of advected test tracers.
 <entry id="age_of_air_trcs" valid_values="0,1" value="0">
 Switch on (off) age of air tracers: 0=off, 1=on.
 </entry>
+<entry id="max_n_rad_cnst" value="30">
+Maximum number of constituents that are radiatively active or in any one
+diagnostic list.
+</entry>
 <entry id="trm" value="1">
 Maximum Fourier wavenumber.
 </entry>
@@ -194,7 +195,7 @@ User specified C compiler options to append to Makefile defaults.
 <entry id="fc" value="">
 User specified Fortran compiler overrides Makefile default.
 </entry>
-<entry id="fc_type" valid_values="pgi,intel,gnu,pathscale,lahey,xlf,nag" value="">
+<entry id="fc_type" valid_values="pgi,intel,gnu,pathscale,xlf,nag" value="">
 Type of Fortran compiler.  Used when -fc specifies a generic wrapper script
 such as mpif90 or ftn.
 </entry>

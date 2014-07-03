@@ -16,9 +16,9 @@
 <srf_emis_type>INTERP_MISSING_MONTHS</srf_emis_type>
 <dms_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_1849-2006_c090804.nc</dms_emis_file>
 <so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_1850-2005_c090804.nc    </so2_emis_file>
-<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_1850-2005_c100429.nc   </soag_emis_file>
+<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_1850-2005_c130424.nc</soag_emis_file>
 <bc_a1_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_1850-2005_c090804.nc     </bc_a1_emis_file>
-<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_surf_1850-2005_c090804.nc     </pom_a1_emis_file>
+<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_1850-2005_c130424.nc    </pom_a1_emis_file>
 <so4_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_surf_1850-2005_c090804.nc </so4_a1_emis_file>
 <so4_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_surf_1850-2005_c090804.nc </so4_a2_emis_file>
 <num_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_1850-2005_c090804.nc </num_a1_emis_file>
@@ -31,7 +31,7 @@
 <so4_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_1850-2005_c090804.nc </so4_a2_ext_file>
 <num_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_elev_1850-2005_c090804.nc </num_a1_ext_file>
 <num_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_1850-2005_c090804.nc </num_a2_ext_file>
-<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_1850-2005_c090804.nc     </pom_a1_ext_file>
+<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_1850-2005_c130424.nc    </pom_a1_ext_file>
 <bc_a1_ext_file    chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_1850-2005_c090804.nc     </bc_a1_ext_file>
 
 <!-- Volcanic aerosol from eruptions is from Caspar Ammann -->
@@ -69,7 +69,6 @@
 <bndtvs hgrid="48x96"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2008_c100128.nc</bndtvs>
 <bndtvs hgrid="32x64"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_32x64_1850_2012_c130411.nc</bndtvs>
 <bndtvs hgrid="8x16"       sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_8x16_1850_2012_c130411.nc</bndtvs>
-
 
 <!-- Use the clim_pi SST datasets if AMIP datasets not available -->
 <sstcyc            hgrid="0.23x0.31">.true.</sstcyc>

@@ -42,7 +42,6 @@ contains
     use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
     use dyn_grid, only : get_horiz_grid_dim_d
     use chemistry   , only: chem_implements_cnst, chem_init_cnst
-    use aerosol_intr, only: aerosol_implements_cnst, aerosol_init_cnst
     use carma_intr,   only: carma_implements_cnst, carma_init_cnst
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
@@ -199,10 +198,6 @@ contains
              call aoa_tracers_init_cnst(cnst_name(m_cnst), tmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "aoa_tracers_init_cnst"'
-          else if (aerosol_implements_cnst(cnst_name(m_cnst))) then
-             call aerosol_init_cnst(cnst_name(m_cnst), tmp, gcid)
-              if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
-                   ' initialized by "aerosol_init_cnst"'
           else if (carma_implements_cnst(cnst_name(m_cnst))) then
              call carma_init_cnst(cnst_name(m_cnst), tmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
@@ -241,9 +236,8 @@ contains
        call endrun('Could not find PS field on input datafile')
     end if
     start=1
-    tmp(:,1)=tmp(:,1)*0.01_r8
 
-    if(minval(tmp(:,1)) < 100) then
+    if(minval(tmp(:,1)) < 10000) then
        call endrun('Problem reading ps field')
     end if
 

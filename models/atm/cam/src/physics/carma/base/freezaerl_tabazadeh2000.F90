@@ -43,7 +43,6 @@ subroutine freezaerl_tabazadeh2000(carma, cstate, iz, rc)
   integer                              :: inuc    !! nucleating element index
   integer                              :: ienucto !! index of target nucleation element
   integer                              :: ignucto !! index of target nucleation group
-  integer                              :: inucto  !! index of target nucleation bin
   integer                              :: isol
   real(kind=f)                         :: A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10
   real(kind=f)                         :: c0, C1, C2, C3, C4, c5
@@ -101,12 +100,6 @@ subroutine freezaerl_tabazadeh2000(carma, cstate, iz, rc)
               !  Loop over particle bins.  Loop from largest to smallest for 
               !  evaluation of index of smallest bin nucleated during time step <inucstep>.
               do ibin =NBIN,1,-1
-    
-                if( ignucto .ne. 0 )then
-                  inucto = inuc2bin(ibin,igroup,ignucto)
-                else
-                  inucto = 0
-                endif
     
                 ! Bypass calculation if few particles are present
                 if( pconmax(iz,igroup) .gt. FEW_PC )then

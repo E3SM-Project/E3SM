@@ -2,14 +2,10 @@
 
 cd $OBJROOT/rof/obj
 
-set comp = 'unknown'
-if ($COMP_INTERFACE == 'MCT' ) set comp = mct
-if ($COMP_INTERFACE == 'ESMF') set comp = esmf
-
 cat >! tmp_filepath << EOF1
 $CASEROOT/SourceMods/src.rtm
 $CODEROOT/rof/rtm/src/riverroute
-$CODEROOT/rof/rtm/src/cpl_$comp
+$CODEROOT/rof/rtm/src/cpl
 $CODEROOT/rof/rtm/src/cpl_share
 EOF1
 

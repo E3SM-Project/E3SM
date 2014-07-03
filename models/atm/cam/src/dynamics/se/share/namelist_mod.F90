@@ -54,7 +54,6 @@ module namelist_mod
        nu_div,          &
        nu_p,          &
        nu_top,        &
-       which_vlaplace, & ! which vector laplace to use, cartesian or vector_identities
        hypervis_scaling,   & ! use tensor HV instead of scalar coefficient
        psurf_vis,    &  
        hypervis_order,    &  
@@ -127,6 +126,8 @@ module namelist_mod
        varname_len,         &
        infilenames,         &
        MAX_INFILES
+
+  use physical_constants, only: omega
 
 #ifdef _PRIM
   use aquaplanet, only : cool_ampl, &
@@ -226,6 +227,7 @@ module namelist_mod
                      nthreads,      &       ! Number of threads per process
                      limiter_option, &
                      smooth,        &        ! Timestep Filter  
+                     omega,         &
 #endif
                      npart,         &      
                      uselapi,       &
@@ -267,7 +269,6 @@ module namelist_mod
                      hypervis_power,    &  
                      hypervis_subcycle, &
                      hypervis_subcycle_q, &
-                     which_vlaplace, & 
                      hypervis_scaling, & 
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
@@ -392,7 +393,7 @@ module namelist_mod
     ! set all CAM defaults 
     ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type = 1            ! foward-in-time RK methods
+    tstep_type = 1            ! forward-in-time RK methods
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
@@ -492,7 +493,6 @@ module namelist_mod
           nmax = ndays * (secpday/tstep)
           restartfreq  = restartfreq*(secpday/tstep)
        end if
-       
        nEndStep = nmax
 #endif
 
@@ -530,8 +530,17 @@ module namelist_mod
           read(*,nml=solver_nl)
 #endif
        else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
-          call abortmp('integration must be explicit, semi_imp or runge_kutta')
+          call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
        end if
+
+       if (integration == "full_imp") then
+          if (tstep_type<10) then
+             ! namelist did not set a valid tstep_type. pick one:
+             tstep_type=11   ! backward euler
+             !tstep_type=12  ! Crank Nicolson
+             !tstep_type=13  ! BDF2 with BE bootstrap
+          endif
+       endif
 
        write(iulog,*)"reading filter namelist..."
        ! Set default mu/freq for advection filtering
@@ -576,6 +585,7 @@ module namelist_mod
        if (test_case=="held_suarez0" .or. &
            test_case(1:10)=="baroclinic" .or. &
            test_case(1:13)=="jw_baroclinic" .or. &
+           test_case(1:12)=="dcmip2_schar" .or. &
            test_case(1:4)=="asp_" .or. &
            test_case(1:10)=="aquaplanet") then
          write(iulog,*) "reading vertical namelist..."
@@ -793,6 +803,7 @@ module namelist_mod
     limiter_option  = se_limiter_option
     nsplit = se_nsplit
 #else
+    call MPI_bcast(omega     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nmax      ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS  ,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -809,7 +820,6 @@ module namelist_mod
 
     call MPI_bcast(fine_ne    ,1,MPIinteger_t,par%root,par%comm,ierr) 
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(which_vlaplace    ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(nu         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_s         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_q         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -829,7 +839,7 @@ module namelist_mod
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(mesh_file,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(tracer_advection_formulation,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -960,7 +970,6 @@ module namelist_mod
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
-
 !logic around different hyperviscosity options
     if (hypervis_power /= 0) then
       if (hypervis_scaling /= 0) then
@@ -970,13 +979,6 @@ module namelist_mod
         print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
           call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
       endif
-    endif
-
-    ! sanity check:
-    if (hypervis_scaling==1) then
-       if (which_vlaplace/=2) then
-          call abortmp('Tensor HV option requires which_vlaplace=2 for now')
-       endif
     endif
 
 
@@ -1059,6 +1061,7 @@ module namelist_mod
     if(nu_q<0) nu_q=nu
     if(nu_div<0) nu_div=nu
 
+
     if (multilevel <= 0) then  
       nmpi_per_node = 1
     endif
@@ -1084,6 +1087,7 @@ module namelist_mod
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
 #ifndef CAM
        write(iulog,*)"readnl: test_case     = ",TRIM(test_case)
+       write(iulog,*)"readnl: omega         = ",omega
        write(iulog,*)"readnl: sub_case      = ",sub_case
        write(iulog,*)"readnl: ndays         = ",ndays
        write(iulog,*)"readnl: nmax          = ",nmax
@@ -1145,30 +1149,19 @@ module namelist_mod
        endif
        
 
-
-
-
-!!!!!!!!!!!!!!!fix this
        if (hypervis_power /= 0)then
-          write(iulog,*)"Variable area-based hyperviscosity with power ",hypervis_power," used."
-          write(iulog,*)"Maximum imposed on hypervis Courant = ", max_hypervis_courant
+          write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
+          write(iulog,*)"max_hypervis_courant = ", max_hypervis_courant
+          write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        elseif(hypervis_scaling /=0)then
-          write(iulog,*)"Tensor hyperviscosity with scaling ",hypervis_scaling," used."
+          write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
        else
           write(iulog,*)"Constant (hyper)viscosity used."
        endif
-!!!!!!!!!!!!!
 
-       if (hypervis_order==1) then
-          write(iulog,*)"weak form viscosity subcycle, tracer subcycle = ",&
-          hypervis_subcycle,hypervis_subcycle_q
-       else if (hypervis_order==2) then
-          write(iulog,*)"weak form hyper viscosity subcycle, tracer subcycle = ",&
-          hypervis_subcycle, hypervis_subcycle_q
-       endif
-       write(iulog,*)"psurf_vis: ",psurf_vis
-       write(iulog,*)"which_vlaplace (0=new, 1=orig, 2=cartesian): ",which_vlaplace
-       write(iulog,*)"Equivalent ne in fine region = ", fine_ne
+       write(iulog,*)"hypervis_subcycle, hypervis_subcycle_q = ",&
+            hypervis_subcycle,hypervis_subcycle_q
+       !write(iulog,*)"psurf_vis: ",psurf_vis
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q

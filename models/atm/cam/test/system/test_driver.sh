@@ -2,7 +2,7 @@
 #
 # test_driver.sh:  driver script for the testing of CAM in Sequential CCSM
 #
-# usage on frankfurt, firefly, yellowstone, jaguarpf/titan, lynx:
+# usage on goldbach, firefly, yellowstone, jaguarpf/titan, lynx:
 # ./test_driver.sh
 #
 # valid arguments: 
@@ -54,8 +54,8 @@ hostname=`hostname`
 
 case $hostname in
 
-    ##yellowstone
-    ye* | ys* )
+    ##yellowstone (or caldera)
+    ye* | ys* | ca* )
     submit_script="`pwd -P`/test_driver_yellowstone_${cur_time}.sh"
     submit_script_cb="`pwd -P`/test_driver_yellowstone_cb_${cur_time}.sh"
 
@@ -66,13 +66,19 @@ case $hostname in
             exit 2
         fi
     fi
-
+ 
     if [ -z "$CAM_BATCHQ" ]; then
         export CAM_BATCHQ="regular"
     fi
 
+    if [[ "$hostname" = "ca"* ]]; then
+        export CAM_BATCHQ="gpgpu"
+    fi
+
     if [ "$CAM_BATCHQ" = "small" ]; then
         wallclock_limit="2:00"
+    elif [[ "$hostname" = "ca"* ]]; then
+        wallclock_limit="6:00"
     else
         wallclock_limit="8:00"
     fi
@@ -110,12 +116,16 @@ fi
 
 
 ##omp threads
-export CAM_THREADS=2
-export CAM_RESTART_THREADS=1
+export CAM_THREADS=4
+export CAM_RESTART_THREADS=2
 
 ##mpi tasks
 export CAM_TASKS=32
 export CAM_RESTART_TASKS=64
+
+# This is a floor preventing the use of 32 MPI tasks per node, which is
+# frequently broken, but allowing 32 threads.
+export min_cpus_per_task=2
 
 source /glade/apps/opt/lmod/lmod/init/bash
 module purge
@@ -127,15 +137,18 @@ if [ "\$CAM_FC" = "PGI" ]; then
   module load ncarcompilers
   module load netcdf/4.2
   module load pnetcdf/1.3.0
+  module load perlmods
   export CFG_STRING=" -cc mpicc -fc_type pgi -fc mpif90 -cppdefs -DNO_MPI2 -cppdefs -DNO_MPIMOD "
 else
-  module load intel
+  module load intel/13.1.2
   module load ncarenv/1.0
   module load ncarbinlibs/1.0
   module load ncarcompilers/1.0
-  module load netcdf/4.2
+  module load netcdf/4.3.0
+  module load netcdf-mpi/4.3.0
   module load pnetcdf/1.3.0
-  module load mkl
+  module load mkl/11.0.1
+  module load perlmods
   export CFG_STRING="-cc mpicc -fc mpif90 -fc_type intel "
 fi
 
@@ -156,10 +169,10 @@ cat > ${submit_script} << EOF
 #!/bin/sh
 #
 
-#BSUB -a poe                    # use LSF poe elim
+#BSUB -a poe                     # use LSF poe elim
 #BSUB -x                          # exclusive use of node (not_shared)
 #BSUB -n 64                       # total tasks needed
-#BSUB -R "span[ptile=32]"          # max number of tasks (MPI) per node
+#BSUB -R "span[ptile=16]"          # max number of tasks (MPI) per node
 #BSUB -o test_dr.o%J              # output filename
 #BSUB -e test_dr.o%J              # error filename
 #BSUB -q $CAM_BATCHQ
@@ -180,13 +193,16 @@ fi
 
 
 ##omp threads
-export CAM_THREADS=2
-export CAM_RESTART_THREADS=1
+export CAM_THREADS=4
+export CAM_RESTART_THREADS=2
 
 ##mpi tasks
 export CAM_TASKS=32
 export CAM_RESTART_TASKS=64
 
+# This is a floor preventing the use of 32 MPI tasks per node, which is
+# frequently broken, but allowing 32 threads.
+export min_cpus_per_task=2
 
 source /glade/apps/opt/lmod/lmod/init/bash
 module purge
@@ -198,15 +214,18 @@ if [ "\$CAM_FC" = "PGI" ]; then
   module load ncarcompilers
   module load netcdf
   module load pnetcdf
+  module load perlmods
   export CFG_STRING=" -cc mpicc -fc_type pgi -fc mpif90 -cppdefs -DNO_MPI2 -cppdefs -DNO_MPIMOD "
 else
-  module load intel
+  module load intel/13.1.2
   module load ncarenv/1.0
   module load ncarbinlibs/1.0
   module load ncarcompilers/1.0
-  module load netcdf/4.2
+  module load netcdf/4.3.0
+  module load netcdf-mpi/4.3.0
   module load pnetcdf/1.3.0
-  module load mkl
+  module load mkl/11.0.1
+  module load perlmods
   export CFG_STRING="-cc mpicc -fc mpif90 -fc_type intel "
 fi
 
@@ -232,13 +251,18 @@ EOF
 ##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
     ;;
 
-    ##frankfurt
-    fr* | f0* )
-    submit_script="`pwd -P`/test_driver_frankfurt_${cur_time}.sh"
+    ##goldbach
+    go* | g[[:digit:]]* )
+    submit_script="`pwd -P`/test_driver_goldbach_${cur_time}.sh"
     export PATH=/cluster/torque/bin:${PATH}
 
+    # Default setting is 12 hr in the long queue; the short queue only
+    # allows 1 hr runs.
+    wallclock_limit="12:00:00"
     if [ -z "$CAM_BATCHQ" ]; then
         export CAM_BATCHQ="long"
+    elif [[ "$CAM_BATCHQ" == short ]]; then
+        wallclock_limit="1:00:00"
     fi
 
     if [ $gmake_j = 0 ]; then
@@ -253,7 +277,7 @@ cat > ${submit_script} << EOF
 # Name of the queue (CHANGE THIS if needed)
 #PBS -q $CAM_BATCHQ
 # Number of nodes (CHANGE THIS if needed)
-#PBS -l walltime=8:00:00,nodes=1:ppn=16
+#PBS -l walltime=$wallclock_limit,nodes=1:ppn=16
 # output file base name
 #PBS -N test_dr
 # Put standard error and standard out in same file
@@ -289,10 +313,9 @@ export CAM_TASKS=16
 export CAM_RESTART_TASKS=8
 
 export INTEL=/usr/local/intel-cluster
-export LAHEY=/usr/local/lf6481
 export NAG=/usr/local/nag
-export PGI=/usr/local/pgi-pgcc-pghf-11.5
-export LD_LIBRARY_PATH=\${PGI}/linux86/lib:\${LAHEY}/lib64:/cluster/torque/lib:\${INTEL}/lib/intel64:\${LD_LIBRARY_PATH}
+export PGI=/usr/local/pgi
+export LD_LIBRARY_PATH=\${PGI}/linux86-64/lib:/cluster/torque/lib:\${INTEL}/lib/intel64
 echo \${LD_LIBRARY_PATH}
 export P4_GLOBMEMSIZE=500000000
 
@@ -300,50 +323,43 @@ export P4_GLOBMEMSIZE=500000000
 if [ "\$CAM_FC" = "INTEL" ]; then
     export INC_NETCDF=/usr/local/netcdf-intel-cluster/include
     export LIB_NETCDF=/usr/local/netcdf-intel-cluster/lib
-    mvapich=/cluster/mvapich2-qlc-intel
-    export INC_MPI=\${mvapich}/include
-    export LIB_MPI=\${mvapich}/lib
+    mpi=/cluster/openmpi-qlc-intel
+    source \${mpi}/bin/mpivars.csh
+    export INC_MPI=\${mpi}/include
+    export LIB_MPI=\${mpi}/lib64
     export LD_LIBRARY_PATH=\${LIB_MPI}:\${LD_LIBRARY_PATH}
-    export PATH=\${INTEL}/bin:\${mvapich}/bin:\${PATH}
-    export CFG_STRING="-fc ifort "
-    export MAKE_CMD="gmake -j $gmake_j"
-    input_file="tests_posttag_frankfurt"
+    export PATH=\${INTEL}/bin:\${mpi}/bin:\${PATH}
+    export CFG_STRING=" -cc mpicc -fc_type intel -fc mpif90 -cppdefs -DNO_MPI2 -cppdefs -DNO_MPIMOD "
+    input_file="tests_posttag_goldbach"
+    export CCSM_MACH="goldbach_intel"
 elif [ "\$CAM_FC" = "NAG" ]; then
-    . /usr/local/nag/nag-bash.rc 
+    . \${NAG}/nag-bash.rc 
     netcdf=/usr/local/netcdf-gcc-nag
     export INC_NETCDF=\${netcdf}/include
     export LIB_NETCDF=\${netcdf}/lib
-    mpich=/home/santos/mpich-gcc-nag
-    export INC_MPI=\${mpich}/include
-    export LIB_MPI=\${mpich}/lib
-    export LD_LIBRARY_PATH=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/lib:\${LIB_MPI}:\${LD_LIBRARY_PATH}:/usr/local/lib
-    export PATH=\${NAG}/bin:\${mpich}/bin:\${PATH}
-    export CFG_STRING="-fc nagfor "
-    export MAKE_CMD="gmake -j $gmake_j"
-    input_file="tests_pretag_frankfurt_nag"
-elif [ "\$CAM_FC" = "PGI" ]; then
-    export LAPACK_LIBDIR=/usr/local/pgi-pgcc-pghf-11.5/linux86-64/11.5/lib
-    export INC_NETCDF=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/include
-    export LIB_NETCDF=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/lib
-    mpich=/usr/local/mpich-pgi
-    export INC_MPI=\${mpich}/include
-    export LIB_MPI=\${mpich}/lib
-    export PATH=\${PGI}/linux86/bin:\${mpich}/bin:\${PATH}:\${LIB_NETCDF}
-    export LD_LIBRARY_PATH=\${LIB_NETCDF}:\${LD_LIBRARY_PATH}
-    export MAKE_CMD="gmake -j $gmake_j"
-    input_file="tests_pretag_frankfurt_pgi"
+    export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:/usr/local/lib
+    # Deliberately do NOT set \${LIB_MPI}, because we want the compiler
+    # wrapper to deal with it.
+    mpi=/usr/local/openmpi-gcc-nag
+    export PATH=\${mpi}/bin:\${PATH}
+    export CFG_STRING="-cc mpicc -fc mpif90 -fc_type nag "
+    input_file="tests_pretag_goldbach_nag"
+    export CCSM_MACH="goldbach_nag"
 else
-    export INC_NETCDF=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/include
-    export LIB_NETCDF=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
-    mpich=/usr/local/mpich-gcc-lf64
-    export INC_MPI=\${mpich}/include
-    export LIB_MPI=\${mpich}/lib
-    export PATH=\${LAHEY}/bin:\${mpich}/bin:\${PATH}
-    export LD_LIBRARY_PATH=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/lib:\${LD_LIBRARY_PATH}
-    export CFG_STRING="-fc lf95 "
-    export MAKE_CMD="gmake -j $gmake_j"
-    input_file="tests_pretag_frankfurt_lahey"
+    export LAPACK_LIBDIR=\${PGI}/linux86-64/lib
+    export INC_NETCDF=/usr/local/netcdf-pgi/include
+    export LIB_NETCDF=/usr/local/netcdf-pgi/lib
+    mpi=/cluster/openmpi-qlc-pgi
+    source \${mpi}/bin/mpivars.csh
+    export INC_MPI=\${mpi}/include
+    export LIB_MPI=\${mpi}/lib64
+    export PATH=\${LIB_MPI}:\${PGI}/linux86-64/bin:\${mpi}/bin:\${PATH}:\${LIB_NETCDF}
+    export LD_LIBRARY_PATH=\${PGI}/linux86-64/libso:\${mpi}/lib64:\${LIB_NETCDF}:\${LD_LIBRARY_PATH}
+    export CFG_STRING=" -cc mpicc -fc_type pgi -fc mpif90 -cppdefs -DNO_MPI2 -cppdefs -DNO_MPIMOD "
+    input_file="tests_pretag_goldbach_pgi"
+    export CCSM_MACH="goldbach_pgi"
 fi
+export MAKE_CMD="gmake -j $gmake_j"
 export MACH_WORKSPACE="/scratch/cluster"
 export CPRNC_EXE=/fs/cgd/csm/tools/cprnc_64/cprnc
 export ADDREALKIND_EXE=/fs/cgd/csm/tools/addrealkind/addrealkind
@@ -405,7 +421,7 @@ export CAM_RESTART_TASKS=8
 module load cray-netcdf
 
 export CFG_STRING="-fc ftn -cc cc -fc_type intel "
-export CCSM_MACH="edinson_intel"
+export CCSM_MACH="edison_intel"
 module list
 
 export MPICH_MAX_SHORT_MSG_SIZE=1024
@@ -590,7 +606,7 @@ export CPRNC_EXE=/project/projectdirs/ccsm1/tools/cprnc/cprnc
 export ADDREALKIND_EXE=/project/projectdir/ccsm1/tools/addrealkind/addrealkind
 dataroot="/project/projectdirs/ccsm1"
 echo_arg="-e"
-input_file="tests_pretag_frankfurt_pgi"
+input_file="tests_pretag_goldbach_pgi"
 
 EOF
 ##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
@@ -707,6 +723,11 @@ cb_flag=0
 for file in ${submit_script} ${submit_script_cb}
 do
 cat >> ${file} << EOF
+
+## Most machines don't need to set this, so default to 1.
+if [[ -z "\$min_cpus_per_task" ]]; then
+    export min_cpus_per_task=1
+fi
 
 ##check if interactive job
 if  \$interactive ; then
@@ -955,10 +976,10 @@ case $hostname in
     ff* )  bsub < ${submit_script};;
 
     ##yellowstone
-    ye* | ys* )  bsub < ${submit_script_cb};;
+    ye* | ys* | ca*)  bsub < ${submit_script_cb};;
 
-    ##frankfurt
-    fr* | f0* )  qsub ${submit_script};;
+    ##goldbach
+    go* | g[[:digit:]]* )  qsub ${submit_script};;
 
   ##edison
     ed* ) qsub ${submit_script};;

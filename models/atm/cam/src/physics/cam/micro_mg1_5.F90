@@ -80,7 +80,7 @@ module micro_mg1_5
 ! 3) svp over ice
 
 #ifndef HAVE_GAMMA_INTRINSICS
-use shr_spfn_mod, only: gamma => shr_spfn_gamma_nonintrinsic
+use shr_spfn_mod, only: gamma => shr_spfn_gamma
 #endif
 
 use wv_sat_methods, only: &
@@ -2956,9 +2956,10 @@ elemental subroutine size_dist_param_liq(qcic, ncic, cdnl, rho, nadjflag, pgam, 
           (qcic*dumgam1))**(1._r8/3._r8)
 
      ! lammin, 50 micron diameter max mean size
-
-     lammin = (pgam+1._r8)/50.e-6_r8
-     lammax = (pgam+1._r8)/2.e-6_r8
+     ! omsm fudge factors are to guaranteed that lamcrad falls within the
+     ! table used by RRTMG.
+     lammin = (pgam+1._r8)/(omsm*50.e-6_r8)
+     lammax = (pgam+1._r8)*omsm/2.e-6_r8
 
      if (lamc < lammin) then
         lamc = lammin

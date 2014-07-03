@@ -25,7 +25,8 @@ module carma_model_flags_mod
   ! Create a public definition of any new namelist variables that you wish to have,
   ! and default them to an inital value.
   logical, public            :: carma_do_WeibullK   = .false.  ! if .true. then use calculated Weibull K, [Monahan, 2006]
-  character(len=32), public  :: carma_seasalt_emis  = 'Gong'   ! the source function scheme, either "Gong", "Martensson", "Clarke",  "Caffrey", "CMS", "CONST", or "NONE" 
+  character(len=32), public  :: carma_seasalt_emis  = 'Gong'   ! the source function scheme, either "Gong", "Martensson",
+                                                               ! "Clarke",  "Caffrey", "CMS", "CONST", or "NONE" 
 
 contains
 

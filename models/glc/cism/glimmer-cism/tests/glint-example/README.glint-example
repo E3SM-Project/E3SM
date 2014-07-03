@@ -29,25 +29,53 @@ The default is Greenland_5km_v1.1.nc. This file is also available in the CESM in
 The 5-km test case and 20-km test case use the same climate files.
 
 
-BUILDING AND RUNNING THE TEST CASE:
+BUILDING AND RUNNING THE TEST CASES:
 
 When building the code, make sure to create the executable glint_example.
-As of April 2013, this executable lives in main_cism_directory/example_drivers/glint/src.
+As of August 2013, this executable lives in main_cism_directory/example_drivers/glint/src.
 
-Copy or link the executable to this test directory.
+Then copy or link the executable to this test directory.
 (E.g., ln -s ../../example-drivers/glint/src/glint_example glint_example)
 
-Then type 'glint_example greenland_20km.config glint_example.config'
-(or similarly for other config filenames).
+As of August 2013, the repo contains three Greenland config files:
+(1) greenland_20km.config
+(2) greenland_5km.config
+(3) greenland_20km.config.smb
 
-Diagnostic output will be written to a file called greenland_20km.config.log
-or something similar.
+These files have settings that are physically reasonable but not scientifically validated.
 
-To change ice sheet model settings including output frequency, edit greenland_*.config.
-The files in the repo have settings that are physically reasonable but not scientifically
-validated.
+Files (1) and (2) are basically identical except for the grid resolution and timestep.
+Both these files use the native Glint positive-degree-day (PDD) scheme to force the Glide dycore,
+which uses the shallow-ice approximation.
 
-To change the length of the run or use different climate forcing files, 
-edit glint_example.config.
+Files (1) and (3) are identical except that file (3) has acab_mode = 0, which means
+that Glint uses an externally computed surface mass balance (SMB) instead of computing
+the SMB with a PDD scheme.  Normally the SMB would be computed and passed in by a climate 
+model such as CESM.  But for the standalone code, the SMB is estimated crudely based on
+the input temperature and precip fields.  This allows us to test the Glint interfaces
+that would be called by a climate model, without actually coupling to a climate model.
+
+There are two glint_example config files in the repo:
+(1) glint_example.config
+(2) glint_example.config.smb
+
+These files are set up to use the global NCEP climatological data for downscaling to
+the Greenland grid. These files also set the length of the model run (by default, we run
+a 10-year smoke test).  The only difference is that file (1) should be run with the
+PDD scheme and file (2) with the SMB scheme.
+
+The three standard diagnostic tests in this directory can be launched as follows:
+
+* ./glint_example greenland_20km.config glint_example.config
+* ./glint_example greenland_5km.config glint_example.config 
+* ./glint_example greenland_20km.config.smb glint_example.config.smb
+
+These are currently the only standard tests that exercise the Glint part of the code,
+which is required for coupling to a climate model.
+
+Diagnostic output is written to a file called greenland_20km.config.log
+or something similar.  NetCDF output is written to various files at a frequency
+set in the Greenland config file.
+
 
 

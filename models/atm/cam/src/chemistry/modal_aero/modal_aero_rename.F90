@@ -60,7 +60,6 @@
                         fromwhere,         lchnk,               &
                         ncol,              nstep,               &
                         loffset,           deltat,              &
-                        latndx,            lonndx,              &
                         pdel,                                   &
                         dotendrn,          q,                   &
                         dqdt,              dqdt_other,          &
@@ -78,7 +77,7 @@
    use mo_constants,  only:  pi
    use physconst, only: gravit, mwdry
    use units, only: getunit
-   use shr_spfn_mod, only: erfc => shr_spfn_erfc_nonintrinsic
+   use shr_spfn_mod, only: erfc => shr_spfn_erfc
 
    implicit none
 
@@ -91,7 +90,6 @@
    integer,  intent(in)    :: nstep                ! model time-step number
    integer,  intent(in)    :: loffset              ! offset applied to modal aero "ptrs"
    real(r8), intent(in)    :: deltat               ! time step (s)
-   integer,  intent(in)    :: latndx(pcols), lonndx(pcols)
 
    real(r8), intent(in)    :: pdel(pcols,pver)     ! pressure thickness of levels (Pa)
    real(r8), intent(in)    :: q(ncol,pver,pcnstxx) ! tracer mixing ratio array
@@ -364,30 +362,30 @@ mainloop1_ipair:  do ipair = 1, npair_renamexf
 	xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
 
 !   diagnostic output start ----------------------------------------
- 	if (ldiag1 > 0) then
- 	icol_diag = -1
- 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) icol_diag = i
- 	if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
- !	write(lun,97010) fromwhere, nstep, lchnk, i, k, ipair
- 	write(lun,97010) fromwhere, nstep, latndx(i), lonndx(i), k, ipair
- 	write(lun,97020) 'drv old/oldbnd/new/del     ',   &
- 		dryvol_t_old, dryvol_t_oldbnd, dryvol_t_new, dryvol_t_del
- 	write(lun,97020) 'num old/oldbnd, dgnold/new ',   &
- 		num_t_old, num_t_oldbnd, dgn_t_old, dgn_t_new
- 	write(lun,97020) 'tailfr v_old/new, n_old/new',   &
- 		tailfr_volold, tailfr_volnew, tailfr_numold, tailfr_numnew
- 	dum = max(1.0e-10_r8,xferfrac_vol) / max(1.0e-10_r8,xferfrac_num)
- 	dgn_xfer = dgn_t_new * dum**onethird
- 	dum = max(1.0e-10_r8,(1.0_r8-xferfrac_vol)) /   &
-               max(1.0e-10_r8,(1.0_r8-xferfrac_num))
- 	dgn_aftr = dgn_t_new * dum**onethird
- 	write(lun,97020) 'xferfrac_v/n; dgn_xfer/aftr',   &
- 		xferfrac_vol, xferfrac_num, dgn_xfer, dgn_aftr
- !97010	format( / 'RENAME ', a, '  nx,lc,i,k,ip', i8, 4i4 )
- 97010	format( / 'RENAME ', a, '  nx,lat,lon,k,ip', i8, 4i4 )
- 97020	format( a, 6(1pe15.7) )
- 	end if
- 	end if
+!!$ 	if (ldiag1 > 0) then
+!!$ 	icol_diag = -1
+!!$ 	if ((lonndx(i) == 37) .and. (latndx(i) == 23)) icol_diag = i
+!!$ 	if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+!!$ !	write(lun,97010) fromwhere, nstep, lchnk, i, k, ipair
+!!$ 	write(lun,97010) fromwhere, nstep, latndx(i), lonndx(i), k, ipair
+!!$ 	write(lun,97020) 'drv old/oldbnd/new/del     ',   &
+!!$ 		dryvol_t_old, dryvol_t_oldbnd, dryvol_t_new, dryvol_t_del
+!!$ 	write(lun,97020) 'num old/oldbnd, dgnold/new ',   &
+!!$ 		num_t_old, num_t_oldbnd, dgn_t_old, dgn_t_new
+!!$ 	write(lun,97020) 'tailfr v_old/new, n_old/new',   &
+!!$ 		tailfr_volold, tailfr_volnew, tailfr_numold, tailfr_numnew
+!!$ 	dum = max(1.0e-10_r8,xferfrac_vol) / max(1.0e-10_r8,xferfrac_num)
+!!$ 	dgn_xfer = dgn_t_new * dum**onethird
+!!$ 	dum = max(1.0e-10_r8,(1.0_r8-xferfrac_vol)) /   &
+!!$               max(1.0e-10_r8,(1.0_r8-xferfrac_num))
+!!$ 	dgn_aftr = dgn_t_new * dum**onethird
+!!$ 	write(lun,97020) 'xferfrac_v/n; dgn_xfer/aftr',   &
+!!$ 		xferfrac_vol, xferfrac_num, dgn_xfer, dgn_aftr
+!!$ !97010	format( / 'RENAME ', a, '  nx,lc,i,k,ip', i8, 4i4 )
+!!$ 97010	format( / 'RENAME ', a, '  nx,lat,lon,k,ip', i8, 4i4 )
+!!$ 97020	format( a, 6(1pe15.7) )
+!!$ 	end if
+!!$ 	end if
 !   diagnostic output end   ------------------------------------------
 
 

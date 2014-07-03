@@ -454,7 +454,7 @@ contains
    integer, intent(in)::xtype
    integer, intent(in)::nvdims
    integer, intent(out)::varid
-   integer, intent(in):: vdims(nvdims+1)
+   integer, intent(in):: vdims(nvdims)
    character*(*), intent(in):: name
    
    integer ret      ! NetCDF return code

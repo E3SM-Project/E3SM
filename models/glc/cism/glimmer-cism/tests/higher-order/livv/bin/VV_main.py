@@ -1,6 +1,7 @@
 
 import sys
 import os
+import re
 from optparse import OptionParser
 import subprocess
 import collections
@@ -40,6 +41,8 @@ parser.add_option('-u', '--username', action='store', type='string', dest='usern
                   metavar='FILE', help='username used to create subdirectory of web pages of output')
 parser.add_option('-g', '--gis_prod', action='store_true', dest='gis_prod', \
                   help='include flag to run the GIS production analysis')
+parser.add_option('-x', '--xml', action='store', type='string', dest='xml_path',\
+		  metavar='FILE', help='path to xml file that python will parse through')
 #parser.add_option('-a', '--ant_prod', action='store_true', dest='ant_prod', \
 #                  help='include flag to run the ANT production analysis')
 
@@ -82,7 +85,7 @@ else:
 if (options.username):
 
 	print 'placing HTML files in the ' + options.username + ' subdirectory (check permissions)'
- 	target_html = options.html_path + '/' + options.username
+ 	target_html = options.html_path
 
 else:
 
@@ -127,7 +130,8 @@ except OSError as o:
 	else:
 		raise
 
-#read the configure file of the production run to provide simulation details
+
+#read the GIS configure file of the production run to provide simulation details
 
 # this function allows creation of nested dictionaries on the fly (like PERL autovivification)
 def makehash():
@@ -179,6 +183,7 @@ if options.gis_prod and options.config_file:
 		diff = float(data['time']['tend']) - float(data['time']['tstart'])
 		timestp = diff / float(data['time']['dt'])
 
+
 # create production plots for analysis
 if options.gis_prod:
 
@@ -217,6 +222,62 @@ if (options.ncl_path + '/alaska_pic.png'):
                 print "error moving cover picture"
                 raise
 
+
+#create all the test suite diagnostics pages
+if options.test_suite:
+
+        test_file = open(target_html + '/test_suite.html', 'w')
+        descript_file = open(target_html + '/test_descript.html', 'w')
+# diagnostic dome case
+        dome30d_file = open(target_html + '/dome30d_details.html', 'w')
+        dome30d_case = open(target_html + '/dome30d_case.html', 'w')
+        dome30d_plot = open(target_html + '/dome30d_plot.html', 'w')
+        dome30d_xml  = open(target_html + '/dome30d_xml.html', 'w')
+# evolving dome case
+        dome30e_file = open(target_html + '/dome30e_details.html', 'w')
+        dome30e_case = open(target_html + '/dome30e_case.html', 'w')
+        dome30e_plot = open(target_html + '/dome30e_plot.html', 'w')
+        dome30e_xml  = open(target_html + '/dome30e_xml.html', 'w')
+# circular shelf case
+        circ_file = open(target_html + '/circ_details.html', 'w')
+        circ_case = open(target_html + '/circ_case.html', 'w')
+        circ_plot = open(target_html + '/circ_plot.html', 'w')
+        circ_xml  = open(target_html + '/circ_xml.html', 'w')
+# confined shelf case
+        conf_file = open(target_html + '/conf_details.html', 'w')
+        conf_case = open(target_html + '/conf_case.html', 'w')
+        conf_plot = open(target_html + '/conf_plot.html', 'w')
+        conf_xml  = open(target_html + '/conf_xml.html', 'w')
+# ismip hom a 80km case
+        ishoma80_file = open(target_html + '/ishoma80_details.html', 'w')
+        ishoma80_case = open(target_html + '/ishoma80_case.html', 'w')
+        ishoma80_plot = open(target_html + '/ishoma80_plot.html', 'w')
+        ishoma80_xml  = open(target_html + '/ishoma80_xml.html', 'w')
+# ismip hom c 80km case
+        ishomc80_file = open(target_html + '/ishomc80_details.html', 'w')
+        ishomc80_case = open(target_html + '/ishomc80_case.html', 'w')
+        ishomc80_plot = open(target_html + '/ishomc80_plot.html', 'w')
+        ishomc80_xml  = open(target_html + '/ishomc80_xml.html', 'w')
+# 10km GIS case
+        gis10_file = open(target_html + '/gis10_details.html', 'w')
+        gis10_case = open(target_html + '/gis10_case.html', 'w')
+        gis10_plot = open(target_html + '/gis10_plot.html', 'w')
+        gis10_xml  = open(target_html + '/gis10_xml.html', 'w')
+
+# TODO create a list of the html files of the included cases, then pass through the testsuite.web call
+
+#path to python code to create all the test suite pages and data
+        reg_test = options.test_suite + "/reg_test"
+
+        VV_testsuite.web(descript_file,test_file,dome30d_file,dome30d_case,dome30d_plot,dome30d_xml, \
+                dome30e_file,dome30e_case,dome30e_plot,dome30e_xml, \
+                circ_file,circ_case,circ_plot,circ_xml,conf_file,conf_case,conf_plot,conf_xml, \
+                ishoma80_file,ishoma80_case,ishoma80_plot,ishoma80_xml,ishomc80_file,ishomc80_case,ishomc80_plot,ishomc80_xml,\
+                gis10_file,gis10_case,gis10_plot,gis10_xml, \
+                reg_test,options.ncl_path,options.data_path,target_html)
+
+dictionary = VV_testsuite.bit_list(reg_test)
+
 #writing the main HTML page
 
 file = open(target_html + '/GIS-main-diag.html', 'w')
@@ -235,15 +296,20 @@ file.write('<FONT color=blue><B>\n')
 file.write('Land Ice Validation package  </B></FONT> <BR>\n')
 file.write('Performed on ' + options.time_stamp + '<BR>\n')
 file.write('Test case run by: ' + options.username + '<BR>\n')
-file.write('Details:' + options.comment + '<BR>\n')
+file.write('Details: ' + options.comment + '<BR>\n')
 file.write('</P>\n')
 file.write('<BR clear=left>\n')
 file.write('<BR>\n')
 file.write('<HR noshade size=2 size="100%">\n')
 file.write('<TH ALIGN=LEFT><A HREF="test_suite.html">Basic Test Suite Diagnostics</A>\n')
-file.write('<BR>\n')
-file.write('<BR>\n')
 
+if 1 in dictionary.values():
+        file.write('<font color="red"> All Cases NOT Bit-for-Bit</font><br>')
+else:
+        file.write(' All Cases Bit-for-Bit <br>')
+
+file.write('<BR>\n')
+file.write('<BR>\n')
 if options.gis_prod:
 	file.write('<TH ALIGN=LEFT><A HREF="GIS-con-diag.html">Production Configure Diagnostics</A>\n')
 	file.write('<BR>\n')
@@ -259,57 +325,9 @@ file.write(' Kate Evans <br>')
 file.write('Oak Ridge National Laboratory<br>')
 file.write('1 Bethel Valley Road <br>')
 file.write('Oak Ridge, Tennessee 37831-6015 <br>')
-file.write('Email: evanskj at ornl dot gov <br> </p>')
+file.write('Email: 4ue@ornl.gov <br> </p>')
 
-#create all the test suite diagnostics pages 
-
-if options.test_suite:
-
-	test_file = open(target_html + '/test_suite.html', 'w')
-	descript_file = open(target_html + '/test_descript.html', 'w')
-# diagnostic dome case
-	dome30d_file = open(target_html + '/dome30d_details.html', 'w')
-	dome30d_case = open(target_html + '/dome30d_case.html', 'w')
-	dome30d_plot = open(target_html + '/dome30d_plot.html', 'w')
-# evolving dome case
-	dome30e_file = open(target_html + '/dome30e_details.html', 'w')
-	dome30e_case = open(target_html + '/dome30e_case.html', 'w')
-	dome30e_plot = open(target_html + '/dome30e_plot.html', 'w')
-# circular shelf case
-	circ_file = open(target_html + '/circ_details.html', 'w')
-	circ_case = open(target_html + '/circ_case.html', 'w')
-	circ_plot = open(target_html + '/circ_plot.html', 'w')
-# confined shelf case
-	conf_file = open(target_html + '/conf_details.html', 'w')
-	conf_case = open(target_html + '/conf_case.html', 'w')
-	conf_plot = open(target_html + '/conf_plot.html', 'w')
-# ismip hom a 80km case
-	ishoma80_file = open(target_html + '/ishoma80_details.html', 'w')
-	ishoma80_case = open(target_html + '/ishoma80_case.html', 'w')
-	ishoma80_plot = open(target_html + '/ishoma80_plot.html', 'w')
-# ismip hom c 80km case
-	ishomc80_file = open(target_html + '/ishomc80_details.html', 'w')
-	ishomc80_case = open(target_html + '/ishomc80_case.html', 'w')
-	ishomc80_plot = open(target_html + '/ishomc80_plot.html', 'w')
-# 10km GIS case
-	gis10_file = open(target_html + '/gis10_details.html', 'w')
-	gis10_case = open(target_html + '/gis10_case.html', 'w')
-	gis10_plot = open(target_html + '/gis10_plot.html', 'w')
-
-# TODO create a list of the html files of the included cases, then pass through the testsuite.web call
-
-#path to python code to create all the test suite pages and data
-	reg_test = options.test_suite + "/reg_test"
-
-	VV_testsuite.web(descript_file,test_file,dome30d_file,dome30d_case,dome30d_plot, \
-		dome30e_file,dome30e_case,dome30e_plot, \
-		circ_file,circ_case,circ_plot,conf_file,conf_case,conf_plot, \
-		ishoma80_file,ishoma80_case,ishoma80_plot,ishomc80_file,ishomc80_case,ishomc80_plot,
-		gis10_file,gis10_case,gis10_plot, \
-		reg_test,options.ncl_path,options.data_path,target_html)
-
-#create www page with config information
-
+#create webpage with config data	
 if options.gis_prod:
 	con_file = open(target_html + '/GIS-con-diag.html', 'w')
 

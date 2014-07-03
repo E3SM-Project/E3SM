@@ -115,7 +115,7 @@ contains
     use ioFileMod,     only : getfil
     use mo_chem_utls,  only : get_spc_ndx, get_rxt_ndx, get_inv_ndx
     use mo_jlong,      only : jlong_init
-    use progseasalts_intr, only : progseasalts_names, sslt_ncnst =>ncnst
+    use seasalt_model, only : sslt_names=>seasalt_names, sslt_ncnst=>seasalt_nbin
     use mo_jshort,     only : jshort_init
     use mo_jeuv,       only : jeuv_init
     use dyn_grid,      only : get_dyn_grid_parm
@@ -417,10 +417,10 @@ contains
     ant_ndx = get_spc_ndx( 'NH4NO3' )
     so4_ndx = get_spc_ndx( 'SO4' )
     if (sslt_ncnst == 4) then
-       sa1_ndx = get_spc_ndx( progseasalts_names(1) )
-       sa2_ndx = get_spc_ndx( progseasalts_names(2) )
-       sa3_ndx = get_spc_ndx( progseasalts_names(3) )
-       sa4_ndx = get_spc_ndx( progseasalts_names(4) )
+       sa1_ndx = get_spc_ndx( sslt_names(1) )
+       sa2_ndx = get_spc_ndx( sslt_names(2) )
+       sa3_ndx = get_spc_ndx( sslt_names(3) )
+       sa4_ndx = get_spc_ndx( sslt_names(4) )
     endif
 
     has_abs_columns : if( has_o2_col .or. has_o3_col ) then
@@ -904,7 +904,7 @@ contains
     use mo_photoin,   only : photoin
     use mo_tuv_inti,  only : nlng
     use time_manager, only : get_curr_date
-    use dust_intr,    only : ndst => dust_number
+    use dust_model,   only : ndst => dust_nbin
     use phys_grid,    only : get_rlat_all_p, get_rlon_all_p
 
     implicit none

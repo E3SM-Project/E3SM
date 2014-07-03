@@ -1,28 +1,25 @@
 module clm_varpar
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: clm_varpar
-!
-! !DESCRIPTION:
-! Module containing CLM parameters
-!
-! !USES:
-  use shr_kind_mod, only: r8 => shr_kind_r8
-!
-! !PUBLIC TYPES:
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Module containing CLM parameters
+  !
+  ! !USES:
+  use shr_kind_mod , only: r8 => shr_kind_r8
+  use shr_log_mod  , only: errMsg => shr_log_errMsg
+  use abortutils   , only: endrun
+  use clm_varctl   , only: use_extralakelayers, use_vertsoilc, use_crop
+  use clm_varctl   , only: use_century_decomp, use_c13, use_c14
+  use clm_varctl   , only: iulog, create_crop_landunit, irrigate, fpftdyn
+  use clm_varctl   , only: use_vichydro
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! -------------------------------------------------------
-! Module Parameters
-! -------------------------------------------------------
-
+  !
   logical, public :: more_vertlayers = .false. ! true => run with more vertical soil layers
 
-
-! Note - model resolution is read in from the surface dataset
+  ! Note - model resolution is read in from the surface dataset
 
   integer, parameter :: nlev_equalspace   = 15
   integer, parameter :: toplev_equalspace =  6
@@ -31,16 +28,12 @@ module clm_varpar
   integer            :: nlevgrnd              ! number of ground layers 
                                               ! (includes lower layers that are hydrologically inactive)
   integer            :: nlevurb               ! number of urban layers
+  integer            :: nlevlak               ! number of lake layers
+  integer            :: nlevdecomp            ! number of biogeochemically active soil layers
+  integer            :: nlevdecomp_full       ! number of biogeochemical layers (includes lower layers that are biogeochemically inactive)
 
-#ifndef EXTRALAKELAYERS
-  integer, parameter :: nlevlak     =  10     ! number of lake layers
-#else
-  ! Yields better results for site simulations.
-  integer, parameter :: nlevlak     =  25     ! number of lake layers
-#endif
   integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
-  ! For CH4 code
-  integer, parameter :: ngases = 3 ! CH4, O2, & CO2
+  integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy
   integer, parameter :: numwat      =   5     ! number of water types (soil, ice, 2 lakes, wetland)
   integer, parameter :: numrad      =   2     ! number of solar radiation bands: vis, nir
@@ -52,139 +45,140 @@ module clm_varpar
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
   integer, parameter :: mxpft       =  24     ! maximum number of PFT's for any mode; might we set some of these automatically from reading pft-physiology?
   integer, parameter :: numveg      =  16     ! number of veg types (without specific crop)
-#if (defined VICHYDRO)
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
-  integer, parameter :: nlayert     =   8     ! number of VIC soil layer + 3 lower thermal layers
-#endif
-#if (defined CROP)
-  integer, parameter :: numpft      = mxpft   ! actual # of pfts (without bare)
-  integer, parameter :: numcft      =  10     ! actual # of crops
-#else
-  integer, parameter :: numpft      = numveg  ! actual # of pfts (without bare)
-  integer, parameter :: numcft      =   2     ! actual # of crops
-#endif
-  integer, parameter :: maxpatch_pft= MAXPATCH_PFT ! max number of plant functional types in naturally vegetated landunit
-  integer, parameter :: numurbl     = 3       ! number of urban landunits
+  integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
 
-  integer            :: nlevdecomp                    ! number of biogeochemically active soil layers
-  integer            :: nlevdecomp_full               ! number of biogeochemical layers (includes lower layers that are biogeochemically inactive)
+  integer :: numpft      = mxpft   ! actual # of pfts (without bare)
+  integer :: numcft      =  10     ! actual # of crops
+  logical :: crop_prog   = .true.  ! If prognostic crops is turned on
+  integer :: maxpatch_urb= 5       ! max number of urban pfts (columns) in urban landunit
 
-! -------------------------------------------------------
-! Module Varaibles (initialized in clm_varpar_init)
-! -------------------------------------------------------
+  integer :: maxpatch_pft          ! max number of plant functional types in naturally vegetated landunit (namelist setting)
 
-#ifndef CENTURY_DECOMP
-  ! parameters for decomposition cascade
-  integer, parameter :: ndecomp_pools = 8
-  integer, parameter :: ndecomp_cascade_transitions = 9
-  integer, parameter :: i_met_lit = 1
-  integer, parameter :: i_cel_lit = 2
-  integer, parameter :: i_lig_lit = 3
-  integer, parameter :: i_cwd = 4
-  integer, parameter :: nsompools = 4
-#else
-  ! parameters for decomposition cascade
-  integer, parameter :: ndecomp_pools = 7
-  integer, parameter :: ndecomp_cascade_transitions = 10
-  integer, parameter :: i_met_lit = 1
-  integer, parameter :: i_cel_lit = 2
-  integer, parameter :: i_lig_lit = 3
-  integer, parameter :: i_cwd = 4
-  integer, parameter :: nsompools = 3
-#endif
+  ! constants for decomposition cascade
 
-! Indices used in surface file read and set in clm_varpar_init
+  integer :: i_met_lit 
+  integer :: i_cel_lit 
+  integer :: i_lig_lit 
+  integer :: i_cwd 
 
-  integer :: maxpatch           ! max number of patches
+  integer :: ndecomp_pools
+  integer :: ndecomp_cascade_transitions
+
+  ! Indices used in surface file read and set in clm_varpar_init
+
+  integer :: natpft_lb          ! In PFT arrays, lower bound of PFTs on the natural veg landunit (i.e., bare ground index)
+  integer :: natpft_ub          ! In PFT arrays, upper bound of PFTs on the natural veg landunit
+  integer :: natpft_size        ! Number of PFTs on natural veg landunit (including bare ground)
+  integer :: cft_lb             ! In PFT arrays, lower bound of PFTs on the crop landunit
+  integer :: cft_ub             ! In PFT arrays, upper bound of PFTs on the crop landunit
+  integer :: cft_size           ! Number of PFTs on crop landunit
+
   integer :: maxpatch_glcmec    ! max number of elevation classes
-  integer :: maxpatch_urb       ! max number of urban pfts (columns) in urban landunit
-  integer :: npatch_urban       ! number of urban pfts (columns) in urban landunit
-  integer :: npatch_lake        ! number of lake pfts (columns) in lake landunit
-  integer :: npatch_wet         ! number of wetland pfts (columns) in wetland landunit
-  integer :: npatch_glacier     ! number of glacier pfts (columns) in glacier landunit
-  integer :: npatch_glacier_mec ! number of glacier_mec pfts (columns) in glacier_mec landunit
-  integer :: max_pft_per_gcell 
-  integer :: max_pft_per_lu 
   integer :: max_pft_per_col
-  integer :: npatch_urban_tbd
-  integer :: npatch_urban_hd
-  integer :: npatch_urban_md
 
   real(r8) :: mach_eps            ! machine epsilon
-
-! !PUBLIC MEMBER FUNCTIONS:
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
   public clm_varpar_init          ! set parameters
+  !
+  !-----------------------------------------------------------------------
 
-! !REVISION HISTORY:
-! Created by Mariana Vertenstein
-
-!EOP
-!-----------------------------------------------------------------------
 contains
 
-!------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: clm_varpar_init
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------------
   subroutine clm_varpar_init()
-!
-! !DESCRIPTION:
-! This subroutine initializes parameters in clm_varpar
-!
-! !USES:
-!
-! !ARGUMENTS:
+    !
+    ! !DESCRIPTION:
+    ! Initialize module variables 
+    !
+    ! !ARGUMENTS:
     implicit none
-!
-! !REVISION HISTORY:
-!   Created by T Craig
-!
-! !LOCAL VARIABLES:
-!
-!EOP
-!------------------------------------------------------------------------------
+    !
+    ! !LOCAL VARIABLES:
+    !
+    character(len=32) :: subname = 'clm_varpar_init'  ! subroutine name
+    !------------------------------------------------------------------------------
 
-  maxpatch_urb   = 5
-  npatch_urban_tbd = maxpatch_pft + 1
-  npatch_urban_hd  = npatch_urban_tbd + maxpatch_urb
-  npatch_urban_md  = npatch_urban_hd + maxpatch_urb
-  npatch_lake      = npatch_urban_md + maxpatch_urb
-  npatch_wet     = npatch_lake  + 1
-  npatch_glacier = npatch_wet   + 1
-  npatch_glacier_mec = npatch_glacier + maxpatch_glcmec
-  maxpatch       = npatch_glacier_mec
-  mach_eps       = epsilon(1.0_r8)
+    ! Crop settings and consistency checks
 
-  max_pft_per_gcell = numpft+1 + 3 + maxpatch_urb*numurbl + maxpatch_glcmec
-#if (defined CROP)
-  max_pft_per_gcell = max_pft_per_gcell +  numcft  
-#endif
-  max_pft_per_lu    = max(numpft+1, numcft, maxpatch_urb)
-  max_pft_per_col   = max(numpft+1, numcft, maxpatch_urb)
+    if (use_crop) then
+       numpft      = mxpft   ! actual # of pfts (without bare)
+       numcft      =  10     ! actual # of crops
+       crop_prog   = .true.  ! If prognostic crops is turned on
+    else
+       numpft      = numveg  ! actual # of pfts (without bare)
+       numcft      =   2     ! actual # of crops
+       crop_prog   = .false. ! If prognostic crops is turned on
+    end if
 
-  nlevsoifl   =  10
-  nlevurb     =  5
-  if ( .not. more_vertlayers )then
-     nlevsoi     =  nlevsoifl
-     nlevgrnd    =  15
-  else
-     nlevsoi     =  8  + nlev_equalspace
-     nlevgrnd    =  15 + nlev_equalspace
-  end if
+    ! For arrays containing all PFTs (natural veg & crop), determine lower and upper bounds
+    ! for (1) PFTs on the natural vegetation landunit (includes bare ground, and includes
+    ! crops if create_crop_landunit=false), and (2) CFTs on the crop landunit (no elements
+    ! if create_crop_landunit=false)
 
-  ! here is a switch to set the number of soil levels for the biogeochemistry calculations.
-  ! currently it works on either a single level or on nlevsoi and nlevgrnd levels
-#ifdef VERTSOILC
-  nlevdecomp      = nlevsoi
-  nlevdecomp_full = nlevgrnd
-#else
-  nlevdecomp      = 1
-  nlevdecomp_full = 1
-#endif
+    if (create_crop_landunit) then
+       natpft_size = (numpft + 1) - numcft    ! note that numpft doesn't include bare ground -- thus we add 1
+       cft_size    = numcft
+    else
+       natpft_size = numpft + 1               ! note that numpft doesn't include bare ground -- thus we add 1
+       cft_size    = 0
+    end if
+
+    natpft_lb = 0
+    natpft_ub = natpft_lb + natpft_size - 1
+    cft_lb = natpft_ub + 1
+    cft_ub = cft_lb + cft_size - 1
+
+    max_pft_per_col= max(numpft+1, numcft, maxpatch_urb)
+    mach_eps       = epsilon(1.0_r8)
+
+    nlevsoifl   =  10
+    nlevurb     =  5
+    if ( .not. more_vertlayers )then
+       nlevsoi     =  nlevsoifl
+       nlevgrnd    =  15
+    else
+       nlevsoi     =  8  + nlev_equalspace
+       nlevgrnd    =  15 + nlev_equalspace
+    end if
+
+    if (use_vichydro) then
+       nlayert     =  nlayer + (nlevgrnd -nlevsoi)
+    endif
+
+    ! here is a switch to set the number of soil levels for the biogeochemistry calculations.
+    ! currently it works on either a single level or on nlevsoi and nlevgrnd levels
+    if (use_vertsoilc) then
+       nlevdecomp      = nlevsoi
+       nlevdecomp_full = nlevgrnd
+    else
+       nlevdecomp      = 1
+       nlevdecomp_full = 1
+    end if
+
+    if (.not. use_extralakelayers) then
+       nlevlak     =  10     ! number of lake layers
+    else
+       nlevlak     =  25     ! number of lake layers (Yields better results for site simulations)
+    end if
+
+    if (use_century_decomp) then
+       ndecomp_pools = 7
+       ndecomp_cascade_transitions = 10
+       i_met_lit = 1
+       i_cel_lit = 2
+       i_lig_lit = 3
+       i_cwd = 4
+    else
+       ndecomp_pools = 8
+       ndecomp_cascade_transitions = 9
+       i_met_lit = 1
+       i_cel_lit = 2
+       i_lig_lit = 3
+       i_cwd = 4
+    end if
 
   end subroutine clm_varpar_init
 
-!------------------------------------------------------------------------------
 end module clm_varpar

@@ -137,6 +137,7 @@ msput() {
 mode="unknown"
 ssh_loc="unknown"
 scp_loc="unknown"
+arc_root="unknown"
 
 while [ $# -gt 0 ]; do
    case $1 in
@@ -153,13 +154,17 @@ while [ $# -gt 0 ]; do
 	   scp_loc=$2
 	   shift
 	   ;;
+       --arc_root )
+	   arc_root=$2
+	   shift
+	   ;;
        * )
    esac
    shift 
 done
 
 found=0
-for name in copy_files copy_dirs_hsi copy_dirs_sshscp ; do
+for name in copy_files copy_dirs_hsi copy_dirs_sshscp copy_dirs_local ; do
     if [ "$name" == "$mode" ] ; then
 	found=1
 	break
@@ -168,6 +173,47 @@ done
 if [ $found -ne 1 ] ; then
     echo "$current value of mode $model not supported"
     exit 1
+fi
+
+#----------------------------------------------------------------------
+# If requested by user, save output on disk in $DOUT_S_SAVE_ROOT
+#----------------------------------------------------------------------
+if [ $DOUT_S_SAVE_ALL_ON_DISK == "TRUE" ] ; then
+    if [ ! -e $DOUT_S_SAVE_ROOT ]; then
+        mkdir -p $DOUT_S_SAVE_ROOT
+        if [ $? -ne 0 ] ; then
+            echo "Exit lt_archive.sh -- Cannot make save directory $DOUT_S_SAVE_ROOT"
+            exit
+        fi
+    fi
+
+    # ..Test that $DOUT_S_SAVE_ROOT is a valid directory
+    if [ ! -d $DOUT_S_SAVE_ROOT ]; then
+        if [ ! -h $DOUT_S_SAVE_ROOT ]; then
+            echo "Exit lt_archive.sh -- $DOUT_S_SAVE_ROOT is not a valid directory"
+            exit
+        else
+            if [ ! -d `readlink -f $DOUT_S_SAVE_ROOT` ] ; then
+                echo "Exit lt_archive.sh -- $DOUT_S_SAVE_ROOT is not a valid directory"
+                exit
+            fi
+        fi
+    fi
+
+    # ..Test that hard links are possible between $DOUT_S_ROOT and $DOUT_S_SAVE_ROOT
+    cd $DOUT_S_ROOT
+    echo 'TestHardLink' > TESTHARDLINK
+    cp -al TESTHARDLINK $DOUT_S_SAVE_ROOT
+    if [ $? -ne 0 ]; then
+        echo "Exit lt_archive.sh -- hard links not possible between $DOUT_S_ROOT and $DOUT_S_SAVE_ROOT"
+        rm -f TESTHARDLINK
+        exit
+    fi
+    rm -f TESTHARDLINK $DOUT_S_SAVE_ROOT/TESTHARDLINK
+
+    # ..Replicate directory trees (except rest) in $DOUT_S_SAVE_ROOT
+    dlist=`ls -1 | sed -e 's/rest//'`
+    cp -al $dlist $DOUT_S_SAVE_ROOT
 fi
 
 #----------------------------------------------------------------------
@@ -284,5 +330,40 @@ if [ "$mode" == "copy_dirs_sshscp" ]; then
 
 fi  # if copy_dirs
 
+#----------------------------------------------------------------------
+
+if [ "$mode" == "copy_dirs_local" ]; then 
+
+    cd $DOUT_S_ROOT
+
+    mkdir -p ${arc_root}/${DOUT_L_MSROOT}
+
+    for dirl1 in */ ; do 
+	cd $DOUT_S_ROOT/${dirl1}
+	cp -r ${DOUT_S_ROOT}/${dirl1} ${arc_root}/${DOUT_L_MSROOT}
+	for dirl2 in */ ; do
+	    cd ${DOUT_S_ROOT}/${dirl1}/${dirl2}
+            for file in `ls -1`; do
+		if [ -f ${file} ]; then
+		    echo "local file: $file ...  long-term archive file: ${DOUT_L_MSROOT}/${dirl1}/${dirl2}/${file}"
+		    lta_listing=`ls -l ${arc_root}/${DOUT_L_MSROOT}/${dirl1}/${dirl2}/${file}`
+		    loc_listing=`ls -l ${file}`
+		    lta_size=`msfsize $lta_listing`
+		    loc_size=`msfsize $loc_listing`
+		    if [ $loc_size -gt 0 ] && [ $loc_size -eq $lta_size ]; then
+			echo "local file and long-term archive file are same size"
+			echo rm -f ${file}
+			rm -f ${file}
+		    else
+			echo "local file and long-term archive file are NOT the same size... ${file} will remain on local disk"
+			#exit -1 #??? ask francis if this is right 
+                        # Not sure what to do here... maybe make the log entry and carry on...
+		    fi
+		fi
+	    done # for file
+	done # for dirl2
+    done # dirl1
+
+fi  # if copy_dirs
 
 

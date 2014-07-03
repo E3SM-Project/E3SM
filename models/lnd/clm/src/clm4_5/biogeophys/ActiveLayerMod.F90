@@ -1,80 +1,55 @@
 module ActiveLayerMod
   
-  
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: ActiveLayerMod
-!
-! !DESCRIPTION:
-! Module holding routines for calculation of active layer dynamics
-!
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Module holding routines for calculation of active layer dynamics
+  !
   ! !USES:
   use shr_kind_mod , only: r8 => shr_kind_r8
   use shr_const_mod, only: SHR_CONST_TKFRZ
-  use clm_varctl  , only: iulog
-  
+  use clm_varctl   , only: iulog
   implicit none
   save
   private
+  !
   ! !PUBLIC MEMBER FUNCTIONS:
   public:: alt_calc
-  
-  !
-  ! !REVISION HISTORY:
-  ! 6/27/2011 Created by C. Koven
-  !
-  !EOP
   !-----------------------------------------------------------------------
   
 contains
 
-
-  subroutine alt_calc(lbc, ubc, num_soilc, filter_soilc)
-!
-! !DESCRIPTION:
-!
-!  define active layer thickness similarly to frost_table, except set as deepest thawed layer and define on nlevgrnd
-!  also update annual maxima, and keep track of prior year for rooting memory
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  subroutine alt_calc(num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    !
+    !  define active layer thickness similarly to frost_table, except set as deepest thawed layer and define on nlevgrnd
+    !  also update annual maxima, and keep track of prior year for rooting memory
+    !
+    !  Note (WJS, 6-12-13): This routine just operates over active soil columns. However,
+    !  because of its placement in the driver sequence (it is called very early in each
+    !  timestep, before weights are adjusted and filters are updated), it effectively operates
+    !  over the active columns from the previous time step. (This isn't really an issue now,
+    !  but could become one when we have dynamic landunits.) As long as the output variables
+    !  computed here are initialized to valid values over non-active points, this shouldn't be
+    !  a problem - it will just mean that values are not quite what they should be in the
+    !  first timestep a point becomes active. Currently, it seems that these variables ARE
+    !  initialized to valid values, so I think this is okay.
+    !
+    ! !USES:
     use clmtype
-    use clm_varpar      , only : nlevgrnd
-    use clm_time_manager    , only : get_curr_date, get_step_size
-    use shr_const_mod, only: SHR_CONST_TKFRZ
-    use clm_varctl  , only: iulog
-    use clm_varcon, only: zsoi
-    
-    
-!
-! !ARGUMENTS:
+    use clm_varpar       , only : nlevgrnd
+    use clm_time_manager , only : get_curr_date, get_step_size
+    use shr_const_mod    , only: SHR_CONST_TKFRZ
+    use clm_varctl       , only: iulog
+    use clm_varcon       , only: zsoi
+    !
+    ! !ARGUMENTS:
     implicit none
-    integer, intent(in) :: lbc, ubc        ! column bounds
     integer, intent(in) :: num_soilc       ! number of soil columns in filter
     integer, intent(in) :: filter_soilc(:) ! filter for soil columns
-!
-! !CALLED FROM:
-! 
-!
-! !REVISION HISTORY:
-!
-! 6/27/2011 Created by C. Koven
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in scalars
-!
-! column level
-    real(r8), pointer :: t_soisno(:,:)          ! soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
-    real(r8), pointer :: alt(:)                 ! current depth of thaw
-    real(r8), pointer :: altmax(:)              ! maximum annual depth of thaw
-    real(r8), pointer :: altmax_lastyear(:)     ! prior year maximum annual depth of thaw
-    integer, pointer :: alt_indx(:)             ! current depth of thaw
-    integer, pointer :: altmax_indx(:)          ! maximum annual depth of thaw
-    integer, pointer :: altmax_lastyear_indx(:) ! prior year maximum annual depth of thaw
-    real(r8), pointer :: lat(:)                 ! gridcell latitude (radians)
-    integer , pointer :: cgridcell(:)           ! gridcell index of column
-    
-    ! local variables
+    !
+    ! !LOCAL VARIABLES:
     integer  :: c, j, fc, g                     ! counters
     integer  :: alt_ind                         ! index of base of activel layer
     integer  :: year                            ! year (0, ...) for nstep+1
@@ -85,20 +60,19 @@ contains
     integer  :: k_frz                           ! index of first nonfrozen soil layer
     logical  :: found_thawlayer                 ! used to break loop when first unfrozen layer reached
     real(r8) :: t1, t2, z1, z2                  ! temporary variables
+    !-----------------------------------------------------------------------
     
-    ! Assign local pointers to derived type arrays
-    t_soisno                               => clm3%g%l%c%ces%t_soisno
-    alt                                    => clm3%g%l%c%cps%alt
-    altmax                                 => clm3%g%l%c%cps%altmax
-    altmax_lastyear                        => clm3%g%l%c%cps%altmax_lastyear
-    alt_indx                               => clm3%g%l%c%cps%alt_indx
-    altmax_indx                            => clm3%g%l%c%cps%altmax_indx
-    altmax_lastyear_indx                   => clm3%g%l%c%cps%altmax_lastyear_indx
-    
-    ! Assign local pointers to derived subtypes components (gridcell-level and mapping)
-    lat             => clm3%g%lat
-    cgridcell       => clm3%g%l%c%gridcell
-    
+   associate(& 
+   t_soisno                       =>    ces%t_soisno                , & ! Input:  [real(r8) (:,:)]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
+   alt                            =>    cps%alt                     , & ! Input:  [real(r8) (:)]  current depth of thaw                                                 
+   altmax                         =>    cps%altmax                  , & ! Input:  [real(r8) (:)]  maximum annual depth of thaw                                          
+   altmax_lastyear                =>    cps%altmax_lastyear         , & ! Input:  [real(r8) (:)]  prior year maximum annual depth of thaw                               
+   alt_indx                       =>    cps%alt_indx                , & ! Input:  [integer (:)]  current depth of thaw                                                  
+   altmax_indx                    =>    cps%altmax_indx             , & ! Input:  [integer (:)]  maximum annual depth of thaw                                           
+   altmax_lastyear_indx           =>    cps%altmax_lastyear_indx    , & ! Input:  [integer (:)]  prior year maximum annual depth of thaw                                
+   lat                            =>    grc%lat                     , & ! Input:  [real(r8) (:)]  gridcell latitude (radians)                                           
+   cgridcell                      =>    col%gridcell                  & ! Input:  [integer (:)]  gridcell index of column                                               
+   )
     
     ! on a set annual timestep, update annual maxima
     ! make this 1 January for NH columns, 1 July for SH columns
@@ -172,7 +146,8 @@ contains
        
     end do
     
-  end subroutine alt_calc
+    end associate 
+   end subroutine alt_calc
   
   
 end module ActiveLayerMod

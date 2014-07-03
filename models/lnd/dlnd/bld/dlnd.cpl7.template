@@ -12,17 +12,11 @@ if ($NINST_LND > 1) then
       if ( ! -f "$CASEROOT/user_nl_dlnd${inst_string}" ) then
          cp $CODEROOT/lnd/dlnd/bld/user_nl_dlnd $CASEROOT/user_nl_dlnd${inst_string} 
       endif
-      if ( ! -f "$CASEROOT/user_nl_dsno${inst_string}" ) then
-         cp $CODEROOT/lnd/dlnd/bld/user_nl_dsno $CASEROOT/user_nl_dsno${inst_string} 
-      endif	 
       @ inst_counter = $inst_counter + 1
    end 
 else
    if ( ! -f "$CASEROOT/user_nl_dlnd" ) then
       cp $CODEROOT/lnd/dlnd/bld/user_nl_dlnd $CASEROOT/user_nl_dlnd 
-   endif
-   if ( ! -f "$CASEROOT/user_nl_dsno" ) then
-      cp $CODEROOT/lnd/dlnd/bld/user_nl_dsno $CASEROOT/user_nl_dsno 
    endif
 endif
 

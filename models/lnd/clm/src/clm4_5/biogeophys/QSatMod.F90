@@ -1,49 +1,34 @@
-
 module QSatMod
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: QSatMod
-!
-! !DESCRIPTION:
-! Computes saturation mixing ratio and the change in saturation
-!
-! !PUBLIC TYPES:
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Computes saturation mixing ratio and the change in saturation
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! !PUBLIC MEMBER FUNCTIONS:
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
   public :: QSat
-!
-! !REVISION HISTORY:
-! Created by Mariana Vertenstein
-!
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: QSat
-!
-! !INTERFACE:
+  !-----------------------------------------------------------------------
   subroutine QSat (T, p, es, esdT, qs, qsdT)
-!
-! !DESCRIPTION:
-! Computes saturation mixing ratio and the change in saturation
-! mixing ratio with respect to temperature.
-! Reference:  Polynomial approximations from:
-!             Piotr J. Flatau, et al.,1992:  Polynomial fits to saturation
-!             vapor pressure.  Journal of Applied Meteorology, 31, 1507-1513.
-!
-! !USES:
+    !
+    ! !DESCRIPTION:
+    ! Computes saturation mixing ratio and the change in saturation
+    ! mixing ratio with respect to temperature.
+    ! Reference:  Polynomial approximations from:
+    !             Piotr J. Flatau, et al.,1992:  Polynomial fits to saturation
+    !             vapor pressure.  Journal of Applied Meteorology, 31, 1507-1513.
+    !
+    ! !USES:
     use shr_kind_mod , only: r8 => shr_kind_r8
     use shr_const_mod, only: SHR_CONST_TKFRZ
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
     real(r8), intent(in)  :: T        ! temperature (K)
     real(r8), intent(in)  :: p        ! surface atmospheric pressure (pa)
@@ -51,25 +36,11 @@ contains
     real(r8), intent(out) :: esdT     ! d(es)/d(T)
     real(r8), intent(out) :: qs       ! humidity (kg/kg)
     real(r8), intent(out) :: qsdT     ! d(qs)/d(T)
-!
-! !CALLED FROM:
-! subroutine Biogeophysics1 in module Biogeophysics1Mod
-! subroutine BiogeophysicsLake in module BiogeophysicsLakeMod
-! subroutine CanopyFluxesMod CanopyFluxesMod
-!
-! !REVISION HISTORY:
-! 15 September 1999: Yongjiu Dai; Initial code
-! 15 December 1999:  Paul Houser and Jon Radakovich; F90 Revision
-!
-!
-! !LOCAL VARIABLES:
-!EOP
-!
+    !
+    ! !LOCAL VARIABLES:
     real(r8) :: T_limit
     real(r8) :: td,vp,vp1,vp2
-!
-! For water vapor (temperature range 0C-100C)
-!
+    ! For water vapor (temperature range 0C-100C)
     real(r8), parameter :: a0 =  6.11213476_r8
     real(r8), parameter :: a1 =  0.444007856_r8
     real(r8), parameter :: a2 =  0.143064234e-01_r8
@@ -79,9 +50,7 @@ contains
     real(r8), parameter :: a6 =  0.892344772e-10_r8
     real(r8), parameter :: a7 = -0.373208410e-12_r8
     real(r8), parameter :: a8 =  0.209339997e-15_r8
-!
-! For derivative:water vapor
-!
+    ! For derivative:water vapor
     real(r8), parameter :: b0 =  0.444017302_r8
     real(r8), parameter :: b1 =  0.286064092e-01_r8
     real(r8), parameter :: b2 =  0.794683137e-03_r8
@@ -91,9 +60,7 @@ contains
     real(r8), parameter :: b6 = -0.788037859e-12_r8
     real(r8), parameter :: b7 = -0.114596802e-13_r8
     real(r8), parameter :: b8 =  0.381294516e-16_r8
-!
-! For ice (temperature range -75C-0C)
-!
+    ! For ice (temperature range -75C-0C)
     real(r8), parameter :: c0 =  6.11123516_r8
     real(r8), parameter :: c1 =  0.503109514_r8
     real(r8), parameter :: c2 =  0.188369801e-01_r8
@@ -103,9 +70,7 @@ contains
     real(r8), parameter :: c6 =  0.387940929e-09_r8
     real(r8), parameter :: c7 =  0.149436277e-11_r8
     real(r8), parameter :: c8 =  0.262655803e-14_r8
-!
-! For derivative:ice
-!
+    ! For derivative:ice
     real(r8), parameter :: d0 =  0.503277922_r8
     real(r8), parameter :: d1 =  0.377289173e-01_r8
     real(r8), parameter :: d2 =  0.126801703e-02_r8
@@ -115,7 +80,7 @@ contains
     real(r8), parameter :: d6 =  0.133268878e-10_r8
     real(r8), parameter :: d7 =  0.394116744e-13_r8
     real(r8), parameter :: d8 =  0.498070196e-16_r8
-!-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
 
     T_limit = T - SHR_CONST_TKFRZ
     if (T_limit > 100.0_r8) T_limit=100.0_r8

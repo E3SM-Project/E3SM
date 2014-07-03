@@ -9,9 +9,9 @@
 
 <para> 
 
-The CESM1.1 data models continue to perform the basic function of
+The CESM1.2 data models continue to perform the basic function of
 reading external data files, modifying that data, and then sending it
-to the coupler via standard CESM1 coupling interfaces.  The coupler and
+to the coupler via standard CESM coupling interfaces.  The coupler and
 other models have no fundamental knowledge of whether another
 component is fully active or just a data model.  In some cases, data
 models are prognostic, that is, they also receive and use data sent by
@@ -21,7 +21,7 @@ the coupler.
 
 </para> <para>
 
-The CESM1 data models have parallel capability and share
+The CESM data models have parallel capability and share
 significant amounts of source code.  Methods for reading
 and interpolating data have been established and can
 easily be reused.  There is a natural hierarchy in the
@@ -134,7 +134,7 @@ included during the build of the model.  The pnetcdf path and option
 is hardwired into the Macros file for the specific machine.
 To turn on pnetcdf in the build, make sure the Macros variables
 PNETCDF_PATH, INC_PNETCDF, and LIB_PNETCDF are set and that the
-pio CONFIG_ARGS sets the PNETCDF_PATH argument.  See the CESM1.1 users
+pio CONFIG_ARGS sets the PNETCDF_PATH argument.  See the CESM1.2 users
 guide for more information.  
 
 </para> <para>
@@ -195,7 +195,7 @@ will take extra time but will not impact the results.
 
 <para>
 The hierarchy of data models, strdata, and streams also
-compartmentalize grids and fields.  In CESM1.1, data models communicate with
+compartmentalize grids and fields.  In CESM1.2, data models communicate with
 the coupler with fields on only the data model model grid (in CESM1.0 the
 data land model communicated with the coupler on two different grids,
 a land grid and a runoff grid).  

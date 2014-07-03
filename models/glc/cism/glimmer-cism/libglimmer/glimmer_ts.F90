@@ -38,6 +38,7 @@
 !! interpolated the data.
 module glimmer_ts
 
+  use glimmer_global, only: dp
   implicit none
 
   !> time series derived type
@@ -45,8 +46,8 @@ module glimmer_ts
      integer :: numt=0                              !< number of times in time series
      integer :: numv=1                              !< number of values per time
      integer :: current=1                           !< current position in ts
-     real, dimension(:), pointer :: times=>NULL()   !< array holding times
-     real, dimension(:,:), pointer :: values=>NULL()!< array holding values
+     real(dp), dimension(:), pointer :: times=>NULL()   !< array holding times
+     real(dp), dimension(:,:), pointer :: values=>NULL()!< array holding values
   end type glimmer_tseries
 
   interface glimmer_ts_step
@@ -71,7 +72,7 @@ contains
     integer, intent(in),optional :: numv  !< number of values per time
     
     ! local variables
-    real :: d1,d2,fact=1.
+    real(dp) :: d1,d2,fact=1.
     integer i,j,ios
     character(len=msg_length) :: message
 
@@ -88,7 +89,7 @@ contains
     end if
 
     ! find number of times and checking if ts is strictly monotonic
-    ios=0
+    ios = 0
     d1 = 1
     do
        d2 = d1
@@ -133,8 +134,8 @@ contains
     use glimmer_log
     implicit none
     type(glimmer_tseries) :: ts     !< time series data
-    real, intent(in)      :: time   !< time value to get
-    real, dimension(:)    :: value  !< interpolated value
+    real(dp), intent(in)      :: time   !< time value to get
+    real(dp), dimension(:)    :: value  !< interpolated value
        
     integer i
 
@@ -157,8 +158,8 @@ contains
     use glimmer_log
     implicit none
     type(glimmer_tseries) :: ts     !< time series data
-    real, intent(in)      :: time   !< time value to get
-    real                  :: value  !< interpolated value
+    real(dp), intent(in)      :: time   !< time value to get
+    real(dp)                  :: value  !< interpolated value
        
     integer i
 
@@ -177,11 +178,11 @@ contains
     use glimmer_log
     implicit none
     type(glimmer_tseries) :: ts     !< time series data
-    real, intent(in)      :: time   !< time value to get
-    real, dimension(:)    :: value  !< interpolated value
+    real(dp), intent(in)      :: time   !< time value to get
+    real(dp), dimension(:)    :: value  !< interpolated value
        
     integer i
-    real,dimension(size(value)) :: slope
+    real(dp),dimension(size(value)) :: slope
 
     if (size(value).ne.ts%numv) then
        call write_log('Error, wrong number of values',GM_FATAL,__FILE__,__LINE__)
@@ -203,11 +204,11 @@ contains
     use glimmer_log
     implicit none
     type(glimmer_tseries) :: ts     !< time series data
-    real, intent(in)      :: time   !< time value to get
-    real                  :: value  !< interpolated value
+    real(dp), intent(in)      :: time   !< time value to get
+    real(dp)                  :: value  !< interpolated value
        
     integer i
-    real :: slope
+    real(dp) :: slope
 
     i = get_i(ts,time)
     if (i.eq.-1) then
@@ -224,7 +225,7 @@ contains
   function get_i(ts,time)
     implicit none
     type(glimmer_tseries) :: ts     !< time series data
-    real, intent(in)      :: time   !< time value to get
+    real(dp), intent(in)      :: time   !< time value to get
     integer get_i
     integer upper,lower
 
@@ -265,4 +266,5 @@ contains
        end if
     end do
   end function get_i
+
 end module glimmer_ts

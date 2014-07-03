@@ -53,7 +53,18 @@ fi
 compset=${2%+*}
 usrmech=${2#*+}
 
-${CAM_ROOT}/scripts/create_newcase -case ${CAM_TESTDIR}/case.$1.$2 -res $1 -compset $compset -mach ${CCSM_MACH} > test.log 2>&1
+echo ${CCSM_MACH}
+if [[ -n "$CCSM_MPILIB" ]]; then
+    echo ${CCSM_MPILIB}
+    mpiopt="-mpilib $CCSM_MPILIB"
+else
+    mpiopt=""
+fi
+echo "${CAM_ROOT}/scripts/create_newcase -case ${CAM_TESTDIR}/case.$1.$2 \
+    -res $1 -compset $compset -mach ${CCSM_MACH} ${mpiopt}"
+
+${CAM_ROOT}/scripts/create_newcase -case ${CAM_TESTDIR}/case.$1.$2 \
+    -res $1 -compset $compset -mach ${CCSM_MACH} ${mpiopt} >test.log 2>&1
 rc=$?
 if [ $rc -eq 0 ]; then
     echo "TCB_ccsm.sh: create_newcase was successful" 
@@ -65,7 +76,10 @@ else
 fi
 
 cd ${CAM_TESTDIR}/case.$1.$2
-./xmlchange -file env_build.xml -id EXEROOT -val ${CAM_TESTDIR}/case.$1.$2 -silent
+echo "./xmlchange -file env_build.xml -id EXEROOT -val ${CAM_TESTDIR}/case.$1.$2/bld -silent"
+./xmlchange -file env_build.xml -id EXEROOT -val ${CAM_TESTDIR}/case.$1.$2/bld -silent
+
+echo "./xmlchange -file env_run.xml -id RUNDIR -val ${CAM_TESTDIR}/case.$1.$2/run -silent"
 ./xmlchange -file env_run.xml -id RUNDIR -val ${CAM_TESTDIR}/case.$1.$2/run -silent
 
 # chemistry preprocessor
@@ -73,33 +87,25 @@ if [ $usrmech != $2 ]; then
    string1=`grep CAM_CONFIG_OPTS env_build.xml`
    string2=`echo $string1 | cut -d "=" -f 3`
    cfgstring=`echo $string2 | cut -d "\"" -f 2`
+   echo "./xmlchange -file env_build.xml -id CAM_CONFIG_OPTS -val ""$cfgstring -usr_mech_infile ${CAM_SCRIPTDIR}/config_files/$usrmech"" "
    ./xmlchange -file env_build.xml -id CAM_CONFIG_OPTS -val "$cfgstring -usr_mech_infile ${CAM_SCRIPTDIR}/config_files/$usrmech" 
 fi
 
 #
-# Override CESM pes layouts on yellowstone
+# Override CESM pe layout.
 #
-if [ ${CCSM_MACH} = 'yellowstone' ]; then
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_ATM -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_LND -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_ICE -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_ROF -val 64
-   ./xmlchange -file env_mach_pes.xml -id NTASKS_WAV -val 64
 
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_ATM -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val 1
-   ./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 1
-fi
+for comp in ATM LND ICE OCN CPL GLC ROF WAV; do
+    echo "./xmlchange -file env_mach_pes.xml -id NTASKS_${comp} -val $CAM_TASKS"
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_${comp} -val $CAM_TASKS
+#    echo "./xmlchange DEBUG=TRUE"
+#    ./xmlchange DEBUG=TRUE
+    echo "./xmlchange -file env_mach_pes.xml -id NTHRDS_${comp} -val $CAM_THREADS"
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_${comp} -val $CAM_THREADS
+done
 
 
+echo "./cesm_setup"
 ./cesm_setup >> ${CAM_TESTDIR}/${test_name}/test.log 2>&1
 rc=$?
 if [ $rc -eq 0 ]; then
@@ -114,6 +120,7 @@ fi
 cp ${CAM_SCRIPTDIR}/nl_files/user_nl_cam .
 
 buildscript=`ls *.build`
+echo "./$buildscript"
 ./$buildscript >> ${CAM_TESTDIR}/${test_name}/test.log 2>&1
 rc=$?
 if [ $rc -eq 0 ]; then
@@ -130,19 +137,10 @@ echo "TCB_ccsm.sh: CESM configure and build test passed"
 echo "PASS" > TestStatus
 if [ $CAM_RETAIN_FILES != "TRUE" ]; then
     echo "TCB_ccsm.sh: removing some unneeded files to save disc space" 
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/atm
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/glc
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/ice
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/lnd
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/ocn
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/rof
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/wav
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/cpl
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/mct
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/pio
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/cesm
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/csm_share
-    rm -rf ${CAM_TESTDIR}/case.$1.$2/lib
+    for dir in atm glc ice lnd ocn rof wav cpl mct pio cesm csm_share lib
+    do
+        rm -rf ${CAM_TESTDIR}/case.$1.$2/$dir
+    done
 fi
 
 exit 0

@@ -1,0 +1,5 @@
+! user_nl_clm namelist options written by PTCLMmkdata:
+! ../PTCLMmkdata --quiet --cesm_root ../../../../../../.. -s US-MMS -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/stdquiet_file_creation 
+ fsurdat = '/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/stdquiet_file_creation/1x1pt_US-MMS/surfdata_1x1pt_US-MMS_simyr2000_clm4_5_c140204.nc'
+ hist_nhtfrq = 0
+ hist_mfilt  = 1200

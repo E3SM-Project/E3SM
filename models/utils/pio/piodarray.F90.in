@@ -1,8 +1,8 @@
 #define __PIO_FILE__ 'piodarray'
 !>
 !! @file 
-!! $Revision: 788 $
-!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
+!! $Revision: 943 $
+!! $LastChangedDate: 2014-02-14 09:20:17 -0700 (Fri, 14 Feb 2014) $
 !! @brief Read and write Routines for decomposed data.
 !<
 module piodarray
@@ -35,10 +35,14 @@ module piodarray
 #ifndef NO_MPIMOD
   use mpi           !_EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
 #ifdef NO_MPIMOD
   include 'mpif.h'            !_EXTERNAL
 #endif
+
   private
   public :: pio_read_darray, pio_write_darray, darray_write_complete, pio_set_buffer_size_limit
 
@@ -901,7 +905,8 @@ contains
        ! allocate temporary IO buffer 
        !-----------------------------
        if(userearranger) then
-          if(File%iotype == pio_iotype_netcdf .and. file%iosystem%io_rank==0) then	
+          if((File%iotype == pio_iotype_netcdf .or. File%iotype == pio_iotype_netcdf4c) &
+               .and. file%iosystem%io_rank==0) then	
              call alloc_check(IOBUF,iodesc%maxiobuflen,' TYPE :IOBUF')
           else
              call alloc_check(IOBUF,len,' TYPE :IOBUF')
@@ -1196,19 +1201,17 @@ contains
        nullify(ptr%next)
     end if
     ptr%request = request
-    File%request_cnt=File%request_cnt+1
     ptr%data_{TYPE} => IOBUF
     this_buffsize = size(iobuf)*c_sizeof(iobuf(1))
     file%buffsize=file%buffsize+this_buffsize
     total_buffsize = total_buffsize+this_buffsize
-    
     call MPI_ALLREDUCE(total_buffsize,maxbuffsize,1,MPI_INTEGER,MPI_MAX,file%iosystem%io_comm, mpierr)
 
     if(maxbuffsize > pio_buffer_size_limit) then
        call darray_write_complete(File)
     endif
 
-    if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
+!    if(debug) 
 
   end subroutine add_data_to_buffer_{TYPE}
 
@@ -1217,7 +1220,9 @@ contains
   subroutine darray_write_complete(File)
     use pio_types, only : io_data_list
 #ifdef _PNETCDF
-#   include <pnetcdf.inc>   /* _EXTERNAL */    
+#ifndef USE_PNETCDF_MOD
+#   include <pnetcdf.inc>   
+#endif
 #endif
 
     type(file_desc_t) :: File
@@ -1226,25 +1231,24 @@ contains
     integer, pointer :: array_of_requests(:), status(:)
 
     if(associated(file%data_list_top)) then
-       if(debug) print *,__FILE__,__LINE__, file%request_cnt
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-       allocate(array_of_requests(file%request_cnt), status(file%request_cnt))
+
+       cnt=1 
        ptr=>file%data_list_top
-       cnt=1
+       do while(associated(ptr))
+          cnt=cnt+1
+          ptr=>ptr%next
+       end do
+       allocate(array_of_requests(cnt), status(cnt))
+       ptr=>file%data_list_top
+       cnt=1 
        do while(associated(ptr))
           array_of_requests(cnt)=ptr%request
           cnt=cnt+1
           ptr=>ptr%next
        end do
-       if(DEBUG) print *,__FILE__,__LINE__, array_of_requests, cnt, file%request_cnt
+
 #ifdef _PNETCDF
-       ierr  = nfmpi_wait_all(file%fh, file%request_cnt, array_of_requests, status)
+       ierr  = nfmpi_wait_all(file%fh, cnt-1, array_of_requests, status)
 #endif
        if(DEBUG) print *,__FILE__,__LINE__,status, ierr, total_buffsize
 
@@ -1266,7 +1270,6 @@ contains
        total_buffsize=total_buffsize-file%buffsize
 
        file%buffsize=0
-       file%request_cnt=0
        deallocate(array_of_requests)
        deallocate(status)
     end if

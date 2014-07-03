@@ -9,8 +9,8 @@
 !!  This was moved from sulfnuc to make the code more manageable.
 !!
 !!  @author Mike Mills, Chuck Bardeen
-!!  @version Sep-2011
-subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc) 
+!!  @version Jun-2013
+subroutine sulfnucrate(carma,cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry, rstar, nucbin, nucrate, rc) 
   use carma_precision_mod
   use carma_enums_mod
   use carma_constants_mod
@@ -25,6 +25,12 @@ subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc)
   type(carmastate_type), intent(inout) :: cstate      !! the carma state object
   integer, intent(in)                  :: iz          !! level index
   integer, intent(in)                  :: igroup      !! group index
+  real(kind=f), intent(out)            :: h2o         !! H2O concentrations in molec/cm3 
+  real(kind=f), intent(out)            :: h2so4       !! H2SO4 concentrations in molec/cm3
+  real(kind=f), intent(out)            :: beta1
+  real(kind=f), intent(out)            :: beta2
+  real(kind=f), intent(out)            :: ftry
+  real(kind=f), intent(out)            :: rstar       !! critical radius (cm)
   integer, intent(out)                 :: nucbin      !! bin in which nucleation occurs
   real(kind=f), intent(out)            :: nucrate     !! nucleation rate #/x/y/z/s
   integer, intent(inout)               :: rc          !! return code, negative indicates failure
@@ -40,8 +46,6 @@ subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc)
   real(kind=f)      :: wtmolr         ! molecular weight ration of H2SO4/H2O
   real(kind=f)      :: h2o_cgs        ! H2O densities in g/cm3
   real(kind=f)      :: h2so4_cgs      ! H2SO4 densities in g/cm3
-  real(kind=f)      :: h2o            ! H2O concentrations in molec/cm3 
-  real(kind=f)      :: h2so4          ! H2SO4 concentrations in molec/cm3
   real(kind=f)      :: h2oln          ! H2O ambient vapor pressures [dynes/cm2]
   real(kind=f)      :: h2so4ln        ! H2SO4 ambient vapor pressures [dynes/cm2]
   real(kind=f)      :: rh             ! relative humidity of water wrt liquid water
@@ -67,12 +71,9 @@ subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc)
   real(kind=f)      :: wfstar
   real(kind=f)      :: sigma
   real(kind=f)      :: ystar
-  real(kind=f)      :: rstar
   real(kind=f)      :: r2
   real(kind=f)      :: gstar
   real(kind=f)      :: rb
-  real(kind=f)      :: beta1
-  real(kind=f)      :: beta2
   real(kind=f)      :: rpr
   real(kind=f)      :: rpre
   real(kind=f)      :: fracmol
@@ -90,6 +91,8 @@ subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc)
  5 format(/,'microfast::WARNING - nucleation rate exceeds 5.e1: ie=', i2,', iz=',i4,',lat=', &
               f7.2,',lon=',f7.2, ', rhompe=', e10.3)	      
   
+  rstar = -1._f
+
   !  Parameterized fit developed by Mike Mills in 1994 to the partial molal
   !  Gibbs energies (F2|o-F2) vs. weight percent H2SO4 table in Giauque et al.,
   !  J. Am. Chem. Soc, 82, 62-70, 1960.  The parameterization gives excellent
@@ -275,7 +278,8 @@ subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc)
   cfac = 0.0_f
 
   ! Gstar exponential term in Zhao & Turco eqn 16 [unitless]
-  ahom = (-gstar / BK / t(iz)) + cfac
+  ftry = (-gstar / BK / t(iz))
+  ahom = ftry + cfac
   if (ahom .lt. -500._f) then
     exhom=0.0_f
   else
@@ -304,7 +308,7 @@ subroutine sulfnucrate(carma,cstate, iz, igroup, nucbin, nucrate, rc)
   else
     ! Calculate the nucleation rate [#/cm3/s], Zhao & Turco eqn 16.
     nucrate = rpre * zeld * exhom
-        
+
     ! Scale to #/x/y/z/s
     nucrate = nucrate * zmet(iz) * xmet(iz) * ymet(iz)
   endif

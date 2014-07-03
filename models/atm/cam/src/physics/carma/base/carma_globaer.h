@@ -83,6 +83,7 @@
 #define solfac(igroup)          carma%f_group(igroup)%f_solface
 #define scavcoef(igroup)        carma%f_group(igroup)%f_scavcoef
 #define if_sec_mom(igroup)      carma%f_group(igroup)%f_if_sec_mom
+#define is_grp_fractal(igroup)  carma%f_group(igroup)%f_is_fractal
 #define is_grp_ice(igroup)      carma%f_group(igroup)%f_is_ice
 #define is_grp_cloud(igroup)    carma%f_group(igroup)%f_is_cloud
 #define is_grp_sulfate(igroup)  carma%f_group(igroup)%f_is_sulfate
@@ -106,11 +107,17 @@
 #define ifallrtn(igroup)        carma%f_group(igroup)%f_ifallrtn
 #define arat(ibin,igroup)       carma%f_group(igroup)%f_arat(ibin) 
 #define rrat(ibin,igroup)       carma%f_group(igroup)%f_rrat(ibin) 
+#define rprat(ibin,igroup)      carma%f_group(igroup)%f_rprat(ibin) 
 #define qext(iwave,ibin,igroup) carma%f_group(igroup)%f_qext(iwave,ibin)
 #define ssa(iwave,ibin,igroup)  carma%f_group(igroup)%f_ssa(iwave,ibin)
 #define do_mie(igroup)          carma%f_group(igroup)%f_do_mie
 #define imiertn(igroup)         carma%f_group(igroup)%f_imiertn
 #define dpc_threshold(igroup)   carma%f_group(igroup)%f_dpc_threshold
+#define rmon(igroup)            carma%f_group(igroup)%f_rmon
+#define df(ibin,igroup)         carma%f_group(igroup)%f_df(ibin)
+#define nmon(ibin,igroup)       carma%f_group(igroup)%f_nmon(ibin)
+#define falpha(igroup)          carma%f_group(igroup)%f_falpha
+#define neutral_volfrc(igroup)  carma%f_group(igroup)%f_neutral_volfrc
 
 ! Solute object
 #define solname(isolute)      carma%f_solute(isolute)%f_name

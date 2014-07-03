@@ -181,7 +181,6 @@ EOF
   }
   # List of input options
   my %inputopts;
-  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition.xml";
   my $datmblddir             = "$cfgdir/../../../../models/atm/datm/bld";
   my $drvblddir              = "$cfgdir/../../../../models/drv/bld";
   my $model                  = $opts{'model'};
@@ -189,6 +188,7 @@ EOF
                                  "$drvblddir/namelist_files/namelist_definition_drv.xml",
                                  "$cfgdir/namelist_files/namelist_definition_$model.xml" 
                                );
+  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition_$model.xml";
   $inputopts{nldef_files}    = \@nl_definition_files;
   $inputopts{namelist}       = $opts{namelist};
   $inputopts{printing}       = $printing;

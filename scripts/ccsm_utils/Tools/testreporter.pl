@@ -3,6 +3,7 @@ use Getopt::Long;
 use Data::Dumper;
 use LWP;
 use HTTP::Request;
+use HTTP::Request::Common qw(POST);
 use XML::LibXML;
 #-------------------------------------------------------------------------------
 # testreporter.pl
@@ -52,21 +53,18 @@ authenticate();
 
 my @testdirs;
 my %suiteinfo;
-while(1)
-{
-    @testdirs = &getTestDirs($testroot, $testid);
-    %suiteinfo = &getTestSuiteInfo(\@testdirs);
-    my $teststatus;
-	my $nlfailreport;
-    ($teststatus, $nlfailreport) = getTestStatus(\@testdirs, $tagname, $testid);
-    &Debug( eval { Dumper $teststatus} );
-    &Debug( eval { Dumper \%suiteinfo } );
-    my $testxml = &makeResultsXml($teststatus, \%suiteinfo, $nlfailreport);
-	&sendresults(\%teststatus, \%suiteinfo, $testxml);
-	&printreport($teststatus, $nlfailreport) if $printreport;
-    exit(0);
-    sleep($sleeptime);
-}
+
+@testdirs = &getTestDirs($testroot, $testid);
+%suiteinfo = &getTestSuiteInfo(\@testdirs);
+my $teststatus;
+my $nlfailreport;
+($teststatus, $nlfailreport) = getTestStatus(\@testdirs, $tagname, $testid);
+&Debug( eval { Dumper $teststatus} );
+&Debug( eval { Dumper \%suiteinfo } );
+my $testxml = &makeResultsXml($teststatus, \%suiteinfo, $nlfailreport);
+&sendresults(\%teststatus, \%suiteinfo, $testxml);
+&printreport($teststatus, $nlfailreport) if $printreport;
+
 #-------------------------------------------------------------------------------
 # End Main
 #-------------------------------------------------------------------------------
@@ -401,9 +399,18 @@ sub getTestStatus
 }
 
 
-# New sendresults, using XML::LibXML
-# This is a work in progress, it is not yet functional.  
-# TODO: finish implementing the programmatic text-based implementation. 
+# Send the results as an XML file, using the following DTD:
+#<testrecord>
+#  <tag_name> </tag_name>
+#  <machine> </machine>
+#  <compiler version=' '> </compiler>
+#  <mpilib version=' '> </mpilib>
+#  <testroot> </testroot>
+#  <testtype> </testtype>
+#  <tests testname name=' '>
+#      <category name=' '> </category>
+#  </tests>
+#</testrecord>
 sub makeResultsXml
 {
 	my ($testresults, $suiteinfo, $nlfailreport) = @_;
@@ -441,8 +448,6 @@ sub makeResultsXml
 				$catelem->appendText($$testresults{$test}{$detail});
 			}
 			$testelem->appendChild($catelem);
-			#print Dumper $testelem;
-			
 		}
 		$root->appendChild($testelem);
 	}
@@ -487,9 +492,16 @@ sub sendresults
 	my $resultsstr = $testxml->toString(1);
 
     my $useragent = LWP::UserAgent->new(ssl_opts => {verify_hostname => 0});
-    my $req = HTTP::Request->new(POST => $posturl);
-    $req->content_type('application/x-www-form-urlencoded');
-    $req->content("username=$username&password=$password&testXML=$resultsstr");
+	
+	# Do not do the HTTP post this way, any string data in the variable $resultsstr
+	# will break the POST on the CGI side 
+    #my $req = HTTP::Request->new(POST => $posturl);
+    #$req->content_type('application/x-www-form-urlencoded');
+    #$req->content("username=$username&password=$password&testXML=$resultsstr");
+
+	# This method of doing the POST makes sure that everything is escaped properly 
+	my $req = POST "$posturl", 
+		[ username => $username, password => $password, testXML => $resultsstr ];
     my $response = $useragent->request($req);
 
     if($response->is_success)
@@ -528,95 +540,6 @@ sub printreport
     	map { print "$_\n"} sort @tests;
     	print "--------------------------------------------------------------------\n";
 	}
-}
-
-#
-#-------------------------------------------------------------------------------
-# Send the test results to csegweb testdb
-#-------------------------------------------------------------------------------
-sub sendresultsOld
-{
-    my ($testresults, $suiteinfo) = @_;
-    my $resultsstr = "";
-
-
-#-------------------------------------------------------------------------------
-# ASB - using the following DTD to send XML formatted results, comments 
-# wrapped in CDATA to ensure proper escaping and encoding of anything that 
-# could possibly 
-#<testrecord>
-#  <tag_name> </tag_name>
-#  <machine> </machine>
-#  <compiler version=' '> </compiler>
-#  <mpilib version=' '> </mpilib>
-#  <testroot> </testroot>
-#  <testtype> </testtype>
-#  <tests testname name=' '>
-#      <category name=' '> </category>
-#  </tests>
-#</testrecord>
-#-------------------------------------------------------------------------------
-    $resultsstr .= "<?xml version='1.0'?>";
-    $resultsstr .= "<testrecord>\n"; 
-    $resultsstr .= "<tag_name>$tagname</tag_name>\n"; 
-    $resultsstr .= "<mach>$suiteinfo{'mach'}</mach>\n";
-    $resultsstr .= "<compiler version=\'$suiteinfo{'compiler_version'}\'>$suiteinfo{'compiler'}</compiler>\n";
-    $resultsstr .= "<mpilib version=\'$suiteinfo{'mpilib_version'}\'>$suiteinfo{'mpilib'}</mpilib>\n";
-    $resultsstr .= "<testroot>$testroot</testroot>\n";
-    $resultsstr .= "<testtype>$testtype</testtype>\n";
-    $resultsstr .= "<baselinetag>$baselinetag</baselinetag>\n";
-
-    foreach my $test(sort keys %$testresults)
-    {
-	    $resultsstr .= "<tests testname='$test'>\n";
-	    foreach my $detail(sort keys %{$$testresults{$test}})
-	    {
-		  if($detail eq 'comment')
-		  {
-			$resultsstr .= "<category name='$detail'><![CDATA[$$testresults{$test}{$detail}]]></category>\n";
-		  }
-		  else
-		  {
-	      	$resultsstr .= "<category name='$detail'>$$testresults{$test}{$detail}</category>\n";
-		  }
-	    }
-	    $resultsstr .= "</tests>\n";
-    }
-    $resultsstr .= "</testrecord>\n"; 
-    &Debug("resultsstr: \n $resultsstr\n");
-    if($debug)
-    {
-        open my $xmldumpfile, ">", "./testreporter.dump.xml" or die $!;
-        print $xmldumpfile $resultsstr;
-        close $xmldumpfile;
-    }
-
-    my $useragent = LWP::UserAgent->new(ssl_opts => {verify_hostname => 0});
-    my $req = HTTP::Request->new(POST => $posturl);
-    $req->content_type('application/x-www-form-urlencoded');
-    $req->content("username=$username&password=$password&testXML=$resultsstr");  
-    my $response = $useragent->request($req);
-
-    if($response->is_success)
-    {
-	    print "Test results successfully posted to csegweb\n";
-    }
-    elsif($response->code eq '401')
-    {
-      my $errmsg = "The server responded with '401 - Unauthorized'\n";
-      $errmsg .=   "Your svn username & password is most likely incorrect!\n";
-      $errmsg .=   "Please re-run the script, and provide the correct svn username & password\n";
-      die $errmsg;
-      
-    }
-    else 
-    {
-	    print "Posting the results to $posturl failed! \n";
-	    my $status = $response->status_line;
-	    print "$status\n";
-	    print "aborting!\n";
-	    exit(1);
-    }
 }
 
 sub authenticate

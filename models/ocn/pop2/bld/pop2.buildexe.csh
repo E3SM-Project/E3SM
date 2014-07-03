@@ -14,34 +14,76 @@ cd $OBJROOT/ocn/source
 
 cp -fp $CODEROOT/ocn/pop2/source/*.F90  .
 cp -fp $CODEROOT/ocn/pop2/mpi/*.F90  .
-cp -fp $CODEROOT/ocn/pop2/drivers/cpl_share/*.F90  .
-if ($COMP_INTERFACE == 'MCT') then
-  cp -fp $CODEROOT/ocn/pop2/drivers/cpl_mct/*.F90 .
-else if ($COMP_INTERFACE == 'ESMF') then
-  cp -fp $CODEROOT/ocn/pop2/drivers/cpl_esmf/*.F90 .
-else
-  echo "ERROR: must specifiy valid $COMP_INTERFACE value"
+cp -fp $CODEROOT/ocn/pop2/drivers/cpl/*.F90 .
+
+# Two files require special attention because they get renamed when copied
+# from either SourceMods/src.pop2 or input_templates/:
+# ${OCN_GRID}_domain_size.F90       -> domain_size.F90
+# ${OCN_GRID}_POP_DomainSizeMod.F90 -> POP_DomainSizeMod.F90
+# (The latter is "needed during LANL merge transition")
+#
+# For these files:
+# 1) Make sure SourceMods does not contain copies of the same file both
+#    with and without the ${OCN_GRID}_ preface.
+if ((-f ${my_path}/domain_size.F90) && \
+    (-f ${my_path}/${OCN_GRID}_domain_size.F90)) then
+   echo "ERROR: you can not have both domain_size.F90 and " \
+        "${OCN_GRID}_domain_size.F90 in SourceMods/src.pop2/"
+   exit -1
+endif
+
+if ((-f ${my_path}/POP_DomainSizeMod.F90) && \
+    (-f ${my_path}/${OCN_GRID}_POP_DomainSizeMod.F90)) then
+   echo "ERROR: you can not have both POP_DomainSizeMod.F90 and " \
+        "${OCN_GRID}_POP_DomainSizeMod.F90 in SourceMods/src.pop2/"
+   exit -1
+endif
+
+set POP2_FOUND_d_s = 0
+set POP2_FOUND_POP_DSM = 0
+# 1) Copy (with name-change) from input templates/ if they exist
+if (-f  $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_domain_size.F90 ) then
+   cp -fp $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_domain_size.F90 domain_size.F90
+   set POP2_FOUND_d_s = 1
+endif
+if (-f $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_POP_DomainSizeMod.F90) then 
+   cp -fp $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_POP_DomainSizeMod.F90 POP_DomainSizeMod.F90
+   set POP2_FOUND_POP_DSM = 1
+endif
+
+# 2) Copy everything from SourceMods over
+if (-d $my_path ) cp -fp $my_path/*.F90 .
+# If domain_size.F90 or POP_DomainSizeMod.F90 exist, they should overwrite 
+# anything copied from from input_templates/
+if (-f  ${my_path}/domain_size.F90 ) then
+   set POP2_FOUND_d_s = 1
+endif
+if (-f ${my_path}/POP_DomainSizeMod.F90) then 
+   set POP2_FOUND_POP_DSM = 1
+endif
+
+# 3) If SourceMods/ contains ${OCN_GRID}_domain_size.F90 or
+#    ${OCN_GRID}_POP_DomainSizeMod.F90, those files will now exist in the
+#    current directory and need to be renamed
+if (-f  ${OCN_GRID}_domain_size.F90 ) then
+   mv -f ${OCN_GRID}_domain_size.F90 domain_size.F90
+   set POP2_FOUND_d_s = 1
+endif
+if (-f ${OCN_GRID}_POP_DomainSizeMod.F90) then
+   mv -f ${OCN_GRID}_POP_DomainSizeMod.F90 POP_DomainSizeMod.F90
+   set POP2_FOUND_POP_DSM = 1
+endif
+
+# 4) Make sure both domain_size.F90 and POP_DomainSizeMod.F90 exist for the
+#    specified grid
+if (${POP2_FOUND_d_s} == 0) then
+  echo "ERROR: you need either ${OCN_GRID}_domain_size.F90 or domain_size.F90"
   exit -1
 endif
-if (-d $my_path ) cp -fp $my_path/*.F90 .
-
-if (-f ${my_path}/${OCN_GRID}_domain_size.F90) then
-   cp -fp ${my_path}/${OCN_GRID}_domain_size.F90 $OBJROOT/ocn/source/domain_size.F90
-else if (-f  $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_domain_size.F90 ) then
-   cp -fp $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_domain_size.F90 $OBJROOT/ocn/source/domain_size.F90
-else
-   echo "missing ${OCN_GRID}_domain_size.F90 file"
-   exit -1    
-endif
-
-# neded during LANL merge transition 
-if (-f ${my_path}/${OCN_GRID}_POP_DomainSizeMod.F90) then
-   cp -fp  ${my_path}/${OCN_GRID}_POP_DomainSizeMod.F90 $OBJROOT/ocn/source/POP_DomainSizeMod.F90
-else if (-f $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_POP_DomainSizeMod.F90) then 
-   cp -fp $CODEROOT/ocn/pop2/input_templates/${OCN_GRID}_POP_DomainSizeMod.F90 $OBJROOT/ocn/source/POP_DomainSizeMod.F90
-else
-   echo "missing ${OCN_GRID}_POP_DomainSizeMod.F90 file"
-   exit -2    
+if (${POP2_FOUND_POP_DSM} == 0) then
+  echo "ERROR: you need either ${OCN_GRID}_POP_DomainSizeMod.F90 or " \
+       "POP_DomainSizeMod.F90"
+  exit -1
 endif
 
 echo -------------------------------------------------------------------------

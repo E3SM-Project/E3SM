@@ -54,18 +54,18 @@ subroutine bhmie(carma, x, refrel, nang, s1, s2, Qext, Qsca, Qback, gfac, rc)
   ! Will loop over nang angles.
   ymod = int(abs(y))
   nmx  = max(xstop, ymod) + 15
-  dang = 1.570796327_f / float(nang - 1)
+  dang = 1.570796327_f / real(nang - 1, kind=f)
   allocate(d(nmx))
   
   do j = 1, nang
-    theta(j) = (float(j) - 1._f) * dang
+    theta(j) = (real(j, kind=f) - 1._f) * dang
     amu(j)   = cos(theta(j))
   end do
   
   ! Logarithmic derivative d(j) calculated by downword
   ! recurrence beginning with initial value 0.0 + i*0.0
   ! at j = nmx
-  d(nmx) = cmplx(0.0_f, 0.0_f)
+  d(nmx) = cmplx(0.0_f, 0.0_f, kind=f)
   nn     = nmx-1
 !  write(*,*) 'nmx=',nmx,' d(nmx)=',d(nmx), ' nn=',nn
       
@@ -74,15 +74,16 @@ subroutine bhmie(carma, x, refrel, nang, s1, s2, Qext, Qsca, Qback, gfac, rc)
     d(nmx-n) = (rn/y) - (1._f / (d(nmx - n + 1) + rn / y))
     
 !    write(*,*) 'n=',n,' rn=',rn,' y=', y,' d(nmx-n)=',d(nmx-n)
-!    write(*,*) 'rn/y=',rn/y, 'd(nmx-n+1)=',d(nmx-n+1),'(d(nmx-n+1)+rn/y)',(d(nmx-n+1)+rn/y),'1./(d(nmx-n+1)+rn/y)',1./(d(nmx-n+1)+rn/y)
+!    write(*,*) 'rn/y=',rn/y, 'd(nmx-n+1)=',d(nmx-n+1),'(d(nmx-n+1)+rn/y)', &
+!         (d(nmx-n+1)+rn/y),'1./(d(nmx-n+1)+rn/y)',1./(d(nmx-n+1)+rn/y)
   end do
   
   pi0(1:nang) = 0.0_f
   pi1(1:nang) = 1.0_f
   
   nn = 2 * nang-1
-  s1(1:nn) = cmplx(0.0_f, 0.0_f)
-  s2(1:nn) = cmplx(0.0_f, 0.0_f)
+  s1(1:nn) = cmplx(0.0_f, 0.0_f, kind=f)
+  s2(1:nn) = cmplx(0.0_f, 0.0_f, kind=f)
   
   ! Riccati-Bessel functions with real argument x
   ! calculated by upward recurrence
@@ -92,8 +93,8 @@ subroutine bhmie(carma, x, refrel, nang, s1, s2, Qext, Qsca, Qback, gfac, rc)
   chi1  = cos(x)
   apsi0 = psi0
   apsi1 = psi1
-  xi0   = cmplx(apsi0,-chi0)
-  xi1   = cmplx(apsi1,-chi1)
+  xi0   = cmplx(apsi0,-chi0, kind=f)
+  xi1   = cmplx(apsi1,-chi1, kind=f)
   Qsca  = 0.0_f
   g1    = 0.0_f
   g2    = 0.0_f
@@ -108,7 +109,7 @@ subroutine bhmie(carma, x, refrel, nang, s1, s2, Qext, Qsca, Qback, gfac, rc)
     psi  = (2._f * dn - 1._f) * psi1 / dx - psi0
     apsi = psi
     chi  = (2._f * rn - 1._f) * chi1 / x - chi0
-    xi   = cmplx(apsi, -chi)
+    xi   = cmplx(apsi, -chi, kind=f)
 !    write(*,*) 'n=', n
 !    write(*,*) 'd(n)=',d(n),' refrel=',refrel,' rn=',rn, ' x=',x,'apsi=',apsi,' apsi1=',apsi1
 
@@ -150,7 +151,7 @@ subroutine bhmie(carma, x, refrel, nang, s1, s2, Qext, Qsca, Qback, gfac, rc)
     apsi1 = psi1
     chi0  = chi1
     chi1  = chi
-    xi1   = cmplx(apsi1, -chi1)
+    xi1   = cmplx(apsi1, -chi1, kind=f)
     n     = n+1
     rn    = n
   

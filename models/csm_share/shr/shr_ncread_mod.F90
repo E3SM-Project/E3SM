@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: shr_ncread_mod.F90 29597 2011-08-04 02:24:04Z erik $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/shr/shr_ncread_mod.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_ncread_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !

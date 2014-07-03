@@ -94,12 +94,12 @@ contains
   subroutine eis_eus(slc,model,time)
     !*FD calculate mass balance
     use glide_types
-    use glimmer_global, only : rk
+    use glimmer_global, only : dp
     implicit none
     type(eis_slc_type)        :: slc   !*FD slc data
     type(glide_global_type)   :: model !*FD model instance
-    real(kind=rk), intent(in) :: time  !*FD current time
+    real(dp), intent(in)      :: time  !*FD current time
 
-    call glimmer_ts_linear(slc%slc_ts,real(time),model%climate%eus)
+    call glimmer_ts_linear(slc%slc_ts, time, model%climate%eus)
   end subroutine eis_eus
 end module eis_slc

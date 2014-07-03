@@ -1,5 +1,5 @@
-! $Id: ESMF_RegridWeightGenCheck.F90 46983 2013-05-09 22:08:12Z tcraig $
-! $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/check_maps/src/ESMF_RegridWeightGenCheck.F90 $
+! $Id: ESMF_RegridWeightGenCheck.F90 59441 2014-04-22 22:51:36Z mlevy@ucar.edu $
+! $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/check_maps/src/ESMF_RegridWeightGenCheck.F90 $
 !
 ! Earth System Modeling Framework
 ! Copyright 2002-2012, University Corporation for Atmospheric Research,
@@ -776,8 +776,8 @@ contains
     integer, intent(out)                :: nxd, nyd
     integer, intent(out), optional      :: localrc
       
-    integer :: ncstat,  nc_file_id,  nc_srcdim_id, nc_dstdim_id
-    integer :: gdims(2)
+    integer :: ncstat,  nc_file_id,  nc_srcdim_id, nc_dstdim_id, srcdim, dstdim
+    integer :: gdims(2), dim_ids(1)
     integer :: titleLen
 
     character(ESMF_MAXSTR) :: msg
@@ -858,26 +858,42 @@ contains
         return
       endif
 
-      nxs = dst_dim
-      nys = 1
+      nxd = dst_dim
+      nyd = 1
 
       !------------------------------------------------------------------------
       !     get 2d grid sizes if we can, overwrite src_dim and dst_dim above
       !------------------------------------------------------------------------
 
       ncstat = nf90_inq_varid(nc_file_id, 'src_grid_dims', nc_srcdim_id)
-      if(ncstat == 0) then
-         ncstat = nf90_get_var(ncid=nc_file_id, varid=nc_srcdim_id, values=gdims)
-         nxs = gdims(1)
-         nys = gdims(2)
+      ncstat = nf90_inquire_variable(nc_file_id, nc_srcdim_id, dimids=dim_ids)
+      if (ncstat.eq.0) then
+        ncstat = nf90_inquire_dimension(nc_file_id, dim_ids(1), len=srcdim)
+      else
+        print*, "ERROR READING DIMENSION OF src_grid_dims"
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      end if
+
+      if (srcdim.eq.2) then
+        ncstat = nf90_get_var(ncid=nc_file_id, varid=nc_srcdim_id, values=gdims)
+        nxs = gdims(1)
+        nys = gdims(2)
       endif
 
       ncstat = nf90_inq_varid(nc_file_id, 'dst_grid_dims', nc_dstdim_id)
-      if(ncstat == 0) then
-         ncstat = nf90_get_var(ncid=nc_file_id, varid=nc_dstdim_id, values=gdims)
-         nxd = gdims(1)
-         nyd = gdims(2)
-      endif
+      ncstat = nf90_inquire_variable(nc_file_id, nc_dstdim_id, dimids=dim_ids)
+      if (ncstat.eq.0) then
+        ncstat = nf90_inquire_dimension(nc_file_id, dim_ids(1), len=dstdim)
+      else
+        print*, "ERROR READING DIMENSION OF dst_grid_dims"
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      end if
+
+      if (dstdim.eq.2) then
+        ncstat = nf90_get_var(ncid=nc_file_id, varid=nc_dstdim_id, values=gdims)
+        nxd = gdims(1)
+        nyd = gdims(2)
+      end if
 
       !------------------------------------------------------------------------
       !     close input file

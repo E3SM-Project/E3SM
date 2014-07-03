@@ -18,9 +18,9 @@ module mo_flbc
   implicit none
 
   type :: flbc
-     integer            :: spc_ndx
+     integer            :: spc_ndx = -1
      real(r8), pointer  :: vmr(:,:,:)
-     character(len=16)  :: species
+     character(len=16)  :: species = ' '
      logical            :: has_mean
      real(r8), pointer  :: vmr_mean(:)
   end type flbc
@@ -43,15 +43,21 @@ module mo_flbc
   logical :: has_flbc(pcnst)
   character(len=256) :: filename, lpath, mspath
 
-  type(time_ramp)             :: flbc_timing
-  type(flbc), allocatable     :: flbcs(:)
+  type(time_ramp) :: flbc_timing
   integer ::  ncdate, ncsec
 
-  integer :: co2_ndx = -1
-  integer :: ch4_ndx = -1
-  integer :: n2o_ndx = -1
-  integer :: f11_ndx = -1
-  integer :: f12_ndx = -1
+  integer, parameter :: nghg = 5
+  integer, parameter :: max_nflbc = pcnst+nghg
+
+  integer, parameter :: co2_ndx = 1
+  integer, parameter :: ch4_ndx = 2
+  integer, parameter :: n2o_ndx = 3
+  integer, parameter :: f11_ndx = 4
+  integer, parameter :: f12_ndx = 5
+  character(len=5)  :: ghg_names(nghg) = (/ 'CO2  ','CH4  ','N2O  ','CFC11','CFC12' /)
+  integer :: ghg_indices(nghg) = -1
+
+  type(flbc) :: flbcs(max_nflbc)
 
   logical, parameter :: debug = .false.
 
@@ -66,8 +72,8 @@ contains
     use string_utils,  only : to_upper
     use constituents,  only : cnst_get_ind
     use cam_pio_utils, only : cam_pio_openfile
-    use pio,           only : pio_get_var,pio_inq_varid,pio_inq_dimid, pio_inq_dimlen, &
-         file_desc_t, pio_closefile, pio_nowrite
+    use pio,           only : pio_get_var,pio_inq_varid,pio_inq_dimid, pio_inq_dimlen
+    use pio,           only : file_desc_t, pio_closefile, pio_nowrite
 
     implicit none
 
@@ -83,7 +89,7 @@ contains
     ! 	... local variables
     !-----------------------------------------------------------------------
     integer :: astat
-    integer :: j, l, m, n,nn                     ! Indices
+    integer :: j, l, m, n                     ! Indices
     integer :: t1, t2
     type(file_desc_t) :: ncid
     integer :: dimid
@@ -94,7 +100,6 @@ contains
     character(len=16)  :: species
     character(len=16)  :: spc_name
     character(len=8)   :: time_type
-    character(len=16)  :: ghg_names(5)
     integer :: ierr
 
     if ( len_trim( flbc_file ) == 0 ) return
@@ -145,129 +150,59 @@ contains
     !-----------------------------------------------------------------------
     has_flbc(:) = .false.
     flbc_cnt = 0
-
-    do m = 1,pcnst
+    
+    do m = 1,max_nflbc
 
        if ( len_trim(flbc_list(m))==0 ) exit
+
+       flbc_cnt = flbc_cnt + 1
 
        call cnst_get_ind (flbc_list(m), n, abort=.false.)
 
        if (n > 0) then
           has_flbc(n) = .true.
-          flbc_cnt = flbc_cnt + 1
-       else
-          write(iulog,*) 'flbc_init: '//flbc_list(m)//' is not included in species set'
-          call endrun('flbc_init: invalid fixed lower boundary species')
+          flbcs(flbc_cnt)%spc_ndx = n
+       else ! must be one of the GHGs which is not prognosted
+          if( .not. any( ghg_names(:) == flbc_list(m) ) ) then
+             call endrun('flbc_inti: flbc_list member '// trim(flbc_list(m)) //' is not allowed')
+          endif
+          flbcs(flbc_cnt)%spc_ndx = -1
        endif
 
-       if(     trim(flbc_list(m)) == 'CO2') then
-          co2_ndx = m
-       elseif( trim(flbc_list(m)) == 'CH4' ) then
-          ch4_ndx = m
-       elseif( trim(flbc_list(m)) == 'N2O' ) then
-          n2o_ndx = m
-       elseif( trim(flbc_list(m)) == 'CFC11' ) then
-          f11_ndx = m
-       elseif( trim(flbc_list(m)) == 'CFC12' ) then
-          f12_ndx = m
+       flbcs(flbc_cnt)%species = trim( flbc_list(m) )
+
+       where( ghg_names(:) == flbc_list(m) )
+          ghg_indices = m
+       endwhere
+
+       if( trim(flbcs(flbc_cnt)%species) == 'CFC11' ) then
+          flbcs(flbc_cnt)%species = 'CFCL3'
+       elseif( trim(flbcs(flbc_cnt)%species) == 'CFC12' ) then
+          flbcs(flbc_cnt)%species = 'CF2CL2'
        endif
 
     enddo
 
     ! check that user has not set vmr namelist values... 
-    if ( co2_ndx > 0 .and. co2vmr>1.e-6_r8) then
+    if ( ghg_indices(co2_ndx) > 0 .and. co2vmr>1.e-6_r8) then
        call endrun('flbc_inti: cannot specify both co2vmr and CO2 in flbc_file')
     endif
-    if ( ch4_ndx > 0 .and. ch4vmr > 0._r8) then
+    if ( ghg_indices(ch4_ndx) > 0 .and. ch4vmr > 0._r8) then
        call endrun('flbc_inti: cannot specify both ch4vmr and CH4 in flbc_file')
     endif
-    if ( n2o_ndx > 0 .and. n2ovmr > 0._r8) then
+    if ( ghg_indices(n2o_ndx) > 0 .and. n2ovmr > 0._r8) then
        call endrun('flbc_inti: cannot specify both n2ovmr and N2O in flbc_file')
     endif
-    if ( f11_ndx > 0 .and. f11vmr > 0._r8) then
+    if ( ghg_indices(f11_ndx) > 0 .and. f11vmr > 0._r8) then
        call endrun('flbc_inti: cannot specify both f11vmr and CFC11 in flbc_file')
     endif
-    if ( f12_ndx > 0 .and. f12vmr > 0._r8) then
+    if ( ghg_indices(f12_ndx) > 0 .and. f12vmr > 0._r8) then
        call endrun('flbc_inti: cannot specify both f12vmr and CFC12 in flbc_file')
     endif
     
-    ! the flbc_file specifies CO2, CH4, N2O, CFC11,CFC12 even if these are not in flbc_list ...
-    ! try to find these GHG tracers on the LBC file if the user has not set the constants
-    m = 0
-    if ( co2_ndx < 0 .and. co2vmr<1.e-6_r8) then
-       flbc_cnt = flbc_cnt+1
-       co2_ndx = flbc_cnt
-       m = m+1
-       ghg_names( m ) = 'CO2'
-    endif
-    if ( ch4_ndx < 0 .and. ch4vmr<0._r8) then
-       flbc_cnt = flbc_cnt+1
-       ch4_ndx = flbc_cnt
-       m = m+1
-       ghg_names( m ) = 'CH4'
-    endif
-    if ( n2o_ndx < 0 .and. n2ovmr<0._r8) then
-       flbc_cnt = flbc_cnt+1
-       n2o_ndx = flbc_cnt
-       m = m+1
-       ghg_names( m ) = 'N2O'
-    endif
-    if ( f11_ndx < 0 .and. f11vmr<0._r8) then
-       flbc_cnt = flbc_cnt+1
-       f11_ndx = flbc_cnt
-       m = m+1
-       ghg_names( m ) = 'CFCL3'
-    endif
-    if ( f12_ndx < 0 .and. f12vmr<0._r8) then
-       flbc_cnt = flbc_cnt+1
-       f12_ndx = flbc_cnt
-       m = m+1
-       ghg_names( m ) = 'CF2CL2'
-    endif
-
     if( flbc_cnt == 0 ) then
        return
     end if
-    !-----------------------------------------------------------------------
-    ! 	... allocate type array
-    !-----------------------------------------------------------------------
-    allocate( flbcs(flbc_cnt), stat=astat )
-    if( astat/= 0 ) then
-       write(iulog,*) 'flbc_inti: failed to allocate flbc array; error = ',astat
-       call endrun
-    end if
-
-    n = 0
-    do m = 1,pcnst
-       if( has_flbc(m) ) then
-          n = n + 1
-
-          flbcs(n)%spc_ndx = m
-          flbcs(n)%species = trim( tracnam(m) )
-
-          if(     trim(flbcs(n)%species) == 'CO2') then
-             co2_ndx = n
-          elseif( trim(flbcs(n)%species) == 'CH4' ) then
-             ch4_ndx = n
-          elseif( trim(flbcs(n)%species) == 'N2O' ) then
-             n2o_ndx = n
-          elseif( trim(flbcs(n)%species) == 'CFC11' ) then
-             f11_ndx = n
-             flbcs(n)%species = 'CFCL3'
-          elseif( trim(flbcs(n)%species) == 'CFC12' ) then
-             f12_ndx = n
-             flbcs(n)%species = 'CF2CL2'
-          endif
-
-       end if
-    end do
-
-    m = 0
-    do nn = n+1,flbc_cnt
-       m = m+1
-       flbcs(nn)%spc_ndx = -1
-       flbcs(nn)%species = trim(ghg_names( m ))
-    enddo
 
     if(masterproc) then
        write(iulog,*) ' '
@@ -406,6 +341,7 @@ contains
     ! 	... close the file
     !-----------------------------------------------------------------------
     call pio_closefile( ncid )
+
   end subroutine flbc_inti
 
   subroutine flbc_chk( )
@@ -797,9 +733,7 @@ contains
 
   end subroutine get_dels
 
-  subroutine flbc_gmean_vmr(co2vmr,ch4vmr,n2ovmr,f11vmr,f12vmr, state)
-
-     use physics_types,only: physics_state
+  subroutine flbc_gmean_vmr(co2vmr,ch4vmr,n2ovmr,f11vmr,f12vmr)
 
      implicit none
 
@@ -808,7 +742,6 @@ contains
      real(r8), intent(inout) :: n2ovmr
      real(r8), intent(inout) :: f11vmr
      real(r8), intent(inout) :: f12vmr
-     type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
 
      integer  :: last, next
      real(r8) :: dels
@@ -816,28 +749,27 @@ contains
      if( flbc_cnt < 1 ) return
 
      call get_dels( dels, last, next )
-     
-     if (co2_ndx>0) &
-          co2vmr = global_mean_vmr(flbcs(co2_ndx), state, dels, last, next )
-     if (ch4_ndx>0) &
-          ch4vmr = global_mean_vmr(flbcs(ch4_ndx), state, dels, last, next )
-     if (n2o_ndx>0) &
-          n2ovmr = global_mean_vmr(flbcs(n2o_ndx), state, dels, last, next )
-     if (f11_ndx>0) &
-          f11vmr = global_mean_vmr(flbcs(f11_ndx), state, dels, last, next )
-     if (f12_ndx>0) &
-          f12vmr = global_mean_vmr(flbcs(f12_ndx), state, dels, last, next )
+
+     if (ghg_indices(co2_ndx)>0) &
+          co2vmr = global_mean_vmr(flbcs(ghg_indices(co2_ndx)), dels, last, next )
+     if (ghg_indices(ch4_ndx)>0) &
+          ch4vmr = global_mean_vmr(flbcs(ghg_indices(ch4_ndx)), dels, last, next )
+     if (ghg_indices(n2o_ndx)>0) &
+          n2ovmr = global_mean_vmr(flbcs(ghg_indices(n2o_ndx)), dels, last, next )
+     if (ghg_indices(f11_ndx)>0) &
+          f11vmr = global_mean_vmr(flbcs(ghg_indices(f11_ndx)), dels, last, next )
+     if (ghg_indices(f12_ndx)>0) &
+          f12vmr = global_mean_vmr(flbcs(ghg_indices(f12_ndx)), dels, last, next )
 
   end subroutine flbc_gmean_vmr
 
-  function global_mean_vmr( flbcs, state, dels, last, next  )
-    use physics_types,only: physics_state
-    use phys_gmean,   only: gmean
+  function global_mean_vmr( flbcs, dels, last, next  )
+    use phys_gmean, only: gmean
+    use phys_grid,  only: get_ncols_p
 
     implicit none
 
     type(flbc), intent(in) :: flbcs
-    type(physics_state), intent(in) :: state(begchunk:endchunk)
     real(r8), intent(in) :: dels
     integer, intent(in) :: last
     integer, intent(in) :: next
@@ -851,7 +783,7 @@ contains
             + dels * (flbcs%vmr_mean(next) - flbcs%vmr_mean(last))
     else 
        do lchnk = begchunk, endchunk
-          ncol = state(lchnk)%ncol
+          ncol = get_ncols_p(lchnk)
           vmr_arr(:ncol,lchnk) = flbcs%vmr(:ncol,lchnk,last) &
                + dels * (flbcs%vmr(:ncol,lchnk,next) - flbcs%vmr(:ncol,lchnk,last))
        enddo

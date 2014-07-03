@@ -2,7 +2,7 @@
 
 #==============================================================================
 # $Id: check_map.sh 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
-# $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/check_maps/check_map.sh $
+# $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/check_maps/check_map.sh $
 #
 # Use an updated ESMF tool to check the quality of a mapping file
 #

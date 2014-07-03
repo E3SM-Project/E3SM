@@ -1,0 +1,238 @@
+==================================================
+Originator: santos
+Date: 2014/05/06
+Component: unit_testing
+Version: unit_testing_0_05
+One-line summary: Python refactoring and environment changes.
+
+A       python/environment.py
+A       python/test_environment.py
+        - New classes for dealing with modules.
+        - "expand_env" function
+        - SoftEnvInterface is present, but still not ready for use.
+
+M       python/machine_setup.py
+        - Start refactoring to shift toward a more object oriented
+          approach.
+        - Add yellowstone/PGI module.
+        - Start moving toward MPI support.
+
+M       python/printer.py
+        - Change CMakePrinter name to ScriptPrinter, add very basic
+          indentation hook.
+
+M       python/xml_test_list.py
+        - Correct docstring grammar.
+
+M       python/xml_utils.py
+M       python/test_xml_utils.py
+        - Add ability to ignore attributes.
+        - Add "elements_to_dict" dictionary translation function.
+        - These are not currently used, but were added in anticipation of
+          environment xml file changes.
+
+M       run_tests.py
+        - Changes needed due to interface changes in other modules.
+        - "-R" option replaced with "-T", which is a generic way to add
+          arguments to CTest.
+        - Add --use-mpi option (only changes compiler command determined
+          from Machines currently).
+        - Change Machines directory detection. Machines is now considered
+          optional if not using a CESM build type, but is mandatory
+          otherwise.
+        - Fix bug where environment was not loaded correctly when
+          rebuilding without "--clean" on yellowstone.
+        - Remove CESM_Macros.CMake when cleaning a build.
+        - Fail when make fails, instead of passing "-k" and ignoring the
+          error code. This is too dangerous; the ability to keep going can
+          be reimplemented when we have a more nuanced way to detect and
+          alert the user to build errors.
+
+==================================================
+Originator: santos
+Date: 2013/12/26
+Component: unit_testing
+Version: unit_testing_0_04
+One-line summary: Remove old "high-level" interfaces, cmake directory.
+
+D       cmake
+D       cmake/CESM_utils.cmake
+D       cmake/Compilers.cmake
+D       cmake/FindpFUnit.cmake
+D       cmake/Sourcelist_utils.cmake
+D       cmake/genf90_utils.cmake
+D       cmake/pFUnit_utils.cmake
+         - CMake modules are now in a separate external.
+
+M       Examples/circle_area/tests/CTest/CMakeLists.txt
+M       Examples/circle_area/tests/pFUnit/CMakeLists.txt
+M       Examples/circle_area/tests/CMakeLists.txt
+M       Examples/circle_area/src/CMakeLists.txt
+M       Examples/interpolate_1d/tests/CTest/CMakeLists.txt
+M       Examples/interpolate_1d/tests/pFUnit/CMakeLists.txt
+M       Examples/interpolate_1d/tests/CMakeLists.txt
+M       Examples/interpolate_1d/src/CMakeLists.txt
+         - Switch to new, somewhat lower level CMake interface.
+         - In this version, all tests are ultimately CTest tests.
+
+M       README
+         - Update documentation with changes, reduce documentation that's
+           redundant with the explanations in the module files themselves.
+
+M       run_tests.py
+         - Improve autodetection.
+         - Allow CESM root directory to be specified, and use it for
+           autodetection of other paths (including genf90.pl now).
+         - Increase verbosity of CTest when "-v" option is given.
+
+==================================================
+Originator: santos
+Date: 2013/12/03
+Component: unit_testing
+Version: unit_testing_0_03
+One-line summary: Address issues mentioned in review, prototype XML lists.
+
+M       Examples/circle_area/tests/CTest/test_driver.F90
+M       Examples/interpolate_1d/tests/CTest/test_driver.F90
+        - Correct the example assert function to be an actual assert with
+          an error message.
+
+A       Examples/test_list.xml
+        - List of all test directories in one XML file.
+
+M       cmake/CESM_utils.cmake
+A       cmake/Sourcelist_utils.cmake
+A       cmake/genf90_utils.cmake
+A       cmake/pFUnit_utils.cmake
+        - Separate utility functions into three new modules.
+        - pFUnit and genf90 functions each get a new module.
+        - Sourcelist_utils provides functions to help manage source files
+          based on directory (i.e. to build as if using a Makefile VPATH).
+
+A       python/comparable.py
+M       python/xml_utils.py
+M       python/test_xml_utils.py
+        - Add workarounds to keep things working on both Python 2.6 and
+          Python 3.
+        - Most of these workarounds are *not* necessary in Python 2.7,
+          because.
+
+A       python/printer.py
+        - Fix bug that prevented error messages from being printed.
+
+A       python/xml_test_list.py
+A       python/test_xml_test_list.py
+        - Add parser for an XML test list and tests for that module.
+
+M       run_tests.py
+        - Add XML test list functionality.
+        - Build directory is now specified with a named option
+          ("--build-dir"), so there are no naked arguments left.
+        - Put some sections of run_tests.py into functions so that it's
+          easier to loop over them (for test lists).
+
+M       README
+        - Document above changes.
+
+==================================================
+Originator: santos
+Date: 2013/11/13
+Component: unit_testing
+Version: unit_testing_0_02
+One-line summary: Add documentation, cleanup, fix NAG bug.
+
+A       Examples/circle_area/tests/CTest/test_driver.F90
+A       Examples/circle_area/tests/CTest/CMakeLists.txt
+A       Examples/circle_area/tests/CTest
+A       Examples/circle_area/tests/pFUnit/test_circle.pf
+A       Examples/circle_area/tests/pFUnit/CMakeLists.txt
+A       Examples/circle_area/tests/pFUnit
+A       Examples/circle_area/tests/CMakeLists.txt
+A       Examples/circle_area/tests
+A       Examples/circle_area/src/CMakeLists.txt
+A       Examples/circle_area/src/circle.F90
+A       Examples/circle_area/src
+A       Examples/circle_area
+A       Examples/interpolate_1d/tests/CTest/test_driver.F90
+A       Examples/interpolate_1d/tests/CTest/CMakeLists.txt
+A       Examples/interpolate_1d/tests/CTest
+A       Examples/interpolate_1d/tests/pFUnit/test_interpolate_point.pf
+A       Examples/interpolate_1d/tests/pFUnit/CMakeLists.txt
+A       Examples/interpolate_1d/tests/pFUnit
+A       Examples/interpolate_1d/tests/CMakeLists.txt
+A       Examples/interpolate_1d/tests
+A       Examples/interpolate_1d/src/interpolate_1d.F90
+A       Examples/interpolate_1d/src/CMakeLists.txt
+A       Examples/interpolate_1d/src
+A       Examples/interpolate_1d
+A       Examples
+        - Add new Examples showing CTest and pFUnit tests for simple cases.
+
+A       README
+        - New documentation of these scripts.
+
+D       test_xml_utils.py
+A       python/test_xml_utils.py
+D       xml_utils.py
+A       python/xml_utils.py
+D       printer.py
+A       python/printer.py
+D       machine_setup.py
+A       python/machine_setup.py
+A       python
+        - Move python modules to a new python directory.
+        - Changes made for better compliance with PEP 8 and PEP 257
+          (the python.org style guides). This includes more detail in
+          docstrings, and having modules define __all__.
+        - Reduced the scope of some import statements.
+        - Mild improvements to machine_setup.make_cmake_macros
+          implementation.
+
+D       cmake/CMakeMacros.pl
+        - Removed in favor of python implementation (which was needed to
+          extract compiler information more easily anyway).
+
+M       cmake/Compilers.cmake
+        - Fix issue where -kind=byte was not being specified for NAG.
+
+M       run_tests.py
+        - "--compiler" option is now case insensitive.
+        - "CESM_DEBUG" is now the default build type.
+        - "--test-spec-dir" is now an option; test specification directory
+          is no longer a mandatory option (to allow test lists later).
+
+==================================================
+Originator: santos
+Date: 2013/11/11
+Component: unit_testing
+Version: unit_testing_0_01
+One-line summary: Start ChangeLog, depend only on Machines, not scripts.
+
+A       ChangeLog
+        - Start this log.
+
+M       cmake/CMakeMacros.pl
+        - Fix bug. Note that this isn't being used right now, and may go
+          away anyway, so the fix is really just in case there's a need to
+          resuscitate this in the future.
+
+M       cmake/CESM_utils.cmake
+M       cmake/Compilers.cmake
+        - Remove config_compilers related logic, as this is now handled in
+          the python scripts.
+
+M       test_xml_utils.py
+M       xml_utils.py
+        - Rename "xmltree" to "xml_tree" and "node" to "element".
+        - Add all_matches function to xml parsing, and tests for it.
+
+M       printer.py
+        - Add CMakePrinter, and add "comment" method to Printer base class.
+
+M       machine_setup.py
+        - Add module loads for yellowstone.
+        - Do all XML parsing of config_compilers here.
+
+M       run_tests.py
+        - Changes for machine_setup interface, and changing option to show
+          that this script only depends on Machines.

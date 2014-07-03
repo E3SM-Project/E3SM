@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --pftgrid --clmnmlusecase=stdurbpt_pd --cesm_root ../../../../../../.. -s CA-Oas -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/stdurbpt_file_creation 

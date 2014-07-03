@@ -181,7 +181,7 @@
 !     o  index_c2o_Si_ifrac    -- ice fraction
 !     o  index_c2o_Sa_pslv     -- sea-level pressure
 !     o  index_c2o_Faoc_duu10n -- 10m wind speed squared
-!     o  index_c2o_Forr_roff   -- river runoff flux
+!     o  index_c2o_Foxx_rofl   -- river runoff flux
 !     o  index_c2o_Sa_co2prog  -- bottom atm level prognostic co2
 !
 !-----------------------------------------------------------------------
@@ -212,7 +212,7 @@
    integer(kind=POP_i4) :: index_c2o_Foxx_rain   ! water flux: rain
    integer(kind=POP_i4) :: index_c2o_Foxx_evap   ! water flux: evap
    integer(kind=POP_i4) :: index_c2o_Foxx_meltw  ! water flux: melt
-   integer(kind=POP_i4) :: index_c2o_Forr_roff   ! water flux: runoff
+   integer(kind=POP_i4) :: index_c2o_Foxx_rofl   ! water flux: runoff
    integer(kind=POP_i4) :: index_c2o_Sa_co2prog  ! bottom atm level prognostic co2
 
    logical (POP_logical) ::   &
@@ -534,7 +534,7 @@
    index_c2o_Si_ifrac    = cpl_interface_contractIndex(contractR,'Si_ifrac')
    index_c2o_Sa_pslv     = cpl_interface_contractIndex(contractR,'Sa_pslv')
    index_c2o_Faoc_duu10n = cpl_interface_contractIndex(contractR,'Faoc_duu10n')
-   index_c2o_Forr_roff   = cpl_interface_contractIndex(contractR,'Forr_roff')
+   index_c2o_Foxx_rofl   = cpl_interface_contractIndex(contractR,'Foxx_rofl')
    index_c2o_Sa_co2prog  = cpl_interface_contractIndex(contractR,'Sa_co2prog',  &
                            perrWith='quiet')
 
@@ -819,7 +819,7 @@
          WORKB (i,j       ) = sbuf(n,index_c2o_Foxx_rain)
          EVAP_F(i,j,iblock) = sbuf(n,index_c2o_Foxx_evap)
          MELT_F(i,j,iblock) = sbuf(n,index_c2o_Foxx_meltw)
-         ROFF_F(i,j,iblock) = sbuf(n,index_c2o_Forr_roff)
+         ROFF_F(i,j,iblock) = sbuf(n,index_c2o_Foxx_rofl)
          SALT_F(i,j,iblock) = sbuf(n,index_c2o_Foxx_salt)
 
          PREC_F(i,j,iblock) = WORKB(i,j) + SNOW_F(i,j,iblock)    ! rain + snow

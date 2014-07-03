@@ -9,42 +9,150 @@
 <title>How to create a new case</title>
 
 <para>
-In what follows, $&CCSMROOT; is the full pathname of the root
-directory of the CESM distribution. You should first use the -h option
-in calling &create_newcase; to document its input options. Then use
-the -l option to determine which component sets, resolutions, and
-machines are supported.  </para>
+CESM supports out of the box <ulink
+url="../modelnl/compsets.html">component sets</ulink>, <ulink
+url="../modelnl/grid.html">model grids</ulink> and <ulink
+url="../modelnl/machines.html">hardware platforms</ulink>.  Component
+sets (usually referred to as compsets) define both the specific model
+components that will be used in a given &cesm; configuration,
+<emphasis>and</emphasis> any component-specific namelist or
+configuration settings that are specific to this configuration.  In
+the CESM1.2 release series (starting with CESM1.2.0) component sets
+and resolutions have been significantly changed to permit addressing
+the growing model complexity. Both compsets and models grids are now
+associated with three names: a new longname, a new short name (that is
+backwards compatible with the older CESM1.1 release series long name)
+and a new alias name (that is backwards compatible with the older
+CESM1.1 release series short name).
+</para>
 
+<sect2 id="compset_names">
+<title>New Component Set Naming Convention</title>
+<para> The new component set (compset) longname has the form 
 <screen>
-> cd $&CCSMROOT;/scripts
-> create_newcase -h 
-> create_newcase -l
+TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_BGC%phys]
+
+TIME = model time period (e.g. 2000, 20TR, RCP8...)   
+ATM  = [CAM4, CAM5, DATM, SATM, XATM]	   
+LND  = [CLM40, CLM45, DLND, SLND, XLND]	   
+ICE  = [CICE, DICE, SICE, SICE]		   
+OCN  = [POP2, DOCN, SOCN, XOCN,AQUAP]	   
+ROF  = [RTM, DROF, SROF, XROF]		   
+GLC  = [CISM1, SGLC, XGLC]			   
+WAV  = [SWAV, XWAV]				   
+BGC  = optional BGC scenario                    
+
+The OPTIONAL %phys attributes specify sub-modes of the given system
+For example DOCN%DOM is the  DOCN data ocean (rather than slab-ocean) mode.
+ALL the possible %phys choices for each component are listed 
+by the calling create_newcase with the -list compsets argument.
+ALL data models now have a %phys option that corresponds to the data
+model mode 
 </screen>
+</para><para>
+As an example, the new longname,
+20TR_CAM4_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV, refers to running the
+prognostic components CAM, CLM, RTM, CICE, POP2 with stubs SGLC and
+SWAV components.  The particular configuration will be a transient 1850 to 2000
+run using cam5 physics, clm4.0 physics with clm4.0 cn,
+prognostic cice (default) and pop2 (default).  The shortname and alias
+for this compset are now B_1850-2000_CAM5_CN and B20TRC5CN, which
+correspond to the CESM1.1 series longname and shortname, respectively.
+<emphasis>Any one of the three compset names </emphasis>(longname, shortname or
+alias) can be used as input to &create_newcase;.  It is now also
+much easier to create your own custom compset (see <link
+linkend="faq_createowncompset">How do I create my own
+compset?</link>). All the out-of-the-box CESM1.2 release series
+compsets are listed in <ulink url="../modelnl/compsets.html">component
+sets</ulink>. Upon clicking on any of the long names a pop up box will
+appear that provides more details of the component configuration.
+</para>
+</sect2>
+
+<sect2 id="grid_names"> 
+<title>New Overall Model Grid Naming Convention</title>
+<para> The new model grid longname has the form
+<screen>
+a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
+
+a%  = atmosphere grid 
+l%  = land grid 
+oi% = ocean/sea-ice grid (must be the same) 
+r%  = river grid 
+m%  = land mask grid 
+g%  = internal land-ice (CISM) grid
+w%  = wave component grid (not relevant in CESM1.2 series) 
+
+From the point of view of model coupling - the glc (CISM) grid is assumed to
+be identical to the land grid. However, the internal CISM grid can be different, 
+and is specified by the g% value.
+</screen>
+</para>
 
 <para>
-CESM supports out of the box <ulink url="../modelnl/grid.html">model
-resolutions</ulink>, <ulink url="../modelnl/machines.html">hardware
-platforms</ulink> and <ulink url="../modelnl/compsets.html">component
-sets</ulink>.  Component sets (usually referred to as compsets) define
-both the specific model components that will be used in a given &cesm;
-configuration, <emphasis>and</emphasis> any component-specific
-namelist or configuration settings that are specific to this
-configuration.  If you want to create a custom compset, create an
-appropriate xml compset file and use the create_newcase option
--compset_file on the create_newcase command line (see <link
-linkend="faq_createowncompset">How do I create my own
-compset?</link>). </para>
+As an example, the new longname,
+a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null, refers to
+running an ne30np4 spectral element 1-degree atmosphere and land grids
+a gx1v6 Greenland pole 1-degree ocean and sea-ice grids a 1/2 degree
+river routing grid, null wave and internal cism grids and an
+ocean/land mask that is determined by the gx1v6 ocean mask.  The
+shortname and alias for this grid are now ne30np4_gx1v6 and ne30_g16,
+which correspond to the CESM1.1 series longname nad shortname
+respectively.  <emphasis>Any one of the three grid names </emphasis>
+(longname, shortname or alias) can be used as input to
+&create_newcase;.  It is now simpler for you to introduce new user
+defined grids (see <link linkend="newgrid">Adding a new user-defined
+grid</link>).  All the out-of-the-box CESM1.2 release series model
+grids are listed in <ulink url="../modelnl/grid.html">grids
+</ulink>. Upon clicking on any of the long names a pop up box will
+appear that provides more details of the model grid.
+</para>
 
-<para> Component sets and resolutions have both short and long
-names. Either the short or long name can be entered as input to
-&create_newcase;. As an example, the component set B_1850_RAMPCO2_CN
-has the short name B1850RMCN. Similarly, the resolution, 0.9x2.5_gx1v6
-has the short name f09_g16. Both the long and short names appear in
-the output from &create_newcase; -l, where the short name always
-appears in parentheses.  As of CESM1.1, it is now simpler for you to
-introduce both new user defined grids and new machines. </para>
-<para> &create_newcase; can be invoked with the following arguments:</para>
- 
+<para>
+Component grids (such as the atmosphere grid or ocean grid above) are
+denoted by the following naming convention:
+<itemizedlist>
+
+<listitem><para>"[dlat]x[dlon]" are regular lon/lat finite volume
+grids where dlat and dlon are the approximate grid spacing.  The
+shorthand convention is "fnn" where nn is generally a pair of numbers
+indicating the resolution.  An example is 1.9x2.5 or f19 for the
+approximately "2-degree" finite volume grid.  Note that CAM uses an
+[nlat]x[nlon] naming convection internally for this
+grid. </para></listitem>
+
+<listitem><para>"Tnn" are spectral lon/lat grids where nn is the
+spectral truncation value for the resolution.  The shorthand name is
+identical. An example is T85.</para></listitem>
+
+<listitem><para>"ne[X]np[Y]" are cubed sphere resolutions where X and
+Y are integers.  The short name is generally ne[X].  An example is
+ne30np4 or ne30.</para></listitem>
+<listitem><para>"pt1" is a single grid point.</para></listitem>
+
+<listitem><para>"gx[D]v[n]" is a displaced pole grid where D is the
+approximate resolution in degrees and n is the grid version.  The
+short name is generally g[D][n].  An example is gx1v6 or g16 for a
+grid of approximately 1-degree resolution.</para></listitem>
+
+<listitem><para>"tx[D]v[n]" is a tripole grid where D is the approximate resolution
+in degrees and n is the grid version. </para></listitem>
+
+</itemizedlist>
+</para>
+
+</sect2>
+
+<sect2 id="using_create_newcase"> 
+<title>Using create_newcase</title>
+<para> 
+You should first use the -h option in calling &create_newcase; to
+document its input options.  In addition, the &create_newcase; -list
+[compsets,grids,machine] option can also be used to see which
+component sets, model grids, and machines are supported. The links
+above, however, provide a much more complete determination.
+&create_newcase; can be called with the following arguments:
+</para>
 <screen>
 create_newcase \     
      -case <emphasis>case-name</emphasis> \        
@@ -57,10 +165,10 @@ create_newcase \
      [-confopts [_AOA],[AOE],[_D],[_E],[_N],[_P],[_R]] \
      [-pecount [S,M,L,X1,X2]] \
      [-pes_file <emphasis>full-pathname</emphasis>] \
-     [-compset_file <emphasis>full-pathname</emphasis>] \
-     [-grid_file <emphasis>full-pathname</emphasis>] \
+     [-user_compset <emphasis>new user compset long name</emphasis>] \
+     [-user_grid_file <emphasis>full-pathname of user xml grid file</emphasis>] \
      [-help [or -h]] |
-     [-list] \         
+     [-list <emphasis>[compsets,grids,machines]</emphasis>  \         
      [-silent [or -s]] \
      [-verbose [or -v]] \
      [-xmlmode [normal, expert]] \
@@ -74,15 +182,19 @@ required pes_file format is provided at
 <filename>$CCSMROOT/scripts/sample_pes_file.xml</filename>. 
 </para>
 
-<para> Following is a simple example of using &create_newcase;:
-<screen>
-> cd $&CCSMROOT;/scripts
-> create_newcase -case ~/cesm1/example1 \
-                 -compset B_1850_CN \
-                 -res 0.9x1.25_gx1v6 \
-                 -mach bluefire 
+<para> 
+Following is a simple example of using &create_newcase;: In what
+follows, $&CCSMROOT; is the full pathname of the root directory of the
+CESM distribution. 
+<screen> 
+> cd $&CCSMROOT;/scripts 
+> create_newcase -case ~/cesm/example1 \ 
+  -compset B_1850_CAM5_CN \ 
+  -res ne30np4_gx1v6 \
+  -mach yellowstone
 </screen>
 </para>
+
 <para>
 This example creates a $&CASEROOT; directory
 <filename>~/cesm1/example1</filename> where $&CASE; is "example1" with
@@ -93,13 +205,15 @@ configured to produce a present-day simulation.  The complete example
 appears in the <link linkend="use_case_basic">basic
 example</link>. $&CASE; can include letters, numbers, ".", and "_".
 Note that &create_newcase; creates the $&CASEROOT; directory. If the
-directory already exists, it prints a warning and aborts. </para>
+directory already exists, it prints a warning and aborts. 
+</para>
 
 <para>
-&create_newcase; creates the directory $&CASEROOT;, which is specified
-by the -case option. In $&CASEROOT;, &create_newcase; installs files
-to build and run the model and perform long term archiving of the case
-on the target platform.  &create_newcase; also creates the directory
+As a more general description, &create_newcase; creates the directory
+$&CASEROOT;, which is specified by the -case option. In $&CASEROOT;,
+&create_newcase; installs files to build and run the model and perform
+long term archiving of the case on the target platform.
+&create_newcase; also creates the directory
 <filename>$CASEROOT/Buildconf/</filename>, that in turn contains
 scripts to generate component namelist and build component libraries.
 The table below outlines the files and directories created by
@@ -132,8 +246,9 @@ and changes.</entry>
 <row>
 <entry>Buildconf/</entry>
 <entry>Directory containing scripts to generate component namelists
-and component and utility libraries (e.g., PIO, MCT). You should never have
-to edit the contents of this directory (unlike in CESM1.0.n) </entry>
+and component and utility libraries (e.g., PIO, MCT). You should never
+have to edit the contents of this directory (unlike in CESM1.0.5)
+</entry>
 </row>
 
 <row>
@@ -268,7 +383,7 @@ For more complete information about the files in the case directory, see
 <para>
 The xml variables in the <filename>env_*.xml</filename> files are
 translated into csh environment variables with the same name by the
-script <command>Tools/ccsm_getenv</command>. Conversion of xml
+script <command>$&CASEROOT;/Tools/ccsm_getenv</command>. Conversion of xml
 variables to environment variables is used by numerous script
 utilities as part of building, and running a given
 case. It is important to note that you do not explicitly see this
@@ -285,6 +400,7 @@ that appear in $&CASEROOT; are provided in
 <ulink url="../modelnl/env_run.html">run-time variables</ulink>.
 </para>
 
+</sect2>
 </sect1>
 
 <!-- ======================================================================= -->
@@ -307,7 +423,7 @@ does not remove this file.
 Creates the files, <filename>user_nl_xxx</filename>, (where xxx
 denotes the set of components targeted for the specific case).  As an
 example, for a B_ compset, xxx would denote
-[cam,clm,rtm,cice,pop2,cpl].  <emphasis>In CESM1.1, these files are
+[cam,clm,rtm,cice,pop2,cpl].  <emphasis>In CESM1.2, these files are
 where all user component namelist modifications are now
 made. </emphasis> <command>cesm_setup -clean</command> does not remove
 these files
@@ -353,7 +469,7 @@ about the files in the case directory, see
 <xref linkend="faq_casestuff"/>.
 </para>
 
-<table><title> Result of invoking &cesm_setup; </title>
+<table><title> Result of calling &cesm_setup; </title>
 <tgroup cols="2">
 <thead>
 <row>
@@ -430,7 +546,7 @@ number of instances of each component and the layout of the components
 across the hardware processors.  Optimizing the throughput and
 efficiency of a &cesm; experiment often involves customizing the
 processor (PE) layout for <link
-linkend="running_ccsm_loadbalance">load balancing</link>.  CESM1 has
+linkend="running_ccsm_loadbalance">load balancing</link>.  CESM has
 significant flexibility with respect to the layout of components
 across different hardware processors. In general, the &cesm;
 components -- atm, lnd, ocn, ice, glc, rof, and cpl -- can run on
@@ -563,18 +679,19 @@ linkend="use_case_pelayout"/>  </para></note>
 <!-- ======================================================================= -->
 
 <sect1 id="multiinst">
-<title>New multi-instance component functionality</title>
+<title>Multi-instance component functionality</title>
 
-<para> CESM1.1 has new capability to run multiple component instances
-under one model executable.  The only caveat to this usage is that if
-N multiple instances of any one active component is used, then N
-multiple instances of ALL active components are required. More details
-are discussed below. The primary motivation for this development was
-to be able to run an ensemble kalman filter for data assimilation and
-parameter estimation (e.g. UQ).  However, it also provides you with the
-ability to run a set of experiments within a single CESM executable
-where each instance can have a different namelist, and have all the
-output go to one directory.</para>
+<para> Like the CESM1.1 series, the CESM1.2 series also has the
+new capability to run multiple component instances under one model
+executable.  The only caveat to this usage is that if N multiple
+instances of any one active component is used, then N multiple
+instances of ALL active components are required. More details are
+discussed below. The primary motivation for this development was to be
+able to run an ensemble Kalman-Filter for data assimilation and
+parameter estimation (e.g. UQ).  However, it also provides you with
+the ability to run a set of experiments within a single CESM
+executable where each instance can have a different namelist, and have
+all the output go to one directory.</para>
 
 <para> In the following an F compset will be used as an
 illustration. Utilizing the multiple instance code involves the
@@ -621,19 +738,29 @@ Lets assume the following out of the box pe-layout for hopper:
 &lt;entry id="NINST_GLC"   value="1"  /&gt;    
 &lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;    
 
+&lt;entry id="NTASKS_WAV"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_WAV"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_WAV"   value="0"  /&gt;    
+&lt;entry id="NINST_WAV"   value="1"  /&gt;    
+&lt;entry id="NINST_WAV_LAYOUT"   value="concurrent"  /&gt;    
+
 &lt;entry id="NTASKS_CPL"   value="128"  /&gt;    
 &lt;entry id="NTHRDS_CPL"   value="1"  /&gt;    
 &lt;entry id="ROOTPE_CPL"   value="0"  /&gt;    
 </screen>
-</para><para>
-For an F compset, only atm, lnd, rof and cice are prognostic components,
-whereas the ocn is a data components and glc is a stub component.
+</para>
+
+<para>
+For an F compset, only atm, lnd, rof are full prognostic components.
+The ocn is a prescribed data component, cice is a mixed
+prescribed/prognostic component (ice-coverage is prescribed) and glc
+and wav are stub components.
 Lets say we want to run 2 instances of CAM in this experiment. The
 current implementation of multi-instances will also require you to run
-2 instances of CLM. However, you have the flexibility to run either 1
-or 2 instances of DOCN (we can ignore glc since it does not do
-anything in this compset). To run 2 instances of CAM, CLM and CICE, all you
-need to do is to change NINST_ATM, NINST_LND and NINST_ICE above from 1 to 2.
+2 instances of CLM, CICE and RTM. However, you have the flexibility to run either 1
+or 2 instances of DOCN (we can ignore glc and wav since they do not do
+anything in this compset). To run 2 instances of CAM, CLM, CICE, RTM and DOCN, all you
+need to do is to change NINST_ATM, NINST_LND, NINST_ICE, NINST_ROF and NINST_DOCN above from 1 to 2.
 This will result in the following &env_mach_pes.xml; file:
 </para><para>
 <screen>
@@ -655,6 +782,12 @@ This will result in the following &env_mach_pes.xml; file:
 &lt;entry id="NINST_ICE"   value="2"  /&gt;    
 &lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;    
 
+&lt;entry id="NTASKS_ROF"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_ROF"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_ROF"   value="0"  /&gt;    
+&lt;entry id="NINST_ROF"   value="2"  /&gt;    
+&lt;entry id="NINST_ROF_LAYOUT"   value="concurrent"  /&gt;    
+
 &lt;entry id="NTASKS_OCN"   value="128"  /&gt;    
 &lt;entry id="NTHRDS_OCN"   value="1"  /&gt;    
 &lt;entry id="ROOTPE_OCN"   value="0"  /&gt;    
@@ -672,8 +805,8 @@ This will result in the following &env_mach_pes.xml; file:
 &lt;entry id="ROOTPE_CPL"   value="0"  /&gt;    
 </screen>
 </para><para>
-As a result of this, you will have 2 instances of CAM, CLM and CICE (prescribed) and DOCN, each running concurrently on
-64 MPI tasks. 
+As a result of this, you will have 2 instances of CAM, CLM and CICE (prescribed) and RTM, each running concurrently on
+64 MPI tasks - and only 1 instance of DOCN.
 </para></listitem>
 
 <listitem><para> A separate user_nl_xxx_NNNN file (where NNNN is the
@@ -692,6 +825,8 @@ user_nl_clm_0002
 user_nl_cpl
 user_nl_docn_0001
 user_nl_docn_0002
+user_nl_rtm_0001
+user_nl_rtm_0002
 </screen>
 </para><para> and the following <filename>*_in_*</filename> files
 and <filename>*txt*</filename> files in $CASEROOT/CaseDocs:
@@ -711,6 +846,8 @@ ice_in_0001
 ice_in_0002
 lnd_in_0001
 lnd_in_0002
+rof_in_0001
+rof_in_0002
 </screen>
 </para><para> The namelist for each component instance can be modified
 by changing the corresponding user_nl_xxx_NNNN file for that component
@@ -734,7 +871,7 @@ It is also important to stress the following points:
 differ by differences in namelist settings - they are ALL using the
 same model executable.</command> </para></listitem>
 
-<listitem><para> Only 1 coupler component is supported in the CESM1.1
+<listitem><para> Only 1 coupler component is supported in the CESM1.2 series
 multiple instance implementation.  </para></listitem>
 
 <listitem><para> <filename>user_nl_*</filename> files once they are

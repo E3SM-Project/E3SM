@@ -23,6 +23,7 @@ cd $CCSMROOT/scripts
 rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
 
 cd $CASERR1
+./xmlchange DOUT_S_SAVE_ALL_ON_DISK=FALSE
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
 ./cesm_setup
@@ -83,16 +84,21 @@ endif
 #--- run ref1 case
 ./$CASE.run
 
-gunzip ${DOUT_S_ROOT}/cpl/logs/cpl.log*.gz
-set CplLogFile = `ls -1t ${DOUT_S_ROOT}/cpl/logs/cpl.log* | head -1`
+set DOUT_S_ROOT_LOCKED=`echo $DOUT_S_ROOT | sed 's/archive/archive.locked/'`
+echo "DOUT_S_ROOT $DOUT_S_ROOT"
+echo "DOUT_S_ROOT_LOCKED $DOUT_S_ROOT_LOCKED"
+gunzip ${CASERR1}/logs/cpl.log*.gz
+set CplLogFile = `ls -1t ${CASERR1}/logs/cpl.log* | head -1`
+echo "CplLogFile $CplLogFile"
 setenv CPLLOG_INIT $CplLogFile
 setenv BASEGEN_FILE01 $CplLogFile
 
-set DOUTSR1 = ${DOUT_S_ROOT}
+set DOUTSR1 = ${DOUT_S_ROOT_LOCKED}
+
 set basestatus = "FAIL "
 if ( $?CPLLOG_INIT ) then
   echo "Checking successful completion of init cpl log file" >>& $TESTSTATUS_LOG
-  set pass = `grep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
+  set pass = `zgrep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
   if ( $pass != 0 ) then
     set basestatus = "PASS "
     echo "$basestatus ${CASEBASEID}.1 " >>& $TESTSTATUS_LOG
@@ -111,6 +117,7 @@ endif
 
 cd ${CASER0}
 source ./Tools/ccsm_getenv
+./xmlchange DOUT_S_SAVE_ALL_ON_DISK=FALSE
 # Set startdate to start2, set ref date based on ref1 restart
 set refdate2   = `ls -1dt ${DOUTSR1}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" `
 echo "ref2: doing a ${stopn2} ${STOP_OPTION} hybrid startup from $start2 using ref1 ${refdate2}" >>& $TESTSTATUS_LOG 
@@ -135,15 +142,20 @@ cp    ${DOUTSR1}/rest/${refdate2}-00000/*rpointer*    $RUNDIR/.
 #--- run ref case
 ./$CASE.run
 
-gunzip ${DOUT_S_ROOT}/cpl/logs/cpl.log*.gz
-set CplLogFile = `ls -1t ${DOUT_S_ROOT}/cpl/logs/cpl.log* | head -1`
+set DOUT_S_ROOT_LOCKED=`echo $DOUT_S_ROOT | sed 's/archive/archive.locked/'`
+echo "DOUT_S_ROOT $DOUT_S_ROOT"
+echo "DOUT_S_ROOT_LOCKED $DOUT_S_ROOT_LOCKED"
+gunzip ${CASER0}/logs/cpl.log*.gz
+
+set CplLogFile = `ls -1t ${CASER0}/logs/cpl.log* | head -1`
+echo "CplLogFile $CplLogFile"
 setenv CPLLOG_HYBR $CplLogFile
 setenv BASEGEN_FILE02 $CplLogFile
 
 set basestatus = "FAIL "
 if ( $?CPLLOG_HYBR ) then
   echo "Checking successful completion of hybr cpl log file" >>& $TESTSTATUS_LOG
-  set pass = `grep "SUCCESSFUL TERM" $CPLLOG_HYBR | wc -l`
+  set pass = `zgrep "SUCCESSFUL TERM" $CPLLOG_HYBR | wc -l`
   if ( $pass != 0 ) then
     set basestatus = "PASS "
     echo "$basestatus ${CASEBASEID}.2 " >>& $TESTSTATUS_LOG
@@ -172,8 +184,9 @@ echo "doing a {stopn4} ${STOP_OPTION} continue restart test" >>& $TESTSTATUS_LOG
 
 ./$CASE.run
 
-gunzip $RUNDIR/cpl.log*.gz
-set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+gunzip $CASEROOT/logs/cpl.log*.gz
+set CplLogFile = `ls -1t $CASEROOT/logs/cpl.log* | head -1`
+echo "CplLogFile $CplLogFile"
 setenv CPLLOG_REST $CplLogFile
 setenv BASEGEN_FILE04 $CplLogFile
 
@@ -197,7 +210,7 @@ set basestatus = "UNDEF"
 
 if ( $?CPLLOG_INIT ) then
   echo "Checking successful completion in init cpl log file" >>& $TESTSTATUS_LOG
-  set pass = `grep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
+  set pass = `zgrep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
   if ( $pass != 0 ) then
     set basestatus = "PASS "
   else

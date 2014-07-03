@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: map_mod.F90 46983 2013-05-09 22:08:12Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/runoff_to_ocn/src/map_mod.F90 $
+! SVN $Id: map_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/gen_mapping_files/runoff_to_ocn/src/map_mod.F90 $
 !===============================================================================
 
 MODULE map_mod
@@ -14,7 +14,6 @@ MODULE map_mod
 #include <netcdf.inc>
 
    integer,parameter :: strLen = 240
-   integer,parameter :: nv     = 4
 
    real(r8)   ,parameter :: pi =  3.14159265358979323846_r8
    real(r8)   ,parameter :: rEarth     =  6.37122e+6         ! radius of earth (m)
@@ -43,10 +42,11 @@ MODULE map_mod
      integer         ::    n_a      ! number of non-zero matrix elements
      integer         ::   ni_a      ! number of 2d array i indicies
      integer         ::   nj_a      ! number of 2d array j indicies
+     integer         ::   nv_a      ! number of vertices per cell on a grid
      real(r8)   ,pointer ::   xc_a(:)   ! x-coords of centers   ~ deg east
      real(r8)   ,pointer ::   yc_a(:)   ! y-coords of centers   ~ deg north
-     real(r8)   ,pointer ::   xv_a(:,:) ! x-coords of verticies ~ deg east, (nv,n)
-     real(r8)   ,pointer ::   yv_a(:,:) ! y-coords of verticies ~ deg north (nv,n)
+     real(r8)   ,pointer ::   xv_a(:,:) ! x-coords of verticies ~ deg east, (nv_a,n)
+     real(r8)   ,pointer ::   yv_a(:,:) ! y-coords of verticies ~ deg north (nv_a,n)
      integer,pointer :: mask_a(:)   ! mask: 0 <=> out-of-domain (invalid data)
      real(r8)   ,pointer :: area_a(:)   ! area of grid cell ~ radians squared
      integer         :: dims_a(2)       ! hardwire to 2 for now
@@ -55,10 +55,11 @@ MODULE map_mod
      integer         ::    n_b      ! number of non-zero matrix elements
      integer         ::   ni_b      ! number of 2d array i indicies
      integer         ::   nj_b      ! number of 2d array j indicies
+     integer         ::   nv_b      ! number of vertices per cell on b grid
      real(r8)   ,pointer ::   xc_b(:)   ! x-coords of centers   ~ deg east
      real(r8)   ,pointer ::   yc_b(:)   ! y-coords of centers   ~ deg north
-     real(r8)   ,pointer ::   xv_b(:,:) ! x-coords of verticies ~ deg east, (nv,n)
-     real(r8)   ,pointer ::   yv_b(:,:) ! y-coords of verticies ~ deg north (nv,n)
+     real(r8)   ,pointer ::   xv_b(:,:) ! x-coords of verticies ~ deg east, (nv_b,n)
+     real(r8)   ,pointer ::   yv_b(:,:) ! y-coords of verticies ~ deg north (nv_b,n)
      integer,pointer :: mask_b(:)   ! mask: 0 <=> out-of-domain (invalid data)
      real(r8)   ,pointer :: area_b(:)   ! area of grid cell ~ radians squared
      integer         :: dims_b(2)       ! hardwire to 2 for now
@@ -106,12 +107,14 @@ SUBROUTINE map_read(map, filename)
    !--- local ---
    integer         :: i,n,m         ! generic indicies
 
-   character(strLen)     :: str     ! variable length char string
-   character(strLen)     :: attstr  ! netCDF attribute name string
-   integer               :: rcode   ! netCDF routine return code
-   integer               :: fid     ! netCDF file      ID
-   integer               :: vid     ! netCDF variable  ID
-   integer               :: did     ! netCDF dimension ID
+   character(strLen)     :: str       ! variable length char string
+   character(strLen)     :: attstr    ! netCDF attribute name string
+   character(strLen)     :: units     ! netCDF attribute name string
+   integer               :: rcode     ! netCDF routine return code
+   integer               :: grid_rank ! value of [src|dst]_grid_rank dimension
+   integer               :: fid       ! netCDF file      ID
+   integer               :: vid       ! netCDF variable  ID
+   integer               :: did       ! netCDF dimension ID
 
    !--- formats ---
    character(len=*),parameter :: F00 = "('(map_read) ',3a)"
@@ -161,40 +164,61 @@ SUBROUTINE map_read(map, filename)
    !-----------------------------------------------
    rcode = nf_inq_dimid (fid, 'n_a' , did)
    rcode = nf_inq_dimlen(fid, did   , map%n_a  )
-   map%dims_a(1) = map%n_a
-   map%dims_a(2) = 1
-   rcode = nf_inq_dimid (fid, 'ni_a', did)
-   if (rcode.eq.NF_NOERR) then
-      rcode = nf_inq_dimlen(fid, did   , map%ni_a )
-      map%dims_a(1) = map%ni_a
+   rcode = nf_inq_dimid (fid, 'nv_a' , did)
+   rcode = nf_inq_dimlen(fid, did   , map%nv_a  )
+   rcode = nf_inq_dimid (fid, 'src_grid_rank' , did)
+   rcode = nf_inq_dimlen(fid, did, grid_rank)
+   if (grid_rank.eq.1) then
+      map%dims_a(1) = map%n_a
+      map%dims_a(2) = 1
+   else
+      rcode = nf_inq_varid(fid, 'src_grid_dims', vid)
+      rcode = nf_get_var_int(fid, vid, map%dims_a)
    endif
-   rcode = nf_inq_dimid (fid, 'nj_a', did)
-   if (rcode.eq.NF_NOERR) then
-      rcode = nf_inq_dimlen(fid, did   , map%nj_a )
-      map%dims_a(2) = map%nj_a
-   endif
+   map%ni_a = map%dims_a(1)
+   map%nj_a = map%dims_a(2)
 
-   allocate(map%  xc_a(   map%n_a)) ! x-coordinates of center
-   allocate(map%  yc_a(   map%n_a)) ! y-coordinates of center
-   allocate(map%  xv_a(nv,map%n_a)) ! x-coordinates of verticies
-   allocate(map%  yv_a(nv,map%n_a)) ! y-coordinates of verticies
-   allocate(map%mask_a(   map%n_a)) ! domain mask
-   allocate(map%area_a(   map%n_a)) ! grid cell area
-   allocate(map%frac_a(   map%n_a)) ! grid cell area
+   allocate(map%  xc_a(         map%n_a)) ! x-coordinates of center
+   allocate(map%  yc_a(         map%n_a)) ! y-coordinates of center
+   allocate(map%  xv_a(map%nv_a,map%n_a)) ! x-coordinates of verticies
+   allocate(map%  yv_a(map%nv_a,map%n_a)) ! y-coordinates of verticies
+   allocate(map%mask_a(         map%n_a)) ! domain mask
+   allocate(map%area_a(         map%n_a)) ! grid cell area
+   allocate(map%frac_a(         map%n_a)) ! grid cell area
 
-   rcode = nf_inq_varid     (fid,'src_grid_dims',vid )
-   if (rcode.eq.NF_NOERR) then
-      rcode = nf_get_var_int   (fid,vid     ,map%dims_a)
-   endif
    rcode = nf_inq_varid     (fid,'xc_a'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%xc_a )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xc_a = map%xc_a * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'yc_a'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%yc_a )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yc_a = map%yc_a * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'xv_a'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%xv_a )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xv_a = map%xv_a * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'yv_a'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%yv_a )
    rcode = nf_inq_varid     (fid,'mask_a',vid )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yv_a = map%yv_a * RADtoDEG
+   end if
+
    rcode = nf_get_var_int   (fid,vid     ,map%mask_a)
    rcode = nf_inq_varid     (fid,'area_a',vid )
    rcode = nf_get_var_double(fid,vid     ,map%area_a)
@@ -206,39 +230,60 @@ SUBROUTINE map_read(map, filename)
    !-----------------------------------------------
    rcode = nf_inq_dimid (fid, 'n_b' , did)
    rcode = nf_inq_dimlen(fid, did   , map%n_b  )
-   map%dims_b(1) = map%n_b
-   map%dims_b(2) = 1
-   rcode = nf_inq_dimid (fid, 'ni_b', did)
-   if (rcode.eq.NF_NOERR) then
-      rcode = nf_inq_dimlen(fid, did   , map%ni_b )
-      map%dims_b(1) = map%ni_b
-   endif
-   rcode = nf_inq_dimid (fid, 'nj_b', did)
-   if (rcode.eq.NF_NOERR) then
-      rcode = nf_inq_dimlen(fid, did   , map%nj_b )
-      map%dims_b(2) = map%nj_b
-   endif
+   rcode = nf_inq_dimid (fid, 'nv_b' , did)
+   rcode = nf_inq_dimlen(fid, did   , map%nv_b  )
+   rcode = nf_inq_dimid (fid, 'dst_grid_rank' , did)
+   rcode = nf_inq_dimlen(fid, did, grid_rank)
+   if (grid_rank.eq.1) then
+      map%dims_b(1) = map%n_b
+      map%dims_b(2) = 1
+   else
+      rcode = nf_inq_varid(fid, 'dst_grid_dims', vid)
+      rcode = nf_get_var_int(fid, vid, map%dims_b)
+   end if
+   map%ni_b = map%dims_b(1)
+   map%nj_b = map%dims_b(2)
 
-   allocate(map%  xc_b(   map%n_b)) ! x-coordinates of center
-   allocate(map%  yc_b(   map%n_b)) ! y-coordinates of center
-   allocate(map%  xv_b(nv,map%n_b)) ! x-coordinates of verticies
-   allocate(map%  yv_b(nv,map%n_b)) ! y-coordinates of verticies
-   allocate(map%mask_b(   map%n_b)) ! domain mask
-   allocate(map%area_b(   map%n_b)) ! grid cell area
-   allocate(map%frac_b(   map%n_b)) ! grid cell area
+   allocate(map%  xc_b(         map%n_b)) ! x-coordinates of center
+   allocate(map%  yc_b(         map%n_b)) ! y-coordinates of center
+   allocate(map%  xv_b(map%nv_b,map%n_b)) ! x-coordinates of verticies
+   allocate(map%  yv_b(map%nv_b,map%n_b)) ! y-coordinates of verticies
+   allocate(map%mask_b(         map%n_b)) ! domain mask
+   allocate(map%area_b(         map%n_b)) ! grid cell area
+   allocate(map%frac_b(         map%n_b)) ! grid cell area
 
-   rcode = nf_inq_varid     (fid,'dst_grid_dims',vid )
-   if (rcode.eq.NF_NOERR) then
-      rcode = nf_get_var_int   (fid,vid     ,map%dims_b)
-   endif
    rcode = nf_inq_varid     (fid,'xc_b'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%xc_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xc_b = map%xc_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'yc_b'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%yc_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yc_b = map%yc_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'xv_b'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%xv_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xv_b = map%xv_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'yv_b'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%yv_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yv_b = map%yv_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'mask_b',vid )
    rcode = nf_get_var_int   (fid,vid     ,map%mask_b)
    rcode = nf_inq_varid     (fid,'area_b',vid )
@@ -270,7 +315,7 @@ END SUBROUTINE map_read
 !===============================================================================
 !===============================================================================
 
-SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
+SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
 
    !--- modules ---
 
@@ -279,22 +324,24 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
    !--- includes ---
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       ! sMatrix info to be read in
-   character(*) , intent(in)    :: rfilename ! name of rtm rdirc file
-   character(*) , intent(in)    :: ofilename ! name of ocn scrip grid file
-   character(*) , intent(in)    :: gridtype  ! type of roff grid data 
-
+   type(sMatrix)    , intent(inout) :: map          ! sMatrix info to be read in
+   character(*)     , intent(in)    :: rfilename    ! name of rtm rdirc file
+   character(*)     , intent(in)    :: ofilename    ! name of ocn scrip grid file
+   character(*)     , intent(in)    :: gridtype     ! type of roff grid data 
+   logical, optional, intent(in)    :: lmake_rSCRIP ! .true. => convert runoff
+                                                    ! grid to SCRIP format
    !--- local ---
    integer         :: i,j,n,m         ! generic indicies
 
    character(strLen)     :: str     ! variable length char string
    character(strLen)     :: attstr  ! netCDF attribute name string
+   character(strLen)     :: units   ! netCDF attribute name string
    integer               :: rcode   ! netCDF routine return code
    integer               :: fid     ! netCDF file      ID
    integer               :: vid     ! netCDF variable  ID
    integer               :: did     ! netCDF dimension ID
    integer               :: grid_rank
-   integer               :: grid_dims(2)
+   integer, allocatable, dimension(:) :: grid_dims
    real(r8)              :: lat,lon,rdirc
    integer               :: ilat,ilon
    integer               :: nm,np,cnt,ibx,jbx,ibxj,jbxj,ni,nj,nij
@@ -303,6 +350,12 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
    integer               :: vcells
    integer,allocatable   :: timin(:,:),timax(:,:),tjmin(:,:),tjmax(:,:)
    logical               :: lxv_a, lyv_a, lmask_a, larea_a
+   logical               :: lrs ! .true. => convert runoff grid to SCRIP format
+
+   ! only used for creating SCRIP grid
+   integer               :: did1, did2, did3   ! netCDF dimension ID
+   character(len= 8)     :: cdate              ! wall clock date
+   character(len=10)     :: ctime              ! wall clock time
 
    !--- formats ---
    character(*),parameter :: subName = "(map_gridRead) "
@@ -320,6 +373,11 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
    !-----------------------------------------------
    ! set global attributesa
    !-----------------------------------------------
+   if (present(lmake_rSCRIP)) then
+     lrs = lmake_rSCRIP
+   else
+     lrs = .false.
+   end if
 
    map%title      = 'gen_runoff mapping generation'
    map%normal     = 'conservative'
@@ -334,19 +392,21 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
       write(*,F00) "read source domain info -- hardwired for 1/2 degree clm/rtm rdirc ascii file"
       !-------------------------------------------------------------------------
 
+      grid_rank = 2
       map%ni_a = 720
       map%nj_a = 360
+      map%nv_a = 4
       map%n_a  = map%ni_a * map%nj_a
       map%dims_a(1) = map%ni_a
       map%dims_a(2) = map%nj_a
 
-      allocate(map%  xc_a(   map%n_a)) ! x-coordinates of center
-      allocate(map%  yc_a(   map%n_a)) ! y-coordinates of center
-      allocate(map%  xv_a(nv,map%n_a)) ! x-coordinates of verticies
-      allocate(map%  yv_a(nv,map%n_a)) ! y-coordinates of verticies
-      allocate(map%mask_a(   map%n_a)) ! domain mask
-      allocate(map%area_a(   map%n_a)) ! grid cell area
-      allocate(map%frac_a(   map%n_a)) ! grid cell area
+      allocate(map%  xc_a(         map%n_a)) ! x-coordinates of center
+      allocate(map%  yc_a(         map%n_a)) ! y-coordinates of center
+      allocate(map%  xv_a(map%nv_a,map%n_a)) ! x-coordinates of verticies
+      allocate(map%  yv_a(map%nv_a,map%n_a)) ! y-coordinates of verticies
+      allocate(map%mask_a(         map%n_a)) ! domain mask
+      allocate(map%area_a(         map%n_a)) ! grid cell area
+      allocate(map%frac_a(         map%n_a)) ! grid cell area
 
       fid = 22
       open(fid,file=trim(rfilename))
@@ -404,16 +464,18 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
       map%ni_a = ni
       map%nj_a = nj
       map%n_a  = ni*nj
+      map%nv_a = 4
       map%dims_a(1) = map%ni_a
       map%dims_a(2) = map%nj_a
+      grid_rank = 2
 
-      allocate(map%  xc_a(   map%n_a)) ! x-coordinates of center
-      allocate(map%  yc_a(   map%n_a)) ! y-coordinates of center
-      allocate(map%  xv_a(nv,map%n_a)) ! x-coordinates of verticies
-      allocate(map%  yv_a(nv,map%n_a)) ! y-coordinates of verticies
-      allocate(map%mask_a(   map%n_a)) ! domain mask
-      allocate(map%area_a(   map%n_a)) ! grid cell area
-      allocate(map%frac_a(   map%n_a)) ! frac of cell mapped to dest
+      allocate(map%  xc_a(         map%n_a)) ! x-coordinates of center
+      allocate(map%  yc_a(         map%n_a)) ! y-coordinates of center
+      allocate(map%  xv_a(map%nv_a,map%n_a)) ! x-coordinates of verticies
+      allocate(map%  yv_a(map%nv_a,map%n_a)) ! y-coordinates of verticies
+      allocate(map%mask_a(         map%n_a)) ! domain mask
+      allocate(map%area_a(         map%n_a)) ! grid cell area
+      allocate(map%frac_a(         map%n_a)) ! frac of cell mapped to dest
 
       rcode = nf_inq_varid     (fid,'xc'  ,vid)
       if (rcode.ne.NF_NOERR) then
@@ -490,8 +552,14 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
 
          if (.not.larea_a) then
            ! Hardcoded for r0.5
-           map%area_a(n) = 0.5*0.5*cos(lat*DEGtoRAD)*DEGtoRAD*DEGtoRAD
+           map%area_a(n) = 0.5_r8*0.5_r8*cos(lat*DEGtoRAD)*DEGtoRAD*DEGtoRAD
          end if
+         ! want area to be in square radians
+         ! globe should be 12.5 sqr rad or 41000 sqr  deg, compare to
+         ! 40000 to see what units we are using
+         ! (MNL note: metadata is wrong in runoff.daitren.annual.090225.nc)
+         if (sum(map%area_a).gt.40000.0_r8) &
+           map%area_a(:) = map%area_a(:)*DEGtoRAD*DEGtoRAD
 
          if (.not.lmask_a) then
            map%mask_a(n) = 1
@@ -523,44 +591,73 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
 
       rcode = nf_inq_dimid (fid, 'grid_size' , did)
       rcode = nf_inq_dimlen(fid, did   , map%n_a  )
+      rcode = nf_inq_dimid (fid, 'grid_corners' , did)
+      rcode = nf_inq_dimlen(fid, did   , map%nv_a  )
       rcode = nf_inq_dimid (fid, 'grid_rank', did)
       rcode = nf_inq_dimlen(fid, did   , grid_rank)
-      if (grid_rank /= 2) then
+      allocate(grid_dims(grid_rank))
+      rcode = nf_inq_varid  (fid, 'grid_dims', vid)
+      rcode = nf_get_var_int(fid, vid   , grid_dims)
+      if (grid_rank.eq.1) then
+         map%ni_a = grid_dims(1)
+         map%nj_a = 1
+      elseif (grid_rank.eq.2) then
+         map%ni_a = grid_dims(1)
+         map%nj_a = grid_dims(2)
+      else
+         deallocate(grid_dims)
          write(6,*) 'ERROR: grid_rank is ',grid_rank,' in ',trim(rfilename)
          call shr_sys_abort(subName//"ERROR: rfilename grid_rank")
       endif
-      rcode = nf_inq_varid  (fid, 'grid_dims', vid)
-      rcode = nf_get_var_int(fid, vid   , grid_dims)
-      map%ni_a = grid_dims(1)
-      map%nj_a = grid_dims(2)
+      deallocate(grid_dims)
       map%dims_a(1) = map%ni_a
       map%dims_a(2) = map%nj_a
 
-      allocate(map%  xc_a(   map%n_a)) ! x-coordinates of center
-      allocate(map%  yc_a(   map%n_a)) ! y-coordinates of center
-      allocate(map%  xv_a(nv,map%n_a)) ! x-coordinates of verticies
-      allocate(map%  yv_a(nv,map%n_a)) ! y-coordinates of verticies
-      allocate(map%mask_a(   map%n_a)) ! domain mask
-      allocate(map%area_a(   map%n_a)) ! grid cell area
-      allocate(map%frac_a(   map%n_a)) ! grid cell area
+      allocate(map%  xc_a(         map%n_a)) ! x-coordinates of center
+      allocate(map%  yc_a(         map%n_a)) ! y-coordinates of center
+      allocate(map%  xv_a(map%nv_a,map%n_a)) ! x-coordinates of verticies
+      allocate(map%  yv_a(map%nv_a,map%n_a)) ! y-coordinates of verticies
+      allocate(map%mask_a(         map%n_a)) ! domain mask
+      allocate(map%area_a(         map%n_a)) ! grid cell area
+      allocate(map%frac_a(         map%n_a)) ! grid cell area
 
       rcode = nf_inq_varid     (fid,'grid_center_lon'  ,vid)
       rcode = nf_get_var_double(fid,vid     ,map%xc_a )
+      units = "" ! units needs to be emptied before reading from netCDF file
+      rcode = nf_get_att_text(fid, vid, "units", units)
+      if (trim(units).eq."radians") then
+         map%xc_a = map%xc_a * RADtoDEG
+      end if
+
       rcode = nf_inq_varid     (fid,'grid_center_lat'  ,vid)
       rcode = nf_get_var_double(fid,vid     ,map%yc_a )
+      units = "" ! units needs to be emptied before reading from netCDF file
+      rcode = nf_get_att_text(fid, vid, "units", units)
+      if (trim(units).eq."radians") then
+         map%yc_a = map%yc_a * RADtoDEG
+      end if
+
       rcode = nf_inq_varid     (fid,'grid_corner_lon'  ,vid)
       rcode = nf_get_var_double(fid,vid     ,map%xv_a )
+      units = "" ! units needs to be emptied before reading from netCDF file
+      rcode = nf_get_att_text(fid, vid, "units", units)
+      if (trim(units).eq."radians") then
+         map%xv_a = map%xv_a * RADtoDEG
+      end if
+
       rcode = nf_inq_varid     (fid,'grid_corner_lat'  ,vid)
       rcode = nf_get_var_double(fid,vid     ,map%yv_a )
+      units = "" ! units needs to be emptied before reading from netCDF file
+      rcode = nf_get_att_text(fid, vid, "units", units)
+      if (trim(units).eq."radians") then
+         map%yv_a = map%yv_a * RADtoDEG
+      end if
+
       rcode = nf_inq_varid     (fid,'grid_imask',vid )
       rcode = nf_get_var_int   (fid,vid     ,map%mask_a)
       rcode = nf_inq_varid     (fid,'grid_area',vid )
       rcode = nf_get_var_double(fid,vid     ,map%area_a)
 
-      map%xc_a = map%xc_a * RADtoDEG
-      map%yc_a = map%yc_a * RADtoDEG
-      map%xv_a = map%xv_a * RADtoDEG
-      map%yv_a = map%yv_a * RADtoDEG
       map%frac_a = map%mask_a * 1.0_r8
 
       rcode = nf_close(fid)
@@ -572,6 +669,79 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
       write(6,F00) 'ERROR: no implementation for gridtype = ',trim(gridtype)
       stop
    end if
+
+   if (lrs) then
+     write(6,*) "Creating ", trim(ofilename), "..."
+     rcode = nf_create(trim(ofilename),IOR(NF_CLOBBER,NF_64BIT_OFFSET),fid)
+     if (rcode.ne.NF_NOERR) write(*,F00) nf_strerror(rcode)
+
+     ! global attributes
+     str = 'SCRIP file generated from ' // trim(rfilename)
+     rcode = nf_put_att_text(fid,NF_GLOBAL,'title', len_trim(str), str)
+     call date_and_time(cdate,ctime) ! f90 intrinsic
+     str  = 'File created: '//cdate(1:4)//'-'//cdate(5:6)//'-'//cdate(7:8) &
+                       //' '//ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)
+     rcode = nf_put_att_text(fid,NF_GLOBAL,'history'    ,len_trim(str),str)
+
+     ! dimension data
+     rcode = nf_def_dim(fid, 'grid_size', map%n_a, did1) 
+     rcode = nf_def_dim(fid, 'grid_rank', grid_rank, did2) 
+     rcode = nf_def_dim(fid, 'grid_corners', map%nv_a, did3)
+
+     ! variable data
+     rcode = nf_def_var(fid, 'grid_dims', NF_INT,1,did2, vid)
+
+     str   = 'degrees'
+     rcode = nf_def_var(fid, 'grid_center_lat', NF_DOUBLE, 1, did1, vid)
+     rcode = nf_put_att_text(fid,vid,"units"    ,len_trim(str),str)
+     rcode = nf_def_var(fid, 'grid_center_lon', NF_DOUBLE, 1, did1, vid)
+     rcode = nf_put_att_text(fid,vid,"units"    ,len_trim(str),str)
+
+     str   = "square radians"
+     rcode = nf_def_var(fid, 'grid_area', NF_DOUBLE,1,did1, vid)
+     rcode = nf_put_att_text(fid,vid,"units"    ,len_trim(str),str)
+     rcode = nf_def_var(fid, 'grid_imask', NF_INT,1,did1, vid)
+
+     str   = 'degrees'
+     rcode = nf_def_var(fid, 'grid_corner_lat', NF_DOUBLE, 2, (/did3, did1/), vid)
+     rcode = nf_put_att_text(fid,vid,"units"    ,len_trim(str),str)
+     rcode = nf_def_var(fid, 'grid_corner_lon', NF_DOUBLE, 2, (/did3, did1/), vid)
+     rcode = nf_put_att_text(fid,vid,"units"    ,len_trim(str),str)
+
+     rcode = nf_enddef(fid)
+
+     ! put data
+
+     rcode = nf_inq_varid(fid,'grid_dims',vid)
+     if (grid_rank.eq.1) then
+       rcode = nf_put_var_int(fid, vid, map%ni_a)
+     else
+       rcode = nf_put_var_int(fid, vid, (/map%ni_a, map%nj_a/))
+     end if
+
+     rcode = nf_inq_varid(fid,'grid_center_lat',vid)
+     rcode = nf_put_var_double(fid, vid, map%yc_a)
+
+     rcode = nf_inq_varid(fid,'grid_center_lon',vid)
+     rcode = nf_put_var_double(fid, vid, map%xc_a)
+
+     rcode = nf_inq_varid(fid,'grid_area',vid)
+     rcode = nf_put_var_double(fid, vid, map%area_a)
+
+     rcode = nf_inq_varid(fid,'grid_imask',vid)
+     rcode = nf_put_var_int(fid, vid, map%mask_a)
+
+     rcode = nf_inq_varid(fid,'grid_corner_lat',vid)
+     rcode = nf_put_var_double(fid, vid, map%yv_a)
+
+     rcode = nf_inq_varid(fid,'grid_corner_lon',vid)
+     rcode = nf_put_var_double(fid, vid, map%xv_a)
+
+     rcode = nf_close(fid)
+
+     print*, "Area sum is ", sum(map%area_a)
+     return
+   end if
  
    !----------------------------------------------------------------------------
    write(*,F00) "read destination domain info -- pop grid"
@@ -581,46 +751,75 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype)
 
    rcode = nf_inq_dimid (fid, 'grid_size' , did)
    rcode = nf_inq_dimlen(fid, did   , map%n_b  )
+   rcode = nf_inq_dimid (fid, 'grid_corners' , did)
+   rcode = nf_inq_dimlen(fid, did   , map%nv_b  )
    rcode = nf_inq_dimid (fid, 'grid_rank', did)
    rcode = nf_inq_dimlen(fid, did   , grid_rank)
-   if (grid_rank /= 2) then
+   allocate(grid_dims(grid_rank))
+   rcode = nf_inq_varid  (fid, 'grid_dims', vid)
+   rcode = nf_get_var_int(fid, vid   , grid_dims)
+   if (grid_rank.eq.1) then
+     map%ni_b = grid_dims(1)
+     map%nj_b = 1
+   elseif (grid_rank.eq.2) then
+     map%ni_b = grid_dims(1)
+     map%nj_b = grid_dims(2)
+   else
+      deallocate(grid_dims)
       write(6,*) 'ERROR: grid_rank is ',grid_rank,' in ',trim(ofilename)
       call shr_sys_abort(subName//"ERROR: ofilename grid_rank")
    endif
-   rcode = nf_inq_varid  (fid, 'grid_dims', vid)
-   rcode = nf_get_var_int(fid, vid   , grid_dims)
-   map%ni_b = grid_dims(1)
-   map%nj_b = grid_dims(2)
+   deallocate(grid_dims)
    map%dims_b(1) = map%ni_b
    map%dims_b(2) = map%nj_b
 
-   allocate(map%  xc_b(   map%n_b)) ! x-coordinates of center
-   allocate(map%  yc_b(   map%n_b)) ! y-coordinates of center
-   allocate(map%  xv_b(nv,map%n_b)) ! x-coordinates of verticies
-   allocate(map%  yv_b(nv,map%n_b)) ! y-coordinates of verticies
-   allocate(map%mask_b(   map%n_b)) ! domain mask
-   allocate(map%area_b(   map%n_b)) ! grid cell area
-   allocate(map%frac_b(   map%n_b)) ! grid cell area
-   allocate(map%sn1      (map%n_b))
-   allocate(map%sn2      (map%n_b))
+   allocate(map%  xc_b(         map%n_b)) ! x-coordinates of center
+   allocate(map%  yc_b(         map%n_b)) ! y-coordinates of center
+   allocate(map%  xv_b(map%nv_b,map%n_b)) ! x-coordinates of verticies
+   allocate(map%  yv_b(map%nv_b,map%n_b)) ! y-coordinates of verticies
+   allocate(map%mask_b(         map%n_b)) ! domain mask
+   allocate(map%area_b(         map%n_b)) ! grid cell area
+   allocate(map%frac_b(         map%n_b)) ! grid cell area
+   allocate(map%sn1            (map%n_b))
+   allocate(map%sn2            (map%n_b))
 
    rcode = nf_inq_varid     (fid,'grid_center_lon'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%xc_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xc_b = map%xc_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'grid_center_lat'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%yc_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yc_b = map%yc_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'grid_corner_lon'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%xv_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xv_b = map%xv_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'grid_corner_lat'  ,vid)
    rcode = nf_get_var_double(fid,vid     ,map%yv_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yv_b = map%yv_b * RADtoDEG
+   end if
+
    rcode = nf_inq_varid     (fid,'grid_imask',vid )
    rcode = nf_get_var_int   (fid,vid     ,map%mask_b)
    rcode = nf_inq_varid     (fid,'grid_area',vid )
    rcode = nf_get_var_double(fid,vid     ,map%area_b)
 
-   map%xc_b = map%xc_b * RADtoDEG
-   map%yc_b = map%yc_b * RADtoDEG
-   map%xv_b = map%xv_b * RADtoDEG
-   map%yv_b = map%yv_b * RADtoDEG
    map%frac_b = map%mask_b * 1.0_r8
 
    rcode = nf_close(fid)
@@ -1292,13 +1491,13 @@ SUBROUTINE map_write(map, filename)
    rcode = nf_def_dim(fid, 'n_a' , map%n_a , did) ! # of points total
    rcode = nf_def_dim(fid, 'ni_a', map%ni_a, did) ! # of points wrt i
    rcode = nf_def_dim(fid, 'nj_a', map%nj_a, did) ! # of points wrt j
-   rcode = nf_def_dim(fid, 'nv_a',  4      , did) ! # of verticies per cell
+   rcode = nf_def_dim(fid, 'nv_a', map%nv_a, did) ! # of verticies per cell
    rcode = nf_def_dim(fid, 'src_grid_rank', 2, did) ! # of verticies per cell
 
    rcode = nf_def_dim(fid, 'n_b' , map%n_b , did) ! # of points total
    rcode = nf_def_dim(fid, 'ni_b', map%ni_b, did) ! # of points wrt i
    rcode = nf_def_dim(fid, 'nj_b', map%nj_b, did) ! # of points wrt j
-   rcode = nf_def_dim(fid, 'nv_b',  4      , did) ! # of verticies per cell
+   rcode = nf_def_dim(fid, 'nv_b', map%nv_b, did) ! # of verticies per cell
    rcode = nf_def_dim(fid, 'dst_grid_rank', 2, did) ! # of verticies per cell
 
    rcode = nf_def_dim(fid, 'n_s' , map%n_s , did) ! size of sparse matrix
@@ -1570,19 +1769,19 @@ SUBROUTINE map_dup(map_in,map_out)
    !------------------------------------------------
    ! allocate space
    !------------------------------------------------
-   allocate(map_out%  xc_a(  map_in%n_a) )
-   allocate(map_out%  yc_a(  map_in%n_a) )
-   allocate(map_out%  xv_a(4,map_in%n_a) )
-   allocate(map_out%  yv_a(4,map_in%n_a) )
-   allocate(map_out%mask_a(  map_in%n_a) )
-   allocate(map_out%area_a(  map_in%n_a) )
+   allocate(map_out%  xc_a(            map_in%n_a) )
+   allocate(map_out%  yc_a(            map_in%n_a) )
+   allocate(map_out%  xv_a(map_in%nv_a,map_in%n_a) )
+   allocate(map_out%  yv_a(map_in%nv_a,map_in%n_a) )
+   allocate(map_out%mask_a(            map_in%n_a) )
+   allocate(map_out%area_a(            map_in%n_a) )
 
-   allocate(map_out%  xc_b(  map_in%n_b) )
-   allocate(map_out%  yc_b(  map_in%n_b) )
-   allocate(map_out%  xv_b(4,map_in%n_b) )
-   allocate(map_out%  yv_b(4,map_in%n_b) )
-   allocate(map_out%mask_b(  map_in%n_b) )
-   allocate(map_out%area_b(  map_in%n_b) )
+   allocate(map_out%  xc_b(            map_in%n_b) )
+   allocate(map_out%  yc_b(            map_in%n_b) )
+   allocate(map_out%  xv_b(map_in%nv_b,map_in%n_b) )
+   allocate(map_out%  yv_b(map_in%nv_b,map_in%n_b) )
+   allocate(map_out%mask_b(            map_in%n_b) )
+   allocate(map_out%area_b(            map_in%n_b) )
 
    allocate(map_out%frac_a(map_in%n_a) )
    allocate(map_out%frac_b(map_in%n_b) )  
@@ -1599,6 +1798,7 @@ SUBROUTINE map_dup(map_in,map_out)
    map_out%   n_a = map_in%   n_a
    map_out%  ni_a = map_in%  ni_a
    map_out%  nj_a = map_in%  nj_a
+   map_out%  nv_a = map_in%  nv_a
    map_out%dims_a = map_in%dims_a
    map_out%  xc_a = map_in%  xc_a
    map_out%  yc_a = map_in%  yc_a
@@ -1610,6 +1810,7 @@ SUBROUTINE map_dup(map_in,map_out)
    map_out%   n_b = map_in%   n_b
    map_out%  ni_b = map_in%  ni_b
    map_out%  nj_b = map_in%  nj_b
+   map_out%  nv_b = map_in%  nv_b
    map_out%dims_b = map_in%dims_b
    map_out%  xc_b = map_in%  xc_b
    map_out%  yc_b = map_in%  yc_b

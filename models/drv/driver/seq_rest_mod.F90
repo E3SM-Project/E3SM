@@ -1,7 +1,4 @@
 !===============================================================================
-! SVN $Id: seq_rest_mod.F90 45286 2013-03-26 18:17:04Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_33/driver/seq_rest_mod.F90 $
-!===============================================================================
 !BOP ===========================================================================
 !
 ! !MODULE: seq_rest_mod -- cpl7 restart reading/writing routines
@@ -33,14 +30,36 @@ module seq_rest_mod
    use shr_file_mod,      only: shr_file_getunit, shr_file_freeunit
    use mct_mod
    use ESMF
+   use component_type_mod     
 
-   use seq_avdata_mod    ! drv aVects & associated domain, fract, cdata (public read/write data)
-   use seq_diag_mct      ! diagnostic routines                          (public read/write data)
-   use seq_comm_mct      ! Sets mpi communicators, logunit and loglevel
-   use seq_cdata_mod     ! "cdata" type & methods (domain + decomp + infodata in one datatype)
-   use seq_infodata_mod  ! "infodata" gathers various control flags into one datatype
-   use seq_timemgr_mod   ! clock & alarm routines
-   use seq_io_mod        ! lower level io routines
+   ! diagnostic routines
+   use seq_diag_mct, only : budg_dataG, budg_ns      
+
+   ! Sets mpi communicators, logunit and loglevel
+   use seq_comm_mct, only: seq_comm_getdata=>seq_comm_setptrs, seq_comm_setnthreads, &
+        seq_comm_iamin, CPLID, GLOID, logunit, loglevel
+
+   ! "infodata" gathers various control flags into one datatype
+   use seq_infodata_mod
+
+   ! clock & alarm routines
+   use seq_timemgr_mod   
+
+   ! diagnostic routines                          
+   use seq_diag_mct, only: budg_datag
+
+   ! lower level io routines
+   use seq_io_mod        
+
+   ! prep modules - coupler communication between different components
+   use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox
+   use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox_cnt
+   use prep_rof_mod,    only: prep_rof_get_l2racc_lx 
+   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
+   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
+   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
+   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
+   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
    implicit none
 
@@ -80,7 +99,6 @@ module seq_rest_mod
    logical     :: rof_present            ! .true.  => land runoff is present
    logical     :: rof_prognostic         ! .true.  => rof comp expects input
    logical     :: glc_present            ! .true.  => glc is present
-   logical     :: sno_present            ! .true.  => land sno is present
    logical     :: wav_present            ! .true.  => wav is present
 
    logical     :: atm_prognostic         ! .true.  => atm comp expects input
@@ -89,28 +107,55 @@ module seq_rest_mod
    logical     :: ocn_prognostic         ! .true.  => ocn comp expects input
    logical     :: ocnrof_prognostic      ! .true.  => ocn comp expects runoff input
    logical     :: glc_prognostic         ! .true.  => glc comp expects input
-   logical     :: sno_prognostic         ! .true.  => sno comp expects input
    logical     :: wav_prognostic         ! .true.  => wav comp expects input
 
    integer(IN) :: info_debug = 0         ! local info_debug level
+
+   !--- temporary pointers ---
+   type(mct_gsMap), pointer :: gsmap
+   type(mct_aVect), pointer :: x2oacc_ox(:)
+   integer        , pointer :: x2oacc_ox_cnt
+   type(mct_aVect), pointer :: l2racc_lx(:)
+   integer        , pointer :: l2racc_lx_cnt
+   type(mct_aVect), pointer :: l2gacc_lx(:)
+   integer        , pointer :: l2gacc_lx_cnt
+   type(mct_aVect), pointer :: xao_ox(:)
+   type(mct_aVect), pointer :: xao_ax(:)
 
 !===============================================================================
 contains
 !===============================================================================
 
-subroutine seq_rest_read(rest_file)
+  subroutine seq_rest_read(rest_file, infodata, &
+       atm, lnd, ice, ocn, rof, glc, wav, &
+       fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+       fractions_rx, fractions_gx, fractions_wx)
 
    implicit none
 
-   character(*),intent(in) :: rest_file  ! restart file path/name
+   character(*)           , intent(in) :: rest_file  ! restart file path/name
+   type(seq_infodata_type), intent(in) :: infodata
+   type (component_type) , intent(inout) :: atm(:)
+   type (component_type) , intent(inout) :: lnd(:)
+   type (component_type) , intent(inout) :: ice(:)
+   type (component_type) , intent(inout) :: ocn(:)
+   type (component_type) , intent(inout) :: rof(:)
+   type (component_type) , intent(inout) :: glc(:)
+   type (component_type) , intent(inout) :: wav(:)
+   type(mct_aVect)  , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_ox(:)   ! Fractions on ocn grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
 
    integer(IN)          :: n,n1,n2,n3
    real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
    real(r8),allocatable :: ns(:)         ! for reshaping diag data for restart file
    character(CS)        :: string
    integer(IN)          :: ierr          ! MPI error return
-   type(mct_gsMap),pointer :: gsmap
-   character(len=*),parameter :: subname = "(seq_rest_read) "
+   character(len=*), parameter :: subname = "(seq_rest_read) "
 
 !-------------------------------------------------------------------------------
 !
@@ -120,88 +165,91 @@ subroutine seq_rest_read(rest_file)
    ! get required infodata
    !----------------------------------------------------------------------------
    iamin_CPLID  = seq_comm_iamin(CPLID)
-   call seq_comm_setptrs(GLOID,mpicom=mpicom_GLOID,nthreads=nthreads_GLOID)
-   call seq_comm_setptrs(CPLID,mpicom=mpicom_CPLID,nthreads=nthreads_CPLID)
-   call seq_infodata_getData(infodata,drv_threading=drv_threading)
-   call seq_infodata_getData(infodata, &
-        atm_present=atm_present, &
-        lnd_present=lnd_present, &
-        rof_present=rof_present, &
-        ice_present=ice_present, &
-        ocn_present=ocn_present, &
-        glc_present=glc_present, &
-        wav_present=wav_present, &
-        sno_present=sno_present  )
-   call seq_infodata_getData(infodata, &
-        atm_prognostic=atm_prognostic, &
-        lnd_prognostic=lnd_prognostic, &
-        ice_prognostic=ice_prognostic, &
-        ocn_prognostic=ocn_prognostic, &
-        rof_prognostic=rof_prognostic, &
-        ocnrof_prognostic=ocnrof_prognostic, &
-        glc_prognostic=glc_prognostic, &
-        wav_prognostic=wav_prognostic, &
-        sno_prognostic=sno_prognostic  )
+
+   call seq_comm_getdata(GLOID,&
+        mpicom=mpicom_GLOID, nthreads=nthreads_GLOID)
+   call seq_comm_getdata(CPLID, &
+        mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
+
+   call seq_infodata_getData(infodata,		&
+        drv_threading=drv_threading,		&
+        atm_present=atm_present,		&
+        lnd_present=lnd_present,		&
+        rof_present=rof_present,		&
+        ice_present=ice_present,		&
+        ocn_present=ocn_present,		&
+        glc_present=glc_present,		&
+        wav_present=wav_present,		&
+        atm_prognostic=atm_prognostic,		&
+        lnd_prognostic=lnd_prognostic,		&
+        ice_prognostic=ice_prognostic,		&
+        ocn_prognostic=ocn_prognostic,		&
+        rof_prognostic=rof_prognostic,		&
+        ocnrof_prognostic=ocnrof_prognostic,	&
+        glc_prognostic=glc_prognostic,		&
+        wav_prognostic=wav_prognostic)
 
    if (iamin_CPLID) then
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (atm_present) then
-         call seq_cdata_setptrs(cdata_ax,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_ax,'fractions_ax')
-         call seq_io_read(rest_file,gsmap,a2x_ax,'a2x_ax')
+         gsmap => component_get_gsmap_cx(atm(1))
+         call seq_io_read(rest_file, gsmap, fractions_ax, 'fractions_ax')
+         call seq_io_read(rest_file, atm, 'c2x', 'a2x_ax')
       endif
       if (lnd_present) then
-         call seq_cdata_setptrs(cdata_lx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_lx,'fractions_lx')
+         gsmap => component_get_gsmap_cx(lnd(1))
+         call seq_io_read(rest_file, gsmap, fractions_lx, 'fractions_lx')
       endif
+      if (lnd_present .and. rof_prognostic) then
+         gsmap         => component_get_gsmap_cx(lnd(1))
+         l2racc_lx     => prep_rof_get_l2racc_lx()
+         l2racc_lx_cnt => prep_rof_get_l2racc_lx_cnt()
+         call seq_io_read(rest_file, gsmap, l2racc_lx, 'l2racc_lx')
+         call seq_io_read(rest_file, l2racc_lx_cnt ,'l2racc_lx_cnt')
+      end if
+      if (lnd_present .and. glc_prognostic) then
+         gsmap         => component_get_gsmap_cx(lnd(1))
+         l2gacc_lx     => prep_glc_get_l2gacc_lx()
+         l2gacc_lx_cnt => prep_glc_get_l2gacc_lx_cnt()
+         call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
+         call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
+      end if
       if (ocn_present) then
-         call seq_cdata_setptrs(cdata_ox,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_ox,'fractions_ox')
-         call seq_io_read(rest_file,gsmap,o2x_ox,'o2x_ox')
-         call seq_io_read(rest_file,gsmap,x2oacc_ox,'x2oacc_ox')
-         call seq_io_read(rest_file,gsmap,xao_ox,'xao_ox')
-         call seq_io_read(rest_file,      x2oacc_ox_cnt,'x2oacc_ox_cnt')
-         call seq_cdata_setptrs(cdata_ax,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,xao_ax,'xao_ax')
+         gsmap         => component_get_gsmap_cx(ocn(1))
+         x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+         x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
+         xao_ox        => prep_aoflux_get_xao_ox()
+         call seq_io_read(rest_file, gsmap, fractions_ox, 'fractions_ox')
+         call seq_io_read(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox')
+         call seq_io_read(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt')
+         call seq_io_read(rest_file, gsmap, xao_ox, 'xao_ox')
+         call seq_io_read(rest_file, ocn, 'c2x', 'o2x_ox')  ! get o2x_ox
       endif
       if (ice_present) then
-         call seq_cdata_setptrs(cdata_ix,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_ix,'fractions_ix')
-         call seq_io_read(rest_file,gsmap,i2x_ix,'i2x_ix')
+         gsmap => component_get_gsmap_cx(ice(1))
+         call seq_io_read(rest_file, gsmap, fractions_ix, 'fractions_ix')
+         call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix') 
       endif
       if (rof_present) then
-         call seq_cdata_setptrs(cdata_rx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_rx,'fractions_rx')
-         call seq_io_read(rest_file,gsmap,r2x_rx,'r2x_rx')
-      endif
-      if (lnd_present .and. rof_present .and. rof_prognostic) then
-         call seq_cdata_setptrs(cdata_lx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,x2racc_lx,'x2racc_lx')
-         call seq_io_read(rest_file,      x2racc_lx_cnt ,'x2racc_lx_cnt')
-      end if
-      if (rof_present .and. ocnrof_prognostic) then
-         call seq_cdata_setptrs(cdata_rx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,r2xacc_rx,'r2xacc_rx')
-         call seq_io_read(rest_file,      r2xacc_rx_cnt,'r2xacc_rx_cnt')
+         gsmap => component_get_gsmap_cx(rof(1))
+         call seq_io_read(rest_file, gsmap, fractions_rx, 'fractions_rx')
+         call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx') 
       endif
       if (glc_present) then
-         call seq_cdata_setptrs(cdata_gx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_gx,'fractions_gx')
-      endif
-      if (sno_present) then
-         call seq_cdata_setptrs(cdata_sx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,x2s_sx,'x2s_sx')
+         gsmap => component_get_gsmap_cx(glc(1))
+         call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
+         call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx') 
       endif
       if (wav_present) then
-         call seq_cdata_setptrs(cdata_wx,gsmap=gsmap)
-         call seq_io_read(rest_file,gsmap,fractions_wx,'fractions_wx')
-         call seq_io_read(rest_file,gsmap,w2x_wx,'w2x_wx')
+         gsmap => component_get_gsmap_cx(wav(1))
+         call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
+         call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx') 
       endif
 
       n = size(budg_dataG)
       allocate(ds(n),ns(n))
-      call seq_io_read(rest_file,ds,'budg_dataG')
-      call seq_io_read(rest_file,ns,'budg_ns')
+      call seq_io_read(rest_file, ds, 'budg_dataG')
+      call seq_io_read(rest_file, ns, 'budg_ns')
 
       n = 0
       do n1 = 1,size(budg_dataG,dim=1)
@@ -225,12 +273,30 @@ end subroutine seq_rest_read
 
 !===============================================================================
 
-subroutine seq_rest_write(EClock_d,seq_SyncClock)
+subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
+     atm, lnd, ice, ocn, rof, glc, wav,                      &
+     fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+     fractions_rx, fractions_gx, fractions_wx)
 
    implicit none
 
-   type(ESMF_Clock)      ,intent(in)    :: EClock_d      ! driver clock
-   type(seq_timemgr_type),intent(inout) :: seq_SyncClock ! contains ptr to driver clock
+   type(ESMF_Clock)       , intent(in)    :: EClock_d      ! driver clock
+   type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
+   type(seq_infodata_type), intent(in)    :: infodata
+   type (component_type)       , intent(inout) :: atm(:)
+   type (component_type)       , intent(inout) :: lnd(:)
+   type (component_type)       , intent(inout) :: ice(:)
+   type (component_type)       , intent(inout) :: ocn(:)
+   type (component_type)       , intent(inout) :: rof(:)
+   type (component_type)       , intent(inout) :: glc(:)
+   type (component_type)       , intent(inout) :: wav(:)
+   type(mct_aVect)        , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_ox(:)   ! Fractions on ocn grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
 
    integer(IN)   :: n,n1,n2,n3,fk
    integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -260,34 +326,35 @@ subroutine seq_rest_write(EClock_d,seq_SyncClock)
    ! get required infodata
    !----------------------------------------------------------------------------
    iamin_CPLID  = seq_comm_iamin(CPLID)
-   call seq_comm_setptrs(GLOID,mpicom=mpicom_GLOID,nthreads=nthreads_GLOID)
-   call seq_comm_setptrs(CPLID,mpicom=mpicom_CPLID,nthreads=nthreads_CPLID)
-   call seq_comm_setptrs(CPLID,iamroot=cplroot)
-   call seq_infodata_getData(infodata,drv_threading=drv_threading)
-   call seq_infodata_getData(infodata, &
-        atm_present=atm_present, &
-        lnd_present=lnd_present, &
-        rof_present=rof_present, &
-        ice_present=ice_present, &
-        ocn_present=ocn_present, &
-        glc_present=glc_present, &
-        wav_present=wav_present, &
-        sno_present=sno_present  )
-   call seq_infodata_getData(infodata, &
-        atm_prognostic=atm_prognostic, &
-        lnd_prognostic=lnd_prognostic, &
-        ice_prognostic=ice_prognostic, &
-        rof_prognostic=rof_prognostic, &
-        ocn_prognostic=ocn_prognostic, &
-        ocnrof_prognostic=ocnrof_prognostic, &
-        glc_prognostic=glc_prognostic, &
-        wav_prognostic=wav_prognostic, &
-        sno_prognostic=sno_prognostic  )
-   call seq_infodata_getData(infodata, cpl_cdf64=cdf64 )
+
+   call seq_comm_getdata(GLOID,&
+        mpicom=mpicom_GLOID, nthreads=nthreads_GLOID)
+
+   call seq_comm_getdata(CPLID,&
+        mpicom=mpicom_CPLID, nthreads=nthreads_CPLID, iamroot=cplroot)
+
+   call seq_infodata_getData(infodata,		&
+        drv_threading=drv_threading,		&
+        atm_present=atm_present,		&
+        lnd_present=lnd_present,		&
+        rof_present=rof_present,		&
+        ice_present=ice_present,		&
+        ocn_present=ocn_present,		&
+        glc_present=glc_present,		&
+        wav_present=wav_present,		&
+        atm_prognostic=atm_prognostic,		&
+        lnd_prognostic=lnd_prognostic,		&
+        ice_prognostic=ice_prognostic,		&
+        rof_prognostic=rof_prognostic,		&
+        ocn_prognostic=ocn_prognostic,		&
+        ocnrof_prognostic=ocnrof_prognostic,	&
+        glc_prognostic=glc_prognostic,		&
+        wav_prognostic=wav_prognostic,		&
+        cpl_cdf64=cdf64,			& 
+        case_name=case_name)
 
    ! Write out infodata and time manager data to restart file
 
-   call seq_infodata_GetData( infodata, case_name=case_name)
    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
    write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
@@ -366,56 +433,78 @@ subroutine seq_rest_write(EClock_d,seq_SyncClock)
          call seq_io_write(rest_file,ns,'budg_ns',whead=whead,wdata=wdata)
 
          if (atm_present) then
-            call seq_cdata_setptrs(cdata_ax,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_ax,'fractions_ax',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,a2x_ax,'a2x_ax',whead=whead,wdata=wdata)
+            gsmap => component_get_gsmap_cx(atm(1))
+            call seq_io_write(rest_file, gsmap, fractions_ax, 'fractions_ax', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, atm, 'c2x', 'a2x_ax', &
+                 whead=whead, wdata=wdata) 
          endif
          if (lnd_present) then
-            call seq_cdata_setptrs(cdata_lx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_lx,'fractions_lx',whead=whead,wdata=wdata)
+            gsmap => component_get_gsmap_cx(lnd(1))
+            call seq_io_write(rest_file, gsmap, fractions_lx, 'fractions_lx', &
+                 whead=whead, wdata=wdata)
          endif
+         if (lnd_present .and. rof_prognostic) then
+            gsmap         => component_get_gsmap_cx(lnd(1))
+            l2racc_lx     => prep_rof_get_l2racc_lx()
+            l2racc_lx_cnt =>  prep_rof_get_l2racc_lx_cnt()
+            call seq_io_write(rest_file, gsmap, l2racc_lx, 'l2racc_lx', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, l2racc_lx_cnt, 'l2racc_lx_cnt', &
+                 whead=whead, wdata=wdata)
+         end if
+         if (lnd_present .and. glc_prognostic) then
+            gsmap         => component_get_gsmap_cx(lnd(1))
+            l2gacc_lx     => prep_glc_get_l2gacc_lx()
+            l2gacc_lx_cnt => prep_glc_get_l2gacc_lx_cnt()
+            call seq_io_write(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
+                 whead=whead, wdata=wdata)
+         end if
          if (ocn_present) then
-            call seq_cdata_setptrs(cdata_ox,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_ox,'fractions_ox',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,o2x_ox,'o2x_ox',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,x2oacc_ox,'x2oacc_ox',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,      x2oacc_ox_cnt,'x2oacc_ox_cnt',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,xao_ox,'xao_ox',whead=whead,wdata=wdata)
-            call seq_cdata_setptrs(cdata_ax,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,xao_ax,'xao_ax',whead=whead,wdata=wdata)
+            gsmap         => component_get_gsmap_cx(ocn(1))
+            x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+            x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
+            xao_ox        => prep_aoflux_get_xao_ox()
+            call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, ocn, 'c2x', 'o2x_ox', &
+                 whead=whead, wdata=wdata) 
+            call seq_io_write(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, gsmap, xao_ox, 'xao_ox', &
+                 whead=whead, wdata=wdata)
          endif
          if (ice_present) then
-            call seq_cdata_setptrs(cdata_ix,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_ix,'fractions_ix',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,i2x_ix,'i2x_ix',whead=whead,wdata=wdata)
+            gsmap  => component_get_gsmap_cx(ice(1))
+            call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, ice, 'c2x', 'i2x_ix', &
+                 whead=whead, wdata=wdata) 
          endif
          if (rof_present) then
-            call seq_cdata_setptrs(cdata_rx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_rx,'fractions_rx',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,r2x_rx,'r2x_rx',whead=whead,wdata=wdata)
-         endif
-         if (lnd_present .and. rof_present .and. rof_prognostic) then
-            call seq_cdata_setptrs(cdata_lx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,x2racc_lx,'x2racc_lx'    ,whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,      x2racc_lx_cnt ,'x2racc_lx_cnt',whead=whead,wdata=wdata)
-         end if
-         if (rof_present .and. ocnrof_prognostic) then
-            call seq_cdata_setptrs(cdata_rx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,r2xacc_rx,'r2xacc_rx',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,      r2xacc_rx_cnt,'r2xacc_rx_cnt',whead=whead,wdata=wdata)
+            gsmap  => component_get_gsmap_cx(rof(1))
+            call seq_io_write(rest_file, gsmap, fractions_rx, 'fractions_rx', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, rof, 'c2x', 'r2x_rx', &
+                 whead=whead, wdata=wdata)
          endif
          if (glc_present) then
-            call seq_cdata_setptrs(cdata_gx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_gx,'fractions_gx',whead=whead,wdata=wdata)
-         endif
-         if (sno_present) then
-            call seq_cdata_setptrs(cdata_sx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,x2s_sx,'x2s_sx',whead=whead,wdata=wdata)
+            gsmap  => component_get_gsmap_cx(glc(1))
+            call seq_io_write(rest_file, gsmap, fractions_gx, 'fractions_gx', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, glc, 'c2x', 'g2x_gx', &
+                 whead=whead, wdata=wdata) 
          endif
          if (wav_present) then
-            call seq_cdata_setptrs(cdata_wx,gsmap=gsmap)
-            call seq_io_write(rest_file,gsmap,fractions_wx,'fractions_wx',whead=whead,wdata=wdata)
-            call seq_io_write(rest_file,gsmap,w2x_wx,'w2x_wx',whead=whead,wdata=wdata)
+            gsmap  => component_get_gsmap_cx(wav(1))
+            call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
+                 whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, wav, 'c2x', 'w2x_wx', &
+                 whead=whead, wdata=wdata) 
          endif
       enddo
 

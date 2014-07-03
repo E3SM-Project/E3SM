@@ -1,9 +1,15 @@
 # -------------------------------------------------------------------------
+# Update env variables in case user changed them during run
+# -------------------------------------------------------------------------
+
+cd $CASEROOT
+source ./Tools/ccsm_getenv
+
+# -------------------------------------------------------------------------
 # Check for successful run
 # -------------------------------------------------------------------------
 
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`
-
 cd $RUNDIR
 set CESMLogFile = `ls -1t cesm.log* | head -1` 
 if ($CESMLogFile == "") then
@@ -19,40 +25,33 @@ grep 'SUCCESSFUL TERMINATION' $CPLLogFile  || echo "Model did not complete - see
 
 echo "run SUCCESSFUL $sdate" >>& $CASEROOT/CaseStatus
 
-# -------------------------------------------------------------------------
-# Update env variables in case user changed them during run
-# -------------------------------------------------------------------------
-
-cd $CASEROOT
-source ./Tools/ccsm_getenv
 
 # -------------------------------------------------------------------------
-# Save model output stdout and stderr 
+# Save model output logs 
 # -------------------------------------------------------------------------
 
-cd $RUNDIR
 gzip *.$LID
 if ($LOGDIR != "") then
   if (! -d $LOGDIR/bld) mkdir -p $LOGDIR/bld || echo " problem in creating $LOGDIR/bld"
-  cp -p *build.$LID.* $LOGDIR/bld  
-  cp -p *log.$LID.*   $LOGDIR      
+  cp -p $RUNDIR/*log.$LID.*   $LOGDIR/      
 endif
 
 # -------------------------------------------------------------------------
 # Perform short term archiving of output
 # -------------------------------------------------------------------------
+cd $CASEROOT
 
 if ($DOUT_S == 'TRUE') then
   echo "Archiving ccsm output to $DOUT_S_ROOT"
-  echo "Calling the short-term archiving script st_archive.sh"
-  cd $RUNDIR; $CASETOOLS/st_archive.sh
+  echo "Calling the short-term archiving script st_archive"
+   ./st_archive 
 endif
 
 # -------------------------------------------------------------------------
 # Submit longer term archiver if appropriate
 # -------------------------------------------------------------------------
 
-cd $CASEROOT
+
 if ($DOUT_L_MS == 'TRUE' && $DOUT_S == 'TRUE') then
   echo "Long term archiving ccsm output using the script $CASE.l_archive"
   set num = 0
@@ -75,7 +74,6 @@ endif
 # Resubmit another run script
 # -------------------------------------------------------------------------
 
-cd $CASEROOT
 if ($RESUBMIT > 0) then
     @ RESUBMIT = $RESUBMIT - 1
     echo RESUBMIT is now $RESUBMIT
@@ -104,16 +102,13 @@ EOF
 endif
 
 if ($CHECK_TIMING == 'TRUE') then
-  cd $CASEROOT
   if !(-d timing) mkdir timing
   $CASETOOLS/getTiming.csh -lid $LID 
   gzip timing/ccsm_timing_stats.$LID
 endif
 
 if ($SAVE_TIMING == 'TRUE') then
-  cd $RUNDIR
-  mv timing timing.$LID
-  cd $CASEROOT
+  mv $RUNDIR/timing $RUNDIR/timing.$LID
 endif
 
 

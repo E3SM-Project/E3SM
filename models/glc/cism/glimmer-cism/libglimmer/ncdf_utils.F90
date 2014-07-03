@@ -34,7 +34,7 @@
 module ncdf_utils
   
   use netcdf
-  use glimmer_global
+  use glimmer_global, only: sp, dp
 
   implicit none
 
@@ -45,6 +45,9 @@ module ncdf_utils
   end type ncdf_utils_type
 
 contains
+
+  !TODO - Change d1 and d2 to dp?
+  !       Note: This subroutine currently is not called, as far as I can tell
 
   subroutine ncdf_utils_create(handle,fname,varname,d1name,d2name,d1,d2)
 
@@ -104,8 +107,8 @@ contains
   subroutine ncdf_utils_write(handle,var,time)
 
     type(ncdf_utils_type),  intent(inout) :: handle
-    real(rk),dimension(:,:),intent(in)    :: var
-    real(sp),               intent(in)    :: time
+    real(dp),dimension(:,:),intent(in)    :: var
+    real(dp),               intent(in)    :: time
 
     integer :: ncerr
 
@@ -139,7 +142,7 @@ contains
     character(*),           intent(in)  :: filename
     character(*),           intent(in)  :: varname
     integer,                intent(in)  :: slice
-    real(rk),dimension(:,:),intent(out) :: array
+    real(dp),dimension(:,:),intent(out) :: array
 
     integer :: ncerr,fileid,varid
 

@@ -8,6 +8,27 @@
 <!-- CLM Namelist -->
 <!-- ========================================================================================  -->
 
+<entry id="finidat_interp_source" 
+       type="char*256" 
+       category="datasets"
+       input_pathname="abs" 
+       group="clm_inparm" 
+       valid_values="" >
+If non-blank, then interpinic will be called to interpolate finidat_interp_source and 
+create output file specified by finidat_interp_dest.
+For this to be used finidat MUST BE blank.
+</entry>
+
+<entry id="finidat_interp_dest" 
+       type="char*256" 
+       category="datasets"
+       input_pathname="abs" 
+       group="clm_inparm" 
+       valid_values="" >
+If finidat_interp_source is set to non-blank, then interpinic will be called 
+to interpolate finidat_interp_source and create output file finidat_interp_dest.
+</entry>
+
 <entry id="finidat" 
        type="char*256" 
        category="datasets"
@@ -71,6 +92,14 @@ over-productive.
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
 </entry>
 
+<entry id="all_active" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, make ALL pfts, columns and landunits active, even those with 0 weight.
+This means that computations will be run even over these 0-weight points.
+
+THIS IS ONLY FOR TESTING PURPOSES - IT HAS NOT BEEN CHECKED FOR SCIENTIFIC VALIDITY.
+</entry>
+
 <entry id="more_vertlayers" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, run with an increased number of soil layers
@@ -106,11 +135,25 @@ Only works when glc_nec is greater than 0.
 (Only tested with glc_smb=.true., setting it to .false. is NOT tested)
 </entry>
 
-<entry id="glc_dyntopo" type="logical" category="clm_physics"
+<entry id="glc_do_dynglacier" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
-If TRUE, dynamically change topographic height over glacier points.
+If TRUE, dynamically change areas and topographic heights over glacier points.
+Only works when glc_nec is greater than zero, and when coupled to CISM.
+Generally should agree with glc_dyn_runoff_routing.
+</entry>
+
+<entry id="glc_dyn_runoff_routing" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, handle snow capping and runoff appropriately for dynamic glacier areas.
 Only works when glc_nec is greater than zero.
-(EXPERIMENTAL AND NOT FUNCTIONAL!)
+Generally should agree with glc_do_dynglacier.
+</entry>
+
+<entry id="glc_snow_persistence_max_days" type="integer" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+Number of days before one considers the perennially snow-covered point 'land ice'
+(and thus capable of generating a positive surface mass balance for CISM).
+Default: 7300 (20 years)
 </entry>
 
 <entry id="albice" type="real(2)" category="clm_physics"
@@ -121,11 +164,6 @@ Visible and Near-infrared albedo's for glacier ice
 <entry id="dtime" type="real"  category="clm_physics" 
        group="clm_inparm" valid_values="">
 Time step (seconds)
-</entry>
-
-<entry id="outnc_large_files" type="logical" category="history"
-       group="clm_inparm" valid_values="" >
-If TRUE, output NetCDF files in 64-bit large-file format
 </entry>
 
 <entry id="override_nsrest" type="integer"  category="clm_restart" 
@@ -145,9 +183,24 @@ Full pathname of topography data file. Only required when
 land-ice model is active.
 </entry>
 
-<entry id="fpftcon" type="char*256" category="datasets"
+<entry id="glcmec_downscale_rain_snow_convert" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, downscale precipitation division into rain vs. snow over glc_mec landunits.
+WARNING: THIS BREAKS ENERGY CONSERVATION, SO SHOULD NOT BE USED IN COUPLED SIMULATIONS
+<default>Default: .false.</default>
+</entry>
+
+<entry id="glcmec_downscale_longwave" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, downscale longwave radiation over glc_mec landunits.
+This downscaling is conservative.
+<default>Default: .true.</default>
+</entry>
+
+<entry id="paramfile" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
-Full pathname datafile with plant function type (PFT) constants
+Full pathname datafile with plant function type (PFT) constants combined with
+constants for biogeochem modules
 </entry>
 
 <entry id="fpftdyn" type="char*256" category="datasets"
@@ -323,6 +376,94 @@ If TRUE, write diagnostic of global radiative temperature written to CLM log fil
 Subgrid fluxes for snow
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Former CPP tokens -->
+<!-- ========================================================================================  -->
+<entry id="use_nofire" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to make wild-fires inactive for biogeochemistry=CN mode
+</entry>
+
+<entry id="use_lch4" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+Turn on methane model. Standard part of CLM45BGC model.
+</entry>
+
+<entry id="use_cn" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+CLM Biogeochemistry mode : Carbon Nitrogen model (CN) 
+(or CLM45BGC if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+</entry>
+
+<entry id="use_cndv" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+CLM Biogeochemistry mode : Carbon Nitrogen with Dynamic Global Vegetation Model (CNDV)
+(or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+</entry>
+
+<entry id="use_nitrif_denitrif" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+Nitrification/denitrification splits the prognostic mineral N pool into two 
+   mineral N pools: NO3 and NH4, and includes the transformations between them.
+Requires the CN model to work (either CN or CNDV).
+</entry>
+
+<entry id="use_vertsoilc" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+Turn on vertical soil carbon.
+Requires the CN model to work (either CN or CNDV).
+</entry>
+
+<entry id="use_century_decomp" type="logical" category="bgc"
+       group="clm_inparm" valid_values="" value=".false.">
+Use parameters for decomposition from the CENTURY Carbon model
+Requires the CN model to work (either CN or CNDV).
+</entry>
+
+<entry id="use_extralakelayers" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to use 25 lake layers instead of 10
+(extralaklayers=".true." is EXPERIMENTAL NOT SUPPORTED! Nor is it Tested!)
+</entry>
+
+<entry id="use_vichydro" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the VIC hydrologic parameterizations
+(vichydro=".true." is EXPERIMENTAL NOT SUPPORTED!)
+</entry>
+
+<entry id="use_crop" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the prognostic crop model
+</entry>
+
+<entry id="use_snicar_frc" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on calculation of SNow and Ice Aerosol Radiation model (SNICAR) radiative forcing
+(snicar_frc=".true." is EXPERIMENTAL NOT SUPPORTED!)
+</entry>
+
+<entry id="use_noio" type="logical" category="default_settings"
+       group="clm_inparm" valid_values="" value=".false." >
+Toggle to turn all history output completely OFF (possibly used for testing)
+</entry>
+
+<entry id="use_vancouver" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle for vancouver specific logic.
+</entry>
+
+<entry id="use_mexicocity" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle for mexico city specific logic.
+</entry>
+
+<entry id="maxpatch_pft" type="integer" category="physics"
+       group="clm_inparm" valid_values="" value="17">
+Max number of plant functional types in naturally vegetated landunit.
+</entry>
+
+
 <!--                                                   -->
 <!-- mkmapdata  namelist                               -->
 <!--                                                   -->
@@ -494,11 +635,6 @@ Inversion-derived CH4 parameters dataset for mksurfdata
 If TRUE, output variables in double precision for mksurfdata
 </entry>
 
-<entry id="outnc_large_files" type="logical" category="mksurfdata"
-       group="clmexp" value=".true.">
-If TRUE, use the large file format for NetCDF
-</entry>
-
 <entry id="all_urban" type="logical" category="mksurfdata"
        group="clmexp" value=".false.">
 If TRUE, ignore other files, and set the output percentage to 100% urban and
@@ -628,11 +764,6 @@ by getco2_historical.ncl
 <entry id="faerdep" type="char*256"  category="tools" 
        input_pathname="abs" group="clmexp" valid_values="" >
 Aerosol deposition file name (only used for aerdepregrid.ncl)
-</entry>
-
-<entry id="fndepdat" type="char*256" category="tools"
-       input_pathname="abs" group="clmexp" valid_values="" >
-Full pathname of nitrogen deposition data file (only used for ndepregrid.ncl).
 </entry>
 
 <entry id="f_fracdata" type="char*256" category="tools"
@@ -826,7 +957,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"  
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,wus12,us20,1km-merge-10min">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,1km-merge-10min">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry> 
@@ -840,7 +971,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*10" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,us20,wus12">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep">
 Land mask description
 </entry> 
 
@@ -881,6 +1012,18 @@ Description of the use case selected.
 <entry id="bgc_spinup" type="char*3" category="default_settings"
        group="default_settings" valid_values="on,off" >
 Command line arguement for turning on CN spinup mode.
+</entry>
+
+<entry id="bgc_mode" type="char*4" category="default_settings"
+       group="default_settings" valid_values="sp,cn,bgc" >
+Command line arguement for biogeochemistry mode for CLM4.5
+   sp  = Satellitte Phenology
+   cn  = Carbon Nitrogen model
+   bgc = CLM4.5 BGC model with: 
+        CENTURY model pools 
+        Nitrification/De-nitrification
+        Methane model
+        Vertically resolved Carbon
 </entry>
 
 <!-- ========================================================================================  -->
@@ -926,24 +1069,9 @@ Entering and exiting spinup mode occurs automatically by comparing the namelist 
 </entry>
 
 <!-- vertical mixing switches    -->
-<entry id="som_diffus" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
-Base diffusivity of SOM associated with bioturbation mixing.
-</entry>
-
 <entry id="som_adv_flux" type="real" category="clm_vertcn"
        group="clm_inparm" valid_values="" >
 Base advective flux (downwards) for SOM.
-</entry>
-
-<entry id="cryoturb_diffusion_k" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
-Diffusion constant for SOM in frozen soils by cryoturbation.
-</entry>
-
-<entry id="max_altdepth_cryoturbation" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
-Maximum ALT depth at which soil mixing is assumed to be cryoturbation rather than bioturbation.
 </entry>
 
 <entry id="max_depth_cryoturb" type="real" category="clm_vertcn"
@@ -1104,101 +1232,12 @@ Use original CLM4 soil hydraulic properties
 <!-- namelist elements associated with the CH4 Model                                           -->
 <!-- ========================================================================================  -->
 
-<entry id="q10ch4base" type="real" category="clm_methane"
+<entry id="use_aereoxid_prog" type="logical" category="clm_methane"
        group="ch4par_in" valid_values="" >
-Base temperature (K) for application of Q10 factor to methane production.
-</entry>
-
-<entry id="q10ch4" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Q10 factor forming the temperature-dependence of methane production relative to q10ch4base. This is the additional
-temperature dependence applied after heterotrophic respiration. (e.g., if soil decomposition has a Q10 of 1.5,
-and q10ch4 = 1.333, then the overall Q10 for methane production will be 1.5*1.333 = 2.)
-</entry>
-
-<entry id="vmax_ch4_oxid" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Michaelis-Mentin maximum methane oxidation rate (mol/m^3-water/s).
-</entry>
-
-<entry id="k_m" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Michaelis-Mentin half-saturation coefficient for methane for methane oxidation (mol/m^3-water)
-</entry>
-
-<entry id="q10_ch4oxid" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Q10 factor forming the temperature-dependence of methane oxidation.
-</entry>
-
-<entry id="smp_crit" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Critical soil moisture potential where oxidation is reduced to 1/e of the potential rate due to moisture-stress
-faced by methanotrophs (above the water table only) (mm).
-</entry>
-
-<entry id="aereoxid" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Prescribed fraction of methane molecules predicted to be transported by aerenchyma to the surface that are instead oxidized.
-By default, this is set to -1 to indicate that this ratio is calculated prognostically within the model. Set to a value >= 0
-in order to prescribe a fixed ratio. It is useful to compare a run with aereoxid = 0. to one with aereoxid = -1., to
-calculate an effective aerenchyma oxidation fraction predicted by the model.
-</entry>
-
-<entry id="mino2lim" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Minimum limitation factor applied to heterotrophic respiration due to anoxia. i.e., even if no oxygen is available,
-the heterotrophic respiration will proceed at the ratio mino2lim of the potential oxygen-unlimited rate.
-Also, if anoxia = FALSE, this will be used in ch4Mod to calculate a seasonal inundation factor (SIF).
-</entry>
-
-<entry id="rootlitfrac" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Fraction of heterotrophic respiration assumed to be associated with the root profile rather than the top 5 layers for
-calculating methane production.  Used only if the vertical soil CN model is not used.
-</entry>
-
-<entry id="scale_factor_aere" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Overall scale factor on aerenchyma transport for sensitivity tests. Setting to zero turns off all methane and oxygen
-transport in aerenchyma.
-</entry>
-
-<entry id="vgc_max" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Ratio of methane partial pressure to atmospheric pressure triggering ebullition.
-</entry>
-
-<entry id="organic_max" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Organic matter content (kg/m^3) where soil is assumed to act entirely like peat rather than mineral soil
-for calculating gas diffusivity. Very large values --> all soil acts like mineral; 0 --> all soil acts like peat.
-</entry>
-
-<entry id="satpow" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Exponent on saturated porosity (watsat) for calculating aqueous solute diffusivity in soil, for methane and oxygen transport.
-4/3 is the Millington-Quirk expression value; 2 is the Buckingham expression value.
-</entry>
-
-<entry id="cnscalefactor" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Overall scale factor on heterotrophic respiration for sensitivity tests for calculating methane production.
-</entry>
-
-<entry id="f_ch4" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Base ratio (adjusted for temperature, etc.) of assumed methane production to total C mineralization rate.
-</entry>
-
-<entry id="k_m_o2" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Michaelis-Mentin half-saturation coefficient for oxygen for methane oxidation (mol/m^3-water)
-</entry>
-
-<entry id="nongrassporosratio" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Ratio of aerenchyma porosity of non-grass (i.e., woody) PFTs compared to grass PFTs.
+Allows user to tune the value of aereoxid.  If set to FALSE, then use the value of aereoxid from 
+the parameter file (set to 0.0, but may be tuned with values in the range {0.0,1.0}.  If set to TRUE,
+then don't fix aere (see ch4Mod.F90).
+<default>Default: .true.</default>
 </entry>
 
 <entry id="allowlakeprod" type="logical" category="clm_methane"
@@ -1207,20 +1246,9 @@ If TRUE, turn on methane biogeochemistry model for lake columns, using a simplif
 (EXPERIMENTAL)
 </entry>
 
-<entry id="lake_decomp_fact" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Base lake soil carbon decomposition rate (1/s) applying at 25 C.  Used if allowlakeprod = TRUE.
-(EXPERIMENTAL)
-</entry>
-
 <entry id="usephfact" type="logical" category="clm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, apply a limitation to methane production based on the soil pH dataset.
-</entry>
-
-<entry id="k_m_unsat" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Michaelis-Mentin half-saturation coefficient for oxygen for methane oxidation, in the unsaturated zone (mol/m^3-water).
 </entry>
 
 <entry id="vmax_oxid_unsat" type="real" category="clm_methane"
@@ -1237,36 +1265,12 @@ so the coupled system will NOT conserve carbon in this mode if the methane model
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="scale_factor_gasdiff" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Scale factor applied to gas diffusivity in soil, for sensitivity tests (i.e. to simulate convection dominating
-molecular diffusion).
-</entry>
-
-<entry id="scale_factor_liqdiff" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Scale factor applied to aqueous solute diffusivity in soil, for sensitivity tests (i.e. to simulate convection
-dominating molecular diffusion).
-</entry>
-
-<entry id="redoxlag" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Lag time (days) used for inhibiting methane production in newly saturated area, to simulate the transient oxidation
-of alternative electron acceptors. A value of 0 indicates no inhibition.
-</entry>
-
 <entry id="fin_use_fsat" type="logical" category="clm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, use the saturated fraction (fsat) calculated in Soil Hydrology to diagnose the inundated fraction (finundated)
 for the CH4 submodel (possibly affecting soil heterotrophic respiration and denitrification depending on the configuration),
 rather than using the inversion to satellite-observed inundated fraction, which requires additional surface data.
 (EXPERIMENTAL and NOT tested)
-</entry>
-
-<entry id="unsat_aere_ratio" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Ratio of aerenchyma porosity in the unsaturated zone to the saturated zone. Porosity will still be kept above a minimum
-value defined in ch4Mod.
 </entry>
 
 <entry id="usefrootc" type="logical" category="clm_methane"
@@ -1282,17 +1286,6 @@ If TRUE, run the methane submodel decoupled from the atmosphere. The atmospheric
 atmch4, the methane flux is not passed to the atmosphere, and the CO2 flux to the atmosphere is not adjusted for
 net methane production. NOTE: Currently this must be TRUE.
 (EXPERIMENTAL and NOT functional)
-</entry>
-
-<entry id="redoxlag_vertical" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Lag time (days) used for inhibiting methane production vertically in newly saturated soil levels, to simulate the
-transient oxidation of alternative electron acceptors in the unsaturated zone. A value of 0 indicates no inhibition.
-</entry>
-
-<entry id="atmch4" type="real" category="clm_methane"
-       group="ch4par_in" valid_values="" >
-Prescribed atmospheric methane mixing ratio (mol/mol) 
 </entry>
 
 <!-- ========================================================================================  -->
@@ -1330,5 +1323,37 @@ If TRUE then use mapped MEGAN emissions factors for isoprene.
 List of possible MEGAN compounds to use
   (the list used by the simulation is on the megan_factors_file as the Comp_Name)
 </entry> 
+
+<!-- ========================================================================================  -->
+<!-- Namelist options related to finidat consistency checks                                    -->
+<!-- ========================================================================================  -->
+
+<entry id="check_finidat_fsurdat_consistency" type="logical" category="clm_restart"
+       group="finidat_consistency_checks" valid_values="" >
+If TRUE (which is the default), check consistency between surface dataset used to create the finidat file
+and the current fsurdat. This check is only done for a transient run.
+</entry>
+
+<entry id="check_finidat_year_consistency" type="logical" category="clm_restart"
+       group="finidat_consistency_checks" valid_values="" >
+If TRUE (which is the default), check consistency between year on the finidat file
+and the current model year. This check is only done for a transient run.
+</entry>
+
+<entry id="check_finidat_pct_consistency" type="logical" category="clm_restart"
+       group="finidat_consistency_checks" valid_values="" >
+If TRUE (which is the default), check consistency between pct_pft on the finidat file
+and pct_pft read from the surface dataset. This check is only done for a NON-transient run.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options related to dynpft consistency checks                                     -->
+<!-- ========================================================================================  -->
+
+<entry id="check_dynpft_consistency" type="logical" category="datasets"
+       group="dynpft_consistency_checks" valid_values="" >
+If TRUE (which is the default), check consistency between pct_nat_pft on the flanduse_timeseries file
+and pct_nat_pft read from the surface dataset.
+</entry>
 
 </namelist_definition>

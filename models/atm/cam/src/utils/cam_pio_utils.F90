@@ -7,7 +7,7 @@ module cam_pio_utils
   use cam_logfile,      only: iulog
   use perf_mod,         only: t_startf, t_stopf
   use spmd_utils,       only: masterproc
-  use cam_history_support, only : fillvalue, hist_mdims, column_info, max_chars, field_info
+  use cam_history_support, only : fillvalue, hist_coords, column_info, max_chars, field_info
 
   implicit none
   private
@@ -82,7 +82,7 @@ contains
     else if(associated(field%mdims)) then
        mdimcnt=size(field%mdims)
        do i=1,mdimcnt
-          mdims(i)= hist_mdims(field%mdims(i))%value
+          mdims(i)= hist_coords(field%mdims(i))%dimsize
        end do
     else
        mdimcnt=1

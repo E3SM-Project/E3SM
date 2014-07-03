@@ -53,7 +53,7 @@ subroutine setupbdif(carma, cstate, rc)
       do iz = 1, NZ
 
         ! Vertical brownian diffusion coefficient
-        dkz(iz,ibin,igroup) = (BK*t(iz)*bpm(iz,ibin,igroup)) / (6._f*PI*rmu(iz)*r_wet(iz,ibin,igroup))
+        dkz(iz,ibin,igroup) = (BK*t(iz)*bpm(iz,ibin,igroup)) / (6._f*PI*rmu(iz)*r_wet(iz,ibin,igroup) * rprat(ibin,igroup))
 
       enddo
     enddo

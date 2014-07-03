@@ -6,12 +6,15 @@
 #ifdef BGL
 #define BGx
 #endif
+#ifdef BGQ
+#define BGx
+#endif
 !>
 !! @file 
 !! @brief Initialization Routines for PIO
 !! 
-!! $Revision: 807 $
-!! $LastChangedDate: 2013-05-10 08:26:06 -0600 (Fri, 10 May 2013) $
+!! $Revision: 912 $
+!! $LastChangedDate: 2014-01-16 19:06:39 -0700 (Thu, 16 Jan 2014) $
 !<
 module piolib_mod
   !--------------
@@ -1734,10 +1737,9 @@ contains
     call dealloc_check(iotmp2)
 
     call identity(comp_comm,iotask)
-    
 
     if (debug) print *,__PIO_FILE__,__LINE__, 'CHECK 2 (myid, n_iotasks, lstride, lbase, iotask, num_iotasks) :', &
-         iosystem%comp_rank, n_iotasks, lstride, lbase, iotask, iosystem%num_tasks	
+         iosystem%comp_rank, n_iotasks, lstride, lbase, iotask, iosystem%num_tasks
     if (debug) print *,__PIO_FILE__,__LINE__, 'IORANK CHECK for proc=:', iosystem%comp_rank, 'n_iotasks = ', &
          n_iotasks, iosystem%iomaster, iosystem%ioranks(:)
 
@@ -1806,6 +1808,10 @@ contains
 
     call mpi_comm_create(comp_comm,mpi_group_io,iosystem%io_comm,ierr)
     if(check) call checkmpireturn('init: after call to comm_create: ',ierr)
+
+    call mpi_group_free(mpi_group_io, ierr)
+    if(check) call checkmpireturn('init: after call to group_free: ',ierr)
+
     
     if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
     if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
@@ -2185,7 +2191,7 @@ contains
         msg = PIO_MSG_EXIT
         call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
      end if
-
+     If (associated (iosystem%ioranks)) deallocate (iosystem%ioranks)
 #ifndef _MPISERIAL
      if(iosystem%info .ne. mpi_info_null) then 
         call mpi_info_free(iosystem%info,ierr) 
@@ -2562,7 +2568,7 @@ contains
 !! variables, and attributes, or deleting attributes.) 
 !! @retval ierr @copydoc error_return
 !<
-  integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
+  integer function PIO_openfile(iosystem, file, iotype, fname,mode, CheckMPI) result(ierr)
 #ifdef _COMPRESSION
     use pio_types, only : pio_iotype_vdc2
 #endif
@@ -2571,6 +2577,7 @@ contains
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
+    logical, optional, intent(in) :: CheckMPI
     ! ===================
     !  local variables
     ! ================
@@ -2653,7 +2660,11 @@ contains
        if(amode /=0) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
-       ierr = open_mpiio(file,myfname)
+       if (present(CheckMPI)) then
+         ierr = open_mpiio(file,myfname, CheckMPI)
+       else
+         ierr = open_mpiio(file,myfname)
+       end if
     case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        ierr = open_nf(file,myfname,amode)
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh

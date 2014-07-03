@@ -168,46 +168,45 @@ submissions.
 <sect2 id="customizing_components">
 <title>Customizing component-specific namelist settings </title>
 
-<para> In each $&CASEROOT; directory, the subdirectory
-<filename>$CASEROOT/Buildconf</filename> contains files to create all
-the component namelists, build the component libraries and create the
+<para> In your $&CASEROOT; directory, the subdirectory
+<filename>$CASEROOT/Buildconf</filename> contains files to create the
+component namelists, build the component libraries and create the
 model executable.
-<filename>Buildconf/$component.buildexe.csh</filename> (creates the
-component libraries) and
-<filename>Buildconf/$component.buildnml.csh</filename> (creates the
-component namelists).  A new feature in CESM1.1 is that
-<emphasis>ALL</emphasis> CESM components now use a component-specific
-<command>build-namelist</command> utility (similar to that of CAM, CLM
-and CICE in the CESM1.0 series) to generate their respective model
-namelists. In addition, CAM, CLM and CICE have an associated
-<command>configure</command> utility that sets up compile time
-configuration options and is also called from the corresponding
-Buildconf/$component.buildnml.csh
-(e.g. Buildconf/cam.buildnml.csh).</para>
+<filename>Buildconf/$component.buildexe.csh</filename> creates the
+component libraries and
+<filename>Buildconf/$component.buildnml.csh</filename> creates the
+component namelists.  A new feature in the CESM1.1 and CESM1.2 release
+series is that <emphasis>ALL</emphasis> CESM components now use a
+component-specific <command>build-namelist</command> utility (similar
+to that of CAM, CLM and CICE in the CESM1.0 series) to generate their
+respective model namelists. In addition, CAM, CLM and CICE have an
+associated <command>configure</command> utility that sets up compile
+time configuration options and is also called from the corresponding
+Buildconf/*.buildnml.csh (e.g. Buildconf/cam.buildnml.csh).</para>
 
 <para> 
-<command>In CESM1.1, user specific component namelist changes should
-only be made only by editing the
-<filename>$CASEROOT/user_nl_xxx</filename> files</command>, or in some
-cases by changing xml variables in 
-<ulink url="../modelnl/env_run.html">env_run.xml</ulink> or
-<ulink url="../modelnl/env_build.html">env_build.xml</ulink>.  A full
+<command>In the CESM1.2 series, user specific component namelist
+changes should only be made only by editing the
+<filename>$CASEROOT/user_nl_xxx</filename> files OR by
+changing xml variables in <ulink
+url="../modelnl/env_run.html">env_run.xml</ulink> or <ulink
+url="../modelnl/env_build.html">env_build.xml</ulink></command>.  A full
 discussion of how to change the namelist variables for each component
-is provided below.  To preview the case component namelists, a new
-utility, <command>preview_namelists</command>, is now available in $&CASEROOT;.
-Issuing <command>preview_namelists</command> results in the creation
+is provided below.  You can preview the case component namelists by
+running <filename>preview_namelists</filename> in your $&CASEROOT;.
+Calling <filename>preview_namelists</filename> results in the creation
 of component namelists (e.g. atm_in, lnd_in, .etc) in
 <filename>$CASEROOT/CaseDocs/</filename>. A complete documentation of
-all <ulink url="../modelnl/index.html">model component namelists
-</ulink>, is now available.  The namelist files created in the
-<filename>CaseDocs/</filename> are there only for user reference and
-<command>SHOULD NOT BE EDITED</command> since they are overwritten
-every time <command>preview_namelists</command>,
-<command>$CASE.run</command> and <command>$CASE.build</command> are
-called. In CESM1.1, (unlike CESM1.0) the only files that should be
-modified by you are in $&CASEROOT; (no files in Buildconf/ should
-be edited).  The following represents a summary of controlling and
-modifying component-specific run-time settings:
+all <ulink url="../modelnl/modelnl.html">model component namelists
+</ulink> for CESM1.2 releases is now available.  The namelist files
+created in the <filename>CaseDocs/</filename> are there only for user
+reference and <emphasis>SHOULD NOT BE EDITED</emphasis> since they are
+overwritten every time <filename>preview_namelists</filename>,
+<filename>$CASE.run</filename> and <filename>$CASE.build</filename>
+are called. In CESM1.2, (like CESM1.1 but unlike CESM1.0) the only
+files that you should modify are in $&CASEROOT;. No files in
+Buildconf/ should be changed. The following represents a summary of
+controlling and modifying component-specific run-time settings:
 </para>
 
 <variablelist>
@@ -216,26 +215,49 @@ modifying component-specific run-time settings:
 <term>DRV</term> 
 <listitem> 
 <para> 
-In CESM1.1, <ulink url="../modelnl/nl_drv.html">driver namelist</ulink>
-are in two groups - those that are set directly from xml variables in
-<ulink url="../modelnl/env_run.html">env_run.xml</ulink> and 
-<ulink url="../modelnl/env_build.html">env_build.xml</ulink> - and those
-that can be modified via changing the <filename>user_nl_cpl</filename>
-file. A full discussion namelist variables that can be changed by
-setting <filename>env_run.xml</filename>
-and <filename>env_build.xml</filename> variables is provided at the
-top of the <filename>user_nl_cpl</filename> file.  For those namelist
-variabes that are not set by directly changing
-<filename>env_run.xml</filename> xml variables,
-or <filename>env_build.xml</filename>, you should add the appropriate
-keyword/value pair at the end of
-the <filename>$CASEROOT/user_nl_cpl</filename> file.  For example, to
-change eps_frac to 1.0e-05, add the following line to the end of
-the <filename>user_nl_cpl</filename>, "eps_frac = 1.0e-02".  To see
-the result of adding this, call
-<command>preview_namelists</command> and verify that this new value appears in
-CaseDocs/drv_in.
-</para>
+In CESM1.2, <ulink url="../modelnl/nl_drv.html">driver
+namelist</ulink> are in two groups - those that are set directly from
+xml variables in <ulink
+url="../modelnl/env_case.html">env_case.xml</ulink>, <ulink
+url="../modelnl/env_mach_pes.html">env_mach_pes.xml</ulink> and <ulink
+url="../modelnl/env_run.html">env_run.xml</ulink>, and those that are
+set by the driver build-namelist utility
+(<filename>$CCSMROOT/models/drv/bld/build-namelist</filename>) for the
+target compset and resolution.  Except for the following driver
+namelist variables (see below), driver namelist variables that are in
+<filename>env_run.xml</filename> can be changed either by changing the
+xml variable OR by adding the correct key-word value pair at the end
+of <filename>user_nl_cpl</filename>, where any changes in
+<filename>user_nl_cpl</filename> <emphasis> will take
+precedence</emphasis> over values set in the xml file.  For example,
+to change eps_frac to 1.0e-15, add the following line to the end of
+the <filename>user_nl_cpl</filename>, "eps_frac = 1.0e-15".  To see
+the result of this modification to <filename>user_nl_cpl</filename>
+call <filename>preview_namelists</filename> and verify that this new
+value appears in <filename>CaseDocs/drv_in</filename>. </para>
+<screen>
+The following namelist variables MAY NOT be changed in user_nl_cpl -
+but must be changed in the appropriate $CASEROOT xml file.  
+XXX  refers to ATM,LND,ICE,OCN,ROF,GLC,WAV
+======================================
+drv namelist   => xml variable 
+variable       
+======================================
+case_name      => CASE                
+username       => CCSMUSER         
+hostname       => MACH                
+model_version  => CCSM_REPOTAG  
+start_type     => RUN_TYPE          
+start_ymd      => RUN_STARTDATE  
+start_tod      => START_TOD
+XXX_cpl_dt     => XXX_NCPL          
+XXX_ntasks     => NTASKS_XXX
+XXX_nthreads   => NTHRDS_XXX
+XXX_rootpe     => ROOTPE_XXX
+XXX_pestride   => PSTRID_XXX
+XXX_layout     => NINST_XXX_LAYOUT
+</screen>
+<para></para>
 </listitem>
 </varlistentry>
 
@@ -247,23 +269,24 @@ CAM's <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/cam/docs/ug5_2/book1.html">configure
 </ulink> and <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/cam/docs/ug5_2/book1.html">build-namelist
-</ulink> utilities are now called by <filename>Buildconf/cam.buildnml.csh</filename>. 
-Note that <ulink
-url="../modelnl/env_build.html#build_cam">CAM_CONFIG_OPTS</ulink>, and
-<ulink url="../modelnl/env_run.html#run_cam">CAM_NAMELIST_OPTS and
-CAM_NML_USE_CASE</ulink> are normally utilized ONLY to set compset
-variables (e.g., "-phys cam3_5_1 -chem waccm_mozart" for
-CAM_CONFIG_OPTS) and in general should not be modified for supported
-compsets. 
-For a complete documentation of namelist settings, see  
-<ulink url="../modelnl/nl_cam.html">CAM namelist variables</ulink>.
-To modify CAM namelist settings, you should add the appropriate
-keyword/value pair at the end of the <filename>$CASEROOT/user_nl_cam</filename>
-file (see the documentation for each file at the top of that file).
-For example, to change the solar constant to 1363.27, modify the
-user_nl_cam file to contain the following line at the end "solar_const=1363.27".
-To see the result of adding this, call <command>preview_namelists</command>
-and verify that this new value appears in <filename>CaseDocs/atm_in</filename>.
+</ulink> utilities are called by
+<filename>Buildconf/cam.buildnml.csh</filename>.  <ulink
+url="../modelnl/env_build.html#build_cam">CAM_CONFIG_OPTS</ulink>,
+<ulink url="../modelnl/env_run.html#run_cam">CAM_NAMELIST_OPTS</ulink>
+and <ulink
+url="../modelnl/env_run.html#run_cam">CAM_NML_USECASE</ulink> are
+used to set compset variables (e.g., "-phys cam5" for CAM_CONFIG_OPTS)
+and in general should not be modified for supported compsets.  For a
+complete documentation of namelist settings, see <ulink
+url="../modelnl/nl_cam.html">CAM namelist variables</ulink>.  To
+modify CAM namelist settings, you should add the appropriate
+keyword/value pair at the end of the
+<filename>$CASEROOT/user_nl_cam</filename> file (see the documentation
+for each file at the top of that file).  For example, to change the
+solar constant to 1363.27, modify the user_nl_cam file to contain the
+following line at the end "solar_const=1363.27".  To see the result of
+adding this, call <command>preview_namelists</command> and verify
+that this new value appears in <filename>CaseDocs/atm_in</filename>.
 </para>
 </listitem>
 </varlistentry>
@@ -276,20 +299,19 @@ CLM's <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.0/clm/models/lnd/clm/doc/UsersGuide/book1.html">
 configure</ulink> and <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.0/clm/models/lnd/clm/doc/UsersGuide/book1.html">
-build-namelist</ulink> utilities are now called by
-<filename>Buildconf/clm.buildnml.csh</filename>.  Note that <ulink
-url="../modelnl/env_build.html#build_clm">CLM_CONFIG_OPTS</ulink>, and
+build-namelist</ulink> utilities are called by
+<filename>Buildconf/clm.buildnml.csh</filename>.  <ulink
+url="../modelnl/env_build.html#build_clm">CLM_CONFIG_OPTS</ulink> and
 <ulink url="../modelnl/env_run.html#run_clm">CLM_NML_USE_CASE</ulink>
-and other CLM run-time settings are normally utilized ONLY to set
-compset specific variables and in general should not be modified for
-supported compsets.  For a complete documentation of namelist
-settings, see <ulink url="../modelnl/nl_clm.html">CLM namelist
-variables</ulink>.  To modify CLM namelist settings, you should add
-the appropriate keyword/value pair at the end of the
-<filename>$CASEROOT/user_nl_clm</filename> file (see the documentation for each
-file at the top of that file).  To see the result of your change, call
-<command>preview_namelists</command> and verify that the changes
-appear correctly in <filename>CaseDocs/lnd_in</filename>.
+are used to set compset specific variables and in general should not
+be modified for supported compsets.  For a complete documentation of
+namelist settings, see <ulink url="../modelnl/nl_clm.html">CLM
+namelist variables</ulink>.  To modify CLM namelist settings, you
+should add the appropriate keyword/value pair at the end of the
+<filename>$CASEROOT/user_nl_clm</filename> file (see the documentation
+for each file at the top of that file).  To see the result of your
+change, call <command>preview_namelists</command> and verify that the
+changes appear correctly in <filename>CaseDocs/lnd_in</filename>.
 </para>
 </listitem>
 </varlistentry>
@@ -325,7 +347,7 @@ build-namelist</ulink> utilities are now called by
 url="../modelnl/env_build.html#build_cice">CICE_CONFIG_OPTS</ulink>,
 and <ulink
 url="../modelnl/env_run.html#run_cice">CICE_NAMELIST_OPTS</ulink> are
-normally utilized ONLY to set compset specific variables and in
+used to set compset specific variables and in
 general should not be modified for supported compsets.
 For a complete documentation of namelist
 settings, see <ulink url="../modelnl/nl_cice.html">CICE namelist
@@ -410,7 +432,7 @@ There are also some run-time settings set via
 <filename>env_run.xml</filename>, as documented in <ulink
 url="../modelnl/env_run.html#run_cism">CISM run time variables</ulink>
 - in particular, the model resolution, set via
-<envar>GLC_GRID</envar>. The value of <envar>GLC_GRID</envar>
+<envar>CISM_GRID</envar>. The value of <envar>CISM_GRID</envar>
 determines the default value of a number of other namelist parameters.
 </para>
 </listitem>
@@ -480,46 +502,43 @@ modifications appear in
 <para> DOCN is discussed in detail in 
 <ulink url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data
 Model's User's Guide</ulink>. </para>
-<para>DOCN running in prescribed mode (in conjunction with
-CICE running in prescribed mode) is used in all <link
-linkend="ccsm_component_sets">F component sets</link>.
-It assumes that the only field in the input stream is SST
-and that  SST is in Celsius and must be converted to Kelvin.
-All other fields are set to zero except for ocean salinity, which
-is set to a constant reference salinity value.
-Normally the ice fraction data is found in the same data files that
-provide SST data to the data ocean model. They are normally found in
-the same file because the SST and ice fraction data are derived from
-the same observational data sets and are consistent with each other.
-They are normally found in the same file
-because the SST and ice fraction data are derived from the same
-observational data sets and are consistent with each other.
-For prescribed mode, default yearly climatological datasets are
-provided for various model resolutions. For multi-year runs requiring
-AMIP datasets of sst/ice_cov fields, you need to set the variables for
-<ulink url="../modelnl/env_run.html#run_sstice"><envar>DOCN_SSTDATA_FILENAME</envar>,
+<para>
+DOCN running in prescribed mode assumes that the only field in the
+input stream is SST and also that SST is in Celsius and must be
+converted to Kelvin.  All other fields are set to zero except for
+ocean salinity, which is set to a constant reference salinity value.
+Normally the ice fraction data (used for prescribed CICE) is found in
+the same data files that provide SST data to the data ocean model
+since SST and ice fraction data are derived from the same
+observational data sets and are consistent with each other.  For DOCN
+prescribed mode, default yearly climatological datasets are provided
+for various model resolutions. For multi-year runs requiring AMIP
+datasets of sst/ice_cov fields, you need to set the variables for
+<ulink
+url="../modelnl/env_run.html#run_sstice"><envar>DOCN_SSTDATA_FILENAME</envar>,
 <envar>DOCN_SSTDATA_YEAR_START</envar>, and
-<envar>DOCN_SSTDATA_YEAR_END</envar></ulink>. CICE in prescribed mode also
-uses these values.
-</para>
-<para>DOCN running as a slab ocean model is used (in conjunction with
-CICE running in prognostic mode) in all <link
-linkend="ccsm_component_sets">E compsets</link>.
-SOM ("slab ocean model") mode is a prognostic mode.  This mode
-computes a prognostic sea surface temperature and a freeze/melt
-potential (surface Q-flux) used by the sea ice model.  This
-calculation requires an external SOM forcing data file that includes
- ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
-Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
-ocean resolution dependent and are derived from the ocean model output
-of a fully coupled run.  Note that while this mode runs out of
-the box, the default SOM forcing file is not scientifically
-appropriate and is provided for testing and development purposes only.
-Users must create scientifically appropriate data for their particular
-application.  A tool is available to derive valid SOM forcing. 
+<envar>DOCN_SSTDATA_YEAR_END</envar></ulink>. CICE in prescribed mode
+also uses these values.
 </para>
 <para>
-DOCN can be user configured in three different ways.  
+DOCN running as a slab ocean model is used (in conjunction with CICE
+running in prognostic mode) in all <link
+linkend="ccsm_component_sets">E compsets</link>.  SOM ("slab ocean
+model") mode is a prognostic mode.  This mode computes a prognostic
+sea surface temperature and a freeze/melt potential (surface Q-flux)
+used by the sea ice model.  This calculation requires an external SOM
+forcing data file that includes ocean mixed layer depths and
+bottom-of-the-slab Q-fluxes.  Scientifically appropriate
+bottom-of-the-slab Q-fluxes are normally ocean resolution dependent
+and are derived from the ocean model output of a fully coupled run.
+Note that while this mode runs out of the box, the default SOM forcing
+file is not scientifically appropriate and is provided for testing and
+development purposes only.  Users must create scientifically
+appropriate data for their particular application.  A tool is
+available to derive valid SOM forcing.
+</para>
+<para>
+DOCN can be user-customized in three ways.  
 </para>
 <para> 
 You can set <ulink url="../modelnl/env_run.html#run_docn">DOCN
@@ -532,8 +551,7 @@ new_namelist_value". Note that any namelist variable from
 shr_strdata_nml and datm_nml can be modified below using the this
 syntax. Use <command>preview_namelists</command> to view (not modify)
 the output namelist in <filename>CaseDocs</filename>. 
-</para> 
-
+</para>
 <para>
 You can modify the contents of a DOCN stream txt file. To do this:
 <itemizedlist>
@@ -570,7 +588,7 @@ again, you should see your new modifications appear in
 <para> DICE is discussed in detail in 
 <ulink url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data Model's User's Guide</ulink>. </para>
 <para>
-DICE can be user configured in three different ways.  
+DICE can be user-customized in three ways.  
 </para>
 <para> 
 You can set <ulink url="../modelnl/env_run.html#run_dice">DICE
@@ -616,7 +634,7 @@ the other data models because it can run
 as a purely data-land model (reading
 in coupler history data for atm/land fluxes and land albedos produced
 by a previous run), or to read in model output from CLM to send to CISM. </para>
-<para>DLND can be user configured in three different way:</para>
+<para>DLND can be user-customized in three ways:</para>
 <para> 
 You can set <ulink url="../modelnl/env_run.html#run_dlnd">DLND
 run-time variables</ulink>.
@@ -663,7 +681,7 @@ Model's User's Guide</ulink>. The data river runoff model reads in runoff data
 and sends it back to the coupler. In general, the data river runoff model is only
 used to provide runoff forcing data to POP2 when running C or G
 compsets</para>
-<para>DROF can be user configured in three different way:</para>
+<para>DROF can be user-customized in three ways:</para>
 <para> 
 You can set <ulink url="../modelnl/env_run.html#run_drof">DROF
 run-time variables</ulink>.
@@ -756,9 +774,16 @@ new &cesm; code.
 </para></listitem>
 <listitem><para> 
 If long-term archiving is not enabled, users must monitor quotas and
-usage in the $<envar>DOUT_S_ROOT/</envar> directory and should
+usage in the <envar>$DOUT_S_ROOT/</envar> directory and should
 manually clean up these areas on a frequent basis.  
 </para></listitem>
+<listitem><para>
+If <envar>$DOUT_L_MS</envar> is TRUE, there is an option to keep the data on disk 
+(logical <envar>$DOUT_S_SAVE_ALL_ON_DISK</envar>) in a directory (<envar>$DOUT_S_SAVE_ROOT</envar>) 
+whose default value is the same as the default value of <envar>$DOUT_S_ROOT</envar>
+except "/archive/" has been replaced with "/csm/". The user may change this but it 
+must be hard linkable from <envar>$DOUT_S_ROOT</envar>. No data is copied when using this option.
+ </para></listitem>
 </itemizedlist>
 
 <para>
@@ -835,16 +860,16 @@ normally results in both increased throughput and increased cost. If
 models scaled linearly, the cost would remain constant across
 different processor counts, but generally, models don't scale linearly
 and cost increases with increasing processor count. This is certainly
-true for CESM1. It is strongly recommended that a user perform a
+true for CESM. It is strongly recommended that a user perform a
 load-balancing exercise on their proposed model run before undertaking
 a long production run.
 </para>
 
 <para>
-CESM1 has significant flexibility with respect to the layout of
+CESM has significant flexibility with respect to the layout of
 components across different hardware processors. In general, there are
 seven unique models (atm, lnd, rof, ocn, ice, glc, cpl) that are managed
-independently in CESM1, each with a unique MPI communicator. In
+independently in CESM, each with a unique MPI communicator. In
 addition, the driver runs on the union of all processors and controls
 the sequencing and hardware partitioning.  
 </para>
@@ -947,16 +972,16 @@ used to compare test runs to help determine the optimal load balance.
 Changing the pe layout of the model has NO IMPACT on the scientific
 results.  The basic order of operations and calling sequence is hardwired 
 into the driver and that doesn't change when the pe layout is changed.
-There are some constraints on the ability of CESM1 to run fully concurrent.
+There are some constraints on the ability of CESM to run fully concurrent.
 In particular, the atmosphere model always run sequentially with the ice
 and land for scientific reasons.  As a result, running the atmosphere
 concurrently with the ice and land will result in idle processors
 in these components at some point in the timestepping sequence.  For
 more information about how the driver is implemented, see
 (Craig, A.P., Vertenstein, M., Jacob, R.,  2012: A new flexible coupler for 
-earth system modeling developed for CCSM4 and CESM1. International Journal of 
+earth system modeling developed for CCSM4 and CESM1.0. International Journal of 
 High Performance Computing Applications, 26, 31-42, 10.1177/1094342011428141).
-In CESM1.1, there is a new separate rof component.  That component is implemented
+As of CESM1.1.1, there is a new separate rof component.  That component is implemented
 in the driver just like the land model.  It can run concurrently with the
 land model but not concurrently with the atmosphere model.
 </para>
@@ -1026,7 +1051,7 @@ component timing.
 </para>
 
 <para>
-In general, there are only a few reasonable component layout options for CESM1.
+In general, there are only a few reasonable component layout options for CESM.
 </para>
 
 <itemizedlist>
@@ -1036,7 +1061,7 @@ In general, there are only a few reasonable component layout options for CESM1.
 rof, and land components </para></listitem>
 <listitem><para>finally, it makes best sense for the coupler to run on a
 subset of the atmosphere processors and that can be sequentially or
-concurrently with the land and ice </para></listitem>
+concurrently run with the land and ice </para></listitem>
 </itemizedlist>
 
 <para>
@@ -1097,7 +1122,7 @@ unsure of a timing result, run cases multiple times.
 
 <!-- ======================================================================= -->
 <sect1 id="running_ccsm_running">
-<title>The Run</title>
+<title>How do I run a case?</title>
 
 <!-- ======================================================================= -->
 <sect2 id="running_ccsm_running_timelimit">
@@ -1125,14 +1150,14 @@ The model throughput is the estimated number of model years that you
 can run in a wallclock day. Based on this, you can maximize
 $CASE.run queue limit and change $STOP_OPTION and $STOP_N in
 &env_run.xml;. For example, say a model's throughput is 4.7
-simulated_years/day.  On bluefire, the maximum runtime limit is 6
+simulated_years/day.  On yellowstone(??), the maximum runtime limit is 6
 hours. 4.7 model years/24 hours * 6 hours = 1.17 years. On the
 massively parallel computers, there is always some variability in how
 long it will take a job to run. On some machines, you may need to
 leave as much as 20% buffer time in your run to guarantee that jobs
 finish reliably before the time limit. For that reason we will set our
 model to run only one model year/job. Continuing to assume that the run is
-on bluefire, in <filename>$CASE.bluefire.run</filename> set
+on yellowstone, in <filename>$CASE.yellowstone.run</filename> set
 </para>
 
 <screen>
@@ -1159,12 +1184,12 @@ and <filename>xmlchange</filename> should be invoked as follows in &CASEROOT;:
 <para>
 Once you have configured and built the model, submit
 <filename>$CASE.run</filename> to your machine's batch queue
-system. For example on NCAR's IBM, bluefire,
+system. For example on NCAR's IBM, yellowstone
 </para>
 
 <screen>
-> # for BLUEFIRE
-> bsub < $CASE.bluefire.run
+> # for yellowstone
+> bsub < $CASE.yellowstone.run
 > # for CRAY
 > qsub $CASE.hopp2.run
 </screen>

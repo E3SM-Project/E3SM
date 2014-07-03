@@ -36,13 +36,13 @@ module glint_ebm
   !
   ! The old module name was 'glint_smb'.
 
-  use glimmer_global
+  use glimmer_global, only: dp
 
   implicit none
 
   type ebm_params
      integer       :: dummyint
-     real(rk)      :: dummyreal
+     real(dp)      :: dummyreal
      character(40) :: dummypath
   end type ebm_params
 
@@ -78,7 +78,7 @@ contains
     use glimmer_log
 
     type(ebm_params)        :: params
-    real(rk),dimension(:,:) :: temp,thck,artm,prcp,U10m,V10m,humidity,SWdown,LWdown,Psurf
+    real(dp),dimension(:,:) :: temp,thck,artm,prcp,U10m,V10m,humidity,SWdown,LWdown,Psurf
 
     ! Fatal error
 

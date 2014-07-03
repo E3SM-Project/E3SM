@@ -146,7 +146,8 @@ contains
     !
     ! NOTE: For CAM, the optional shortname needs to be provided for the group. These names
     ! should be 6 characters or less and without spaces.
-    call CARMAELEMENT_Create(carma, I_ELEM_DUST, I_GRP_DUST, "meteor smoke", RHO_METEOR_SMOKE, I_INVOLATILE, I_METEOR_SMOKE, rc, shortname="DUST")
+    call CARMAELEMENT_Create(carma, I_ELEM_DUST, I_GRP_DUST, "meteor smoke", RHO_METEOR_SMOKE, &
+         I_INVOLATILE, I_METEOR_SMOKE, rc, shortname="DUST")
     if (rc < 0) call endrun('CARMA_DefineModel::CARMA_AddElement failed.')
     
     
@@ -299,7 +300,6 @@ contains
     
     integer                            :: ilat                  ! latitude index 
     integer                            :: iltime                ! local time index
-    integer                            :: lchnk                 ! chunk identifier
     integer                            :: ncol                  ! number of columns in chunk
     integer                            :: icol                  ! column index
     integer                            :: igroup                ! the index of the carma aerosol group
@@ -339,8 +339,6 @@ contains
     ! so don't let the doy get too big.
     doy = min(365, doy)
 
-    ! Determine the latitude and longitude of each column.
-    lchnk = state%lchnk
     ncol = state%ncol
 
     ! Add any surface flux here.
@@ -396,8 +394,9 @@ contains
                 
                 if (pressure > carma_emis_lev(ilev)) then
                   rate = rate + &
-                    ((carma_emis_rate(ilev+carma_emis_ilev_incr) - carma_emis_rate(ilev)) / (carma_emis_lev(ilev+carma_emis_ilev_incr) - carma_emis_lev(ilev))) * &
-                    (pressure - carma_emis_lev(ilev))
+                    ((carma_emis_rate(ilev+carma_emis_ilev_incr) - &
+                    carma_emis_rate(ilev)) / (carma_emis_lev(ilev+carma_emis_ilev_incr) - &
+                    carma_emis_lev(ilev))) * (pressure - carma_emis_lev(ilev))
                 end if
                 
                 rate = rate * (((1.3e-7_r8)**3) / (r(ibin)**3))
@@ -428,7 +427,8 @@ contains
                     rfScale(icol) = carma_escale_grf(ilat, doy)
                   else
                     rfScale(icol) = carma_escale_grf(ilat-1, doy) + &
-                    (((state%lat(icol) / DEG2RAD) - carma_escale_lat(ilat-1)) / (carma_escale_lat(ilat) - carma_escale_lat(ilat-1))) * &
+                    (((state%lat(icol) / DEG2RAD) - &
+                    carma_escale_lat(ilat-1)) / (carma_escale_lat(ilat) - carma_escale_lat(ilat-1))) * &
                     (carma_escale_grf(ilat, doy) - carma_escale_grf(ilat-1, doy))
                   endif
                   exit
@@ -497,7 +497,8 @@ contains
     implicit none
 
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     integer                            :: ilev                  ! level index
@@ -601,7 +602,8 @@ contains
         enddo
         
         if (do_print) write(LUNOPRT, *) 'carma_init(): Total Emission = ', carma_emis_total, ' (kt/yr)'
-        carma_emis_expected = ((carma_emis_total * 1e6_r8) / (3600.0_r8 * 24.0_r8 * 365.0_r8)) / (4.0_r8 * PI * ((REARTH / 100._r8) ** 2))
+        carma_emis_expected = ((carma_emis_total * 1e6_r8) / (3600.0_r8 * 24.0_r8 * 365.0_r8)) / &
+             (4.0_r8 * PI * ((REARTH / 100._r8) ** 2))
         if (do_print) write(LUNOPRT,*) 'carma_init(): Done with emission table.'
 
       endif

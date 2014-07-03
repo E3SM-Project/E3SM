@@ -192,6 +192,7 @@ contains
   !> get parameters for polar stereographic projection
   function CFproj_get_stere_polar(ncid,mapid)
     use parallel
+    use glimmer_global, only: dp
     use glimmer_log
 
     implicit none
@@ -200,7 +201,7 @@ contains
     integer, intent(in) :: mapid  !< Handle of map projection in netCDF file.
     
     integer status
-    real dummy
+    real(dp) :: dummy
 
     allocate(CFproj_get_stere_polar)
     status = parallel_get_att(ncid,mapid,'false_easting',CFproj_get_stere_polar%false_easting)

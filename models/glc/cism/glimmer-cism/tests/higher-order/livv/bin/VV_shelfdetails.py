@@ -6,94 +6,118 @@ from optparse import OptionParser
 import subprocess
 import collections
 import VV_outprocess
+import VV_utilities
+import VV_checks
 
-def circdetails(circ_file,job_path):  # using data, fill the web page with info
+def circdetails(solver_file,job_path):  # using data, fill the web page with info
 
-	circ_file.write('<HTML>\n')
-	circ_file.write('<H3>Circular Shelf Iteration Count Details:</H3>')
-	circ_file.write('<H4>Eventually published in plot form</H4>')
-	circ_file.write('<BR> \n')
+        failedt_list = []
+	solver_file.write('<HTML>\n')
+	solver_file.write('<H3>Circular Shelf Iteration Count Details:</H3>')
+	solver_file.write('<H4>Eventually published in plot form</H4>')
+	solver_file.write('<BR> \n')
 
 # JFNK 2 proc
-	circ_file.write('<H4>New Run:</H4>')
-        procttl_circd, nonlist_circd,avg2_circd,out_flag_circd,ndcirc_name,ldcirc_name = VV_outprocess.jobprocess(job_path + '/circular-shelf/data/circular-shelf.out','circ')
 
-        circ_file.write("Number of Processors = " + str(procttl_circd[-1]) + "<BR>\n")
-        circ_file.write("Number of Nonlinear Iterations = ")
-        for item in nonlist_circd:
-                circ_file.write(str(item) + ", ")
-        circ_file.write('<BR>\n')
+# Failure checking
+        failedt1 = VV_checks.failcheck(job_path, '/circular-shelf/data/circular-shelf.out')
+        failedt_list.append(failedt1)
+
+        solver_file.write('<H4>New Run: circular-shelf.out</H4>')
+        procttl_circd, nonlist_circd, avg2_circd, out_flag_circd, ndcirc_name, ldcirc_name = VV_outprocess.jobprocess(job_path + '/circular-shelf/data/circular-shelf.out','circ')
+
+        solver_file.write("Number of Processors = " + str(procttl_circd[-1]) + "<BR>\n")
+        solver_file.write("Number of Nonlinear Iterations = ")
+        VV_utilities.format(solver_file, nonlist_circd)
+        solver_file.write('<BR>\n')
         if out_flag_circd == 1:
-                circ_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
-        circ_file.write("Average Number of Linear Iterations per Time-Step = ")
-        for item in avg2_circd:
-                circ_file.write(str(item) + ", ")
-        circ_file.write('<BR> \n')
+                solver_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
+        solver_file.write("Average Number of Linear Iterations per Time-Step = ")
+        VV_utilities.format(solver_file, avg2_circd)
+        solver_file.write('<BR> \n')
 
-        circ_file.write('<H4>Benchmark Run:</H4>')
-        procttl_circb, nonlist_circb,avg2_circb,out_flag_circb, ndcircb_name,ldcircb_name = VV_outprocess.jobprocess(job_path + '/circular-shelf/bench/circular-shelf.out','circb')
+        solver_file.write('<H4>Benchmark Run: circular-shelf.out</H4>')
+        procttl_circb, nonlist_circb, avg2_circb, out_flag_circb, ndcircb_name, ldcircb_name = VV_outprocess.jobprocess(job_path + '/bench/circular-shelf/data/circular-shelf.out','circb')
 
-        circ_file.write("Number of Processors = " + str(procttl_circb[-1]) + "<BR>\n")
-        circ_file.write("Number of Nonlinear Iterations = ")
-        for item in nonlist_circb:
-                circ_file.write(str(item) + ", ")
-        circ_file.write('<BR>\n')
+        solver_file.write("Number of Processors = " + str(procttl_circb[-1]) + "<BR>\n")
+        solver_file.write("Number of Nonlinear Iterations = ")
+        VV_utilities.format(solver_file, nonlist_circb)
+        solver_file.write('<BR>\n')
         if out_flag_circb == 1:
-                circ_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
-        circ_file.write("Average Number of Linear Iterations per Time-Step = ")
-        for item in avg2_circb:
-                circ_file.write(str(item) + ", ")
-        circ_file.write('<BR> \n')
+                solver_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
+        solver_file.write("Average Number of Linear Iterations per Time-Step = ")
+        VV_utilities.format(solver_file, avg2_circb)
+        solver_file.write('<BR> \n')
 
+        if 1 in failedt_list:
+            failedt = 1
+        else:
+            failedt = 0
+
+        return failedt
 # TODO have jobprocess grab picard solver info as well
 
-def confdetails(conf_file,job_path):  # using data, fill the web page with info
+def confdetails(solver_file,job_path):  # using data, fill the web page with info
 
-	conf_file.write('<HTML>\n')
-	conf_file.write('<H3>Confined Shelf Iteration Count Details:</H3>')
-	conf_file.write('<H4>Eventually published in plot form</H4>')
-	conf_file.write('<BR> \n')
+        failedt_list = []
+
+	solver_file.write('<HTML>\n')
+	solver_file.write('<H3>Confined Shelf Iteration Count Details:</H3>')
+	solver_file.write('<H4>Eventually published in plot form</H4>')
+	solver_file.write('<BR> \n')
 
 # JFNK 2 proc
-        conf_file.write('<H4>New Run:</H4>')
-        procttl_confd, nonlist_confd,avg2_confd,out_flag_confd, ndconf_name, ldconf_name = VV_outprocess.jobprocess(job_path + '/confined-shelf/data/confined-shelf.out', 'conf')
+        
+# Failure checking
+        failedt1 = VV_checks.failcheck(job_path, '/confined-shelf/data/confined-shelf.out')
+        failedt_list.append(failedt1)
 
-        conf_file.write("Number of Processors = " + str(procttl_confd[-1]) + "<BR>\n")
-        conf_file.write("Number of Nonlinear Iterations = ")
-        for item in nonlist_confd:
-                conf_file.write(str(item) + ", ")
-        conf_file.write('<BR>\n')
+        solver_file.write('<H4>New Run: confined-shelf.out</H4>')
+        procttl_confd, nonlist_confd, avg2_confd, out_flag_confd, ndconf_name, ldconf_name = VV_outprocess.jobprocess(job_path + '/confined-shelf/data/confined-shelf.out', 'conf')
+
+        solver_file.write("Number of Processors = " + str(procttl_confd[-1]) + "<BR>\n")
+        solver_file.write("Number of Nonlinear Iterations = ")
+        VV_utilities.format(solver_file, nonlist_confd)
+        solver_file.write('<BR>\n')
         if out_flag_confd == 1:
-                conf_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
-        conf_file.write("Average Number of Linear Iterations per Time-Step = ")
-        for item in avg2_confd:
-                conf_file.write(str(item) + ", ")
-        conf_file.write('<BR> \n')
+                solver_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
+        solver_file.write("Average Number of Linear Iterations per Time-Step = ")
+        VV_utilities.format(solver_file, avg2_confd)
+        solver_file.write('<BR> \n')
 
-        conf_file.write('<H4>Benchmark Run:</H4>')
-        procttl_confb, nonlist_confb,avg2_confb,out_flag_confb, ndconfb_name, ldconfb_name = VV_outprocess.jobprocess(job_path + '/confined-shelf/bench/confined-shelf.out','confb')
+        solver_file.write('<H4>Benchmark Run: confined-shelf.out</H4>')
+        procttl_confb, nonlist_confb, avg2_confb, out_flag_confb, ndconfb_name, ldconfb_name = VV_outprocess.jobprocess(job_path + '/bench/confined-shelf/data/confined-shelf.out','confb')
 
-        conf_file.write("Number of Processors = " + str(procttl_confb[-1]) + "<BR>\n")
-        conf_file.write("Number of Nonlinear Iterations = ")
-        for item in nonlist_confb:
-                conf_file.write(str(item) + ", ")
-        conf_file.write('<BR>\n')
+        solver_file.write("Number of Processors = " + str(procttl_confb[-1]) + "<BR>\n")
+        solver_file.write("Number of Nonlinear Iterations = ")
+        VV_utilities.format(solver_file, nonlist_confb)
+        solver_file.write('<BR>\n')
         if out_flag_confb == 1:
-                conf_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
-        conf_file.write("Average Number of Linear Iterations per Time-Step = ")
-        for item in avg2_confb:
-                conf_file.write(str(item) + ", ")
-        conf_file.write('<BR> \n')
+                solver_file.write('<FONT COLOR="red">***TIME STEP(S) WHICH FAILED TO CONVERGE</FONT> <BR>\n')
+        solver_file.write("Average Number of Linear Iterations per Time-Step = ")
+        VV_utilities.format(solver_file, avg2_confb)
+        solver_file.write('<BR> \n')
 
-	conf_file.write('</HTML>\n')
-	conf_file.close()
+	solver_file.write('</HTML>\n')
+	solver_file.close()
+
+        if 1 in failedt_list:
+            failedt = 1
+        else:
+            failedt = 0
+        
+        return failedt
 
 def circplot(plot_file,job_path,ncl_path,html_path):  # using data, fill the web page with info
 
+        tmpath = job_path + '/circular-shelf/data/circular-shelf.gnu.JFNK.nc'
+        if VV_utilities.emptycheck(tmpath) == 0:
+                return
+
 	plot_file.write('<HTML>\n')
 	plot_file.write('<H3>Circular Shelf Plot Details:</H3>')
-	circ_plotfile=''+ ncl_path + '/circshelf.ncl'
-	stock='STOCK = addfile(\"'+ job_path + '/circular-shelf/bench/circular-shelf.gnu.JFNK.nc\", \"r\")'
+        circ_plotfile=''+ ncl_path + '/circshelf.ncl'
+	stock='STOCK = addfile(\"'+ job_path + '/bench/circular-shelf/data/circular-shelf.gnu.JFNK.nc\", \"r\")'
 	VAR1  ='VAR1 = addfile(\"' + job_path + '/circular-shelf/data/circular-shelf.gnu.JFNK.nc\", \"r\")'
 	png  = 'PNG = "' + ncl_path + '/circular-shelf"'
         plot_circ = "ncl '" + VAR1 + "' '" + stock + "' '" + png + "' " + circ_plotfile 
@@ -132,10 +156,14 @@ def circplot(plot_file,job_path,ncl_path,html_path):  # using data, fill the web
 
 def confplot(plot_file,job_path,ncl_path,html_path):  # using data, fill the web page with info
 
-	plot_file.write('<HTML>\n')
+        tmpath = job_path + '/confined-shelf/data/confined-shelf.gnu.JFNK.nc'
+        if VV_utilities.emptycheck(tmpath) == 0:
+                return
+
+        plot_file.write('<HTML>\n')
 	plot_file.write('<H3>Confined Shelf Plot Details:</H3>')
 	conf_plotfile=''+ ncl_path + '/confshelf.ncl'
-	stock='STOCK = addfile(\"'+ job_path + '/confined-shelf/bench/confined-shelf.gnu.JFNK.nc\", \"r\")'
+	stock='STOCK = addfile(\"'+ job_path + '/bench/confined-shelf/data/confined-shelf.gnu.JFNK.nc\", \"r\")'
 	VAR1  ='VAR1 = addfile(\"' + job_path + '/confined-shelf/data/confined-shelf.gnu.JFNK.nc\", \"r\")'
 	png  = 'PNG = "' + ncl_path + '/confined-shelf"'
         plot_conf = "ncl '" + VAR1 + "' '" + stock + "' '" + png + "' " + conf_plotfile 

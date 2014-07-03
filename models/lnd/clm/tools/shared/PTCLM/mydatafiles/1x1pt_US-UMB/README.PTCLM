@@ -1,0 +1,1 @@
+./PTCLMmkdata -s US-UMB -d /glade/p/cesmdata/cseg/inputdata --map_gdate 140121 --mydatadir /glade/p/cesmdata/cseg/inputdata/lnd/clm2/PTCLMmydatafiles/

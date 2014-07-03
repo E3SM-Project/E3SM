@@ -2,14 +2,10 @@
 
 cd $OBJROOT/lnd/obj
 
-set comp = 'unknown'
-if ($COMP_INTERFACE == 'MCT' ) set comp = mct
-if ($COMP_INTERFACE == 'ESMF') set comp = esmf
-
 cat >! Filepath << EOF
 $CASEROOT/SourceMods/src.xlnd
 $CODEROOT/lnd/xlnd
-$CODEROOT/lnd/xlnd/cpl_$comp
+$CODEROOT/lnd/xlnd/cpl
 EOF
 
 gmake complib -j $GMAKE_J MODEL=xlnd COMPLIB=$LIBROOT/liblnd.a -f $CASETOOLS/Makefile MACFILE=$CASEROOT/Macros.$MACH || exit 2

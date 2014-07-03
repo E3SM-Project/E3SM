@@ -1,5 +1,5 @@
 This directory contains source code for building unit tests for
-clm4_5/mksurfdata_map
+mksurfdata_map
 
 test_mod.F90 was copied from
 https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk/unit_testers/test_mod.F90

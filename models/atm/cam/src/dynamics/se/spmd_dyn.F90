@@ -6,7 +6,6 @@ module spmd_dyn
   ! 
   !-----------------------------------------------------------------------
 
-  use shr_kind_mod, only: r8 => shr_kind_r8
   use parallel_mod, only: initmp,  par
   use abortutils,   only: endrun
   use spmd_utils,   only: masterproc, npes

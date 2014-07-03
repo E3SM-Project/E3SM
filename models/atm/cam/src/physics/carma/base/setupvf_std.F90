@@ -96,7 +96,7 @@ subroutine setupvf_std(carma, cstate, j, rc)
     do i = 1,NBIN
     
       ! <rkn> is knudsen number
-      rkn = rmfp / r_wet(k,i,j)
+      rkn = rmfp / (r_wet(k,i,j) * rrat(i,j))
 
       ! <bpm> is the slip correction factor, the correction term for
       ! non-continuum effects.  Also used to calculate coagulation kernels
@@ -106,8 +106,8 @@ subroutine setupvf_std(carma, cstate, j, rc)
       bpm(k,i,j) = 1._f + (1.246_f*rkn + 0.42_f*rkn*exp(expon))
 
       ! Stokes fall velocity and Reynolds' number
-      vf(k,i,j) = (ONE * 2._f / 9._f) * rhop_wet(k,i,j) * r_wet(k,i,j)**2 * GRAV * bpm(k,i,j) / rmu(k)
-      re(k,i,j) = 2. * rhoa_cgs * r_wet(k,i,j) * vf(k,i,j) / rmu(k)
+      vf(k,i,j) = (ONE * 2._f / 9._f) * rhop_wet(k,i,j) * r_wet(k,i,j)**2 * GRAV * bpm(k,i,j) / rmu(k) / rprat(i,j)
+      re(k,i,j) = 2. * rhoa_cgs * r_wet(k,i,j) * rprat(i,j) * vf(k,i,j) / rmu(k)
 
       if (re(k,i,j) .ge. 1._f) then
 
@@ -120,14 +120,14 @@ subroutine setupvf_std(carma, cstate, j, rc)
         if (re(k,i,j) .le. 1.e3_f) then
 
           ! drag coefficient from quadratic fit y(x) when Re < 1,000
-          vf(k,i,j) = re(k,i,j) * rmu(k) / (2._f * r_wet(k,i,j) * rhoa_cgs)
+          vf(k,i,j) = re(k,i,j) * rmu(k) / (2._f * r_wet(k,i,j) * rprat(i,j) * rhoa_cgs)
         else
         
           ! drag coefficient = 0.45 independent of Reynolds number when Re > 1,000
           cdrag = 0.45_f 
           vf(k,i,j) = bpm(k,i,j) * &
                       sqrt( 8._f * rhop_wet(k,i,j) * r_wet(k,i,j) * GRAV / &
-                      (3._f * cdrag * rhoa_cgs) )
+                      (3._f * cdrag * rhoa_cgs * rprat(i,j)**2.) )
         endif
       endif
     enddo      ! <i=1,NBIN>

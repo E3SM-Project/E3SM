@@ -8,7 +8,7 @@ use shr_kind_mod,  only: r8 => shr_kind_r8
 use camsrfexch,    only: cam_in_t, cam_out_t
 use physics_types, only: physics_state, physics_tend
 use ppgrid,        only: pcols, pver, pverp, begchunk, endchunk
-use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, pbuf_times, &
+use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_time_lvls, &
                           pbuf_get_field, pbuf_get_index, pbuf_old_tim_idx
 
 
@@ -66,6 +66,7 @@ character(len=8) :: diag_cnst_conv_tend = 'q_only' ! output constituent tendenci
                                                    ! 'none', 'q_only' or 'all'
 
 logical          :: history_amwg                   ! output the variables used by the AMWG diag package
+logical          :: history_vdiag                  ! output the variables used by the AMWG variability diag package
 logical          :: history_eddy                   ! output the eddy variables
 logical          :: history_budget                 ! output tendencies and state variables for CAM4
                                                    ! temperature, water vapor, cloud ice and cloud
@@ -103,7 +104,7 @@ contains
 subroutine diag_register
     
    ! Request physics buffer space for fields that persist across timesteps.
-   call pbuf_add_field('T_TTEND', 'global', dtype_r8, (/pcols,pver,pbuf_times/), t_ttend_idx)
+   call pbuf_add_field('T_TTEND', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), t_ttend_idx)
 
 end subroutine diag_register
 
@@ -282,6 +283,7 @@ subroutine diag_init()
    ! determine default variables
    ! ----------------------------
    call phys_getopts(history_amwg_out   = history_amwg    , &
+                     history_vdiag_out  = history_vdiag   , &
                      history_eddy_out   = history_eddy    , &
                      history_budget_out = history_budget  , &
                      history_budget_histfile_num_out = history_budget_histfile_num)
@@ -308,6 +310,15 @@ subroutine diag_init()
       end if
    end if
    
+   if (history_vdiag) then
+     call add_default ('U200', 2, ' ')
+     call add_default ('V200', 2, ' ')
+     call add_default ('U850', 2, ' ')
+     call add_default ('U200', 3, ' ')
+     call add_default ('U850', 3, ' ')
+     call add_default ('OMEGA500', 3, ' ')
+   end if
+
    if (history_eddy) then
       call add_default ('VT      ', 1, ' ')
       call add_default ('VU      ', 1, ' ')
@@ -327,6 +338,8 @@ subroutine diag_init()
       call add_default ('U       '  , history_budget_histfile_num, ' ')
       call add_default ('V       '  , history_budget_histfile_num, ' ')
       call add_default (cnst_name(1), history_budget_histfile_num, ' ')
+      call add_default ('TTEND_TOT' , history_budget_histfile_num, ' ')
+
       ! State before physics (FV)
       call add_default ('TBP     '  , history_budget_histfile_num, ' ')
       call add_default (bpcnst(1)   , history_budget_histfile_num, ' ')
@@ -474,6 +487,12 @@ subroutine diag_init()
        call add_default ('SNOWHLND', 1, ' ')
        call add_default ('SNOWHICE', 1, ' ')
     endif
+
+    if (history_vdiag) then
+        call add_default ('PRECT   ', 2, ' ')
+        call add_default ('PRECT   ', 3, ' ')
+        call add_default ('PRECT   ', 4, ' ')
+    end if
 
    ! outfld calls in diag_phys_tend_writeout
 
@@ -721,7 +740,7 @@ subroutine diag_conv_tend_ini(state,pbuf)
 
    !! initialize to pbuf T_TTEND to temperature at first timestep
    if (is_first_step()) then
-      do m = 1, pbuf_times
+      do m = 1, dyn_time_lvls
          call pbuf_get_field(pbuf, t_ttend_idx, t_ttend, start=(/1,1,m/), kount=(/pcols,pver,1/))
          t_ttend(:ncol,:) = state%t(:ncol,:)
       end do
@@ -1506,7 +1525,7 @@ end subroutine diag_export
 !---------------------------Local workspace-----------------------------
 !
    integer  :: k                 ! indices
-   integer  :: itim              ! indices
+   integer  :: itim_old          ! indices
 
    real(r8), pointer, dimension(:,:) :: cwat_var
    real(r8), pointer, dimension(:,:) :: conv_var_3d
@@ -1520,27 +1539,27 @@ end subroutine diag_export
       !
       ! Associate pointers with physics buffer fields
       !
-      itim = pbuf_old_tim_idx()
+      itim_old = pbuf_old_tim_idx()
 
       if (qcwat_idx > 0) then
-         call pbuf_get_field(pbuf, qcwat_idx, cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+         call pbuf_get_field(pbuf, qcwat_idx, cwat_var, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
          call outfld('QCWAT&IC   ',cwat_var, pcols,lchnk)
       end if
 
       if (tcwat_idx > 0) then
-         call pbuf_get_field(pbuf, tcwat_idx,  cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+         call pbuf_get_field(pbuf, tcwat_idx,  cwat_var, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
          call outfld('TCWAT&IC   ',cwat_var, pcols,lchnk)
       end if
 
       if (lcwat_idx > 0) then
-         call pbuf_get_field(pbuf, lcwat_idx,  cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+         call pbuf_get_field(pbuf, lcwat_idx,  cwat_var, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
          call outfld('LCWAT&IC   ',cwat_var, pcols,lchnk)
       end if
 
-      call pbuf_get_field(pbuf, cld_idx,    cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+      call pbuf_get_field(pbuf, cld_idx,    cwat_var, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
       call outfld('CLOUD&IC   ',cwat_var, pcols,lchnk)
 
-      call pbuf_get_field(pbuf, concld_idx, cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+      call pbuf_get_field(pbuf, concld_idx, cwat_var, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
       call outfld('CONCLD&IC   ',cwat_var, pcols,lchnk)
 
       call pbuf_get_field(pbuf, tke_idx, conv_var_3d)
@@ -1552,7 +1571,7 @@ end subroutine diag_export
       call pbuf_get_field(pbuf, kvh_idx,  conv_var_3d)
       call outfld('KVH&IC    ',conv_var_3d, pcols,lchnk)
  
-      call pbuf_get_field(pbuf, cush_idx, conv_var_2d ,(/1,itim/),  (/pcols,1/))
+      call pbuf_get_field(pbuf, cush_idx, conv_var_2d ,(/1,itim_old/),  (/pcols,1/))
       call outfld('CUSH&IC   ',conv_var_2d, pcols,lchnk)
 
       if (qpert_idx > 0) then 
@@ -1614,7 +1633,7 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
    integer  :: ixcldice, ixcldliq! constituent indices for cloud liquid and ice water.
    ! CAM pointers to get variables from the physics buffer
    real(r8), pointer, dimension(:,:) :: t_ttend  
-   integer  :: itim
+   integer  :: itim_old
 
    !-----------------------------------------------------------------------
 
@@ -1682,8 +1701,8 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
    ! Total (physics+dynamics, everything!) tendency for Temperature
 
    !! get temperature stored in physics buffer
-   itim = pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, t_ttend_idx, t_ttend, start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   itim_old = pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, t_ttend_idx, t_ttend, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
    !! calculate and outfld the total temperature tendency
    ftem3(:ncol,:) = (state%t(:ncol,:) - t_ttend(:ncol,:))/ztodt

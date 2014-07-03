@@ -142,8 +142,8 @@
       integer      ::  latndx(pcols)                                 ! chunk lat indicies
       integer      ::  lonndx(pcols)                                 ! chunk lon indicies
       real(r8)     ::  invariants(ncol,pver,nfs)
-      real(r8)     ::  col_dens(ncol,pver,nabscol)                   ! column densities (molecules/cm^2)
-      real(r8)     ::  col_delta(ncol,0:pver,nabscol)                ! layer column densities (molecules/cm^2)
+      real(r8)     ::  col_dens(ncol,pver,max(1,nabscol))            ! column densities (molecules/cm^2)
+      real(r8)     ::  col_delta(ncol,0:pver,max(1,nabscol))         ! layer column densities (molecules/cm^2)
       real(r8)     ::  vmr(ncol,pver,gas_pcnst)                      ! xported species (vmr)
       real(r8)     ::  reaction_rates(ncol,pver,rxntot)              ! reaction rates
       real(r8)     ::  mmr(pcols,pver,gas_pcnst)                     ! chem working concentrations (kg/kg)

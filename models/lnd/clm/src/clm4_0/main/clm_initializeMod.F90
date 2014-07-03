@@ -259,8 +259,8 @@ contains
 ! o Initializes accumulation variables.
 !
 ! !USES:
-    use clm_atmlnd      , only : clm_map2gcell
-    use clm_glclnd      , only : create_clm_s2x
+    use clm_atmlnd      , only : clm_map2gcell_minimal
+    use clm_glclnd      , only : update_clm_s2x
     use clm_varctl      , only : finidat, fpftdyn
     use decompMod       , only : get_proc_clumps, get_proc_bounds
     use filterMod       , only : allocFilters, setFilters
@@ -597,7 +597,7 @@ contains
        ! Determine gridcell averaged properties to send to atm
 
        call t_startf('init_map2gc')
-       call clm_map2gcell(init=.true.)
+       call clm_map2gcell_minimal()
        call t_stopf('init_map2gc')
 
     end if
@@ -605,7 +605,7 @@ contains
     ! Initialize sno export state
     if (create_glacier_mec_landunit) then
        call t_startf('init_create_s2x')
-       call create_clm_s2x(init=.true.)
+       call update_clm_s2x(init=.true.)
        call t_stopf('init_create_s2x')
     end if
 

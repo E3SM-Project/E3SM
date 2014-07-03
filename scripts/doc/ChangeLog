@@ -1,0 +1,32 @@
+
+================================================================================
+Tag name: doc_140519
+Originator: aliceb
+Date: May 2 2014
+Model: doc
+Version: cesm1_2
+One-line: Merged from branch to trunk. Updates for BFBFLAG explanation, ocean intialization and author group
+
+M       doc/usersguide/testing.xml
+M       doc/usersguide/usecases.xml
+M       doc/usersguide/bookinfo.xml
+
+================================================================================
+
+Tag name: doc_140228
+Originator(s): sacks
+Date: Feb 28, 2014
+One-line Summary: add new section in CISM namelist documentation
+
+M       modelnl/nldef2html_cism
+
+
+===============================================================
+Tag name: doc_131021
+Originator(s): aliceb
+Date: Mon Oct 21
+One-line Summary: 
+creating doc external starting point of
+https://svn-ccsm-models.cgd.ucar.edu/scripts/branches/docs1_2_scripts4_130418/doc
+
+===============================================================

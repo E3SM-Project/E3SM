@@ -80,176 +80,9 @@ EOF
 ##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
     ;;
 
-    ##bluefire
-    be* )
-    submit_script="test_driver_bluefire${cur_time}.sh"
-
-    if [ -z "$CLM_ACCOUNT" ]; then
-	export CLM_ACCOUNT=`grep -i "^${LOGNAME}:" /etc/project.ncar | cut -f 1 -d "," | cut -f 2 -d ":" `
-	if [ -z "${CLM_ACCOUNT}" ]; then
-	    echo "ERROR: unable to locate an account number to charge for this job under user: $LOGNAME"
-	    exit 2
-	fi
-    fi
-
-##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv writing to batch script vvvvvvvvvvvvvvvvvvv
-cat > ./${submit_script} << EOF
-#!/bin/sh
-#
-
-#BSUB -a poe                      # use LSF poe elim
-#BSUB -x                          # exclusive use of node (not_shared)
-#BSUB -n 192                      # total tasks needed
-#BSUB -R "span[ptile=32]"         # max number of tasks (MPI) per node
-#BSUB -o test_dr.o%J              # output filename
-#BSUB -e test_dr.o%J              # error filename
-#BSUB -q regular                  # queue
-#BSUB -W 6:00                     
-#BSUB -P $CLM_ACCOUNT
-#BSUB -J clmtest
-
-if [ -n "\$LSB_JOBID" ]; then   #batch job
-    export JOBID=\${LSB_JOBID}
-    initdir=\${LS_SUBCWD}
-    interactive="NO"
-    input_file="tests_pretag_bluefire"
-    c_threads=2
-    r_threads=4
-else
-    interactive="YES"
-    export LSB_MCPU_HOSTS="\$hostname 8"
-    input_file="tests_pretag_bluefire_nompi"
-    c_threads=13
-    r_threads=25
-fi
-
-##omp threads
-if [ -z "\$CLM_THREADS" ]; then   #threads NOT set on command line
-   export CLM_THREADS=\$c_threads
-fi
-export CLM_RESTART_THREADS=\$r_threads
-
-##mpi tasks
-export CLM_TASKS=96
-export CLM_RESTART_TASKS=46
-
-export OBJECT_MODE=64
-export XLSMPOPTS="stack=256000000"
-export OMP_DYNAMIC=FALSE
-export AIXTHREAD_SCOPE=S
-export MALLOCMULTIHEAP=TRUE
-export MP_LABELIO=yes
-
-# MPI Environment
-export MP_RC_USE_LMC=yes
-export LAPI_DEBUG_RC_WAIT_ON_QP_SETUP=yes
-export MP_INFOLEVEL=2
-export MP_EUIDEVICE=sn_all
-export MP_SHARED_MEMORY=yes
-export LAPI_USE_SHM=yes
-export MP_EUILIB=us
-# commenting out the following line because we believe it will be better to use 
-# the defaults, which change with processor count
-#export MP_EAGER_LIMIT=32k
-export MP_BULK_MIN_MSG_SIZE=64k
-export MP_POLLING_INTERVAL=20000000
-export MEMORY_AFFINITY=MCM
-export LAPI_DEBUG_ENABLE_AFFINITY=YES
-export LAPI_DEBUG_BINDPROC_AFFINITY=YES
-export MP_SYNC_QP=YES
-export MP_RFIFO_SIZE=16777216
-export MP_SHM_ATTACH_THRESH=500000
-export MP_EUIDEVELOP=min
-export MP_USE_BULK_XFER=yes
-export MP_BUFFER_MEM=64M
-
-export MP_RC_MAX_QP=8192
-export LAPI_DEBUG_RC_DREG_THRESHOLD=1000000
-export LAPI_DEBUG_QP_NOTIFICATION=no
-export LAPI_DEBUG_RC_INIT_SETUP=no
-
-. /contrib/Modules/3.2.6/init/sh
-module load netcdf/4.1.3_seq
-if [ "\$CLM_FC" = "GENIBM" ]; then
-  export CESM_MACH="generic_AIX"
-else
-  export CESM_MACH="bluefire"
-fi
-export CESM_COMP="ibm"
-
-export NETCDF_DIR=\$NETCDF
-export INC_NETCDF=\$NETCDF/include
-export LIB_NETCDF=\$NETCDF/lib
-export MAKE_CMD="gmake -j "
-export CFG_STRING=""
-export TOOLS_MAKE_STRING=""
-export MACH_WORKSPACE="/glade/scratch"
-CPRNC_EXE="/glade/proj3/cseg/tools/cprnc/cprnc"
-newcprnc="\$MACH_WORKSPACE/\$LOGIN/newcprnc"
-/bin/cp -fp \$CPRNC_EXE \$newcprnc
-export CPRNC_EXE="\$newcprnc"
-export DATM_QIAN_DATA_DIR="/glade/proj2/cgd/tss/atm_forcing.datm7.Qian.T62.c080727"
-dataroot="/glade/proj3/cseg"
-export TOOLSLIBS=""
-export TOOLS_CONF_STRING=""
-
-
-echo_arg=""
-
-EOF
-##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
-    ;;
-
-    ##mirage
-    mirage* )
-    submit_script="test_driver_mirage_${cur_time}.sh"
-
-##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv writing to batch script vvvvvvvvvvvvvvvvvvv
-cat > ./${submit_script} << EOF
-#!/bin/sh
-#
-
-interactive="YES"
-
-##omp threads
-if [ -z "\$CLM_THREADS" ]; then   #threads NOT set on command line
-   export CLM_THREADS=2
-fi
-export CLM_RESTART_THREADS=1
-
-##mpi tasks
-export CLM_TASKS=4
-export CLM_RESTART_TASKS=3
-
-export NETCDF_PATH=/fs/local/apps/netcdf-4.1.3_intel
-export NETCDF_DIR=\$NETCDF_PATH
-export INC_NETCDF=\$NETCDF_PATH/include
-export LIB_NETCDF=\$NETCDF_PATH/lib
-export intel=/fs/local
-export PATH=\${intel}/bin:\${PATH}
-export MAKE_CMD="gmake -j5 "
-export CESM_MACH="generic_LINUX"
-export CESM_COMP="intel"
-export CFG_STRING=""
-export TOOLS_MAKE_STRING="USER_FC=ifort USER_LINKER=ifort "
-export MACH_WORKSPACE="/glade/scratch"
-export CPRNC_EXE=/glade/home/erik/bin/cprnc
-export DATM_QIAN_DATA_DIR="/glade/proj2/cgd/tss/atm_forcing.datm7.Qian.T62.c080727"
-dataroot="/glade/proj3/cseg"
-echo_arg="-e"
-export LD_LIBRARY_PATH="\$LIB_NETCDF:\${LD_LIBRARY_PATH}"
-export SLIBS="-L\$NETCDF_DIR/lib -lnetcdff -lnetcdf"
-export TOOLSLIBS=\$SLIBS
-export TOOLS_CONF_STRING="-scratchroot \$MACH_WORKSPACE/$USER -max_tasks_per_node 2 -din_loc_root \$dataroot/inputdata"
-input_file="tests_posttag_mirage"
-
-EOF
-##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
-    ;;
-
-    ## frankfurt
-    frankfurt* ) 
-    submit_script="test_driver_frankfurt_${cur_time}.sh"
+    ## goldbach
+    goldbach* ) 
+    submit_script="test_driver_goldbach_${cur_time}.sh"
     export PATH=/cluster/torque/bin:${PATH}
 
 ##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv writing to batch script vvvvvvvvvvvvvvvvvvv
@@ -276,10 +109,10 @@ fi
 
 if [ "\$PBS_ENVIRONMENT" = "PBS_BATCH" ]; then
     interactive="NO"
-    input_file="tests_posttag_frankfurt"
+    input_file="tests_posttag_goldbach"
 else
     interactive="YES"
-    input_file="tests_posttag_frankfurt_nompi"
+    input_file="tests_posttag_goldbach_nompi"
 fi
 
 ##omp threads
@@ -297,7 +130,7 @@ export INTEL=/usr/local/intel-cluster
 export P4_GLOBMEMSIZE=500000000
 
 
-export CESM_MACH="frankfurt"
+export CESM_MACH="goldbach"
 
 if [ "\$CLM_FC" = "PGI" ]; then
    export NETCDF_PATH=/usr/local/netcdf-pgi
@@ -314,8 +147,8 @@ else
    export PATH=\${OMPI_INTEL_PATH}/bin:\${INTEL}/bin:\${PATH}
 
    export NETCDF_PATH=/usr/local/netcdf-intel-cluster
-   export LD_LIBRARY_PATH=\$INTEL/composer_xe_2011_sp1.6.233/compiler/lib/intel64:\$OMPI_INTEL_PATH/lib64:/usr/mpi/intel/openmpi-1.4.3-qlc/lib64
-   export LIBRARY_PATH=\$INTEL/composer_xe_2011_sp1.6.233/compiler/lib/intel64:\$OMPI_INTEL_PATH/lib64:/usr/mpi/intel/openmpi-1.4.3-qlc/lib64
+   export LD_LIBRARY_PATH=\$INTEL/composer_xe_2011_sp1.6.233/compiler/lib/intel64:\$OMPI_INTEL_PATH/lib64:/usr/mpi/intel/openmpi-1.4.3-qlc/lib64:/usr/local/intel-cluster-2013.4.183/compiler/lib/intel64
+   export LIBRARY_PATH=\$INTEL/composer_xe_2011_sp1.6.233/compiler/lib/intel64:\$OMPI_INTEL_PATH/lib64:/usr/mpi/intel/openmpi-1.4.3-qlc/lib64:/usr/local/intel-cluster-2013.4.183/compiler/lib/intel64
    export CESM_COMP="intel"
    export TOOLS_MAKE_STRING="USER_FC=ifort USER_CC=icc "
    export TOOLS_CONF_STRING=""
@@ -327,7 +160,7 @@ export LIBRARY_PATH=\${LIBRARY_PATH}:\${NETCDF_PATH}/lib
 export NETCDF_DIR=\$NETCDF_PATH
 export INC_NETCDF=\${NETCDF_PATH}/include
 export LIB_NETCDF=\${NETCDF_PATH}/lib
-export MAKE_CMD="gmake -j 5"   ##using hyper-threading on frankfurt
+export MAKE_CMD="gmake -j 5"   ##using hyper-threading on goldbach
 export MACH_WORKSPACE="/scratch/cluster"
 export CPRNC_EXE=/fs/cgd/csm/tools/cprnc_64/cprnc
 export DATM_QIAN_DATA_DIR="/project/tss/atm_forcing.datm7.Qian.T62.c080727"
@@ -335,250 +168,6 @@ dataroot="/fs/cgd/csm"
 export TOOLSSLIBS=""
 echo_arg="-e"
 
-EOF
-##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
-    ;;
-
-    ## lynx
-    lynx* | l0*) 
-    submit_script="test_driver_lynx_${cur_time}.sh"
-
-    shell=bash
-
-##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv writing to batch script vvvvvvvvvvvvvvvvvvv
-cat > ./${submit_script} << EOF
-#!/bin/$shell
-#
-
-# Name of the queue (CHANGE THIS if needed)
-#PBS -q regular
-# 
-# Number of nodes (CHANGE THIS if needed)
-#PBS -l mppwidth=48
-#PBS -l walltime=06:00:00
-# output file base name
-#PBS -N test_dr
-# Put standard error and standard out in same file
-#PBS -j oe
-# Export all Environment variables
-#PBS -V
-# Use bourne shell
-#PBS -S /bin/$shell
-# End of options
-
-if [ -n "\$PBS_JOBID" ]; then    #batch job
-    export JOBID=\`echo \${PBS_JOBID} | cut -f1 -d'.'\`
-    initdir=\${PBS_O_WORKDIR}
-fi
-
-if [ "\$PBS_ENVIRONMENT" = "PBS_BATCH" ]; then
-    interactive="NO"
-    input_file="tests_posttag_lynx"
-else
-    interactive="YES"
-    input_file="tests_posttag_lynx_nompi"
-fi
-
-##omp threads
-if [ -z "\$CLM_THREADS" ]; then   #threads NOT set on command line
-   export CLM_THREADS=6
-fi
-export CLM_RESTART_THREADS=3
-
-##mpi tasks
-export CLM_TASKS=8
-export CLM_RESTART_TASKS=7
-
-#-------------------------------------------------------------------------------
-# Runtime environment variables (from Machines_120309)
-#-------------------------------------------------------------------------------
-
-# fix for file system problem with empty namelists, june 2011
-export DVS_MAXNODES=1
-
-export MPICH_MAX_SHORT_MSG_SIZE=8000 # default is 128000 bytes
-export MPICH_PTL_UNEX_EVENTS=960000  # default is  90000 (unexpected recv queue size)
-export MPICH_MSGS_PER_PROC=160000    # default is  32768
-export MPICH_PTL_SEND_CREDITS=-1
-export MPICH_ENV_DISPLAY=1
-export MPICH_VERSION_DISPLAY=1
-limit coredumpsize unlimited
-
-# The environment variables below produce corefiles and maybe (?) should be
-# moved to DEBUG mode at some point
-export MPICH_DBMASK=0x200
-export MPSTKZ=64M
-export OMP_STACKSIZE=64M
-
-#-------------------------------------------------------------------------------
-# Modules
-#-------------------------------------------------------------------------------
-
-. /opt/modules/default/init/$shell
-
-module rm PrgEnv-intel
-module rm PrgEnv-pgi
-module rm PrgEnv-cray
-module rm PrgEnv-gnu
-module rm PrgEnv-pathscale
-module rm intel
-module rm pgi
-module rm cray
-module rm pathscale
-module rm netcdf
-module load subversion
-
-
-export CESM_MACH="lynx"
-if [ "\$CLM_FC" = "PATH" ]; then
-   module load PrgEnv-pathscale
-   module load netcdf
-   module load torque
-   module load netcdf
-   export CESM_COMP="pathscale"
-   export NETCDF_DIR=\$CRAY_NETCDF_DIR/netcdf-pathscale
-   export TOOLS_MAKE_STRING="USER_FC=ftn USER_CC=cc "
-   export MAKE_CMD="gmake -j 12"   ##using hyper-threading on lynx
-elif [ "\$CLM_FC" = "INTEL" ]; then
-   module load PrgEnv-intel
-   module load netcdf
-   module switch intel intel/12.1.0
-   module switch xt-mpt    xt-mpt/5.1.4
-   module switch xt-libsci xt-libsci/10.5.02
-   module load netcdf
-   export NETCDF_DIR=\$CRAY_NETCDF_DIR/netcdf-intel
-   export CESM_COMP="intel"
-   export TOOLS_MAKE_STRING="USER_FC=ftn USER_CC=cc "
-   export MAKE_CMD="gmake -j 12"   ##using hyper-threading on lynx
-else
-   module load PrgEnv-pgi
-   module switch pgi       pgi/11.10.0        
-   module switch xt-mpt    xt-mpt/4.0.3     
-   module switch xt-libsci xt-libsci/10.4.3 
-   module load PGI/netcdf4/4.1.3_seq
-   export NETCDF_DIR=\$NETCDF
-   export CESM_COMP="pgi"
-   export TOOLS_MAKE_STRING=" "
-   export MAKE_CMD="gmake -j 12"   ##using hyper-threading on lynx
-fi
-
-module load esmf/5.2.0rp1
-module load subversion
-
-export CFG_STRING=""
-
-export INC_NETCDF=\${NETCDF_DIR}/include
-export LIB_NETCDF=\${NETCDF_DIR}/lib
-export INC_MPI=""
-export LIB_MPI=""
-export MACH_WORKSPACE="/glade/scratch"
-export CPRNC_EXE=/glade/proj3/cseg/tools/cprnc.lynx/cprnc
-export DATM_QIAN_DATA_DIR="/glade/proj2/cgd/tss/atm_forcing.datm7.Qian.T62.c080727"
-dataroot="/glade/proj3/cseg"
-export TOOLSSLIBS=""
-export TOOLS_CONF_STRING="-scratchroot \$MACH_WORKSPACE/$USER -max_tasks_per_node 2 -din_loc_root \$dataroot/inputdata"
-echo_arg="-e"
-
-EOF
-##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
-    ;;
-
-    ##jaguarpf
-    jaguarpf* ) 
-    submit_script="test_driver_jaguarpf_${cur_time}.sh"
-
-##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv writing to batch script vvvvvvvvvvvvvvvvvvv
-cat > ./${submit_script} << EOF
-#!/bin/sh
-#
-
-# Name of the queue (CHANGE THIS if needed)
-# #PBS -q batch
-# Number of nodes (CHANGE THIS if needed)
-#PBS -l walltime=12:00:00,size=1584
-# output file base name
-#PBS -N test_dr
-# Put standard error and standard out in same file
-#PBS -j oe
-# Use sh
-#PBS -S /bin/sh
-# Export all Environment variables
-#PBS -V
-# filesystems to associate with job
-#PBS -l gres=widow1%widow2%widow3
-#PBS -A CLI017dev
-# End of options
-
-if [ -n "\$PBS_JOBID" ]; then    #batch job
-    export JOBID=\`echo \${PBS_JOBID} | cut -f1 -d'.'\`
-    initdir=\${PBS_O_WORKDIR}
-fi
-
-echo_arg="-e"
-if [ "\$PBS_ENVIRONMENT" = "PBS_BATCH" ]; then
-    interactive="NO"
-    input_file="tests_pretag_jaguarpf"
-else
-    interactive="YES"
-    input_file="tests_pretag_jaguarpf_nompi"
-    if [ "\$compile_only" = "YES" ]; then
-       input_file="tests_pretag_jaguarpf"
-    fi
-fi
-
-
-##omp threads
-if [ -z "\$CLM_THREADS" ]; then   #threads NOT set on command line
-   export CLM_THREADS=6
-fi
-export CLM_RESTART_THREADS=12
-
-##mpi tasks
-export CLM_TASKS=264
-export CLM_RESTART_TASKS=129
-
-source /opt/modules/default/init/sh
-
-module switch pgi       pgi/11.10.0        
-module switch xt-mpich2    xt-mpich2/5.4.1
-module switch xt-libsci xt-libsci/11.0.04.4
-module swap xt-asyncpe xt-asyncpe/5.05
-module load szip/2.1
-module load hdf5/1.8.7
-module load netcdf/4.1.3
-module load parallel-netcdf/1.2.0
-module load subversion
-export CESM_MACH="titan"
-export CESM_COMP="pgi"
-module load   ncl
-module load esmf/5.2.0r_with-lapack+netcdf_O
-
-# The environment variables below produce corefiles and maybe (?) should be
-# moved to DEBUG mode at some point
-export MPICH_DBMASK=0x200
-#limit coredumpsize unlimited
-
-# The environment variable below increase the stack size, which is necessary for
-# CICE to run threaded on this machine. 
-export MPSTKZ=64M
-export OMP_STACKSIZE=64M
-
-
-export LIB_NETCDF=\${NETCDF_DIR}/lib
-export INC_NETCDF=\${NETCDF_DIR}/include
-export MOD_NETCDF=\${NETCDF_DIR}/include
-export INC_PNETCDF=\${PNETCDF_DIR}/include
-export LIB_PNETCDF=\${PNETCDF_DIR}/lib
-export CFG_STRING=""
-export TOOLS_MAKE_STRING="USER_FC=ftn USER_CC=cc "
-export MAKE_CMD="gmake -j 25 "
-export MACH_WORKSPACE="/tmp/work"
-export CPRNC_EXE=/tmp/proj/ccsm/tools/ccsm_cprnc/cprnc
-export DATM_QIAN_DATA_DIR="/tmp/proj/ccsm/inputdata/atm/datm7/atm_forcing.datm7.Qian.T62.c080727"
-export ESMFBIN_PATH=$ESMF_BIN
-dataroot="/tmp/proj/ccsm"
-export TOOLSLIBS=""
-export TOOLS_CONF_STRING=""
 EOF
 ##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
     ;;
@@ -638,7 +227,7 @@ EOF
 ##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ writing to batch script ^^^^^^^^^^^^^^^^^^^
     ;;
     * )
-    echo "Only setup to work on: yellowstone, bluefire, mirage, lynx, jaguarpf, frankfurt, and yong"
+    echo "Only setup to work on: yellowstone, goldbach, and yong"
     exit
  
 
@@ -947,7 +536,7 @@ case $arg1 in
     * )
     echo ""
     echo "**********************"
-    echo "usage on yellowstone, bluefire, frankfurt, lynx, mirage, titan: "
+    echo "usage on yellowstone, goldbach, and yongi: "
     echo "./test_driver.sh -i"
     echo ""
     echo "valid arguments: "

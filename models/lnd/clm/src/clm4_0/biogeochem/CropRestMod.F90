@@ -28,8 +28,7 @@ module CropRestMod
 !
 
 ! !PRIVATE DATA MEMBERS:
-   integer, parameter :: unset = -999  ! Flag that restart year is not set
-   integer :: restyear = unset         ! Restart year from the initial conditions file
+  integer :: restyear = 0         ! Restart year from the initial conditions file, incremented as time elapses
 
 !EOP
 !----------------------------------------------------------------------- 
@@ -88,8 +87,7 @@ contains
     ! Prognostic crop restart year
     if (flag == 'define') then
        call ncd_defvar(ncid=ncid, varname='restyear', xtype=ncd_int,  &
-            long_name='Number of years prognostic crop ran', units="years", &
-            imissing_value=unset, ifill_value=unset )
+            long_name='Number of years prognostic crop ran', units="years")
     else if (flag == 'read' .or. flag == 'write') then
        call ncd_io(varname='restyear', data=restyear, &
             ncid=ncid, flag=flag, readvar=readvar) 
@@ -637,9 +635,6 @@ contains
 !
 ! !LOCAL VARIABLES:
      CropRestYear = restyear
-     if ( CropRestYear == unset )then
-        CropRestYear = 0
-     end if
   end function CropRestYear
 
 !-----------------------------------------------------------------------
@@ -648,26 +643,36 @@ contains
 ! !IROUTINE: CropRestIncYear
 !
 ! !INTERFACE:
-  subroutine CropRestIncYear ( nyrs )
+  subroutine CropRestIncYear ()
 !
 ! !DESCRIPTION: 
-! Increment the crop restart year
+! Increment the crop restart year, if appropriate
+!
+! This routine should be called every time step, but only once per clump (to avoid
+! inadvertently updating nyrs multiple times)
 !
 ! !USES:
-!
-! !ARGUMENTS:
+    use surfrdMod        , only : crop_prog
+    use clm_time_manager , only : get_curr_date, is_first_step
     implicit none
-    integer, intent(out) :: nyrs ! Number of years crop has run
-!
-! !REVISION HISTORY:
-! Author: Erik Kluzek
-!
-!EOP
 !
 ! !LOCAL VARIABLES:
-      if ( restyear == unset ) restyear = 0
-      restyear = restyear + 1
-      nyrs     = restyear
+    integer kyr                     ! current year
+    integer kmo                     !         month of year  (1, ..., 12)
+    integer kda                     !         day of month   (1, ..., 31)
+    integer mcsec                   !         seconds of day (0, ..., seconds/day)
+!-----------------------------------------------------------------------
+
+    ! Update restyear only when running with prognostic crop
+    if ( crop_prog )then
+       ! Update restyear when it's the start of a new year - but don't do that at the
+       ! very start of the run
+       call get_curr_date (   kyr, kmo, kda, mcsec)
+       if ((kmo == 1 .and. kda == 1 .and. mcsec == 0) .and. .not. is_first_step()) then
+          restyear = restyear + 1
+       end if
+    end if
+
   end subroutine CropRestIncYear
 
 !-----------------------------------------------------------------------
@@ -710,7 +715,7 @@ contains
     integer :: rsmon       ! Restart month from restart file
     integer :: rsday       ! Restart day from restart file
     integer :: tod         ! Restart time of day from restart file
-    character(len=*), parameter :: formDate = '(A,i4.4,"/"i2.2,"/",i2.2)' ! log output format
+    character(len=*), parameter :: formDate = '(A,i4.4,"/",i2.2,"/",i2.2)' ! log output format
     character(len=32) :: subname = 'CropRest::checkDates'
     !
     ! If branch or startup make sure the startdate is compatible with the date

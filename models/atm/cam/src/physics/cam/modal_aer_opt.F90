@@ -767,6 +767,14 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
 
                if ((dopaer(i) <= -1.e-10_r8) .or. (dopaer(i) >= 30._r8)) then
 
+                  if (dopaer(i) <= -1.e-10_r8) then
+                     write(iulog,*) "ERROR: Negative aerosol optical depth &
+                          &in this layer."
+                  else
+                     write(iulog,*) "WARNING: Aerosol optical depth is &
+                          &unreasonably high in this layer."
+                  end if
+
                   write(iulog,*) 'dopaer(', i, ',', k, ',', m, ',', lchnk, ')=', dopaer(i)
                   ! write(iulog,*) 'itab,jtab,ttab,utab=',itab(i),jtab(i),ttab(i),utab(i)
                   write(iulog,*) 'k=', k, ' pext=', pext(i), ' specext=', specpext(i)
@@ -786,9 +794,10 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
                   end do
 
                   nerr_dopaer = nerr_dopaer + 1
-                  if (nerr_dopaer >= nerrmax_dopaer) then
-                     ! write(iulog,*) '*** halting in '//subname//' after nerr_dopaer =', nerr_dopaer
-                     ! call endrun('exit from '//subname)
+!                  if (nerr_dopaer >= nerrmax_dopaer) then
+                  if (dopaer(i) < -1.e-10_r8) then
+                     write(iulog,*) '*** halting in '//subname//' after nerr_dopaer =', nerr_dopaer
+                     call endrun('exit from '//subname)
                   end if
 
                end if
@@ -1087,6 +1096,14 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
 
                if ((dopaer(i) <= -1.e-10_r8) .or. (dopaer(i) >= 20._r8)) then
 
+                  if (dopaer(i) <= -1.e-10_r8) then
+                     write(iulog,*) "ERROR: Negative aerosol optical depth &
+                          &in this layer."
+                  else
+                     write(iulog,*) "WARNING: Aerosol optical depth is &
+                          &unreasonably high in this layer."
+                  end if
+
                   write(iulog,*) 'dopaer(',i,',',k,',',m,',',lchnk,')=', dopaer(i)
                   write(iulog,*) 'k=',k,' pabs=', pabs(i)
                   write(iulog,*) 'wetvol=',wetvol(i),' dryvol=',dryvol(i),     &
@@ -1105,7 +1122,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
                   end do
 
                   nerr_dopaer = nerr_dopaer + 1
-                  if (nerr_dopaer >= nerrmax_dopaer) then
+                  if (nerr_dopaer >= nerrmax_dopaer .or. dopaer(i) < -1.e-10_r8) then
                      write(iulog,*) '*** halting in '//subname//' after nerr_dopaer =', nerr_dopaer
                      call endrun()
                   end if
@@ -1187,10 +1204,10 @@ subroutine read_water_refindex(infilename)
 
    ! set complex representation of refractive indices as module data
    do i = 1, nswbands
-      crefwsw(i)  = cmplx(refrwsw(i), abs(refiwsw(i)))
+      crefwsw(i)  = cmplx(refrwsw(i), abs(refiwsw(i)),kind=r8)
    end do
    do i = 1, nlwbands
-      crefwlw(i)  = cmplx(refrwlw(i), abs(refiwlw(i)))
+      crefwlw(i)  = cmplx(refrwlw(i), abs(refiwlw(i)),kind=r8)
    end do
 
    call pio_closefile(ncid)

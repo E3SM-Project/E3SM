@@ -101,6 +101,10 @@ module datm_comp_mod
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
+! anomaly forcing
+  integer(IN) :: kprecsf,sprecsf
+  integer(IN) :: kprec_af,ku_af,kv_af,ktbot_af,kshum_af,kpbot_af,klwdn_af,kswdn_af
+  integer(IN) :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
 
   type(shr_strdata_type) :: SDATM
   type(mct_rearr) :: rearr
@@ -111,7 +115,9 @@ module datm_comp_mod
   real(R8), pointer :: winddFactor(:)
   real(R8), pointer :: qsatFactor(:)
   
-  integer(IN),parameter :: ktrans = 56
+! for anomaly forcing
+  integer(IN),parameter :: ktrans = 65
+
   character(16),parameter  :: avofld(1:ktrans) = &
      (/"Sa_z            ","Sa_u            ","Sa_v            ","Sa_tbot         ", &
        "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
@@ -127,7 +133,12 @@ module datm_comp_mod
        "Sl_snowh        ","Sf_lfrac        ","Sf_ifrac        ","Sf_ofrac        ", &
        "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
        "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
-       "Faoo_fdms_ocn   "                                                          /)
+! anomaly forcing add Sa_precsf for precip scale factor
+       "Faoo_fdms_ocn   ","Sa_precsf       ", &
+! add values for anomaly forcing
+       "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
+       "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      " &
+       /)
   character(16),parameter  :: avifld(1:ktrans) = &
      (/"z               ","u               ","v               ","tbot            ", &
        "ptem            ","shum            ","dens            ","pbot            ", &
@@ -143,22 +154,36 @@ module datm_comp_mod
        "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
        "taux            ","tauy            ","lat             ","sen             ", &
        "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
-       "dms             "                                                          /)
+! add precsf
+       "dms             ","precsf          ", &                                       
+! add Sa_precsf for precip scale factor
+       "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
+       "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  /)
 
-  integer(IN),parameter :: ktranss = 19
+! add stream for anomaly forcing
+  integer(IN),parameter :: ktranss = 28
+
   character(16),parameter  :: stofld(1:ktranss) = &
      (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
        "strm_shum       ","strm_tdew       ","strm_rh         ","strm_lwdn       ", &
        "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
        "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
-       "strm_swup       ","strm_prec       ","strm_tarcf      " /)
+!       "strm_swup       ","strm_prec       ","strm_tarcf      " /)
+! add strm_precsf
+       "strm_swup       ","strm_prec       ","strm_tarcf      ","strm_precsf     ", &
+! add anomaly forcing streams
+       "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
+       "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    "  /)
   character(16),parameter  :: stifld(1:ktranss) = &
      (/"tbot            ","wind            ","z               ","pbot            ", &
        "shum            ","tdew            ","rh              ","lwdn            ", &
        "swdn            ","swdndf          ","swdndr          ","precc           ", &
        "precl           ","precn           ","co2prog         ","co2diag         ", &
-       "swup            ","prec            ","tarcf           " /)
-
+! add strm_precsf
+       "swup            ","prec            ","tarcf           ","precsf          ", &
+! add anomaly forcing streams
+       "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
+       "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  /)
   character(CL), pointer :: ilist_av(:)     ! input list for translation
   character(CL), pointer :: olist_av(:)     ! output list for translation
   character(CL), pointer :: ilist_st(:)     ! input list for translation
@@ -185,6 +210,7 @@ CONTAINS
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
+  use pio, only : iosystem_desc_t
   use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
@@ -214,6 +240,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
+    type(iosystem_desc_t)  , pointer :: iosystem 
 
     character(CL) :: filePath    ! generic file path
     character(CL) :: fileName    ! generic file name
@@ -242,11 +269,15 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     real(R8)      :: nextsw_cday ! calendar of next atm sw
     character(CL) :: flds_strm
     logical       :: presaero    ! true => send valid prescribe aero fields to coupler
+    logical       :: force_prognostic_true ! if true set prognostic true
     character(CL) :: calendar    ! calendar type
+    character(CL) :: bias_correct    ! true => send bias correction fields to coupler
+    character(CL) :: anomaly_forcing(8)    ! true => send anomaly forcing fields to coupler
 
     !----- define namelist -----
     namelist / datm_nml / &
-        atm_in, decomp, iradsw, factorFn, restfilm, restfils, presaero
+        atm_in, decomp, iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
+        anomaly_forcing, force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -324,11 +355,13 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
     presaero = .false.
+    force_prognostic_true = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
        read (nunit,nml=datm_nml,iostat=ierr)
        close(nunit)
+
        call shr_file_freeUnit(nunit)
        if (ierr > 0) then
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
@@ -341,6 +374,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
        write(logunit,F00)' restfilm = ',trim(restfilm)
        write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F0L)' presaero = ',presaero
+       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
        write(logunit,F01) 'inst_index  =  ',inst_index
        write(logunit,F00) 'inst_name   =  ',trim(inst_name)
        write(logunit,F00) 'inst_suffix =  ',trim(inst_suffix)
@@ -353,9 +387,14 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(presaero,mpicom,'presaero')
+    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
+    if (force_prognostic_true) then
+       atm_present    = .true.
+       atm_prognostic = .true.
+    endif
 
     !----------------------------------------------------------------------------
     ! Read dshr namelist
@@ -368,7 +407,8 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     ! Initialize PIO
     !----------------------------------------------------------------------------
     
-    call shr_strdata_pioinit(SDATM, shr_pio_getiosys(trim(inst_name)), &
+    iosystem => shr_pio_getiosys(trim(inst_name))
+    call shr_strdata_pioinit(SDATM, iosystem, &
                                     shr_pio_getiotype(trim(inst_name)))
 
     !----------------------------------------------------------------------------
@@ -524,6 +564,17 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     kdw2  = mct_aVect_indexRA(a2x,'Faxa_dstwet2')
     kdw3  = mct_aVect_indexRA(a2x,'Faxa_dstwet3')
     kdw4  = mct_aVect_indexRA(a2x,'Faxa_dstwet4')
+    kprecsf = mct_aVect_indexRA(a2x,'Sa_precsf',perrWith='quiet')
+
+    ! anomaly forcing
+    kprec_af = mct_aVect_indexRA(a2x,'Sa_prec_af',perrWith='quiet')
+    ku_af = mct_aVect_indexRA(a2x,'Sa_u_af',perrWith='quiet')
+    kv_af = mct_aVect_indexRA(a2x,'Sa_v_af',perrWith='quiet')
+    ktbot_af = mct_aVect_indexRA(a2x,'Sa_tbot_af',perrWith='quiet')
+    kpbot_af = mct_aVect_indexRA(a2x,'Sa_pbot_af',perrWith='quiet')
+    kshum_af = mct_aVect_indexRA(a2x,'Sa_shum_af',perrWith='quiet')
+    kswdn_af = mct_aVect_indexRA(a2x,'Sa_swdn_af',perrWith='quiet')
+    klwdn_af = mct_aVect_indexRA(a2x,'Sa_lwdn_af',perrWith='quiet')
 
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_zero(x2a)
@@ -574,6 +625,16 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     sswup  = mct_aVect_indexRA(avstrm,'strm_swup',perrWith='quiet')
     sprec  = mct_aVect_indexRA(avstrm,'strm_prec',perrWith='quiet')
     starcf = mct_aVect_indexRA(avstrm,'strm_tarcf',perrWith='quiet')
+    ! anomaly forcing
+    sprecsf = mct_aVect_indexRA(avstrm,'strm_precsf',perrWith='quiet')
+    sprec_af = mct_aVect_indexRA(avstrm,'strm_prec_af',perrWith='quiet')
+    su_af = mct_aVect_indexRA(avstrm,'strm_u_af',perrWith='quiet')
+    sv_af = mct_aVect_indexRA(avstrm,'strm_v_af',perrWith='quiet')
+    stbot_af = mct_aVect_indexRA(avstrm,'strm_tbot_af',perrWith='quiet')
+    spbot_af = mct_aVect_indexRA(avstrm,'strm_pbot_af',perrWith='quiet')
+    sshum_af = mct_aVect_indexRA(avstrm,'strm_shum_af',perrWith='quiet')
+    sswdn_af = mct_aVect_indexRA(avstrm,'strm_swdn_af',perrWith='quiet')
+    slwdn_af = mct_aVect_indexRA(avstrm,'strm_lwdn_af',perrWith='quiet')
 
     allocate(imask(lsize))
     allocate(yc(lsize))

@@ -389,7 +389,9 @@ contains
     status = parallel_get_var(NCI%id,varid,delta)
     call nc_errorhandle(__FILE__,__LINE__,status)
 
-    if (abs(delta(2)-delta(1) - model%numerics%dew*len0) > small) then
+!WHL - mod to prevent code from crashing due to small roundoff error
+!    if (abs(delta(2)-delta(1) - model%numerics%dew*len0) > small) then
+    if (abs( (delta(2)-delta(1) - model%numerics%dew*len0) / (model%numerics%dew*len0) ) > small) then
        write(message,*) 'deltax1 of file '//trim(process_path(NCI%filename))// &
             ' does not match with config deltax: ', delta(2)-delta(1),model%numerics%dew*len0
        call write_log(message,type=GM_FATAL)
@@ -430,7 +432,10 @@ contains
     status = parallel_get_var(NCI%id,varid,delta)
     call nc_errorhandle(__FILE__,__LINE__,status)
 
-    if (abs(delta(2)-delta(1) - model%numerics%dns*len0) > small) then
+
+!WHL - mod to prevent code from crashing due to small roundoff error
+!    if (abs(delta(2)-delta(1) - model%numerics%dns*len0) > small) then
+    if (abs( (delta(2)-delta(1) - model%numerics%dns*len0) / (model%numerics%dns*len0) ) > small) then
        write(message,*) 'deltay1 of file '//trim(process_path(NCI%filename))// &
             ' does not match with config deltay: ', delta(2)-delta(1),model%numerics%dns*len0
        call write_log(message,type=GM_FATAL)
@@ -489,17 +494,10 @@ contains
     real(dp),optional :: time           !*FD Optional alternative time
 
     character(len=msglen) :: message
-    real(dp) :: sub_time
 
     integer :: pos  ! to identify restart files
 
     real(dp) :: restart_time   ! time of restart (yr)
-
-    if (present(time)) then
-       sub_time = time
-    else
-       sub_time = model%numerics%time
-    end if
 
     if (infile%current_time <= infile%nt) then
        if (.not.NCI%just_processed) then
@@ -518,20 +516,41 @@ contains
           endif
           !EIB! end add
           write(message,*) 'Reading time slice ',infile%current_time,'(',infile%times(infile%current_time),') from file ', &
-               trim(process_path(NCI%filename)), ' at time ', sub_time
+               trim(process_path(NCI%filename)), ' at time ', sub_time(model, time)
           call write_log(message)
           NCI%just_processed = .TRUE.
-          NCI%processsed_time = sub_time
+          NCI%processsed_time = sub_time(model, time)
        end if
     end if
 
-    if (sub_time > NCI%processsed_time) then
+    if (sub_time(model, time) > NCI%processsed_time) then
        if (NCI%just_processed) then
           ! finished reading during last time step, need to increase counter...
           infile%current_time = infile%current_time + 1
           NCI%just_processed = .FALSE.
        end if
     end if
+
+  contains
+    real(dp) function sub_time(model, time)
+      ! Get the current time applicable to this subroutine. 
+      ! If time is present, use that; otherwise use model%numerics%time
+      !
+      ! We need this function to avoid code duplication. We canNOT simply set a local
+      ! sub_time variable variable at the start of glimmer_nc_checkread, because model
+      ! %numerics%time can be updated in the midst of this routine... so we need to
+      ! determine sub_time when it's actually needed, with this function.
+      use glide_types
+      implicit none
+      type(glide_global_type) :: model    !*FD the model instance
+      real(dp),optional :: time           !*FD Optional alternative time
+
+      if (present(time)) then
+         sub_time = time
+      else
+         sub_time = model%numerics%time
+      end if
+    end function sub_time
 
   end subroutine glimmer_nc_checkread
 

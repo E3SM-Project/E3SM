@@ -15,8 +15,7 @@ SET(SRCS_C  GPTLget_memusage.c
             GPTLutil.c
             f_wrappers.c
             gptl.c
-            gptl_papi.c
-            threadutil.c)
+            gptl_papi.c)
 
 SET(SRCS_F90  perf_mod.F90
               perf_utils.F90)

@@ -796,6 +796,12 @@ sub check_input_files {
                 if ($pathname =~ m/unknown.+/) {
 		    # skip file
                 }
+		elsif ($pathname =~ m/.*UNSET.*/) {
+		    # skip file
+                }
+		elsif ($pathname =~ m/.*unset.*/) {
+		    # skip file
+                }
 		elsif ($input_pathname_type eq 'stream') {
 		    if ($pathname =~ m/.*(,).*/) {
 			my @paths = split ",", $pathname, -1;   # The -1 prevents split from stripping trailing nulls
@@ -823,8 +829,6 @@ sub check_input_files {
 		}
 	    }
 	}
-	close OUTFILE if defined $inputdata_rootdir;
-	return 0 if defined $inputdata_rootdir;
     }
 }
 

@@ -1,0 +1,84 @@
+models/lnd/clm/tools/shared/PTCLM/README                11/22/2013
+
+PTCLMmkdata is a python tool built on top of CLM tools and CESM scripts
+for building datasets to run CLM "I" cases for data from Ameriflux Tower-sites,
+or other user-supplied single-point datasets.
+
+Original Authors:
+
+Daniel M. Ricciuto, Dali Wang, Peter E. Thornton, Wilfred M. Post
+
+Environmental Sciences Division, Oak Ridge National Laboratory (ORNL)
+
+R. Quinn Thomas
+
+Cornell University
+
+Modified by:
+
+Erik Kluzek (NCAR)
+
+General Directory structure:
+
+  models/lnd/clm/tools/shared/PTCLM/PTCLMmkdata ----- Main script
+  models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata  - Site data files of 
+        static information latitude, longitude, soil info., and PFT information 
+        for each site Also different "groups" of site-data lists, and the script to
+        convert the transient years pftdyn files into pftdyn text files that
+        mksurfdata can use.
+  models/lnd/clm/tools/shared/PTCLM/mydatafiles ----- Default location of
+        data files that will be created by PTCLMmkdata. Sites will be built
+        in their own subdirectories under here. Optionally you can give your
+        own location you'd like to use for your data.
+  models/lnd/clm/tools/shared/PTCLM/buildtools ------ Script to build the CLM
+        tools needed to run PTCLMmkdata (mksurfdata_map both clm4_0 and clm4_5
+        versions and gen_domain). Works on yellowstone.
+
+Quickstart:
+
+# ASSUMPTIONS:
+# For this example I'm running a ICLM451PT case on yellowstone using  
+# CSMDATA in the standard location
+# Finally we use the 6-digit AmeriFlux site code for the University of Mich. Biological
+# Station US-UMB (data for this station is checked into the inputdata repository).
+# I also assume you are using UNIX C-shell, and GNU make is called gmake
+setenv CSMDATA   /glade/p/cesm/cseg/inputdata
+setenv SITE      US-UMB
+
+
+cd models/lnd/clm/tools/shared/PTCLM
+setenv MYDATAFILES `pwd`/mydatafiles
+
+# Next build all of the clm tools you will need
+# The following script assumes yellowstone_intel, for other machines
+# you'll need to build each tool by hand
+./buildtools
+# next run PTCLMmkdata (NOTE -- MAKE SURE python AND NCL IS IN YOUR PATH)
+# NOTE: Every day you run PTCLMmkdata it will remake the map called
+#       renamemapfiles to rename files with todays creation date.
+#       This makes running PTCLMmkdata a reasonable amount of time.
+#       However, you can use the script in mydatafiles
+#
+./PTCLMmkdata -s $SITE -d $CSMDATA
+
+# Next copy the towersite meterology datafiles into your $MYDATAFILES space
+# (For the US-UMB station you can skip this step as the .build step will bring the data over) 
+cd $MYDATAFILES/1x1pt_$SITE
+mkdir $MYDATAFILES/1x1pt_$SITE/CLM1PT_data
+# Copy meteorology data NetCDF files into 1x1pt_$SITE sub-directory 
+# (with filenames of yyyy-mm.nc)
+# The variables assumed to be on the files are: 
+#     ZBOT, TBOT, RH, WIND, PRECTmms, FSDS, PSRF, FLDS
+# (if other fields are available or with different names this can be changed by
+#  editing the streams file in your case)
+
+# Then create a case using the data you just created
+setenv MYCASE "testPTCLM"
+cd ../../../../../../scripts
+./create_newcase -user_mods_dir $MYDATAFILES/1x1pt_$SITE -case $MYCASE -res CLM_USRDAT -compset ICLM451PT -mach yellowstone_intel
+
+# Finally configure, build, and run the case as normal
+cd $MYCASE
+./cesm_setup
+./$MYCASE.build
+./$MYCASE.submit

@@ -10,12 +10,15 @@ module fileutils
 ! Module containing file I/O utilities
 !
 ! !USES:
-  use clm_varctl,  only : iulog
   use shr_sys_mod, only : shr_sys_abort
 !
 ! !PUBLIC TYPES:
   implicit none
   save
+!
+! Unit Numbers
+!
+  integer, public :: iulog = 6        ! "stdout" log file unit number, default is 6
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: get_filename  !Returns filename given full pathname

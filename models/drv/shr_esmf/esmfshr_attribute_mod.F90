@@ -29,6 +29,8 @@ module esmfshr_attribute_mod
       integer :: localrc
       character(ESMF_MAXSTR) :: convCIM, purpComp
 
+      rc = ESMF_SUCCESS
+#ifdef USE_ESMF_METADATA
       convCIM  = 'CIM'
       purpComp = 'Model Component Simulation Description'
 
@@ -66,6 +68,7 @@ module esmfshr_attribute_mod
                              convention=convCIM, purpose=purpComp, rc=localrc)
 
       rc = localrc
+#endif
 
    end subroutine
 
@@ -83,6 +86,9 @@ module esmfshr_attribute_mod
 
       ! Local variables
       integer :: localrc
+
+      rc = ESMF_SUCCESS
+#ifdef USE_ESMF_METADATA
 
 !      call ESMF_LogWrite('a2x fields = >'//trim(seq_flds_a2x_fields)//'<', &
 !                         ESMF_LOG_INFO, rc=localrc)
@@ -108,15 +114,12 @@ module esmfshr_attribute_mod
       call esmfshr_attribute_field_init( &
               seq_flds_x2g_fields, cesmState, rc=localrc)
       call esmfshr_attribute_field_init( &
-              seq_flds_s2x_fields, cesmState, rc=localrc)
-      call esmfshr_attribute_field_init( &
-              seq_flds_x2s_fields, cesmState, rc=localrc)
-      call esmfshr_attribute_field_init( &
               seq_flds_xao_fields, cesmState, rc=localrc)
       call esmfshr_attribute_field_init( &
               seq_flds_r2x_fields, cesmState, rc=localrc)
 
       rc = localrc
+#endif
 
    end subroutine
 
@@ -145,6 +148,9 @@ module esmfshr_attribute_mod
       type(ESMF_FieldBundle) :: fbundle
       !type(ESMF_LOG) :: alog
 
+      rc = ESMF_SUCCESS
+
+#ifdef USE_ESMF_METADATA
       ! Set up the attribute descriptions
       convCIM   = 'CIM'
       purpField = 'Inputs Description'
@@ -288,6 +294,7 @@ module esmfshr_attribute_mod
       end if
 
       rc = localrc
+#endif
 
    end subroutine
 

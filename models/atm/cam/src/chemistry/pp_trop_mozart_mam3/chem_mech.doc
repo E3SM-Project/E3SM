@@ -288,7 +288,7 @@ Class List
   usr_O_O2         (  1)   O + O2 + M ->  O3 + M                                                rate = ** User defined **         ( 43)
   O_O3             (  2)   O + O3 ->  2*O2                                                      rate = 8.00E-12*exp(  -2060./t)   ( 44)
   O1D_N2           (  3)   O1D + N2 ->  O + N2                                                  rate = 2.15E-11*exp(    110./t)   ( 45)
-  O1D_O2b          (  4)   O1D + O2 ->  O + O2                                                  rate = 1.65E-12*exp(     55./t)   ( 46)
+  O1D_O2b          (  4)   O1D + O2 ->  O + O2                                                  rate = 3.30E-11*exp(     55./t)   ( 46)
   O1D_O3           (  5)   O1D + O3 ->  O2 + O2                                                 rate = 1.20E-10                   ( 47)
   ox_l1            (  6)   O1D + H2O ->  2*OH                                                   rate = 1.63E-10*exp(     60./t)   ( 48)
   O1D_H2           (  7)   O1D + H2 ->  H + OH                                                  rate = 1.20E-10                   ( 49)

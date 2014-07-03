@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --cesm_root ../../../../../../.. -s IT-Cpz -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/std_file_creation 

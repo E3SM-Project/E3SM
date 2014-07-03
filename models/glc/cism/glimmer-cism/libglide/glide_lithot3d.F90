@@ -56,6 +56,8 @@ contains
     integer i,j,k,r,icount,jcount,ewn,nsn
 
     ! allocate memory for 3D code
+    !TODO - Move to glide_allocarr?
+
     ewn=model%general%ewn
     nsn=model%general%nsn
 
@@ -66,6 +68,8 @@ contains
     allocate(model%lithot%rhs(model%lithot%nlayer*ewn*nsn))
     allocate(model%lithot%answer(model%lithot%nlayer*ewn*nsn))
     model%lithot%mxnelt = 20 * model%lithot%nlayer*ewn*nsn
+
+    !TODO - Deallocate these arrays
     allocate(model%lithot%rwork(model%lithot%mxnelt))
     allocate(model%lithot%iwork(model%lithot%mxnelt))
 
@@ -144,6 +148,7 @@ contains
           end do
        end do
     end do
+
   end subroutine init_lithot3d
 
   subroutine calc_lithot3d(model)

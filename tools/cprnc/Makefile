@@ -143,6 +143,12 @@ ifeq ($(UNAMES),Linux)
     FFLAGS = -c -I$(INC_NETCDF) -O -ffree-form -ffree-line-length-none
   endif
   LDFLAGS = -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+  ifeq ($(FC),ifort)
+    LDFLAGS += -Wl,rpath,$(LIB_NETCDF)
+  endif
+  ifeq ($(FC),pgf90)
+    LDFLAGS += -Wl,-R$(LIB_NETCDF)
+  endif
 
 
 endif

@@ -1,0 +1,219 @@
+-------------------------------------------------
+New features in CAM-5.4
+-------------------------------------------------
+
+## CAM-SE
+
+* Defaults changed for soil_erod and dust_emis_fact (XXEaton)
+
+* Update SE dycore tuning parameters (XXEaton)
+  - Change time stepping method to RK5 (Kinnmark & Gray Runga-Kutta 5
+    stage; 3rd order accurate in time)
+  - Set the namelists variables as recommended for RK5 in:
+    http://www.cgd.ucar.edu/cms/pel/software/cam-se-dt-table.pdf
+  - Add "tstep_type" namelist option for SE dycore
+  - Turn on the FV energy fixer (This will be updated later on with
+    Williamson an Olson enery fixer)
+  - Remove the variable "energy_fixer" from the cam namelist.
+ 
+  To update a namelist created by an earlier CAM tag for an SE run on
+  grid ne30np4 one should make the following changes:
+  - The default settings for CESM1.2.0 were:
+    tstep_type =1
+    hypervis_subcycle = 2
+    qsplit =4
+    rsplit = 5
+    se_ftype =1
+    se_nsplit = 1
+ 
+  - The new recommended settings are:
+    tstep_type =5
+    hypervis_subcycle = 3
+    qsplit = 1
+    rsplit = 3
+    se_ftype =0
+    se_nsplit = 2
+
+
+## CARMA
+* Add six new CARMA models:
+    - cirrus_dust
+    - meteor_impact
+    - mixed_sulfate
+    - pmc_sulfate
+    - tholin
+    - test_tracers2
+
+* Further development of CARMA-CAM integration, including:
+    - New sulfate model features.
+    - "Fractal" code for soot.
+    - Port to the NAG compiler.
+
+## CLUBB
+
+## CHEMISTRY
+
+## Prescribed Modal Aerosols
+
+## Radiation
+
+## MG microphysics
+
+## Deep convection
+
+* Minor improvements to the ZM scheme improve robustness for some inputs
+  (e.g. unusually high temperatures).
+
+## Sub-columns
+* Modifications to pbuf and history to support sub-columns
+
+* Introduced sub-column interface and utlities routines
+
+* Microphysics now has the ability to be run on grid(usual) or subcolumns
+
+## Gravity waves
+
+* New AMIP configuration with a high vertical resolution uses spectral
+  gravity waves in the low top model.
+
+* WACCM's gravity wave functionality can now be enabled in non-WACCM runs,
+  and can be enabled/disabled at run time via the namelist.
+
+* Most gravity wave parameters that were previously hard-coded are now
+  set by the namelist instead.
+
+* Added "tau_0_ubc" option, to enforce an upper boundary condition of tau = 0
+  in the gravity wave parameterization.
+
+## WACCM
+
+## SCAM
+
+-------------------------------------------------
+CODE CLEANUP AND REFACTORING
+-------------------------------------------------
+
+* CARMA and the MG microphysics interface now use micro_mg_utils to get
+  size distribution parameters for cloud droplets, ice, and precipitation.
+  Previously this was done with duplicated code.
+
+* The chemistry-aerosol model interface was refactored to provide a more
+  extendable framework.  This will ease incorporation of other aerosol
+  models (e.g., a sectional aerosol model)
+
+* The SE dycore now uses Pa instead of hPa, which is consistent with CAM's
+  physics.
+
+* The CAM and WACCM gravity wave modules have been merged together, and the
+  result was extensively refactored. The CAM interface (gw_drag.F90) has been
+  separated from a new set of modules that constitute a portable layer, and
+  the routines for the wave sources, wave propagation, and effective diffusion
+  have been separated from each other as well. The resulting modules produce
+  the same climate as the old methods, and in most cases give the same answers
+  bit-for-bit.
+
+* Removed the WACCM_PHYS preprocessor macro, and brought WACCM physics modules
+  up to date with current CAM conventions:
+
+  - qbo, radheat, and iondrag have their own namelists. If WACCM is off, we
+    compile in stubs rather than using the WACCM_PHYS macro.
+  - Molecular diffusion is turned on/off at run time based on the namelist and
+    the extent of the vertical grid.
+  - Each type of gravity wave source is turned on/off via the namelist.
+  - WACCM-specific fields set by the dycore are now communicated via the physics
+    buffer rather than the physics_state object, and are only set if needed.
+
+
+* Remove workarounds used to maintain bit-for-bit output during the NAG port.
+
+* Remove restriction that radiation diagnostic calculations reuse the water (XXEaton)
+  uptake and wet radius values calculated for the climate affecting modes.
+  These quantities are now recomputed for the diagnostic modes.
+
+* Add new diagnostics for modal aerosol optics. (XXEaton)
+
+* Make species burdens consistent with mode burdens, i.e., only include (XXEaton)
+  contributions from daylight columns.
+
+* Add new IOP datasets, use cases, and run script for scam. Along with a  (XXEaton)
+  date bug fix for scam.
+
+* Minor bug fix and external update for SE from Taylor (XXEaton)
+
+* inic files moved back to homme from se. (XXEaton)
+
+* satellite history output was refactored to improve run-time performance
+  -- find nearest neighbor operation was parallelized
+
+-------------------------------------------------
+CAM INFRASTRUCTURE CHANGES
+-------------------------------------------------
+
+* updates to soil_erod defaults (XXEaton)
+
+* updates to dust_emis_fact (XXEaton)
+
+* Type descriptions in namelist_definitions.xml can now include variables
+  as dimensions. For instance, both "integer(n)" and "integer(2)" can be
+  used for a 1-D integer array.
+
+* The rad_climate and rad_diag_* arrays can now be set to a larger size
+  using the new "-max_n_rad_cnst" configure option.
+
+* Turning on CESM's DEBUG mode now also turns on state_debug_checks.
+
+* add tstep_type, remove energy_fixer, and change many default SE tuning (XXEaton)
+   parameters 
+
+* New history_waccm flag, for turning on common outputs for WACCM runs.
+  Implementation of this flag is incomplete and should be considered a
+  work in progress.
+
+* The Lahey compiler is no longer supported.
+
+* Updates for bndtvs [SPS: I do not know what this was! I was responsible
+                           for flbc_file changes in this tag, but they were
+                           unrelated and not noteworthy.]
+
+* New initial condition file for ne30np4 (XXEaton)
+
+* New tunings for rsplit and se_split to allow 7.5 minute vertical remapping for ne120np4. (XXEaton)
+
+* Added a new namelist variable, history_aero_optics, to add modal aerosol (XXEaton)
+   optics diagnostics to the default history fields.  The existing
+   history_aerosol variable turns on diagnostics related to the aerosol
+   production and removal tendencies.
+-------------------------------------------------
+Bugs fixed (include bugzilla ID):
+-------------------------------------------------
+* 1958: Fix computation of the diagnostic term "DTCORE" - total dynamics T-tendency
+* 1954: lon-lat history file from multi-instance CAM-SE
+* 1919: write outside array bounds in pilgrim code
+* 1891: The "top" of RRTMG is too high in high-top models
+* 1872: RRTMG gives biased results on big-endian architectures
+* 1859: bug inside physics_buffer:  linked list should be advanced from 2,index instead of 1,index (XXEaton)
+* 1864: bug in lidar simulator fixed (XXEaton)
+* 1813: CMELIQ no longer able to be output  [THIS BUG WILL BE REMOVED AS IT APPEARED AND WAS FIXED IN cam5_3_xx]
+* 1794: Interpolation in cloud_rad_props is less precise than originally intended.
+* 1797: CMPLX has wrong precision in several places
+* 1744: WACCM-SE sometimes fails due to race condition with threading
+* 1766: Excessive frontogenesis in WACCM-SE (only affects gravity waves).
+* 1760: Fix some namelist values in 1850_cam5_pm.xml that had yellowstone paths hard-coded.
+* OMP bug fixed for WACCM-X. (XXEaton)
+* Memory leak fix for WACCM-SE. (XXEaton)
+* CAM no longer aborts if state_debug_checks is enabled and there are grid points with
+  an average altitude below sea level.
+* Restored functioning of CAM4+RRTMG (still not scientifically supported).
+* Miscellanous fixes and improvements for NAG support.
+* Fixes for builds using the Darwin toolchain.
+* Fix multi-instance CAM-SE (from Jim Edwards).
+* Fix for topo_tool (from Peter Lauritzen).
+* COSP history field units changed to be CF compliant
+* Replaced 'cosp_nhtml' mdim with 'lev'
+* COSP mdim coordinate values output correctly (were zero). This applies
+   to all coordinates created with the add_hist_coord subroutine.
+* Fix bug in configure script for SE (XXEaton)
+* Correction to aerosol surface area used in heterogeneous chemical reactions
+* Correction to O1D+O2 gas-phase chemical reaction rate
+
+

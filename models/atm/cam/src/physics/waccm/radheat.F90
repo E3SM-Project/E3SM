@@ -30,8 +30,7 @@ module radheat
 
 ! Public interfaces
   public  &
-       radheat_defaultopts,   &!
-       radheat_setopts,       &!
+       radheat_readnl,        &!
        radheat_init,          &!
        radheat_timestep_init, &!
        radheat_tend            ! return net radiative heating
@@ -69,39 +68,46 @@ module radheat
 contains
 !===============================================================================
 
-  subroutine radheat_defaultopts( nlte_use_mo_out )
+  subroutine radheat_readnl(nlfile)
 
-!----------------------------------------------------------------------- 
-! Purpose: Return default runtime options
-!-----------------------------------------------------------------------
+    use namelist_utils,  only: find_group_name
+    use units,           only: getunit, freeunit
+    use mpishorthand
+    use abortutils,  only: endrun
 
-    use chemistry, only: chem_is
+    use waccm_forcing,   only: waccm_forcing_readnl
 
-    logical,          intent(out), optional :: nlte_use_mo_out
-!-----------------------------------------------------------------------
+    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
-    if ( present(nlte_use_mo_out) ) then
-       nlte_use_mo_out = nlte_use_mo
+    ! Local variables
+    integer :: unitn, ierr
+    character(len=*), parameter :: subname = 'radheat_readnl'
+
+    namelist /radheat_nl/ nlte_use_mo
+
+    if (masterproc) then
+       unitn = getunit()
+       open( unitn, file=trim(nlfile), status='old' )
+       call find_group_name(unitn, 'radheat_nl', status=ierr)
+       if (ierr == 0) then
+          read(unitn, radheat_nl, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun(subname // ':: ERROR reading namelist')
+          end if
+       end if
+       close(unitn)
+       call freeunit(unitn)
+
     end if
 
-  end subroutine radheat_defaultopts
+#ifdef SPMD
+    call mpibcast (nlte_use_mo,   1,                      mpilog,  0, mpicom)
+#endif
 
-!================================================================================================
+    ! Have waccm_forcing read its namelist as well.
+    call waccm_forcing_readnl(nlfile)
 
-  subroutine radheat_setopts( nlte_use_mo_in )
-
-!----------------------------------------------------------------------- 
-! Purpose: Set runtime options
-!-----------------------------------------------------------------------
-
-    logical,          intent(in), optional :: nlte_use_mo_in
-!-----------------------------------------------------------------------
-
-    if ( present(nlte_use_mo_in) ) then
-       nlte_use_mo = nlte_use_mo_in
-    end if
-
-  end subroutine radheat_setopts
+  end subroutine radheat_readnl
 
 !================================================================================================
 

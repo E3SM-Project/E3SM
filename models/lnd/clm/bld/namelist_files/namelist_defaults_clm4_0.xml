@@ -17,9 +17,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Default time step -->
 <dtime>1800</dtime>
 
-<!-- NetCDF Large file format -->
-<outnc_large_files>.true.</outnc_large_files>
-
 <!-- CO2 volume mixing ratio -->
 <co2_ppmv sim_year="1000"      >379.0</co2_ppmv>
 <co2_ppmv sim_year="2000"      >379.0</co2_ppmv>
@@ -33,6 +30,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <suplnitro bgc="cndv" crop="on" >PROG_CROP_ONLY</suplnitro>
 <suplnitro bgc="cn"   crop="off">NONE</suplnitro>
 <suplnitro bgc="cndv" crop="off">NONE</suplnitro>
+
+<!-- Irrigation default -->
+<irrig>.false.</irrig>
 
 <!-- Albedo for glaciers -->
 <albice glc_nec="0" >0.80,0.55</albice>
@@ -126,16 +126,6 @@ ic_tod="0" sim_year="2000" glc_nec="0" irrig=".false." crop="off" >lnd/clm2/init
 
 <finidat hgrid="0.9x1.25"  maxpft="17"  mask="gx1v6" bgc="cndv" ic_ymd="20000101" 
 ic_tod="0" sim_year="2000" glc_nec="0" irrig=".false." crop="off" >lnd/clm2/initdata/clmi.BCN.2000-01-01_0.9x1.25_gx1v6_simyr2000_c100303.nc
-</finidat>
-
-<!-- Initial files for WRF resolutions -->
-
-<finidat hgrid="wus12"     maxpft="17"  mask="wus12" bgc="none" ic_ymd="20030101"
-ic_tod="0" sim_year="2000" glc_nec="0" irrig=".false." crop="off" >lnd/clm2/initdata/clmi.wus12.init20031001_c110208.nc
-</finidat>
-
-<finidat hgrid="us20"      maxpft="17"  mask="us20"  bgc="none" ic_ymd="20050101"
-ic_tod="0" sim_year="2000" glc_nec="0" irrig=".false." crop="off" >lnd/clm2/initdata/clmi.us20.init20050101_c120125.nc
 </finidat>
 
 <!-- Initial files interpolated from native resolution -->
@@ -255,16 +245,6 @@ lnd/clm2/surfdata_map/surfdata_48x96_simyr1850_glcmec10_c120927.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_glcmec10_c120927.nc</fsurdat>
 <fsurdat hgrid="1.9x2.5"   sim_year="1850" glc_nec="10" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_glcmec10_c120927.nc</fsurdat>
-
-<!-- for present day simulations with WRF - year 2000 (same file with/without Glacier model) -->
-<fsurdat hgrid="wus12"     sim_year="2000" glc_nec="0"  irrig=".false." crop="off" >
-lnd/clm2/surfdata/surfdata_0336x0340_20110128.nc</fsurdat>
-<fsurdat hgrid="wus12"     sim_year="2000" glc_nec="10" irrig=".false." crop="off" >
-lnd/clm2/surfdata/surfdata_0336x0340_20110128.nc</fsurdat>
-<fsurdat hgrid="us20"      sim_year="2000" glc_nec="0"  irrig=".false." crop="off" >
-lnd/clm2/surfdata/surfdata_0230x0350_20110930.nc</fsurdat>
-<fsurdat hgrid="us20"      sim_year="2000" glc_nec="10" irrig=".false." crop="off" >
-lnd/clm2/surfdata/surfdata_0230x0350_20110930.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" crop="off"                    >
@@ -438,8 +418,6 @@ lnd/clm2/surfdata/surfdata_1x1_tropicAtl_simyr1850_c090923.nc</fsurdat>
 <fpftdyn hgrid="48x96"         sim_year_range="1850-2000"
  irrig=".false." crop="off" >lnd/clm2/surfdata_map/surfdata.pftdyn_48x96_hist_simyr1850-2005_c120127.nc</fpftdyn>
 
-<fpftdyn hgrid="ne16np4"       sim_year_range="1850-2000" 
- irrig=".false." crop="off" >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c120416.nc</fpftdyn>
 <fpftdyn hgrid="ne30np4"       sim_year_range="1850-2000" 
  irrig=".false." crop="off" >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_hist_simyr1850-2005_c120907.nc</fpftdyn>
 <fpftdyn hgrid="ne60np4"       sim_year_range="1850-2000" 

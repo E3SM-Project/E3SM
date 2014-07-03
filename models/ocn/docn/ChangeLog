@@ -1,9 +1,88 @@
 ================================================================================
- SVN $Id: ChangeLog 44786 2013-03-13 23:04:57Z tcraig $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_130313/ChangeLog $
+ SVN $Id: ChangeLog 55705 2013-12-01 08:22:30Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_131201/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
 ================================================================================
+
+================================================================================
+Originator: tcraig
+Date: Dec 01 2013
+Model: docn7
+Version: docn8_131201
+One-line summary: add force_prognostic_true namelist
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_definition_docn.xml
+M       docn_comp_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: Nov 07 2013
+Model: docn7
+Version: docn8_131007
+One-line summary: update build_namelist to parse env variables correctly
+
+M  bld/build-namelist
+
+================================================================================
+Originator: mvertens
+Date: Sep 24 2013
+Model: docn7
+Version: docn8_130924
+One-line summary: move cpl/ code into docn/ directory
+
+M       bld/docn.buildexe.csh
+A  +    ocn_comp_esmf.F90
+M       ChangeLog
+A  +    ocn_comp_mct.F90
+D       cpl
+D       cpl/ocn_comp_esmf.F90
+D       cpl/ocn_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Sep 20 2013
+Model: docn7
+Version: docn8_130920
+One-line summary: merge comptype branch to trunk
+	
+cpl_esmf/ is gone, cpl_mct/ is gone and cpl/ is new 
+with both ocn_comp_esmf and ocn_comp_mct - this will only 
+work with new cpl7 intrastructure in drvseq4_3_05 and beyond
+
+M       bld/docn.buildexe.csh
+D       cpl_mct
+D       cpl_mct/ocn_comp_mct.F90
+M       ChangeLog
+D       cpl_esmf
+D       cpl_esmf/ocn_comp_mct.F90
+D       cpl_esmf/ocn_comp_esmf.F90
+A  +    cpl
+A  +    cpl/ocn_comp_esmf.F90
+	
+================================================================================
+Date: Sep 06 2013
+Who: jshollen
+Model: docn7
+Version: docn8_130906
+One-line summary: bug fix in docn_comp_mod.F90
+
+M       docn_comp_mod.F90
+================================================================================
+Date: Sep 05 2013
+Who: tcraig
+Model: docn7
+Version: docn8_130905
+One-line summary: merge cplupa branch
+ - update runoff coupling field names for consistency with driver
+ - modify intents on init/run/finalize coupling interfaces
+ - add ifdef USE_ESMF_METADATA around esmf attribute calls
+ - update logunit initialization for cam scripts (BE)
+
+M       cpl_mct/ocn_comp_mct.F90
+M       cpl_esmf/ocn_comp_esmf.F90
+M       docn_comp_mod.F90
 ================================================================================
 Date: Mar 13 2013
 Who: tcraig
@@ -758,7 +837,7 @@ One-line summary:  replace save statements to attributes wrt jaguar compiler bug
 Changes made:
 
 - replace save statements to attributes wrt jaguar compiler bug (bugz #455)
-- rework svnURL = "SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_130313/ChangeLog $" to maximize available F90 line-length
+- rework svnURL = "SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_131201/ChangeLog $" to maximize available F90 line-length
 
 =============================================================================
 

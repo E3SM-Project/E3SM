@@ -1,8 +1,301 @@
 ================================================================================
-SVN $Id: ChangeLog 47549 2013-05-28 22:22:13Z santos@ucar.edu $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/ChangeLog $
+SVN $Id: ChangeLog 60112 2014-05-09 20:40:56Z jedwards $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
+===========================
+Originator: jedwards
+Date: 2014/05/09
+Model: share
+Version: share3_140509
+One-line summary:workaround for cray compiler
+
+M shr_assert_mod.F90.in
+M shr_assert_mod.F90 
+
+
+===========================
+Originator: santos
+Date: 2014/05/07
+Model: share
+Version: share3_140507
+One-line summary: Fix SCAM in builds that use the CESM scripts.
+
+M       shr/shr_scam_mod.F90
+        - Add "force_prognostic_true" to the docn namelist. This is not
+          actually used, but it is an error to omit it, if the namelist in
+          docn_in contains a value for this variable.
+
+===========================
+Originator: santos
+Date: 2014/04/18
+Model: share
+Version: share3_140418
+One-line summary: Add shr_assert macros, minor updates, and pFUnit tests.
+
+A       shr/shr_assert.h
+
+        - New preprocessor macro interface for shr_assert, as well as the
+          new shr_assert_all and shr_assert_any subroutines. The macros
+          here are turned off if NDEBUG is defined, which gets rid of any
+          costs associated with the expressions fed in as arguments.
+
+M       shr/shr_assert_mod.F90
+M       shr/shr_assert_mod.F90.in
+
+        - shr_assert now only accepts scalars. This is NOT backwards
+          compatible.
+
+        - New shr_assert_all and shr_assert_any functions introduced.
+          shr_assert_all is equivalent to the old shr_assert. Currently,
+          these are trivial one-liners, but they are intended to make it
+          easier to modify the error reporting for array inputs at some
+          point in the future.
+
+        - shr_assert_in_domain can now accept an absolute (but not
+          relative) error tolerance. This is primarily intended to make
+          the eq/ne tests more useful for floating point inputs. However,
+          they still work for integers as well.
+
+        - Attempt to simplify a little bit of the cpp/genf90/conditional
+          messiness.
+
+M       shr/shr_infnan_mod.F90
+M       shr/shr_infnan_mod.F90.in
+
+        - Change the way a negative infinity bit pattern is produced, to
+          prevent a (more or less spurious) compilation error with
+          gfortran. We may be able to remove the -frange-check option from
+          compilation flags after this.
+
+M       shr/shr_spfn_mod.F90
+
+        - Use reals of an explicit kind to set parameters. This really does
+          nothing for this particular case, except that it will prevent
+          precision issues in the unlikely event that some of these
+          parameters are copied in the future.
+
+M       unit_testers/Makefile
+D       unit_testers/shr_assert_test
+D       unit_testers/shr_assert_test/domain_tests.F90
+D       unit_testers/shr_assert_test/logical_tests.F90
+D       unit_testers/shr_assert_test/Makefile
+D       unit_testers/shr_assert_test/shr_sys_mod.F90
+D       unit_testers/shr_assert_test/test_shr_assert.F90
+D       unit_testers/shr_assert_test/test_utils.F90
+D       unit_testers/test_shr_infnan.F90
+D       unit_testers/test_shr_spfn.F90
+A       unit_testers/new_framework
+A       unit_testers/new_framework/CMakeLists.txt
+A       unit_testers/new_framework/mock/
+A       unit_testers/new_framework/mock/CMakeLists.txt
+A       unit_testers/new_framework/mock/shr_sys_mod.nompi_abortthrows.F90
+A       unit_testers/new_framework/shr_assert_test/
+A       unit_testers/new_framework/shr_assert_test/CMakeLists.txt
+A       unit_testers/new_framework/shr_assert_test/test_assert.pf
+A       unit_testers/new_framework/shr_assert_test/test_assert_array.pf
+A       unit_testers/new_framework/shr_assert_test/test_macro.pf
+A       unit_testers/new_framework/shr_assert_test/test_ndebug.pf
+A       unit_testers/new_framework/shr_infnan_test/
+A       unit_testers/new_framework/shr_infnan_test/CMakeLists.txt
+A       unit_testers/new_framework/shr_infnan_test/test_infnan.F90
+A       unit_testers/new_framework/shr_spfn_test/
+A       unit_testers/new_framework/shr_spfn_test/CMakeLists.txt
+A       unit_testers/new_framework/shr_spfn_test/test_erf_r4.pf
+A       unit_testers/new_framework/shr_spfn_test/test_erf_r8.pf
+A       unit_testers/new_framework/shr_spfn_test/test_gamma_factorial.pf
+A       unit_testers/new_framework/shr_spfn_test/test_igamma.pf
+
+        - Replace unit tests for shr_assert_mod, shr_infnan_mod, and
+          shr_spfn_mod with tests based on the new CMake+pFUnit framework.
+
+        - The parameterized tests use the pFUnit 2.1 interface; they should
+          be transitioned to the pFUnit 3.0 interface, which is simpler.
+
+        - Note that the test coverage for shr_assert_mod has dropped
+          dramatically. This is largely because the tests in the old system
+          were extremely long, arbitrary, and repetitive, so many have just
+          been dropped completely. They may be rewritten in a saner way
+          during future refactorings.
+
+        - Note also that test_infnan.F90 does not work with floating point
+          trapping enabled. The test is effectively skipped when compiling
+          with floating-point trapping on (including with CESM_DEBUG build
+          flags).
+
+===========================
+Originator: tcraig
+Date: 2014/01/15
+Model: share
+Version: share3_140115
+One-line summary: add uses for mct routines
+
+M       shr/mct_mod.F90
+
+===========================
+Originator: sacks
+Date: 2013/12/31
+Model: share
+Version: share3_131231
+One-line summary: move a 'use' statement outside an ifdef
+
+For the sake of cmake's dependency generation (needed for building unit tests),
+I needed to move a 'use' statement outside an ifdef. This change is from Sean
+Santos.
+
+M       shr/shr_assert_mod.F90.in
+M       shr/shr_assert_mod.F90
+
+===========================
+Originator: sacks
+Date: 2013/12/26
+Model: share
+Version: share3_131226
+One-line summary: Add CMakeLists.txt, needed for Sean's new unit test setup
+
+A       shr/CMakeLists.txt
+
+===========================
+Originator: santos
+Date: 2013/11/01
+Model: share
+Version: share3_131101
+One-line summary: Make gamma an elemental function.
+
+M       shr/shr_spfn_mod.F90
+
+===========================
+Originator: santos
+Date: 2013/09/18
+Model: share
+Version: share3_130918
+One-line summary: Fix SCAM bug that caused use of OoB data in PIO.
+
+M       shr/shr_scam_mod.F90
+
+===========================
+Originator: tcraig
+Date: 2013/09/06
+Model: share
+Version: share3_130906
+One-line summary: minor change for NAG compiler
+
+M       shr/mct_mod.F90
+
+===========================
+Originator: tcraig
+Date: 2013/09/05
+Model: share
+Version: share3_130905
+One-line summary: merge cplupa branch
+ - delete shr_mct_sMatPInitnc_configfile method
+ - add shr_mct_queryConfigFile method
+ - remove access to mct_Accumulator datatypes and methods
+ - add mct_aVect_sharedFields, mct_aVect_initSharedFields
+ - update mct_aVect_avg, mct_aVect_accum
+ - add rofice_present argument to shr_scam_checkSurface
+
+M       shr/mct_mod.F90
+M       shr/shr_scam_mod.F90
+M       shr/shr_mct_mod.F90
+
+===========================
+Originator: jshollen
+Date: 2013/09/04
+Model: share
+Version: share3_130904
+One-line summary: remove shr/shr_isnan.c to fix build
+
+D       shr/shr_isnan.c
+
+===========================
+Originator: santos
+Date: 2013/08/29
+Model: share
+Version: share3_130829
+One-line summary: Remove Lahey and NAG port scaffolding, add some F2003.
+
+M       shr/shr_assert_mod.F90.in
+M       shr/shr_assert_mod.F90
+         - Simplify workaround for PGI, remove CPRLAHEY from ifdefs.
+
+D       shr/shr_test_infnan_mod.F90
+D       shr/shr_isnan.h
+M       shr/shr_infnan_mod.F90.in
+M       shr/shr_infnan_mod.F90
+         - Remove shr_test_infnan_mod.F90, as it was only needed by Lahey,
+           GNU, and some versions of Cray, and was excessively complex.
+         - Modify shr_infnan_mod.F90 to work for GNU. Any other compiler
+           without the IEEE_ARITHMETIC intrinsic module will need to add an
+           "isnan" function here, but the GNU workaround should provide all
+           the other functionality for this module.
+         - Created shr_infnan_to_r4 and shr_infnan_to_r8 as convenience
+           functions (making it unnecessary to create temporary reals in
+           some cases).
+
+M       shr/shr_spfn_mod.F90
+         - Remove references to Lahey and a workaround for older IBM
+           compilers.
+         - Remove "nonintrinsic" interfaces; cam5_3_04 and later do not use
+           them. Remove internal error function interfaces that are also no
+           longer needed.
+         - Minor simplification using the F2003 "import" statement.
+
+M       unit_testers/Makefile
+         - Remove references to deleted source files.
+         - Remove an empty file called "F" that is mysteriously generated
+           on Mira, apparently by xlf2003_r.
+
+M       unit_testers/make.Macros
+         - Change pgf90 to the more generic "pgfortran".
+         - Remove Lahey build information.
+         - Define "CPRGNU" for gfortran.
+         - If OS is Linux and compiler is xlf2003_r, use the correct
+           compiler options for Mira.
+
+M       unit_testers/test_shr_infnan.F90
+         - Set bit patterns in a standard-conforming way (F2003).
+         - Test new shr_infnan_mod functions.
+
+M       unit_testers/shr_assert_test/Makefile
+         - Add IBM compiler and remove Lahey.
+         - Remove references to deleted source files.
+
+M       unit_testers/shr_assert_test/shr_sys_mod.F90
+M       unit_testers/shr_assert_test/test_utils.F90
+         - Remove workarounds for Lahey and older PGI (<12.5)
+
+===========================
+Originator: sacks
+Date: Jul 23, 2013
+Model: share
+Version: share3_130723
+One-line summary: Add shr_log_errMsg
+
+New shr_log_errMsg routine returns an error message string, given a
+file and line number. Intended usage is:
+
+  shr_log_errMsg(__FILE__, __LINE__)
+
+M       shr/shr_log_mod.F90
+A       unit_testers/test_shr_log.F90
+M       unit_testers/Makefile
+
+===========================
+Originator: santos
+Date: Jul 15, 2013
+Model: share
+Version: share3_130715
+One-line summary: Change shr_infnan_mod from using elementals to genf90.
+
+A       shr/shr_infnan_mod.F90.in
+M       shr/shr_infnan_mod.F90
+        - Previously, assigning an array to Inf/NaN was a slow operation.
+          Changing to genf90.pl, assigning Inf/NaN to a scalar, and using
+          the scalar to set the output array, we get much better
+          performance on Intel (e.g. ~20x speed up when initializing CAM's
+          physics_state).
+
 ===========================
 Originator: santos
 Date: May 28, 2013

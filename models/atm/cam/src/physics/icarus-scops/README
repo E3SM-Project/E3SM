@@ -201,10 +201,10 @@ If you see something like this:
 [mark@sagan icarus-scops-3.4]$ make test
 ./test_isccp_cloud_types.ksh
 make[1]: Entering directory `/home/mark/icarus-scops-3.4'
-f77 -c test_isccp_cloud_types.f
-f77 -c isccp_cloud_types.f 
+f77 -c test_isccp_cloud_types.f77
+f77 -c isccp_cloud_types.f77 
 f77 -c ran0.f
-f77 test_isccp_cloud_types.f isccp_cloud_types.o ran0.o  -o test_isccp_cloud_types
+f77 test_isccp_cloud_types.f77 isccp_cloud_types.o ran0.o  -o test_isccp_cloud_types
 make[1]: Leaving directory `/home/mark/icarus-scops-3.4'
 916c916
 < meantaucld   =   0.00000
@@ -233,7 +233,7 @@ make[1]: Leaving directory `/home/mark/icarus-scops-3.4'
 
 then you are most likely unable to read the unformatted files containing the 
 optical thickness weights - try setting readbinary=.false. near line
-24 of test_isccp_cloud_types.f
+24 of test_isccp_cloud_types.f77
 
 5. Points to be aware of when using the code
 --------------------------------------------

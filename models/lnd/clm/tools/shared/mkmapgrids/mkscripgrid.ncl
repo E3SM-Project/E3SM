@@ -6,7 +6,7 @@
 ;
 ;  Erik Kluzek
 ;  Dec/07/2011
-;  $Id: mkscripgrid.ncl 47629 2013-05-31 08:59:50Z erik $
+;  $Id: mkscripgrid.ncl 51827 2013-09-30 01:22:45Z erik $
 ;  $HeadURL;
 ;
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
@@ -98,27 +98,27 @@ begin
 
   lonCenters = fspan( (lonW + delX/2.d0), (lonE - delX/2.d0), nx)
   latCenters = fspan( (latS + delY/2.d0), (latN - delY/2.d0), ny)
-  lon = new( (/nx, ny/), "double" );
-  lat = new( (/nx, ny/), "double" );
-  lonCorners = new( (/nx, ny, 4/), "double" );
-  latCorners = new( (/nx, ny, 4/), "double" );
+  lon = new( (/ny, nx/), "double" );
+  lat = new( (/ny, nx/), "double" );
+  lonCorners = new( (/ny, nx, 4/), "double" );
+  latCorners = new( (/ny, nx, 4/), "double" );
   do i = 0, nx-1
-    lat(i,:)          =  latCenters;
-    latCorners(i,:,0) =  latCenters - delY/2.d0;
-    latCorners(i,:,1) =  latCenters + delY/2.d0;
-    latCorners(i,:,2) =  latCenters + delY/2.d0;
-    latCorners(i,:,3) =  latCenters - delY/2.d0;
+    lat(:,i)          =  latCenters;
+    latCorners(:,i,0) =  latCenters - delY/2.d0;
+    latCorners(:,i,1) =  latCenters + delY/2.d0;
+    latCorners(:,i,2) =  latCenters + delY/2.d0;
+    latCorners(:,i,3) =  latCenters - delY/2.d0;
   end do
   do j = 0, ny-1
-    lon(:,j)          =  lonCenters;
-    lonCorners(:,j,0) =  lonCenters - delX/2.d0;
-    lonCorners(:,j,1) =  lonCenters - delX/2.d0;
-    lonCorners(:,j,2) =  lonCenters + delX/2.d0;
-    lonCorners(:,j,3) =  lonCenters + delX/2.d0;
+    lon(j,:)          =  lonCenters;
+    lonCorners(j,:,0) =  lonCenters - delX/2.d0;
+    lonCorners(j,:,1) =  lonCenters - delX/2.d0;
+    lonCorners(j,:,2) =  lonCenters + delX/2.d0;
+    lonCorners(j,:,3) =  lonCenters + delX/2.d0;
   end do
 
   ; for some reason, "No_FillValue" isn't working in the case where imask=1
-  Mask2D = new( (/nx,ny/), "integer", "No_FillValue" )
+  Mask2D = new( (/ny,nx/), "integer", "No_FillValue" )
   Mask2D(:,:) = imask
   gridSize = delX+"x"+delY
 
@@ -143,8 +143,8 @@ begin
   nc = addfile( outfilename, "w" );
   nc@history = ldate+": create using mkscripgrid.ncl";
   nc@comment = "Ocean is assumed to non-existant at this point";
-  nc@Version = "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/cesm1_2_rel_tags/cesm1_2_0_n02_clm4_5_07/models/lnd/clm/tools/shared/mkmapgrids/mkscripgrid.ncl $";
-  nc@Revision = "$Id: mkscripgrid.ncl 47629 2013-05-31 08:59:50Z erik $";
+  nc@Version = "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_71/models/lnd/clm/tools/shared/mkmapgrids/mkscripgrid.ncl $";
+  nc@Revision = "$Id: mkscripgrid.ncl 51827 2013-09-30 01:22:45Z erik $";
   if ( printn )then
     print( "================================================================================================" );
     print( "Successfully created SCRIP grid file: "+outfilename);

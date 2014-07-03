@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --donot_use_tower_yrs --cesm_root ../../../../../../.. -s CA-Let -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/notower_file_creation 

@@ -32,9 +32,10 @@
 !! this used for calculating continentality
 !!
 !! \author Magnus Hagdorn
-module searchcircle
+module glimmer_searchcircle
   
-  implicit none
+   use glimmer_global, only: dp
+   implicit none
 
   type searchdata
      logical :: initialised = .false.
@@ -42,9 +43,9 @@ module searchcircle
      integer, pointer, dimension(:) :: ipos         !< positions on quater circle which will be moved along
      integer :: istart, jstart                      !< starting position of grid to be processed, will default to usally 1
      integer :: isize, jsize                        !< size of array to be processed
-     real :: total_area
-     real, pointer, dimension(:,:) :: sarray        !< array to be searched (expanded to include outside points
-     real, pointer, dimension(:,:) :: weight        !< reciprocal weights
+     real(dp) :: total_area
+     real(dp), pointer, dimension(:,:) :: sarray    !< array to be searched (expanded to include outside points
+     real(dp), pointer, dimension(:,:) :: weight    !< reciprocal weights
   end type searchdata
 
   !MAKE_RESTART
@@ -56,16 +57,17 @@ contains
   !! \return initialised data type
   function sc_initdata(radius,istart,jstart,isize,jsize,searchgrid)
     implicit none
-    integer, intent(in) :: radius                !< radius of search radius
-    integer, intent(in) :: istart,jstart         !< starting position of grid to be processed
-    integer, intent(in) :: isize,jsize           !< size of array to be processed
-    real, dimension(:,:), optional :: searchgrid !< used for determining bounds of grid to be searched if not present, the bounds are assumed to be the same as the resultgrid
+    integer, intent(in) :: radius                    !< radius of search radius
+    integer, intent(in) :: istart,jstart             !< starting position of grid to be processed
+    integer, intent(in) :: isize,jsize               !< size of array to be processed
+    real(dp), dimension(:,:), optional :: searchgrid !< used for determining bounds of grid to be searched 
+                                                     !< if not present, the bounds are assumed to be the same as the resultgrid
     
     type(searchdata) :: sc_initdata
 
     ! local variables
-    real, allocatable, dimension(:) :: area
-    real ::  area_temp
+    real(dp), allocatable, dimension(:) :: area
+    real(dp) ::  area_temp
     integer i,j,intrad,ii,jj
     integer si_start,si_end,sj_start,sj_end,si_size,sj_size
 
@@ -98,7 +100,7 @@ contains
 
     ! initialising data
     ! mask
-    sc_initdata%sarray = 0.
+    sc_initdata%sarray = 0.d0
     sc_initdata%ipos = 0
     ! weights
     ! calculate integral over quater circle
@@ -108,31 +110,31 @@ contains
        sc_initdata%ipos(i) = int(sqrt(real(radius*radius-i*i)))
        area(i) = area(i-1)+real(sc_initdata%ipos(i))
     end do
-    sc_initdata%total_area = 1.+4.*area(radius)
+    sc_initdata%total_area = 1.d0 + 4.d0*area(radius)
 
     ! complaining if search circle does not fit
-    if (si_size < 2*radius+2 .and. sj_size < 2*radius+2) then
+    if (si_size < 2.d0*radius+2 .and. sj_size < 2.d0*radius+2) then
        ! internal sums
        sc_initdata%weight(1+radius:isize-radius, 1+radius:jsize-radius) = sc_initdata%total_area
        do j=jstart,jstart+jsize-1
           !left
           do i=istart,istart+radius-1
-             area_temp = 0.
+             area_temp = 0.d0
              do jj=max(sj_start,j-radius),min(sj_end,j+radius)
                 intrad = int(sqrt(real(radius*radius-(jj-j)*(jj-j))))
                 do ii=max(si_start,i-intrad),min(si_end,i+intrad)
-                   area_temp = area_temp + 1.
+                   area_temp = area_temp + 1.d0
                 end do
              end do
              sc_initdata%weight(i-istart+1,j-jstart+1) = area_temp
           end do
           !right
           do i=istart+isize-1-radius,istart+isize-1
-             area_temp = 0.
+             area_temp = 0.d0
              do jj=max(sj_start,j-radius),min(sj_end,j+radius)
                 intrad = int(sqrt(real(radius*radius-(jj-j)*(jj-j))))
                 do ii=max(si_start,i-intrad),min(si_end,i+intrad)
-                   area_temp = area_temp + 1.
+                   area_temp = area_temp + 1.d0
                 end do
              end do
              sc_initdata%weight(i-istart+1,j-jstart+1) = area_temp
@@ -141,11 +143,11 @@ contains
        ! lower
        do j=jstart,jstart+radius-1
           do i=istart+radius,istart+isize-1-radius
-             area_temp = 0.
+             area_temp = 0.d0
              do jj=max(sj_start,j-radius),min(sj_end,j+radius)
                 intrad = int(sqrt(real(radius*radius-(jj-j)*(jj-j))))
                 do ii=max(si_start,i-intrad),min(si_end,i+intrad)
-                   area_temp = area_temp + 1.
+                   area_temp = area_temp + 1.d0
                 end do
              end do
              sc_initdata%weight(i-istart+1,j-jstart+1) = area_temp
@@ -154,11 +156,11 @@ contains
        ! upper
        do j=jstart+jsize-1-radius,jstart+jsize-1
           do i=istart+radius,istart+isize-1-radius
-             area_temp = 0.
+             area_temp = 0.d0
              do jj=max(sj_start,j-radius),min(sj_end,j+radius)
                 intrad = int(sqrt(real(radius*radius-(jj-j)*(jj-j))))
                 do ii=max(si_start,i-intrad),min(si_end,i+intrad)
-                   area_temp = area_temp + 1.
+                   area_temp = area_temp + 1.d0
                 end do
              end do
              sc_initdata%weight(i-istart+1,j-jstart+1) = area_temp
@@ -167,11 +169,11 @@ contains
     else
        do j=jstart,jstart+jsize-1
           do i=istart,istart+isize-1
-             area_temp = 0.
+             area_temp = 0.d0
              do jj=max(sj_start,j-radius),min(sj_end,j+radius)
                 intrad = int(sqrt(real(radius*radius-(jj-j)*(jj-j))))
                 do ii=max(si_start,i-intrad),min(si_end,i+intrad)
-                   area_temp = area_temp + 1.
+                   area_temp = area_temp + 1.d0
                 end do
              end do
              sc_initdata%weight(i-istart+1,j-jstart+1) = area_temp
@@ -188,11 +190,12 @@ contains
   !> do the search
   !!
   !! \bug cony does not match at boundary. no idea what is going on...
+
   subroutine sc_search(sdata,searchgrid,resultgrid)
     implicit none
     type(searchdata) :: sdata !< the search circle type
-    real, dimension(:,:), intent(in) :: searchgrid !< the input mesh
-    real, dimension(:,:), intent(out) :: resultgrid !< the result mesh
+    real(dp), dimension(:,:), intent(in) :: searchgrid !< the input mesh
+    real(dp), dimension(:,:), intent(out) :: resultgrid !< the result mesh
 
     ! local variables
     integer i,j,ii,jj,intrad
@@ -209,7 +212,7 @@ contains
        stop
     end if
     !filling search array
-    sdata%sarray = 0.
+    sdata%sarray = 0.d0
     istart = max(1, sdata%istart-sdata%radius)
     iend   = min(size(searchgrid,1),sdata%istart+sdata%isize+sdata%radius-1)
     jstart = max(1, sdata%jstart-sdata%radius)
@@ -217,7 +220,7 @@ contains
 
     sdata%sarray(1+istart-sdata%istart:iend-sdata%istart+1, 1+jstart-sdata%jstart:jend-sdata%jstart+1) = &
          searchgrid(istart:iend, jstart:jend)
-    resultgrid = 0.
+    resultgrid = 0.d0
 
     ! loop over grid
     do j=1,sdata%jsize
@@ -244,4 +247,4 @@ contains
     resultgrid = resultgrid * sdata%weight
   end subroutine sc_search
 
-end module searchcircle
+end module glimmer_searchcircle

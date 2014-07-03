@@ -1,21 +1,16 @@
 module mo_gas_phase_chemdr
-  
+
   use shr_kind_mod,     only : r8 => shr_kind_r8
   use shr_const_mod,    only : pi => shr_const_pi
   use constituents,     only : pcnst
   use cam_history,      only : fieldname_len
   use chem_mods,        only : phtcnt, rxntot, gas_pcnst
   use chem_mods,        only : rxt_tag_cnt, rxt_tag_lst, rxt_tag_map, extcnt
-  use dust_intr,        only : dust_names
-  use progseasalts_intr,only : progseasalts_names
-  use constituents,     only : sflxnam
+  use dust_model,       only : dust_names, ndust => dust_nbin
   use ppgrid,           only : pcols, pver
   use spmd_utils,       only : iam
   use phys_control,     only : phys_getopts
   use carma_flags_mod,  only : carma_do_hetchem
-#ifdef MODAL_AERO
-  use modal_aero_data,  only : ntot_amode
-#endif
 
   implicit none
   save
@@ -29,22 +24,13 @@ module mo_gas_phase_chemdr
   integer :: synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
   integer :: o3_ndx
   integer :: het1_ndx
-  integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_pblh, ndx_prain, ndx_sadsulf
-
-#ifdef MODAL_AERO
-  integer :: ndx_dgnum, ndx_dgnumwet, ndx_wetdens_ap
-  logical :: inv_o3, inv_oh, inv_no3, inv_ho2
-  integer :: id_o3, id_oh, id_no3, id_ho2
-  character(len=fieldname_len), dimension(ntot_amode) :: dgnum_name
-#endif
+  integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
+  integer :: ndx_h2so4
 
   character(len=fieldname_len),dimension(rxntot-phtcnt) :: rxn_names
   character(len=fieldname_len),dimension(phtcnt)        :: pht_names
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
-
-  ! prognostic modal aerosols
-  logical :: prog_modal_aero
 
 contains
 
@@ -52,8 +38,6 @@ contains
 
     use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx, get_rxt_ndx
     use cam_history,       only : addfld,phys_decomp
-    use progseasalts_intr, only : progseasalts_implements_cnst
-    use dust_intr,         only : dust_implements_cnst
     use abortutils,        only : endrun
     use cam_history,       only : add_default
     use mo_chm_diags,      only : chm_diags_inti
@@ -61,34 +45,19 @@ contains
     use constituents,      only : cnst_get_ind
     use physics_buffer,    only : pbuf_get_index
     use rate_diags,        only : rate_diags_init
+    use rad_constituents,  only : rad_cnst_get_info
 
     implicit none
 
     character(len=3)  :: string
     integer           :: n, m
     logical           :: history_aerosol      ! Output the MAM aerosol tendencies
-    character(len=2)  :: unit_basename  ! Units 'kg' or '1' 
 
     !-----------------------------------------------------------------------
 
-#ifdef MODAL_AERO
-    inv_o3   = get_inv_ndx('O3') > 0
-    inv_oh   = get_inv_ndx('OH') > 0
-    inv_no3  = get_inv_ndx('NO3') > 0
-    inv_ho2  = get_inv_ndx('HO2') > 0
-    if (inv_o3) then
-       id_o3 = get_inv_ndx('O3')
-    endif
-    if (inv_oh) then
-       id_oh = get_inv_ndx('OH')
-    endif
-    if (inv_no3) then
-       id_no3 = get_inv_ndx('NO3')
-    endif
-    if (inv_ho2) then
-       id_ho2 = get_inv_ndx('HO2')
-    endif
-#endif
+    call phys_getopts( history_aerosol_out = history_aerosol )
+   
+    ndx_h2so4 = get_spc_ndx('H2SO4')
 
     het1_ndx= get_rxt_ndx('het1')
     o3_ndx  = get_spc_ndx('O3')
@@ -100,43 +69,6 @@ contains
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
     call cnst_get_ind( 'CLDICE', cldice_ndx )
- 
-    call phys_getopts( history_aerosol_out = history_aerosol, prog_modal_aero_out=prog_modal_aero )
-    do m = 1,gas_pcnst
-       call cnst_get_ind(solsym(m), n, abort=.false. ) 
-
-       if ( n > 0 ) then
-
-          if (sflxnam(n)(3:5) == 'num') then  ! name is in the form of "SF****"
-             unit_basename = ' 1'
-          else
-             unit_basename = 'kg'  
-          endif
-
-          call addfld (sflxnam(n),  unit_basename//'/m2/s',1,    'A',trim(solsym(m))//' surface flux',phys_decomp)
-          if ( history_aerosol ) then 
-             call add_default( sflxnam(n), 1, ' ' )
-          endif
-       endif
-
-#if (defined MODAL_AERO)
-
-       if  ( solsym(m)(1:3) == 'num') then
-          unit_basename = ' 1'  ! Units 'kg' or '1' 
-       else
-          unit_basename = 'kg'  ! Units 'kg' or '1' 
-       end if
-
-       call addfld( 'GS_'//trim(solsym(m)), unit_basename//'/m2/s ',1,  'A', &
-                    trim(solsym(m))//' gas chemistry/wet removal (for gas species)', phys_decomp)
-       call addfld( 'AQ_'//trim(solsym(m)), unit_basename//'/m2/s ',1,  'A', &
-                    trim(solsym(m))//' aqueous chemistry (for gas species)', phys_decomp)
-       if ( history_aerosol ) then 
-          call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
-          call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
-       endif
-#endif
-    enddo
 
     do m = 1,extcnt
        WRITE(UNIT=string, FMT='(I2.2)') m
@@ -188,18 +120,7 @@ contains
     call addfld( 'RAD_SULFC', 'cm ', pver, 'I', 'chemical sad sulfate', phys_decomp )
     call addfld( 'RAD_LNAT', 'cm ', pver, 'I', 'large nat radius', phys_decomp )
     call addfld( 'RAD_ICE', 'cm ', pver, 'I', 'sad ice', phys_decomp )
-
     call addfld( 'SAD_TROP', 'cm2/cm3 ', pver, 'I', 'tropospheric aerosol SAD', phys_decomp )
-#if (defined MODAL_AERO)
-!    call add_default( 'SAD_TROP', 1, ' ' )
-    do n=1,ntot_amode
-      dgnum_name(n) = ' '
-      write(dgnum_name(n),fmt='(a,i1)') 'dgnumwet',n
-      call addfld( dgnum_name(n), 'm', pver, 'I', 'Aerosol mode wet diameter', phys_decomp )
-!      call add_default( dgnum_name(n), 1, ' ' )
-    end do
-#endif
-
     call addfld( 'HNO3_STS', 'mol/mol', pver, 'I', 'STS condensed HNO3', phys_decomp )
     call addfld( 'HNO3_NAT', 'mol/mol', pver, 'I', 'NAT condensed HNO3', phys_decomp )
     call addfld( 'QDSETT', '/s ', pver, 'I', 'water vapor settling delta', phys_decomp )
@@ -222,28 +143,24 @@ contains
     ndx_nevapr = pbuf_get_index('NEVAPR')
     ndx_prain  = pbuf_get_index('PRAIN')
     ndx_cldtop = pbuf_get_index('CLDTOP')
-    ndx_pblh   = pbuf_get_index('pblh')
+
     if (carma_do_hetchem) ndx_sadsulf= pbuf_get_index('SADSULF')
-
-
-#if ( defined MODAL_AERO )                    
-    ndx_dgnum      = pbuf_get_index('DGNUM')
-    ndx_dgnumwet   = pbuf_get_index('DGNUMWET')
-    ndx_wetdens_ap = pbuf_get_index('WETDENS_AP')
-#endif
-
+    
   end subroutine gas_phase_chemdr_inti
 
 
-  subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, qtend, &
-                              cflx, phis, zm, zi, calday, &
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+  subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
+                              phis, zm, zi, calday, &
                               tfld, pmid, pdel, pint,  &
                               cldw, troplev, &
                               ncldwtr, ufld, vfld,  &
                               delt, ps, xactive_prates, &
                               fsds, ts, asdir, ocnfrac, icefrac, &
                               precc, precl, snowhland, ghg_chem, latmapback, &
-                              chem_name, drydepflx, pbuf)
+                              chem_name, drydepflx, cflx, qtend, pbuf)
+
     !-----------------------------------------------------------------------
     !     ... Chem_solver advances the volumetric mixing ratio
     !         forward one time step via a combination of explicit,
@@ -263,7 +180,6 @@ contains
     use mo_setinv,         only : setinv
     use mo_negtrc,         only : negtrc
     use mo_sulf,           only : sulf_interp
-    use mo_srf_emissions,  only : set_srf_emissions
     use mo_lightning,      only : prod_no
     use mo_setext,         only : setext
     use mo_sethet,         only : sethet
@@ -271,24 +187,13 @@ contains
     use seq_drydep_mod,    only : DD_XLND, DD_XATM, DD_TABL, drydep_method
     use mo_fstrat,         only : set_fstrat_vals, set_fstrat_h2o
     use mo_flbc,           only : flbc_set
-#if (defined MODAL_AERO)
-    use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri, qqcw2vmr, vmr2qqcw
-#else
-    use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
-#endif
     use phys_grid,         only : get_rlat_all_p, get_rlon_all_p, get_lat_all_p, get_lon_all_p
     use mo_mean_mass,      only : set_mean_mass
     use cam_history,       only : outfld
     use wv_saturation,     only : qsat
     use constituents,      only : cnst_mw
     use mo_drydep,         only : has_drydep
-    use mo_setsox,         only : setsox, has_sox
-    use mo_setsoa,         only : setsoa, has_soa
-    use mo_aerosols,       only : aerosols_formation, has_aerosols
     use time_manager,      only : get_ref_date
-    use dust_intr,         only : ndst => dust_number
-    use mz_aerosols_intr,  only : do_cam_sulfchem
-
     use mo_ghg_chem,       only : ghg_chem_set_rates, ghg_chem_set_flbc
     use mo_sad,            only : sad_strat_calc
     use charge_neutrality, only : charge_balance
@@ -301,27 +206,24 @@ contains
     use short_lived_species,only: set_short_lived_species,get_short_lived_species
     use mo_chm_diags,      only : chm_diags, het_diags
     use perf_mod,          only : t_startf, t_stopf
-#if (defined MODAL_AERO)
-    use abortutils,            only : endrun
-    use modal_aero_data,       only : ntot_amode
-    use modal_aero_coag,       only : modal_aero_coag_sub
-    use modal_aero_gasaerexch, only : modal_aero_gasaerexch_sub
-    use modal_aero_newnuc,     only : modal_aero_newnuc_sub
-    use time_manager,          only : get_nstep
     use mo_tracname,       only : solsym
     use physconst,         only : gravit
     use chem_mods,         only : adv_mass
-#endif
-    use mo_neu_wetdep,    only : do_neu_wetdep
-    use physics_buffer,   only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
-    use infnan,           only : nan, assignment(=)
-    use rate_diags,       only : rate_diags_calc
+    use mo_neu_wetdep,     only : do_neu_wetdep
+    use physics_buffer,    only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use infnan,            only : nan, assignment(=)
+    use rate_diags,        only : rate_diags_calc
+    use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
 !
 ! LINOZ
 !
     use lin_strat_chem,    only : do_lin_strat_chem, lin_strat_chem_solve
     use linoz_data,        only : has_linoz_data
 !
+! for aqueous chemistry and aerosol growth
+!
+    use aero_model,        only : aero_model_gasaerexch
+
     implicit none
 
     !-----------------------------------------------------------------------
@@ -345,8 +247,6 @@ contains
     real(r8),       intent(in)    :: zi(pcols,pver+1)               ! interface geopotential height above the surface (m)
     real(r8),       intent(in)    :: pint(pcols,pver+1)             ! interface pressures (Pa)
     real(r8),       intent(in)    :: q(pcols,pver,pcnst)            ! species concentrations (kg/kg)
-    real(r8),       intent(inout) :: qtend(pcols,pver,pcnst)        ! species tendencies (kg/kg/s)
-    real(r8),       intent(inout) :: cflx(pcols,pcnst)              ! constituent surface flux (kg/m^2/s)
     logical,        intent(in)    :: xactive_prates
     real(r8),       intent(in)    :: fsds(pcols)                    ! longwave down at sfc
     real(r8),       intent(in)    :: icefrac(pcols)                 ! sea-ice areal fraction
@@ -357,11 +257,14 @@ contains
     real(r8),       intent(in)    :: precl(pcols)                   !
     real(r8),       intent(in)    :: snowhland(pcols)               !
     logical,        intent(in)    :: ghg_chem 
-    integer,  intent(in)          :: latmapback(pcols)
+    integer,        intent(in)    :: latmapback(pcols)
     character(len=*), intent(in)  :: chem_name
+    integer,         intent(in) ::  troplev(pcols)
+
+    real(r8),       intent(inout) :: qtend(pcols,pver,pcnst)        ! species tendencies (kg/kg/s)
+    real(r8),       intent(inout) :: cflx(pcols,pcnst)              ! constituent surface flux (kg/m^2/s)
     real(r8),       intent(out)   :: drydepflx(pcols,pcnst)         ! dry deposition flux (kg/m^2/s)
 
-    integer, intent(in) ::  troplev(pcols)
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     !-----------------------------------------------------------------------
@@ -370,7 +273,6 @@ contains
     real(r8), parameter :: m2km  = 1.e-3_r8
     real(r8), parameter :: Pa2mb = 1.e-2_r8
 
-    real(r8),       pointer    :: pblh(:)                    ! pbl height (m)
     real(r8),       pointer    :: prain(:,:)
     real(r8),       pointer    :: nevapr(:,:)
     real(r8),       pointer    :: cmfdqr(:,:)
@@ -385,16 +287,13 @@ contains
     integer      ::  latndx(pcols)                         ! chunk lat indicies
     integer      ::  lonndx(pcols)                         ! chunk lon indicies
     real(r8)     ::  invariants(ncol,pver,nfs)
-    real(r8)     ::  col_dens(ncol,pver,nabscol)           ! column densities (molecules/cm^2)
-    real(r8)     ::  col_delta(ncol,0:pver,nabscol)        ! layer column densities (molecules/cm^2)
+    real(r8)     ::  col_dens(ncol,pver,max(1,nabscol))    ! column densities (molecules/cm^2)
+    real(r8)     ::  col_delta(ncol,0:pver,max(1,nabscol)) ! layer column densities (molecules/cm^2)
     real(r8)     ::  extfrc(ncol,pver,max(1,extcnt))
-    real(r8)     ::  vmr(ncol,pver,gas_pcnst)              ! xported species (vmr)
-#if (defined MODAL_AERO)
-    real(r8)     ::  vmrcw(ncol,pver,gas_pcnst)            ! cloud-borne aerosol (vmr)
-#endif
+    real(r8)     ::  vmr(ncol,pver,gas_pcnst)         ! xported species (vmr)
     real(r8)     ::  reaction_rates(ncol,pver,max(1,rxntot))      ! reaction rates
     real(r8)     ::  depvel(ncol,gas_pcnst)                ! dry deposition velocity (cm/s)
-    real(r8)     ::  het_rates(ncol,pver,max(1,gas_pcnst))    ! washout rate (1/s)
+    real(r8)     ::  het_rates(ncol,pver,max(1,gas_pcnst)) ! washout rate (1/s)
     real(r8), dimension(ncol,pver) :: &
          h2ovmr, &                                         ! water vapor volume mixing ratio
          mbar, &                                           ! mean wet atmospheric mass ( amu )
@@ -404,9 +303,6 @@ contains
          pmb                                               ! pressure at midpoints ( hPa )
     real(r8), dimension(ncol,pver) :: &
          cwat, &                                           ! cloud water mass mixing ratio (kg/kg)
-#if (defined MODAL_AERO)
-         cldnum, &                                         ! droplet number concentration (#/kg)
-#endif
          wrk
     real(r8), dimension(ncol,pver+1) :: &
          zintr                                              ! interface geopotential in km realitive to surf
@@ -423,8 +319,7 @@ contains
     real(r8) :: satq(ncol,pver)                            ! wrk array for relative humidity
 
     integer                   :: j,wd_index
-    character(len=32)         :: wd_name, depvel_name 
-    real(r8), dimension(ncol) :: wrk_wd, noy_wk, sox_wk, nhx_wk
+    real(r8), dimension(ncol) :: noy_wk, sox_wk, nhx_wk
     integer                   ::  ltrop_sol(pcols)                 ! tropopause vertical index used in chem solvers
     real(r8)                  ::  strato_sad(pcols,pver)           ! stratospheric SAD (cm2/cm3)
     real(r8)                  ::  sad_total(pcols,pver)            ! total trop. SAD (cm2/cm3)
@@ -438,14 +333,12 @@ contains
     real(r8) :: soilw(pcols)
     real(r8) :: prect(pcols)
     real(r8) :: sflx(pcols,gas_pcnst)
-    real(r8) :: dust_vmr(ncol,pver,ndst)
+    real(r8) :: dust_vmr(ncol,pver,ndust)
     real(r8) :: noy(ncol,pver)
     real(r8) :: sox(ncol,pver)
     real(r8) :: nhx(ncol,pver)
     real(r8) :: dt_diag(pcols,8)               ! od diagnostics
     real(r8) :: fracday(pcols)                 ! fraction of day
-    real(r8), parameter :: N_molwgt = 14.00674_r8
-    real(r8), parameter :: S_molwgt = 32.066_r8
     real(r8) :: o2mmr(ncol,pver)               ! o2 concentration (kg/kg)
     real(r8) :: ommr(ncol,pver)                ! o concentration (kg/kg)
     real(r8) :: mmr(pcols,pver,gas_pcnst)      ! chem working concentrations (kg/kg)
@@ -461,17 +354,9 @@ contains
     real(r8) :: qh2o(pcols,pver)               ! specific humidity (kg/kg)
     real(r8) :: delta
 
-#if (defined MODAL_AERO)
-    integer  :: lmz_h2so4
-    real(r8) :: del_h2so4_aeruptk(ncol,pver)
+  ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
-    real(r8) :: dvmrdt_sv1(ncol,pver,gas_pcnst)
-    real(r8) :: dvmrcwdt_sv1(ncol,pver,gas_pcnst)
-
-    real(r8) :: dicorfac_hox(ncol), dicorfac_no3(ncol)
-    integer :: nstep
-    real(r8), pointer :: dgnum(:,:,:), dgnumwet(:,:,:), wetdens(:,:,:)
-#endif
+    real(r8) :: vmr0(ncol,pver,gas_pcnst)
 
     ! initialize to NaN to hopefully catch user defined rxts that go unset
     reaction_rates(:,:,:) = nan
@@ -485,37 +370,12 @@ contains
     call get_rlat_all_p( lchnk, ncol, rlats )
     call get_rlon_all_p( lchnk, ncol, rlons )
     tim_ndx = pbuf_old_tim_idx()
-    call pbuf_get_field(pbuf, ndx_pblh,       pblh)
     call pbuf_get_field(pbuf, ndx_prain,      prain,  start=(/1,1/), kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_cldfr,        cldfr, start=(/1,1,tim_ndx/), kount=(/ncol,pver,1/) )
     call pbuf_get_field(pbuf, ndx_cmfdqr,     cmfdqr, start=(/1,1/), kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_nevapr,     nevapr, start=(/1,1/), kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_cldtop,     cldtop )
 
-#if (defined MODAL_AERO)
-    call pbuf_get_field(pbuf, ndx_dgnum,      dgnum,  start=(/1,1,1/), kount=(/pcols,pver,ntot_amode/) )
-    call pbuf_get_field(pbuf, ndx_dgnumwet,   dgnumwet )
-    call pbuf_get_field(pbuf, ndx_wetdens_ap, wetdens )
-
-    do n=1,ntot_amode
-       call outfld(dgnum_name(n),dgnumwet(1:ncol,1:pver,n), ncol, lchnk )
-    end do
-
-    !-----------------------------------------------------------------------
-    !        ... Do modal aero tasks
-    !-----------------------------------------------------------------------
-    nstep = get_nstep()
-
-    lmz_h2so4 = 0
-    do m = 1, gas_pcnst
-       if ((solsym(m) == 'H2SO4') .or. (solsym(m) == 'h2so4')) then
-          lmz_h2so4 = m
-          exit
-       end if
-    end do
-#endif
-
-    !
     !-----------------------------------------------------------------------      
     !        ... Calculate cosine of zenith angle
     !            then cast back to angle (radians)
@@ -547,7 +407,6 @@ contains
     do m = 1,pcnst
        n = map2chm(m)
        if( n > 0 ) then
-          sflx(:ncol,n) = cflx(:ncol,m)
           mmr(:ncol,:,n) = q(:ncol,:,m)
        end if
     end do
@@ -563,10 +422,6 @@ contains
     !        ... Xform from mmr to vmr
     !-----------------------------------------------------------------------      
     call mmr2vmr( mmr, vmr, mbar, ncol )
-
-#if (defined MODAL_AERO)
-    call qqcw2vmr( lchnk, vmrcw, mbar, ncol, imozart-1, pbuf )
-#endif
 
     if (h2o_ndx>0) then
        !-----------------------------------------------------------------------      
@@ -609,6 +464,7 @@ contains
       call pbuf_get_field(pbuf, ndx_sadsulf, sadsulf_ptr)
       strato_sad(:ncol,:pver)=sadsulf_ptr(:ncol,:pver)
     else
+
     !-----------------------------------------------------------------
     ! ... zero out sulfate below tropopause
     !-----------------------------------------------------------------
@@ -712,15 +568,9 @@ contains
        relhum(:,k) = .622_r8 * h2ovmr(:,k) / satq(:,k)
        relhum(:,k) = max( 0._r8,min( 1._r8,relhum(:,k) ) )
     end do
+    
+    cwat(:ncol,:pver) = cldw(:ncol,:pver)
 
-    do k = 1,pver
-       cwat(:,k) = cldw(:ncol,k)
-#if (defined MODAL_AERO)
-       cldnum(:,k) = ncldwtr(:ncol,k)
-#endif
-    end do
-
-    sad_total(:,:) = 0._r8
     call usrrxt( reaction_rates, tfld, tfld, tfld, invariants, h2ovmr, ps, &
                  pmid, invariants(:,:,indexm), sulfate, mmr, relhum, strato_sad, &
                  troplev, ncol, sad_total, cwat, mbar, pbuf )
@@ -760,10 +610,11 @@ contains
 
     if ( xactive_prates ) then
        if ( dst_ndx > 0 ) then
-          dust_vmr(:ncol,:,:) = vmr(:ncol,:,dst_ndx:dst_ndx+ndst-1)
+          dust_vmr(:ncol,:,1:ndust) = vmr(:ncol,:,dst_ndx:dst_ndx+ndust-1)
        else 
           dust_vmr(:ncol,:,:) = 0._r8
        endif
+
        !-----------------------------------------------------------------
        !	... compute the photolysis rates
        !-----------------------------------------------------------------
@@ -835,7 +686,7 @@ contains
     else
       call sethet( het_rates, pmid, zmid, phis, tfld, &
                    cmfdqr, prain, nevapr, delt, invariants(:,:,indexm), &
-                   vmr, ncol, lchnk, prog_modal_aero )
+                   vmr, ncol, lchnk )
       call het_diags( het_rates(:ncol,:,:), mmr(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )
     end if
 
@@ -849,15 +700,14 @@ contains
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     endif
 
-#if (defined MODAL_AERO)
     ! save h2so4 before gas phase chem (for later new particle nucleation)
-    if (lmz_h2so4 > 0) then
-       del_h2so4_gasprod(1:ncol,:) = vmr(1:ncol,:,lmz_h2so4)
+    if (ndx_h2so4 > 0) then
+       del_h2so4_gasprod(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4)
     else
        del_h2so4_gasprod(:,:) = 0.0_r8
     endif
-    dvmrdt_sv1 = vmr
-#endif
+
+    vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
     !=======================================================================
     !        ... Call the class solution algorithms
@@ -879,135 +729,22 @@ contains
 
     if( h2o_ndx>0) call outfld( 'H2O_GAS',  vmr(1,1,h2o_ndx),  ncol ,lchnk )
 
-#if (defined MODAL_AERO)
     ! save h2so4 change by gas phase chem (for later new particle nucleation)
-    if (lmz_h2so4 > 0) then
-       del_h2so4_gasprod(1:ncol,:) = vmr(1:ncol,:,lmz_h2so4) - del_h2so4_gasprod(1:ncol,:)
-    endif
-    ! calculate tendency due to gas phase chemistry and outfld
-    dvmrdt_sv1 = (vmr - dvmrdt_sv1)/delt
-    do m = 1,gas_pcnst
-       wrk_wd(:ncol) = 0._r8
-       do k = 1,pver
-          wrk_wd(:ncol) = wrk_wd(:ncol) + dvmrdt_sv1(:ncol,k,m)*adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
-       end do
-       wd_name = 'GS_'//trim(solsym(m))
-       call outfld( wd_name, wrk_wd(:ncol), ncol, lchnk )
-    enddo
-#endif
-
-    !
-    ! aerosol packages
-    !
-#if (defined MODAL_AERO)
-    dvmrdt_sv1 = vmr
-    dvmrcwdt_sv1 = vmrcw
-#endif
-    if( has_sox .and. (.not. do_cam_sulfchem) ) then
-#if (defined MODAL_AERO)
-       call setsox( ncol,   &
-            pmid,   &
-            delt,   &
-            tfld,   &
-            qh2o,   &
-            cwat,   &
-            lchnk,  &
-            pdel,   &
-            mbar,   &
-            prain,  &
-            cldfr,  &
-            cldnum, &
-            vmrcw,    &
-            imozart-1,&
-            invariants(1,1,indexm), &
-            vmr, &
-            invariants )
-#else
-       call setsox( ncol,   &
-            pmid,   &
-            delt,   &
-            tfld,   &
-            qh2o,   &
-            cwat,   &
-            invariants(1,1,indexm), &
-            vmr, invariants )
-#endif
+    if (ndx_h2so4 > 0) then
+       del_h2so4_gasprod(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4) - del_h2so4_gasprod(1:ncol,:)
     endif
 
-#if ( ! defined MODAL_AERO )
-    if( has_soa ) then
-       call setsoa( delt,reaction_rates,tfld,vmr,&
-                    invariants(1,1,indexm),ncol,lchnk, pbuf)
-    endif
+!
+! Aerosol processes ...
+!
 
-    if( has_aerosols ) then
-       call aerosols_formation( ncol, lchnk, latndx, lonndx, tfld, relhum, vmr )
-    endif
+    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, reaction_rates, &
+                                tfld, pmid, pdel, mbar, relhum, &
+                                zm,  qh2o, cwat, cldfr, ncldwtr, &
+                                invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
+                                vmr0, vmr, pbuf )
 
-#endif
-
-#if ( defined MODAL_AERO )
-! vmr tendency from aqchem and soa routines
-    dvmrdt_sv1 = (vmr - dvmrdt_sv1)/delt
-    dvmrcwdt_sv1 = (vmrcw - dvmrcwdt_sv1)/delt
-    do m = 1,gas_pcnst
-       wrk_wd(:ncol) = 0._r8
-       do k = 1,pver
-          wrk_wd(:ncol) = wrk_wd(:ncol) + dvmrdt_sv1(:ncol,k,m)*adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
-       end do
-       wd_name = 'AQ_'//trim(solsym(m))
-       call outfld( wd_name, wrk_wd(:ncol), ncol, lchnk )
-    enddo
-
-   call t_startf('modal_gas-aer_exchng')
-! do gas-aerosol exchange (h2so4, msa, nh3 condensation)
-    if (lmz_h2so4 > 0) then
-       del_h2so4_aeruptk(1:ncol,:) = vmr(1:ncol,:,lmz_h2so4)
-    else
-       del_h2so4_aeruptk(:,:) = 0.0_r8
-    endif
-    call modal_aero_gasaerexch_sub(                         &
-                      lchnk,    ncol,     nstep,            &
-                      imozart-1,          delt,             &
-                      latndx,   lonndx,                     &
-                      tfld,     pmid,     pdel,             &
-                      vmr,                vmrcw,            &
-                      dvmrdt_sv1,         dvmrcwdt_sv1,     &
-                      dgnum,              dgnumwet     )
-    if (lmz_h2so4 > 0) then
-       del_h2so4_aeruptk(1:ncol,:) = vmr(1:ncol,:,lmz_h2so4) - del_h2so4_aeruptk(1:ncol,:)
-    endif
-   call t_stopf('modal_gas-aer_exchng')
-   call t_startf('modal_nucl')
-
-! do aerosol nucleation (new particle formation)
-    call modal_aero_newnuc_sub(                             &
-                      lchnk,    ncol,     nstep,            &
-                      imozart-1,          delt,             &
-                      latndx,   lonndx,                     &
-                      tfld,     pmid,     pdel,             &
-                      zm,       pblh,                       &
-                      qh2o,     cldfr,                      &
-                      vmr,                                  &
-                      del_h2so4_gasprod,  del_h2so4_aeruptk )
-
-   call t_stopf('modal_nucl')
-   call t_startf('modal_coag')
-
-! do aerosol coagulation
-    call modal_aero_coag_sub(                               &
-                      lchnk,    ncol,     nstep,            &
-                      imozart-1,          delt,             &
-                      latndx,   lonndx,                     &
-                      tfld,     pmid,     pdel,             &
-                      vmr,                                  &
-                      dgnum,              dgnumwet,         &
-                      wetdens                          )
-
-   call t_stopf('modal_coag')
-#endif
-
-    if ( has_strato_chem ) then
+    if ( has_strato_chem ) then 
 
        wrk(:ncol,:) = (vmr(:ncol,:,h2o_ndx) - wrk(:ncol,:))*delt_inverse
        call outfld( 'QDCHEM',   wrk(:ncol,:),         ncol, lchnk )
@@ -1085,11 +822,6 @@ contains
     !-----------------------------------------------------------------------      
     call vmr2mmr( vmr, mmr_tend, mbar, ncol )
 
-#ifdef MODAL_AERO
-
-    call vmr2qqcw( lchnk, vmrcw, mbar, ncol, imozart-1, pbuf )
-#endif
-
     call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
 
     !-----------------------------------------------------------------------      
@@ -1106,18 +838,6 @@ contains
           qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n) 
        end if
     end do
-
-    !-----------------------------------------------------------------------      
-    !        ... Set surface emissions
-    !-----------------------------------------------------------------------      
-    call set_srf_emissions( rlats(:), rlons(:), lchnk, sflx(:,:), ncol )
-    do m = 1,pcnst
-       n = map2chm(m)
-       if ( n /= h2o_ndx .and. n > 0 ) then
-          cflx(:ncol,m) = sflx(:ncol,n)
-          call outfld( sflxnam(m), cflx(:ncol,m), ncol,lchnk)
-       endif
-    enddo
 
     tvs(:ncol) = tfld(:ncol,pver) * (1._r8 + qh2o(:ncol,pver))
 

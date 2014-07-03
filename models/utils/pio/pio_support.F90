@@ -3,14 +3,23 @@
 !! @file pio_support.F90
 !! @brief internal code for compiler workarounds, aborts and debug functions
 !!
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 823 $
+!! $LastChangedDate: 2013-08-29 09:16:58 -0600 (Thu, 29 Aug 2013) $
 !<
 !>
 !! \def _NO_MPI_RSEND
 !! Code added as a work around for poor rsend performance on cray systems with
 !! Gemini interconnect
 !<
+#ifdef BGP
+#define BGx
+#endif
+#ifdef BGL
+#define BGx
+#endif
+#ifdef BGQ
+#define BGx
+#endif
 #ifdef _NO_MPI_RSEND
 #define MPI_RSEND MPI_SEND
 #define mpi_rsend mpi_send
@@ -95,7 +104,7 @@ contains
     endif
 
 
-#if defined(CPRXLF) && !defined(BGL) && !defined(BGP)
+#if defined(CPRXLF) && !defined(BGx)
   close(5)    ! needed to prevent batch jobs from hanging in xl__trbk
   call xl__trbk()
 #endif

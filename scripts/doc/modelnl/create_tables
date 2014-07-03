@@ -5,8 +5,7 @@
 ./nldef2html_cam          >! nl_cam.html
 ./nldef2html_cice         >! nl_cice.html     
 ./nldef2html_cism         >! nl_cism.html
-./nldef2html_clm40        >! nl_clm40.html
-./nldef2html_clm45        >! nl_clm45.html
+./nldef2html_clm          >! nl_clm.html
 ./nldef2html_pop2         >! nl_pop2.html
 ./nldef2html_rtm          >! nl_rtm.html
 

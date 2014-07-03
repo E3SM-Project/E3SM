@@ -1844,21 +1844,6 @@ Valid Values: TRUE,FALSE </pre>
     </td>
     <td>env_run.xml</td>
   </tr>
-  <tr id="ROF2LND_SMAPNAME_tr">
-    <td><a name="ROF2LND_SMAPNAME"></a>
-        <img id="ROF2LND_SMAPNAME_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('ROF2LND_SMAPNAME')">ROF2LND_SMAPNAME</a>
-        </code>
-        <div id="ROF2LND_SMAPNAME_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>rof2lnd state mapping file</pre>
-        </div>
-    </td>
-    <td>env_run.xml</td>
-  </tr>
   <tr id="LND2ROF_FMAPNAME_tr">
     <td><a name="LND2ROF_FMAPNAME"></a>
         <img id="LND2ROF_FMAPNAME_arrow" src="./images/arrow_right.gif">
@@ -1900,6 +1885,36 @@ Valid Values: TRUE,FALSE </pre>
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>rof2ocn runoff mapping file</pre>
+        </div>
+    </td>
+    <td>env_run.xml</td>
+  </tr>
+  <tr id="GLC2OCN_RMAPNAME_tr">
+    <td><a name="GLC2OCN_RMAPNAME"></a>
+        <img id="GLC2OCN_RMAPNAME_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC2OCN_RMAPNAME')">GLC2OCN_RMAPNAME</a>
+        </code>
+        <div id="GLC2OCN_RMAPNAME_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>glc2ocn runoff mapping file</pre>
+        </div>
+    </td>
+    <td>env_run.xml</td>
+  </tr>
+  <tr id="GLC2ICE_RMAPNAME_tr">
+    <td><a name="GLC2ICE_RMAPNAME"></a>
+        <img id="GLC2ICE_RMAPNAME_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC2ICE_RMAPNAME')">GLC2ICE_RMAPNAME</a>
+        </code>
+        <div id="GLC2ICE_RMAPNAME_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>glc2ice runoff mapping file</pre>
         </div>
     </td>
     <td>env_run.xml</td>
@@ -2199,9 +2214,48 @@ visible to compute nodes.</pre>
 	     <pre>logical to archive all interim restart files, not just those at eor . 
 If TRUE, perform short term archiving on all interim restart files,
 not just those at the end of the run. By default, this value is FALSE.
+The restart files are saved under the specific component directory
+($CASE/$COMPONENT/rest rather than the top-level $CASE/rest directory).
 This is for expert users ONLY and requires expert knowledge. We will
 not document this further in this guide.
 Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_run.xml</td>
+  </tr>
+  <tr id="DOUT_S_SAVE_ALL_ON_DISK_tr">
+    <td><a name="DOUT_S_SAVE_ALL_ON_DISK"></a>
+        <img id="DOUT_S_SAVE_ALL_ON_DISK_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('DOUT_S_SAVE_ALL_ON_DISK')">DOUT_S_SAVE_ALL_ON_DISK</a>
+        </code>
+        <div id="DOUT_S_SAVE_ALL_ON_DISK_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>logical to save contents of the short term archive on disk . 
+If TRUE, replicate the short term archive DOUT_S_ROOT in DOUT_S_SAVE_ROOT
+before calling lt_archive.sh to write DOUT_S_ROOT to the HPSS and delete
+from the disk. This keeps the output data on disk after the long term
+archiver is run. The rest directory is not saved.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_run.xml</td>
+  </tr>
+  <tr id="DOUT_S_SAVE_ROOT_tr">
+    <td><a name="DOUT_S_SAVE_ROOT"></a>
+        <img id="DOUT_S_SAVE_ROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('DOUT_S_SAVE_ROOT')">DOUT_S_SAVE_ROOT</a>
+        </code>
+        <div id="DOUT_S_SAVE_ROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>local root directory for saving output on disk . 
+Root directory for saving on disk the contents of the short term archival directory. This directory must be
+visible to compute nodes.</pre>
         </div>
     </td>
     <td>env_run.xml</td>
@@ -3107,29 +3161,14 @@ Valid Values: prescribed,som,copyall,null </pre>
         <div id="DLND_MODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>valid values: CPLHIST,NULL . 
-DLND mode. Valid values are CPLHIST and NULL. In CPLHIST mode, land
+	     <pre>valid values: CPLHIST,GLC_CPLHIST,NULL . 
+DLND mode. Valid values are CPLHIST, GLC_CPLHIST and NULL. In CPLHIST mode, land
 forcing data (produced by CLM) from a previous model run is output in
-coupler history files and read in by the data land model. In NULL
+coupler history files and read in by the data land model. IN GLC_CPLHIST,
+glc coupling fields are read in from a coupler history file.  In NULL
 mode, land forcing is set to zero and not utilized. The default is
 NULL. 
-Valid Values: CPLHIST,NULL </pre>
-        </div>
-    </td>
-    <td>env_run.xml</td>
-  </tr>
-  <tr id="DLND_SNO_MODE_tr">
-    <td><a name="DLND_SNO_MODE"></a>
-        <img id="DLND_SNO_MODE_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('DLND_SNO_MODE')">DLND_SNO_MODE</a>
-        </code>
-        <div id="DLND_SNO_MODE_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>valid values: CPLHIST,NULL
-Valid Values: CPLHIST,NULL </pre>
+Valid Values: CPLHIST,GLC_CPLHIST,NULL </pre>
         </div>
     </td>
     <td>env_run.xml</td>

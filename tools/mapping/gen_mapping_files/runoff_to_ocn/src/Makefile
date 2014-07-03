@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# SVN $Id: Makefile 35698 2012-03-22 23:59:57Z kauff $
+# SVN $Id: Makefile 49095 2013-07-16 21:51:37Z mlevy@ucar.edu $
 # SVN $Source$
 #-------------------------------------------------------------------------------
 # Common Makefile: a framework for building all CCSM components and more
@@ -29,14 +29,16 @@
 # parse cmd-line and establish values for EXEC, VPATH, SRCS, OBJS, etc
 #-------------------------------------------------------------------------------
 
-EXEC     := a.out
-MACFILE  := NONE 
+EXEC     := ../runoff_map
+MACFILE  := Macros
 MODEL    := NONE 
 VPFILE   := NONE
-VPATH    := .
+VPATH    := $(shell pwd)
 SRCFILE  := NONE
 SRCS     := NONE
 DEPGEN   := ./makdep  # an externally provided dependency generator
+#compile_threaded := true
+compile_threaded := false
 
 ifneq ($(VPATH),.)
   # this variable was specified on cmd line or in an env var
@@ -78,6 +80,9 @@ all: $(EXEC)
 ifneq ($(MAKECMDGOALS), db_files)
   -include $(MACFILE)
 endif
+FFLAGS   += -c
+CFLAGS   += -c
+INCLDIR  += -I$(NETCDF_PATH)/include
 
 #-------------------------------------------------------------------------------
 # echo file names, paths, compile flags, etc. used during build
@@ -96,45 +101,42 @@ db_files:
 	@echo "* DEPS    := $(DEPS)"
 db_flags:
 	@echo " "
-	@echo "* cpp     := $(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR)"
-	@echo "* cc      := $(CC)  $(CFLAGS) $(INCS) $(INCLDIR)"
-	@echo "* .F.o    := $(FC)  $(FFLAGS) $(FIXEDFLAGS) $(INCS) $(INCLDIR)"
-	@echo "* .F90.o  := $(FC)  $(FFLAGS) $(FREEFLAGS) $(INCS) $(INCLDIR)"
+	@echo "* cc      := $(SCC)  $(CFLAGS) $(INCS) $(INCLDIR)"
+	@echo "* .F.o    := $(SFC)  $(FFLAGS) $(FIXEDFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR)"
+	@echo "* .F90.o  := $(SFC)  $(FFLAGS) $(FREEFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR)"
 
 #-------------------------------------------------------------------------------
 # build rules: MACFILE, cmd-line, or env vars must provide the needed macros
 #-------------------------------------------------------------------------------
 
 $(EXEC): $(OBJS)
-	$(LD) -o $(EXEC) $(OBJS) $(SLIBS) $(ULIBS) $(LDFLAGS) 
+	$(SFC) -o $(EXEC) $(OBJS) $(SLIBS) $(ULIBS) $(LDFLAGS) 
 
 .c.o:
-	$(CC) $(INCLDIR) $(INCS) $(CPPDEFS) $(CFLAGS)  $<
+	$(SCC) $(INCLDIR) $(INCS) $(CPPDEFS) $(CFLAGS)  $<
 
 ifeq ($(CPP),NONE)
 .F.o:
-	$(FC) $(FFLAGS) $(FIXEDFLAGS) $(CPPFLAGS) $(CPPDEFS) $(INCLDIR) $(INCS)  $<
+	$(SFC) $(FFLAGS) $(FIXEDFLAGS) $(CPPFLAGS) $(CPPDEFS) $(INCLDIR) $(INCS)  $<
 
 .F90.o:
-	$(FC) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $(INCLDIR) $(INCS)  $<
+	$(SFC) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $(INCLDIR) $(INCS)  $<
 else
 .F.o:
-	$(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $< > $*.f 
-	$(FC)  $(FFLAGS) $(FIXEDFLAGS) $(INCS) $(INCLDIR) $*.f  
+	$(SFC)  $(FFLAGS) $(FIXEDFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $*.f  
 
 .F90.o:
-	$(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $< > $*.f90
-	$(FC)  $(FFLAGS) $(FREEFLAGS) $(INCS) $(INCLDIR) $*.f90  
+	$(SFC)  $(FFLAGS) $(FREEFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $*.F90  
 endif
 
-mostlyclean:
-	$(RM) -f *.f *.f90 
-
 clean:
-	$(RM) -f *.f *.f90 *.d *.$(MOD_SUFFIX) $(OBJS)
+	$(RM) -f *.f *.f90 *.d *.mod $(OBJS)
 
-realclean:
-	$(RM) -f *.f *.f90 *.d *.$(MOD_SUFFIX) $(OBJS) $(EXEC)
+realclean: clean
+	$(RM) -f $(EXEC)
+
+distclean: realclean
+	$(RM) -f Macros env_mach_specific Depends* makdep build.csh
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
@@ -148,18 +150,21 @@ realclean:
 #   are understood & accepted.
 #-------------------------------------------------------------------------------
 
-%.d : %.c
+%.d : %.c $(DEPGEN)
 	@ echo "Building dependency for $@"
 	@ $(DEPGEN) -f $(INCS) $< | head -3  > $@
-%.d : %.F
+%.d : %.F $(DEPGEN)
 	@ echo "Building dependency for $@"
 	@ $(DEPGEN) -f $(INCS) $<  > $@
-%.d : %.F90
+%.d : %.F90 $(DEPGEN)
 	@ echo "Building dependency for $@"
 	@ $(DEPGEN) -f $(INCS) $<  > $@
-%.d : %.H
+%.d : %.H $(DEPGEN)
 	@ echo "Building dependency for $@"
 	@ $(DEPGEN) -f $(INCS) $<  > $@
+
+$(DEPGEN) :
+	cc -o $(DEPGEN) ../tools/makdep.c
 
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)

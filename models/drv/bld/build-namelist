@@ -310,10 +310,13 @@ if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Note - $USER is not in the config_defintion.xml file - it is only in the environment
 $xmlvars{'USER'} = $ENV{'USER'};
+unshift @INC, "$CASEROOT/Tools";
+require XML::Lite;
+require SetupTools;
+my %xmlvars = ();
+SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
+  $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
 }
 
 
@@ -361,32 +364,6 @@ add_default($nl, 'cplflds_custom', 'val'=>'');
 
 my $PTS_MODE = "$xmlvars{'PTS_MODE'}"; 
 
-my $samegrid_ao = '.false.';
-if ($ATM_GRID eq $OCN_GRID) {$samegrid_ao = '.true.';}
-if ($PTS_MODE eq 'TRUE')    {$samegrid_ao = '.true.';}
-
-my $samegrid_al = '.false.';
-if ($ATM_GRID eq $LND_GRID) {$samegrid_al = '.true.';}
-if ($PTS_MODE eq 'TRUE')    {$samegrid_al = '.true.';}
-
-my $samegrid_ro = '.false.';
-if ($ROF_GRID eq $OCN_GRID) {$samegrid_ro = '.true.';}
-if ($PTS_MODE eq 'TRUE')    {$samegrid_ro = '.true.';}
-
-my $samegrid_aw = '.false.';
-if ($ATM_GRID eq $WAV_GRID) {$samegrid_aw = '.true.';}
-if ($PTS_MODE eq 'TRUE')    {$samegrid_aw = '.true.';}
-
-my $samegrid_ow = '.false.';
-if ($OCN_GRID eq $WAV_GRID) {$samegrid_ow = '.true.';}
-if ($PTS_MODE eq 'TRUE')    {$samegrid_ow = '.true.';}
-
-add_default($nl, 'samegrid_al', 'val'=>"$samegrid_al",  'der'=>'DERIVED');
-add_default($nl, 'samegrid_ro', 'val'=>"$samegrid_ro",  'der'=>'DERIVED'); 
-add_default($nl, 'samegrid_ao', 'val'=>"$samegrid_ao",  'der'=>'DERIVED');  
-add_default($nl, 'samegrid_aw', 'val'=>"$samegrid_aw",  'der'=>'DERIVED');
-add_default($nl, 'samegrid_ow', 'val'=>"$samegrid_ow",  'der'=>'DERIVED');
-
 my $start_type;
 my $RUN_TYPE     = "$xmlvars{'RUN_TYPE'}";
 my $CONTINUE_RUN = "$xmlvars{'CONTINUE_RUN'}";
@@ -402,6 +379,14 @@ add_default($nl, 'username' ,     'val'=>"$xmlvars{'CCSMUSER'}",     'xml'=>'CCS
 add_default($nl, 'hostname' ,     'val'=>"$xmlvars{'MACH'}",         'xml'=>'MACH');
 add_default($nl, 'model_version', 'val'=>"$xmlvars{'CCSM_REPOTAG'}", 'xml'=>'CCSM_REPOTAG');
 
+add_default($nl, 'atm_gnam',      'val'=>"$xmlvars{'ATM_GRID'}",     'xml'=>'ATM_GRID');
+add_default($nl, 'lnd_gnam',      'val'=>"$xmlvars{'LND_GRID'}",     'xml'=>'LND_GRID');
+add_default($nl, 'ocn_gnam',      'val'=>"$xmlvars{'OCN_GRID'}",     'xml'=>'OCN_GRID');
+add_default($nl, 'ice_gnam',      'val'=>"$xmlvars{'ICE_GRID'}",     'xml'=>'ICE_GRID');
+add_default($nl, 'rof_gnam',      'val'=>"$xmlvars{'ROF_GRID'}",     'xml'=>'ROF_GRID');
+add_default($nl, 'glc_gnam',      'val'=>"$xmlvars{'GLC_GRID'}",     'xml'=>'GLC_GRID');
+add_default($nl, 'wav_gnam',      'val'=>"$xmlvars{'WAV_GRID'}",     'xml'=>'WAV_GRID');
+
 add_default($nl, 'brnch_retain_casename', 'BRNCH_RETAIN_CASENAME'=>"$xmlvars{'BRNCH_RETAIN_CASENAME'}");
 add_default($nl, 'ocean_tight_coupling',  'OCN_TIGHT_COUPLING'=>"$xmlvars{'OCN_TIGHT_COUPLING'}");
 add_default($nl, 'drv_threading', 'DRV_THREADING'=>"$xmlvars{'DRV_THREADING'}");
@@ -414,6 +399,8 @@ add_default($nl, 'flux_albav');
 add_default($nl, 'flux_epbal');
 add_default($nl, 'info_debug');
 add_default($nl, 'cpl_decomp');
+add_default($nl, 'wall_time_limit');
+add_default($nl, 'force_stop_at');
 
 add_default($nl, 'do_histinit');
 add_default($nl, 'shr_map_dopole');
@@ -437,7 +424,7 @@ add_default($nl, 'histaux_a2x3hrp');
 add_default($nl, 'histaux_a2x24hr');
 add_default($nl, 'histaux_l2x');
 add_default($nl, 'histaux_r2x');
-add_default($nl, 'histaux_s2x1yr');
+add_default($nl, 'histaux_l2x1yr');
 
 add_default($nl, 'vect_map');
 add_default($nl, 'eps_frac');
@@ -713,10 +700,11 @@ add_default($nl, 'atm2lnd_smapname');
 add_default($nl, 'lnd2atm_fmapname');
 add_default($nl, 'lnd2atm_smapname');
 add_default($nl, 'lnd2rof_fmapname');
-add_default($nl, 'rof2ocn_rmapname');
 add_default($nl, 'rof2lnd_fmapname');
-add_default($nl, 'rof2lnd_smapname');
 add_default($nl, 'rof2ocn_fmapname');
+add_default($nl, 'rof2ocn_rmapname');
+add_default($nl, 'glc2ocn_rmapname');
+add_default($nl, 'glc2ice_rmapname');
 add_default($nl, 'atm2wav_smapname');
 add_default($nl, 'ocn2wav_smapname');
 add_default($nl, 'ice2wav_smapname');
@@ -744,9 +732,10 @@ add_default($nl, 'lnd2atm_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'lnd2atm_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'lnd2rof_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'rof2lnd_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
-add_default($nl, 'rof2lnd_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}"); 
 add_default($nl, 'rof2ocn_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'rof2ocn_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'glc2ocn_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'glc2ice_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'atm2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'ocn2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'ice2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
@@ -1236,8 +1225,16 @@ sub expand_env_xml {
     my $value = shift;
 
     if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
+	my $subst;
+	if(defined $xmlvars{$1}){
+	    $subst = $xmlvars{$1};
+	}elsif (defined $ENV{$1}){
+	    $subst = $ENV{$1};
+	}else{
+	    warn "Could not find suitable value for $1\n";
+	}
 	$value =~ s/\$${1}/$subst/g;
+	    
     }
     return $value; 
 }	 

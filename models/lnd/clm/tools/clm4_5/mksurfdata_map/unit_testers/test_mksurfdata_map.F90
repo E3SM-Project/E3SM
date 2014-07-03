@@ -6,6 +6,7 @@ program mksurfdata_map_unit_tester
    use test_mkindexmapMod
    use test_mkchecksMod
    use test_mkurbanparMod
+   use test_mkpftMod
    use test_mkncdio
    use test_mod, only : test_init, test_final
 
@@ -15,6 +16,7 @@ program mksurfdata_map_unit_tester
    call test_domain_read_dims
 
    ! Test mkutilsMod
+   call test_remove_small_cover
    call test_slightly_below
    call test_slightly_above
 
@@ -30,6 +32,9 @@ program mksurfdata_map_unit_tester
    call test_lookup_2d
    call test_lookup_2d_netcdf
    call test_which_max
+
+   ! Test mkpftMod
+   call test_mkpft_normalize
 
    ! Test mkchecksMod
    call test_min_bad

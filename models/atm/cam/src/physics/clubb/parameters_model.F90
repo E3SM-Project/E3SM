@@ -38,6 +38,7 @@ module parameters_model
 #ifdef GFDL
  real( kind = core_rknd ), public ::  &   ! h1g, 2010-06-15
     cloud_frac_min    ! minimum cloud fraction for droplet #
+!$omp threadprivate(cloud_frac_min)
 #endif
 
 

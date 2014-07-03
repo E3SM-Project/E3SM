@@ -14,7 +14,7 @@
 module fvm_mod
 
   use kinds, only : real_kind, int_kind, longdouble_kind
-  use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &
+  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
                        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
   use bndry_mod, only: ghost_exchangeV                     
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d
@@ -52,7 +52,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
-   use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbuffer,freeghostbuffertr
+   use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
 
    
   implicit none
@@ -89,7 +89,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   
 !!!!! FOR DEBUGGING
 
-  call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
+  call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
    
    do ie=nets, nete
      do k=1,nlev
@@ -211,7 +211,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
-  use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbuffer,freeghostbuffertr
+  use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
    
    
   implicit none
@@ -241,7 +241,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   
   type (ghostBuffertr_t)                      :: buflatlon
   
-  call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
+  call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
   
   call t_startf('CSLAM scheme') 
   
@@ -340,7 +340,7 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
-   use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbuffer,freeghostbuffertr
+   use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
 
    
   implicit none
@@ -367,7 +367,7 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 
 
 
-  call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
+  call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
   
     call t_startf('CSLAM scheme') 
  
@@ -665,7 +665,7 @@ subroutine fvm_init1(par)
      call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
   endif
 
-  call initghostbuffer(cellghostbuf,nlev,ntrac,nhc,nc) !+1 for the air_density, which comes from SE
+  call initghostbufferTR(cellghostbuf,nlev,ntrac,nhc,nc) !+1 for the air_density, which comes from SE
   
   call initEdgebuffer(edgeveloc,2*nlev)
 end subroutine fvm_init1
@@ -677,10 +677,9 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
   use fvm_control_volume_mod, only: fvm_mesh_ari
   use fvm_analytic_mod, only: computexytosphere_moments
   use bndry_mod, only: compute_ghost_corner_orientation
-  use bndry_mod, only : ghost_exchangevfull, bndry_exchangev, ghost_exchangev3d
+  use bndry_mod, only : ghost_exchangevfull, bndry_exchangev
   
-  use edge_mod, only : ghostbuffer_t, ghostvpackfull, ghostvunpackfull, initghostbufferfull,&
-       freeghostbuffer
+!  use edge_mod, only : ghostvpackfull, ghostvunpackfull
 
   type (timelevel_t) :: tl
   type (fvm_struct) :: fvm(:)
@@ -688,11 +687,6 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
   type (hybrid_t)                             :: hybrid
   integer :: ie,nets,nete
 
-!   type (ghostBuffer_t)   :: ghostbuf_cv
-!   integer :: i,j, kptr
-!   real (kind=real_kind) :: cin(nc,nc,nlev,nets:nete)  !CE: fvm tracer
-!   real (kind=real_kind) :: cout(-nc+1:nc+nc,-nc+1:nc+nc,nlev,nets:nete)  !CE: fvm tracer
-  
   call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
   ! run some tests:
 !    call test_ghost(hybrid,elem,nets,nete)

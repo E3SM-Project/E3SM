@@ -85,11 +85,11 @@ only matched variables.
              #cccccc;">
 	     <pre>
 Space-delimited list of variables output to history file
-<br/>Default: 'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'
+<br/>Default: 'acab artm thk usurf uvel vvel uflx vflx temp'
 </pre>
         </div>
     </td>
-    <td>char*1024</td>
+    <td>char*256</td>
     <td>cism_params</td>
   </tr>
   <tr id="cism_debug_tr">
@@ -123,10 +123,8 @@ Determines whether extra diagnostics are printed in the cism log file
              #cccccc;">
 	     <pre>
 Input file
-<br/>Default: For startup runs or hybrid runs with CISM_OBSERVED_IC=TRUE, a resolution-dependent
-         initial conditions file (e.g., gland10.input.nc).
-         For branch/hybrid runs with CISM_OBSERVED_IC=FALSE, a restart file name
-         built based on RUN_REFCASE and RUN_REFDATE.
+<br/>Default: For startup runs, a resolution-dependent initial conditions file (e.g., gland10.input.nc)
+         For branch/hybrid runs, a restart file name built based on RUN_REFCASE and RUN_REFDATE
 </pre>
         </div>
     </td>
@@ -595,7 +593,6 @@ Number of nodes in z-direction
 	     <pre>
 List of sigma levels, in ascending order, separated by spaces
 These run between 0.0 (at top surface) and 1.0 (at lower surface)
-Only relevant if sigma = 2
 <br/>Default: 0.00 0.15 0.30 0.45 0.60 0.75 0.83 0.90 0.95 0.98 1.00
 </pre>
         </div>
@@ -623,26 +620,6 @@ Only relevant if sigma = 2
 Mass-balance model to use.
 In the CESM context, this should be set to 0 (receive surface mass balance from climate model)
 <br/>Default: 0
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_climate</td>
-  </tr>
-  <tr id="evolve_ice_tr">
-    <td><a name="evolve_ice"></a>
-        <img id="evolve_ice_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('evolve_ice')">evolve_ice</a>
-        </code>
-        <div id="evolve_ice_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-0: Do not let the ice sheet evolve (hold ice state fixed at initial condition)
-1: Let the ice sheet evolve
-<br/>Default: 1
 </pre>
         </div>
     </td>
@@ -870,7 +847,7 @@ Valid values: LAEA, AEA, LCC, STERE
 	     <pre>
 0: not in continuity equation
 1: in continuity equation
-<br/>Default: 1
+<br/>Default: 0
 </pre>
         </div>
     </td>
@@ -889,34 +866,10 @@ Valid values: LAEA, AEA, LCC, STERE
              #cccccc;">
 	     <pre>
 Determines the treatment of basal water
-0: Set to zero everywhere
-1: Calculated from local water balance
-2: Compute the basal water flux, then find depth via calculation
-3: Set to constant everywhere (10m)
-4: Calculated from till water content, in the basal processes module
-<br/>Default: 0
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_options</td>
-  </tr>
-  <tr id="dycore_tr">
-    <td><a name="dycore"></a>
-        <img id="dycore_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dycore')">dycore</a>
-        </code>
-        <div id="dycore_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Which dycore to use
-0: glide dycore (SIA, serial only)
-1: glam dycore (HO, FDM, serial or parallel)
-2: glissade dycore (HO, FEM, serial or parallel)
-<br/>Default: 0 for cism1, 1 for cism2
+0: local water balance
+1: local water balance plus constant flux
+2: no basal water (any basal water is instantly removed and does not affect the dynamics)
+<br/>Default: 2
 </pre>
         </div>
     </td>
@@ -934,13 +887,11 @@ Which dycore to use
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
+-1: no evolution
 0: pseudo-diffusion
-1: ADI scheme [CANNOT BE USED: RESTARTS ARE NOT EXACT]
+1: ADI scheme
 2: diffusion
-3: remap thickness
-4: 1st order upwind
-5: no thickness evolution
-<br/>Default: 0 for cism1, 3 for cism2
+<br/>Default: 0
 </pre>
         </div>
     </td>
@@ -958,30 +909,9 @@ Which dycore to use
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-0: constant value, taken from default_flwa
-1: uniform value equal to the Paterson-Budd value at -10 deg C
-2: Paterson-Budd temperature-dependent relationship
-<br/>Default: 2
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_options</td>
-  </tr>
-  <tr id="gthf_tr">
-    <td><a name="gthf"></a>
-        <img id="gthf_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('gthf')">gthf</a>
-        </code>
-        <div id="gthf_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-0: prescribed uniform geothermal heat flux
-1: read 2D geothermal flux field from input file (if present)
-2: calculate geothermal flux using 3d diffusion
+0: Paterson-Budd temperature-dependent relationship
+1: uniform value equal to the Paterson-Budd value at -5 deg C
+2: constant value, taken from default_flwa
 <br/>Default: 0
 </pre>
         </div>
@@ -1002,27 +932,7 @@ Which dycore to use
 	     <pre>
 Hotstart the model if set to 1. 
 This option only affects the way the initial temperature and flow factor distribution is calculated.
-<br/>Default: 0 for startup or hybrid with CISM_OBSERVED_IC=TRUE, 1 for hybrid/branch with CISM_OBSERVED_IC=FALSE
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_options</td>
-  </tr>
-  <tr id="isostasy_tr">
-    <td><a name="isostasy"></a>
-        <img id="isostasy_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('isostasy')">isostasy</a>
-        </code>
-        <div id="isostasy_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-0: no isostasy
-1: compute isostasy
-<br/>Default: 0
+<br/>Default: 0 for startup, 1 for hybrid/branch
 </pre>
         </div>
     </td>
@@ -1042,32 +952,10 @@ This option only affects the way the initial temperature and flow factor distrib
 	     <pre>
 0: ignore marine margin
 1: set thickness to zero if floating
-2: lose a specified fraction of floating ice
-3: set thickness to zero if relaxed bedrock is below a given depth (marine_limit)
+2: set thickness to zero if relaxed bedrock is below a given depth (marine_limit)
+3: lose a specified fraction of floating ice
 4: set thickness to zero if current bedrock is below a given depth (marine_limit)
-5: Huybrechts grounding line scheme for Greenland initialization
 <br/>Default: 1
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_options</td>
-  </tr>
-  <tr id="sigma_tr">
-    <td><a name="sigma"></a>
-        <img id="sigma_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('sigma')">sigma</a>
-        </code>
-        <div id="sigma_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-How to determine sigma values
-0: compute
-2: read from config file
-<br/>Default: 0
 </pre>
         </div>
     </td>
@@ -1089,32 +977,10 @@ Basal traction parameter
 0: no basal sliding
 1: constant basal traction coefficient
 2: constant coefficient where basal water is present, else no sliding
-3: constant coefficient where the basal temperature is at the pressure melting point, else no sliding
+3: coefficient is a linear function of basal water depth
 4: coefficient is proportional to basal melt rate
-5: coefficient is a linear function of basal water depth
+5: constant coefficient where the basal temperature is at the pressure melting point, else no sliding
 <br/>Default: 0
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_options</td>
-  </tr>
-  <tr id="temp_init_tr">
-    <td><a name="temp_init"></a>
-        <img id="temp_init_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('temp_init')">temp_init</a>
-        </code>
-        <div id="temp_init_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Temperature initialization method
-0: Initialize temperature to 0 C
-1: Initialize temperature to surface air temperature
-2: Initialize temperature with a linear profile in each column
-<br/>Default: 2
 </pre>
         </div>
     </td>
@@ -1134,8 +1000,7 @@ Temperature initialization method
 	     <pre>
 Determines the temperature solution method
 0: isothermal: set column to surface air temperature
-1: full prognostic temperature solution
-2: do NOTHING: hold temperatures steady at initial value
+1: full temperature solution
 <br/>Default: 1
 </pre>
         </div>
@@ -1204,27 +1069,7 @@ Method of integration used to obtain vertical velocity
 	     <pre>
 Ice sheet timestep (years)
 Must translate into an integer number of hours
-<br/>Default: Depends on resolution and physics option
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>cism_config_time</td>
-  </tr>
-  <tr id="dt_diag_tr">
-    <td><a name="dt_diag"></a>
-        <img id="dt_diag_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dt_diag')">dt_diag</a>
-        </code>
-        <div id="dt_diag_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Diagnostic frequency (years)
-Set to 0 for no diagnostic output; set to dt for diagnostic output every time step
-<br/>Default: 1
+<br/>Default: 0.05 years for 5km, 0.1 years for 10km and 20km
 </pre>
         </div>
     </td>
@@ -1263,6 +1108,25 @@ x coordinate of point for diagnostic output
 	     <pre>
 y coordinate of point for diagnostic output
 <br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_time</td>
+  </tr>
+  <tr id="ndiag_tr">
+    <td><a name="ndiag"></a>
+        <img id="ndiag_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ndiag')">ndiag</a>
+        </code>
+        <div id="ndiag_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of ice sheet timesteps between each diagnostic output to log file
+<br/>Default: Set so that there is one diagnostic print per year
 </pre>
         </div>
     </td>
@@ -1315,83 +1179,45 @@ Multiplier of ice sheet timestep, dt
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
-  <tr id="basal_tract_const_tr">
-    <td><a name="basal_tract_const"></a>
-        <img id="basal_tract_const_arrow" src="./images/arrow_right.gif">
+  <tr id="basal_tract_tr">
+    <td><a name="basal_tract"></a>
+        <img id="basal_tract_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('basal_tract_const')">basal_tract_const</a>
+             onclick="toggleHelp('basal_tract')">basal_tract</a>
         </code>
-        <div id="basal_tract_const_help" style="display: none;
+        <div id="basal_tract_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-(m yr-1 Pa-1)
-<br/>Default: 1.e-4
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>cism_config_parameters</td>
-  </tr>
-  <tr id="basal_tract_max_tr">
-    <td><a name="basal_tract_max"></a>
-        <img id="basal_tract_max_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('basal_tract_max')">basal_tract_max</a>
-        </code>
-        <div id="basal_tract_max_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-(m yr-1 Pa-1)
-(Only used for slip_coeff = BTRC_LINEAR_BMLT)
-<br/>Default: (use hard-coded default)
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>cism_config_parameters</td>
-  </tr>
-  <tr id="basal_tract_slope_tr">
-    <td><a name="basal_tract_slope"></a>
-        <img id="basal_tract_slope_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('basal_tract_slope')">basal_tract_slope</a>
-        </code>
-        <div id="basal_tract_slope_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-(Pa-1)
-(Only used for slip_coeff = BTRC_LINEAR_BMLT)
-<br/>Default: (use hard-coded default)
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>cism_config_parameters</td>
-  </tr>
-  <tr id="basal_tract_tanh_tr">
-    <td><a name="basal_tract_tanh"></a>
-        <img id="basal_tract_tanh_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('basal_tract_tanh')">basal_tract_tanh</a>
-        </code>
-        <div id="basal_tract_tanh_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-5-element list of values
-(Only used for slip_coeff = BTRC_TANH_BWAT)
-<br/>Default: (use hard-coded default)
+Array of five values corresponding to various basal traction parameters.
+Currently, only the first value is used, and this only applies in the case where slip_coeff = 1, 2 or 5.
+This first value has units of (m yr-1 Pa-1), and is the inverse of beta-squared in the linear relationship:
+    tauB = -1*(beta-squared)*u
+<br/>Default: 2 10 10 0 1
 </pre>
         </div>
     </td>
     <td>real(5)</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="basal_water_smoothing_tr">
+    <td><a name="basal_water_smoothing"></a>
+        <img id="basal_water_smoothing_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_water_smoothing')">basal_water_smoothing</a>
+        </code>
+        <div id="basal_water_smoothing_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Basal water field smoothing strength
+<br/>Default: 0.01
+</pre>
+        </div>
+    </td>
+    <td>real</td>
     <td>cism_config_parameters</td>
   </tr>
   <tr id="calving_fraction_tr">
@@ -1406,26 +1232,7 @@ Multiplier of ice sheet timestep, dt
              #cccccc;">
 	     <pre>
 Fraction of ice lost to calving
-<br/>Default: (use hard-coded default)
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>cism_config_parameters</td>
-  </tr>
-  <tr id="default_flwa_tr">
-    <td><a name="default_flwa"></a>
-        <img id="default_flwa_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('default_flwa')">default_flwa</a>
-        </code>
-        <div id="default_flwa_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Glen's A to use in isothermal case
-<br/>Default: (use hard-coded default)
+<br/>Default: 0.8
 </pre>
         </div>
     </td>
@@ -1445,7 +1252,7 @@ Glen's A to use in isothermal case
 	     <pre>
 The flow law is enhanced with this factor.
 The greater the value, the lower the viscosity and the faster the ice will flow.
-<br/>Default: 3.0 for cism1, 1.0 for cism2
+<br/>Default: 3
 </pre>
         </div>
     </td>
@@ -1552,151 +1359,6 @@ Note that water depth is negative
     <td>cism_config_parameters</td>
   </tr>
 </table>
-<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Higher-Order Options</h3></span>
-<table id="cism_config_ho_options_table" border="1" width="100%" cellpadding="2" cellspacing="0">
-  <th width="80%">Namelist Variable</th>
-  <th width="10%">Type</th>
-  <th width="10%">Group</th>
-  <tr id="which_disp_tr">
-    <td><a name="which_disp"></a>
-        <img id="which_disp_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('which_disp')">which_disp</a>
-        </code>
-        <div id="which_disp_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Method for computing the dissipation during the temperature calculation
-0: 0-order SIA approx.
-1: 1st order solution (e.g., Blatter-Pattyn)
-2: 1st order depth-integrated solution (SSA)
-<br/>Default: 0
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_ho_options</td>
-  </tr>
-  <tr id="which_ho_babc_tr">
-    <td><a name="which_ho_babc"></a>
-        <img id="which_ho_babc_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('which_ho_babc')">which_ho_babc</a>
-        </code>
-        <div id="which_ho_babc_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Basal boundary condition for Payne/Price dynamical core
-0: constant value (hardcoded in, useful for debugging)
-1: simple pattern (hardcoded in, useful for debugging)
-2: use till yield stress (Picard-type iteration)
-3: circular ice shelf
-4: no slip everywhere (using stress basal bc and large value for B^2)
-5: beta^2 field passed in from CISM
-6: no slip everywhere (using Dirichlet, no slip basal bc)
-7: use till yield stress (Newton-type iteration)
-<br/>Default: 5
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_ho_options</td>
-  </tr>
-  <tr id="which_ho_efvs_tr">
-    <td><a name="which_ho_efvs"></a>
-        <img id="which_ho_efvs_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('which_ho_efvs')">which_ho_efvs</a>
-        </code>
-        <div id="which_ho_efvs_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-How effective viscosity is computed for Payne/Price dynamical core
-0: constant value
-1: multiple of flow factor
-2: compute from effective strain rate
-<br/>Default: 2
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_ho_options</td>
-  </tr>
-  <tr id="which_ho_nonlinear_tr">
-    <td><a name="which_ho_nonlinear"></a>
-        <img id="which_ho_nonlinear_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('which_ho_nonlinear')">which_ho_nonlinear</a>
-        </code>
-        <div id="which_ho_nonlinear_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Method for solving the nonlinear iteration when solving the first-order momentum balance
-0: use the standard Picard iteration
-1: use Jacobian Free Newton Krylov (JFNK) method
-<br/>Default: 1
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_ho_options</td>
-  </tr>
-  <tr id="which_ho_resid_tr">
-    <td><a name="which_ho_resid"></a>
-        <img id="which_ho_resid_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('which_ho_resid')">which_ho_resid</a>
-        </code>
-        <div id="which_ho_resid_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Method for computing residual in Payne/Price dynamical core
-0: maxval
-1: maxval ignoring basal velocity
-2: mean value
-3: L2 norm of system residual, Ax-b=resid
-<br/>Default: 3
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_ho_options</td>
-  </tr>
-  <tr id="which_ho_sparse_tr">
-    <td><a name="which_ho_sparse"></a>
-        <img id="which_ho_sparse_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('which_ho_sparse')">which_ho_sparse</a>
-        </code>
-        <div id="which_ho_sparse_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Method for solving the sparse linear system that arises from the higher-order solver
-0: Biconjugate gradient, incomplete LU preconditioner
-1: GMRES, incomplete LU preconditioner
-2: Conjugate gradient, incomplete LU preconditioner
-3: Conjugate gradient, structured grid, parallel-enabled
-4: standalone interface to Trilinos
-<br/>Default: 4 when building with trilinos, 1 otherwise
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>cism_config_ho_options</td>
-  </tr>
-</table>
 <h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Geothermal Heat Flux Settings</h3></span>
 <table id="cism_config_gthf_table" border="1" width="100%" cellpadding="2" cellspacing="0">
   <th width="80%">Namelist Variable</th>
@@ -1714,13 +1376,32 @@ Method for solving the sparse linear system that arises from the higher-order so
              #cccccc;">
 	     <pre>
 thermal conductivity of lithosphere (W m-1 K-1)
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 3.3
 </pre>
         </div>
     </td>
     <td>real</td>
     <td>cism_config_gthf</td>
+  </tr>
+  <tr id="do_gthf_tr">
+    <td><a name="do_gthf"></a>
+        <img id="do_gthf_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('do_gthf')">do_gthf</a>
+        </code>
+        <div id="do_gthf_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Determines whether the GTHF (geothermal heat flux) section is output to the cism.config file.
+<br/>Default: false
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>cism_config_control</td>
   </tr>
   <tr id="nlayer_tr">
     <td><a name="nlayer"></a>
@@ -1734,7 +1415,7 @@ Only relevant if gthf = 2
              #cccccc;">
 	     <pre>
 Number of vertical layers
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 20
 </pre>
         </div>
@@ -1755,7 +1436,7 @@ Only relevant if gthf = 2
 	     <pre>
 1: 1D calculations
 3: 3D calculations
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 1
 </pre>
         </div>
@@ -1775,7 +1456,7 @@ Only relevant if gthf = 2
              #cccccc;">
 	     <pre>
 Number of time steps for spinning up GTHF calculations
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 0
 </pre>
         </div>
@@ -1795,7 +1476,7 @@ Only relevant if gthf = 2
              #cccccc;">
 	     <pre>
 Density of lithosphere (kg m-3)
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 3300
 </pre>
         </div>
@@ -1815,7 +1496,7 @@ Only relevant if gthf = 2
              #cccccc;">
 	     <pre>
 Depth below sea-level at which geothermal heat gradient is applied (m)
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: -5000
 </pre>
         </div>
@@ -1835,7 +1516,7 @@ Only relevant if gthf = 2
              #cccccc;">
 	     <pre>
 Specific heat capacity of lithosphere (J kg-1 K-1)
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 1000
 </pre>
         </div>
@@ -1855,7 +1536,7 @@ Only relevant if gthf = 2
              #cccccc;">
 	     <pre>
 Initial surface temperature (degrees C)
-Only relevant if gthf = 2
+Only relevant if do_gthf is .true.
 <br/>Default: 2
 </pre>
         </div>
@@ -1882,7 +1563,7 @@ Only relevant if gthf = 2
 	     <pre>
 0: fluid mantle, isostatic adjustment happens instantaneously
 1: relaxing mantle, mantle is approximated by a half-space
-Only relevant if isostasy = 1
+Only relevant if do_isostasy is .true.
 <br/>Default: 0
 </pre>
         </div>
@@ -1890,25 +1571,24 @@ Only relevant if isostasy = 1
     <td>integer</td>
     <td>cism_config_isostasy</td>
   </tr>
-  <tr id="flexural_rigidity_tr">
-    <td><a name="flexural_rigidity"></a>
-        <img id="flexural_rigidity_arrow" src="./images/arrow_right.gif">
+  <tr id="do_isostasy_tr">
+    <td><a name="do_isostasy"></a>
+        <img id="do_isostasy_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('flexural_rigidity')">flexural_rigidity</a>
+             onclick="toggleHelp('do_isostasy')">do_isostasy</a>
         </code>
-        <div id="flexural_rigidity_help" style="display: none;
+        <div id="do_isostasy_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Flexural rigidity of the lithosphere
-Only relevant if 'lithosphere' is set to 1
-<br/>Default: 0.24e25
+Determines whether the isostasy section is output to the cism.config file.
+<br/>Default: false
 </pre>
         </div>
     </td>
-    <td>real</td>
-    <td>cism_config_isostasy</td>
+    <td>logical</td>
+    <td>cism_config_control</td>
   </tr>
   <tr id="lithosphere_tr">
     <td><a name="lithosphere"></a>
@@ -1923,7 +1603,7 @@ Only relevant if 'lithosphere' is set to 1
 	     <pre>
 0: local lithosphere, equilibrium bedrock depression is found using Archimedes' principle
 1: elastic lithosphere, flexural rigidity is taken into account
-Only relevant if isostasy = 1
+Only relevant if do_isostasy is .true.
 <br/>Default: 0
 </pre>
         </div>
@@ -1943,7 +1623,7 @@ Only relevant if isostasy = 1
              #cccccc;">
 	     <pre>
 Characteristic time constant of relaxing mantle (years)
-Only relevant if isostasy = 1
+Only relevant if do_isostasy is .true.
 <br/>Default: 4000.
 </pre>
         </div>
@@ -1963,7 +1643,7 @@ Only relevant if isostasy = 1
              #cccccc;">
 	     <pre>
 Lithosphere update period (years)
-Only relevant if isostasy = 1
+Only relevant if do_isostasy is .true.
 <br/>Default: 500.
 </pre>
         </div>
@@ -1977,6 +1657,26 @@ Only relevant if isostasy = 1
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
+  <tr id="flexural_rigidity_tr">
+    <td><a name="flexural_rigidity"></a>
+        <img id="flexural_rigidity_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('flexural_rigidity')">flexural_rigidity</a>
+        </code>
+        <div id="flexural_rigidity_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Flexural rigidity of the lithosphere
+Only relevant if 'lithosphere' is set to 1
+<br/>Default: 0.24e25
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_elastic_lithosphere</td>
+  </tr>
 </table>
 </body>
 </html>

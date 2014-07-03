@@ -1,1 +1,1 @@
--SW 52,190 -NE 73,220 -id 13x12pt_f19_alaskaUSA -nomv -mycsmdata CSMDATA
+-SW 52,190 -NE 73,220 -i sample_inlist -o sample_outlist

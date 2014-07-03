@@ -125,12 +125,16 @@ subroutine freezaerl_koop2000(carma, cstate, iz, rc)
                     !  Koop et al. nucleation rate parameterization
                     td    = t(iz)
                     rlnt  = log(td)
-                    dmy   = 210368._f + 131.438_f * td - (3.32373e6_f / td) - 41729.1_f * rlnt    ! eqn 2, potential difference [J mol-1]
+                    ! eqn 2, potential difference [J mol-1]
+                    dmy   = 210368._f + 131.438_f * td - (3.32373e6_f / td) - 41729.1_f * rlnt
                     rsi   = RGAS / 1.e7_f       ! gas constant [J mol-1 K-1]
-                    awi   = exp(dmy / (rsi * td))                                                 ! Notes (p: ambient vs. at pressure) ?
+                    ! Notes (p: ambient vs. at pressure) ?
+                    awi   = exp(dmy / (rsi * td))
   
-                    vw0   = -230.76_f - 0.1478_f * td + (4099.2_f / td) + 48.8341_f * rlnt        ! eqn 4
-                    vi    = 19.43_f - 2.2e-3_f * td + 1.08e-5_f * td * td                         ! eqn 5
+                    ! eqn 4
+                    vw0   = -230.76_f - 0.1478_f * td + (4099.2_f / td) + 48.8341_f * rlnt
+                    ! eqn 5
+                    vi    = 19.43_f - 2.2e-3_f * td + 1.08e-5_f * td * td
                     
                     pp    = 1.e-10_f * p(iz)  ! pressure [GPa]
                     pp2   = pp * pp * 0.5_f
@@ -188,7 +192,8 @@ subroutine freezaerl_koop2000(carma, cstate, iz, rc)
                       volrat = rhosol(isol) / RHO_W * ((100._f - WT) / WT) + 1._f
                     endif
 
-                    rnuclg(ibin,igroup,ignucto) = rnuclg(ibin,igroup,ignucto) + rjj * volrat * vol(ibin,igroup)                ! [s-1]
+                    ! [s-1]
+                    rnuclg(ibin,igroup,ignucto) = rnuclg(ibin,igroup,ignucto) + rjj * volrat * vol(ibin,igroup)
                   endif   ! ssi > sifreeze .and. target droplets not evaporating
                 enddo    ! ibin = 1,NBIN
               endif     ! inucproc(iepart,ienucto) .eq. I_DROPACT

@@ -111,11 +111,11 @@ module metdata
 !----------------------------------------------------------------------- 
 
   type input2d
-     real(r8), dimension(:,:), pointer :: data
+     real(r8), dimension(:,:), pointer :: data => null()
   endtype input2d
 
   type input3d
-     real(r8), dimension(:,:,:), pointer :: data
+     real(r8), dimension(:,:,:), pointer :: data => null()
   endtype input3d
 
   real(r8), allocatable :: met_t(:,:,:)  ! interpolated temperature 
@@ -166,7 +166,8 @@ module metdata
   character(len=256) :: met_filenames_list = ''
   character(len=256) :: met_data_path = ''
   type(file_desc_t) :: curr_fileid, next_fileid     ! the id of the NetCDF file
-  real(r8), pointer, dimension(:)  :: curr_data_times, next_data_times
+  real(r8), pointer, dimension(:) :: curr_data_times => null()
+  real(r8), pointer, dimension(:) :: next_data_times => null()
 
   real(r8) :: alpha = 1.0_r8 ! don't read in water vapor  
   !   real(r8), private :: alpha = 0.0  ! read in water vaper each time step
@@ -1673,7 +1674,7 @@ contains
 
     character(*), intent(in) :: fname
     type(file_desc_t), intent(inout) :: fileid
-    real(r8), pointer :: times(:)
+    real(r8), pointer, intent(inout) :: times(:)
     character(*), intent(in) :: datapath
     logical, optional, intent(in) :: check_dims
     type (T_FVDYCORE_GRID), optional, intent(in) :: grid

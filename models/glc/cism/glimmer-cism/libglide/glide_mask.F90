@@ -34,7 +34,7 @@ module glide_mask
 
     ! masking ice thicknesses
 
-    use glimmer_global, only : dp, sp
+    use glimmer_global, only : dp
     use nan_mod, only : NaN
 
     implicit none
@@ -56,12 +56,12 @@ contains
     implicit none
 
     type(glide_numerics), intent(in) :: numerics !Numerical parameters structure
-    real(dp), dimension(:,:), intent(in) :: thck !Ice thickness
-    real(dp), dimension(:,:), intent(in) :: topg !Bedrock topography (not lower surface!)
-    integer, intent(in) :: ewn, nsn !Grid size
-    real(sp), intent(in) :: eus !Sea level
-    integer, dimension(:,:), intent(inout) :: mask !Output mask
-    real(dp), intent(inout), optional :: ivol, iarea !Area and volume of ice
+    real(dp), dimension(:,:), intent(in) :: thck ! Ice thickness
+    real(dp), dimension(:,:), intent(in) :: topg ! Bedrock topography (not lower surface!)
+    integer, intent(in) :: ewn, nsn              ! Grid size
+    real(dp), intent(in) :: eus                  ! Sea level
+    integer, dimension(:,:), intent(inout) :: mask   ! Output mask
+    real(dp), intent(inout), optional :: ivol, iarea ! Area and volume of ice
     logical, optional :: exec_serial  !JEFF If executing in serial in MPI program.
 
     ! local variables

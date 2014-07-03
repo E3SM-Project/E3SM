@@ -65,9 +65,9 @@ module drof_comp_mod
 
   integer(IN),parameter :: ktrans = 2
   character(12),parameter  :: avofld(1:ktrans) = &
-     (/ "Forr_roff   ","Forr_ioff   "/)
+     (/ "Forr_rofl   ","Forr_rofi   "/)
   character(12),parameter  :: avifld(1:ktrans) = &
-     (/ "roff        ","ioff        "/)
+     (/ "rofl        ","rofi        "/)
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -110,6 +110,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
     integer(IN)   :: nunit          ! unit number
     logical       :: rof_present    ! flag
+    logical       :: rofice_present ! flag
     logical       :: rof_prognostic ! flag
     logical       :: flood_present  ! flag
     character(CL) :: calendar       ! model calendar
@@ -136,6 +137,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     character(CL) :: rest_file_strm_r   ! restart filename for stream
     character(CL) :: restfilm    ! model restart file namelist
     character(CL) :: restfilsr   ! stream restart file namelist
+    logical       :: force_prognostic_true ! if true set prognostic true
     logical       :: exists      ! file existance logical
     logical       :: exists_r    ! file existance logical
     integer(IN)   :: nu          ! unit number
@@ -145,10 +147,12 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
 
     !----- define namelist -----
     namelist / drof_nml / &
-        rof_in, decomp, restfilm, restfilsr
+        rof_in, decomp, restfilm, restfilsr, &
+        force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(drof_comp_init) ',8a)"
+    character(*), parameter :: F0L   = "('(drof_comp_init) ',a, l2)"
     character(*), parameter :: F01   = "('(drof_comp_init) ',a,5i8)"
     character(*), parameter :: F02   = "('(drof_comp_init) ',a,4es13.6)"
     character(*), parameter :: F03   = "('(drof_comp_init) ',a,i8,a)"
@@ -195,6 +199,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     !----------------------------------------------------------------------------
 
     rof_present    = .false.
+    rofice_present = .false.
     rof_prognostic = .false.
     flood_present  = .false.
     call seq_infodata_GetData(infodata,read_restart=read_restart)
@@ -210,6 +215,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     decomp = "1d"
     restfilm  = trim(nullstr)
     restfilsr = trim(nullstr)
+    force_prognostic_true = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -224,14 +230,20 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
        write(logunit,F00)' decomp = ',trim(decomp)
        write(logunit,F00)' restfilm = ',trim(restfilm)
        write(logunit,F00)' restfilsr = ',trim(restfilsr)
+       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
     call shr_mpi_bcast(rof_in,mpicom,'rof_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfilsr,mpicom,'restfilsr')
+    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
  
     rest_file = trim(restfilm)
     rest_file_strm_r = trim(restfilsr)
+    if (force_prognostic_true) then
+       rof_present    = .true.
+       rof_prognostic = .true.
+    endif
 
     !----------------------------------------------------------------------------
     ! Read dshr namelist
@@ -289,7 +301,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
 
     call seq_infodata_PutData(infodata, &
          rof_present=rof_present, rof_prognostic=rof_prognostic, &
-         rof_nx=SDROF%nxg, rof_ny=SDROF%nyg)
+         rofice_present=rofice_present, rof_nx=SDROF%nxg, rof_ny=SDROF%nyg)
     call seq_infodata_PutData(infodata, flood_present=flood_present)
 
     if (.not. rof_present) then

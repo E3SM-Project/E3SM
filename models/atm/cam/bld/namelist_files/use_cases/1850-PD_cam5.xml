@@ -15,10 +15,10 @@
 <!-- Surface emissions for MAM from by R Easter, PNNL -->
 <srf_emis_type>INTERP_MISSING_MONTHS</srf_emis_type>
 <dms_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_1849-2100_c111017.nc    </dms_emis_file>
-<so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so2_surf_1850-2020_c20120308.nc        </so2_emis_file>
-<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_soag_1.5_surf_1850-2020_c20120308.nc   </soag_emis_file>
+<so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so2_surf_1850-2020_c20120308.nc    </so2_emis_file>
+<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_soag_1.5_surf_1850-2020_c20130923.nc</soag_emis_file>
 <bc_a1_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_bc_surf_1850-2020_c20120308.nc     </bc_a1_emis_file>
-<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_oc_surf_1850-2020_c20120308.nc     </pom_a1_emis_file>
+<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_pom_surf_1850-2020_c20130923.nc    </pom_a1_emis_file>
 <so4_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so4_a1_surf_1850-2020_c20120308.nc </so4_a1_emis_file>
 <so4_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so4_a2_surf_1850-2020_c20120308.nc </so4_a2_emis_file>
 <num_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_num_a1_surf_1850-2020_c20120308.nc </num_a1_emis_file>
@@ -31,7 +31,7 @@
 <so4_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_so4_a2_elev_1850-2020_c20120308.nc </so4_a2_ext_file>
 <num_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_num_a1_elev_1850-2020_c20120308.nc </num_a1_ext_file>
 <num_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_num_a2_elev_1850-2020_c20120308.nc </num_a2_ext_file>
-<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_oc_elev_1850-2020_c20120308.nc     </pom_a1_ext_file>
+<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_pom_elev_1850-2020_c20130923.nc    </pom_a1_ext_file>
 <bc_a1_ext_file    chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP45_mam3_bc_elev_1850-2020_c20120308.nc     </bc_a1_ext_file>
 
 <!-- Volcanic aerosol from eruptions is from Caspar Ammann -->

@@ -89,26 +89,28 @@ contains
              write(iulog,*) 'Error: hyai input file and HOMME plevp do not match',plevp,plevp_in
              ierr=1
           endif
-          read(11,*)hvcoord%hyai(1:plevp)
+          read(11,*)hvcoord%hyai(1:plevp_in)
+
           read(11,*) plevp_in
           if (plevp_in .ne. plevp) then
              write(iulog,*) 'Error: hybi input file and HOMME plevp do not match',plevp,plevp_in
              ierr=1
           endif
-          read(11,*)hvcoord%hybi(1:plevp)
+          read(11,*)hvcoord%hybi(1:plevp_in)
 
           read(12,*) plev_in
           if (plev_in .ne. plev) then
              write(iulog,*) 'Error: hyam input file and HOMME plev do not match',plev,plev_in
              ierr=1
           endif
-          read(12,*) hvcoord%hyam(1:plev)
+          read(12,*) hvcoord%hyam(1:plev_in)
+
           read(12,*) plev_in
           if (plev_in .ne. plev) then
-             write(iulog,*) 'Error: hybi input file and HOMME plev do not match',plev,plev_in
+             write(iulog,*) 'Error: hybm input file and HOMME plev do not match',plev,plev_in
              ierr=1
           endif
-          read(12,*)hvcoord%hybm(1:plev)
+          read(12,*)hvcoord%hybm(1:plev_in)
 
           close(11)
           close(12)
@@ -151,7 +153,7 @@ contains
 #if (! defined ELEMENT_OPENMP)
 !$OMP END CRITICAL
 #endif
-  if(ierr>0) return 
+  if(ierr>0) return
 
   eps            = 1.D-05
   hvcoord%nprlev = 0

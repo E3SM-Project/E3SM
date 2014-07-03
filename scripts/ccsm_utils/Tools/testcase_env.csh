@@ -1,6 +1,7 @@
 #!/bin/csh -f
 
 # regression test baseline directory and coupler log files
+source ./Tools/ccsm_getenv
 
 echo "setenv CASEBASEID $CASE" >> $CASE.test || exit -1
 
@@ -15,6 +16,9 @@ else
   echo "setenv TEST_TESTID " >> $CASE.test || exit -1
 endif
 
+# MODEL_GEN_COMP option
+echo "setenv MODEL_GEN_COMP $MODEL_GEN_COMP" >> $CASE.test || exit -1
+
 if ( $?BASELINE_ROOT ) then
    # continue
 else if ( $?CCSM_BASELINE) then
@@ -25,7 +29,7 @@ endif
 echo "setenv BASELINE_ROOT       $BASELINE_ROOT"       >> $CASE.test || exit -1
 
 # generate baseline test flag
-if ( $?GENERATE_BASELINE ) then
+if ( "$GENERATE_BASELINE" == "TRUE" ) then
   echo "setenv GENERATE_BASELINE"                        >> $CASE.test || exit -1
   echo "setenv BASEGEN_NAME        $baseline_name_gen"   >> $CASE.test || exit -1
   echo "setenv BASEGEN_DIR         $BASELINE_ROOT/$BASEGEN_CASE"           >> $CASE.test || exit -1
@@ -54,7 +58,7 @@ echo "unsetenv BASEGEN_FILE11"         >> $CASE.test || exit -1
 echo "unsetenv BASEGEN_FILE12"         >> $CASE.test || exit -1
 
 # regression test comparison flag
-if ( $?COMPARE_BASELINE ) then
+if ( "$COMPARE_BASELINE" == "TRUE" ) then
   echo "setenv COMPARE_BASELINE"                                         >> $CASE.test || exit -1
   echo "setenv BASECMP_NAME        $baseline_name_cmp"                   >> $CASE.test || exit -1
   echo "setenv BASECMP_DIR         $BASELINE_ROOT/$BASECMP_CASE"         >> $CASE.test || exit -1
@@ -67,9 +71,10 @@ else
 endif
 
 # cleanup option
-if ( $?CLEANUP ) then
+if ( "$CLEANUP" == "TRUE" ) then
   echo "setenv CLEANUP" >> $CASE.test || exit -1
 else
   echo "unsetenv CLEANUP" >> $CASE.test || exit -1
 endif
+
 

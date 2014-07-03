@@ -14,10 +14,6 @@ set sourcemod_dir=$CASEROOT/SourceMods/src.cism
 
 cd $glc_obj_dir
 
-set comp = 'unknown'
-if ($COMP_INTERFACE == 'MCT' ) set comp = mct
-if ($COMP_INTERFACE == 'ESMF') set comp = esmf
-
 # ----------------------------------------------------------------------
 # Create Filepath
 # ----------------------------------------------------------------------
@@ -25,8 +21,7 @@ if ($COMP_INTERFACE == 'ESMF') set comp = esmf
 # the glimmer-cism stuff is picked up by the cmake-based build
 cat >! Filepath << EOF
 $sourcemod_dir
-$CODEROOT/glc/cism/drivers/cpl_share
-$CODEROOT/glc/cism/drivers/cpl_$comp
+$CODEROOT/glc/cism/drivers/cpl
 $CODEROOT/glc/cism/source_glc
 $CODEROOT/glc/cism/mpi
 EOF

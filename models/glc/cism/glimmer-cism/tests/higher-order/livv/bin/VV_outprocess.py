@@ -22,6 +22,7 @@ def jobprocess(file,job_name):    # Reading a job Output File for production run
 	total = 0.000
 	average = 0.000
 	out_flag = 0
+#        fatal_flag = 0
 
 #Open Output File (From job) if there is one inputted
 	if file:
@@ -47,7 +48,10 @@ def jobprocess(file,job_name):    # Reading a job Output File for production run
 			#create linear iterations list
 			if ('The Belos solver' in line):
 	       	         	list.append(int(line.split()[21]))
-	
+                        
+#                        if ('FATAL ERROR' in line):
+#                            fatal_flag = 1
+
 			#calculate average number of linear iterations if time step converges
        	 		if ('Converged!' in line):
        	         		nonlist.append(current_step)
@@ -64,8 +68,8 @@ def jobprocess(file,job_name):    # Reading a job Output File for production run
 	
 			#if there contains a time step that fails to converge
 			elif ('Failed!' in line):
-#				nonlist.append(str(current_step) + "***")
-       	         		nonlist.append(current_step)
+				nonlist.append(str(current_step) + "***")
+       	         		#nonlist.append(current_step)
 				for value in list:
 					total += value
 				average = total / len(list)
@@ -77,12 +81,11 @@ def jobprocess(file,job_name):    # Reading a job Output File for production run
 				average = 0.000
 				avg = []
 				out_flag = 1
+        
+#        return fatal_flag
+#        logfile.close()
 	
-			#no information, indicating something else is wrong and needs investigation
-			#else:
-			#	error_flag = 1
-	
-	# write nonlinear solver iteration data
+        # write nonlinear solver iteration data
 
         nd_name = '/newton_' + job_name + '.asc'
         ld_name = '/fgmres_' + job_name + '.asc'

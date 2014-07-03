@@ -53,15 +53,12 @@ module glimmer_global
   !*FD the -r8 flag), then this parameter may need to be set in agreement
   !*FD with that
 
-#ifdef GLIMMER_SP
-
-  integer,parameter :: rk=sp !< Precision of glimmer module --- the general Fortran real-type kind value for the Glimmer module and its interfaces.
-
-#else
-
-  integer,parameter :: rk=dp !< Precision of glimmer module --- the general Fortran real-type kind value for the Glimmer module and its interfaces.
-
-#endif
+!WHL - Removed rk from the code, so commenting out these declarations
+!!#ifdef GLIMMER_SP
+!!  integer,parameter :: rk=sp !< Precision of glimmer module --- the general Fortran real-type kind value for the Glimmer module and its interfaces.
+!!#else
+!!  integer,parameter :: rk=dp !< Precision of glimmer module --- the general Fortran real-type kind value for the Glimmer module and its interfaces.
+!!#endif
 
   integer,parameter :: size_t = kind(1)
 

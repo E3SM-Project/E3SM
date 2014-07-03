@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --cycle_forcing --cesm_root ../../../../../../.. -s TS-Ts3 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/cycling_file_creation 

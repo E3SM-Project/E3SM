@@ -41,6 +41,15 @@
           CCSM_TCOST="1"
           DOUT_S="FALSE" />
 
+<ccsmtest NAME="PRS"
+          DESC="pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days"
+          INFO_DBUG="2"
+          BFBFLAG="TRUE"
+          CCSM_TCOST="1"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="ERS"
           DESC="exact restart from startup, default 6 days + 5 days"
           INFO_DBUG="2"
@@ -55,6 +64,8 @@
           CCSM_TCOST="0"
           STOP_OPTION="nmonths"
           STOP_N="3"
+          AVGHIST_OPTION="nmonths"
+          AVGHIST_N="1"
           DOUT_S="FALSE" />
 
 <ccsmtest NAME="ERI"
@@ -137,7 +148,6 @@
           DESC="smoke CLM spinup test (only valid for CLM compsets with CLM45 and CN or BGC)"
           INFO_DBUG="2"
           CCSM_TCOST="-1"
-          CLM_BLDNML_OPTS="-bgc_spinup on"
           STOP_OPTION="ndays"
           RUN_TYPE="startup"
           STOP_N="4"
@@ -145,6 +155,12 @@
 
 <ccsmtest NAME="NCK"
           DESC="multi-instance validation vs single instance (default length)"
+          INFO_DBUG="2"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="NOC"
+          DESC="multi-instance validation for single instance ocean (default length)"
           INFO_DBUG="2"
           CCSM_TCOST="-1"
           DOUT_S="FALSE" />

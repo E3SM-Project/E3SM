@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: shr_orb_mod.F90 25434 2010-11-04 22:46:24Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/shr/shr_orb_mod.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_orb_mod.F90 $
 !===============================================================================
 
 MODULE shr_orb_mod
@@ -302,7 +302,7 @@ SUBROUTINE shr_orb_params( iyear_AD , eccen  , obliq , mvelp     ,     &
    "$Id: shr_orb_mod.F90 25434 2010-11-04 22:46:24Z tcraig $"
    character(*),parameter :: svnURL = "SVN <unknown URL>" 
 !  character(*),parameter :: svnURL = "SVN " // &
-!  "$URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/shr/shr_orb_mod.F90 $"
+!  "$URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_orb_mod.F90 $"
    character(len=*),parameter :: F00 = "('(shr_orb_params) ',4a)"
    character(len=*),parameter :: F01 = "('(shr_orb_params) ',a,i9)"
    character(len=*),parameter :: F02 = "('(shr_orb_params) ',a,f6.3)"

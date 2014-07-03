@@ -80,15 +80,18 @@
    use glc_global_fields, only: glc_allocate_global, climate, ice_sheet,   &
                                 temp,    precip,  orog,    ice_frac,       &
                                 tsfc,    qsmb,    topo,                    &
-                                gfrac,   gtopo,   grofi,   grofl,  ghflx
+                                gfrac,   gtopo,   grofi,   grofl,  ghflx,  &
+				ice_sheet_grid_mask
 
    use glc_global_grid, only: init_glc_grid, glc_grid
+   use glc_override_frac, only: init_glc_frac_overrides
    use glc_constants
    use glc_communicate, only: init_communicate
    use glc_io, only: history_vars
    use glc_time_management, only: init_time1, init_time2, dtt, ihour
    use glimmer_log
    use glc_global_grid, only: glc_landmask
+   use glc_route_ice_runoff, only: set_routing
    use shr_file_mod, only : shr_file_getunit, shr_file_freeunit
 
      !TODO - probably not needed; commented out for now
@@ -118,6 +121,9 @@
       cesm_history_vars  ! Name of the CISM variables to be output in cesm
                          ! history files
 
+  character(CL) :: &
+       ice_flux_routing  ! Code for how solid ice should be routed to ocean or sea ice
+
   ! Scalars which hold information about the global grid --------------
  
   integer (i4) ::  &
@@ -141,7 +147,7 @@
       cism_debug   = .false. ! Logical flag to pass to glimmer, telling it to output extra
                              ! debug diagnostics
 
-  real(rk), dimension(:), allocatable ::  &    
+  real(dp), dimension(:), allocatable ::  &    
       glint_lats     ,&! lats on glint grid (N to S indexing, instead of S to N as on glc_grid)  
       glint_lons     ,&! lons on glint grid
       glint_latb       ! lat_bound on glint grid
@@ -151,7 +157,7 @@
 
   integer :: unit      ! fileunit passed to Glint 
 
-  namelist /cism_params/  paramfile, cism_debug, cesm_history_vars
+  namelist /cism_params/  paramfile, cism_debug, cesm_history_vars, ice_flux_routing
  
 !-----------------------------------------------------------------------
 !  initialize return flag
@@ -220,6 +226,8 @@
    call broadcast_scalar(cism_debug,        master_task)
    call broadcast_scalar(cesm_history_vars, master_task)
    history_vars = trim(cesm_history_vars)
+   call broadcast_scalar(ice_flux_routing,  master_task)
+   call set_routing(ice_flux_routing)
 
    if (verbose .and. my_task==master_task) then
       write (stdout,*) 'paramfile =   ', paramfile
@@ -295,6 +303,8 @@
   nhour_glint = 0     ! number of hours glint has run since start of complete simulation
                       ! must be set to correct value if reading from a restart file
  
+  call init_glc_frac_overrides()
+
   ! if this is a continuation run, then set up to read restart file and get the restart time
   if (runtype == 'continue') then
     cesm_restart = .true.
@@ -334,6 +344,7 @@
                             grofi = grofi,                        &
                             grofl = grofl,                        &
                             ghflx = ghflx,                        &
+			    ice_sheet_grid_mask=ice_sheet_grid_mask,&
                             gmask = glint_landmask,               &
                             gcm_restart = cesm_restart,           &
                             gcm_restart_file = cesm_restart_file, &

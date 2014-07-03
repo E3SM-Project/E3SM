@@ -13,7 +13,7 @@ module clm_varctl
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
-  public :: set_clmvarctl     ! Set variables
+  public :: clm_varctl_set     ! Set variables
   public :: clmvarctl_init    ! Initialize and check values after namelist input
 
   private
@@ -162,6 +162,9 @@ module clm_varctl
 #else
   logical, public :: use_exit_spinup = .false.
 #endif
+  !needed for compatibility with changes in clm4_5 and reference dy lnd_comp_mct
+  !however use_voc is not used anywhere inside the clm4_0 code
+  logical, public :: use_voc = .true. 
 !
 ! !PRIVATE DATA MEMBERS:
 !
@@ -180,10 +183,10 @@ contains
 !---------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE: set_clmvarctl
+! !IROUTINE: clm_varctl_set
 !
 ! !INTERFACE:
-  subroutine set_clmvarctl( caseid_in, ctitle_in, brnch_retain_casename_in,    &
+  subroutine clm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
                             single_column_in, scmlat_in, scmlon_in, nsrest_in, &
                             version_in, hostname_in, username_in)
 !
@@ -207,7 +210,7 @@ contains
 
 !
 ! !LOCAL VARIABLES:
-   character(len=32) :: subname = 'set_clmvarctl'  ! subroutine name
+   character(len=32) :: subname = 'clm_varctl_set'  ! subroutine name
 !
 ! !REVISION HISTORY:
 ! Author: Erik Kluzek
@@ -228,7 +231,7 @@ contains
     if ( present(username_in     ) ) username      = username_in
     if ( present(hostname_in     ) ) hostname      = hostname_in
 
-  end subroutine set_clmvarctl
+  end subroutine clm_varctl_set
 
 !---------------------------------------------------------------------------
 !BOP

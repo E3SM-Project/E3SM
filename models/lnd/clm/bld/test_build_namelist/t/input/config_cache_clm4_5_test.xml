@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<config_definition>
+
+<commandline>
+/Users/bandre/projects/clm/build-namelist-unittests/models/lnd/clm/bld/configure -phys clm4_5
+</commandline>
+<entry id="clm_root" value="/Users/bandre/projects/clm/build-namelist-unittests/models/lnd/clm" list="" valid_values="">
+Root directory of CLM source distribution (directory above CLM configure).
+</entry>
+<entry id="comp_intf" value="MCT" list="" valid_values="ESMF,MCT,cpl_\$COMP">
+Component framework interface to use 
+(Model Coupling Toolkit, or Earth System Modeling Framework)
+</entry>
+<entry id="cppdefs" value="" list="" valid_values="">
+User specified CPP defines to append to Makefile defaults.
+Note: It's recommended to use configure options to set standard CPP values rather
+than defining them here.
+</entry>
+<entry id="phys" value="clm4_5" list="" valid_values="clm4_0,clm4_5">
+Specifies either clm4_0 or clm4_5 physics
+</entry>
+<entry id="usr_src" value="" list="1" valid_values="">
+User source directories to prepend to the filepath.  Multiple directories
+are specified as a comma separated list with no embedded white space.
+Normally this is SourceMods/src.clm in your case.
+</entry>
+
+</config_definition>

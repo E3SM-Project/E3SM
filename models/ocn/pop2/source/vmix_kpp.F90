@@ -12,7 +12,7 @@
 !  November 1994).
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: vmix_kpp.F90 44694 2013-03-12 19:58:14Z mlevy@ucar.edu $
+!  SVN:$Id: vmix_kpp.F90 55489 2013-11-21 20:43:56Z mlevy@ucar.edu $
 
 ! !USES:
 
@@ -265,7 +265,8 @@
       bckgrnd_vdc_linv     ! inverse length for transition region
 
    logical (log_kind) ::  &
-      lhoriz_varying_bckgrnd
+      lhoriz_varying_bckgrnd,  &
+      larctic_bckgrnd_vdc  ! historically only used as a suboption of lniw_mixing
 
    namelist /vmix_kpp_nml/bckgrnd_vdc1, bckgrnd_vdc2,           &
                           bckgrnd_vdc_eq, bckgrnd_vdc_psim,     &
@@ -274,6 +275,7 @@
                           Prandtl, rich_mix,                    &
                           num_v_smooth_Ri, lrich, ldbl_diff,    &
                           lshort_wave, lcheckekmo,              &
+                          larctic_bckgrnd_vdc,                  &
                           lhoriz_varying_bckgrnd, llangmuir,    &
                           linertial
 
@@ -308,6 +310,7 @@
    ldbl_diff              = .false.
    lshort_wave            = .false.
    lcheckekmo             = .false.
+   larctic_bckgrnd_vdc    = .false.
    lhoriz_varying_bckgrnd = .false.
    llangmuir              = .false.
    linertial              = .false.
@@ -353,6 +356,7 @@
       write(stdout,fmt_log ) '  short_wave                =', lshort_wave
       write(stdout,fmt_log ) '  lcheckekmo                =', lcheckekmo
       write(stdout,fmt_int ) '  num_smooth_Ri             =', num_v_smooth_Ri
+      write(stdout,fmt_log ) '  larctic_bckgrnd_vdc       =', larctic_bckgrnd_vdc
       write(stdout,fmt_log ) '  lhoriz_varying_bckgrnd    =', lhoriz_varying_bckgrnd
       write(stdout,fmt_log ) '  langmuir parameterization =', llangmuir
       write(stdout,fmt_log ) '  inertial mixing param.    =', linertial
@@ -372,6 +376,7 @@
    call broadcast_scalar(ldbl_diff,             master_task)
    call broadcast_scalar(lshort_wave,           master_task)
    call broadcast_scalar(lcheckekmo,            master_task)
+   call broadcast_scalar(larctic_bckgrnd_vdc,   master_task)
    call broadcast_scalar(lhoriz_varying_bckgrnd,master_task)
    call broadcast_scalar(llangmuir,             master_task)
    call broadcast_scalar(linertial,             master_task)
@@ -514,7 +519,7 @@
       ! Arctic
       !----------------
 
-      if (lniw_mixing) then   ! for now, only used in niw mixing
+      if (larctic_bckgrnd_vdc) then   ! historically only used as a suboption of lniw_mixing
       if (TLATD(i,j,iblock)  .ge. 70.0_r8) then
        bckgrnd_vdc(i,j,k,iblock) = bckgrnd_vdc_eq
       endif
@@ -1300,9 +1305,13 @@
         where (WORK1 > c0)
           TIDAL_DIFF(:,:,k,bid) = TIDAL_COEF(:,:,k,bid)/WORK1
         endwhere
-    
-        if (.not. lccsm_control_compatible) then   ! this step breaks backwards compatibility
-        where ( k > 2  .and.  ( k == KMT(:,:,bid)-1  .or.  k == KMT(:,:,bid)-2 ) )
+
+        ! Notes:
+        ! (1) this step breaks backwards compatibility
+        ! (2) check for k>2 was added to if statement to avoid
+        !     out of bounds access
+        if ((.not. lccsm_control_compatible).and.(k.gt.2)) then
+        where ( k == KMT(:,:,bid)-1  .or.  k == KMT(:,:,bid)-2 )
           TIDAL_DIFF(:,:,k,bid) = max( TIDAL_DIFF(:,:,k,  bid),  &
                                        TIDAL_DIFF(:,:,k-1,bid) )
         endwhere 

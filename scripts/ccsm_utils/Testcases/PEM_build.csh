@@ -56,6 +56,10 @@ cp -f env_mach_pes.xml env_mach_pes.xml.pem2
 
 cp -f env_build.xml.pem1 env_build.xml
 cp -f env_mach_pes.xml.pem1 env_mach_pes.xml
+./cesm_setup -clean
+./cesm_setup
+cp -f env_build.xml.pem1 env_build.xml
+cp -f env_mach_pes.xml.pem1 env_mach_pes.xml
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
 cp -f env_build.xml LockedFiles/env_build.xml.locked
 

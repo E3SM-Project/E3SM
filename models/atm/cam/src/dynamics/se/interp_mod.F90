@@ -96,6 +96,7 @@ contains
   subroutine write_interpolated_scalar(File, varid, fld, numlev, data_type, decomp_type) 
     use pio, only : file_desc_t, io_desc_t, var_desc_t, pio_write_darray, iosystem_desc_t, &
          pio_initdecomp, pio_freedecomp, pio_setdebuglevel
+    use cam_instance, only: atm_id
     use spmd_dyn,       only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
     use ppgrid, only : begchunk, endchunk, pcols, pver
     use phys_grid, only : get_gcol_all_p, get_ncols_p, chunk_to_block_send_pters, chunk_to_block_recv_pters, &
@@ -138,7 +139,7 @@ contains
 
     nlon=get_interp_parameter('nlon')
     nlat=get_interp_parameter('nlat')
-    pio_subsystem => shr_pio_getiosys('ATM')
+    pio_subsystem => shr_pio_getiosys(atm_id)
 
     if(decomp_type==phys_decomp) then
        fld_dyn = -999_R8

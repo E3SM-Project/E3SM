@@ -214,78 +214,6 @@ Set by the xml variable GLC_NEC in env_run.xml
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
-  <tr id="aqua_planet_tr">
-    <td><a name="aqua_planet"></a>
-        <img id="aqua_planet_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('aqua_planet')">aqua_planet</a>
-        </code>
-        <div id="aqua_planet_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-true => turn on aquaplanet mode in cam
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="aqua_planet_sst_tr">
-    <td><a name="aqua_planet_sst"></a>
-        <img id="aqua_planet_sst_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('aqua_planet_sst')">aqua_planet_sst</a>
-        </code>
-        <div id="aqua_planet_sst_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-1 => default sst mode for aquaplanet in cam
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="atm_adiabatic_tr">
-    <td><a name="atm_adiabatic"></a>
-        <img id="atm_adiabatic_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm_adiabatic')">atm_adiabatic</a>
-        </code>
-        <div id="atm_adiabatic_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-true => turn on adiabatic mode in cam
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="atm_ideal_phys_tr">
-    <td><a name="atm_ideal_phys"></a>
-        <img id="atm_ideal_phys_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm_ideal_phys')">atm_ideal_phys</a>
-        </code>
-        <div id="atm_ideal_phys_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-true => turn on ideal physics mode in cam
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
   <tr id="bfbflag_tr">
     <td><a name="bfbflag"></a>
         <img id="bfbflag_arrow" src="./images/arrow_right.gif">
@@ -822,72 +750,32 @@ Grid for atm ocn flux calc (untested)
     <td>char*64</td>
     <td>seq_infodata_inparm</td>
   </tr>
-  <tr id="atm2ice_fmapname_tr">
-    <td><a name="atm2ice_fmapname"></a>
-        <img id="atm2ice_fmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2icefmapname_tr">
+    <td><a name="atm2icefmapname"></a>
+        <img id="atm2icefmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ice_fmapname')">atm2ice_fmapname</a>
+             onclick="toggleHelp('atm2icefmapname')">atm2icefmapname</a>
         </code>
-        <div id="atm2ice_fmapname_help" style="display: none;
+        <div id="atm2icefmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-atm to ice flux mapping file for fluxes
+atm to ice flux mapping file for fluxes (currently first order conservative)
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ice_fmaptype_tr">
-    <td><a name="atm2ice_fmaptype"></a>
-        <img id="atm2ice_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2icefmaptype_tr">
+    <td><a name="atm2icefmaptype"></a>
+        <img id="atm2icefmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ice_fmaptype')">atm2ice_fmaptype</a>
+             onclick="toggleHelp('atm2icefmaptype')">atm2icefmaptype</a>
         </code>
-        <div id="atm2ice_fmaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="atm2ice_smapname_tr">
-    <td><a name="atm2ice_smapname"></a>
-        <img id="atm2ice_smapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ice_smapname')">atm2ice_smapname</a>
-        </code>
-        <div id="atm2ice_smapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-atm to ice state mapping file for states
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="atm2ice_smaptype_tr">
-    <td><a name="atm2ice_smaptype"></a>
-        <img id="atm2ice_smaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ice_smaptype')">atm2ice_smaptype</a>
-        </code>
-        <div id="atm2ice_smaptype_help" style="display: none;
+        <div id="atm2icefmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -902,32 +790,32 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ice_vmapname_tr">
-    <td><a name="atm2ice_vmapname"></a>
-        <img id="atm2ice_vmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2icesmapname_tr">
+    <td><a name="atm2icesmapname"></a>
+        <img id="atm2icesmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ice_vmapname')">atm2ice_vmapname</a>
+             onclick="toggleHelp('atm2icesmapname')">atm2icesmapname</a>
         </code>
-        <div id="atm2ice_vmapname_help" style="display: none;
+        <div id="atm2icesmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-atm to ice state mapping file for velocity
+atm to ice state mapping file for states (currently bilinear)
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ice_vmaptype_tr">
-    <td><a name="atm2ice_vmaptype"></a>
-        <img id="atm2ice_vmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2icesmaptype_tr">
+    <td><a name="atm2icesmaptype"></a>
+        <img id="atm2icesmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ice_vmaptype')">atm2ice_vmaptype</a>
+             onclick="toggleHelp('atm2icesmaptype')">atm2icesmaptype</a>
         </code>
-        <div id="atm2ice_vmaptype_help" style="display: none;
+        <div id="atm2icesmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -942,14 +830,54 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2lnd_fmapname_tr">
-    <td><a name="atm2lnd_fmapname"></a>
-        <img id="atm2lnd_fmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2icevmapname_tr">
+    <td><a name="atm2icevmapname"></a>
+        <img id="atm2icevmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2lnd_fmapname')">atm2lnd_fmapname</a>
+             onclick="toggleHelp('atm2icevmapname')">atm2icevmapname</a>
         </code>
-        <div id="atm2lnd_fmapname_help" style="display: none;
+        <div id="atm2icevmapname_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+atm to ice state mapping file for velocity (currently bilinear or patch)
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>seq_maps</td>
+  </tr>
+  <tr id="atm2icevmaptype_tr">
+    <td><a name="atm2icevmaptype"></a>
+        <img id="atm2icevmaptype_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('atm2icevmaptype')">atm2icevmaptype</a>
+        </code>
+        <div id="atm2icevmaptype_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>seq_maps</td>
+  </tr>
+  <tr id="atm2lndfmapname_tr">
+    <td><a name="atm2lndfmapname"></a>
+        <img id="atm2lndfmapname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('atm2lndfmapname')">atm2lndfmapname</a>
+        </code>
+        <div id="atm2lndfmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -960,14 +888,14 @@ atm to land mapping file for fluxes
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2lnd_fmaptype_tr">
-    <td><a name="atm2lnd_fmaptype"></a>
-        <img id="atm2lnd_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2lndfmaptype_tr">
+    <td><a name="atm2lndfmaptype"></a>
+        <img id="atm2lndfmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2lnd_fmaptype')">atm2lnd_fmaptype</a>
+             onclick="toggleHelp('atm2lndfmaptype')">atm2lndfmaptype</a>
         </code>
-        <div id="atm2lnd_fmaptype_help" style="display: none;
+        <div id="atm2lndfmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -982,14 +910,14 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2lnd_smapname_tr">
-    <td><a name="atm2lnd_smapname"></a>
-        <img id="atm2lnd_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2lndsmapname_tr">
+    <td><a name="atm2lndsmapname"></a>
+        <img id="atm2lndsmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2lnd_smapname')">atm2lnd_smapname</a>
+             onclick="toggleHelp('atm2lndsmapname')">atm2lndsmapname</a>
         </code>
-        <div id="atm2lnd_smapname_help" style="display: none;
+        <div id="atm2lndsmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1000,14 +928,14 @@ atm to land mapping file for states
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2lnd_smaptype_tr">
-    <td><a name="atm2lnd_smaptype"></a>
-        <img id="atm2lnd_smaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2lndsmaptype_tr">
+    <td><a name="atm2lndsmaptype"></a>
+        <img id="atm2lndsmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2lnd_smaptype')">atm2lnd_smaptype</a>
+             onclick="toggleHelp('atm2lndsmaptype')">atm2lndsmaptype</a>
         </code>
-        <div id="atm2lnd_smaptype_help" style="display: none;
+        <div id="atm2lndsmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1022,72 +950,32 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ocn_fmapname_tr">
-    <td><a name="atm2ocn_fmapname"></a>
-        <img id="atm2ocn_fmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2ocnfmapname_tr">
+    <td><a name="atm2ocnfmapname"></a>
+        <img id="atm2ocnfmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ocn_fmapname')">atm2ocn_fmapname</a>
+             onclick="toggleHelp('atm2ocnfmapname')">atm2ocnfmapname</a>
         </code>
-        <div id="atm2ocn_fmapname_help" style="display: none;
+        <div id="atm2ocnfmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-atm to ocn flux mapping file for fluxes 
+atm to ocn flux mapping file for fluxes (currently first order conservative)
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ocn_fmaptype_tr">
-    <td><a name="atm2ocn_fmaptype"></a>
-        <img id="atm2ocn_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2ocnfmaptype_tr">
+    <td><a name="atm2ocnfmaptype"></a>
+        <img id="atm2ocnfmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ocn_fmaptype')">atm2ocn_fmaptype</a>
+             onclick="toggleHelp('atm2ocnfmaptype')">atm2ocnfmaptype</a>
         </code>
-        <div id="atm2ocn_fmaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="atm2ocn_smapname_tr">
-    <td><a name="atm2ocn_smapname"></a>
-        <img id="atm2ocn_smapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ocn_smapname')">atm2ocn_smapname</a>
-        </code>
-        <div id="atm2ocn_smapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-atm to ocn state mapping file for states
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="atm2ocn_smaptype_tr">
-    <td><a name="atm2ocn_smaptype"></a>
-        <img id="atm2ocn_smaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ocn_smaptype')">atm2ocn_smaptype</a>
-        </code>
-        <div id="atm2ocn_smaptype_help" style="display: none;
+        <div id="atm2ocnfmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1102,72 +990,32 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ocn_vmapname_tr">
-    <td><a name="atm2ocn_vmapname"></a>
-        <img id="atm2ocn_vmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2ocnsmapname_tr">
+    <td><a name="atm2ocnsmapname"></a>
+        <img id="atm2ocnsmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ocn_vmapname')">atm2ocn_vmapname</a>
+             onclick="toggleHelp('atm2ocnsmapname')">atm2ocnsmapname</a>
         </code>
-        <div id="atm2ocn_vmapname_help" style="display: none;
+        <div id="atm2ocnsmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-atm to ocn state mapping file for velocity
+atm to ocn state mapping file for states (currently bilinear)
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="atm2ocn_vmaptype_tr">
-    <td><a name="atm2ocn_vmaptype"></a>
-        <img id="atm2ocn_vmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2ocnsmaptype_tr">
+    <td><a name="atm2ocnsmaptype"></a>
+        <img id="atm2ocnsmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2ocn_vmaptype')">atm2ocn_vmaptype</a>
+             onclick="toggleHelp('atm2ocnsmaptype')">atm2ocnsmaptype</a>
         </code>
-        <div id="atm2ocn_vmaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="atm2wav_smapname_tr">
-    <td><a name="atm2wav_smapname"></a>
-        <img id="atm2wav_smapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2wav_smapname')">atm2wav_smapname</a>
-        </code>
-        <div id="atm2wav_smapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-atm to wav state mapping file for states
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="atm2wav_smaptype_tr">
-    <td><a name="atm2wav_smaptype"></a>
-        <img id="atm2wav_smaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm2wav_smaptype')">atm2wav_smaptype</a>
-        </code>
-        <div id="atm2wav_smaptype_help" style="display: none;
+        <div id="atm2ocnsmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1182,32 +1030,32 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ice2atm_fmapname_tr">
-    <td><a name="ice2atm_fmapname"></a>
-        <img id="ice2atm_fmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2ocnvmapname_tr">
+    <td><a name="atm2ocnvmapname"></a>
+        <img id="atm2ocnvmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ice2atm_fmapname')">ice2atm_fmapname</a>
+             onclick="toggleHelp('atm2ocnvmapname')">atm2ocnvmapname</a>
         </code>
-        <div id="ice2atm_fmapname_help" style="display: none;
+        <div id="atm2ocnvmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-ice to atm mapping file for fluxes
+atm to ocn state mapping file for velocity (currently bilinear or patch)
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ice2atm_fmaptype_tr">
-    <td><a name="ice2atm_fmaptype"></a>
-        <img id="ice2atm_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="atm2ocnvmaptype_tr">
+    <td><a name="atm2ocnvmaptype"></a>
+        <img id="atm2ocnvmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ice2atm_fmaptype')">ice2atm_fmaptype</a>
+             onclick="toggleHelp('atm2ocnvmaptype')">atm2ocnvmaptype</a>
         </code>
-        <div id="ice2atm_fmaptype_help" style="display: none;
+        <div id="atm2ocnvmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1222,14 +1070,54 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ice2atm_smapname_tr">
-    <td><a name="ice2atm_smapname"></a>
-        <img id="ice2atm_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="ice2atmfmapname_tr">
+    <td><a name="ice2atmfmapname"></a>
+        <img id="ice2atmfmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ice2atm_smapname')">ice2atm_smapname</a>
+             onclick="toggleHelp('ice2atmfmapname')">ice2atmfmapname</a>
         </code>
-        <div id="ice2atm_smapname_help" style="display: none;
+        <div id="ice2atmfmapname_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+ice to atm mapping file for fluxes (currently first order conservative)
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>seq_maps</td>
+  </tr>
+  <tr id="ice2atmfmaptype_tr">
+    <td><a name="ice2atmfmaptype"></a>
+        <img id="ice2atmfmaptype_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ice2atmfmaptype')">ice2atmfmaptype</a>
+        </code>
+        <div id="ice2atmfmaptype_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>seq_maps</td>
+  </tr>
+  <tr id="ice2atmsmapname_tr">
+    <td><a name="ice2atmsmapname"></a>
+        <img id="ice2atmsmapname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ice2atmsmapname')">ice2atmsmapname</a>
+        </code>
+        <div id="ice2atmsmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1240,14 +1128,14 @@ ice to atm mapping file for states
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ice2atm_smaptype_tr">
-    <td><a name="ice2atm_smaptype"></a>
-        <img id="ice2atm_smaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="ice2atmsmaptype_tr">
+    <td><a name="ice2atmsmaptype"></a>
+        <img id="ice2atmsmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ice2atm_smaptype')">ice2atm_smaptype</a>
+             onclick="toggleHelp('ice2atmsmaptype')">ice2atmsmaptype</a>
         </code>
-        <div id="ice2atm_smaptype_help" style="display: none;
+        <div id="ice2atmsmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1262,54 +1150,14 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ice2wav_smapname_tr">
-    <td><a name="ice2wav_smapname"></a>
-        <img id="ice2wav_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="lnd2atmfmapname_tr">
+    <td><a name="lnd2atmfmapname"></a>
+        <img id="lnd2atmfmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ice2wav_smapname')">ice2wav_smapname</a>
+             onclick="toggleHelp('lnd2atmfmapname')">lnd2atmfmapname</a>
         </code>
-        <div id="ice2wav_smapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-ice to wav state mapping file for states
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="ice2wav_smaptype_tr">
-    <td><a name="ice2wav_smaptype"></a>
-        <img id="ice2wav_smaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('ice2wav_smaptype')">ice2wav_smaptype</a>
-        </code>
-        <div id="ice2wav_smaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="lnd2atm_fmapname_tr">
-    <td><a name="lnd2atm_fmapname"></a>
-        <img id="lnd2atm_fmapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('lnd2atm_fmapname')">lnd2atm_fmapname</a>
-        </code>
-        <div id="lnd2atm_fmapname_help" style="display: none;
+        <div id="lnd2atmfmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1320,14 +1168,14 @@ land to atm mapping file for fluxes
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="lnd2atm_fmaptype_tr">
-    <td><a name="lnd2atm_fmaptype"></a>
-        <img id="lnd2atm_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="lnd2atmfmaptype_tr">
+    <td><a name="lnd2atmfmaptype"></a>
+        <img id="lnd2atmfmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('lnd2atm_fmaptype')">lnd2atm_fmaptype</a>
+             onclick="toggleHelp('lnd2atmfmaptype')">lnd2atmfmaptype</a>
         </code>
-        <div id="lnd2atm_fmaptype_help" style="display: none;
+        <div id="lnd2atmfmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1342,14 +1190,14 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="lnd2atm_smapname_tr">
-    <td><a name="lnd2atm_smapname"></a>
-        <img id="lnd2atm_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="lnd2atmsmapname_tr">
+    <td><a name="lnd2atmsmapname"></a>
+        <img id="lnd2atmsmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('lnd2atm_smapname')">lnd2atm_smapname</a>
+             onclick="toggleHelp('lnd2atmsmapname')">lnd2atmsmapname</a>
         </code>
-        <div id="lnd2atm_smapname_help" style="display: none;
+        <div id="lnd2atmsmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1360,14 +1208,14 @@ land to atm mapping file for states
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="lnd2atm_smaptype_tr">
-    <td><a name="lnd2atm_smaptype"></a>
-        <img id="lnd2atm_smaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="lnd2atmsmaptype_tr">
+    <td><a name="lnd2atmsmaptype"></a>
+        <img id="lnd2atmsmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('lnd2atm_smaptype')">lnd2atm_smaptype</a>
+             onclick="toggleHelp('lnd2atmsmaptype')">lnd2atmsmaptype</a>
         </code>
-        <div id="lnd2atm_smaptype_help" style="display: none;
+        <div id="lnd2atmsmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1382,14 +1230,14 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="lnd2rof_fmapname_tr">
-    <td><a name="lnd2rof_fmapname"></a>
-        <img id="lnd2rof_fmapname_arrow" src="./images/arrow_right.gif">
+  <tr id="lnd2roffmapname_tr">
+    <td><a name="lnd2roffmapname"></a>
+        <img id="lnd2roffmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('lnd2rof_fmapname')">lnd2rof_fmapname</a>
+             onclick="toggleHelp('lnd2roffmapname')">lnd2roffmapname</a>
         </code>
-        <div id="lnd2rof_fmapname_help" style="display: none;
+        <div id="lnd2roffmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1400,14 +1248,14 @@ lnd to runoff conservative mapping file
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="lnd2rof_fmaptype_tr">
-    <td><a name="lnd2rof_fmaptype"></a>
-        <img id="lnd2rof_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="lnd2roffmaptype_tr">
+    <td><a name="lnd2roffmaptype"></a>
+        <img id="lnd2roffmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('lnd2rof_fmaptype')">lnd2rof_fmaptype</a>
+             onclick="toggleHelp('lnd2roffmaptype')">lnd2roffmaptype</a>
         </code>
-        <div id="lnd2rof_fmaptype_help" style="display: none;
+        <div id="lnd2roffmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1422,70 +1270,32 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="mct_usealltoall_tr">
-    <td><a name="mct_usealltoall"></a>
-        <img id="mct_usealltoall_arrow" src="./images/arrow_right.gif">
+  <tr id="ocn2atmfmapname_tr">
+    <td><a name="ocn2atmfmapname"></a>
+        <img id="ocn2atmfmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('mct_usealltoall')">mct_usealltoall</a>
+             onclick="toggleHelp('ocn2atmfmapname')">ocn2atmfmapname</a>
         </code>
-        <div id="mct_usealltoall_help" style="display: none;
+        <div id="ocn2atmfmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-mct alltoall mapping flag
-<br/>default: false
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="mct_usevector_tr">
-    <td><a name="mct_usevector"></a>
-        <img id="mct_usevector_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('mct_usevector')">mct_usevector</a>
-        </code>
-        <div id="mct_usevector_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-mct vector flag
-<br/>default: false
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="ocn2atm_fmapname_tr">
-    <td><a name="ocn2atm_fmapname"></a>
-        <img id="ocn2atm_fmapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('ocn2atm_fmapname')">ocn2atm_fmapname</a>
-        </code>
-        <div id="ocn2atm_fmapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-ocn to atm mapping file for fluxes
+ocn to atm mapping file for fluxes (currently first order conservative)
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ocn2atm_fmaptype_tr">
-    <td><a name="ocn2atm_fmaptype"></a>
-        <img id="ocn2atm_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="ocn2atmfmaptype_tr">
+    <td><a name="ocn2atmfmaptype"></a>
+        <img id="ocn2atmfmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ocn2atm_fmaptype')">ocn2atm_fmaptype</a>
+             onclick="toggleHelp('ocn2atmfmaptype')">ocn2atmfmaptype</a>
         </code>
-        <div id="ocn2atm_fmaptype_help" style="display: none;
+        <div id="ocn2atmfmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1500,14 +1310,14 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ocn2atm_smapname_tr">
-    <td><a name="ocn2atm_smapname"></a>
-        <img id="ocn2atm_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="ocn2atmsmapname_tr">
+    <td><a name="ocn2atmsmapname"></a>
+        <img id="ocn2atmsmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ocn2atm_smapname')">ocn2atm_smapname</a>
+             onclick="toggleHelp('ocn2atmsmapname')">ocn2atmsmapname</a>
         </code>
-        <div id="ocn2atm_smapname_help" style="display: none;
+        <div id="ocn2atmsmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1518,14 +1328,14 @@ ocn to atm mapping file for states
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ocn2atm_smaptype_tr">
-    <td><a name="ocn2atm_smaptype"></a>
-        <img id="ocn2atm_smaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="ocn2atmsmaptype_tr">
+    <td><a name="ocn2atmsmaptype"></a>
+        <img id="ocn2atmsmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ocn2atm_smaptype')">ocn2atm_smaptype</a>
+             onclick="toggleHelp('ocn2atmsmaptype')">ocn2atmsmaptype</a>
         </code>
-        <div id="ocn2atm_smaptype_help" style="display: none;
+        <div id="ocn2atmsmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1540,54 +1350,14 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="ocn2wav_smapname_tr">
-    <td><a name="ocn2wav_smapname"></a>
-        <img id="ocn2wav_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="rof2lndfmapname_tr">
+    <td><a name="rof2lndfmapname"></a>
+        <img id="rof2lndfmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('ocn2wav_smapname')">ocn2wav_smapname</a>
+             onclick="toggleHelp('rof2lndfmapname')">rof2lndfmapname</a>
         </code>
-        <div id="ocn2wav_smapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-ocn to wav state mapping file for states
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="ocn2wav_smaptype_tr">
-    <td><a name="ocn2wav_smaptype"></a>
-        <img id="ocn2wav_smaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('ocn2wav_smaptype')">ocn2wav_smaptype</a>
-        </code>
-        <div id="ocn2wav_smaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="rof2lnd_fmapname_tr">
-    <td><a name="rof2lnd_fmapname"></a>
-        <img id="rof2lnd_fmapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2lnd_fmapname')">rof2lnd_fmapname</a>
-        </code>
-        <div id="rof2lnd_fmapname_help" style="display: none;
+        <div id="rof2lndfmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1598,14 +1368,14 @@ runoff to lnd conservative mapping file
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="rof2lnd_fmaptype_tr">
-    <td><a name="rof2lnd_fmaptype"></a>
-        <img id="rof2lnd_fmaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="rof2lndfmaptype_tr">
+    <td><a name="rof2lndfmaptype"></a>
+        <img id="rof2lndfmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2lnd_fmaptype')">rof2lnd_fmaptype</a>
+             onclick="toggleHelp('rof2lndfmaptype')">rof2lndfmaptype</a>
         </code>
-        <div id="rof2lnd_fmaptype_help" style="display: none;
+        <div id="rof2lndfmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1620,112 +1390,32 @@ grid.
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="rof2lnd_smapname_tr">
-    <td><a name="rof2lnd_smapname"></a>
-        <img id="rof2lnd_smapname_arrow" src="./images/arrow_right.gif">
+  <tr id="rof2ocnfmapname_tr">
+    <td><a name="rof2ocnfmapname"></a>
+        <img id="rof2ocnfmapname_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2lnd_smapname')">rof2lnd_smapname</a>
+             onclick="toggleHelp('rof2ocnfmapname')">rof2ocnfmapname</a>
         </code>
-        <div id="rof2lnd_smapname_help" style="display: none;
+        <div id="rof2ocnfmapname_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-runoff to lnd conservative mapping file
+runoff to ocn conservative mapping file
 </pre>
         </div>
     </td>
     <td>char*256</td>
     <td>seq_maps</td>
   </tr>
-  <tr id="rof2lnd_smaptype_tr">
-    <td><a name="rof2lnd_smaptype"></a>
-        <img id="rof2lnd_smaptype_arrow" src="./images/arrow_right.gif">
+  <tr id="rof2ocnfmaptype_tr">
+    <td><a name="rof2ocnfmaptype"></a>
+        <img id="rof2ocnfmaptype_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2lnd_smaptype')">rof2lnd_smaptype</a>
+             onclick="toggleHelp('rof2ocnfmaptype')">rof2ocnfmaptype</a>
         </code>
-        <div id="rof2lnd_smaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="rof2ocn_fmapname_tr">
-    <td><a name="rof2ocn_fmapname"></a>
-        <img id="rof2ocn_fmapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2ocn_fmapname')">rof2ocn_fmapname</a>
-        </code>
-        <div id="rof2ocn_fmapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-runoff to ocn area overlap conservative mapping file
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="rof2ocn_fmaptype_tr">
-    <td><a name="rof2ocn_fmaptype"></a>
-        <img id="rof2ocn_fmaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2ocn_fmaptype')">rof2ocn_fmaptype</a>
-        </code>
-        <div id="rof2ocn_fmaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="rof2ocn_rmapname_tr">
-    <td><a name="rof2ocn_rmapname"></a>
-        <img id="rof2ocn_rmapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2ocn_rmapname')">rof2ocn_rmapname</a>
-        </code>
-        <div id="rof2ocn_rmapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-runoff to ocn nearest neighbor plus smoothing conservative mapping file
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="rof2ocn_rmaptype_tr">
-    <td><a name="rof2ocn_rmaptype"></a>
-        <img id="rof2ocn_rmaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('rof2ocn_rmaptype')">rof2ocn_rmaptype</a>
-        </code>
-        <div id="rof2ocn_rmaptype_help" style="display: none;
+        <div id="rof2ocnfmaptype_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -1774,46 +1464,6 @@ automatically set by comparison of ATM_GRID and LND_GRID which are set in env_ca
 tells the coupler to treat the atm and ocean grids as "the same".  
 automatically set by comparison of ATM_GRID and OCN_GRID which are set in env_case.xml.  
 <br/>default: true
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="samegrid_aw_tr">
-    <td><a name="samegrid_aw"></a>
-        <img id="samegrid_aw_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('samegrid_aw')">samegrid_aw</a>
-        </code>
-        <div id="samegrid_aw_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-tells the coupler to treat the atm and wave grids as "the same".  
-automatically set by comparison of ATM_GRID and WAV_GRID which are set in env_case.xml.  
-<br/>default: false
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="samegrid_ow_tr">
-    <td><a name="samegrid_ow"></a>
-        <img id="samegrid_ow_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('samegrid_ow')">samegrid_ow</a>
-        </code>
-        <div id="samegrid_ow_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-tells the coupler to treat the ocean and wave grids as "the same".  
-automatically set by comparison of OCN_GRID and WAV_GRID which are set in env_case.xml.  
-<br/>default: false
 </pre>
         </div>
     </td>
@@ -1891,46 +1541,6 @@ mapping.
     </td>
     <td>char*64</td>
     <td>seq_infodata_inparm</td>
-  </tr>
-  <tr id="wav2ocn_smapname_tr">
-    <td><a name="wav2ocn_smapname"></a>
-        <img id="wav2ocn_smapname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('wav2ocn_smapname')">wav2ocn_smapname</a>
-        </code>
-        <div id="wav2ocn_smapname_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-wav to ocn state mapping file for states
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
-  </tr>
-  <tr id="wav2ocn_smaptype_tr">
-    <td><a name="wav2ocn_smaptype"></a>
-        <img id="wav2ocn_smaptype_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('wav2ocn_smaptype')">wav2ocn_smaptype</a>
-        </code>
-        <div id="wav2ocn_smaptype_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-The type of mapping desired, either "source" or "destination" mapping.
-X is associated with rearrangement of the source grid to the
-destination grid and then local mapping.  Y is associated with mapping
-on the source grid and then rearrangement and sum to the destination
-grid.
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>seq_maps</td>
   </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple"><a name="budget"     >DRV: Budgets (drv_in)</a></h3></span>
@@ -3007,48 +2617,6 @@ tprof_option alarms are:
     <td>char*16</td>
     <td>seq_timemgr_inparm</td>
   </tr>
-  <tr id="wav_cpl_dt_tr">
-    <td><a name="wav_cpl_dt"></a>
-        <img id="wav_cpl_dt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_cpl_dt')">wav_cpl_dt</a>
-        </code>
-        <div id="wav_cpl_dt_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-wav coupling interval in seconds
-set via WAV_NCPL in env_run.xml.  
-WAV_NCPL is the number of times the wav is coupled per NCPL_BASE_PERIOD
-NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
-associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
-<br/>default: 0
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>seq_timemgr_inparm</td>
-  </tr>
-  <tr id="wav_cpl_offset_tr">
-    <td><a name="wav_cpl_offset"></a>
-        <img id="wav_cpl_offset_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_cpl_offset')">wav_cpl_offset</a>
-        </code>
-        <div id="wav_cpl_offset_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-wav coupling interval offset in seconds
-<br/>default: 0
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
-    <td>seq_timemgr_inparm</td>
-  </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple"><a name="ccsm_pes"   >DRV: PE Layout (drv_in)</a></h3></span>
 <table id="ccsm_pes_table" border="1" width="100%" cellpadding="2" cellspacing="0">
@@ -3695,98 +3263,62 @@ set by ROOTPE_LND in env_configure.xml.
     <td>integer</td>
     <td>ccsm_pes</td>
   </tr>
-  <tr id="wav_layout_tr">
-    <td><a name="wav_layout"></a>
-        <img id="wav_layout_arrow" src="./images/arrow_right.gif">
+  <tr id="scmlat_tr">
+    <td><a name="scmlat"></a>
+        <img id="scmlat_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_layout')">wav_layout</a>
+             onclick="toggleHelp('scmlat')">scmlat</a>
         </code>
-        <div id="wav_layout_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>  
-Layout of multi-instance wavs (if there are more than 1)
-</pre>
-        </div>
-    </td>
-    <td>char*32</td>
-    <td>ccsm_pes</td>
-  </tr>
-  <tr id="wav_ntasks_tr">
-    <td><a name="wav_ntasks"></a>
-        <img id="wav_ntasks_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_ntasks')">wav_ntasks</a>
-        </code>
-        <div id="wav_ntasks_help" style="display: none;
+        <div id="scmlat_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-the number of mpi tasks assigned to the wav components. 
-set by NTASKS_WAV in env_configure.xml.  
+grid point latitude associated with single column mode.  
+set by PTS_LAT in env_run.xml.
 </pre>
         </div>
     </td>
-    <td>integer</td>
+    <td>real</td>
     <td>ccsm_pes</td>
   </tr>
-  <tr id="wav_nthreads_tr">
-    <td><a name="wav_nthreads"></a>
-        <img id="wav_nthreads_arrow" src="./images/arrow_right.gif">
+  <tr id="scmlon_tr">
+    <td><a name="scmlon"></a>
+        <img id="scmlon_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_nthreads')">wav_nthreads</a>
+             onclick="toggleHelp('scmlon')">scmlon</a>
         </code>
-        <div id="wav_nthreads_help" style="display: none;
+        <div id="scmlon_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-the number of threads per mpi task for the wav component.  
-set by NTHRDS_WAV in env_configure.xml.  
+grid point longitude associated with single column mode.  
+set by PTS_LON in env_run.xml.
 </pre>
         </div>
     </td>
-    <td>integer</td>
+    <td>real</td>
     <td>ccsm_pes</td>
   </tr>
-  <tr id="wav_pestride_tr">
-    <td><a name="wav_pestride"></a>
-        <img id="wav_pestride_arrow" src="./images/arrow_right.gif">
+  <tr id="single_column_tr">
+    <td><a name="single_column"></a>
+        <img id="single_column_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_pestride')">wav_pestride</a>
+             onclick="toggleHelp('single_column')">single_column</a>
         </code>
-        <div id="wav_pestride_help" style="display: none;
+        <div id="single_column_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-the mpi global processors stride associated with the mpi tasks for the wav component.  
-set by PSTRID_WAV in env_configure.xml.  
+turns on single column mode.  
+set by PTS_MODE in env_case.xml, 
+<br/>default: false
 </pre>
         </div>
     </td>
-    <td>integer</td>
-    <td>ccsm_pes</td>
-  </tr>
-  <tr id="wav_rootpe_tr">
-    <td><a name="wav_rootpe"></a>
-        <img id="wav_rootpe_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('wav_rootpe')">wav_rootpe</a>
-        </code>
-        <div id="wav_rootpe_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-the global mpi task rank of the root processor assigned to the wav component.  
-set by ROOTPE_WAV in env_configure.xml.
-</pre>
-        </div>
-    </td>
-    <td>integer</td>
+    <td>logical</td>
     <td>ccsm_pes</td>
   </tr>
 </table>

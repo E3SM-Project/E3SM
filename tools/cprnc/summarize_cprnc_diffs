@@ -57,8 +57,8 @@ else {
 #    Dir => directory (gives test name)
 #    Filename  => cprnc filename
 #    Variable  => variable
-#    RMS       => rms value [may or may not be present]
-#    FILLDIFF  => ' '       [may or may not be present]
+#    RMS       => normalized rms value [may or may not be present]
+#    FILLDIFF  => ' '                  [may or may not be present]
 my ($summary_hash) =
    process_cprnc_output($opts{'basedir'}, $opts{'testid'}, $opts{'in_rundir'});
 
@@ -97,13 +97,13 @@ SYNOPSIS
 
     <testid> is the testid of the tests to summarize
 
-    The script looks for cprnc output in all directories in basedir
-    whose name ends with the given testid. Summaries of cprnc
-    differences (RMS differences and FILLDIFFs) are placed in three output
+    The script looks for cprnc output in all directories in basedir whose
+    name ends with the given testid. Summaries of cprnc differences
+    (normalized RMS differences and FILLDIFFs) are placed in three output
     files beginning with the name 'cprnc.summary', in the current directory.
-    These files contain the same information, but one is sorted by test name, 
-    one is sorted by variable name, and is one sorted from largest to
-    smallest RMS differences.
+    These files contain the same information, but one is sorted by test
+    name, one is sorted by variable name, and is one sorted from largest to
+    smallest normalized RMS differences.
 
     This is intended to be used to post-process baseline comparison output
     from a CESM test suite -- either from the main tests (which compare
@@ -191,13 +191,16 @@ sub process_line {
 
    my $diff_type;
    my $varname;
-   my $diff_val;
-
+   my $rms;
+   my $ignore;
+   my $rms_normalized;
+   
    if ($line =~ /^ *RMS /) {
-      ($diff_type, $varname, $diff_val) = split " ", $line;
+      ($diff_type, $varname, $rms, $ignore, $rms_normalized) = split " ", $line;
    } elsif ($line =~ /^ *FILLDIFF /) {
       ($diff_type, $varname) = split " ", $line;
-      $diff_val = "";
+      $rms = "";
+      $rms_normalized = "";
    } else {
       $diff_type = "";
    }
@@ -221,11 +224,11 @@ sub process_line {
                         };
       }
 
-      # Whether or not the hash already contained the given key, we need to add
-      # the value of interest -- either the RMS error or the fact that there is a
-      # FILLDIFF; in the latter case, note that $diff_val is irrelevant, but we
-      # use it as the value of the hash anyway for simplicity.
-      $diffs->{$key}{$diff_type} = $diff_val;
+      # Whether or not the hash already contained the given key, we need to add the value
+      # of interest -- either the normalized RMS error or the fact that there is a
+      # FILLDIFF; in the latter case, note that $rms_normalized is irrelevant, but we use
+      # it as the value of the hash anyway for simplicity.
+      $diffs->{$key}{$diff_type} = $rms_normalized;
    } elsif ($diff_type ne '') {
       die "Unexpected diff_type: $diff_type";
    }
@@ -411,10 +414,10 @@ sub format_line {
 # process_line("FILLDIFF var1", "test_dir1", "file_b", \%diffs);
 #
 # # add an RMS to existing filldiff
-# process_line("RMS var1 42", "test_dir1", "file_b", \%diffs);
+# process_line("RMS var1 99 NORMALIZED 42", "test_dir1", "file_b", \%diffs);
 #
 # # test basic rms error
-# process_line("RMS var17 3.14", "test_dir1", "file_b", \%diffs);
+# process_line("RMS var17 99 NORMALIZED 3.14", "test_dir1", "file_b", \%diffs);
 #
 # # add a filldiff to existing rms error
 # process_line("FILLDIFF var17", "test_dir1", "file_b", \%diffs);
@@ -423,10 +426,10 @@ sub format_line {
 # process_line("FILLDIFF var42", "test_dir2", "file_c", \%diffs);
 #
 # # add an RMS error without filldiff
-# process_line("RMS var100 100", "test_dir2", "file_d", \%diffs);
+# process_line("RMS var100 99 NORMALIZED 100", "test_dir2", "file_d", \%diffs);
 #
 # # test a warning: should issue a warning and replace the above setting
-# process_line("RMS var100 200", "test_dir2", "file_d", \%diffs);
+# process_line("RMS var100 99 NORMALIZED 200", "test_dir2", "file_d", \%diffs);
 #
 # print Dumper(\%diffs);
 

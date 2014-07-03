@@ -31,14 +31,16 @@
 !TODO - Move this program to another directory so that this directory contains no programs?
 
 program test_ts
+
   !*FD testing the time series module
   use glimmer_ts
+  use glimmer_global, only: dp
   implicit none
 
   character(len=50) :: fname
   integer numv
-  real, dimension(:), allocatable :: val1,val2
-  real time
+  real(dp), dimension(:), allocatable :: val1,val2
+  real(dp) :: time
   type(glimmer_tseries) :: ts
 
   write(*,*) 'Enter name containing time series'

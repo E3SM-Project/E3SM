@@ -1,95 +1,77 @@
 module CLMVICMapMod
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: CLMVICMapMod
-!
-! !DESCRIPTION:
-! Performs  the mapping from CLM layers to VIC layers
-! Specifically, 10 (or 23 when more_vertlayers == .true.) 
-! CLM hydrologically active soil layers are mapped to three VIC layers
-! by assigning the first nlvic(1) layers to VIC layer 1
-!              the next nlvic(2) layers  to VIC alyer 2
-!              and the remaining to VIC layer 3
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Performs  the mapping from CLM layers to VIC layers
+  ! Specifically, 10 (or 23 when more_vertlayers == .true.) 
+  ! CLM hydrologically active soil layers are mapped to three VIC layers
+  ! by assigning the first nlvic(1) layers to VIC layer 1
+  !              the next nlvic(2) layers  to VIC alyer 2
+  !              and the remaining to VIC layer 3
+  !
+  ! !USES:
   use shr_kind_mod, only: r8 => shr_kind_r8
-!
-! !PUBLIC TYPES:
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! !PUBLIC MEMBER FUNCTIONS:
-#if (defined VICHYDRO)
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
   public  :: initCLMVICMap   ! map layer/node fractions
   public  :: CLMVICMap          ! map from VIC to CLM layers
   private :: linear_interp      ! function for linear interperation 
-!
-! !REVISION HISTORY:
-! Created by Aihui Wang, 2008
-! Revised by Maoyi Huang, 02/12/2010
-!
-!EOP
-!-----------------------------------------------------------------------
+  !
+  ! !REVISION HISTORY:
+  ! Created by Aihui Wang, 2008
+  ! Revised by Maoyi Huang, 02/12/2010
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: initCLMVICMap
-!
-! !INTERFACE:
-subroutine initCLMVICMap(c)
+  !-----------------------------------------------------------------------
+  subroutine initCLMVICMap(c)
 
-! !DESCRIPTION:
-! This subroutine calculates mapping between CLM and VIC layers
-! added by AWang
-! modified by M.Huang for CLM4 
-!
-! !USES:
-   use clmtype
-   use clm_varcon  , only : denh2o, denice, pondmx
-   use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
-   use shr_kind_mod, only: r8 => shr_kind_r8
-
-   ! !ARGUMENTS:
+    ! !DESCRIPTION:
+    ! This subroutine calculates mapping between CLM and VIC layers
+    ! added by AWang
+    ! modified by M.Huang for CLM4 
+    !
+    ! !USES:
+    use clmtype
+    use clm_varcon  , only : denh2o, denice, pondmx
+    use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+    !
+    ! !ARGUMENTS:
     implicit none
     integer , intent(in)  :: c
-
-! !REVISION HISTORY:
-! Created by Maoyi Huang
-! 11/13/2012, Maoyi Huang: rewrite the mapping modules in CLM4VIC 
-!
-!local pointers to original implicit in arrays
-
-    real(r8), pointer :: dz(:,:)                    ! layer depth (m)
-    real(r8), pointer :: zi(:,:)                    ! interface level below a "z" level (m)
-    real(r8), pointer :: z(:,:)                     ! layer thickness (m)
-    real(r8), pointer :: depth(:,:)                 ! layer depth of VIC (m)
-    real(r8), pointer :: vic_clm_fract(:,:,:)       ! fraction of VIC layers in clm layers
+    !
+    ! !REVISION HISTORY:
+    ! Created by Maoyi Huang
+    ! 11/13/2012, Maoyi Huang: rewrite the mapping modules in CLM4VIC 
+    !
     real(r8) :: sum_frac(1:nlayer)                  ! sum of fraction for each layer
     real(r8) :: deltal(1:nlayer+1)                  ! temporary
     real(r8) :: zsum                                ! temporary
     real(r8) :: lsum                                ! temporary
     real(r8) :: temp                                ! temporary
 
- ! other local variables
+    ! other local variables
+   
+    integer :: i, j, fc
+    ! note: in CLM h2osoil_liq unit is kg/m2, in VIC moist is mm
+    ! h2osoi_ice is actually water equavlent ice content.
+    !-----------------------------------------------------------------------
     
-   integer :: i, j, fc
- ! note: in CLM h2osoil_liq unit is kg/m2, in VIC moist is mm
- ! h2osoi_ice is actually water equavlent ice content.
- ! Assign local pointers to derived subtypes components (column-level)
+   associate(& 
+   dz            =>    cps%dz             , & ! Input:  [real(r8) (:,:)]  layer depth (m)                       
+   zi            =>    cps%zi             , & ! Input:  [real(r8) (:,:)]  interface level below a "z" level (m) 
+   z             =>    cps%z              , & ! Input:  [real(r8) (:,:)]  layer thickness (m)                   
+   depth         =>    cps%depth          , & ! Input:  [real(r8) (:,:)]  layer depth of VIC (m)                
+   vic_clm_fract =>    cps%vic_clm_fract    & ! Input:  [real(r8) (:,:,:)]  fraction of VIC layers in clm layers
+   )
+   !************************************************************************  
 
-    dz         => clm3%g%l%c%cps%dz
-    zi         => clm3%g%l%c%cps%zi
-    z          => clm3%g%l%c%cps%z
-    depth      => clm3%g%l%c%cps%depth
-    vic_clm_fract => clm3%g%l%c%cps%vic_clm_fract
-!************************************************************************  
-
-!  set fraction of VIC layer in each CLM layer
+   !  set fraction of VIC layer in each CLM layer
  
    lsum = 0._r8
    do i = 1, nlayer
@@ -124,73 +106,54 @@ subroutine initCLMVICMap(c)
      lsum = lsum + deltal(i)
    end do                             ! end VIC layer calcultion 
    
-end subroutine initCLMVICMap
+    end associate 
+ end subroutine initCLMVICMap
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: CLMVICMap
-!
-! !INTERFACE:
-subroutine CLMVICMap(lbc, ubc, numf, filter)
-!
-! !DESCRIPTION:
-! mapping from VIC to CLM layers, M.Huang
-!
-! !USES:
+ !-----------------------------------------------------------------------
+ subroutine CLMVICMap(bounds, numf, filter)
+   !
+   ! !DESCRIPTION:
+   ! mapping from VIC to CLM layers, M.Huang
+   !
+   ! !USES:
    use clmtype
    use clm_varcon  , only : denh2o, denice, pondmx, watmin
    use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
-   use shr_kind_mod, only: r8 => shr_kind_r8
-
-! !REVISION HISTORY:
-! Created by Maoyi Huang
-! 11/13/2012, Maoyi Huang: rewrite the mapping modules in CLM4VIC 
-
+   use decompMod   , only : bounds_type
+   !
+   ! !REVISION HISTORY:
+   ! Created by Maoyi Huang
+   ! 11/13/2012, Maoyi Huang: rewrite the mapping modules in CLM4VIC 
+   !
    ! !ARGUMENTS:
-    implicit none
-    integer , intent(in)  :: lbc, ubc               ! column bounds
-    integer , intent(in)  :: numf                   ! number of column soil points in column filter
-    integer , intent(in)  :: filter(ubc-lbc+1)      ! column filter for soil points
+   implicit none
+   type(bounds_type), intent(in) :: bounds  ! bounds
+   integer , intent(in)  :: numf                   ! number of column soil points in column filter
+   integer , intent(in)  :: filter(:)      ! column filter for soil points
+   !
+   ! !LOCAL VARIABLES
+   real(r8) :: ice0(1:nlayer)            ! last step ice lens (mm)  (new)
+   real(r8) :: moist0(1:nlayer)          ! last step soil water (mm)  (new)
+   integer  :: i, j, c, fc
+   ! note: in CLM3 h2osoil_liq unit is kg/m2, in VIC moist is mm
+   ! h2osoi_ice is actually water equavlent ice content.
+   !-----------------------------------------------------------------------
 
-!
-!local pointers to original implicit in arrays
-
-    real(r8), pointer :: dz(:,:)                    !layer depth (m)
-    real(r8), pointer :: zi(:,:)                    !interface level below a "z" level (m)
-    real(r8), pointer :: z(:,:)                     !layer thickness (m)
-    real(r8), pointer :: h2osoi_liq(:,:)            !liquid water (kg/m2)
-    real(r8), pointer :: h2osoi_ice(:,:)            !ice lens (kg/m2)
-    real(r8), pointer :: moist(:,:)                 !liquid water (mm)
-    real(r8), pointer :: ice(:,:)                   !ice lens (mm)
-    real(r8), pointer :: depth(:,:)                 !layer depth of upper layer (m)
-    real(r8), pointer :: max_moist(:,:)             !max layer moist + ice (mm)
-    real(r8), pointer :: moist_vol(:,:)             !volumetric soil moisture for VIC soil layers
-    real(r8), pointer :: h2osoi_vol(:,:)            !volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-    real(r8), pointer :: porosity(:,:)              !soil porisity (1-bulk_density/soil_density)
-    real(r8), pointer :: vic_clm_fract(:,:,:)       !fraction of VIC layers in each CLM layer 
-!
-!local variables
-    real(r8) :: ice0(1:nlayer)            ! last step ice lens (mm)  (new)
-    real(r8) :: moist0(1:nlayer)          ! last step soil water (mm)  (new)
-    integer  :: i, j, c, fc
-
- ! note: in CLM3 h2osoil_liq unit is kg/m2, in VIC moist is mm
- ! h2osoi_ice is actually water equavlent ice content.
- ! Assign local pointers to derived subtypes components (column-level)
-    dz            => clm3%g%l%c%cps%dz
-    zi            => clm3%g%l%c%cps%zi
-    z             => clm3%g%l%c%cps%z
-    h2osoi_liq    => clm3%g%l%c%cws%h2osoi_liq
-    h2osoi_ice    => clm3%g%l%c%cws%h2osoi_ice
-    moist         => clm3%g%l%c%cws%moist
-    ice           => clm3%g%l%c%cws%ice
-    h2osoi_vol    => clm3%g%l%c%cws%h2osoi_vol
-    moist_vol     => clm3%g%l%c%cws%moist_vol
-    porosity      => clm3%g%l%c%cps%porosity
-    depth         => clm3%g%l%c%cps%depth
-    max_moist     => clm3%g%l%c%cps%max_moist
-    vic_clm_fract => clm3%g%l%c%cps%vic_clm_fract
+   associate(& 
+   dz             => cps%dz           , & ! Input:  [real(r8) (:,:)] layer depth (m)                        
+   zi             => cps%zi           , & ! Input:  [real(r8) (:,:)] interface level below a "z" level (m)  
+   z              => cps%z            , & ! Input:  [real(r8) (:,:)] layer thickness (m)                    
+   h2osoi_liq     => cws%h2osoi_liq   , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
+   h2osoi_ice     => cws%h2osoi_ice   , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
+   moist          => cws%moist        , & ! Input:  [real(r8) (:,:)] liquid water (mm)                      
+   ice            => cws%ice          , & ! Input:  [real(r8) (:,:)] ice lens (mm)                          
+   h2osoi_vol     => cws%h2osoi_vol   , & ! Input:  [real(r8) (:,:)] volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+   moist_vol      => cws%moist_vol    , & ! Input:  [real(r8) (:,:)] volumetric soil moisture for VIC soil layers
+   porosity       => cps%porosity     , & ! Input:  [real(r8) (:,:)] soil porisity (1-bulk_density/soil_density)
+   depth          => cps%depth        , & ! Input:  [real(r8) (:,:)] layer depth of upper layer (m)         
+   max_moist      => cps%max_moist    , & ! Input:  [real(r8) (:,:)] max layer moist + ice (mm)             
+   vic_clm_fract  => cps%vic_clm_fract  & ! Input:  [real(r8) (:,:,:)] fraction of VIC layers in each CLM layer
+   )
 
    ! map CLM to VIC
    do fc = 1, numf
@@ -220,27 +183,26 @@ subroutine CLMVICMap(lbc, ubc, numf, filter)
      moist_vol(c, nlayer+1:nlayert) = h2osoi_vol(c, nlevsoi+1:nlevgrnd)
   end do
 
-end subroutine CLMVICMap
+    end associate 
+ end subroutine CLMVICMap
 
-!-------------------------------------------------------------------
-subroutine linear_interp(x,y, x0, x1, y0, y1)
-
-! !DESCRIPTION:
-! This subroutine provides linear interpolation
-
-! !USES:  
-  use shr_kind_mod, only: r8 => shr_kind_r8
-
-! !ARGUMENTS:
+ !-------------------------------------------------------------------
+ subroutine linear_interp(x,y, x0, x1, y0, y1)
+   !
+   ! !DESCRIPTION:
+   ! This subroutine provides linear interpolation
+   !
+   ! !USES:  
+   !
+   ! !ARGUMENTS:
    implicit none
-
    real(r8), intent(in) :: x, x0, y0, x1, y1
    real(r8), intent(out) :: y
+   !-------------------------------------------------------------------
 
 
    y = y0 + (x - x0) * (y1 - y0) / (x1 - x0)
-  
-end subroutine linear_interp
 
-#endif
+ end subroutine linear_interp
+
 end module CLMVICMapMod

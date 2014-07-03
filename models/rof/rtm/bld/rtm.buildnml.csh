@@ -42,32 +42,42 @@ if (-e $CASEBUILD/rtm.input_data_list) rm $CASEBUILD/rtm.input_data_list
 
 # The following is for backwards compatibility when runoff restart data was on clm restart files
 set finidat_rtm = ""
-if ($RUN_TYPE == 'hybrid') then
-  set finidat_rtm = "finidat_rtm ='${RUN_REFCASE}.rtm${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc'" 
+set nrevsn_rtm = ""
+if (${ROF_GRID} != "null") then
+if ($RUN_TYPE == 'hybrid' || $RUN_TYPE == "branch" ) then
+
+  # set search directory
   if ($GET_REFCASE == 'TRUE') then
     set refdir = "$DIN_LOC_ROOT/ccsm4_init/$RUN_REFCASE/$RUN_REFDATE"
-    ls $refdir/*rtm* >& /dev/null
-    if ( $status != 0 ) then
-      set finidat_rtm = "finidat_rtm ='${RUN_REFCASE}.clm2.r.${RUN_REFDATE}-${RUN_REFTOD}.nc'" 
-    endif
+  else
+    set refdir = "$RUNDIR"
   endif
-endif
 
-set nrevsn_rtm = ""
-if ($RUN_TYPE == 'branch') then
-  set nrevsn_rtm = "${RUN_REFCASE}.rtm${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc" 
-    if( -e "$RUNDIR/$nrevsn_rtm") then
-      set nrevsn_rtm = "nrevsn_rtm='$nrevsn_rtm'"
-    else
-      set nrevsn_rtm = "${RUN_REFCASE}.rtm.r.${RUN_REFDATE}-${RUN_REFTOD}.nc" 
+  # search for clm or rtm files with instance or not
+  set fncheck = "${RUN_REFCASE}.rtm${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
+  if !(-e "$refdir/$fncheck") then
+    set fncheck = "${RUN_REFCASE}.rtm.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
+    if !(-e "$refdir/$fncheck") then
+      set fncheck = "${RUN_REFCASE}.clm2${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
+      if !(-e "$refdir/$fncheck") then
+        set fncheck = "${RUN_REFCASE}.clm2.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
+        if !(-e "$refdir/$fncheck") then
+          echo "rtm.buildnml.csh could not find restart file for branch or hybrid start"
+          exit -8
+        endif
+      endif
     endif
-  if ($GET_REFCASE == 'TRUE') then
-     set refdir = "$DIN_LOC_ROOT/ccsm4_init/$RUN_REFCASE/$RUN_REFDATE"
-     ls $refdir/*rtm* >& /dev/null
-     if ( $status != 0 ) then
-       set nrevsn_rtm = "nrevsn_rtm ='${RUN_REFCASE}.clm2.r.${RUN_REFDATE}-${RUN_REFTOD}.nc'" 
-     endif
   endif
+
+  # set the namelist variable needed
+  if ($RUN_TYPE == "hybrid") then
+    set finidat_rtm = "finidat_rtm = '$fncheck'"
+  endif
+  if ($RUN_TYPE == "branch") then
+    set nrevsn_rtm = "nrevsn_rtm = '$refdir/$fncheck'"
+  endif
+
+endif
 endif
 
 cat >! $CASEBUILD/rtmconf/cesm_namelist << EOF2

@@ -205,7 +205,7 @@ require ConfigCase;
 # Modify the relevant xml file
 
 # Check that file is supported 
-my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml);
+my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml env_archive.xml);
 
 # If NOT settings list option, check that file is valid
 # tcraig, add the input file set by the user for things like env_build.xml.001 in tests
@@ -299,7 +299,12 @@ foreach my $id ( keys(%idlist) ) {
 
 # Overwrite the file(s)
 foreach my $filename ( keys(%myfiles) ) {
-    $cfg_ref->write_file($filename);
+    if( $filename eq 'env_archive.xml') {
+        $cfg_ref->write_file($filename, "xml", "$dir");
+    }
+    else {
+        $cfg_ref->write_file($filename);
+    }
 }
 if ($print>=2) { print "xmlchange done.\n"; }
 exit;

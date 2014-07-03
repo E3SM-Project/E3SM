@@ -1,0 +1,20 @@
+!
+! Sample input file of regional datasets that will be created. You need to have
+! the same list of files as in the input filelist as well. See the sample_inlist
+! for the list of files that can be operated on.
+!
+! format: list of filenames similar to namelist format with a single line
+!         per file with the format of:
+!
+! variable = "filepath"
+!
+! Lines (such as these) with "!" are ignored.
+! 
+ fatmlndfrc = 'domain.lnd.13x12pt_f19_alaskaUSA_gx1v6_c131122.nc'
+ fsurdat = 'surfdata_13x12pt_f19_alaskaUSA_simyr2000_c131122.nc'
+ fpftdyn = 'surfdata.pftdyn_13x12pt_f19_alaskaUSA_rcp8.5_simyr1850-2100_c131122.nc'
+
+ stream_fldfilename_ndep = 'fndep_clm_hist_simyr1849-2006_13x12pt_f19_alaskaUSA_c131122.nc'
+ stream_fldfilename_popdens = 'clmforc.Li_2012_hdm_13x12pt_f19_alaskaUSA_AVHRR_simyr1850-2010_c131122.nc'
+ stream_fldfilename_lightng = 'clmforc.Li_2012_climo1995-2011.13x12pt_f19_alaskaUSA.lnfm_c131122.nc'
+ strm_datfil                = 'clmforc.Qian.c2006.13x12pt_f19_alaskaUSA.Solr.1948-01.nc'

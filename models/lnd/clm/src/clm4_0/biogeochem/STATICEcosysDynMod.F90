@@ -60,7 +60,7 @@ contains
 ! Dynamically allocate memory and set to signaling NaN.
 !
 ! !USES:
-    use nanMod
+    use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
     use decompMod, only : get_proc_bounds
 !
 ! !ARGUMENTS:

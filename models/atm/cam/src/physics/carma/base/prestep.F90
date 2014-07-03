@@ -59,7 +59,8 @@ subroutine prestep(carma, cstate, rc)
           ! substep the gas unless both of these are true. This might run into
           ! trouble if d_t is large and negative.
 !          if (d_gc(iz, igas) < 0._f) then
-          if ((d_gc(iz, igas) < 0._f) .and. ((supsatiold(iz, igas) > 0._f) .or. (supsati(iz, igas) > 0._f))) then
+          if ((d_gc(iz, igas) < 0._f) .and. ((supsatiold(iz, igas) > 0._f) &
+               .or. (supsati(iz, igas) > 0._f))) then
           
             ! Start from the new state and don't step the gas.
             d_gc(iz, igas) = 0._f

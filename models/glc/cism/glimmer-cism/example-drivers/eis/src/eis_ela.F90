@@ -36,22 +36,22 @@ module eis_ela
   !*FD Edinburgh Ice Sheet model. 
 
   use glimmer_ts
-  use glimmer_global, only : fname_length
+  use glimmer_global, only : fname_length, dp
 
   type eis_ela_type
      !*FD Parameters for the EIS climate forcing
-     real :: ela_a = 10821.                      !*FD ELA paramters
-     real :: ela_b = -238.                       !*FD ELA paramters
-     real :: ela_c = 1.312                       !*FD ELA paramters
-     real :: zmax_mar = 1200.                    !*FD parameters describing how the MB
-     real :: bmax_mar = 1.5                      !*FD varies around the ELA
-     real :: zmax_cont = 500.                    !*FD parameters describing how the MB
-     real :: bmax_cont = 0.3                     !*FD varies around the ELA
-     real :: shelf_ablation = -1.0               !*FD ablation over ice shelf
+     real(dp) :: ela_a = 10821.                      !*FD ELA parameters
+     real(dp) :: ela_b = -238.                       !*FD ELA parameters
+     real(dp) :: ela_c = 1.312                       !*FD ELA parameters
+     real(dp) :: zmax_mar = 1200.                    !*FD parameters describing how the MB
+     real(dp) :: bmax_mar = 1.5                      !*FD varies around the ELA
+     real(dp) :: zmax_cont = 500.                    !*FD parameters describing how the MB
+     real(dp) :: bmax_cont = 0.3                     !*FD varies around the ELA
+     real(dp) :: shelf_ablation = -1.0               !*FD ablation over ice shelf
      character(len=fname_length) :: fname=''     !*FD name of file containing ELA ts
      character(len=fname_length) :: ew_fname=''  !*FD name of file containing longitude dependance of ELA field
      type(glimmer_tseries) :: ela_ts             !*FD ELA time series 
-     real,dimension(:,:),pointer :: ela => null()!*FD ELA field
+     real(dp),dimension(:,:),pointer :: ela => null()!*FD ELA field
   end type eis_ela_type
 
   private :: ela_lat, calc_mb
@@ -127,7 +127,9 @@ contains
     !*FD initialise ELA forcing
     use glide_types
     use glimmer_paramets, only: thk0, acc0, scyr
+    use glimmer_coordinates, only: coordsystem_allocate
     implicit none
+
     type(eis_ela_type)      :: ela   !*FD ela data
     type(glide_global_type) :: model !*FD model instance
     
@@ -159,7 +161,7 @@ contains
     
     ! local variables
     integer ew,ns
-    real :: ela_m
+    real(dp) :: ela_m
     type(glimmer_tseries) :: ela_ew
 
     ela%ela = ela%ela + ela_lat(ela%ela_a,ela%ela_b,ela%ela_c,model%climate%lati)
@@ -179,17 +181,16 @@ contains
     !*FD calculate mass balance
     use eis_cony
     use glide_types
-    use glimmer_global, only : rk
     implicit none
     type(eis_ela_type)        :: ela   !*FD ela data
     type(eis_cony_type)       :: cony  !*FD cony data
     type(glide_global_type)   :: model !*FD model instance
-    real(kind=rk), intent(in) :: time  !*FD current time
+    real(dp), intent(in)      :: time  !*FD current time
 
     ! local variables
-    real :: ela_time = 0.
+    real(dp) :: ela_time = 0.d0
 
-    call glimmer_ts_step(ela%ela_ts,real(time),ela_time)
+    call glimmer_ts_step(ela%ela_ts,time,ela_time)
 
     model%climate%acab = calc_mb(ela%ela+ela_time, &
          model%geometry%topg, &
@@ -208,19 +209,19 @@ contains
     !*FD calculate mass balance
     use glimmer_global, only : dp
     implicit none
-    real, intent(in) :: ela       !*FD equilibrium line altitude
-    real(kind=dp), intent(in) :: topo      !*FD topography
-    real(kind=dp), intent(in) :: thick     !*FD ice thickness
-    real,intent(in)           :: cony      !*FD continentality
-    real, intent(in) :: eus       !*FD eustatic sea level
-    real, intent(in) :: mzmax,mbmax !*FD parameters describing MB variation around ELA
-    real, intent(in) :: czmax,cbmax !*FD parameters describing MB variation around ELA
-    real, intent(in) :: shelf_ablation !*FD ablation over ice shelf
-    real calc_mb
+    real(dp), intent(in) :: ela       !*FD equilibrium line altitude
+    real(dp), intent(in) :: topo      !*FD topography
+    real(dp), intent(in) :: thick     !*FD ice thickness
+    real(dp),intent(in)           :: cony      !*FD continentality
+    real(dp), intent(in) :: eus       !*FD eustatic sea level
+    real(dp), intent(in) :: mzmax,mbmax !*FD parameters describing MB variation around ELA
+    real(dp), intent(in) :: czmax,cbmax !*FD parameters describing MB variation around ELA
+    real(dp), intent(in) :: shelf_ablation !*FD ablation over ice shelf
+    real(dp) :: calc_mb
 
     ! local variables
-    real z
-    real zmax,bmax
+    real(dp) :: z
+    real(dp) :: zmax,bmax
 
     if (topo.ge.eus .or. thick.gt.0) then
        z = topo+thick-eus
@@ -248,9 +249,9 @@ contains
   elemental function ela_lat(a,b,c,lat)
     !*FD calculate ELA variation with latitude
     implicit none
-    real, intent(in) :: a,b,c !*FD shape of ELA field
-    real,intent(in)  :: lat   !*FD latitude
-    real ela_lat
+    real(dp), intent(in) :: a,b,c !*FD shape of ELA field
+    real(dp),intent(in)  :: lat   !*FD latitude
+    real(dp) :: ela_lat
 
     ela_lat = a +  b * lat +  c * lat * lat
   end function ela_lat

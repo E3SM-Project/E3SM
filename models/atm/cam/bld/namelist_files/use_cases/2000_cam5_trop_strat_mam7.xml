@@ -17,7 +17,7 @@
 <solar_data_type>'FIXED'</solar_data_type>
 <solar_data_ymd>20000101</solar_data_ymd>
 
-<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c091214.nc</flbc_file>
+<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c120204.nc</flbc_file>
 
 <co2vmr>0.000001e-6</co2vmr>
 
@@ -33,7 +33,7 @@
   'num_a1 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_elev_2000_c120716.nc',
   'num_a2 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_2000_c120315.nc',
   'num_a3 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_elev_2000_c120716.nc',
-  'pom_a3 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_2000_c120315.nc',
+  'pom_a3 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130424.nc',
   'so4_a1 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_elev_2000_c120315.nc',
   'so4_a2 -> $INPUTDATA_ROOT/atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_2000_c120315.nc'
 </ext_frc_specifier>

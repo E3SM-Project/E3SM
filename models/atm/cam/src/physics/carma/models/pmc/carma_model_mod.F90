@@ -227,7 +227,8 @@ contains
           if (wave(i) > warren_wave(j)) then
             if (j > 1) then
               interp = (wave(i) - warren_wave(j-1)) / (warren_wave(j) - warren_wave(j-1))
-              refidx_ice(i) = cmplx(warren_real(j-1) + interp*(warren_real(j) - warren_real(j-1)), warren_imag(j-1) + interp*(warren_imag(j) - warren_imag(j-1)))
+              refidx_ice(i) = cmplx(warren_real(j-1) + interp*(warren_real(j) - warren_real(j-1)), &
+                   warren_imag(j-1) + interp*(warren_imag(j) - warren_imag(j-1)))
             else
               refidx_ice(i) = cmplx(warren_real(j), warren_imag(j))
             endif
@@ -247,13 +248,16 @@ contains
     !
     ! NOTE: For CAM, the optional shortname needs to be provided for the group. These names
     ! should be 6 characters or less and without spaces.
-    call CARMAELEMENT_Create(carma, I_ELEM_DUST, I_GRP_DUST, "meteor smoke", RHO_METEOR_SMOKE, I_INVOLATILE, I_METEOR_SMOKE, rc, shortname="DUST")
+    call CARMAELEMENT_Create(carma, I_ELEM_DUST, I_GRP_DUST, "meteor smoke", RHO_METEOR_SMOKE, &
+         I_INVOLATILE, I_METEOR_SMOKE, rc, shortname="DUST")
     if (rc < 0) call endrun('CARMA_DefineModel::CARMA_AddElement failed.')
 
-    call CARMAELEMENT_Create(carma, I_ELEM_CRICE, I_GRP_CRICE, "ice crystal", RHO_I, I_VOLATILE, I_ICE, rc, shortname="CRICE")
+    call CARMAELEMENT_Create(carma, I_ELEM_CRICE, I_GRP_CRICE, "ice crystal", RHO_I, &
+         I_VOLATILE, I_ICE, rc, shortname="CRICE")
     if (rc < 0) call endrun('CARMA_DefineModel::CARMA_AddElement failed.')
 
-    call CARMAELEMENT_Create(carma, I_ELEM_CRCORE, I_GRP_CRICE, "ice core", RHO_METEOR_SMOKE, I_COREMASS, I_METEOR_SMOKE, rc, shortname="CRCORE")
+    call CARMAELEMENT_Create(carma, I_ELEM_CRCORE, I_GRP_CRICE, "ice core", RHO_METEOR_SMOKE, &
+         I_COREMASS, I_METEOR_SMOKE, rc, shortname="CRCORE")
     if (rc < 0) call endrun('CARMA_DefineModel::CARMA_AddElement failed.')
     
     
@@ -261,7 +265,8 @@ contains
     
     
     ! Define the Gases
-    call CARMAGAS_Create(carma, I_GAS_H2O, "Water Vapor", WTMOL_H2O, I_VAPRTN_H2O_MURPHY2005, I_GCOMP_H2O, rc, shortname="Q", ds_threshold=0.2_f)
+    call CARMAGAS_Create(carma, I_GAS_H2O, "Water Vapor", WTMOL_H2O, &
+         I_VAPRTN_H2O_MURPHY2005, I_GCOMP_H2O, rc, shortname="Q", ds_threshold=0.2_f)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMAGAS_Create failed.')
     
     
@@ -269,7 +274,8 @@ contains
     call CARMA_AddCoagulation(carma, I_GRP_DUST, I_GRP_DUST, I_GRP_DUST, I_COLLEC_DATA, rc)
     if (rc < 0) call endrun('CARMA_DefineModel::CARMA_AddCoagulation failed.')
 
-    call CARMA_AddNucleation(carma, I_ELEM_DUST, I_ELEM_CRCORE, I_HETNUC, 0._f, rc, igas=I_GAS_H2O, ievp2elem=I_ELEM_DUST)
+    call CARMA_AddNucleation(carma, I_ELEM_DUST, I_ELEM_CRCORE, I_HETNUC, 0._f, rc, &
+         igas=I_GAS_H2O, ievp2elem=I_ELEM_DUST)
     if (rc < RC_OK) call endrun('CARMA_DefineModel::CARMA_AddNucleation failed.')
 
     call CARMA_AddGrowth(carma, I_ELEM_CRICE, I_GAS_H2O, rc)
@@ -411,7 +417,6 @@ contains
     
     integer                            :: ilat                  ! latitude index 
     integer                            :: iltime                ! local time index
-    integer                            :: lchnk                 ! chunk identifier
     integer                            :: ncol                  ! number of columns in chunk
     integer                            :: icol                  ! column index
     integer                            :: igroup                ! the index of the carma aerosol group
@@ -451,8 +456,6 @@ contains
     ! so don't let the doy get too big.
     doy = min(365, doy)
 
-    ! Determine the latitude and longitude of each column.
-    lchnk = state%lchnk
     ncol = state%ncol
 
     ! Add any surface flux here.
@@ -508,7 +511,8 @@ contains
                 
                 if (pressure > carma_emis_lev(ilev)) then
                   rate = rate + &
-                    ((carma_emis_rate(ilev+carma_emis_ilev_incr) - carma_emis_rate(ilev)) / (carma_emis_lev(ilev+carma_emis_ilev_incr) - carma_emis_lev(ilev))) * &
+                    ((carma_emis_rate(ilev+carma_emis_ilev_incr) - carma_emis_rate(ilev)) / &
+                    (carma_emis_lev(ilev+carma_emis_ilev_incr) - carma_emis_lev(ilev))) * &
                     (pressure - carma_emis_lev(ilev))
                 end if
                 
@@ -540,7 +544,8 @@ contains
                     rfScale(icol) = carma_escale_grf(ilat, doy)
                   else
                     rfScale(icol) = carma_escale_grf(ilat-1, doy) + &
-                    (((state%lat(icol) / DEG2RAD) - carma_escale_lat(ilat-1)) / (carma_escale_lat(ilat) - carma_escale_lat(ilat-1))) * &
+                    (((state%lat(icol) / DEG2RAD) - carma_escale_lat(ilat-1)) / &
+                    (carma_escale_lat(ilat) - carma_escale_lat(ilat-1))) * &
                     (carma_escale_grf(ilat, doy) - carma_escale_grf(ilat-1, doy))
                   endif
                   exit
@@ -609,7 +614,8 @@ contains
     implicit none
 
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     integer                            :: ilev                  ! level index
@@ -713,7 +719,8 @@ contains
         enddo
         
         if (do_print) write(LUNOPRT, *) 'carma_init(): Total Emission = ', carma_emis_total, ' (kt/yr)'
-        carma_emis_expected = ((carma_emis_total * 1e6_r8) / (3600.0_r8 * 24.0_r8 * 365.0_r8)) / (4.0_r8 * PI * ((REARTH / 100._r8) ** 2))
+        carma_emis_expected = ((carma_emis_total * 1e6_r8) / (3600.0_r8 * 24.0_r8 * 365.0_r8)) / &
+             (4.0_r8 * PI * ((REARTH / 100._r8) ** 2))
         if (do_print) write(LUNOPRT,*) 'carma_init(): Done with emission table.'
 
       endif

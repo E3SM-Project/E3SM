@@ -25,6 +25,8 @@ public :: &
    modal_aero_wateruptake_init, &
    modal_aero_wateruptake_dr
 
+public :: modal_aero_wateruptake_reg
+
 real(r8), parameter :: third = 1._r8/3._r8
 real(r8), parameter :: pi43  = pi*4.0_r8/3.0_r8
 
@@ -40,7 +42,30 @@ integer :: qaerwat_idx    = 0
 contains
 !===============================================================================
 
-subroutine modal_aero_wateruptake_init()
+subroutine modal_aero_wateruptake_reg()
+
+  use physics_buffer,   only: pbuf_add_field, dtype_r8
+  use rad_constituents, only: rad_cnst_get_info
+
+   integer :: nmodes
+   
+   call rad_cnst_get_info(0, nmodes=nmodes)
+   call pbuf_add_field('DGNUMWET',   'global',  dtype_r8, (/pcols, pver, nmodes/), dgnumwet_idx)
+   call pbuf_add_field('WETDENS_AP', 'physpkg', dtype_r8, (/pcols, pver, nmodes/), wetdens_ap_idx)
+
+   ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
+   call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)  
+
+end subroutine modal_aero_wateruptake_reg
+
+!===============================================================================
+!===============================================================================
+
+subroutine modal_aero_wateruptake_init(pbuf2d)
+   use time_manager,  only: is_first_step
+   use physics_buffer,only: pbuf_set_field
+
+   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
    integer :: m, nmodes
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
@@ -50,9 +75,6 @@ subroutine modal_aero_wateruptake_init()
 
    cld_idx        = pbuf_get_index('CLD')    
    dgnum_idx      = pbuf_get_index('DGNUM')    
-   dgnumwet_idx   = pbuf_get_index('DGNUMWET')    
-   wetdens_ap_idx = pbuf_get_index('WETDENS_AP')    
-   qaerwat_idx    = pbuf_get_index('QAERWAT')    
 
    ! assume for now that will compute wateruptake for climate list modes only
 
@@ -77,6 +99,11 @@ subroutine modal_aero_wateruptake_init()
       endif
 
    end do
+   
+   if (is_first_step()) then
+      ! initialize fields in physics buffer
+      call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_r8)
+   endif
 
 end subroutine modal_aero_wateruptake_init
 
@@ -113,7 +140,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    integer  :: stat
 
    integer :: i, k, l, m
-   integer :: itim
+   integer :: itim_old
    integer :: nmodes
    integer :: nspec
 
@@ -277,13 +304,17 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    t      => state%t
    pmid   => state%pmid
 
-   itim    =  pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, cld_idx, cldn, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+   itim_old    =  pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, cld_idx, cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
    do k = top_lev, pver
       call qsat_water(t(:ncol,k), pmid(:ncol,k), es(:ncol), qs(:ncol))
       do i = 1, ncol
-         rh(i,k) = h2ommr(i,k)/qs(i)
+         if (qs(i) > h2ommr(i,k)) then
+            rh(i,k) = h2ommr(i,k)/qs(i)
+         else
+            rh(i,k) = 0.98_r8
+         endif
          rh(i,k) = max(rh(i,k), 0.0_r8)
          rh(i,k) = min(rh(i,k), 0.98_r8)
          if (cldn(i,k) .lt. 1.0_r8) then
@@ -404,7 +435,7 @@ subroutine modal_aero_wateruptake_sub( &
          do i = 1, ncol
 
             ! compute wet radius for each mode
-            call modal_aero_kohler(dryrad(i:,k,m), hygro(i:,k,m), rh(i:,k), wetrad(i:,k,m), 1, 1)
+            call modal_aero_kohler(dryrad(i:i,k,m), hygro(i:i,k,m), rh(i:i,k), wetrad(i:i,k,m), 1)
 
             wetrad(i,k,m) = max(wetrad(i,k,m), dryrad(i,k,m))
             wetvol(i,k,m) = pi43*wetrad(i,k,m)**3
@@ -435,7 +466,7 @@ end subroutine modal_aero_wateruptake_sub
 
 !-----------------------------------------------------------------------
       subroutine modal_aero_kohler(   &
-          rdry_in, hygro, s, rwet_out, im, imx )
+          rdry_in, hygro, s, rwet_out, im )
 
 ! calculates equlibrium radius r of haze droplets as function of
 ! dry particle mass and relative humidity s using kohler solution
@@ -447,11 +478,10 @@ end subroutine modal_aero_wateruptake_sub
 
 ! arguments
       integer :: im         ! number of grid points to be processed
-      integer :: imx        ! dimensioned number of grid points
-      real(r8) :: rdry_in(imx)    ! aerosol dry radius (m)
-      real(r8) :: hygro(imx)      ! aerosol volume-mean hygroscopicity (--)
-      real(r8) :: s(imx)          ! relative humidity (1 = saturated)
-      real(r8) :: rwet_out(imx)   ! aerosol wet radius (m)
+      real(r8) :: rdry_in(:)    ! aerosol dry radius (m)
+      real(r8) :: hygro(:)      ! aerosol volume-mean hygroscopicity (--)
+      real(r8) :: s(:)          ! relative humidity (1 = saturated)
+      real(r8) :: rwet_out(:)   ! aerosol wet radius (m)
 
 ! local variables
       integer, parameter :: imax=200
@@ -462,7 +492,7 @@ end subroutine modal_aero_wateruptake_sub
       real(r8) :: p30(imax),p31(imax),p32(imax) ! coefficients of polynomial
       real(r8) :: p
       real(r8) :: r3, r4
-      real(r8) :: r(imx)        ! wet radius (microns)
+      real(r8) :: r(im)         ! wet radius (microns)
       real(r8) :: rdry(imax)    ! radius of dry particle (microns)
       real(r8) :: ss            ! relative humidity (1 = saturated)
       real(r8) :: slog(imax)    ! log relative humidity
@@ -661,7 +691,7 @@ end subroutine modal_aero_wateruptake_sub
                      crad(imx), cy(imx), czero
 
 
-      czero=cmplx(0.0_r8,0.0_r8)
+      czero=cmplx(0.0_r8,0.0_r8,r8)
       third=1._r8/3._r8
 
       do 10 i=1,im

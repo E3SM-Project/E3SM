@@ -15,7 +15,8 @@ module mkutilsMod
    private
 !
 ! !PUBLIC MEMBER FUNCTIONS:
-   public :: normalize_classes_by_gcell
+   public :: normalize_classes_by_gcell  ! renormalize array so values are given as % of total grid cell area
+   public :: remove_small_cover          ! remove too-small cover types from pft or column-level arrays
    public :: slightly_below
    public :: slightly_above
    public :: convert_latlon
@@ -98,6 +99,102 @@ subroutine normalize_classes_by_gcell(classes_pct_tot, sums, classes_pct_gcell)
    end do
 end subroutine normalize_classes_by_gcell
 !------------------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: remove_small_cover
+!
+! !INTERFACE:
+subroutine remove_small_cover(pct_gcell, pct_lunit, nsmall, too_small, suma)
+!
+! !DESCRIPTION:
+! Remove any small PFTs (or columns), and adjust pct_gcell and pct_lunit and renormalize
+! other elements of the pct_lunit array as necessary. Also returns the number of small
+! PFTs/columns found.
+!
+! Note that suma is just used to determine what the final cover will eventually be once we
+! renormalize all landunits to sum to exactly 100%. This is generally unimportant for the
+! purposes of this routine, unless suma is substantially different from 100% (e.g., less
+! than 50%).
+!
+! !USES:
+!
+! !ARGUMENTS:
+  implicit none
+  real(r8), intent(inout) :: pct_gcell     ! % of the landunit on the grid cell
+  real(r8), intent(inout) :: pct_lunit(:)  ! % of each PFT or column on the landunit (adds to 100% before and after this routine)
+  integer , intent(out)   :: nsmall        ! number of small (but non-zero) PFTs/columns found
+  real(r8), intent(in)    :: too_small     ! threshold for considering a PFT/column too small (% of gridcell)
+  real(r8), intent(in), optional :: suma   ! current total % cover of ALL landunits on the gridcell (if not given, assumed to be 100%)
+!
+! !CALLED FROM:
+! subroutine normalizencheck_landuse in mksurfdat.F90
+!
+! !REVISION HISTORY:
+! Author: Bill Sacks
+!
+!
+! !LOCAL VARIABLES:
+!EOP
+  real(r8) :: my_suma                               ! local version of suma
+  logical,  dimension(size(pct_lunit)) :: is_small  ! whether each cover is considered too small (but not 0)
+  logical,  dimension(size(pct_lunit)) :: is_zero   ! whether each cover is exactly 0
+  integer  :: i                                     ! counter
+  real(r8) :: correction                            ! correction needed to pct_gcell
+
+  character(len=*), parameter :: subname = 'remove_small_cover'
+!-----------------------------------------------------------------------
+
+  if (present(suma)) then
+     if (suma <= 0._r8) then
+        write(6,*) 'suma must be > 0; suma = ', suma
+        call abort()
+     end if
+     my_suma = suma
+  else
+     my_suma = 100._r8
+  end if
+
+  ! Determine which array elements are zero, and which are too-small
+  is_zero(:)  = (pct_lunit(:) * pct_gcell == 0._r8)
+  is_small(:) = ((pct_lunit(:) * pct_gcell / my_suma) < too_small .and. .not. is_zero(:))
+
+  nsmall = count(is_small(:))
+
+  if (nsmall > 0) then
+
+     if (all(is_zero(:) .or. is_small(:))) then
+        ! If all PFTs are either 0 or small, then set pct_gcell to 0, but don't touch
+        ! pct_lunit(:)
+        ! (We do NOT set pct_lunit to all 0 in this case, because we need to maintain
+        ! sum(pct_lunit) = 100%)
+        pct_gcell = 0._r8
+
+     else
+        ! If there are some big PFTs, then we need to adjust pct_lunit as well as
+        ! pct_gcell (setting pct_lunit to 0 for the small elements, and renormalizing the
+        ! others)
+
+        correction = 0._r8
+        do i = 1, size(pct_lunit)
+           if (is_small(i)) then
+              ! Note that the parenthesized term in the following is the grid cell-level
+              ! cover of this point (ignoring the difference between suma and 100, which
+              ! is the right thing to do here, since the correction of this difference is
+              ! done later, outside this routine)
+              correction = correction + (pct_gcell * pct_lunit(i) / 100._r8)
+              pct_lunit(i) = 0._r8
+           end if
+        end do
+
+        pct_gcell = pct_gcell - correction
+        pct_lunit(:) = pct_lunit(:) * 100._r8 / sum(pct_lunit(:))
+     end if
+  end if
+
+end subroutine remove_small_cover
+
 
 !------------------------------------------------------------------------------
 !BOP

@@ -30,12 +30,12 @@
 
 module glint_global_grid
 
-  use glimmer_global
+  use glimmer_global, only: dp
   use glimmer_physcon, only: pi
 
   implicit none
 
-  real(rk),parameter :: pi2 = 2.0*pi
+  real(dp),parameter :: pi2 = 2.d0*pi
 
   ! ------------------------------------------------------------
   ! GLOBAL_GRID derived type
@@ -53,21 +53,21 @@ module glint_global_grid
 
      ! Locations of grid-points ---------------------------------
 
-     real(rk),pointer,dimension(:) :: lats      => null() 
+     real(dp),pointer,dimension(:) :: lats      => null() 
      !*FD Latitudinal locations of data-points in global fields (degrees)
-     real(rk),pointer,dimension(:) :: lons      => null() 
+     real(dp),pointer,dimension(:) :: lons      => null() 
      !*FD Longitudinal locations of data-points in global fields (degrees)
 
      ! Locations of grid-box boundaries -------------------------
 
-     real(rk),pointer,dimension(:) :: lat_bound => null() 
+     real(dp),pointer,dimension(:) :: lat_bound => null() 
      !*FD Latitudinal boundaries of data-points in global fields (degrees)
-     real(rk),pointer,dimension(:) :: lon_bound => null() 
+     real(dp),pointer,dimension(:) :: lon_bound => null() 
      !*FD Longitudinal boundaries of data-points in global fields (degrees)
 
      ! Areas of grid-boxes --------------------------------------
 
-     real(rk),pointer,dimension(:,:) :: box_areas => null() 
+     real(dp),pointer,dimension(:,:) :: box_areas => null() 
      !*FD The areas of the grid-boxes (m$^2$). This is a two-dimensional array to take
      !*FD account of the possibility of a grid irregularly spaced in longitude
 
@@ -112,18 +112,18 @@ contains
     !*FD Initialises a new global grid type
 
     type(global_grid),              intent(inout) :: grid !*FD The grid to be initialised
-    real(rk),dimension(:),          intent(in)    :: lons !*FD Longitudinal positions of grid-points (degrees)
-    real(rk),dimension(:),          intent(in)    :: lats !*FD Latitudinal positions of grid-points (degrees)
-    real(rk),dimension(:), optional,intent(in)    :: lonb !*FD Longitudinal boundaries of grid-boxes (degrees)
-    real(rk),dimension(:), optional,intent(in)    :: latb !*FD Latitudinal boundaries of grid-boxes (degrees)
-    real(rk),              optional,intent(in)    :: radius  !*FD  The radius of the Earth (m)
+    real(dp),dimension(:),          intent(in)    :: lons !*FD Longitudinal positions of grid-points (degrees)
+    real(dp),dimension(:),          intent(in)    :: lats !*FD Latitudinal positions of grid-points (degrees)
+    real(dp),dimension(:), optional,intent(in)    :: lonb !*FD Longitudinal boundaries of grid-boxes (degrees)
+    real(dp),dimension(:), optional,intent(in)    :: latb !*FD Latitudinal boundaries of grid-boxes (degrees)
+    real(dp),              optional,intent(in)    :: radius  !*FD  The radius of the Earth (m)
     logical,               optional,intent(in)    :: correct !*FD  Set to correct for boundaries (default is .true.)
     integer,               optional,intent(in)    :: nec     !*FD  Number of elevation classes    
     integer,dimension(:,:),optional,intent(in)    :: mask    !*FD  Mask indicating where global data are valid 
 
     ! Internal variables
 
-    real(rk) :: radea=1.0
+    real(dp) :: radea=1.0
     integer :: i,j
     logical :: cor
 
@@ -346,8 +346,8 @@ contains
 
     implicit none
 
-    real(rk),dimension(:),intent(in)  :: lons    !*FD locations of global grid-points (degrees)
-    real(rk),dimension(:),intent(out) :: lonb    !*FD boundaries of grid-boxes (degrees)
+    real(dp),dimension(:),intent(in)  :: lons    !*FD locations of global grid-points (degrees)
+    real(dp),dimension(:),intent(out) :: lonb    !*FD boundaries of grid-boxes (degrees)
     logical,              intent(in)  :: correct !*FD Set to correct for longitudinal grid boundary
 
     integer :: nxg,i
@@ -377,8 +377,8 @@ contains
 
     implicit none
 
-    real(rk),dimension(:),intent(in)  :: lat  !*FD locations of global grid-points (degrees)
-    real(rk),dimension(:),intent(out) :: latb !*FD boundaries of grid-boxes (degrees)
+    real(dp),dimension(:),intent(in)  :: lat  !*FD locations of global grid-points (degrees)
+    real(dp),dimension(:),intent(out) :: latb !*FD boundaries of grid-boxes (degrees)
 
     integer :: nyg,j
 
@@ -399,17 +399,17 @@ contains
 
   !-------------------------------------------------------------
 
-  real(rk) function mid_lon(a,b,correct)
+  real(dp) function mid_lon(a,b,correct)
 
     use glimmer_log
 
     !*FD Calculates the mid-point between two longitudes.
     !*FD \texttt{a} must be west of \texttt{b}.
 
-    real(rk),intent(in) :: a,b
+    real(dp),intent(in) :: a,b
     logical :: correct
 
-    real(rk) :: aa,bb,out
+    real(dp) :: aa,bb,out
 
     aa=a ; bb=b
 
@@ -440,12 +440,12 @@ contains
 
   !-------------------------------------------------------------
 
-  real(rk) function sin_deg(a)
+  real(dp) function sin_deg(a)
 
     !*FD Calculate sin(a), where a is in degrees
 
-    real(rk) :: a
-    real(rk) :: aa
+    real(dp) :: a
+    real(dp) :: aa
 
     aa=pi*a/180.0
 
@@ -465,10 +465,10 @@ contains
 
   !-------------------------------------------------------------
 
-  real(rk) function delta_lon(a,b)
+  real(dp) function delta_lon(a,b)
 
-    real(rk) :: a,b
-    real(rk) :: aa,bb,dl
+    real(dp) :: a,b
+    real(dp) :: aa,bb,dl
 
     aa=a ; bb=b
 
@@ -589,7 +589,7 @@ contains
 
   subroutine grid_alloc_3d(array,grid,d3)
 
-    real(rk),dimension(:,:,:),pointer :: array
+    real(dp),dimension(:,:,:),pointer :: array
     type(global_grid),intent(in)  :: grid
     integer,intent(in) :: d3
 
@@ -603,7 +603,7 @@ contains
 
   subroutine grid_alloc_2d(array,grid)
 
-    real(rk),dimension(:,:),pointer :: array
+    real(dp),dimension(:,:),pointer :: array
     type(global_grid),intent(in)  :: grid
 
     if (associated(array)) deallocate(array)

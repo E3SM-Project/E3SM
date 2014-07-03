@@ -55,10 +55,7 @@ contains
     use cam_pio_utils,    only : cam_pio_openfile
     use pio,              only : pio_inquire, pio_nowrite, pio_closefile, pio_inq_varndims
     use pio,              only : pio_inq_varname, file_desc_t
-
-
-    use chem_surfvals, only : flbc_list
-
+    use chem_surfvals,    only : flbc_list
 
     implicit none
 
@@ -234,7 +231,7 @@ contains
   end subroutine set_srf_emissions_time
 
   ! adds surf flux specified in file to sflx
-  subroutine set_srf_emissions( rlats, rlons, lchnk, sflx, ncol )
+  subroutine set_srf_emissions( lchnk, ncol, sflx )
     !--------------------------------------------------------
     !	... form the surface fluxes for this latitude slice
     !--------------------------------------------------------
@@ -242,17 +239,16 @@ contains
     use mo_constants, only : pi
     use time_manager, only : get_curr_calday
     use string_utils, only : to_lower, GLC
+    use phys_grid,    only : get_rlat_all_p, get_rlon_all_p
 
     implicit none
 
     !--------------------------------------------------------
     !	... Dummy arguments
     !--------------------------------------------------------
-    integer,  intent(in)    :: ncol                  ! columns in chunk
-    integer,  intent(in)    :: lchnk                 ! chunk index
-    real(r8), intent(in)    :: rlons(ncol)           ! chunk longitudes (radians)
-    real(r8), intent(in)    :: rlats(ncol)           ! chunk latitudes (radians)
-    real(r8), intent(inout) :: sflx(pcols,gas_pcnst) ! surface emissions ( kg/m^2/s )
+    integer,  intent(in)  :: ncol                  ! columns in chunk
+    integer,  intent(in)  :: lchnk                 ! chunk index
+    real(r8), intent(out) :: sflx(:,:) ! surface emissions ( kg/m^2/s )
 
     !--------------------------------------------------------
     !	... local variables
@@ -276,7 +272,6 @@ contains
     real(r8), parameter :: twopi = 2.0_r8 * pi
     real(r8), parameter :: pid2  = 0.5_r8 * pi
     real(r8), parameter :: dec_max = 23.45_r8 * pi/180._r8
-    real(r8), parameter :: om_to_oc  = 1.4_r8
 
     real(r8) :: flux(ncol)
     real(r8) :: mfactor
@@ -287,9 +282,10 @@ contains
                                                      "kg/m^2/s    ", &
                                                      "kg/m^2/sec  " /)
     character(len=12) :: units
-    real(r8) :: in_sflx(pcols,gas_pcnst) ! surface emissions ( kg/m^2/s )
 
-    in_sflx(:,:) = 0._r8
+    real(r8), dimension(ncol) :: rlats, rlons 
+
+    sflx(:,:) = 0._r8
 
     !--------------------------------------------------------
     !	... set non-zero emissions
@@ -303,33 +299,19 @@ contains
           flux(:ncol) = flux(:ncol) + emissions(m)%fields(isec)%data(:ncol,1,lchnk)
        enddo
 
-#if (defined MODAL_AERO)
-       select case( emissions(m)%species )
-       case( 'SOAG' )
-          flux(:ncol) = flux(:ncol) * om_to_oc
-       case( 'pom_a1', 'pom_a3' ) ! for both 3-mode and 7-mode ? -- should be done offline!
-          flux(:ncol) = flux(:ncol) * om_to_oc
-       end select
-#endif
-
        units = to_lower(trim(emissions(m)%fields(1)%units(:GLC(emissions(m)%fields(1)%units))))
-
+       
        if ( any( mks_units(:) == units ) ) then
-          if (  emissions(m)%species == 'ISOP' .or. emissions(m)%species == 'C10H16' ) then
-             in_sflx(:ncol,n) = flux(:ncol)
-          else
-             sflx(:ncol,n) = sflx(:ncol,n) + flux(:ncol)
-          endif
+          sflx(:ncol,n) = flux(:ncol)
        else
           mfactor = amufac * emissions(m)%mw
-          if (  emissions(m)%species == 'ISOP' .or. emissions(m)%species == 'C10H16' ) then
-             in_sflx(:ncol,n) = flux(:ncol) * mfactor
-          else
-             sflx(:ncol,n) = sflx(:ncol,n) + flux(:ncol) * mfactor
-          endif
+          sflx(:ncol,n) = flux(:ncol) * mfactor
        endif
 
     end do emis_loop
+
+    call get_rlat_all_p( lchnk, ncol, rlats )
+    call get_rlon_all_p( lchnk, ncol, rlons )
 
     calday = get_curr_calday()
     doy_loc     = aint( calday )
@@ -370,12 +352,11 @@ contains
           if( has_emis(c10h16_ndx) ) then
              if( .not. polar_night .and. .not. polar_day ) then
                 dayfrac = sunoff / pi
-                in_sflx(i,c10h16_ndx) = in_sflx(i,c10h16_ndx) / (.7_r8 + .3_r8*dayfrac)
+                sflx(i,c10h16_ndx) = sflx(i,c10h16_ndx) / (.7_r8 + .3_r8*dayfrac)
                 if( loc_angle >= sunoff .and. loc_angle <= sunon ) then
-                   in_sflx(i,c10h16_ndx) = in_sflx(i,c10h16_ndx) * .7_r8
+                   sflx(i,c10h16_ndx) = sflx(i,c10h16_ndx) * .7_r8
                 endif
              end if
-             sflx(i,c10h16_ndx) = sflx(i,c10h16_ndx) + in_sflx(i,c10h16_ndx)
           end if
        end if
 
@@ -393,24 +374,22 @@ contains
                    iso_on  = 2._r8 * pi - iso_off
                 end if
                 if( loc_angle >= iso_off .and. loc_angle <= iso_on ) then
-                   in_sflx(i,isop_ndx) = 0._r8
+                   sflx(i,isop_ndx) = 0._r8
                 else
                    factor = loc_angle - iso_on
                    if( factor <= 0._r8 ) then
                       factor = factor + 2._r8*pi
                    end if
                    factor = factor / (2._r8*iso_off + 1.e-6_r8)
-                   in_sflx(i,isop_ndx) =in_sflx(i,isop_ndx) * 2._r8 / iso_off * pi * (sin(pi*factor))**2
+                   sflx(i,isop_ndx) = sflx(i,isop_ndx) * 2._r8 / iso_off * pi * (sin(pi*factor))**2
                 end if
              else
-                in_sflx(i,isop_ndx) = 0._r8
+                sflx(i,isop_ndx) = 0._r8
              end if
-             sflx(i,isop_ndx) = sflx(i,isop_ndx) + in_sflx(i,isop_ndx)
           end if
        end if
 
     end do
-
 
   end subroutine set_srf_emissions
 

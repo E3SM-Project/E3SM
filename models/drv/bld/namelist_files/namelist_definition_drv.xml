@@ -325,7 +325,7 @@ default: SHR_ORB_UNDEF_REAL (1.e36)
 </entry>
 
 <entry
-id="orb_velp"
+id="orb_mvelp"
 type="real"
 category="orbital" 
 group="seq_infodata_inparm">
@@ -364,53 +364,85 @@ default: false
 </entry>
 
 <entry 
-id="samegrid_al"
-type="logical"
-category="mapping" 
+id="wall_time_limit"
+type="real"
+category="control" 
 group="seq_infodata_inparm">
-tells the coupler to treat the atm and land grids as "the same".  
-automatically set by comparison of ATM_GRID and LND_GRID which are set in env_case.xml.  
-default: true
+Wall time limit for run
+default: -1.0
 </entry>
 
 <entry 
-id="samegrid_ao"
-type="logical"
-category="mapping" 
-group="seq_infodata_inparm">
-tells the coupler to treat the atm and ocean grids as "the same".  
-automatically set by comparison of ATM_GRID and OCN_GRID which are set in env_case.xml.  
-default: true
+id="force_stop_at"
+type="char*8"
+category="control" 
+group="seq_infodata_inparm"
+valid_values="day,month,year">
+Force stop at the next month, day, etc when wall_time_limit is hit
+default: month
 </entry>
 
 <entry 
-id="samegrid_ro"
-type="logical"
+id="atm_gnam"
+type="char*64"
 category="mapping" 
 group="seq_infodata_inparm">
-tells the coupler to treat the runoff and ocean grids as "the same".  
-automatically set by comparison of LND_GRID and OCN_GRID which are set in env_case.xml.  
-default: false
+ATM_GRID values passed into driver.
+default: undefined
 </entry>
 
 <entry 
-id="samegrid_aw"
-type="logical"
+id="lnd_gnam"
+type="char*64"
 category="mapping" 
 group="seq_infodata_inparm">
-tells the coupler to treat the atm and wave grids as "the same".  
-automatically set by comparison of ATM_GRID and WAV_GRID which are set in env_case.xml.  
-default: false
+LND_GRID values passed into driver.
+default: undefined
 </entry>
 
 <entry 
-id="samegrid_ow"
-type="logical"
+id="ocn_gnam"
+type="char*64"
 category="mapping" 
 group="seq_infodata_inparm">
-tells the coupler to treat the ocean and wave grids as "the same".  
-automatically set by comparison of OCN_GRID and WAV_GRID which are set in env_case.xml.  
-default: false
+OCN_GRID values passed into driver.
+default: undefined
+</entry>
+
+<entry 
+id="ice_gnam"
+type="char*64"
+category="mapping" 
+group="seq_infodata_inparm">
+ICE_GRID values passed into driver.
+default: undefined
+</entry>
+
+<entry 
+id="rof_gnam"
+type="char*64"
+category="mapping" 
+group="seq_infodata_inparm">
+ROF_GRID values passed into driver.
+default: undefined
+</entry>
+
+<entry 
+id="glc_gnam"
+type="char*64"
+category="mapping" 
+group="seq_infodata_inparm">
+GLC_GRID values passed into driver.
+default: undefined
+</entry>
+
+<entry 
+id="wav_gnam"
+type="char*64"
+category="mapping" 
+group="seq_infodata_inparm">
+WAV_GRID values passed into driver.
+default: undefined
 </entry>
 
 <entry 
@@ -669,7 +701,7 @@ default: false
 </entry>
 
 <entry 
-id="histaux_s2x1yr"
+id="histaux_l2x1yr"
 type="logical"
 category="history" 
 group="seq_infodata_inparm">
@@ -1174,44 +1206,6 @@ category="time"
 group="seq_timemgr_inparm">
 date associated with histavg_option date.  yyyymmdd format.  
 set by AVGHIST_DATE in env_run.xml.
-</entry>
-
-<entry
-id="histavg_option"
-type="char*16"
-category="time" 
-group="seq_timemgr_inparm"
-valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end">
-sets the run length with histavg_n and histavg_ymd
-histavg_option alarms are:
-[none/never], turns option off
-[nstep/s]   , history every histavg_n nsteps  , relative to current run start time
-[nsecond/s] , history every histavg_n nseconds, relative to current run start time
-[nminute/s] , history every histavg_n nminutes, relative to current run start time
-[nhour/s]   , history every histavg_n nhours  , relative to current run start time
-[nday/s]    , history every histavg_n ndays   , relative to current run start time
-[monthly/s] , history every           month   , relative to current run start time
-[nmonth/s]  , history every histavg_n nmonths , relative to current run start time
-[nyear/s]   , history every histavg_n nyears  , relative to current run start time
-[date]      , history at histavg_ymd value
-[ifdays0]   , history at histavg_n calendar day value and seconds equal 0
-[end]       , history at end
-</entry>
-
-<entry
-id="histavg_n"
-type="integer"
-category="time" 
-group="seq_timemgr_inparm">
-Sets coupler time-average history file frequency (like restart_option)
-</entry>
-
-<entry
-id="histavg_ymd"
-type="integer"
-category="time" 
-group="seq_timemgr_inparm">
-yyyymmdd format, sets coupler time-average history date (like restart_ymd)
 </entry>
 
 <entry
@@ -2121,16 +2115,16 @@ grid.
 </entry>
 
 <entry 
-id="rof2lnd_smapname"
+id="rof2ocn_fmapname"
 type="char*256"
 category="mapping" 
 input_pathname="abs"
 group="seq_maps">
-runoff to lnd conservative mapping file
+runoff to ocn area overlap conservative mapping file
 </entry>
 
 <entry 
-id="rof2lnd_smaptype"
+id="rof2ocn_fmaptype"
 type="char*256"
 category="mapping" 
 group="seq_maps">
@@ -2142,16 +2136,37 @@ grid.
 </entry>
 
 <entry 
-id="rof2ocn_fmapname"
+id="glc2ocn_rmapname"
 type="char*256"
 category="mapping" 
 input_pathname="abs"
 group="seq_maps">
-runoff to ocn area overlap conservative mapping file
+glc to ocn runoff conservative mapping file
 </entry>
 
 <entry 
-id="rof2ocn_fmaptype"
+id="glc2ocn_rmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="glc2ice_rmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to ice runoff conservative mapping file
+</entry>
+
+<entry 
+id="glc2ice_rmaptype"
 type="char*256"
 category="mapping" 
 group="seq_maps">

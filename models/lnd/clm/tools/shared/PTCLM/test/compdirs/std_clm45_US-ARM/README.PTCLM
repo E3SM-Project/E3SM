@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --phys clm4_5 --cesm_root ../../../../../../.. -s US-ARM -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/stdclm45_file_creation 

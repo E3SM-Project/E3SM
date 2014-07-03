@@ -34,7 +34,7 @@ module glimmer_anomcouple
   !*FD written for use with GLINT, it has general applicability. Temperature coupling
   !*FD is done linearly, precipitation proportionally.
 
-  use glimmer_global
+  use glimmer_global, only: dp, fname_length, msg_length
   use glimmer_ncdf, only: nc_errorhandle  !EIB! from lanl
 
   implicit none
@@ -59,11 +59,11 @@ module glimmer_anomcouple
      character(fname_length) :: fname_reference !*FD File containing reference climate
      character(fname_length) :: fname_modelclim !*FD File containing mean model climate
      integer :: nslices                         !*FD Number of time-slices in climatologies
-     real(rk),dimension(:,:,:),pointer :: temp_ref => null() !*FD Reference climate (temperature)
-     real(rk),dimension(:,:,:),pointer :: temp_mod => null() !*FD Model climate (temperature)
-     real(rk),dimension(:,:,:),pointer :: prcp_ref => null() !*FD Reference climate (precip)
-     real(rk),dimension(:,:,:),pointer :: prcp_mod => null() !*FD Model climate (precip)
-     real(rk),dimension(:)    ,pointer :: time     => null() !*FD Time axis (fraction of year)
+     real(dp),dimension(:,:,:),pointer :: temp_ref => null() !*FD Reference climate (temperature)
+     real(dp),dimension(:,:,:),pointer :: temp_mod => null() !*FD Model climate (temperature)
+     real(dp),dimension(:,:,:),pointer :: prcp_ref => null() !*FD Reference climate (precip)
+     real(dp),dimension(:,:,:),pointer :: prcp_mod => null() !*FD Model climate (precip)
+     real(dp),dimension(:)    ,pointer :: time     => null() !*FD Time axis (fraction of year)
      integer :: nx,ny !*FD Grid dimensions (for convenience)
      character(20) :: pvarname_ref='prcp                '
      character(20) :: tvarname_ref='artm                '
@@ -97,13 +97,13 @@ contains
   subroutine anomaly_calc(params,time,rawtemp,rawprcp,anomtemp,anomprcp)
 
     type(anomaly_coupling),intent(in) :: params !*FD Parameters to be initialised
-    real(rk) :: time
-    real(rk),dimension(:,:),intent(in)  :: rawtemp, rawprcp
-    real(rk),dimension(:,:),intent(out) :: anomtemp,anomprcp
+    real(dp) :: time
+    real(dp),dimension(:,:),intent(in)  :: rawtemp, rawprcp
+    real(dp),dimension(:,:),intent(out) :: anomtemp,anomprcp
 
-    real(rk),dimension(size(rawtemp,1),size(rawtemp,2)) :: tempm,prcpm,tempr,prcpr
+    real(dp),dimension(size(rawtemp,1),size(rawtemp,2)) :: tempm,prcpm,tempr,prcpr
     integer  :: first
-    real(sp) :: frac
+    real(dp) :: frac
     integer  :: i,j
 
     if (params%enabled) then
@@ -116,19 +116,19 @@ contains
        if (params%mult_precip) then
           do i=1,size(anomprcp,1)
              do j=1,size(anomprcp,2)
-                if (prcpm(i,j)/=0.0_rk) then
+                if (prcpm(i,j)/=0.d0) then
                    anomprcp(i,j)=rawprcp(i,j)*prcpr(i,j)/prcpm(i,j)
-                else if (rawprcp(i,j)==0.0_rk) then
+                else if (rawprcp(i,j)==0.d0) then
                    anomprcp(i,j)=prcpr(i,j)
-                else if (prcpr(i,j)==0.0_rk) then
+                else if (prcpr(i,j)==0.d0) then
                    anomprcp(i,j)=rawprcp(i,j)
                 else
-                   anomprcp(i,j)=0.0_rk
+                   anomprcp(i,j)=0.d0
                 end if
              end do
           end do
        else
-          anomprcp=max(rawprcp-prcpm+prcpr,0.0_rk)
+          anomprcp=max(rawprcp-prcpm+prcpr,0.d0)
        end if
     else
        anomprcp=rawprcp
@@ -207,8 +207,8 @@ contains
     type(anomaly_coupling),intent(inout) :: params !*FD Parameters to be initialised
 
     integer,dimension(4) :: nx,ny,nt
-    real(rk),dimension(:),pointer :: timemod => null()
-    real(rk),dimension(:),pointer :: timeref => null()
+    real(dp),dimension(:),pointer :: timemod => null()
+    real(dp),dimension(:),pointer :: timeref => null()
 
     call anomaly_readnc(params%fname_reference,params%pvarname_ref,params%prcp_ref,timeref,nx(1),ny(1),nt(1))
     call anomaly_readnc(params%fname_reference,params%tvarname_ref,params%temp_ref,timeref,nx(2),ny(2),nt(2))
@@ -246,8 +246,8 @@ contains
 
     character(*),                     intent(in)  :: fname
     character(*),                     intent(in)  :: varname
-    real(rk),dimension(:,:,:),pointer             :: data
-    real(rk),dimension(:),    pointer             :: timeaxis
+    real(dp),dimension(:,:,:),pointer             :: data
+    real(dp),dimension(:),    pointer             :: timeaxis
     integer,                          intent(out) :: nx,ny,nt
 
     ! Local variables
@@ -255,7 +255,7 @@ contains
     integer,dimension(3) :: dimids
     integer,dimension(3) :: dimnames
     character(30) :: dntemp,timevar
-    real(sp) :: interval
+    real(dp) :: interval
     
     ! Open file
     !EIB lanl!status=nf90_open(process_path(fname),NF90_NOWRITE,ncid)
@@ -349,18 +349,18 @@ contains
 
     use glimmer_log
 
-    real(rk),dimension(:),intent(in)  :: timeaxis
-    real(rk),             intent(in)  :: time
+    real(dp),dimension(:),intent(in)  :: timeaxis
+    real(dp),             intent(in)  :: time
     integer,              intent(out) :: first
-    real(sp),             intent(out) :: frac 
+    real(dp),             intent(out) :: frac 
 
     first=1
     do
-       if (time>=timeaxis(first).and.time<timeaxis(first+1)) then
-          frac=(time-timeaxis(first))/(timeaxis(first+1)-timeaxis(first))
+       if (time >= timeaxis(first) .and. time < timeaxis(first+1)) then
+          frac = (time-timeaxis(first)) / (timeaxis(first+1)-timeaxis(first))
           exit
        endif
-       first=first+1
+       first = first+1
        if (first==size(timeaxis)) then
           call write_log("Anomaly coupling: Problem indexing time-slices",GM_FATAL,__FILE__,__LINE__)
        end if

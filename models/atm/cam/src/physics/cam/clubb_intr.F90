@@ -12,7 +12,7 @@ module clubb_intr
   ! Calling sequence:                                                                                    !
   !                                                                                                      !
   !---------------------------Code history-------------------------------------------------------------- !
-  ! Authors:  P. Bogenschutz, C. Craig, A. Gettelmen                                                     ! 
+  ! Authors:  P. Bogenschutz, C. Craig, A. Gettelman                                                     ! 
   !                                                                                                      ! 
   !----------------------------------------------------------------------------------------------------- !
 
@@ -121,6 +121,7 @@ module clubb_intr
     tke_idx, &                          ! turbulent kinetic energy
     tpert_idx, &                        ! temperature perturbation from PBL
     fice_idx, &                         ! fice_idx index in physics buffer
+    cmeliq_idx, &                       ! cmeliq_idx index in physics buffer
     relvar_idx, &                       ! relative cloud water variance
     accre_enhan_idx                     ! optional accretion enhancement factor for MG
 
@@ -149,7 +150,7 @@ module clubb_intr
     !------------------------------------------------ !
 
     !  Add CLUBB fields to pbuf 
-    use physics_buffer,  only: pbuf_add_field, dtype_r8, pbuf_times
+    use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
     use ppgrid,          only: pver, pverp, pcols
     
     call phys_getopts( eddy_scheme_out = eddy_scheme, &
@@ -161,30 +162,31 @@ module clubb_intr
     call pbuf_add_field('kvh',        'global', dtype_r8, (/pcols, pverp/),             kvh_idx)
     call pbuf_add_field('kvm',        'global', dtype_r8, (/pcols, pverp/),             kvm_idx)
     call pbuf_add_field('tpert',      'global', dtype_r8, (/pcols/),                    tpert_idx)
-    call pbuf_add_field('AST',        'global', dtype_r8, (/pcols,pver,pbuf_times/),    ast_idx)
-    call pbuf_add_field('AIST',       'global', dtype_r8, (/pcols,pver,pbuf_times/),    aist_idx)
-    call pbuf_add_field('ALST',       'global', dtype_r8, (/pcols,pver,pbuf_times/),    alst_idx)
-    call pbuf_add_field('QIST',       'global', dtype_r8, (/pcols,pver,pbuf_times/),    qist_idx)
-    call pbuf_add_field('QLST',       'global', dtype_r8, (/pcols,pver,pbuf_times/),    qlst_idx)
-    call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,pbuf_times/),    concld_idx)
-    call pbuf_add_field('CLD',        'global', dtype_r8, (/pcols,pver,pbuf_times/),    cld_idx)
-    call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/),               fice_idx)
+    call pbuf_add_field('AST',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    ast_idx)
+    call pbuf_add_field('AIST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    aist_idx)
+    call pbuf_add_field('ALST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    alst_idx)
+    call pbuf_add_field('QIST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qist_idx)
+    call pbuf_add_field('QLST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qlst_idx)
+    call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    concld_idx)
+    call pbuf_add_field('CLD',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    cld_idx)
+    call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/),                  fice_idx)
+    call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/),                  cmeliq_idx)
     
-    call pbuf_add_field('WP2',        'global', dtype_r8, (/pcols,pverp,pbuf_times/), wp2_idx)
-    call pbuf_add_field('WP3',        'global', dtype_r8, (/pcols,pverp,pbuf_times/), wp3_idx)
-    call pbuf_add_field('WPTHLP',     'global', dtype_r8, (/pcols,pverp,pbuf_times/), wpthlp_idx)
-    call pbuf_add_field('WPRTP',      'global', dtype_r8, (/pcols,pverp,pbuf_times/), wprtp_idx)
-    call pbuf_add_field('RTPTHLP',    'global', dtype_r8, (/pcols,pverp,pbuf_times/), rtpthlp_idx)
-    call pbuf_add_field('RTP2',       'global', dtype_r8, (/pcols,pverp,pbuf_times/), rtp2_idx)
-    call pbuf_add_field('THLP2',      'global', dtype_r8, (/pcols,pverp,pbuf_times/), thlp2_idx)
-    call pbuf_add_field('UP2',        'global', dtype_r8, (/pcols,pverp,pbuf_times/), up2_idx)
-    call pbuf_add_field('VP2',        'global', dtype_r8, (/pcols,pverp,pbuf_times/), vp2_idx)
-    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,pbuf_times/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,pbuf_times/), vpwp_idx)
-    call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,pbuf_times/), thlm_idx)
-    call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,pbuf_times/), rtm_idx)
-    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,pbuf_times/), um_idx)
-    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,pbuf_times/), vm_idx)
+    call pbuf_add_field('WP2',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_idx)
+    call pbuf_add_field('WP3',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp3_idx)
+    call pbuf_add_field('WPTHLP',     'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wpthlp_idx)
+    call pbuf_add_field('WPRTP',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wprtp_idx)
+    call pbuf_add_field('RTPTHLP',    'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtpthlp_idx)
+    call pbuf_add_field('RTP2',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtp2_idx)
+    call pbuf_add_field('THLP2',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlp2_idx)
+    call pbuf_add_field('UP2',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), up2_idx)
+    call pbuf_add_field('VP2',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vp2_idx)
+    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx)
+    call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlm_idx)
+    call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
+    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
+    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vm_idx)
 
 #endif 
 
@@ -391,7 +393,9 @@ module clubb_intr
     ! ----------------------------------------------------------------- !
     
     !  Read in parameters for CLUBB.  Just read in default values 
+!$OMP PARALLEL
       call read_parameters( -99, "", clubb_params )
+!$OMP END PARALLEL
       
     !  Fill in dummy arrays for height.  Note that these are overwrote
     !  at every CLUBB step to physical values.    
@@ -404,6 +408,7 @@ module clubb_intr
     !  when clubb_tend_cam is called.  The reason is that heights can change
     !  at each time step, which is why dummy arrays are read in here for heights
     !  as they are immediately overwrote.     
+!$OMP PARALLEL
     call setup_clubb_core     &
          ( pverp, theta0, ts_nudge, &                                 ! In
            hydromet_dim,  sclr_dim, &                                 ! In
@@ -414,9 +419,10 @@ module clubb_intr
            zi_g(1:pverp), zt_g(1:pverp), &                            ! In
            host_dx, host_dy, zi_g(1), &                               ! In
            err_code )
+!$OMP END PARALLEL
 	   
     ! ----------------------------------------------------------------- !
-    ! Set-up HB diffusion.  Only intialized to diagnose PBL depth       !
+    ! Set-up HB diffusion.  Only initialized to diagnose PBL depth      !
     ! ----------------------------------------------------------------- !
 
     ! Initialize eddy diffusivity module
@@ -486,7 +492,8 @@ module clubb_intr
      call addfld ('ZMDLF',            'kg/kg/s',  pver,  'A', 'Detrained liquid water from ZM convection',phys_decomp)
 
      call addfld ('CONCLD   ',        'fraction', pver,  'A', 'Convective cloud cover',phys_decomp)
-     
+     call addfld ('CMELIQ   ',        'kg/kg/s ', pver, 'A', 'Rate of cond-evap of liq within the cloud',phys_decomp)
+
      !  Initialize statistics, below are dummy variables
       dum1 = 300._r8
       dum2 = 1200._r8
@@ -603,7 +610,7 @@ module clubb_intr
 			      physics_ptend_sum, physics_update
 
     use physics_buffer, only: pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field, &
-                              pbuf_set_field, physics_buffer_desc, pbuf_times
+                              pbuf_set_field, physics_buffer_desc
 			      
     use ppgrid, 	only: pver, pverp, pcols
     use constituents, 	only: cnst_get_ind
@@ -660,6 +667,7 @@ module clubb_intr
     ! These two variables are needed for energy check    
     real(r8),            intent(out)   :: det_s(pcols)               ! Integral of detrained static energy from ice
     real(r8),            intent(out)   :: det_ice(pcols)             ! Integral of detrained ice for energy check
+
         
     ! --------------- !
     ! Local Variables !
@@ -672,7 +680,7 @@ module clubb_intr
    
    integer :: i, j, k, t, ixind, nadv
    integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq
-   integer :: itim
+   integer :: itim_old
    integer :: ncol, lchnk                   	! # of columns, and chunk identifier
    integer :: err_code				! Diagnostic, for if some calculation goes amiss.
    integer :: begin_height, end_height
@@ -831,6 +839,7 @@ module clubb_intr
    real(r8), pointer, dimension(:,:) :: dp_icwmr ! deep convection in cloud mixing ratio        [kg/kg]
    real(r8), pointer, dimension(:,:) :: relvar   ! relative cloud water variance                [-]
    real(r8), pointer, dimension(:,:) :: accre_enhan ! accretion enhancement factor              [-]
+   real(r8), pointer, dimension(:,:) :: cmeliq 
 
    logical            :: lqice(pcnst)
 
@@ -873,37 +882,38 @@ module clubb_intr
 
    !  Determine time step of physics buffer
    
-   itim = pbuf_old_tim_idx() 
+   itim_old = pbuf_old_tim_idx() 
 
    !  Establish associations between pointers and physics buffer fields   
 
-   call pbuf_get_field(pbuf, wp2_idx,     wp2,     start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, wp3_idx,     wp3,     start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, wpthlp_idx,  wpthlp,  start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, wprtp_idx,   wprtp,   start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, rtpthlp_idx, rtpthlp, start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, rtp2_idx,    rtp2,    start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, thlp2_idx,   thlp2,   start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, up2_idx,     up2,     start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, vp2_idx,     vp2,     start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, wp2_idx,     wp2,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, wp3_idx,     wp3,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, wpthlp_idx,  wpthlp,  start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, wprtp_idx,   wprtp,   start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, rtpthlp_idx, rtpthlp, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, rtp2_idx,    rtp2,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, thlp2_idx,   thlp2,   start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, up2_idx,     up2,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, vp2_idx,     vp2,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
 
    call pbuf_get_field(pbuf, tke_idx,     tke)
 
-   call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, alst_idx,    alst,    start=(/1,1,itim/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, aist_idx,    aist,    start=(/1,1,itim/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, qlst_idx,    qlst,    start=(/1,1,itim/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, qist_idx,    qist,    start=(/1,1,itim/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, alst_idx,    alst,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, aist_idx,    aist,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, qlst_idx,    qlst,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, qist_idx,    qist,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
    call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan)
+   call pbuf_get_field(pbuf, cmeliq_idx,  cmeliq)
    call pbuf_get_field(pbuf, relvar_idx,  relvar)
    call pbuf_get_field(pbuf, dp_frac_idx, deepcu)
    call pbuf_get_field(pbuf, sh_frac_idx, shalcu)
@@ -1373,11 +1383,13 @@ module clubb_intr
      enddo
 
    enddo  ! end column loop
- 
-    ! ------------------------------------------------- !
-    ! End column computation of CLUBB, begin to apply   !
-    ! and compute output, etc		 	        !
-    ! ------------------------------------------------- !
+
+   cmeliq(:,:) = ptend_loc%q(:,:,ixcldliq)
+
+   ! ------------------------------------------------- !
+   ! End column computation of CLUBB, begin to apply   !
+   ! and compute output, etc		 	        !
+   ! ------------------------------------------------- !
 
    !  Output CLUBB tendencies 
    call outfld( 'RVMTEND_CLUBB', ptend_loc%q(:,:,ixq)*1000._r8, pcols, lchnk)
@@ -1386,6 +1398,8 @@ module clubb_intr
    call outfld( 'STEND_CLUBB',   ptend_loc%s,pcols, lchnk)
    call outfld( 'UTEND_CLUBB',   ptend_loc%u,pcols, lchnk)
    call outfld( 'VTEND_CLUBB',   ptend_loc%v,pcols, lchnk)
+
+   call outfld( 'CMELIQ',        cmeliq, pcols, lchnk)
 
    !  Update physics tendencies     
    call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
@@ -1744,9 +1758,6 @@ module clubb_intr
     use ppgrid, 	        only: pver, pcols
     use constituents, 	        only: pcnst, cnst_get_ind
     use camsrfexch,             only: cam_in_t
-#ifdef MODAL_AERO
-    use modal_aero_data
-#endif
     
     implicit none
     

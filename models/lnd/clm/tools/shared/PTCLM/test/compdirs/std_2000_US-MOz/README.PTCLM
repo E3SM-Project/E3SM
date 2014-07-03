@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --clmnmlusecase=2000_control --cesm_root ../../../../../../.. -s US-MOz -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/std2000_file_creation 

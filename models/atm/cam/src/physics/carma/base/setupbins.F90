@@ -26,6 +26,9 @@ subroutine setupbins(carma, rc)
   real(kind=f)  :: tmp_rhop(NBIN, NGROUP)
   real(kind=f)  :: vrfact
   real(kind=f)  :: cpi
+  ! Local declarations needed for creation of fractal bin structure
+  real(kind=f)  :: rf, rp
+  real(kind=f)  :: vpor, upor, gamma, happel, perm, brinkman, epsil, omega
 
   !  Define formats
   !
@@ -33,8 +36,9 @@ subroutine setupbins(carma, rc)
   2 format(a,':  ',i6)
   3 format(a,':  ',f12.2)
   4 format(a,':  ',12f12.2)
-  6 format(a,':  ',1p12e12.3)
   5 format(/,'Particle grid structure (setupbins):')
+  6 format(a,':  ',1p12e12.3)
+  7 format(a,':  ',12l6)
 
 
   !  Determine which elements are particle number concentrations
@@ -154,7 +158,49 @@ subroutine setupbins(carma, rc)
       rup(j,igrp) = ( rmassup(j,igrp)/tmp_rhop(j,igrp)/cpi )**(ONE/3._f)
       dr(j,igrp)  = vrfact*(rmass(j,igrp)/tmp_rhop(j,igrp))**(ONE/3._f)
       rlow(j,igrp) = rup(j,igrp) - dr(j,igrp)
-    enddo
+ 
+      if (is_grp_fractal(igrp)) then
+      ! fractal flag is true
+
+        if (r(j,igrp) .le. rmon(igrp)) then   ! if the bin radius is less than the monomer size
+                                     
+          nmon(j,igrp) = 1.0_f
+          rrat(j,igrp) = 1.0_f
+          arat(j,igrp) = 1.0_f
+          rprat(j,igrp) = 1.0_f
+          df(j,igrp) = 3.0_f  ! Reset fractal dimension to 3 (this is a formality)
+
+        else   ! if bin radius is greater than the monomer size
+
+          rf = (1.0_f/falpha(igrp))**(1.0_f/df(j,igrp))*r(j,igrp)**(3.0_f/df(j,igrp))*rmon(igrp)**(1.0_f-3.0_f/df(j,igrp))
+          nmon(j,igrp) = falpha(igrp)*(rf/rmon(igrp))**df(j,igrp)
+
+          rrat(j,igrp) = rf/r(j,igrp)           
+                                                                                         
+          ! Calculate mobility radius for permeable aggregates
+          ! using Vainshtein (2003) formulation     
+          vpor = 1.0_f - (nmon(j,igrp))**(1.0_f-3.0_f/df(j,igrp))           ! Volume average porosity (eq. 3.2)
+          upor = 1.0_f-(1.0_f - vpor)*sqrt(df(j,igrp)/3.0_f)                ! Uniform poroisty (eq. 3.10)
+          gamma = (1.0_f - upor)**(1.0_f/3.0_f)
+          happel = 2.0_f/(9.0_f*(1.0_f-upor))*   &                          ! Happel permeability model
+                  (3.0_f-4.5_f*gamma+4.5_f*gamma**5.0_f-3.0_f*gamma**6.0_f)/  &
+                  (3.0_f+2.0_f*gamma**5.0_f)    
+          perm = happel*rmon(igrp)**2.0_f                                   ! Permeability (eq. 3.3)
+          brinkman = nmon(j,igrp)**(1.0_f/df(j,igrp))*1.0_f/sqrt(happel)    ! Brinkman parameter (eq. 3.9) 
+          epsil = 1.0_f - brinkman**(-1.)*tanh(brinkman)                    !
+          omega = 2.0_f/3.0_f*epsil/(2.0_f/3.0_f+epsil/brinkman**2.0_f)     ! drag coefficient (eq. 2.7)
+          rp = rf * omega
+          rprat(j,igrp) = rp/r(j,igrp)
+
+          arat(j,igrp) = (rprat(j,igrp) / rrat(j, igrp))**2.0_f
+        endif
+      else
+         ! Not a fractal.
+         nmon(j,igrp) = 1.0_f
+         rprat(j,igrp) = 1.0_f
+         df(j,igrp) = 3.0_f
+      endif
+   enddo
   enddo
   
   !  Evaluate differences between valuse of <rmass> in different bins.
@@ -181,6 +227,7 @@ subroutine setupbins(carma, rc)
     write(LUNOPRT,1) 'ienconc',(ienconc(i),i=1,NGROUP)
     write(LUNOPRT,1) 'igelem ',(igelem(i),i=1,NELEM)
     write(LUNOPRT,1) 'ncore  ',(ncore(i),i=1,NGROUP)
+    write(LUNOPRT,7) 'fractal',(is_grp_fractal(i),i=1,NGROUP)
   end if
  
   !  Return to caller with particle grid initialized

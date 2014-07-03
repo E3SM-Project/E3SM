@@ -36,14 +36,13 @@
 
 module kelvin
 
+  use glimmer_global, only: sp, dp
+  use glimmer_physcon, only: pi
   implicit none
 
-  integer, private, parameter :: sp=selected_real_kind(6)   !< integer storing kind value for variables with a precision of at least 6 digits (single precision)
-  integer, private, parameter :: dp=selected_real_kind(15)  !< integer storing kind value for variables with a precision of at least 15 digits (double precision)
   real(kind=dp), private, parameter :: gamma=0.577215664901532860606512d0 !< Euler's constant
-  real(kind=dp), private, parameter :: pi=3.14159265358979323846264338328d0 !< pi
   integer, private :: j_max = 40 !< maximum number of iterations
-  real(kind=dp), private :: tolerance=1.d-10 !< the tolerance
+  real(kind=dp), private :: tolerance = 1.d-10 !< the tolerance
 
   interface ber
      module procedure d_ber, s_ber

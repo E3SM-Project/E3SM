@@ -17,5 +17,7 @@ Traceback (most recent call last):
     print "error reading" + configlog
 UnboundLocalError: local variable 'configlog' referenced before assignment
 
+2. can't find netcdf and other modules.
 
+Are you trying to run it on the compute machine like Titan?
 

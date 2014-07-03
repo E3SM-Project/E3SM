@@ -11,7 +11,7 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
-  use control_mod, only : which_vlaplace, hypervis_scaling
+  use control_mod, only : hypervis_scaling, hypervis_power
 
 implicit none
 private
@@ -120,11 +120,12 @@ contains
 ! derivatives and interpolating
 ! ==========================================
 
-  subroutine derivinit(deriv,fvm_corners, fvm_points)
+  subroutine derivinit(deriv,fvm_corners, fvm_points, spelt_refnep)
     type (derivative_t)      :: deriv
 !    real (kind=longdouble_kind),optional :: phys_points(:)
     real (kind=longdouble_kind),optional :: fvm_corners(nc+1)
     real (kind=longdouble_kind),optional :: fvm_points(nc)
+    real (kind=longdouble_kind),optional :: spelt_refnep(nep)
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
@@ -198,6 +199,10 @@ contains
 
     if (present(fvm_points)) &
          call v2pinit(deriv%Cfvm,gp%points,fvm_points,np,nc)
+         
+    if (present(spelt_refnep)) &     
+      call v2pinit(deriv%Sfvm,gp%points,spelt_refnep,np,nep)
+         
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
     deallocate(gp%points)
@@ -1524,7 +1529,9 @@ endif
     real(kind=longdouble_kind) :: gll_edges(np+1),phys_edges(nphys+1)
     type(quadrature_t) :: gll_pts
     ! setup (most be done on masterthread only) since all data is static
+#if (! defined ELEMENT_OPENMP)
 !OMP MASTER
+#endif
     if (nphys_init/=nphys) then
        nphys_init=nphys
        ! find number of intersections
@@ -1626,8 +1633,10 @@ endif
     call abortmp(__FILE__)
 #endif
     endif
-    !OMP ENDMASTER
+#if (! defined ELEMENT_OPENMP)
+    !OMP END MASTER
     !OMP BARRIER
+#endif
 
 
     pout=0
@@ -2324,11 +2333,6 @@ endif
       real(kind=real_kind) :: rdx
       real(kind=real_kind) :: rdy
 
-! dx,dy are no longer initialized - this routine must be updated 
-! see vorticity_sphere above
-!      rdx=2.0D0/(elem%dx*rrearth) ! strong derivative inverse x length
-!      rdy=2.0D0/(elem%dy*rrearth) ! strong derivative inverse y length
-
       ! convert to covariant form
                                                                     
       do j=1,np
@@ -2359,7 +2363,7 @@ endif
 
       do j=1,np
          do i=1,np 
-            vort(i,j)=elem%rmetdet(i,j)*(rdx*vort(i,j)-rdy*vtemp(i,j))
+          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
          end do 
       end do 
      
@@ -2441,11 +2445,11 @@ endif
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
-       if (hypervis_scaling==0 ) then
-          ! const or variable viscosity, (1) or (2)
+       if (hypervis_power/=0 ) then
+          ! scalar viscosity with variable coefficient
           grads(:,:,1) = grads(:,:,1)*elem%variable_hyperviscosity(:,:)
           grads(:,:,2) = grads(:,:,2)*elem%variable_hyperviscosity(:,:)
-       else
+       else if (hypervis_scaling /=0 ) then
           ! tensor hv, (3)
           oldgrads=grads
           do j=1,np
@@ -2454,6 +2458,8 @@ endif
                 grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
              end do
           end do
+       else
+          ! do nothing: constant coefficient viscsoity
        endif
     endif
 
@@ -2468,7 +2474,13 @@ endif
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
-
+!
+!   logic:
+!      tensorHV:     requires cartesian
+!      nu_div/=nu:   requires contra formulatino
+!
+!   One combination NOT supported:  tensorHV and nu_div/=nu then abort
+!
     real(kind=real_kind), intent(in) :: v(np,np,2) 
     logical :: var_coef
     type (derivative_t)              :: deriv
@@ -2476,19 +2488,25 @@ endif
     real(kind=real_kind), optional :: nu_ratio
     real(kind=real_kind) :: laplace(np,np,2)
 
-    if (which_vlaplace .eq. 2) then
-      laplace=cartesian_laplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio)
-    else if (which_vlaplace .eq. 1) then
-      laplace=laplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio)
-    else
-      laplace=laplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio)
+
+    if (hypervis_scaling/=0 .and. var_coef) then
+       ! tensorHV is turned on - requires cartesian formulation
+       if (present(nu_ratio)) then
+          if (nu_ratio /= 1) then
+             call abortmp('ERROR: tensorHV can not be used with nu_div/=nu')
+          endif
+       endif
+       laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
+    else  
+       ! all other cases, use contra formulation:
+       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
 
 
 
-  function cartesian_laplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2498,7 +2516,6 @@ endif
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind) :: laplace(np,np,2)
-    real(kind=real_kind), optional :: nu_ratio
     ! Local
 
     integer component
@@ -2521,160 +2538,11 @@ endif
        laplace(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
     end do 
 
-  end function cartesian_laplace_sphere_wk
+  end function vlaplace_sphere_wk_cartesian
 
 
 
-  function laplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio) result(laplace)
-!
-!   input:  v = vector in lat-lon coordinates
-!   ouput:  weak laplacian of v, in lat-lon coordinates
-!   note: integrals must be performed in contra variant coordinates,
-!         convert to lat-lon after computing integral
-!
-!   du/dt = laplace(u) = grad(div) - curl(vor)
-!   < PHI du/dt > = < PHI laplace(u) >     PHI = covariant, u = contravariant
-!
-!   weak form   < PHI , grad(div) > - < PHI, curl(vor*khat) >    PHI=covaraint
-!   by parts:  -< div(PHI) div >    - < vor curl(PHI) >      
-!            =        grad_wk(div)  - curl_wk(vor)               
-!
-! used vector identity: div(F cross G)=G dot curl F - F dot curl G
-!                  OR:    < G, curl F> = < F, curl G >
-!
-!  NOTE: for the equation:   < PHI, LAPLACE > =   -< div(PHI) div >   - < vor curl(PHI) >      
-!  if LAPLACE is in covarient, we test with PHI = (1,0) and (0,1) in contra-variant
-!  if LAPLACE is in contra-varient, we test with PHI = (1,0) and (0,1) in co-varient
-!
-!  compute with two different test functions:
-!  (then transform back to lat-lon (since we output in lat-lon))
-!  test function 1:  contra:  (phi,0)        covarient:   (met11 phi, met21 phi)
-!  test function 2:  contra:  (0,phi)        covariant:   (met12 phi, met22 phi)
-!  
-!  div acts on contra components
-!   < div(PHI) div >  =  <  1/g (g phi)_x div >  = <  phi_x div >    (test 1)
-!                        <  1/g (g phi)_y div >  = <  phi_y div >    (test 2)
-!
-!
-!  curl  acts on co-variant
-!   < curl(PHI) vor >  =   <  1/g [-(met11 phi )_y + (met21 phi)_x  ] vor > 
-!                          <  1/g [-(met12 phi )_y + (met22 phi)_x  ] vor >
-!                      =   <  1/g [-met11 phi_y + met21 phi_x  ] vor > 
-!                          <  1/g [-met12 phi_y + met22 phi_x  ] vor >
-!             
-!
-!  curl acting on co-variant test functions:
-!  test function 1:  co:  (phi,0)        curl(PHI) = -phi_y
-!  test function 2:  co:  (0,phi)        curl(PHI) = phi_x
-!   < curl(PHI) vor >  =  <  1/g -phi_y vor  >  = <  1/g -phy_y vor  >    (test 1)
-!                         <  1/g phi_x vor >    = <  1/g phi_x vor >      (test 2)
-!
-!                         
-!   
-!
-! NOTE:  SEM can compute (g11 phi)_y in two ways:
-!        project, than derivative:     met11 phi_y   (we are using this formula)
-!        expand first:                 met11 phi_y  + met11_y phi
-!
-!
-! compare to weak divergence:  < grad(PHI), v >
-!  if v is in contra,  grad(PHI) in covariant = (phi_x, phi_y)
-!  < phi_x v1  + phi_y v2 >   THUS:  < phi_x div > loop should look like d/dx
-!  loop in divergence_sphere_wk()
-!
-! NOTE: dont forget < u v > = integral g*u*v = sum mv()*metdet()*u*v  
-!        with g=metdet(), spheremv=mv()*metdet()
-!
-!  < phy_y div > = sum spheremv * phy_y * div
-!  < 1/g F >     = sum mv * F
-!
-    real(kind=real_kind), intent(in) :: v(np,np,2) 
-    logical var_coef
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
-    real(kind=real_kind) :: laplace(np,np,2)
-    real(kind=real_kind), optional :: nu_ratio
-    ! Local
-
-    integer i,j,l,m,n
-    real(kind=real_kind) :: vor(np,np),div(np,np)
-    real(kind=real_kind) :: v1,v2,div1,div2,vor1,vor2,phi_x,phi_y
-
-    div=divergence_sphere(v,deriv,elem)
-    vor=vorticity_sphere(v,deriv,elem)
-
-
-    if (var_coef) then
-       div = div*elem%variable_hyperviscosity(:,:)
-       vor = vor*elem%variable_hyperviscosity(:,:)
-    end if
-    if (present(nu_ratio)) div = nu_ratio*div
-
-#undef DIVCONTRA_VORCO
-
-    do n=1,np
-       do m=1,np
-
-          div1=0; div2=0;
-          vor1=0; vor2=0; 
-
-          do l=1,np
-             phi_x=deriv%Dvv(m,l)*rrearth ! (m,n) cardinal function, d/dx  
-                                        ! phi_x(i,j) = 0  for j<>n.  so treat this as phi_x(i,n)
-
-             phi_y=deriv%Dvv(n,l)*rrearth ! (m,n) cardinal function, d/dy
-                                        ! phi_y(i,j) = 0  for i<>m.  so treat this as phi_x(m,j)
-
-             div1=div1 + elem%spheremp(l,n)*div(l,n)*phi_x
-             div2=div2 + elem%spheremp(m,l)*div(m,l)*phi_y
-             
-#ifdef DIVCONTRA_VORCO
-             vor1=vor1 - elem%mp(m,l)*vor(m,l)*phi_y
-             vor2=vor2 + elem%mp(l,n)*vor(l,n)*phi_x
-#else
-             vor1=vor1 - elem%mp(m,l)*vor(m,l)*elem%met(1,1,m,l)*phi_y &
-                         + elem%mp(l,n)*vor(l,n)*elem%met(2,1,l,n)*phi_x
-
-             vor2=vor2 - elem%mp(m,l)*vor(m,l)*elem%met(1,2,m,l)*phi_y &
-                         + elem%mp(l,n)*vor(l,n)*elem%met(2,2,l,n)*phi_x
-
-#endif
-
-          enddo
-#ifdef DIVCONTRA_VORCO
-          v1=-div1
-          v2=-div2
-
-          !  (v1,v2) = divergence componet tested against contra-variant, so result is CO-variant
-          laplace(m,n,1)=elem%Dinv(1,1,m,n)*v1 + elem%Dinv(2,1,m,n)*v2   ! co->latlon
-          laplace(m,n,2)=elem%Dinv(1,2,m,n)*v1 + elem%Dinv(2,2,m,n)*v2   ! co->latlon
-
-          v1=-vor1
-          v2=-vor2
-          !  (v1,v2) = vorticity component tested against co-variant.  so result is CONTRA 
-          laplace(m,n,1)=laplace(m,n,1) + elem%D(1,1,m,n)*v1 + elem%D(1,2,m,n)*v2   ! contra->latlon
-          laplace(m,n,2)=laplace(m,n,2) + elem%D(2,1,m,n)*v1 + elem%D(2,2,m,n)*v2   ! contra->latlon
-#else
-          v1=-( div1 + vor1 )
-          v2=-( div2 + vor2 )
-
-          !  (v1,v2) = RHS tested agains contra-variant delta functions, so result is CO-varient
-          laplace(m,n,1)=elem%Dinv(1,1,m,n)*v1 + elem%Dinv(2,1,m,n)*v2   ! co->latlon
-          laplace(m,n,2)=elem%Dinv(1,2,m,n)*v1 + elem%Dinv(2,2,m,n)*v2   ! co->latlon
-#endif
-          ! add in correction so we dont damp rigid rotation
-#define UNDAMPRR
-#ifdef UNDAMPRR
-          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(rrearth**2)
-          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(rrearth**2)
-#endif
-       enddo
-    enddo
-  end function laplace_sphere_wk_orig
-
-
-
-  function laplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2699,10 +2567,12 @@ endif
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
 
-    if (var_coef) then
-       div = div*elem%variable_hyperviscosity(:,:)
-       vor = vor*elem%variable_hyperviscosity(:,:)
-    end if
+    if (var_coef .and. hypervis_power/=0 ) then
+          ! scalar viscosity with variable coefficient
+          div = div*elem%variable_hyperviscosity(:,:)
+          vor = vor*elem%variable_hyperviscosity(:,:)
+    endif
+
     if (present(nu_ratio)) div = nu_ratio*div
 
     laplace = gradient_sphere_wk_testcov(div,deriv,elem) - &
@@ -2718,7 +2588,7 @@ endif
 #endif
        enddo
     enddo
-  end function laplace_sphere_wk_new
+  end function vlaplace_sphere_wk_contra
 
 
 

@@ -1,0 +1,203 @@
+module test_assert_array
+
+! Test shr_assert_all and shr_assert_any.
+
+use pfunit_mod
+
+use shr_assert_mod, only: &
+     shr_assert_all, &
+     shr_assert_any
+
+implicit none
+save
+
+@Parameters = [rank]
+type, extends(AbstractTestParameter) :: ArrayRank
+   integer :: rank
+end type ArrayRank
+
+@TestCase
+type, extends(ParameterizedTestCase) :: TestAssertArray
+   integer :: rank
+   procedure(runMethod), pointer :: userMethod => null()
+ contains
+   procedure, nopass :: getParameters
+   procedure, pass(this) :: getParameterString
+   procedure, pass(this) :: runMethod
+end type TestAssertArray
+
+interface TestAssertArray
+   module procedure TestAssertArray_ctr
+end interface
+
+contains
+
+function TestAssertArray_ctr(name, method, rank) result(test)
+
+  character(len=*), intent(in) :: name
+  procedure(runMethod) :: method
+  integer, intent(in) :: rank
+
+  type(TestAssertArray) :: test
+
+  call test%setName(name)
+  test%userMethod => method
+  test%rank = rank
+  
+end function TestAssertArray_ctr
+
+function getParameters() result(params)
+  type(ArrayRank), allocatable :: params(:)
+
+  integer :: i
+
+  params = [( ArrayRank(i), i = 1, 7 )]
+
+end function getParameters
+
+function getParameterString(this) result(string)
+  class(TestAssertArray), intent(in) :: this
+  character(:), allocatable :: string
+
+  character(len=30) :: buffer
+
+  write(buffer, '(A,I1,A)') "(rank = ",this%rank,")"
+
+  string = trim(buffer)
+
+end function getParameterString
+
+subroutine runMethod(this)
+  class(TestAssertArray), intent(inout) :: this
+  call this%userMethod()
+end subroutine runMethod
+
+@Test
+subroutine assert_all_size_zero_passes(this)
+  class(TestAssertArray), intent(inout) :: this
+  call assert_all_wrapper([logical::], 0, this%rank, &
+       "Assert unexpectedly aborted!")
+end subroutine assert_all_size_zero_passes
+
+@Test
+subroutine assert_all_can_pass(this)
+  class(TestAssertArray), intent(inout) :: this
+  call assert_all_wrapper([.true.], 1, this%rank, &
+       "Assert unexpectedly aborted!")
+end subroutine assert_all_can_pass
+
+@Test
+subroutine assert_all_can_fail(this)
+  class(TestAssertArray), intent(inout) :: this
+  call assert_all_wrapper([.false.], 1, this%rank, &
+       "Expected failure.")
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine assert_all_can_fail
+
+@Test
+subroutine assert_all_partial_false_fails(this)
+  class(TestAssertArray), intent(inout) :: this
+  logical :: test_array(2**this%rank)
+  integer :: i
+  test_array = [( mod(i,2) == 0, i = 1, size(test_array) )]
+  call assert_all_wrapper(test_array, 2, this%rank, &
+       "Expected failure.")
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine assert_all_partial_false_fails
+
+@Test
+subroutine assert_any_size_zero_fails(this)
+  class(TestAssertArray), intent(inout) :: this
+  call assert_any_wrapper([logical::], 0, this%rank, &
+       "Expected failure.")
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine assert_any_size_zero_fails
+
+@Test
+subroutine assert_any_can_pass(this)
+  class(TestAssertArray), intent(inout) :: this
+  call assert_any_wrapper([.true.], 1, this%rank, &
+       "Assert unexpectedly aborted!")
+end subroutine assert_any_can_pass
+
+@Test
+subroutine assert_any_can_fail(this)
+  class(TestAssertArray), intent(inout) :: this
+  call assert_any_wrapper([.false.], 1, this%rank, &
+       "Expected failure.")
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine assert_any_can_fail
+
+@Test
+subroutine assert_any_partial_false_passes(this)
+  class(TestAssertArray), intent(inout) :: this
+  logical :: test_array(2**this%rank)
+  integer :: i
+  test_array = [( mod(i,2) == 0, i = 1, size(test_array) )]
+  call assert_any_wrapper(test_array, 2, this%rank, &
+       "Assert unexpectedly aborted!")
+end subroutine assert_any_partial_false_passes
+
+! The wrappers are to allow rank-generic programming.
+! The routines assert with the given array and message, but the array is
+! resized to have "rank" dimensions of size "dimsize".
+
+subroutine assert_all_wrapper(array, dimsize, rank, msg)
+  logical, intent(in) :: array(:)
+  integer, intent(in) :: dimsize
+  integer, intent(in) :: rank
+  character(len=*), intent(in) :: msg
+
+  integer :: i
+
+  select case (rank)
+  case(1)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 1)]), msg)
+  case(2)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 2)]), msg)
+  case(3)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 3)]), msg)
+  case(4)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 4)]), msg)
+  case(5)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 5)]), msg)
+  case(6)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 6)]), msg)
+  case(7)
+     call shr_assert_all(reshape(array, [(dimsize, i = 1, 7)]), msg)
+  case default
+     call throw("assert_all_wrapper was given a bad rank.")
+  end select
+
+end subroutine assert_all_wrapper
+
+subroutine assert_any_wrapper(array, dimsize, rank, msg)
+  logical, intent(in) :: array(:)
+  integer, intent(in) :: dimsize
+  integer, intent(in) :: rank
+  character(len=*), intent(in) :: msg
+
+  integer :: i
+
+  select case (rank)
+  case(1)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 1)]), msg)
+  case(2)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 2)]), msg)
+  case(3)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 3)]), msg)
+  case(4)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 4)]), msg)
+  case(5)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 5)]), msg)
+  case(6)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 6)]), msg)
+  case(7)
+     call shr_assert_any(reshape(array, [(dimsize, i = 1, 7)]), msg)
+  case default
+     call throw("assert_any_wrapper was given a bad rank.")
+  end select
+
+end subroutine assert_any_wrapper
+
+end module test_assert_array

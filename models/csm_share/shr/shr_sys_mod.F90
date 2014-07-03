@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: shr_sys_mod.F90 46802 2013-05-07 18:05:27Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/shr/shr_sys_mod.F90 $
+! SVN $Id: shr_sys_mod.F90 59033 2014-04-11 01:55:15Z santos@ucar.edu $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_sys_mod.F90 $
 !===============================================================================
 
 #if defined CPRIBM || defined CPRPGI || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY

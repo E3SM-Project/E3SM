@@ -128,7 +128,7 @@ if (! $clean ) {
     if (!-f "./Macros") {
 	print "Creating Macros file for $mach$eol";
 	SetupTools::set_compiler($xmlvars{OS},"$xmlvars{CCSM_MACHDIR}/config_compilers.xml",
-				 $xmlvars{COMPILER},$xmlvars{MACH}, 0, 'Macros'  );
+				 $xmlvars{COMPILER},$xmlvars{MACH}, $xmlvars{MPILIB}, 0, 'Macros'  );
     } else {
 	print "Macros script already created ...skipping$eol ";
     }
@@ -145,28 +145,20 @@ if (! $clean ) {
     }
 
 
-    my $ninst_fail = 0;
-    if ($xmlvars{NINST_ATM} > $xmlvars{NTASKS_ATM}) {
-	die "ERROR cesm_setup: ATM NINST value greater than ATM NTASKS";
+    my $ninst_fail = 0;    
+    foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
+	my $ninst = "NINST_".$comp;
+	my $ntasks = "NTASKS_".$comp;
+	if ($xmlvars{$ninst} > $xmlvars{$ntasks}) {
+	    if($xmlvars{$ntasks}==1){
+		system("./xmlchange $ntasks=$xmlvars{$ninst}");
+		$xmlvars{$ntasks}=$xmlvars{$ninst};
+	    }else{
+		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
+	    }
+	}
     }
-    if ($xmlvars{NINST_LND} > $xmlvars{NTASKS_LND}) {
-	die "ERROR cesm_setup: LND NINST value greater than LND NTASKS";
-    }
-    if ($xmlvars{NINST_ROF} > $xmlvars{NTASKS_ROF}) {
-	die "ERROR cesm_setup: ROF NINST value greater than ROF NTASKS";
-    }
-    if ($xmlvars{NINST_OCN} > $xmlvars{NTASKS_OCN}) {
-	die "ERROR cesm_setup: OCN NINST value greater than OCN NTASKS";
-    }
-    if ($xmlvars{NINST_ICE} > $xmlvars{NTASKS_ICE}) {
-	die "ERROR cesm_setup: ICE NINST value greater than ICE NTASKS";
-    }
-    if ($xmlvars{NINST_GLC} > $xmlvars{NTASKS_GLC}) {
-	die "ERROR cesm_setup: GLC NINST value greater than GLC NTASKS";
-    }
-    if ($xmlvars{NINST_WAV} > $xmlvars{NTASKS_WAV}) {
-	die "ERROR cesm_setup: WAV NINST value greater than WAV NTASKS";
-    }
+
 
     if (-f "$caseroot/$case.run") {
 	print "Machine/Decomp/Pes configuration has already been done ...skipping$eol ";
@@ -180,6 +172,7 @@ if (! $clean ) {
 	$sysmod = "./xmlchange -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 	
+        # Compute cost based on PE count
 	my $pval = 1;
 	my $pcnt = 0;
 	while ($pval < $pestot) {
@@ -188,13 +181,29 @@ if (! $clean ) {
 	    $pcnt = $pcnt + 6;       # (scaling like sqrt(6/10))
 	}
 	my $pcost = 3 - int($pcnt / 10); # (3 is 64 with 6)
+
+        # Compute cost based on DEBUG
 	my $ccsm_dcost = 0;
 	if ($xmlvars{'DEBUG'} == "TRUE") {$ccsm_dcost = 3;}
+
+        # Compute cost based on run length 
+        # For simplicity, we use a heuristic just based on STOP_OPTION (not considering
+        # STOP_N), and only deal with options longer than ndays
+        my $ccsm_lcost = 0;
+        if ($xmlvars{'STOP_OPTION'} =~ /nmonth/) {
+           # N months costs 30x as much as N days; since cost is based on log-base-2, add 5
+           $ccsm_lcost = 5;
+        }
+        elsif ($xmlvars{'STOP_OPTION'} =~ /nyear/) {
+           # N years costs 365x as much as N days; since cost is based on log-base-2, add 9
+           $ccsm_lcost = 9;
+        }
+           
 	my $CCSM_CCOST = $xmlvars{'CCSM_CCOST'};
 	my $CCSM_GCOST = $xmlvars{'CCSM_GCOST'};
 	my $CCSM_TCOST = $xmlvars{'CCSM_TCOST'};
 	my $CCSM_MCOST = $xmlvars{'CCSM_MCOST'};
-	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $ccsm_dcost;
+	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $ccsm_dcost + $ccsm_lcost;
 	
 	$sysmod = "./xmlchange -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
@@ -249,7 +258,8 @@ if (! $clean ) {
 	print "Creating user_nl_xxx files for components and cpl$eol";
     }
     my $buildconf  = "$caseroot/Buildconf";
-    foreach my $model qw(COMP_ATM COMP_LND COMP_ICE COMP_OCN COMP_GLC COMP_ROF COMP_WAV) {
+    my @models = qw( COMP_ATM COMP_LND COMP_ICE COMP_OCN COMP_GLC COMP_ROF COMP_WAV );
+    foreach my $model (@models) {
 	my $comp  = $xmlvars{"$model"};
 	if (-f "$buildconf/$comp.user_nl.csh") {
 	    my $sysmod = "env CASEROOT=$caseroot CODEROOT=$xmlvars{CCSMROOT}/models";
@@ -262,11 +272,11 @@ if (! $clean ) {
 	    $sysmod = "$sysmod NINST_GLC=$xmlvars{NINST_GLC}";
 	    $sysmod = "$sysmod NINST_WAV=$xmlvars{NINST_WAV}";
 	    $sysmod = "$sysmod $buildconf/$comp.user_nl.csh";
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    qx/$sysmod/ == 0 or die "ERROR: $sysmod failed: $?\n";
 	}
     }
     my $sysmod = "env CASEROOT=$caseroot CODEROOT=$xmlvars{CCSMROOT}/models $buildconf/cpl.user_nl.csh";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    qx/$sysmod/ == 0 or die "ERROR: $sysmod failed: $?\n";
 
     print "Running preview_namelist script $eol";
     my $sysmod = "$caseroot/preview_namelists";
@@ -278,33 +288,14 @@ if (! $clean ) {
     if( -e "$caseroot/env_test.xml" && -e "$caseroot/PESetupHist")
     {
 	print "creating test script $xmlvars{'CASE'}.test\n";
-	my $scriptsroot = $xmlvars{'SCRIPTSROOT'};
-	# Run mkbatch for the test script
-	my $sysmod = "env PHASE=set_batch TESTMODE=test $xmlvars{'CCSM_MACHDIR'}/mkbatch.$xmlvars{'MACH'}";
+        # Run mkbatch for the test script
+	my $mkbatch ="./Tools/mkbatch.$xmlvars{'MACH'}";
+	$mkbatch = "$xmlvars{'CCSM_MACHDIR'}/mkbatch.$xmlvars{'MACH'}" if(! -e $mkbatch);
+
+	my $sysmod = "env PHASE=set_batch TESTMODE=test $mkbatch";
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?$eol";
 
-	# Set up the call to testcase_env.csh, setting the appropriate env variables as needed. 
-	$sysmod = "env CASE=$xmlvars{'CASE'} TEST_ARGV=\"$xmlvars{'TEST_ARGV'}\" ";
-	$sysmod .= "TEST_TESTID=$xmlvars{'TEST_TESTID'}  BASELINE_ROOT=$xmlvars{'CCSM_BASELINE'} "; 
-
-	if(defined $xmlvars{'BASELINE_ROOT'} ) 
-	{
-	    $sysmod .= "BASELINE_ROOT=$xmlvars{'BASELINE_ROOT'} ";
-	}
-	if($xmlvars{'GENERATE_BASELINE'} eq "TRUE")
-	{
-	    $sysmod .= "GENERATE_BASELINE='' baseline_name_gen=$xmlvars{'BASELINE_NAME_GEN'} BASEGEN_CASE=$xmlvars{'BASEGEN_CASE'} ";
-	}
-	if($xmlvars{'COMPARE_BASELINE'} eq "TRUE")
-	{
-	    $sysmod .= "COMPARE_BASELINE='' baseline_name_cmp=$xmlvars{'BASELINE_NAME_CMP'} BASECMP_CASE=$xmlvars{'BASECMP_CASE'} ";
-	}
-	
-	if($xmlvars{'CLEANUP'} eq 'TRUE')
-	{
-	    $sysmod .= "CLEANUP='' "; 
-	}
-	$sysmod .= " $xmlvars{'CCSMROOT'}/scripts/ccsm_utils/Tools/testcase_env.csh";
+	$sysmod = " $xmlvars{'CCSMROOT'}/scripts/ccsm_utils/Tools/testcase_env.csh";
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 	my $testbatch = "$xmlvars{'CASE'}.test";

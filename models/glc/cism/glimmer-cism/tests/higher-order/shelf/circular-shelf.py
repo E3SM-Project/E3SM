@@ -101,11 +101,11 @@ for i in range(nx):
 if not options.smooth_beta:  # command line option is NOT present
   beta[0,:,:] =  0                             # beta is 0 almost everywhere
   #beta[0,:,:] =  1                             # beta is 1 almost everywhere
-  beta[0,ny/2-1:ny/2+1,nx/2-1:nx/2+1] = 1.0e10 # but large in the center
+  beta[0,ny/2-1:ny/2+1,nx/2-1:nx/2+1] = 1.0e8 # but large in the center
 
 # Add a single bedrock spike in the domain center, to "ground" shelf for 
 # bisicles dycore
-topg[0,(ny-1)/2-1:(ny-1)/2+2,(nx-1)/2-1:(nx-1)/2+2] = -800. 
+topg[0,(ny-1)/2-1:(ny-1)/2+2,(nx-1)/2-1:(nx-1)/2+2] = -880. 
 
 # Create the required variables in the netCDF file.
 netCDFfile.createVariable('thk', 'f',('time','y1','x1'))[:] = thk.tolist()

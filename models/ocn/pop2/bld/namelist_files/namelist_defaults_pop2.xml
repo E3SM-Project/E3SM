@@ -248,6 +248,7 @@
 <ldbl_diff>.true.</ldbl_diff>
 <lshort_wave>.true.</lshort_wave>
 <lcheckekmo>.false.</lcheckekmo>
+<larctic_bckgrnd_vdc>.false.</larctic_bckgrnd_vdc>
 <num_v_smooth_Ri>1</num_v_smooth_Ri>
 <bckgrnd_vdc_linv>4.5e-05</bckgrnd_vdc_linv>
 <lhoriz_varying_bckgrnd ocn_grid="gx1v6"  >.true.</lhoriz_varying_bckgrnd>
@@ -891,8 +892,6 @@
 
 <doc_riv_flux_input%scale_factor>1.0</doc_riv_flux_input%scale_factor>
 
-<ndep_data_type>monthly-calendar</ndep_data_type>
-
 <nox_flux_monthly_input%file_fmt>nc</nox_flux_monthly_input%file_fmt>
 
 <nox_flux_monthly_input%file_varname>NOy_deposition</nox_flux_monthly_input%file_varname>
@@ -905,14 +904,23 @@
 
 <nhy_flux_monthly_input%scale_factor>7.1429e+06</nhy_flux_monthly_input%scale_factor>
 
+<ndep_data_type>monthly-calendar</ndep_data_type>
 <ndep_data_type ocn_transient="unset"    >monthly-calendar</ndep_data_type>
 <ndep_data_type ocn_transient="1850-2000">shr_stream</ndep_data_type>              
+<ndep_data_type ocn_transient="rcp4.5">shr_stream</ndep_data_type>              
+<ndep_data_type ocn_transient="rcp8.5">shr_stream</ndep_data_type>              
 
 <ndep_shr_stream_year_first>1849</ndep_shr_stream_year_first>  
+<ndep_shr_stream_year_first ocn_transient="rcp4.5">2004</ndep_shr_stream_year_first>  
+<ndep_shr_stream_year_first ocn_transient="rcp8.5">2004</ndep_shr_stream_year_first>  
 
 <ndep_shr_stream_year_last>2006</ndep_shr_stream_year_last>   
+<ndep_shr_stream_year_last ocn_transient="rcp4.5">2101</ndep_shr_stream_year_last>   
+<ndep_shr_stream_year_last ocn_transient="rcp8.5">2101</ndep_shr_stream_year_last>   
 
 <ndep_shr_stream_year_align>1849</ndep_shr_stream_year_align>  
+<ndep_shr_stream_year_align ocn_transient="rcp4.5">2004</ndep_shr_stream_year_align>  
+<ndep_shr_stream_year_align ocn_transient="rcp8.5">2004</ndep_shr_stream_year_align>  
 
 <ndep_shr_stream_scale_factor>7.1429e+06</ndep_shr_stream_scale_factor>
 
@@ -966,7 +974,11 @@
 <nhy_flux_monthly_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/ndep_ocn_1850_gx1v6_c100428.nc</nhy_flux_monthly_input%filename>  
 
 <ndep_shr_stream_file ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/ndep_ocn_1850-2005_gx3v7_c100612.nc</ndep_shr_stream_file> 
+<ndep_shr_stream_file ocn_grid="gx3v7" ocn_transient="rcp4.5">ocn/pop/gx3v7/forcing/ndep_ocn_rcp45_gx3v7_c100816.nc</ndep_shr_stream_file> 
+<ndep_shr_stream_file ocn_grid="gx3v7" ocn_transient="rcp8.5">ocn/pop/gx3v7/forcing/ndep_ocn_rcp85_gx3v7_c100816.nc</ndep_shr_stream_file> 
 <ndep_shr_stream_file ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/ndep_ocn_1850-2005_gx1v6_c100612.nc</ndep_shr_stream_file> 
+<ndep_shr_stream_file ocn_grid="gx1v6" ocn_transient="rcp4.5">ocn/pop/gx1v6/forcing/ndep_ocn_rcp45_gx1v6_c100816.nc</ndep_shr_stream_file> 
+<ndep_shr_stream_file ocn_grid="gx1v6" ocn_transient="rcp8.5">ocn/pop/gx1v6/forcing/ndep_ocn_rcp85_gx1v6_c100816.nc</ndep_shr_stream_file> 
 
 <!---------------------------->
 <!--    ecosys_parms_nml    -->
@@ -984,11 +996,11 @@
 <parm_POMbury ocn_grid="gx3v7">5.0</parm_POMbury>
 <parm_POMbury                 >1.4</parm_POMbury>
 
-<parm_BSIbury ocn_grid="gx3v7">0.58</parm_BSIbury>
-<parm_BSIbury                 >0.44</parm_BSIbury>
+<parm_BSIbury ocn_grid="gx3v7">0.95</parm_BSIbury>
+<parm_BSIbury                 >0.65</parm_BSIbury>
 
-<parm_fe_scavenge_rate0 ocn_grid="gx3v7">1.6</parm_fe_scavenge_rate0>
-<parm_fe_scavenge_rate0                 >1.3</parm_fe_scavenge_rate0>
+<parm_fe_scavenge_rate0 ocn_grid="gx3v7">2.7</parm_fe_scavenge_rate0>
+<parm_fe_scavenge_rate0                 >3.0</parm_fe_scavenge_rate0>
 
 <parm_f_prod_sp_CaCO3 ocn_grid="gx3v7">0.053</parm_f_prod_sp_CaCO3>
 <parm_f_prod_sp_CaCO3                 >0.055</parm_f_prod_sp_CaCO3>

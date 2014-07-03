@@ -38,25 +38,25 @@
 
 module verifD
   
-  use glimmer_global, only : rk, sp
+  use glimmer_global, only : dp
 
   private
   public :: verifD_type, verifD_config, verifD_printconfig, verifD_init, verifD_update
 
-  real(rk), parameter, private :: eps =  2.2204d-16
+  real(dp), parameter, private :: eps =  2.2204d-16
 
   type verifD_type
-     real(rk) :: Cp = 200.   !*FD magnitude of perturbation (meters)
-     real(rk) :: Tp = 5000.  !*FD period of perturbation (years)
-     real(rk) :: H0 = 3600.  !*FD central thickness at $t_0$ (m)
-     real(rk) :: R0 = 750.   !*FD margin radius (km)
-     real(rk) :: tf = 25000. !*FD run from 0 to tf years
-     real(rk) :: gamma
-     real(rk) :: C,c1
-     real(rk) :: gn
-     real(rk) :: centre
+     real(dp) :: Cp = 200.d0   !*FD magnitude of perturbation (meters)
+     real(dp) :: Tp = 5000.d0  !*FD period of perturbation (years)
+     real(dp) :: H0 = 3600.d0  !*FD central thickness at $t_0$ (m)
+     real(dp) :: R0 = 750.d0   !*FD margin radius (km)
+     real(dp) :: tf = 25000.d0 !*FD run from 0 to tf years
+     real(dp) :: gamma
+     real(dp) :: C,c1
+     real(dp) :: gn
+     real(dp) :: centre
 
-     real(sp), dimension(:,:), pointer :: mb_steady => NULL() !*FD steady state mass balance
+     real(dp), dimension(:,:), pointer :: mb_steady => NULL() !*FD steady state mass balance
   end type verifD_type
 
 contains
@@ -109,7 +109,7 @@ contains
 
     ! local variables
     integer num, i, j
-    real(rk) :: x,y,r
+    real(dp) :: x,y,r
     character(len=100) :: message
 
     call write_log('Setting up VerifD test')
@@ -119,7 +119,7 @@ contains
     veri%R0 = veri%R0*1000.
     veri%tf = veri%tf*scyr
     veri%Tp = veri%Tp*scyr
-    veri%gn = real(gn,kind=rk)
+    veri%gn = real(gn,kind=dp)
 
     ! calculate Gamma
     veri%gamma = 2.*(rhoi*grav)**veri%gn*vis0/(veri%gn+2.)
@@ -174,12 +174,12 @@ contains
     implicit none
     type(glide_global_type)   :: model !*FD model instance
     type(verifD_type)        :: veri  !*FD structure holding test setup
-    real(kind=rk), intent(in) :: time  !*FD current time
-    real(kind=rk), dimension(:,:), intent(out) :: exact_h
-    real(sp), dimension(:,:), intent(out) :: mb
+    real(dp), intent(in) :: time  !*FD current time
+    real(dp), dimension(:,:), intent(out) :: exact_h
+    real(dp), dimension(:,:), intent(out) :: mb
 
     ! local variables
-    real(rk) t,r,x,y
+    real(dp) t,r,x,y
     integer i,j
 
     t = time*scyr
@@ -203,10 +203,10 @@ contains
     use glimmer_physcon, only : pi
     implicit none
     type(verifD_type)    :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
-    real(rk), intent(in) :: t    !*FD time
+    real(dp), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: t    !*FD time
 
-    real(rk) :: calc_hp
+    real(dp) :: calc_hp
 
     calc_hp = calc_hs(veri,r) + veri%cp*sin(2.*pi*t/veri%tp)*getgp(veri,r)
   end function calc_hp
@@ -215,12 +215,12 @@ contains
     !*FD calculate steady state ice thickness
     implicit none
     type(verifD_type)    :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: r    !*FD radius (m)
 
-    real(rk) :: calc_hs
+    real(dp) :: calc_hs
 
     ! local variables
-    real(rk) chi, sr
+    real(dp) chi, sr
 
     if (r.lt.veri%R0) then
        sr = r/veri%R0
@@ -236,13 +236,13 @@ contains
     use glimmer_physcon, only : pi
     implicit none
     type(verifD_type)    :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
-    real(rk), intent(in) :: t    !*FD time   (s)
+    real(dp), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: t    !*FD time   (s)
 
-    real(rk) :: calc_mc
+    real(dp) :: calc_mc
 
-    real(rk) :: hp, divterms
-    real(rk), dimension(2) :: ddhp
+    real(dp) :: hp, divterms
+    real(dp), dimension(2) :: ddhp
 
     if (r.ge.0.3*veri%R0 .and. r.le.0.9*veri%R0) then
        hp = calc_hp(veri,r,t)
@@ -259,9 +259,9 @@ contains
     use glimmer_physcon, only : scyr
     implicit none
     type(verifD_type)    :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: r    !*FD radius (m)
 
-    real(rk) :: calc_ms
+    real(dp) :: calc_ms
 
     real temp, sr
 
@@ -283,9 +283,9 @@ contains
     use glimmer_physcon, only : pi
     implicit none
     type(verifD_type)    :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: r    !*FD radius (m)
     
-    real(rk) :: getgp
+    real(dp) :: getgp
 
     if (r.ge.0.3*veri%R0 .and. r.le.0.9*veri%R0) then
        getgp = .5*cos(pi*(r-0.6*veri%R0)/(0.3*veri%R0))+0.5
@@ -299,13 +299,13 @@ contains
     use glimmer_physcon, only : pi
     implicit none
     type(verifD_type)    :: veri !*FD structure holding test setup
-    real(rk), intent(in) :: r    !*FD radius (m)
-    real(rk), intent(in) :: t    !*FD time   (s)
+    real(dp), intent(in) :: r    !*FD radius (m)
+    real(dp), intent(in) :: t    !*FD time   (s)
 
-    real(rk), dimension(2) :: getddr
+    real(dp), dimension(2) :: getddr
 
-    real(rk) :: dgp, ddgp, chi, dchi, ddchi, dHs, ddHS
-    real(rk) :: sr
+    real(dp) :: dgp, ddgp, chi, dchi, ddchi, dHs, ddHS
+    real(dp) :: sr
 
     sr = r/veri%R0
 

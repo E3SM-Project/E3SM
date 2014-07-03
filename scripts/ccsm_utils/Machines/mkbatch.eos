@@ -1,0 +1,149 @@
+#! /bin/csh -f
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+@ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
+if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
+  @ mppnodes = $mppnodes + 1
+  @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
+endif
+
+set maxthrds = 0
+set minthrds = $MAX_TASKS_PER_NODE
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  if ($NTHRDS[$n] > $MAX_TASKS_PER_NODE ) then
+     echo "ERROR, NTHRDS maximum is $MAX_TASKS_PER_NODE"
+     echo "you have set NTHRDS = ( $NTHRDS[$n] ) - must reset"
+     exit 1
+  endif   
+  if ($NTHRDS[$n] > $maxthrds) then
+     set maxthrds = $NTHRDS[$n]
+  endif
+  if ($NTHRDS[$n] < $minthrds) then
+     set minthrds = $NTHRDS[$n]
+  endif
+end
+
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+
+
+if (! $?PROJECT && -e ~/.ccsm_proj) then
+   setenv PROJECT = `head -1 ~/.ccsm_proj`
+else
+  if (! $?PROJECT) then
+    echo "You must set the env variable \$PROJECT"
+  endif
+endif
+
+
+
+set walltime = "01:15:00"
+if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
+if ($CCSM_ESTCOST > 3) set walltime = "05:00:00"
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+# For the PBS stanza always use this formula (mppnppn is broken)
+
+set mppsum = `${CASEROOT}/Tools/taskmaker.pl -sumpes` 
+if ( $mppsum > 1 ) then
+  @ mppwidth = $mppsum / ( ${MAX_TASKS_PER_NODE} / ${PES_PER_NODE} )
+else
+  @ mppwidth = 1
+endif
+
+@ mppnodes = $mppsum / ${MAX_TASKS_PER_NODE}
+if ( $mppnodes < 1 ) then
+  @ mppnodes = 1
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#PBS -A ${PROJECT}
+#PBS -N ${jobname}
+#PBS -q batch
+#PBS -l nodes=${mppnodes}
+##PBS -l mppwidth=${mppwidth}
+#PBS -l walltime=${walltime}
+#PBS -j oe
+#PBS -S /bin/csh -V
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+source ./Tools/ccsm_getenv || exit -1
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set myaprun = `${CASEROOT}/Tools/taskmaker.pl -aprun`
+
+if ( ${MAX_TASKS_PER_NODE} > ${PES_PER_NODE} ) then
+  set myaprun = "-j 2 $myaprun "
+endif
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+aprun ${myaprun} >&! cesm.log.\$LID
+wait
+
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+if (! $?PROJECT && -e ~/.ccsm_proj) then
+   setenv PROJECT = `head -1 ~/.ccsm_proj`
+else
+  if (! $?PROJECT) then
+    echo "You must set the env variable \$PROJECT"
+  endif
+endif
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#PBS -A ${PROJECT}dev
+#PBS -N ${CASE}.l_archive
+#PBS -q batch
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -S /bin/csh -V
+
+cd $CASEROOT 
+source ./Tools/ccsm_getenv || exit -1
+cd \$DOUT_S_ROOT
+$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

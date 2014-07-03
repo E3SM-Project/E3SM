@@ -49,7 +49,8 @@ subroutine vaporp_h2o_murphy2005(carma, cstate, iz, rc, pvap_liq, pvap_ice)
   !
   ! NOTE: Don't stop the simulation if the limits are exceeded.
 !  if ((t(iz) .le. 123.0_f) .or. (t(iz) .ge. 332.0_f)) then
-!    if (do_print) write(LUNOPRT,*) 'vaporp_h2o_murphy2005::WARNING - Temperature', t(iz), ' out of range at iz = ', iz, "lat=", lat, "lon=", lon
+!    if (do_print) write(LUNOPRT,*) 'vaporp_h2o_murphy2005::WARNING - Temperature', t(iz), &
+!         ' out of range at iz = ', iz, "lat=", lat, "lon=", lon
 !    rc = RC_WARNING
 !  endif
 

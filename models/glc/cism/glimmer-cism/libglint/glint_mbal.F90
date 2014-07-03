@@ -30,14 +30,14 @@
 
 module glint_mbal
 
-  use glimmer_global
+  use glimmer_global, only: dp
   use glint_pdd
   use glint_daily_pdd
 
 #ifdef USE_ENMABAL  ! This option is *not* suppported
-  use smb_mecons       ! might exist somewhere, but not part of a Glint release
+  use smb_mecons  ! might exist somewhere, but not part of a Glint release
 #else
-  use glint_ebm        ! dummy wrapper
+  use glint_ebm   ! dummy wrapper
 #endif
 
   implicit none
@@ -52,9 +52,16 @@ module glint_mbal
      integer :: tstep !*FD Timestep of mass-balance scheme in hours
   end type glint_mbal_params
 
+  integer, parameter :: MASS_BALANCE_GCM = 0       ! receive mass balance from global climate model
+  integer, parameter :: MASS_BALANCE_PDD = 1       ! compute mass balance using positive-degree-day scheme
+  integer, parameter :: MASS_BALANCE_ACCUM = 2     ! accumulation only 
+  integer, parameter :: MASS_BALANCE_EBM = 3       ! compute mass balance using energy-balance model
+  integer, parameter :: MASS_BALANCE_DAILY_PDD = 4 ! compute mass balance using energy-balance model
+!  Note: Option 3 is not presently supported.
+    
 contains
 
-  subroutine glint_mbal_init(params,config,which,nx,ny,dxr)
+  subroutine glint_mbal_init(params,config,whichacab,nx,ny,dxr)
 
     use glimmer_config
     use glimmer_log
@@ -64,13 +71,13 @@ contains
 
     type(glint_mbal_params)      :: params !*FD parameters to be initialised
     type(ConfigSection), pointer :: config !*FD structure holding sections of configuration file
-    integer,intent(in)           :: which  !*FD selector for pdd type
+    integer,intent(in)           :: whichacab  !*FD selector for mass balance type
     integer                      :: nx,ny  !*FD grid dimensions (for EBM)
-    real(rk)                     :: dxr    !* Grid length (for EBM)
+    real(dp)                     :: dxr    !* Grid length (for EBM)
 
     ! Copy selector
 
-    params%which=which
+    params%which=whichacab
 
     ! Deallocate if necessary
 
@@ -81,21 +88,21 @@ contains
     ! Allocate desired type and initialise
     ! Also check we have a valid value of which
 
-    select case(which)
+    select case(whichacab)
     ! Note: Mass balance timestep and accum time are typically assumed to be one year.
-    case(0)
+    case(MASS_BALANCE_GCM)
        params%tstep=years2hours   ! mbal tstep = 1 year
-    case(1)
+    case(MASS_BALANCE_PDD)
        allocate(params%annual_pdd)
        call glint_pdd_init(params%annual_pdd,config)
        params%tstep=years2hours
-    case(2)
+    case(MASS_BALANCE_ACCUM)
        params%tstep=years2hours
-    case(3)
+    case(MASS_BALANCE_EBM)
        allocate(params%ebm)
        params%tstep=6
        call EBMInitWrapper(params%ebm,nx,ny,nint(dxr),params%tstep*60,'/data/ggdagw/src/ebm/ebm_config/online')
-    case(4)
+    case(MASS_BALANCE_DAILY_PDD)
        allocate(params%daily_pdd)
        call glint_daily_pdd_init(params%daily_pdd,config)
        params%tstep=days2hours
@@ -107,50 +114,57 @@ contains
 
   ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-  subroutine glint_mbal_calc(params,artm,arng,prcp,landsea,snowd,siced,ablt,acab, &
-       thck,U10m,V10m,humidity,SWdown,LWdown,Psurf)
+  subroutine glint_mbal_calc(params,             &
+                             artm,     arng,     &
+                             prcp,     landsea,  &
+                             snowd,    siced,    &
+                             ablt,     acab,     &
+                             thck,              &
+                             U10m,     V10m,     &
+                             humidity, SWdown,   &
+                             LWdown,   Psurf)
 
     use glimmer_log
 
     type(glint_mbal_params)                 :: params  !*FD parameters to be initialised
-    real(sp), dimension(:,:), intent(in)    :: artm    !*FD Mean air-temperature ($^{\circ}$C)
-    real(sp), dimension(:,:), intent(in)    :: arng    !*FD Temperature half-range ($^{\circ}$C)
-    real(sp), dimension(:,:), intent(in)    :: prcp    !*FD Accumulated precipitation (m)
+    real(dp), dimension(:,:), intent(in)    :: artm    !*FD Mean air-temperature ($^{\circ}$C)
+    real(dp), dimension(:,:), intent(in)    :: arng    !*FD Temperature half-range ($^{\circ}$C)
+    real(dp), dimension(:,:), intent(in)    :: prcp    !*FD Accumulated precipitation (m)
     logical,  dimension(:,:), intent(in)    :: landsea !*FD Land-sea mask (land is TRUE)
-    real(sp), dimension(:,:), intent(inout) :: snowd   !*FD Snow depth (m)
-    real(sp), dimension(:,:), intent(inout) :: siced   !*FD Superimposed ice depth (m)
-    real(sp), dimension(:,:), intent(out)   :: ablt    !*FD Ablation (m)
-    real(sp), dimension(:,:), intent(out)   :: acab    !*FD Mass-balance (m)
-    real(rk), dimension(:,:), intent(in)    :: thck    !*FD Ice thickness (m)
-    real(rk), dimension(:,:), intent(in)    :: U10m    !*FD Ten-metre x-wind (m/s)
-    real(rk), dimension(:,:), intent(in)    :: V10m    !*FD Ten-metre y-wind (m/s)
-    real(rk), dimension(:,:), intent(in)    :: humidity !*FD Relative humidity (%)
-    real(rk), dimension(:,:), intent(in)    :: SWdown  !*FD Downwelling shortwave (W/m^2)
-    real(rk), dimension(:,:), intent(in)    :: LWdown  !*FD Downwelling longwave (W/m^2)
-    real(rk), dimension(:,:), intent(in)    :: Psurf   !*FD Surface pressure (Pa)
+    real(dp), dimension(:,:), intent(inout) :: snowd   !*FD Snow depth (m)
+    real(dp), dimension(:,:), intent(inout) :: siced   !*FD Superimposed ice depth (m)
+    real(dp), dimension(:,:), intent(out)   :: ablt    !*FD Ablation (m)
+    real(dp), dimension(:,:), intent(out)   :: acab    !*FD Mass-balance (m)
+    real(dp), dimension(:,:), intent(in)    :: thck    !*FD Ice thickness (m)
+    real(dp), dimension(:,:), intent(in)    :: U10m    !*FD Ten-metre x-wind (m/s)
+    real(dp), dimension(:,:), intent(in)    :: V10m    !*FD Ten-metre y-wind (m/s)
+    real(dp), dimension(:,:), intent(in)    :: humidity !*FD Relative humidity (%)
+    real(dp), dimension(:,:), intent(in)    :: SWdown  !*FD Downwelling shortwave (W/m^2)
+    real(dp), dimension(:,:), intent(in)    :: LWdown  !*FD Downwelling longwave (W/m^2)
+    real(dp), dimension(:,:), intent(in)    :: Psurf   !*FD Surface pressure (Pa)
 
-    real(rk),dimension(size(acab,1),size(acab,2)) :: acab_temp
+    real(dp),dimension(size(acab,1),size(acab,2)) :: acab_temp
 
     select case(params%which)
-    case(1)
+    case(MASS_BALANCE_PDD)
        call glint_pdd_mbal(params%annual_pdd,artm,arng,prcp,ablt,acab,landsea) 
-    case(2) 
+    case(MASS_BALANCE_ACCUM) 
        acab = prcp
-    case(3)
+    case(MASS_BALANCE_EBM)
        ! The energy-balance model will go here...
        ! NB SLM will be thickness array...
-       call EBMStepWrapper(params%ebm,acab_temp,thck,real(artm,rk),real(prcp*1000.0,rk),U10m,V10m,humidity,SWdown,LWdown,Psurf)
-       acab=acab_temp
-       acab=acab/1000.0  ! Convert to metres
-       ablt=prcp-acab    ! Construct ablation field (in m)
+       call EBMStepWrapper(params%ebm,acab_temp,thck,real(artm,dp),real(prcp*1000.d0,dp),U10m,V10m,humidity,SWdown,LWdown,Psurf)
+       acab = acab_temp
+       acab = acab/1000.d0  ! Convert to meters
+       ablt = prcp-acab     ! Construct ablation field (in m)
        ! Fix according to land-sea mask
        where (.not.landsea)
-          ablt=prcp
-          acab=0.0
-          snowd=0.0
-          siced=0.0
+          ablt = prcp
+          acab = 0.d0
+          snowd= 0.d0
+          siced= 0.d0
        end where
-    case(4)
+    case(MASS_BALANCE_DAILY_PDD)
        call glint_daily_pdd_mbal(params%daily_pdd,artm,arng,prcp,snowd,siced,ablt,acab,landsea)
     end select
 
@@ -162,7 +176,7 @@ contains
 
     type(glint_mbal_params)      :: params 
 
-    if (params%which==4) then
+    if (params%which==MASS_BALANCE_DAILY_PDD) then
        mbal_has_snow_model=.true.
     else
        mbal_has_snow_model=.false.

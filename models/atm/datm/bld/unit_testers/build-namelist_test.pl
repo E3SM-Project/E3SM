@@ -29,7 +29,7 @@ OPTIONS
 EOF
 }
 # The env variables that will need to be set
-my %xmlenv = ( "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID", "GRID" );
+my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID", "GRID" );
 my $envxmlfile = "env_utrun.xml";   # Filename to write env settings to
 #
 # Process command-line options.
@@ -57,9 +57,9 @@ if (@ARGV) {
 #
 # Figure out number of tests that will run
 #
-my $ntests = 563;
+my $ntests = 480;
 if ( defined($opts{'compare'}) ) {
-   $ntests += 39;
+   $ntests += 43;
 }
 plan( tests=>$ntests );
 
@@ -105,6 +105,7 @@ $xmlenv{'ATM_GRID'}                 = "48x96";
 $xmlenv{'GRID'}                     = "48x96_g37";
 $xmlenv{'DATM_MODE'}                = "CLMQIAN";
 $xmlenv{'DATM_PRESAERO'}            = "clim_2000";
+$xmlenv{'DATM_CO2_TSERIES'}         = "none";
 # Set some ENV vars needed for CLM_QIAN
 $xmlenv{'DATM_CLMNCEP_YR_START'} = 1948;
 $xmlenv{'DATM_CLMNCEP_YR_END'}   = 2004;
@@ -148,7 +149,9 @@ system( "/bin/rm -rf $confdir"         );
 my %wc;
 # Run all the different options 
 foreach my $option ( "-print 0", "-print 1", "-print 2", "-test -print 2", 
-                     "-namelist \"&datm_exp taxmode='extend'/\""  ) {
+                     "-namelist \"&datm_exp taxmode='extend'/\"",
+                     "-user_xml_dir .",
+                     "-user_xml_dir $cwd/user_xml_dir -print 2"  ) {
    &writeEnv( %xmlenv );
    eval{ system( "$bldnml $option > $tempfile 2>&1 " ); };
    ok( ! $?, "$option" );
@@ -167,6 +170,23 @@ ok( $wc{'-print 0'} < $wc{'-print 1'},     , "Silent printing smaller than norma
 ok( $wc{'-print 1'} < $wc{'-print 2'},     , "Normal printing smaller than verbose" );
 ok( $wc{'-print 2'} < $wc{'-test -print 2'}, "Verbose printing smaller than test/verbose" );
 &dodiffonfile( \%diff,    "datm_atm_in", "default" );
+# Run with user datm stream file
+mkdir( "$CASEROOT" );
+&writeEnv( %xmlenv );
+my $streamfile = "datm.streams.txt.CLM_QIAN.Solar";
+system( "cp user_streams/user_$streamfile $CASEROOT" );
+eval{ system( "$bldnml" ); };
+ok( ! $?, "user_stream build-namelist" );
+&checkfilesexist( );
+my %diff;
+
+&comparefiles( \%diff, "default", "$xmlenv{'DATM_MODE'}", $opts{'compare'} );
+my $diffstat = `diff -q user_streams/user_$streamfile $CASEROOT/Buildconf/datmconf/$streamfile`;
+ok( ! $?, "stream file same as user version" );
+
+# Cleanup
+system( "/bin/rm -rf $confdir"         );
+
 # Run different RUN_TYPE (all should be the same as default namelist)
 foreach my $run_type ( "startup", "branch", "hybrid" ) {
    $xmlenv{'RUN_TYPE'} = $run_type;
@@ -205,7 +225,7 @@ foreach my $presaero (
  ) {
    if ( $presaero =~ /^(clim|trans)*([_0-9\.-]*)([0-9]+x[0-9]+_[a-zA-Z0-9_]+)$/ ) {
       $xmlenv{'GRID'}     = $3;
-      $xmlenv{'ATM_GRID'} = "reg";
+      $xmlenv{'ATM_GRID'} = $3;
       if ( $3 eq "1x1_mexicocityMEX" ) {
          $xmlenv{'DATM_MODE'} = "CLM1PT";
       } else {
@@ -245,7 +265,7 @@ print "DATM_MODE    = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO= $xmlenv{'DATM_PRESAERO'}\n";
 # Check CLM_USRDAT_NAME
 $xmlenv{'GRID'}               = "CLM_USRDAT";
-$xmlenv{'ATM_GRID'}           = "reg";
+$xmlenv{'ATM_GRID'}           = $xmlenv{'GRID'};
 print "GRID           = $xmlenv{'GRID'}\n";
 print "ATM_GRID       = $xmlenv{'ATM_GRID'}\n";
 $xmlenv{'CLM_USRDAT_NAME'} = "13x12pt_f19_alaskaUSA";
@@ -261,9 +281,19 @@ ok( ! $?, "CLM_USRDAT_NAME" );
 &checkfilesexist( );
 &comparefiles( \%diff, "default", "$xmlenv{'DATM_MODE'}" );
 &shownmldiff( "default", "$xmlenv{'DATM_MODE'}" );
+# Turn transient CO2 on
+$xmlenv{'DATM_CO2_TSERIES'} = "20tr";
+&writeEnv( %xmlenv );
+eval{ system( "$bldnml" ); };
+ok( ! $?, "CLM_USRDAT_NAME" );
+&doNOTdodiffonfile( \%diff, "datm_atm_in", "CO2_tseries" );
+&checkfilesexist( );
+&comparefiles( \%diff, "default", "$xmlenv{'DATM_MODE'}" );
+&shownmldiff( "default", "$xmlenv{'DATM_MODE'}" );
+$xmlenv{'DATM_CO2_TSERIES'} = "none";
 # Check CLM_USRDAT_NAME for CLM1PT mode
 $xmlenv{'GRID'}               = "CLM_USRDAT";
-$xmlenv{'ATM_GRID'}           = "reg";
+$xmlenv{'ATM_GRID'}           = $xmlenv{'GRID'};
 $xmlenv{'DATM_MODE'}     = "CLM1PT";
 $xmlenv{'DATM_PRESAERO'} = "pt1_pt1";
 print "DATM_MODE     = $xmlenv{'DATM_MODE'}\n";
@@ -285,7 +315,7 @@ my $stat = `fgrep \$ $confdir/datm_atm_in`;
 isnt( $?, 0, "check for unresolved env variables" );
 system( "/bin/rm -rf $confdir"         );
 # Run different DATM_MODE
-foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP", "WRF" ) {
+foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP" ) {
    $xmlenv{'DATM_MODE'} = $mode;
    print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
    &writeEnv( %xmlenv );
@@ -320,7 +350,7 @@ print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 #
 
 # Bad arguments or bad namelist value to build-namelist
-foreach my $option ( "-zztop", "-namelist '&datm_exp zztop=24/'" ) {
+foreach my $option ( "-zztop", "-namelist '&datm_exp zztop=24/'", "-user_xml_dir zztop" ) {
   &writeEnv( %xmlenv );
   eval{ system( "$bldnml $option  > $tempfile 2>&1 " ); };
   isnt( $?, 0, "Bad argument to build-namelist: $option" );
@@ -330,18 +360,20 @@ foreach my $option ( "-zztop", "-namelist '&datm_exp zztop=24/'" ) {
 
 # Bad ENV settings
 my %bad_env = (
-   CLMQIAN_N_PAERONONE=>{ DATM_MODE    =>"CLM_QIAN",   DATM_PRESAERO=>"none"     },
-   BAD_DATM_MODE      =>{ DATM_MODE    =>"zztop"       },
-   BAD_PRESAERO       =>{ DATM_PRESAERO=>"zztop"       },
-   BAD_CQYR_RANGE     =>{ DATM_CLMNCEP_YR_START=>2004, DATM_CLMNCEP_YR_END=>1948 },
-   MISSING_CQYR_START =>{ DATM_CLMNCEP_YR_START=>undef },
-   MISSING_CQYR_END   =>{ DATM_CLMNCEP_YR_END  =>undef },
-   MISSING_CQYR_ALIGN =>{ DATM_CLMNCEP_YR_ALIGN=>undef },
-   MISSING_CHYR_START =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_START=>undef },
-   MISSING_CHYR_END   =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_END  =>undef },
-   MISSING_CHYR_ALIGN =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_ALIGN=>undef },
-   BAD_CHYR_RANGE     =>{ DATM_MODE    =>"CPLHIST3HrWx", 
-                          DATM_CPLHIST_YR_START=>1000, DATM_CPLHIST_YR_END=>500 },
+   CLMQIAN_N_PAERONONE =>{ DATM_MODE    =>"CLM_QIAN",   DATM_PRESAERO=>"none"     },
+   BAD_DATM_MODE       =>{ DATM_MODE    =>"zztop"       },
+   BAD_PRESAERO        =>{ DATM_PRESAERO=>"zztop"       },
+   BAD_CQYR_RANGE      =>{ DATM_CLMNCEP_YR_START=>2004, DATM_CLMNCEP_YR_END=>1948 },
+   MISSING_CQYR_START  =>{ DATM_CLMNCEP_YR_START=>undef },
+   MISSING_CQYR_END    =>{ DATM_CLMNCEP_YR_END  =>undef },
+   MISSING_CQYR_ALIGN  =>{ DATM_CLMNCEP_YR_ALIGN=>undef },
+   MISSING_CHYR_START  =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_START=>undef },
+   MISSING_CHYR_END    =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_END  =>undef },
+   MISSING_CHYR_ALIGN  =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_ALIGN=>undef },
+   BAD_CHYR_RANGE      =>{ DATM_MODE    =>"CPLHIST3HrWx", 
+                           DATM_CPLHIST_YR_START=>1000, DATM_CPLHIST_YR_END=>500 },
+   BAD_DATM_CO2TSERIES =>{ DATM_CO2_TSERIES=>"thing" },
+   READONLY_USERSTRM   =>{ DATM_MODE    =>"CLM_QIAN" },
               );
 foreach my $test ( keys(%bad_env) ) {
    my $envvarref = $bad_env{$test};
@@ -354,6 +386,11 @@ foreach my $test ( keys(%bad_env) ) {
       print "$env = ".$xmlenv{$env}."\n";
    }
    &writeEnv( %xmlenv );
+   # Readonly user stream file
+   if ( $test =~ /READONLY_USERSTRM/ ) {
+      my $streamfile = "datm.streams.txt.CLM_QIAN.Solar";
+      system( "cp -p user_streams/user_$streamfile.readonly $CASEROOT/user_$streamfile" );
+   }
    eval{ system( "$bldnml  > $tempfile 2>&1 " ); };
    isnt( $?, 0, "$test" );
    system( "cat $tempfile" );

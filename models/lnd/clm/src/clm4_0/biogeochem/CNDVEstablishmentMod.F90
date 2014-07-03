@@ -358,7 +358,8 @@ contains
           else
              stemdiam = 0._r8
           end if
-          crownarea(p) = min(crownarea_max(ivt(p)), allom1(ivt(p))*stemdiam**reinickerp(ivt(p))) ! Eqn D (now also in Light; need here for 1st yr when pfts haven't established, yet)
+          ! Eqn D (now also in Light; need here for 1st yr when pfts haven't established, yet)
+          crownarea(p) = min(crownarea_max(ivt(p)), allom1(ivt(p))*stemdiam**reinickerp(ivt(p)))
 
           ! Update LAI and FPC
 

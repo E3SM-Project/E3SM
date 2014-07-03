@@ -68,7 +68,8 @@ subroutine setupvf_heymsfield2010(carma, cstate, j, rc)
 
       dmax = 2._f * r_wet(k,i,j) * rrat(i,j)
       
-      x = (rhoa_cgs / (rmu(k)**2)) * ((8._f * rmass(i,j) * GRAV) / (PI * (arat(i,j)**0.5_f)))
+      x = (rhoa_cgs / (rmu(k)**2)) * &
+           ((8._f * rmass(i,j) * GRAV) / (PI * (arat(i,j)**0.5_f)))
       
       ! Apply the slip correction factor. This is not included in the formulation
       ! from Heymsfield and Westbrook [2010].

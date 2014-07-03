@@ -1297,25 +1297,6 @@ Turns on TEM circulation diagnostics history output.  Only valid for FV dycore.
     <td>logical</td>
     <td>circ_diag_nl</td>
   </tr>
-  <tr id="history_aero_optics_tr">
-    <td><a name="history_aero_optics"></a>
-        <img id="history_aero_optics_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('history_aero_optics')">history_aero_optics</a>
-        </code>
-        <div id="history_aero_optics_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Switch for diagnostic output of the aerosol optics
-<br/>Default: .false.
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>phys_ctl_nl</td>
-  </tr>
   <tr id="history_aerosol_tr">
     <td><a name="history_aerosol"></a>
         <img id="history_aerosol_arrow" src="./images/arrow_right.gif">
@@ -1329,25 +1310,6 @@ Switch for diagnostic output of the aerosol optics
 	     <pre>
 Switch for diagnostic output of the aerosol tendencies
 <br/>Default: .false.
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>phys_ctl_nl</td>
-  </tr>
-  <tr id="history_amwg_tr">
-    <td><a name="history_amwg"></a>
-        <img id="history_amwg_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('history_amwg')">history_amwg</a>
-        </code>
-        <div id="history_amwg_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-Switch for diagnostic output of AMWG diag package variables
-<br/>Default: .true.
 </pre>
         </div>
     </td>
@@ -1392,18 +1354,18 @@ History tape number T/Q budget output is written to.
     <td>integer</td>
     <td>phys_ctl_nl</td>
   </tr>
-  <tr id="history_eddy_tr">
-    <td><a name="history_eddy"></a>
-        <img id="history_eddy_arrow" src="./images/arrow_right.gif">
+  <tr id="history_microphysics_tr">
+    <td><a name="history_microphysics"></a>
+        <img id="history_microphysics_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('history_eddy')">history_eddy</a>
+             onclick="toggleHelp('history_microphysics')">history_microphysics</a>
         </code>
-        <div id="history_eddy_help" style="display: none;
+        <div id="history_microphysics_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Switch for diagnostic output of eddy variables 
+Switch for diagnostic output of microphysics variables 
 <br/>Default: .false.
 </pre>
         </div>
@@ -3300,6 +3262,474 @@ if true nudge meteorology surface fields TAUX, TAUY, SHFLX, QFLX rather than for
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
+  <tr id="energy_fixer_tr">
+    <td><a name="energy_fixer"></a>
+        <img id="energy_fixer_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('energy_fixer')">energy_fixer</a>
+        </code>
+        <div id="energy_fixer_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 3
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="hypervis_order_tr">
+    <td><a name="hypervis_order"></a>
+        <img id="hypervis_order_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hypervis_order')">hypervis_order</a>
+        </code>
+        <div id="hypervis_order_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 2
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="hypervis_subcycle_tr">
+    <td><a name="hypervis_subcycle"></a>
+        <img id="hypervis_subcycle_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hypervis_subcycle')">hypervis_subcycle</a>
+        </code>
+        <div id="hypervis_subcycle_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="hypervis_subcycle_q_tr">
+    <td><a name="hypervis_subcycle_q"></a>
+        <img id="hypervis_subcycle_q_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hypervis_subcycle_q')">hypervis_subcycle_q</a>
+        </code>
+        <div id="hypervis_subcycle_q_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="integration_tr">
+    <td><a name="integration"></a>
+        <img id="integration_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('integration')">integration</a>
+        </code>
+        <div id="integration_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Time integration (explicit or semi_implicit).
+<br/>Default: "explicit"
+</pre>
+        </div>
+    </td>
+    <td>char*80</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="interp_gridtype_tr">
+    <td><a name="interp_gridtype"></a>
+        <img id="interp_gridtype_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('interp_gridtype')">interp_gridtype</a>
+        </code>
+        <div id="interp_gridtype_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>analysis_nl</td>
+  </tr>
+  <tr id="interp_nlat_tr">
+    <td><a name="interp_nlat"></a>
+        <img id="interp_nlat_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('interp_nlat')">interp_nlat</a>
+        </code>
+        <div id="interp_nlat_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>analysis_nl</td>
+  </tr>
+  <tr id="interp_nlon_tr">
+    <td><a name="interp_nlon"></a>
+        <img id="interp_nlon_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('interp_nlon')">interp_nlon</a>
+        </code>
+        <div id="interp_nlon_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>analysis_nl</td>
+  </tr>
+  <tr id="interp_type_tr">
+    <td><a name="interp_type"></a>
+        <img id="interp_type_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('interp_type')">interp_type</a>
+        </code>
+        <div id="interp_type_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>analysis_nl</td>
+  </tr>
+  <tr id="interpolate_analysis_tr">
+    <td><a name="interpolate_analysis"></a>
+        <img id="interpolate_analysis_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('interpolate_analysis')">interpolate_analysis</a>
+        </code>
+        <div id="interpolate_analysis_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>logical(6)</td>
+    <td>analysis_nl</td>
+  </tr>
+  <tr id="nu_tr">
+    <td><a name="nu"></a>
+        <img id="nu_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nu')">nu</a>
+        </code>
+        <div id="nu_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Hyperviscosity [m^4/s].
+<br/>Default: 7.0e5
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="nu_div_tr">
+    <td><a name="nu_div"></a>
+        <img id="nu_div_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nu_div')">nu_div</a>
+        </code>
+        <div id="nu_div_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="nu_p_tr">
+    <td><a name="nu_p"></a>
+        <img id="nu_p_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nu_p')">nu_p</a>
+        </code>
+        <div id="nu_p_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="nu_q_tr">
+    <td><a name="nu_q"></a>
+        <img id="nu_q_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nu_q')">nu_q</a>
+        </code>
+        <div id="nu_q_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Hyperviscosity [m^4/s].
+<br/>Default: 7.0e5
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="nu_top_tr">
+    <td><a name="nu_top"></a>
+        <img id="nu_top_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nu_top')">nu_top</a>
+        </code>
+        <div id="nu_top_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Viscosity [m^2/s].
+<br/>Default: 2.5e5
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="qsplit_tr">
+    <td><a name="qsplit"></a>
+        <img id="qsplit_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('qsplit')">qsplit</a>
+        </code>
+        <div id="qsplit_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: none
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_ftype_tr">
+    <td><a name="se_ftype"></a>
+        <img id="se_ftype_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_ftype')">se_ftype</a>
+        </code>
+        <div id="se_ftype_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+CAM physics forcing option: 0 = tendencies, 1 = adjustments, 2 = hybrid.
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_limiter_option_tr">
+    <td><a name="se_limiter_option"></a>
+        <img id="se_limiter_option_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_limiter_option')">se_limiter_option</a>
+        </code>
+        <div id="se_limiter_option_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Homme limiter option
+<br/>Default: 4
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_ne_tr">
+    <td><a name="se_ne"></a>
+        <img id="se_ne_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_ne')">se_ne</a>
+        </code>
+        <div id="se_ne_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: none
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_nsplit_tr">
+    <td><a name="se_nsplit"></a>
+        <img id="se_nsplit_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_nsplit')">se_nsplit</a>
+        </code>
+        <div id="se_nsplit_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of dynamics steps per physics timestep.
+<br/>Default: none
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_nthreads_tr">
+    <td><a name="se_nthreads"></a>
+        <img id="se_nthreads_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_nthreads')">se_nthreads</a>
+        </code>
+        <div id="se_nthreads_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_partmethod_tr">
+    <td><a name="se_partmethod"></a>
+        <img id="se_partmethod_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_partmethod')">se_partmethod</a>
+        </code>
+        <div id="se_partmethod_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_phys_tscale_tr">
+    <td><a name="se_phys_tscale"></a>
+        <img id="se_phys_tscale_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_phys_tscale')">se_phys_tscale</a>
+        </code>
+        <div id="se_phys_tscale_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Physics timescale (in seconds) used to compute physics tendencies
+<br/>Default: 0 = feature disabled, use dtime.  
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_smooth_tr">
+    <td><a name="se_smooth"></a>
+        <img id="se_smooth_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_smooth')">se_smooth</a>
+        </code>
+        <div id="se_smooth_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Timestep filter.
+<br/>Default: 0.05
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="se_topology_tr">
+    <td><a name="se_topology"></a>
+        <img id="se_topology_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('se_topology')">se_topology</a>
+        </code>
+        <div id="se_topology_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: "cube"
+</pre>
+        </div>
+    </td>
+    <td>char*80</td>
+    <td>ctl_nl</td>
+  </tr>
+  <tr id="statefreq_tr">
+    <td><a name="statefreq"></a>
+        <img id="statefreq_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('statefreq')">statefreq</a>
+        </code>
+        <div id="statefreq_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ctl_nl</td>
+  </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple">CAM:  Dynamics - Spectral (Eulerian and SLD)</h3></span>
 <table id="dyn_spectral_table" border="1" width="100%" cellpadding="2" cellspacing="0">
@@ -3433,7 +3863,7 @@ latitudes. This only matters when using a reduced grid.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Number of processes assigned to dynamics (SE, EUL and SLD dycores).
+Number of processes assigned to dynamics (HOMME, EUL and SLD dycores).
 <br/>Default: Total number of processes assigned to job.
 </pre>
         </div>
@@ -4009,6 +4439,46 @@ Type of macrophysics scheme employed.  'park' for Park
     <td>char*16</td>
     <td>phys_ctl_nl</td>
   </tr>
+  <tr id="micro_mg_do_cldice_tr">
+    <td><a name="micro_mg_do_cldice"></a>
+        <img id="micro_mg_do_cldice_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('micro_mg_do_cldice')">micro_mg_do_cldice</a>
+        </code>
+        <div id="micro_mg_do_cldice_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Switch to control whether MG microphysics should prognose
+cloud ice (cldice).
+<br/>Default: .true.
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>micro_mg_nl</td>
+  </tr>
+  <tr id="micro_mg_do_cldliq_tr">
+    <td><a name="micro_mg_do_cldliq"></a>
+        <img id="micro_mg_do_cldliq_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('micro_mg_do_cldliq')">micro_mg_do_cldliq</a>
+        </code>
+        <div id="micro_mg_do_cldliq_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Switch to control whether MG microphysics should prognose
+cloud liquid (cldliq).
+<br/>Default: .true.
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>micro_mg_nl</td>
+  </tr>
   <tr id="microp_aero_bulk_scale_tr">
     <td><a name="microp_aero_bulk_scale"></a>
         <img id="microp_aero_bulk_scale_arrow" src="./images/arrow_right.gif">
@@ -4040,8 +4510,7 @@ prescribed aerosol bulk sulfur scale factor
              #cccccc;">
 	     <pre>
 Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
-(1998); 'MG' for Morrison and Gettelman (2008), Gettelman et al (2010)
-two moment scheme for CAM5.1
+(1998); 'MG' for Morrison and Gettelman two moment scheme.
 <br/>Default: set by build-namelist (depends on value set in configure).
 </pre>
         </div>
@@ -4070,25 +4539,25 @@ for CLUBB_SGS.
     <td>char*16</td>
     <td>phys_ctl_nl</td>
   </tr>
-  <tr id="use_subcol_microp_tr">
-    <td><a name="use_subcol_microp"></a>
-        <img id="use_subcol_microp_arrow" src="./images/arrow_right.gif">
+  <tr id="trop_cloud_top_press_tr">
+    <td><a name="trop_cloud_top_press"></a>
+        <img id="trop_cloud_top_press_arrow" src="./images/arrow_right.gif">
         <code class="varname">
           <a href="javascript:void(0)"
-             onclick="toggleHelp('use_subcol_microp')">use_subcol_microp</a>
+             onclick="toggleHelp('trop_cloud_top_press')">trop_cloud_top_press</a>
         </code>
-        <div id="use_subcol_microp_help" style="display: none;
+        <div id="trop_cloud_top_press_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Control use of sub-columns within microphysics;
-'false' for no subcolumns.
-<br/>Default: 'false'
+Troposphere cloud physics will be done only below the top defined
+by this pressure (Pa).
+<br/>Default: 100._r8
 </pre>
         </div>
     </td>
-    <td>logical</td>
-    <td>phys_ctl_nl</td>
+    <td>real</td>
+    <td>ref_pres_nl</td>
   </tr>
   <tr id="uwshcu_rpen_tr">
     <td><a name="uwshcu_rpen"></a>
@@ -4108,6 +4577,26 @@ Penetrative entrainment efficiency in UW shallow scheme.
     </td>
     <td>real</td>
     <td>uwshcu_nl</td>
+  </tr>
+  <tr id="wvsat_scheme_tr">
+    <td><a name="wvsat_scheme"></a>
+        <img id="wvsat_scheme_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('wvsat_scheme')">wvsat_scheme</a>
+        </code>
+        <div id="wvsat_scheme_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Type of water vapor saturation vapor pressure scheme employed.  'GoffGratch' for
+Goff and Gratch (1946); 'MurphyKoop' for Murphy & Koop (2005)
+<br/>Default: GoffGratch
+</pre>
+        </div>
+    </td>
+    <td>char*16</td>
+    <td>phys_ctl_nl</td>
   </tr>
   <tr id="zmconv_c0_lnd_tr">
     <td><a name="zmconv_c0_lnd"></a>
@@ -7312,25 +7801,6 @@ Full pathname of boundary dataset for soil erodibility factors.
     <td>char*256</td>
     <td>aerosol_nl</td>
   </tr>
-  <tr id="sol_facti_cloud_borne_tr">
-    <td><a name="sol_facti_cloud_borne"></a>
-        <img id="sol_facti_cloud_borne_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('sol_facti_cloud_borne')">sol_facti_cloud_borne</a>
-        </code>
-        <div id="sol_facti_cloud_borne_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-In-cloud scav for cloud-borne aerosol tuning factor
-<br/>Default: set by build-namelist.
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>chem_inparm</td>
-  </tr>
   <tr id="srf_emis_cycle_yr_tr">
     <td><a name="srf_emis_cycle_yr"></a>
         <img id="srf_emis_cycle_yr_arrow" src="./images/arrow_right.gif">
@@ -9476,27 +9946,6 @@ debug.  The closest column in the physics grid will be used.
     <td>real</td>
     <td>phys_debug_nl</td>
   </tr>
-  <tr id="state_debug_checks_tr">
-    <td><a name="state_debug_checks"></a>
-        <img id="state_debug_checks_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('state_debug_checks')">state_debug_checks</a>
-        </code>
-        <div id="state_debug_checks_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-If set to .true., turns on extra validation of physics_state objects
-in physics_update. Used mainly to track down which package is the
-source of invalid data in state.
-<br/>Default: .false.
-</pre>
-        </div>
-    </td>
-    <td>logical</td>
-    <td>phys_ctl_nl</td>
-  </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple">CAM:  Performance - Tuning and Profiling</h3></span>
 <table id="performance_table" border="1" width="100%" cellpadding="2" cellspacing="0">
@@ -10146,12 +10595,114 @@ set by build-namelist for WACCM, T31
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
+  <tr id="rad_drv_case_tr">
+    <td><a name="rad_drv_case"></a>
+        <img id="rad_drv_case_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rad_drv_case')">rad_drv_case</a>
+        </code>
+        <div id="rad_drv_case_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Radiation driver use case name.
+<br/>Default: none.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>rad_drv_nl</td>
+  </tr>
+  <tr id="rad_drv_infile_tr">
+    <td><a name="rad_drv_infile"></a>
+        <img id="rad_drv_infile_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rad_drv_infile')">rad_drv_infile</a>
+        </code>
+        <div id="rad_drv_infile_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Radiation driver input data file.
+<br/>Default: none.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>rad_drv_nl</td>
+  </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple">CAM:  Utilities - Reproducible Distributed Sum Calculation</h3></span>
 <table id="repro_sum_table" border="1" width="100%" cellpadding="2" cellspacing="0">
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
+  <tr id="repro_sum_recompute_tr">
+    <td><a name="repro_sum_recompute"></a>
+        <img id="repro_sum_recompute_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('repro_sum_recompute')">repro_sum_recompute</a>
+        </code>
+        <div id="repro_sum_recompute_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Flag to indicate whether a distributed sum that violates the difference 
+tolerance specified by repro_sum_rel_diff_max should be recomputed using 
+a floating point-based (but nonscalable) reproducible algorithm.
+<br/>Default: FALSE
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>cam_inparm</td>
+  </tr>
+  <tr id="repro_sum_rel_diff_max_tr">
+    <td><a name="repro_sum_rel_diff_max"></a>
+        <img id="repro_sum_rel_diff_max_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('repro_sum_rel_diff_max')">repro_sum_rel_diff_max</a>
+        </code>
+        <div id="repro_sum_rel_diff_max_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Relative difference between repro and nonrepro algorithms that will 
+generate a warning. This will also force a recompute using a nonscalable 
+algorihm if repro_sum_recompute is true. If less than zero, then
+the difference will not be evaluated (and the nonrepro algorithm will not 
+be computed).
+<br/>Default: -1.0
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cam_inparm</td>
+  </tr>
+  <tr id="repro_sum_use_ddpdd_tr">
+    <td><a name="repro_sum_use_ddpdd"></a>
+        <img id="repro_sum_use_ddpdd_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('repro_sum_use_ddpdd')">repro_sum_use_ddpdd</a>
+        </code>
+        <div id="repro_sum_use_ddpdd_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Flag to indicate whether to use the double-double distributed sum algorithm
+rather than the (almost) infinite precision reproducible distributed sum algorithm.
+<br/>Default: FALSE
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>cam_inparm</td>
+  </tr>
 </table>
 <h3><span style="background-color: #00FFFF" font color="purple">CAM:  Utilities - Physics Buffer</h3></span>
 <table id="pbuf_table" border="1" width="100%" cellpadding="2" cellspacing="0">

@@ -1,6 +1,407 @@
 ================================================================================
- SVN $Id: ChangeLog 46542 2013-04-30 18:34:21Z mvertens $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_33/ChangeLog $
+ SVN $Id: ChangeLog 60249 2014-05-14 21:38:20Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_12/ChangeLog $
+================================================================================
+Information on changes to cpl7
+================================================================================
+Originator: tcraig
+Date: 14 May 2014
+Model: cpl7
+Version: drvseq5_0_12
+One-line summary: update for PORT mode with NAG
+
+requested and tested by FVitt.
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: jshollen
+Date: 8 May 2014
+Model: cpl7
+Version: drvseq5_0_11
+One-line summary: update build-namelist for correct variable expansion
+
+M       bld/build-namelist
+
+================================================================================
+Originator: sacks
+Date: 1 May 2014
+Model: cpl7
+Version: drvseq5_0_10
+One-line summary: add fields for CLM <-> CISM coupling; add to hist_a2x3hr_flds
+
+This is meant to go with cism1_140501 and an upcoming CLM tag (probably either
+clm4_5_72 or clm4_5_73), although these may not be strictly required.
+
+*** Add fields for CLM <-> CISM coupling. 
+M       shr/seq_flds_mod.F90
+
+*** Unrelated change: Add to hist_a2x3hr_fields, to give all fields needed for
+    MOAR runs (note: I was not able to test this change, because the writing of
+    this auxiliary hist file is currently broken)
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 15 Jan 2014
+Model: cpl7
+Version: drvseq5_0_09
+One-line summary: update merge with self documentation and sharedindices,
+ avghist set from env file, wall_time_limit feature added
+
+- all merge methods now self-documenting
+- add sharedindices feature to merge to improve performance
+- avghist namelist now set from env file
+- wall_time_limit feature added via new namelist, wall_time_limit (hours)
+  and force_stop_at (day,month,year) variables.
+- new checks added to "auto" merges to make sure there is only one matching
+  field name, make sure the same fraction can't be applied automatically
+  more than once, and to make sure the fraction logic is consistent
+  between merged fields.
+- coupling fields now written to cpl.log file
+- minor issues like add missing subname strings, fix write to 6, etc.
+- depends on:
+  scripts4_140115a
+  share3_140115
+  compiler_fixes_n04_MCT_2.8.3
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       driver/prep_wav_mod.F90
+M       driver/prep_ice_mod.F90
+M       driver/prep_glc_mod.F90
+M       driver/prep_lnd_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/prep_ocn_mod.F90
+M       driver/prep_atm_mod.F90
+M       driver/prep_rof_mod.F90
+M       shr/seq_timemgr_mod.F90
+M       shr/seq_infodata_mod.F90
+M       shr/seq_flds_mod.F90
+================================================================================
+Originator: tcraig
+Date: 16 Dec 2013
+Model: cpl7
+Version: drvseq5_0_08
+One-line summary: Fix coupler time average history bug
+M       driver/seq_hist_mod.F90
+================================================================================
+Originator: tcraig
+Date: 30 Nov 2013
+Model: cpl7
+Version: drvseq5_0_07
+One-line summary: Fix coupler time average history files
+
+  also change num_inst_lnd to num_inst_rof as needed and update
+  output avs in coupler history files
+
+M       driver/seq_hist_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 13 Nov 2013
+Model: cpl7
+Version: drvseq5_0_06
+One-line summary: more driver refactoring to enalbe coexisting MCT/ESMF compatiblity at driver level
+
+brought in commap branch into driver trunk
+
+moved instantiation of atm, lnd, rof, ocn, ice, glc, wav instances from ccsm_comp_mod.F90
+to component_type_mod.F90
+
+	type(component_type), target :: atm(num_inst_atm)
+	type(component_type), target :: lnd(num_inst_lnd)
+	type(component_type), target :: rof(num_inst_rof)
+	type(component_type), target :: ocn(num_inst_ocn)
+	type(component_type), target :: ice(num_inst_ice)
+	type(component_type), target :: glc(num_inst_glc)
+	type(component_type), target :: wav(num_inst_wav)
+
+M       driver/ccsm_comp_mod.F90
+M       driver/component_mod.F90
+M       driver/component_type_mod.F90
+	- leveraged that atm, lnd, ice, ocn, glc, rof, wav are now instantiated in 
+	component_type_mod and are now obtained via explicit use statements 
+	rather than arguments
+	- renamed and refactored component init => component_init_cc
+	- renamed and refactored component_post => component_init_cx
+	- component_init_cx now enables reuse of memory for MCT attribute vectors
+	and ESMF arrays at the driver level
+	
+M       driver/prep_wav_mod.F90
+M       driver/prep_aoflux_mod.F90
+M       driver/prep_ice_mod.F90
+M       driver/prep_glc_mod.F90
+M       driver/prep_lnd_mod.F90
+M       driver/prep_ocn_mod.F90
+M       driver/prep_atm_mod.F90
+M       driver/prep_rof_mod.F90
+	- all prep routines no longer have atm, lnd, ice, ocn, glc, rof, wav
+	components passed as arguments - but rather are obtained via explicit use statements
+	of component_type data
+	- all prep routines no longer utilize component_get_gsmap_cx routines and no longer
+	pass gsmax_cx variables and mpicom_CPLID to the seq_map_init_rcfile - but rather 
+	simply pass the relevant component_type data structure  - as an example 
+	=== old way ===
+           gsmap_ox => component_get_gsmap_cx(ocn(1)) 
+           gsmap_wx => component_get_gsmap_cx(wav(1)) 
+           call seq_map_init_rcfile(mapper_So2w, gsmap_ox, gsmap_wx, mpicom_CPLID, &
+	   ...
+	=== new way ===
+           call seq_map_init_rcfile(mapper_So2w, ocn(1), wav(1), &
+	   ...
+	the above elimates explicit reference to global seg map data structures in ALL prep routines
+	and will make it easier for ESMF remapping to leverage use of the prep routines
+	 
+	
+A  +    driver/cplcomp_exchange_mod.F90
+D       driver/seq_mctext_mod.F90
+	- separated exchange functionality (of component<=>hub) on union of hub/component pes
+	from remapping (source => target component) on hub pes only
+	
+A  +    driver/cpl_comp_esmf.F90
+	- new gridded component that allows overlap of ESMF and MCT memory such that
+	restart, history, diagnostic and mapping aream corrections do not have to be rewritten
+	but can be used in their current form even with ESMF interfaces at the top level
+	
+M       driver/seq_map_mod.F90
+M       driver/seq_map_type_mod.F90
+M       driver/seq_map_esmf.F90
+	
+================================================================================
+Originator: tcraig
+Date: 06 Nov 2013
+Model: cpl7
+Version: drvseq5_0_05
+One-line summary: add support for single instance prognostic ocean model
+
+  with averaging coupled with n instance of other components.  merge from
+  seqinst_drv5 branch.  includes initial spcam mods.
+
+  svn merge $SVNREPO/drv/seq_mct/trunk $SVNREPO/drv/seq_mct/branch_tags/seqinst_drv5_tags/seqinst_drv5_03_drvseq5_0_04
+
+M       driver/seq_domain_mct.F90
+M       driver/prep_wav_mod.F90
+M       driver/prep_ice_mod.F90
+M       driver/prep_glc_mod.F90
+M       driver/component_mod.F90
+M       driver/prep_lnd_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/prep_ocn_mod.F90
+M       driver/prep_atm_mod.F90
+M       driver/prep_rof_mod.F90
+M       shr/seq_comm_mct.F90
+
+================================================================================
+Originator: tcraig
+Date: 28 Oct 2013
+Model: cpl7
+Version: drvseq5_0_04
+One-line summary: fix accumulation counters in prep mods for multi-instance
+
+M       driver/prep_glc_mod.F90
+M       driver/prep_ocn_mod.F90
+M       driver/prep_rof_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 18 Oct 2013
+Model: cpl7
+Version: drvseq5_0_03
+One-line summary: fix for scam bfb test
+
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 2 Oct 2013
+Model: cpl7
+Version: drvseq5_0_02
+One-line summary: Removed cdata_cx and fixed FIDEAL and FADIABATIC problem
+
+M       driver/component_mod.F90
+M       driver/component_type_mod.F90
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 1 Oct 2013
+Model: cpl7
+Version: drvseq5_0_01
+One-line summary: Retag of drvseq4_3_06 as drvseq5_0_01
+
+New tag line for major infrastructure changes
+
+================================================================================
+Originator: mvertens
+Date: 24 Sept 2013
+Model: cpl7
+Version: drvseq4_3_06
+One-line summary: bug fix for single column mode
+
+M       driver/component_type_mod.F90 (just comment changes)
+M       driver/ccsm_comp_mod.F90      (bug fix)
+
+================================================================================
+Originator: mvertens
+Date: 20 Sept 2013
+Model: cpl7
+Version: drvseq4_3_05
+One-line summary: major coupler refactoring
+
+- added new routines prep_xxx_mod.F90 which are modules that
+contain all mapping and merging from components other than
+xxx (e.g. prep_atm_mod./F90 does the mapping from lnd, ice and ocn
+to the atm grid and then merges then via scaling by the
+appropriate fractions. Note that ALL prep_xxx_mod.F90 routines are
+nly called on the cpl processes
+	
+- added new module, component_mod.F90, and new derived type in
+component_type_mod.f90, that permits a new layer to be added
+between the driver (ccsm_comp_mod.F90) and the components that
+allows the driver to be independent of the coupling infrastructure
+use. It also eliminates the need for xxx_comp_mct.F90 IN the
+cpl_esmf/ directories.
+
+Files added: 	
+A  +    driver/seq_map_type_mod.F90
+A  +    driver/t_driver_timers_mod.F90
+A  +    driver/component_mod.F90
+A  +    driver/component_type_mod.F90
+A  +    driver/prep_atm_mod.F90
+A  +    driver/prep_lnd_mod.F90
+A  +    driver/prep_ocn_mod.F90
+A  +    driver/prep_ice_mod.F90
+A  +    driver/prep_rof_mod.F90
+A  +    driver/prep_glc_mod.F90
+A  +    driver/prep_wav_mod.F90
+A  +    driver/seq_io_mod.F90
+A  +    shr/seq_io_read_mod.F90
+
+Files deleted:
+D       driver/mrg_mod.F90
+D       driver/seq_avdata_mod.F90
+D       shr/seq_io_mod.F90
+
+Files modified:	
+M       driver/seq_domain_mct.F90
+M       driver/seq_map_mod.F90
+M       driver/seq_rest_mod.F90
+M       driver/seq_frac_mct.F90
+M       driver/seq_flux_mct.F90
+M       driver/seq_map_esmf.F90
+M       driver/ccsm_driver.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_hist_mod.F90
+M       driver/seq_diag_mct.F90p
+M       shr/seq_cdata_mod.F90
+M       shr/seq_timemgr_mod.F90
+M       shr/seq_infodata_mod.F90
+================================================================================
+Originator: tcraig
+Date: 17 Sept 2013
+Model: cpl7
+Version: drvseq4_3_04
+One-line summary: fix single column mode, areafact==1.0
+
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 06 Sept 2013
+Model: cpl7
+Version: drvseq4_3_03
+One-line summary: fix save for NAG compiler
+
+M       driver/ccsm_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: 05 Sept 2013
+Model: cpl7
+Version: drvseq4_3_02
+One-line summary: remove ifdefs from code for new features
+
+remove ifdefs BITFORBIT, MATCHOLD, AOFLUXOLD, AREAFACTOLD, CHECKGO to
+- update averaging calculation, leverage share code
+- update runoff calculation to reduce lags to ocean
+- update aoflux calculation to reduce lag to ocean, compute before mrgx2o
+- update areafact computation to remove forced 1.0 values for samegrid configurations
+- remove prototype control method
+
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_map_mod.F90
+M       driver/seq_diag_mct.F90
+
+================================================================================
+Originator: tcraig
+Date: 05 Sept 2013
+Model: cpl7
+Version: drvseq4_3_01
+One-line summary: merge cplupa_n11 to trunk
+
+- remove sno coupling from land interface, merge those sno coupling fields
+  into the land avects
+- add support for new glc-ocn/ice and rof-ice coupling, including mapping,
+  merging, control, etc.
+- add ifdef USE_ESMF_METADATA around esmf attribute calls
+- modify samegrid implementation, grid names instead of samegrid vars
+  are now passed in via namelist
+- new control logic with xxx_c2_yyy flags
+- refactor runoff flow through system, reduce lag
+- reduce lag of fluxao to ocean coupling
+- change mct_accumulators to mct_avects
+- update budgets to reflect new coupling
+- implement support for mapping data reuse
+- modify runoff coupling field names for consistency
+- convert volr from state to flux variable
+- modify timers as needed
+- modify domain checked to improve robustness
+- remove npfix
+- modify how mappings are initialized, leverage new seq_mct_queryConfigFile method
+
+svn merge $SVNREPO/drv/seq_mct/trunk_tags/drvseq4_2_35 $SVNREPO/drv/seq_mct/branch_tags/cplupa_tags/cplupa_n11_drvseq4_2_35
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       shr_esmf/esmfshr_attribute_mod.F90
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_domain_mct.F90
+M       driver/mrg_mod.F90
+M       driver/seq_map_mod.F90
+M       driver/seq_rest_mod.F90
+M       driver/seq_frac_mct.F90
+M       driver/seq_avdata_mod.F90
+M       driver/seq_flux_mct.F90
+M       driver/seq_hist_mod.F90
+M       driver/seq_diag_mct.F90
+M       shr/seq_infodata_mod.F90
+M       shr/seq_flds_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: 18 July 2013
+Model: cpl7
+Version: drvseq4_2_35
+One-line summary: Refactor build_namelist to allow the
+	use and expansion of multiple variables in an xml entry
+
+M   bld/build_namelist
+
+
+================================================================================
+
+Information on changes to cpl7
+Originator: jedwards
+Date: 09 July 2013
+Model: cpl7
+Version: drvseq4_2_34
+One-line summary: Fixed bug in namelist_definition of orb_mvelp
+
+M   bld/namelist_files/namelist_definition_drv.xml
+
 ================================================================================
 
 Information on changes to cpl7

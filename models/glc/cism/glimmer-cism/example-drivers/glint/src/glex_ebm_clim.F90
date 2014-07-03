@@ -35,16 +35,16 @@ module glint_ebm_ex_clim
   !*FD the energy balance mass-balance model. Unlike the main glint_example code,
   !*FD this one assumes that the data are all on the same grid.
 
-  use glimmer_global
+  use glimmer_global, only: dp, fname_length
   use glint_global_grid
 
   implicit none
 
   type glex_ebm_climate
      ! Mass-balance coupling timing parameters --------------------------
-     integer                 :: total_years=10    ! Length of run in years
-     integer                 :: climate_tstep=6   ! Climate time-step in hours
-     real(rk)                :: diurnal_cycle=0.0 ! Imposed Diurnal cycle (degC)
+     integer                 :: total_years=10     ! Length of run in years
+     integer                 :: climate_tstep=6    ! Climate time-step in hours
+     real(dp)                :: diurnal_cycle=0.d0 ! Imposed Diurnal cycle (degC)
      ! Filenames --------------------------------------------------------
      character(fname_length) :: precip_file = 'monthly_precip_mean_1974-2003.nc' !*FD Name of precip file
      character(fname_length) :: stemp_file  = 'surf_temp_6h_1974-2003.nc'        !*FD Name of surface temp file
@@ -66,15 +66,15 @@ module glint_ebm_ex_clim
      character(fname_length) :: swdown_varname   = ''
      character(fname_length) :: airpress_varname = ''
      ! Arrays for holding climatology -----------------------------------
-     real(rk),dimension(:,:),  pointer :: orog_clim     => null()  !*FD Orography
-     real(rk),dimension(:,:,:),pointer :: precip_clim   => null()  !*FD Precip
-     real(rk),dimension(:,:,:),pointer :: surftemp_clim => null()  !*FD Surface temperature
-     real(rk),dimension(:,:,:),pointer :: zonwind_clim  => null()  !*FD Zonal wind
-     real(rk),dimension(:,:,:),pointer :: merwind_clim  => null()  !*FD Meridional Wind
-     real(rk),dimension(:,:,:),pointer :: humid_clim    => null()  !*FD Humidity
-     real(rk),dimension(:,:,:),pointer :: lwdown_clim   => null()  !*FD Longwave down
-     real(rk),dimension(:,:,:),pointer :: swdown_clim   => null()  !*FD Shortwave down
-     real(rk),dimension(:,:,:),pointer :: airpress_clim => null()  !*FD Air pressure
+     real(dp),dimension(:,:),  pointer :: orog_clim     => null()  !*FD Orography
+     real(dp),dimension(:,:,:),pointer :: precip_clim   => null()  !*FD Precip
+     real(dp),dimension(:,:,:),pointer :: surftemp_clim => null()  !*FD Surface temperature
+     real(dp),dimension(:,:,:),pointer :: zonwind_clim  => null()  !*FD Zonal wind
+     real(dp),dimension(:,:,:),pointer :: merwind_clim  => null()  !*FD Meridional Wind
+     real(dp),dimension(:,:,:),pointer :: humid_clim    => null()  !*FD Humidity
+     real(dp),dimension(:,:,:),pointer :: lwdown_clim   => null()  !*FD Longwave down
+     real(dp),dimension(:,:,:),pointer :: swdown_clim   => null()  !*FD Shortwave down
+     real(dp),dimension(:,:,:),pointer :: airpress_clim => null()  !*FD Air pressure
      ! Grid variables ---------------------------------------------------
      type(global_grid),pointer :: grid   => null()
      type(global_grid),pointer :: grid_check => null()
@@ -135,11 +135,11 @@ contains
 
     ! Fix up a few things
 
-    params%surftemp_clim=params%surftemp_clim-273.15       ! Convert temps to degreesC
-    params%precip_clim=params%precip_clim*1000.0/21600.0   ! Convert precip to mm/s
-    params%lwdown_clim=params%lwdown_clim/21600.0          ! Convert fluxes to W/m^2
-    params%swdown_clim=params%swdown_clim/21600.0          ! Convert fluxes to W/m^2
-    params%orog_clim=params%orog_clim/9.81                 ! Convert geopotential to m
+    params%surftemp_clim=params%surftemp_clim-273.15         ! Convert temps to degreesC
+    params%precip_clim=params%precip_clim*1000.d0/21600.d0   ! Convert precip to mm/s
+    params%lwdown_clim=params%lwdown_clim/21600.d0           ! Convert fluxes to W/m^2
+    params%swdown_clim=params%swdown_clim/21600.d0           ! Convert fluxes to W/m^2
+    params%orog_clim=params%orog_clim/9.81d0                 ! Convert geopotential to m
 
   end subroutine glex_ebm_clim_init
 
@@ -216,19 +216,19 @@ contains
     use netcdf
 
     character(*)                    :: filename,varname
-    real(rk),dimension(:,:),pointer :: array
+    real(dp),dimension(:,:),pointer :: array
     type(global_grid),      pointer :: grid
 
-    real(rk),dimension(:),allocatable :: dim1,dim2
-    real(rk),dimension(:),pointer :: lonbound => NULL()
-    real(rk),dimension(:),pointer :: latbound => NULL()
+    real(dp),dimension(:),allocatable :: dim1,dim2
+    real(dp),dimension(:),pointer :: lonbound => NULL()
+    real(dp),dimension(:),pointer :: latbound => NULL()
 
     integer  :: ncerr     ! NetCDF error 
     integer  :: ncid      ! NetCDF file id
     integer  :: varid     ! NetCDF variable id
     integer  :: ndims     ! Number of dimensions
     integer  :: i,args
-    real(rk) :: offset=0.0,scale=1.0
+    real(dp) :: offset=0.d0, scale=1.d0
     integer,      dimension(2) :: dimids,dimlens
     character(20),dimension(2) :: dimnames
     logical :: lonb_present,latb_present
@@ -291,19 +291,19 @@ contains
     use netcdf
 
     character(*)                      :: filename,varname
-    real(rk),dimension(:,:,:),pointer :: array
+    real(dp),dimension(:,:,:),pointer :: array
     type(global_grid),        pointer :: grid
 
-    real(rk),dimension(:),allocatable :: dim1,dim2,dim3
-    real(rk),dimension(:),pointer :: lonbound => NULL()
-    real(rk),dimension(:),pointer :: latbound => NULL()
+    real(dp),dimension(:),allocatable :: dim1,dim2,dim3
+    real(dp),dimension(:),pointer :: lonbound => NULL()
+    real(dp),dimension(:),pointer :: latbound => NULL()
 
     integer  :: ncerr     ! NetCDF error 
     integer  :: ncid      ! NetCDF file id
     integer  :: varid     ! NetCDF variable id
     integer  :: ndims     ! Number of dimensions
     integer  :: i,args
-    real(rk) :: offset=0.0,scale=1.0
+    real(dp) :: offset=0.d0, scale=1.d0
     integer,      dimension(3) :: dimids,dimlens
     character(20),dimension(3) :: dimnames
     real(dp),     dimension(:,:),allocatable :: lnb,ltb
@@ -420,21 +420,21 @@ contains
     use netcdf
 
     integer :: ncid,varid
-    real(rk) :: offset,scale
+    real(dp) :: offset,scale
     integer :: ncerr
 
     ! Get scaling and offset, if present, and apply ----
 
-    ncerr=nf90_get_att(ncid, varid, 'add_offset', offset)
-    if (ncerr/=NF90_NOERR) then
-       offset=0.0
-       ncerr=NF90_NOERR
+    ncerr = nf90_get_att(ncid, varid, 'add_offset', offset)
+    if (ncerr /= NF90_NOERR) then
+       offset = 0.d0
+       ncerr = NF90_NOERR
     end if
 
-    ncerr=nf90_get_att(ncid, varid, 'scale_factor', scale)
-    if (ncerr/=NF90_NOERR) then
-       scale=1.0
-       ncerr=NF90_NOERR
+    ncerr = nf90_get_att(ncid, varid, 'scale_factor', scale)
+    if (ncerr /= NF90_NOERR) then
+       scale = 1.d0
+       ncerr = NF90_NOERR
     end if
 
   end subroutine read_ncdf_common3
@@ -447,7 +447,7 @@ contains
 
     integer :: ncid,varid
     character(*) :: dimname
-    real(rk),dimension(:) :: dim
+    real(dp),dimension(:) :: dim
     integer :: ncerr
 
     ! Get dimension variables 
@@ -468,12 +468,12 @@ contains
     integer :: ncid,varid
     character(*) :: boundname
     logical :: present
-    real(rk),dimension(:),pointer :: bound
+    real(dp),dimension(:),pointer :: bound
 
     integer :: ncerr
     integer,dimension(2) :: dimids,dimlens
     character(20),dimension(2) :: dimnames
-    real(rk),dimension(:,:),allocatable :: b
+    real(dp),dimension(:,:),allocatable :: b
     integer :: i
 
     ncerr=nf90_inq_varid(ncid,boundname,varid)
@@ -507,8 +507,8 @@ contains
 
     type(global_grid),        pointer :: grid
     logical :: lonb_present,latb_present
-    real(rk),dimension(:) :: dim1,dim2
-    real(rk), dimension(:), pointer :: lonbound,latbound
+    real(dp),dimension(:) :: dim1,dim2
+    real(dp), dimension(:), pointer :: lonbound,latbound
     integer :: args
 
     ! Construct grid type
@@ -554,12 +554,12 @@ contains
     use glimmer_log
 
     type(glex_ebm_climate) :: params
-    real(rk),dimension(:,:),intent(out)  :: precip,temp,zonwind,merwind,humid,lwdown,swdown,airpress
-    real(rk),intent(in) :: time
+    real(dp),dimension(:,:),intent(out)  :: precip,temp,zonwind,merwind,humid,lwdown,swdown,airpress
+    real(dp),intent(in) :: time
 
     integer :: ntemp,nprecip,nzonwind,nmerwind,nhumid,nlwdown,nswdown,nairpress
-    real(rk) :: tsp,tst,tsz,tsm,tsh,tsl,tss,tsa
-    real(rk) :: pos
+    real(dp) :: tsp,tst,tsz,tsm,tsh,tsl,tss,tsa
+    real(dp) :: pos
     integer :: lower,upper
     character(150) :: msg
 
@@ -603,14 +603,14 @@ contains
 
   function interp_field(time,ts,n,clim)
  
-    real(rk),intent(in) :: time
-    real(rk),intent(in) :: ts
+    real(dp),intent(in) :: time
+    real(dp),intent(in) :: ts
     integer, intent(in) :: n
-    real(rk),dimension(:,:,:),intent(in) :: clim
-    real(rk),dimension(size(clim,1),size(clim,2)) :: interp_field
+    real(dp),dimension(:,:,:),intent(in) :: clim
+    real(dp),dimension(size(clim,1),size(clim,2)) :: interp_field
 
     integer :: lower,upper
-    real(rk) :: pos
+    real(dp) :: pos
 
     lower=int(time/ts)
     upper=lower+1
@@ -625,9 +625,9 @@ contains
 
   function linear_interp(a,b,pos)
 
-    real(rk),dimension(:,:),intent(in) :: a,b
-    real(rk),dimension(size(a,1),size(a,2)) :: linear_interp
-    real(rk),               intent(in) :: pos
+    real(dp),dimension(:,:),intent(in) :: a,b
+    real(dp),dimension(size(a,1),size(a,2)) :: linear_interp
+    real(dp),               intent(in) :: pos
 
     linear_interp=a*(1.0-pos)+b*pos
 

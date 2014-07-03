@@ -35,17 +35,17 @@ module verif
 
   use verifBC
   use verifD
-  use glimmer_global, only : rk, sp
+  use glimmer_global, only : dp
 
-  private :: rk, sp
+  private :: dp
 
   type verif_type
      type(verifBC_type), pointer :: vb => NULL()
      type(verifD_type),  pointer :: vd => NULL()
 
-     real(rk), dimension(:,:), pointer :: exact_h => NULL() !*FD exact ice thickness
-     real(sp), dimension(:,:), pointer :: mb => NULL()      !*FD mass balance
-     real(rk) :: ivol_e = 0.
+     real(dp), dimension(:,:), pointer :: exact_h => NULL() !*FD exact ice thickness
+     real(dp), dimension(:,:), pointer :: mb => NULL()      !*FD mass balance
+     real(dp) :: ivol_e = 0.
   end type verif_type
 
 contains
@@ -129,7 +129,7 @@ contains
     implicit none
     type(glide_global_type)   :: model !*FD model instance
     type(verif_type)          :: veri  !*FD structure holding test setup
-    real(kind=rk), intent(in) :: time  !*FD current time
+    real(dp), intent(in)      :: time  !*FD current time
 
     if (associated(veri%vb)) then
        call verifBC_update(model,veri%vb, time, veri%exact_h, veri%mb)

@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: seq_timemgr_mod.F90 46244 2013-04-23 16:51:27Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_33/shr/seq_timemgr_mod.F90 $
+! SVN $Id: seq_timemgr_mod.F90 59750 2014-05-01 15:17:20Z sacks $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_12/shr/seq_timemgr_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -28,7 +28,8 @@ module seq_timemgr_mod
    use shr_cal_mod
    use SHR_KIND_mod,     only: SHR_KIND_IN, SHR_KIND_R8, SHR_KIND_CS, &
                                SHR_KIND_CL, SHR_KIND_I8
-   use seq_comm_mct,     only: logunit, loglevel, seq_comm_iamin, CPLID, seq_comm_gloroot
+   use seq_comm_mct,     only: logunit, loglevel, seq_comm_iamin, CPLID, &
+                               seq_comm_gloroot, seq_comm_iamroot
    use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
 
    implicit none
@@ -235,7 +236,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, mpic
    use shr_string_mod, only : shr_string_toupper
    use shr_file_mod,   only : shr_file_getunit, shr_file_freeunit
    use shr_mpi_mod,    only : shr_mpi_bcast
-   use seq_io_mod,     only : seq_io_read
+   use seq_io_read_mod
 
    implicit none
 
@@ -1034,30 +1035,49 @@ end subroutine seq_timemgr_EClockGetData
 !      
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_timemgr_clockAdvance( SyncClock )
+subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, force_stop_tod )
 
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
 
    type(seq_timemgr_type), intent(INOUT) :: SyncClock    ! Advancing clock
+   logical, optional, intent(in) :: force_stop           ! force stop
+   integer, optional, intent(in) :: force_stop_ymd       ! force stop ymd
+   integer, optional, intent(in) :: force_stop_tod       ! force stop tod
 
 !EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_clockAdvance) '
     integer :: n    
-    type(ESMF_Time) :: drvCT,clkCT
+    type(ESMF_Time) :: NextAlarm              ! Next restart alarm time
     integer :: rc    ! Return code
 
 !-------------------------------------------------------------------------------
 ! Notes:
 !-------------------------------------------------------------------------------
 
-   ! --- turn off all alarms on all clocks ---
+   ! --- set datestop alarm to force_stop alarm ---
 
    do n = 1,max_clocks
       call seq_timemgr_alarmSetOff(SyncClock%ECP(n)%EClock)
+      if (present(force_stop) .and. present(force_stop_ymd) .and. present(force_stop_tod)) then
+      if (force_stop) then
+         if (n == 1 .and. seq_comm_iamroot(CPLID)) then
+            write(logunit,*) subname,'force stop at ',force_stop_ymd, force_stop_tod
+         endif
+         if (force_stop_ymd < 0 .or. force_stop_tod < 0) then
+            call shr_sys_abort(subname//': force_stop_ymd, force_stop_tod invalid')
+         endif
+         seq_timemgr_end_restart = .true.
+         call seq_timemgr_ETimeInit(NextAlarm, force_stop_ymd, force_stop_tod, "optDate")
+         CALL ESMF_AlarmSet( SyncClock%EAlarm(n,seq_timemgr_nalarm_datestop),  &
+                             name = trim(seq_timemgr_alarm_datestop), &
+                             RingTime=NextAlarm,        &
+                             rc=rc )
+      endif
+      endif
    enddo
 
    ! --- advance driver clock and all driver alarms ---

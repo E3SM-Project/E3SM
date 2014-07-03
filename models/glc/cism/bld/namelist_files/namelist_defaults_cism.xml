@@ -44,6 +44,8 @@ now, it gives reasonable enough results for testing purposes. -->
 
 <cesm_history_vars>'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'</cesm_history_vars>
 
+<ice_flux_routing>ocn</ice_flux_routing>
+
 <!-- =============================================================  -->
 <!-- group: grid_nml                                                -->
 <!-- =============================================================  -->
@@ -67,6 +69,20 @@ now, it gives reasonable enough results for testing purposes. -->
 <stop_option>never</stop_option>
 
 <allow_leapyear>.false.</allow_leapyear>
+
+<!-- =============================================================  -->
+<!-- group: glc_override_nml                                        -->
+<!-- =============================================================  -->
+
+<enable_frac_overrides>.false.</enable_frac_overrides>
+
+<override_delay>0</override_delay>
+
+<decrease_frac>0.0</decrease_frac>
+
+<increase_frac>0.0</increase_frac>
+
+<rearrange_freq>0</rearrange_freq>
 
 <!-- =============================================================  -->
 <!-- group: cism.config: grid                                       -->
@@ -117,6 +133,8 @@ now, it gives reasonable enough results for testing purposes. -->
 <precip_mode>1</precip_mode>
 
 <acab_mode>0</acab_mode>
+
+<test_coupling>.false.</test_coupling>
 
 <!-- =============================================================  -->
 <!-- group: cism.config: projection                                 -->

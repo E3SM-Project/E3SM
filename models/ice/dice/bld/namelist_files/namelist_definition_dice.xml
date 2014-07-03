@@ -303,6 +303,14 @@ multiple instances).
 default: 'undefined'
 </entry>
 
+<entry id="force_prognostic_true"
+type="logical" 
+category="dice"
+group="dice_nml">
+If TRUE, prognostic is forced to true.
+default=false 
+</entry>
+
 <entry id="logfile" 
 type="char*256" 
 category="dice"

@@ -35,7 +35,7 @@ module carma_intr
                             cnst_name, cnst_longname, cnst_type
   use chem_surfvals,  only: chem_surfvals_get
   use abortutils,     only: endrun
-  use physics_buffer, only: physics_buffer_desc, pbuf_add_field, pbuf_times, pbuf_old_tim_idx, &
+  use physics_buffer, only: physics_buffer_desc, pbuf_add_field, pbuf_old_tim_idx, &
                             pbuf_get_index, pbuf_get_field, dtype_r8
 
 
@@ -120,7 +120,8 @@ module carma_intr
   character(len=16)              :: etndname(NELEM, NBIN)         ! names of element tendencies
   character(len=16)              :: gtndname(NGAS)                ! names of gas tendencies
   
-  logical                        :: lq_carma(pcnst)               ! flags to indicate whether the constituent could have a CARMA tendency
+  ! Flags to indicate whether each constituent could have a CARMA tendency.
+  logical                        :: lq_carma(pcnst)
   
   ! The CARMA object stores the configuration inforamtion about CARMA, only one is
   ! is needed per MPI task. In the future, this could potentially be turned into one
@@ -140,6 +141,8 @@ module carma_intr
   
   ! Globals used for a reference atmosphere.
   real(kind=f)                   :: carma_t_ref(pver)             ! midpoint temperature (Pa)
+  real(kind=f)                   :: carma_h2o_ref(pver)           ! h2o mmmr (kg/kg)
+  real(kind=f)                   :: carma_h2so4_ref(pver)         ! h2so4 mmr (kg/kg)
 
 
   ! Globals used for total statistics
@@ -248,7 +251,8 @@ contains
     ! Create the CARMA object that will contain all the information about the
     ! how CARMA is configured.
       
-    call CARMA_Create(carma, NBIN, NELEM, NGROUP, NSOLUTE, NGAS, NWAVE, rc, LUNOPRT=LUNOPRT, wave=wave, dwave=dwave, do_wave_emit=do_wave_emit)
+    call CARMA_Create(carma, NBIN, NELEM, NGROUP, NSOLUTE, NGAS, NWAVE, rc, &
+         LUNOPRT=LUNOPRT, wave=wave, dwave=dwave, do_wave_emit=do_wave_emit)
     if (rc < 0) call endrun('carma_register::CARMA_Create failed.')
     
     ! Define the microphysical model.
@@ -365,7 +369,7 @@ contains
             write(btndname(igroup, ibin), '(A, I2.2)') trim(grp_short), ibin
 
             write(c_name, '(A, I2.2)') trim(shortname), ibin
-            write(c_longname, '(A, e10.4, A)') trim(name) // ', ', r(ibin)*1.e4_r8, ' um'
+            write(c_longname, '(A, e11.4, A)') trim(name) // ', ', r(ibin)*1.e4_r8, ' um'
              
             ! The molecular weight seems to be used for molecular diffusion, which
             ! doesn't make sense for particles. The CAM solvers are unstable if the 
@@ -566,18 +570,25 @@ contains
             call addfld(cnst_name(icnst),             'kg/kg   ', pver, 'A', cnst_longname(icnst), phys_decomp)
             call add_default(cnst_name(icnst), 1, ' ')
     
-            call addfld(trim(etndname(ielem, ibin))//'TC',        'kg/kg/s ', pver, 'A', trim(cnst_name(icnst)) // ' tendency', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'SF', 'kg/m2/s ', 1,    'A', trim(cnst_name(icnst)) // ' surface emission', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'EM', 'kg/kg/s ', pver, 'A', trim(cnst_name(icnst)) // ' emission', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'WD', 'kg/kg/s ', pver, 'A', trim(cnst_name(icnst)) // ' wet deposition', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'SW', 'kg/m2/s ', 1,    'A', trim(cnst_name(icnst)) // ' wet deposition flux at surface', phys_decomp)
+            call addfld(trim(etndname(ielem, ibin))//'TC', 'kg/kg/s ', pver, 'A', &
+                 trim(cnst_name(icnst)) // ' tendency', phys_decomp)
+            call addfld(trim(etndname(ielem, ibin))//'SF', 'kg/m2/s ', 1,    'A', &
+                 trim(cnst_name(icnst)) // ' surface emission', phys_decomp)
+            call addfld(trim(etndname(ielem, ibin))//'EM', 'kg/kg/s ', pver, 'A', &
+                 trim(cnst_name(icnst)) // ' emission', phys_decomp)
+            call addfld(trim(etndname(ielem, ibin))//'WD', 'kg/kg/s ', pver, 'A', &
+                 trim(cnst_name(icnst)) // ' wet deposition', phys_decomp)
+            call addfld(trim(etndname(ielem, ibin))//'SW', 'kg/m2/s ', 1,    'A', &
+                 trim(cnst_name(icnst)) // ' wet deposition flux at surface', phys_decomp)
 
             if (do_drydep) then
-              call addfld(trim(etndname(ielem, ibin))//'DD', 'kg/m2/s ', 1,    'A', trim(cnst_name(icnst)) // ' dry deposition', phys_decomp)
+              call addfld(trim(etndname(ielem, ibin))//'DD', 'kg/m2/s ', 1,  'A', &
+                   trim(cnst_name(icnst)) // ' dry deposition', phys_decomp)
             end if
 
             if (carma_do_pheat) then
-              call addfld(trim(etndname(ielem, ibin))//'TP', 'K       ', pver,    'A', trim(cnst_name(icnst)) // ' delta particle temperature', phys_decomp)
+              call addfld(trim(etndname(ielem, ibin))//'TP', 'K     ', pver, 'A', &
+                   trim(cnst_name(icnst)) // ' delta particle temperature', phys_decomp)
             end if
           end if
         end if
@@ -624,7 +635,8 @@ contains
       ! Per bin stats ..
       if (do_drydep) then
         do ibin = 1, NBIN
-          call addfld(trim(btndname(igroup, ibin))//'VD', 'm/s     ', 1,    'A', trim(cnst_name(icnst)) // ' dry deposition velocity', phys_decomp)
+          call addfld(trim(btndname(igroup, ibin))//'VD', 'm/s     ', 1,    'A', &
+               trim(sname) // ' dry deposition velocity', phys_decomp)
         end do
       end if
 
@@ -638,13 +650,19 @@ contains
       lq_carma(icnst) = .true.
       gtndname(igas) = trim(cnst_name(icnst)) // 'TC'
 
-      call addfld(gtndname(igas),     'kg/kg/s ', pver, 'A', trim(cnst_name(icnst)) // ' CARMA tendency', phys_decomp)
+      call addfld(gtndname(igas),     'kg/kg/s ', pver, 'A', &
+           trim(cnst_name(icnst)) // ' CARMA tendency', phys_decomp)
 
-      call addfld(trim(cnst_name(icnst))//'SI', 'ratio   ', pver, 'A', trim(cnst_name(icnst)) // ' saturation wrt ice', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'SL', 'ratio   ', pver, 'A', trim(cnst_name(icnst)) // ' saturation wrt liquid', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'EI', 'mol/mol ', pver, 'A', trim(cnst_name(icnst)) // ' equilibrium vmr wrt ice', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'EL', 'mol/mol ', pver, 'A', trim(cnst_name(icnst)) // ' equilibrium vmr wrt liquid', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'WT', '%       ', pver, 'A', trim(cnst_name(icnst)) // ' weight percent aerosol composition', phys_decomp)
+      call addfld(trim(cnst_name(icnst))//'SI', 'ratio   ', pver, 'A', &
+           trim(cnst_name(icnst)) // ' saturation wrt ice', phys_decomp)
+      call addfld(trim(cnst_name(icnst))//'SL', 'ratio   ', pver, 'A', &
+           trim(cnst_name(icnst)) // ' saturation wrt liquid', phys_decomp)
+      call addfld(trim(cnst_name(icnst))//'EI', 'mol/mol ', pver, 'A', &
+           trim(cnst_name(icnst)) // ' equilibrium vmr wrt ice', phys_decomp)
+      call addfld(trim(cnst_name(icnst))//'EL', 'mol/mol ', pver, 'A', &
+           trim(cnst_name(icnst)) // ' equilibrium vmr wrt liquid', phys_decomp)
+      call addfld(trim(cnst_name(icnst))//'WT', '%       ', pver, 'A', &
+           trim(cnst_name(icnst)) // ' weight percent aerosol composition', phys_decomp)
       
       call add_default(trim(cnst_name(icnst))//'SI', 1, ' ')
       call add_default(trim(cnst_name(icnst))//'SL', 1, ' ')
@@ -674,6 +692,8 @@ contains
       ! if it will be used. The initial condition file is only opened on an initial run.
       if (is_first_step()) then      
         call carma_getT(carma_t_ref)
+        if (carma%f_igash2o /= 0)    call carma_getH2O(carma_h2o_ref)
+        if (carma%f_igash2So4 /= 0)  call carma_getH2SO4(carma_h2so4_ref)
       end if
 
       if (masterproc) then
@@ -708,7 +728,8 @@ contains
           
           ! Does the number of levels match?
           if (nlev /= pver) then
-            call endrun("carma_init::ERROR - Incompatible number of levels in the CARMA reference temperature file ... " // trim(locfn))
+            call endrun("carma_init::ERROR - Incompatible number of levels &
+                 &in the CARMA reference temperature file ... " // trim(locfn))
           end if
   
           ! Get variable ID for reference temperature
@@ -716,6 +737,22 @@ contains
   
           ! Read in the temperature data.
           call wrap_get_var_realx(ncid, vid_T, carma_T_ref)
+
+          if (carma%f_igash2o /= 0) then
+            ! Get variable ID for reference temperature
+            call wrap_inq_varid(ncid, 'Q', vid_T)
+  
+            ! Read in the temperature data.
+            call wrap_get_var_realx(ncid, vid_T, carma_h2o_ref)
+          end if
+
+          if (carma%f_igash2so4 /= 0) then
+            ! Get variable ID for reference temperature
+            call wrap_inq_varid(ncid, 'H2SO4', vid_T)
+  
+            ! Read in the temperature data.
+            call wrap_get_var_realx(ncid, vid_T, carma_h2so4_ref)
+          end if
           
           ! Close the file
           call wrap_close(ncid)
@@ -727,8 +764,8 @@ contains
           if (do_print) write(LUNOPRT,*) 'Creating CARMA reference temperature file ... ', trim(locfn)
     
           ! Save the average into a file to be used for restarts.
-          call CARMA_CreateRefTFile(carma, locfn, pref_mid(:) / 100._r8, carma_t_ref(:), rc)
-          
+          call CARMA_CreateRefTFile(carma, locfn, pref_mid(:) / 100._r8, &
+               carma_t_ref(:), rc, refh2o=carma_h2o_ref(:), refh2so4=carma_h2so4_ref(:))
         else
           
           ! The file must already exist for a restart run.
@@ -776,7 +813,9 @@ contains
     integer           :: LUNOPRT      ! logical unit number for output
     logical           :: do_print     ! do print output?
             
-    2 format(' carma_final: overall substepping statistics',/,'    max nsubstep=',1F9.0,/,'    avg nsubstep=',1F9.2,/,'    max nretry=',1F9.0,/,'    avg nretry=',1F10.4)
+    2 format(' carma_final: overall substepping statistics',/,&
+           '    max nsubstep=',1F9.0,/,'    avg nsubstep=',1F9.2,/,&
+           '    max nretry=',1F9.0,/,'    avg nretry=',1F10.4)
 
     ! Initialize the return code.
     rc = 0
@@ -968,7 +1007,8 @@ contains
     logical               :: is_cloud                               ! is the group a cloud?
     logical               :: is_ice                                 ! is the group ice?
     integer               :: ienconc
-    logical               :: do_drydep                              ! is dry depostion enabled for group?
+    logical               :: grp_do_drydep                          ! is dry depostion enabled for group?
+    logical               :: do_drydep                              ! is dry depostion enabled?
     logical               :: do_fixedinit                           ! do initialization from reference atm?
     logical               :: do_detrain                             ! do convective detrainment?
     integer               :: iwvl
@@ -1077,7 +1117,9 @@ contains
                          pref_mid(:), &
                          pref_edge(:), &
                          carma_t_ref(:), &
-                         rc)
+                         rc, &
+                         qh2o=carma_h2o_ref, &
+                         qh2so4=carma_h2so4_ref)
       if (rc < 0) call endrun('carma_timestep_tend::CARMASTATE_CreateFromReference failed.')
     end if
 
@@ -1309,7 +1351,10 @@ contains
     
     
       ! Advance the microphysics one timestep.
-      call CARMASTATE_Step(cstate, rc, cldfrc=cldfrc, rhcrit=rhcrit, lndfv=lndfv, ocnfv=ocnfv, icefv=icefv, lndram=lndram, ocnram=ocnram, iceram=iceram, lndfrac=cam_in%landfrac(icol), ocnfrac=cam_in%ocnfrac(icol), icefrac=cam_in%icefrac(icol))
+      call CARMASTATE_Step(cstate, rc, cldfrc=cldfrc, rhcrit=rhcrit, &
+           lndfv=lndfv, ocnfv=ocnfv, icefv=icefv, lndram=lndram, &
+           ocnram=ocnram, iceram=iceram, lndfrac=cam_in%landfrac(icol), &
+           ocnfrac=cam_in%ocnfrac(icol), icefrac=cam_in%icefrac(icol))
       if (rc < 0) call endrun('carma_timestep_tend::CARMA_Step failed.') 
             
 
@@ -1340,7 +1385,7 @@ contains
         if (rc < 0) call endrun('carma_timestep_tend::CARMAELEMENT_Get failed.')
         
         call CARMAGROUP_Get(carma, igroup, rc, cnsttype=cnsttype, r=r, rmass=rmass, maxbin=maxbin, &
-               is_cloud=is_cloud, is_ice=is_ice, do_drydep=do_drydep, rrat=rrat, arat=arat)
+               is_cloud=is_cloud, is_ice=is_ice, do_drydep=grp_do_drydep, rrat=rrat, arat=arat)
         if (rc < 0) call endrun('carma_timestep_tend::CARMAGROUP_Get failed.')
       
         ! Intialize the group totals
@@ -1375,7 +1420,7 @@ contains
               ! Update the consituent tendency.
               ptend%q(icol, :, icnst) = (newstate(:) - state_loc%q(icol, :, icnst)) / dt
               
-              if (do_drydep) then
+              if (grp_do_drydep) then
                 sbdiags(icol, ibin, ielem, SBDIAGS_DD) = dd / dt
                 sbdiags(icol, ibin, ielem, SBDIAGS_VD) = - vd / 100._r8
               end if
@@ -1880,11 +1925,11 @@ contains
             if (rc < 0) call endrun('carma_emission_tend::CARMA_EmitParticle failed.')
           
             ! Add any surface flux here.
-            cam_in%cflx(:ncol, icnst) = surfaceFlux
+            cam_in%cflx(:ncol, icnst) = surfaceFlux(:ncol)
             call outfld(trim(cnst_name(icnst))//'SF', cam_in%cflx(:ncol, icnst), ncol, lchnk)
             
             ! For emissions into the atmosphere, put the emission here.
-            ptend%q(:ncol, :pver, icnst) = tendency
+            ptend%q(:ncol, :pver, icnst) = tendency(:ncol, :pver)
             call outfld(trim(cnst_name(icnst))//'EM', ptend%q(:ncol, :, icnst), ncol, lchnk)
           end if
         enddo
@@ -1928,8 +1973,8 @@ contains
     ! local vars
     real(r8)                            :: rainmr(pcols,pver)     ! mixing ratio of rain within cloud volume
     real(r8)                            :: cldv(pcols,pver)       ! cloudy volume undergoing wet chem and scavenging
-    real(r8)                            :: cldvcu(pcols,pver)   ! Convective precipitation area at the top interface of current layer
-    real(r8)                            :: cldvst(pcols,pver)   ! Stratiform precipitation area at the top interface of current layer 
+    real(r8)                            :: cldvcu(pcols,pver)   ! Convective precipitation area, top interface of current layer
+    real(r8)                            :: cldvst(pcols,pver)   ! Stratiform precipitation area, top interface of current layer 
     integer                             :: ielem                  ! element index
     integer                             :: igroup                 ! group index
     integer                             :: ibin                   ! bin index
@@ -1960,7 +2005,7 @@ contains
     integer                             :: maxbin
 
     ! physics buffer 
-    integer itim, ifld
+    integer itim_old, ifld
     real(r8), pointer, dimension(:,:)   :: cldn                   ! cloud fraction
     real(r8), pointer, dimension(:,:)   :: cme
     real(r8), pointer, dimension(:,:)   :: prain
@@ -1992,9 +2037,9 @@ contains
     call get_rlat_all_p(lchnk, ncol, clat)
 
     ! Associate pointers with physics buffer fields
-    itim = pbuf_old_tim_idx()
+    itim_old = pbuf_old_tim_idx()
     
-    call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cldn, (/1,1,itim/),(/pcols,pver,1/))
+    call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cldn, (/1,1,itim_old/),(/pcols,pver,1/))
     call pbuf_get_field(pbuf, pbuf_get_index('QME'), cme )
     call pbuf_get_field(pbuf, pbuf_get_index('PRAIN'), prain )
     call pbuf_get_field(pbuf, pbuf_get_index('NEVAPR'), evapr )
@@ -2026,7 +2071,8 @@ contains
 
     call cnst_get_ind('CLDICE', ixcldice)
     call cnst_get_ind('CLDLIQ', ixcldliq)
-    totcond = state%q(:ncol,:,ixcldliq) + state%q(:ncol,:,ixcldice)
+    totcond(:ncol,:) = state%q(:ncol,:,ixcldliq) + &
+         state%q(:ncol,:,ixcldice)
 
     ! Iterate over each particle and calculate a tendency from wet
     ! scavenging for it.
@@ -2250,29 +2296,35 @@ contains
             call wrap_def_dim(fid, 'rh_idx',  nrh,  rhdim)
             call wrap_def_dim(fid, 'lw_band', nlwbands, lwdim)
             call wrap_def_dim(fid, 'sw_band', nswbands, swdim)
-            
+
+            write(LUNOPRT,*) "Defined rh_idx, lw_band, and sw_band dims."
+
             dimids(1) = rhdim
-            call wrap_def_var(fid, 'rh',  NF90_DOUBLE, 1, dimids, rhvar)
+            call wrap_def_var(fid, 'rh',  NF90_DOUBLE, 1, dimids(1:1), rhvar)
             
             dimids(1) = lwdim
-            call wrap_def_var(fid, 'lw_band', NF90_DOUBLE, 1, dimids, lwvar)
+            call wrap_def_var(fid, 'lw_band', NF90_DOUBLE, 1, dimids(1:1), lwvar)
             
             dimids(1) = swdim
-            call wrap_def_var(fid, 'sw_band', NF90_DOUBLE, 1, dimids, swvar)
+            call wrap_def_var(fid, 'sw_band', NF90_DOUBLE, 1, dimids(1:1), swvar)
+
+            write(LUNOPRT,*) "Defined rh_idx, lw_band, and sw_band vars."
             
             call wrap_put_att_text(fid, rhvar, 'units', 'fraction') 
             call wrap_put_att_text(fid, lwvar, 'units', 'm') 
             call wrap_put_att_text(fid, swvar, 'units', 'm') 
   
-            call wrap_put_att_text(fid, rhvar, 'long_name', 'relative humidity') 
-            call wrap_put_att_text(fid, lwvar, 'long_name', 'longwave bands') 
-            call wrap_put_att_text(fid, swvar, 'long_name', 'shortwave bands') 
+            call wrap_put_att_text(fid, rhvar, 'long_name', 'relative humidity')
+            call wrap_put_att_text(fid, lwvar, 'long_name', 'longwave bands')
+            call wrap_put_att_text(fid, swvar, 'long_name', 'shortwave bands')
             
             ! Define the variables: abs_lw, ext_sw, ssa_sw, asm_sw
             dimids(1) = rhdim
             dimids(2) = lwdim
             call wrap_def_var(fid, 'abs_lw', NF90_DOUBLE, 2, dimids, abs_lw_var)
-            
+
+            write(LUNOPRT,*) "Defined abs_lw."
+
             call wrap_put_att_text(fid, abs_lw_var, 'units', 'meter^2 kilogram^-1') 
             
             dimids(1) = rhdim
@@ -2281,19 +2333,25 @@ contains
             call wrap_def_var(fid, 'ssa_sw', NF90_DOUBLE, 2, dimids, ssa_sw_var)
             call wrap_def_var(fid, 'asm_sw', NF90_DOUBLE, 2, dimids, asm_sw_var)
             
+            write(LUNOPRT,*) "Defined ext_sw, ssa_sw, and asm_sw."
+
             call wrap_put_att_text(fid, ssa_sw_var, 'units', 'fraction') 
             call wrap_put_att_text(fid, ext_sw_var, 'units', 'meter^2 kilogram^-1') 
             call wrap_put_att_text(fid, asm_sw_var, 'units', '-') 
             
             ! Define the variables for the refractive indicies.
             dimids(1) = swdim
-            call wrap_def_var(fid, 'refindex_real_aer_sw', NF90_DOUBLE, 1, dimids, sw_r_refidx_var)
-            call wrap_def_var(fid, 'refindex_im_aer_sw',   NF90_DOUBLE, 1, dimids, sw_i_refidx_var)
+            call wrap_def_var(fid, 'refindex_real_aer_sw', NF90_DOUBLE, 1, dimids(1:1), sw_r_refidx_var)
+            call wrap_def_var(fid, 'refindex_im_aer_sw',   NF90_DOUBLE, 1, dimids(1:1), sw_i_refidx_var)
             
+            write(LUNOPRT,*) "Defined lw refindex."
+
             dimids(1) = lwdim
-            call wrap_def_var(fid, 'refindex_real_aer_lw', NF90_DOUBLE, 1, dimids, lw_r_refidx_var)
-            call wrap_def_var(fid, 'refindex_im_aer_lw',   NF90_DOUBLE, 1, dimids, lw_i_refidx_var)
+            call wrap_def_var(fid, 'refindex_real_aer_lw', NF90_DOUBLE, 1, dimids(1:1), lw_r_refidx_var)
+            call wrap_def_var(fid, 'refindex_im_aer_lw',   NF90_DOUBLE, 1, dimids(1:1), lw_i_refidx_var)
   
+            write(LUNOPRT,*) "Defined sw refindex."
+
             call wrap_put_att_text(fid, sw_r_refidx_var, 'units', '-') 
             call wrap_put_att_text(fid, sw_i_refidx_var, 'units', '-') 
             call wrap_put_att_text(fid, lw_r_refidx_var, 'units', '-') 
@@ -2308,23 +2366,29 @@ contains
             ! Define fields that define the aerosol properties.
             call wrap_def_dim(fid, 'opticsmethod_len',  32, omdim)
             dimids(1) = omdim
-            call wrap_def_var(fid, 'opticsmethod',  NF90_CHAR, 1, dimids, omvar)
+            call wrap_def_var(fid, 'opticsmethod',  NF90_CHAR, 1, dimids(1:1), omvar)
   
+            write(LUNOPRT,*) "Defined omdim."
+
             call wrap_def_dim(fid, 'namelength',  20, andim)
             dimids(1) = andim
-            call wrap_def_var(fid, 'aername',  NF90_CHAR, 1, dimids, anvar)
+            call wrap_def_var(fid, 'aername',  NF90_CHAR, 1, dimids(1:1), anvar)
   
+            write(LUNOPRT,*) "Defined aername."
+
             call wrap_def_dim(fid, 'name_len',  32, namedim)
             dimids(1) = namedim
-            call wrap_def_var(fid, 'name',  NF90_CHAR, 1, dimids, namevar)
+            call wrap_def_var(fid, 'name',  NF90_CHAR, 1, dimids(1:1), namevar)
   
-            call wrap_def_var(fid, 'density',            NF90_DOUBLE, 0, dimids, denvar)
-            call wrap_def_var(fid, 'sigma_logr',         NF90_DOUBLE, 0, dimids, slogvar)
-            call wrap_def_var(fid, 'dryrad',             NF90_DOUBLE, 0, dimids, dryrvar)
-            call wrap_def_var(fid, 'radmin_aer',         NF90_DOUBLE, 0, dimids, rminvar)
-            call wrap_def_var(fid, 'radmax_aer',         NF90_DOUBLE, 0, dimids, rmaxvar)
-            call wrap_def_var(fid, 'hygroscopicity',     NF90_DOUBLE, 0, dimids, hygrovar)
-            call wrap_def_var(fid, 'num_to_mass_ratio',  NF90_DOUBLE, 0, dimids, ntmvar)
+            write(LUNOPRT,*) "Defined name."
+
+            call wrap_def_var(fid, 'density',            NF90_DOUBLE, 0, dimids(1:0), denvar)
+            call wrap_def_var(fid, 'sigma_logr',         NF90_DOUBLE, 0, dimids(1:0), slogvar)
+            call wrap_def_var(fid, 'dryrad',             NF90_DOUBLE, 0, dimids(1:0), dryrvar)
+            call wrap_def_var(fid, 'radmin_aer',         NF90_DOUBLE, 0, dimids(1:0), rminvar)
+            call wrap_def_var(fid, 'radmax_aer',         NF90_DOUBLE, 0, dimids(1:0), rmaxvar)
+            call wrap_def_var(fid, 'hygroscopicity',     NF90_DOUBLE, 0, dimids(1:0), hygrovar)
+            call wrap_def_var(fid, 'num_to_mass_ratio',  NF90_DOUBLE, 0, dimids(1:0), ntmvar)
             
             call wrap_put_att_text(fid, denvar,   'units', 'kg m^-3') 
             call wrap_put_att_text(fid, slogvar,  'units', '-') 
@@ -2343,6 +2407,8 @@ contains
             call wrap_put_att_text(fid, ntmvar,   'long_name', 'ratio of number to mass of aerosol') 
             
   
+            write(LUNOPRT,*) "Defined all variables."
+
             ! End the defintion phase of the netcdf file.      
             call wrap_enddef(fid)
             
@@ -2398,20 +2464,29 @@ contains
               
               ! Calculate at each wavelength.
               do iwave = 1, NWAVE
+write(carma%f_LUNOPRT,*) "CARMA mie calc:  start  ", igroup, ibin, iwave, carma%f_wave(iwave), carma%f_group(igroup)%f_nmon(ibin)
+
         
                 ! Using Mie code, calculate the optical properties: extinction coefficient,
                 ! single scattering albedo and asymmetry factor.
                 ! Assume the particle is homogeneous (no core).
+                !
+                ! NOTE: nmon, df, rmon and falpha are only used for fractal particles.
                 call mie(carma, &
                          carma%f_group(igroup)%f_imiertn, &
                          rwet, &
                          carma%f_wave(iwave), &
+                         carma%f_group(igroup)%f_nmon(ibin), &
+                         carma%f_group(igroup)%f_df(ibin), &
+                         carma%f_group(igroup)%f_rmon, &
+                         carma%f_group(igroup)%f_falpha, &
                          carma%f_group(igroup)%f_refidx(iwave), &
                          Qext, &
                          Qsca, &
                          asym, &
                          rc)
                 if (rc < 0) call endrun('carma_CreateOpticsFile::mie failed.')
+write(carma%f_LUNOPRT,*) "CARMA mie calc:  done  ", Qext, Qsca, asym
     
               
                 ! Calculate  the shortwave and longwave properties?
@@ -2434,26 +2509,26 @@ contains
             end do
             
             ! Write out the longwave fields.
-            ret = nf90_get_var (fid, abs_lw_var, abs_lw(:nrh, :))
+            ret = nf90_put_var (fid, abs_lw_var, abs_lw(:nrh, :))
             if (ret/=NF90_NOERR) then
-               write(iulog,*)'CARMA_CreateOpticsFile: error reading varid =', abs_lw_var
+               write(iulog,*)'CARMA_CreateOpticsFile: error writing varid =', abs_lw_var
                call handle_error (ret)
             end if
             
             ! Write out the shortwave fields.
-            ret = nf90_get_var (fid, ext_sw_var, ext_sw(:nrh, :))
+            ret = nf90_put_var (fid, ext_sw_var, ext_sw(:nrh, :))
             if (ret/=NF90_NOERR) then
-               write(iulog,*)'CARMA_CreateOpticsFile: error reading varid =', ext_sw_var
+               write(iulog,*)'CARMA_CreateOpticsFile: error writing varid =', ext_sw_var
                call handle_error (ret)
             end if
-            ret = nf90_get_var (fid, ssa_sw_var, ssa_sw(:nrh, :))
+            ret = nf90_put_var (fid, ssa_sw_var, ssa_sw(:nrh, :))
             if (ret/=NF90_NOERR) then
-               write(iulog,*)'CARMA_CreateOpticsFile: error reading varid =', ssa_sw_var
+               write(iulog,*)'CARMA_CreateOpticsFile: error writing varid =', ssa_sw_var
                call handle_error (ret)
             end if
-            ret = nf90_get_var (fid, asm_sw_var, asm_sw(:nrh, :))
+            ret = nf90_put_var (fid, asm_sw_var, asm_sw(:nrh, :))
             if (ret/=NF90_NOERR) then
-               write(iulog,*)'CARMA_CreateOpticsFile: error reading varid =', asm_sw_var
+               write(iulog,*)'CARMA_CreateOpticsFile: error writing varid =', asm_sw_var
                call handle_error (ret)
             end if
             
@@ -2465,26 +2540,28 @@ contains
     end do
     
     return
-  end subroutine CARMA_CreateOpticsFile
+  end subroutine CARMA_CreateOpticsFile 
   
   
   !! This routine creates a file containing a reference temperature profile
   !! for use with fixed initialization.
-  subroutine CARMA_CreateRefTFile(carma, filepath, lev, reft, rc)
+  subroutine CARMA_CreateRefTFile(carma, filepath, lev, reft, rc, refh2o, refh2so4)
     use wrap_nf
     
     implicit none
 
-    type(carma_type), intent(inout)     :: carma         !! the carma object
-    character(len=*), intent(in)        :: filepath      !! the file path
-    real(kind=f), intent(in)            :: lev(pver)     !! pressure levels
-    real(kind=f), intent(in)            :: reft(pver)    !! reference temperature
-    integer, intent(out)                :: rc            !! return code, negative indicates failure
+    type(carma_type), intent(inout)     :: carma          !! the carma object
+    character(len=*), intent(in)        :: filepath       !! the file path
+    real(kind=f), intent(in)            :: lev(pver)      !! pressure levels
+    real(kind=f), intent(in)            :: reft(pver)     !! reference temperature
+    integer, intent(out)                :: rc             !! return code, negative indicates failure
+    real(kind=f), optional, intent(in)  :: refh2o(pver)   !! reference water vapor
+    real(kind=f), optional, intent(in)  :: refh2so4(pver) !! reference sulfuric acid
 
     ! Local variables
     integer                             :: fid
     integer                             :: levdim
-    integer                             :: levvar, tvar
+    integer                             :: levvar, tvar, h2ovar, h2so4var
     integer                             :: dimids(2)
     
     
@@ -2499,7 +2576,7 @@ contains
     call wrap_def_dim(fid, 'lev',  pver,  levdim)
             
     dimids(1) = levdim
-    call wrap_def_var(fid, 'lev',  NF90_DOUBLE, 1, dimids, levvar)
+    call wrap_def_var(fid, 'lev',  NF90_DOUBLE, 1, dimids(1:1), levvar)
 
     call wrap_put_att_text(fid, levvar, 'units', 'level') 
     call wrap_put_att_text(fid, levvar, 'long_name', 'hybrid level at midpoints (1000*(A+B))') 
@@ -2508,10 +2585,24 @@ contains
     call wrap_put_att_text(fid, levvar, 'formula_terms', 'a: hyam b: hybm p0: P0 ps: PS') 
             
     ! Define the variables: T
-    call wrap_def_var(fid, 'T', NF90_DOUBLE, 1, dimids, tvar)
+    call wrap_def_var(fid, 'T', NF90_DOUBLE, 1, dimids(1:1), tvar)
             
     call wrap_put_att_text(fid, tvar, 'units', 'K') 
-    call wrap_put_att_text(fid, tvar, 'long_name', 'Temperature') 
+    call wrap_put_att_text(fid, tvar, 'long_name', 'Temperature')
+    
+    if ((carma%f_igash2o /= 0) .and. present(refh2o)) then
+      call wrap_def_var(fid, 'Q', NF90_DOUBLE, 1, dimids(1:1), h2ovar)
+            
+      call wrap_put_att_text(fid, h2ovar, 'units', 'kg/kg') 
+      call wrap_put_att_text(fid, h2ovar, 'long_name', 'Specific Humidity')
+    end if
+
+    if ((carma%f_igash2so4 /= 0) .and. present(refh2so4)) then
+      call wrap_def_var(fid, 'H2SO4', NF90_DOUBLE, 1, dimids(1:1), h2so4var)
+            
+      call wrap_put_att_text(fid, h2so4var, 'units', 'kg/kg') 
+      call wrap_put_att_text(fid, h2so4var, 'long_name', 'H2SO4')
+    end if
   
     ! End the defintion phase of the netcdf file.      
     call wrap_enddef(fid)
@@ -2522,7 +2613,15 @@ contains
     
     ! Write out the variables.
     call wrap_put_var_realx(fid, tvar, reft)
-            
+
+    if ((carma%f_igash2o /= 0) .and. present(refh2o)) then
+      call wrap_put_var_realx(fid, h2ovar, refh2o(:))
+    end if
+
+    if ((carma%f_igash2so4 /= 0) .and. present(refh2so4)) then
+      call wrap_put_var_realx(fid, h2so4var, refh2so4(:))
+    end if
+    
     ! Close the file.
     call wrap_close(fid)
     

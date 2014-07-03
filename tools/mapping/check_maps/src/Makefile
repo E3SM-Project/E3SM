@@ -1,6 +1,6 @@
 #===============================================================================
 # $Id: Makefile 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
-# $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/check_maps/src/Makefile $
+# $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/check_maps/src/Makefile $
 # 
 # This is the makefile for the RegridWeightGen application in ESMF
 # Altered for use with CESM's gen_atm_ocn_maps.sh tool

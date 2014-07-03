@@ -43,7 +43,7 @@ CONTAINS
 
   end subroutine gws_init
 
-  subroutine gws_src_fnct(elem, tl, frontga, frontgf)
+  subroutine gws_src_fnct(elem, tl, frontgf, frontga)
     use derivative_mod, only  : derivinit
     use dimensions_mod, only  : npsq, nelemd
     use dof_mod, only         : UniquePoints
@@ -61,22 +61,22 @@ CONTAINS
     ! Local variables
     type (hybrid_t) :: hybrid
     integer :: nets, nete, ithr, ncols, ie
-    real(kind=real_kind), allocatable  ::  frontga_thr(:,:,:,:)
     real(kind=real_kind), allocatable  ::  frontgf_thr(:,:,:,:)
+    real(kind=real_kind), allocatable  ::  frontga_thr(:,:,:,:)
     
-    !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,frontgf_thr,frontga_thr)
+    !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
     ithr=omp_get_thread_num()
     nets=dom_mt(ithr)%start
     nete=dom_mt(ithr)%end
     hybrid = hybrid_create(par,ithr,NThreads)
     call derivinit(deriv(hybrid%ithr))
-    allocate(frontga_thr(np,np,nlev,nets:nete))
     allocate(frontgf_thr(np,np,nlev,nets:nete))
-    call compute_frontogenesis(frontga_thr,frontgf_thr,tl,elem,deriv(hybrid%ithr),hybrid,nets,nete)
+    allocate(frontga_thr(np,np,nlev,nets:nete))
+    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,elem,deriv(hybrid%ithr),hybrid,nets,nete)
     do ie=nets,nete
        ncols = elem(ie)%idxP%NumUniquePts
-       call UniquePoints(elem(ie)%idxP, nlev, frontga_thr(:,:,:,ie), frontga(1:ncols,:,ie))
        call UniquePoints(elem(ie)%idxP, nlev, frontgf_thr(:,:,:,ie), frontgf(1:ncols,:,ie))
+       call UniquePoints(elem(ie)%idxP, nlev, frontga_thr(:,:,:,ie), frontga(1:ncols,:,ie))
     end do
     deallocate(frontga_thr)
     deallocate(frontgf_thr)
@@ -84,7 +84,7 @@ CONTAINS
 
   end subroutine gws_src_fnct
   
-  subroutine compute_frontogenesis(frontga,frontgf,tl,elem,ederiv,hybrid,nets,nete)
+  subroutine compute_frontogenesis(frontgf,frontga,tl,elem,ederiv,hybrid,nets,nete)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! compute frontogenesis function F
   !   F =  -gradth dot C
@@ -110,8 +110,8 @@ CONTAINS
     type (derivative_t)  , intent(in) :: ederiv
     integer, intent(in) :: nets,nete
     integer, intent(in) :: tl ! timelevel to use
-    real(kind=real_kind), intent(out) ::  frontga(np,np,nlev,nets:nete)
     real(kind=real_kind), intent(out) ::  frontgf(np,np,nlev,nets:nete)
+    real(kind=real_kind), intent(out) ::  frontga(np,np,nlev,nets:nete)
   
     ! local
     integer :: k,kptr,i,j,ie,component

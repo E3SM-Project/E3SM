@@ -154,7 +154,7 @@ subroutine cldfrc_register
 
    call pbuf_add_field('SH_FRAC', 'physpkg', dtype_r8, (/pcols,pver/), sh_frac_idx) 
    call pbuf_add_field('DP_FRAC', 'physpkg', dtype_r8, (/pcols,pver/), dp_frac_idx) 
- 
+
 end subroutine cldfrc_register
 
 !================================================================================================
@@ -189,6 +189,7 @@ subroutine cldfrc_init
 
    ! Initialize cloud fraction run-time parameters
 
+   use cam_history,   only:  phys_decomp, addfld
    use dycore,        only:  dycore_is, get_resolution
    use chemistry,     only:  chem_is
    use phys_control,  only:  phys_getopts
@@ -238,6 +239,9 @@ subroutine cldfrc_init
       write(iulog,*)'cldfrc_init: model level nearest 700 mb is',k700,'which is',pref_mid(k700),'pascals'
    end if
 
+   call addfld ('SH_CLD   ', 'fraction', pver, 'A', 'Shallow convective cloud cover'                          ,phys_decomp)
+   call addfld ('DP_CLD   ', 'fraction', pver, 'A', 'Deep convective cloud cover'                             ,phys_decomp)
+
 end subroutine cldfrc_init
 
 !===============================================================================
@@ -264,6 +268,7 @@ subroutine cldfrc(lchnk   ,ncol    , pbuf,  &
     ! Author: Many. Last modified by Jim McCaa
     ! 
     !-----------------------------------------------------------------------
+    use cam_history,   only: outfld
     use physconst,     only: cappa, gravit, rair, tmelt
     use wv_saturation, only: qsat, qsat_water, svp_ice
     use phys_grid,     only: get_rlat_all_p, get_rlon_all_p
@@ -729,6 +734,9 @@ subroutine cldfrc(lchnk   ,ncol    , pbuf,  &
           cloud(i,k) = min(cloud(i,k)+concld(i,k), 1.0_r8)
        end do
     end do
+
+    call outfld( 'SH_CLD  ', shallowcu   , pcols, lchnk )
+    call outfld( 'DP_CLD  ', deepcu      , pcols, lchnk )
 
     !
     return

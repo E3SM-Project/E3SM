@@ -29,6 +29,7 @@ module chemistry
   public :: chem_init_restart
   public :: chem_readnl                    ! read chem namelist 
   public :: chem_reset_fluxes
+  public :: chem_emissions
 
   interface chem_write_restart
      module procedure chem_write_restart_bin
@@ -59,11 +60,15 @@ contains
 !================================================================================================
 
   subroutine chem_register
+    use aero_model, only : aero_model_register
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: register advected constituents for parameterized greenhouse gas chemistry
     ! 
     !-----------------------------------------------------------------------
+
+   ! for prescribed aerosols
+    call aero_model_register()
 
   end subroutine chem_register
 
@@ -117,9 +122,15 @@ contains
     ! 
     !-----------------------------------------------------------------------
     use physics_buffer, only : physics_buffer_desc
-    use cam_history,    only: addfld, add_default, phys_decomp
+    use cam_history,    only : addfld, add_default, phys_decomp
+    use aero_model,     only : aero_model_init
+
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+   ! for prescribed aerosols
+    call aero_model_init(pbuf2d)
+
   end subroutine chem_init
 
 !===============================================================================
@@ -211,5 +222,14 @@ contains
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
 
   end subroutine chem_reset_fluxes
+!================================================================================
+  subroutine chem_emissions( state, cam_in )
+    use camsrfexch,       only: cam_in_t     
 
+    ! Arguments:
+
+    type(physics_state),    intent(in)    :: state   ! Physics state variables
+    type(cam_in_t),         intent(inout) :: cam_in  ! import state
+
+  end subroutine chem_emissions
 end module chemistry

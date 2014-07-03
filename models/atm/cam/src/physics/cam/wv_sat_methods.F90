@@ -9,7 +9,7 @@ module wv_sat_methods
 ! Typical usage of this module:
 !
 ! Init:
-! call wv_sat_methods_init(r8, tmelt, h2otrip, tboil, errstring)
+! call wv_sat_methods_init(r8, <constants>, errstring)
 !
 ! Get scheme index from a name string:
 ! scheme_idx = wv_sat_get_scheme_idx(scheme_name)
@@ -66,7 +66,6 @@ public wv_sat_svp_trans
 
 ! pressure -> humidity conversion
 public wv_sat_svp_to_qsat
-public wv_sat_svp_to_qmmr
 
 ! Combined qsat operations
 public wv_sat_qsat_water
@@ -192,27 +191,6 @@ elemental function wv_sat_svp_to_qsat(es, p) result(qs)
   end if
 
 end function wv_sat_svp_to_qsat
-
-! Get saturation "mass mixing ratio".
-! It is almost always preferable to use saturation
-! specific humidity rather than this mixing ratio,
-! which blows up at low pressure.
-elemental function wv_sat_svp_to_qmmr(es, p) result(qmmr)
-
-  real(r8), intent(in) :: es  ! SVP
-  real(r8), intent(in) :: p   ! Current pressure.
-  real(r8) :: qmmr
-
-  ! When this function is used in regions of very low
-  ! pressure, we set it to "huge" rather than using
-  ! the small denominator.
-  if ( (p - es) < epsilon(1.0_r8)**2 ) then
-     qmmr = huge(1.0_r8)
-  else
-     qmmr = epsilo*es / (p - es)
-  end if
-
-end function wv_sat_svp_to_qmmr
 
 elemental subroutine wv_sat_qsat_water(t, p, es, qs, idx)
   !------------------------------------------------------------------!

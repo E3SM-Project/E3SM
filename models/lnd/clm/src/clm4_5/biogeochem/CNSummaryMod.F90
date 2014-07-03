@@ -1,654 +1,367 @@
 module CNSummaryMod
 
-#ifdef CN
-
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: CNSummaryMod
-!
-! !DESCRIPTION:
-! Module for carbon and nitrogen summary calculations
-!
-! !USES:
-    use shr_kind_mod, only: r8 => shr_kind_r8
-    use clm_varcon, only: dzsoi_decomp, zisoi
-    use pftvarcon   , only: npcropmin
-    use surfrdMod   , only: crop_prog
-    use abortutils  , only: endrun
-    implicit none
-    save
-    private
-! !PUBLIC MEMBER FUNCTIONS:
-    public :: CSummary
-    public :: NSummary
-!
-! !REVISION HISTORY:
-! 4/23/2004: Created by Peter Thornton
-! F. Li and S. Levis (11/06/12)
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Module for carbon and nitrogen summary calculations
+  !
+  ! !USES:
+  use shr_kind_mod , only: r8 => shr_kind_r8
+  use clm_varcon   , only: dzsoi_decomp, zisoi
+  use pftvarcon    , only: npcropmin
+  use clm_varpar   , only: crop_prog
+  use abortutils   , only: endrun
+  use decompMod    , only: bounds_type
+  use shr_log_mod  , only: errMsg => shr_log_errMsg
+  implicit none
+  save
+  private
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public :: CSummary
+  public :: NSummary
+  !-----------------------------------------------------------------------
 
 contains
 
+  !-----------------------------------------------------------------------
+  subroutine CSummary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
+  !
+  ! !DESCRIPTION:
+  ! On the radiation time step, perform pft and column-level carbon
+  ! summary calculations
+  !
+  ! !USES:
+  use clmtype
+  use pft2colMod, only: p2c
+  use clm_varctl, only: iulog, use_cndv
+  use shr_sys_mod, only: shr_sys_flush
+  use clm_varpar  , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
+  use CNNDynamicsMod, only: nfix_timeconst
+  use clm_time_manager    , only : get_step_size
+  use clm_varcon      , only: secspday, spval
+  !
+  ! !ARGUMENTS:
+  implicit none
+  type(bounds_type), intent(in) :: bounds  ! bounds
+  integer, intent(in) :: num_soilc       ! number of soil columns in filter
+  integer, intent(in) :: filter_soilc(:) ! filter for soil columns
+  integer, intent(in) :: num_soilp       ! number of soil pfts in filter
+  integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
+  character(len=*), intent(in) :: isotope         ! 'bulk', 'c13' or 'c14'
+  !
+  ! !LOCAL VARIABLES:
+  real(r8), pointer :: woodc(:)               ! wood C (gC/m2)
+  real(r8), pointer :: tempsum_npp(:)         ! temporary annual sum of NPP (gC/m2/yr)
+  real(r8), pointer :: tempsum_litfall(:)    ! temporary annual sum of litfall (gC/m2/yr)
+  real(r8), pointer :: col_lag_npp(:)        ! (gC/m2/s) lagged net primary production
+  real(r8), pointer :: som_c_leached(:)                           ! total SOM C loss from vertical transport (gC/m^2/s)
+  real(r8), pointer :: decomp_cpools_leached(:,:)                 ! C loss from vertical transport from each decomposing C pool (gC/m^2/s)
+  real(r8), pointer :: decomp_cpools_transport_tendency(:,:,:)    ! C tendency due to vertical transport in decomposing C pools (gC/m^3/s)
+  real(r8) :: nfixlags, dtime                ! temp variables for making lagged npp
+  integer :: c,p,j,k,l        ! indices
+  integer :: fp,fc        ! lake filter indices
+  real(r8) :: maxdepth    ! depth to integrate soil variables
+  type(pft_cflux_type)    , pointer :: pcisof
+  type(pft_cstate_type)   , pointer :: pcisos
+  type(column_cflux_type) , pointer :: ccisof
+  type(column_cstate_type), pointer :: ccisos
+  type(pft_cflux_type)    , pointer :: pcisof_a
+  type(pft_cstate_type)   , pointer :: pcisos_a
 !-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: CSummary
-!
-! !INTERFACE:
-subroutine CSummary(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
-!
-! !DESCRIPTION:
-! On the radiation time step, perform pft and column-level carbon
-! summary calculations
-!
-! !USES:
-   use clmtype
-   use pft2colMod, only: p2c
-   use clm_varctl, only: iulog
-   use shr_sys_mod, only: shr_sys_flush
-   use clm_varpar  , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
-   use CNNDynamicsMod, only: nfix_timeconst
-   use clm_time_manager    , only : get_step_size
-   use clm_varcon      , only: secspday, spval
-!
-! !ARGUMENTS:
-   implicit none
-   integer, intent(in) :: num_soilc       ! number of soil columns in filter
-   integer, intent(in) :: filter_soilc(:) ! filter for soil columns
-   integer, intent(in) :: num_soilp       ! number of soil pfts in filter
-   integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
-   character(len=*), intent(in) :: isotope         ! 'bulk', 'c13' or 'c14'
-!
-! !CALLED FROM:
-! subroutine CNEcosystemDyn
-!
-! !REVISION HISTORY:
-! 12/9/03: Created by Peter Thornton
-! 11/6/12: revised by F. Li and S. Levis
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in scalars
-   integer , pointer :: ivt(:)                ! pft vegetation type
-   real(r8), pointer :: col_fire_closs(:)     ! (gC/m2/s) total column-level fire C loss
-   real(r8), pointer :: er(:)                 ! (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-   real(r8), pointer :: hr(:)                 ! (gC/m2/s) total heterotrophic respiration
-   real(r8), pointer :: litfire(:)            ! (gC/m2/s) litter fire losses
-   real(r8), pointer :: lithr(:)              ! (gC/m2/s) litter heterotrophic respiration 
-   real(r8), pointer :: cwdc(:)               ! (gC/m2) coarse woody debris C
-   real(r8), pointer :: col_ctrunc(:)         ! (gC/m2) column-level sink for C truncation
-   real(r8), pointer :: decomp_cascade_hr_vr(:,:,:)       
-   real(r8), pointer :: decomp_cascade_hr(:,:)
-   real(r8), pointer :: hr_vr(:,:)       ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-   real(r8), pointer :: m_decomp_cpools_to_fire_vr(:,:,:)
-   real(r8), pointer :: m_decomp_cpools_to_fire(:,:)
-   
-   real(r8), pointer :: decomp_cpools(:,:)             ! (gC/m2)  decomposing (litter, cwd, soil) c pools
-   real(r8), pointer :: decomp_cpools_1m(:,:)          ! (gC/m2)  decomposing (litter, cwd, soil) c pools to 1 meter
-   real(r8), pointer :: decomp_cpools_vr(:,:,:)        ! (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-   integer, pointer :: altmax_indx(:)                  ! maximum annual depth of thaw
-   integer, pointer :: altmax_lastyear_indx(:)         ! prior year maximum annual depth of thaw
-   real(r8), pointer :: col_ctrunc_vr(:,:)         ! (gC/m3) column-level sink for C truncation
-   integer,  pointer :: cascade_donor_pool(:)             ! which pool is C taken from for a given decomposition step
-   logical, pointer :: is_litter(:)                       ! TRUE => pool is a litter pool
-   logical, pointer :: is_soil(:)                         ! TRUE => pool is a soil pool
-   logical, pointer :: is_cwd(:)                          ! TRUE => pool is a cwd pool
-   real(r8), pointer :: nee(:)                ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, land-use, harvest, and hrv_xsmrpool flux, positive for source
-   real(r8), pointer :: nep(:)                ! (gC/m2/s) net ecosystem production, excludes fire, land-use, and harvest flux, positive for sink
-   real(r8), pointer :: nbp(:)                ! (gC/m2/s) net biome production, includes fire, land-use, and harvest flux, positive for sink
-   real(r8), pointer :: col_ar(:)             ! (gC/m2/s) autotrophic respiration (MR + GR)
-   real(r8), pointer :: col_gpp(:)            ! GPP flux before downregulation (gC/m2/s)
-   real(r8), pointer :: col_npp(:)            ! (gC/m2/s) net primary production
-   real(r8), pointer :: col_lag_npp(:)        ! (gC/m2/s) lagged net primary production
-   real(r8), pointer :: col_pft_fire_closs(:) ! (gC/m2/s) total pft-level fire C loss 
-   real(r8), pointer :: col_litfall(:)        ! (gC/m2/s) total pft-level litterfall C loss 
-   real(r8), pointer :: col_rr(:)             ! (gC/m2/s) root respiration (fine root MR + total root GR)
-   real(r8), pointer :: col_vegfire(:)        ! (gC/m2/s) pft-level fire loss (obsolete, mark for removal)
-   real(r8), pointer :: col_wood_harvestc(:)
-   real(r8), pointer :: somfire(:)            ! (gC/m2/s) soil organic matter fire losses
-   real(r8), pointer :: somhr(:)              ! (gC/m2/s) soil organic matter heterotrophic respiration
-   real(r8), pointer :: sr(:)                 ! (gC/m2/s) total soil respiration (HR + root resp)
-   real(r8), pointer :: totfire(:)            ! (gC/m2/s) total ecosystem fire losses
-   real(r8), pointer :: col_totpftc(:)        ! (gC/m2) total pft-level carbon, including cpool
-   real(r8), pointer :: col_totvegc(:)        ! (gC/m2) total vegetation carbon, excluding cpool
-   real(r8), pointer :: totcolc(:)            ! (gC/m2) total column carbon, incl veg and cpool
-   real(r8), pointer :: totecosysc(:)         ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
-   real(r8), pointer :: totlitc(:)            ! (gC/m2) total litter carbon
-   real(r8), pointer :: totlitc_1m(:)         ! (gC/m2) total litter carbon to 1 meter
-   real(r8), pointer :: totsomc(:)            ! (gC/m2) total soil organic matter carbon
-   real(r8), pointer :: totsomc_1m(:)         ! (gC/m2) total soil organic matter carbon to 1 meter
-   real(r8), pointer :: agnpp(:)              ! (gC/m2/s) aboveground NPP
-   real(r8), pointer :: ar(:)                 ! (gC/m2/s) autotrophic respiration (MR + GR)
-   real(r8), pointer :: bgnpp(:)                  ! (gC/m2/s) belowground NPP
-   real(r8), pointer :: xsmrpool_to_atm(:)        ! excess MR pool harvest mortality (gC/m2/s)
-   real(r8), pointer :: cpool_grain_gr(:)         ! grain growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_grain_storage_gr(:) ! grain growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_to_grainc(:)        ! allocation to grain C storage (gC/m2/s)
-   real(r8), pointer :: grainc_xfer_to_grainc(:)  ! grain C growth from storage (gC/m2/s)
-   real(r8), pointer :: transfer_grain_gr(:)      ! grain growth respiration from storage (gC/m2/s)
-   real(r8), pointer :: grainc_to_food(:)         ! grain C to food (gC/m2/s)
-   real(r8), pointer :: livestemc_to_litter(:)    ! live stem C litterfall (gC/m2/s)
-   real(r8), pointer :: grainc(:)                 ! (gC/m2) grain C
-   real(r8), pointer :: grainc_storage(:)         ! (gC/m2) grain C storage
-   real(r8), pointer :: grainc_xfer(:)            ! (gC/m2) grain C transfer
-   real(r8), pointer :: cpool_deadcroot_gr(:)     ! dead coarse root growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_deadcroot_storage_gr(:) ! dead coarse root growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_deadstem_gr(:)          ! dead stem growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_deadstem_storage_gr(:)  ! dead stem growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_froot_gr(:)             ! fine root growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_froot_storage_gr(:)     ! fine root  growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_leaf_gr(:)              ! leaf growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_leaf_storage_gr(:)      ! leaf growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_livecroot_gr(:)         ! live coarse root growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_livecroot_storage_gr(:) ! live coarse root growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_livestem_gr(:)          ! live stem growth respiration (gC/m2/s)
-   real(r8), pointer :: cpool_livestem_storage_gr(:)  ! live stem growth respiration to storage (gC/m2/s)
-   real(r8), pointer :: cpool_to_deadcrootc(:)        ! allocation to dead coarse root C (gC/m2/s)
-   real(r8), pointer :: cpool_to_deadstemc(:)         ! allocation to dead stem C (gC/m2/s)
-   real(r8), pointer :: cpool_to_frootc(:)            ! allocation to fine root C (gC/m2/s)
-   real(r8), pointer :: cpool_to_leafc(:)             ! allocation to leaf C (gC/m2/s)
-   real(r8), pointer :: cpool_to_livecrootc(:)        ! allocation to live coarse root C (gC/m2/s)
-   real(r8), pointer :: cpool_to_livestemc(:)         ! allocation to live stem C (gC/m2/s)
-   real(r8), pointer :: current_gr(:)                 ! (gC/m2/s) growth resp for new growth displayed in this timestep
-   real(r8), pointer :: deadcrootc_xfer_to_deadcrootc(:)
-   real(r8), pointer :: deadstemc_xfer_to_deadstemc(:) 
-   real(r8), pointer :: frootc_to_litter(:)
-   real(r8), pointer :: frootc_xfer_to_frootc(:)       
-   real(r8), pointer :: froot_mr(:)     
-   real(r8), pointer :: grain_mr(:)
-   real(r8), pointer :: froot_curmr(:)     
-   real(r8), pointer :: froot_xsmr(:)     
-   real(r8), pointer :: gpp(:)                !GPP flux before downregulation (gC/m2/s)
-   real(r8), pointer :: gr(:)                 ! (gC/m2/s) total growth respiration
-   real(r8), pointer :: leafc_to_litter(:)
-   real(r8), pointer :: leafc_xfer_to_leafc(:)         
-   real(r8), pointer :: leaf_mr(:)
-   real(r8), pointer :: leaf_curmr(:)
-   real(r8), pointer :: leaf_xsmr(:)
-   real(r8), pointer :: litfall(:)            ! (gC/m2/s) litterfall (leaves and fine roots)
-   real(r8), pointer :: livecrootc_xfer_to_livecrootc(:)
-   real(r8), pointer :: livecroot_mr(:)
-   real(r8), pointer :: livecroot_curmr(:)
-   real(r8), pointer :: livecroot_xsmr(:)
-   real(r8), pointer :: livestemc_xfer_to_livestemc(:) 
-   real(r8), pointer :: livestem_mr(:)  
-   real(r8), pointer :: livestem_curmr(:)  
-   real(r8), pointer :: livestem_xsmr(:)  
 
-! fire variables changed by F. Li and S. Levis
-   real(r8), pointer :: m_leafc_to_fire(:)             
-   real(r8), pointer :: m_leafc_storage_to_fire(:)                
-   real(r8), pointer :: m_leafc_xfer_to_fire(:)        
-   real(r8), pointer :: m_livestemc_to_fire(:)         
-   real(r8), pointer :: m_livestemc_storage_to_fire(:)       
-   real(r8), pointer :: m_livestemc_xfer_to_fire(:)    
-   real(r8), pointer :: m_deadstemc_to_fire(:)         
-   real(r8), pointer :: m_deadstemc_storage_to_fire(:)          
-   real(r8), pointer :: m_deadstemc_xfer_to_fire(:)    
-   real(r8), pointer :: m_frootc_to_fire(:)            
-   real(r8), pointer :: m_frootc_storage_to_fire(:)    
-   real(r8), pointer :: m_frootc_xfer_to_fire(:)       
-   real(r8), pointer :: m_livecrootc_to_fire(:)        
-   real(r8), pointer :: m_livecrootc_storage_to_fire(:)     
-   real(r8), pointer :: m_livecrootc_xfer_to_fire(:)   
-   real(r8), pointer :: m_deadcrootc_to_fire(:)        
-   real(r8), pointer :: m_deadcrootc_storage_to_fire(:)
-   real(r8), pointer :: m_deadcrootc_xfer_to_fire(:)  
-   real(r8), pointer :: m_gresp_storage_to_fire(:)     
-   real(r8), pointer :: m_gresp_xfer_to_fire(:)       
-   real(r8), pointer :: m_leafc_to_litter_fire(:)   
-   real(r8), pointer :: m_leafc_storage_to_litter_fire(:)                
-   real(r8), pointer :: m_leafc_xfer_to_litter_fire(:)  
-   real(r8), pointer :: m_livestemc_to_litter_fire(:)    
-   real(r8), pointer :: m_livestemc_storage_to_litter_fire(:)        
-   real(r8), pointer :: m_livestemc_xfer_to_litter_fire(:) 
-   real(r8), pointer :: m_livestemc_to_deadstemc_fire(:)    
-   real(r8), pointer :: m_deadstemc_to_litter_fire(:) 
-   real(r8), pointer :: m_deadstemc_storage_to_litter_fire(:)           
-   real(r8), pointer :: m_deadstemc_xfer_to_litter_fire(:) 
-   real(r8), pointer :: m_frootc_to_litter_fire(:)        
-   real(r8), pointer :: m_frootc_storage_to_litter_fire(:)  
-   real(r8), pointer :: m_frootc_xfer_to_litter_fire(:)
-   real(r8), pointer :: m_livecrootc_to_litter_fire(:)    
-   real(r8), pointer :: m_livecrootc_storage_to_litter_fire(:)      
-   real(r8), pointer :: m_livecrootc_xfer_to_litter_fire(:)
-   real(r8), pointer :: m_livecrootc_to_deadcrootc_fire(:)    
-   real(r8), pointer :: m_deadcrootc_to_litter_fire(:)        
-   real(r8), pointer :: m_deadcrootc_storage_to_litter_fire(:)  
-   real(r8), pointer :: m_deadcrootc_xfer_to_litter_fire(:)
-   real(r8), pointer :: m_gresp_storage_to_litter_fire(:)      
-   real(r8), pointer :: m_gresp_xfer_to_litter_fire(:)    
-
-   real(r8), pointer :: m_deadcrootc_storage_to_litter(:)
-   real(r8), pointer :: m_deadcrootc_to_litter(:)
-   real(r8), pointer :: m_deadcrootc_xfer_to_litter(:)
-   real(r8), pointer :: m_deadstemc_storage_to_litter(:)
-   real(r8), pointer :: m_deadstemc_to_litter(:)
-   real(r8), pointer :: m_deadstemc_xfer_to_litter(:)
-   real(r8), pointer :: m_frootc_storage_to_litter(:)
-   real(r8), pointer :: m_frootc_to_litter(:)
-   real(r8), pointer :: m_frootc_xfer_to_litter(:)
-   real(r8), pointer :: m_gresp_storage_to_litter(:)
-   real(r8), pointer :: m_gresp_xfer_to_litter(:)
-   real(r8), pointer :: m_leafc_storage_to_litter(:)
-   real(r8), pointer :: m_leafc_to_litter(:)
-   real(r8), pointer :: m_leafc_xfer_to_litter(:)
-   real(r8), pointer :: m_livecrootc_storage_to_litter(:)
-   real(r8), pointer :: m_livecrootc_to_litter(:)
-   real(r8), pointer :: m_livecrootc_xfer_to_litter(:)
-   real(r8), pointer :: m_livestemc_storage_to_litter(:)
-   real(r8), pointer :: m_livestemc_to_litter(:)
-   real(r8), pointer :: m_livestemc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_leafc_to_litter(:)              
-   real(r8), pointer :: hrv_leafc_storage_to_litter(:)      
-   real(r8), pointer :: hrv_leafc_xfer_to_litter(:)         
-   real(r8), pointer :: hrv_frootc_to_litter(:)             
-   real(r8), pointer :: hrv_frootc_storage_to_litter(:)     
-   real(r8), pointer :: hrv_frootc_xfer_to_litter(:)        
-   real(r8), pointer :: hrv_livestemc_to_litter(:)          
-   real(r8), pointer :: hrv_livestemc_storage_to_litter(:)  
-   real(r8), pointer :: hrv_livestemc_xfer_to_litter(:)     
-   real(r8), pointer :: hrv_deadstemc_to_prod10c(:)         
-   real(r8), pointer :: hrv_deadstemc_to_prod100c(:)        
-   real(r8), pointer :: hrv_deadstemc_storage_to_litter(:)  
-   real(r8), pointer :: hrv_deadstemc_xfer_to_litter(:)     
-   real(r8), pointer :: hrv_livecrootc_to_litter(:)         
-   real(r8), pointer :: hrv_livecrootc_storage_to_litter(:) 
-   real(r8), pointer :: hrv_livecrootc_xfer_to_litter(:)    
-   real(r8), pointer :: hrv_deadcrootc_to_litter(:)         
-   real(r8), pointer :: hrv_deadcrootc_storage_to_litter(:) 
-   real(r8), pointer :: hrv_deadcrootc_xfer_to_litter(:)    
-   real(r8), pointer :: hrv_gresp_storage_to_litter(:)      
-   real(r8), pointer :: hrv_gresp_xfer_to_litter(:)         
-   real(r8), pointer :: hrv_xsmrpool_to_atm(:)              
-   real(r8), pointer :: col_hrv_xsmrpool_to_atm(:)              
-   real(r8), pointer :: mr(:)                 ! (gC/m2/s) maintenance respiration
-   real(r8), pointer :: npp(:)                ! (gC/m2/s) net primary production
-   real(r8), pointer :: pft_fire_closs(:)     ! (gC/m2/s) total pft-level fire C loss 
-   real(r8), pointer :: psnshade_to_cpool(:)
-   real(r8), pointer :: psnsun_to_cpool(:) 
-   real(r8), pointer :: rr(:)                 ! (gC/m2/s) root respiration (fine root MR + total root GR)
-   real(r8), pointer :: storage_gr(:)         ! (gC/m2/s) growth resp for growth sent to storage for later display
-   real(r8), pointer :: transfer_deadcroot_gr(:)
-   real(r8), pointer :: transfer_deadstem_gr(:)      
-   real(r8), pointer :: transfer_froot_gr(:)         
-   real(r8), pointer :: transfer_gr(:)        ! (gC/m2/s) growth resp for transfer growth displayed in this timestep
-   real(r8), pointer :: transfer_leaf_gr(:)          
-   real(r8), pointer :: transfer_livecroot_gr(:)     
-   real(r8), pointer :: transfer_livestem_gr(:)      
-   real(r8), pointer :: wood_harvestc(:)      ! (gC/m2/s) pft-level wood harvest (to product pools)
-   real(r8), pointer :: vegfire(:)            ! (gC/m2/s) pft-level fire loss (obsolete, mark for removal)
-   real(r8), pointer :: cpool(:)              ! (gC/m2) temporary photosynthate C pool
-   real(r8), pointer :: xsmrpool(:)           ! (gC/m2) temporary photosynthate C pool
-   real(r8), pointer :: pft_ctrunc(:)         ! (gC/m2) pft-level sink for C truncation
-   real(r8), pointer :: deadcrootc(:)         ! (gC/m2) dead coarse root C
-   real(r8), pointer :: deadcrootc_storage(:) ! (gC/m2) dead coarse root C storage
-   real(r8), pointer :: deadcrootc_xfer(:)    ! (gC/m2) dead coarse root C transfer
-   real(r8), pointer :: deadstemc(:)          ! (gC/m2) dead stem C
-   real(r8), pointer :: deadstemc_storage(:)  ! (gC/m2) dead stem C storage
-   real(r8), pointer :: deadstemc_xfer(:)     ! (gC/m2) dead stem C transfer
-   real(r8), pointer :: dispvegc(:)           ! (gC/m2) displayed veg carbon, excluding storage and cpool
-   real(r8), pointer :: frootc(:)             ! (gC/m2) fine root C
-   real(r8), pointer :: frootc_storage(:)     ! (gC/m2) fine root C storage
-   real(r8), pointer :: frootc_xfer(:)        ! (gC/m2) fine root C transfer
-   real(r8), pointer :: gresp_storage(:)      ! (gC/m2) growth respiration storage
-   real(r8), pointer :: gresp_xfer(:)         ! (gC/m2) growth respiration transfer
-   real(r8), pointer :: leafc(:)              ! (gC/m2) leaf C
-   real(r8), pointer :: leafc_storage(:)      ! (gC/m2) leaf C storage
-   real(r8), pointer :: leafc_xfer(:)         ! (gC/m2) leaf C transfer
-   real(r8), pointer :: livecrootc(:)         ! (gC/m2) live coarse root C
-   real(r8), pointer :: livecrootc_storage(:) ! (gC/m2) live coarse root C storage
-   real(r8), pointer :: livecrootc_xfer(:)    ! (gC/m2) live coarse root C transfer
-   real(r8), pointer :: livestemc(:)          ! (gC/m2) live stem C
-   real(r8), pointer :: livestemc_storage(:)  ! (gC/m2) live stem C storage
-   real(r8), pointer :: livestemc_xfer(:)     ! (gC/m2) live stem C transfer
-   real(r8), pointer :: storvegc(:)           ! (gC/m2) stored vegetation carbon, excluding cpool
-   real(r8), pointer :: totpftc(:)            ! (gC/m2) total pft-level carbon, including cpool
-   real(r8), pointer :: totvegc(:)            ! (gC/m2) total vegetation carbon, excluding cpool
-   real(r8), pointer :: tempsum_npp(:)        ! temporary annual sum of NPP (gC/m2/yr)
-#if (defined CNDV)
-   real(r8), pointer :: tempsum_litfall(:)      !temporary annual sum of litfall (gC/m2/yr)
-#endif
-   ! for landcover change
-   real(r8), pointer :: landuseflux(:)        ! (gC/m2/s) dwt_closs+product_closs
-   real(r8), pointer :: landuptake(:)         ! (gC/m2/s) nee-landuseflux
-   real(r8), pointer :: dwt_closs(:)          ! (gC/m2/s) total carbon loss from land cover conversion
-   real(r8), pointer :: dwt_conv_cflux(:)     ! (gC/m2/s) conversion C flux (immediate loss to atm)
-   real(r8), pointer :: prod10c_loss(:)       ! (gC/m2/s) loss from 10-yr wood product pool
-   real(r8), pointer :: prod100c_loss(:)      ! (gC/m2/s) loss from 100-yr wood product pool
-   real(r8), pointer :: product_closs(:)      ! (gC/m2/s) total wood product carbon loss
-   real(r8), pointer :: seedc(:)              ! (gC/m2) column-level pool for seeding new PFTs
-   real(r8), pointer :: prod10c(:)            ! (gC/m2) wood product C pool, 10-year lifespan
-   real(r8), pointer :: prod100c(:)           ! (gC/m2) wood product C pool, 100-year lifespan
-   real(r8), pointer :: totprodc(:)           ! (gC/m2) total wood product C
-
-   real(r8), pointer :: frootc_alloc(:)       ! fine root C allocation (gC/m2/s)
-   real(r8), pointer :: frootc_loss(:)        ! fine root C loss (gC/m2/s)
-   real(r8), pointer :: leafc_alloc(:)        ! leaf C allocation (gC/m2/s)
-   real(r8), pointer :: leafc_loss(:)         ! leaf C loss (gC/m2/s)
-   real(r8), pointer :: woodc(:)              ! wood C (gC/m2)
-   real(r8), pointer :: woodc_alloc(:)        ! wood C allocation (gC/m2/s)
-   real(r8), pointer :: woodc_loss(:)         ! wood C loss (gC/m2/s)
-   real(r8), pointer :: cwdc_hr(:)            ! coarse woody debris C heterotrophic respiration (gC/m2/s)
-   real(r8), pointer :: cwdc_loss(:)          ! coarse woody debris C loss (gC/m2/s)
-   real(r8), pointer :: litterc_loss(:)       ! litter C loss (gC/m2/s)
-   real(r8), pointer :: decomp_cascade_ctransfer_vr(:,:,:)  
-   real(r8), pointer :: decomp_cascade_ctransfer(:,:)
-   real(r8), pointer :: som_c_leached(:)                           ! total SOM C loss from vertical transport (gC/m^2/s)
-   real(r8), pointer :: decomp_cpools_leached(:,:)                 ! C loss from vertical transport from each decomposing C pool (gC/m^2/s)
-   real(r8), pointer :: decomp_cpools_transport_tendency(:,:,:)    ! C tendency due to vertical transport in decomposing C pools (gC/m^3/s)
-   real(r8) :: nfixlags, dtime                ! temp variables for making lagged npp
-
-!
-!
-! local pointers to implicit in/out scalars
-!
-!
-! local pointers to implicit out scalars
-!
-!
-! !OTHER LOCAL VARIABLES:
-   type(pft_cflux_type), pointer :: pcisof
-   type(pft_cstate_type), pointer :: pcisos
-   type(column_cflux_type), pointer :: ccisof
-   type(column_cstate_type), pointer :: ccisos
-   integer :: c,p,j,k,l        ! indices
-   integer :: fp,fc        ! lake filter indices
-   real(r8) :: maxdepth    ! depth to integrate soil variables
-
-!EOP
-!-----------------------------------------------------------------------
    ! select which isotope
    select case (isotope)
    case ('bulk')
-      pcisof => clm3%g%l%c%p%pcf
-      pcisos => clm3%g%l%c%p%pcs
-      ccisof => clm3%g%l%c%ccf
-      ccisos => clm3%g%l%c%ccs
+      pcisof =>  pcf
+      pcisos =>  pcs
+      ccisof =>  ccf
+      ccisos =>  ccs
+      pcisof_a => pcf_a
+      pcisos_a => pcs_a
    case ('c14')
-      pcisof => clm3%g%l%c%p%pc14f
-      pcisos => clm3%g%l%c%p%pc14s
-      ccisof => clm3%g%l%c%cc14f
-      ccisos => clm3%g%l%c%cc14s
+      pcisof =>  pc14f
+      pcisos =>  pc14s
+      ccisof =>  cc14f
+      ccisos =>  cc14s
+      pcisof_a => pc14f_a
+      pcisos_a => pc14s_a
    case ('c13')
-      pcisof => clm3%g%l%c%p%pc13f
-      pcisos => clm3%g%l%c%p%pc13s
-      ccisof => clm3%g%l%c%cc13f
-      ccisos => clm3%g%l%c%cc13s
+      pcisof =>  pc13f
+      pcisos =>  pc13s
+      ccisof =>  cc13f
+      ccisos =>  cc13s
+      pcisof_a => pc13f_a
+      pcisos_a => pc13s_a
    case default
-      call endrun('CNCIsoSummaryMod: iso must be bulk, c13 or c14')
+      call endrun(msg='CNCIsoSummaryMod: iso must be bulk, c13 or c14'//&
+           errMsg(__FILE__, __LINE__))
    end select
 
-   ! assign local pointers
-    ivt                            => clm3%g%l%c%p%itype
-    col_fire_closs                 => ccisof%col_fire_closs
-    er                             => ccisof%er
-    hr                             => ccisof%hr
-    litfire                        => ccisof%litfire
-    lithr                          => ccisof%lithr
-    col_totpftc                    => ccisos%pcs_a%totpftc
-    col_totvegc                    => ccisos%pcs_a%totvegc
-    cwdc                           => ccisos%cwdc
-    col_ctrunc                     => ccisos%col_ctrunc
-    decomp_cascade_hr_vr              => ccisof%decomp_cascade_hr_vr
-    decomp_cascade_hr                 => ccisof%decomp_cascade_hr
-    hr_vr                             => ccisof%hr_vr
-    m_decomp_cpools_to_fire_vr        => ccisof%m_decomp_cpools_to_fire_vr
-    m_decomp_cpools_to_fire           => ccisof%m_decomp_cpools_to_fire
-    decomp_cascade_ctransfer_vr       => ccisof%decomp_cascade_ctransfer_vr
-    decomp_cascade_ctransfer          => ccisof%decomp_cascade_ctransfer
-    decomp_cpools_vr                  => ccisos%decomp_cpools_vr
-    decomp_cpools                     => ccisos%decomp_cpools
-    decomp_cpools_1m                  => ccisos%decomp_cpools_1m
-    altmax_indx                       => clm3%g%l%c%cps%altmax_indx
-    altmax_lastyear_indx              => clm3%g%l%c%cps%altmax_lastyear_indx
-    col_ctrunc_vr                     => ccisos%col_ctrunc_vr
-    cascade_donor_pool                => decomp_cascade_con%cascade_donor_pool
-    is_litter                         => decomp_cascade_con%is_litter
-    is_soil                           => decomp_cascade_con%is_soil
-    is_cwd                            => decomp_cascade_con%is_cwd
-    nee                            => ccisof%nee
-    nep                            => ccisof%nep
-    nbp                            => ccisof%nbp
-    col_ar                         => ccisof%pcf_a%ar
-    col_gpp                        => ccisof%pcf_a%gpp
-    col_npp                        => ccisof%pcf_a%npp
-    col_pft_fire_closs             => ccisof%pcf_a%pft_fire_closs
-    col_litfall                    => ccisof%pcf_a%litfall
-    col_rr                         => ccisof%pcf_a%rr
-    col_vegfire                    => ccisof%pcf_a%vegfire
-    col_wood_harvestc              => ccisof%pcf_a%wood_harvestc
-    somfire                        => ccisof%somfire
-    somhr                          => ccisof%somhr
-    sr                             => ccisof%sr
-    totfire                        => ccisof%totfire
-    cwdc_hr                        => ccisof%cwdc_hr
-    cwdc_loss                      => ccisof%cwdc_loss
-    litterc_loss                   => ccisof%litterc_loss
-    ! dynamic landcover pointers
-    dwt_closs                      => ccisof%dwt_closs
-    landuseflux                    => ccisof%landuseflux
-    landuptake                     => ccisof%landuptake
-    dwt_conv_cflux                 => ccisof%dwt_conv_cflux
-    seedc                          => ccisos%seedc
-    
-    ! wood product pointers
-    prod10c_loss                   => ccisof%prod10c_loss
-    prod100c_loss                  => ccisof%prod100c_loss
-    product_closs                  => ccisof%product_closs
-    prod10c                        => ccisos%prod10c
-    prod100c                       => ccisos%prod100c
-    totprodc                       => ccisos%totprodc
-    
-    totcolc                        => ccisos%totcolc
-    totecosysc                     => ccisos%totecosysc
-    totlitc                        => ccisos%totlitc
-    totlitc_1m                     => ccisos%totlitc_1m
-    totsomc                        => ccisos%totsomc
-    totsomc_1m                     => ccisos%totsomc_1m
-    agnpp                          => pcisof%agnpp
-    ar                             => pcisof%ar
-    bgnpp                          => pcisof%bgnpp
-    xsmrpool_to_atm                => pcisof%xsmrpool_to_atm
-    cpool_grain_gr                 => pcisof%cpool_grain_gr
-    cpool_grain_storage_gr         => pcisof%cpool_grain_storage_gr
-    cpool_to_grainc                => pcisof%cpool_to_grainc
-    grainc_xfer_to_grainc          => pcisof%grainc_xfer_to_grainc
-    transfer_grain_gr              => pcisof%transfer_grain_gr
-    grainc_to_food                 => pcisof%grainc_to_food
-    livestemc_to_litter            => pcisof%livestemc_to_litter
-    grainc                         => pcisos%grainc
-    grainc_storage                 => pcisos%grainc_storage
-    grainc_xfer                    => pcisos%grainc_xfer
-    cpool_deadcroot_gr             => pcisof%cpool_deadcroot_gr
-    cpool_deadcroot_storage_gr     => pcisof%cpool_deadcroot_storage_gr
-    cpool_deadstem_gr              => pcisof%cpool_deadstem_gr
-    cpool_deadstem_storage_gr      => pcisof%cpool_deadstem_storage_gr
-    cpool_froot_gr                 => pcisof%cpool_froot_gr
-    cpool_froot_storage_gr         => pcisof%cpool_froot_storage_gr
-    cpool_leaf_gr                  => pcisof%cpool_leaf_gr
-    cpool_leaf_storage_gr          => pcisof%cpool_leaf_storage_gr
-    cpool_livecroot_gr             => pcisof%cpool_livecroot_gr
-    cpool_livecroot_storage_gr     => pcisof%cpool_livecroot_storage_gr
-    cpool_livestem_gr              => pcisof%cpool_livestem_gr
-    cpool_livestem_storage_gr      => pcisof%cpool_livestem_storage_gr
-    cpool_to_deadcrootc            => pcisof%cpool_to_deadcrootc
-    cpool_to_deadstemc             => pcisof%cpool_to_deadstemc
-    cpool_to_frootc                => pcisof%cpool_to_frootc
-    cpool_to_leafc                 => pcisof%cpool_to_leafc
-    cpool_to_livecrootc            => pcisof%cpool_to_livecrootc
-    cpool_to_livestemc             => pcisof%cpool_to_livestemc
-    current_gr                     => pcisof%current_gr
-    deadcrootc_xfer_to_deadcrootc  => pcisof%deadcrootc_xfer_to_deadcrootc
-    deadstemc_xfer_to_deadstemc    => pcisof%deadstemc_xfer_to_deadstemc
-    frootc_to_litter               => pcisof%frootc_to_litter
-    frootc_xfer_to_frootc          => pcisof%frootc_xfer_to_frootc
-    froot_mr                       => pcisof%froot_mr
-    froot_curmr                    => pcisof%froot_curmr
-    froot_xsmr                     => pcisof%froot_xsmr
-    grain_mr                       => pcisof%grain_mr
-    gpp                            => pcisof%gpp
-    gr                             => pcisof%gr
-    leafc_to_litter                => pcisof%leafc_to_litter
-    leafc_xfer_to_leafc            => pcisof%leafc_xfer_to_leafc
-    leaf_mr                        => pcisof%leaf_mr
-    leaf_curmr                     => pcisof%leaf_curmr
-    leaf_xsmr                      => pcisof%leaf_xsmr
-    litfall                        => pcisof%litfall
-    livecrootc_xfer_to_livecrootc  => pcisof%livecrootc_xfer_to_livecrootc
-    livecroot_mr                   => pcisof%livecroot_mr
-    livecroot_curmr                => pcisof%livecroot_curmr
-    livecroot_xsmr                 => pcisof%livecroot_xsmr
-    livestemc_xfer_to_livestemc    => pcisof%livestemc_xfer_to_livestemc
-    livestem_mr                    => pcisof%livestem_mr
-    livestem_curmr                 => pcisof%livestem_curmr
-    livestem_xsmr                  => pcisof%livestem_xsmr
+   associate(& 
+   col_totpftc                     =>    pcisos_a%totpftc                            , & ! Input:  [real(r8) (:)]  (gC/m2) total pft-level carbon , including cpool                       
+   col_totvegc                     =>    pcisos_a%totvegc                            , & ! Input:  [real(r8) (:)]  (gC/m2) total vegetation carbon , excluding cpool                      
+   ivt                             =>    pft%itype                                   , & ! Input:  [integer (:)]  pft vegetation type                                
+   col_fire_closs                  =>    ccisof%col_fire_closs                       , & ! Input:  [real(r8) (:)]  (gC/m2/s) total column-level fire C loss          
+   er                              =>    ccisof%er                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+   hr                              =>    ccisof%hr                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) total heterotrophic respiration         
+   litfire                         =>    ccisof%litfire                              , & ! Input:  [real(r8) (:)]  (gC/m2/s) litter fire losses                      
+   lithr                           =>    ccisof%lithr                                , & ! Input:  [real(r8) (:)]  (gC/m2/s) litter heterotrophic respiration        
+   cwdc                            =>    ccisos%cwdc                                 , & ! Input:  [real(r8) (:)]  (gC/m2) coarse woody debris C                     
+   col_ctrunc                      =>    ccisos%col_ctrunc                           , & ! Input:  [real(r8) (:)]  (gC/m2) column-level sink for C truncation        
+   decomp_cascade_hr_vr            =>    ccisof%decomp_cascade_hr_vr                 , & ! Input:  [real(r8) (:,:,:)]                                                
+   decomp_cascade_hr               =>    ccisof%decomp_cascade_hr                    , & ! Input:  [real(r8) (:,:)]                                                  
+   hr_vr                           =>    ccisof%hr_vr                                , & ! Input:  [real(r8) (:,:)]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+   m_decomp_cpools_to_fire_vr      =>    ccisof%m_decomp_cpools_to_fire_vr           , & ! Input:  [real(r8) (:,:,:)]                                                
+   m_decomp_cpools_to_fire         =>    ccisof%m_decomp_cpools_to_fire              , & ! Input:  [real(r8) (:,:)]                                                  
+   decomp_cascade_ctransfer_vr     =>    ccisof%decomp_cascade_ctransfer_vr          , & ! Input:  [real(r8) (:,:,:)]                                                
+   decomp_cascade_ctransfer        =>    ccisof%decomp_cascade_ctransfer             , & ! Input:  [real(r8) (:,:)]                                                  
+   decomp_cpools_vr                =>    ccisos%decomp_cpools_vr                     , & ! Input:  [real(r8) (:,:,:)]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+   decomp_cpools                   =>    ccisos%decomp_cpools                        , & ! Input:  [real(r8) (:,:)]  (gC/m2)  decomposing (litter, cwd, soil) c pools
+   decomp_cpools_1m                =>    ccisos%decomp_cpools_1m                     , & ! Input:  [real(r8) (:,:)]  (gC/m2)  decomposing (litter, cwd, soil) c pools to 1 meter
+   altmax_indx                     =>    cps%altmax_indx                             , & ! Input:  [integer (:)]  maximum annual depth of thaw                       
+   altmax_lastyear_indx            =>    cps%altmax_lastyear_indx                    , & ! Input:  [integer (:)]  prior year maximum annual depth of thaw            
+   col_ctrunc_vr                   =>    ccisos%col_ctrunc_vr                        , & ! Input:  [real(r8) (:,:)]  (gC/m3) column-level sink for C truncation      
+   cascade_donor_pool              =>    decomp_cascade_con%cascade_donor_pool       , & ! Input:  [integer (:)]  which pool is C taken from for a given decomposition step
+   is_litter                       =>    decomp_cascade_con%is_litter                , & ! Input:  [logical (:)]  TRUE => pool is a litter pool                      
+   is_soil                         =>    decomp_cascade_con%is_soil                  , & ! Input:  [logical (:)]  TRUE => pool is a soil pool                        
+   is_cwd                          =>    decomp_cascade_con%is_cwd                   , & ! Input:  [logical (:)]  TRUE => pool is a cwd pool                         
+   nee                             =>    ccisof%nee                                  , & ! Input:  [real(r8) (:)]  (gC/m2/s) net ecosystem exchange of carbon, includes fire, land-use, harvest, and hrv_xsmrpool flux, positive for source
+   nep                             =>    ccisof%nep                                  , & ! Input:  [real(r8) (:)]  (gC/m2/s) net ecosystem production, excludes fire, land-use, and harvest flux, positive for sink
+   nbp                             =>    ccisof%nbp                                  , & ! Input:  [real(r8) (:)]  (gC/m2/s) net biome production, includes fire, land-use, and harvest flux, positive for sink
+   col_ar                          =>    pcisof_a%ar                                 , & ! Input:  [real(r8) (:)]  (gC/m2/s) autotrophic respiration (MR + GR)       
+   col_gpp                         =>    pcisof_a%gpp                                , & ! Input:  [real(r8) (:)]  GPP flux before downregulation (gC/m2/s)          
+   col_npp                         =>    pcisof_a%npp                                , & ! Input:  [real(r8) (:)]  (gC/m2/s) net primary production                  
+   col_pft_fire_closs              =>    pcisof_a%pft_fire_closs                     , & ! Input:  [real(r8) (:)]  (gC/m2/s) total pft-level fire C loss             
+   col_litfall                     =>    pcisof_a%litfall                            , & ! Input:  [real(r8) (:)]  (gC/m2/s) total pft-level litterfall C loss       
+   col_rr                          =>    pcisof_a%rr                                 , & ! Input:  [real(r8) (:)]  (gC/m2/s) root respiration (fine root MR + total root GR)
+   col_vegfire                     =>    pcisof_a%vegfire                            , & ! Input:  [real(r8) (:)]  (gC/m2/s) pft-level fire loss (obsolete, mark for removal)
+   col_wood_harvestc               =>    pcisof_a%wood_harvestc                      , & ! Input:  [real(r8) (:)]                                                    
+   somfire                         =>    ccisof%somfire                              , & ! Input:  [real(r8) (:)]  (gC/m2/s) soil organic matter fire losses         
+   somhr                           =>    ccisof%somhr                                , & ! Input:  [real(r8) (:)]  (gC/m2/s) soil organic matter heterotrophic respiration
+   sr                              =>    ccisof%sr                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) total soil respiration (HR + root resp) 
+   totfire                         =>    ccisof%totfire                              , & ! Input:  [real(r8) (:)]  (gC/m2/s) total ecosystem fire losses             
+   cwdc_hr                         =>    ccisof%cwdc_hr                              , & ! Input:  [real(r8) (:)]  coarse woody debris C heterotrophic respiration (gC/m2/s)
+   cwdc_loss                       =>    ccisof%cwdc_loss                            , & ! Input:  [real(r8) (:)]  coarse woody debris C loss (gC/m2/s)              
+   litterc_loss                    =>    ccisof%litterc_loss                         , & ! Input:  [real(r8) (:)]  litter C loss (gC/m2/s)                           
+   ! dynamic landcover pointers
+   dwt_closs                       =>    ccisof%dwt_closs                            , & ! Input:  [real(r8) (:)]  (gC/m2/s) total carbon loss from land cover conversion
+   landuseflux                     =>    ccisof%landuseflux                          , & ! Input:  [real(r8) (:)]  (gC/m2/s) dwt_closs+product_closs                 
+   landuptake                      =>    ccisof%landuptake                           , & ! Input:  [real(r8) (:)]  (gC/m2/s) nee-landuseflux                         
+   dwt_conv_cflux                  =>    ccisof%dwt_conv_cflux                       , & ! Input:  [real(r8) (:)]  (gC/m2/s) conversion C flux (immediate loss to atm)
+   seedc                           =>    ccisos%seedc                                , & ! Input:  [real(r8) (:)]  (gC/m2) column-level pool for seeding new PFTs    
+   ! wood product pointers
+   prod10c_loss                    =>    ccisof%prod10c_loss                         , & ! Input:  [real(r8) (:)]  (gC/m2/s) loss from 10-yr wood product pool       
+   prod100c_loss                   =>    ccisof%prod100c_loss                        , & ! Input:  [real(r8) (:)]  (gC/m2/s) loss from 100-yr wood product pool      
+   product_closs                   =>    ccisof%product_closs                        , & ! Input:  [real(r8) (:)]  (gC/m2/s) total wood product carbon loss          
+   prod10c                         =>    ccisos%prod10c                              , & ! Input:  [real(r8) (:)]  (gC/m2) wood product C pool, 10-year lifespan     
+   prod100c                        =>    ccisos%prod100c                             , & ! Input:  [real(r8) (:)]  (gC/m2) wood product C pool, 100-year lifespan    
+   totprodc                        =>    ccisos%totprodc                             , & ! Input:  [real(r8) (:)]  (gC/m2) total wood product C                      
+   totcolc                         =>    ccisos%totcolc                              , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool   
+   totecosysc                      =>    ccisos%totecosysc                           , & ! Input:  [real(r8) (:)]  (gC/m2) total ecosystem carbon, incl veg but excl cpool
+   totlitc                         =>    ccisos%totlitc                              , & ! Input:  [real(r8) (:)]  (gC/m2) total litter carbon                       
+   totlitc_1m                      =>    ccisos%totlitc_1m                           , & ! Input:  [real(r8) (:)]  (gC/m2) total litter carbon to 1 meter            
+   totsomc                         =>    ccisos%totsomc                              , & ! Input:  [real(r8) (:)]  (gC/m2) total soil organic matter carbon          
+   totsomc_1m                      =>    ccisos%totsomc_1m                           , & ! Input:  [real(r8) (:)]  (gC/m2) total soil organic matter carbon to 1 meter
+   agnpp                           =>    pcisof%agnpp                                , & ! Input:  [real(r8) (:)]  (gC/m2/s) aboveground NPP                         
+   ar                              =>    pcisof%ar                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) autotrophic respiration (MR + GR)       
+   bgnpp                           =>    pcisof%bgnpp                                , & ! Input:  [real(r8) (:)]  (gC/m2/s) belowground NPP                         
+   xsmrpool_to_atm                 =>    pcisof%xsmrpool_to_atm                      , & ! Input:  [real(r8) (:)]  excess MR pool harvest mortality (gC/m2/s)        
+   cpool_grain_gr                  =>    pcisof%cpool_grain_gr                       , & ! Input:  [real(r8) (:)]  grain growth respiration (gC/m2/s)                
+   cpool_grain_storage_gr          =>    pcisof%cpool_grain_storage_gr               , & ! Input:  [real(r8) (:)]  grain growth respiration to storage (gC/m2/s)     
+   cpool_to_grainc                 =>    pcisof%cpool_to_grainc                      , & ! Input:  [real(r8) (:)]  allocation to grain C storage (gC/m2/s)           
+   grainc_xfer_to_grainc           =>    pcisof%grainc_xfer_to_grainc                , & ! Input:  [real(r8) (:)]  grain C growth from storage (gC/m2/s)             
+   transfer_grain_gr               =>    pcisof%transfer_grain_gr                    , & ! Input:  [real(r8) (:)]  grain growth respiration from storage (gC/m2/s)   
+   grainc_to_food                  =>    pcisof%grainc_to_food                       , & ! Input:  [real(r8) (:)]  grain C to food (gC/m2/s)                         
+   livestemc_to_litter             =>    pcisof%livestemc_to_litter                  , & ! Input:  [real(r8) (:)]  live stem C litterfall (gC/m2/s)                  
+   grainc                          =>    pcisos%grainc                               , & ! Input:  [real(r8) (:)]  (gC/m2) grain C                                   
+   grainc_storage                  =>    pcisos%grainc_storage                       , & ! Input:  [real(r8) (:)]  (gC/m2) grain C storage                           
+   grainc_xfer                     =>    pcisos%grainc_xfer                          , & ! Input:  [real(r8) (:)]  (gC/m2) grain C transfer                          
+   cpool_deadcroot_gr              =>    pcisof%cpool_deadcroot_gr                   , & ! Input:  [real(r8) (:)]  dead coarse root growth respiration (gC/m2/s)     
+   cpool_deadcroot_storage_gr      =>    pcisof%cpool_deadcroot_storage_gr           , & ! Input:  [real(r8) (:)]  dead coarse root growth respiration to storage (gC/m2/s)
+   cpool_deadstem_gr               =>    pcisof%cpool_deadstem_gr                    , & ! Input:  [real(r8) (:)]  dead stem growth respiration (gC/m2/s)            
+   cpool_deadstem_storage_gr       =>    pcisof%cpool_deadstem_storage_gr            , & ! Input:  [real(r8) (:)]  dead stem growth respiration to storage (gC/m2/s) 
+   cpool_froot_gr                  =>    pcisof%cpool_froot_gr                       , & ! Input:  [real(r8) (:)]  fine root growth respiration (gC/m2/s)            
+   cpool_froot_storage_gr          =>    pcisof%cpool_froot_storage_gr               , & ! Input:  [real(r8) (:)]  fine root  growth respiration to storage (gC/m2/s)
+   cpool_leaf_gr                   =>    pcisof%cpool_leaf_gr                        , & ! Input:  [real(r8) (:)]  leaf growth respiration (gC/m2/s)                 
+   cpool_leaf_storage_gr           =>    pcisof%cpool_leaf_storage_gr                , & ! Input:  [real(r8) (:)]  leaf growth respiration to storage (gC/m2/s)      
+   cpool_livecroot_gr              =>    pcisof%cpool_livecroot_gr                   , & ! Input:  [real(r8) (:)]  live coarse root growth respiration (gC/m2/s)     
+   cpool_livecroot_storage_gr      =>    pcisof%cpool_livecroot_storage_gr           , & ! Input:  [real(r8) (:)]  live coarse root growth respiration to storage (gC/m2/s)
+   cpool_livestem_gr               =>    pcisof%cpool_livestem_gr                    , & ! Input:  [real(r8) (:)]  live stem growth respiration (gC/m2/s)            
+   cpool_livestem_storage_gr       =>    pcisof%cpool_livestem_storage_gr            , & ! Input:  [real(r8) (:)]  live stem growth respiration to storage (gC/m2/s) 
+   cpool_to_deadcrootc             =>    pcisof%cpool_to_deadcrootc                  , & ! Input:  [real(r8) (:)]  allocation to dead coarse root C (gC/m2/s)        
+   cpool_to_deadstemc              =>    pcisof%cpool_to_deadstemc                   , & ! Input:  [real(r8) (:)]  allocation to dead stem C (gC/m2/s)               
+   cpool_to_frootc                 =>    pcisof%cpool_to_frootc                      , & ! Input:  [real(r8) (:)]  allocation to fine root C (gC/m2/s)               
+   cpool_to_leafc                  =>    pcisof%cpool_to_leafc                       , & ! Input:  [real(r8) (:)]  allocation to leaf C (gC/m2/s)                    
+   cpool_to_livecrootc             =>    pcisof%cpool_to_livecrootc                  , & ! Input:  [real(r8) (:)]  allocation to live coarse root C (gC/m2/s)        
+   cpool_to_livestemc              =>    pcisof%cpool_to_livestemc                   , & ! Input:  [real(r8) (:)]  allocation to live stem C (gC/m2/s)               
+   current_gr                      =>    pcisof%current_gr                           , & ! Input:  [real(r8) (:)]  (gC/m2/s) growth resp for new growth displayed in this timestep
+   deadcrootc_xfer_to_deadcrootc   =>    pcisof%deadcrootc_xfer_to_deadcrootc        , & ! Input:  [real(r8) (:)]                                                    
+   deadstemc_xfer_to_deadstemc     =>    pcisof%deadstemc_xfer_to_deadstemc          , & ! Input:  [real(r8) (:)]                                                    
+   frootc_to_litter                =>    pcisof%frootc_to_litter                     , & ! Input:  [real(r8) (:)]                                                    
+   frootc_xfer_to_frootc           =>    pcisof%frootc_xfer_to_frootc                , & ! Input:  [real(r8) (:)]                                                    
+   froot_mr                        =>    pcisof%froot_mr                             , & ! Input:  [real(r8) (:)]                                                    
+   froot_curmr                     =>    pcisof%froot_curmr                          , & ! Input:  [real(r8) (:)]                                                    
+   froot_xsmr                      =>    pcisof%froot_xsmr                           , & ! Input:  [real(r8) (:)]                                                    
+   grain_mr                        =>    pcisof%grain_mr                             , & ! Input:  [real(r8) (:)]                                                    
+   gpp                             =>    pcisof%gpp                                  , & ! Input:  [real(r8) (:)] GPP flux before downregulation (gC/m2/s)           
+   gr                              =>    pcisof%gr                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) total growth respiration                
+   leafc_to_litter                 =>    pcisof%leafc_to_litter                      , & ! Input:  [real(r8) (:)]                                                    
+   leafc_xfer_to_leafc             =>    pcisof%leafc_xfer_to_leafc                  , & ! Input:  [real(r8) (:)]                                                    
+   leaf_mr                         =>    pcisof%leaf_mr                              , & ! Input:  [real(r8) (:)]                                                    
+   leaf_curmr                      =>    pcisof%leaf_curmr                           , & ! Input:  [real(r8) (:)]                                                    
+   leaf_xsmr                       =>    pcisof%leaf_xsmr                            , & ! Input:  [real(r8) (:)]                                                    
+   litfall                         =>    pcisof%litfall                              , & ! Input:  [real(r8) (:)]  (gC/m2/s) litterfall (leaves and fine roots)      
+   livecrootc_xfer_to_livecrootc   =>    pcisof%livecrootc_xfer_to_livecrootc        , & ! Input:  [real(r8) (:)]                                                    
+   livecroot_mr                    =>    pcisof%livecroot_mr                         , & ! Input:  [real(r8) (:)]                                                    
+   livecroot_curmr                 =>    pcisof%livecroot_curmr                      , & ! Input:  [real(r8) (:)]                                                    
+   livecroot_xsmr                  =>    pcisof%livecroot_xsmr                       , & ! Input:  [real(r8) (:)]                                                    
+   livestemc_xfer_to_livestemc     =>    pcisof%livestemc_xfer_to_livestemc          , & ! Input:  [real(r8) (:)]                                                    
+   livestem_mr                     =>    pcisof%livestem_mr                          , & ! Input:  [real(r8) (:)]                                                    
+   livestem_curmr                  =>    pcisof%livestem_curmr                       , & ! Input:  [real(r8) (:)]                                                    
+   livestem_xsmr                   =>    pcisof%livestem_xsmr                        , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_to_fire                 =>    pcisof%m_leafc_to_fire                      , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_storage_to_fire         =>    pcisof%m_leafc_storage_to_fire              , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_xfer_to_fire            =>    pcisof%m_leafc_xfer_to_fire                 , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_to_fire             =>    pcisof%m_livestemc_to_fire                  , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_storage_to_fire     =>    pcisof%m_livestemc_storage_to_fire          , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_xfer_to_fire        =>    pcisof%m_livestemc_xfer_to_fire             , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_to_fire             =>    pcisof%m_deadstemc_to_fire                  , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_storage_to_fire     =>    pcisof%m_deadstemc_storage_to_fire          , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_xfer_to_fire        =>    pcisof%m_deadstemc_xfer_to_fire             , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_to_fire                =>    pcisof%m_frootc_to_fire                     , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_storage_to_fire        =>    pcisof%m_frootc_storage_to_fire             , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_xfer_to_fire           =>    pcisof%m_frootc_xfer_to_fire                , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_to_fire            =>    pcisof%m_livecrootc_to_fire                 , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_storage_to_fire    =>    pcisof%m_livecrootc_storage_to_fire         , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_xfer_to_fire       =>    pcisof%m_livecrootc_xfer_to_fire            , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_to_fire            =>    pcisof%m_deadcrootc_to_fire                 , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_storage_to_fire    =>    pcisof%m_deadcrootc_storage_to_fire         , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_xfer_to_fire       =>    pcisof%m_deadcrootc_xfer_to_fire            , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_storage_to_fire         =>    pcisof%m_gresp_storage_to_fire              , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_xfer_to_fire            =>    pcisof%m_gresp_xfer_to_fire                 , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_to_litter_fire          =>    pcisof%m_leafc_to_litter_fire               , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_storage_to_litter_fire  =>    pcisof%m_leafc_storage_to_litter_fire       , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_xfer_to_litter_fire     =>    pcisof%m_leafc_xfer_to_litter_fire          , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_to_litter_fire      =>    pcisof%m_livestemc_to_litter_fire           , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_storage_to_litter_fire  =>    pcisof%m_livestemc_storage_to_litter_fire, & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_xfer_to_litter_fire =>    pcisof%m_livestemc_xfer_to_litter_fire      , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_to_deadstemc_fire   =>    pcisof%m_livestemc_to_deadstemc_fire        , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_to_litter_fire      =>    pcisof%m_deadstemc_to_litter_fire           , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_storage_to_litter_fire  =>    pcisof%m_deadstemc_storage_to_litter_fire, & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_xfer_to_litter_fire =>    pcisof%m_deadstemc_xfer_to_litter_fire      , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_to_litter_fire         =>    pcisof%m_frootc_to_litter_fire              , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_storage_to_litter_fire =>    pcisof%m_frootc_storage_to_litter_fire      , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_xfer_to_litter_fire    =>    pcisof%m_frootc_xfer_to_litter_fire         , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_to_litter_fire     =>    pcisof%m_livecrootc_to_litter_fire          , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_storage_to_litter_fire  =>    pcisof%m_livecrootc_storage_to_litter_fire, & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_xfer_to_litter_fire=>    pcisof%m_livecrootc_xfer_to_litter_fire     , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_to_deadcrootc_fire =>    pcisof%m_livecrootc_to_deadcrootc_fire      , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_to_litter_fire     =>    pcisof%m_deadcrootc_to_litter_fire          , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_storage_to_litter_fire  =>    pcisof%m_deadcrootc_storage_to_litter_fire, & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_xfer_to_litter_fire=>    pcisof%m_deadcrootc_xfer_to_litter_fire     , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_storage_to_litter_fire  =>    pcisof%m_gresp_storage_to_litter_fire       , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_xfer_to_litter_fire     =>    pcisof%m_gresp_xfer_to_litter_fire          , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_storage_to_litter  =>    pcisof%m_deadcrootc_storage_to_litter       , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_to_litter          =>    pcisof%m_deadcrootc_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_xfer_to_litter     =>    pcisof%m_deadcrootc_xfer_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_storage_to_litter   =>    pcisof%m_deadstemc_storage_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_to_litter           =>    pcisof%m_deadstemc_to_litter                , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_xfer_to_litter      =>    pcisof%m_deadstemc_xfer_to_litter           , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_storage_to_litter      =>    pcisof%m_frootc_storage_to_litter           , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_to_litter              =>    pcisof%m_frootc_to_litter                   , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_xfer_to_litter         =>    pcisof%m_frootc_xfer_to_litter              , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_storage_to_litter       =>    pcisof%m_gresp_storage_to_litter            , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_xfer_to_litter          =>    pcisof%m_gresp_xfer_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_storage_to_litter       =>    pcisof%m_leafc_storage_to_litter            , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_to_litter               =>    pcisof%m_leafc_to_litter                    , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_xfer_to_litter          =>    pcisof%m_leafc_xfer_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_storage_to_litter  =>    pcisof%m_livecrootc_storage_to_litter       , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_to_litter          =>    pcisof%m_livecrootc_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_xfer_to_litter     =>    pcisof%m_livecrootc_xfer_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_storage_to_litter   =>    pcisof%m_livestemc_storage_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_to_litter           =>    pcisof%m_livestemc_to_litter                , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_xfer_to_litter      =>    pcisof%m_livestemc_xfer_to_litter           , & ! Input:  [real(r8) (:)]                                                    
+   hrv_leafc_to_litter             =>    pcisof%hrv_leafc_to_litter                  , & ! Input:  [real(r8) (:)]                                                    
+   hrv_leafc_storage_to_litter     =>    pcisof%hrv_leafc_storage_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   hrv_leafc_xfer_to_litter        =>    pcisof%hrv_leafc_xfer_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_frootc_to_litter            =>    pcisof%hrv_frootc_to_litter                 , & ! Input:  [real(r8) (:)]                                                    
+   hrv_frootc_storage_to_litter    =>    pcisof%hrv_frootc_storage_to_litter         , & ! Input:  [real(r8) (:)]                                                    
+   hrv_frootc_xfer_to_litter       =>    pcisof%hrv_frootc_xfer_to_litter            , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livestemc_to_litter         =>    pcisof%hrv_livestemc_to_litter              , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livestemc_storage_to_litter =>    pcisof%hrv_livestemc_storage_to_litter      , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livestemc_xfer_to_litter    =>    pcisof%hrv_livestemc_xfer_to_litter         , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_to_prod10c        =>    pcisof%hrv_deadstemc_to_prod10c             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_to_prod100c       =>    pcisof%hrv_deadstemc_to_prod100c            , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_storage_to_litter =>    pcisof%hrv_deadstemc_storage_to_litter      , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_xfer_to_litter    =>    pcisof%hrv_deadstemc_xfer_to_litter         , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livecrootc_to_litter        =>    pcisof%hrv_livecrootc_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livecrootc_storage_to_litter=>    pcisof%hrv_livecrootc_storage_to_litter     , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livecrootc_xfer_to_litter   =>    pcisof%hrv_livecrootc_xfer_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadcrootc_to_litter        =>    pcisof%hrv_deadcrootc_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadcrootc_storage_to_litter=>    pcisof%hrv_deadcrootc_storage_to_litter     , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadcrootc_xfer_to_litter   =>    pcisof%hrv_deadcrootc_xfer_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   hrv_gresp_storage_to_litter     =>    pcisof%hrv_gresp_storage_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   hrv_gresp_xfer_to_litter        =>    pcisof%hrv_gresp_xfer_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_xsmrpool_to_atm             =>    pcisof%hrv_xsmrpool_to_atm                  , & ! Input:  [real(r8) (:)]                                                    
+   col_hrv_xsmrpool_to_atm         =>    pcisof_a%hrv_xsmrpool_to_atm                , & ! Input:  [real(r8) (:)]                                                    
+   mr                              =>    pcisof%mr                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) maintenance respiration                 
+   npp                             =>    pcisof%npp                                  , & ! Input:  [real(r8) (:)]  (gC/m2/s) net primary production                  
+   pft_fire_closs                  =>    pcisof%pft_fire_closs                       , & ! Input:  [real(r8) (:)]  (gC/m2/s) total pft-level fire C loss             
+   psnshade_to_cpool               =>    pcisof%psnshade_to_cpool                    , & ! Input:  [real(r8) (:)]                                                    
+   psnsun_to_cpool                 =>    pcisof%psnsun_to_cpool                      , & ! Input:  [real(r8) (:)]                                                    
+   rr                              =>    pcisof%rr                                   , & ! Input:  [real(r8) (:)]  (gC/m2/s) root respiration (fine root MR + total root GR)
+   storage_gr                      =>    pcisof%storage_gr                           , & ! Input:  [real(r8) (:)]  (gC/m2/s) growth resp for growth sent to storage for later display
+   transfer_deadcroot_gr           =>    pcisof%transfer_deadcroot_gr                , & ! Input:  [real(r8) (:)]                                                    
+   transfer_deadstem_gr            =>    pcisof%transfer_deadstem_gr                 , & ! Input:  [real(r8) (:)]                                                    
+   transfer_froot_gr               =>    pcisof%transfer_froot_gr                    , & ! Input:  [real(r8) (:)]                                                    
+   transfer_gr                     =>    pcisof%transfer_gr                          , & ! Input:  [real(r8) (:)]  (gC/m2/s) growth resp for transfer growth displayed in this timestep
+   transfer_leaf_gr                =>    pcisof%transfer_leaf_gr                     , & ! Input:  [real(r8) (:)]                                                    
+   transfer_livecroot_gr           =>    pcisof%transfer_livecroot_gr                , & ! Input:  [real(r8) (:)]                                                    
+   transfer_livestem_gr            =>    pcisof%transfer_livestem_gr                 , & ! Input:  [real(r8) (:)]                                                    
+   vegfire                         =>    pcisof%vegfire                              , & ! Input:  [real(r8) (:)]  (gC/m2/s) pft-level fire loss (obsolete, mark for removal)
+   wood_harvestc                   =>    pcisof%wood_harvestc                        , & ! Input:  [real(r8) (:)]  (gC/m2/s) pft-level wood harvest (to product pools)
+   frootc_alloc                    =>    pcisof%frootc_alloc                         , & ! Input:  [real(r8) (:)]  fine root C allocation (gC/m2/s)                  
+   frootc_loss                     =>    pcisof%frootc_loss                          , & ! Input:  [real(r8) (:)]  fine root C loss (gC/m2/s)                        
+   leafc_alloc                     =>    pcisof%leafc_alloc                          , & ! Input:  [real(r8) (:)]  leaf C allocation (gC/m2/s)                       
+   leafc_loss                      =>    pcisof%leafc_loss                           , & ! Input:  [real(r8) (:)]  leaf C loss (gC/m2/s)                             
+   woodc_alloc                     =>    pcisof%woodc_alloc                          , & ! Input:  [real(r8) (:)]  wood C allocation (gC/m2/s)                       
+   woodc_loss                      =>    pcisof%woodc_loss                           , & ! Input:  [real(r8) (:)]  wood C loss (gC/m2/s)                             
+   cpool                           =>    pcisos%cpool                                , & ! Input:  [real(r8) (:)]  (gC/m2) temporary photosynthate C pool            
+   xsmrpool                        =>    pcisos%xsmrpool                             , & ! Input:  [real(r8) (:)]  (gC/m2) temporary photosynthate C pool            
+   pft_ctrunc                      =>    pcisos%pft_ctrunc                           , & ! Input:  [real(r8) (:)]  (gC/m2) pft-level sink for C truncation           
+   deadcrootc                      =>    pcisos%deadcrootc                           , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C                        
+   deadcrootc_storage              =>    pcisos%deadcrootc_storage                   , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C storage                
+   deadcrootc_xfer                 =>    pcisos%deadcrootc_xfer                      , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C transfer               
+   deadstemc                       =>    pcisos%deadstemc                            , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C                               
+   deadstemc_storage               =>    pcisos%deadstemc_storage                    , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C storage                       
+   deadstemc_xfer                  =>    pcisos%deadstemc_xfer                       , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C transfer                      
+   dispvegc                        =>    pcisos%dispvegc                             , & ! Input:  [real(r8) (:)]  (gC/m2) displayed veg carbon, excluding storage and cpool
+   frootc                          =>    pcisos%frootc                               , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C                               
+   frootc_storage                  =>    pcisos%frootc_storage                       , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C storage                       
+   frootc_xfer                     =>    pcisos%frootc_xfer                          , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C transfer                      
+   gresp_storage                   =>    pcisos%gresp_storage                        , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration storage                
+   gresp_xfer                      =>    pcisos%gresp_xfer                           , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration transfer               
+   leafc                           =>    pcisos%leafc                                , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C                                    
+   leafc_storage                   =>    pcisos%leafc_storage                        , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C storage                            
+   leafc_xfer                      =>    pcisos%leafc_xfer                           , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C transfer                           
+   livecrootc                      =>    pcisos%livecrootc                           , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C                        
+   livecrootc_storage              =>    pcisos%livecrootc_storage                   , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C storage                
+   livecrootc_xfer                 =>    pcisos%livecrootc_xfer                      , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C transfer               
+   livestemc                       =>    pcisos%livestemc                            , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C                               
+   livestemc_storage               =>    pcisos%livestemc_storage                    , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C storage                       
+   livestemc_xfer                  =>    pcisos%livestemc_xfer                       , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C transfer                      
+   storvegc                        =>    pcisos%storvegc                             , & ! Input:  [real(r8) (:)]  (gC/m2) stored vegetation carbon, excluding cpool 
+   totpftc                         =>    pcisos%totpftc                              , & ! Input:  [real(r8) (:)]  (gC/m2) total pft-level carbon, including cpool   
+   totvegc                         =>    pcisos%totvegc &
+   )
 
-! fire variables changed by F. Li and S. Levis
-    m_leafc_to_fire                => pcisof%m_leafc_to_fire
-    m_leafc_storage_to_fire        => pcisof%m_leafc_storage_to_fire
-    m_leafc_xfer_to_fire           => pcisof%m_leafc_xfer_to_fire
-    m_livestemc_to_fire            => pcisof%m_livestemc_to_fire
-    m_livestemc_storage_to_fire    => pcisof%m_livestemc_storage_to_fire
-    m_livestemc_xfer_to_fire       => pcisof%m_livestemc_xfer_to_fire
-    m_deadstemc_to_fire            => pcisof%m_deadstemc_to_fire
-    m_deadstemc_storage_to_fire    => pcisof%m_deadstemc_storage_to_fire
-    m_deadstemc_xfer_to_fire       => pcisof%m_deadstemc_xfer_to_fire
-    m_frootc_to_fire               => pcisof%m_frootc_to_fire
-    m_frootc_storage_to_fire       => pcisof%m_frootc_storage_to_fire
-    m_frootc_xfer_to_fire          => pcisof%m_frootc_xfer_to_fire
-    m_livecrootc_to_fire           => pcisof%m_livecrootc_to_fire
-    m_livecrootc_storage_to_fire   => pcisof%m_livecrootc_storage_to_fire
-    m_livecrootc_xfer_to_fire      => pcisof%m_livecrootc_xfer_to_fire
-    m_deadcrootc_to_fire           => pcisof%m_deadcrootc_to_fire
-    m_deadcrootc_storage_to_fire   => pcisof%m_deadcrootc_storage_to_fire
-    m_deadcrootc_xfer_to_fire      => pcisof%m_deadcrootc_xfer_to_fire
-    m_gresp_storage_to_fire        => pcisof%m_gresp_storage_to_fire
-    m_gresp_xfer_to_fire           => pcisof%m_gresp_xfer_to_fire
-    m_leafc_to_litter_fire               => pcisof%m_leafc_to_litter_fire
-    m_leafc_storage_to_litter_fire      => pcisof%m_leafc_storage_to_litter_fire
-    m_leafc_xfer_to_litter_fire         => pcisof%m_leafc_xfer_to_litter_fire
-    m_livestemc_to_litter_fire          => pcisof%m_livestemc_to_litter_fire
-    m_livestemc_storage_to_litter_fire  => pcisof%m_livestemc_storage_to_litter_fire
-    m_livestemc_xfer_to_litter_fire     => pcisof%m_livestemc_xfer_to_litter_fire
-    m_livestemc_to_deadstemc_fire       => pcisof%m_livestemc_to_deadstemc_fire
-    m_deadstemc_to_litter_fire          => pcisof%m_deadstemc_to_litter_fire
-    m_deadstemc_storage_to_litter_fire  => pcisof%m_deadstemc_storage_to_litter_fire
-    m_deadstemc_xfer_to_litter_fire     => pcisof%m_deadstemc_xfer_to_litter_fire
-    m_frootc_to_litter_fire             => pcisof%m_frootc_to_litter_fire
-    m_frootc_storage_to_litter_fire     => pcisof%m_frootc_storage_to_litter_fire
-    m_frootc_xfer_to_litter_fire        => pcisof%m_frootc_xfer_to_litter_fire
-    m_livecrootc_to_litter_fire         => pcisof%m_livecrootc_to_litter_fire
-    m_livecrootc_storage_to_litter_fire => pcisof%m_livecrootc_storage_to_litter_fire
-    m_livecrootc_xfer_to_litter_fire    => pcisof%m_livecrootc_xfer_to_litter_fire
-    m_livecrootc_to_deadcrootc_fire     => pcisof%m_livecrootc_to_deadcrootc_fire
-    m_deadcrootc_to_litter_fire         => pcisof%m_deadcrootc_to_litter_fire
-    m_deadcrootc_storage_to_litter_fire => pcisof%m_deadcrootc_storage_to_litter_fire
-    m_deadcrootc_xfer_to_litter_fire    => pcisof%m_deadcrootc_xfer_to_litter_fire
-    m_gresp_storage_to_litter_fire      => pcisof%m_gresp_storage_to_litter_fire
-    m_gresp_xfer_to_litter_fire         => pcisof%m_gresp_xfer_to_litter_fire
-
-    m_deadcrootc_storage_to_litter => pcisof%m_deadcrootc_storage_to_litter
-    m_deadcrootc_to_litter         => pcisof%m_deadcrootc_to_litter
-    m_deadcrootc_xfer_to_litter    => pcisof%m_deadcrootc_xfer_to_litter
-    m_deadstemc_storage_to_litter  => pcisof%m_deadstemc_storage_to_litter
-    m_deadstemc_to_litter          => pcisof%m_deadstemc_to_litter
-    m_deadstemc_xfer_to_litter     => pcisof%m_deadstemc_xfer_to_litter
-    m_frootc_storage_to_litter     => pcisof%m_frootc_storage_to_litter
-    m_frootc_to_litter             => pcisof%m_frootc_to_litter
-    m_frootc_xfer_to_litter        => pcisof%m_frootc_xfer_to_litter
-    m_gresp_storage_to_litter      => pcisof%m_gresp_storage_to_litter
-    m_gresp_xfer_to_litter         => pcisof%m_gresp_xfer_to_litter
-    m_leafc_storage_to_litter      => pcisof%m_leafc_storage_to_litter
-    m_leafc_to_litter              => pcisof%m_leafc_to_litter
-    m_leafc_xfer_to_litter         => pcisof%m_leafc_xfer_to_litter
-    m_livecrootc_storage_to_litter => pcisof%m_livecrootc_storage_to_litter
-    m_livecrootc_to_litter         => pcisof%m_livecrootc_to_litter
-    m_livecrootc_xfer_to_litter    => pcisof%m_livecrootc_xfer_to_litter
-    m_livestemc_storage_to_litter  => pcisof%m_livestemc_storage_to_litter
-    m_livestemc_to_litter          => pcisof%m_livestemc_to_litter
-    m_livestemc_xfer_to_litter     => pcisof%m_livestemc_xfer_to_litter
-    hrv_leafc_to_litter               => pcisof%hrv_leafc_to_litter               
-    hrv_leafc_storage_to_litter       => pcisof%hrv_leafc_storage_to_litter     
-    hrv_leafc_xfer_to_litter          => pcisof%hrv_leafc_xfer_to_litter        
-    hrv_frootc_to_litter              => pcisof%hrv_frootc_to_litter            
-    hrv_frootc_storage_to_litter      => pcisof%hrv_frootc_storage_to_litter    
-    hrv_frootc_xfer_to_litter         => pcisof%hrv_frootc_xfer_to_litter       
-    hrv_livestemc_to_litter           => pcisof%hrv_livestemc_to_litter         
-    hrv_livestemc_storage_to_litter   => pcisof%hrv_livestemc_storage_to_litter 
-    hrv_livestemc_xfer_to_litter      => pcisof%hrv_livestemc_xfer_to_litter    
-    hrv_deadstemc_to_prod10c          => pcisof%hrv_deadstemc_to_prod10c        
-    hrv_deadstemc_to_prod100c         => pcisof%hrv_deadstemc_to_prod100c       
-    hrv_deadstemc_storage_to_litter   => pcisof%hrv_deadstemc_storage_to_litter 
-    hrv_deadstemc_xfer_to_litter      => pcisof%hrv_deadstemc_xfer_to_litter    
-    hrv_livecrootc_to_litter          => pcisof%hrv_livecrootc_to_litter        
-    hrv_livecrootc_storage_to_litter  => pcisof%hrv_livecrootc_storage_to_litter
-    hrv_livecrootc_xfer_to_litter     => pcisof%hrv_livecrootc_xfer_to_litter   
-    hrv_deadcrootc_to_litter          => pcisof%hrv_deadcrootc_to_litter        
-    hrv_deadcrootc_storage_to_litter  => pcisof%hrv_deadcrootc_storage_to_litter
-    hrv_deadcrootc_xfer_to_litter     => pcisof%hrv_deadcrootc_xfer_to_litter   
-    hrv_gresp_storage_to_litter       => pcisof%hrv_gresp_storage_to_litter     
-    hrv_gresp_xfer_to_litter          => pcisof%hrv_gresp_xfer_to_litter        
-    hrv_xsmrpool_to_atm               => pcisof%hrv_xsmrpool_to_atm             
-    col_hrv_xsmrpool_to_atm           => ccisof%pcf_a%hrv_xsmrpool_to_atm             
-    mr                             => pcisof%mr
-    npp                            => pcisof%npp
-    pft_fire_closs                 => pcisof%pft_fire_closs
-    psnshade_to_cpool              => pcisof%psnshade_to_cpool
-    psnsun_to_cpool                => pcisof%psnsun_to_cpool
-    rr                             => pcisof%rr
-    storage_gr                     => pcisof%storage_gr
-    transfer_deadcroot_gr          => pcisof%transfer_deadcroot_gr
-    transfer_deadstem_gr           => pcisof%transfer_deadstem_gr
-    transfer_froot_gr              => pcisof%transfer_froot_gr
-    transfer_gr                    => pcisof%transfer_gr
-    transfer_leaf_gr               => pcisof%transfer_leaf_gr
-    transfer_livecroot_gr          => pcisof%transfer_livecroot_gr
-    transfer_livestem_gr           => pcisof%transfer_livestem_gr
-    vegfire                        => pcisof%vegfire
-    wood_harvestc                  => pcisof%wood_harvestc
-    frootc_alloc                   => pcisof%frootc_alloc
-    frootc_loss                    => pcisof%frootc_loss
-    leafc_alloc                    => pcisof%leafc_alloc
-    leafc_loss                     => pcisof%leafc_loss
-    woodc_alloc                    => pcisof%woodc_alloc
-    woodc_loss                     => pcisof%woodc_loss
-    cpool                          => pcisos%cpool
-    xsmrpool                       => pcisos%xsmrpool
-    pft_ctrunc                     => pcisos%pft_ctrunc
-    deadcrootc                     => pcisos%deadcrootc
-    deadcrootc_storage             => pcisos%deadcrootc_storage
-    deadcrootc_xfer                => pcisos%deadcrootc_xfer
-    deadstemc                      => pcisos%deadstemc
-    deadstemc_storage              => pcisos%deadstemc_storage
-    deadstemc_xfer                 => pcisos%deadstemc_xfer
-    dispvegc                       => pcisos%dispvegc
-    frootc                         => pcisos%frootc
-    frootc_storage                 => pcisos%frootc_storage
-    frootc_xfer                    => pcisos%frootc_xfer
-    gresp_storage                  => pcisos%gresp_storage
-    gresp_xfer                     => pcisos%gresp_xfer
-    leafc                          => pcisos%leafc
-    leafc_storage                  => pcisos%leafc_storage
-    leafc_xfer                     => pcisos%leafc_xfer
-    livecrootc                     => pcisos%livecrootc
-    livecrootc_storage             => pcisos%livecrootc_storage
-    livecrootc_xfer                => pcisos%livecrootc_xfer
-    livestemc                      => pcisos%livestemc
-    livestemc_storage              => pcisos%livestemc_storage
-    livestemc_xfer                 => pcisos%livestemc_xfer
-    storvegc                       => pcisos%storvegc
-    totpftc                        => pcisos%totpftc
-    totvegc                        => pcisos%totvegc
-    woodc                          => pcisos%woodc
-    tempsum_npp                    => clm3%g%l%c%p%pepv%tempsum_npp
-#if (defined CNDV)
-    tempsum_litfall                => clm3%g%l%c%p%pepv%tempsum_litfall
-#endif
-    som_c_leached                      => ccisof%som_c_leached
-    decomp_cpools_leached              => ccisof%decomp_cpools_leached
-    decomp_cpools_transport_tendency   => ccisof%decomp_cpools_transport_tendency
+   woodc                           =>    pcisos%woodc                                 ! Input:  [real(r8) (:)]  wood C (gC/m2)                                    
+   tempsum_npp                     =>    pepv%tempsum_npp                             ! Input:  [real(r8) (:)]  temporary annual sum of NPP (gC/m2/yr)            
+   tempsum_litfall                 =>    pepv%tempsum_litfall                         ! Input:  [real(r8) (:)] temporary annual sum of litfall (gC/m2/yr)         
+   col_lag_npp                     =>    cps%col_lag_npp                              ! Input:  [real(r8) (:)]  (gC/m2/s) lagged net primary production           
+   som_c_leached                   =>    ccisof%som_c_leached                         ! Input:  [real(r8) (:)]  total SOM C loss from vertical transport (gC/m^2/s)
+   decomp_cpools_leached           =>    ccisof%decomp_cpools_leached                 ! Input:  [real(r8) (:,:)]  C loss from vertical transport from each decomposing C pool (gC/m^2/s)
+   decomp_cpools_transport_tendency=>    ccisof%decomp_cpools_transport_tendency      ! Input:  [real(r8) (:,:,:)]  C tendency due to vertical transport in decomposing C pools (gC/m^3/s)
 
    ! pft loop
    do fp = 1,num_soilp
@@ -838,10 +551,10 @@ subroutine CSummary(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
          hrv_gresp_storage_to_litter(p)     + &
          hrv_gresp_xfer_to_litter(p)
                  
-#if (defined CNDV)
-      ! update the annual litfall accumulator, for use in mortality code
-      tempsum_litfall(p) = tempsum_litfall(p) + leafc_to_litter(p) + frootc_to_litter(p)
-#endif
+      if (use_cndv) then
+         ! update the annual litfall accumulator, for use in mortality code
+         tempsum_litfall(p) = tempsum_litfall(p) + leafc_to_litter(p) + frootc_to_litter(p)
+      end if
 
       ! pft-level fire losses (VEGFIRE)
       vegfire(p) = 0._r8
@@ -994,22 +707,43 @@ subroutine CSummary(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
    end do  ! end of pfts loop
 
    ! use p2c routine to get selected column-average pft-level fluxes and states
-   call p2c(num_soilc, filter_soilc, gpp, col_gpp)
-   call p2c(num_soilc, filter_soilc, ar, col_ar)
-   call p2c(num_soilc, filter_soilc, rr, col_rr)
-   call p2c(num_soilc, filter_soilc, npp, col_npp)
-   call p2c(num_soilc, filter_soilc, vegfire, col_vegfire)
-   call p2c(num_soilc, filter_soilc, wood_harvestc, col_wood_harvestc)
-   call p2c(num_soilc, filter_soilc, totvegc, col_totvegc)
-   call p2c(num_soilc, filter_soilc, totpftc, col_totpftc)
-   call p2c(num_soilc, filter_soilc, pft_fire_closs, col_pft_fire_closs)
-   call p2c(num_soilc, filter_soilc, litfall, col_litfall)
-   call p2c(num_soilc, filter_soilc, hrv_xsmrpool_to_atm, col_hrv_xsmrpool_to_atm)
+   call p2c(bounds, num_soilc, filter_soilc, &
+        gpp(bounds%begp:bounds%endp), &
+        col_gpp(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        ar(bounds%begp:bounds%endp), &
+        col_ar(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        rr(bounds%begp:bounds%endp), &
+        col_rr(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        npp(bounds%begp:bounds%endp), &
+        col_npp(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        vegfire(bounds%begp:bounds%endp), &
+        col_vegfire(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        wood_harvestc(bounds%begp:bounds%endp), &
+        col_wood_harvestc(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        totvegc(bounds%begp:bounds%endp), &
+        col_totvegc(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        totpftc(bounds%begp:bounds%endp), &
+        col_totpftc(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        pft_fire_closs(bounds%begp:bounds%endp), &
+        col_pft_fire_closs(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        litfall(bounds%begp:bounds%endp), &
+        col_litfall(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        hrv_xsmrpool_to_atm(bounds%begp:bounds%endp), &
+        col_hrv_xsmrpool_to_atm(bounds%begc:bounds%endc))
 
    if ( isotope .eq. 'bulk') then
       if (nfix_timeconst .gt. 0._r8 .and. nfix_timeconst .lt. 500._r8 ) then
          ! this code is to calculate an exponentially-relaxed npp value for use in NDynamics code
-         col_lag_npp                    => clm3%g%l%c%cps%col_lag_npp
          dtime = get_step_size()
          nfixlags = nfix_timeconst * secspday
          ! column loop
@@ -1363,327 +1097,164 @@ subroutine CSummary(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
       end do
    end do
 
+    end associate 
+ end subroutine CSummary
 
-
-end subroutine CSummary
-!-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: NSummary
-!
-! !INTERFACE:
-subroutine NSummary(num_soilc, filter_soilc, num_soilp, filter_soilp)
-!
-! !DESCRIPTION:
-! On the radiation time step, perform pft and column-level nitrogen
-! summary calculations
-!
-! !USES:
+ !-----------------------------------------------------------------------
+ subroutine NSummary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+   !
+   ! !DESCRIPTION:
+   ! On the radiation time step, perform pft and column-level nitrogen
+   ! summary calculations
+   !
+   ! !USES:
    use clmtype
    use pft2colMod, only: p2c
-   use clm_varpar  , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-!
-! !ARGUMENTS:
+   use clm_varpar, only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+   use clm_varctl, only: use_nitrif_denitrif
+   !
+   ! !ARGUMENTS:
    implicit none
+   type(bounds_type), intent(in) :: bounds  ! bounds
    integer, intent(in) :: num_soilc       ! number of soil columns in filter
    integer, intent(in) :: filter_soilc(:) ! filter for soil columns
    integer, intent(in) :: num_soilp       ! number of soil pfts in filter
    integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
-!
-! !CALLED FROM:
-! subroutine CNEcosystemDyn
-!
-! !REVISION HISTORY:
-! 6/28/04: Created by Peter Thornton
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in scalars
-   integer , pointer :: ivt(:)            ! pft vegetation type
-   real(r8), pointer :: col_fire_nloss(:) ! (gN/m2/s) total column-level fire N loss
-   real(r8), pointer :: col_wood_harvestn(:)
-   real(r8), pointer :: denit(:)
-   real(r8), pointer :: col_pft_fire_nloss(:) ! (gN/m2/s) total pft-level fire C loss 
-   real(r8), pointer :: col_totpftn(:)        ! (gN/m2) total pft-level nitrogen
-   real(r8), pointer :: col_totvegn(:)            ! (gN/m2) total vegetation nitrogen
-   real(r8), pointer :: cwdn(:)               ! (gN/m2) coarse woody debris N
-   real(r8), pointer :: col_ntrunc(:)         ! (gN/m2) column-level sink for N truncation
-   real(r8), pointer :: sminn(:)              ! (gN/m2) soil mineral N
-   real(r8), pointer :: m_decomp_npools_to_fire_vr(:,:,:)              
-   real(r8), pointer :: m_decomp_npools_to_fire(:,:)              
-   logical, pointer :: is_litter(:)                       ! TRUE => pool is a litter pool
-   logical, pointer :: is_soil(:)                         ! TRUE => pool is a soil pool
-   logical, pointer :: is_cwd(:)                          ! TRUE => pool is a cwd pool
-#ifndef NITRIF_DENITRIF
-   real(r8), pointer :: sminn_to_denit_excess_vr(:,:)
-   real(r8), pointer :: sminn_to_denit_excess(:)
-   real(r8), pointer :: sminn_leached_vr(:,:)
-   real(r8), pointer :: sminn_leached(:)
-   real(r8), pointer :: sminn_to_denit_decomp_cascade_vr(:,:,:)   ! vertically-resolved denitrification along decomp cascade (gN/m3/s) 
-   real(r8), pointer :: sminn_to_denit_decomp_cascade(:,:)   ! vertically-integrated denitrification along decomp cascade (gN/m2/s) 
-#else
-   real(r8), pointer :: smin_no3(:)
-   real(r8), pointer :: smin_nh4(:)
-   real(r8), pointer :: smin_no3_vr(:,:)
-   real(r8), pointer :: smin_nh4_vr(:,:)
-   real(r8), pointer :: f_nit_vr(:,:)
-   real(r8), pointer :: f_nit(:)
-   real(r8), pointer :: f_denit_vr(:,:)
-   real(r8), pointer :: f_denit(:)
-   real(r8), pointer :: pot_f_nit_vr(:,:)
-   real(r8), pointer :: pot_f_nit(:)
-   real(r8), pointer :: pot_f_denit_vr(:,:)
-   real(r8), pointer :: pot_f_denit(:)
-   real(r8), pointer :: f_n2o_denit_vr(:,:)    ! flux of N2o from denitrification [gN/m3/s]
-   real(r8), pointer :: f_n2o_denit(:)         ! flux of N2o from denitrification [gN/m2/s]
-   real(r8), pointer :: f_n2o_nit_vr(:,:)      ! flux of N2o from nitrification [gN/m3/s]
-   real(r8), pointer :: f_n2o_nit(:)           ! flux of N2o from nitrification [gN/m2/s]
-   real(r8), pointer :: smin_no3_leached_vr(:,:)
-   real(r8), pointer :: smin_no3_leached(:)
-   real(r8), pointer :: smin_no3_runoff_vr(:,:)
-   real(r8), pointer :: smin_no3_runoff(:)
-#endif
-   real(r8), pointer :: decomp_npools(:,:)         ! (gN/m2)  decomposing (litter, cwd, soil) N pools
-   real(r8), pointer :: decomp_npools_vr(:,:,:)    ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-   real(r8), pointer :: decomp_npools_1m(:,:)           ! (gN/m2)  diagnostic: decomposing (litter, cwd, soil) N pools to 1 meter
-   integer, pointer :: altmax_indx(:)                  ! maximum annual depth of thaw
-   integer, pointer :: altmax_lastyear_indx(:)         ! prior year maximum annual depth of thaw
-   real(r8), pointer :: sminn_vr(:,:)              ! (gN/m3) soil mineral N
-   real(r8), pointer :: col_ntrunc_vr(:,:)         ! (gN/m3) column-level sink for N truncation
-   real(r8), pointer :: supplement_to_sminn(:)
-   real(r8), pointer :: supplement_to_sminn_vr(:,:)
-   real(r8), pointer :: totcoln(:)            ! (gN/m2) total column nitrogen, incl veg
-   real(r8), pointer :: totecosysn(:)         ! (gN/m2) total ecosystem nitrogen, incl veg 
-   real(r8), pointer :: totlitn(:)            ! (gN/m2) total litter nitrogen
-   real(r8), pointer :: totlitn_1m(:)         ! (gN/m2) total litter nitrogen to 1 meter
-   real(r8), pointer :: totsomn(:)            ! (gN/m2) total soil organic matter nitrogen
-
-! fire related variables changed by F. Li and S. Levis
-   real(r8), pointer :: m_leafn_to_fire(:)   
-   real(r8), pointer :: m_leafn_storage_to_fire(:)                
-   real(r8), pointer :: m_leafn_xfer_to_fire(:)  
-   real(r8), pointer :: m_livestemn_to_fire(:)    
-   real(r8), pointer :: m_livestemn_storage_to_fire(:)        
-   real(r8), pointer :: m_livestemn_xfer_to_fire(:) 
-   real(r8), pointer :: m_deadstemn_to_fire(:) 
-   real(r8), pointer :: m_deadstemn_storage_to_fire(:)           
-   real(r8), pointer :: totsomn_1m(:)         ! (gN/m2) total soil organic matter nitrogen to 1 meter
-   real(r8), pointer :: m_deadcrootn_storage_to_fire(:) 
-   real(r8), pointer :: m_deadcrootn_to_fire(:)         
-   real(r8), pointer :: m_deadcrootn_xfer_to_fire(:)
-   real(r8), pointer :: m_deadstemn_xfer_to_fire(:) 
-   real(r8), pointer :: m_frootn_to_fire(:)        
-   real(r8), pointer :: m_frootn_storage_to_fire(:)  
-   real(r8), pointer :: m_frootn_xfer_to_fire(:)
-   real(r8), pointer :: m_livecrootn_to_fire(:)    
-   real(r8), pointer :: m_livecrootn_storage_to_fire(:)      
-   real(r8), pointer :: m_livecrootn_xfer_to_fire(:)
-   real(r8), pointer :: m_retransn_to_fire(:)   
-    
-   real(r8), pointer :: hrv_deadstemn_to_prod10n(:)        
-   real(r8), pointer :: hrv_deadstemn_to_prod100n(:)       
-   real(r8), pointer :: ndeploy(:)
-   real(r8), pointer :: pft_fire_nloss(:) ! (gN/m2/s) total pft-level fire C loss 
-   real(r8), pointer :: retransn_to_npool(:)          
-   real(r8), pointer :: sminn_to_npool(:)             
-   real(r8), pointer :: deadcrootn(:)         ! (gN/m2) dead coarse root N
-   real(r8), pointer :: deadcrootn_storage(:) ! (gN/m2) dead coarse root N storage
-   real(r8), pointer :: deadcrootn_xfer(:)    ! (gN/m2) dead coarse root N transfer
-   real(r8), pointer :: deadstemn(:)          ! (gN/m2) dead stem N
-   real(r8), pointer :: deadstemn_storage(:)  ! (gN/m2) dead stem N storage
-   real(r8), pointer :: deadstemn_xfer(:)     ! (gN/m2) dead stem N transfer
-   real(r8), pointer :: dispvegn(:)           ! (gN/m2) displayed veg nitrogen, excluding storage
-   real(r8), pointer :: frootn(:)             ! (gN/m2) fine root N
-   real(r8), pointer :: frootn_storage(:)     ! (gN/m2) fine root N storage
-   real(r8), pointer :: frootn_xfer(:)        ! (gN/m2) fine root N transfer
-   real(r8), pointer :: leafn(:)              ! (gN/m2) leaf N 
-   real(r8), pointer :: leafn_storage(:)      ! (gN/m2) leaf N storage
-   real(r8), pointer :: leafn_xfer(:)         ! (gN/m2) leaf N transfer
-   real(r8), pointer :: livecrootn(:)         ! (gN/m2) live coarse root N
-   real(r8), pointer :: livecrootn_storage(:) ! (gN/m2) live coarse root N storage
-   real(r8), pointer :: livecrootn_xfer(:)    ! (gN/m2) live coarse root N transfer
-   real(r8), pointer :: grainn(:)             ! (gN/m2) grain N
-   real(r8), pointer :: grainn_storage(:)     ! (gN/m2) grain N storage
-   real(r8), pointer :: grainn_xfer(:)        ! (gN/m2) grain N transfer
-   real(r8), pointer :: livestemn(:)          ! (gN/m2) live stem N
-   real(r8), pointer :: livestemn_storage(:)  ! (gN/m2) live stem N storage
-   real(r8), pointer :: livestemn_xfer(:)     ! (gN/m2) live stem N transfer
-   real(r8), pointer :: retransn(:)           ! (gN/m2) plant pool of retranslocated N
-   real(r8), pointer :: npool(:)              ! (gN/m2) temporary plant N pool
-   real(r8), pointer :: pft_ntrunc(:)         ! (gN/m2) pft-level sink for N truncation
-   real(r8), pointer :: storvegn(:)           ! (gN/m2) stored vegetation nitrogen
-   real(r8), pointer :: totpftn(:)            ! (gN/m2) total pft-level nitrogen
-   real(r8), pointer :: totvegn(:)            ! (gN/m2) total vegetation nitrogen
-   ! for landcover change
-   real(r8), pointer :: wood_harvestn(:)                    ! total N losses to wood product pools (gN/m2/s)
-   real(r8), pointer :: dwt_nloss(:)          ! (gN/m2/s) total nitrogen loss from product pools and conversion
-   real(r8), pointer :: dwt_conv_nflux(:)     ! (gN/m2/s) conversion N flux (immediate loss to atm)
-   real(r8), pointer :: seedn(:)              ! (gN/m2) column-level pool for seeding new PFTs
-   real(r8), pointer :: prod10n_loss(:)       ! (gN/m2/s) loss from 10-yr wood product pool
-   real(r8), pointer :: prod100n_loss(:)      ! (gN/m2/s) loss from 100-yr wood product pool
-   real(r8), pointer :: product_nloss(:)      ! (gN/m2/s) total wood product nitrogen loss
-   real(r8), pointer :: prod10n(:)            ! (gN/m2) wood product N pool, 10-year lifespan
-   real(r8), pointer :: prod100n(:)           ! (gN/m2) wood product N pool, 100-year lifespan
-   real(r8), pointer :: totprodn(:)           ! (gN/m2) total wood product N
-
-   real(r8), pointer :: decomp_cascade_ntransfer_vr(:,:,:)
-   real(r8), pointer :: decomp_cascade_ntransfer(:,:)
-   real(r8), pointer :: decomp_cascade_sminn_flux_vr(:,:,:)   ! vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
-   real(r8), pointer :: decomp_cascade_sminn_flux(:,:)        ! vert-int (diagnostic) mineral N flux for transition along decomposition cascade (gN/m2/s)
-
-   real(r8), pointer :: som_n_leached(:)                           ! total SOM N loss from vertical transport (gN/m^2/s)
-   real(r8), pointer :: decomp_npools_leached(:,:)                 ! N loss from vertical transport from each decomposing N pool (gN/m^2/s)
-   real(r8), pointer :: decomp_npools_transport_tendency(:,:,:)    ! N tendency due to vertical transport in decomposing N pools (gN/m^3/s)
-
-!
-! local pointers to implicit in/out scalars
-!
-! local pointers to implicit out scalars
-!
-! !OTHER LOCAL VARIABLES:
+   !
+   ! !LOCAL VARIABLES:
    integer :: c,p,j,k,l       ! indices
    integer :: fp,fc       ! lake filter indices
    real(r8) :: maxdepth    ! depth to integrate soil variables
+   !-----------------------------------------------------------------------
 
-!EOP
-!-----------------------------------------------------------------------
-    ! assign local pointers
-    ivt                            => clm3%g%l%c%p%itype
-    col_fire_nloss                 => clm3%g%l%c%cnf%col_fire_nloss
-    denit                          => clm3%g%l%c%cnf%denit
-    col_pft_fire_nloss             => clm3%g%l%c%cnf%pnf_a%pft_fire_nloss
-    cwdn                           => clm3%g%l%c%cns%cwdn
-    col_ntrunc                     => clm3%g%l%c%cns%col_ntrunc
-    sminn                          => clm3%g%l%c%cns%sminn
-    m_decomp_npools_to_fire_vr     => clm3%g%l%c%cnf%m_decomp_npools_to_fire_vr
-    m_decomp_npools_to_fire        => clm3%g%l%c%cnf%m_decomp_npools_to_fire
-    is_litter                               => decomp_cascade_con%is_litter
-    is_soil                                 => decomp_cascade_con%is_soil
-    is_cwd                                  => decomp_cascade_con%is_cwd
-#ifndef NITRIF_DENITRIF
-    sminn_to_denit_excess_vr          => clm3%g%l%c%cnf%sminn_to_denit_excess_vr
-    sminn_to_denit_excess             => clm3%g%l%c%cnf%sminn_to_denit_excess
-    sminn_to_denit_decomp_cascade_vr  => clm3%g%l%c%cnf%sminn_to_denit_decomp_cascade_vr
-    sminn_to_denit_decomp_cascade     => clm3%g%l%c%cnf%sminn_to_denit_decomp_cascade
-    sminn_leached_vr                  => clm3%g%l%c%cnf%sminn_leached_vr
-    sminn_leached                     => clm3%g%l%c%cnf%sminn_leached
-#else
-    smin_no3                          => clm3%g%l%c%cns%smin_no3
-    smin_nh4                          => clm3%g%l%c%cns%smin_nh4
-    smin_no3_vr                       => clm3%g%l%c%cns%smin_no3_vr
-    smin_nh4_vr                       => clm3%g%l%c%cns%smin_nh4_vr
-    f_nit_vr                          => clm3%g%l%c%cnf%f_nit_vr
-    f_nit                             => clm3%g%l%c%cnf%f_nit
-    f_denit_vr                        => clm3%g%l%c%cnf%f_denit_vr
-    f_denit                           => clm3%g%l%c%cnf%f_denit
-    pot_f_nit_vr                      => clm3%g%l%c%cnf%pot_f_nit_vr
-    pot_f_nit                         => clm3%g%l%c%cnf%pot_f_nit
-    pot_f_denit_vr                    => clm3%g%l%c%cnf%pot_f_denit_vr
-    pot_f_denit                       => clm3%g%l%c%cnf%pot_f_denit
-    f_n2o_denit_vr                    => clm3%g%l%c%cnf%f_n2o_denit_vr
-    f_n2o_nit_vr                      => clm3%g%l%c%cnf%f_n2o_nit_vr
-    f_n2o_denit                       => clm3%g%l%c%cnf%f_n2o_denit
-    f_n2o_nit                         => clm3%g%l%c%cnf%f_n2o_nit
-    smin_no3_leached_vr               => clm3%g%l%c%cnf%smin_no3_leached_vr
-    smin_no3_leached                  => clm3%g%l%c%cnf%smin_no3_leached
-    smin_no3_runoff_vr                => clm3%g%l%c%cnf%smin_no3_runoff_vr
-    smin_no3_runoff                   => clm3%g%l%c%cnf%smin_no3_runoff
-#endif
-    decomp_npools                     => clm3%g%l%c%cns%decomp_npools
-    decomp_npools_vr                  => clm3%g%l%c%cns%decomp_npools_vr
-    decomp_npools_1m                  => clm3%g%l%c%cns%decomp_npools_1m
-    altmax_indx                       => clm3%g%l%c%cps%altmax_indx
-    altmax_lastyear_indx              => clm3%g%l%c%cps%altmax_lastyear_indx
-    sminn_vr                          => clm3%g%l%c%cns%sminn_vr
-    col_ntrunc_vr                     => clm3%g%l%c%cns%col_ntrunc_vr
-    supplement_to_sminn               => clm3%g%l%c%cnf%supplement_to_sminn
-    supplement_to_sminn_vr            => clm3%g%l%c%cnf%supplement_to_sminn_vr
-    col_totpftn                    => clm3%g%l%c%cns%pns_a%totpftn
-    col_totvegn                    => clm3%g%l%c%cns%pns_a%totvegn
-    totcoln                        => clm3%g%l%c%cns%totcoln
-    totecosysn                     => clm3%g%l%c%cns%totecosysn
-    totlitn                        => clm3%g%l%c%cns%totlitn
-    totlitn_1m                     => clm3%g%l%c%cns%totlitn_1m
-    totsomn                        => clm3%g%l%c%cns%totsomn
-    m_leafn_to_fire                => clm3%g%l%c%p%pnf%m_leafn_to_fire
-    m_leafn_storage_to_fire        => clm3%g%l%c%p%pnf%m_leafn_storage_to_fire
-    m_leafn_xfer_to_fire           => clm3%g%l%c%p%pnf%m_leafn_xfer_to_fire
-    m_livestemn_to_fire            => clm3%g%l%c%p%pnf%m_livestemn_to_fire
-    m_livestemn_storage_to_fire    => clm3%g%l%c%p%pnf%m_livestemn_storage_to_fire
-    m_livestemn_xfer_to_fire       => clm3%g%l%c%p%pnf%m_livestemn_xfer_to_fire
-    m_deadstemn_to_fire            => clm3%g%l%c%p%pnf%m_deadstemn_to_fire
-    totsomn_1m                     => clm3%g%l%c%cns%totsomn_1m
-    m_deadcrootn_storage_to_fire   => clm3%g%l%c%p%pnf%m_deadcrootn_storage_to_fire
-    m_deadcrootn_to_fire           => clm3%g%l%c%p%pnf%m_deadcrootn_to_fire
-    m_deadcrootn_xfer_to_fire      => clm3%g%l%c%p%pnf%m_deadcrootn_xfer_to_fire
-    m_deadstemn_storage_to_fire    => clm3%g%l%c%p%pnf%m_deadstemn_storage_to_fire
-    m_deadstemn_xfer_to_fire       => clm3%g%l%c%p%pnf%m_deadstemn_xfer_to_fire
-    m_frootn_to_fire               => clm3%g%l%c%p%pnf%m_frootn_to_fire
-    m_frootn_storage_to_fire       => clm3%g%l%c%p%pnf%m_frootn_storage_to_fire
-    m_frootn_xfer_to_fire          => clm3%g%l%c%p%pnf%m_frootn_xfer_to_fire
-    m_livecrootn_to_fire           => clm3%g%l%c%p%pnf%m_livecrootn_to_fire
-    m_livecrootn_storage_to_fire   => clm3%g%l%c%p%pnf%m_livecrootn_storage_to_fire
-    m_livecrootn_xfer_to_fire      => clm3%g%l%c%p%pnf%m_livecrootn_xfer_to_fire
-    m_deadcrootn_to_fire           => clm3%g%l%c%p%pnf%m_deadcrootn_to_fire
-    m_deadcrootn_storage_to_fire   => clm3%g%l%c%p%pnf%m_deadcrootn_storage_to_fire
-    m_deadcrootn_xfer_to_fire      => clm3%g%l%c%p%pnf%m_deadcrootn_xfer_to_fire
-    m_retransn_to_fire             => clm3%g%l%c%p%pnf%m_retransn_to_fire
-   
-
-    hrv_deadstemn_to_prod10n         => clm3%g%l%c%p%pnf%hrv_deadstemn_to_prod10n        
-    hrv_deadstemn_to_prod100n        => clm3%g%l%c%p%pnf%hrv_deadstemn_to_prod100n       
-    ndeploy                        => clm3%g%l%c%p%pnf%ndeploy
-    pft_fire_nloss                 => clm3%g%l%c%p%pnf%pft_fire_nloss
-    retransn_to_npool              => clm3%g%l%c%p%pnf%retransn_to_npool
-    sminn_to_npool                 => clm3%g%l%c%p%pnf%sminn_to_npool
-    deadcrootn                     => clm3%g%l%c%p%pns%deadcrootn
-    deadcrootn_storage             => clm3%g%l%c%p%pns%deadcrootn_storage
-    deadcrootn_xfer                => clm3%g%l%c%p%pns%deadcrootn_xfer
-    deadstemn                      => clm3%g%l%c%p%pns%deadstemn
-    deadstemn_storage              => clm3%g%l%c%p%pns%deadstemn_storage
-    deadstemn_xfer                 => clm3%g%l%c%p%pns%deadstemn_xfer
-    dispvegn                       => clm3%g%l%c%p%pns%dispvegn
-    frootn                         => clm3%g%l%c%p%pns%frootn
-    frootn_storage                 => clm3%g%l%c%p%pns%frootn_storage
-    frootn_xfer                    => clm3%g%l%c%p%pns%frootn_xfer
-    leafn                          => clm3%g%l%c%p%pns%leafn
-    leafn_storage                  => clm3%g%l%c%p%pns%leafn_storage
-    leafn_xfer                     => clm3%g%l%c%p%pns%leafn_xfer
-    livecrootn                     => clm3%g%l%c%p%pns%livecrootn
-    livecrootn_storage             => clm3%g%l%c%p%pns%livecrootn_storage
-    livecrootn_xfer                => clm3%g%l%c%p%pns%livecrootn_xfer
-    grainn                         => clm3%g%l%c%p%pns%grainn
-    grainn_storage                 => clm3%g%l%c%p%pns%grainn_storage
-    grainn_xfer                    => clm3%g%l%c%p%pns%grainn_xfer
-    livestemn                      => clm3%g%l%c%p%pns%livestemn
-    livestemn_storage              => clm3%g%l%c%p%pns%livestemn_storage
-    livestemn_xfer                 => clm3%g%l%c%p%pns%livestemn_xfer
-    retransn                       => clm3%g%l%c%p%pns%retransn
-    npool                          => clm3%g%l%c%p%pns%npool
-    pft_ntrunc                     => clm3%g%l%c%p%pns%pft_ntrunc
-    storvegn                       => clm3%g%l%c%p%pns%storvegn
-    totpftn                        => clm3%g%l%c%p%pns%totpftn
-    totvegn                        => clm3%g%l%c%p%pns%totvegn
-    ! dynamic landcover pointers
-    wood_harvestn                  => clm3%g%l%c%p%pnf%wood_harvestn
-    col_wood_harvestn              => clm3%g%l%c%cnf%pnf_a%wood_harvestn 
-    dwt_nloss                      => clm3%g%l%c%cnf%dwt_nloss
-    dwt_conv_nflux                 => clm3%g%l%c%cnf%dwt_conv_nflux
-    prod10n_loss                   => clm3%g%l%c%cnf%prod10n_loss
-    prod100n_loss                  => clm3%g%l%c%cnf%prod100n_loss
-    product_nloss                  => clm3%g%l%c%cnf%product_nloss
-    seedn                          => clm3%g%l%c%cns%seedn
-    prod10n                        => clm3%g%l%c%cns%prod10n
-    prod100n                       => clm3%g%l%c%cns%prod100n
-    totprodn                       => clm3%g%l%c%cns%totprodn
-    som_n_leached                      => clm3%g%l%c%cnf%som_n_leached
-    decomp_npools_leached              => clm3%g%l%c%cnf%decomp_npools_leached
-    decomp_npools_transport_tendency   => clm3%g%l%c%cnf%decomp_npools_transport_tendency
-    decomp_cascade_ntransfer_vr       => clm3%g%l%c%cnf%decomp_cascade_ntransfer_vr
-    decomp_cascade_ntransfer          => clm3%g%l%c%cnf%decomp_cascade_ntransfer
-    decomp_cascade_sminn_flux_vr      => clm3%g%l%c%cnf%decomp_cascade_sminn_flux_vr
-    decomp_cascade_sminn_flux         => clm3%g%l%c%cnf%decomp_cascade_sminn_flux
+   associate(& 
+   ivt                             =>   pft%itype                                    , & ! Input:  [integer (:)]  pft vegetation type                                
+   col_fire_nloss                  =>    cnf%col_fire_nloss                          , & ! Input:  [real(r8) (:)]  (gN/m2/s) total column-level fire N loss          
+   denit                           =>    cnf%denit                                   , & ! Input:  [real(r8) (:)]                                                    
+   col_pft_fire_nloss              =>    pnf_a%pft_fire_nloss                        , & ! Input:  [real(r8) (:)]  (gN/m2/s) total pft-level fire C loss             
+   cwdn                            =>    cns%cwdn                                    , & ! Input:  [real(r8) (:)]  (gN/m2) coarse woody debris N                     
+   col_ntrunc                      =>    cns%col_ntrunc                              , & ! Input:  [real(r8) (:)]  (gN/m2) column-level sink for N truncation        
+   sminn                           =>    cns%sminn                                   , & ! Input:  [real(r8) (:)]  (gN/m2) soil mineral N                            
+   m_decomp_npools_to_fire_vr      =>    cnf%m_decomp_npools_to_fire_vr              , & ! Input:  [real(r8) (:,:,:)]                                                
+   m_decomp_npools_to_fire         =>    cnf%m_decomp_npools_to_fire                 , & ! Input:  [real(r8) (:,:)]                                                  
+   is_litter                       =>    decomp_cascade_con%is_litter                , & ! Input:  [logical (:)]  TRUE => pool is a litter pool                      
+   is_soil                         =>    decomp_cascade_con%is_soil                  , & ! Input:  [logical (:)]  TRUE => pool is a soil pool                        
+   is_cwd                          =>    decomp_cascade_con%is_cwd                   , & ! Input:  [logical (:)]  TRUE => pool is a cwd pool                         
+   sminn_to_denit_excess_vr        =>    cnf%sminn_to_denit_excess_vr                , & ! Input:  [real(r8) (:,:)]                                                  
+   sminn_to_denit_excess           =>    cnf%sminn_to_denit_excess                   , & ! Input:  [real(r8) (:)]                                                    
+   sminn_to_denit_decomp_cascade_vr=>    cnf%sminn_to_denit_decomp_cascade_vr        , & ! Input:  [real(r8) (:,:,:)]  vertically-resolved denitrification along decomp cascade (gN/m3/s)
+   sminn_to_denit_decomp_cascade   =>    cnf%sminn_to_denit_decomp_cascade           , & ! Input:  [real(r8) (:,:)]  vertically-integrated denitrification along decomp cascade (gN/m2/s)
+   sminn_leached_vr                =>    cnf%sminn_leached_vr                        , & ! Input:  [real(r8) (:,:)]                                                  
+   sminn_leached                   =>    cnf%sminn_leached                           , & ! Input:  [real(r8) (:)]                                                    
+   smin_no3                        =>    cns%smin_no3                                , & ! Input:  [real(r8) (:)]                                                    
+   smin_nh4                        =>    cns%smin_nh4                                , & ! Input:  [real(r8) (:)]                                                    
+   smin_no3_vr                     =>    cns%smin_no3_vr                             , & ! Input:  [real(r8) (:,:)]                                                  
+   smin_nh4_vr                     =>    cns%smin_nh4_vr                             , & ! Input:  [real(r8) (:,:)]                                                  
+   f_nit_vr                        =>    cnf%f_nit_vr                                , & ! Input:  [real(r8) (:,:)]                                                  
+   f_nit                           =>    cnf%f_nit                                   , & ! Input:  [real(r8) (:)]                                                    
+   f_denit_vr                      =>    cnf%f_denit_vr                              , & ! Input:  [real(r8) (:,:)]                                                  
+   f_denit                         =>    cnf%f_denit                                 , & ! Input:  [real(r8) (:)]                                                    
+   pot_f_nit_vr                    =>    cnf%pot_f_nit_vr                            , & ! Input:  [real(r8) (:,:)]                                                  
+   pot_f_nit                       =>    cnf%pot_f_nit                               , & ! Input:  [real(r8) (:)]                                                    
+   pot_f_denit_vr                  =>    cnf%pot_f_denit_vr                          , & ! Input:  [real(r8) (:,:)]                                                  
+   pot_f_denit                     =>    cnf%pot_f_denit                             , & ! Input:  [real(r8) (:)]                                                    
+   f_n2o_denit_vr                  =>    cnf%f_n2o_denit_vr                          , & ! Input:  [real(r8) (:,:)]  flux of N2o from denitrification [gN/m3/s]      
+   f_n2o_nit_vr                    =>    cnf%f_n2o_nit_vr                            , & ! Input:  [real(r8) (:,:)]  flux of N2o from nitrification [gN/m3/s]        
+   f_n2o_denit                     =>    cnf%f_n2o_denit                             , & ! Input:  [real(r8) (:)]  flux of N2o from denitrification [gN/m2/s]        
+   f_n2o_nit                       =>    cnf%f_n2o_nit                               , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m2/s]          
+   smin_no3_leached_vr             =>    cnf%smin_no3_leached_vr                     , & ! Input:  [real(r8) (:,:)]                                                  
+   smin_no3_leached                =>    cnf%smin_no3_leached                        , & ! Input:  [real(r8) (:)]                                                    
+   smin_no3_runoff_vr              =>    cnf%smin_no3_runoff_vr                      , & ! Input:  [real(r8) (:,:)]                                                  
+   smin_no3_runoff                 =>    cnf%smin_no3_runoff                         , & ! Input:  [real(r8) (:)]                                                    
+   decomp_npools                   =>    cns%decomp_npools                           , & ! Input:  [real(r8) (:,:)]  (gN/m2)  decomposing (litter, cwd, soil) N pools
+   decomp_npools_vr                =>    cns%decomp_npools_vr                        , & ! Input:  [real(r8) (:,:,:)]  (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+   decomp_npools_1m                =>    cns%decomp_npools_1m                        , & ! Input:  [real(r8) (:,:)]  (gN/m2)  diagnostic: decomposing (litter, cwd, soil) N pools to 1 meter
+   altmax_indx                     =>    cps%altmax_indx                             , & ! Input:  [integer (:)]  maximum annual depth of thaw                       
+   altmax_lastyear_indx            =>    cps%altmax_lastyear_indx                    , & ! Input:  [integer (:)]  prior year maximum annual depth of thaw            
+   sminn_vr                        =>    cns%sminn_vr                                , & ! Input:  [real(r8) (:,:)]  (gN/m3) soil mineral N                          
+   col_ntrunc_vr                   =>    cns%col_ntrunc_vr                           , & ! Input:  [real(r8) (:,:)]  (gN/m3) column-level sink for N truncation      
+   supplement_to_sminn             =>    cnf%supplement_to_sminn                     , & ! Input:  [real(r8) (:)]                                                    
+   supplement_to_sminn_vr          =>    cnf%supplement_to_sminn_vr                  , & ! Input:  [real(r8) (:,:)]                                                  
+   col_totpftn                     =>    pns_a%totpftn                               , & ! Input:  [real(r8) (:)]  (gN/m2) total pft-level nitrogen                  
+   col_totvegn                     =>    pns_a%totvegn                               , & ! Input:  [real(r8) (:)]  (gN/m2) total vegetation nitrogen                 
+   totcoln                         =>    cns%totcoln                                 , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg           
+   totecosysn                      =>    cns%totecosysn                              , & ! Input:  [real(r8) (:)]  (gN/m2) total ecosystem nitrogen, incl veg        
+   totlitn                         =>    cns%totlitn                                 , & ! Input:  [real(r8) (:)]  (gN/m2) total litter nitrogen                     
+   totlitn_1m                      =>    cns%totlitn_1m                              , & ! Input:  [real(r8) (:)]  (gN/m2) total litter nitrogen to 1 meter          
+   totsomn                         =>    cns%totsomn                                 , & ! Input:  [real(r8) (:)]  (gN/m2) total soil organic matter nitrogen        
+   m_leafn_to_fire                 =>    pnf%m_leafn_to_fire                         , & ! Input:  [real(r8) (:)]                                                    
+   m_leafn_storage_to_fire         =>    pnf%m_leafn_storage_to_fire                 , & ! Input:  [real(r8) (:)]                                                    
+   m_leafn_xfer_to_fire            =>    pnf%m_leafn_xfer_to_fire                    , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemn_to_fire             =>    pnf%m_livestemn_to_fire                     , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemn_storage_to_fire     =>    pnf%m_livestemn_storage_to_fire             , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemn_xfer_to_fire        =>    pnf%m_livestemn_xfer_to_fire                , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemn_to_fire             =>    pnf%m_deadstemn_to_fire                     , & ! Input:  [real(r8) (:)]                                                    
+   totsomn_1m                      =>    cns%totsomn_1m                              , & ! Input:  [real(r8) (:)]  (gN/m2) total soil organic matter nitrogen to 1 meter
+   m_deadcrootn_storage_to_fire    =>    pnf%m_deadcrootn_storage_to_fire            , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootn_to_fire            =>    pnf%m_deadcrootn_to_fire                    , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootn_xfer_to_fire       =>    pnf%m_deadcrootn_xfer_to_fire               , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemn_storage_to_fire     =>    pnf%m_deadstemn_storage_to_fire             , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemn_xfer_to_fire        =>    pnf%m_deadstemn_xfer_to_fire                , & ! Input:  [real(r8) (:)]                                                    
+   m_frootn_to_fire                =>    pnf%m_frootn_to_fire                        , & ! Input:  [real(r8) (:)]                                                    
+   m_frootn_storage_to_fire        =>    pnf%m_frootn_storage_to_fire                , & ! Input:  [real(r8) (:)]                                                    
+   m_frootn_xfer_to_fire           =>    pnf%m_frootn_xfer_to_fire                   , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootn_to_fire            =>    pnf%m_livecrootn_to_fire                    , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootn_storage_to_fire    =>    pnf%m_livecrootn_storage_to_fire            , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootn_xfer_to_fire       =>    pnf%m_livecrootn_xfer_to_fire               , & ! Input:  [real(r8) (:)]                                                    
+   m_retransn_to_fire              =>    pnf%m_retransn_to_fire                      , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemn_to_prod10n        =>    pnf%hrv_deadstemn_to_prod10n                , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemn_to_prod100n       =>    pnf%hrv_deadstemn_to_prod100n               , & ! Input:  [real(r8) (:)]                                                    
+   ndeploy                         =>    pnf%ndeploy                                 , & ! Input:  [real(r8) (:)]                                                    
+   pft_fire_nloss                  =>    pnf%pft_fire_nloss                          , & ! Input:  [real(r8) (:)]  (gN/m2/s) total pft-level fire C loss             
+   retransn_to_npool               =>    pnf%retransn_to_npool                       , & ! Input:  [real(r8) (:)]                                                    
+   sminn_to_npool                  =>    pnf%sminn_to_npool                          , & ! Input:  [real(r8) (:)]                                                    
+   deadcrootn                      =>    pns%deadcrootn                              , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N                        
+   deadcrootn_storage              =>    pns%deadcrootn_storage                      , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N storage                
+   deadcrootn_xfer                 =>    pns%deadcrootn_xfer                         , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N transfer               
+   deadstemn                       =>    pns%deadstemn                               , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N                               
+   deadstemn_storage               =>    pns%deadstemn_storage                       , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N storage                       
+   deadstemn_xfer                  =>    pns%deadstemn_xfer                          , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N transfer                      
+   dispvegn                        =>    pns%dispvegn                                , & ! Input:  [real(r8) (:)]  (gN/m2) displayed veg nitrogen, excluding storage 
+   frootn                          =>    pns%frootn                                  , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N                               
+   frootn_storage                  =>    pns%frootn_storage                          , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N storage                       
+   frootn_xfer                     =>    pns%frootn_xfer                             , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N transfer                      
+   leafn                           =>    pns%leafn                                   , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N                                    
+   leafn_storage                   =>    pns%leafn_storage                           , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N storage                            
+   leafn_xfer                      =>    pns%leafn_xfer                              , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N transfer                           
+   livecrootn                      =>    pns%livecrootn                              , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N                        
+   livecrootn_storage              =>    pns%livecrootn_storage                      , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N storage                
+   livecrootn_xfer                 =>    pns%livecrootn_xfer                         , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N transfer               
+   grainn                          =>    pns%grainn                                  , & ! Input:  [real(r8) (:)]  (gN/m2) grain N                                   
+   grainn_storage                  =>    pns%grainn_storage                          , & ! Input:  [real(r8) (:)]  (gN/m2) grain N storage                           
+   grainn_xfer                     =>    pns%grainn_xfer                             , & ! Input:  [real(r8) (:)]  (gN/m2) grain N transfer                          
+   livestemn                       =>    pns%livestemn                               , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N                               
+   livestemn_storage               =>    pns%livestemn_storage                       , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N storage                       
+   livestemn_xfer                  =>    pns%livestemn_xfer                          , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N transfer                      
+   retransn                        =>    pns%retransn                                , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of retranslocated N            
+   npool                           =>    pns%npool                                   , & ! Input:  [real(r8) (:)]  (gN/m2) temporary plant N pool                    
+   pft_ntrunc                      =>    pns%pft_ntrunc                              , & ! Input:  [real(r8) (:)]  (gN/m2) pft-level sink for N truncation           
+   storvegn                        =>    pns%storvegn                                , & ! Input:  [real(r8) (:)]  (gN/m2) stored vegetation nitrogen                
+   totpftn                         =>    pns%totpftn                                 , & ! Input:  [real(r8) (:)]  (gN/m2) total pft-level nitrogen                  
+   totvegn                         =>    pns%totvegn                                 , & ! Input:  [real(r8) (:)]  (gN/m2) total vegetation nitrogen                 
+   wood_harvestn                   =>    pnf%wood_harvestn                           , & ! Input:  [real(r8) (:)]  total N losses to wood product pools (gN/m2/s)    
+   col_wood_harvestn               =>    pnf_a%wood_harvestn                         , & ! Input:  [real(r8) (:)]                                                    
+   dwt_nloss                       =>    cnf%dwt_nloss                               , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
+   dwt_conv_nflux                  =>    cnf%dwt_conv_nflux                          , & ! Input:  [real(r8) (:)]  (gN/m2/s) conversion N flux (immediate loss to atm)
+   prod10n_loss                    =>    cnf%prod10n_loss                            , & ! Input:  [real(r8) (:)]  (gN/m2/s) loss from 10-yr wood product pool       
+   prod100n_loss                   =>    cnf%prod100n_loss                           , & ! Input:  [real(r8) (:)]  (gN/m2/s) loss from 100-yr wood product pool      
+   product_nloss                   =>    cnf%product_nloss                           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total wood product nitrogen loss        
+   seedn                           =>    cns%seedn                                   , & ! Input:  [real(r8) (:)]  (gN/m2) column-level pool for seeding new PFTs    
+   prod10n                         =>    cns%prod10n                                 , & ! Input:  [real(r8) (:)]  (gN/m2) wood product N pool, 10-year lifespan     
+   prod100n                        =>    cns%prod100n                                , & ! Input:  [real(r8) (:)]  (gN/m2) wood product N pool, 100-year lifespan    
+   totprodn                        =>    cns%totprodn                                , & ! Input:  [real(r8) (:)]  (gN/m2) total wood product N                      
+   som_n_leached                   =>    cnf%som_n_leached                           , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport (gN/m^2/s)
+   decomp_npools_leached           =>    cnf%decomp_npools_leached                   , & ! Input:  [real(r8) (:,:)]  N loss from vertical transport from each decomposing N pool (gN/m^2/s)
+   decomp_npools_transport_tendency=>    cnf%decomp_npools_transport_tendency        , & ! Input:  [real(r8) (:,:,:)]  N tendency due to vertical transport in decomposing N pools (gN/m^3/s)
+   decomp_cascade_ntransfer_vr     =>    cnf%decomp_cascade_ntransfer_vr             , & ! Input:  [real(r8) (:,:,:)]                                                
+   decomp_cascade_ntransfer        =>    cnf%decomp_cascade_ntransfer                , & ! Input:  [real(r8) (:,:)]                                                  
+   decomp_cascade_sminn_flux_vr    =>    cnf%decomp_cascade_sminn_flux_vr            , & ! vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)]
+   decomp_cascade_sminn_flux       =>    cnf%decomp_cascade_sminn_flux                 & ! Input:  [real(r8) (:,:)]  vert-int (diagnostic) mineral N flux for transition along decomposition cascade (gN/m2/s)
+   )
 
    ! pft loop
    do fp = 1,num_soilp
@@ -1767,10 +1338,18 @@ subroutine NSummary(num_soilc, filter_soilc, num_soilp, filter_soilp)
    end do  ! end of pfts loop
 
    ! use p2c routine to get selected column-average pft-level fluxes and states
-   call p2c(num_soilc, filter_soilc, pft_fire_nloss, col_pft_fire_nloss)
-   call p2c(num_soilc, filter_soilc, wood_harvestn, col_wood_harvestn)
-   call p2c(num_soilc, filter_soilc, totvegn, col_totvegn)
-   call p2c(num_soilc, filter_soilc, totpftn, col_totpftn)
+   call p2c(bounds, num_soilc, filter_soilc, &
+        pft_fire_nloss(bounds%begp:bounds%endp), &
+        col_pft_fire_nloss(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        wood_harvestn(bounds%begp:bounds%endp), &
+        col_wood_harvestn(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        totvegn(bounds%begp:bounds%endp), &
+        col_totvegn(bounds%begc:bounds%endc))
+   call p2c(bounds, num_soilc, filter_soilc, &
+        totpftn(bounds%begp:bounds%endp), &
+        col_totpftn(bounds%begc:bounds%endc))
 
    ! column loops
    do fc = 1,num_soilc
@@ -1778,10 +1357,10 @@ subroutine NSummary(num_soilc, filter_soilc, num_soilp, filter_soilp)
 
       ! some zeroing
       denit(c) = 0._r8
-#ifdef NITRIF_DENITRIF
-      smin_no3(c) = 0._r8
-      smin_nh4(c) = 0._r8
-#endif
+      if (use_nitrif_denitrif) then
+         smin_no3(c) = 0._r8
+         smin_nh4(c) = 0._r8
+      end if
       totlitn(c) = 0._r8
       totsomn(c) = 0._r8
       cwdn(c) = 0._r8
@@ -1798,76 +1377,78 @@ subroutine NSummary(num_soilc, filter_soilc, num_soilp, filter_soilp)
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            decomp_cascade_ntransfer(c,k) = decomp_cascade_ntransfer(c,k) + decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j) 
-            decomp_cascade_sminn_flux(c,k) = decomp_cascade_sminn_flux(c,k) + decomp_cascade_sminn_flux_vr(c,j,k) * dzsoi_decomp(j) 
+            decomp_cascade_ntransfer(c,k) = decomp_cascade_ntransfer(c,k) &
+               + decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j) 
+            decomp_cascade_sminn_flux(c,k) = decomp_cascade_sminn_flux(c,k) &
+               + decomp_cascade_sminn_flux_vr(c,j,k) * dzsoi_decomp(j) 
          end do
       end do
    end do
    
-#ifndef NITRIF_DENITRIF
-   ! vertically integrate each denitrification flux
-   do l = 1, ndecomp_cascade_transitions
+   if (.not. use_nitrif_denitrif) then
+      ! vertically integrate each denitrification flux
+      do l = 1, ndecomp_cascade_transitions
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               sminn_to_denit_decomp_cascade(c,l) = sminn_to_denit_decomp_cascade(c,l) + &
+                    sminn_to_denit_decomp_cascade_vr(c,j,l) * dzsoi_decomp(j)
+            end do
+         end do
+      end do
+      
+      ! vertically integrate bulk denitrification and  leaching flux
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            sminn_to_denit_decomp_cascade(c,l) = sminn_to_denit_decomp_cascade(c,l) + &
-                 sminn_to_denit_decomp_cascade_vr(c,j,l) * dzsoi_decomp(j)
+            sminn_to_denit_excess(c) = sminn_to_denit_excess(c) + sminn_to_denit_excess_vr(c,j) * dzsoi_decomp(j)
+            sminn_leached(c) = sminn_leached(c) + sminn_leached_vr(c,j) * dzsoi_decomp(j)
          end do
       end do
-   end do
 
-   ! vertically integrate bulk denitrification and  leaching flux
-   do j = 1, nlevdecomp
+      ! total N denitrification (DENIT)
+      do l = 1, ndecomp_cascade_transitions
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            denit(c) = denit(c) + sminn_to_denit_decomp_cascade(c,l)
+         end do
+      end do
+
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         sminn_to_denit_excess(c) = sminn_to_denit_excess(c) + sminn_to_denit_excess_vr(c,j) * dzsoi_decomp(j)
-         sminn_leached(c) = sminn_leached(c) + sminn_leached_vr(c,j) * dzsoi_decomp(j)
+         denit(c) =  denit(c) + sminn_to_denit_excess(c)
       end do
-   end do
 
-   ! total N denitrification (DENIT)
-   do l = 1, ndecomp_cascade_transitions
+   else
+
+      ! vertically integrate NO3 NH4 N2O fluxes and pools
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! nitrification and denitrification fluxes
+            f_nit(c) = f_nit(c) + f_nit_vr(c,j) * dzsoi_decomp(j)
+            f_denit(c) = f_denit(c) + f_denit_vr(c,j) * dzsoi_decomp(j)
+            pot_f_nit(c) = pot_f_nit(c) + pot_f_nit_vr(c,j) * dzsoi_decomp(j)
+            pot_f_denit(c) = pot_f_denit(c) + pot_f_denit_vr(c,j) * dzsoi_decomp(j)
+            f_n2o_nit(c) = f_n2o_nit(c) + f_n2o_nit_vr(c,j) * dzsoi_decomp(j)
+            f_n2o_denit(c) = f_n2o_denit(c) + f_n2o_denit_vr(c,j) * dzsoi_decomp(j)
+
+            ! leaching/runoff flux
+            smin_no3_leached(c) = smin_no3_leached(c) + smin_no3_leached_vr(c,j) * dzsoi_decomp(j)
+            smin_no3_runoff(c) = smin_no3_runoff(c) + smin_no3_runoff_vr(c,j) * dzsoi_decomp(j)
+
+            ! mineral N pools (must set to zero first since they are state rather than flux variables)
+            smin_no3(c) = smin_no3(c) + smin_no3_vr(c,j) * dzsoi_decomp(j)
+            smin_nh4(c) = smin_nh4(c) + smin_nh4_vr(c,j) * dzsoi_decomp(j)
+         end do
+      end do
+
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         denit(c) = denit(c) + sminn_to_denit_decomp_cascade(c,l)
+         denit(c) = f_denit(c)
       end do
-   end do
 
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      denit(c) =  denit(c) + sminn_to_denit_excess(c)
-   end do
-
-#else
-
-   ! vertically integrate NO3 NH4 N2O fluxes and pools
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         ! nitrification and denitrification fluxes
-         f_nit(c) = f_nit(c) + f_nit_vr(c,j) * dzsoi_decomp(j)
-         f_denit(c) = f_denit(c) + f_denit_vr(c,j) * dzsoi_decomp(j)
-         pot_f_nit(c) = pot_f_nit(c) + pot_f_nit_vr(c,j) * dzsoi_decomp(j)
-         pot_f_denit(c) = pot_f_denit(c) + pot_f_denit_vr(c,j) * dzsoi_decomp(j)
-         f_n2o_nit(c) = f_n2o_nit(c) + f_n2o_nit_vr(c,j) * dzsoi_decomp(j)
-         f_n2o_denit(c) = f_n2o_denit(c) + f_n2o_denit_vr(c,j) * dzsoi_decomp(j)
-         
-         ! leaching/runoff flux
-         smin_no3_leached(c) = smin_no3_leached(c) + smin_no3_leached_vr(c,j) * dzsoi_decomp(j)
-         smin_no3_runoff(c) = smin_no3_runoff(c) + smin_no3_runoff_vr(c,j) * dzsoi_decomp(j)
-         
-         ! mineral N pools (must set to zero first since they are state rather than flux variables)
-         smin_no3(c) = smin_no3(c) + smin_no3_vr(c,j) * dzsoi_decomp(j)
-         smin_nh4(c) = smin_nh4(c) + smin_nh4_vr(c,j) * dzsoi_decomp(j)
-      end do
-   end do
-
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      denit(c) = f_denit(c)
-   end do
-
-#endif
+   end if
 
    ! vertically integrate column-level fire N losses
    do k = 1, ndecomp_pools
@@ -2080,11 +1661,7 @@ subroutine NSummary(num_soilc, filter_soilc, num_soilp, filter_soilp)
       end do
    end do
 
-
-
-end subroutine NSummary
-!-----------------------------------------------------------------------
-
-#endif
+    end associate 
+ end subroutine NSummary
 
 end module CNSummaryMod

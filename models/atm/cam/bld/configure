@@ -112,9 +112,10 @@ OPTIONS
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
      -carma <name>      Build CAM with specified CARMA microphysics model
-                        [ none | bc_strat | cirrus | dust | meteor_smoke | pmc | sea_salt | sulfate | 
-                         test_detrain | test_growth | test_passive | test_radiative | test_swelling |
-                         test_tracers].
+                        [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
+                          meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
+                          test_detrain | test_growth | test_passive | test_radiative | test_swelling |
+                          test_tracers, test_tracers2].
                         Default: none.
      -chem <name>       Build CAM with specified prognostic chemistry package 
                         [ waccm_mozart | waccm_mozart_sulfur | waccm_ghg |
@@ -133,6 +134,8 @@ OPTIONS
                         dlatxdlon for fv grids (dlat and dlon are the grid cell size
 			in degrees for latitude and longitude respectively); nexnp for
                         se grids.
+     -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
+                        active, or in any single diagnostic list for the radiation.
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | rk].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
@@ -216,10 +219,11 @@ OPTIONS
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
                         configuration parameters only.  Parameters relating to the build which
                         are system dependent will be ignored.
+     -cosp_libdir <dir> Directory containing COSP library.
      -esmf_libdir <dir> Directory containing ESMF library and esmf.mk file.
      -fc <name>         User specified Fortran compiler.  Overrides Makefile default.
-     -fc_type <name>    Type of Fortran compiler [pgi | lahey | intel |
-                        pathscale].  This argument is used in conjunction
+     -fc_type <name>    Type of Fortran compiler [pgi | intel | gnu | pathscale
+                        | xlf | nag].  This argument is used in conjunction
                         with the -fc argument when the name of the fortran
                         compiler refers to a wrapper script (e.g., mpif90
                         or ftn).  In this case the user needs to specify
@@ -236,6 +240,8 @@ OPTIONS
      -ldflags <string>  A string of user specified load options.  Appended to
                         Makefile defaults.
      -linker <name>     User specified linker.  Overrides Makefile default of \$(FC).
+     -mct_libdir <dir>  Directory containing MCT library.  Default: build the library from source
+                        in a subdirectory of \$cam_bld.
      -mpi_inc <dir>     Directory containing MPI include files.
      -mpi_lib <dir>     Directory containing MPI library.
      -nc_inc <dir>      Directory containing netCDF include files.
@@ -248,7 +254,6 @@ OPTIONS
 			executing as defined by the perl \$OSNAME variable.
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
-     -offline_drv <name> Specify offline unit driver [ rad | stub ]
 EOF
 }
 
@@ -313,6 +318,7 @@ GetOptions(
     "waccm_phys"                => \$opts{'waccm_phys'},
     "offline_dyn"               => \$opts{'offline_dyn'},
     "waccmx"                    => \$opts{'waccmx'},
+    "cosp_libdir=s"             => \$opts{'cosp_libdir'},
     "esmf_libdir=s"             => \$opts{'esmf_libdir'},
     "mct_libdir=s"              => \$opts{'mct_libdir'},
     "fc=s"                      => \$opts{'fc'},
@@ -327,6 +333,7 @@ GetOptions(
     "ldflags=s"                 => \$opts{'ldflags'},
     "linker=s"                  => \$opts{'linker'},
     "lnd=s"                     => \$opts{'lnd'},
+    "max_n_rad_cnst=s"          => \$opts{'max_n_rad_cnst'},
     "microphys=s"               => \$opts{'microphys'},
     "mpi_inc=s"                 => \$opts{'mpi_inc'},
     "mpi_lib=s"                 => \$opts{'mpi_lib'},
@@ -348,7 +355,6 @@ GetOptions(
     "prog_species=s"            => \$opts{'prog_species'},
     "psubcols=s"                => \$opts{'psubcols'},
     "rad=s"                     => \$opts{'rad'},
-    "offline_drv=s"             => \$opts{'offline_drv'},
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
@@ -762,6 +768,16 @@ my $ttrac_nadv = $cfg_ref->get('nadv_tt');
 
 if ($print>=2) { print "Number of user requested test tracers: $ttrac_nadv$eol"; }
 
+
+#-----------------------------------------------------------------------------------------------
+# Radiatively active constituents.
+if (defined $opts{'max_n_rad_cnst'}) {
+    $cfg_ref->set('max_n_rad_cnst', $opts{'max_n_rad_cnst'});
+}
+my $max_n_rad_cnst = $cfg_ref->get('max_n_rad_cnst');
+
+if ($print>=2) { print "Maximum radiatively active tracers: $max_n_rad_cnst$eol"; }
+
 #-----------------------------------------------------------------------------------------------
 # Chemistry package
 # The chemistry package is determined before the configuration object is initialized.
@@ -773,11 +789,6 @@ if (defined $opts{'waccm_phys'}) {
     $cfg_ref->set('waccm_phys', $opts{'waccm_phys'});
 }
 my $waccm_phys = $cfg_ref->get('waccm_phys');
-
-# offline unit driver
-if (defined $opts{'offline_drv'}) {
-    $cfg_ref->set('offline_drv', $opts{'offline_drv'});
-}
 
 # WACCM only runs with FV dycore
 if ( ($waccm_phys) and ($dyn_pkg ne 'fv') and ($dyn_pkg ne 'se') ) {
@@ -905,15 +916,6 @@ if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
 EOF
 }
 
-#CLUBB_SGS doesn't work when threading is turned on
-if ($clubb_sgs and ($smp eq 'ON' or $ENV{'NTHRDS_ATM'} > 1)) {
-  die <<"EOF";
-**
-**    ERROR: CLUBB_SGS doesn't support multiple threads in this version.
-**
-EOF
-}
-
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
 # The default for the current physics package is:
@@ -1029,10 +1031,6 @@ my $ocn_pkg = 'docn';
 if ($phys_pkg =~ m/ideal|adiabatic/) {
     $ocn_pkg = 'socn';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $ocn_pkg = 'socn';
-} 
-
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'ocn'}) {
@@ -1053,10 +1051,6 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $lnd_pkg = 'slnd';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $lnd_pkg = 'slnd';
-}
-
 # If building for CESM then do nothing for land component
 if ($ccsm_seq) {
     $lnd_pkg = 'none';
@@ -1085,9 +1079,6 @@ elsif ($phys_pkg eq 'cam3') {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $ice_pkg = 'sice';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $ice_pkg = 'sice';
-}
 # If building for CESM then do nothing for sea ice component
 if ($ccsm_seq) {
     $ice_pkg = 'none';
@@ -1112,10 +1103,6 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $rof_pkg = 'srof';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $rof_pkg = 'srof';
-}
-
 # If building for CESM then do nothing for runoff component
 if ($ccsm_seq) {
     $rof_pkg = 'none';
@@ -1369,20 +1356,35 @@ if ($carma_pkg eq 'bc_strat') {
 elsif ($carma_pkg eq 'cirrus') {
     $carma_nadv = 84;
 }
+elsif ($carma_pkg eq 'cirrus_dust') {
+    $carma_nadv = 140;
+}
 elsif ($carma_pkg eq 'dust') {
     $carma_nadv = 16;
+}
+elsif ($carma_pkg eq 'meteor_impact') {
+    $carma_nadv = 42;
 }
 elsif ($carma_pkg eq 'meteor_smoke') {
     $carma_nadv = 28;
 }
+elsif ($carma_pkg eq 'mixed_sulfate') {
+    $carma_nadv = 84;
+}
 elsif ($carma_pkg eq 'pmc') {
     $carma_nadv = 84;
+}
+elsif ($carma_pkg eq 'pmc_sulfate') {
+    $carma_nadv = 140;
 }
 elsif ($carma_pkg eq 'sea_salt') {
     $carma_nadv = 16;
 }
 elsif ($carma_pkg eq 'sulfate') {
     $carma_nadv = 30;
+}
+elsif ($carma_pkg eq 'tholin') {
+    $carma_nadv = 40;
 }
 elsif ($carma_pkg eq 'test_detrain') {
     $carma_nadv = 66;
@@ -1401,6 +1403,9 @@ elsif ($carma_pkg eq 'test_swelling') {
 }
 elsif ($carma_pkg eq 'test_tracers') {
     $carma_nadv = 372;
+}
+elsif ($carma_pkg eq 'test_tracers2') {
+    $carma_nadv = 434;
 }
 
 
@@ -1707,7 +1712,6 @@ else {
 # section of the Makefile.
 
 if    ($fc =~ /pgf/)    { $fc_type = 'pgi'; }
-elsif ($fc =~ /^lf/)    { $fc_type = 'lahey'; }
 elsif ($fc =~ /ifort/)  { $fc_type = 'intel'; }
 elsif ($fc =~ /^nag/)    { $fc_type = 'nag'; }
 elsif ($fc =~ /path/)   { $fc_type = 'pathscale'; }
@@ -1752,7 +1756,6 @@ if ($cc eq '') {
 
 	# Set default C compiler based on fc_type
 	if    ($fc_type eq 'pgi')       { $cc = 'pgcc'; }
-	elsif ($fc_type eq 'lahey')     { $cc = 'gcc'; }
 	elsif ($fc_type eq 'intel')     { $cc = 'icc'; }
         elsif ($fc_type eq 'nag')       { $cc = 'gcc'; }
 	elsif ($fc_type eq 'pathscale') { $cc = 'pathcc'; }
@@ -1822,8 +1825,11 @@ if ($fopt and $print>=2) { print "Override default Fortran optimization flags wi
 #-----------------------------------------------------------------------------------------------
 # Load options appended to Makefile defaults
 my $ldflags = '';
+my $usr_ldflags = '';
 if (defined $opts{'ldflags'}) {
-    $ldflags = $opts{'ldflags'};
+    $ldflags     = $opts{'ldflags'};
+    # Save off the user specification to pass to the MCT configure
+    $usr_ldflags = $opts{'ldflags'};
 }
 $cfg_ref->set('ldflags', $ldflags);
 
@@ -1901,6 +1907,9 @@ my $pcols = $cfg_ref->get('pcols');
 my $psubcols = $cfg_ref->get('psubcols');
 $cfg_cppdefs .= " -DPLEV=$nlev -DPCNST=$nadv -DPCOLS=$pcols -DPSUBCOLS=$psubcols";
 
+# Radiatively active constituent number
+$cfg_cppdefs .= " -DN_RAD_CNST=$max_n_rad_cnst";
+
 # Spectral truncation parameters
 my $trm = $cfg_ref->get('trm');
 my $trn = $cfg_ref->get('trn');
@@ -1927,7 +1936,6 @@ if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
 $cfg_cppdefs .= $chem_cppdefs;
-if ($waccm_phys) { $cfg_cppdefs .= ' -DWACCM_PHYS'; }
 
 # CARMA CPP defs
 $cfg_cppdefs .= $carma_cppdefs;
@@ -2017,10 +2025,10 @@ if ($cam_build) {
 	# nc-config script has already set an arg to be passed to the linker.
 	if ($nc_ldflags !~ m/-Wl/) {
 	    if ($fc_type eq 'nag') {
-		$nc_ldflags .= " -Wl,-Wl,,-rpath=$nc_lib";
+		$nc_ldflags .= " -Wl,-Wl,,-rpath -Wl,-Wl,,$nc_lib";
 	    }
 	    else {
-		$nc_ldflags .= " -Wl,-rpath=$nc_lib";
+		$nc_ldflags .= " -Wl,-rpath -Wl,$nc_lib";
 	    }
 	}
 
@@ -2266,13 +2274,18 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 #-----------------------------------------------------------------------------------------------
 # COSP library.
-
-# Only build COSP as a separate library if doing a CAM standalone build.
-if ($cosp and $cam_build) {
+if ($cosp) {
 
     # Set the directory used to build cosp.  Add location and library name
     # to the user specified load flags.
-    my $cosp_libdir = "$cam_bld/cosp";
+    my $cosp_libdir = '';
+    if (defined $opts{'cosp_libdir'}) {
+      $cosp_libdir = $opts{'cosp_libdir'};
+    } else
+    {
+	$cosp_libdir = "$cam_bld/cosp";
+    } 
+
     $cfg_ref->set('cosp_libdir', "$cosp_libdir");
 
     my $ldflags = $cfg_ref->get('ldflags');
@@ -2286,27 +2299,37 @@ if ($cosp and $cam_build) {
     }
 
     # Create the COSP Makefile from a template and copy it into the cosp bld directory
-    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cam_bld/cosp/Makefile");
-    if ($print) { print "creating $cam_bld/cosp/Makefile\n"; }
+    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cosp_libdir/Makefile");
+    if ($print) { print "creating $cosp_libdir/Makefile\n"; }
 }
 
 
 #-----------------------------------------------------------------------------------------------
 # MCT library.
 # Only build MCT as a separate library if doing a CAM standalone build.
+# If -mct_libdir is specified, then check for existing libs and build
+# only if necessary.  Note that separate versions of the lib must be built
+# for parallel and serial use.
 
 if ($cam_build) {
-    my $mct_libdir = '$cam_bld/mct';
+
+    my $mct_libdir = "$cam_bld/mct";
     if (defined $opts{'mct_libdir'}) {
         $mct_libdir = $opts{'mct_libdir'};
     }
     elsif (defined $ENV{MCT_LIBDIR}) {
         $mct_libdir = $ENV{MCT_LIBDIR};
-    } else {
-      $mct_libdir = "$cam_bld/mct"; 
     }
-    $cfg_ref->set('mct_libdir', "$mct_libdir");
 
+    # strip a trailing slash
+    $mct_libdir =~ s!/$!!;
+
+    # modify the name of the serial version so it can be made in the same
+    # directory as the parallel version
+    if ($spmd eq 'OFF') {
+	$mct_libdir .= '-serial';
+    }
+    $cfg_ref->set('mct_libdir', $mct_libdir);
 
     my $ldflags = $cfg_ref->get('ldflags');
     $ldflags .= " -L$mct_libdir/mct -lmct -L$mct_libdir/mpeu -lmpeu ";
@@ -2315,80 +2338,132 @@ if ($cam_build) {
     }
     $cfg_ref->set('ldflags', $ldflags);
    
-    unless (-d $mct_libdir or mkdirp($mct_libdir)) {
-        die "** Could not create the mct build directory: $mct_libdir\n";
-    }
-    unless (-d "$mct_libdir/mct" or mkdirp("$mct_libdir/mct")) {
-        die "** Could not create the mct build directory: $mct_libdir/mct\n";
-    }
-    unless (-d "$mct_libdir/mpeu" or mkdirp("$mct_libdir/mpeu")) {
-        die "** Could not create the mct build directory: $mct_libdir/mpeu\n";
-    }
-    if ($spmd eq 'OFF') { 
-         unless (-d "$mct_libdir/mpi-serial" or mkdirp("$mct_libdir/mpi-serial")) {
-             die "** Could not create the mct build directory: $mct_libdir/mpi-serial\n";
-         }
-    }
-
-    system("cp $cam_root/models/utils/mct/Makefile $mct_libdir/.") == 0
-	or die "Unable to copy mct/Makefile\n";
-    system("cp $cam_root/models/utils/mct/mct/Makefile $mct_libdir/mct/.") == 0
-	or die "Unable to copy mct/Makefile\n";
-    system("cp $cam_root/models/utils/mct/mpeu/Makefile $mct_libdir/mpeu/.") == 0
-	or die "Unable to copy mpeu/Makefile\n";
-    if ($spmd eq 'OFF') { 
-       system("cp $cam_root/models/utils/mct/mpi-serial/Makefile $mct_libdir/mpi-serial/.") == 0
-	   or die "Unable to copy mpi-serial/Makefile\n";
+    # Check whether the MCT libs already exist.  The MCT configuration here is 
+    # set up to build mct, mpeu, and mpi-serial libs.  So either they all should
+    # exist, or non of them should exist.  Otherwise it's an error.
+    my $libs_exist = 0;
+    my $libs_expected = 2;
+    if (-f "$mct_libdir/mct/libmct.a" or 
+	-f "$mct_libdir/mct/libmct.so") {++$libs_exist;}
+    if (-f "$mct_libdir/mpeu/libmpeu.a" or 
+	-f "$mct_libdir/mpeu/libmpeu.so") {++$libs_exist;}
+    if ($spmd eq 'OFF') {
+	$libs_expected = 3;
+	if (-f "$mct_libdir/mpi-serial/libmpi-serial.a" or
+	    -f "$mct_libdir/mpi-serial/libmpi-serial.so") {++$libs_exist;}
     }
 
-    my $mct_quiet = '> /dev/null 2>&1';
-    if ($print >= 2) {$mct_quiet = '';}
-
-    my $mct_debug = '';
-    if ($debug eq 'ON') {$mct_debug = '--enable-debugging';}
-
-    my $mpi_serial = '--enable-mpiserial';
-    if ($spmd eq 'ON') {$mpi_serial = '';}
-
-    my $mpi_hdr = '';
-    if ($spmd eq 'ON') {
-        if ($mpi_inc) {$mpi_hdr = "MPIHEADER=-I$mpi_inc"; }
+    my $build_mct;
+    if ($libs_exist == 0) {
+	$build_mct = 1;
+    }
+    elsif ($libs_exist == $libs_expected) {
+	$build_mct = 0;
+    }
+    else {
+	die <<"EOF";
+** The MCT build in $mct_libdir is incomplete.  Remove the contents of
+   $mct_libdir and run the CAM configure script again. **
+EOF
     }
 
-    # Set F[C]FLAGS for MCT for compilers where the defaults won't work.
-    # Blank string does nothing, letting MCT's configure decide.
-    my $mct_flags_str = " ";
-    if ($fc_type eq "nag") {
-        # Take options from CESM's Machines directory.
-        $mct_flags_str = " -O2 -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,".
-            "mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,".
-            "mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,".
-            "mpi_file_write_all,mpibcast,mpiscatterv ";
-        if ($debug eq 'ON') { $mct_flags_str .= " -g -gline -time -f95 -C=all "; }
 
-        # Set to both FFLAGS and FCFLAGS to ensure all files use this.
-        $mct_flags_str = " FFLAGS=\"$mct_flags_str\" ".
-                           "FCFLAGS=\"$mct_flags_str\" ";
+    if ($build_mct) {
 
-        # This workaround tells gcc how to link to the NAG runtime,
-        # which is the only way to run MCT's configure with runtime
-        # checks enabled.
-        # Note that this hard-codes the NAG path, and libf53, for NAG 5.3.1.
-        if ($debug eq 'ON') {
-            $mct_flags_str .= " CFLAGS=\" -g -Wl,--as-needed,--allow-shlib-undefined\" ";
-            $mct_flags_str .= " LIBS=\" -L/usr/local/nag/lib/NAG_Fortran -lf53 \" ";
-        }
-    }
+	# If the libdirs do not exist then create them.
+	if (! -d "$mct_libdir/mct") {
+	    mkdirp("$mct_libdir/mct") or
+		die "** Could not create the mct build directory: $mct_libdir/mct\n";
+	}
+	if (! -d "$mct_libdir/mpeu") {
+	    mkdirp("$mct_libdir/mpeu") or
+		die "** Could not create the mct build directory: $mct_libdir/mpeu\n";
+	}
 
-    my $cfg_cmnd = "$cam_root/models/utils/mct/configure FC=$fc ".
-        "$mct_flags_str --srcdir=$cam_root/models/utils/mct $mpi_hdr ".
-        "$mpi_serial $mct_debug $mct_quiet";
+	if ($spmd eq 'OFF') {
+	    # The mpi-serial lib is only built when the mct and mpeu libs are configured
+	    # to run in a serial mode (with the --enable-mpiserial option).
+	    if (! -d "$mct_libdir/mpi-serial") {
+		mkdirp("$mct_libdir/mpi-serial") or
+		    die "** Could not create the mct build directory: $mct_libdir/mpi-serial\n";
+	    }
+	}
 
-    chdir $mct_libdir      or die "FAILURE: cd to $mct_libdir\n";
-    system($cfg_cmnd) == 0 or die "FAILURE: MCT configure\n";
-    chdir $cam_bld         or die "FAILURE: cd to $cam_bld\n";
+	system("cp $cam_root/models/utils/mct/Makefile $mct_libdir/.") == 0
+	    or die "Unable to copy mct top level Makefile\n";
+	system("cp $cam_root/models/utils/mct/mct/Makefile $mct_libdir/mct/.") == 0
+	    or die "Unable to copy mct Makefile\n";
+	system("cp $cam_root/models/utils/mct/mpeu/Makefile $mct_libdir/mpeu/.") == 0
+	    or die "Unable to copy mpeu Makefile\n";
+	if ($spmd eq 'OFF') {
+	    system("cp $cam_root/models/utils/mct/mpi-serial/Makefile $mct_libdir/mpi-serial/.") == 0
+		or die "Unable to copy mpi-serial Makefile\n";
+	}
+
+	my $mct_quiet = '> /dev/null 2>&1';
+	if ($print >= 2) {$mct_quiet = '';}
+
+	my $mct_debug = '';
+	if ($debug eq 'ON') {$mct_debug = '--enable-debugging';}
+
+	my $mpi_serial = '--enable-mpiserial';
+	if ($spmd eq 'ON') {$mpi_serial = '';}
+
+	my $mpi_hdr = '';
+	if ($spmd eq 'ON') {
+	    if ($mpi_inc) {$mpi_hdr = "MPIHEADER=-I$mpi_inc"; }
+	}
+
+	# Set F[C]FLAGS for MCT for compilers where the defaults won't work.
+	# Blank string does nothing, letting MCT's configure decide.
+	my $mct_flags_str = " ";
+	my $mct_ldflags   = " ";
+	if ($fc_type eq "nag") {
+	    # Take options from CESM's Machines directory.
+	    $mct_flags_str = " -O2 -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,".
+		"mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,".
+		"mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,".
+		"mpi_file_write_all,mpibcast,mpiscatterv ";
+	    if ($debug eq 'ON') { $mct_flags_str .= " -g -gline -time -f95 -C=all "; }
+
+	    # Set to both FFLAGS and FCFLAGS to ensure all files use this.
+	    $mct_flags_str = " FFLAGS=\"$mct_flags_str\" ".
+                             "FCFLAGS=\"$mct_flags_str\" ";
+
+	    # This workaround tells gcc how to link to the NAG runtime,
+	    # which is the only way to run MCT's configure with runtime
+	    # checks enabled.
+	    # Note that this hard-codes the NAG path, and libf53, for NAG 5.3.1.
+	    if ($debug eq 'ON') {
+		$mct_flags_str .= " CFLAGS=\" -g -Wl,--as-needed,--allow-shlib-undefined\" ";
+		$mct_flags_str .= " LIBS=\" -L/usr/local/nag/lib/NAG_Fortran -lf53 \" ";
+	    }
+	}
+	elsif ($fc_type eq "pgi") {
+
+	    # 11 Feb 2014: This is a workaround for a problem with PGI-13
+	    # on the CGD cluster when pgf90 is invoked by the openmpi
+	    # version of mpif90 (undefined omp_set_schedule in pgf90rtl lib)
+	    $mct_ldflags = "-Wl,--allow-shlib-undefined ";
+	}
+
+	# Append any user specified LDFLAGS options
+	$mct_ldflags .= $usr_ldflags;
+	$mct_ldflags = "LDFLAGS=\'$mct_ldflags\' ";
+
+	my $cfg_cmnd = "$cam_root/models/utils/mct/configure FC=$fc CC=$cc ".
+	    "$mct_flags_str --srcdir=$cam_root/models/utils/mct $mpi_hdr ".
+	    "$mpi_serial $mct_debug $mct_quiet $mct_ldflags ";
+
+	chdir $mct_libdir      or die "FAILURE: cd to $mct_libdir\n";
+	system($cfg_cmnd) == 0 or die "FAILURE: MCT configure\n";
+	chdir $cam_bld         or die "FAILURE: cd to $cam_bld\n";
        
-    print "MCT configure is done.\n";
+	if ($print) {print "MCT configure is done.\n";}
+    }
+    else {
+	if ($print) {print "Using MCT libs in $mct_libdir.\n";}
+    }
 }
 
 
@@ -2528,7 +2603,6 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
-    my $offline_drv   = $cfg_ref->get('offline_drv');
 
     # Root directory
     my $srcdir = "$cam_root/models";
@@ -2554,17 +2628,6 @@ sub write_filepath
 	print $fh "$CASEROOT/SourceMods/src.cam\n";
     }
 
-    # offline unit driver
-    if ($offline_drv) {
-	if (!($offline_drv eq 'stub')) {
-	    print $fh "$srcdir/atm/cam/src/unit_drivers/${offline_drv}\n";
-	    if ($rad eq 'camrt') {
-		print $fh "$srcdir/atm/cam/src/unit_drivers/${offline_drv}/$rad\n";
-	    }
-	}
-    }
-
-
     if ($carma ne 'none') {
 	# This directory needs to precede physics/cam/ to replace
 	# the CARMA stub package with CARMA. Putting it first allows
@@ -2583,7 +2646,10 @@ sub write_filepath
     }
     if ($chem =~ /_mam/) {
 	print $fh "$srcdir/atm/cam/src/chemistry/modal_aero\n";
+    } else {
+	print $fh "$srcdir/atm/cam/src/chemistry/bulk_aero\n";
     }
+    print $fh "$srcdir/atm/cam/src/chemistry/aerosol\n";
     print $fh "$srcdir/atm/cam/src/chemistry/mozart\n";
     if ($waccm_phys) {
 	print $fh "$srcdir/atm/cam/src/physics/waccm\n";
@@ -2593,7 +2659,6 @@ sub write_filepath
         print $fh "$srcdir/atm/cam/src/physics/waccmx\n";
     }
 
-    print $fh "$srcdir/atm/cam/src/chemistry/bulk_aero\n";
     print $fh "$srcdir/atm/cam/src/chemistry/utils\n";
 
     if ($rad eq 'rrtmg') {
@@ -2608,6 +2673,7 @@ sub write_filepath
     print $fh "$srcdir/atm/cam/src/physics/cam\n";
     if ($clubb_sgs eq '1') {
        print $fh "$srcdir/atm/cam/src/physics/clubb\n";
+       print $fh "$srcdir/atm/cam/src/physics/silhs\n";
     }
 
     print $fh "$srcdir/atm/cam/src/dynamics/$dyn\n";
@@ -2625,31 +2691,13 @@ sub write_filepath
 	print $fh "$srcdir/atm/cam/src/advection/slt\n";
     }
 
-    print $fh "$srcdir/atm/cam/src/cpl_$comp_intf\n";
-    print $fh "$srcdir/atm/cam/src/cpl_share\n";
+    print $fh "$srcdir/atm/cam/src/cpl\n";
     print $fh "$srcdir/atm/cam/src/control\n";
     print $fh "$srcdir/atm/cam/src/utils\n";
 
-    if ($ccsm_seq) {
+    if ($cam_build) {
 
-	# These paths are only needed for the CESM build which builds COSP
-	# as a part of the atm component library.  The CAM standalone build
-	# issues a sub-make call to build COSP in it's own library.
-	if ($cosp) {
-	    # COSP simulator
-	    print $fh "$srcdir/atm/cam/src/physics/cosp\n";
-	    print $fh "$srcdir/atm/cam/src/physics/icarus-scops\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/quickbeam\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/actsim\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/llnl\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/MISR_simulator\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/MODIS_simulator\n";
-	}
-
-    }
-    else {
-
-	# The rest of these paths are only needed for CAM standalone builds
+	# These paths are only needed for CAM standalone builds
 
 	print $fh "$srcdir/utils/timing\n";
 	print $fh "$srcdir/utils/pio\n";
@@ -2668,63 +2716,59 @@ sub write_filepath
 	# Ocean package.
 	if ($ocn eq 'dom') {
 	    print $fh "$srcdir/atm/cam/src/utils/cam_dom\n";
-	    print $fh "$srcdir/atm/cam/src/utils/cam_dom/cpl_$comp_intf\n";
 	}
 	elsif ($ocn eq 'docn') {
 	    print $fh "$srcdir/ocn/docn\n";
-	    print $fh "$srcdir/ocn/docn/cpl_$comp_intf\n";
+	    print $fh "$srcdir/ocn/docn/cpl\n";
 	}
 	elsif ($ocn eq 'aquaplanet') {
 	    print $fh "$srcdir/atm/cam/src/utils/cam_aqua\n";
-	    print $fh "$srcdir/atm/cam/src/utils/cam_aqua/cpl_$comp_intf\n";
+	    print $fh "$srcdir/atm/cam/src/utils/cam_aqua/cpl\n";
 	}
 	elsif ($ocn eq 'socn') {
-	    print $fh "$srcdir/ocn/socn/cpl_$comp_intf\n";
+	    print $fh "$srcdir/ocn/socn/cpl\n";
 	}
 
 	# Land package
 	if ($lnd eq 'clm') {
-	    print $fh "$srcdir/lnd/clm/src/cpl_$comp_intf\n";
-	    print $fh "$srcdir/lnd/clm/src/cpl_share\n";
+	    print $fh "$srcdir/lnd/clm/src/cpl\n";
 	    print $fh "$srcdir/lnd/clm/src/clm4_0/main\n";
 	    print $fh "$srcdir/lnd/clm/src/clm4_0/biogeochem\n";
 	    print $fh "$srcdir/lnd/clm/src/clm4_0/biogeophys\n";
 	    print $fh "$srcdir/lnd/clm/src/util_share\n";
 	}
 	elsif ($lnd eq 'slnd') {
-	    print $fh "$srcdir/lnd/slnd/cpl_$comp_intf\n";
+	    print $fh "$srcdir/lnd/slnd/cpl\n";
 	}
 
 	# Sea ice package
 	if ($ice eq 'csim4') {
 	    print $fh "$srcdir/atm/cam/src/utils/cam_csim4\n";
-	    print $fh "$srcdir/atm/cam/src/utils/cam_csim4/cpl_$comp_intf\n";
+	    print $fh "$srcdir/atm/cam/src/utils/cam_csim4/cpl\n";
 	}
 	elsif ($ice eq 'sice') {
-	    print $fh "$srcdir/ice/sice/cpl_$comp_intf\n";
+	    print $fh "$srcdir/ice/sice/cpl\n";
 	}
 	elsif ($ice eq 'cice') {
-	    print $fh "$srcdir/ice/cice/src/drivers/cpl_$comp_intf\n";
-	    print $fh "$srcdir/ice/cice/src/drivers/cpl_share\n";
+	    print $fh "$srcdir/ice/cice/src/drivers/cpl\n";
 	    print $fh "$srcdir/ice/cice/src/mpi\n";
 	    print $fh "$srcdir/ice/cice/src/source\n";
 	}
 
 	# Land ice package
-	print $fh "$srcdir/glc/sglc/cpl_$comp_intf\n";
+	print $fh "$srcdir/glc/sglc/cpl\n";
 
         # Runoff package
         if ($rof eq 'rtm') {
-	    print $fh "$srcdir/rof/rtm/src/cpl_$comp_intf\n";
-	    print $fh "$srcdir/rof/rtm/src/cpl_share\n";
+	    print $fh "$srcdir/rof/rtm/src/cpl\n";
             print $fh "$srcdir/rof/rtm/src/riverroute\n";
         }
         elsif ($rof eq 'srof') {
-            print $fh "$srcdir/rof/srof/cpl_$comp_intf\n";
+            print $fh "$srcdir/rof/srof/cpl\n";
         }
 
 	# Wave package
-	print $fh "$srcdir/wav/swav/cpl_$comp_intf\n";
+	print $fh "$srcdir/wav/swav/cpl\n";
 
 	print $fh "$srcdir/csm_share/shr\n";
 	print $fh "$srcdir/csm_share/dshr\n";

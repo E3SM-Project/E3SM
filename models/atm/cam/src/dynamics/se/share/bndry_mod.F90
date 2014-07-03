@@ -7,7 +7,9 @@ module bndry_mod
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
-  public :: ghost_exchangeV, ghost_exchangev3d
+  public :: ghost_exchangeV
+!  public :: ghost_exchangev3d
+  public :: sort_neighbor_buffer_mapping
 
   interface bndry_exchangeV
      module procedure bndry_exchangeV_nonth
@@ -349,7 +351,7 @@ contains
 
 
 
-  subroutine ghost_exchangeVfull(hybrid,buffer,nc)
+  subroutine ghost_exchangeVfull(hybrid,buffer)
 !
 !   MT 2011:  derived from bndry_exchange, but copies an entire
 !             element of ghost cell information, including corner
@@ -357,7 +359,7 @@ contains
 !
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
-    use edge_mod, only : Ghostbuffer_t
+    use edge_mod, only : Ghostbuffer3D_t
     use schedule_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
@@ -369,8 +371,7 @@ contains
     implicit none
 
     type (hybrid_t)                   :: hybrid
-    type (GhostBuffer_t)               :: buffer
-    integer :: nc
+    type (GhostBuffer3D_t)               :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
     type (Cycle_t),pointer                        :: pCycle
@@ -408,7 +409,7 @@ contains
        do icycle=1,nSendCycles
           pCycle      => pSchedule%SendCycle(icycle)
           dest            = pCycle%dest - 1
-          length      = nlyr * pCycle%lengthP_ghost*nc*nc
+          length      = nlyr * pCycle%lengthP_ghost * buffer%elem_size
           tag             = pCycle%tag
           iptr            = pCycle%ptrP_ghost
           !print *,'ghost_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
@@ -426,7 +427,7 @@ contains
        do icycle=1,nRecvCycles
           pCycle         => pSchedule%RecvCycle(icycle)
           source          = pCycle%source - 1
-          length      = nlyr * pCycle%lengthP_ghost*nc*nc
+          length      = nlyr * pCycle%lengthP_ghost * buffer%elem_size
           tag             = pCycle%tag
           iptr            = pCycle%ptrP_ghost
           !print *,'ghost_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
@@ -452,11 +453,7 @@ contains
           length             = pCycle%lengthP_ghost
           iptr            = pCycle%ptrP_ghost
           do i=0,length-1
-             do i2=1,nc
-                do i1=1,nc
-                   buffer%buf(i1,i2,1:nlyr,iptr+i) = buffer%receive(i1,i2,1:nlyr,iptr+i)
-                enddo
-             enddo
+             buffer%buf(:,:,1:nlyr,iptr+i) = buffer%receive(:,:,1:nlyr,iptr+i)
           enddo
        end do   ! icycle
 
@@ -598,149 +595,20 @@ contains
 
 
 
-  ! ===========================================
-  !  GHOST_EXCHANGEV3d:
-  !  Author: James overflet
-  !  derived from bndry_exchange, but copies an entire
-  !             element of ghost cell information, including corner
-  !             elements.  Requres cubed-sphere grid
-  ! =========================================
- subroutine ghost_exchangeV3d(hybrid, buffer)
-!
-!   2011:  derived from bndry_exchange, but copies an entire
-!             element of ghost cell information, including corner
-!             elements.  Requres cubed-sphere grid
-!
-    use hybrid_mod,    only : hybrid_t
-    use kinds,         only : log_kind
-    use edge_mod,      only : Ghostbuffer3d_t
-    use schedule_mod,  only : schedule_t, cycle_t, schedule
-    use dimensions_mod, only: nelemd
-#ifdef _MPI
-    use parallel_mod, only : abortmp, status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : abortmp
-#endif
-    implicit none
-
-    type (hybrid_t)                   :: hybrid
-    type (GhostBuffer3d_t)            :: buffer
-    integer :: nhc,np
-
-    type (Schedule_t),pointer                     :: pSchedule
-    type (Cycle_t),pointer                        :: pCycle
-    integer                                       :: dest,length,tag
-    integer                                       :: icycle,ierr
-    integer                                       :: iptr,source,nlyr
-    integer                                       :: nSendCycles,nRecvCycles
-    integer                                       :: errorcode,errorlen
-    character*(80) errorstring
-
-    integer        :: i,i1,i2
-    logical(kind=log_kind),parameter      :: Debug = .FALSE.
-
-
-#if (! defined ELEMENT_OPENMP)
-    !$OMP BARRIER
-#endif
-    if(hybrid%ithr == 0) then 
-
-#ifdef _MPI
-       ! Setup the pointer to proper Schedule
-#ifdef _PREDICT
-       pSchedule => Schedule(iam)
-#else
-       pSchedule => Schedule(1)
-#endif
-       nlyr    = buffer%nlyr
-       nhc     = buffer%nhc
-       np      = buffer%np
-
-
-       nSendCycles = pSchedule%nSendCycles
-       nRecvCycles = pSchedule%nRecvCycles
-
-       !==================================================
-       !  Fire off the sends
-       !==================================================
-       do icycle=1,nSendCycles
-          pCycle      => pSchedule%SendCycle(icycle)
-          dest            = pCycle%dest - 1
-          length          = nlyr * pCycle%lengthP_ghost*(nhc+1)*np
-          tag             = pCycle%tag
-          iptr            = pCycle%ptrP_ghost
-          !print *,'ghost_exchangeV3d: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-          call MPI_Isend(buffer%buf(1,1,1,iptr),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
-          if(ierr .ne. MPI_SUCCESS) then
-             errorcode=ierr
-             call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-             print *,'ghost_exchangeV3d: Error after call to MPI_Isend: ',errorstring
-          endif
-       end do    ! icycle
-
-       !==================================================
-       !  Post the Receives 
-       !==================================================
-       do icycle=1,nRecvCycles
-          pCycle         => pSchedule%RecvCycle(icycle)
-          source          = pCycle%source - 1
-          length          = nlyr * pCycle%lengthP_ghost*(nhc+1)*np
-          tag             = pCycle%tag
-          iptr            = pCycle%ptrP_ghost
-          !print *,'ghost_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-          call MPI_Irecv(buffer%receive(1,1,1,iptr),length,MPIreal_t, &
-               source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
-          if(ierr .ne. MPI_SUCCESS) then
-             errorcode=ierr
-             call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-             print *,'ghost_exchangeV3d: Error after call to MPI_Irecv: ',errorstring
-          endif
-       end do    ! icycle
-
-
-       !==================================================
-       !  Wait for all the receives to complete
-       !==================================================
-
-       call MPI_Waitall(nSendCycles,Srequest,status,ierr)
-       call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
-
-       do icycle=1,nRecvCycles
-          pCycle         => pSchedule%RecvCycle(icycle)
-          length          = pCycle%lengthP_ghost
-          iptr            = pCycle%ptrP_ghost
-          do i=0,length-1
-             buffer%buf(:, :, :, iptr+i) = buffer%receive(:, :, :, iptr+i)
-!            do i2=1,nhc
-!               do i1=1,np
-!                  buffer%buf(i1, i2, 1:nlyr, iptr+i) = buffer%receive(i1, i2, 1:nlyr, iptr+i)
-!               enddo
-!            enddo
-          enddo
-       end do   ! icycle
-
-
-#endif
-    endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
-    !$OMP BARRIER
-#endif
-
-  end subroutine ghost_exchangeV3d
-
-
-
 
 
   subroutine compute_ghost_corner_orientation(hybrid,elem,nets,nete)
+!
+!  this routine can NOT be called in a threaded region because then each thread
+!  will have its on ghostbuffer.   initghostbufer3D() should detect this and abort.
+!
   use kinds, only : real_kind
   use dimensions_mod, only: nelemd, np
   use parallel_mod, only : syncmp
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
-  use edge_mod, only : ghostbuffer_t, ghostvpackfull, ghostvunpackfull, initghostbufferfull,&
-       freeghostbuffer
+  use edge_mod, only : ghostbuffer3D_t, ghostvpackfull, ghostvunpackfull, &
+       initghostbuffer3D,freeghostbuffer3D
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
 
   implicit none
@@ -748,7 +616,7 @@ contains
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
   integer :: nets,nete
-  type (ghostBuffer_t)   :: ghostbuf,ghostbuf_cv
+  type (ghostBuffer3D_t)   :: ghostbuf_cv
 
   real (kind=real_kind) :: cin(2,2,1,nets:nete)  !CE: fvm tracer
   real (kind=real_kind) :: cout(-1:4,-1:4,1,nets:nete)  !CE: fvm tracer
@@ -766,7 +634,8 @@ contains
   nc2=4
 
   nlev=1
-  call initghostbufferfull(ghostbuf_cv,nlev,nc)
+  call initghostbuffer3D(ghostbuf_cv,nlev,nc)
+
 
   do ie=nets,nete
      cin(1,1,1,ie)=  elem(ie)%gdofp(1,1)
@@ -783,7 +652,7 @@ contains
      kptr=0
      call ghostVpackfull(ghostbuf_cv, cin(:,:,:,ie),1,nc,nc,nlev,kptr,elem(ie)%desc)
   end do
-  call ghost_exchangeVfull(hybrid,ghostbuf_cv,nc)
+  call ghost_exchangeVfull(hybrid,ghostbuf_cv)
   do ie=nets,nete
      kptr=0
      call ghostVunpackfull(ghostbuf_cv, cout(:,:,:,ie), nc1,nc2,nc,nlev, kptr, elem(ie)%desc)
@@ -853,9 +722,154 @@ contains
         elem(ie)%desc%reverse(neast)=.true.
      endif
   enddo
+  call freeghostbuffer3D(ghostbuf_cv)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  end ghost exchange corner orientation
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  end subroutine
+
+
+
+
+
+  subroutine sort_neighbor_buffer_mapping(hybrid,elem,nets,nete)
+!
+!  gather global ID's of all neighbor elements.  Then create sorted (in global ID numbering)
+!  mapping between edge buffer for each neighbor and a local map.  
+!
+!  this routine can NOT be called in a threaded region because then each thread
+!  will have its on ghostbuffer.   initghostbufer3D() should detect this and abort.
+!
+!  also return num_neigh(ie) = number of neighbors (including onself) for element ie
+!  
+!
+  use kinds, only : real_kind
+  use dimensions_mod, only: nelemd, np, max_neigh_edges
+  use parallel_mod, only : syncmp
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use edge_mod, only : ghostbuffer3D_t, ghostvpack_unoriented, ghostvunpack_unoriented, &
+       initghostbuffer3D,freeghostbuffer3D
+  use control_mod, only : north,south,east,west,neast, nwest, seast, swest
+  use coordinate_systems_mod, only: cartesian3D_t
+  implicit none
+
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  integer :: nets,nete
+  type (ghostBuffer3D_t)   :: ghostbuf_cv
+
+  real (kind=real_kind) :: cin(2,2,4,nets:nete)                    ! 1x1 element input data
+  real (kind=real_kind) :: cout(2,2,4,max_neigh_edges,nets:nete)   ! 1x1 element output data
+  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,actual_neigh_edges,l,l2,sum1,sum2
+  logical :: fail,fail1,fail2
+  real (kind=real_kind) :: tol=.1
+
+  type (cartesian3D_t)     :: neigh_corners(4,max_neigh_edges,nelemd)  
+
+  call syncmp(hybrid%par)
+  if (hybrid%par%masterproc) print *,'checking ghost cell neighbor buffer sorting...'
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! first test on the Gauss Grid with same number of ghost cells:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  nc=2
+  nlev=4
+  call initghostbuffer3D(ghostbuf_cv,nlev,nc)
+
+
+  do ie=nets,nete
+     cin(:,:,nlev,ie)=  elem(ie)%GlobalID
+     k=0
+     do i=1,nc
+     do j=1,nc
+        k=k+1
+        cin(i,j,1,ie) = elem(ie)%corners3D(k)%x
+        cin(i,j,2,ie) = elem(ie)%corners3D(k)%y
+        cin(i,j,3,ie) = elem(ie)%corners3D(k)%z
+     enddo
+     enddo
+  enddo
+  cout=-1
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  run ghost exchange to get global ID of all neighbors
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  do ie=nets,nete
+     kptr=0
+     call ghostVpack_unoriented(ghostbuf_cv, cin(:,:,:,ie),nc,nlev,kptr,elem(ie)%desc)
+  end do
+
+  ! check for array out of bouds overwriting 
+  if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
+     call abortmp('ghost excchange unoriented failure ob1')
+  endif
+  call ghost_exchangeVfull(hybrid,ghostbuf_cv)
+  if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
+     call abortmp('ghost excchange unoriented failure ob2')
+  endif
+
+  do ie=nets,nete
+     kptr=0
+     call ghostVunpack_unoriented(ghostbuf_cv, cout(:,:,:,:,ie),nc,nlev, kptr, elem(ie)%desc)
+
+     ! check that we get the count of real neighbors correct
+     actual_neigh_edges=0
+
+     do l=1,max_neigh_edges
+        if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
+           actual_neigh_edges = actual_neigh_edges + 1
+        endif
+     enddo
+
+     if (elem(ie)%desc%actual_neigh_edges /= actual_neigh_edges) then
+        print *,'desc  actual_neigh_edges: ',elem(ie)%desc%actual_neigh_edges
+        print *,'check actual_neigh_edges: ',actual_neigh_edges
+        call abortmp( 'ghost exchange unoriented failure 1')
+     endif
+
+     ! check that all non-neighbors stayed -1
+     if ( actual_neigh_edges < max_neigh_edges ) then
+        do l=actual_neigh_edges+1,max_neigh_edges
+        if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
+           call abortmp( 'ghost exchange unoriented failure 2')
+        endif
+        enddo
+     endif
+
+     ! i am too lazy to check if all id's are identical since they are in
+     ! different order.  check if there sum is identical
+     sum1 = sum(int(cout(1,1,nlev,1:actual_neigh_edges,ie)))
+     sum2=0
+     do l=1,max_neigh_edges
+        if (elem(ie)%desc%globalID(l)>0) sum2 = sum2 + elem(ie)%desc%globalID(l)
+     enddo
+     if (sum1 /= sum2 ) then
+        print *,int(cin(1,1,nlev,ie)),elem(ie)%desc%actual_neigh_edges,actual_neigh_edges
+        write(*,'(a,99i5)') 'ghost=',int(cout(1,1,nlev,1:actual_neigh_edges,ie))
+        write(*,'(a,99i5)') 'desc =',elem(ie)%desc%globalID(:)
+
+        print *,'cout sum of all neighbor global ids:',sum1 
+        print *,'desc sum of all neighbor global ids:',sum2  
+        call abortmp( 'ghost exchange unoriented failure 3')        
+     endif
+
+     ! unpack corner data into array
+     do l=1,elem(ie)%desc%actual_neigh_edges
+     k=0
+     do i=1,nc
+     do j=1,nc
+        k=k+1
+        neigh_corners(k,l,ie)%x=cout(i,j,1,l,ie) 
+        neigh_corners(k,l,ie)%y=cout(i,j,2,l,ie) 
+        neigh_corners(k,l,ie)%z=cout(i,j,3,l,ie) 
+     enddo
+     enddo
+     enddo
+  enddo
+
+  call freeghostbuffer3D(ghostbuf_cv)
+  if (hybrid%par%masterproc) print *,'passed.'
   end subroutine
 
 

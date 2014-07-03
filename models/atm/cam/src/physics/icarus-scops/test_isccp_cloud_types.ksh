@@ -47,7 +47,7 @@ echo Running ISCCP simulator tests - may take a few minutes....
 
 rm -f stdout
 
-./rcsid isccp_cloud_types.f > stdout
+./rcsid isccp_cloud_types.f77 > stdout
 for top_height_direction in 1 2
 do
   for top in 1 2 3

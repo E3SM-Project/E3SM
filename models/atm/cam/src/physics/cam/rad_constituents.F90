@@ -55,33 +55,39 @@ logical,            public :: oldcldoptics = .false.
 
 ! Private module data
 
-integer, parameter :: n_mode_str = 60     ! max number of strings in mode definitions
-integer, parameter :: N_RAD_CNST = 30     ! max number of externally mixed entities in the climate/diag lists
+! max number of strings in mode definitions
+integer, parameter :: n_mode_str = 60
+
+! max number of externally mixed entities in the climate/diag lists
+integer, parameter :: n_rad_cnst = N_RAD_CNST
 
 ! Namelist variables
 character(len=cs1), dimension(n_mode_str) :: mode_defs   = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_climate = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_1  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_2  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_3  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_4  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_5  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_6  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_7  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_8  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_9  = ' '
-character(len=cs1), dimension(N_RAD_CNST) :: rad_diag_10 = ' '
+character(len=cs1) :: rad_climate(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_1(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_2(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_3(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_4(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_5(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_6(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_7(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_8(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_9(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_10(n_rad_cnst) = ' '
 
 ! type to provide access to the components of a mode
 type :: mode_component_t
    integer :: nspec
-   character(len=  1) :: source_num_a  ! source of interstitial number conc field ('N' if in pbuf (non-advected) or 'A' if in state (advected))
+   ! For "source" variables below, value is:
+   ! 'N' if in pbuf (non-advected)
+   ! 'A' if in state (advected)
+   character(len=  1) :: source_num_a  ! source of interstitial number conc field
    character(len= 32) :: camname_num_a ! name registered in pbuf or constituents for number mixing ratio of interstitial species
-   character(len=  1) :: source_num_c  ! source of cloud borne number conc field ('N' if in pbuf (non-advected) or 'A' if in state (advected))
+   character(len=  1) :: source_num_c  ! source of cloud borne number conc field
    character(len= 32) :: camname_num_c ! name registered in pbuf or constituents for number mixing ratio of cloud borne species
-   character(len=  1), pointer :: source_mmr_a(:)  ! source of interstitial specie mmr fields ('N' if in pbuf or 'A' if in state)
+   character(len=  1), pointer :: source_mmr_a(:)  ! source of interstitial specie mmr fields
    character(len= 32), pointer :: camname_mmr_a(:) ! name registered in pbuf or constituents for mmr of interstitial components
-   character(len=  1), pointer :: source_mmr_c(:)  ! source of cloud borne specie mmr fields ('N' if in pbuf or 'A' if in state)
+   character(len=  1), pointer :: source_mmr_c(:)  ! source of cloud borne specie mmr fields
    character(len= 32), pointer :: camname_mmr_c(:) ! name registered in pbuf or constituents for mmr of cloud borne components
    character(len= 32), pointer :: type(:)          ! specie type (as used in MAM code)
    character(len=cs1), pointer :: props(:)         ! file containing specie properties
@@ -264,17 +270,17 @@ subroutine rad_cnst_readnl(nlfile)
 #ifdef SPMD
    ! Broadcast namelist variables
    call mpibcast (mode_defs,     len(mode_defs(1))*n_mode_str,     mpichar, 0, mpicom)
-   call mpibcast (rad_climate,   len(rad_climate(1))*N_RAD_CNST,   mpichar, 0, mpicom)
-   call mpibcast (rad_diag_1,    len(rad_diag_1(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_2,    len(rad_diag_2(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_3,    len(rad_diag_3(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_4,    len(rad_diag_4(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_5,    len(rad_diag_5(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_6,    len(rad_diag_6(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_7,    len(rad_diag_7(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_8,    len(rad_diag_8(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_9,    len(rad_diag_9(1))*N_RAD_CNST,    mpichar, 0, mpicom)
-   call mpibcast (rad_diag_10,   len(rad_diag_10(1))*N_RAD_CNST,   mpichar, 0, mpicom)
+   call mpibcast (rad_climate,   len(rad_climate(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_1,    len(rad_diag_1(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_2,    len(rad_diag_2(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_3,    len(rad_diag_3(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_4,    len(rad_diag_4(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_5,    len(rad_diag_5(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_6,    len(rad_diag_6(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_7,    len(rad_diag_7(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_8,    len(rad_diag_8(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_9,    len(rad_diag_9(1))*n_rad_cnst,    mpichar, 0, mpicom)
+   call mpibcast (rad_diag_10,   len(rad_diag_10(1))*n_rad_cnst,   mpichar, 0, mpicom)
    call mpibcast (iceopticsfile, len(iceopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqopticsfile, len(liqopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqcldoptics,  len(liqcldoptics),                mpichar, 0, mpicom)
@@ -1601,7 +1607,7 @@ subroutine parse_rad_specifier(specifier, namelist_data)
   
     number = 0
 
-    parse_loop: do i = 1, N_RAD_CNST
+    parse_loop: do i = 1, n_rad_cnst
       if ( len_trim(specifier(i)) == 0 ) then 
          exit parse_loop
       endif

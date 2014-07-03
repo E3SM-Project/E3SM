@@ -110,7 +110,7 @@
         <Parameter name="Number of Tests" type="int" value="2"/>
         <ParameterList name="Test 0">
           <Parameter name="Test Type" type="string" value="NormF"/>
-          <Parameter name="Tolerance" type="double" value="1.0e-11"/>
+          <Parameter name="Tolerance" type="double" value="1.0e-6"/>
         </ParameterList>
         <ParameterList name="Test 1">
           <Parameter name="Test Type" type="string" value="MaxIters"/>

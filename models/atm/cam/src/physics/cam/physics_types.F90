@@ -46,7 +46,6 @@ module physics_types
   public physics_type_alloc
 
   public physics_state_alloc   ! allocate individual components within state
-  public physics_state_dycore_alloc   ! allocate components set by dycore
   public physics_state_dealloc ! deallocate individual components within state
   public physics_tend_alloc    ! allocate individual components within tend
   public physics_tend_dealloc  ! deallocate individual components within tend
@@ -58,10 +57,8 @@ module physics_types
      integer                                     :: &
           lchnk,                &! chunk index
           ngrdcol,              &! -- Grid        -- number of active columns (on the grid)
-          nsubcol(pcols),       &! -- Sub-columns -- number of active sub-columns in each grid column
           psetcols=0,           &! --             -- max number of columns set - if subcols = pcols*psubcols, else = pcols
-          ncol=0,               &! --             -- sum of nsubcol for all ngrdcols - number of active columns
-          indcol(pcols*psubcols) ! --             -- indices for mapping from subcols to grid cols
+          ncol=0                 ! --             -- sum of nsubcol for all ngrdcols - number of active columns
      real(r8), dimension(:), allocatable         :: &
           lat,     &! latitude (radians)
           lon,     &! longitude (radians)
@@ -109,15 +106,6 @@ module physics_types
           cid        ! unique column id
      integer :: ulatcnt, &! number of unique lats in chunk
                 uloncnt   ! number of unique lons in chunk
-
-     ! Whether allocation from dycore has happened.
-     logical :: dycore_alloc = .false.
-
-     ! WACCM variables set by dycore
-     real(r8), dimension(:,:),allocatable        :: &
-          uzm,     &  ! zonal wind for qbo (m/s)
-          frontgf, &  ! frontogenesis function
-          frontga     ! frontogenesis angle
 
   end type physics_state
 
@@ -220,6 +208,7 @@ contains
     use scamMod,      only: scm_crm_mode, single_column
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
+    use ppgrid,       only: begchunk, endchunk
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -242,9 +231,16 @@ contains
 
     real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
 
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+    real(r8),allocatable :: rairv_loc(:,:,:)
+
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
          (/ "stratiform", "cldwat    ", "micro_mg  ", "macro_park" /)
+
+    ! cldliq/ice limits that are always on.
+    character(len=24), parameter :: cldlim_names(2) = &
+         (/ "convect_deep", "zm_conv_tend" /)
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
@@ -277,6 +273,30 @@ contains
        end if
     end if
 
+    !-----------------------------------------------------------------------
+    ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
+    ! If psetcols == pcols, the cpairv is the correct size and just copy
+    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
+    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpair
+    else
+       call endrun('physics_update: cpairv is not allowed to vary when subcolumns are turned on')
+    end if
+    if (state%psetcols == pcols) then
+       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       rairv_loc(:,:,:) = rairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
+       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       rairv_loc(:,:,:) = rair
+    else
+       call endrun('physics_update: rairv_loc is not allowed to vary when subcolumns are turned on')
+    end if
+
+    !-----------------------------------------------------------------------
     call phys_getopts(state_debug_checks_out=state_debug_checks)
 
     ncol = state%ncol
@@ -354,7 +374,7 @@ contains
           if ( any(ptend%name == pergro_cldlim_names) ) &
                call state_cnst_min_nz(1.e-12_r8, ixcldliq, ixnumliq)
 #endif
-          if (ptend%name == 'convect_deep') &
+          if ( any(ptend%name == cldlim_names) ) &
                call state_cnst_min_nz(1.e-36_r8, ixcldliq, ixnumliq)
        end if
     end if
@@ -365,7 +385,7 @@ contains
           if ( any(ptend%name == pergro_cldlim_names) ) &
                call state_cnst_min_nz(1.e-12_r8, ixcldice, ixnumice)
 #endif
-          if (ptend%name == 'convect_deep') &
+          if ( any(ptend%name == cldlim_names) ) &
                call state_cnst_min_nz(1.e-36_r8, ixcldice, ixnumice)
        end if
     end if
@@ -384,19 +404,19 @@ contains
     endif	  
    
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
+      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
     else
       zvirv(:,:) = zvir    
     endif
 
     !-------------------------------------------------------------------------------------------
-    ! Update dry static energy(moved from above for WACCM-X so updating after cpairv update)
+    ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
     !-------------------------------------------------------------------------------------------
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
           state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
           if (present(tend)) &
-               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv(:ncol,k,state%lchnk)
+               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
        end do
     end if
 
@@ -404,7 +424,7 @@ contains
     if (ptend%ls .or. ptend%lq(1)) then
        call geopotential_dse(  &
             state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel  , state%rpdel  , &
-            state%s     , state%q(:,:,1),state%phis , rairv(:,:,state%lchnk), gravit  , cpairv(:,:,state%lchnk), &
+            state%s     , state%q(:,:,1),state%phis , rairv_loc(:,:,state%lchnk), gravit  , cpairv_loc(:,:,state%lchnk), &
             zvirv    , state%t     , state%zi    , state%zm    , ncol         )
     end if
 
@@ -412,6 +432,8 @@ contains
     call shr_sys_flush(iulog)
 
     if (state_debug_checks) call physics_state_check(state, ptend%name)
+
+    deallocate(cpairv_loc, rairv_loc)
 
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
@@ -452,6 +474,7 @@ contains
 
     end subroutine state_cnst_min_nz
 
+
   end subroutine physics_update
 
 !===============================================================================
@@ -490,12 +513,8 @@ contains
     posinf_r8 = shr_infnan_posinf
     neginf_r8 = shr_infnan_neginf
 
-    ! It may be reasonable to check some of the integers components of the
+    ! It may be reasonable to check some of the integer components of the
     ! state as well, but this is not yet implemented.
-
-    call shr_assert(allocated(state%frontgf) .eqv. allocated(state%frontga), &
-         msg="Only one of frontgf/frontga allocated. Either both should be &
-         &allocated, or neither (package "//trim(name)//").")
 
     ! Check for NaN first to avoid any IEEE exceptions.
 
@@ -553,17 +572,6 @@ contains
          varname="state%exner",     msg=msg)
     call shr_assert_in_domain(state%zm(:ncol,:),        is_nan=.false., &
          varname="state%zm",        msg=msg)
-
-    ! Don't check these fields until they are first set.
-    if (allocated(state%uzm)) &
-         call shr_assert_in_domain(state%uzm(:ncol,:),     is_nan=.false., &
-         varname="state%uzm",     msg=msg)
-    if (allocated(state%frontgf)) &
-         call shr_assert_in_domain(state%frontgf(:ncol,:), is_nan=.false., &
-         varname="state%frontgf", msg=msg)
-    if (allocated(state%frontga)) &
-         call shr_assert_in_domain(state%frontga(:ncol,:), is_nan=.false., &
-         varname="state%frontga", msg=msg)
 
     ! 2-D variables (at interfaces)
     call shr_assert_in_domain(state%pint(:ncol,:),      is_nan=.false., &
@@ -636,19 +644,8 @@ contains
          varname="state%lnpmiddry", msg=msg)
     call shr_assert_in_domain(state%exner(:ncol,:),     lt=posinf_r8, gt=0._r8, &
          varname="state%exner",     msg=msg)
-    call shr_assert_in_domain(state%zm(:ncol,:),        lt=posinf_r8, ge=0._r8, &
+    call shr_assert_in_domain(state%zm(:ncol,:),        lt=posinf_r8, gt=neginf_r8, &
          varname="state%zm",        msg=msg)
-
-    ! Don't check these fields until they are first set.
-    if (allocated(state%uzm)) &
-         call shr_assert_in_domain(state%uzm(:ncol,:),     lt=posinf_r8, gt=neginf_r8, &
-         varname="state%uzm",     msg=msg)
-    if (allocated(state%frontgf)) &
-         call shr_assert_in_domain(state%frontgf(:ncol,:), lt=posinf_r8, gt=neginf_r8, &
-         varname="state%frontgf", msg=msg)
-    if (allocated(state%frontga)) &
-         call shr_assert_in_domain(state%frontga(:ncol,:), le=pi,        ge=-pi, &
-         varname="state%frontga", msg=msg)
 
     ! 2-D variables (at interfaces)
     call shr_assert_in_domain(state%pint(:ncol,:),      lt=posinf_r8, gt=0._r8, &
@@ -659,7 +656,7 @@ contains
          varname="state%lnpint",    msg=msg)
     call shr_assert_in_domain(state%lnpintdry(:ncol,:), lt=posinf_r8, gt=neginf_r8, &
          varname="state%lnpintdry", msg=msg)
-    call shr_assert_in_domain(state%zi(:ncol,:),        lt=posinf_r8, ge=0._r8, &
+    call shr_assert_in_domain(state%zi(:ncol,:),        lt=posinf_r8, gt=neginf_r8, &
          varname="state%zi",        msg=msg)
 
     ! 3-D variables
@@ -870,7 +867,6 @@ subroutine physics_ptend_copy(ptend, ptend_cp)
    end if
 
 end subroutine physics_ptend_copy
-
 
 !===============================================================================
 
@@ -1176,7 +1172,7 @@ end subroutine physics_ptend_copy
 
 ! compute new T,z from new s,q,dp
     if (adjust_te) then
-       call geopotential_dse(state%lnpint, state%lnpmid  , state%pint ,  &
+       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
             state%pmid  , state%pdel    , state%rpdel,  &
             state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
 	    gravit, cpairv(:,:,state%lchnk), zvirv, &
@@ -1207,8 +1203,6 @@ end subroutine physics_ptend_copy
 
     ! Allocate state_out with same subcol dimension as state_in
     call physics_state_alloc ( state_out, state_in%lchnk, state_in%psetcols)
-    if (state_in%dycore_alloc) &
-         call physics_state_dycore_alloc(state_out)
 
     ncol = state_in%ncol
     
@@ -1217,9 +1211,6 @@ end subroutine physics_ptend_copy
     state_out%lchnk    = state_in%lchnk
     state_out%ncol     = state_in%ncol  
     state_out%count    = state_in%count 
-    state_out%indcol(:)= state_in%indcol(:)
-
-    state_out%nsubcol(:)= state_in%nsubcol(:)
 
     do i = 1, ncol
        state_out%lat(i)    = state_in%lat(i)
@@ -1282,30 +1273,6 @@ end subroutine physics_ptend_copy
           end do
        end do
     end do
-
-    if (allocated(state_in%uzm)) then
-       do k = 1, pver
-          do i = 1, ncol
-             state_out%uzm(i,k) = state_in%uzm(i,k) 
-          end do
-       end do
-    end if
-
-    if (allocated(state_in%frontgf)) then
-       do k = 1, pver
-          do i = 1, ncol
-             state_out%frontgf(i,k) = state_in%frontgf(i,k) 
-          end do
-       end do
-    end if
-
-    if (allocated(state_in%frontga)) then
-       do k = 1, pver
-          do i = 1, ncol
-             state_out%frontga(i,k) = state_in%frontga(i,k)
-          end do
-       end do
-    end if
 
   end subroutine physics_state_copy
 !===============================================================================
@@ -1444,11 +1411,6 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   !  state%ncol - is initialized in physics_state_set_grid,  if not using sub-columns
 
-  state%nsubcol(:) = 1                   ! Default number of sub-columns is 1
-  do i=1,state%ngrdcol
-    state%indcol(i)  = i                 ! Default is the index for each column (no sub-columns)
-  end do
-  state%indcol(state%ngrdcol+1:psetcols) = 0._r8
   !----------------------------------
 
   allocate(state%lat(psetcols), stat=ierr)
@@ -1595,45 +1557,6 @@ end subroutine physics_state_alloc
 
 !===============================================================================
 
-subroutine physics_state_dycore_alloc(state)
-
-  ! Allocate the components of state that are first set by the dycore.
-  ! Assumes that physics_state_alloc has already been called.
-
-  use dycore, only : dycore_is
-  use infnan, only : inf, assignment(=)
-
-  type(physics_state), intent(inout) :: state
-
-  integer :: psetcols, ierr=0
-
-  psetcols = state%psetcols
-
-  ! Zonal mean only calculated for lat-lon grids.
-  if (dycore_is('LR')) then
-     allocate(state%uzm(psetcols,pver), stat=ierr)
-     if ( ierr /= 0 ) call endrun( &
-          'physics_state_dycore_alloc error: allocation error for state%uzm')
-     state%uzm(:,:) = inf
-  end if
-
-  allocate(state%frontgf(psetcols,pver), stat=ierr)
-  if ( ierr /= 0 ) call endrun( &
-       'physics_state_dycore_alloc error: allocation error for state%frontgf')
-
-  allocate(state%frontga(psetcols,pver), stat=ierr)
-  if ( ierr /= 0 ) call endrun( &
-       'physics_state_dycore_alloc error: allocation error for state%frontga')
-
-  state%frontgf(:,:) = inf
-  state%frontga(:,:) = inf
-
-  state%dycore_alloc = .true.
-
-end subroutine physics_state_dycore_alloc
-
-!===============================================================================
-
 subroutine physics_state_dealloc(state)
 
 ! deallocate the individual state components
@@ -1742,19 +1665,6 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%lonmapback, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%lonmapback')
-
-  ! The following fields may not always be allocated, so check allocation status.
-
-  if (allocated(state%uzm)) deallocate(state%uzm, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%uzm')
-
-  if (allocated(state%frontgf)) deallocate(state%frontgf, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%frontgf')
-
-  if (allocated(state%frontga)) deallocate(state%frontga, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%frontga')
-
-  state%dycore_alloc = .false.
 
 end subroutine physics_state_dealloc
 

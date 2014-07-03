@@ -28,12 +28,16 @@
  of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment 
  variable of the same name if it exists.
 
+ NOTE: The variable CESMSCRATCHROOT must be fully resolved before a case is built so cannot 
+            contain other variables defined in cesm.
+
 -->
 <machine MACH="userdefined">
         <DESC>User Defined Machine</DESC>                                 <!-- can be anything -->
         <OS>USERDEFINED_required_macros</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
         <COMPILERS>intel,ibm,pgi,pathscale,gnu,cray,lahey</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
         <MPILIBS>openmpi,mpich,mpt,mpt,ibm,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
+        <CESMSCRATCHROOT>USERDEFINED_required_build</CESMSCRATCHROOT>                     <!-- complete path to the 'scratch' directory -->
         <RUNDIR>USERDEFINED_required_build</RUNDIR>                       <!-- complete path to the run directory -->
         <EXEROOT>USERDEFINED_required_build</EXEROOT>                     <!-- complete path to the build directory -->
         <DIN_LOC_ROOT>USERDEFINED_required_build</DIN_LOC_ROOT>           <!-- complete path to the inputdata directory -->
@@ -54,6 +58,7 @@
          <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,cray,gnu</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <CESMSCRATCHROOT>/scratch/sciteam/$USER</CESMSCRATCHROOT>
          <RUNDIR>/scratch/sciteam/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/scratch/sciteam/$CCSMUSER/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/sciteam/jng/cesm/inputdata</DIN_LOC_ROOT>
@@ -77,6 +82,7 @@
          <OS>LINUX</OS>
          <RUNDIR>/cluster/work/uwis/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/cluster/work/uwis/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/cluster/work/uwis/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/cluster/work/uwis/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -97,6 +103,7 @@
 	 <MPILIBS>mpich</MPILIBS>
          <RUNDIR>/lustre/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/lustre/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/lustre/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lustre/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -111,23 +118,25 @@
 </machine>
 
 <machine MACH="edison">
-         <DESC>NERSC XC30, os is CNL, 16 pes/node, batch system is PBS</DESC>
+         <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <RUNDIR>/scratch1/scratchdirs/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/scratch1/scratchdirs/$CCSMUSER/$CASE/bld</EXEROOT>
+         <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
+         <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/scratch1/scratchdirs/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$SCRATCH/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+	 <PES_PER_NODE>24</PES_PER_NODE>
 </machine>
 
 
@@ -138,6 +147,7 @@
 	 <MPILIBS>ibm,mpi-serial</MPILIBS>
          <RUNDIR>/ampstmp/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/ampstmp/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/ampstmp/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/tss</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/ampstmp/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -159,6 +169,7 @@
 	 <MPILIBS>openmpi</MPILIBS>
          <RUNDIR>/lustre/data/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/data/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/lustre/data/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/data/eg_nfs/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/data/eg_nfs/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lustre/data/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -172,12 +183,35 @@
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
 </machine>
 
-<machine MACH="frankfurt">
+<machine MACH="eos">
+         <DESC>ORNL XC30, os is CNL, 16 pes/node, batch system is PBS</DESC>
+	 <COMPILERS>intel</COMPILERS>
+	 <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
+         <EXEROOT>$MEMBERWORK/$PROJECT/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>$MEMBERWORK/$PROJECT</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$MEMBERWORK/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.eos</CCSM_CPRNC>
+         <OS>CNL</OS>
+         <BATCHQUERY>qstat -f</BATCHQUERY>
+         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <SUPPORTED_BY>cseg</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <PES_PER_NODE>16</PES_PER_NODE>
+         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+</machine>
+
+<machine MACH="goldbach">
          <DESC>"NCAR CGD Linux Cluster 16 pes/node, batch system is PBS"</DESC>
-         <COMPILERS>pgi,intel,nag</COMPILERS>
-         <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
+         <COMPILERS>pgi,intel,nag,gnu</COMPILERS>
+         <MPILIBS>openmpi,mpi-serial</MPILIBS>
          <RUNDIR>/scratch/cluster/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/scratch/cluster/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
          <OBJROOT>$EXEROOT</OBJROOT>
          <INCROOT>$EXEROOT/lib/include</INCROOT>
          <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
@@ -199,6 +233,7 @@
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE</DOUT_S_ROOT>
@@ -219,6 +254,7 @@
          <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>/p/lscratchd/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratchd/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/p/lscratchd/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/p/lscratchd/mirin/ccsm3data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/p/lscratchd/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -240,6 +276,7 @@
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
          <RUNDIR>/scratch/scratchdirs/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/scratch/scratchdirs/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/scratch/scratchdirs/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/scratch/scratchdirs/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -254,26 +291,6 @@
          <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
 </machine>
 
-<machine MACH="intrepid">
-         <DESC>ANL IBM BG/P, os is BGP, 4 pes/node, batch system is cobalt</DESC>
-	 <COMPILERS>ibm</COMPILERS>
-	 <MPILIBS>ibm</MPILIBS>
-         <RUNDIR>/intrepid-fs0/CCESDev/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
-         <EXEROOT>/intrepid-fs0/CCESDev/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/gpfs/home/projects/ccsm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/gpfs/home/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/intrepid-fs0/CCESDev/$CCSMUSER/persistent/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/gpfs/home/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/gpfs/home/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
-         <OS>BGP</OS>
-         <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHSUBMIT>csh</BATCHSUBMIT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>2</GMAKE_J>
-         <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-</machine>
-
 <machine MACH="janus">
          <DESC>CU Linux Cluster (intel), 2 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>intel,pgi</COMPILERS>
@@ -281,6 +298,7 @@
          <OS>LINUX</OS>
          <RUNDIR>/lustre/janus_scratch/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/janus_scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/lustre/janus_scratch/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/lustre/janus_scratch/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/janus_scratch/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lustre/janus_scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -295,46 +313,48 @@
 	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
 </machine>
 
-<machine MACH="lynx">
-         <DESC>NCAR XT5, os is CNL, 12 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi,intel,pathscale,gnu,cray</COMPILERS>
-	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <OS>CNL</OS>
-         <RUNDIR>/glade/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/glade/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/glade/proj3/cseg/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/glade/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/glade/proj3/cseg/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/glade/proj3/cseg/tools/cprnc.lynx/cprnc</CCSM_CPRNC>
-         <BATCHQUERY>UNSET</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-</machine>
 
+<machine MACH="juqueen">
+         <DESC>FZJ IBM BG/Q, os is CNK, 16 pes/node, batch system is LoadLeveler</DESC>
+         <COMPILERS>ibm</COMPILERS>
+         <MPILIBS>ibm</MPILIBS>
+         <RUNDIR>$ENV{WORK}/$CASE/run</RUNDIR>
+         <EXEROOT>$ENV{WORK}/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>$ENV{WORK}</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>$ENV{WORK}/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>$ENV{WORK}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
+         <CCSM_BASELINE>$ENV{WORK}/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>$ENV{WORK}/tools/cprnc/cprnc</CCSM_CPRNC>
+         <OS>BGQ</OS>
+         <BATCHQUERY>llq</BATCHQUERY>
+         <BATCHSUBMIT>llsubmit</BATCHSUBMIT>
+         <SUPPORTED_BY>dennis -at- ucar.edu</SUPPORTED_BY>
+         <GMAKE_J>4</GMAKE_J>
+         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+</machine>
 
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <RUNDIR>/gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
-         <EXEROOT>/gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/gpfs/mira-fs0/projects/ccsm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/gpfs/mira-fs0/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <RUNDIR>/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
+         <EXEROOT>/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/projects/ClimEndStation/$CCSMUSER/scratch/exe</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/projects/ClimEndStation/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/gpfs/mira-fs0/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
-	 <CCSM_CPRNC>/gpfs/mira-fs0/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
+	     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>BGQ</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>2</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <GMAKE_J>4</GMAKE_J>
+         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
 </machine>
 
 
@@ -346,6 +366,7 @@
 	 <MPILIBS>mpich</MPILIBS>
          <RUNDIR>/pic/scratch/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -359,24 +380,6 @@
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
 
-<machine MACH="pleiades-har">
-         <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 3.0 GHz Harpertown processors, 8 pes/node and 8 GB of memory, batch system is PBS</DESC>
-	 <COMPILERS>intel</COMPILERS>
-	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <OS>LINUX</OS>
-         <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
-         <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-</machine>
-
 <machine MACH="pleiades-wes">
          <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.93 GHz Westmere processors, 12 pes/node and 24 GB of memory, batch system is PBS</DESC>
 	 <COMPILERS>intel</COMPILERS>
@@ -384,6 +387,7 @@
          <OS>LINUX</OS>
          <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -402,6 +406,7 @@
          <OS>LINUX</OS>
          <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -413,12 +418,32 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="pleiades-ivy">
+         <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.8 GHz Ivy Bridge processors, 20 cores/node and 3.2 GB of memory per core, batch system is PBS</DESC>
+	 <COMPILERS>intel</COMPILERS>
+	 <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <OS>LINUX</OS>
+         <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
+         <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+         <BATCHQUERY>qstat</BATCHQUERY>
+         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
+</machine>
+
 <machine MACH="sierra">
          <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
          <COMPILERS>pgi</COMPILERS>
          <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>/p/lscratchd/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratchd/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/p/lscratchd/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/p/lscratchd/mirin/ccsm3data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/p/lscratchd/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -434,18 +459,41 @@
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="stampede">
+        <DESC>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</DESC>
+        <OS>LINUX</OS>
+        <COMPILERS>intel,intelmic,intel14,intelmic14</COMPILERS>
+        <MPILIBS>impi,mvapich2,mpi-serial</MPILIBS>
+        <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
+        <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
+        <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
+        <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
+        <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+        <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
+        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
+        <CCSM_BASELINE>/scratch/projects/xsede/CESM/ccsm_baselines</CCSM_BASELINE>
+        <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
+        <BATCHQUERY>squeue</BATCHQUERY>
+        <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+        <SUPPORTED_BY>srinathv -at- ucar.edu</SUPPORTED_BY>
+        <GMAKE_J>8</GMAKE_J>
+        <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+        <PES_PER_NODE>16</PES_PER_NODE>
+</machine>
+
 <machine MACH="titan">
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi</COMPILERS>
+	 <COMPILERS>pgi,pgicuda</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <RUNDIR>/tmp/work/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/tmp/work/$CCSMUSER/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/tmp/proj/ccsm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/tmp/proj/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/tmp/work/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
+         <EXEROOT>$CASEROOT/bld</EXEROOT>
+         <CESMSCRATCHROOT>$MEMBERWORK/$PROJECT</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$MEMBERWORK/$PROJECT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/tmp/proj/ccsm/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/tmp/proj/ccsm/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -459,11 +507,12 @@
         <OS>LINUX</OS>
         <COMPILERS>intel,pgi,gnu,pathscale</COMPILERS>
         <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
-        <RUNDIR>/glade/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-        <EXEROOT>/glade/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+        <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
+        <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+        <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
         <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
-        <DOUT_S_ROOT>/glade/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+        <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
         <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
         <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -475,29 +524,47 @@
         <PES_PER_NODE>16</PES_PER_NODE>
 </machine>
 
-
-<machine MACH="stampede">
-        <DESC>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</DESC>
+<machine MACH="pronghorn">
+        <DESC>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</DESC>
         <OS>LINUX</OS>
-        <COMPILERS>intel,intel-mic</COMPILERS>
-        <MPILIBS>mvapich2,impi,mpi-serial</MPILIBS>
-        <RUNDIR>/work/02463/srinathv/$CASE/run</RUNDIR>
-        <EXEROOT>/work/02463/srinathv/$CASE/bld</EXEROOT>
-        <DIN_LOC_ROOT>/work/02463/srinathv/inputdata</DIN_LOC_ROOT>
-        <DIN_LOC_ROOT_CLMFORC>/work/02463/srinathv/lmwg</DIN_LOC_ROOT_CLMFORC>
-        <DOUT_S_ROOT>/work/02463/srinathv/archive/$CASE</DOUT_S_ROOT>
+        <COMPILERS>intel,intelmic</COMPILERS>
+        <MPILIBS>impi,mpi-serial</MPILIBS>
+        <RUNDIR>/glade/scratch/$CCSMUSER/$CASE/run</RUNDIR>
+        <EXEROOT>/glade/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+        <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
+        <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+        <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+        <DOUT_S_ROOT>/glade/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
-        <CCSM_BASELINE>/work/02463/srinathv/ccsm_baselines</CCSM_BASELINE>
-        <CCSM_CPRNC>/work/02463/srinathv/tools/cprnc/cprnc</CCSM_CPRNC>
-        <BATCHQUERY>squeue</BATCHQUERY>
-        <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+        <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
+        <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
+        <BATCHQUERY>bjobs -w</BATCHQUERY>                                                                     
+        <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
         <SUPPORTED_BY>srinathv -at- ucar.edu</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
-        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>16</PES_PER_NODE>
 </machine>
 
-
-
+<machine MACH="rosa">
+        <DESC>CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM</DESC>
+        <COMPILERS>pgi,cray,gnu</COMPILERS>
+        <MPILIBS>mpich,mpi-serial</MPILIBS>
+        <RUNDIR>/scratch/rosa/$CCSMUSER/$CASE/run</RUNDIR>
+        <EXEROOT>/scratch/rosa/$CCSMUSER/$CASE/bld</EXEROOT>
+        <CESMSCRATCHROOT>/scratch/rosa/$USER</CESMSCRATCHROOT>
+        <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
+        <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+        <DOUT_S_ROOT>/project/s433/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+        <CCSM_BASELINE>/project/s433/ccsm_baselines</CCSM_BASELINE>
+        <CCSM_CPRNC>/project/s433/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
+        <OS>CNL</OS>
+        <BATCHQUERY>squeue</BATCHQUERY>
+        <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+        <SUPPORTED_BY>edouard.davin -at- env.ethz.ch</SUPPORTED_BY>
+        <GMAKE_J>12</GMAKE_J>
+        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+</machine>
 
 </config_machines>

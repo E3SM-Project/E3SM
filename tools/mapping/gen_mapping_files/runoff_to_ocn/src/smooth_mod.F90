@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: smooth_mod.F90 44128 2013-02-22 15:43:14Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90 $
+! SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90 $
 !===============================================================================
 
 MODULE smooth_mod
@@ -117,19 +117,19 @@ SUBROUTINE smooth_init(map_in, map_out)
    write(*,*) subName,' nactive                      = ',nactive
 !  write(*,*) subName,' map_in%n_b                   = ',map_in%n_b
 
-   allocate(map_out%  xc_a(  map_in%n_b) )
-   allocate(map_out%  yc_a(  map_in%n_b) )
-   allocate(map_out%  xv_a(4,map_in%n_b) )
-   allocate(map_out%  yv_a(4,map_in%n_b) )
-   allocate(map_out%mask_a(  map_in%n_b) )
-   allocate(map_out%area_a(  map_in%n_b) )
+   allocate(map_out%  xc_a(            map_in%n_b) )
+   allocate(map_out%  yc_a(            map_in%n_b) )
+   allocate(map_out%  xv_a(map_in%nv_b,map_in%n_b) )
+   allocate(map_out%  yv_a(map_in%nv_b,map_in%n_b) )
+   allocate(map_out%mask_a(            map_in%n_b) )
+   allocate(map_out%area_a(            map_in%n_b) )
 
-   allocate(map_out%  xc_b(  map_in%n_b) )
-   allocate(map_out%  yc_b(  map_in%n_b) )
-   allocate(map_out%  xv_b(4,map_in%n_b) )
-   allocate(map_out%  yv_b(4,map_in%n_b) )
-   allocate(map_out%mask_b(  map_in%n_b) )
-   allocate(map_out%area_b(  map_in%n_b) )
+   allocate(map_out%  xc_b(            map_in%n_b) )
+   allocate(map_out%  yc_b(            map_in%n_b) )
+   allocate(map_out%  xv_b(map_in%nv_b,map_in%n_b) )
+   allocate(map_out%  yv_b(map_in%nv_b,map_in%n_b) )
+   allocate(map_out%mask_b(            map_in%n_b) )
+   allocate(map_out%area_b(            map_in%n_b) )
 
    allocate(map_out%frac_a(map_in%n_b) )
    allocate(map_out%frac_b(map_in%n_b) )
@@ -144,8 +144,10 @@ SUBROUTINE smooth_init(map_in, map_out)
    ! set values
    !------------------------------------------------
    map_out%   n_a = map_in%   n_b
+   map_out%dims_a = map_in%dims_b
    map_out%  ni_a = map_in%  ni_b
    map_out%  nj_a = map_in%  nj_b
+   map_out%  nv_a = map_in%  nv_b
    map_out%  xc_a = map_in%  xc_b
    map_out%  yc_a = map_in%  yc_b
    map_out%  xv_a = map_in%  xv_b
@@ -167,8 +169,10 @@ SUBROUTINE smooth_init(map_in, map_out)
    write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
 
    map_out%   n_b = map_in%   n_b
+   map_out%dims_b = map_in%dims_b
    map_out%  ni_b = map_in%  ni_b
    map_out%  nj_b = map_in%  nj_b
+   map_out%  nv_b = map_in%  nv_b
    map_out%  xc_b = map_in%  xc_b
    map_out%  yc_b = map_in%  yc_b
    map_out%  xv_b = map_in%  xv_b
@@ -190,7 +194,7 @@ SUBROUTINE smooth_init(map_in, map_out)
 
    map_out%title      = "CCSM conservative smoothing map"
    map_out%normal     = map_in%normal
-   map_out%method     = "created using SVN $Id: smooth_mod.F90 44128 2013-02-22 15:43:14Z mlevy@ucar.edu $"
+   map_out%method     = "created using SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $"
    map_out%history    = map_in%history
    map_out%convention = map_in%convention
    map_out%domain_a   = map_in%domain_b

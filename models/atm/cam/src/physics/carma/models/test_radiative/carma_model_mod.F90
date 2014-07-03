@@ -250,7 +250,6 @@ contains
     use shr_kind_mod,  only: r8 => shr_kind_r8
     use ppgrid,        only: pcols, pver
     use physics_types, only: physics_state
-    use phys_grid,     only: get_lon_all_p, get_lat_all_p, get_rlat_all_p
     use time_manager,  only: get_curr_date, get_perp_date, get_curr_calday, &
                              is_perpetual
     use camsrfexch,       only: cam_in_t
@@ -268,10 +267,6 @@ contains
     real(r8), intent(out)              :: surfaceFlux(pcols)    !! constituent surface flux (kg/m^2/s)
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
-    integer      :: lat(pcols)              ! latitude index 
-    integer      :: lon(pcols)              ! longitude index
-    real(r8)     :: clat(pcols)             ! latitude 
-    integer      :: lchnk                   ! chunk identifier
     integer      :: ncol                    ! number of columns in chunk
     integer      :: icol                    ! column index
     real(r8)     :: calday                  ! current calendar day
@@ -293,14 +288,7 @@ contains
     end if
     doy = floor(calday)
 
-    ! Determine the latitude and longitude of each column.
-    lchnk = state%lchnk
     ncol = state%ncol
-    
-    call get_lat_all_p(lchnk, ncol, lat)
-    call get_lon_all_p(lchnk, ncol, lon)
-    call get_rlat_all_p(lchnk, ncol, clat)
-    
     
     ! Add any surface flux here.
     surfaceFlux(:ncol) = 0.0_r8
@@ -325,7 +313,8 @@ contains
     implicit none
     
     type(carma_type), intent(in)       :: carma                 !! the carma object
-    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent could have a CARMA tendency
+    logical, intent(inout)             :: lq_carma(pcnst)       !! flags to indicate whether the constituent
+                                                                !! could have a CARMA tendency
     integer, intent(out)               :: rc                    !! return code, negative indicates failure
 
     ! Default return code.

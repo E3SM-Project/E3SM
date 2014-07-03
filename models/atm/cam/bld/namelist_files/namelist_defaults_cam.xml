@@ -3,20 +3,25 @@
 <namelist_defaults>
 
 <!-- Timestep size (this is the dynamics/physics coupling interval) -->
-<dtime dyn="eul"   hgrid="256x512" >300</dtime>
-<dtime dyn="eul"   hgrid="128x256" >600</dtime>
+<dtime dyn="eul"                   >1200</dtime>
+<dtime dyn="eul"   hgrid="256x512" >300 </dtime>
+<dtime dyn="eul"   hgrid="128x256" >600 </dtime>
 <dtime dyn="eul"   hgrid="64x128"  >1200</dtime>
 <dtime dyn="eul"   hgrid="48x96"   >1800</dtime>
 <dtime dyn="eul"   hgrid="32x64"   >1800</dtime>
 <dtime dyn="eul"   hgrid="8x16"    >1800</dtime>
-<dtime dyn="eul"                   >1200</dtime>
 
 <dtime dyn="fv"                    >1800</dtime>
-<dtime dyn="fv"    waccmx="1"      >300</dtime>
-<dtime dyn="se"                 >1800</dtime>
-<dtime dyn="se" hgrid="ne60np4" >1200</dtime>
-<dtime dyn="se" hgrid="ne120np4" >900</dtime>
-<dtime dyn="se" hgrid="ne240np4" >900</dtime>
+<dtime dyn="fv"    waccmx="1"      >300 </dtime>
+
+<dtime dyn="se"                    >1800</dtime>
+<dtime dyn="se"    hgrid="ne11np4" >1800</dtime>
+<dtime dyn="se"    hgrid="ne16np4" >1800</dtime>
+<dtime dyn="se"    hgrid="ne30np4" >1800</dtime>
+<dtime dyn="se"    hgrid="ne60np4" >1800</dtime>
+<dtime dyn="se"    hgrid="ne120np4">900 </dtime>
+<dtime dyn="se"    hgrid="ne240np4">600 </dtime>
+
 <dtime dyn="sld"                   >3600</dtime>
 
 <!-- Initial conditions -->
@@ -314,10 +319,17 @@
 <!-- CARMA file paths -->
 <carma_emis_file        carma="meteor_smoke">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
 <carma_escale_file      carma="meteor_smoke">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
+<carma_emis_file        carma="mixed_sulfate">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
+<carma_escale_file      carma="mixed_sulfate">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
 <carma_emis_file        carma="pmc">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
 <carma_escale_file      carma="pmc">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
 <carma_mice_file        carma="pmc">atm/cam/physprops/mice_warren_2008.nc</carma_mice_file> 
+<carma_emis_file        carma="pmc_sulfate">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
+<carma_escale_file      carma="pmc_sulfate">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
+<carma_mice_file        carma="pmc_sulfate">atm/cam/physprops/mice_warren_2008.nc</carma_mice_file> 
+<carma_soilerosion_file carma="cirrus_dust">atm/cam/dst/soil_erosion_factor_1x1_c120907.nc</carma_soilerosion_file> 
 <carma_soilerosion_file carma="dust">atm/cam/dst/soil_erosion_factor_1x1_c120907.nc</carma_soilerosion_file> 
+<carma_emis_file        carma="tholin">atm/waccm/emis/early_earth_haze.nc</carma_emis_file> 
 
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
@@ -430,7 +442,22 @@
 <solar_parms_file chem="waccm_mozart_sulfur">atm/waccm/phot/wasolar.nc</solar_parms_file>
 <solar_parms_file chem="waccm_mozart_mam3">atm/waccm/phot/wasolar.nc</solar_parms_file>
 
-<!-- Waccm gravity wave file -->
+<!-- Gravity wave settings for WACCM -->
+<effgw_oro>0.125D0</effgw_oro>
+
+<effgw_cm>1.D0</effgw_cm>
+<frontgfc            >1.25D-15</frontgfc>
+<frontgfc hgrid="4x5">7.5D-16</frontgfc>
+<taubgnd             >1.5D-3</taubgnd>
+<taubgnd  hgrid="4x5">1.0D-3</taubgnd>
+
+<effgw_beres>0.1D0</effgw_beres>
+
+<!-- Changes to default gravity wave settings for 60 layer CAM -->
+<effgw_beres nlev="60">0.55D0</effgw_beres>
+<effgw_oro   nlev="60">0.0625D0</effgw_oro>
+
+<!-- Beres scheme gravity wave file -->
 <gw_drag_file>atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
 
 <!-- Waccm-x runtime option -->
@@ -513,48 +540,24 @@
 <isop_emis_file    chem="super_fast_llnl">atm/cam/chem/trop_mozart/emis/emissions.ISOP.surface.T42LR.nc</isop_emis_file>
 
 <!-- BAM and MAM aerosol emissions -->
-<dms_emis_file	   chem="trop_bam">atm/cam/chem/trop_mozart_aero/emis/aerocom_DMS_2000.c080417.nc</dms_emis_file>
-<cb1_emis_file	   chem="trop_bam">atm/cam/chem/trop_mozart_aero/emis/aerocom_CB1_2000.c080807.nc</cb1_emis_file>
-<oc1_emis_file	   chem="trop_bam">atm/cam/chem/trop_mozart_aero/emis/aerocom_OC1_2000.nosoa.c080807.nc</oc1_emis_file>
-<so2_emis_file	   chem="trop_bam">atm/cam/chem/trop_mozart_aero/emis/aerocom_SO2_surface_2000.c080807.nc</so2_emis_file>
-<so4_emis_file	   chem="trop_bam">atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_surface_2000.c080807.nc</so4_emis_file>
-<so2_vrt_emis_file                >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO2_vertical_2000.c080807.nc</so2_vrt_emis_file>
-<so4_vrt_emis_file                >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_vertical_2000.c080807.nc</so4_vrt_emis_file>
+<dms_emis_bam      >atm/cam/chem/trop_mozart_aero/emis/aerocom_DMS_2000.c080417.nc</dms_emis_bam>
+<cb1_emis_bam      >atm/cam/chem/trop_mozart_aero/emis/aerocom_CB1_2000.c080807.nc</cb1_emis_bam>
+<oc1_emis_bam      >atm/cam/chem/trop_mozart_aero/emis/aerocom_OC1_2000.nosoa.c080807.nc</oc1_emis_bam>
+<so2_emis_bam      >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO2_surface_2000.c080807.nc</so2_emis_bam>
+<so4_emis_bam      >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_surface_2000.c080807.nc</so4_emis_bam>
 
-<!-- trop_mam3 emissions -->
-<dms_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c090129.nc</dms_emis_file>
-<so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c090726.nc</so2_emis_file>
-<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_2000_c100217.nc</soag_emis_file>
-<bc_a1_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c090726.nc</bc_a1_emis_file>
-<bc_a3_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c090726.nc</bc_a3_emis_file>
-<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_surf_2000_c090726.nc</pom_a1_emis_file>
-<so4_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_surf_2000_c090726.nc</so4_a1_emis_file>
-<so4_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_surf_2000_c090726.nc</so4_a2_emis_file>
-<num_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_2000_c090726.nc</num_a1_emis_file>
-<num_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_surf_2000_c090726.nc</num_a2_emis_file>
-
-<so2_ext_file      chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_elev_2000_c090726.nc </so2_ext_file>
-<so4_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_elev_2000_c090726.nc</so4_a1_ext_file>
-<so4_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_2000_c090726.nc</so4_a2_ext_file>
-<num_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_elev_2000_c090726.nc</num_a1_ext_file>
-<num_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_2000_c090726.nc</num_a2_ext_file>
-<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_2000_c090726.nc </pom_a1_ext_file>
-<bc_a1_ext_file    chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c090726.nc </bc_a1_ext_file>
-
-<mam7_num_a1_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_surf_2000_c120716.nc</mam7_num_a1_emis_file>
-<mam7_num_a3_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_surf_2000_c120716.nc</mam7_num_a3_emis_file>
-<mam7_num_a1_ext_file  >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_elev_2000_c120716.nc</mam7_num_a1_ext_file>
-<mam7_num_a3_ext_file  >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_elev_2000_c120716.nc</mam7_num_a3_ext_file>
+<so2_vrt_emis_file >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO2_vertical_2000.c080807.nc</so2_vrt_emis_file>
+<so4_vrt_emis_file >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_vertical_2000.c080807.nc</so4_vrt_emis_file>
 
 <!-- modal aerosol emissions -->
 <nh3_emis_file     ver="mam">atm/cam/chem/trop_mozart_aero/emis/emis_NH3_2000_c111014.nc</nh3_emis_file>
 <dms_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c120315.nc</dms_emis_file>
 <so2_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c120315.nc</so2_emis_file>
-<soag_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_2000_c120315.nc</soag_emis_file>
+<soag_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_2000_c130422.nc</soag_emis_file>
 <bc_a1_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a1_emis_file>
 <bc_a3_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a3_emis_file>
-<pom_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_surf_2000_c120315.nc</pom_a1_emis_file>
-<pom_a3_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_surf_2000_c120315.nc</pom_a3_emis_file>
+<pom_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_2000_c130422.nc</pom_a1_emis_file>
+<pom_a3_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_2000_c130422.nc</pom_a3_emis_file>
 <so4_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_surf_2000_c120315.nc</so4_a1_emis_file>
 <so4_a2_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_surf_2000_c120315.nc</so4_a2_emis_file>
 <num_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_2000_c120315.nc</num_a1_emis_file>
@@ -565,10 +568,15 @@
 <so4_a2_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_2000_c120315.nc</so4_a2_ext_file>
 <num_a1_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_elev_2000_c120315.nc</num_a1_ext_file>
 <num_a2_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_2000_c120315.nc</num_a2_ext_file>
-<pom_a1_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_2000_c120315.nc </pom_a1_ext_file>
-<pom_a3_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_2000_c120315.nc </pom_a3_ext_file>
+<pom_a1_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a1_ext_file>
+<pom_a3_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a3_ext_file>
 <bc_a1_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a1_ext_file>
 <bc_a3_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a3_ext_file>
+
+<mam7_num_a1_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_surf_2000_c120716.nc</mam7_num_a1_emis_file>
+<mam7_num_a3_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_surf_2000_c120716.nc</mam7_num_a3_emis_file>
+<mam7_num_a1_ext_file  >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_elev_2000_c120716.nc</mam7_num_a1_ext_file>
+<mam7_num_a3_ext_file  >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_elev_2000_c120716.nc</mam7_num_a3_ext_file>
 
 <!-- prescribed oxidants for prognostic aerosol chemistry -->
 <tracer_cnst_file     ver="fixed_ox">oxid_1.9x2.5_L26_1850-2005_c091123.nc</tracer_cnst_file>
@@ -647,23 +655,17 @@
 
 
 <!-- soil erodibility factors -->
-<soil_erod  >atm/cam/dst/dst_0.9x1.25_c100121.nc</soil_erod>
-<soil_erod dyn="fv"    hgrid="0.23x0.31">atm/cam/dst/dst_0.23x0.31_c100121.nc</soil_erod>
-<soil_erod dyn="fv"    hgrid="0.47x0.63">atm/cam/dst/dst_0.47x0.63_c100121.nc</soil_erod>
-<soil_erod dyn="fv"    hgrid="0.9x1.25">atm/cam/dst/dst_0.9x1.25_c100121.nc</soil_erod>
-<soil_erod dyn="fv"    hgrid="1.9x2.5" >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod>
-<soil_erod dyn="fv"    hgrid="4x5"     >atm/cam/dst/dst_4x5_c090203.nc</soil_erod>
-<soil_erod dyn="fv"    hgrid="10x15"   >atm/cam/dst/dst_10x15_c090203.nc</soil_erod>
-<soil_erod             hgrid="8x16"    >atm/cam/dst/dst_8x16_c090203.nc</soil_erod>
-<soil_erod             hgrid="32x64"   >atm/cam/dst/dst_32x64_c090203.nc</soil_erod>
-<soil_erod             hgrid="48x96"   >atm/cam/dst/dst_48x96_c090203.nc</soil_erod>
-<soil_erod             hgrid="64x128"  >atm/cam/dst/dst_64x128_c090203.nc</soil_erod>
-<soil_erod             hgrid="128x256" >atm/cam/dst/dst_128x256_c090203.nc</soil_erod>
-<soil_erod dyn="se" hgrid="ne16np4"          >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod>
-<soil_erod dyn="se" hgrid="ne30np4"          >atm/cam/dst/dst_0.9x1.25_c100121.nc</soil_erod>
-<soil_erod dyn="se" hgrid="ne60np4"          >atm/cam/dst/dst_0.47x0.63_c100121.nc</soil_erod>
-<soil_erod dyn="se" hgrid="ne120np4"         >atm/cam/dst/dst_0.23x0.31_c100121.nc</soil_erod>
-<soil_erod dyn="se" hgrid="ne240np4"         >atm/cam/dst/dst_0.23x0.31_c100121.nc</soil_erod>
+<soil_erod_file                  >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
+<!-- Maintain FV 1-deg version since production model tuned with it. -->
+<soil_erod_file  hgrid="0.9x1.25">atm/cam/dst/dst_0.9x1.25_c100121.nc</soil_erod_file>
+<!-- Use some special files at low resolutions for backwards compatibility only -->
+<soil_erod_file  hgrid="4x5"     >atm/cam/dst/dst_4x5_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="10x15"   >atm/cam/dst/dst_10x15_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="8x16"    >atm/cam/dst/dst_8x16_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="32x64"   >atm/cam/dst/dst_32x64_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="48x96"   >atm/cam/dst/dst_48x96_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="64x128"  >atm/cam/dst/dst_64x128_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="128x256" >atm/cam/dst/dst_128x256_c090203.nc</soil_erod_file>
 
 <!-- Turbulent Mountain Stress -->
 <do_tms                                                     > .false. </do_tms>
@@ -710,6 +712,8 @@
 <micro_mg_version microphys="mg1.5">1</micro_mg_version>
 <micro_mg_sub_version microphys="mg1.5">5</micro_mg_sub_version>
 
+<microp_uniform>.false.</microp_uniform>
+
 <!-- Macrophysics scheme -->
 <macrop_scheme                       >none</macrop_scheme>
 <macrop_scheme macrophys="rk"        >rk</macrop_scheme>
@@ -745,12 +749,20 @@
 
 <diff_cnsrv_mass_check                > .false. </diff_cnsrv_mass_check>
 
+<!-- Molecular diffusion limits -->
+
+<do_molec_press> 0.1D0 </do_molec_press>
+<molec_diff_bot_press> 50.D0 </molec_diff_bot_press>
+
 <!-- dust emission tuning factor -->
-<dust_emis_fact                                                 >2.76D0</dust_emis_fact>
-<dust_emis_fact                                 chem="trop_bam" >4.2D0</dust_emis_fact>
-<dust_emis_fact             tms="1" phys="cam5"                 >0.35D0</dust_emis_fact>
-<dust_emis_fact dyn="se" tms="1" phys="cam5"                 >0.55D0</dust_emis_fact>
-<dust_emis_fact dyn="fv"    tms="1" phys="cam5" clubb_sgs="1"   >0.13D0</dust_emis_fact>
+<dust_emis_fact                                                         >2.76D0</dust_emis_fact>
+<dust_emis_fact                                         chem="trop_bam"	>4.2D0 </dust_emis_fact>
+<dust_emis_fact                            phys="cam5"                  >0.35D0</dust_emis_fact>
+<dust_emis_fact          hgrid="0.47x0.63" phys="cam5"                  >0.45D0</dust_emis_fact>
+<dust_emis_fact          hgrid="0.23x0.31" phys="cam5"                  >0.45D0</dust_emis_fact>
+
+<dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
+<dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
 
 <!-- in-cloud scav for cloud-borne aerosol tuning factor -->
 <sol_facti_cloud_borne                 >1.0D0</sol_facti_cloud_borne>
@@ -758,6 +770,22 @@
 
 <!-- sub-column switches for physics packages -->
 <use_subcol_microp>.false.</use_subcol_microp>
+<subcol_scheme    >off    </subcol_scheme>
+
+<!-- sub-column tstcp switches for testing purposes -->
+<subcol_tstcp_noAvg  >.false.</subcol_tstcp_noAvg>
+<subcol_tstcp_filter >.false.</subcol_tstcp_filter>
+<subcol_tstcp_weight >.false.</subcol_tstcp_weight>
+<subcol_tstcp_perturb>.false.</subcol_tstcp_perturb>
+
+<!-- sub-column vamp switches  -->
+<subcol_vamp_ctyp  > 3 </subcol_vamp_ctyp>
+<subcol_vamp_otyp  > 1 </subcol_vamp_otyp>
+<subcol_vamp_nsubc > 10 </subcol_vamp_nsubc>
+
+<!-- sub-column SILHS switches -->
+<subcol_silhs_weight >.true.</subcol_silhs_weight>
+<subcol_silhs_numsubcol >4</subcol_silhs_numsubcol>
 
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>
@@ -992,12 +1020,15 @@
 <phys_loadbalance dyn="se"> 0 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>
 
-<!-- default variable -->
-<history_amwg>       .true.   </history_amwg>
-<history_aerosol>    .false.  </history_aerosol>
-<history_aero_optics>.false. </history_aero_optics>
-<history_eddy>       .false.  </history_eddy>
-<history_budget>     .false.  </history_budget>
+<!-- Control output to history file(s) -->
+<history_amwg>                 .true.   </history_amwg>
+<history_vdiag>                .false.  </history_vdiag>
+<history_aerosol>              .false.  </history_aerosol>
+<history_aero_optics>          .false.  </history_aero_optics>
+<history_eddy>                 .false.  </history_eddy>
+<history_budget>               .false.  </history_budget>
+<history_waccm>                .false.  </history_waccm>
+<history_waccm waccm_phys="1"> .true.   </history_waccm>
 
 
 <!-- ================================================================== -->
@@ -1008,53 +1039,80 @@
 <se_topology> "cube" </se_topology>
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
-<energy_fixer> 1 </energy_fixer>
 
 <nu_top> 2.5e5 </nu_top>
 <nu_top hgrid="ne240np4"> 1.0e5 </nu_top>
 
-<nu> 7.0e5 </nu>
-
-<nu hgrid="ne16np4">  6.0e15 </nu>
-<nu hgrid="ne16np8">  1.0e14 </nu>
-<nu hgrid="ne30np4">  1.0e15 </nu>
-<nu hgrid="ne30np8">  1.0e13 </nu>
-<nu hgrid="ne60np4">  1.0e14 </nu>
-<nu hgrid="ne120np4"> 1.0e13 </nu>
-<nu hgrid="ne240np4"> 1.0e12 </nu>
-
-<nu hgrid="ne30np4" waccm_phys="1"> 4.0D15 </nu>
+<nu>                   1.0e15 </nu>
+<nu hgrid="ne11np4" >  2.0e16 </nu>
+<nu hgrid="ne16np4" >  7.0e15 </nu>
+<nu hgrid="ne30np4" >  1.0e15 </nu>
+<nu hgrid="ne60np4" >  1.0e14 </nu>
+<nu hgrid="ne120np4">  1.0e13 </nu>
+<nu hgrid="ne240np4">  1.1e12 </nu>
 
 <!-- This will set nu_q to nu internally. -->
 <nu_q> -1.0 </nu_q>
 
-<nu_p> 1.e15 </nu_p>
-<nu_p hgrid="ne16np4">  6.0e15 </nu_p>
-<nu_p hgrid="ne120np4"> 1.0e13 </nu_p>
+<nu_p>                   1.0e15 </nu_p>
+<nu_p hgrid="ne11np4" >  2.0e16 </nu_p>
+<nu_p hgrid="ne16np4" >  7.0e15 </nu_p>
+<nu_p hgrid="ne30np4" >  1.0e15 </nu_p>
+<nu_p hgrid="ne60np4" >  1.0e14 </nu_p>
+<nu_p hgrid="ne120np4">  1.0e13 </nu_p>
+<nu_p hgrid="ne240np4">  1.1e12 </nu_p>
 
-<nu_div> 2.5e15 </nu_div>
-<nu_div hgrid="ne16np4" > 1.5e16 </nu_div>
-<nu_div hgrid="ne120np4"> 2.5e13 </nu_div>
 
-<hypervis_order > 2 </hypervis_order>
-<hypervis_subcycle> 2 </hypervis_subcycle>
+<nu_div>                   2.5e15 </nu_div>
+<nu_div hgrid="ne11np4" >  5.0e16 </nu_div>
+<nu_div hgrid="ne16np4" > 15.5e15 </nu_div>
+<nu_div hgrid="ne30np4" >  2.5e15 </nu_div>
+<nu_div hgrid="ne60np4" >  2.5e14 </nu_div>
+<nu_div hgrid="ne120np4">  2.5e13 </nu_div>
+<nu_div hgrid="ne240np4">  2.5e12 </nu_div>
+
+<hypervis_order >     2 </hypervis_order>
+
+<hypervis_subcycle>                   3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne11np4" >  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne16np4" >  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne30np4" >  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne60np4" >  4 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne120np4">  4 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne240np4">  4 </hypervis_subcycle>
+<hypervis_subcycle dyn="se" waccm_phys="1">  1 </hypervis_subcycle>
+
 <hypervis_subcycle_q> 1 </hypervis_subcycle_q>
 
-<qsplit > 4 </qsplit>
-<qsplit    hgrid="ne120np4"> 5 </qsplit>
+<tstep_type > 5 </tstep_type>
 
-<rsplit > 5 </rsplit>
+<qsplit > 1 </qsplit>
 
-<se_nsplit> 1 </se_nsplit>
-<se_nsplit hgrid="ne16np8" >  3 </se_nsplit>
-<se_nsplit hgrid="ne30np8" >  7 </se_nsplit>
-<se_nsplit hgrid="ne60np4" >  2 </se_nsplit>
-<se_nsplit hgrid="ne120np4">  2 </se_nsplit>
+<rsplit >                  3 </rsplit>
+<rsplit hgrid="ne11np4" >  2 </rsplit>
+<rsplit hgrid="ne16np4" >  3 </rsplit>
+<rsplit hgrid="ne30np4" >  3 </rsplit>
+<rsplit hgrid="ne60np4" >  3 </rsplit>
+<rsplit hgrid="ne120np4">  3 </rsplit>
+<rsplit hgrid="ne240np4">  3 </rsplit>
+
+<se_nsplit>                   2 </se_nsplit>
+<se_nsplit hgrid="ne11np4" >  1 </se_nsplit>
+<se_nsplit hgrid="ne16np4" >  1 </se_nsplit>
+<se_nsplit hgrid="ne30np4" >  2 </se_nsplit>
+<se_nsplit hgrid="ne60np4" >  4 </se_nsplit>
+<se_nsplit hgrid="ne120np4">  4 </se_nsplit>
 <se_nsplit hgrid="ne240np4">  5 </se_nsplit>
 
-<se_nsplit hgrid="ne30np4" waccm_phys="1"> 3 </se_nsplit>
+<se_nsplit hgrid="ne11np4"  waccm_phys="1">  5 </se_nsplit>
+<se_nsplit hgrid="ne16np4"  waccm_phys="1">  5 </se_nsplit>
+<se_nsplit hgrid="ne30np4"  waccm_phys="1">  10 </se_nsplit>
+<se_nsplit hgrid="ne60np4"  waccm_phys="1">  20 </se_nsplit>
+<se_nsplit hgrid="ne120np4" waccm_phys="1">  20 </se_nsplit>
+<se_nsplit hgrid="ne240np4" waccm_phys="1">  25 </se_nsplit>
 
-<se_ftype> 1 </se_ftype>
+
+<se_ftype> 0 </se_ftype>
 
 <se_phys_tscale> 0 </se_phys_tscale>
 <se_limiter_option> 8 </se_limiter_option>
@@ -1109,7 +1167,6 @@
 <!-- Plant function types (relative to {csmdata}) -->
 <fpftcon>lnd/clm2/pftdata/pft-physiology.clm40.c130424.nc</fpftcon>
 
-
 <!-- Initial condition datasets (relative to {csmdata}) -->
 <!-- The year has been removed from the ic_ymd attribute for the climatology files -->
 <!-- so that they will be used when the default 101 climatology start date -->
@@ -1122,6 +1179,7 @@
 <finidat hgrid="0.9x1.25"  ic_ymd="101" sim_year="1850">ccsm4_init/b40.1850.track1.1deg.006/0863-01-01/b40.1850.track1.1deg.006.clm2.r.0863-01-01-00000.nc</finidat>
 <finidat hgrid="1.9x2.5"   ic_ymd="101" sim_year="1850">ccsm4_init/b40.1850.track1.2deg.003/year_401/b40.1850.track1.2deg.003.clm2.r.0401-01-01-00000.nc</finidat>
 <finidat hgrid="48x96"     ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.BCN.1850-01-01_48x96_gx3v7_simyr1850_c110421.nc</finidat>
+<finidat hgrid="ne30np4"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_ne30np4_gx1v6_simyr2000_c110328.nc</finidat>
 
 <!-- Surface datasets (relative to {csmdata}) -->
 <!-- for present day simulations - year 2000 -->
@@ -1298,7 +1356,7 @@
 <focndomain hgrid="4x5"       >atm/cam/ocnfrac/domain.camocn.4x5_USGS_070807.nc</focndomain>
 <focndomain hgrid="10x15"     >atm/cam/ocnfrac/domain.camocn.10x15_USGS_070807.nc</focndomain>
 
-<focndomain hgrid="ne16np4"   >share/domains/domain.ocn.ne16np4_gx3v7.120406.nc</focndomain>
+<focndomain hgrid="ne16np4"   >share/domains/domain.ocn.ne16np4_gx3v7.121113.nc</focndomain>
 <focndomain hgrid="ne30np4"   >share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</focndomain>
 <focndomain hgrid="ne60np4"   >share/domains/domain.ocn.ne60np4_gx1v6.120406.nc</focndomain>
 <focndomain hgrid="ne120np4"  >share/domains/domain.ocn.ne120np4_gx1v6.111226.nc</focndomain>

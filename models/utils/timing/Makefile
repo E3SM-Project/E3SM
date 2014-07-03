@@ -28,12 +28,14 @@ endif
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
 
+INCLDIR += -I$(GPTL_DIR)
+
 ifeq ($(strip $(MPILIB)), mpi-serial)
   CC      := $(SCC)
   FC      := $(SFC)
   MPIFC   := $(SFC)
   MPICC   := $(SCC)
-  INCLDIR += -I$(EXEROOT)/mct/mpi-serial
+  INCLDIR += -I$(GPTL_LIBDIR)/../mct/mpi-serial
 else
   CC := $(MPICC)
   FC := $(MPIFC)
@@ -73,8 +75,8 @@ clean:
 
 
 install: libgptl.a
-	cp -p *.$(MOD_SUFFIX) $(INCROOT) 
-	cp -p libgptl.a $(LIBROOT)
+	cp -p *.$(MOD_SUFFIX) $(SHAREDPATH)/include
+	cp -p libgptl.a $(SHAREDPATH)/lib
 
 
 perf_mod.o: perf_utils.o

@@ -274,4 +274,12 @@ valid_values="">
 Stream restart file name for docn model, needed for branch simulations
 </entry>
 
+<entry id="force_prognostic_true"
+type="logical" 
+category="docn"
+group="docn_nml">
+If TRUE, prognostic is forced to true.
+default=false 
+</entry>
+
 </namelist_definition>

@@ -61,7 +61,7 @@ if [ ! -f ${CAM_SCRIPTDIR}/config_files/${confile} ]; then
 fi
 
 ##construct string of args to configure
-config_string=$CFG_STRING 
+config_string="$CFG_STRING -mct_libdir $CAM_TESTDIR/lib/mct "
 while read config_arg; do
     config_string="${config_string}${config_arg} "
 done < ${CAM_SCRIPTDIR}/config_files/${confile}
@@ -76,7 +76,7 @@ else
         thrd_flag=$CAM_THREADS
         config_string="${config_string} -ntasks ${task_flag} -nthreads ${thrd_flag} "
     else
-	task_flag=`expr $CAM_TASKS "*" $CAM_THREADS / 2`
+	task_flag=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * 2 ) ))
         thrd_flag=2
         config_string="${config_string} -ntasks ${task_flag} "
     fi

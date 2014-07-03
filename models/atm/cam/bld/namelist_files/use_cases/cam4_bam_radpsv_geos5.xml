@@ -20,7 +20,7 @@
 <solar_data_type>SERIAL</solar_data_type>
 
 <!-- aerosol nl -->
-<soil_erod>atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod>
+<soil_erod_file>atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
 <dust_emis_fact>2.76D0</dust_emis_fact>
 
 <!-- Prescribed BAM data is from Jean-Francois Lamarque -->

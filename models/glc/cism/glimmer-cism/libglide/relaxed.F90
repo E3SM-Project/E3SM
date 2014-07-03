@@ -37,7 +37,7 @@ program relaxed
 
   ! utility to add relaxed bedrock topography to GLIMMER netcdf input files
 
-  use glimmer_global
+  use glimmer_global, only: dp
   use glimmer_ncdf
   use glimmer_ncinfile
   use glimmer_ncfile
@@ -118,10 +118,10 @@ program relaxed
 
   ! Calculate thickness
 
-  where (model%climate%out_mask == 1.0)
-     model%geometry%thck = max(0.,real(model%climate%presusrf - model%geometry%topg))
+  where (model%climate%out_mask == 1.d0)
+     model%geometry%thck = max(0.d0, (model%climate%presusrf - model%geometry%topg) )
   elsewhere
-     model%geometry%thck = 0.0
+     model%geometry%thck = 0.d0
   end where
 
   ! Do flexure of some kind
@@ -142,19 +142,19 @@ program relaxed
 
      ! Flatten masked areas
      
-     where (model%climate%out_mask==0.0)
+     where (model%climate%out_mask==0.d0)
         model%geometry%relx=min(-1.0,model%geometry%relx)
      end where
 
   else
 
-     where (model%geometry%thck > 0.0d0)
+     where (model%geometry%thck > 0.d0)
         model%geometry%relx = model%geometry%topg + model%geometry%thck * rhoi / rhom
      elsewhere
         model%geometry%relx = model%geometry%topg
      end where
 
-     where (model%geometry%relx < 0.0d0 .and. model%geometry%thck > 0.0d0)
+     where (model%geometry%relx < 0.d0 .and. model%geometry%thck > 0.d0)
         model%geometry%relx = model%geometry%relx * rhom / (rhom - rhoo)
      end where
 
@@ -173,7 +173,7 @@ program relaxed
   status = nf90_put_var(NCO%id, NCO%varids(NC_B_TOPG), model%geometry%topg, (/1,1,1/))
   call nc_errorhandle(__FILE__,__LINE__,status)
 
-  status = nf90_put_var(NCO%id, NCO%timevar,0.0,(/1/))
+  status = nf90_put_var(NCO%id, NCO%timevar, 0.d0, (/1/))
   call nc_errorhandle(__FILE__,__LINE__,status)
 
   if (NCI%do_var(NC_B_LAT)) then
@@ -212,6 +212,7 @@ contains
 
   subroutine flextopg(flag,flex,thck,topg,rhoo,rhoi,rhom,dew,dns)
 
+    use glimmer_physcon, only: grav, pi
     implicit none
 
     ! Arguments
@@ -229,8 +230,8 @@ contains
     integer :: ew, ns,nsn,ewn
 
     real(dp), save :: thklim = 100.0d0   
-    real(dp), parameter :: grav = 9.81 
-    real(dp), parameter :: pi = 3.1416
+!!    real(dp), parameter :: grav = 9.81 
+!!    real(dp), parameter :: pi = 3.1416
 
     integer :: ewpt, nspt, ewflx, nsflx, ikelv
     integer, save :: nflx
@@ -244,15 +245,15 @@ contains
     ! ** radius of lithosphere (m)
     ! ** Poisson's ratio
 
-    real(sp), parameter :: youngs = 8.35e10
-    real(sp), parameter :: thklith = 110.0e3
-    real(sp), parameter :: radlith = 6.244e6
-    real(sp), parameter :: poiss = 0.25
-    real(sp), parameter :: dkelv = 0.1 
+    real(dp), parameter :: youngs = 8.35d10
+    real(dp), parameter :: thklith = 110.0d3
+    real(dp), parameter :: radlith = 6.244d6
+    real(dp), parameter :: poiss = 0.25d0
+    real(dp), parameter :: dkelv = 0.1d0 
 
     ! ** zero order kelvin function (for every dkelv from 0.0 to 8.0)
 
-    real(sp), parameter, dimension(nkelv) :: &
+    real(dp), parameter, dimension(nkelv) :: &
          kelvin0 = (/ -0.785, -0.777, -0.758, -0.733, -0.704, &
          -0.672, -0.637, -0.602, -0.566, -0.531, &
          -0.495, -0.460, -0.426, -0.393, -0.362, &
@@ -271,7 +272,7 @@ contains
          0.001,  0.001,  0.001,  0.001,  0.001, & 
          0.000,  0.000 /)
 
-    real(sp), dimension(:,:), allocatable, save :: dflct
+    real(dp), dimension(:,:), allocatable, save :: dflct
 
     ! ** quantities calculated
 
@@ -279,7 +280,7 @@ contains
     ! ** radius of stiffness
     ! ** multiplier for loads
 
-    real(sp) :: rigid, alpha, multi, dist, load
+    real(dp) :: rigid, alpha, multi, dist, load
 
     logical, save :: first = .true.
 
@@ -289,11 +290,11 @@ contains
 
     if (first) then                                                  
 
-       rigid = (youngs * thklith**3) / (12.0 * (1.0 - poiss**2))
+       rigid = (youngs * thklith**3) / (12.d0 * (1.d0 - poiss**2))
 
-       alpha = (rigid / ((youngs * thklith / radlith**2) + rhom * grav))**0.25
+       alpha = (rigid / ((youngs * thklith / radlith**2) + rhom * grav))**0.25d0
 
-       multi = grav * dew**2 * alpha**2 / (2.0 * pi * rigid)
+       multi = grav * dew**2 * alpha**2 / (2.d0 * pi * rigid)
 
        nflx = 7 * int(alpha / dew) + 1
 

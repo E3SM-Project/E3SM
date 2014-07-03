@@ -57,6 +57,7 @@ integer :: lu_idx       = 0
 integer :: ld_idx       = 0 
 integer :: cldfsnow_idx = 0 
 integer :: cld_idx      = 0 
+integer :: concld_idx   = 0
 
 ! Default values for namelist variables
 
@@ -318,12 +319,12 @@ end function radiation_nextsw_cday
     logical :: active_calls(0:N_DIAG)
     integer :: nstep                       ! current timestep number
     logical :: history_amwg                ! output the variables used by the AMWG diag package
+    logical :: history_vdiag               ! output the variables used by the AMWG variability diag package
     logical :: history_budget              ! output tendencies and state variables for CAM4
                                            ! temperature, water vapor, cloud ice and cloud
                                            ! liquid budgets.
     integer :: history_budget_histfile_num ! output history file number for budget fields
     integer :: err
-
     !-----------------------------------------------------------------------
     
     call rrtmg_state_init()
@@ -333,8 +334,9 @@ end function radiation_nextsw_cday
     call radsw_init()
     call radlw_init()
 
-    call phys_getopts(history_amwg_out   = history_amwg   , &
-                      history_budget_out = history_budget , &
+    call phys_getopts(history_amwg_out   = history_amwg,    &
+                      history_vdiag_out  = history_vdiag,   &
+                      history_budget_out = history_budget,  &
                       history_budget_histfile_num_out = history_budget_histfile_num)
 
     ! Determine whether modal aerosols are affecting the climate, and if so
@@ -549,8 +551,14 @@ end function radiation_nextsw_cday
        call add_default ('QRS     ', history_budget_histfile_num, ' ')
     end if
 
+    if (history_vdiag) then
+       call add_default('FLUT', 2, ' ')
+       call add_default('FLUT', 3, ' ')
+    end if
+
     cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
     cld_idx      = pbuf_get_index('CLD')
+    concld_idx   = pbuf_get_index('CONCLD')
 
     if (cldfsnow_idx > 0) then
        call addfld ('CLDFSNOW','1',pver,'I','CLDFSNOW',phys_decomp,flag_xyfill=.true.)
@@ -591,8 +599,7 @@ end function radiation_nextsw_cday
     
     use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
     use physics_types,   only: physics_state, physics_ptend
-    use cospsimulator_intr, only: docosp, cospsimulator_intr_run
-    use cosp_share, only: cosp_nradsteps
+    use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
     use time_manager,    only: get_curr_calday
     use camsrfexch,      only: cam_out_t, cam_in_t
     use cam_history,     only: outfld
@@ -708,11 +715,11 @@ end function radiation_nextsw_cday
     real(r8) :: ice_icld_vistau(pcols,pver) ! ice in-cloud visible sw optical depth for output on history files
     real(r8) :: snow_icld_vistau(pcols,pver) ! snow in-cloud visible sw optical depth for output on history files
 
-    integer itim, ifld
-
+    integer itim_old, ifld
     real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction
     real(r8), pointer, dimension(:,:) :: cldfsnow ! cloud fraction of just "snow clouds- whatever they are"
     real(r8) :: cldfprime(pcols,pver)             ! combined cloud fraction (snow plus regular)
+    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction
     real(r8), pointer, dimension(:,:) :: qrs      ! shortwave radiative heating rate 
     real(r8), pointer, dimension(:,:) :: qrl      ! longwave  radiative heating rate 
     real(r8) :: qrsc(pcols,pver)                  ! clearsky shortwave radiative heating rate 
@@ -800,12 +807,13 @@ end function radiation_nextsw_cday
 
     calday = get_curr_calday()
 
-    itim = pbuf_old_tim_idx()
+    itim_old = pbuf_old_tim_idx()
 
     if (cldfsnow_idx > 0) then
-       call pbuf_get_field(pbuf, cldfsnow_idx, cldfsnow, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+       call pbuf_get_field(pbuf, cldfsnow_idx, cldfsnow, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
     endif
-    call pbuf_get_field(pbuf, cld_idx,      cld,      start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+    call pbuf_get_field(pbuf, cld_idx,      cld,      start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+    call pbuf_get_field(pbuf, concld_idx,   concld,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/)  )
 
     call pbuf_get_field(pbuf, qrs_idx,      qrs)
     call pbuf_get_field(pbuf, qrl_idx,      qrl)
@@ -834,6 +842,8 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol)
+
+    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
@@ -1254,9 +1264,6 @@ end function radiation_nextsw_cday
        end if
 
     end if   !  if (dosw .or. dolw) then
-
-    ! output rad inputs and resulting heating rates
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Compute net radiative heating tendency
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &

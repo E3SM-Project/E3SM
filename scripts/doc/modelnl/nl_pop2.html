@@ -86,7 +86,7 @@ only matched variables.
 	     <pre>
 Method to use to distribute blocks in baroclinic distribution.
 
-Valid Values: 'cartesian', 'balanced', 'spacecurve', 'blockone'
+Valid Values: 'cartesian', 'balanced', 'spacecurve'
 <br/>Default: 'cartesian'
 </pre>
         </div>
@@ -209,7 +209,7 @@ Flag to add MPI_Barrier calls for timing studies in time-step module.
 	     <pre>
 Method to use to distribute blocks in barotropic distribution.
 
-Valid Values: 'cartesian', 'balanced', 'spacecurve', 'blockone'
+Valid Values: 'cartesian', 'balanced', 'spacecurve'
 <br/>Default: 'cartesian'
 </pre>
         </div>
@@ -7386,6 +7386,24 @@ Flag for using ecosys module.
     <td>char*256</td>
     <td>cfc_nml</td>
   </tr>
+  <tr id="gas_flux_ap%mod_varname_tr">
+    <td><a name="gas_flux_ap%mod_varname_cfc_nml"></a>
+        <img id="gas_flux_ap%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gas_flux_ap%mod_varname_cfc_nml')">gas_flux_ap%mod_varname</a>
+        </code>
+        <div id="gas_flux_ap%mod_varname_cfc_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>cfc_nml</td>
+  </tr>
   <tr id="gas_flux_ap%scale_factor_tr">
     <td><a name="gas_flux_ap%scale_factor_cfc_nml"></a>
         <img id="gas_flux_ap%scale_factor_arrow" src="./images/arrow_right.gif">
@@ -7476,6 +7494,24 @@ Flag for using ecosys module.
     <td>char*256</td>
     <td>cfc_nml</td>
   </tr>
+  <tr id="gas_flux_fice%mod_varname_tr">
+    <td><a name="gas_flux_fice%mod_varname_cfc_nml"></a>
+        <img id="gas_flux_fice%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gas_flux_fice%mod_varname_cfc_nml')">gas_flux_fice%mod_varname</a>
+        </code>
+        <div id="gas_flux_fice%mod_varname_cfc_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>cfc_nml</td>
+  </tr>
   <tr id="gas_flux_fice%scale_factor_tr">
     <td><a name="gas_flux_fice%scale_factor_cfc_nml"></a>
         <img id="gas_flux_fice%scale_factor_arrow" src="./images/arrow_right.gif">
@@ -7556,6 +7592,24 @@ Flag for using ecosys module.
              onclick="toggleHelp('gas_flux_ws%filename_cfc_nml')">gas_flux_ws%filename</a>
         </code>
         <div id="gas_flux_ws%filename_cfc_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>cfc_nml</td>
+  </tr>
+  <tr id="gas_flux_ws%mod_varname_tr">
+    <td><a name="gas_flux_ws%mod_varname_cfc_nml"></a>
+        <img id="gas_flux_ws%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gas_flux_ws%mod_varname_cfc_nml')">gas_flux_ws%mod_varname</a>
+        </code>
+        <div id="gas_flux_ws%mod_varname_cfc_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -8010,132 +8064,6 @@ File name for ascii time series of atm cfc11.
   <th width="80%">Namelist Variable</th>
   <th width="10%">Type</th>
   <th width="10%">Group</th>
-  <tr id="alk_riv_flux_input%default_val_tr">
-    <td><a name="alk_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="alk_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('alk_riv_flux_input%default_val_ecosys_nml')">alk_riv_flux_input%default_val</a>
-        </code>
-        <div id="alk_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="alk_riv_flux_input%file_fmt_tr">
-    <td><a name="alk_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="alk_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('alk_riv_flux_input%file_fmt_ecosys_nml')">alk_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="alk_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="alk_riv_flux_input%file_varname_tr">
-    <td><a name="alk_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="alk_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('alk_riv_flux_input%file_varname_ecosys_nml')">alk_riv_flux_input%file_varname</a>
-        </code>
-        <div id="alk_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="alk_riv_flux_input%filename_tr">
-    <td><a name="alk_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="alk_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('alk_riv_flux_input%filename_ecosys_nml')">alk_riv_flux_input%filename</a>
-        </code>
-        <div id="alk_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="alk_riv_flux_input%scale_factor_tr">
-    <td><a name="alk_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="alk_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('alk_riv_flux_input%scale_factor_ecosys_nml')">alk_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="alk_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="atm_alt_co2_const_tr">
-    <td><a name="atm_alt_co2_const_ecosys_nml"></a>
-        <img id="atm_alt_co2_const_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm_alt_co2_const_ecosys_nml')">atm_alt_co2_const</a>
-        </code>
-        <div id="atm_alt_co2_const_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="atm_alt_co2_opt_tr">
-    <td><a name="atm_alt_co2_opt_ecosys_nml"></a>
-        <img id="atm_alt_co2_opt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('atm_alt_co2_opt_ecosys_nml')">atm_alt_co2_opt</a>
-        </code>
-        <div id="atm_alt_co2_opt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
   <tr id="atm_co2_const_tr">
     <td><a name="atm_co2_const_ecosys_nml"></a>
         <img id="atm_co2_const_arrow" src="./images/arrow_right.gif">
@@ -8172,150 +8100,6 @@ File name for ascii time series of atm cfc11.
     <td>char*256</td>
     <td>ecosys_nml</td>
   </tr>
-  <tr id="autotrophs%kdop_tr">
-    <td><a name="autotrophs%kdop_ecosys_parms_nml"></a>
-        <img id="autotrophs%kdop_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%kdop_ecosys_parms_nml')">autotrophs%kdop</a>
-        </code>
-        <div id="autotrophs%kdop_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%kfe_tr">
-    <td><a name="autotrophs%kfe_ecosys_parms_nml"></a>
-        <img id="autotrophs%kfe_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%kfe_ecosys_parms_nml')">autotrophs%kfe</a>
-        </code>
-        <div id="autotrophs%kfe_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%knh4_tr">
-    <td><a name="autotrophs%knh4_ecosys_parms_nml"></a>
-        <img id="autotrophs%knh4_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%knh4_ecosys_parms_nml')">autotrophs%knh4</a>
-        </code>
-        <div id="autotrophs%knh4_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%kno3_tr">
-    <td><a name="autotrophs%kno3_ecosys_parms_nml"></a>
-        <img id="autotrophs%kno3_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%kno3_ecosys_parms_nml')">autotrophs%kno3</a>
-        </code>
-        <div id="autotrophs%kno3_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%kpo4_tr">
-    <td><a name="autotrophs%kpo4_ecosys_parms_nml"></a>
-        <img id="autotrophs%kpo4_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%kpo4_ecosys_parms_nml')">autotrophs%kpo4</a>
-        </code>
-        <div id="autotrophs%kpo4_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%ksio3_tr">
-    <td><a name="autotrophs%ksio3_ecosys_parms_nml"></a>
-        <img id="autotrophs%ksio3_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%ksio3_ecosys_parms_nml')">autotrophs%ksio3</a>
-        </code>
-        <div id="autotrophs%ksio3_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%sname_tr">
-    <td><a name="autotrophs%sname_ecosys_parms_nml"></a>
-        <img id="autotrophs%sname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%sname_ecosys_parms_nml')">autotrophs%sname</a>
-        </code>
-        <div id="autotrophs%sname_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="autotrophs%z_umax_0_tr">
-    <td><a name="autotrophs%z_umax_0_ecosys_parms_nml"></a>
-        <img id="autotrophs%z_umax_0_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('autotrophs%z_umax_0_ecosys_parms_nml')">autotrophs%z_umax_0</a>
-        </code>
-        <div id="autotrophs%z_umax_0_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
   <tr id="comp_surf_avg_freq_tr">
     <td><a name="comp_surf_avg_freq_ecosys_nml"></a>
         <img id="comp_surf_avg_freq_arrow" src="./images/arrow_right.gif">
@@ -8350,726 +8134,6 @@ File name for ascii time series of atm cfc11.
         </div>
     </td>
     <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dfe_riv_flux_input%default_val_tr">
-    <td><a name="dfe_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="dfe_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dfe_riv_flux_input%default_val_ecosys_nml')">dfe_riv_flux_input%default_val</a>
-        </code>
-        <div id="dfe_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dfe_riv_flux_input%file_fmt_tr">
-    <td><a name="dfe_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="dfe_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dfe_riv_flux_input%file_fmt_ecosys_nml')">dfe_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="dfe_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dfe_riv_flux_input%file_varname_tr">
-    <td><a name="dfe_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="dfe_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dfe_riv_flux_input%file_varname_ecosys_nml')">dfe_riv_flux_input%file_varname</a>
-        </code>
-        <div id="dfe_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dfe_riv_flux_input%filename_tr">
-    <td><a name="dfe_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="dfe_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dfe_riv_flux_input%filename_ecosys_nml')">dfe_riv_flux_input%filename</a>
-        </code>
-        <div id="dfe_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dfe_riv_flux_input%scale_factor_tr">
-    <td><a name="dfe_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="dfe_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dfe_riv_flux_input%scale_factor_ecosys_nml')">dfe_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="dfe_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dic_riv_flux_input%default_val_tr">
-    <td><a name="dic_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="dic_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dic_riv_flux_input%default_val_ecosys_nml')">dic_riv_flux_input%default_val</a>
-        </code>
-        <div id="dic_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dic_riv_flux_input%file_fmt_tr">
-    <td><a name="dic_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="dic_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dic_riv_flux_input%file_fmt_ecosys_nml')">dic_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="dic_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dic_riv_flux_input%file_varname_tr">
-    <td><a name="dic_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="dic_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dic_riv_flux_input%file_varname_ecosys_nml')">dic_riv_flux_input%file_varname</a>
-        </code>
-        <div id="dic_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dic_riv_flux_input%filename_tr">
-    <td><a name="dic_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="dic_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dic_riv_flux_input%filename_ecosys_nml')">dic_riv_flux_input%filename</a>
-        </code>
-        <div id="dic_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dic_riv_flux_input%scale_factor_tr">
-    <td><a name="dic_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="dic_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dic_riv_flux_input%scale_factor_ecosys_nml')">dic_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="dic_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="din_riv_flux_input%default_val_tr">
-    <td><a name="din_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="din_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('din_riv_flux_input%default_val_ecosys_nml')">din_riv_flux_input%default_val</a>
-        </code>
-        <div id="din_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="din_riv_flux_input%file_fmt_tr">
-    <td><a name="din_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="din_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('din_riv_flux_input%file_fmt_ecosys_nml')">din_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="din_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="din_riv_flux_input%file_varname_tr">
-    <td><a name="din_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="din_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('din_riv_flux_input%file_varname_ecosys_nml')">din_riv_flux_input%file_varname</a>
-        </code>
-        <div id="din_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="din_riv_flux_input%filename_tr">
-    <td><a name="din_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="din_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('din_riv_flux_input%filename_ecosys_nml')">din_riv_flux_input%filename</a>
-        </code>
-        <div id="din_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="din_riv_flux_input%scale_factor_tr">
-    <td><a name="din_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="din_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('din_riv_flux_input%scale_factor_ecosys_nml')">din_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="din_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dip_riv_flux_input%default_val_tr">
-    <td><a name="dip_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="dip_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dip_riv_flux_input%default_val_ecosys_nml')">dip_riv_flux_input%default_val</a>
-        </code>
-        <div id="dip_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dip_riv_flux_input%file_fmt_tr">
-    <td><a name="dip_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="dip_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dip_riv_flux_input%file_fmt_ecosys_nml')">dip_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="dip_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dip_riv_flux_input%file_varname_tr">
-    <td><a name="dip_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="dip_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dip_riv_flux_input%file_varname_ecosys_nml')">dip_riv_flux_input%file_varname</a>
-        </code>
-        <div id="dip_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dip_riv_flux_input%filename_tr">
-    <td><a name="dip_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="dip_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dip_riv_flux_input%filename_ecosys_nml')">dip_riv_flux_input%filename</a>
-        </code>
-        <div id="dip_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dip_riv_flux_input%scale_factor_tr">
-    <td><a name="dip_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="dip_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dip_riv_flux_input%scale_factor_ecosys_nml')">dip_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="dip_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="doc_riv_flux_input%default_val_tr">
-    <td><a name="doc_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="doc_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('doc_riv_flux_input%default_val_ecosys_nml')">doc_riv_flux_input%default_val</a>
-        </code>
-        <div id="doc_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="doc_riv_flux_input%file_fmt_tr">
-    <td><a name="doc_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="doc_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('doc_riv_flux_input%file_fmt_ecosys_nml')">doc_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="doc_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="doc_riv_flux_input%file_varname_tr">
-    <td><a name="doc_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="doc_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('doc_riv_flux_input%file_varname_ecosys_nml')">doc_riv_flux_input%file_varname</a>
-        </code>
-        <div id="doc_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="doc_riv_flux_input%filename_tr">
-    <td><a name="doc_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="doc_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('doc_riv_flux_input%filename_ecosys_nml')">doc_riv_flux_input%filename</a>
-        </code>
-        <div id="doc_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="doc_riv_flux_input%scale_factor_tr">
-    <td><a name="doc_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="doc_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('doc_riv_flux_input%scale_factor_ecosys_nml')">doc_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="doc_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="don_riv_flux_input%default_val_tr">
-    <td><a name="don_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="don_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('don_riv_flux_input%default_val_ecosys_nml')">don_riv_flux_input%default_val</a>
-        </code>
-        <div id="don_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="don_riv_flux_input%file_fmt_tr">
-    <td><a name="don_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="don_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('don_riv_flux_input%file_fmt_ecosys_nml')">don_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="don_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="don_riv_flux_input%file_varname_tr">
-    <td><a name="don_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="don_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('don_riv_flux_input%file_varname_ecosys_nml')">don_riv_flux_input%file_varname</a>
-        </code>
-        <div id="don_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="don_riv_flux_input%filename_tr">
-    <td><a name="don_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="don_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('don_riv_flux_input%filename_ecosys_nml')">don_riv_flux_input%filename</a>
-        </code>
-        <div id="don_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="don_riv_flux_input%scale_factor_tr">
-    <td><a name="don_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="don_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('don_riv_flux_input%scale_factor_ecosys_nml')">don_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="don_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dop_riv_flux_input%default_val_tr">
-    <td><a name="dop_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="dop_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dop_riv_flux_input%default_val_ecosys_nml')">dop_riv_flux_input%default_val</a>
-        </code>
-        <div id="dop_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dop_riv_flux_input%file_fmt_tr">
-    <td><a name="dop_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="dop_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dop_riv_flux_input%file_fmt_ecosys_nml')">dop_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="dop_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dop_riv_flux_input%file_varname_tr">
-    <td><a name="dop_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="dop_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dop_riv_flux_input%file_varname_ecosys_nml')">dop_riv_flux_input%file_varname</a>
-        </code>
-        <div id="dop_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dop_riv_flux_input%filename_tr">
-    <td><a name="dop_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="dop_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dop_riv_flux_input%filename_ecosys_nml')">dop_riv_flux_input%filename</a>
-        </code>
-        <div id="dop_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dop_riv_flux_input%scale_factor_tr">
-    <td><a name="dop_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="dop_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dop_riv_flux_input%scale_factor_ecosys_nml')">dop_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="dop_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dsi_riv_flux_input%default_val_tr">
-    <td><a name="dsi_riv_flux_input%default_val_ecosys_nml"></a>
-        <img id="dsi_riv_flux_input%default_val_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dsi_riv_flux_input%default_val_ecosys_nml')">dsi_riv_flux_input%default_val</a>
-        </code>
-        <div id="dsi_riv_flux_input%default_val_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dsi_riv_flux_input%file_fmt_tr">
-    <td><a name="dsi_riv_flux_input%file_fmt_ecosys_nml"></a>
-        <img id="dsi_riv_flux_input%file_fmt_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dsi_riv_flux_input%file_fmt_ecosys_nml')">dsi_riv_flux_input%file_fmt</a>
-        </code>
-        <div id="dsi_riv_flux_input%file_fmt_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dsi_riv_flux_input%file_varname_tr">
-    <td><a name="dsi_riv_flux_input%file_varname_ecosys_nml"></a>
-        <img id="dsi_riv_flux_input%file_varname_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dsi_riv_flux_input%file_varname_ecosys_nml')">dsi_riv_flux_input%file_varname</a>
-        </code>
-        <div id="dsi_riv_flux_input%file_varname_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dsi_riv_flux_input%filename_tr">
-    <td><a name="dsi_riv_flux_input%filename_ecosys_nml"></a>
-        <img id="dsi_riv_flux_input%filename_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dsi_riv_flux_input%filename_ecosys_nml')">dsi_riv_flux_input%filename</a>
-        </code>
-        <div id="dsi_riv_flux_input%filename_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>char*256</td>
-    <td>ecosys_nml</td>
-  </tr>
-  <tr id="dsi_riv_flux_input%scale_factor_tr">
-    <td><a name="dsi_riv_flux_input%scale_factor_ecosys_nml"></a>
-        <img id="dsi_riv_flux_input%scale_factor_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('dsi_riv_flux_input%scale_factor_ecosys_nml')">dsi_riv_flux_input%scale_factor</a>
-        </code>
-        <div id="dsi_riv_flux_input%scale_factor_ecosys_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default: 
-</pre>
-        </div>
-    </td>
-    <td>real</td>
     <td>ecosys_nml</td>
   </tr>
   <tr id="dust_flux_input%default_val_tr">
@@ -9134,6 +8198,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('dust_flux_input%filename_ecosys_nml')">dust_flux_input%filename</a>
         </code>
         <div id="dust_flux_input%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="dust_flux_input%mod_varname_tr">
+    <td><a name="dust_flux_input%mod_varname_ecosys_nml"></a>
+        <img id="dust_flux_input%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dust_flux_input%mod_varname_ecosys_nml')">dust_flux_input%mod_varname</a>
+        </code>
+        <div id="dust_flux_input%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -9270,6 +8352,24 @@ File name for ascii time series of atm cfc11.
     <td>char*256</td>
     <td>ecosys_nml</td>
   </tr>
+  <tr id="fesedflux_input%mod_varname_tr">
+    <td><a name="fesedflux_input%mod_varname_ecosys_nml"></a>
+        <img id="fesedflux_input%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fesedflux_input%mod_varname_ecosys_nml')">fesedflux_input%mod_varname</a>
+        </code>
+        <div id="fesedflux_input%mod_varname_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
   <tr id="fesedflux_input%scale_factor_tr">
     <td><a name="fesedflux_input%scale_factor_ecosys_nml"></a>
         <img id="fesedflux_input%scale_factor_arrow" src="./images/arrow_right.gif">
@@ -9360,6 +8460,24 @@ File name for ascii time series of atm cfc11.
     <td>char*256</td>
     <td>ecosys_nml</td>
   </tr>
+  <tr id="gas_flux_ap%mod_varname_tr">
+    <td><a name="gas_flux_ap%mod_varname_ecosys_nml"></a>
+        <img id="gas_flux_ap%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gas_flux_ap%mod_varname_ecosys_nml')">gas_flux_ap%mod_varname</a>
+        </code>
+        <div id="gas_flux_ap%mod_varname_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
   <tr id="gas_flux_ap%scale_factor_tr">
     <td><a name="gas_flux_ap%scale_factor_ecosys_nml"></a>
         <img id="gas_flux_ap%scale_factor_arrow" src="./images/arrow_right.gif">
@@ -9440,6 +8558,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('gas_flux_fice%filename_ecosys_nml')">gas_flux_fice%filename</a>
         </code>
         <div id="gas_flux_fice%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="gas_flux_fice%mod_varname_tr">
+    <td><a name="gas_flux_fice%mod_varname_ecosys_nml"></a>
+        <img id="gas_flux_fice%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gas_flux_fice%mod_varname_ecosys_nml')">gas_flux_fice%mod_varname</a>
+        </code>
+        <div id="gas_flux_fice%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -9566,6 +8702,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('gas_flux_ws%filename_ecosys_nml')">gas_flux_ws%filename</a>
         </code>
         <div id="gas_flux_ws%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="gas_flux_ws%mod_varname_tr">
+    <td><a name="gas_flux_ws%mod_varname_ecosys_nml"></a>
+        <img id="gas_flux_ws%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gas_flux_ws%mod_varname_ecosys_nml')">gas_flux_ws%mod_varname</a>
+        </code>
+        <div id="gas_flux_ws%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -9710,6 +8864,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('iron_flux_input%filename_ecosys_nml')">iron_flux_input%filename</a>
         </code>
         <div id="iron_flux_input%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="iron_flux_input%mod_varname_tr">
+    <td><a name="iron_flux_input%mod_varname_ecosys_nml"></a>
+        <img id="iron_flux_input%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('iron_flux_input%mod_varname_ecosys_nml')">iron_flux_input%mod_varname</a>
+        </code>
+        <div id="iron_flux_input%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -10152,6 +9324,24 @@ File name for ascii time series of atm cfc11.
     <td>char*256</td>
     <td>ecosys_nml</td>
   </tr>
+  <tr id="nhy_flux_monthly_input%mod_varname_tr">
+    <td><a name="nhy_flux_monthly_input%mod_varname_ecosys_nml"></a>
+        <img id="nhy_flux_monthly_input%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nhy_flux_monthly_input%mod_varname_ecosys_nml')">nhy_flux_monthly_input%mod_varname</a>
+        </code>
+        <div id="nhy_flux_monthly_input%mod_varname_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
   <tr id="nhy_flux_monthly_input%scale_factor_tr">
     <td><a name="nhy_flux_monthly_input%scale_factor_ecosys_nml"></a>
         <img id="nhy_flux_monthly_input%scale_factor_arrow" src="./images/arrow_right.gif">
@@ -10232,6 +9422,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('no3_rest%filename_ecosys_nml')">no3_rest%filename</a>
         </code>
         <div id="no3_rest%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="no3_rest%mod_varname_tr">
+    <td><a name="no3_rest%mod_varname_ecosys_nml"></a>
+        <img id="no3_rest%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('no3_rest%mod_varname_ecosys_nml')">no3_rest%mod_varname</a>
+        </code>
+        <div id="no3_rest%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -10332,6 +9540,24 @@ File name for ascii time series of atm cfc11.
     <td>char*256</td>
     <td>ecosys_nml</td>
   </tr>
+  <tr id="nox_flux_monthly_input%mod_varname_tr">
+    <td><a name="nox_flux_monthly_input%mod_varname_ecosys_nml"></a>
+        <img id="nox_flux_monthly_input%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nox_flux_monthly_input%mod_varname_ecosys_nml')">nox_flux_monthly_input%mod_varname</a>
+        </code>
+        <div id="nox_flux_monthly_input%mod_varname_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
   <tr id="nox_flux_monthly_input%scale_factor_tr">
     <td><a name="nox_flux_monthly_input%scale_factor_ecosys_nml"></a>
         <img id="nox_flux_monthly_input%scale_factor_arrow" src="./images/arrow_right.gif">
@@ -10404,312 +9630,6 @@ File name for ascii time series of atm cfc11.
     <td>char*256</td>
     <td>ecosys_nml</td>
   </tr>
-  <tr id="parm_bsibury_tr">
-    <td><a name="parm_bsibury_ecosys_parms_nml"></a>
-        <img id="parm_bsibury_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_bsibury_ecosys_parms_nml')">parm_bsibury</a>
-        </code>
-        <div id="parm_bsibury_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_caco3_diss_tr">
-    <td><a name="parm_caco3_diss_ecosys_parms_nml"></a>
-        <img id="parm_caco3_diss_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_caco3_diss_ecosys_parms_nml')">parm_caco3_diss</a>
-        </code>
-        <div id="parm_caco3_diss_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_f_prod_sp_caco3_tr">
-    <td><a name="parm_f_prod_sp_caco3_ecosys_parms_nml"></a>
-        <img id="parm_f_prod_sp_caco3_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_f_prod_sp_caco3_ecosys_parms_nml')">parm_f_prod_sp_caco3</a>
-        </code>
-        <div id="parm_f_prod_sp_caco3_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_fe_bioavail_tr">
-    <td><a name="parm_fe_bioavail_ecosys_parms_nml"></a>
-        <img id="parm_fe_bioavail_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_fe_bioavail_ecosys_parms_nml')">parm_fe_bioavail</a>
-        </code>
-        <div id="parm_fe_bioavail_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_fe_scavenge_rate0_tr">
-    <td><a name="parm_fe_scavenge_rate0_ecosys_parms_nml"></a>
-        <img id="parm_fe_scavenge_rate0_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_fe_scavenge_rate0_ecosys_parms_nml')">parm_fe_scavenge_rate0</a>
-        </code>
-        <div id="parm_fe_scavenge_rate0_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_kappa_nitrif_tr">
-    <td><a name="parm_kappa_nitrif_ecosys_parms_nml"></a>
-        <img id="parm_kappa_nitrif_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_kappa_nitrif_ecosys_parms_nml')">parm_kappa_nitrif</a>
-        </code>
-        <div id="parm_kappa_nitrif_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_labile_ratio_tr">
-    <td><a name="parm_labile_ratio_ecosys_parms_nml"></a>
-        <img id="parm_labile_ratio_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_labile_ratio_ecosys_parms_nml')">parm_labile_ratio</a>
-        </code>
-        <div id="parm_labile_ratio_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_nitrif_par_lim_tr">
-    <td><a name="parm_nitrif_par_lim_ecosys_parms_nml"></a>
-        <img id="parm_nitrif_par_lim_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_nitrif_par_lim_ecosys_parms_nml')">parm_nitrif_par_lim</a>
-        </code>
-        <div id="parm_nitrif_par_lim_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_o2_min_tr">
-    <td><a name="parm_o2_min_ecosys_parms_nml"></a>
-        <img id="parm_o2_min_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_o2_min_ecosys_parms_nml')">parm_o2_min</a>
-        </code>
-        <div id="parm_o2_min_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_o2_min_delta_tr">
-    <td><a name="parm_o2_min_delta_ecosys_parms_nml"></a>
-        <img id="parm_o2_min_delta_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_o2_min_delta_ecosys_parms_nml')">parm_o2_min_delta</a>
-        </code>
-        <div id="parm_o2_min_delta_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_poc_diss_tr">
-    <td><a name="parm_poc_diss_ecosys_parms_nml"></a>
-        <img id="parm_poc_diss_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_poc_diss_ecosys_parms_nml')">parm_poc_diss</a>
-        </code>
-        <div id="parm_poc_diss_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_pombury_tr">
-    <td><a name="parm_pombury_ecosys_parms_nml"></a>
-        <img id="parm_pombury_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_pombury_ecosys_parms_nml')">parm_pombury</a>
-        </code>
-        <div id="parm_pombury_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_scalelen_vals_tr">
-    <td><a name="parm_scalelen_vals_ecosys_parms_nml"></a>
-        <img id="parm_scalelen_vals_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_scalelen_vals_ecosys_parms_nml')">parm_scalelen_vals</a>
-        </code>
-        <div id="parm_scalelen_vals_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real(4)</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_scalelen_z_tr">
-    <td><a name="parm_scalelen_z_ecosys_parms_nml"></a>
-        <img id="parm_scalelen_z_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_scalelen_z_ecosys_parms_nml')">parm_scalelen_z</a>
-        </code>
-        <div id="parm_scalelen_z_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real(4)</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_sio2_diss_tr">
-    <td><a name="parm_sio2_diss_ecosys_parms_nml"></a>
-        <img id="parm_sio2_diss_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_sio2_diss_ecosys_parms_nml')">parm_sio2_diss</a>
-        </code>
-        <div id="parm_sio2_diss_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_z_mort2_0_tr">
-    <td><a name="parm_z_mort2_0_ecosys_parms_nml"></a>
-        <img id="parm_z_mort2_0_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_z_mort2_0_ecosys_parms_nml')">parm_z_mort2_0</a>
-        </code>
-        <div id="parm_z_mort2_0_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
-  <tr id="parm_z_mort_0_tr">
-    <td><a name="parm_z_mort_0_ecosys_parms_nml"></a>
-        <img id="parm_z_mort_0_arrow" src="./images/arrow_right.gif">
-        <code class="varname">
-          <a href="javascript:void(0)"
-             onclick="toggleHelp('parm_z_mort_0_ecosys_parms_nml')">parm_z_mort_0</a>
-        </code>
-        <div id="parm_z_mort_0_ecosys_parms_nml_help" style="display: none;
-             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
-             #cccccc;">
-	     <pre>
-<br/>Default:  
-</pre>
-        </div>
-    </td>
-    <td>real</td>
-    <td>ecosys_parms_nml</td>
-  </tr>
   <tr id="po4_rest%default_val_tr">
     <td><a name="po4_rest%default_val_ecosys_nml"></a>
         <img id="po4_rest%default_val_arrow" src="./images/arrow_right.gif">
@@ -10772,6 +9692,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('po4_rest%filename_ecosys_nml')">po4_rest%filename</a>
         </code>
         <div id="po4_rest%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="po4_rest%mod_varname_tr">
+    <td><a name="po4_rest%mod_varname_ecosys_nml"></a>
+        <img id="po4_rest%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('po4_rest%mod_varname_ecosys_nml')">po4_rest%mod_varname</a>
+        </code>
+        <div id="po4_rest%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
@@ -10934,6 +9872,24 @@ File name for ascii time series of atm cfc11.
              onclick="toggleHelp('sio3_rest%filename_ecosys_nml')">sio3_rest%filename</a>
         </code>
         <div id="sio3_rest%filename_ecosys_nml_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+<br/>Default: 
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ecosys_nml</td>
+  </tr>
+  <tr id="sio3_rest%mod_varname_tr">
+    <td><a name="sio3_rest%mod_varname_ecosys_nml"></a>
+        <img id="sio3_rest%mod_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('sio3_rest%mod_varname_ecosys_nml')">sio3_rest%mod_varname</a>
+        </code>
+        <div id="sio3_rest%mod_varname_ecosys_nml_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>

@@ -1,22 +1,4 @@
-Known Bugs in CLM4.5.07 in CESM1.2.0                            May/31/2013
-
-1722  Test failure with VIC and more_vertlayers
-1719  Rogers found small bug in Fang Li's fire code
-1717  Hydrology bug
-1710  AREA, LANDFRAC_PFT in fsurdat differ from area, landfrac ...
-1699  ERI_D.f10_f10.ICLM45CNCROP.yellowstone_intel sometimes fa...
-1698  ERS.f19_g16_r01.I1850CLM45BGC.nldir_rtmOnFloodOnEffvelOff...
-1696  use before define issue in ICNCROP
-1686  Problem creating f09 CROP dataset in clm4_5_00
-1672  Subscript bounds problem with PGI for ICLM45CN4MeNoVS
-1666  Bug in Calender?
-1658  ERB problem with clm4_0
-1654  changing datm forcing period start/end years...
-1649  possible bug in shr_cal_mod.F90
-1632  Soil balance error for ne120np4 resolution transient case
-1598  non-repeatable results when running CNDV CROP with threading
-1597  array bounds error when checking annsum_counter in CN Ann...
-1557  can't restart mid-day with glc_mec 
+Known Bugs in CLM4.0.54 in CESM1.1.0                            Nov/08/2012
 
 ====================================================================================
 Bug Number: 1543
@@ -61,6 +43,33 @@ argument to hist_addfld1d and hist_addfld2d to prevent this problem from
 arising again in the future.
 
 ====================================================================================
+Bug Number: 1377
+CLM1PT mode is in extend mode by default, so fails going beyond one data cycle
+
+PLM1PT mode puts atm forcing data in extend mode so if you go beyond one data
+cycle it gives screwy results. I ran the spinup series with PTCLM and since it
+was running over multiple years after it ran one cycle it used the last
+time-step for the future years.
+
+Here's one way to fix this issue after a case is built...
+
+   sed "s/'extend','cycle'/'cycle','cycle'/g" Buildconf/datm.buildnml.csh > datm.bld
+   mv datm.bld Buildconf/datm.buildnml.csh
+
+See bug 1368 below for a case where this causes a major problem with a 
+simulation.
+
+====================================================================================
+Bug Number: 1368
+PTCLM for US-UMB spins up with zero GPP
+
+I ran a spinup with PTCLM (to test the procedure and to get initial conditions
+for US-UMB, and be able to work the transient issue). For the final_spinup
+phase GPP was identically zero.
+
+This was fixed by setting taxmode='cycle'. See bug 1377 above.
+ 
+====================================================================================
 Bug Number: 1360
 Can't do a ncdump on the US-UMB single point data for PTCLM
 
@@ -90,6 +99,22 @@ clm4_0_32.
 
 The difference is in landmask field where some values are set to 1.95379e+09
 looks like over ocean.
+
+====================================================================================
+Bug Number: 1345
+Irrigation dataset is upside down! 
+
+The irrigation dataset used to create surface datasets by mksurfdata is upside
+down (latitude goes from 90 to -90 rather) relative to other files used to
+create surface datasets.
+
+The filename is:
+
+     $CSMDATA/lnd/clm2/rawdata/mksrf_irrig_2160x4320_simyr2000.c090320.nc
+
+This is the same problem as in the VOC dataset in bug number 1044 below.
+
+Even though the file looks incorrect the datasets it creates are fine.
 
 ====================================================================================
 Bug Number: 1339
@@ -138,7 +163,7 @@ gmake: *** [dlnd_comp_mod.o] Error 40
 
 ====================================================================================
 Bug Number: 1326
-Running with both crop AND irrigation fail with a balance check error for CLM40
+Running with both crop AND irrigation fail with a balance check error
 
 Running tests that have both crop AND irrigation fail with a balance check
 error. This is for starting up with arbitrary initial conditions and running
@@ -331,7 +356,7 @@ as we are setting the dtlimit to a very high value.
 
 ====================================================================================
 Bug Number: 1164
-Restart trouble for CNC13 with INTEL, PGI and LAHEY compilers for CLM40
+Restart trouble for CNC13 with INTEL, PGI and LAHEY compilers
 
 017 erR53 TER.sh 17p_cnc13sc_do clm_std^nl_urb 20020115:NONE:1800 10x15
 USGS@1850 10+38 cold ....FAIL! rc= 13
@@ -369,7 +394,7 @@ reported quite accurately.
 
 ====================================================================================
 Bug Number: 1101
-suplnitro=ALL mode is over-productive for CLM40
+suplnitro=ALL mode is over-productive
 
 suplnitro=ALL mode is over-productive. This is because it provides unlimited
 Nitrogen. Fixing it requires using fnitr from the pft-physiology file, a different 

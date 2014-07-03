@@ -34,6 +34,14 @@ foreach $dir (@paths) {
 	$filename =~ s!.*/!!;                   # remove part before last slash
 	$src{$filename} = 1;
     }
+    @templates = glob("$dir/*.F90.in");
+    foreach $filename (@templates) {
+	$filename =~ s!.*/!!;                   # remove part before last slash
+	my $dfile = $filename;
+	$dfile =~ s/\.in//;
+	delete $src{$dfile} if(defined $src{$dfile});
+	$src{$filename} = 1;
+    }
 }
 
 my @srcfiles;

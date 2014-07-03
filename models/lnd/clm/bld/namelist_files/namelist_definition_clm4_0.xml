@@ -112,11 +112,6 @@ Visible and Near-infrared albedo's for glacier ice
 Time step (seconds)
 </entry>
 
-<entry id="outnc_large_files" type="logical" category="history"
-       group="clm_inparm" valid_values="" >
-If TRUE, output NetCDF files in 64-bit large-file format
-</entry>
-
 <entry id="override_nsrest" type="integer"  category="clm_restart" 
        group="clm_inparm" valid_values="3">
 Override the start type from the driver: it can only be
@@ -448,11 +443,6 @@ Biogenic Volatile Organic Compounds (VOC) emissions dataset for mksurfdata
 If TRUE, output variables in double precision for mksurfdata
 </entry>
 
-<entry id="outnc_large_files" type="logical" category="mksurfdata"
-       group="clmexp" value=".true.">
-If TRUE, use the large file format for NetCDF
-</entry>
-
 <entry id="all_urban" type="logical" category="mksurfdata"
        group="clmexp" value=".false.">
 If TRUE, ignore other files, and set the output percentage to 100% urban and
@@ -578,11 +568,6 @@ by getco2_historical.ncl
 Aerosol deposition file name (only used for aerdepregrid.ncl)
 </entry>
 
-<entry id="fndepdat" type="char*256" category="tools"
-       input_pathname="abs" group="clmexp" valid_values="" >
-Full pathname of nitrogen deposition data file (only used for ndepregrid.ncl).
-</entry>
-
 <entry id="f_fracdata" type="char*256" category="tools"
        input_pathname="abs" group="domain_nl" valid_values="" >
 Full pathname of CLM fraction dataset (only used for mkdatadomain).
@@ -700,7 +685,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"  
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.47x0.63,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,wus12,us20">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.47x0.63,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry> 
@@ -714,7 +699,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*10" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,us20,wus12">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep">
 Land mask description
 </entry> 
 

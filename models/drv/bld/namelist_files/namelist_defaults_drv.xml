@@ -22,9 +22,9 @@
 <history_ymd>$HIST_DATE</history_ymd>
 
 <histavg_init>.false.</histavg_init>
-<histavg_option>never</histavg_option>
-<histavg_n>-999</histavg_n>
-<histavg_ymd>-999</histavg_ymd> 
+<histavg_option>$AVGHIST_OPTION</histavg_option>
+<histavg_n>$AVGHIST_N</histavg_n>
+<histavg_ymd>$AVGHIST_DATE</histavg_ymd>
 
 <!-- =========================================  -->
 <!--- seq_infodata_inparm                       -->
@@ -45,7 +45,7 @@
 <histaux_a2x24hr>.false.</histaux_a2x24hr>
 <histaux_l2x    >.false.</histaux_l2x    >
 <histaux_r2x    >.false.</histaux_r2x    >
-<histaux_s2x1yr >.false.</histaux_s2x1yr >
+<histaux_l2x1yr >.false.</histaux_l2x1yr >
 
 <budget_inst >0</budget_inst>
 <budget_daily>0</budget_daily> 
@@ -87,6 +87,8 @@
 <cpl_decomp>$CPL_DECOMP</cpl_decomp>
 <flux_epbal>$CPL_EPBAL</flux_epbal>
 <flux_albav>.$CPL_ALBAV.</flux_albav> 
+<wall_time_limit>-1.0</wall_time_limit> 
+<force_stop_at>month</force_stop_at> 
 
 <run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers> 
 <run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers> 
@@ -154,10 +156,10 @@
 <lnd2atm_smapname>$LND2ATM_SMAPNAME</lnd2atm_smapname>
 <lnd2rof_fmapname>$LND2ROF_FMAPNAME</lnd2rof_fmapname>
 <rof2lnd_fmapname>$ROF2LND_FMAPNAME</rof2lnd_fmapname>
-<rof2lnd_smapname>$ROF2LND_SMAPNAME</rof2lnd_smapname>
 <rof2ocn_rmapname>$ROF2OCN_RMAPNAME</rof2ocn_rmapname>
 <rof2ocn_fmapname>$ROF2OCN_FMAPNAME</rof2ocn_fmapname>
-<rof2ocn_smapname>$ROF2OCN_SMAPNAME</rof2ocn_smapname>
+<glc2ocn_rmapname>$GLC2OCN_RMAPNAME</glc2ocn_rmapname>
+<glc2ice_rmapname>$GLC2ICE_RMAPNAME</glc2ice_rmapname>
 <atm2wav_smapname>$ATM2WAV_SMAPNAME</atm2wav_smapname>
 <ocn2wav_smapname>$OCN2WAV_SMAPNAME</ocn2wav_smapname>
 <ice2wav_smapname>$ICE2WAV_SMAPNAME</ice2wav_smapname>
@@ -176,7 +178,8 @@
 <rof2lnd_fmaptype>Y</rof2lnd_fmaptype>
 <rof2ocn_fmaptype>Y</rof2ocn_fmaptype>
 <rof2ocn_rmaptype>Y</rof2ocn_rmaptype>
-<rof2lnd_smaptype>Y</rof2lnd_smaptype>
+<glc2ocn_rmaptype>X</glc2ocn_rmaptype>
+<glc2ice_rmaptype>X</glc2ice_rmaptype>
 <atm2wav_smaptype>Y</atm2wav_smaptype>
 <ocn2wav_smaptype>Y</ocn2wav_smaptype>
 <ice2wav_smaptype>Y</ice2wav_smaptype>
@@ -195,7 +198,8 @@
 <rof2lnd_fmaptype BFBFLAG="TRUE">X</rof2lnd_fmaptype>
 <rof2ocn_fmaptype BFBFLAG="TRUE">X</rof2ocn_fmaptype>
 <rof2ocn_rmaptype BFBFLAG="TRUE">X</rof2ocn_rmaptype>
-<rof2lnd_smaptype BFBFLAG="TRUE">X</rof2lnd_smaptype>
+<glc2ocn_rmaptype BFBFLAG="TRUE">X</glc2ocn_rmaptype>
+<glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
 <atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
 <ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>

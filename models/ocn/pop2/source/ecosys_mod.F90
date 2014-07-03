@@ -394,7 +394,7 @@
       tavg_DIC_GAS_FLUX_ALT_CO2,  buf_ind_DIC_GAS_FLUX_ALT_CO2,  &! dic flux alternative CO2
       tavg_PH_ALT_CO2,            buf_ind_PH_ALT_CO2,            &! surface pH alternative CO2
       tavg_ATM_ALT_CO2,           buf_ind_ATM_ALT_CO2,           &! atmospheric alternative CO2
-      tavg_IRON_FLUX,                                            &! iron flux
+      tavg_IRON_FLUX,             buf_ind_IRON_FLUX,             &! iron flux
       tavg_DUST_FLUX,                                            &! dust flux
       tavg_NOx_FLUX,              buf_ind_NOx_FLUX,              &! nox flux
       tavg_NHy_FLUX,                                             &! nhy flux
@@ -1992,9 +1992,11 @@ contains
    buf_ind_ATM_ALT_CO2 = buf_len
 
    call define_tavg_field(tavg_IRON_FLUX,'IRON_FLUX',2,                &
-                          long_name='Iron Flux',                       &
-                          units='mmol/m^2/s', grid_loc='2110',        &
+                          long_name='Atmospheric Iron Flux',           &
+                          units='mmol/m^2/s', grid_loc='2110',         &
                           coordinates='TLONG TLAT time')
+   buf_len = buf_len+1
+   buf_ind_IRON_FLUX = buf_len
 
    call define_tavg_field(tavg_DUST_FLUX,'DUST_FLUX',2,                &
                           long_name='Dust Flux',                       &
@@ -2569,7 +2571,7 @@ contains
                           coordinates='TLONG TLAT time')
    call define_tavg_field(tavg_pfeToSed,'pfeToSed',2,                  &
                           long_name='pFe Flux to Sediments',           &
-                          units='g/cm^2/s', grid_loc='2110',           &
+                          units='nmolFe/cm^2/s', grid_loc='2110',      &
                           coordinates='TLONG TLAT time')
 
 !-----------------------------------------------------------------------
@@ -4348,7 +4350,9 @@ contains
 !-----------------------------------------------------------------------
 
    real (r8) :: poc_diss, & ! diss. length used (cm)
-                sio2_diss   ! diss. length varies spatially with O2
+                sio2_diss,& ! diss. length varies spatially with O2
+                caco3_diss,&
+                dust_diss
 
    character(*), parameter :: &
       subname = 'ecosys_mod:compute_particulate_terms'
@@ -4356,14 +4360,14 @@ contains
    real (r8), dimension(nx_block,ny_block) :: &
       WORK,               & ! temporary for summed quantities to be averaged
       TfuncS,             & ! temperature scaling from soft POM remin
-      DECAY_CaCO3,        & ! scaling factor for dissolution of CaCO3
-      DECAY_dust,         & ! scaling factor for dissolution of dust
       DECAY_Hard,         & ! scaling factor for dissolution of Hard Ballast
       DECAY_HardDust        ! scaling factor for dissolution of Hard dust
 
    real (r8) :: &
       decay_POC_E,        & ! scaling factor for dissolution of excess POC
       decay_SiO2,         & ! scaling factor for dissolution of SiO2
+      decay_CaCO3,        & ! scaling factor for dissolution of CaCO3
+      decay_dust,         & ! scaling factor for dissolution of dust
       POC_PROD_avail,     & ! POC production available for excess POC flux
       new_QA_dust_def,    & ! outgoing deficit in the QA(dust) POC flux
       scalelength,        & ! used to scale dissolution length scales
@@ -4402,6 +4406,7 @@ contains
 !  initialize loss to sediments = 0 and local copy of percent sed
 !-----------------------------------------------------------------------
 
+   P_iron%sed_loss(:,:,bid) = c0
    POC%sed_loss(:,:,bid) = c0
    P_CaCO3%sed_loss(:,:,bid) = c0
    P_SiO2%sed_loss(:,:,bid) = c0
@@ -4429,13 +4434,9 @@ contains
    endif
 
    if (partial_bottom_cells) then
-      DECAY_CaCO3    = exp(-DZT(:,:,k,bid) / (scalelength*P_CaCO3%diss))
-      DECAY_dust     = exp(-DZT(:,:,k,bid) / (scalelength*dust%diss))
       DECAY_Hard     = exp(-DZT(:,:,k,bid) / 4.0e6_r8)
       DECAY_HardDust = exp(-DZT(:,:,k,bid) / 1.2e7_r8)
    else
-      DECAY_CaCO3    = exp(-dz(k) / (scalelength*P_CaCO3%diss))
-      DECAY_dust     = exp(-dz(k) / (scalelength*dust%diss))
       DECAY_Hard     = exp(-dz(k) / 4.0e6_r8)
       DECAY_HardDust = exp(-dz(k) / 1.2e7_r8)
    endif
@@ -4461,6 +4462,8 @@ contains
 
             poc_diss = POC%diss
             sio2_diss = P_SiO2%diss
+            caco3_diss = P_CaCO3%diss
+            dust_diss = dust%diss
 
 !-----------------------------------------------------------------------
 !  increase POC diss length scale where O2 concentrations are low
@@ -4473,11 +4476,28 @@ contains
             endif
 
 !-----------------------------------------------------------------------
+!  apply scalelength factor to length scales
+!-----------------------------------------------------------------------
+
+            poc_diss = scalelength * poc_diss
+            sio2_diss = scalelength * sio2_diss
+            caco3_diss = scalelength * caco3_diss
+            dust_diss = scalelength * dust_diss
+
+!-----------------------------------------------------------------------
+!  apply temperature dependence to sio2_diss length scale
+!-----------------------------------------------------------------------
+
+            sio2_diss = sio2_diss / TfuncS(i,j)
+
+!-----------------------------------------------------------------------
 !  decay_POC_E and decay_SiO2 set locally, modified by O2
 !-----------------------------------------------------------------------
 
-            decay_POC_E = exp(-dz_loc / (scalelength*poc_diss))
-            decay_SiO2  = exp(-dz_loc / (scalelength*sio2_diss / TfuncS(i,j)))
+            decay_POC_E = exp(-dz_loc / poc_diss)
+            decay_SiO2  = exp(-dz_loc / sio2_diss)
+            decay_CaCO3 = exp(-dz_loc / caco3_diss)
+            decay_dust  = exp(-dz_loc / dust_diss)
 
 !-----------------------------------------------------------------------
 !  Set outgoing fluxes for non-iron pools.
@@ -4487,21 +4507,21 @@ contains
 !  It is assumed that there is no sub-surface dust production.
 !-----------------------------------------------------------------------
 
-            P_CaCO3%sflux_out(i,j,bid) = P_CaCO3%sflux_in(i,j,bid) * DECAY_CaCO3(i,j) + &
-               P_CaCO3%prod(i,j,bid) * ((c1 - P_CaCO3%gamma) * (c1 - DECAY_CaCO3(i,j)) &
-                  * P_CaCO3%diss)
+            P_CaCO3%sflux_out(i,j,bid) = P_CaCO3%sflux_in(i,j,bid) * decay_caco3 + &
+               P_CaCO3%prod(i,j,bid) * ((c1 - P_CaCO3%gamma) * (c1 - decay_caco3) &
+                  * caco3_diss)
 
             P_CaCO3%hflux_out(i,j,bid) = P_CaCO3%hflux_in(i,j,bid) * DECAY_Hard(i,j) + &
                P_CaCO3%prod(i,j,bid) * (P_CaCO3%gamma * dz_loc)
 
             P_SiO2%sflux_out(i,j,bid) = P_SiO2%sflux_in(i,j,bid) * decay_SiO2 + &
                P_SiO2%prod(i,j,bid) * ((c1 - P_SiO2%gamma) * (c1 - decay_SiO2) &
-                  * (P_SiO2%diss / TfuncS(i,j)))
+                  * sio2_diss)
 
             P_SiO2%hflux_out(i,j,bid) = P_SiO2%hflux_in(i,j,bid) * DECAY_Hard(i,j) + &
                P_SiO2%prod(i,j,bid) * (P_SiO2%gamma * dz_loc)
 
-            dust%sflux_out(i,j,bid) = dust%sflux_in(i,j,bid) * DECAY_dust(i,j)
+            dust%sflux_out(i,j,bid) = dust%sflux_in(i,j,bid) * decay_dust
 
             dust%hflux_out(i,j,bid) = dust%hflux_in(i,j,bid) * DECAY_HardDust(i,j)
 
@@ -4608,9 +4628,10 @@ contains
             else
                P_iron%remin(i,j,bid) = (POC%remin(i,j,bid) * &
                   (P_iron%sflux_in(i,j,bid) + P_iron%hflux_in(i,j,bid)) / &
-                  (POC%sflux_in(i,j,bid) + POC%hflux_in(i,j,bid))) + &
-                  (P_iron%sflux_in(i,j,bid) * 1.5e-5_r8)
+                  (POC%sflux_in(i,j,bid) + POC%hflux_in(i,j,bid)))
             endif
+            P_iron%remin(i,j,bid) = P_iron%remin(i,j,bid) +                &
+                                    (P_iron%sflux_in(i,j,bid) * 1.5e-5_r8)
 
             P_iron%sflux_out(i,j,bid) = P_iron%sflux_in(i,j,bid) + dz_loc * &
                ((c1 - P_iron%gamma) * P_iron%prod(i,j,bid) - P_iron%remin(i,j,bid))
@@ -4671,7 +4692,7 @@ contains
 !      In special case where bottom O2 has been depleted to < 1.0 uM,
 !               all sedimentary remin is due to DENITRIFICATION + OTHER_REMIN
 !  POC burial from Dunne et al. 2007 (doi:10.1029/2006GB002907), maximum of 80% burial efficiency imposed
-!  Bsi preservation in sediments = 0.3*sinkBsi - 0.06 mmol/m2/day
+!  Bsi preservation in sediments based on
 !     Ragueneau et al. 2000 (doi:10.1016/S0921-8181(00)00052-7)
 !  Calcite is preserved in sediments above the lysocline, dissolves below.
 !       Here a constant depth is used for lysocline.
@@ -4709,8 +4730,8 @@ contains
             flux = P_SiO2%sflux_out(i,j,bid)+P_SiO2%hflux_out(i,j,bid)
             flux_alt = flux*mpercm*spd ! convert to mmol/m^2/day
             ! first compute burial efficiency, then compute loss to sediments
-            if (flux_alt > c1) then
-               P_SiO2%sed_loss(i,j,bid) = 0.3_r8 * flux_alt - 0.06_r8
+            if (flux_alt > c2) then
+               P_SiO2%sed_loss(i,j,bid) = 0.2_r8
             else
                P_SiO2%sed_loss(i,j,bid) = 0.04_r8
             endif
@@ -5893,7 +5914,7 @@ contains
 
    scalar_temp = f_qsw_par / hflux_factor
 
-   !$OMP PARALLEL DO PRIVATE(iblock,WORK1)
+   !$OMP PARALLEL DO PRIVATE(iblock,WORK1,auto_ind,n)
    do iblock = 1, nblocks_clinic
       STF_MODULE(:,:,:,iblock) = c0
 
@@ -6061,10 +6082,9 @@ contains
                O2SAT_USED = AP_USED(:,:,iblock) * O2SAT_1atm
                FLUX = PV * (O2SAT_USED - p5*(SURF_VALS_OLD(:,:,o2_ind,iblock) + &
                                              SURF_VALS_CUR(:,:,o2_ind,iblock)))
-               STF_MODULE(:,:,o2_ind,iblock) = FLUX
+               STF_MODULE(:,:,o2_ind,iblock) = STF_MODULE(:,:,o2_ind,iblock) + FLUX
             elsewhere
                O2SAT_USED = c0
-               STF_MODULE(:,:,o2_ind,iblock) = c0
             end where
 
             ECO_SFLUX_TAVG(:,:,buf_ind_PV_O2,iblock) = PV
@@ -6232,7 +6252,8 @@ contains
 
    IRON_FLUX_IN = IRON_FLUX_IN * parm_Fe_bioavail
 
-   STF_MODULE(:,:,fe_ind,:) = IRON_FLUX_IN
+   STF_MODULE(:,:,fe_ind,:) = STF_MODULE(:,:,fe_ind,:) + IRON_FLUX_IN
+   ECO_SFLUX_TAVG(:,:,buf_ind_IRON_FLUX,:) = IRON_FLUX_IN
 
    if (dust_flux%has_data) then
       if (thour00 >= dust_flux%data_update) then
@@ -6293,7 +6314,7 @@ contains
          nox_flux_monthly%data_time_min_loc, nox_flux_monthly%interp_freq, &
          nox_flux_monthly%interp_inc,        nox_flux_monthly%interp_next, &
          nox_flux_monthly%interp_last,       0)
-      STF_MODULE(:,:,no3_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,no3_ind,:) = STF_MODULE(:,:,no3_ind,:) + INTERP_WORK(:,:,:,1)
       ECO_SFLUX_TAVG(:,:,buf_ind_NOx_FLUX,:) = INTERP_WORK(:,:,:,1)
    endif
 
@@ -6318,7 +6339,7 @@ contains
          nhy_flux_monthly%data_time_min_loc, nhy_flux_monthly%interp_freq, &
          nhy_flux_monthly%interp_inc,        nhy_flux_monthly%interp_next, &
          nhy_flux_monthly%interp_last,       0)
-      STF_MODULE(:,:,nh4_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,nh4_ind,:) = STF_MODULE(:,:,nh4_ind,:) + INTERP_WORK(:,:,:,1)
    endif
 
 #ifdef CCSMCOUPLED
@@ -6402,12 +6423,11 @@ contains
       !$OMP PARALLEL DO PRIVATE(iblock)
       do iblock = 1, nblocks_clinic
          where (LAND_MASK(:,:,iblock))
-            STF_MODULE(:,:,no3_ind,iblock) = &
-               ndep_shr_stream_scale_factor * SHR_STREAM_WORK(:,:,iblock)
-         elsewhere
-            STF_MODULE(:,:,no3_ind,iblock) = c0
+            STF_MODULE(:,:,no3_ind,iblock) = STF_MODULE(:,:,no3_ind,iblock) &
+               + ndep_shr_stream_scale_factor * SHR_STREAM_WORK(:,:,iblock)
          endwhere
-         ECO_SFLUX_TAVG(:,:,buf_ind_NOx_FLUX,iblock) = STF_MODULE(:,:,no3_ind,iblock)
+         ECO_SFLUX_TAVG(:,:,buf_ind_NOx_FLUX,iblock) = &
+            ndep_shr_stream_scale_factor * SHR_STREAM_WORK(:,:,iblock)
       enddo
       !$OMP END PARALLEL DO
 
@@ -6440,10 +6460,8 @@ contains
       !$OMP PARALLEL DO PRIVATE(iblock)
       do iblock = 1, nblocks_clinic
          where (LAND_MASK(:,:,iblock))
-            STF_MODULE(:,:,nh4_ind,iblock) = &
-               ndep_shr_stream_scale_factor * SHR_STREAM_WORK(:,:,iblock)
-         elsewhere
-            STF_MODULE(:,:,nh4_ind,iblock) = c0
+            STF_MODULE(:,:,nh4_ind,iblock) = STF_MODULE(:,:,nh4_ind,iblock) &
+               + ndep_shr_stream_scale_factor * SHR_STREAM_WORK(:,:,iblock)
          endwhere
       enddo
       !$OMP END PARALLEL DO
@@ -6501,7 +6519,7 @@ contains
          dip_riv_flux%data_time_min_loc, dip_riv_flux%interp_freq, &
          dip_riv_flux%interp_inc,        dip_riv_flux%interp_next, &
          dip_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,po4_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,po4_ind,:) = STF_MODULE(:,:,po4_ind,:) + INTERP_WORK(:,:,:,1)
    endif
 
    if (don_riv_flux%has_data) then
@@ -6525,8 +6543,8 @@ contains
          don_riv_flux%data_time_min_loc, don_riv_flux%interp_freq, &
          don_riv_flux%interp_inc,        don_riv_flux%interp_next, &
          don_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,don_ind,:) = (INTERP_WORK(:,:,:,1) * 0.9_r8)
-      STF_MODULE(:,:,donr_ind,:) = (INTERP_WORK(:,:,:,1) * 0.1_r8)
+      STF_MODULE(:,:,don_ind,:) = STF_MODULE(:,:,don_ind,:) + (INTERP_WORK(:,:,:,1) * 0.9_r8)
+      STF_MODULE(:,:,donr_ind,:) = STF_MODULE(:,:,donr_ind,:) + (INTERP_WORK(:,:,:,1) * 0.1_r8)
    endif
 
    if (dop_riv_flux%has_data) then
@@ -6550,8 +6568,8 @@ contains
          dop_riv_flux%data_time_min_loc, dop_riv_flux%interp_freq, &
          dop_riv_flux%interp_inc,        dop_riv_flux%interp_next, &
          dop_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,dop_ind,:) = (INTERP_WORK(:,:,:,1) * 0.975_r8)
-      STF_MODULE(:,:,dopr_ind,:) = (INTERP_WORK(:,:,:,1) * 0.025_r8)
+      STF_MODULE(:,:,dop_ind,:) = STF_MODULE(:,:,dop_ind,:) + (INTERP_WORK(:,:,:,1) * 0.975_r8)
+      STF_MODULE(:,:,dopr_ind,:) = STF_MODULE(:,:,dopr_ind,:) + (INTERP_WORK(:,:,:,1) * 0.025_r8)
    endif
 
    if (dsi_riv_flux%has_data) then
@@ -6575,7 +6593,7 @@ contains
          dsi_riv_flux%data_time_min_loc, dsi_riv_flux%interp_freq, &
          dsi_riv_flux%interp_inc,        dsi_riv_flux%interp_next, &
          dsi_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,sio3_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,sio3_ind,:) = STF_MODULE(:,:,sio3_ind,:) + INTERP_WORK(:,:,:,1)
    endif
 
    if (dfe_riv_flux%has_data) then
@@ -6599,7 +6617,7 @@ contains
          dfe_riv_flux%data_time_min_loc, dfe_riv_flux%interp_freq, &
          dfe_riv_flux%interp_inc,        dfe_riv_flux%interp_next, &
          dfe_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,fe_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,fe_ind,:) = STF_MODULE(:,:,fe_ind,:) + INTERP_WORK(:,:,:,1)
       ECO_SFLUX_TAVG(:,:,buf_ind_DFE_RIV_FLUX,:) = INTERP_WORK(:,:,:,1)
    endif
 
@@ -6650,7 +6668,7 @@ contains
          alk_riv_flux%data_time_min_loc, alk_riv_flux%interp_freq, &
          alk_riv_flux%interp_inc,        alk_riv_flux%interp_next, &
          alk_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,alk_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,alk_ind,:) = STF_MODULE(:,:,alk_ind,:) + INTERP_WORK(:,:,:,1)
       ECO_SFLUX_TAVG(:,:,buf_ind_ALK_RIV_FLUX,:) = INTERP_WORK(:,:,:,1)
    endif
 
@@ -6675,7 +6693,7 @@ contains
          doc_riv_flux%data_time_min_loc, doc_riv_flux%interp_freq, &
          doc_riv_flux%interp_inc,        doc_riv_flux%interp_next, &
          doc_riv_flux%interp_last,       0)
-      STF_MODULE(:,:,doc_ind,:) = INTERP_WORK(:,:,:,1)
+      STF_MODULE(:,:,doc_ind,:) = STF_MODULE(:,:,doc_ind,:) + INTERP_WORK(:,:,:,1)
    endif
 
 !-----------------------------------------------------------------------
@@ -6976,7 +6994,7 @@ contains
                                  tavg_PH_ALT_CO2,iblock,1)
       call accumulate_tavg_field(ECO_SFLUX_TAVG(:,:,buf_ind_ATM_ALT_CO2,iblock), &
                                  tavg_ATM_ALT_CO2,iblock,1)
-      call accumulate_tavg_field(STF_MODULE(:,:,fe_ind,iblock)*mpercm, &
+      call accumulate_tavg_field(ECO_SFLUX_TAVG(:,:,buf_ind_IRON_FLUX,iblock)*mpercm, &
                                  tavg_IRON_FLUX,iblock,1)
       call accumulate_tavg_field(dust_FLUX_IN(:,:,iblock)*mpercm, &
                                  tavg_DUST_FLUX,iblock,1)

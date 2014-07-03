@@ -15,7 +15,7 @@ endif
 # Make necessary directories
 # -------------------------------------------------------------------------
 
-foreach DIR ( $EXEROOT $LIBROOT $INCROOT $RUNDIR)
+foreach DIR ( $EXEROOT $LIBROOT $INCROOT $RUNDIR $SHAREDLIBROOT )
   if !(-d $DIR) mkdir -p $DIR || "cannot make $DIR" && exit -1
 end
 

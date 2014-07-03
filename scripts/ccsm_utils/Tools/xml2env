@@ -123,15 +123,22 @@ require ConfigCase;
 
 my $config_file = "$cfgdir/$config_def_file";
 
+
+
+
 my $cfg_ref = ConfigCase->new("$config_file", "env_case.xml");
 $cfg_ref->reset_setup("env_build.xml");
 $cfg_ref->reset_setup("env_run.xml");
 $cfg_ref->reset_setup("env_mach_pes.xml");
-
+if(-e "env_test.xml"){
+  $cfg_ref->reset_setup("env_test.xml");
+  $cfg_ref->write_file("env_test", "env");
+}
 $cfg_ref->write_file("env_case"   , "env");
 $cfg_ref->write_file("env_build"  , "env" );
 $cfg_ref->write_file("env_run"    , "env");
 $cfg_ref->write_file("env_mach_pes", "env");
+
 
 if ($print>=2) { print "xml2env done.\n"; }
 exit;

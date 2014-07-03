@@ -1,0 +1,8 @@
+-spmd -nosmp
+-chem trop_strat_mam3
+-age_of_air_trcs
+-dyn fv
+-res 4x5
+-phys cam5
+-debug
+-s

@@ -33,6 +33,7 @@ $CODEROOT/lnd/clm/bld/configure  $config_opts -comp_intf $COMP_INTERFACE \
 # Create clm.buildnml.csh
 #--------------------------------------------------------------------
 
+set startfiletype = "finidat"
 if ($RUN_TYPE == startup ) then
    if ($CLM_FORCE_COLDSTART == on) then
      set START_TYPE = "cold"
@@ -45,6 +46,9 @@ else
    else
      set START_TYPE = $RUN_TYPE
    endif
+endif
+if ($RUN_TYPE == branch ) then
+   set startfiletype = "nrevsn"
 endif
 
 set default_lnd_in_filename = "lnd_in"
@@ -69,10 +73,27 @@ cd $CASEBUILD/clmconf
 
 if (-e $CASEBUILD/clm.input_data_list) rm $CASEBUILD/clm.input_data_list
 
-if (-e $CASEROOT/user_nl_clm${inst_string}) then
-  $UTILROOT/Tools/user_nlcreate -user_nl_file $CASEROOT/user_nl_clm${inst_string} \
-    -namelist_name clm_inparm >! $CASEBUILD/clmconf/cesm_namelist  || exit -2
+set clmicfile=""
+if ( $RUN_TYPE == "hybrid" || $RUN_TYPE == "branch" ) then
+    set clm_startfile = "${RUN_REFCASE}.clm2${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
+    if ( -e "$RUNDIR/$clm_startfile") then
+      set clm_startfile = "$clm_startfile"
+    else
+      set clm_startfile = "${RUN_REFCASE}.clm2.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
+    endif
+    set clmicfile = " $startfiletype = '$clm_startfile'"
 endif
+cat >! $CASEBUILD/clmconf/cesm_namelist << EOF2
+&clm_inparm
+$clmicfile
+EOF2
+if (-e $CASEROOT/user_nl_clm${inst_string}) then
+  $UTILROOT/Tools/user_nl_add -user_nl_file $CASEROOT/user_nl_clm${inst_string} \
+   >> $CASEBUILD/clmconf/cesm_namelist  || exit -2
+endif
+cat >> $CASEBUILD/clmconf/cesm_namelist << EOF2
+/
+EOF2
 
 set glc_opts = ""
 if ("$COMP_GLC" != "sglc" )then
@@ -82,15 +103,7 @@ endif
 set usecase = " "
 if ($CLM_NML_USE_CASE != "UNSET") set usecase = "-use_case $CLM_NML_USE_CASE"
 
-set clm_startfile = " "
-if ( $RUN_TYPE == "hybrid" || $RUN_TYPE == "branch" ) then
-    set clm_startfile = "${RUN_REFCASE}.clm2${inst_string}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
-    if ( -e "$RUNDIR/$clm_startfile") then
-      set clm_startfile = "-clm_startfile $clm_startfile"
-    else
-      set clm_startfile = "-clm_startfile ${RUN_REFCASE}.clm2.r.${RUN_REFDATE}-${RUN_REFTOD}.nc"
-    endif
-endif
+
 set start_ymd = `echo $RUN_STARTDATE | sed s/-//g`
 set ignore = "-ignore_ic_date"
 if ($RUN_STARTDATE =~ *-01-01* || $RUN_STARTDATE =~ *-09-01*) then
@@ -101,7 +114,8 @@ $CODEROOT/lnd/clm/bld/build-namelist -infile $CASEBUILD/clmconf/cesm_namelist \
     -csmdata $DIN_LOC_ROOT  \
     -inputdata $CASEBUILD/clm.input_data_list $ignore \
     -namelist "&clm_inparm start_ymd = $start_ymd $CLM_NAMELIST_OPTS /" $usecase $glc_opts \
-    -res $RESOLUTION $clmusr -clm_start_type $START_TYPE $clm_startfile \
+    -res $RESOLUTION $clmusr -clm_start_type $START_TYPE \
+    -envxml_dir $CASEROOT \
     -l_ncpl $LND_NCPL -lnd_frac "${LND_DOMAIN_PATH}/${LND_DOMAIN_FILE}" \
     -glc_nec $GLC_NEC -co2_ppmv $CCSM_CO2_PPMV -co2_type $CLM_CO2_TYPE \
     -config $CASEBUILD/clmconf/config_cache.xml $CLM_BLDNML_OPTS || exit -3

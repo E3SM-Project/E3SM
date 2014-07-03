@@ -108,7 +108,7 @@ contains
     call pio_seterrorhandling( ncid, PIO_BCAST_ERROR)
 
     readvar = .true.
-    ret = PIO_inq_varid (ncid, varname, varid)
+    ret = PIO_inq_varid (ncid, trim(varname), varid)
     if (ret/=PIO_NOERR) then
        if (masterproc) then
           write(iulog,*)'CHECK_VAR INFO: variable ',trim(varname),' is not on file'
@@ -126,14 +126,13 @@ contains
   ! !IROUTINE: infld_real_2d
   !
   ! !INTERFACE:
-  subroutine infld_real_2d(varname ,ncid   , lonnam  ,latnam  , dim1b   , &
-       dim1e   ,dim2b   ,dim2e   ,field   , readvar , &
-       grid_map, timelevel)
+  subroutine infld_real_2d(varname, ncid, lonnam, latnam, dim1b,     &
+       dim1e, dim2b, dim2e, field, readvar, grid_map, timelevel)
 
-    use dyn_grid, only: get_block_gcol_d, get_block_gcol_cnt_d, get_horiz_grid_dim_d
-    use phys_grid, only: get_ncols_p, get_gcol_all_p
-    use xpavg_mod, only: xpavg
-    use pio, only : pio_get_var, pio_read_darray
+    use dyn_grid,      only: get_block_gcol_d, get_block_gcol_cnt_d, get_horiz_grid_dim_d
+    use phys_grid,     only: get_ncols_p, get_gcol_all_p
+    use xpavg_mod,     only: xpavg
+    use pio,           only : pio_get_var, pio_read_darray
     use cam_pio_utils, only : get_phys_decomp, get_dyn_decomp !, dyn_decomp
     !
     ! !DESCRIPTION: 
@@ -298,7 +297,8 @@ contains
   ! !IROUTINE: infld_real_2dncol
   !
   ! !INTERFACE:
-  subroutine infld_real_2dncol(varname ,ncid , iodesc, field, readvar, timelevel )
+  subroutine infld_real_2dncol(varname, ncid, iodesc, field, readvar, &
+       timelevel, ncolnam)
     !
     ! !DESCRIPTION: 
     ! Netcdf i/o of 2d initial real field from netCDF file
@@ -315,6 +315,7 @@ contains
     real(r8)        , intent(out) :: field(:) ! array to be returned (decomposed or global)
     logical         , intent(out) :: readvar  ! true => variable is on initial dataset
     integer, optional, intent(in) :: timelevel
+    character(len=*), optional, intent(in)  :: ncolnam   ! name of column dimension of field on file
     !
     !EOP
     !
@@ -333,7 +334,7 @@ contains
     logical :: readvar_tmp              ! if true, variable is on tape
     character*(PIO_MAX_NAME) tmpname
     character(len=32) :: subname='INFLD_REAL_2Dncol' ! subroutine name
-
+    character(len=pio_max_name) :: ncolnam_local ! to process ncolnam
 
     !
     ! Read netCDF file
@@ -350,7 +351,12 @@ contains
        !
        ! Get dimension id's and sizes
        !
-       ier = PIO_inq_dimid  (ncid, 'ncol'  , ncoldimid)
+      if (present(ncolnam)) then
+        ncolnam_local = trim(ncolnam)
+      else
+        ncolnam_local = 'ncol'
+      end if
+       ier = PIO_inq_dimid  (ncid, trim(ncolnam_local)  , ncoldimid)
        ier = PIO_inq_dimlen (ncid, ncoldimid, dimncol)
        !
        ! Check order of dimensions in variable
@@ -387,9 +393,9 @@ contains
   ! !IROUTINE: infld_real_3d
   !
   ! !INTERFACE:
-  subroutine infld_real_3d(varname ,ncid    ,lonnam  ,levnam  ,latnam  , &
-       dim1b   ,dim1e   ,dim2b   ,dim2e   ,dim3b   , &
-       dim3e   ,field   ,readvar ,grid_map, array_order_in, timelevel)
+  subroutine infld_real_3d(varname, ncid, lonnam, levnam, latnam,    &
+       dim1b, dim1e, dim2b, dim2e, dim3b, dim3e,                     &
+       field, readvar, grid_map, array_order_in, timelevel)
     !
     ! !DESCRIPTION: 
     ! Netcdf i/o of 3d initial real field from netCDF file
@@ -615,7 +621,7 @@ contains
   ! !IROUTINE: infld_real_3dncol
   !
   ! !INTERFACE:
-  subroutine infld_real_3dncol(varname ,ncid , iodesc, ncols, levnam, field, readvar, timelevel )
+  subroutine infld_real_3dncol(varname ,ncid , iodesc, ncols, levnam, field, readvar, timelevel, ncolnam)
     !
     ! !DESCRIPTION: 
     ! Netcdf i/o of 3d initial real field from netCDF file
@@ -635,6 +641,7 @@ contains
     real(r8),  intent(out)     :: field(:,:) ! array to be returned (decomposed or global)
     logical         , intent(out)     :: readvar  ! true => variable is on initial dataset
     integer, optional, intent(in) :: timelevel
+    character(len=*), optional, intent(in)  :: ncolnam   ! name of column dimension of field on file
     !
     !EOP
     !
@@ -655,6 +662,7 @@ contains
     character*(PIO_MAX_NAME) tmpname
     character(len=32) :: subname='INFLD_REAL_3Dncol' ! subroutine name
     integer :: lsize
+    character(len=pio_max_name) :: ncolnam_local ! to process ncolnam
     !
     ! Read netCDF file
     !
@@ -670,9 +678,14 @@ contains
        !
        ! Get dimension id's and sizes
        !
-       ier = PIO_inq_dimid  (ncid, 'ncol'  , ncoldimid)
+      if (present(ncolnam)) then
+        ncolnam_local = trim(ncolnam)
+      else
+        ncolnam_local = 'ncol'
+      end if
+       ier = PIO_inq_dimid  (ncid, trim(ncolnam_local)  , ncoldimid)
        ier = PIO_inq_dimlen (ncid, ncoldimid, dimncol)
-       ier = PIO_inq_dimid  (ncid, levnam  , levdimid)
+       ier = PIO_inq_dimid  (ncid, trim(levnam)  , levdimid)
        ier = PIO_inq_dimlen (ncid, levdimid, dimlev)
 
        !

@@ -1,3 +1,12 @@
+timing_140416: Changed Makefile so that .mods and the static library are copied to 
+               LIBROOT
+timing_140317: Modified Makefile to deal with shared mpi-serial builds
+timing_131108: Added memory retrieval commands for BG/Q [S Mickelson]
+timing_131023: Added explicit include path for gptl.h [J Edwards]
+timing_130827: added routines supporting non-null terminated timer labels, for use with
+               with C++ std:string (and more efficient usage with Fortran); also CMake 
+               logic fixes
+               [Patrick Worley]
 timing_130506: Copy all modules to the include directory on install
 timing_130417: Made nano time the default timer if available.
 timing_130316: Changed declarations of functions used in qsort in gptl.c, to eliminate

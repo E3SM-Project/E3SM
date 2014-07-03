@@ -12,7 +12,10 @@ module interpolate_mod
        cubedsphere2cart, distance, change_coordinates, projectpoint
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
-  use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPI_MAX, MPIinteger_t, MPI_SUM, MPI_MIN
+  use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPIinteger_t
+#ifdef _MPI
+  use parallel_mod,           only : MPI_MAX, MPI_SUM, MPI_MIN
+#endif
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map
@@ -62,6 +65,8 @@ module interpolate_mod
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
 
+  public :: interpolate_tracers
+  public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
 
@@ -218,6 +223,103 @@ contains
     deallocate(leg)
 
   end subroutine interpolate_create
+
+
+  subroutine interpolate_tracers(r, tracers, f) 
+    use kinds,          only : longdouble_kind
+    use dimensions_mod, only : np, qsize
+    use quadrature_mod, only : quadrature_t, gausslobatto
+
+
+    implicit none
+
+    type (cartesian2D_t), intent(in)  :: r
+    real (kind=real_kind),intent(in)  :: tracers(np*np,qsize)
+    real (kind=real_kind),intent(out) :: f(qsize)
+
+    type (quadrature_t        )       :: gll        
+    real (kind=real_kind      )       :: dp    (np)
+    real (kind=real_kind      )       :: x     (np)
+    real (kind=real_kind      )       :: y     (np)
+    real (kind=real_kind      )       :: c     (np,np)
+    real (kind=real_kind      )       :: xy    (np*np)
+
+    integer                           :: i,j
+    logical                           :: first_time=.true.
+    
+    save c
+    save gll
+   
+    if (first_time) then
+      first_time = .false.
+      gll=gausslobatto(np)
+      dp = 1
+      do i=1,np
+        do j=1,np
+          if (i /= j) then
+            dp(i) = dp(i) * (gll%points(i) - gll%points(j))
+          end if
+        end do
+      end do 
+      do i=1,np
+        do j=1,np
+          c(i,j) = 1/(dp(i)*dp(j))
+        end do
+      end do 
+    end if
+
+    x = 1
+    y = 1
+    do i=1,np
+      do j=1,np
+        if (i /= j) then
+          x(i) = x(i) * (r%x - gll%points(j))
+          y(i) = y(i) * (r%y - gll%points(j))
+        end if
+      end do
+    end do 
+    do j=1,np  
+      do i=1,np
+        xy(i + (j-1)*np) = x(i)*y(j)*c(i,j)
+      end do
+    end do 
+    f = MATMUL(xy,tracers)
+  end subroutine interpolate_tracers
+
+  subroutine minmax_tracers(r, tracers, mint, maxt) 
+    use dimensions_mod, only : np, qsize
+    use quadrature_mod, only : quadrature_t, gausslobatto
+
+
+    implicit none
+
+    type (cartesian2D_t), intent(in)  :: r
+    real (kind=real_kind),intent(in)  :: tracers(np,np,qsize)
+    real (kind=real_kind),intent(out) :: mint(qsize)
+    real (kind=real_kind),intent(out) :: maxt(qsize)
+
+    type (quadrature_t        )       :: gll        
+    integer                           :: i,j,k
+    logical                           :: first_time=.true.
+    
+    save gll
+   
+    if (first_time) then
+      first_time = .false.
+      gll=gausslobatto(np)
+    end if
+
+    do i=1,np  
+      if (r%x < gll%points(i)) exit
+    end do 
+    do j=1,np  
+      if (r%y < gll%points(j)) exit
+    end do 
+    if (1 < i) i = i-1
+    if (1 < j) j = j-1
+    mint(:) = minval(minval(tracers(i:i+1,j:j+1,:),1),1)
+    maxt(:) = maxval(maxval(tracers(i:i+1,j:j+1,:),1),1)
+  end subroutine minmax_tracers
 
   function interpolate_2d(cart, f, interp, npts, fillvalue) result(fxy)
     integer, intent(in)               :: npts

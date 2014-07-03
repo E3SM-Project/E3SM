@@ -304,9 +304,6 @@ contains
     topt_out(lbp:ubp) = spval
     Eopt_out(lbp:ubp) = spval
 
-    ! initalize to zero since this might not alway get set
-    vocflx_meg(:) = 0._r8
-
     ! Begin loop over points
     !_______________________________________________________________________________
     do fp = 1,num_soilp
@@ -316,6 +313,10 @@ contains
 
        ! initialize EF
        epsilon=0._r8
+       
+       ! initalize to zero since this might not alway get set
+       ! this needs to be within the fp loop ... 
+       vocflx_meg(:) = 0._r8
 
        ! calculate VOC emissions for non-bare ground PFTs
        if (ivt(p) > 0) then 

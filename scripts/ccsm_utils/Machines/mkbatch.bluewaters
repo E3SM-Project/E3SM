@@ -54,7 +54,7 @@ endif
 cat >! $file << EOF1
 #!/bin/csh -f
 #PBS -N ${jobname}
-#PBS -q batch
+#PBS -q normal
 #PBS -l nodes=${mppnodes}:ppn=32:xe
 #PBS -l walltime=${walltime}
 #PBS -j oe

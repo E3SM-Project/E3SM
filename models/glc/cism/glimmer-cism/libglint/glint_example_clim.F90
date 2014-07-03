@@ -32,7 +32,7 @@ module glint_example_clim
 
   ! Subroutines used to initialize and compute forcing for the glint_example climate driver
 
-  use glimmer_global
+  use glimmer_global, only: dp, fname_length
   use glint_global_grid
 
   implicit none
@@ -40,8 +40,8 @@ module glint_example_clim
   type glex_climate
 
      ! Mass-balance coupling timing parameters --------------------------
-     integer                 :: total_years=10   ! Length of run in years
-     integer                 :: climate_tstep=6  ! Climate time-step in hours
+     integer                 :: total_years  = 10  ! Length of run in years
+     integer                 :: climate_tstep = 6  ! Climate time-step in hours
 
      ! Filenames --------------------------------------------------------
      character(fname_length) :: precip_file = '' !*FD Name of precip file
@@ -54,21 +54,21 @@ module glint_example_clim
      character(fname_length) :: orog_varname   = '' !*FD orography variable name
 
      ! Arrays for holding climatology -----------------------------------
-     real(rk),dimension(:,:),  pointer :: orog_clim     => null()  !*FD Orography
-     real(rk),dimension(:,:,:),pointer :: precip_clim   => null()  !*FD Precip
-     real(rk),dimension(:,:,:),pointer :: surftemp_clim => null()  !*FD Surface temperature
+     real(dp),dimension(:,:),  pointer :: orog_clim     => null()  !*FD Orography
+     real(dp),dimension(:,:,:),pointer :: precip_clim   => null()  !*FD Precip
+     real(dp),dimension(:,:,:),pointer :: surftemp_clim => null()  !*FD Surface temperature
 
      ! Grid variables ---------------------------------------------------
      type(global_grid) :: clim_grid
 
      ! Time variables ---------------------------------------------------
-     real(rk),dimension(:),pointer :: pr_time => null() !*FD Time in precip climatology
-     real(rk),dimension(:),pointer :: st_time => null() !*FD Time in surftemp climatology
+     real(dp),dimension(:),pointer :: pr_time => null() !*FD Time in precip climatology
+     real(dp),dimension(:),pointer :: st_time => null() !*FD Time in surftemp climatology
 
      ! Other parameters -------------------------------------------------
-     integer  :: days_in_year=365
-     integer  :: hours_in_year=365*24
-     real(rk) :: precip_scale=1.0 ! Factor to scale precip by
+     integer  :: days_in_year  = 365
+     integer  :: hours_in_year = 365*24
+     real(dp) :: precip_scale  = 1.d0  ! Factor for scaling precip
      logical  :: temp_in_kelvin=.true. ! Set if temperature field is in Kelvin
 
      !NOTE: The glint_example driver assumes we will read in precip, surface air temp,
@@ -158,7 +158,7 @@ contains
        call GetValue(section,'climate_tstep',params%climate_tstep)
        call GetValue(section,'gcm_smb',params%gcm_smb)
 
-       params%hours_in_year=params%days_in_year*24
+       params%hours_in_year = params%days_in_year*24
     end if
 
     call GetSection(config,section,'GLEX precip')
@@ -221,8 +221,8 @@ contains
        call write_log('Temperatures in degC')
     end if
     
-    if (params%precip_scale/=1.0) then
-       write(message,*)'Precipitation scaled by ',params%precip_scale
+    if (params%precip_scale /= 1.d0) then
+       write(message,*)'Precipitation scaled by ', params%precip_scale
        call write_log(message)
     end if
 
@@ -268,8 +268,8 @@ contains
     call ncdf_find_var(ncid,(/'latitude' /),lat_varn,lat_id,lat_nd)
 
     ! Check they're only 1D arrays
-    if (lon_nd/=1.or.lat_nd/=1) &
-         call write_log('Latitude and Longitude variables must be 1D',GM_FATAL)
+    if (lon_nd/=1 .or. lat_nd/=1) &
+         call write_log('Latitude and longitude variables must be 1D',GM_FATAL)
 
     ! Find out the sizes
     ncerr = nf90_inquire_variable(ncid,lon_id,dimids=lldimids)
@@ -292,7 +292,7 @@ contains
 
     ! NB we are ignoring cell boundaries here.
     ! Construct global grid type
-    call new_global_grid(ggrid,real(lons,rk),real(lats,rk),correct=.false.)
+    call new_global_grid(ggrid,real(lons,dp),real(lats,dp),correct=.false.)
 
     ! Close file
     ncerr = nf90_close(ncid)
@@ -313,11 +313,11 @@ contains
 
     fail=.false.
 
-    if (g1%nx/=g2%nx.or.g1%nx/=g3%nx) fail = .true.
-    if (g1%ny/=g2%ny.or.g1%ny/=g3%ny) fail = .true.
+    if (g1%nx/=g2%nx .or. g1%nx/=g3%nx) fail = .true.
+    if (g1%ny/=g2%ny .or. g1%ny/=g3%ny) fail = .true.
 
-    if (any(g1%lons/=g2%lons).or.any(g1%lons/=g3%lons)) fail = .true.
-    if (any(g1%lats/=g2%lats).or.any(g1%lats/=g3%lats)) fail = .true.
+    if (any(g1%lons/=g2%lons) .or. any(g1%lons/=g3%lons)) fail = .true.
+    if (any(g1%lats/=g2%lats) .or. any(g1%lats/=g3%lats)) fail = .true.
 
     if (fail) &
          call write_log('GLINT Example: All three grids must be the same',GM_FATAL)
@@ -348,9 +348,9 @@ contains
     logical :: ft
 
     if (present(fatal)) then
-       ft=fatal
+       ft = fatal
     else
-       ft=.true.
+       ft = .true.
     end if
 
     nsn=size(stdnames)
@@ -409,24 +409,24 @@ contains
     use glimmer_log
 
     character(*), intent(in)      :: filename,varname
-    real(rk),dimension(:),pointer :: array
+    real(dp),dimension(:),pointer :: array
     character(*),optional,intent(out) :: units
 
-    real(rk),dimension(:),allocatable :: dim1
+    real(dp),dimension(:),allocatable :: dim1
 
     integer  :: ncerr     ! NetCDF error 
     integer  :: ncid      ! NetCDF file id
     integer  :: varid     ! NetCDF variable id
     integer  :: ndims     ! Number of dimensions
-    real(rk) :: offset,scale
+    real(dp) :: offset,scale
     integer,      dimension(1) :: dimids,dimlens
     character(20),dimension(1) :: dimnames
     character(100) :: message
     integer :: u_attlen
 
     if (associated(array)) deallocate(array)
-    offset = 0.0
-    scale = 1.0
+    offset = 0.d0
+    scale  = 1.d0
 
     call read_ncdf_findvar(filename,ncid,varid,ndims,varname)
 
@@ -470,25 +470,25 @@ contains
     use netcdf
 
     character(*), intent(in)        :: filename,varname
-    real(rk),dimension(:,:),pointer :: array
+    real(dp),dimension(:,:),pointer :: array
 
     integer  :: ncerr     ! NetCDF error 
     integer  :: ncid      ! NetCDF file id
     integer  :: varid     ! NetCDF variable id
     integer  :: ndims     ! Number of dimensions
-    real(rk) :: offset,scale
+    real(dp) :: offset,scale
     integer,      dimension(2) :: dimids,dimlens
     character(20),dimension(2) :: dimnames
 
     if (associated(array)) deallocate(array)
-    offset = 0.0
-    scale = 1.0
+    offset = 0.d0
+    scale  = 1.d0
 
     call read_ncdf_findvar(filename,ncid,varid,ndims,varname)
 
     ! If not a 2d variable, flag and error and exit ----
 
-    if (ndims/=2) then
+    if (ndims /= 2) then
        print*,'NetCDF: Requested variable only has ',ndims,' dimensions'
        stop
     end if
@@ -506,7 +506,7 @@ contains
 
     call read_ncdf_scaling(ncid,varid,offset,scale)
 
-    array=offset+(array*scale)
+    array = offset + (array*scale)
 
   end subroutine read_ncdf_2d
 
@@ -517,25 +517,25 @@ contains
     use netcdf
 
     character(*), intent(in)          :: filename,varname
-    real(rk),dimension(:,:,:),pointer :: array
+    real(dp),dimension(:,:,:),pointer :: array
 
     integer  :: ncerr     ! NetCDF error 
     integer  :: ncid      ! NetCDF file id
     integer  :: varid     ! NetCDF variable id
     integer  :: ndims     ! Number of dimensions
-    real(rk) :: offset,scale
+    real(dp) :: offset,scale
     integer,      dimension(3) :: dimids,dimlens
     character(20),dimension(3) :: dimnames
 
     if (associated(array)) deallocate(array)
-    offset = 0.0
-    scale = 1.0
+    offset = 0.d0
+    scale  = 1.d0
 
     call read_ncdf_findvar(filename,ncid,varid,ndims,varname)
 
     ! If not a 3d variable, flag and error and exit ----
 
-    if (ndims/=3) then
+    if (ndims /= 3) then
        print*,'NetCDF: Requested variable only has ',ndims,' dimensions'
        stop
     end if
@@ -553,7 +553,7 @@ contains
 
     call read_ncdf_scaling(ncid,varid,offset,scale)
 
-    array=offset+(array*scale)
+    array = offset + (array*scale)
 
   end subroutine read_ncdf_3d
 
@@ -615,21 +615,21 @@ contains
     use netcdf
 
     integer :: ncid,varid
-    real(rk) :: offset,scale
+    real(dp) :: offset,scale
     integer :: ncerr
 
     ! Get scaling and offset, if present, and apply ----
 
     ncerr=nf90_get_att(ncid, varid, 'add_offset', offset)
-    if (ncerr/=NF90_NOERR) then
-       offset=0.0
-       ncerr=NF90_NOERR
+    if (ncerr /= NF90_NOERR) then
+       offset = 0.d0
+       ncerr = NF90_NOERR
     end if
 
     ncerr=nf90_get_att(ncid, varid, 'scale_factor', scale)
     if (ncerr/=NF90_NOERR) then
-       scale=1.0
-       ncerr=NF90_NOERR
+       scale = 1.d0
+       ncerr = NF90_NOERR
     end if
 
   end subroutine read_ncdf_scaling
@@ -641,16 +641,28 @@ contains
     use glimmer_log
     
     type(glex_climate),   intent(in)    :: params
-    real(rk),dimension(:),intent(inout) :: time
+    real(dp),dimension(:),intent(inout) :: time
     character(*),         intent(in)    :: units
 
     select case(trim(units))
+
     case('years')
        ! Do nothing
+
     case('hours')
-       time=time/real(params%hours_in_year,rk)
+       time = time/real(params%hours_in_year,dp)
+
+    !WHL - Added 'months' and 'days'
+    !TODO - Test these options
+    case('months')
+       time = time/12.d0      
+
+    case('days')
+       time = time/real(params%days_in_year,dp)
+
     case default
        call write_log('Time units '//trim(units)//' unrecognised',GM_FATAL)
+
     end select
 
   end subroutine scale_time
@@ -678,27 +690,26 @@ contains
     use glimmer_log
 
     type(glex_climate) :: params
-    real(rk),dimension(:,:),intent(out)  :: precip,temp
-    real(rk),intent(in) :: time ! Time (hours)
+    real(dp),dimension(:,:),intent(out)  :: precip,temp
+    real(dp),intent(in) :: time ! Time (hours)
 
     integer :: ntemp,nprecip
-    real(rk) :: tsp,tst
-    real(rk) :: pos
+    real(dp) :: tsp,tst
+    real(dp) :: pos
     integer :: lower,upper
 
-    real(rk) :: fyear
-
+    real(dp) :: fyear
 
     ! Calculate fraction of year
-    fyear = real(mod(time,real(params%hours_in_year,rk)))/real(params%hours_in_year)
-    
+    fyear = real(mod(time,real(params%hours_in_year,dp))) / real(params%hours_in_year,dp)
+
     ! Do temperature interpolation
-    call bracket_point(fyear,params%st_time,lower,upper,pos)
-    temp=linear_interp(params%surftemp_clim(:,:,lower),params%surftemp_clim(:,:,upper),pos)
+    call bracket_point(fyear, params%st_time, lower, upper, pos)
+    temp = linear_interp(params%surftemp_clim(:,:,lower), params%surftemp_clim(:,:,upper), pos)
 
     ! precip
-    call bracket_point(fyear,params%pr_time,lower,upper,pos)
-    precip=linear_interp(params%precip_clim(:,:,lower),params%precip_clim(:,:,upper),pos)
+    call bracket_point(fyear, params%pr_time, lower, upper, pos)
+    precip = linear_interp(params%precip_clim(:,:,lower), params%precip_clim(:,:,upper), pos)
 
   end subroutine example_climate
 
@@ -706,11 +717,11 @@ contains
 
   function linear_interp(a,b,pos)
 
-    real(rk),dimension(:,:),intent(in) :: a,b
-    real(rk),dimension(size(a,1),size(a,2)) :: linear_interp
-    real(rk),               intent(in) :: pos
+    real(dp),dimension(:,:),intent(in) :: a,b
+    real(dp),dimension(size(a,1),size(a,2)) :: linear_interp
+    real(dp),               intent(in) :: pos
 
-    linear_interp=a*(1.0-pos)+b*pos
+    linear_interp = a*(1.d0-pos) + b*pos
 
   end function linear_interp
 
@@ -718,31 +729,31 @@ contains
 
   subroutine bracket_point(n,a,lower,upper,frac)
 
-    real(rk),             intent(in)  :: n
-    real(rk),dimension(:),intent(in)  :: a
+    real(dp),             intent(in)  :: n      ! current fraction of year
+    real(dp),dimension(:),intent(in)  :: a      ! array of fractional year values
     integer,              intent(out) :: lower
     integer,              intent(out) :: upper
-    real(rk),             intent(out) :: frac
+    real(dp),             intent(out) :: frac
 
-    real(rk),dimension(0:size(a)+1) :: aa
+    real(dp),dimension(0:size(a)+1) :: aa
     integer :: na
 
     ! Array bounds
-    na=size(a)
+    na = size(a)
     aa(1:na) = a
-    aa(0) = -1+a(na)
-    aa(na+1) = 1+aa(1)
+    aa(0)    = -1 + a(na)
+    aa(na+1) =  1 + aa(1)
 
-    lower=0
-    upper=1
+    lower = 0
+    upper = 1
     do
-       if (n>=aa(lower).and.n<aa(upper)) then
+       if (n >= aa(lower) .and. n < aa(upper)) then
           exit
        end if
-       lower=lower+1
-       upper=upper+1
+       lower = lower + 1
+       upper = upper + 1
     end do
-    frac = (n-aa(lower))/(aa(upper)-aa(lower))
+    frac = (n-aa(lower)) / (aa(upper)-aa(lower))
 
     call fixbounds(lower,1,na)
     call fixbounds(upper,1,na)
@@ -757,12 +768,12 @@ contains
 
     do
        if (in<=top) exit
-       in=in-(top-bottom+1)
+       in = in - (top-bottom+1)
     end do
 
     do
        if (in>=bottom) exit
-       in=in+(top-bottom+1)
+       in = in + (top-bottom+1)
     end do
 
   end subroutine fixbounds
@@ -784,30 +795,31 @@ contains
      ! By tuning ablt_const, we can get an SMB that is not so different from what the PDD scheme computes.
 
      ! input fields on global grid
-     real(rk), dimension(:,:), intent(in) :: temp     ! 2 m air temp (deg C)
-     real(rk), dimension(:,:), intent(in) :: precip   ! precip rate  (mm/s = kg/m2/s)
-     real(rk), dimension(:,:), intent(in) :: orog     ! global orography (m)
+     real(dp), dimension(:,:), intent(in) :: temp     ! 2 m air temp (deg C)
+     real(dp), dimension(:,:), intent(in) :: precip   ! precip rate  (mm/s = kg/m2/s)
+     real(dp), dimension(:,:), intent(in) :: orog     ! global orography (m)
 
      ! output fields on global grid, with elevation class index
-     real(rk), dimension(:,:,:), intent(inout) :: qsmb    ! ice sfc mass balance (kg/m2/s)
-     real(rk), dimension(:,:,:), intent(inout) :: tsfc    ! ice sfc temp (deg C)
-     real(rk), dimension(:,:,:), intent(inout) :: topo    ! ice sfc elevation (m)
+     real(dp), dimension(:,:,:), intent(inout) :: qsmb    ! ice sfc mass balance (kg/m2/s)
+     real(dp), dimension(:,:,:), intent(inout) :: tsfc    ! ice sfc temp (deg C)
+     real(dp), dimension(:,:,:), intent(inout) :: topo    ! ice sfc elevation (m)
 
      integer, intent(in) :: glc_nec                       ! number of elevation classes
 
-     real(rk), dimension(0:glc_nec), intent(in) :: glc_topomax  ! upper elevation of each class (m)
+     real(dp), dimension(0:glc_nec), intent(in) :: glc_topomax  ! upper elevation of each class (m)
 
      integer :: nx, ny, nec
      integer :: i, j, k
 
-     real(rk), dimension(glc_nec) :: glc_topomid   ! midrange elevation of each class (m)
+     real(dp), dimension(glc_nec) :: glc_topomid   ! midrange elevation of each class (m)
 
-     real(rk) :: ablt                              ! ablation rate (kg/m2/s)
+     real(dp) :: ablt                              ! ablation rate (kg/m2/s)
 
-     real(rk), parameter :: lapse_rate = 0.006d0   ! temp lapse rate (deg/m)
+     real(dp), parameter :: lapse_rate = 0.006d0   ! temp lapse rate (deg/m)
 
-     real(rk), parameter :: ablt_const = 5000.d0/scyr  ! ablation rate per degree above 0 C (converted from kg/m2/yr to kg/m2/s)
+     real(dp), parameter :: ablt_const = 5000.d0/scyr  ! ablation rate per degree above 0 C (converted from kg/m2/yr to kg/m2/s)
                                                        ! can be tuned to agree (more or less) with acab from PDD scheme
+
      ! get global grid size
      nx = size(temp,1)
      ny = size(temp,2)

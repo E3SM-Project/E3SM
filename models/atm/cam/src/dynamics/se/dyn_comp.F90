@@ -66,6 +66,9 @@ Module dyn_comp
   character(*), parameter, public :: VERSION     = "$Id$" 
   type (domain1d_t), pointer, public :: dom_mt(:) => null()
 
+  ! Frontogenesis indices
+  integer, public :: frontgf_idx = -1
+  integer, public :: frontga_idx = -1
 
 CONTAINS
 
@@ -75,19 +78,19 @@ CONTAINS
 
   ! Initialize the dynamical core
 
-    use pio,              only: file_desc_t
-    use hycoef,           only: hycoef_init
-    use ref_pres,         only: ref_pres_init
+    use pio,                 only: file_desc_t
+    use hycoef,              only: hycoef_init
+    use ref_pres,            only: ref_pres_init
 
-    use pmgrid,           only: dyndecomp_set
-    use dyn_grid,         only: dyn_grid_init, fvm, elem, set_horiz_grid_cnt_d, &
-                                get_dyn_grid_parm, set_horiz_grid_cnt_d
-    use rgrid,            only: fullgrid
-    use spmd_utils,       only: mpi_integer, mpicom, mpi_logical
-    use spmd_dyn,         only: spmd_readnl
-    use interpolate_mod,  only: interpolate_analysis
-    use native_mapping,   only: create_native_mapping_files, native_mapping_readnl
-    use time_manager,     only: get_nstep, dtime
+    use pmgrid,              only: dyndecomp_set
+    use dyn_grid,            only: dyn_grid_init, fvm, elem, get_dyn_grid_parm,&
+                                   set_horiz_grid_cnt_d
+    use rgrid,               only: fullgrid
+    use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
+    use spmd_dyn,            only: spmd_readnl
+    use interpolate_mod,     only: interpolate_analysis
+    use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
+    use time_manager,        only: get_nstep, dtime
 
     use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
     use prim_driver_mod,  only: prim_init1
@@ -96,6 +99,9 @@ CONTAINS
     use namelist_mod,     only: readnl
     use control_mod,      only: runtype, qsplit, rsplit
     use time_mod,         only: tstep
+    use phys_control,     only: use_gw_front
+    use physics_buffer,   only: pbuf_add_field, dtype_r8
+    use ppgrid,           only: pcols, pver
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -109,6 +115,15 @@ CONTAINS
     integer :: neltmp(3)
     logical :: nellogtmp(7)
     integer :: npes_se
+
+    !----------------------------------------------------------------------
+
+    if (use_gw_front) then
+       call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
+            frontgf_idx)
+       call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
+            frontga_idx)
+    end if
 
     ! Initialize dynamics grid
     call dyn_grid_init()
@@ -187,8 +202,10 @@ CONTAINS
 
     if (par%nprocs .lt. npes_cam) then
 ! Broadcast quantities to auxiliary processes
+#ifdef SPMD
        call mpibcast(neltmp, 3, mpi_integer, 0, mpicom)
        call mpibcast(nellogtmp, 7, mpi_logical, 0, mpicom)
+#endif
        if (iam .ge. par%nprocs) then
           nelemdmax = neltmp(1)
           nelem     = neltmp(2)
@@ -241,7 +258,7 @@ CONTAINS
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
-    use cam_instance, only : inst_index
+    use cam_instance,     only: inst_index
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
@@ -256,7 +273,7 @@ CONTAINS
     elem  => dyn_in%elem
     fvm => dyn_in%fvm
 
-    dyn_ps0=ps0/100._r8
+    dyn_ps0=ps0
     hvcoord%hyam=hyam
     hvcoord%hyai=hyai
     hvcoord%hybm=hybm
@@ -334,10 +351,11 @@ CONTAINS
        !$OMP END PARALLEL 
 #endif
     end if
-    if(inst_index==1) then
+
+    if (inst_index == 1) then
        call write_grid_mapping(par, elem)
-    endif
-    
+    end if
+
   end subroutine dyn_init2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !-----------------------------------------------------------------------

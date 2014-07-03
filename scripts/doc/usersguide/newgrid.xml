@@ -2,7 +2,7 @@
 <title>Adding a new user-defined grid (EXPERTS ONLY)</title>
 
 <para> Support for numerous out-of-the box <ulink
-url="../modelnl/grid.html">model resolutions</ulink> accompany the CESM1.1
+url="../modelnl/grid.html">model resolutions</ulink> accompany the CESM
 release. (In addition to the link above, you can also view a listing of 
 supported "out-of-the-box" resolutions by running <command>create_newcase
 -l</command>.) In general, CESM grids are associated with a specific
@@ -25,12 +25,9 @@ document will outline how to set up the more complicated trigrid case, but
 will also highlight what steps can be skipped if the atmosphere and land do not
 need to be separated.
 </para>
-<para>
-Note: This will be generalized in CESM1.2.
-</para>
 
-<para>CESM1.1 provides completely <emphasis>new support</emphasis> for you to
-add your own specific component grid combinations. To achieve this, CESM1.1
+<para>CESM1.2 provides completely <emphasis>new support</emphasis> for you to
+add your own specific component grid combinations. To achieve this, CESM1.2
 has a new top level directory <filename>$CCSMROOT/mapping/</filename>. A brief
 list of the steps needed to add a new component grid to the model system
 follows. Again, this process can be simplified if the atmosphere and land are
@@ -144,7 +141,7 @@ runoff grid, then only the 5 atm&lt;-&gt;ocn maps will be generated.
 <listitem>
 <para>
 ESMF_RegridWeightGen runs in parallel, and the <filename>gen_cesm_maps.sh
-</filename> script has been written to run on bluefire, jaguar, and 
+</filename> script has been written to run on 
 yellowstone. To run on any other machine, you may need to add some environment
 variables to
 <filename>$CCSMROOT/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh</filename>
@@ -352,7 +349,7 @@ should be 1; for structured grids, they should be the dimensions of the grid.
 <para>
 One of the many input files generated for the coupler is
 <filename>$RUNDIR/seq_maps.rc</filename>, which contains a list of mapping
-files. Using an f09_g16 run on bluefire as an example, the file will contain
+files. Using an f09_g16 run on yellowstone as an example, the file will contain
 the following (for brevity, some lines have been cut):
 </para>
 <para>

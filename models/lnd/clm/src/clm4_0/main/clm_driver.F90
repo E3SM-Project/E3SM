@@ -94,6 +94,7 @@ module clm_driver
   use dynlandMod          , only : dynland_hwcontent
   use clm_varcon          , only : zlnd, isturb
   use clm_time_manager    , only : get_step_size,get_curr_date,get_ref_date,get_nstep
+  use CropRestMod         , only : CropRestIncYear
   use histFileMod         , only : hist_update_hbuf, hist_htapes_wrapup
   use restFileMod         , only : restFile_write, restFile_filename
   use accFldsMod          , only : updateAccFlds
@@ -126,7 +127,7 @@ module clm_driver
   use UrbanMod            , only : UrbanAlbedo, UrbanRadiation, UrbanFluxes 
   use SNICARMod           , only : SnowAge_grain
   use clm_atmlnd          , only : clm_map2gcell
-  use clm_glclnd          , only : create_clm_s2x
+  use clm_glclnd          , only : update_clm_s2x
   use perf_mod
 !
 ! !PUBLIC TYPES:
@@ -230,6 +231,11 @@ subroutine clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
   ! Set pointers into derived type
 
   cptr => col
+
+  ! Update time-related info
+
+  call CropRestIncYear()
+
 
   if (use_cn) then
      ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
@@ -692,10 +698,9 @@ subroutine clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
   
   if (create_glacier_mec_landunit) then
      call t_startf('create_s2x')
-     call create_clm_s2x(init=.false.)
+     call update_clm_s2x(init=.false.)
      call t_stopf('create_s2x')
   end if
-  
 
   ! ============================================================================
   ! Write global average diagnostics to standard output

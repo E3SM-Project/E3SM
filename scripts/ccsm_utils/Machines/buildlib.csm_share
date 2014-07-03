@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 use strict;
+use File::Path;
 #===============================================================================
 # Purpose:
 #     (a) Build csm_share library
@@ -17,26 +18,33 @@ foreach my $attr (keys %xmlvars) {
     $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
 }
 
-my $libdir = "$xmlvars{EXEROOT}/csm_share";
-chdir($libdir) or die "Could not cd to $libdir: $!\n";
+my $sharedlibroot = "$ARGV[0]";
 
 
 #--------------------------------------------------------------------
 # Filepath: list of source code directories (in order of importance).
 #--------------------------------------------------------------------
 my $comp="mct";
-$comp = "esmf" if($xmlvars{USE_ESMF_LIB} eq "TRUE");
+$comp = "esmf" if($xmlvars{COMP_INTERFACE} eq "ESMF");
+my $useesmf = "noesmf";
+$useesmf = "esmf" if($ENV{USE_ESMF_LIB} eq "TRUE");
+my $libdir = "$sharedlibroot/$ENV{COMP_INTERFACE}/$useesmf/$ENV{NINST_VALUE}/csm_share";
+mkpath($libdir) unless -d $libdir;
+chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 
 my $code = $xmlvars{CODEROOT};
 
 my @filepath = ( "$case/SourceMods/src.share",
-		 "$code/drv/shr_$comp",
 		 "$code/drv/shr",
 		 "$code/dead_share",
 		 "$code/csm_share/shr",
 		 );
-push(@filepath,"$code/utils/esmf_wrf_timemgr") if($comp eq "mct");
+if($useesmf eq "noesmf"){
+  push(@filepath,"$code/utils/esmf_wrf_timemgr");
+}else{
+  push(@filepath,"$code/drv/shr_esmf");
+} 
 
 my @fp;    
 if(-e "Filepath"){
@@ -64,7 +72,7 @@ $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_GLC=$xmlvars{NINST_GLC}
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_WAV=$xmlvars{NINST_WAV}";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ROF=$xmlvars{NINST_ROF}";
 
-my $bld = "$xmlvars{GMAKE} complib -j $xmlvars{GMAKE_J} MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $xmlvars{CASETOOLS}/Makefile ";
+my $bld = "$xmlvars{GMAKE}  complib -j $xmlvars{GMAKE_J} MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $xmlvars{CASETOOLS}/Makefile ";
 
 my $rc = system($bld);
 if($rc==0xff00){
@@ -86,7 +94,7 @@ if($rc==0xff00){
 
 
 
-system("cp -p -f libcsm_share.a $xmlvars{LIBROOT}/");
-system("cp -p -f *.mod $xmlvars{LIBROOT}/include/");
+#system("cp -p -f libcsm_share.a $sharedlibroot/lib");
+#system("cp -p -f *.mod $sharedlibroot/include/");
 
 

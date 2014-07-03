@@ -9,7 +9,7 @@
 !  reductions like global sums, minvals, maxvals, etc.
 !
 ! !REVISION HISTORY:
-!  SVN:$Id: global_reductions.F90 31939 2011-11-09 21:02:42Z njn01 $
+!  SVN:$Id: global_reductions.F90 60040 2014-05-07 21:54:20Z mlevy@ucar.edu $
 
 ! !USES:
 
@@ -1206,7 +1206,7 @@
       this_block          ! holds local block information
 
 
-   if (b4b) then
+   if (.not. b4b) then
 
 !-----------------------------------------------------------------------
 !
@@ -1422,7 +1422,7 @@
       this_block          ! holds local block information
 
 
-   if (b4b) then
+   if (.not. b4b) then
 
 !-----------------------------------------------------------------------
 !
@@ -1639,7 +1639,7 @@
       this_block          ! holds local block information
 
 
-   if (b4b) then
+   if (.not. b4b) then
 
 !-----------------------------------------------------------------------
 !

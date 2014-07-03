@@ -344,6 +344,9 @@
       real(dp), intent(in) ::     &
          dt           ! time step
 
+      !TODO - Pass in dx and dy as 3D fields to allow for spatially varying
+      !       cell dimensions as in POP/CICE?
+
       real(dp), intent(in) ::    &   
          dx, dy       ! x and y gridcell dimensions
 
@@ -487,9 +490,8 @@
 
       ! Assume gridcells are rectangular, in which case dxt = dxu = htn
       !  and dyt = dyu = hte.
-      ! The code could be simplified by turning these into scalars,
-      !  but for now we define arrays to be consistent with the CICE code 
-      !  (which assumes a curved orthogonal grid). 
+      !TODO - Pass in dx and dy as 3D fields to allow for spatially varying
+      !       cell dimensions as in POP/CICE?
 
       dxt(:,:) = dx
       dxu(:,:) = dx
@@ -511,7 +513,6 @@
       yyav(:,:) = 1.d0 / 12.d0
 !!      xxav(:,:) = dxt(:,:)**2 / 12.d0  ! These would be used if dimensional values 
 !!      yyav(:,:) = dyt(:,:)**2 / 12.d0  ! of dxt and dyt were passed to construct_fields
-
       xyav(:,:) = 0.d0
 
       l_stop = .false.
@@ -1400,7 +1401,7 @@
     !-------------------------------------------------------------------
     ! Determine the indices (i2,j2) of the cell where the trajectory lies.
     ! Compute the coordinates of the midpoint of the backward trajectory
-    !  relative to the cell center in a stretch coordinate system
+    !  relative to the cell center in a stretched coordinate system
     !  with vertices at (1/2, 1/2), (1/2, -1/2), etc.
     !-------------------------------------------------------------------
 
@@ -1636,7 +1637,7 @@
     !     BL   |   BC   |   BR     (bottom left, center, right)
     !          |        |
     !
-    ! and the transport is across the edge between cells TC and TB.
+    ! and the transport is across the edge between cells TC and BC.
     !
     ! Departure points are scaled to a local coordinate system
     !  whose origin is at the midpoint of the edge.

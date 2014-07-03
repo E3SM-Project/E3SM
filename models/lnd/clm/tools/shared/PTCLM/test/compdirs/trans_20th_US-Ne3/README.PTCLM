@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --pftgrid --clmnmlusecase=20thC_transient --cesm_root ../../../../../../.. -s US-Ne3 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/trans20thgrd_file_creation 

@@ -132,6 +132,7 @@ module parallel
      module procedure distributed_get_var_integer_2d
      module procedure distributed_get_var_real4_1d
      module procedure distributed_get_var_real4_2d
+     module procedure distributed_get_var_real8_1d
      module procedure distributed_get_var_real8_2d
      module procedure distributed_get_var_real8_3d
   end interface
@@ -147,6 +148,7 @@ module parallel
      module procedure distributed_put_var_integer_2d
      module procedure distributed_put_var_real4_1d
      module procedure distributed_put_var_real4_2d
+     module procedure distributed_put_var_real8_1d
      module procedure distributed_put_var_real8_2d
      module procedure distributed_put_var_real8_3d
 
@@ -202,7 +204,7 @@ module parallel
      module procedure staggered_parallel_halo_integer_3d
      module procedure staggered_parallel_halo_real8_2d
      module procedure staggered_parallel_halo_real8_3d
-     module procedure staggered_parallel_halo_real8_6d
+     module procedure staggered_parallel_halo_real8_4d
   end interface
 
   interface parallel_print
@@ -372,6 +374,41 @@ contains
     endif
 
   end function distributed_get_var_real4_2d
+
+  !WHL - added this function
+
+  function distributed_get_var_real8_1d(ncid,varid,values,start)
+
+    implicit none
+    integer :: distributed_get_var_real8_1d,ncid,varid
+    integer,dimension(:) :: start
+    real(8),dimension(:) :: values
+
+    integer :: status, x1id, y1id
+    integer :: ilo, ihi
+
+    ! begin
+
+    if (main_task) then
+
+       status = nf90_inq_varid(ncid,"x1",x1id)
+       status = nf90_inq_varid(ncid,"y1",y1id)
+       if (varid==x1id) then
+          ilo = 1+lhalo
+          ihi = local_ewn - uhalo
+       else if (varid==y1id) then
+          ilo = 1+lhalo
+          ihi = local_nsn - uhalo
+       else
+          call parallel_stop(__FILE__,__LINE__)
+       end if
+
+       distributed_get_var_real8_1d = &
+              nf90_get_var(ncid,varid,values(ilo:ihi),start)
+
+    endif
+
+  end function distributed_get_var_real8_1d
 
   function distributed_get_var_real8_2d(ncid,varid,values,start)
     implicit none
@@ -886,6 +923,47 @@ contains
     endif
 
   end function distributed_put_var_real4_2d
+
+  !WHL - added this function
+  function distributed_put_var_real8_1d(ncid,varid,values)
+    implicit none
+    integer :: distributed_put_var_real8_1d,ncid,varid
+    real(8),dimension(:) :: values
+
+    integer :: status, x0id, x1id, y0id, y1id
+    integer :: ilo, ihi
+
+    ! begin
+
+    if (main_task) then
+
+       status = nf90_inq_varid(ncid,"x0",x0id)
+       status = nf90_inq_varid(ncid,"x1",x1id)
+       status = nf90_inq_varid(ncid,"y0",y0id)
+       status = nf90_inq_varid(ncid,"y1",y1id)
+
+       if (varid==x0id) then         ! staggered grid
+          ilo = 1 + lhalo
+          ihi = local_ewn - 1 - uhalo
+       else if (varid==x1id) then    ! unstaggered grid
+          ilo = 1 + lhalo
+          ihi = local_ewn - uhalo
+       else if (varid==y0id) then    ! staggered grid
+          ilo = 1 + lhalo
+          ihi = local_nsn - 1 - uhalo
+       else if (varid==y1id) then    ! unstaggered grid
+          ilo = 1 + lhalo
+          ihi = local_nsn - uhalo
+       else
+          call parallel_stop(__FILE__,__LINE__)
+       end if
+
+       distributed_put_var_real8_1d = nf90_put_var(ncid,varid,values(ilo:ihi))
+
+    endif
+
+  end function distributed_put_var_real8_1d
+
 
   function distributed_put_var_real8_2d(ncid,varid,values,start)
     implicit none
@@ -2054,54 +2132,52 @@ contains
 
   end subroutine staggered_parallel_halo_real8_3d
 
+!WHL - New subroutine for 4D arrays
+  subroutine staggered_parallel_halo_real8_4d(a)
 
-  subroutine staggered_parallel_halo_real8_6d(a)
+    ! Implements a staggered grid halo update for a 4D field.
+    ! This subroutine is used for the 4D arrays that hold matrix entries.
 
-    ! Implements a staggered grid halo update for a 6D field.
-    ! This subroutine is custom-made for the 6D arrays that hold matrix entries.
-
-    ! As the grid is staggered, the array 'a' is one smaller in both dimensions than an unstaggered array.
-    ! The vertical dimension is assumed to precede the i and j indices, i.e., a(:,:,:,k,i,j).
-
-    ! NOTE: The first three dimensions are -1:1. 
-    !       The subroutine is specifically designed for matrix arrays with this structure.
+    ! As the grid is staggered, the array 'a' is one smaller in x and y dimensions than an unstaggered array.
+    ! The vertical dimension is assumed to precede the i and j indices, i.e., a(:,k,i,j).
+    ! The first dimension holds matrix elements for a single row.
 
     implicit none
-    real(8),dimension(-1:,-1:,-1:,:,:,:) :: a
+    real(8),dimension(:,:,:,:) :: a
 
-    real(8),dimension(-1:1,-1:1,-1:1,size(a,4),staggered_lhalo,size(a,6)-staggered_lhalo-staggered_uhalo) :: ecopy
-    real(8),dimension(-1:1,-1:1,-1:1,size(a,4),staggered_uhalo,size(a,6)-staggered_lhalo-staggered_uhalo) :: wcopy
-    real(8),dimension(-1:1,-1:1,-1:1,size(a,4),size(a,5),staggered_lhalo) :: ncopy
-    real(8),dimension(-1:1,-1:1,-1:1,size(a,4),size(a,5),staggered_uhalo) :: scopy
+    real(8),dimension(size(a,1),size(a,2),staggered_lhalo,size(a,4)-staggered_lhalo-staggered_uhalo) :: ecopy
+    real(8),dimension(size(a,1),size(a,2),staggered_uhalo,size(a,4)-staggered_lhalo-staggered_uhalo) :: wcopy
+    real(8),dimension(size(a,1),size(a,2),size(a,3),staggered_lhalo) :: ncopy
+    real(8),dimension(size(a,1),size(a,2),size(a,3),staggered_uhalo) :: scopy
 
     ! begin
 
     ! Confirm staggered array
-    if (size(a,5)/=local_ewn-1 .or. size(a,6)/=local_nsn-1) then
+    if (size(a,3)/=local_ewn-1 .or. size(a,4)/=local_nsn-1) then
          write(*,*) "staggered_parallel_halo() requires staggered arrays."
          call parallel_stop(__FILE__,__LINE__)
     endif
 
-    wcopy(:,:,:,:,:, 1:size(a,6)-staggered_lhalo-staggered_uhalo) = &
-       a(:,:,:,:,1+staggered_lhalo:1+staggered_lhalo+staggered_uhalo-1, &
-                 1+staggered_lhalo:size(a,6)-staggered_uhalo)
+    wcopy(:,:,:, 1:size(a,4)-staggered_lhalo-staggered_uhalo) = &
+       a(:,:,1+staggered_lhalo:1+staggered_lhalo+staggered_uhalo-1, &
+             1+staggered_lhalo:size(a,4)-staggered_uhalo)
 
-    ecopy(:,:,:,:,:, 1:size(a,6)-staggered_lhalo-staggered_uhalo) = &
-       a(:,:,:,:,size(a,5)-staggered_uhalo-staggered_lhalo+1:size(a,5)-staggered_uhalo, &
-                 1+staggered_lhalo:size(a,6)-staggered_uhalo)
+    ecopy(:,:,:, 1:size(a,4)-staggered_lhalo-staggered_uhalo) = &
+       a(:,:,size(a,3)-staggered_uhalo-staggered_lhalo+1:size(a,3)-staggered_uhalo, &
+             1+staggered_lhalo:size(a,4)-staggered_uhalo)
 
-    a(:,:,:,:, size(a,5)-staggered_uhalo+1:size(a,5), 1+staggered_lhalo:size(a,6)-staggered_uhalo) = &
-       wcopy(:,:,:,:,:, 1:size(a,6)-staggered_lhalo-staggered_uhalo)
+    a(:,:, size(a,3)-staggered_uhalo+1:size(a,3), 1+staggered_lhalo:size(a,4)-staggered_uhalo) = &
+       wcopy(:,:,:, 1:size(a,4)-staggered_lhalo-staggered_uhalo)
 
-    a(:,:,:,:, 1:staggered_lhalo, 1+staggered_lhalo:size(a,6)-staggered_uhalo) = &
-       ecopy(:,:,:,:,:, 1:size(a,6)-staggered_lhalo-staggered_uhalo)
+    a(:,:, 1:staggered_lhalo, 1+staggered_lhalo:size(a,4)-staggered_uhalo) = &
+       ecopy(:,:,:, 1:size(a,4)-staggered_lhalo-staggered_uhalo)
 
-    scopy(:,:,:,:,:,:) = a(:,:,:,:,:, 1+staggered_lhalo:1+staggered_lhalo+staggered_uhalo-1)
-    ncopy(:,:,:,:,:,:) = a(:,:,:,:,:, size(a,6)-staggered_uhalo-staggered_lhalo+1:size(a,6)-staggered_uhalo)
+    scopy(:,:,:,:) = a(:,:,:, 1+staggered_lhalo:1+staggered_lhalo+staggered_uhalo-1)
+    ncopy(:,:,:,:) = a(:,:,:, size(a,4)-staggered_uhalo-staggered_lhalo+1:size(a,4)-staggered_uhalo)
 
-    a(:,:,:,:,:,size(a,6)-staggered_uhalo+1:size(a,6)) = scopy(:,:,:,:,:,:)
-    a(:,:,:,:,:,1:staggered_lhalo) = ncopy(:,:,:,:,:,:)
+    a(:,:,:,size(a,4)-staggered_uhalo+1:size(a,4)) = scopy(:,:,:,:)
+    a(:,:,:,1:staggered_lhalo) = ncopy(:,:,:,:)
 
-  end subroutine staggered_parallel_halo_real8_6d
+  end subroutine staggered_parallel_halo_real8_4d
 
 end module parallel

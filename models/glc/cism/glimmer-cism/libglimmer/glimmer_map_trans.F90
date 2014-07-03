@@ -32,7 +32,7 @@
 module glimmer_map_trans
 
   use glimmer_map_types
-
+  use glimmer_global, only: dp
   implicit none
 
   private
@@ -52,14 +52,14 @@ contains
 
     implicit none
 
-    real(rk),intent(in)  :: lon !< The location of the point in lat-lon space (Longitude)
-    real(rk),intent(in)  :: lat !< The location of the point in lat-lon space (Latitude)
-    real(rk),intent(out) :: x   !< The location of the point in x-y space (x coordinate)
-    real(rk),intent(out) :: y   !< The location of the point in x-y space (y coordinate)
+    real(dp),intent(in)  :: lon !< The location of the point in lat-lon space (Longitude)
+    real(dp),intent(in)  :: lat !< The location of the point in lat-lon space (Latitude)
+    real(dp),intent(out) :: x   !< The location of the point in x-y space (x coordinate)
+    real(dp),intent(out) :: y   !< The location of the point in x-y space (y coordinate)
     type(glimmap_proj),    intent(in) :: proj !< The projection being used
     type(coordsystem_type),intent(in) :: grid !< the grid definition
 
-    real(rk) :: xx,yy ! These are real-space distances in meters
+    real(dp) :: xx,yy ! These are real-space distances in meters
 
     if (associated(proj%laea)) then
        call glimmap_laea(lon,lat,xx,yy,proj%laea)
@@ -93,14 +93,14 @@ contains
 
     implicit none
 
-    real(rk),intent(out) :: lon !< The location of the point in lat-lon space (Longitude)
-    real(rk),intent(out) :: lat !< The location of the point in lat-lon space (Latitude)
-    real(rk),intent(in)  :: x   !< The location of the point in x-y space (x coordinate)
-    real(rk),intent(in)  :: y   !< The location of the point in x-y space (y coordinate)
+    real(dp),intent(out) :: lon !< The location of the point in lat-lon space (Longitude)
+    real(dp),intent(out) :: lat !< The location of the point in lat-lon space (Latitude)
+    real(dp),intent(in)  :: x   !< The location of the point in x-y space (x coordinate)
+    real(dp),intent(in)  :: y   !< The location of the point in x-y space (y coordinate)
     type(glimmap_proj),    intent(in) :: proj !< The projection being used
     type(coordsystem_type),intent(in) :: grid !< the grid definition
 
-    real(rk) :: xx,yy ! These are real-space distances in meters
+    real(dp) :: xx,yy ! These are real-space distances in meters
 
     ! First convert grid-point space to real space
 
@@ -118,7 +118,7 @@ contains
        call write_log('No known projection found!',GM_WARNING)
     end if
 
-    lon=loncorrect(lon,0.0_rk)
+    lon=loncorrect(lon,0.d0)
 
   end subroutine glimmap_xy_to_ll
   
@@ -134,20 +134,20 @@ contains
 
     use glimmer_log
 
-    real(rk),intent(in)  :: lon !< longitude
-    real(rk),intent(in)  :: lat !< latitude
-    real(rk),intent(out) :: x   !< x
-    real(rk),intent(out) :: y   !< y
+    real(dp),intent(in)  :: lon !< longitude
+    real(dp),intent(in)  :: lat !< latitude
+    real(dp),intent(out) :: x   !< x
+    real(dp),intent(out) :: y   !< y
     type(proj_laea),intent(in) :: params !< projection parameters
 
-    real(rk) :: sin_lat,cos_lat,sin_lon,cos_lon,c,dlon,dlat,tmp,k
+    real(dp) :: sin_lat,cos_lat,sin_lon,cos_lon,c,dlon,dlat,tmp,k
     character(80) :: errtxt
 
     dlon = lon-params%longitude_of_central_meridian
 
     ! Check domain of longitude
 
-    dlon = loncorrect(dlon,-180.0_rk)
+    dlon = loncorrect(dlon,-180.d0)
 
     ! Convert to radians and calculate sine and cos
 
@@ -159,10 +159,10 @@ contains
 
     ! Mapping transformation
 
-    tmp = 1.0 + params%sinp * sin_lat + params%cosp * c
+    tmp = 1.d0 + params%sinp * sin_lat + params%cosp * c
 
-    if (tmp > 0.0) then
-       k = EQ_RAD * sqrt (2.0 / tmp)
+    if (tmp > 0.d0) then
+       k = EQ_RAD * sqrt (2.d0 / tmp)
        x = k * cos_lat * sin_lon
        y = k * (params%cosp * sin_lat - params%sinp * c)
     else
@@ -184,13 +184,13 @@ contains
 
     use glimmer_log
 
-    real(rk),intent(out) :: lon !< longitude
-    real(rk),intent(out) :: lat !< latitude
-    real(rk),intent(in)  :: x   !< x
-    real(rk),intent(in)  :: y   !< y
+    real(dp),intent(out) :: lon !< longitude
+    real(dp),intent(out) :: lat !< latitude
+    real(dp),intent(in)  :: x   !< x
+    real(dp),intent(in)  :: y   !< y
     type(proj_laea),intent(in) :: params !< projection parameters
 
-    real(rk) :: rho,c,sin_c,cos_c,xx,yy
+    real(dp) :: rho,c,sin_c,cos_c,xx,yy
     character(80) :: errtxt
 
     xx=x ; yy=y
@@ -207,7 +207,7 @@ contains
        lat = params%latitude_of_projection_origin
        lon = params%longitude_of_central_meridian
     else
-       c = 2.0 * asin(0.5 * rho * i_EQ_RAD)
+       c = 2.d0 * asin(0.5d0 * rho * i_EQ_RAD)
        call sincos (c, sin_c, cos_c)
        lat = asin (cos_c * params%sinp + (yy * sin_c * params%cosp / rho)) * R2D
        select case(params%pole)
@@ -233,19 +233,19 @@ contains
   !> Forward transformation: lat-lon -> x-y of Albers equal area conic projection
   subroutine glimmap_aea(lon,lat,x,y,params)
 
-    real(rk),intent(in)  :: lon !< longitude
-    real(rk),intent(in)  :: lat !< latitude
-    real(rk),intent(out) :: x   !< x
-    real(rk),intent(out) :: y   !< y
+    real(dp),intent(in)  :: lon !< longitude
+    real(dp),intent(in)  :: lat !< latitude
+    real(dp),intent(out) :: x   !< x
+    real(dp),intent(out) :: y   !< y
     type(proj_aea),intent(in) :: params !< projection parameters
 
-    real(rk) :: dlon,theta,sint,cost,rho
+    real(dp) :: dlon,theta,sint,cost,rho
 
     dlon = lon-params%longitude_of_central_meridian
 
     ! Check domain of longitude
 
-    dlon = loncorrect(dlon,-180.0_rk)
+    dlon = loncorrect(dlon,-180.d0)
     theta = params%n * dlon * D2R
     call sincos(theta,sint,cost)
 
@@ -266,13 +266,13 @@ contains
   !> Inverse transformation: lat-lon -> x-y of Albers equal area conic projection
   subroutine glimmap_iaea(lon,lat,x,y,params)
 
-    real(rk),intent(out) :: lon !< longitude
-    real(rk),intent(out) :: lat !< latitude
-    real(rk),intent(in)  :: x   !< x
-    real(rk),intent(in)  :: y   !< y
+    real(dp),intent(out) :: lon !< longitude
+    real(dp),intent(out) :: lat !< latitude
+    real(dp),intent(in)  :: x   !< x
+    real(dp),intent(in)  :: y   !< y
     type(proj_aea),intent(in) :: params !< projection parameters
 
-    real(rk) :: xx,yy,rho,theta
+    real(dp) :: xx,yy,rho,theta
 
     xx=x ; yy=y
 
@@ -281,14 +281,14 @@ contains
     xx = xx - params%false_easting
     yy = yy - params%false_northing
 
-    rho = sqrt(xx**2.0 + (params%rho0 - yy)**2.0)
-    if (params%n >0.0) then
+    rho = sqrt(xx**2.d0 + (params%rho0 - yy)**2.d0)
+    if (params%n > 0.d0) then
        theta = atan2(xx,(params%rho0-yy))
     else
        theta = atan2(-xx,(yy-params%rho0))
     end if
 
-    lat = asin((params%c-(rho*params%n/EQ_RAD)**2.0)*0.5*params%i_n)*R2D
+    lat = asin((params%c-(rho*params%n/EQ_RAD)**2.d0)*0.5d0*params%i_n)*R2D
     lon = params%longitude_of_central_meridian+R2D*theta*params%i_n
 
   end subroutine glimmap_iaea
@@ -300,20 +300,20 @@ contains
   !> Forward transformation: lat-lon -> x-y of Lambert conformal conic projection
   subroutine glimmap_lcc(lon,lat,x,y,params)
 
-    real(rk),intent(in)  :: lon !< longitude
-    real(rk),intent(in)  :: lat !< latitude
-    real(rk),intent(out) :: x   !< x
-    real(rk),intent(out) :: y   !< y
+    real(dp),intent(in)  :: lon !< longitude
+    real(dp),intent(in)  :: lat !< latitude
+    real(dp),intent(out) :: x   !< x
+    real(dp),intent(out) :: y   !< y
     type(proj_lcc),intent(in) :: params !< projection parameters
 
-    real(rk) :: dlon,rho,theta,sint,cost
+    real(dp) :: dlon,rho,theta,sint,cost
 
     dlon = lon-params%longitude_of_central_meridian
 
     ! Check domain of longitude
 
-    dlon = loncorrect(dlon,-180.0_rk)
-    rho  = EQ_RAD * params%f/(tan(M_PI_4+lat*D2R/2.0))**params%n
+    dlon = loncorrect(dlon,-180.d0)
+    rho  = EQ_RAD * params%f/(tan(M_PI_4+lat*D2R/2.d0))**params%n
     theta = params%n*dlon*D2R
     call sincos(theta,sint,cost)
 
@@ -332,13 +332,13 @@ contains
   !> Inverse transformation: lat-lon -> x-y of Lambert conformal conic projection
   subroutine glimmap_ilcc(lon,lat,x,y,params)
 
-    real(rk),intent(out) :: lon !< longitude
-    real(rk),intent(out) :: lat !< latitude
-    real(rk),intent(in)  :: x   !< x
-    real(rk),intent(in)  :: y   !< y
+    real(dp),intent(out) :: lon !< longitude
+    real(dp),intent(out) :: lat !< latitude
+    real(dp),intent(in)  :: x   !< x
+    real(dp),intent(in)  :: y   !< y
     type(proj_lcc),intent(in) :: params !< projection parameters
 
-    real(rk) :: xx,yy,rho,theta
+    real(dp) :: xx,yy,rho,theta
 
     xx=x ; yy=y
 
@@ -347,17 +347,17 @@ contains
     xx = xx - params%false_easting
     yy = yy - params%false_northing
 
-    rho = sign(sqrt(xx**2.0 + (params%rho0-yy)**2.0),params%n)
-    if (params%n > 0.0) then
+    rho = sign(sqrt(xx**2.d0 + (params%rho0-yy)**2.d0),params%n)
+    if (params%n > 0.d0) then
        theta = atan2(xx,(params%rho0-yy))
     else
        theta = atan2(-xx,(yy-params%rho0))
     end if
 
     if (abs(rho) < CONV_LIMIT) then
-       lat = sign(real(90.0,kind=rk),params%n)
+       lat = sign(real(90.d0,kind=dp),params%n)
     else
-       lat = R2D * (2.0 * atan((EQ_RAD*params%f/rho)**params%i_n) - M_PI_2)
+       lat = R2D * (2.d0 * atan((EQ_RAD*params%f/rho)**params%i_n) - M_PI_2)
     end if
 
     lon = params%longitude_of_central_meridian+R2D*theta*params%i_n
@@ -373,38 +373,38 @@ contains
 
     use glimmer_log
 
-    real(rk),intent(in)  :: lon !< longitude
-    real(rk),intent(in)  :: lat !< latitude
-    real(rk),intent(out) :: x   !< x
-    real(rk),intent(out) :: y   !< y
+    real(dp),intent(in)  :: lon !< longitude
+    real(dp),intent(in)  :: lat !< latitude
+    real(dp),intent(out) :: x   !< x
+    real(dp),intent(out) :: y   !< y
     type(proj_stere),intent(in) :: params !< projection parameters
 
-    real(rk) :: dlon,k,dlat,slat,clat,slon,clon
+    real(dp) :: dlon,k,dlat,slat,clat,slon,clon
     character(80) :: errtxt
 
     dlon = lon-params%longitude_of_central_meridian
 
     ! Check domain of longitude
 
-    dlon = loncorrect(dlon,-180.0_rk)
+    dlon = loncorrect(dlon,-180.d0)
     dlon = dlon * D2R
     dlat = lat  * D2R
     call sincos(dlon,slon,clon)
 
     select case(params%pole)
     case(1)  ! North pole
-       x =  2.0 * params%k0 * tan(M_PI_4 - dlat/2.0)*slon
-       y = -2.0 * params%k0 * tan(M_PI_4 - dlat/2.0)*clon
+       x =  2.d0 * params%k0 * tan(M_PI_4 - dlat/2.d0)*slon
+       y = -2.d0 * params%k0 * tan(M_PI_4 - dlat/2.d0)*clon
     case(-1)  ! South pole
-       x = 2.0 * params%k0 * tan(M_PI_4 + dlat/2.0)*slon
-       y = 2.0 * params%k0 * tan(M_PI_4 + dlat/2.0)*clon
+       x = 2.d0 * params%k0 * tan(M_PI_4 + dlat/2.d0)*slon
+       y = 2.d0 * params%k0 * tan(M_PI_4 + dlat/2.d0)*clon
     case(0)  ! Oblique
        call sincos(dlat,slat,clat)
        if (params%equatorial) then
-          k = 2.0 * params%k0 / (1.0 + clat*clon)
+          k = 2.d0 * params%k0 / (1.d0 + clat*clon)
           y = k * slat
        else
-          k = 2.0 * params%k0 / (1.0 + params%sinp*slat + params%cosp*clat*clon)
+          k = 2.d0 * params%k0 / (1.d0 + params%sinp*slat + params%cosp*clat*clon)
           y = k * (params%cosp*slat - params%sinp*clat*clon)
        end if
        x = k * clat * slon
@@ -425,13 +425,13 @@ contains
   !> Inverse transformation: lat-lon -> x-y of Stereographic projection
   subroutine glimmap_istere(lon,lat,x,y,params)
 
-    real(rk),intent(out) :: lon !< longitude
-    real(rk),intent(out) :: lat !< latitude
-    real(rk),intent(in)  :: x   !< x
-    real(rk),intent(in)  :: y   !< y
+    real(dp),intent(out) :: lon !< longitude
+    real(dp),intent(out) :: lat !< latitude
+    real(dp),intent(in)  :: x   !< x
+    real(dp),intent(in)  :: y   !< y
     type(proj_stere),intent(in) :: params !< projection parameters
 
-    real(rk) :: xx,yy,rho,c,sinc,cosc
+    real(dp) :: xx,yy,rho,c,sinc,cosc
 
     xx=x ; yy=y
 
@@ -446,7 +446,7 @@ contains
        lon = params%longitude_of_central_meridian
        lat = params%latitude_of_projection_origin
     else
-       c = 2.0 * atan(rho*0.5*params%ik0)
+       c = 2.d0 * atan(rho*0.5d0*params%ik0)
        call sincos(c,sinc,cosc)
        select case(params%pole)
        case(0)
@@ -477,10 +477,10 @@ contains
 
     implicit none
 
-    real(rk),intent(out) :: x  !< x-location in real space
-    real(rk),intent(out) :: y  !< y-location in real space
-    real(rk),intent(in)  :: gx !< x-location in grid space
-    real(rk),intent(in)  :: gy !< y-location in grid space
+    real(dp),intent(out) :: x  !< x-location in real space
+    real(dp),intent(out) :: y  !< y-location in real space
+    real(dp),intent(in)  :: gx !< x-location in grid space
+    real(dp),intent(in)  :: gy !< y-location in grid space
     type(coordsystem_type), intent(in) :: coordsys  !< coordinate system
 
     x=coordsys%origin%pt(1) + real(gx - 1)*coordsys%delta%pt(1)
@@ -497,14 +497,14 @@ contains
 
     implicit none
 
-    real(rk),intent(in)  :: x  !< x-location in real space
-    real(rk),intent(in)  :: y  !< y-location in real space
-    real(rk),intent(out) :: gx !< x-location in grid space
-    real(rk),intent(out) :: gy !< y-location in grid space
+    real(dp),intent(in)  :: x  !< x-location in real space
+    real(dp),intent(in)  :: y  !< y-location in real space
+    real(dp),intent(out) :: gx !< x-location in grid space
+    real(dp),intent(out) :: gy !< y-location in grid space
     type(coordsystem_type), intent(in) :: coordsys  !< coordinate system
 
-    gx = 1.0 + (x - coordsys%origin%pt(1))/coordsys%delta%pt(1)
-    gy = 1.0 + (y - coordsys%origin%pt(2))/coordsys%delta%pt(2)
+    gx = 1.d0 + (x - coordsys%origin%pt(1))/coordsys%delta%pt(1)
+    gy = 1.d0 + (y - coordsys%origin%pt(2))/coordsys%delta%pt(2)
 
   end subroutine space2grid
 
@@ -515,12 +515,12 @@ contains
 
     implicit none
 
-    real(rk),intent(in)  :: a !< Input value (radians).
-    real(rk),intent(out) :: s !< sin(a)
-    real(rk),intent(out) :: c !< cos(a)
+    real(dp),intent(in)  :: a !< Input value (radians).
+    real(dp),intent(out) :: s !< sin(a)
+    real(dp),intent(out) :: c !< cos(a)
 
-    s = sin (a)
-    c = cos (a)
+    s = sin(a)
+    c = cos(a)
 
   end subroutine sincos
 
@@ -528,22 +528,22 @@ contains
 
   !> Normalises a value of longitude to the range starting at min degrees.
   !! \return The normalised value of longitude.
-  real(rk) function loncorrect(lon,minimum)
+  real(dp) function loncorrect(lon,minimum)
 
-    real(rk),intent(in) :: lon     !< The longitude under consideration (degrees east)
-    real(rk),intent(in) :: minimum !< The lower end of the output range (degrees east)
+    real(dp),intent(in) :: lon     !< The longitude under consideration (degrees east)
+    real(dp),intent(in) :: minimum !< The lower end of the output range (degrees east)
 
-    real(rk) :: maximum
+    real(dp) :: maximum
 
     loncorrect = lon
-    maximum = minimum + 360.0
+    maximum = minimum + 360.d0
 
     do while (loncorrect >= maximum)
-       loncorrect=loncorrect-360.0
+       loncorrect = loncorrect-360.d0
     enddo
 
     do while (loncorrect < minimum)
-       loncorrect=loncorrect+360.0
+       loncorrect = loncorrect+360.d0
     enddo
 
   end function loncorrect
@@ -551,13 +551,13 @@ contains
   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
   !> compute \f$\sqrt{x^2+y^2}\f$
-  real(rk) function hypot(x,y)
+  real(dp) function hypot(x,y)
 
 
     implicit none
 
-    real(rk),intent(in) :: x !< One input value
-    real(rk),intent(in) :: y !< Another input value
+    real(dp),intent(in) :: x !< One input value
+    real(dp),intent(in) :: y !< Another input value
 
     hypot=sqrt(x*x+y*y)
 

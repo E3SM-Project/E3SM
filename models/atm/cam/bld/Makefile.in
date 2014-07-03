@@ -309,19 +309,19 @@ endif
 ifeq ($(FC_TYPE),pgi)
 
   CPPDEF        += -DNO_R16 -DCPRPGI
-  CFLAGS        += -gopt -O2 -Mvect=nosse 
+  CFLAGS        += -gopt -O2
   FC_FLAGS      := -i4 -Mdalign -Mextend -byteswapio
   FC_FLAGS_NOOPT:= $(FC_FLAGS)
   FREEFLAGS     := -Mfree
   FIXEDFLAGS    := -Mfixed
-  LDFLAGS       := 
+  LDFLAGS       := -Bdynamic
 
   ifeq ($(DEBUG),TRUE)
     FC_FLAGS       += -g -Ktrap=fp -Mbounds -Kieee
   else
     # Check for override of default Fortran compiler optimizations
     ifeq ($(F_OPTIMIZATION_OVERRIDE),$(null))
-      FORTRAN_OPTIMIZATION := -gopt -O2 -Mvect=nosse -Kieee
+      FORTRAN_OPTIMIZATION := -gopt -O2 -Kieee
     endif
     FC_FLAGS += $(FORTRAN_OPTIMIZATION)
   endif
@@ -347,90 +347,43 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 
 endif
 
-# Lahey
-
-ifeq ($(FC_TYPE),lahey)
-
-  CPPDEF        += -DCPRLAHEY
-  FC_FLAGS      := --wide
-  FC_FLAGS_NOOPT:= $(FC_FLAGS)
-  FREEFLAGS     :=
-  FIXEDFLAGS    := --fix
-  LDFLAGS       := --staticlink
-
-  ifeq ($(DEBUG),TRUE)
-    # --trace produces a call traceback on abort
-    # --trap causes code to stop on divide by zero or overflow exceptions
-    # --pca prevents overwriting constant arguments, but it overrides the
-    #       action of --chk a.  So don't specify both.
-    # --chk for basic compiler checking (a,e,s,u,x)
-    #TBH:  this works    FFLAGS += -g --chk --pca
-    #TBH:  this FAILS    FFLAGS += -g --chk a,e,s,u,x --pca
-    FC_FLAGS       += -g --chk a,e,s,u --trace --trap
-    CFLAGS         += -g
-  else
-    # Check for override of default Fortran compiler optimizations
-    ifeq ($(F_OPTIMIZATION_OVERRIDE),$(null))
-      FORTRAN_OPTIMIZATION := -O
-    endif
-    FC_FLAGS    += $(FORTRAN_OPTIMIZATION)
-    # Threading only works by putting thread memory on the heap rather than the stack (--threadheap).
-    # As of lf95 version 6.2 the thread stacksize limits are (still) too small to run even small
-    # resolution problems (FV at 10x15 res fails).
-    ifeq ($(SMP),TRUE)
-      FC_FLAGS       += --openmp --threadheap 4096
-      FC_FLAGS_NOOPT += --openmp --threadheap 4096
-      CFLAGS         += -fstack-check
-      LDFLAGS        += --openmp --threadheap 4096
-    endif
-  endif
-
-  FFLAGS       := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS)
-  FFLAGS_NOOPT := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS_NOOPT)
-  FC_AUTO_R8   := -CcdRR8
-
-binary_io.o: binary_io.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-wrap_nf.o: wrap_nf.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-wrap_mpi.o: wrap_mpi.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-apex_subs.o: apex_subs.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-
-endif
-
 # Intel
 
 ifeq ($(FC_TYPE),intel)
 
   CPPDEF        += -DCPRINTEL
-  FC_FLAGS      := -ftz -convert big_endian -fp-model precise 
+  FC_FLAGS      := -ftz -convert big_endian -fp-model precise -assume realloc_lhs
+  FC_FLAGS_O3OPT:= $(FC_FLAGS)
   FC_FLAGS_NOOPT:= -ftz -convert big_endian -O0
   FREEFLAGS     := 
   FIXEDFLAGS    := -fixed -132
-  LDFLAGS       := -static-intel
+  LDFLAGS       := -static-intel -liomp5
 
   ifeq ($(DEBUG),TRUE)
-    FC_FLAGS       += -check all -check noarg_temp_created -fpe0 -g -traceback
+    FC_DEBUG       := -check all -check noarg_temp_created -fpe0 -g -traceback
+    FC_FLAGS       += $(FC_DEBUG)
+    FC_FLAGS_O3OPT += $(FC_DEBUG)
     CFLAGS         += -g
   else
     # Check for override of default Fortran compiler optimizations
     ifeq ($(F_OPTIMIZATION_OVERRIDE),$(null))
       FORTRAN_OPTIMIZATION := -O2
     endif
-    FC_FLAGS += $(FORTRAN_OPTIMIZATION)
+    FC_FLAGS       += $(FORTRAN_OPTIMIZATION)
+    FC_FLAGS_O3OPT += -O3 -no-prec-div -xHost
   endif
 
   ifeq ($(SMP),TRUE)
     FC_FLAGS       += -openmp
     FC_FLAGS_NOOPT += -openmp
+    FC_FLAGS_O3OPT += -openmp
     CFLAGS         += -openmp
     LDFLAGS        += -openmp
   endif
 
   FFLAGS      := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS)
   FFLAGS_NOOPT:= $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS_NOOPT)
+  FFLAGS_O3OPT:= $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS_O3OPT)
   FC_AUTO_R8  := -autodouble
 
 # These RRTMG files take an extraordinarily long time to compile with optimization.
@@ -442,6 +395,23 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 shr_scam_mod.o: shr_scam_mod.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+
+# 3 April 2014: The optimization in following files has been validated by testing
+# on yellowstone in a CESM context.
+prim_advection_mod.o: prim_advection_mod.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
+edge_mod.o: edge_mod.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
+derivative_mod.o: derivative_mod.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
+bndry_mod.o: bndry_mod.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
+prim_advance_mod.o: prim_advance_mod.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
+uwshcu.o: uwshcu.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
+wetdep.o: wetdep.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
 
 endif
 
@@ -584,7 +554,7 @@ ifeq ($(FC_TYPE), nag)
   # not to check them. -mismatch_all is alternative, but less
   # targeted option.
   nag_mismatch_flag := -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpibcast,mpiscatterv
-  FC_FLAGS      := $(nag_mismatch_flag) -kind=byte
+  FC_FLAGS      := $(nag_mismatch_flag) -kind=byte -Wp,-macro=no_com
   FC_FLAGS_NOOPT:= $(FC_FLAGS)
 
   FREEFLAGS     := -free
@@ -622,8 +592,9 @@ ifeq ($(FC_TYPE), nag)
     FC_FLAGS       += -openmp
     FC_FLAGS_NOOPT += -openmp
     # nagfor doesn't deal well with OpenMP functions called from C code.
-    # Add wrapper of Fortran OpenMP code to work with gptl.
-    LDFLAGS        += -openmp -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,--rpath=/home/santos/lib/fake_omp
+    # This will not work unless you add a wrapper of Fortran OpenMP code to
+    # work with gptl.
+    LDFLAGS        += -openmp
   endif
 
   FFLAGS       := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS)
@@ -715,14 +686,21 @@ ifeq ($(UNAMES),Darwin)
     ifneq ($(strip $(MOD_NETCDF)),)
       mod_path  += -I$(MOD_NETCDF) 
     endif
-    
+    # Needed for COSP, since it builds in its own directory.
+    ifneq ($(strip $(COSP_LIBDIR)),)
+      mod_path += -I$(COSP_LIBDIR)
+    endif
+
+    # COSP needs to autopromote to get its precision to match CAM
+    FC_AUTO_R8  := -autodouble
+
     # NOTE: use-asm is require to work with Xcode 3.2.2 and ifort 11.1.088. Perhaps this
     # will not be needed with future versions.
     FFLAGS      := $(cpp_path) $(mod_path) $(CPPDEF) -ftz -g -traceback -fp-model precise -use-asm  -convert big_endian
     LDFLAGS     := -Xlinker -map -Xlinker ./cam_map.txt
 
     FREEFLAGS   := -FR
-    FIXEDFLAGS  := -132
+    FIXEDFLAGS  := -fixed -132
 
     ifeq ($(SMP),TRUE)
       FFLAGS += -openmp
@@ -782,6 +760,13 @@ ifeq ($(UNAMES),Darwin)
     ifneq ($(strip $(MOD_NETCDF)),)
       mod_path += -I$(MOD_NETCDF) 
     endif
+    # Needed for COSP, since it builds in its own directory.
+    ifneq ($(strip $(COSP_LIBDIR)),)
+      mod_path += -I$(COSP_LIBDIR)
+    endif
+
+    # COSP needs to autopromote to get its precision to match CAM
+    FC_AUTO_R8   := -qrealsize=8
 
     FFLAGS     := $(cpp_path) $(mod_path) $(FPPFLAGS) -qspillsize=2500 
     FREEFLAGS  := -qsuffix=f=f90:cpp=F90

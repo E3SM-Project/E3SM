@@ -116,7 +116,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    integer(IN)                      ::  nvars
    integer(IN)                      ::  nvarid
    integer(IN)                      ::  ndimid
-   integer(IN)                      ::  strt(nf90_max_var_dims),count(nf90_max_var_dims)
+   integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
    integer(IN)                      ::  nlon,nlat
    integer(IN), dimension(nf90_max_var_dims) :: dimids
    logical                          ::  lfound        ! local version of found
@@ -219,10 +219,10 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
       if ( is_latlon( vars(nvarid), latitude=.true., varnotdim=.true. ) )then
 
          call get_latlonindices( latitude=.true., dimnames=latdimnames, ndims=nlatdims, &
-                                 nlen=latlen, strt=strt, count=count )
+                                 nlen=latlen, strt=strt, cnt=cnt )
          nlat = latlen
          allocate(lats(nlat))
-         rcode= nf90_get_var(ncid, nvarid ,lats, start = strt, count = count)
+         rcode= nf90_get_var(ncid, nvarid ,lats, start = strt, count = cnt)
          call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf latitude" )
          if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -235,10 +235,10 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
 
       if ( is_latlon( vars(nvarid), latitude=.false., varnotdim=.true. ) )then
          call get_latlonindices( latitude=.false., ndims=nlondims, dimnames=londimnames, &
-                                 nlen=lonlen, strt=strt, count=count )
+                                 nlen=lonlen, strt=strt, cnt=cnt )
          nlon = lonlen
          allocate(lons(nlon))
-         rcode= nf90_get_var(ncid, nvarid ,lons, start = strt, count = count)
+         rcode= nf90_get_var(ncid, nvarid ,lons, start = strt, count = cnt)
          call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf longitude" )
          if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -326,7 +326,7 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    integer(IN)                      ::  nvars    = 0
    integer(IN)                      ::  nvarid
    integer(IN)                      ::  ndimid
-   integer(IN)                      ::  strt(nf90_max_var_dims),count(nf90_max_var_dims)
+   integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
    integer(IN)                      ::  nlon = 0, nlat = 0
    logical                          ::  lfound        ! local version of found
    integer(IN), dimension(nf90_max_var_dims) :: dimids
@@ -428,10 +428,10 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
       if ( is_latlon( vars(nvarid), latitude=.true., varnotdim=.true. ) )then
 
          call get_latlonindices( latitude=.true., ndims=nlatdims, dimnames=latdimnames, &
-                                 nlen=latlen, strt=strt, count=count )
+                                 nlen=latlen, strt=strt, cnt=cnt )
          nlat = latlen
          allocate(lats(nlat))
-         rcode= pio_get_var(pioid, nvarid ,strt, count, lats)
+         rcode= pio_get_var(pioid, nvarid ,strt(:nlatdims), cnt(:nlatdims), lats)
          if (rcode /= PIO_noerr) then
             call shr_ncread_handleErr( rcode, subname// &
                                "ERROR: Cant read netcdf latitude")
@@ -446,10 +446,10 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
 
       if ( is_latlon( vars(nvarid), latitude=.false., varnotdim=.true. ) )then
          call get_latlonindices( latitude=.false., ndims=nlondims, dimnames=londimnames, &
-                                 nlen=lonlen, strt=strt, count=count )
+                                 nlen=lonlen, strt=strt, cnt=cnt )
          nlon = lonlen
          allocate(lons(nlon))
-         rcode= pio_get_var(pioid, nvarid ,strt, count, lons)
+         rcode= pio_get_var(pioid, nvarid ,strt(:nlondims), cnt(:nlondims), lons)
          if (rcode /= PIO_noerr) then
             call shr_ncread_handleErr( rcode, subname// &
                                "ERROR: Cant read netcdf longitude")
@@ -566,7 +566,7 @@ end subroutine shr_scam_getCloseLatLonFile
 
 subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
      lnd_present, sno_present, ocn_present, ice_present, &
-     rof_present, flood_present)
+     rof_present, flood_present, rofice_present)
 
 ! !USES:
    use shr_dmodel_mod    ! shr data model stuff
@@ -586,6 +586,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
    logical,            optional, intent(inout) :: ocn_present  ! ocean point
    logical,            optional, intent(inout) :: rof_present  ! land point with rof
    logical,            optional, intent(inout) :: flood_present  ! rof doing flood
+   logical,            optional, intent(inout) :: rofice_present ! land point with rof
 
 !EOP
 
@@ -621,8 +622,10 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
    character(len=CL)      :: restfils = 'unset'
    character(len=CL)      :: ocn_in = 'unset'
    integer(IN)   :: nfrac
+   logical :: force_prognostic_true = .false.
    namelist /dom_inparm/ sstcyc, nrevsn, rest_pfile, bndtvs, focndomain
-   namelist / docn_nml / ocn_in, decomp, restfilm, restfils
+   namelist / docn_nml / ocn_in, decomp, force_prognostic_true, &
+        restfilm, restfils
 
 !-------------------------------------------------------------------------------
 ! Notes:
@@ -708,8 +711,9 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
    if (present(ice_present))   ice_present   = ice_present .and. ocn_point
 
    ! Always turn rof off.
-   if (present(rof_present))   rof_present   = .false.
-   if (present(flood_present)) flood_present = .false.
+   if (present(rof_present))    rof_present   = .false.
+   if (present(flood_present))  flood_present = .false.
+   if (present(rofice_present)) rofice_present = .false.
 
 end subroutine shr_scam_checkSurface
 
@@ -804,7 +808,7 @@ end function is_latlon
 !     2010 Nov 03 - E. Kluzek  - first version
 !
 ! !INTERFACE: ------------------------------------------------------------------
-subroutine get_latlonindices( latitude, ndims, dimnames, nlen, strt, count )
+subroutine get_latlonindices( latitude, ndims, dimnames, nlen, strt, cnt )
 ! !USES:
 ! !INPUT/OUTPUT PARAMETERS:
    implicit none
@@ -813,7 +817,7 @@ subroutine get_latlonindices( latitude, ndims, dimnames, nlen, strt, count )
    character(len=*), intent(IN) :: dimnames(ndims) ! Dimension names
    integer(IN), intent(IN)  :: nlen                ! Dimension length
    integer(IN), intent(OUT) :: strt(ndims)         ! Start along dimension
-   integer(IN), intent(OUT) :: count(ndims)        ! Count along dimension
+   integer(IN), intent(OUT) :: cnt(ndims)          ! Count along dimension
 !EOP
 
    !----- local variables -----
@@ -834,11 +838,11 @@ subroutine get_latlonindices( latitude, ndims, dimnames, nlen, strt, count )
       !--- is this a lat/longitude dimension  ---
       if ( is_latlon( dimnames(ndimid), latitude=latitude, varnotdim=.false. ) )then
          strt(ndimid)  = 1
-         count(ndimid) = nlen
+         cnt(ndimid) = nlen
          found         = .true.
       else
          strt(ndimid)  = 1
-         count(ndimid) = 1
+         cnt(ndimid) = 1
       endif
    end do
    if (.not. found ) then

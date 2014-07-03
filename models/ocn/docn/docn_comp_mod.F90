@@ -76,7 +76,7 @@ module docn_comp_mod
   real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal  ! ocean reference salinity
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq  ! field indices
-  integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,kioff
+  integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
 
   type(shr_strdata_type) :: SDOCN
@@ -91,14 +91,14 @@ module docn_comp_mod
      (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
         "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
         "melth       ","salt        ","prec        ","snow        ","rain        ", &
-        "evap        ","meltw       ","roff        ","ioff        ",                &
+        "evap        ","meltw       ","rofl        ","rofi        ",                &
         "t           ","u           ","v           ","dhdx        ","dhdy        ", &
         "s           ","q           ","h           ","qbot        "                 /)
   character(12),parameter  :: avofld(1:ktrans) = &
      (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
         "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
         "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
-        "Foxx_evap   ","Fioi_meltw  ","Forr_roff   ","Forr_ioff   ",                &
+        "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
         "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
         "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   "                 /)
 
@@ -169,15 +169,19 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     character(CL) :: rest_file_strm   ! restart filename for stream
     character(CL) :: restfilm    ! restart filename for namelist
     character(CL) :: restfils    ! restart filename for stream for namelist
+    logical       :: force_prognostic_true ! if true set prognostic true
+
     logical       :: exists      ! file existance
     integer(IN)   :: nu          ! unit number
 
     !----- define namelist -----
     namelist / docn_nml / &
-        ocn_in, decomp, restfilm, restfils
+        ocn_in, decomp, restfilm, restfils, &
+        force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
+    character(*), parameter :: F0L   = "('(docn_comp_init) ',a, l2)"
     character(*), parameter :: F01   = "('(docn_comp_init) ',a,5i8)"
     character(*), parameter :: F02   = "('(docn_comp_init) ',a,4es13.6)"
     character(*), parameter :: F03   = "('(docn_comp_init) ',a,i8,a)"
@@ -208,11 +212,13 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     inst_suffix = seq_comm_suffix(COMPID)
 
     !--- open log file ---
+    logUnit = 6
     if (my_task == master_task) then
-       logUnit = shr_file_getUnit()
-       call shr_file_setIO('ocn_modelio.nml'//trim(inst_suffix),logUnit)
-    else
-       logUnit = 6
+       inquire(FILE='ocn_modelio.nml'//trim(inst_suffix), exist=exists)
+       if (exists) then
+         logUnit = shr_file_getUnit()
+         call shr_file_setIO('ocn_modelio.nml'//trim(inst_suffix),logUnit)
+       end if
     endif
 
     !----------------------------------------------------------------------------
@@ -245,6 +251,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     decomp = "1d"
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
+    force_prognostic_true = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -259,14 +266,20 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        write(logunit,F00)' decomp = ',trim(decomp)
        write(logunit,F00)' restfilm = ',trim(restfilm)
        write(logunit,F00)' restfils = ',trim(restfils)
+       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
     call shr_mpi_bcast(ocn_in,mpicom,'ocn_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
+    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
  
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
+    if (force_prognostic_true) then
+       ocn_present    = .true.
+       ocn_prognostic = .true.
+    endif
 
     !----------------------------------------------------------------------------
     ! Read dshr namelist
@@ -396,7 +409,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     klat   = mct_aVect_indexRA(x2o,'Foxx_lat')
     kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
     ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
-    kioff  = mct_aVect_indexRA(x2o,'Forr_ioff')
+    krofi  = mct_aVect_indexRA(x2o,'Foxx_rofi')
 
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
@@ -647,7 +660,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
                 x2o%rAttr(klat  ,n) + &  ! latent
                 x2o%rAttr(kmelth,n) - &  ! ice melt
                 avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
-                (x2o%rAttr(ksnow,n)+x2o%rAttr(kioff,n))*latice) * &  ! latent by prec and roff
+                (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
                 dt/(cpsw*rhosw*hn)
              !--- compute ice formed or melt potential ---
             o2x%rAttr(kq,n) = (TkFrzSw - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0

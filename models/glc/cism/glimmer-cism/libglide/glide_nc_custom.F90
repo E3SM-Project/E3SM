@@ -34,15 +34,12 @@ module glide_nc_custom
 
   !module for filling in dimension variables
 
+  use glimmer_global, only: dp
   implicit none
 
 contains
 
-  !WHL - Added optional vertical_level_flag for case of 2D variables
-  !      without a vertical dimension
-  !TODO - Remove this flag?  Current code seems to work fine without it.
-
-  subroutine glide_nc_fillall(model, outfiles, vertical_level_flag)
+  subroutine glide_nc_fillall(model, outfiles)
 
     !*FD fill dimension variables of all files
     use glide_types
@@ -52,8 +49,6 @@ contains
 
     type(glide_global_type) :: model
     type(glimmer_nc_output),pointer,optional :: outfiles
-    logical, intent(in), optional ::  &
-       vertical_level_flag   ! if false, do not fill vertical dimensions
 
     ! local variables
     type(glimmer_nc_output), pointer :: oc
@@ -66,22 +61,14 @@ contains
 
     do while(associated(oc))
        if (.not.oc%append) then
-          if (present(vertical_level_flag)) then
-             call glide_nc_filldvars(oc,model,vertical_level_flag)
-          else
-             call glide_nc_filldvars(oc,model)
-          endif
-       endif             
+          call glide_nc_filldvars(oc,model)
+       endif
        oc=>oc%next
     end do
 
   end subroutine glide_nc_fillall
 
-  !WHL - Added optional vertical_level_flag for case of 2D variables
-  !      without a vertical dimension
-  !TODO - Remove this flag?  Current code seems to work fine without it.
-
-  subroutine glide_nc_filldvars(outfile, model, vertical_level_flag)
+  subroutine glide_nc_filldvars(outfile, model)
 
     use parallel
     use glide_types
@@ -91,14 +78,12 @@ contains
 
     type(glimmer_nc_output), pointer :: outfile
     type(glide_global_type) :: model
-    logical, intent(in), optional ::  &
-       vertical_level_flag   ! if false, do not fill vertical dimensions
 
     integer i,status,varid
-    real(sp),dimension(model%general%ewn-1) :: x0
-    real(sp),dimension(model%general%ewn) :: x1
-    real(sp),dimension(model%general%nsn-1) :: y0
-    real(sp),dimension(model%general%nsn) :: y1
+    real(dp),dimension(model%general%ewn-1) :: x0
+    real(dp),dimension(model%general%ewn) :: x1
+    real(dp),dimension(model%general%nsn-1) :: y0
+    real(dp),dimension(model%general%nsn) :: y1
     logical :: vertical_levels
 
     ! check if we are still in define mode and if so leave it
@@ -171,41 +156,31 @@ contains
 
     end if   ! associated(model%funits%in_first)
 
-    ! vertical dimension
+    ! layer interfaces
 
-    if (present(vertical_level_flag)) then
-       vertical_levels = vertical_level_flag
-    else
-       vertical_levels = .true.
-    endif
+    status = parallel_inq_varid(NCO%id,'level',varid)
+    status = parallel_put_var(NCO%id,varid,model%numerics%sigma)
+    call nc_errorhandle(__FILE__,__LINE__,status)
 
-    if (vertical_levels) then
+    ! layer midpoints
 
-       ! layer interfaces
-
-       status = parallel_inq_varid(NCO%id,'level',varid)
-       status = parallel_put_var(NCO%id,varid,model%numerics%sigma)
-       call nc_errorhandle(__FILE__,__LINE__,status)
-
-       ! layer midpoints
-
-       status = parallel_inq_varid(NCO%id,'staglevel',varid)
-       status = parallel_put_var(NCO%id,varid,model%numerics%stagsigma)
-       call nc_errorhandle(__FILE__,__LINE__,status)
+    status = parallel_inq_varid(NCO%id,'staglevel',varid)
+    status = parallel_put_var(NCO%id,varid,model%numerics%stagsigma)
+    call nc_errorhandle(__FILE__,__LINE__,status)
 
 !       do i=1, model%general%upn-1
 !          status=nf90_put_var(NCO%id,varid,(model%numerics%sigma(i)+model%numerics%sigma(i+1))/2.0,(/i/))
 !          call nc_errorhandle(__FILE__,__LINE__,status)
 !       end do
 
-       ! layer midpoints, plus upper and lower surfaces
-       ! (e.g., temperature field in HO dycore)
+    ! layer midpoints, plus upper and lower surfaces
+    ! (e.g., temperature field in HO dycore)
 
-       status = parallel_inq_varid(NCO%id,'stagwbndlevel',varid)
-       status = parallel_put_var(NCO%id,varid,model%numerics%stagwbndsigma)
-       call nc_errorhandle(__FILE__,__LINE__,status)
+    status = parallel_inq_varid(NCO%id,'stagwbndlevel',varid)
+    status = parallel_put_var(NCO%id,varid,model%numerics%stagwbndsigma)
+    call nc_errorhandle(__FILE__,__LINE__,status)
 
-    endif   ! vertical_levels
+    ! lithosphere vertical coordinate
 
     if (model%options%gthf == GTHF_COMPUTE) then
        status = parallel_inq_varid(NCO%id,'lithoz',varid)

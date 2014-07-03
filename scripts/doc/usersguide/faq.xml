@@ -225,11 +225,11 @@ ccsm_getenv script.
 <!-- ======================================================================= -->
 
 <sect1 id="faq_getenv">
-<title>What are CESM1 env variables and env xml files?</title>
+<title>What are CESM env variables and env xml files?</title>
 
 <para>
-Like in CESM1.0, CESM1.1 cases are customized, built and run largely
-through setting what CESM1 calls "environment variables".  These
+Like in CESM1.0, CESM1.2 cases are customized, built and run largely
+through setting what CESM calls "environment variables".  These
 actually appear to the user as variables defined in xml files.  Those
 files appear in the case directory once a case is created and are
 named something like env_*.xml.  They are converted to actual
@@ -262,7 +262,7 @@ commands <command>cesm_setup -clean</command>,
 &cesm_setup;. &env_build.xml; variables cannot be changed after
 the model is built unless you plan to clean and rebuild.  <ulink
 url="../modelnl/env_run.html">env_run.xml</ulink> variables can be
-changed anytime.  The CESM1 scripting software checks that xml files
+changed anytime.  The CESM scripting software checks that xml files
 are not changed when they shouldn't be.
 </para>
 
@@ -418,8 +418,8 @@ See <xref linkend="case_conf_setting_pes"/> or the use case
 <title>What is pio? </title>
 
 <para>
-The parallel IO (PIO) library is included with CESM1 and is automatically built
-as part of the CESM build.  Several CESM1 components
+The parallel IO (PIO) library is included with CESM and is automatically built
+as part of the CESM build.  Several CESM components
 use the PIO library to read and/or write data.  The PIO library is
 a set of interfaces that support serial netcdf, parallel
 netcdf, or binary IO transparently.  The implementation allows
@@ -429,7 +429,7 @@ parameters associated with PIO to optimize IO performance.
 </para>
 
 <para>
-CESM1 prefers that data be written in CF compliant netcdf format
+CESM prefers that data be written in CF compliant netcdf format
 to a single file that is independent of all parallel decomposition
 information.  Historically, data was written by gathering global 
 arrays on a root processor and then writing the data from the root 
@@ -454,7 +454,7 @@ serially using netcdf or in parallel using pnetcdf.
 There are several benefits associated with using PIO.  First,
 even with serial netcdf, the memory use can be significantly decreased
 because the global arrays are decomposed across the IO processors
-and written in chunks serially.  This is critical as CESM1 runs at higher
+and written in chunks serially.  This is critical as CESM runs at higher
 resolutions where global arrays need to be minimized due to memory
 availability.  Second, pnetcdf can be turned on transparently
 potentially improving the IO performance.  Third, PIO parameters
@@ -465,7 +465,7 @@ scatter can be recovered by setting the number of io tasks to 1
 and using serial netcdf.
 </para>
 <para>
-CESM1 uses the serial netcdf implementation of PIO and
+CESM uses the serial netcdf implementation of PIO and
 pnetcdf is turned off in PIO by default.  Several
 components provide namelist inputs that allow use of pnetcdf in PIO.
 To use pnetcdf, a pnetcdf library (like netcdf) must be available
@@ -506,7 +506,7 @@ Run the clean_build script if the model has already been built.
 
 <step>
 <para>
-Run the build script to rebuilt pio and the full CESM1 system.
+Run the build script to rebuilt pio and the full CESM system.
 </para>
 </step>
 
@@ -523,7 +523,7 @@ IO tasks and layout.
 <para>
 The PNETCDF_PIO variable tells pio to build with pnetcdf support turned
 on.  The LIB_PNETCDF variable tells the CESM Makefile to link in the
-pnetcdf library at the link step of the CESM1 build.
+pnetcdf library at the link step of the CESM build.
 </para>
 
 <para>
@@ -564,7 +564,7 @@ items.
 <title>How do I create my own compset? </title>
 
 <para>
-Several compsets are hardwired in the CESM1 release.  "create_newcase -l" 
+Several compsets are hardwired in the CESM releases.  "create_newcase -l" 
 provides a current listing of supported "out-of-the-box" compsets. 
 </para>
 
@@ -836,7 +836,7 @@ Next create a new case in your case directory with the same name, b40.20th.1deg.
 </para>
 <screen>
 > cd $CASEDIR/scripts
-> create_newcase -mach bluefire -compset B_1850-2000_CN -res f09_g16 -case b40.20th.1deg 
+> create_newcase -mach yellowstone -compset B_1850-2000_CN -res f09_g16 -case b40.20th.1deg 
 cd $RUNDIR
 </screen>
 </listitem>
@@ -858,7 +858,7 @@ Next invoke the following commands
 
 <listitem> 
 <para>
-Next set up the case and edit the coupler and CAM namelists.
+Next set up the case and edit the coupler and CAM and CLM namelists.
 
 <orderedlist numeration="loweralpha" > 
 
@@ -894,11 +894,27 @@ Next set up the case and edit the coupler and CAM namelists.
                  'PS:I','QREFHT:I','TREFHT:I','TS:I'        
                   /
    </screen> 
+  <para>  Edit user_nl_clm. This adds four auxilary history files in addition to the
+          standard monthly files. The first two are daily, and the last two are six and
+          three hourly.
+  </para>
+ 
+  <screen>
+        hist_mfilt   = 1,365,30,120,240        
+        hist_nhtfrq  = 0,-24,-24,-6,-3        
+        hist_fincl2  = 'TSOI', 'TG',   'TV',   'FIRE',   'FSR', 'FSH', 'EFLX_LH_TOT', 'WT'
+        hist_fincl3  = 'FSA'
+        hist_fincl4  = 'TSOI', 'TG',   'TV',   'FIRE',   'FSR', 'FSH', 'EFLX_LH_TOT', 'WT'
+        hist_fincl5  = 'TSOI', 'TG',   'TV',   'FIRE',   'FSR', 'FSH', 'EFLX_LH_TOT', 'WT'
+   </screen> 
+
    </listitem>
 </orderedlist>
 </para>
 </listitem>
 </orderedlist>
+
+
 <orderedlist numeration="arabic" continuation="continues">
 
 <listitem>

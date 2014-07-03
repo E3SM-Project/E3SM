@@ -200,6 +200,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     character(CL) :: rest_file_strm   ! restart filename for stream
     character(CL) :: restfilm    ! model restart file namelist
     character(CL) :: restfils    ! stream restart file namelist
+    logical       :: force_prognostic_true ! if true set prognostic true
     logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
     type(iosystem_desc_t), pointer :: ice_pio_subsystem
@@ -207,10 +208,12 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
 
     !----- define namelist -----
     namelist / dice_nml / &
-        ice_in, decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
+        ice_in, decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
+        force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
+    character(*), parameter :: F0L   = "('(dice_comp_init) ',a, l2)"
     character(*), parameter :: F01   = "('(dice_comp_init) ',a,5i8)"
     character(*), parameter :: F02   = "('(dice_comp_init) ',a,4es13.6)"
     character(*), parameter :: F03   = "('(dice_comp_init) ',a,i8,a)"
@@ -282,6 +285,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     flux_Qacc0 =     0.0_R8  ! no water
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
+    force_prognostic_true = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -300,6 +304,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
        write(logunit,F02)' flux_Qacc0 = ',flux_Qacc0
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
+       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
     call shr_mpi_bcast(ice_in    ,mpicom,'ice_in')
     call shr_mpi_bcast(decomp    ,mpicom,'decomp')
@@ -309,9 +314,14 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     call shr_mpi_bcast(flux_Qacc0,mpicom,'flux_Qacc0')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
+    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
+    if (force_prognostic_true) then
+       ice_present    = .true.
+       ice_prognostic = .true.
+    endif
 
     !----------------------------------------------------------------------------
     ! Read dshr namelist
@@ -385,6 +395,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
 
     call seq_infodata_PutData(infodata, &
       ice_present=ice_present, ice_prognostic=ice_prognostic, &
+      iceberg_prognostic=.false., &
       ice_nx=SDICE%nxg, ice_ny=SDICE%nyg )
 
     !----------------------------------------------------------------------------

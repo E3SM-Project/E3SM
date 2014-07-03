@@ -49,12 +49,12 @@ F77=f77
 DEBUG=-g -C
 
 test_isccp_cloud_types: test_isccp_cloud_types.o isccp_cloud_types.o icarus.o scops.o Makefile
-	$(F77) $(DEBUG) test_isccp_cloud_types.f isccp_cloud_types.o icarus.o scops.o -o test_isccp_cloud_types
+	$(F77) $(DEBUG) test_isccp_cloud_types.f77 isccp_cloud_types.o icarus.o scops.o -o test_isccp_cloud_types
 
 test_congvec: test_congvec.o Makefile
 	$(F77) $(DEBUG) test_congvec.o -o test_congvec
 
-test_congvec.o: test_congvec.f congvec.f Makefile
+test_congvec.o: test_congvec.f congvec.inc Makefile
 	$(F77) $(DEBUG) -c test_congvec.f
 
 clean:
@@ -63,11 +63,11 @@ clean:
 test:
 	./test_isccp_cloud_types.ksh
 
-test_isccp_cloud_types.o: test_isccp_cloud_types.f Makefile
-	$(F77) $(DEBUG) -c test_isccp_cloud_types.f
+test_isccp_cloud_types.o: test_isccp_cloud_types.f77 Makefile
+	$(F77) $(DEBUG) -c test_isccp_cloud_types.f77
 
-isccp_cloud_types.o: isccp_cloud_types.f Makefile
-	$(F77) $(DEBUG) -c isccp_cloud_types.f 
+isccp_cloud_types.o: isccp_cloud_types.f77 Makefile
+	$(F77) $(DEBUG) -c isccp_cloud_types.f77 
 
 icarus.o: icarus.f Makefile
 	$(F77) $(DEBUG) -c icarus.f 

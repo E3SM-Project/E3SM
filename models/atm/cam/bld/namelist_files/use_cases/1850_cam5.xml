@@ -23,11 +23,12 @@
 
 <!-- Surface emissions for MAM -->
 <srf_emis_type>CYCLICAL</srf_emis_type>
+<srf_emis_cycle_yr>0</srf_emis_cycle_yr>
 <dms_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c090129.nc</dms_emis_file>
 <so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_1850_c090726.nc</so2_emis_file>
-<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_1850_c100217.nc</soag_emis_file>
+<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_1850_c130423.nc</soag_emis_file>
 <bc_a1_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_1850_c090726.nc</bc_a1_emis_file>
-<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_surf_1850_c090726.nc</pom_a1_emis_file>
+<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_1850_c130423.nc</pom_a1_emis_file>
 <so4_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_surf_1850_c090726.nc</so4_a1_emis_file>
 <so4_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_surf_1850_c090726.nc</so4_a2_emis_file>
 <num_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_1850_c090726.nc</num_a1_emis_file>
@@ -35,12 +36,13 @@
 
 <!-- External forcing for BAM or MAM -->
 <ext_frc_type>CYCLICAL</ext_frc_type>
+<ext_frc_cycle_yr>0</ext_frc_cycle_yr>
 <so2_ext_file      chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_elev_1850_c090726.nc </so2_ext_file>
 <so4_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_elev_1850_c090726.nc</so4_a1_ext_file>
 <so4_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_1850_c090726.nc</so4_a2_ext_file>
 <num_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_elev_1850_c090726.nc</num_a1_ext_file>
 <num_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_1850_c090726.nc</num_a2_ext_file>
-<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_1850_c090726.nc </pom_a1_ext_file>
+<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_1850_c130423.nc</pom_a1_ext_file>
 <bc_a1_ext_file    chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_1850_c090726.nc </bc_a1_ext_file>
 
 <!-- Prescribed oxidants for aerosol chemistry -->

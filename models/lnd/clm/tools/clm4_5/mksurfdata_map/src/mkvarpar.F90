@@ -18,6 +18,7 @@ module mkvarpar
 !
   integer, parameter :: nlevsoi = 10  ! number of soil layers
   integer, parameter :: numstdpft = 16! number of standard PFT types
+  integer, parameter :: numstdcft = 2 ! of the number of standard PFT types, how many are crop (CFT)
   integer, parameter :: noveg   = 0   ! value for non-vegetated pft
   integer, parameter :: nlevurb = 5   ! number of urban layers
   integer, parameter :: numsolar = 2  ! number of solar types (Direct,Diffuse)

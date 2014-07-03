@@ -11,40 +11,41 @@ unsetenv CPLLOG_REST
 cd $CASEROOT
 echo "doing an initial threaded test, with length taken from compset default" >>& $TESTSTATUS_LOG 
 
-set cnthrds = 2
+set cnthrds = 9
 
 if ( $NTHRDS_ATM <= 1) then
    echo "WARNING: component not threaded, NTHRDS_ATM is $NTHRDS_ATM" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
 if ( $NTHRDS_LND <= 1) then
    echo "WARNING: component not threaded, NTHRDS_LND is $NTHRDS_LND" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
 if ( $NTHRDS_ROF <= 1) then
    echo "WARNING: component not threaded, NTHRDS_ROF is $NTHRDS_ROF" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
-endif
-if ( $NTHRDS_WAV <= 1) then
-   echo "WARNING: component not threaded, NTHRDS_WAV is $NTHRDS_WAV" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
 if ( $NTHRDS_ICE <= 1) then
    echo "WARNING: component not threaded, NTHRDS_ICE is $NTHRDS_ICE" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
 if ( $NTHRDS_OCN <= 1) then
    echo "WARNING: component not threaded, NTHRDS_OCN is $NTHRDS_OCN" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
 if ( $NTHRDS_GLC <= 1) then
    echo "WARNING: component not threaded, NTHRDS_GLC is $NTHRDS_GLC" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
 if ( $NTHRDS_CPL <= 1) then
    echo "WARNING: component not threaded, NTHRDS_CPL is $NTHRDS_CPL" >>& $TESTSTATUS_LOG
-   set cnthrds = 1
+   @ cnthrds--
 endif
+if ( $NTHRDS_WAV <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_WAV is $NTHRDS_WAV" >>& $TESTSTATUS_LOG
+   @ cnthrds--
+endif
+
 
 if ( $cnthrds <= 1) then
   set basestatus = "TFAIL"

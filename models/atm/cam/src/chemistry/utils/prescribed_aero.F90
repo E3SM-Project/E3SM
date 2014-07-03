@@ -108,6 +108,8 @@ contains
     use physics_buffer, only : physics_buffer_desc
 
     implicit none
+
+    ! local vars
     character(len=32)  :: spec_a
     integer :: ndx, istat, i, i_c, j
     

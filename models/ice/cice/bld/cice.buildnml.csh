@@ -16,11 +16,7 @@ if ($CICE_AUTO_DECOMP == 'true') then
    set config = `./generate_cice_decomp.pl -res $hgrid -nx $ICE_NX -ny $ICE_NY -nproc $ntasks -thrds $NTHRDS_ICE -output all`
    cd $CASEROOT 
    if ($config[1] >= 0) then
-      ./xmlchange -file env_build.xml -id CICE_BLCKX      -val $config[3] || exit -1
-      ./xmlchange -file env_build.xml -id CICE_BLCKY      -val $config[4] || exit -2
-      ./xmlchange -file env_build.xml -id CICE_MXBLCKS    -val $config[5] || exit -3
-      ./xmlchange -file env_build.xml -id CICE_DECOMPTYPE -val $config[6] || exit -4
-      ./xmlchange -file env_build.xml -id CICE_DECOMPSETTING -val $config[7] || exit -5
+      ./xmlchange CICE_BLCKX=$config[3],CICE_BLCKY=$config[4],CICE_MXBLCKS=$config[5],CICE_DECOMPTYPE=$config[6],CICE_DECOMPSETTING=$config[7] || exit -1
       source $CASEROOT/Tools/ccsm_getenv # need to do this since env_build.xml just changed
    else
       echo "ERROR configure: cice decomp not set for $ICE_GRID on $ntasks x $NTHRDS_ICE procs"

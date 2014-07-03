@@ -1,14 +1,15 @@
 module clm_varcon
 
 !-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: clm_varcon
-!
-! !DESCRIPTION:
-! Module containing various model constants
-!
-! !USES:
+  ! !DESCRIPTION:
+  ! Module containing various model constants. This includes physical constants, landunit
+  ! and column indices, and others. This also contains functions for operating on these
+  ! constants and associated variables.
+  !
+  ! TODO: Move some of the stuff here into column_varcon.F90 and landunit_varcon.F90 (bug 1928).
+  !
+  ! !USES:
+#include "shr_assert.h"
   use shr_kind_mod , only: r8 => shr_kind_r8
   use shr_const_mod, only: SHR_CONST_G,SHR_CONST_STEBOL,SHR_CONST_KARMAN,     &
                            SHR_CONST_RWV,SHR_CONST_RDAIR,SHR_CONST_CPFW,      &
@@ -17,22 +18,32 @@ module clm_varcon
                            SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH, &
                            SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY,       &
                            SHR_CONST_RGAS
-  use clm_varpar   , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full, nsompools
+  use clm_varpar   , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
   use clm_varpar   , only: ngases
-#if (defined VICHYDRO)
   use clm_varpar   , only: nlayer
-#endif
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
 
-!
-! !PUBLIC TYPES:
+  
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! !REVISION HISTORY:
-! Created by Mariana Vertenstein
-! 27 February 2008: Keith Oleson; Add forcing height and aerodynamic parameters
-!
-!EOP
+
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public :: clm_varcon_init  ! initialize constants in clm_varcon
+
+  ! TODO: Move the following to a new module, column_varcon.F90 (see bug 1928). For now,
+  ! I'm putting these here, to be in the same module as the icol_* variables defined here.
+  public :: icemec_class_to_col_itype  ! convert an icemec class (1..maxpatch_glcmec) into col%itype
+  public :: col_itype_to_icemec_class  ! convert col%itype into an icemec class (1..maxpatch_glcmec)
+  
+  !
+  ! !PRIVATE MEMBER FUNCTIONS:
+  private :: set_landunit_names  ! set the landunit_names vector
+  !
+  ! !REVISION HISTORY:
+  ! Created by Mariana Vertenstein
+  ! 27 February 2008: Keith Oleson; Add forcing height and aerodynamic parameters
 !-----------------------------------------------------------------------
 
   !------------------------------------------------------------------
@@ -68,7 +79,7 @@ module clm_varcon
   real(r8) :: tkice  = 2.290_r8     !thermal conductivity of ice   [W/m/K]
   real(r8) :: tkwat  = 0.57_r8       !thermal conductivity of water [W/m/K]
   real(r8) :: tfrz   = SHR_CONST_TKFRZ  !freezing temperature [K]
-  real(r8) :: tcrit  = 2.5_r8       !critical temperature to determine rain or snow
+  real(r8), parameter :: tcrit  = 2.5_r8       !critical temperature to determine rain or snow
   real(r8) :: o2_molar_const = 0.209_r8   !constant atmospheric O2 molar ratio (mol/mol)
 
   real(r8) :: bdsno = 250._r8       !bulk density snow (kg/m**3)
@@ -83,7 +94,7 @@ module clm_varcon
   real(r8), public, parameter ::  secspday= SHR_CONST_CDAY  ! Seconds per day
   integer,  public, parameter :: isecspday= secspday        ! Integer seconds per day
   real(r8), public, parameter ::  spval = 1.e36_r8  ! special value for real data
-  integer , public, parameter :: ispval = -9999     ! special value for int data
+  integer , public, parameter :: ispval = -9999     ! special value for int data (keep this negative to avoid conflicts with possible valid values)
 
   ! These are tunable constants from clm2_3
 
@@ -118,56 +129,48 @@ module clm_varcon
   real(r8), parameter :: h2osno_max = 1000._r8    ! max allowed snow thickness (mm H2O)
   real(r8), parameter :: lapse_glcmec = 0.006_r8  ! surface temperature lapse rate (deg m-1)
                                                   ! Pritchard et al. (GRL, 35, 2008) use 0.006  
+  real(r8), parameter :: glcmec_rain_snow_threshold = SHR_CONST_TKFRZ  ! temperature dividing rain & snow in downscaling (K)
+
   integer, private :: i  ! loop index
 
-
-#ifdef NITRIF_DENITRIF
- !  real(r8), parameter :: nitrif_n2o_loss_frac = 0.02_r8   !fraction of N lost as N2O in nitrification (Parton et al., 2001)
+  !  real(r8), parameter :: nitrif_n2o_loss_frac = 0.02_r8   !fraction of N lost as N2O in nitrification (Parton et al., 2001)
   real(r8), parameter :: nitrif_n2o_loss_frac = 6.e-4_r8   !fraction of N lost as N2O in nitrification (Li et al., 2000)
   real(r8), parameter :: frac_minrlztn_to_no3 = 0.2_r8   !fraction of N mineralized that is dieverted to the nitrification stream (Parton et al., 2001)
-#endif
-
-
+  
   !------------------------------------------------------------------
-  ! Initialize water type constants
+  ! Initialize landunit & column type constants
   !------------------------------------------------------------------
 
-  ! "land unit " types
-  !   1     soil (includes vegetated landunits)
-  !   2     land ice (glacier)
-  !   3     deep lake
-  !  (DEPRECATED: New lake model has variable depth) 4     shallow lake
-  !   5     wetland (swamp, marsh, etc.)
-  !   6     urban
-  !   7     land ice (glacier) with multiple elevation classes
-  !   8     crop
+  integer, parameter :: istsoil    = 1  !soil         landunit type (natural vegetation)
+  integer, parameter :: istcrop    = 2  !crop         landunit type
+  integer, parameter :: istice     = 3  !land ice     landunit type (glacier)
+  integer, parameter :: istice_mec = 4  !land ice (multiple elevation classes) landunit type
+  integer, parameter :: istdlak    = 5  !deep lake    landunit type (now used for all lakes)
+  integer, parameter :: istwet     = 6  !wetland      landunit type (swamp, marsh, etc.)
 
-  integer, parameter :: istsoil    = 1  !soil         landunit type
-  integer, parameter :: istice     = 2  !land ice     landunit type
-  integer, parameter :: istdlak    = 3  !deep lake    landunit type
-  ! Not used; now 3 is used for all lakes, which have variable depth.
-  integer, parameter :: istslak    = 4  !shallow lake landunit type
-  integer, parameter :: istwet     = 5  !wetland      landunit type
-  integer, parameter :: isturb     = 6  !urban        landunit type
-  integer, parameter :: istice_mec = 7  !land ice (multiple elevation classes) landunit type
-  integer, parameter :: istcrop    = 8  !crop         landunit type
-  integer, parameter :: max_lunit  = 8  !maximum value that clm3%g%l%itype can have
-                             !(i.e., largest value in the above list)
+  integer, parameter :: isturb_MIN = 7  !minimum urban type index
+  integer, parameter :: isturb_tbd = 7  !urban tbd    landunit type
+  integer, parameter :: isturb_hd  = 8  !urban hd     landunit type
+  integer, parameter :: isturb_md  = 9  !urban md     landunit type
+  integer, parameter :: isturb_MAX = 9  !maximum urban type index
+
+  integer, parameter :: max_lunit  = 9  !maximum value that lun%itype can have
+                                        !(i.e., largest value in the above list)
+
+  integer, parameter                   :: landunit_name_length = 12  ! max length of landunit names
+  character(len=landunit_name_length)  :: landunit_names(max_lunit)  ! name of each landunit type
 
   ! urban column types
 
-  integer, parameter :: icol_roof        = 61
-  integer, parameter :: icol_sunwall     = 62
-  integer, parameter :: icol_shadewall   = 63
-  integer, parameter :: icol_road_imperv = 64
-  integer, parameter :: icol_road_perv   = 65
+  integer, parameter :: icol_roof        = 71
+  integer, parameter :: icol_sunwall     = 72
+  integer, parameter :: icol_shadewall   = 73
+  integer, parameter :: icol_road_imperv = 74
+  integer, parameter :: icol_road_perv   = 75
 
-  ! urban density types
+  ! parameters that depend on the above constants
 
-  integer, parameter :: udens_base     = 600
-  integer, parameter :: udens_tbd      = 601
-  integer, parameter :: udens_hd       = 602
-  integer, parameter :: udens_md       = 603
+  integer, parameter :: numurbl = isturb_MAX - isturb_MIN + 1   ! number of urban landunits
 
   !------------------------------------------------------------------
   ! Initialize miscellaneous radiation constants
@@ -195,9 +198,8 @@ module clm_varcon
   real(r8), pointer :: dzsoi(:)        !soil dz (thickness)
   real(r8), pointer :: zisoi(:)        !soil zi (interfaces)
   real(r8), pointer :: dzsoi_decomp(:) !soil dz (thickness)
-#if (defined VICHYDRO)
-  integer, pointer  :: nlvic(:)        !number of CLM layers in each VIC layer (#)
-#endif
+  integer , pointer :: nlvic(:)        !number of CLM layers in each VIC layer (#)
+  real(r8), pointer :: dzvic(:)        !soil dz (thickness) of each VIC layer
 
   !------------------------------------------------------------------
   ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in ch4varcon)
@@ -226,55 +228,121 @@ module clm_varcon
   real(r8) :: kh_theta(ngases)    ! Henry's constant (L.atm/mol) at standard temperature (298K)
   data kh_theta(1:3) /714.29_r8, 769.23_r8, 29.4_r8/ ! CH4, O2, CO2
   real(r8) :: kh_tbase = 298._r8 ! base temperature for calculation of Henry's constant (K)
-
-! !PUBLIC MEMBER FUNCTIONS:
-  public clm_varcon_init          ! Initialze constants that need to be initialized
+  
 
 ! !REVISION HISTORY:
 ! Created by Mariana Vertenstein
-
-!EOP
 !-----------------------------------------------------------------------
+
 contains
 
 !------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: clm_varcon_init
-!
-! !INTERFACE:
   subroutine clm_varcon_init()
-!
-! !DESCRIPTION:
-! This subroutine initializes constants in clm_varcon. MUST be called 
-! after the clm_varpar_init.
-!
-! !USES:
-!
-! !ARGUMENTS:
+    !
+    ! !DESCRIPTION:
+    ! This subroutine initializes constants in clm_varcon. MUST be called 
+    ! after the clm_varpar_init.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
     implicit none
-!
-! !REVISION HISTORY:
-!   Created by E. Kluzek
-!
-!
-! !LOCAL VARIABLES:
-!
-!EOP
+    !
+    ! !REVISION HISTORY:
+    !   Created by E. Kluzek
 !------------------------------------------------------------------------------
-  allocate( zlak(1:nlevlak) )
-  allocate( dzlak(1:nlevlak) )
-  allocate( zsoi(1:nlevgrnd) )
-  allocate( dzsoi(1:nlevgrnd) )
-  allocate( zisoi(0:nlevgrnd) )
-  allocate( dzsoi_decomp(1:nlevdecomp_full) )
-#if (defined VICHYDRO)
-  allocate( nlvic(1:nlayer))
-#endif
+    allocate( zlak(1:nlevlak) )
+    allocate( dzlak(1:nlevlak) )
+    allocate( zsoi(1:nlevgrnd) )
+    allocate( dzsoi(1:nlevgrnd) )
+    allocate( zisoi(0:nlevgrnd) )
+    allocate( dzsoi_decomp(1:nlevdecomp_full) )
+    allocate( nlvic(1:nlayer))
+    allocate( dzvic(1:nlayer))
+
+    call set_landunit_names()
 
   end subroutine clm_varcon_init
 
+  !-----------------------------------------------------------------------
+  subroutine set_landunit_names
+    !
+    ! !DESCRIPTION:
+    ! Set the landunit_names vector
+    !
+    ! !USES:
+    use abortutils, only : endrun
+    !
+    character(len=*), parameter :: not_set = 'NOT_SET'
+    character(len=*), parameter :: subname = 'set_landunit_names'
+    !-----------------------------------------------------------------------
+    
+    landunit_names(:) = not_set
 
+    landunit_names(istsoil) = 'soil'
+    landunit_names(istcrop) = 'crop'
+    landunit_names(istice) = 'ice'
+    landunit_names(istice_mec) = 'ice_mec'
+    landunit_names(istdlak) = 'lake'
+    landunit_names(istwet) = 'wetland'
+    landunit_names(isturb_tbd) = 'urb_tbd'
+    landunit_names(isturb_hd) = 'urb_hd'
+    landunit_names(isturb_md) = 'urb_md'
 
+    if (any(landunit_names == not_set)) then
+       call endrun(msg=subname//': Not all landunit names set')
+    end if
+
+  end subroutine set_landunit_names
+
+  !-----------------------------------------------------------------------
+  function icemec_class_to_col_itype(icemec_class) result(col_itype)
+    !
+    ! !DESCRIPTION:
+    ! Convert an icemec class (1..maxpatch_glcmec) into col%itype
+    !
+    ! !USES:
+    use clm_varpar, only : maxpatch_glcmec
+    !
+    ! !ARGUMENTS:
+    integer :: col_itype                ! function result
+    integer, intent(in) :: icemec_class ! icemec class, between 1 and maxpatch_glcmec
+    !
+    ! !LOCAL VARIABLES:
+    
+    character(len=*), parameter :: subname = 'icemec_class_to_col_itype'
+    !-----------------------------------------------------------------------
+    
+    SHR_ASSERT((1 <= icemec_class .and. icemec_class <= maxpatch_glcmec), errMsg(__FILE__, __LINE__))
+
+    col_itype = istice_mec*100 + icemec_class
+
+  end function icemec_class_to_col_itype
+
+  !-----------------------------------------------------------------------
+  function col_itype_to_icemec_class(col_itype) result(icemec_class)
+    !
+    ! !DESCRIPTION:
+    ! Convert a col%itype value (for an icemec landunit) into an icemec class (1..maxpatch_glcmec)
+    !
+    ! !USES:
+    use clm_varpar, only : maxpatch_glcmec
+    !
+    ! !ARGUMENTS:
+    integer :: icemec_class          ! function result
+    integer, intent(in) :: col_itype ! col%itype value for an icemec landunit
+    !
+    ! !LOCAL VARIABLES:
+    
+    character(len=*), parameter :: subname = 'col_itype_to_icemec_class'
+    !-----------------------------------------------------------------------
+    
+    icemec_class = col_itype - istice_mec*100
+
+    ! The following assertion is here to ensure that col_itype is really from an
+    ! istice_mec landunit
+    SHR_ASSERT((1 <= icemec_class .and. icemec_class <= maxpatch_glcmec), errMsg(__FILE__, __LINE__))
+
+  end function col_itype_to_icemec_class
 
 end module clm_varcon

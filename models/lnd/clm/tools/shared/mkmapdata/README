@@ -1,4 +1,4 @@
-models/lnd/clm/tools/shared/mkmapdata/README		Jun/04/2013
+models/lnd/clm/tools/mkmapdata/README		Jan/17/2012
 
 The routines in this directory create a mapping dataset from
 SCRIP grid files to map from one grid to another. These mapping files
@@ -9,7 +9,7 @@ The script uses ESMF and requires that ESMF be built and the path
 for ESMF binary files (using the program ESMF_RegridWeightGen) 
 be given as input to the script.
 
-Currently uses: ESMF6.1.1
+Currently uses: ESMF5.2.0
 
 Do the following for help with the different options to the script...
 
@@ -42,7 +42,7 @@ options passed to it in the mkmapdata.sh script.
    Option A.)  Use mkmapdata.sh directly
    run script(e.g.): (see header of mkmapdata.sh for other environment that can be set)
 
-   Example for standard resolutions
+   Example for standard reslutions
         ./mkmapdata.sh -r 10x15
    Example for non-standard resolutions where you provide an input SCRIP grid file.
         ./mkmapdata.sh -f <SCRIP_gridfile>
@@ -64,12 +64,8 @@ Important files:
   regridbatch.sh ------- Script to run mkmapdata.sh for many resolutions
   mvNimport.sh --------- Script to copy and import mapping files in for many resolutions
   mkmapdata.sh --------- Script to create mapping datasets for a given resolution
-  rmdups.ncl ----------- Removes duplicate weights from the resulting mapping file
 
   mknoocnmap.pl -------- Script to create unity mapping dataset for single-point
                          or regional studies over land-only (no ocean).
   mkunitymap.ncl ------- NCL script to create a unity map -- ran by above script
-
-  createXMLEntries.pl -- Script to create entries needed for new mapping files in the XML namelist_defaults file.
-                         Operates on the mapping files created in the current directory.
 

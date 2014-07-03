@@ -5,64 +5,97 @@
       <yellowstone>
          <INTEL>
             <compare>
-               <entry testId="211" failType="xFail"> missing datasets for us20 </entry>
-               <entry testId="291" failType="xFail"> ne16 missing finidat file for 1850</entry>
             </compare>
             <generate>
             </generate>
          </INTEL>
       </yellowstone>
-      <frankfurt>
+      <goldbach>
          <INTEL>
             <compare>
-               <entry testId="211" failType="xFail"> missing datasets for us20 </entry>
-               <entry testId="291" failType="xFail"> ne16 missing finidat file for 1850</entry>
             </compare>
             <generate>
             </generate>
          </INTEL>
-      </frankfurt>
+      </goldbach>
    </namelistTest>
 
    <cesm> 
-      <auxTests>
+      <auxShortTests>
          <yellowstone>
             <INTEL>
-               <entry testId="ERB.ne30_g16.I_1948-2004"                                  failType="FAIL" bugz="1658" >Differences found</entry>
-               <entry testId="ERS_Ld211_D_P112x1.f10_f10.ICNCROP.nldir_crop"             failType="FAIL" bugz="1696" >use before define in history</entry>
-               <entry testId="ERS.f09_g16.ICLM45VIC.yellowstone_intel.clm-vrtlay"        failType="FAIL" bugz="1722" >floating point exception</entry>
-               <entry testId="ERS_D.f09_g16.ICLM45VIC.yellowstone_intel.clm-vrtlay"      failType="FAIL" bugz="1722" >floating point exception</entry>
+               <entry testId="PET_P15x2_Ly3.f10_f10.ICLM45BGCCROP.yellowstone_intel.clm-irrigOn_reduceOutput.140210-001104"
+failType="FAIL" >Negative conc. in ch4tran. c,j,deficit (mol):        6175           1</entry>
             </INTEL>
             <PGI>
-               <entry testId="ERS_D.hcru_hcru.I_2000_CRUFRC_CLM45_CN"                    failType="RUN"  bugz="1721" >Subscript overflow issue in pio</entry>
-               <entry testId="ERS_D.f10_f10.ICLM45CN4MeNoVS"                             failType="RUN"  bugz="1672" >Subscript overflow issue</entry>
+               <entry testId="SMS_Ly1.f19_g16.ICLM45BGCCROP.yellowstone_pgi" failType="FAIL" >Water balance errors followed by (negative conc. in ch4tran), then tries (-10^-12 .lt. smin_nh4 .lt. 0. resetting to zero.), then it exits at approximately 9 months.  This same test passes with yellowstone_intel and frankfurt_intel</entry>
             </PGI>
          </yellowstone>
-         <frankfurt>
+         <goldbach>
             <INTEL>
             </INTEL>
             <NAG>
             </NAG>
             <PGI>
+               <entry testId="SMS_Ly1.f19_g16.ICLM45BGCCROP.frankfurt_pgi" failType="FAIL" >Water balance errors followed by (negative conc. in ch4tran), then tries (-10^-12 .lt. smin_nh4 .lt. 0. resetting to zero.), then it exits at approximately 9 months.  This same test passes with yellowstone_intel and frankfurt_intel</entry>
             </PGI>
-         </frankfurt>
-      </auxTests>
+         </goldbach>
+      </auxShortTests>
+      <auxTests>
+         <edison>
+            <INTEL>
+               <entry testId="ERH_D.f19_g16.I1850CLM45CN.edison_intel.clm-default"               failType="FAIL" >See (ERH_D.f19_g16.I1850CLM45CN.yellowstone_pgi.clm-default</entry>
+               <entry testId="ERI_D.ne30_g16.ICLM45BGC.edison_intel.clm-vrtlay"                  failType="FAIL" >Seg fault while writing h1 file</entry>
+               <entry testId="ERS_Ld211_D_P144x1.f10_f10.ICNCROP.edison_intel.clm-crop"          failType="FAIL" bugz="1696" >See ERS_Ld211_D_P112x1.f10_f10.ICNCROP in yellowstone intel list</entry>
+            </INTEL>
+         </edison>
+         <yellowstone>
+            <INTEL>
+               <entry testId="ERI_D.ne30_g16.ICLM45BGC.yellowstone_intel.clm-vrtlay"      failType="FAIL" >Seg fault while writing h1 file. This used to pass on yellowstone, but it failed on edison; now it is failing on yellowstone, too (it fails in clm4_5_37, too).</entry>
+               <entry testId="ERS_D.f09_g16.ICLM45VIC.yellowstone_intel.clm-vrtlay"       failType="RUN" >core dump when writing h1 history file.  fort: (7): Attempt to use pointer PTR when it is not associated with a target</entry>
+            </INTEL>
+            <PGI>
+               <entry testId="ERH_D.f19_g16.I1850CLM45CN.yellowstone_pgi.clm-default"     failType="RUN" > </entry>
+               <entry testId="ERS.f09_g16.ICLM45VIC.yellowstone_pgi.clm-vrtlay"           failType="RUN" >core dump when writing h1 history file</entry>
+            </PGI>
+         </yellowstone>
+         <goldbach>
+            <INTEL>
+            </INTEL>
+            <NAG>
+               <!-- Following test just seems to run out of wallclock for me sometimes (clm4_5_25), my final version actually passed -->
+               <entry testId="ERI_D_Mmpich.f19_g16.ICLM45BGC.frankfurt_nag" failType="RUN" >Sometimes runs out of wallclock time</entry>
+               <entry testId="SMS_RLA_Mmpich.f45_f45.ICLM45.frankfurt_nag.clm-default" failType="FAIL" >Sometimes passes, sometimes fails. MPI error with > 1 pe.  works with mpi-serial which is the normal use case for this setup.</entry>
+            </NAG>
+            <PGI>
+            </PGI>
+         </goldbach>
+     </auxTests>
    </cesm>
+
+   <tools_test_driver>
+         <yellowstone>
+            <INTEL>
+            </INTEL>
+         </yellowstone>
+         <goldbach>
+            <INTEL>
+               <entry testId="sm684" failType="FAIL">goldbach not recognized</entry>
+               <entry testId="smf84" failType="FAIL">goldbach not recognized</entry>
+               <entry testId="smfc4" failType="FAIL">goldbach not recognized</entry>
+            </INTEL>
+         </goldbach>
+   </tools_test_driver>
 
    <PTCLM>
          <yellowstone>
             <INTEL>
-               <entry testId="0_US-UMB_I_1850_CLM45"          failType="FAIL"              ></entry>
-               <entry testId="0_US-UMB_I20TRCLM45"            failType="FAIL"              ></entry>
-               <entry testId="0_US-UMB_ICLM45CN"              failType="FAIL"              ></entry>
-               <entry testId="0_US-UMB_I1850CLM45BGC"         failType="FAIL"              ></entry>
-               <entry testId="0_US-UMB_ICLM45BGC"             failType="FAIL"              ></entry>
             </INTEL>
          </yellowstone>
-         <frankfurt>
+         <goldbach>
             <PGI>
             </PGI>
-         </frankfurt>
+         </goldbach>
    </PTCLM>
 
 </expectedFails> 

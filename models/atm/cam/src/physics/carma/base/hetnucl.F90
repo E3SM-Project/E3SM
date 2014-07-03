@@ -37,7 +37,6 @@ subroutine hetnucl(carma, cstate, iz, rc)
   integer, intent(inout)               :: rc      !! return code, negative indicates failure
 
   ! Local declarations
-  logical                              :: evapfrom_nucto
   integer                              :: igas    ! gas index
   integer                              :: igroup  ! group index
   integer                              :: ibin    ! bin index
@@ -45,7 +44,6 @@ subroutine hetnucl(carma, cstate, iz, rc)
   integer                              :: inuc    ! nucleating element index
   integer                              :: ienucto ! index of target nucleation element
   integer                              :: ignucto ! index of target nucleation group
-  integer                              :: inucto  ! index of target nucleation bin
   real(kind=f)                         :: rmw
   real(kind=f)                         :: R_H2O
   real(kind=f)                         :: rnh2o
@@ -110,23 +108,9 @@ subroutine hetnucl(carma, cstate, iz, rc)
           ! evaluation of index of smallest bin nucleated during time step <inucstep>.
           do ibin = NBIN, 1, -1
     
-            !  <inucto> is index of target nucleation bin.
-            if (ignucto .ne. 0) then
-              inucto = inuc2bin(ibin,igroup,ignucto)
-            else
-              inucto = 0
-            endif
-    
             ! Bypass calculation if few particles are present
             if (pconmax(iz,igroup) .gt. FEW_PC) then
     
-              ! Set <evapfrom_nucto> to .true. when target droplets are evaporating
-              if (inucto .ne. 0) then
-                evapfrom_nucto = evaplg(inucto,ignucto) .gt. 0._f
-              else
-                evapfrom_nucto = .false.
-              endif
-      
               ! Only proceed if ice supersaturated
               !
               ! NOTE: We are only trying to model PMC partcles, so turn of nucleation

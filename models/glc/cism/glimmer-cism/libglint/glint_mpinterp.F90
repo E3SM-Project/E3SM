@@ -33,7 +33,8 @@ module glint_mpinterp
   !*FD Uses SLAP to calculate the field needed to perform
   !*FD mean-preserving interpolation on a sphere
 
-  use glimmer_global
+  use glimmer_global, only: dp
+  use glimmer_physcon, only: pi
   implicit none
 
   type mpinterp
@@ -52,8 +53,6 @@ module glint_mpinterp
      ! Grid-box areas
      real(dp),dimension(:,:),pointer :: areas => null() !*FD Grid-box areas
   end type mpinterp
-
-  real(dp),parameter,private :: pi = 3.141592654
 
   private
   public mpinterp,new_mpinterp,mean_preserve_interp
@@ -276,8 +275,8 @@ contains
   subroutine mean_preserve_interp(params,in,out,zeros)
 
     type(mpinterp),         intent(inout) :: params
-    real(rk),dimension(:,:),intent(in)    :: in
-    real(rk),dimension(:,:),intent(out)   :: out
+    real(dp),dimension(:,:),intent(in)    :: in
+    real(dp),dimension(:,:),intent(out)   :: out
     logical, dimension(:,:),intent(out)   :: zeros
     
     integer :: i,j,ii

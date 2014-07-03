@@ -51,12 +51,18 @@
 
   ! output to coupler
 
-  real(r8),dimension(:,:,:), allocatable ::  &   ! per elevation class
-     gfrac       ,&! fractional glacier area [0,1] 
-     gtopo       ,&! glacier surface elevation (m)
+  real(r8),dimension(:,:), allocatable :: &
      grofi       ,&! ice runoff (calving) flux (kg/m^2/s)
-     grofl       ,&! ice runoff (calving) flux (kg/m^2/s)
+     grofl         ! ice runoff (calving) flux (kg/m^2/s)
+
+  real(r8),dimension(:,:,:), allocatable, target ::  &   ! per elevation class
+     gfrac         ! fractional glacier area [0,1] (needs to be a target for the sake of gfrac_to_cpl in glc_import_export)
+  real(r8),dimension(:,:,:), allocatable ::  &   ! per elevation class
+     gtopo       ,&! glacier surface elevation (m)
      ghflx         ! heat flux from glacier interior, positive down (W/m^2)
+
+  real(r8),dimension(:,:), allocatable :: &
+     ice_sheet_grid_mask
 
   type(glint_params) :: ice_sheet   ! Parameters relevant to all model instances, 
                                     ! i.e. pertaining to the global model 
@@ -134,17 +140,18 @@
 !!   integer (i4) :: nxo, nyo  ! not currently used
 
  ! from coupler
-   allocate(tsfc(nx,ny,glc_nec))
-   allocate(topo(nx,ny,glc_nec))
-   allocate(qsmb(nx,ny,glc_nec))
+   allocate(tsfc(nx,ny,0:glc_nec))
+   allocate(topo(nx,ny,0:glc_nec))
+   allocate(qsmb(nx,ny,0:glc_nec))
 
  ! to coupler
-   allocate(gfrac(nx,ny,glc_nec))
-   allocate(gtopo(nx,ny,glc_nec))
-   allocate(grofi(nx,ny,glc_nec))
-   allocate(grofl(nx,ny,glc_nec))
-   allocate(ghflx(nx,ny,glc_nec))
-
+   allocate(grofi(nx,ny))
+   allocate(grofl(nx,ny))
+   allocate(gfrac(nx,ny,0:glc_nec))
+   allocate(gtopo(nx,ny,0:glc_nec))
+   allocate(ghflx(nx,ny,0:glc_nec))
+   allocate(ice_sheet_grid_mask(nx,ny))
+   
  ! Other fields
 
    allocate(temp(nx,ny),precip(nx,ny),orog(nx,ny))
@@ -195,7 +202,7 @@
    deallocate(grofi)
    deallocate(grofl)
    deallocate(ghflx)
-
+   deallocate(ice_sheet_grid_mask)
  ! Other fields
 !lipscomb - TO DO - Some of these are not needed
   deallocate(temp)

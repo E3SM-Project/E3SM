@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: shr_stream_mod.F90 43642 2013-01-31 19:22:00Z sacks $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/shr/shr_stream_mod.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_stream_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !

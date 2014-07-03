@@ -655,8 +655,8 @@
       use chem_mods,        only : adv_mass
       use mo_constants,     only : avogadro
       use mo_chem_utls,     only : get_spc_ndx
-      use dust_intr,        only : dust_names
-      use progseasalts_intr,only : progseasalts_names
+      use dust_model,       only : dust_names
+      use seasalt_model,    only : sslt_names=>seasalt_names
 
       implicit none
 
@@ -1101,7 +1101,8 @@
 !-----------------------------------------------------------------------------
 !  	... sea salts
 !-----------------------------------------------------------------------------
-       ndx = get_spc_ndx(progseasalts_names(1))
+       ndx = get_spc_ndx(sslt_names(1))
+   
        if( ndx > 0 ) then
           mw = adv_mass( ndx )
           gpm2(:) = dz(:) * asal(:pver,1) * mw 
@@ -1122,7 +1123,7 @@
          end do
        end if
  
-       ndx = get_spc_ndx(progseasalts_names(2))
+       ndx = get_spc_ndx(sslt_names(2))
        if( ndx > 0 ) then
           mw = adv_mass( ndx )
           gpm2(:) = dz(:) * asal(:pver,2) * mw 
@@ -1143,7 +1144,7 @@
          end do
        end if
 
-       ndx = get_spc_ndx(progseasalts_names(3))
+       ndx = get_spc_ndx(sslt_names(3))
        if( ndx > 0 ) then
           mw = adv_mass( ndx )
           gpm2(:) = dz(:) * asal(:pver,3) * mw 
@@ -1164,7 +1165,7 @@
          end do
       end if
 
-      ndx = get_spc_ndx(progseasalts_names(4))
+      ndx = get_spc_ndx(sslt_names(4))
       if( ndx > 0 ) then
           mw = adv_mass( ndx )
           gpm2(:) = dz(:) * asal(:pver,4) * mw 

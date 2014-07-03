@@ -55,7 +55,8 @@ contains
 
 !TODO - Pretty sure that none of the arrays in this subroutine are needed for HO,
 !        so we may not need to call this subroutine from glissade_initialise.
-
+!       Make sure the arrays allocated here are deallocated at the end.
+!        Might want to move allocation/deallocation to subroutines in glide_types.
 !       Some velowk arrays are used in wvelintg, but not hard to rewrite wvelintg without these arrays.
 
   subroutine init_velo(model)
@@ -711,7 +712,6 @@ contains
     !*FD Calculates the time-derivative of a field. This subroutine is used by 
     !*FD the Glimmer temperature solver only.
 
-    use glimmer_global, only : dp, sp
     use glimmer_paramets, only : tim0
     use glimmer_physcon, only: scyr
 
@@ -951,16 +951,13 @@ contains
   end subroutine wvel_ew
 
 !------------------------------------------------------------------------------------------
-!TODO - Remove 'use parallel'?
 
   subroutine chckwvel(numerics,geomderv,uvel,vvel,wvel,thck,acab)
 
     !*FD Constrain the vertical velocity field to obey a kinematic upper boundary 
     !*FD condition.
-    use parallel
-    use glimmer_global, only : sp 
-!!    use glimmer_horiz_bcs, only: horiz_bcs_unstag_scalar
 
+    use parallel   !TODO - Remove?
     implicit none
 
     !------------------------------------------------------------------------------------
@@ -977,7 +974,7 @@ contains
                                                         !*FD level (scaled, on staggered grid).
     real(dp),dimension(:,:,:),intent(inout) :: wvel     !*FD Vertical velocity field, 
     real(dp),dimension(:,:),  intent(in)    :: thck     !*FD Ice thickness (scaled)
-    real(sp),dimension(:,:),  intent(in)    :: acab     !*FD Mass-balance (scaled)
+    real(dp),dimension(:,:),  intent(in)    :: acab     !*FD Mass-balance (scaled)
 
     !------------------------------------------------------------------------------------
     ! Internal variables
@@ -1071,7 +1068,7 @@ contains
   subroutine calc_btrc(model,flag,btrc)
 
     !*FD Calculate the value of $B$ used for basal sliding calculations.
-    use glimmer_global, only : dp 
+
     use glimmer_physcon, only : rhoo, rhoi
     use glimmer_paramets, only : len0, thk0, scyr, vel0
     implicit none
@@ -1085,15 +1082,15 @@ contains
     !------------------------------------------------------------------------------------
 
     real(dp) :: stagbwat, stagbmlt 
-    integer :: ew,ns,nsn,ewn
-    real :: Asl = 1.8d-10 !in units N^-3 yr^-1 m^8 for case(5)
-    real :: Z !accounts for reduced basal traction due to pressure of
-              !subglacial water for case(5)
-    real :: tau !basal shear stress
+    integer  :: ew,ns,nsn,ewn
+    real(dp) :: Asl = 1.8d-10   !in units N^-3 yr^-1 m^8 for case(5)
+    real(dp) :: Z !accounts for reduced basal traction due to pressure of
+                  !subglacial water for case(5)
+    real(dp) :: tau  !basal shear stress
 
     !scaling
-    real :: tau_factor = 1.d-3*thk0*thk0/len0
-    !real :: tau_factor = 1.0d0
+    real(dp) :: tau_factor = 1.d-3*thk0*thk0/len0
+    !real(dp) :: tau_factor = 1.0d0
     !------------------------------------------------------------------------------------
 
     ewn=model%general%ewn

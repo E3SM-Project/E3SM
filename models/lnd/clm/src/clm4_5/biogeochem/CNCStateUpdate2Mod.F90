@@ -1,200 +1,124 @@
-
 module CNCStateUpdate2Mod
-#ifdef CN
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: CStateUpdate2Mod
-!
-! !DESCRIPTION:
-! Module for carbon state variable update, mortality fluxes.
-!
-! !USES:
-    use shr_kind_mod, only: r8 => shr_kind_r8
-    use abortutils  , only: endrun
-    implicit none
-    save
-    private
-! !PUBLIC MEMBER FUNCTIONS:
-    public:: CStateUpdate2
-    public:: CStateUpdate2h
-!
-! !REVISION HISTORY:
-! 4/23/2004: Created by Peter Thornton
-!
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Module for carbon state variable update, mortality fluxes.
+  !
+  ! !USES:
+  use shr_kind_mod , only: r8 => shr_kind_r8
+  use abortutils   , only: endrun
+  use shr_log_mod  , only: errMsg => shr_log_errMsg
+  implicit none
+  save
+  private
+
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public:: CStateUpdate2
+  public:: CStateUpdate2h
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: CStateUpdate2
-!
-! !INTERFACE:
-subroutine CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
-!
-! !DESCRIPTION:
-! On the radiation time step, update all the prognostic carbon state
-! variables affected by gap-phase mortality fluxes
-!
-! !USES:
-   use clmtype
-   use clm_time_manager, only: get_step_size
-   use clm_varpar   , only: nlevsoi, nlevdecomp
-   use clm_varpar   , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-!
-! !ARGUMENTS:
-   implicit none
-   integer, intent(in) :: num_soilc       ! number of soil columns in filter
-   integer, intent(in) :: filter_soilc(:) ! filter for soil columns
-   integer, intent(in) :: num_soilp       ! number of soil pfts in filter
-   integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
-   character(len=*), intent(in) :: isotope         ! 'bulk', 'c13' or 'c14'
-!
-! !CALLED FROM:
-! subroutine CNEcosystemDyn
-!
-! !REVISION HISTORY:
-! 3/29/04: Created by Peter Thornton
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in arrays
-   real(r8), pointer :: gap_mortality_c_to_litr_met_c(:,:)         ! C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
-   real(r8), pointer :: gap_mortality_c_to_litr_cel_c(:,:)         ! C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
-   real(r8), pointer :: gap_mortality_c_to_litr_lig_c(:,:)         ! C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
-   real(r8), pointer :: gap_mortality_c_to_cwdc(:,:)               ! C fluxes associated with gap mortality to CWD pool (gC/m3/s)
-   real(r8), pointer :: m_deadcrootc_storage_to_litter(:)
-   real(r8), pointer :: m_deadcrootc_to_litter(:)
-   real(r8), pointer :: m_deadcrootc_xfer_to_litter(:)
-   real(r8), pointer :: m_deadstemc_storage_to_litter(:)
-   real(r8), pointer :: m_deadstemc_to_litter(:)
-   real(r8), pointer :: m_deadstemc_xfer_to_litter(:)
-   real(r8), pointer :: m_frootc_storage_to_litter(:)
-   real(r8), pointer :: m_frootc_to_litter(:)
-   real(r8), pointer :: m_frootc_xfer_to_litter(:)
-   real(r8), pointer :: m_gresp_storage_to_litter(:)
-   real(r8), pointer :: m_gresp_xfer_to_litter(:)
-   real(r8), pointer :: m_leafc_storage_to_litter(:)
-   real(r8), pointer :: m_leafc_to_litter(:)
-   real(r8), pointer :: m_leafc_xfer_to_litter(:)
-   real(r8), pointer :: m_livecrootc_storage_to_litter(:)
-   real(r8), pointer :: m_livecrootc_to_litter(:)
-   real(r8), pointer :: m_livecrootc_xfer_to_litter(:)
-   real(r8), pointer :: m_livestemc_storage_to_litter(:)
-   real(r8), pointer :: m_livestemc_to_litter(:)
-   real(r8), pointer :: m_livestemc_xfer_to_litter(:)
-!
-! local pointers to implicit in/out arrays
-   real(r8), pointer :: decomp_cpools_vr(:,:,:)    ! (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-   real(r8), pointer :: deadcrootc(:)         ! (gC/m2) dead coarse root C
-   real(r8), pointer :: deadcrootc_storage(:) ! (gC/m2) dead coarse root C storage
-   real(r8), pointer :: deadcrootc_xfer(:)    !(gC/m2) dead coarse root C transfer
-   real(r8), pointer :: deadstemc(:)          ! (gC/m2) dead stem C
-   real(r8), pointer :: deadstemc_storage(:)  ! (gC/m2) dead stem C storage
-   real(r8), pointer :: deadstemc_xfer(:)     ! (gC/m2) dead stem C transfer
-   real(r8), pointer :: frootc(:)             ! (gC/m2) fine root C
-   real(r8), pointer :: frootc_storage(:)     ! (gC/m2) fine root C storage
-   real(r8), pointer :: frootc_xfer(:)        ! (gC/m2) fine root C transfer
-   real(r8), pointer :: gresp_storage(:)      ! (gC/m2) growth respiration storage
-   real(r8), pointer :: gresp_xfer(:)         ! (gC/m2) growth respiration transfer
-   real(r8), pointer :: leafc(:)              ! (gC/m2) leaf C
-   real(r8), pointer :: leafc_storage(:)      ! (gC/m2) leaf C storage
-   real(r8), pointer :: leafc_xfer(:)         ! (gC/m2) leaf C transfer
-   real(r8), pointer :: livecrootc(:)         ! (gC/m2) live coarse root C
-   real(r8), pointer :: livecrootc_storage(:) ! (gC/m2) live coarse root C storage
-   real(r8), pointer :: livecrootc_xfer(:)    !(gC/m2) live coarse root C transfer
-   real(r8), pointer :: livestemc(:)          ! (gC/m2) live stem C
-   real(r8), pointer :: livestemc_storage(:)  ! (gC/m2) live stem C storage
-   real(r8), pointer :: livestemc_xfer(:)     ! (gC/m2) live stem C transfer
-!
-!
-! local pointers to implicit out arrays
-!
-!
-! !OTHER LOCAL VARIABLES:
-   type(pft_cflux_type), pointer :: pcisof
-   type(pft_cstate_type), pointer :: pcisos
-   type(column_cflux_type), pointer :: ccisof
-   type(column_cstate_type), pointer :: ccisos
-   integer :: c,p,j      ! indices
-   integer :: fp,fc    ! lake filter indices
-   real(r8):: dt       ! radiation time step (seconds)
-!
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  subroutine CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update all the prognostic carbon state
+    ! variables affected by gap-phase mortality fluxes
+    !
+    ! !USES:
+    use clmtype
+    use clm_time_manager, only: get_step_size
+    use clm_varpar   , only: nlevsoi, nlevdecomp
+    use clm_varpar   , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+    !
+    ! !ARGUMENTS:
+    implicit none
+    integer, intent(in) :: num_soilc       ! number of soil columns in filter
+    integer, intent(in) :: filter_soilc(:) ! filter for soil columns
+    integer, intent(in) :: num_soilp       ! number of soil pfts in filter
+    integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
+    character(len=*), intent(in) :: isotope         ! 'bulk', 'c13' or 'c14'
+    !
+    ! !LOCAL VARIABLES:
+    type(pft_cflux_type), pointer :: pcisof
+    type(pft_cstate_type), pointer :: pcisos
+    type(column_cflux_type), pointer :: ccisof
+    type(column_cstate_type), pointer :: ccisos
+    integer :: c,p,j      ! indices
+    integer :: fp,fc    ! lake filter indices
+    real(r8):: dt       ! radiation time step (seconds)
+    !-----------------------------------------------------------------------
+
    ! select which isotope
    select case (isotope)
    case ('bulk')
-      pcisof => clm3%g%l%c%p%pcf
-      pcisos => clm3%g%l%c%p%pcs
-      ccisof => clm3%g%l%c%ccf
-      ccisos => clm3%g%l%c%ccs
+      pcisof =>  pcf
+      pcisos =>  pcs
+      ccisof =>  ccf
+      ccisos =>  ccs
    case ('c14')
-      pcisof => clm3%g%l%c%p%pc14f
-      pcisos => clm3%g%l%c%p%pc14s
-      ccisof => clm3%g%l%c%cc14f
-      ccisos => clm3%g%l%c%cc14s
+      pcisof =>  pc14f
+      pcisos =>  pc14s
+      ccisof =>  cc14f
+      ccisos =>  cc14s
    case ('c13')
-      pcisof => clm3%g%l%c%p%pc13f
-      pcisos => clm3%g%l%c%p%pc13s
-      ccisof => clm3%g%l%c%cc13f
-      ccisos => clm3%g%l%c%cc13s
+      pcisof =>  pc13f
+      pcisos =>  pc13s
+      ccisof =>  cc13f
+      ccisos =>  cc13s
    case default
-      call endrun('CNCIsoStateUpdate2Mod: iso must be bulk, c13 or c14')
+      call endrun(msg='CNCIsoStateUpdate2Mod: iso must be bulk, c13 or c14'//&
+           errMsg(__FILE__, __LINE__))
    end select
 
-    ! assign local pointers at the column level
-    gap_mortality_c_to_litr_met_c  => ccisof%gap_mortality_c_to_litr_met_c
-    gap_mortality_c_to_litr_cel_c  => ccisof%gap_mortality_c_to_litr_cel_c
-    gap_mortality_c_to_litr_lig_c  => ccisof%gap_mortality_c_to_litr_lig_c
-    gap_mortality_c_to_cwdc        => ccisof%gap_mortality_c_to_cwdc
-    decomp_cpools_vr                   => ccisos%decomp_cpools_vr
-
-
-    ! assign local pointers at the pft level
-    m_deadcrootc_storage_to_litter => pcisof%m_deadcrootc_storage_to_litter
-    m_deadcrootc_to_litter         => pcisof%m_deadcrootc_to_litter
-    m_deadcrootc_xfer_to_litter    => pcisof%m_deadcrootc_xfer_to_litter
-    m_deadstemc_storage_to_litter  => pcisof%m_deadstemc_storage_to_litter
-    m_deadstemc_to_litter          => pcisof%m_deadstemc_to_litter
-    m_deadstemc_xfer_to_litter     => pcisof%m_deadstemc_xfer_to_litter
-    m_frootc_storage_to_litter     => pcisof%m_frootc_storage_to_litter
-    m_frootc_to_litter             => pcisof%m_frootc_to_litter
-    m_frootc_xfer_to_litter        => pcisof%m_frootc_xfer_to_litter
-    m_gresp_storage_to_litter      => pcisof%m_gresp_storage_to_litter
-    m_gresp_xfer_to_litter         => pcisof%m_gresp_xfer_to_litter
-    m_leafc_storage_to_litter      => pcisof%m_leafc_storage_to_litter
-    m_leafc_to_litter              => pcisof%m_leafc_to_litter
-    m_leafc_xfer_to_litter         => pcisof%m_leafc_xfer_to_litter
-    m_livecrootc_storage_to_litter => pcisof%m_livecrootc_storage_to_litter
-    m_livecrootc_to_litter         => pcisof%m_livecrootc_to_litter
-    m_livecrootc_xfer_to_litter    => pcisof%m_livecrootc_xfer_to_litter
-    m_livestemc_storage_to_litter  => pcisof%m_livestemc_storage_to_litter
-    m_livestemc_to_litter          => pcisof%m_livestemc_to_litter
-    m_livestemc_xfer_to_litter     => pcisof%m_livestemc_xfer_to_litter
-    deadcrootc                     => pcisos%deadcrootc
-    deadcrootc_storage             => pcisos%deadcrootc_storage
-    deadcrootc_xfer                => pcisos%deadcrootc_xfer
-    deadstemc                      => pcisos%deadstemc
-    deadstemc_storage              => pcisos%deadstemc_storage
-    deadstemc_xfer                 => pcisos%deadstemc_xfer
-    frootc                         => pcisos%frootc
-    frootc_storage                 => pcisos%frootc_storage
-    frootc_xfer                    => pcisos%frootc_xfer
-    gresp_storage                  => pcisos%gresp_storage
-    gresp_xfer                     => pcisos%gresp_xfer
-    leafc                          => pcisos%leafc
-    leafc_storage                  => pcisos%leafc_storage
-    leafc_xfer                     => pcisos%leafc_xfer
-    livecrootc                     => pcisos%livecrootc
-    livecrootc_storage             => pcisos%livecrootc_storage
-    livecrootc_xfer                => pcisos%livecrootc_xfer
-    livestemc                      => pcisos%livestemc
-    livestemc_storage              => pcisos%livestemc_storage
-    livestemc_xfer                 => pcisos%livestemc_xfer
+   associate(& 
+   gap_mortality_c_to_litr_met_c       =>    ccisof%gap_mortality_c_to_litr_met_c        , & ! Input:  [real(r8) (:,:)]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
+   gap_mortality_c_to_litr_cel_c       =>    ccisof%gap_mortality_c_to_litr_cel_c        , & ! Input:  [real(r8) (:,:)]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
+   gap_mortality_c_to_litr_lig_c       =>    ccisof%gap_mortality_c_to_litr_lig_c        , & ! Input:  [real(r8) (:,:)]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
+   gap_mortality_c_to_cwdc             =>    ccisof%gap_mortality_c_to_cwdc              , & ! Input:  [real(r8) (:,:)]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
+   decomp_cpools_vr                    =>    ccisos%decomp_cpools_vr                     , & ! InOut:  [real(r8) (:,:,:)]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+   m_deadcrootc_storage_to_litter      =>    pcisof%m_deadcrootc_storage_to_litter       , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_to_litter              =>    pcisof%m_deadcrootc_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_deadcrootc_xfer_to_litter         =>    pcisof%m_deadcrootc_xfer_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_storage_to_litter       =>    pcisof%m_deadstemc_storage_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_to_litter               =>    pcisof%m_deadstemc_to_litter                , & ! Input:  [real(r8) (:)]                                                    
+   m_deadstemc_xfer_to_litter          =>    pcisof%m_deadstemc_xfer_to_litter           , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_storage_to_litter          =>    pcisof%m_frootc_storage_to_litter           , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_to_litter                  =>    pcisof%m_frootc_to_litter                   , & ! Input:  [real(r8) (:)]                                                    
+   m_frootc_xfer_to_litter             =>    pcisof%m_frootc_xfer_to_litter              , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_storage_to_litter           =>    pcisof%m_gresp_storage_to_litter            , & ! Input:  [real(r8) (:)]                                                    
+   m_gresp_xfer_to_litter              =>    pcisof%m_gresp_xfer_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_storage_to_litter           =>    pcisof%m_leafc_storage_to_litter            , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_to_litter                   =>    pcisof%m_leafc_to_litter                    , & ! Input:  [real(r8) (:)]                                                    
+   m_leafc_xfer_to_litter              =>    pcisof%m_leafc_xfer_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_storage_to_litter      =>    pcisof%m_livecrootc_storage_to_litter       , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_to_litter              =>    pcisof%m_livecrootc_to_litter               , & ! Input:  [real(r8) (:)]                                                    
+   m_livecrootc_xfer_to_litter         =>    pcisof%m_livecrootc_xfer_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_storage_to_litter       =>    pcisof%m_livestemc_storage_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_to_litter               =>    pcisof%m_livestemc_to_litter                , & ! Input:  [real(r8) (:)]                                                    
+   m_livestemc_xfer_to_litter          =>    pcisof%m_livestemc_xfer_to_litter           , & ! Input:  [real(r8) (:)]                                                    
+   deadcrootc                          =>    pcisos%deadcrootc                           , & ! InOut:  [real(r8) (:)]  (gC/m2) dead coarse root C                        
+   deadcrootc_storage                  =>    pcisos%deadcrootc_storage                   , & ! InOut:  [real(r8) (:)]  (gC/m2) dead coarse root C storage                
+   deadcrootc_xfer                     =>    pcisos%deadcrootc_xfer                      , & ! InOut:  [real(r8) (:)] (gC/m2) dead coarse root C transfer                
+   deadstemc                           =>    pcisos%deadstemc                            , & ! InOut:  [real(r8) (:)]  (gC/m2) dead stem C                               
+   deadstemc_storage                   =>    pcisos%deadstemc_storage                    , & ! InOut:  [real(r8) (:)]  (gC/m2) dead stem C storage                       
+   deadstemc_xfer                      =>    pcisos%deadstemc_xfer                       , & ! InOut:  [real(r8) (:)]  (gC/m2) dead stem C transfer                      
+   frootc                              =>    pcisos%frootc                               , & ! InOut:  [real(r8) (:)]  (gC/m2) fine root C                               
+   frootc_storage                      =>    pcisos%frootc_storage                       , & ! InOut:  [real(r8) (:)]  (gC/m2) fine root C storage                       
+   frootc_xfer                         =>    pcisos%frootc_xfer                          , & ! InOut:  [real(r8) (:)]  (gC/m2) fine root C transfer                      
+   gresp_storage                       =>    pcisos%gresp_storage                        , & ! InOut:  [real(r8) (:)]  (gC/m2) growth respiration storage                
+   gresp_xfer                          =>    pcisos%gresp_xfer                           , & ! InOut:  [real(r8) (:)]  (gC/m2) growth respiration transfer               
+   leafc                               =>    pcisos%leafc                                , & ! InOut:  [real(r8) (:)]  (gC/m2) leaf C                                    
+   leafc_storage                       =>    pcisos%leafc_storage                        , & ! InOut:  [real(r8) (:)]  (gC/m2) leaf C storage                            
+   leafc_xfer                          =>    pcisos%leafc_xfer                           , & ! InOut:  [real(r8) (:)]  (gC/m2) leaf C transfer                           
+   livecrootc                          =>    pcisos%livecrootc                           , & ! InOut:  [real(r8) (:)]  (gC/m2) live coarse root C                        
+   livecrootc_storage                  =>    pcisos%livecrootc_storage                   , & ! InOut:  [real(r8) (:)]  (gC/m2) live coarse root C storage                
+   livecrootc_xfer                     =>    pcisos%livecrootc_xfer                      , & ! InOut:  [real(r8) (:)] (gC/m2) live coarse root C transfer                
+   livestemc                           =>    pcisos%livestemc                            , & ! InOut:  [real(r8) (:)]  (gC/m2) live stem C                               
+   livestemc_storage                   =>    pcisos%livestemc_storage                    , & ! InOut:  [real(r8) (:)]  (gC/m2) live stem C storage                       
+   livestemc_xfer                      =>    pcisos%livestemc_xfer                         & ! InOut:  [real(r8) (:)]  (gC/m2) live stem C transfer                      
+   )
 
     ! set time steps
     dt = real( get_step_size(), r8 )
@@ -246,99 +170,31 @@ subroutine CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, isoto
        gresp_xfer(p)          = gresp_xfer(p)         - m_gresp_xfer_to_litter(p)         * dt
     end do ! end of pft loop
 
-end subroutine CStateUpdate2
-!-----------------------------------------------------------------------
+    end associate 
+ end subroutine CStateUpdate2
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: CStateUpdate2h
-!
-! !INTERFACE:
-subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
-!
-! !DESCRIPTION:
-! Update all the prognostic carbon state
-! variables affected by harvest mortality fluxes
-!
-! !USES:
+ !-----------------------------------------------------------------------
+ subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
+   !
+   ! !DESCRIPTION:
+   ! Update all the prognostic carbon state
+   ! variables affected by harvest mortality fluxes
+   !
+   ! !USES:
    use clmtype
    use clm_time_manager, only: get_step_size
    use clm_varpar   , only: nlevdecomp
    use clm_varpar   , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-!
-! !ARGUMENTS:
+   !
+   ! !ARGUMENTS:
    implicit none
    integer, intent(in) :: num_soilc       ! number of soil columns in filter
    integer, intent(in) :: filter_soilc(:) ! filter for soil columns
    integer, intent(in) :: num_soilp       ! number of soil pfts in filter
    integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
    character(len=*), intent(in) :: isotope         ! 'bulk', 'c13' or 'c14'
-!
-! !CALLED FROM:
-! subroutine CNEcosystemDyn
-!
-! !REVISION HISTORY:
-! 5/20/09: Created by Peter Thornton
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in arrays
-   real(r8), pointer :: harvest_c_to_litr_met_c(:,:)               ! C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
-   real(r8), pointer :: harvest_c_to_litr_cel_c(:,:)               ! C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
-   real(r8), pointer :: harvest_c_to_litr_lig_c(:,:)               ! C fluxes associated with harvest to litter lignin pool (gC/m3/s)
-   real(r8), pointer :: harvest_c_to_cwdc(:,:)                     ! C fluxes associated with harvest to CWD pool (gC/m3/s)
-   real(r8), pointer :: hrv_deadcrootc_storage_to_litter(:)
-   real(r8), pointer :: hrv_deadcrootc_to_litter(:)
-   real(r8), pointer :: hrv_deadcrootc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_deadstemc_storage_to_litter(:)
-   real(r8), pointer :: hrv_deadstemc_to_prod10c(:)
-   real(r8), pointer :: hrv_deadstemc_to_prod100c(:)
-   real(r8), pointer :: hrv_deadstemc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_frootc_storage_to_litter(:)
-   real(r8), pointer :: hrv_frootc_to_litter(:)
-   real(r8), pointer :: hrv_frootc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_gresp_storage_to_litter(:)
-   real(r8), pointer :: hrv_gresp_xfer_to_litter(:)
-   real(r8), pointer :: hrv_leafc_storage_to_litter(:)
-   real(r8), pointer :: hrv_leafc_to_litter(:)
-   real(r8), pointer :: hrv_leafc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_livecrootc_storage_to_litter(:)
-   real(r8), pointer :: hrv_livecrootc_to_litter(:)
-   real(r8), pointer :: hrv_livecrootc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_livestemc_storage_to_litter(:)
-   real(r8), pointer :: hrv_livestemc_to_litter(:)
-   real(r8), pointer :: hrv_livestemc_xfer_to_litter(:)
-   real(r8), pointer :: hrv_xsmrpool_to_atm(:)
-!
-! local pointers to implicit in/out arrays
-   real(r8), pointer :: decomp_cpools_vr(:,:,:)    ! (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-   real(r8), pointer :: deadcrootc(:)         ! (gC/m2) dead coarse root C
-   real(r8), pointer :: deadcrootc_storage(:) ! (gC/m2) dead coarse root C storage
-   real(r8), pointer :: deadcrootc_xfer(:)    ! (gC/m2) dead coarse root C transfer
-   real(r8), pointer :: deadstemc(:)          ! (gC/m2) dead stem C
-   real(r8), pointer :: deadstemc_storage(:)  ! (gC/m2) dead stem C storage
-   real(r8), pointer :: deadstemc_xfer(:)     ! (gC/m2) dead stem C transfer
-   real(r8), pointer :: frootc(:)             ! (gC/m2) fine root C
-   real(r8), pointer :: frootc_storage(:)     ! (gC/m2) fine root C storage
-   real(r8), pointer :: frootc_xfer(:)        ! (gC/m2) fine root C transfer
-   real(r8), pointer :: gresp_storage(:)      ! (gC/m2) growth respiration storage
-   real(r8), pointer :: gresp_xfer(:)         ! (gC/m2) growth respiration transfer
-   real(r8), pointer :: leafc(:)              ! (gC/m2) leaf C
-   real(r8), pointer :: leafc_storage(:)      ! (gC/m2) leaf C storage
-   real(r8), pointer :: leafc_xfer(:)         ! (gC/m2) leaf C transfer
-   real(r8), pointer :: livecrootc(:)         ! (gC/m2) live coarse root C
-   real(r8), pointer :: livecrootc_storage(:) ! (gC/m2) live coarse root C storage
-   real(r8), pointer :: livecrootc_xfer(:)    ! (gC/m2) live coarse root C transfer
-   real(r8), pointer :: livestemc(:)          ! (gC/m2) live stem C
-   real(r8), pointer :: livestemc_storage(:)  ! (gC/m2) live stem C storage
-   real(r8), pointer :: livestemc_xfer(:)     ! (gC/m2) live stem C transfer
-   real(r8), pointer :: xsmrpool(:)           ! (gC/m2) abstract C pool to meet excess MR demand
-!
-!
-! local pointers to implicit out arrays
-!
-!
-! !OTHER LOCAL VARIABLES:
+   !
+   ! !LOCAL VARIABLES:
    type(pft_cflux_type), pointer :: pcisof
    type(pft_cstate_type), pointer :: pcisos
    type(column_cflux_type), pointer :: ccisof
@@ -346,81 +202,81 @@ subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, isot
    integer :: c,p,j,k,l       ! indices
    integer :: fp,fc    ! lake filter indices
    real(r8):: dt       ! radiation time step (seconds)
-!
-!EOP
-!-----------------------------------------------------------------------
+   !-----------------------------------------------------------------------
+
    ! select which isotope
    select case (isotope)
    case ('bulk')
-      pcisof => clm3%g%l%c%p%pcf
-      pcisos => clm3%g%l%c%p%pcs
-      ccisof => clm3%g%l%c%ccf
-      ccisos => clm3%g%l%c%ccs
+      pcisof =>  pcf
+      pcisos =>  pcs
+      ccisof =>  ccf
+      ccisos =>  ccs
    case ('c14')
-      pcisof => clm3%g%l%c%p%pc14f
-      pcisos => clm3%g%l%c%p%pc14s
-      ccisof => clm3%g%l%c%cc14f
-      ccisos => clm3%g%l%c%cc14s
+      pcisof =>  pc14f
+      pcisos =>  pc14s
+      ccisof =>  cc14f
+      ccisos =>  cc14s
    case ('c13')
-      pcisof => clm3%g%l%c%p%pc13f
-      pcisos => clm3%g%l%c%p%pc13s
-      ccisof => clm3%g%l%c%cc13f
-      ccisos => clm3%g%l%c%cc13s
+      pcisof =>  pc13f
+      pcisos =>  pc13s
+      ccisof =>  cc13f
+      ccisos =>  cc13s
    case default
-      call endrun('CNCIsoStateUpdate2Mod: iso must be bulk, c13 or c14')
+      call endrun(msg='CNCIsoStateUpdate2Mod: iso must be bulk, c13 or c14'//&
+           errMsg(__FILE__, __LINE__))
    end select
 
-    ! assign local pointers at the column level    ! assign local pointers at the column level
-    harvest_c_to_litr_met_c          => ccisof%harvest_c_to_litr_met_c
-    harvest_c_to_litr_cel_c          => ccisof%harvest_c_to_litr_cel_c
-    harvest_c_to_litr_lig_c          => ccisof%harvest_c_to_litr_lig_c
-    harvest_c_to_cwdc                => ccisof%harvest_c_to_cwdc
-    decomp_cpools_vr                     => ccisos%decomp_cpools_vr
+   associate(& 
+   harvest_c_to_litr_met_c             =>    ccisof%harvest_c_to_litr_met_c              , & ! Input:  [real(r8) (:,:)]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
+   harvest_c_to_litr_cel_c             =>    ccisof%harvest_c_to_litr_cel_c              , & ! Input:  [real(r8) (:,:)]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
+   harvest_c_to_litr_lig_c             =>    ccisof%harvest_c_to_litr_lig_c              , & ! Input:  [real(r8) (:,:)]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+   harvest_c_to_cwdc                   =>    ccisof%harvest_c_to_cwdc                    , & ! Input:  [real(r8) (:,:)]  C fluxes associated with harvest to CWD pool (gC/m3/s)
+   decomp_cpools_vr                    =>    ccisos%decomp_cpools_vr                     , & ! InOut:  [real(r8) (:,:,:)]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
 
-    ! assign local pointers at the pft level
-    hrv_deadcrootc_storage_to_litter => pcisof%hrv_deadcrootc_storage_to_litter
-    hrv_deadcrootc_to_litter         => pcisof%hrv_deadcrootc_to_litter
-    hrv_deadcrootc_xfer_to_litter    => pcisof%hrv_deadcrootc_xfer_to_litter
-    hrv_deadstemc_storage_to_litter  => pcisof%hrv_deadstemc_storage_to_litter
-    hrv_deadstemc_to_prod10c         => pcisof%hrv_deadstemc_to_prod10c
-    hrv_deadstemc_to_prod100c        => pcisof%hrv_deadstemc_to_prod100c
-    hrv_deadstemc_xfer_to_litter     => pcisof%hrv_deadstemc_xfer_to_litter
-    hrv_frootc_storage_to_litter     => pcisof%hrv_frootc_storage_to_litter
-    hrv_frootc_to_litter             => pcisof%hrv_frootc_to_litter
-    hrv_frootc_xfer_to_litter        => pcisof%hrv_frootc_xfer_to_litter
-    hrv_gresp_storage_to_litter      => pcisof%hrv_gresp_storage_to_litter
-    hrv_gresp_xfer_to_litter         => pcisof%hrv_gresp_xfer_to_litter
-    hrv_leafc_storage_to_litter      => pcisof%hrv_leafc_storage_to_litter
-    hrv_leafc_to_litter              => pcisof%hrv_leafc_to_litter
-    hrv_leafc_xfer_to_litter         => pcisof%hrv_leafc_xfer_to_litter
-    hrv_livecrootc_storage_to_litter => pcisof%hrv_livecrootc_storage_to_litter
-    hrv_livecrootc_to_litter         => pcisof%hrv_livecrootc_to_litter
-    hrv_livecrootc_xfer_to_litter    => pcisof%hrv_livecrootc_xfer_to_litter
-    hrv_livestemc_storage_to_litter  => pcisof%hrv_livestemc_storage_to_litter
-    hrv_livestemc_to_litter          => pcisof%hrv_livestemc_to_litter
-    hrv_livestemc_xfer_to_litter     => pcisof%hrv_livestemc_xfer_to_litter
-    hrv_xsmrpool_to_atm              => pcisof%hrv_xsmrpool_to_atm
-    deadcrootc                     => pcisos%deadcrootc
-    deadcrootc_storage             => pcisos%deadcrootc_storage
-    deadcrootc_xfer                => pcisos%deadcrootc_xfer
-    deadstemc                      => pcisos%deadstemc
-    deadstemc_storage              => pcisos%deadstemc_storage
-    deadstemc_xfer                 => pcisos%deadstemc_xfer
-    frootc                         => pcisos%frootc
-    frootc_storage                 => pcisos%frootc_storage
-    frootc_xfer                    => pcisos%frootc_xfer
-    gresp_storage                  => pcisos%gresp_storage
-    gresp_xfer                     => pcisos%gresp_xfer
-    leafc                          => pcisos%leafc
-    leafc_storage                  => pcisos%leafc_storage
-    leafc_xfer                     => pcisos%leafc_xfer
-    livecrootc                     => pcisos%livecrootc
-    livecrootc_storage             => pcisos%livecrootc_storage
-    livecrootc_xfer                => pcisos%livecrootc_xfer
-    livestemc                      => pcisos%livestemc
-    livestemc_storage              => pcisos%livestemc_storage
-    livestemc_xfer                 => pcisos%livestemc_xfer
-    xsmrpool                       => pcisos%xsmrpool
+   hrv_deadcrootc_storage_to_litter    =>    pcisof%hrv_deadcrootc_storage_to_litter     , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadcrootc_to_litter            =>    pcisof%hrv_deadcrootc_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadcrootc_xfer_to_litter       =>    pcisof%hrv_deadcrootc_xfer_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_storage_to_litter     =>    pcisof%hrv_deadstemc_storage_to_litter      , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_to_prod10c            =>    pcisof%hrv_deadstemc_to_prod10c             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_to_prod100c           =>    pcisof%hrv_deadstemc_to_prod100c            , & ! Input:  [real(r8) (:)]                                                    
+   hrv_deadstemc_xfer_to_litter        =>    pcisof%hrv_deadstemc_xfer_to_litter         , & ! Input:  [real(r8) (:)]                                                    
+   hrv_frootc_storage_to_litter        =>    pcisof%hrv_frootc_storage_to_litter         , & ! Input:  [real(r8) (:)]                                                    
+   hrv_frootc_to_litter                =>    pcisof%hrv_frootc_to_litter                 , & ! Input:  [real(r8) (:)]                                                    
+   hrv_frootc_xfer_to_litter           =>    pcisof%hrv_frootc_xfer_to_litter            , & ! Input:  [real(r8) (:)]                                                    
+   hrv_gresp_storage_to_litter         =>    pcisof%hrv_gresp_storage_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   hrv_gresp_xfer_to_litter            =>    pcisof%hrv_gresp_xfer_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_leafc_storage_to_litter         =>    pcisof%hrv_leafc_storage_to_litter          , & ! Input:  [real(r8) (:)]                                                    
+   hrv_leafc_to_litter                 =>    pcisof%hrv_leafc_to_litter                  , & ! Input:  [real(r8) (:)]                                                    
+   hrv_leafc_xfer_to_litter            =>    pcisof%hrv_leafc_xfer_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livecrootc_storage_to_litter    =>    pcisof%hrv_livecrootc_storage_to_litter     , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livecrootc_to_litter            =>    pcisof%hrv_livecrootc_to_litter             , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livecrootc_xfer_to_litter       =>    pcisof%hrv_livecrootc_xfer_to_litter        , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livestemc_storage_to_litter     =>    pcisof%hrv_livestemc_storage_to_litter      , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livestemc_to_litter             =>    pcisof%hrv_livestemc_to_litter              , & ! Input:  [real(r8) (:)]                                                    
+   hrv_livestemc_xfer_to_litter        =>    pcisof%hrv_livestemc_xfer_to_litter         , & ! Input:  [real(r8) (:)]                                                    
+   hrv_xsmrpool_to_atm                 =>    pcisof%hrv_xsmrpool_to_atm                  , & ! Input:  [real(r8) (:)]                                                    
+   deadcrootc                          =>    pcisos%deadcrootc                           , & ! InOut:  [real(r8) (:)]  (gC/m2) dead coarse root C                        
+   deadcrootc_storage                  =>    pcisos%deadcrootc_storage                   , & ! InOut:  [real(r8) (:)]  (gC/m2) dead coarse root C storage                
+   deadcrootc_xfer                     =>    pcisos%deadcrootc_xfer                      , & ! InOut:  [real(r8) (:)]  (gC/m2) dead coarse root C transfer               
+   deadstemc                           =>    pcisos%deadstemc                            , & ! InOut:  [real(r8) (:)]  (gC/m2) dead stem C                               
+   deadstemc_storage                   =>    pcisos%deadstemc_storage                    , & ! InOut:  [real(r8) (:)]  (gC/m2) dead stem C storage                       
+   deadstemc_xfer                      =>    pcisos%deadstemc_xfer                       , & ! InOut:  [real(r8) (:)]  (gC/m2) dead stem C transfer                      
+   frootc                              =>    pcisos%frootc                               , & ! InOut:  [real(r8) (:)]  (gC/m2) fine root C                               
+   frootc_storage                      =>    pcisos%frootc_storage                       , & ! InOut:  [real(r8) (:)]  (gC/m2) fine root C storage                       
+   frootc_xfer                         =>    pcisos%frootc_xfer                          , & ! InOut:  [real(r8) (:)]  (gC/m2) fine root C transfer                      
+   gresp_storage                       =>    pcisos%gresp_storage                        , & ! InOut:  [real(r8) (:)]  (gC/m2) growth respiration storage                
+   gresp_xfer                          =>    pcisos%gresp_xfer                           , & ! InOut:  [real(r8) (:)]  (gC/m2) growth respiration transfer               
+   leafc                               =>    pcisos%leafc                                , & ! InOut:  [real(r8) (:)]  (gC/m2) leaf C                                    
+   leafc_storage                       =>    pcisos%leafc_storage                        , & ! InOut:  [real(r8) (:)]  (gC/m2) leaf C storage                            
+   leafc_xfer                          =>    pcisos%leafc_xfer                           , & ! InOut:  [real(r8) (:)]  (gC/m2) leaf C transfer                           
+   livecrootc                          =>    pcisos%livecrootc                           , & ! InOut:  [real(r8) (:)]  (gC/m2) live coarse root C                        
+   livecrootc_storage                  =>    pcisos%livecrootc_storage                   , & ! InOut:  [real(r8) (:)]  (gC/m2) live coarse root C storage                
+   livecrootc_xfer                     =>    pcisos%livecrootc_xfer                      , & ! InOut:  [real(r8) (:)]  (gC/m2) live coarse root C transfer               
+   livestemc                           =>    pcisos%livestemc                            , & ! InOut:  [real(r8) (:)]  (gC/m2) live stem C                               
+   livestemc_storage                   =>    pcisos%livestemc_storage                    , & ! InOut:  [real(r8) (:)]  (gC/m2) live stem C storage                       
+   livestemc_xfer                      =>    pcisos%livestemc_xfer                       , & ! InOut:  [real(r8) (:)]  (gC/m2) live stem C transfer                      
+   xsmrpool                            =>    pcisos%xsmrpool                               & ! InOut:  [real(r8) (:)]  (gC/m2) abstract C pool to meet excess MR demand  
+   )
 
     ! set time steps
     dt = real( get_step_size(), r8 )
@@ -478,8 +334,7 @@ subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, isot
 
     end do ! end of pft loop
 
-end subroutine CStateUpdate2h
-!-----------------------------------------------------------------------
-#endif
+    end associate 
+ end subroutine CStateUpdate2h
 
 end module CNCStateUpdate2Mod

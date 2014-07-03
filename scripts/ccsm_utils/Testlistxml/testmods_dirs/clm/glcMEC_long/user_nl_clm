@@ -1,0 +1,11 @@
+ hist_dov2xy    = .true.,.false.
+ hist_ndens     = 1,1
+! add some special history fields: multi-layer snow fields, and a per-column forcing field
+ hist_fincl1    = 'SNO_EXISTENCE', 'SNO_ABS', 'SNO_T:M', 'SNO_GS:X', 'QICE_FORC'
+ hist_fincl2    = 'QICE'
+ hist_nhtfrq    =0,0
+ hist_mfilt     = 1,12
+
+! Set max snow persistence to a small number so that smb from bare land can potentially be triggered
+! (since this testmods directory is set up for long runs, use 1 year rather than just a couple of days)
+ glc_snow_persistence_max_days = 365

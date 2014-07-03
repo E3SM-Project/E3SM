@@ -1,8 +1,95 @@
 ================================================================================
- SVN $Id: ChangeLog 43934 2013-02-13 16:21:41Z sacks $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_130213/ChangeLog $
+ SVN $Id: ChangeLog 55709 2013-12-01 08:23:46Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_131201/ChangeLog $
 ================================================================================
 This file describes what main-trunk tags were created and why
+================================================================================
+Originator: tcraig
+Date: Dec 1 2013
+Model: dlnd7
+Version: dlnd8_131201
+One-line summary: add force_prognostic_true namelist
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_definition_dlnd.xml
+M       dlnd_comp_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: Nov 7 2013
+Model: dlnd7
+Version: dlnd8_131107
+One-line summary: update build_namelist to correctly parse xml mixed with env
+
+M   bld/build-namelist
+
+
+================================================================================
+Originator: tcraig
+Date: Nov 6 2013
+Model: dlnd7
+Version: dlnd8_131106
+One-line summary: fix NULL mode logging
+
+M       dlnd_comp_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Sep 24 2013
+Model: dlnd7
+Version: dlnd8_130924
+One-line summary: move cpl/ code into dlnd/ directory
+
+M       bld/dlnd.buildexe.csh
+M       ChangeLog
+A  +    lnd_comp_esmf.F90
+A  +    lnd_comp_mct.F90
+D       cpl
+D       cpl/lnd_comp_esmf.F90
+D       cpl/lnd_comp_mct.F90
+
+================================================================================
+Originator: mvertens
+Date: Sep 20 2013
+Model: dlnd7
+Version: dlnd8_130920
+One-line summary: merge comptype branch to trunk
+
+cpl_esmf/ is gone, cpl_mct/ is gone and cpl/ is new 
+with both lnd_comp_esmf and lnd_comp_mct - this will only 
+work with new cpl7 intrastructure in drvseq4_3_05 and beyond
+
+M       bld/dlnd.buildexe.csh
+D       cpl_mct
+D       cpl_mct/lnd_comp_mct.F90
+M       ChangeLog
+D       cpl_esmf
+D       cpl_esmf/lnd_comp_mct.F90
+D       cpl_esmf/lnd_comp_esmf.F90
+A  +    cpl
+A  +    cpl/lnd_comp_esmf.F90
+
+================================================================================
+Date: Sep 5 2013
+Who: tcraig
+Model: dlnd7
+Version: dlnd8_130905
+One-line summary: remove sno interface in coupling
+ - remove "sno interface" from cesm coupling
+ - modify intents on init/run/finalize coupling interfaces
+ - add ifdef USE_ESMF_METADATA around esmf attribute calls
+svn merge $SVNREPO/dlnd7/trunk_tags/dlnd8_130213 $SVNREPO/dlnd7/branch_tags/cplupa_tags/cplupa_n03_dlnd8_130213
+
+M       bld/dlnd.cpl7.template
+M       bld/dlnd.buildnml.csh
+M       bld/build-namelist
+D       bld/user_nl_dsno
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+M       bld/namelist_files/namelist_definition_dlnd.xml
+M       cpl_mct/lnd_comp_mct.F90
+M       cpl_esmf/lnd_comp_esmf.F90
+M       cpl_esmf/lnd_comp_mct.F90
+M       dlnd_comp_mod.F90
 ================================================================================
 Date: Feb 13 2013
 Who: sacks

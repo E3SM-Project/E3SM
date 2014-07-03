@@ -55,7 +55,7 @@ module glissade
 
   ! Driver for Glissade (parallel, higher-order) dynamical core
 
-  use glimmer_global
+  use glimmer_global, only: dp
   use glimmer_log
   use glide_types
   use glide_io
@@ -64,8 +64,9 @@ module glissade
 
   implicit none
 
-  integer, parameter :: &
+  integer :: &
      ntracer = 1   ! number of tracers to transport (just temperature for now)
+                   ! BDM change ntracer from parameter so it's not a constant
                    !TODO - Declare elsewhere?
 
   integer, private, parameter :: dummyunit=99
@@ -96,6 +97,8 @@ contains
     use glide_ground
     use glide_thck, only : glide_calclsrf
     use glam_strs2, only : glam_velo_init
+    use glimmer_coordinates, only: coordsystem_new
+
     use glissade_velo_higher, only: glissade_velo_higher_init
 
 !!    use glimmer_horiz_bcs, only: horiz_bcs_unstag_scalar
@@ -208,7 +211,10 @@ contains
     !       Can remove this call provided velowk is not used elsewhere (e.g., to call wvelintg)
     call init_velo(model)
 
-    call glissade_init_temp(model)  ! temperature lives at layer centers
+    !BDM - Just call glissade_init_temp, which will call glissade_init_enthalpy
+    !      if necessary
+
+    call glissade_init_temp(model) 
 
     if (model%options%gthf == GTHF_COMPUTE) then
        call not_parallel(__FILE__,__LINE__)
@@ -217,14 +223,14 @@ contains
 
     if (model%options%whichdycore == DYCORE_GLAM ) then  ! glam finite-difference
 
-        call glam_velo_init(model%general%ewn,    model%general%nsn,  &
-                            model%general%upn,                        &
-                            model%numerics%dew,   model%numerics%dns, &
-                            model%numerics%sigma)
+       call glam_velo_init(model%general%ewn,    model%general%nsn,  &
+                           model%general%upn,                        &
+                           model%numerics%dew,   model%numerics%dns, &
+                           model%numerics%sigma)
 
     elseif (model%options%whichdycore == DYCORE_GLISSADE ) then  ! glissade finite-element
 
-        call glissade_velo_higher_init
+       call glissade_velo_higher_init
 
     endif
 
@@ -290,19 +296,19 @@ contains
     ! Perform time-step of an ice model instance with glissade dycore
     !TODO - Reorganize to put isostasy and calving at start of step?
 
-    use glimmer_global, only : rk
+    use parallel
+!!    use glimmer_horiz_bcs, only: horiz_bcs_stag_vector_ew, horiz_bcs_stag_vector_ns, &
+!!                                 horiz_bcs_unstag_scalar
+
     use glimmer_paramets, only: tim0, len0, vel0, thk0
     use glimmer_physcon, only: scyr
     use glissade_temp, only: glissade_temp_driver
-    use glissade_transport, only: glissade_transport_driver
     use glide_mask, only: glide_set_mask, calc_iareaf_iareag
     use glide_ground, only: glide_marinlim
     use glide_grid_operators
     use isostasy
-
-    use parallel
-!!    use glimmer_horiz_bcs, only: horiz_bcs_stag_vector_ew, horiz_bcs_stag_vector_ns, &
-!!                                 horiz_bcs_unstag_scalar
+    use glissade_enthalpy
+    use glissade_transport, only: glissade_transport_driver
 
     implicit none
 
@@ -331,6 +337,9 @@ contains
        bmlt_continuity  ! = bmlt if basal mass balance is included in continuity equation
                         ! else = 0
     
+    !WHL - debug
+    integer :: j
+
     ! ========================
 
     ! Update internal clock
@@ -360,7 +369,7 @@ contains
 !HALO TODO - Modify glissade_temp_driver to compute over locally owned cells only?
 
       call t_startf('glissade_temp_driver')
-       call glissade_temp_driver(model, model%options%whichtemp)
+      call glissade_temp_driver(model, model%options%whichtemp)
       call t_stopf('glissade_temp_driver')
 
        model%temper%newtemps = .true.
@@ -435,6 +444,13 @@ contains
 !          call horiz_bcs_unstag_scalar(model%temper%temp)
        endif
 
+       if (model%options%whichtemp == TEMP_ENTHALPY) then
+          call parallel_halo(model%temper%temp)
+          call parallel_halo(model%temper%waterfrac)
+!          call horiz_bcs_unstag_scalar(model%temper%temp)
+!          call horiz_bcs_unstag_scalar(model%temper%waterfrac)
+       endif
+
       call t_stopf('new_remap_halo_upds')
 
       call t_startf('glissade_transport_driver')
@@ -484,6 +500,33 @@ contains
              ! convert thck back to scaled units
              model%geometry%thck(:,:) = thck_unscaled(:,:) / thk0
 
+          elseif (model%options%whichtemp == TEMP_ENTHALPY) then  ! Use IR to transport thickness, temperature,
+                                                                ! and waterfrac.  Also set ntracer = 3
+                                                                ! Note: We are passing arrays in SI units.
+
+             ! temporary thickness array in SI units (m)                               
+             thck_unscaled(:,:) = model%geometry%thck(:,:) * thk0
+
+             ! BDM Set ntracer = 3 since temp and waterfrac need to be passed (and maybe ice age).
+             !     If no ice age is present, a dummy array will be passed for tracer = 2
+             ntracer = 3
+
+             call glissade_transport_driver(model%numerics%dt * tim0,                             &
+                                            model%numerics%dew * len0, model%numerics%dns * len0, &
+                                            model%general%ewn,         model%general%nsn,         &
+                                            model%general%upn-1,       model%numerics%sigma,      &
+                                            nhalo,                     ntracer,                 &
+                                            model%velocity%uvel(:,:,:) * vel0,                    &
+                                            model%velocity%vvel(:,:,:) * vel0,                    &
+                                            thck_unscaled(:,:),                                   &
+                                            dble(model%climate%acab(:,:)) * thk0/tim0,            &
+                                            bmlt_continuity(:,:),                                 &
+                                            model%temper%temp(:,:,:),                             & 
+                                            model%temper%waterfrac(:,:,:)  )
+
+             ! convert thck back to scaled units
+             model%geometry%thck(:,:) = thck_unscaled(:,:) / thk0
+         
           !TODO - Will we continue to support this option?  May not be needed.
 
           else  ! Use IR to transport thickness only
@@ -519,24 +562,29 @@ contains
 !    print*, 'max, min thck (m)=', maxval(model%geometry%thck)*thk0, minval(model%geometry%thck)*thk0
 !    print*, 'max, min acab (m/yr) =', maxval(model%climate%acab)*scale_acab, minval(model%climate%acab)*scale_acab
 !    print*, 'max, min artm =', maxval(model%climate%artm), minval(model%climate%artm)
+!    print*, 'thklim =', model%numerics%thklim * thk0
 !    print*, 'max, min temp =', maxval(model%temper%temp), minval(model%temper%temp)
 !    print*, ' '
 !    print*, 'thck:'
 !    do j = model%general%nsn, 1, -1
-!       write(6,'(30f5.0)') model%geometry%thck(3:32,j)*thk0
+!       write(6,'(23f7.2)') model%geometry%thck(7:29,j)*thk0
 !    enddo
 
           ! Update halos of modified fields
 
          call t_startf('after_remap_haloupds')
 
-          call parallel_halo(model%geometry%thck)
-!          call horiz_bcs_unstag_scalar(model%geometry%thck)
+         call parallel_halo(model%geometry%thck)
+!         call horiz_bcs_unstag_scalar(model%geometry%thck)
 
-          call parallel_halo(model%temper%temp)
-!          call horiz_bcs_unstag_scalar(model%temper%temp)
+         call parallel_halo(model%temper%temp)
+!         call horiz_bcs_unstag_scalar(model%temper%temp)
 
           ! Halo updates of other tracers, if present, would need to go here
+         if (model%options%whichtemp == TEMP_ENTHALPY) then
+            call parallel_halo(model%temper%waterfrac)
+!            call horiz_bcs_unstag_scalar(model%temper%waterfrac)
+         endif
 
          call t_stopf('after_remap_haloupds')
 
@@ -709,16 +757,16 @@ contains
 
     use parallel
 
-    use glide_thck, only: glide_calclsrf
-    use glissade_temp, only: glissade_calcflwa
-    use glissade_velo, only: glissade_velo_driver
     use glimmer_paramets, only: tim0, len0, vel0
     use glimmer_physcon, only: scyr
+    use glide_thck, only: glide_calclsrf
+    use glissade_temp, only: glissade_calcflwa
+    use glam_velo, only: glam_velo_driver
+    use glissade_velo, only: glissade_velo_driver
     use glide_stress, only : glide_calcstrsstr
 !!    use glimmer_horiz_bcs, only: horiz_bcs_unstag_scalar, horiz_bcs_stag_scalar, horiz_bcs_stag_vector_ew, horiz_bcs_stag_vector_ns
-    use glam_grid_operators,  only: glam_geometry_derivs, df_field_2d_staggered
 
-    use glide_grid_operators, only: stagvarb    !TODO - Is this needed?  Seems redundant with df_field_2d_staggered
+    use glam_grid_operators, only: glam_geometry_derivs
 
     implicit none
 
@@ -747,26 +795,34 @@ contains
     ! Note: We are passing in only vertical elements (1:upn-1) of the temp array,
     !       so that it has the same vertical dimensions as flwa.
 
-    call glissade_calcflwa(model%numerics%stagsigma,    &
-                           model%numerics%thklim,       &
-                           model%temper%flwa,           &
-                           model%temper%temp(1:model%general%upn-1,:,:),  &
-                           model%geometry%thck,         &
-                           model%paramets%flow_factor,  &
-                           model%paramets%default_flwa, &
-                           model%options%whichflwa)
+    ! BDM - adding a call for whichtemp = TEMP_ENTHALPY that includes waterfrac as input
+    ! TODO - May be OK to use a single call (with waterfrac) for either TEMP option.
+
+    if (model%options%whichtemp == TEMP_ENTHALPY) then
+
+       call glissade_calcflwa(model%numerics%stagsigma,    &
+                              model%numerics%thklim,       &
+                              model%temper%flwa,           &
+                              model%temper%temp(1:model%general%upn-1,:,:),  &
+                              model%geometry%thck,         &
+                              model%paramets%flow_factor,  &
+                              model%paramets%default_flwa, &
+                              model%options%whichflwa,      &
+                              model%temper%waterfrac(:,:,:))
+    else
+
+       call glissade_calcflwa(model%numerics%stagsigma,    &
+                              model%numerics%thklim,       &
+                              model%temper%flwa,           &
+                              model%temper%temp(1:model%general%upn-1,:,:),  &
+                              model%geometry%thck,         &
+                              model%paramets%flow_factor,  &
+                              model%paramets%default_flwa, &
+                              model%options%whichflwa)
+    endif
 
     ! Halo update for flwa
-
     call parallel_halo(model%temper%flwa)
-
-!WHL - Moved mask update and calving from beginning of diagnostic subroutine
-!      to end of main glissade_tstep subroutine.  This ensures that for a
-!      simple diagnostic case, the velocities are based on the input geometry
-!      rather than a geometry that evolves due to calving.
-
-!      Note that glide_set_mask is called near the beginning of glissade_velo_driver,
-!      so that call is not needed here.
 
     ! ------------------------------------------------------------------------
     ! Halo updates for ice topography and thickness
@@ -780,11 +836,6 @@ contains
     !      In other cases (anything but ismip-hom), periodic_offset_ew = periodic_offset_ns = 0, 
     !       and this argument will have no effect.
     ! ------------------------------------------------------------------------
-
-!WHL - uncommented these halo updates so that all the geometry updates are grouped together
-!TODO - Remove the halo update of thck in glide_marinlim if it's not needed.
-!       The topg update might not be needed here if it's been updated above (before the call to glide_set_mask).
-!       But topg definitely needs a halo update after the isostasy calculation.
 
     call parallel_halo(model%geometry%thck)
     call parallel_halo(model%geometry%topg, periodic_offset_ew = model%numerics%periodic_offset_ew)
@@ -800,145 +851,21 @@ contains
 
     model%geometry%usrf(:,:) = max(0.d0, model%geometry%thck(:,:) + model%geometry%lsrf(:,:))
 
-! MJH: Next 53 lines copied from start of glissade_tstep.
-!      Notes below indicate it is unclear which of these derivatives are actually needed.  
-!      But geometry derivatives are diagnostic fields and should be calculated here.
 
-    ! ------------------------------------------------------------------------ 
-    ! Now that geometry is finalized for the time step, calculate derivatives 
-    ! that may be needed for the velocity solve.
-    ! ------------------------------------------------------------------------     
-
-!HALO TODO - Make sure these geometry derivs are computed everywhere they are needed
-!       (all locally owned velocity points?)
-
-!TODO - Remove this call to glam_geometry_derivs?  It is repeated below.
-!
-! SFP: Note that NOT all of the vars calculated in "geometry_derivs" are calculated in geomtry_derivs by default
-! I added explicit calls to the missing ones below, along w/ appropriate halo updates prior to their call. I agree
-! that we should comment this out here (and elsewhere). Better to make explicit which fields are being calculated
-! and where the necessary halo updates for those fields are being made.
-! An additional call to this has been commented out below.
+    ! ------------------------------------------------------------------------
+    ! Update some geometry derivatives
+    ! ------------------------------------------------------------------------
+    !TODO - The fields computed by glam_geometry_derivs are not required by
+    !       the glissade solver (which computes them internally).  
+    !       However, some of the fields (stagthck, dusrfdew and dusrfdns) 
+    !       are needed during the next timestep by glissade_temp
+    !       if we're doing shallow-ice dissipation.  If dissipation is always
+    !       higher-order, then I don't think this call is needed here.
+    !       (The glam_velo driver includes its own call to glam_geometry_derivs.) 
 
     call glam_geometry_derivs(model)
-    
-    !EIB! from gc2 - think this was all replaced by geometry_derivs??
-!TODO - The subroutine geometry_derivs calls subroutine stagthickness to compute stagthck.
-!       Similarly for dthckdew/ns and dusrfdew/ns
-!       No need to call the next three subroutines as well as geometry_derivs
-!       This calculation of stagthck differs from that in geometry_derivs which calls stagthickness() 
-!        in the glide_grids.F90  Which do we want to use?  
-!        stagthickness() seems to be noisier but there are notes in there about some issue related to margins.
 
-    ! SFP: not sure if these are all needed here or not. Halo updates for usrf and thck are needed in order 
-    ! for periodic bcs to work. Otherwise, global halos do not contain correct values and, presumably, the gradients
-    ! calculated below are incorrect in and near the global halos.
-    ! Calls were added here for other staggered variables (stagusrf, stagtopg, and staglsrf), first providing halo
-    ! updates to the non-stag vars, then calc. their stag values. This was done because debug lines show that these
-    ! stag fields did not have the correct values in their global halos. This may be ok if they are not used at all 
-    ! by the dycores called here, but I added them for consistency. More testing needed to determine if they are
-    ! essential or not.
-
-    !WHL: I am commenting out these four parallel_halo updates.
-    !     Halo updates for topg and thck are done above, after the call to glide_calcflwa and before
-    !      the call to geometry_derivs.  These halo updates are immediately followed by calculations
-    !      of lsrf and usrf.  Since usrf and lsrf are calculated for all grid cells based on thck and topg,
-    !      they do not require halo updates.
-    !     Steve may want to verify that moving the halo updates to before the call to geometry_derivs
-    !      does not change the results.
-!!    call parallel_halo (model%geometry%usrf)
-!!    call parallel_halo (model%geometry%lsrf)
-!!    call parallel_halo (model%geometry%topg)
-!!    call parallel_halo (model%geometry%thck)
-
-    ! SFP: for consistency, I added these calls, so that all scalars interpolated to the stag mesh
-    ! first have had their global halos updated. As w/ above calls to halo updates, these may be better 
-    ! placed elsewhere. The only call originally here was the one to calc stagthck.
-
-    !TODO - Should we replace these with calls to df_field_2d_staggered?
-
-    call stagvarb(model%geometry%usrf, model%geomderv%stagusrf,&
-                  model%general%ewn,   model%general%nsn)
-
-    call stagvarb(model%geometry%lsrf, model%geomderv%staglsrf,&
-                  model%general%ewn,   model%general%nsn)
-
-    call stagvarb(model%geometry%topg, model%geomderv%stagtopg,&
-                  model%general%ewn,   model%general%nsn)
-
-    call stagvarb(model%geometry%thck, model%geomderv%stagthck,&    ! SFP: this call was already here. Calls to calc 
-                  model%general%ewn,   model%general%nsn)           ! stagusrf, staglsrf, and stagtop were added
-
-
-    call df_field_2d_staggered(model%geometry%usrf, &
-                               model%numerics%dew,      model%numerics%dns, &
-                               model%geomderv%dusrfdew, model%geomderv%dusrfdns, &
-                               model%geometry%thck,     model%numerics%thklim )
-
-    call df_field_2d_staggered(model%geometry%thck, &
-                               model%numerics%dew,      model%numerics%dns, &
-                               model%geomderv%dthckdew, model%geomderv%dthckdns, &
-                               model%geometry%thck,     model%numerics%thklim )
-
-!SFP: W.r.t WHL comment below, I went the other route above - that is, did halo updates for the non-stag
-!fields first, then did the subroutine calls to calc. fields on the unstag mesh. I think this makes sure
-!you are not populating the stag field global halos with bad information that may have been sitting in the 
-!associated non-stag field halos in the case that you forgot to update them. Maybe?
-
-!TODO - Not sure these are needed.
-       !Halo updates required for inputs to glide_stress?
-       call staggered_parallel_halo (model%geomderv%dusrfdew)
-!       call horiz_bcs_stag_vector_ew(model%geomderv%dusrfdew)
-
-       call staggered_parallel_halo (model%geomderv%dusrfdns)
-!       call horiz_bcs_stag_vector_ns(model%geomderv%dusrfdns)
-
-       call staggered_parallel_halo (model%geomderv%dthckdew)
-!       call horiz_bcs_stag_vector_ew(model%geomderv%dthckdew)
-
-       call staggered_parallel_halo (model%geomderv%dthckdns)
-!       call horiz_bcs_stag_vector_ns(model%geomderv%dthckdns)
-
-!TODO - It should be possible to compute stagthck without a halo update,
-!       provided that thck has been updated.
-!SFP: This is now done above, so I commented out the call here (that is, above we first call halo updates
-! on the non-stag thickness, then calc the stagthck field. I have confirmed that stagthck field calc in this way
-! has correct values in global halos.
-!    call staggered_parallel_halo(model%geomderv%stagthck)
-!    call horiz_bcs_stag_scalar(model%geomderv%stagthck)
-
-    ! call parallel_halo(model%geometry%thkmask) in earlier glide_set_mask call
-
-!###     ! basal shear stress calculations
-!### 
-!### !HALO - If these values are needed, it should be possible to compute them without halo updates,
-!### !        provided that thck and usrf have been updated in halos.
-!### !       But I think they are not needed, because calc_basal_shear is SIA-only.
-!###     ! call staggered_parallel_halo(model%geomderv%stagthck) prior to calc_gline_flux
-!###     ! call staggered_parallel_halo(model%geomderv%dusrfdew) prior to glide_calcstrsstr
-!###     ! call staggered_parallel_halo(model%geomderv%dusrfdns) prior to glide_calcstrsstr
-
-        ! Compute the new geometry derivatives for this time step
-! TODO Merge the geom derivs with above.  Are they needed for the velocity solve?  
-!      I assume so, but need to make sure they happen in the right order and have halo updates if needed.
-
-!TODO - Would be better to have just one derivative call per field.
-!       Also could consider computing derivatives in glissade_velo.F90.
-!       Do halo updates as needed (e.g., thck) before computing derivatives.
-!       If we need a derivative on the staggered grid (for all locally owned cells),
-!        then we need one layer of halo scalars before calling the derivative routine.
-
-!SFP: For some reason, this next call IS needed. It does not affect the results of the periodic ismip-hom test case either
-! way (that is, if it is active or commented out), or the dome test case. But for some reason, if it is not active, it
-! messes up both shelf test cases. There must be some important derivs being calculated within this call that are NOT
-! being explicitly calculated above. 
-
-          call glam_geometry_derivs(model)
-
-!TODO - Pretty sure this is not needed
-!SFP: this calls appear to be overwritting calls made above which explicitly make sure that 
-! global halos are filled first ... comment these out?
-!          call geometry_derivs_unstag(model)
+    !WHL - Moved glam-specific geometry calculations to glam_velo_driver in glam_velo.F90.
 
     ! ------------------------------------------------------------------------ 
     ! ------------------------------------------------------------------------ 
@@ -966,7 +893,8 @@ contains
           ! This happens automatically, but let the user know.
           ! Using this value versus not will only change the answer within the tolerance of the nonlinear solve.  
           ! If a user already has a good guess from a previous run, they may wish to start things off with it to speed the initial solution.
-          call write_log('Using uvel, vvel from input file as initial guess at initial time.  If this is not desired, please remove those fields from the input file.')
+          call write_log('Using uvel, vvel from input file as initial guess at initial time.')
+          call write_log('If this is not desired, please remove those fields from the input file.')
        endif
 
        if (main_task) then
@@ -974,23 +902,25 @@ contains
           print *, 'Compute higher-order ice velocities, time =', model%numerics%time
        endif
 
-       call t_startf('glissade_velo_driver')
 
-       call glissade_velo_driver(model)
+       !WHL - Broke up into separate calls to glam_velo_driver and glissade_velo_driver
+       !      Previously had a single call to glissade_velo_driver
 
-       call t_stopf('glissade_velo_driver')
+       if (model%options%whichdycore == DYCORE_GLAM) then    ! glam finite-difference dycore
 
-!TODO - Don't think we need to update ubas, vbas, or velnorm,
-!       because these can be derived directly from the 3D uvel and vvel arrays
+         call t_startf('glam_velo_driver')
+          call glam_velo_driver(model)
+         call t_stopf('glam_velo_driver')
 
-       call staggered_parallel_halo(model%velocity%velnorm)
-!       call horiz_bcs_stag_scalar(model%velocity%velnorm)
-       call staggered_parallel_halo(model%velocity%ubas)
-!       call horiz_bcs_stag_vector_ew(model%velocity%ubas)
-       call staggered_parallel_halo(model%velocity%vbas)
-!       call horiz_bcs_stag_vector_ns(model%velocity%vbas)
+       else
 
-    endif
+         call t_startf('glissade_velo_driver')
+          call glissade_velo_driver(model)
+         call t_stopf('glissade_velo_driver')
+
+       endif  ! whichdycore
+ 
+    endif     ! is_restart
 
     ! ------------------------------------------------------------------------ 
     ! ------------------------------------------------------------------------ 
@@ -1000,35 +930,52 @@ contains
     ! ------------------------------------------------------------------------ 
     ! ------------------------------------------------------------------------ 
 
-!TODO - Not sure if we will support calc_gline_flux.  
-!       It computes a diagnostic flux, but doesn't compute it accurately.
-!       Comment out for now.
+    ! compute the velocity norm (for diagnostic output)
 
-    !calculate the grounding line flux after the mask is correct
-    !Halo updates required for inputs to calc_gline_flux?
+    model%velocity%velnorm = sqrt(model%velocity%uvel**2 + model%velocity%vvel**2)
 
-!!    call calc_gline_flux(model%geomderv%stagthck,  model%velocity%velnorm,  &
-!!                         model%geometry%thkmask,   model%ground%gline_flux, &
-!!                         model%velocity%ubas,      model%velocity%vbas,     &
-!!                         model%numerics%dew)
-    !Includes a halo update of model%ground%gline_flux at end of call
-!TODO - Halo update of gline_flux (if needed) should go here.
-!       But I think this update is not needed.
+    ! WHL - Copy uvel and vvel to arrays uvel_icegrid and vvel_icegrid.
+    !       These arrays have horizontal dimensions (nx,ny) instead of (nx-1,ny-1).
+    !       Thus they are better suited for I/O if we have periodic BC,
+    !        where the velocity field we are solving for has global dimensions (nx,ny).
+    !       Since uvel and vvel are not defined for i = nx or for j = ny, the
+    !        uvel_icegrid and vvel_icegrid arrays will have values of zero at these points.
+    !       But these are halo points, so when we write netCDF I/O it shouldn't matter;
+    !        we should have the correct values at physical points.
+    
+    model%velocity%uvel_icegrid(:,:,:) = 0.d0
+    model%velocity%vvel_icegrid(:,:,:) = 0.d0
 
-       call parallel_halo(model%stress%efvs)
-!       call horiz_bcs_unstag_scalar(model%stress%efvs)
+    do j = 1, model%general%nsn-1
+       do i = 1, model%general%ewn-1
+          model%velocity%uvel_icegrid(:,i,j) = model%velocity%uvel(:,i,j)
+          model%velocity%vvel_icegrid(:,i,j) = model%velocity%vvel(:,i,j)             
+       enddo
+    enddo
+        
+!TODO - Don't think we need to update ubas, vbas, or velnorm,
+!       because these can be derived directly from the 3D uvel and vvel arrays
 
-       !Tau is calculated in glide_stress and initialized in glide_types.
+    call staggered_parallel_halo(model%velocity%velnorm)
+    !       call horiz_bcs_stag_scalar(model%velocity%velnorm)
+    call staggered_parallel_halo(model%velocity%ubas)
+    !       call horiz_bcs_stag_vector_ew(model%velocity%ubas)
+    call staggered_parallel_halo(model%velocity%vbas)
+    !       call horiz_bcs_stag_vector_ns(model%velocity%vbas)
 
-       call glide_calcstrsstr( model )       !*sfp* added for populating stress tensor w/ HO fields
+    call parallel_halo(model%stress%efvs)
+    !       call horiz_bcs_unstag_scalar(model%stress%efvs)
 
-       ! Includes halo updates of 
-       ! model%stress%tau%xx, model%stress%tau%yy, model%stress%tau%xy,
-       ! model%stress%tau%scalar, model%stress%tau%xz, model%stress%tau%yz
+    !Tau is calculated in glide_stress and initialized in glide_types.
 
-!HALO TODO - If the stress%tau halo updates are needed, they should go here (in glissade.F90)
-!       But I think they are not needed.
+    call glide_calcstrsstr( model )       !*sfp* added for populating stress tensor w/ HO fields
 
+    ! Includes halo updates of 
+    ! model%stress%tau%xx, model%stress%tau%yy, model%stress%tau%xy,
+    ! model%stress%tau%scalar, model%stress%tau%xz, model%stress%tau%yz
+
+    !HALO TODO - If the stress%tau halo updates are needed, they should go here (in glissade.F90)
+    !            But I think they are not needed.
 
     ! --- A calculation of wvel could go here if we want to calculate it.
     ! --- For now, such a calculation is not needed.
@@ -1106,6 +1053,7 @@ contains
     use parallel
     use glissade_transport, only: glissade_transport_driver
     use glimmer_paramets, only: len0
+    use glimmer_physcon, only: pi
 
     ! various tests of parallel model
 
@@ -1127,8 +1075,6 @@ contains
     integer :: nx, ny, nz
 
     integer, parameter :: rdiag = 0    ! rank for diagnostic prints 
-
-    real(dp), parameter :: pi = 3.14159265358979
 
     real(dp), parameter :: dt = 1.0       ! time step in yr
     integer, parameter  :: ntstep = 10     ! run for this number of timesteps

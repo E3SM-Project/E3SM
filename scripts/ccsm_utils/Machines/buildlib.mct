@@ -1,11 +1,13 @@
-#! /bin/csh -f
+#! /bin/csh -fx
 #==============================================================================
 # Purpose:
 #     (a) Build mct library
 #==============================================================================
 
 setenv MCT_DIR $CCSMROOT/models/utils/mct   # mct directory
-setenv MCT_LIBDIR $EXEROOT/mct
+setenv LIBDIR $1
+setenv MCT_LIBDIR $LIBDIR/mct
+echo MCT_LIBDIR $MCT_LIBDIR
 
   cd $MCT_LIBDIR
   echo "Copying source to CCSM EXEROOT..."
@@ -29,36 +31,39 @@ setenv MCT_LIBDIR $EXEROOT/mct
 #    when a filesystem is mounted on multiple platforms) -- run configure
 # 3. already built, same platform -- don't run configure
 #
-  if(-e mct_conf) then
-    echo "MCT already built. Checking machine type"
-    cp -f mct_conf mct_conf.old
-    echo ${OS} > mct_conf
-    set diffwc = 1
-    set diffwc = `diff mct_conf.old mct_conf | wc -m`
-    if ($diffwc != 0) then
-      echo "Different machine. Rerun configure"
-      rm Makefile.conf.old
-      rm -f $LIBROOT/libmct.a
-      rm -f $LIBROOT/libmpeu.a
+  #if(-e mct_conf) then
+  #  echo "MCT already built. Checking machine type"
+  #  cp -f mct_conf mct_conf.old
+  #  echo ${OS} > mct_conf
+  #  set diffwc = 1
+  #  set diffwc = `diff mct_conf.old mct_conf | wc -m`
+  #  if ($diffwc != 0) then
+  #    echo "Different machine. Rerun configure"
+  #    rm Makefile.conf.old
+  #    rm -f $LIBROOT/libmct.a
+  #    rm -f $LIBROOT/libmpeu.a
 
-      set runconf = 1
-      set runclean = 1
-    else
-      echo "Same machine."
-      cp -p Makefile.conf.old Makefile.conf
-    endif
-  else
-    echo "New build of MCT"
-    echo ${OS} > mct_conf
-    set runconf = 1
-  endif
+  #    set runconf = 1
+  #    set runclean = 1
+  #  else
+  #    echo "Same machine."
+  #    cp -p Makefile.conf.old Makefile.conf
+  #  endif
+  #else
+  #  echo "New build of MCT"
+  #  echo ${OS} > mct_conf
+  #  set runconf = 1
+  #endif
 
 # run configure with correct arguments if necessary
-  if ($runconf == 1) then
+  #if ($runconf == 1) then
     echo "Running configure..."
     echo "for OS=$OS MACH=$MACH"
-    $GMAKE -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf 
-  endif
+    $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf 
+    #if($? != 0) then
+    #  rm mct_conf*
+    #endif 
+  #endif
 
   if ($runclean == 1) then
     $GMAKE clean
@@ -66,13 +71,18 @@ setenv MCT_LIBDIR $EXEROOT/mct
 
   cp -p Makefile.conf Makefile.conf.old
 
-  $GMAKE || exit 1
+  $GMAKE  || exit 1
 
-  cp -p mct/lib*.a $LIBROOT/
-  cp -p mpeu/lib*.a $LIBROOT/
-  if (-d mpi-serial) cp -p mpi-serial/lib*.a $LIBROOT
-  cp -p mct/*.mod $LIBROOT/include/
-  cp -p mpeu/*.mod $LIBROOT/include/
+
+  cp -p mct/lib*.a $LIBDIR/lib
+  cp -p mpeu/lib*.a $LIBDIR/lib
+  if ( "$MPILIB" == "mpi-serial" ) then
+    cp -p mpi-serial/lib*.a $LIBDIR/lib
+    cp -p mpi-serial/*.h $LIBDIR/include
+    cp -p $MCT_DIR/mpi-serial/mpi.h $LIBDIR/include
+  endif
+  cp -p mct/*.mod $LIBDIR/include/
+  cp -p mpeu/*.mod $LIBDIR/include/
 
 exit 0
 

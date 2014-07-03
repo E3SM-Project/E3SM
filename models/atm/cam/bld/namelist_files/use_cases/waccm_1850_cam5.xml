@@ -62,9 +62,9 @@
 <dms_emis_file>atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_DMS_1850-2000_1.9x2.5.c090827.nc</dms_emis_file>
 <no_emis_file>atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_NOx_1850-2000_1.9x2.5.c090728.nc</no_emis_file>
 <so2_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_1850-2010_c20100902_v12.nc</so2_emis_file>
-<soag_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_surf_1850-2005_c090804.nc</soag_emis_file>
+<soag_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_surf_1850-2005_c130424.nc</soag_emis_file>
 <bc_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_1850-2005_c090804.nc</bc_a1_emis_file>
-<pom_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_surf_1850-2005_c090804.nc</pom_a1_emis_file>
+<pom_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_1850-2005_c130424.nc</pom_a1_emis_file>
 <so4_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_surf_1850-2005_c090804.nc</so4_a1_emis_file>
 <so4_a2_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_surf_1850-2005_c090804.nc</so4_a2_emis_file>
 <num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_1850-2005_c090804.nc</num_a1_emis_file>
@@ -78,9 +78,10 @@
 <so4_a2_ext_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_1850_c090726.nc</so4_a2_ext_file>
 <num_a1_ext_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_elev_1850_c090726.nc</num_a1_ext_file>
 <num_a2_ext_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_1850_c090726.nc</num_a2_ext_file>
-<pom_a1_ext_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_oc_elev_1850_c090726.nc </pom_a1_ext_file>
+<pom_a1_ext_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_1850_c130423.nc</pom_a1_ext_file>
 <bc_a1_ext_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_1850_c090726.nc </bc_a1_ext_file>
 <ext_frc_type>CYCLICAL</ext_frc_type>
+<ext_frc_cycle_yr>0</ext_frc_cycle_yr>
 
 <!-- Photolysis Inputs DEFAULTS okay for: rsf_file,xs_long_file,xs_short_file -->
 

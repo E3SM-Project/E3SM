@@ -1,9 +1,0 @@
-&clmexp
- mksrf_fnavyoro =
- mksrf_lsmlon = 1
- mksrf_lsmlat = 1
- mksrf_edgee = SITEE
- mksrf_edgew = SITEW
- mksrf_edges = SITES
- mksrf_edgen = SITEN
-/

@@ -45,7 +45,7 @@
 
 module glam_grid_operators
 
-    use glimmer_global, only: sp, dp
+    use glimmer_global, only: dp
 
     implicit none
 
@@ -161,26 +161,26 @@ contains
                 if (any(GLIDE_HAS_ICE(mask(ew:ew+1,ns:ns+1)))) then
                     n = 0
                     tot = 0
-                    if (abs(ipvr(ew,ns)) > 0.0d0  )then
+                    if (abs(ipvr(ew,ns)) > 0.d0  )then
                         tot = tot + ipvr(ew,ns)
                         n   = n   + 1
                     end if
-                    if (abs(ipvr(ew+1,ns)) > 0.0d0  )then
+                    if (abs(ipvr(ew+1,ns)) > 0.d0  )then
                         tot = tot + ipvr(ew+1,ns)
                         n   = n   + 1
                     end if
-                    if (abs(ipvr(ew,ns+1)) > 0.0d0  )then
+                    if (abs(ipvr(ew,ns+1)) > 0.d0  )then
                         tot = tot + ipvr(ew,ns+1)
                         n   = n   + 1
                     end if
-                    if (abs(ipvr(ew+1,ns+1)) > 0.0d0  )then
+                    if (abs(ipvr(ew+1,ns+1)) > 0.d0  )then
                         tot = tot + ipvr(ew+1,ns+1)
                         n   = n   + 1
                     end if
                     if (n > 0) then
                         opvr(ew,ns) = tot/n
                     else
-                        opvr(ew,ns) = 0
+                        opvr(ew,ns) = 0.d0
                     end if
 
                 !The following cases relate to Anne LeBroque's fix for nunataks
@@ -188,30 +188,30 @@ contains
                 else if (ipvr(ew,ns) <= thklim .and. &
                    ((usrf(ew,ns) >= usrf(ew+1,ns) .and. ipvr(ew+1,ns) >= thklim) &
                     .or. (usrf(ew,ns) >= usrf(ew,ns+1) .and. ipvr(ew,ns+1) >= thklim))) then
-                        opvr(ew,ns) = 0.0
+                        opvr(ew,ns) = 0.d0
 
                 !ew+1,ns cell is ice free:
                 else if (ipvr(ew+1,ns) <= thklim .and. &
                     ((usrf(ew+1,ns) >= usrf(ew,ns) .and. ipvr(ew,ns) >= thklim) &
                     .or. (usrf(ew+1,ns) >= usrf(ew+1,ns+1) .and. ipvr(ew+1,ns+1) >= thklim))) then
-                        opvr(ew,ns) = 0.0
+                        opvr(ew,ns) = 0.d0
     
                 !ew,ns+1 cell is ice free:
                 else if (ipvr(ew,ns+1) <= thklim .and. &
                     ((usrf(ew,ns+1) >= usrf(ew,ns) .and. ipvr(ew,ns) >= thklim) &
                     .or. (usrf(ew,ns+1) >= usrf(ew+1,ns+1) .and. ipvr(ew+1,ns+1) >= thklim))) then
-                        opvr(ew,ns) = 0.0
+                        opvr(ew,ns) = 0.d0
     
                 !ew+1,ns+1 cell is ice free:
                 else if (ipvr(ew+1,ns+1) <= thklim .and. &
                     ((usrf(ew+1,ns+1) >= usrf(ew+1,ns) .and. ipvr(ew+1,ns) >=thklim) &
                     .or. (usrf(ew+1,ns+1) >= usrf(ew,ns+1) .and. ipvr(ew,ns+1) >=thklim))) then
-                        opvr(ew,ns) = 0.0
+                        opvr(ew,ns) = 0.d0
                
 !                !Standard Staggering   !! Not needed if only-nonzero-thickness staggering scheme is used
 !                else
 !                        opvr(ew,ns) = (ipvr(ew+1,ns) + ipvr(ew,ns+1) + &
-!                                       ipvr(ew+1,ns+1) + ipvr(ew,ns)) / 4.0d0
+!                                       ipvr(ew+1,ns+1) + ipvr(ew,ns)) / 4.d0
 
                 end if
   
@@ -260,15 +260,15 @@ contains
                 grad_x = 0
                 grad_y = 0
                 if (upwind) then
-                    if (direction_x(x,y) < 0 .and. x > 2) then !Upstream case
+                    if (direction_x(x,y) < 0.d0 .and. x > 2) then ! Upstream case
                         grad_x = -1
-                    else if(direction_x(x,y) > 0 .and. x < nx - 1) then !Downstream case
+                    else if(direction_x(x,y) > 0.d0 .and. x < nx - 1) then ! Downstream case
                         grad_x = 1
                     end if
 
-                    if (direction_y(x,y) < 0 .and. y > 2) then !Upstream case
+                    if (direction_y(x,y) < 0.d0 .and. y > 2) then !Upstream case
                         grad_y = -1
-                    else if(direction_y(x,y) > 0 .and. y < ny - 1) then !Downstream case
+                    else if(direction_y(x,y) > 0.d0 .and. y < ny - 1) then !Downstream case
                         grad_y = 1
                     end if
                 end if
@@ -330,8 +330,8 @@ contains
         ny = size(f, 2)
 
         ! intialize to zeros
-        out_dfdx = 0.0d0
-        out_dfdy = 0.0d0
+        out_dfdx = 0.d0
+        out_dfdy = 0.d0
         
         ! *SFP* old subroutine calls, commented out below but still available, 
         ! use centered diffs on normal thck / surf grids but do nothing special at lateral
@@ -426,15 +426,15 @@ contains
                         grad_x = 0
                         grad_y = 0
                         if (upwind) then
-                            if (direction_x(x,y) < 0 .and. x > 2) then !Upstream case
+                            if (direction_x(x,y) < 0.d0 .and. x > 2) then !Upstream case
                                 grad_x = -1
-                            else if(direction_x(x,y) > 0 .and. x < nx - 1) then !Downstream case
+                            else if(direction_x(x,y) > 0.d0 .and. x < nx - 1) then !Downstream case
                                 grad_x = 1
                             end if
 
-                            if (direction_y(x,y) < 0 .and. y > 2) then !Upstream case
+                            if (direction_y(x,y) < 0.d0 .and. y > 2) then !Upstream case
                                 grad_y = -1
-                            else if(direction_y(x,y) > 0 .and. y < ny - 1) then !Downstream case
+                            else if(direction_y(x,y) > 0.d0 .and. y < ny - 1) then !Downstream case
                                 grad_y = 1
                             end if
                         end if
@@ -556,7 +556,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_2d
         
-        dfdx_2d = (-.5/delta)*f(i-1, j) + (.5/delta)*f(i+1, j)
+        dfdx_2d = (-.5d0/delta)*f(i-1, j) + (.5d0/delta)*f(i+1, j)
         !write(*,*), i, j, f(i,j), ip1, im1, delta, dfdx_2d
     end function dfdx_2d
 
@@ -577,7 +577,7 @@ contains
         if (jp1 == size(f, 2)+1) jp1 = 2
         if (jm1 == 0) jm1 = size(f, 2)-1
         
-        dfdy_2d = (-.5/delta)*f(i, j-1) + (.5/delta)*f(i, j+1)
+        dfdy_2d = (-.5d0/delta)*f(i, j-1) + (.5d0/delta)*f(i, j+1)
     end function dfdy_2d
 
 !----------------------------------------------------------------------------
@@ -591,7 +591,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_2d_stag
-        dfdx_2d_stag = (f(i+1, j) + f(i+1, j+1) - f(i, j) - f(i, j+1))/(2*delta) 
+        dfdx_2d_stag = (f(i+1, j) + f(i+1, j+1) - f(i, j) - f(i, j+1))/(2.d0*delta) 
     end function dfdx_2d_stag
 
 !----------------------------------------------------------------------------
@@ -605,7 +605,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_2d_stag
-        dfdy_2d_stag = (f(i, j+1) + f(i+1, j+1) - f(i,j) - f(i+1, j))/(2*delta)
+        dfdy_2d_stag = (f(i, j+1) + f(i+1, j+1) - f(i,j) - f(i+1, j))/(2.d0*delta)
     end function dfdy_2d_stag
 
 !----------------------------------------------------------------------------
@@ -625,49 +625,49 @@ contains
         real(dp) :: f_min
 
         ! initialize vars/arrays to zeros
-        dfdx_2d_stag_os = 0.0d0; f_array = 0.0d0; f_min = 0.0d0
+        dfdx_2d_stag_os = 0.d0; f_array = 0.d0; f_min = 0.d0
 
         f = f_in
 
         where( thck <= thklim )
-            f = 0
+            f = 0.d0
         end where
 
         f_array(1,1) = f(i,j); f_array(2,1) = f(i+1,j); f_array(1,2) = f(i,j+1); f_array(2,2) = f(i+1,j+1);
 
-        if( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 4.0 )then
+        if( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 4.d0 )then
 
             ! normal differencing for interior points
             dfdx_2d_stag_os = (f(i+1,j) + f(i+1,j+1) - f(i,j) - f(i,j+1))/(2*delta)
 
-        elseif( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 3.0 )then
+        elseif( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 3.d0 )then
 
             ! corner; use 2x next closest value
             if( f(i,j) == f_min )then     ! southwest corner point missing: apply value from s.e. point
-                dfdx_2d_stag_os = ( f(i+1,j+1) + f(i+1,j) - 2.0*f(i,j+1) )/(2*delta)
+                dfdx_2d_stag_os = ( f(i+1,j+1) + f(i+1,j) - 2.d0*f(i,j+1) )/(2.d0*delta)
             elseif( f(i+1,j) == f_min )then ! southeast corner point missing: apply value from s.w. point
-                dfdx_2d_stag_os = ( 2.0*f(i+1,j+1) - f(i,j) - f(i,j+1) )/(2*delta)
+                dfdx_2d_stag_os = ( 2.d0*f(i+1,j+1) - f(i,j) - f(i,j+1) )/(2.d0*delta)
             elseif( f(i,j+1) == f_min )then ! northwest corner point missing: apply value from n.e. point
-                dfdx_2d_stag_os = ( f(i+1,j+1) + f(i+1,j) - 2.0*f(i,j))/(2*delta)
+                dfdx_2d_stag_os = ( f(i+1,j+1) + f(i+1,j) - 2.d0*f(i,j))/(2.d0*delta)
             elseif( f(i+1,j+1) == f_min )then ! northeast corner point missing: apply value from n.w. point
-                dfdx_2d_stag_os = ( 2.0*f(i+1,j) - f(i,j) - f(i,j+1) )/(2*delta)
+                dfdx_2d_stag_os = ( 2.d0*f(i+1,j) - f(i,j) - f(i,j+1) )/(2.d0*delta)
             endif
 
-        elseif( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 2.0 )then
+        elseif( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 2.0 )then
 
             ! side; back up and take gradient from points one set of cells in OR use only the single set of
             ! cells available along the differencing direction 
             if( f(i,j) == f_min .and. f(i,j+1) == f_min )then   ! west cells empty
-                dfdx_2d_stag_os = (f(i+2,j) + f(i+2,j+1) - f(i+1,j+1) - f(i+1,j))/(2*delta)
+                dfdx_2d_stag_os = (f(i+2,j) + f(i+2,j+1) - f(i+1,j+1) - f(i+1,j))/(2.d0*delta)
             elseif( f(i+1,j) == f_min .and. f(i+1,j+1) == f_min )then   ! east cells empty
-                dfdx_2d_stag_os = (f(i,j) + f(i,j+1) - f(i-1,j) - f(i-1,j+1))/(2*delta)
+                dfdx_2d_stag_os = (f(i,j) + f(i,j+1) - f(i-1,j) - f(i-1,j+1))/(2.d0*delta)
             elseif( f(i,j+1) == f_min .and. f(i+1,j+1) == f_min )then   ! north cells empty
                 dfdx_2d_stag_os = (f(i+1,j) - f(i,j) )/(delta)
             elseif( f(i,j) == f_min .and. f(i+1,j) == f_min )then   ! south cells empty
                 dfdx_2d_stag_os = (f(i+1,j+1) - f(i,j+1) )/(delta)
             endif
 
-        elseif( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 1.0 )then
+        elseif( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 1.d0 )then
 
             ! isolated; treat by assuming it is part of a 3 block for which the rest of the values are not contained in
             ! the local 2x2 block with indices i:i+1, j:j+1 
@@ -707,36 +707,35 @@ contains
         real(dp) :: f_min
 
         ! initialize to zeros
-        dfdy_2d_stag_os = 0.0d0; f_array = 0.0d0; f_min = 0.0d0
+        dfdy_2d_stag_os = 0.d0; f_array = 0.d0; f_min = 0.d0
 
         f = f_in
 
         where( thck <= thklim )
-            f = 0
+            f = 0.d0
         end where
 
         f_array(1,1) = f(i,j); f_array(2,1) = f(i+1,j); f_array(1,2) = f(i,j+1); f_array(2,2) = f(i+1,j+1);
 
-        !TODO - Change reals to dp
-        if( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 4.0 )then
+        if( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 4.d0 )then
 
             ! normal differencing for interior points
-            dfdy_2d_stag_os = (f(i,j+1) + f(i+1,j+1) - f(i,j) - f(i+1,j))/(2*delta)
+            dfdy_2d_stag_os = (f(i,j+1) + f(i+1,j+1) - f(i,j) - f(i+1,j))/(2.d0*delta)
 
-        elseif( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 3.0 )then
+        elseif( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 3.d0 ) then
 
             ! corner; use 2x next closest value
             if( f(i,j) == f_min )then     ! southwest corner point missing: apply value from s.e. point
-                dfdy_2d_stag_os = (f(i,j+1) + f(i+1,j+1) - 2.0*f(i+1,j))/(2*delta)
+                dfdy_2d_stag_os = (f(i,j+1) + f(i+1,j+1) - 2.d0*f(i+1,j))/(2.d0*delta)
             elseif( f(i+1,j) == f_min )then ! southeast corner point missing: apply value from s.w. point
-                dfdy_2d_stag_os = (f(i,j+1) + f(i+1,j+1) - 2.0*f(i,j))/(2*delta)
+                dfdy_2d_stag_os = (f(i,j+1) + f(i+1,j+1) - 2.d0*f(i,j))/(2.d0*delta)
             elseif( f(i,j+1) == f_min )then ! northwest corner point missing: apply value from n.e. point
-                dfdy_2d_stag_os = ( 2.0*f(i+1,j+1) - f(i,j) - f(i+1,j))/(2*delta)
+                dfdy_2d_stag_os = ( 2.d0*f(i+1,j+1) - f(i,j) - f(i+1,j))/(2.d0*delta)
             elseif( f(i+1,j+1) == f_min )then ! northeast corner point missing: apply value from n.w. point
-                dfdy_2d_stag_os = ( 2.0*f(i,j+1) - f(i,j) - f(i+1,j))/(2*delta)
+                dfdy_2d_stag_os = ( 2.d0*f(i,j+1) - f(i,j) - f(i+1,j))/(2.d0*delta)
             endif
 
-        elseif( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 2.0 )then
+        elseif( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 2.d0 )then
 
             ! side; back up and take gradient from points one set of cells in OR use only the single set of
             ! cells available along the differencing direction 
@@ -745,12 +744,12 @@ contains
             elseif( f(i+1,j) == f_min .and. f(i+1,j+1) == f_min )then   ! east cells empty
                 dfdy_2d_stag_os = (f(i,j+1) - f(i,j) )/(delta)
             elseif( f(i,j+1) == f_min .and. f(i+1,j+1) == f_min )then   ! north cells empty
-                dfdy_2d_stag_os = (f(i,j) + f(i+1,j) - f(i,j-1) - f(i+1,j-1))/(2*delta)
+                dfdy_2d_stag_os = (f(i,j) + f(i+1,j) - f(i,j-1) - f(i+1,j-1))/(2.d0*delta)
             elseif( f(i,j) == f_min .and. f(i+1,j) == f_min )then   ! south cells empty
-                dfdy_2d_stag_os = (f(i,j+2) + f(i+1,j+2) - f(i,j+1) - f(i+1,j+1))/(2*delta)
+                dfdy_2d_stag_os = (f(i,j+2) + f(i+1,j+2) - f(i,j+1) - f(i+1,j+1))/(2.d0*delta)
             endif
 
-        elseif( sum( f_array/ f_array, MASK = f_array /= 0.0d0 ) == 1.0 )then
+        elseif( sum( f_array/ f_array, MASK = f_array /= 0.d0 ) == 1.d0 ) then
 
             ! isolated; treat by assuming it is part of a 3 block for which the rest of the values are not contained within
             ! the local 2x2 block with indices i:i+1, j:j+1 
@@ -783,7 +782,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_2d_upwind
-        dfdx_2d_upwind = (.5 * f(i-2,j) - 2 * f(i-1, j) + 1.5 * f(i, j))/delta
+        dfdx_2d_upwind = (.5d0 * f(i-2,j) - 2.d0 * f(i-1, j) + 1.5d0 * f(i, j))/delta
     end function dfdx_2d_upwind
 
 !----------------------------------------------------------------------------
@@ -797,7 +796,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_2d_upwind
-        dfdy_2d_upwind = (.5 * f(i,j-2) - 2 * f(i, j-1) + 1.5 * f(i, j))/delta
+        dfdy_2d_upwind = (.5d0 * f(i,j-2) - 2.d0 * f(i, j-1) + 1.5d0 * f(i, j))/delta
     end function dfdy_2d_upwind
 
 !----------------------------------------------------------------------------
@@ -811,7 +810,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_2d_downwind
-        dfdx_2d_downwind = (-1.5 * f(i, j) + 2 * f(i+1, j) - .5 * f(i+2, j))/delta
+        dfdx_2d_downwind = (-1.5d0 * f(i, j) + 2.d0 * f(i+1, j) - .5d0 * f(i+2, j))/delta
     end function dfdx_2d_downwind 
 
 !----------------------------------------------------------------------------
@@ -825,7 +824,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_2d_downwind
-        dfdy_2d_downwind = (-1.5 * f(i, j) + 2 * f(i, j+1) - .5 * f(i, j+2))/delta
+        dfdy_2d_downwind = (-1.5d0 * f(i, j) + 2.d0 * f(i, j+1) - .5d0 * f(i, j+2))/delta
     end function dfdy_2d_downwind
 
 !----------------------------------------------------------------------------
@@ -842,7 +841,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_3d
-        dfdx_3d = (-.5/delta)*f(k, i-1, j)  + (.5/delta)*f(k, i+1, j)
+        dfdx_3d = (-.5d0/delta)*f(k, i-1, j)  + (.5d0/delta)*f(k, i+1, j)
     end function dfdx_3d
 
 !----------------------------------------------------------------------------
@@ -855,7 +854,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_3d
-        dfdy_3d = (-.5/delta)*f(k, i, j-1) + (.5/delta)*f(k, i, j+1)
+        dfdy_3d = (-.5d0/delta)*f(k, i, j-1) + (.5d0/delta)*f(k, i, j+1)
     end function dfdy_3d
     
 !----------------------------------------------------------------------------
@@ -872,7 +871,7 @@ contains
         real(dp) :: dfdz_3d_irregular
 
         dfdz_3d_irregular = f(k-1,i,j)*(dz(k) - dz(k+1))/((dz(k) - dz(k-1))*(dz(k+1)-dz(k-1))) + &
-                            f(k,  i,j)*(dz(k+1)-2*dz(k)+dz(k-1))/((dz(k)-dz(k-1))*(dz(k+1)-dz(k))) + &
+                            f(k,  i,j)*(dz(k+1)-2.d0*dz(k)+dz(k-1))/((dz(k)-dz(k-1))*(dz(k+1)-dz(k))) + &
                             f(k+1,i,j)*(dz(k)-dz(k-1))/((dz(k+1)-dz(k))*(dz(K+1)-dz(k-1)))
     end function
     
@@ -894,7 +893,7 @@ contains
         
         dfdz_3d_upwind_irregular = f(k-2, i, j) * zkMinusZkm1 / (zkm1MinusZkm2 * zkMinusZkm2) - &
                                    f(k-1, i, j) * zkMinusZkm2 / (zkMinusZkm1 * zkm1MinusZkm2) + &
-                                   f(k,   i, j) * (2*deltas(k) - deltas(k-1) - deltas(k-2)) / (zkMinusZkm1 * zkMinusZkm2)
+                                   f(k,   i, j) * (2.d0*deltas(k) - deltas(k-1) - deltas(k-2)) / (zkMinusZkm1 * zkMinusZkm2)
     end function
     
 !----------------------------------------------------------------------------
@@ -929,7 +928,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_3d_stag
-        dfdx_3d_stag = (f(k, i+1, j) + f(k, i+1, j+1) - f(k, i, j) - f(k, i, j+1))/(2*delta) 
+        dfdx_3d_stag = (f(k, i+1, j) + f(k, i+1, j+1) - f(k, i, j) - f(k, i, j+1))/(2.d0*delta) 
     end function dfdx_3d_stag
 
 !----------------------------------------------------------------------------
@@ -943,7 +942,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_3d_stag
-        dfdy_3d_stag = (f(k, i, j+1) + f(k, i+1, j+1) - f(k, i, j) - f(k, i+1, j))/(2*delta)
+        dfdy_3d_stag = (f(k, i, j+1) + f(k, i+1, j+1) - f(k, i, j) - f(k, i+1, j))/(2.d0*delta)
     end function dfdy_3d_stag
 
 !----------------------------------------------------------------------------
@@ -957,7 +956,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_3d_upwind
-        dfdx_3d_upwind = (.5 * f(k, i-2, j) - 2 * f(k, i-1, j) + 1.5 * f(k, i, j))/delta
+        dfdx_3d_upwind = (.5d0 * f(k, i-2, j) - 2.d0 * f(k, i-1, j) + 1.5d0 * f(k, i, j))/delta
     end function dfdx_3d_upwind
 
 !----------------------------------------------------------------------------
@@ -971,7 +970,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_3d_upwind
-        dfdy_3d_upwind = (.5 * f(k, i, j-2) - 2 * f(k, i, j-1) + 1.5 * f(k, i, j))/delta
+        dfdy_3d_upwind = (.5d0 * f(k, i, j-2) - 2.d0 * f(k, i, j-1) + 1.5d0 * f(k, i, j))/delta
     end function dfdy_3d_upwind
 
 !----------------------------------------------------------------------------
@@ -985,7 +984,7 @@ contains
         integer, intent(in) :: i,j, k
         real(dp), intent(in) :: delta
         real(dp) :: dfdx_3d_downwind
-        dfdx_3d_downwind = (-1.5 * f(k, i, j) + 2 * f(k, i+1, j) - .5 * f(k, i+2, j))/delta
+        dfdx_3d_downwind = (-1.5d0 * f(k, i, j) + 2.d0 * f(k, i+1, j) - .5d0 * f(k, i+2, j))/delta
     end function dfdx_3d_downwind 
 
 !----------------------------------------------------------------------------
@@ -999,7 +998,7 @@ contains
         integer, intent(in) :: i,j,k
         real(dp), intent(in) :: delta
         real(dp) :: dfdy_3d_downwind
-        dfdy_3d_downwind = (-1.5 * f(k, i, j) + 2 * f(k, i, j+1) - .5 * f(k, i, j+2))/delta
+        dfdy_3d_downwind = (-1.5d0 * f(k, i, j) + 2.d0 * f(k, i, j+1) - .5d0 * f(k, i, j+2))/delta
     end function dfdy_3d_downwind
     
 !----------------------------------------------------------------------------
@@ -1016,7 +1015,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: d2fdx2_2d     
-        d2fdx2_2d = (f(i+1,j) + f(i-1,j) - 2 * f(i, j))/(delta*delta)
+        d2fdx2_2d = (f(i+1,j) + f(i-1,j) - 2.d0 * f(i, j))/(delta*delta)
     end function d2fdx2_2d
 
 !----------------------------------------------------------------------------
@@ -1028,7 +1027,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdx2_2d_downwind   
 
-        d2fdx2_2d_downwind = (3*f(i, j) - 7*f(i+1, j) + 5*f(i+2, j) - f(i+3, j)) / (2*delta**2)
+        d2fdx2_2d_downwind = (3.d0*f(i, j) - 7.d0*f(i+1, j) + 5.d0*f(i+2, j) - f(i+3, j)) / (2.d0*delta**2)
 
     end function d2fdx2_2d_downwind
 
@@ -1041,7 +1040,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdx2_2d_upwind 
 
-        d2fdx2_2d_upwind = (3*f(i, j) - 7*f(i-1, j) + 5*f(i-2, j) - f(i-3, j)) / (2*delta**2)
+        d2fdx2_2d_upwind = (3.d0*f(i, j) - 7.d0*f(i-1, j) + 5.d0*f(i-2, j) - f(i-3, j)) / (2.d0*delta**2)
 
     end function d2fdx2_2d_upwind
 
@@ -1054,7 +1053,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdy2_2d_downwind   
 
-        d2fdy2_2d_downwind = (3*f(i, j) - 7*f(i, j+1) + 5*f(i, j+2) - f(i, j+3)) / (2*delta**2)
+        d2fdy2_2d_downwind = (3.d0*f(i, j) - 7.d0*f(i, j+1) + 5.d0*f(i, j+2) - f(i, j+3)) / (2.d0*delta**2)
 
     end function d2fdy2_2d_downwind
 
@@ -1067,7 +1066,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdy2_2d_upwind 
 
-        d2fdy2_2d_upwind = (3*f(i, j) - 7*f(i, j-1) + 5*f(i, j-2) - f(i, j-3)) / (2*delta**2)
+        d2fdy2_2d_upwind = (3.d0*f(i, j) - 7.d0*f(i, j-1) + 5.d0*f(i, j-2) - f(i, j-3)) / (2.d0*delta**2)
 
     end function d2fdy2_2d_upwind
 
@@ -1084,7 +1083,7 @@ contains
         !(i to i+2, and i-1 to i+1) to get the derivative at
         !i and i+1, then applying a central difference to that
         !in order to get the 2nd derivative at a staggered point
-        d2fdx2_2d_stag = sum(f(i+2, j:j+1) + f(i-1, j:j+1) - f(i+1, j:j+1) - f(i, j:j+1))/(4*delta**2)
+        d2fdx2_2d_stag = sum(f(i+2, j:j+1) + f(i-1, j:j+1) - f(i+1, j:j+1) - f(i, j:j+1))/(4.d0*delta**2)
     end function d2fdx2_2d_stag
 
 !----------------------------------------------------------------------------
@@ -1096,7 +1095,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdx2_2d_stag_downwind
         
-        d2fdx2_2d_stag_downwind = sum(3*f(i, j:j+1) - 7*f(i+1, j:j+1) + 5*f(i+2, j:j+1) - f(i+3, j:j+1)) / (4*delta**2)
+        d2fdx2_2d_stag_downwind = sum(3.d0*f(i, j:j+1) - 7.d0*f(i+1, j:j+1) + 5.d0*f(i+2, j:j+1) - f(i+3, j:j+1)) / (4.d0*delta**2)
         end function d2fdx2_2d_stag_downwind
         
         function d2fdx2_2d_stag_upwind(f, i, j, delta)
@@ -1106,7 +1105,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdx2_2d_stag_upwind
         
-        d2fdx2_2d_stag_upwind = sum(-3*f(i+1, j:j+1) + 7*f(i, j:j+1) - 5*f(i-1, j:j+1) + f(i-2, j:j+1)) / (4*delta**2)
+        d2fdx2_2d_stag_upwind = sum(-3.d0*f(i+1, j:j+1) + 7.d0*f(i, j:j+1) - 5.d0*f(i-1, j:j+1) + f(i-2, j:j+1)) / (4.d0*delta**2)
     end function d2fdx2_2d_stag_upwind
 
 !----------------------------------------------------------------------------
@@ -1119,7 +1118,7 @@ contains
         integer, intent(in) :: i,j
         real(dp), intent(in) :: delta
         real(dp) :: d2fdy2_2d
-        d2fdy2_2d = (f(i, j+1) + f(i, j-1) - 2 * f(i, j))/(delta*delta)
+        d2fdy2_2d = (f(i, j+1) + f(i, j-1) - 2.d0 * f(i, j))/(delta*delta)
     end function d2fdy2_2d
     
 !----------------------------------------------------------------------------
@@ -1135,7 +1134,7 @@ contains
         !(i to i+2, and i-1 to i+1) to get the derivative at
         !i and i+1, then applying a central difference to that
         !in order to get the 2nd derivative at a staggered point
-        d2fdy2_2d_stag = sum(f(i:i+1, j+2) + f(i:i+1, j-1) - f(i:i+1, j+1) - f(i:i+1, j))/(4*delta**2)
+        d2fdy2_2d_stag = sum(f(i:i+1, j+2) + f(i:i+1, j-1) - f(i:i+1, j+1) - f(i:i+1, j))/(4.d0*delta**2)
     end function d2fdy2_2d_stag
     
 !----------------------------------------------------------------------------
@@ -1147,7 +1146,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdy2_2d_stag_downwind
         
-        d2fdy2_2d_stag_downwind = sum(3*f(i:i+1, j) - 7*f(i:i+1, j+1) + 5*f(i:i+1, j+2) - f(i:i+1, j+3)) / (4*delta**2)
+        d2fdy2_2d_stag_downwind = sum(3.d0*f(i:i+1, j) - 7.d0*f(i:i+1, j+1) + 5.d0*f(i:i+1, j+2) - f(i:i+1, j+3)) / (4.d0*delta**2)
     end function d2fdy2_2d_stag_downwind
         
 !----------------------------------------------------------------------------
@@ -1159,7 +1158,7 @@ contains
         real(dp), intent(in) :: delta
         real(dp) :: d2fdy2_2d_stag_upwind
         
-        d2fdy2_2d_stag_upwind = sum(-3*f(i:i+1, j+1) + 7*f(i:i+1, j) - 5*f(i:i+1, j-1) + f(i:i+1, j-2)) / (4*delta**2)
+        d2fdy2_2d_stag_upwind = sum(-3.d0*f(i:i+1, j+1) + 7.d0*f(i:i+1, j) - 5.d0*f(i:i+1, j-1) + f(i:i+1, j-2)) / (4.d0*delta**2)
     end function d2fdy2_2d_stag_upwind
    
 !----------------------------------------------------------------------------
@@ -1189,9 +1188,9 @@ contains
                     d2fdx2(i,j) = d2fdx2_2d_upwind(f,i,j,deltax)
                 else
                     if (present(direction_x)) then
-                        if (direction_x(i,j) > 0) then
+                        if (direction_x(i,j) > 0.d0) then
                             d2fdx2(i,j) = d2fdx2_2d_downwind(f,i,j,deltax)
-                        else if (direction_x(i,j) < 0) then
+                        else if (direction_x(i,j) < 0.d0) then
                             d2fdx2(i,j) = d2fdx2_2d_upwind(f,i,j,deltax)
                         else
                             d2fdx2(i,j) = d2fdx2_2d(f,i,j,deltax)
@@ -1207,9 +1206,9 @@ contains
                     d2fdy2(i,j) = d2fdy2_2d_upwind(f,i,j,deltax)
                 else
                     if (present(direction_y)) then
-                        if (direction_y(i,j) > 0) then
+                        if (direction_y(i,j) > 0.d0) then
                             d2fdy2(i,j) = d2fdy2_2d_downwind(f,i,j,deltax)
-                        else if (direction_y(i,j) < 0) then
+                        else if (direction_y(i,j) < 0.d0) then
                             d2fdy2(i,j) = d2fdy2_2d_upwind(f,i,j,deltax)
                         else
                             d2fdy2(i,j) = d2fdy2_2d(f,i,j,deltax)
@@ -1341,8 +1340,8 @@ contains
       real(dp) :: boundyew
       integer ns
 
-      boundyew = pt(1) * (3.0d0 * sum(f(pt(2),ns:ns+1)) - 7.0d0 * sum(f(pt(2)+pt(1),ns:ns+1)) + &
-                 5.0d0 * sum(f(pt(2)+2*pt(1),ns:ns+1)) - sum(f(pt(2)+3*pt(1),ns:ns+1))) / dewsq4
+      boundyew = pt(1) * (3.d0 * sum(f(pt(2),ns:ns+1)) - 7.d0 * sum(f(pt(2)+pt(1),ns:ns+1)) + &
+                 5.d0 * sum(f(pt(2)+2*pt(1),ns:ns+1)) - sum(f(pt(2)+3*pt(1),ns:ns+1))) / dewsq4
 
     end function boundyew
 
@@ -1356,8 +1355,8 @@ contains
       real(dp) :: boundyns
       integer ew
 
-      boundyns = pt(1) * (3.0d0 * sum(f(ew:ew+1,pt(2))) - 7.0d0 * sum(f(ew:ew+1,pt(2)+pt(1))) + &
-                 5.0d0 * sum(f(ew:ew+1,pt(2)+2*pt(1))) - sum(f(ew:ew+1,pt(2)+3*pt(1)))) / dnssq4
+      boundyns = pt(1) * (3.d0 * sum(f(ew:ew+1,pt(2))) - 7.d0 * sum(f(ew:ew+1,pt(2)+pt(1))) + &
+                 5.d0 * sum(f(ew:ew+1,pt(2)+2*pt(1))) - sum(f(ew:ew+1,pt(2)+3*pt(1)))) / dnssq4
 
     end function boundyns
 
@@ -1518,7 +1517,7 @@ contains
         real(dp), intent(in) :: delta_x, delta_y
         real(dp) :: d2fdxy_3d
         
-        d2fdxy_3d = (f(k, i-1, j-1) - f(k, i-1, j+1) - f(k, i+1, j-1) + f(k, i+1, j+1))/(4*delta_x*delta_y) 
+        d2fdxy_3d = (f(k, i-1, j-1) - f(k, i-1, j+1) - f(k, i+1, j-1) + f(k, i+1, j+1))/(4.d0*delta_x*delta_y) 
     end function d2fdxy_3d
     
 !----------------------------------------------------------------------------
@@ -1531,7 +1530,7 @@ contains
         real(dp), dimension(:), intent(in) :: dz
         real(dp) :: d2fdxz_3d
         
-        d2fdxz_3d = (.5/delta_x) * ( &
+        d2fdxz_3d = (.5d0/delta_x) * ( &
           (f(k-1, i+1, j) - f(k-1, i-1, j)) * (dz(k) - dz(k+1)) / ( (dz(k) - dz(k-1)) * (dz(k+1) - dz(k-1)) ) + &
           (f(k,   i+1, j) - f(k,   i-1, j)) * (dz(k+1) + dz(k-1) - 2*dz(k)) / ( (dz(k) - dz(k-1)) * (dz(k+1) - dz(k)) ) + &
           (f(k+1, i+1, j) - f(k+1, i-1, j)) * (dz(k) - dz(k-1)) / ( (dz(k+1) - dz(k)) * (dz(k+1) - dz(k-1)) ) )
@@ -1545,7 +1544,7 @@ contains
         real(dp), dimension(:), intent(in) :: dz
         real(dp) :: d2fdyz_3d
         
-        d2fdyz_3d = (.5/delta_x) * ( &
+        d2fdyz_3d = (.5d0/delta_x) * ( &
           (f(k-1, i, j+1) - f(k-1, i, j-1)) * (dz(k) - dz(k+1)) / ( (dz(k) - dz(k-1)) * (dz(k+1) - dz(k-1)) ) + &
           (f(k,   i, j+1) - f(k,   i, j-1)) * (dz(k+1) + dz(k-1) - 2*dz(k)) / ( (dz(k) - dz(k-1)) * (dz(k+1) - dz(k)) ) + &
           (f(k+1, i, j+1) - f(k+1, i, j-1)) * (dz(k) - dz(k-1)) / ( (dz(k+1) - dz(k)) * (dz(k+1) - dz(k-1)) ) )
@@ -1570,9 +1569,9 @@ contains
         zkp1MinusZk = -1 * zkMinusZkp1
         
         
-        d2fdz2_3d_irregular = 2 * f(k-1, i, j) / (zkMinusZkm1 * zkp1MinusZkm1) - &
-                              2 * f(k,   i, j) / (zkp1MinusZk * zkMinusZkm1) + &
-                              2 * f(k+1, i, j) / (zkp1Minuszk * zkp1MinusZkm1)    
+        d2fdz2_3d_irregular = 2.d0 * f(k-1, i, j) / (zkMinusZkm1 * zkp1MinusZkm1) - &
+                              2.d0 * f(k,   i, j) / (zkp1MinusZk * zkMinusZkm1) + &
+                              2.d0 * f(k+1, i, j) / (zkp1Minuszk * zkp1MinusZkm1)    
     end function d2fdz2_3d_irregular
 
 !---------------------------------------------------------------------------------

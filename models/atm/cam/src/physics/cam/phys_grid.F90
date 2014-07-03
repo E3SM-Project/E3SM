@@ -2799,9 +2799,8 @@ logical function phys_grid_initialized ()
    integer, intent(in) :: hdim1d    ! declared first horizontal index 
                                     ! dimension
    integer, intent(in):: localchunks(fdim,pcols,mdim,begchunk:endchunk,ldim) ! local chunks
-!JR Changed globalfield to inout because slaves under lf95 pass a bogus argument, which will result
-!JR in trash being written to useful memory if intent(out) is specified.  THIS SHOULD BE FIXED!!!
-   integer, intent(inout) :: globalfield(fdim,hdim1d,mdim,hdim2_d,ldim) ! global field
+
+   integer, intent(out) :: globalfield(fdim,hdim1d,mdim,hdim2_d,ldim) ! global field
 
 !---------------------------Local workspace-----------------------------
 

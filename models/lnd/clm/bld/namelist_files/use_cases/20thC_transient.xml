@@ -5,6 +5,7 @@
 <use_case_desc            >Simulate transient land-use, and aerosol deposition changes from 1850 to 2005</use_case_desc>
 <use_case_desc bgc="cn"   >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
 <use_case_desc bgc="cndv" >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
 
 <sim_year>1850</sim_year>
 
@@ -14,20 +15,19 @@
 
 <clm_demand >fpftdyn</clm_demand>
 
-<stream_year_first_ndep bgc="cn"   >1850</stream_year_first_ndep>
-<stream_year_last_ndep  bgc="cn"   >2005</stream_year_last_ndep>
-<model_year_align_ndep  bgc="cn"   >1850</model_year_align_ndep>
+<stream_year_first_ndep phys="clm4_0" bgc="cn"   >1850</stream_year_first_ndep>
+<stream_year_last_ndep phys="clm4_0" bgc="cn"   >2005</stream_year_last_ndep>
+<model_year_align_ndep phys="clm4_0" bgc="cn"   >1850</model_year_align_ndep>
 
-<stream_year_first_ndep bgc="cndv" >1850</stream_year_first_ndep>
-<stream_year_last_ndep  bgc="cndv" >2005</stream_year_last_ndep>
-<model_year_align_ndep  bgc="cndv" >1850</model_year_align_ndep>
+<stream_year_first_ndep phys="clm4_0" bgc="cndv" >1850</stream_year_first_ndep>
+<stream_year_last_ndep phys="clm4_0" bgc="cndv" >2005</stream_year_last_ndep>
+<model_year_align_ndep phys="clm4_0" bgc="cndv" >1850</model_year_align_ndep>
 
-<stream_year_first_popdens  phys="clm4_5" bgc="cn"   >1850</stream_year_first_popdens>
-<stream_year_last_popdens   phys="clm4_5" bgc="cn"   >2010</stream_year_last_popdens>
-<model_year_align_popdens   phys="clm4_5" bgc="cn"   >1850</model_year_align_popdens>
+<stream_year_first_ndep phys="clm4_5" use_cn=".true."   >1850</stream_year_first_ndep>
+<stream_year_last_ndep phys="clm4_5" use_cn=".true."   >2005</stream_year_last_ndep>
+<model_year_align_ndep phys="clm4_5" use_cn=".true."   >1850</model_year_align_ndep>
 
-<stream_year_first_popdens  phys="clm4_5" bgc="cndv" >1850</stream_year_first_popdens>
-<stream_year_last_popdens   phys="clm4_5" bgc="cndv" >2010</stream_year_last_popdens>
-<model_year_align_popdens   phys="clm4_5" bgc="cndv" >1850</model_year_align_popdens>
-
+<stream_year_first_popdens phys="clm4_5" use_cn=".true."   >1850</stream_year_first_popdens>
+<stream_year_last_popdens phys="clm4_5" use_cn=".true."   >2010</stream_year_last_popdens>
+<model_year_align_popdens phys="clm4_5" use_cn=".true."   >1850</model_year_align_popdens>
 </namelist_defaults>

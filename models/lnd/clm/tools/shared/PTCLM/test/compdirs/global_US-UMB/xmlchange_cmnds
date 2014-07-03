@@ -1,0 +1,13 @@
+# xmlchange commands written by PTCLMmkdata:
+# ../PTCLMmkdata --pftgrid --soilgrid --verbose --donot_use_tower_yrs --clmnmlusecase=20thC_transient --cesm_root ../../../../../../.. -s US-UMB -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/global_surfdata_create 
+./xmlchange CLM_USRDAT_NAME=1x1pt_US-UMB
+./xmlchange CLM_BLDNML_OPTS='-mask navy'
+./xmlchange MPILIB=mpi-serial
+./xmlchange ATM_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/global_surfdata_create/1x1pt_US-UMB
+./xmlchange LND_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/global_surfdata_create/1x1pt_US-UMB
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_US-UMB_navy.140204.nc
+./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_US-UMB_navy.140204.nc
+./xmlchange CALENDAR=GREGORIAN
+./xmlchange DOUT_S=FALSE
+./xmlchange ATM_NCPL=24
+./xmlchange DIN_LOC_ROOT=/glade/p/cesmdata/cseg/inputdata

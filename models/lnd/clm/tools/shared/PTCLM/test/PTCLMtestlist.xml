@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+
+<!-- 
+
+  List of system tests for PTCLM 
+
+-->
+
+<PTCLMtestlist>
+    <!-- Normal tests to run that should complete successfully -->
+    <!-- Tests with "resultfile" will be compared to the resultfile to ensure they are the same -->
+
+   <!-- Tests of just PTCLM.py itself -->
+   <test id="help"        type="list" site="test"
+         opts="--help"                         resultfile="listings/help"           />
+   <test id="list"        type="list" site="test"
+         opts="--list"                         resultfile="listings/list"           />
+   <test id="sitelist"    type="list" site="list"
+         opts=""                               resultfile="listings/sitelist"       />
+   <!-- Test file creation for US-UMB for a couple different ways-->
+   <test id="std_file_creation"      type="RUN"   site="US-UMB" compdir="std_US-UMB"
+         opts="--verbose"        />
+   <test id="global_surfdata_create" type="RUN"   site="US-UMB" compdir="global_US-UMB"
+         opts="--pftgrid --soilgrid --verbose --donot_use_tower_yrs  --clmnmlusecase=20thC_transient"        />
+   <!-- Test crop on -->
+   <test id="croppft_file_creation"  type="RUN"   site="US-IB1" compdir="crop_US-IB1"
+         opts="--verbose --pftgrid --mksurfdata_opts='-crop -hirespft'"     />
+   
+   <!-- All the different sites and use a variety of options -->
+   <test id="noopt_file_creation"         type="RUN"   site="US-CHATS" compdir="noopt_US-CHATS"
+         opts=""        />
+   <test id="stdclm40_file_creation"      type="RUN"   site="US-FPe" compdir="std_clm40_US-FPe"
+         opts="--verbose --phys clm4_0"        />
+   <test id="stdclm40_file_creation"      type="RUN"   site="US-NR1" compdir="std_clm40_US-NR1"
+         opts="--verbose --phys clm4_0"        />
+   <test id="stdclm40_file_creation"      type="RUN"   site="US-Brw" compdir="std_clm40_US-Brw"
+         opts="--verbose --phys clm4_0"        />
+   <test id="stdclm45_file_creation"      type="RUN"   site="US-ARM" compdir="std_clm45_US-ARM"
+         opts="--verbose --phys clm4_5"        />
+   <test id="stdclm45_file_creation"      type="RUN"   site="US-Var" compdir="std_clm45_US-Var"
+         opts="--verbose --phys clm4_5"        />
+   <test id="stdclm45_file_creation"      type="RUN"   site="US-Ha1" compdir="std_clm45_US-Ha1"
+         opts="--verbose --phys clm4_5"        />
+   <test id="clm45grd_trans_pft"          type="RUN"   site="US-Ha1" compdir="trans_clm45_US-Ha1"
+         opts="--verbose --pftgrid --phys clm4_5 --clmnmlusecase=20thC_transient"        />
+   <test id="stdquiet_file_creation"      type="RUN"   site="US-Ho1" compdir="std_quiet_US-Ho1"
+         opts="--quiet"        />
+   <test id="stdquiet_file_creation"      type="RUN"   site="US-MMS" compdir="std_quiet_US-MMS"
+         opts="--quiet"        />
+   <test id="stdquiet_file_creation"      type="RUN"   site="US-Bo1" compdir="std_quiet_US-Bo1"
+         opts="--quiet"        />
+   <test id="rcp26grd_file_creation"      type="RUN"   site="US-Dk2" compdir="rcp26_US-Dk2"
+         opts="--verbose --pftgrid --clmnmlusecase=1850-2100_rcp2.6_transient"        />
+   <test id="rcp45grd_file_creation"      type="RUN"   site="US-Dk3" compdir="rcp45_US-Dk3"
+         opts="--verbose --pftgrid --clmnmlusecase=1850-2100_rcp4.5_transient"        />
+   <test id="rcp6grd_file_creation"       type="RUN"   site="US-IB1" compdir="rcp6_US-IB1"
+         opts="--verbose --pftgrid --clmnmlusecase=1850-2100_rcp6_transient"        />
+   <test id="rcp85grd_file_creation"      type="RUN"   site="US-Me4" compdir="rcp85_US-Me4"
+         opts="--verbose --pftgrid --clmnmlusecase=1850-2100_rcp8.5_transient"        />
+   <test id="std1850_file_creation"       type="RUN"   site="US-Me2" compdir="std_1850_US-Me2"
+         opts="--verbose --clmnmlusecase=1850_control"        />
+   <test id="std2000_file_creation"       type="RUN"   site="US-MOz" compdir="std_2000_US-MOz"
+         opts="--verbose --clmnmlusecase=2000_control"        />
+   <test id="trans20thgrd_file_creation"  type="RUN"   site="US-Ne3" compdir="trans_20th_US-Ne3"
+         opts="--verbose --pftgrid --clmnmlusecase=20thC_transient"        />
+   <test id="notower_file_creation"       type="RUN"   site="US-WCr" compdir="notowyrs_US-WCr"
+         opts="--verbose --donot_use_tower_yrs"        />
+   <test id="notower_file_creation"       type="RUN"   site="CA-Let" compdir="notowyrs_CA-Let"
+         opts="--verbose --donot_use_tower_yrs"        />
+   <test id="notower_file_creation"       type="RUN"   site="CA-Man" compdir="notowyrs_CA-Man"
+         opts="--verbose --donot_use_tower_yrs"        />
+   <test id="pftgrid_file_creation"       type="RUN"   site="CA-Ca1" compdir="pftgrd_CA-Ca1"
+         opts="--verbose --pftgrid"        />
+   <test id="stdurbpt_file_creation"      type="RUN"   site="CA-Oas" compdir="stdurbpt_pftgrd_CA-Oas"
+         opts="--verbose --pftgrid --clmnmlusecase=stdurbpt_pd"        />
+   <test id="pftgrid_file_creation"       type="RUN"   site="CA-Obs" compdir="pftgrd_CA-Obs"
+         opts="--verbose --pftgrid"        />
+   <test id="soigrid_file_creation"       type="RUN"   site="CA-Ojp" compdir="soigrd_CA-Ojp"
+         opts="--verbose --soilgrid"        />
+   <test id="soigrid_file_creation"       type="RUN"   site="CA-Qfo" compdir="soigrd_CA-Qfo"
+         opts="--verbose --soilgrid"        />
+   <test id="soigrid_file_creation"       type="RUN"   site="BR-Sa1" compdir="std_soigrd_BR-Sa1"
+         opts="--verbose --soilgrid"        />
+   <test id="cyc_file_creation"           type="RUN"   site="BR-Sa3" compdir="std_BR-Sa3"
+         opts="--verbose  --cycle_forcing"        />
+   <test id="cyc_file_creation"           type="RUN"   site="ES-ES1" compdir="std_ES-ES1"
+         opts="--verbose  --cycle_forcing"        />
+   <test id="cyc_file_creation"           type="RUN"   site="FL-Hyy" compdir="std_FL-Hyy"
+         opts="--verbose  --cycle_forcing"        />
+   <test id="std_file_creation"           type="RUN"   site="FL-Kaa" compdir="std_FL-Kaa"
+         opts="--verbose"        />
+   <test id="std_file_creation"           type="RUN"   site="IT-Col" compdir="std_IT-Col"
+         opts="--verbose"        />
+   <test id="std_file_creation"           type="RUN"   site="IT-Cpz" compdir="std_IT-Cpz"
+         opts="--verbose"        />
+   <test id="std_file_creation"           type="RUN"   site="DE-Tha" compdir="std_DE-Tha"
+         opts="--verbose"        />
+   <test id="std_file_creation"           type="RUN"   site="BE-Vie" compdir="std_BE-Vie"
+         opts="--verbose"        />
+   <test id="cycling__file_creation"      type="RUN"   site="TS-Ts1" compdir="cyc_TS-Ts1"
+         opts="--verbose --cycle_forcing"        />
+   <test id="cycling_file_creation"       type="RUN"   site="TS-Ts2" compdir="cyc_TS-Ts2"
+         opts="--verbose --cycle_forcing"        />
+   <test id="cycling_file_creation"       type="RUN"   site="TS-Ts3" compdir="cyc_TS-Ts3"
+         opts="--verbose --cycle_forcing"        />
+   <!-- tests of options that should fail -->
+   <failtest id="fail-no-datadir"     type="Fail" opts="-s test"/>
+   <failtest id="fail-no-site"        type="Fail" opts="-d test"/>
+   <failtest id="fail-bad-option"     type="Fail" opts="--zztop"/>
+   <failtest id="fail-bad_usecase"    type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=randomname --debug"/>
+   <!-- This test does NOT work since you have to run it with the debug option -->
+   <!-- So we comment it out here. If you add it back in be sure that map_gdate has double dash.
+   <failtest id="fail-bad_mapgdate"   type="Fail" opts="-m yellowstone_intel -d /glade/p/cesmdata/cseg/inputdata  -s US-UMB -map_gdate 991231"/>
+   -->
+   <failtest id="fail-bad_ctlusecase" type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=thing_control --debug"/>
+   <failtest id="fail-bad_trnusecase" type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=thing_transient --debug"/>
+   <failtest id="fail-no_dynpftdata"  type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=20thC_transient --debug"/>
+</PTCLMtestlist>

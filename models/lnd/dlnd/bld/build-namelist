@@ -33,8 +33,6 @@ SYNOPSIS
 
      Build the dlnd namelist 
 OPTIONS
-     -dlnd_type                    data land model type - one of three values     
-                                   required, one of values are [lnd sno]
      -help [or -h]            	   Print usage to STDOUT.					    
      -infile "filepath"       	   Specify a file or list of files (comma delimited) 	    
                               	   containing namelists to read values from.			    
@@ -90,7 +88,6 @@ my %opts = ( help        => 0,
 	    );
 
 GetOptions(
-    "dlnd_type=s"   => \$opts{'dlnd_type'},
     "h|help"        => \$opts{'help'},
     "infile=s"      => \$opts{'infile'},
     "namelist=s"    => \$opts{'namelist'},
@@ -107,16 +104,6 @@ usage() if $opts{'help'};
 if (@ARGV) {
     print "ERROR: unrecognized arguments: @ARGV\n";
     usage();
-}
-
-my $dlnd_type;
-if ($opts{'dlnd_type'}) {
-    $dlnd_type = $opts{'dlnd_type'};
-    if ($dlnd_type ne "lnd" && $dlnd_type ne "sno") {
-	die "ERROR: dlnd_type must be have a value of lnd or sno \n"; 
-    }
-} else {
-    die "ERROR: dlnd_type must be specified as input argument, -dlnd_type \n";
 }
 
 # Define print levels:
@@ -225,7 +212,7 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$cesm_tools/perl5lib");
+my @dirs = ( "$cfgdir/..", "$cesm_tools/perl5lib", "$CASEROOT/Tools");
 unshift @INC, @dirs;
 require XML::Lite;
 require Build::Config;
@@ -233,6 +220,7 @@ require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
 require Streams::TemplateGeneric;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DLND config_cache.xml file. 
@@ -301,31 +289,19 @@ if (defined $opts{'infile'}) {
 # Required xml variables           #
 ####################################
 
-my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml  = XML::Lite->new( "$file" );
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
+my %xmlvars = {};
+SetupTools::getxmlvars(${CASEROOT},\%xmlvars);
+
 foreach my $attr (keys %xmlvars) {
-    if ( $xmlvars{$attr} =~ m/\$/ ) {
-	$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});
-	$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});
-    }
+    $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $RUN_TYPE         = $xmlvars{'RUN_TYPE'};
-my $DIN_LOC_ROOT     = $xmlvars{'DIN_LOC_ROOT'};     
+my $DIN_LOC_ROOT     = $xmlvars{'DIN_LOC_ROOT'}; 
 my $LND_DOMAIN_FILE  = $xmlvars{'LND_DOMAIN_FILE'};  
 my $LND_DOMAIN_PATH  = $xmlvars{'LND_DOMAIN_PATH'};  
 my $LND_GRID         = $xmlvars{'LND_GRID'};         
 my $DLND_MODE        = $xmlvars{'DLND_MODE'};        
-my $DLND_RUNOFF_MODE = $xmlvars{'DLND_RUNOFF_MODE'}; 
-my $DLND_SNO_MODE    = $xmlvars{'DLND_SNO_MODE'};    
 my $GLC_NEC          = $xmlvars{'GLC_NEC'};
 
 (-d $DIN_LOC_ROOT)  or  die <<"EOF";
@@ -339,22 +315,12 @@ if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Create input data list (written to later)
 my $fh_out = new IO::File;
-if ($dlnd_type eq 'lnd') {
-    $fh_out->open(">$CASEROOT/Buildconf/dlnd.input_data_list") or
-	die "** can't open filepath file: dlnd.input_data_list\n";
-} else {
-    $fh_out->open(">>$CASEROOT/Buildconf/dlnd.input_data_list") or
-	die "** can't open filepath file: dlnd.input_data_list\n";
-}
+$fh_out->open(">$CASEROOT/Buildconf/dlnd.input_data_list") or
+  die "** can't open filepath file: dlnd.input_data_list\n";
 
 # Create hash needed to parse namelist_defaults_dlnd.xml file
 my %default_namelist_opts;
-if ($dlnd_type eq "lnd") {
-    $default_namelist_opts{'dlnd_mode'} = $DLND_MODE;
-}
-if ($dlnd_type eq "sno") {
-    $default_namelist_opts{'dlnd_sno_mode'} = $DLND_SNO_MODE;
-}
+$default_namelist_opts{'dlnd_mode'} = $DLND_MODE;
 $default_namelist_opts{'lnd_grid'} = $LND_GRID;
 
 # Create streams template file(s) - loop over streams
@@ -410,12 +376,12 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'yearfirst'}  = $defaults->get_value( "strm_year_start", \%default_namelist_opts );
 	$stream_template_opts{'yearlast'}   = $defaults->get_value( "strm_year_end"  , \%default_namelist_opts );
 	
-	$stream_template_opts{'filepath'}   = expand_env_xml($stream_template_opts{'filepath'});
-	$stream_template_opts{'filenames'}  = expand_env_xml($stream_template_opts{'filenames'});
-	$stream_template_opts{'domainpath'} = expand_env_xml($stream_template_opts{'domainpath'});
-	$stream_template_opts{'domain'}     = expand_env_xml($stream_template_opts{'domain'});
-	$stream_template_opts{'yearfirst'}  = expand_env_xml($stream_template_opts{'yearfirst'});
-	$stream_template_opts{'yearlast'}   = expand_env_xml($stream_template_opts{'yearlast'});
+	$stream_template_opts{'filepath'}   = SetupTools::expand_env_var($stream_template_opts{'filepath'}, \%xmlvars);
+	$stream_template_opts{'filenames'}  = SetupTools::expand_env_var($stream_template_opts{'filenames'}, \%xmlvars);
+	$stream_template_opts{'domainpath'} = SetupTools::expand_env_var($stream_template_opts{'domainpath'}, \%xmlvars);
+	$stream_template_opts{'domain'}     = SetupTools::expand_env_var($stream_template_opts{'domain'}, \%xmlvars);
+	$stream_template_opts{'yearfirst'}  = SetupTools::expand_env_var($stream_template_opts{'yearfirst'}, \%xmlvars);
+	$stream_template_opts{'yearlast'}   = SetupTools::expand_env_var($stream_template_opts{'yearlast'}, \%xmlvars);
 	
 	$stream_template_opts{'glc_nec'}    = $GLC_NEC;
 
@@ -451,9 +417,9 @@ foreach my $stream ( @streams ) {
     my $beg_year   = $defaults->get_value( 'strm_year_start', \%default_namelist_opts);
     my $end_year   = $defaults->get_value( 'strm_year_end'  , \%default_namelist_opts);
     my $align_year = $defaults->get_value( 'strm_year_align', \%default_namelist_opts);
-    $beg_year      = expand_env_xml($beg_year);
-    $end_year      = expand_env_xml($end_year);
-    $align_year    = expand_env_xml($align_year);
+    $beg_year      = SetupTools::expand_env_var($beg_year, \%xmlvars);
+    $end_year      = SetupTools::expand_env_var($end_year, \%xmlvars);
+    $align_year    = SetupTools::expand_env_var($align_year, \%xmlvars);
 
     if ( $beg_year > $end_year ) {
 	print "\n\nbeg_year=$beg_year end_year=$end_year\n";
@@ -488,12 +454,8 @@ $fh_out->close;
 ####################################
 
 my $datamode   = $defaults->get_value( "datamode", \%default_namelist_opts );
-add_default($nl, 'datamode', 'val' => "$datamode" );
-if ($dlnd_type eq "lnd") {
-    # Model domain only output for lnd mode - not for runoff or sno mode
-    add_default($nl, 'datamode',   'val' => "$datamode");
-    add_default($nl, 'domainfile', 'val' => "$LND_DOMAIN_PATH/$LND_DOMAIN_FILE" );
-}
+add_default($nl, 'datamode',   'val' => "$datamode");
+add_default($nl, 'domainfile', 'val' => "$LND_DOMAIN_PATH/$LND_DOMAIN_FILE" );
 if ($datamode ne 'NULL') {
     add_default($nl, 'streams',    'val' => "$ostreams"  );
     add_default($nl, 'mapalgo',    'val' => "$omapalgo"  );
@@ -510,8 +472,8 @@ if ($datamode ne 'NULL') {
 #############################
 
 add_default($nl, 'lnd_in', 'val'=>"dlnd_lnd_in${INST_STRING}");
-add_default($nl, 'sno_in', 'val'=>"dlnd_sno_in${INST_STRING}");
 add_default($nl, 'decomp');
+add_default($nl, 'force_prognostic_true', 'val'=>'.false.');
 
 if ( $RUN_TYPE =~ /branch/ ) {
    # The dlnd master restart file is currently unused
@@ -533,8 +495,7 @@ my $note = "";
 # dlnd_lnd_in
 my @groups = qw(shr_strdata_nml);
 my $outfile;
-if ($dlnd_type eq "lnd") {$outfile = "./dlnd_lnd_in";}
-if ($dlnd_type eq "sno") {$outfile = "./dlnd_sno_in";}
+$outfile = "./dlnd_lnd_in";
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
 if ($print>=2) { print "Writing dlnd_dshr namelist to $outfile $eol"; }
 
@@ -876,15 +837,4 @@ sub quote_string {
 }
 
 #-------------------------------------------------------------------------------
-
-sub expand_env_xml {
-
-    my $value = shift;
-
-    if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
-	$value =~ s/\$${1}/$subst/g;
-    }
-    return $value; 
-}	 
 

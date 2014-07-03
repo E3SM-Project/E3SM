@@ -314,7 +314,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    integer :: ixcldice, ixcldliq      ! constituent indices for cloud liquid and ice water.
    integer :: lchnk                   ! chunk identifier
    integer :: ncol                    ! number of atmospheric columns
-   integer :: itim                    ! for physics buffer fields
+   integer :: itim_old                ! for physics buffer fields
 
    real(r8) :: ftem(pcols,pver)              ! Temporary workspace for outfld variables
    real(r8) :: ntprprd(pcols,pver)    ! evap outfld: net precip production in layer
@@ -384,8 +384,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
 ! Associate pointers with physics buffer fields
 !
-   itim = pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, cld_idx,         cld,    start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+   itim_old = pbuf_old_tim_idx()
+   call pbuf_get_field(pbuf, cld_idx,         cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
    call pbuf_get_field(pbuf, icwmrdp_idx,     ql )
    call pbuf_get_field(pbuf, rprddp_idx,      rprd )
@@ -455,8 +455,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     call outfld('PCONVT  ',pcont          ,pcols   ,lchnk   )
     call outfld('PCONVB  ',pconb          ,pcols   ,lchnk   )
 
-  ! This name triggers a special case in physics_types.F90:physics_update()
-  call physics_ptend_init(ptend_all, state%psetcols, 'convect_deep')
+  call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
 
   ! add tendency from this process to tendencies from other processes
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
@@ -625,7 +624,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf)
    real(r8), dimension(pcols,pver) :: dpdry
 
 ! physics buffer fields 
-   integer itim, ifld
+   integer ifld
    real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
    logical   :: lq(pcnst)
 

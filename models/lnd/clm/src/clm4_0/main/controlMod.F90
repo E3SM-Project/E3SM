@@ -19,7 +19,7 @@ module controlMod
   use clm_varpar   , only : maxpatch_pft, maxpatch_glcmec
   use clm_varctl   , only : caseid, ctitle, nsrest, brnch_retain_casename, hostname, &
                             model_version=>version,    &
-                            iulog, outnc_large_files, finidat, fsurdat, fatmlndfrc, &
+                            iulog, finidat, fsurdat, fatmlndfrc, &
                             fatmtopo, flndtopo, fpftdyn, fpftcon, nrevsn, &
                             create_crop_landunit, allocate_all_vegpfts,   &
                             co2_type, wrtdia, co2_ppmv, nsegspc,          &
@@ -126,7 +126,7 @@ contains
     use clm_time_manager , only : set_timemgr_init, get_timemgr_defaults
     use fileutils        , only : getavu, relavu
     use shr_string_mod   , only : shr_string_getParentDir
-    use clm_varctl       , only : clmvarctl_init, set_clmvarctl, nsrBranch, nsrStartup, &
+    use clm_varctl       , only : clmvarctl_init, clm_varctl_set, nsrBranch, nsrStartup, &
                                   nsrContinue
     use clm_cpl_indices  , only : glc_nec
 
@@ -176,8 +176,7 @@ contains
          hist_fincl1,  hist_fincl2, hist_fincl3, &
          hist_fincl4,  hist_fincl5, hist_fincl6, &
          hist_fexcl1,  hist_fexcl2, hist_fexcl3, &
-         hist_fexcl4,  hist_fexcl5, hist_fexcl6, &
-         outnc_large_files
+         hist_fexcl4,  hist_fexcl5, hist_fexcl6
 
     ! BGC info
 
@@ -276,7 +275,7 @@ contains
               call endrun( subname//' ERROR: can ONLY override clm start-type ' // &
                            'to branch type and ONLY if driver is a startup type' )
            end if
-           call set_clmvarctl( nsrest_in=override_nsrest )
+           call clm_varctl_set( nsrest_in=override_nsrest )
        end if
        
        ! Consistency of elevation classes on namelist to what's sent by the coupler
@@ -404,7 +403,6 @@ contains
 
     ! history file variables
 
-    call mpi_bcast (outnc_large_files, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (hist_empty_htapes, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (hist_dov2xy, size(hist_dov2xy), MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (hist_nhtfrq, size(hist_nhtfrq), MPI_INTEGER, 0, mpicom, ier)
@@ -536,11 +534,14 @@ contains
     write(iulog,*) 'Restart parameters:'
     write(iulog,*)'   restart pointer file directory     = ',trim(rpntdir)
     write(iulog,*)'   restart pointer file name          = ',trim(rpntfil)
-    if ( outnc_large_files ) then
-       write(iulog,*)'Large file support for output files is ON'
-    end if
     write(iulog,*) 'model physics parameters:'
-    write(iulog,*) '   CO2 volume mixing ratio   (umol/mol)   = ', co2_ppmv
+
+    if ( trim(co2_type) == 'constant' )then
+       write(iulog,*) '   CO2 volume mixing ratio   (umol/mol)   = ', co2_ppmv
+    else
+       write(iulog,*) '   CO2 volume mixing ratio                = ', co2_type
+    end if
+
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac
     write(iulog,*) '   urban traffic flux   = ', urban_traffic

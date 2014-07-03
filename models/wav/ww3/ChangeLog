@@ -1,0 +1,43 @@
+================================================================================
+ww3 ChangeLog
+================================================================================
+Originator: tcraig
+Date: 05 Sep 2013
+Model: cpl7
+Version: ww3_130905
+One-line summary:  modify coupling interface intents
+	
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Originator: tcraig
+Date: 14 Mar 2013
+Model: cpl7
+Version: ww3_130314
+One-line summary:  remove debug write statements
+
+M       src/source/w3iogomd.f90
+M       src/source/w3wavemd.f90
+================================================================================
+Originator: tcraig
+Date: 13 Mar 2013
+Model: cpl7
+Version: ww3_130313
+One-line summary:  update ww3 to cesm1_2_beta02, merge adrean's mods
+
+A       bld/ww3.buildnml.csh
+A       bld/user_nl_ww3
+A       bld/ww3.buildexe.csh
+M       bld/ww3.cpl7.template
+M       src/cpl_share/ww3_cpl_indices.f90
+M       src/source/w3iogomd.f90
+M       src/source/w3wavemd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Version: ww3_120308
+================================================================================
+Version: ww3_120227
+================================================================================
+Version: ww3_111230
+================================================================================
+
+

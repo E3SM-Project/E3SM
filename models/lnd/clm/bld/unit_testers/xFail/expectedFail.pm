@@ -646,24 +646,16 @@ sub _getMachInfo
 
    my %machNames = (
       "ys"  => "yellowstone",
-      "ja"   => "janus",
-      "mi"   => "mirage",
-      "ly"   => "lynx",
-      "ys"   => "yellowstone"
+      "fr"   => "frankfurt"
    );
 
    my %compNames = (
       "ys"  => "INTEL",
-      "ja"   => "intel",
-      "mi"   => "PGI",
-      "ly"   => "intel",
-      "ys"   => "intel"
+      "fr"   => "INTEL"
    );
    
    my $mach = $machNames {lc $name} || "unknown";
    my $comp = $compNames {lc $name} || "unknown";
-
-   print"SPM DEBUG :: $mach , $comp \n";
 
    return ($mach,$comp);
 

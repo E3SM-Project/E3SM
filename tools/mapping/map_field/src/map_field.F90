@@ -249,14 +249,20 @@ contains
       if (dst_grid_rank == 2) then
          nbi = dst_grid_dims(1)
          nbj = dst_grid_dims(2)
+      else
+        nbi = dst_grid_dims(1)
+        nbj = 1
       end if
       nb = nbi * nbj
 
       if (src_grid_rank == 2) then
          nai = src_grid_dims(1)
          naj = src_grid_dims(2)
-         na = nai * naj
+      else
+         nai = src_grid_dims(1)
+         naj = 1
       end if
+      na = nai * naj
 
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_atm', str_grida)
       if ( rcode == nf_enotatt ) then

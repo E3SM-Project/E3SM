@@ -1,0 +1,7 @@
+-debug
+-spmd -nosmp
+-dyn fv
+-res 4x5
+-prog_species SO4,BC,OC,SSLT,DST,GHG
+-phys cam4
+-s

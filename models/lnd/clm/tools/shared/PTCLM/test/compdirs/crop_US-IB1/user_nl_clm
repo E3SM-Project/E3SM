@@ -1,0 +1,5 @@
+! user_nl_clm namelist options written by PTCLMmkdata:
+! ../PTCLMmkdata --verbose --pftgrid --mksurfdata_opts=-crop -hirespft --cesm_root ../../../../../../.. -s US-IB1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/croppft_file_creation 
+ fsurdat = '/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/croppft_file_creation/1x1pt_US-IB1/surfdata_1x1pt_US-IB1_simyr2000_clm4_5_pftgrd_-crop+-hirespft_c140204.nc'
+ hist_nhtfrq = 0
+ hist_mfilt  = 1200

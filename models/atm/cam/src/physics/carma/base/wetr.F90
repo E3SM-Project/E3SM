@@ -14,7 +14,7 @@ contains
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000 
-  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, wgtpct, temp)
+  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp)
   
     ! types
     use carma_precision_mod
@@ -35,12 +35,16 @@ contains
     real(kind=f), intent(in)             :: rhopdry !! dry radius [cm]
     real(kind=f), intent(out)            :: rhopwet !! wet radius [cm]
     integer, intent(inout)               :: rc      !! return code, negative indicates failure
-    real(kind=f), intent(in), optional   :: wgtpct  !! weight percent [%]
+    real(kind=f), intent(in), optional   :: h2o_mass!! water vapor mass concentration (g/cm3)
+    real(kind=f), intent(in), optional   :: h2o_vp  !! water eq. vaper pressure (dynes/cm2)    
     real(kind=f), intent(in), optional   :: temp    !! temperature [K]
   
     ! Local declarations
     real(kind=f)            :: humidity
     real(kind=f)            :: r_ratio
+    real(kind=f)            :: wtpkelv, den1, den2, drho_dwt
+    real(kind=f)            :: sigkelv, sig1, sig2, dsigma_dwt
+    real(kind=f)            :: rkelvinH2O_a, rkelvinH2O_b, rkelvinH2O, h2o_kelv
         
     ! The following parameters relate to the swelling of seasalt like particles
     ! following Fitzgerald, Journal of Applied Meteorology, [1975].
@@ -203,8 +207,31 @@ contains
     
     ! Sulfate Aerosol, using weight percent.
     if (irhswell(igroup) == I_WTPCT_H2SO4) then
-      rhopwet   = sulfate_density(carma, wgtpct, temp, rc)
-      rwet      = rdry * (100._f * rhopdry / wgtpct / rhopwet)**(1._f / 3._f)   
+    
+      ! Adjust calculation for the Kelvin effect of H2O:
+      wtpkelv = 80._f ! start with assumption of 80 wt % H2SO4 
+      den1 = 2.00151_f - 0.000974043_f * temp ! density at 79 wt %
+      den2 = 2.01703_f - 0.000988264_f * temp ! density at 80 wt %
+      drho_dwt = den2-den1 ! change in density for change in 1 wt %
+      
+      sig1 = 79.3556_f - 0.0267212_f * temp ! surface tension at 79.432 wt %
+      sig2 = 75.608_f  - 0.0269204_f * temp ! surface tension at 85.9195 wt %      
+      dsigma_dwt = (sig2-sig1) / (85.9195_f - 79.432_f) ! change in density for change in 1 wt %
+      sigkelv = sig1 + dsigma_dwt * (80.0_f - 79.432_f)
+      
+      rwet = rdry * (100._f * rhopdry / wtpkelv / den2)**(1._f / 3._f)
+
+      rkelvinH2O_b = 1._f + wtpkelv * drho_dwt / den2 - 3._f * wtpkelv &
+          * dsigma_dwt / (2._f*sigkelv)
+
+      rkelvinH2O_a = 2._f * gwtmol(igash2so4) * sigkelv / (den1 * RGAS * temp * rwet)     
+
+      rkelvinH2O = exp (rkelvinH2O_a*rkelvinH2O_b)
+            
+      h2o_kelv = h2o_mass / rkelvinH2O
+      wtpkelv = wtpct_tabaz(carma, temp, h2o_kelv, h2o_vp, rc)
+      rhopwet   = sulfate_density(carma, wtpkelv, temp, rc)
+      rwet      = rdry * (100._f * rhopdry / wtpkelv / rhopwet)**(1._f / 3._f)   
     end if
   
     ! Return to caller with wet radius evaluated.

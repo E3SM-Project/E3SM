@@ -23,10 +23,11 @@
       (  1)  M               
       (  2)  N2              
       (  3)  O2              
-      (  4)  O3              
-      (  5)  OH              
-      (  6)  NO3             
-      (  7)  HO2             
+      (  4)  H2O             
+      (  5)  O3              
+      (  6)  OH              
+      (  7)  NO3             
+      (  8)  HO2             
   
   
      Column integrals
@@ -56,10 +57,17 @@ Class List
       ( 16)  DST04           
   
      Photolysis
+  jh2o2            (  1)   H2O2 + hv ->  2*OH                                                   rate = ** User defined **         (  1)
   
      Reactions
-                   (  1)   CB1 ->  CB2                                                          rate = 1.01E-05                   (  1)
-                   (  2)   OC1 ->  OC2                                                          rate = 1.01E-05                   (  2)
+  usr_HO2_HO2      (  1)   HO2 + HO2 ->  H2O2 + O2                                              rate = ** User defined **         (  2)
+                   (  2)   H2O2 + OH ->  H2O + HO2                                              rate = 2.90E-12*exp(   -160./t)   (  3)
+  usr_SO2_OH       (  3)   SO2 + OH ->  SO4                                                     rate = ** User defined **         (  4)
+                   (  4)   DMS + OH ->  SO2                                                     rate = 9.60E-12*exp(   -234./t)   (  5)
+  usr_DMS_OH       (  5)   DMS + OH ->  .5*SO2                                                  rate = ** User defined **         (  6)
+                   (  6)   DMS + NO3 ->  SO2                                                    rate = 1.90E-13*exp(    520./t)   (  7)
+                   (  7)   CB1 ->  CB2                                                          rate = 1.01E-05                   (  8)
+                   (  8)   OC1 ->  OC2                                                          rate = 1.01E-05                   (  9)
   
 Extraneous prod/loss species
  ( 1)   SO2   (dataset)
@@ -68,14 +76,16 @@ Extraneous prod/loss species
   
  Equation Report
   
-    d(H2O2)/dt = 0                                                                                                      
-    d(SO2)/dt = 0                                                                                                       
-    d(SO4)/dt = 0                                                                                                       
-    d(DMS)/dt = 0                                                                                                       
-    d(OC1)/dt =  - r2*OC1                                                                                               
-    d(OC2)/dt = r2*OC1                                                                                                  
-    d(CB1)/dt =  - r1*CB1                                                                                               
-    d(CB2)/dt = r1*CB1                                                                                                  
+    d(H2O2)/dt = r1                                                                                                     
+                  - j1*H2O2  - r2*OH*H2O2                                                                               
+    d(SO2)/dt = r4*OH*DMS  + .5*r5*OH*DMS  + r6*NO3*DMS                                                                 
+                 - r3*OH*SO2                                                                                            
+    d(SO4)/dt = r3*OH*SO2                                                                                               
+    d(DMS)/dt =  - r4*OH*DMS  - r5*OH*DMS  - r6*NO3*DMS                                                                 
+    d(OC1)/dt =  - r8*OC1                                                                                               
+    d(OC2)/dt = r8*OC1                                                                                                  
+    d(CB1)/dt =  - r7*CB1                                                                                               
+    d(CB2)/dt = r7*CB1                                                                                                  
     d(SSLT01)/dt = 0                                                                                                    
     d(SSLT02)/dt = 0                                                                                                    
     d(SSLT03)/dt = 0                                                                                                    

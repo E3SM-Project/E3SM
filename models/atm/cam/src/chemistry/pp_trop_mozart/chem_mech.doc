@@ -278,7 +278,7 @@ Class List
   usr_O_O2         (  1)   O + O2 + M ->  O3 + M                                                rate = ** User defined **         ( 41)
                    (  2)   O + O3 ->  2*O2                                                      rate = 8.00E-12*exp(  -2060./t)   ( 42)
   o1d_n2           (  3)   O1D + N2 ->  O + N2                                                  rate = 2.10E-11*exp(    115./t)   ( 43)
-  o1d_o2           (  4)   O1D + O2 ->  O + O2                                                  rate = 3.20E-11*exp(     70./t)   ( 44)
+  o1d_o2           (  4)   O1D + O2 ->  O + O2                                                  rate = 3.30E-11*exp(     55./t)   ( 44)
   ox_l1            (  5)   O1D + H2O ->  2*OH                                                   rate = 2.20E-10                   ( 45)
                    (  6)   H2 + O1D ->  HO2 + OH                                                rate = 1.10E-10                   ( 46)
                    (  7)   H2 + OH ->  H2O + HO2                                                rate = 2.80E-12*exp(  -1800./t)   ( 47)
@@ -496,6 +496,7 @@ Extraneous prod/loss species
  ( 1)   NO   (dataset)
  ( 2)   CO   (dataset)
  ( 3)   SO2   (dataset)
+ ( 4)   SO4   (dataset)
   
   
  Equation Report

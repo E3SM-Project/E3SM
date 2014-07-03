@@ -332,7 +332,7 @@ $repotag = $repotag[2];
 chomp($repotag);
 $cfg_ref->set('CCSM_REPOTAG', $repotag);
 
-SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $print, "$output_dir/Macros");
+SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, $print, "$output_dir/Macros");
 my $sysmod;
 # Create machine specific environment file (env_mach_specific)
 if(-e "$machdir/env_mach_specific.$mach" ) {

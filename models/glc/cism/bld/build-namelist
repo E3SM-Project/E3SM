@@ -70,6 +70,10 @@ my $GTHF_CALCULATE = 2;
 # should have an 'isostasy' section
 my $ISOSTASY_ON = 1;
 
+# regular expressions to match fortran true/false
+my $TRUE  = qr/\.true\./i;
+my $FALSE = qr/\.false\./i;
+
 #-----------------------------------------------------------------------------------------------
 # Set the directory that contains the CISM configuration scripts.  If the command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
@@ -415,7 +419,7 @@ add_default($nl, 'frac_varname');
 add_default($nl, 'paramfile', 'noprepend'=>'1' );
 add_default($nl, 'cism_debug');
 add_default($nl, 'cesm_history_vars');
-
+add_default($nl, 'ice_flux_routing');
 
 my $hotstart;
 if ($RUN_TYPE eq 'startup') {
@@ -440,15 +444,23 @@ else {
 }
 
 ####################################
-# create cism.config in run dir    #
+# namelist group: glc_override_nml #
 ####################################
+
+add_default($nl, 'enable_frac_overrides');
+if ($nl->get_value('enable_frac_overrides') =~ $TRUE) {
+   add_default($nl, 'override_delay');
+   add_default($nl, 'decrease_frac');
+   add_default($nl, 'increase_frac');
+   add_default($nl, 'rearrange_freq');
+}
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (cism_in) and input dataset list (cism.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
 
-my @groups = qw(cism_params grid_nml time_manager_nml); 
+my @groups = qw(cism_params grid_nml time_manager_nml glc_override_nml); 
 
 # Write out all groups  to cism_in
 my $outfile = "./cism_in";
@@ -457,6 +469,10 @@ if ($print>=2) { print "Writing cism glc component namelist to $outfile $eol"; }
 
 # Write  input dataset list.
 check_input_files($nl, $DIN_LOC_ROOT, "../cism.input_data_list");
+
+####################################
+# create cism.config in run dir    #
+####################################
 
 # Write cism.config
 my $fh = new IO::File;
@@ -474,6 +490,7 @@ print $fh "\n[GLINT climate]\n";
 add_default($nl, 'evolve_ice');
 add_default($nl, 'precip_mode');
 add_default($nl, 'acab_mode');
+add_default($nl, 'test_coupling');
 $nl->write_cism_config($fh, "cism_config_climate");
 
 print $fh "\n[projection]\n";

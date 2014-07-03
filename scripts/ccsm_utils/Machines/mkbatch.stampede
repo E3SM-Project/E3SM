@@ -45,11 +45,8 @@ cat >! $file << EOF1
 #SBATCH -J ${CASE}         # job name
 #SBATCH -n $mpp 	   # total number of mpi tasks requested
 #SBATCH -N $nodes	  # total number of nodes
-#SBATCH -p normal-mic 	   # queue (partition) -- normal, development, etc.
+#SBATCH -p normal 	   # queue (partition) -- normal, development, etc.
 #SBATCH -t 01:30:00        # run time (hh:mm:ss) - 1.5 hours
-#SBATCH --mail-user=srinathv@ucar.edu
-#SBATCH --mail-type=begin  # email me when the job starts
-#SBATCH --mail-type=end    # email me when the job finishes
 
 # End of options
 

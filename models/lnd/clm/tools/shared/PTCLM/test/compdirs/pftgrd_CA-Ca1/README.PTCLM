@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --pftgrid --cesm_root ../../../../../../.. -s CA-Ca1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/pftgrid_file_creation 

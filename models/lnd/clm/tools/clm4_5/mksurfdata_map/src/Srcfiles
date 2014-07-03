@@ -8,8 +8,6 @@ mkharvestMod.F90
 mklaiMod.F90
 mklanwatMod.F90
 mkpftMod.F90
-clm_varctl.F90
-clm_varpar.F90
 mksoilMod.F90
 mkvocefMod.F90
 mksurfdat.F90

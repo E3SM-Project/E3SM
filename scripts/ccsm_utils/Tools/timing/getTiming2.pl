@@ -199,6 +199,12 @@ printf("  ocn = %-8s   %-6u      %-6u   %-6u x %-6u  %-6u (%-6u) \n",$COMP_OCN,$
 &gettime(' DRIVER_WAV_RUN ' ,$wmin,$wmax,$nullf);
 &gettime(' DRIVER_ATM_RUN ' ,$amin,$amax,$nullf);
 &gettime(' DRIVER_OCN_RUN ' ,$omin,$omax,$nullf);
+&gettime(' DRIVER_OCNT_RUN ',$otmin,$otmax,$nullf);
+# pick OCNT_RUN for tight coupling
+if ($otmax > $omax) {
+  $omin = $otmin;
+  $omax = $otmax;
+}
 &gettime(' DRIVER_CPL_RUN ' ,$cmin,$cmax,$nullf);
 &gettime(' DRIVER_CPL_COMM ',$xmin,$xmax,$nullf);
 
@@ -206,7 +212,7 @@ printf("  ocn = %-8s   %-6u      %-6u   %-6u x %-6u  %-6u (%-6u) \n",$COMP_OCN,$
 if ( $odays != 0.0 ) {
    $ocnrunitime = ($omax) * ($adays/$odays - 1.0);
 } else {
-   $ocnrunitime = 0.0
+   $ocnrunitime = 0.0;
 }
 $correction = $ocnrunitime - $ocnwaittime;
 if ($correction < 0) {$correction = 0.0;}
@@ -331,8 +337,8 @@ print ("\n");
 &prttime(' DRIVER_ROF_RUN '         ,$roffset,$adays,$m999);
 &prttime(' DRIVER_WAV_RUN_BARRIER ' ,$roffset,$adays,$m999);
 &prttime(' DRIVER_WAV_RUN '         ,$roffset,$adays,$m999);
-&prttime(' DRIVER_OCN_RUN_BARRIER ' ,$ooffset,$odays,$m999);
-&prttime(' DRIVER_OCN_RUN '         ,$ooffset,$odays,$m999);
+&prttime(' DRIVER_OCNT_RUN_BARRIER ',$ooffset,$odays,$m999);
+&prttime(' DRIVER_OCNT_RUN '        ,$ooffset,$odays,$m999);
 &prttime(' DRIVER_O2CT_BARRIER '    ,$ooffset,$odays,$coffset);
 &prttime(' DRIVER_O2CT '            ,$ooffset,$odays,$coffset);
 &prttime(' DRIVER_OCNPOSTT_BARRIER ',$coffset,$adays,$m999);
@@ -365,6 +371,8 @@ print ("\n");
 &prttime(' DRIVER_ATMPREP '         ,$coffset,$adays,$m999);
 &prttime(' DRIVER_C2A_BARRIER '     ,$aoffset,$adays,$coffset);
 &prttime(' DRIVER_C2A '             ,$aoffset,$adays,$coffset);
+&prttime(' DRIVER_OCN_RUN_BARRIER ' ,$ooffset,$odays,$m999);
+&prttime(' DRIVER_OCN_RUN '         ,$ooffset,$odays,$m999);
 &prttime(' DRIVER_ATM_RUN_BARRIER ' ,$aoffset,$adays,$m999);
 &prttime(' DRIVER_ATM_RUN '         ,$aoffset,$adays,$m999);
 &prttime(' DRIVER_GLC_RUN_BARRIER ' ,$goffset,$adays,$m999);
@@ -410,14 +418,12 @@ print ("\n");
 &prttime(' DRIVER_OCNPREP '         ,$coffset,$adays,$m999);
 &prttime(' driver_ocnprep_atm2ocn ' ,$coffset,$adays,$m999);
 &prttime(' driver_ocnprep_avg '     ,$coffset,$adays,$m999);
-&prttime(' driver_ocnprep_ravg '    ,$coffset,$adays,$m999);
-&prttime(' driver_ocnprep_rof2ocn ' ,$coffset,$adays,$m999);
-&prttime(' driver_ocnprep_rofcopy ' ,$coffset,$adays,$m999);
 &prttime(' driver_ocnprep_diagav '  ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_LNDPREP '         ,$coffset,$adays,$m999);
 &prttime(' driver_lndprep_atm2lnd ' ,$coffset,$adays,$m999);
 &prttime(' driver_lndprep_rof2lnd ' ,$coffset,$adays,$m999);
+&prttime(' driver_lndprep_glc2lnd ' ,$coffset,$adays,$m999);
 &prttime(' driver_lndprep_mrgx2l '  ,$coffset,$adays,$m999);
 &prttime(' driver_lndprep_diagav '  ,$coffset,$adays,$m999);
 print ("\n");
@@ -444,23 +450,31 @@ print ("\n");
 &prttime(' driver_ocnpostt_diagav ' ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_ATMOCNP '         ,$coffset,$adays,$m999);
-&prttime(' driver_atmocnp_ice2ocn ' ,$coffset,$adays,$m999);
-&prttime(' driver_atmocnp_mrgx2o '  ,$coffset,$adays,$m999);
-&prttime(' driver_atmocnp_accum '   ,$coffset,$adays,$m999);
 &prttime(' driver_atmocnp_fluxo '   ,$coffset,$adays,$m999);
 &prttime(' driver_atmocnp_fluxe '   ,$coffset,$adays,$m999);
+&prttime(' driver_atmocnp_ice2ocn ' ,$coffset,$adays,$m999);
+&prttime(' driver_atmocnp_wav2ocn ' ,$coffset,$adays,$m999);
+&prttime(' driver_atmocnp_mrgx2o '  ,$coffset,$adays,$m999);
+&prttime(' driver_atmocnp_accum '   ,$coffset,$adays,$m999);
+&prttime(' driver_atmocnp_ocnalb '  ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_LNDPOST '         ,$coffset,$adays,$m999);
 &prttime(' driver_lndpost_diagav '  ,$coffset,$adays,$m999);
+&prttime(' driver_lndpost_acc2lr '  ,$coffset,$adays,$m999);
+&prttime(' driver_lndpost_acc2lg '  ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_GLCPREP '         ,$coffset,$adays,$m999);
-&prttime(' driver_glcprep_sno2glc ' ,$coffset,$adays,$m999);
+&prttime(' driver_glcprep_avg '     ,$coffset,$adays,$m999);
+&prttime(' driver_glcprep_lnd2glc ' ,$coffset,$adays,$m999);
 &prttime(' driver_glcprep_mrgx2g '  ,$coffset,$adays,$m999);
 &prttime(' driver_glcprep_diagav '  ,$coffset,$adays,$m999);
 print ("\n");
-&prttime(' DRIVER_ROFOST '         ,$coffset,$adays,$m999);
+&prttime(' DRIVER_ROFOST '          ,$coffset,$adays,$m999);
 &prttime(' driver_rofpost_diagav '  ,$coffset,$adays,$m999);
-&prttime(' driver_rofpost_raccum '  ,$coffset,$adays,$m999);
+&prttime(' driver_rofpost_histaux ' ,$coffset,$adays,$m999);
+&prttime(' driver_rofpost_rof2lnd ' ,$coffset,$adays,$m999);
+&prttime(' driver_rofpost_rof2ice ' ,$coffset,$adays,$m999);
+&prttime(' driver_rofpost_rof2ocn ' ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_ICEPOST '         ,$coffset,$adays,$m999);
 &prttime(' driver_icepost_diagav '  ,$coffset,$adays,$m999);
@@ -486,8 +500,9 @@ print ("\n");
 print ("\n");
 &prttime(' DRIVER_GLCPOST '         ,$coffset,$adays,$m999);
 &prttime(' driver_glcpost_diagav '  ,$coffset,$adays,$m999);
-&prttime(' driver_glcpost_glc2sno ' ,$coffset,$adays,$m999);
-&prttime(' driver_glcpost_mrgx2s '  ,$coffset,$adays,$m999);
+&prttime(' driver_glcpost_glc2lnd ' ,$coffset,$adays,$m999);
+&prttime(' driver_glcpost_glc2ice ' ,$coffset,$adays,$m999);
+&prttime(' driver_glcpost_glc2ocn ' ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_ATMPOST '         ,$coffset,$adays,$m999);
 &prttime(' driver_atmpost_diagav '  ,$coffset,$adays,$m999);
@@ -551,7 +566,7 @@ sub gettime{
    $strw = $str;
    $strw =~ s/^\s+//;
    $strw =~ s/\s+$//;
-   @tmp=`grep -w "$strw" $fin | grep "(" | grep -v hashtable`;
+   @tmp=`grep -w "$strw" $fin | grep -E '\\(' | grep -v hashtable`;
 
 #   print ("tcx1 $#tmp $tmp[0]\n");
    if ($#tmp == 0) {
@@ -585,7 +600,7 @@ sub gettime2{
    $strw = $str;
    $strw =~ s/^\s+//;
    $strw =~ s/\s+$//;
-   @tmp=`grep -w "$strw" $fin | grep "(" | grep -v hashtable`;
+   @tmp=`grep -w "$strw" $fin | grep -E '\\(' | grep -v hashtable`;
 
    if ($#tmp == 0) {
        if ($tmp[0] =~ m/\s*${strw}\s*(\d+)\s*\d+\s*(\S+)/) {

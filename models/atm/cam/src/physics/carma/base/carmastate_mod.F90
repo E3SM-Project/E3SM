@@ -90,7 +90,7 @@ contains
   subroutine CARMASTATE_Create(cstate, carma_ptr, time, dtime, NZ, igridv, igridh,  &
       lat, lon, xc, dx, yc, dy, zc, zl, p, pl, t, rc, qh2o, relhum, told, radint)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
-    type(carma_type), pointer               :: carma_ptr   !! (in) the carma object
+    type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
@@ -263,7 +263,7 @@ contains
   subroutine CARMASTATE_CreateFromReference(cstate, carma_ptr, time, dtime, NZ, igridv, igridh,  &
       lat, lon, xc, dx, yc, dy, zc, zl, p, pl, t, rc, qh2o, relhum, qh2so4)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
-    type(carma_type), pointer               :: carma_ptr   !! (in) the carma object
+    type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
@@ -384,7 +384,9 @@ contains
           if (rc < 0) return
   
           gc_cgs = (rvap * t(iz)) / (pvap_liq * relhum(iz))
-          cstate%f_gc(iz, carma_ptr%f_igash2o) = gc_cgs * (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz)) / cstate%f_rhoa_wet(iz) 
+          cstate%f_gc(iz, carma_ptr%f_igash2o) = gc_cgs * &
+               (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz)) / &
+               cstate%f_rhoa_wet(iz) 
         enddo
       end if      
     end if
@@ -535,7 +537,10 @@ contains
         cstate%f_pcl(NZ,NBIN,NELEM), &
         stat=ier)
       if (ier /= 0) then
-        if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::ERROR allocating atmosphere arrays, status=", ier
+        if (cstate%f_carma%f_do_print) then
+           write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
+                &ERROR allocating atmosphere arrays, status=", ier
+        end if
         rc = RC_ERROR
         return
       end if
@@ -558,7 +563,10 @@ contains
           cstate%f_zsubsteps(NZ), &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::ERROR allocating stepping arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
+                  &ERROR allocating stepping arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -583,7 +591,8 @@ contains
       ! Allocate the variables needed for setupvf.
       !
       ! NOTE: Coagulation and dry deposition also need bpm, vf and re.
-      if (cstate%f_carma%f_do_vtran .or. cstate%f_carma%f_do_coag .or. cstate%f_carma%f_do_grow .or. cstate%f_carma%f_do_drydep) then
+      if (cstate%f_carma%f_do_vtran .or. cstate%f_carma%f_do_coag .or. &
+           cstate%f_carma%f_do_grow .or. cstate%f_carma%f_do_drydep) then
         allocate( &
           cstate%f_bpm(NZ,NBIN,NGROUP), &
           cstate%f_vf(NZP1,NBIN,NGROUP), &
@@ -596,7 +605,10 @@ contains
           cstate%f_vd(NBIN, NGROUP), &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::ERROR allocating vertical transport arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
+                  &ERROR allocating vertical transport arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -625,7 +637,10 @@ contains
           cstate%f_supsatiold(NZ,NGAS), &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::ERROR allocating gas arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
+                  ERROR allocating gas arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -665,7 +680,10 @@ contains
           cstate%f_totevap(NBIN,NGROUP), &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::ERROR allocating growth arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
+                  &ERROR allocating growth arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -680,7 +698,10 @@ contains
           cstate%f_ckernel(NZ,NBIN,NBIN,NGROUP,NGROUP), &
           stat = ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::ERROR allocating coag arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
+                  &ERROR allocating coag arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         end if
@@ -759,7 +780,10 @@ contains
         cstate%f_pcl, &
         stat=ier)
       if (ier /= 0) then
-        if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::ERROR deallocating atmosphere arrays, status=", ier
+        if (cstate%f_carma%f_do_print) then
+           write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::&
+                &ERROR deallocating atmosphere arrays, status=", ier
+        end if
         rc = RC_ERROR
         return
       end if
@@ -774,7 +798,10 @@ contains
           cstate%f_zsubsteps, &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::ERROR deallocating stepping arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::&
+                  &ERROR deallocating stepping arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -796,7 +823,10 @@ contains
           cstate%f_vd, &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::ERROR deallocating vertical transport arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::&
+                  &ERROR deallocating vertical transport arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -835,7 +865,10 @@ contains
           cstate%f_totevap, &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::ERROR deallocating growth arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::&
+                  &ERROR deallocating growth arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -851,7 +884,10 @@ contains
           cstate%f_supsatiold, &
           stat=ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::ERROR deallocating gas arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::&
+                  &ERROR deallocating gas arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         endif
@@ -864,7 +900,10 @@ contains
           cstate%f_ckernel, &
           stat = ier)
         if (ier /= 0) then
-          if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::ERROR deallocating coag arrays, status=", ier
+          if (cstate%f_carma%f_do_print) then
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Destroy::&
+                  &ERROR deallocating coag arrays, status=", ier
+          end if
           rc = RC_ERROR
           return
         end if
@@ -964,7 +1003,9 @@ contains
             lndfrac, ocnfrac, icefrac, rc)
           if (rc < RC_OK) return
         else
-          write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Step: do_drydep requires that the optional inputs xxxfv, xxxram and xxxfrac be provided."
+          write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Step: &
+               &do_drydep requires that the optional inputs xxxfv, xxxram &
+               &and xxxfrac be provided."
           rc = RC_ERROR
           return
         end if
@@ -1097,7 +1138,8 @@ contains
 
 
     ! Handle the special cases for different types of elements ...
-    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+         (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
       mmr(:) = mmr(:) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       mmr(:) = mmr(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1116,7 +1158,8 @@ contains
       surface = cstate%f_pc_surf(ibin, ielem) * 1e4_f / 1e3_f
 
       ! Handle the special cases for different types of elements ...
-      if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+      if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+           (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
         surface = surface * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         surface = surface / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1130,7 +1173,8 @@ contains
       sedimentationflux = cstate%f_sedimentationflux(ibin, ielem) * 1e4_f / 1e3_f
 
       ! Handle the special cases for different types of elements ...
-      if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+      if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+           (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
         sedimentationflux = sedimentationflux * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         sedimentationflux = sedimentationflux / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1140,7 +1184,8 @@ contains
     ! If this is the partcile # element, then determine some other statistics.
     if (ienconc == ielem) then
       if (present(nmr))           nmr(:)             = (cstate%f_pc(:, ibin, ielem) / cstate%f_rhoa_wet(:)) * 1000._f
-      if (present(numberDensity)) numberDensity(:)   = cstate%f_pc(:, ibin, ielem) / (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
+      if (present(numberDensity)) numberDensity(:)   = cstate%f_pc(:, ibin, ielem) / &
+           (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
       if (present(r_wet))         r_wet(:)           = cstate%f_r_wet(:, ibin, igroup)
       if (present(rhop_wet))      rhop_wet(:)        = cstate%f_rhop_wet(:, ibin, igroup)
 
@@ -1163,7 +1208,8 @@ contains
       end if
 
       if (cstate%f_carma%f_do_grow) then
-        if (present(nucleationRate)) nucleationRate(:) = cstate%f_pc_nucl(:, ibin, ielem) / (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:)) / cstate%f_dtime
+        if (present(nucleationRate)) nucleationRate(:) = cstate%f_pc_nucl(:, ibin, ielem) / &
+             (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:)) / cstate%f_dtime
       else
         if (present(nucleationRate)) nucleationRate(:) = CAM_FILL
       end if
@@ -1241,7 +1287,8 @@ contains
 
 
     ! Handle the special cases for different types of elements ...
-    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+         (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
       mmr(:) = mmr(:) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       mmr(:) = mmr(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1251,7 +1298,8 @@ contains
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
     if (ienconc == ielem) then
       if (present(nmr))           nmr(:)             = (cstate%f_pcd(:, ibin, ielem) / cstate%f_rhoa_wet(:)) * 1000._f
-      if (present(numberDensity)) numberDensity(:)   = cstate%f_pcd(:, ibin, ielem) / (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
+      if (present(numberDensity)) numberDensity(:)   = cstate%f_pcd(:, ibin, ielem) / &
+           (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
       if (present(r_wet))         r_wet(:)           = cstate%f_r_wet(:, ibin, igroup)
       if (present(rhop_wet))      rhop_wet(:)        = cstate%f_rhop_wet(:, ibin, igroup)
     else
@@ -1333,7 +1381,8 @@ contains
     if (present(p))         p(:) = cstate%f_p(:) / RPA2CGS
     
     ! Convert rhoa from the scaled units to mks.
-    if (present(rhoa_wet))  rhoa_wet(:) = (cstate%f_rhoa_wet(:) / (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) * 1e6_f / 1e3_f
+    if (present(rhoa_wet))  rhoa_wet(:) = (cstate%f_rhoa_wet(:) / &
+         (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) * 1e6_f / 1e3_f
     
     if (present(rlheat))    rlheat(:) = cstate%f_rlheat(:)
 
@@ -1386,7 +1435,8 @@ contains
     cstate%f_pc(:, ibin, ielem) = mmr(:) * cstate%f_rhoa_wet(:)
     
     ! Handle the special cases for different types of elements ...
-    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+         (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
       cstate%f_pc(:, ibin, ielem) = cstate%f_pc(:, ibin, ielem) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       cstate%f_pc(:, ibin, ielem) = cstate%f_pc(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1400,7 +1450,8 @@ contains
       cstate%f_pc_surf(ibin, ielem) = surface / 1e4_f * 1e3_f
 
       ! Handle the special cases for different types of elements ...
-      if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+      if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+           (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
         cstate%f_pc_surf(ibin, ielem) = cstate%f_pc_surf(ibin, ielem) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         cstate%f_pc_surf(ibin, ielem) = cstate%f_pc_surf(ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1458,7 +1509,8 @@ contains
     cstate%f_pcd(:, ibin, ielem) = mmr(:) * cstate%f_rhoa_wet(:)
     
     ! Handle the special cases for different types of elements ...
-    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+    if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
+         (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
       cstate%f_pcd(:, ibin, ielem) = cstate%f_pcd(:, ibin, ielem) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       cstate%f_pcd(:, ibin, ielem) = cstate%f_pcd(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
@@ -1504,7 +1556,10 @@ contains
     
     if (cstate%f_carma%f_do_substep) then
       if (.not. present(mmr_old)) then
-        if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT,*) "CARMASTATE_SetGas: Error - Need to specify mmr_old, satic_old, satliq_old when substepping."
+        if (cstate%f_carma%f_do_print) then
+           write(cstate%f_carma%f_LUNOPRT,*) "CARMASTATE_SetGas: &
+                &Error - Need to specify mmr_old, satic_old, satliq_old when substepping."
+        end if
         rc = RC_ERROR
         
         return
@@ -1596,7 +1651,8 @@ contains
     if (present(t))         cstate%f_t(:) = t(:)
     
     ! Convert rhoa from mks to the scaled units.
-    if (present(rhoa_wet))  cstate%f_rhoa_wet(:) = (rhoa_wet(:) * (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) / 1e6_f * 1e3_f
+    if (present(rhoa_wet))  cstate%f_rhoa_wet(:) = (rhoa_wet(:) * &
+         (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) / 1e6_f * 1e3_f
     
     return
   end subroutine CARMASTATE_SetState

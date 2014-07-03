@@ -195,7 +195,7 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$cesm_tools/perl5lib");
+my @dirs = ( "$cfgdir/..", "$cesm_tools/perl5lib", "$CASEROOT/Tools");
 unshift @INC, @dirs;
 require XML::Lite;
 require Build::Config;
@@ -203,6 +203,7 @@ require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
 require Streams::TemplateGeneric;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DOCN config_cache.xml file. 
@@ -273,20 +274,10 @@ if (defined $opts{'infile'}) {
 ####################################
 
 my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml = XML::Lite->new( "$file" );
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
+SetupTools::getxmlvars(${CASEROOT},\%xmlvars);
+
 foreach my $attr (keys %xmlvars) {
-    if ( $xmlvars{$attr} =~ m/\$/ ) {
-	$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});
-	$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});
-    }
+    $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $RUN_TYPE        = $xmlvars{'RUN_TYPE'};
@@ -369,24 +360,24 @@ foreach my $stream ( @streams ) {
 	    # Currently ASSUME ONLY 1 FILE for prescribed mode
 	    my $grid_file = $defaults->get_value( "strm_grid_file", \%default_namelist_opts );
 	    my $data_file = $defaults->get_value( "strm_data_file", \%default_namelist_opts );
-	    my $grid_file = expand_env_xml($grid_file);
-	    my $data_file = expand_env_xml($data_file);
+	    my $grid_file = SetupTools::expand_env_var($grid_file, \%xmlvars);
+	    my $data_file = SetupTools::expand_env_var($data_file, \%xmlvars);
 	    $stream_template_opts{'domainpath'} = dirname($grid_file);  
 	    $stream_template_opts{'domain'}     = basename($grid_file);  
 	    $stream_template_opts{'filepath'}   = dirname($data_file);  
 	    $stream_template_opts{'filenames'}  = basename($data_file);  
 	} else {
-	    $stream_template_opts{'domainpath'} = expand_env_xml($defaults->get_value( "strm_domdir"    , \%default_namelist_opts ));
-	    $stream_template_opts{'domain'}     = expand_env_xml($defaults->get_value( "strm_domfil"    , \%default_namelist_opts ));
-	    $stream_template_opts{'filepath'}   = expand_env_xml($defaults->get_value( "strm_datdir"    , \%default_namelist_opts ));
-	    $stream_template_opts{'filenames'}  = expand_env_xml($defaults->get_value( "strm_datfil"    , \%default_namelist_opts ));
+	    $stream_template_opts{'domainpath'} = SetupTools::expand_env_var($defaults->get_value( "strm_domdir"    , \%default_namelist_opts ), \%xmlvars);
+	    $stream_template_opts{'domain'}     = SetupTools::expand_env_var($defaults->get_value( "strm_domfil"    , \%default_namelist_opts ), \%xmlvars);
+	    $stream_template_opts{'filepath'}   = SetupTools::expand_env_var($defaults->get_value( "strm_datdir"    , \%default_namelist_opts ), \%xmlvars);
+	    $stream_template_opts{'filenames'}  = SetupTools::expand_env_var($defaults->get_value( "strm_datfil"    , \%default_namelist_opts ), \%xmlvars);
 	}    
 	
 	$stream_template_opts{'offset'}     = 0;
 	$stream_template_opts{'datvarnames'}= $defaults->get_value( "strm_datvar"    , \%default_namelist_opts );
 	$stream_template_opts{'domvarnames'}= $defaults->get_value( "strm_domvar"    , \%default_namelist_opts );
-	$stream_template_opts{'yearfirst'}  = expand_env_xml($defaults->get_value( "strm_year_start", \%default_namelist_opts ));
-	$stream_template_opts{'yearlast'}   = expand_env_xml($defaults->get_value( "strm_year_end"  , \%default_namelist_opts ));
+	$stream_template_opts{'yearfirst'}  = SetupTools::expand_env_var($defaults->get_value( "strm_year_start", \%default_namelist_opts ), \%xmlvars);
+	$stream_template_opts{'yearlast'}   = SetupTools::expand_env_var($defaults->get_value( "strm_year_end"  , \%default_namelist_opts ), \%xmlvars);
 	
 	# Create the streams txt file for this stream (from a generic template)
 	my $stream_template = Streams::TemplateGeneric->new( \%stream_template_opts );
@@ -417,9 +408,9 @@ foreach my $stream ( @streams ) {
     my $taxmode    = $defaults->get_value( "strm_taxmode"   , \%default_namelist_opts);
     my $fillalgo   = $defaults->get_value( 'strm_fillalgo'  , \%default_namelist_opts);
     my $fillmask   = $defaults->get_value( 'strm_fillmask'  , \%default_namelist_opts);
-    my $beg_year   = expand_env_xml($defaults->get_value( 'strm_year_start', \%default_namelist_opts));
-    my $end_year   = expand_env_xml($defaults->get_value( 'strm_year_end'  , \%default_namelist_opts));
-    my $align_year = expand_env_xml($defaults->get_value( 'strm_year_align', \%default_namelist_opts));
+    my $beg_year   = SetupTools::expand_env_var($defaults->get_value( 'strm_year_start', \%default_namelist_opts), \%xmlvars);
+    my $end_year   = SetupTools::expand_env_var($defaults->get_value( 'strm_year_end'  , \%default_namelist_opts), \%xmlvars);
+    my $align_year = SetupTools::expand_env_var($defaults->get_value( 'strm_year_align', \%default_namelist_opts), \%xmlvars);
     
     if ( $beg_year > $end_year ) {
 	print "\n\nbeg_year=$beg_year end_year=$end_year\n";
@@ -470,6 +461,7 @@ if ($datamode ne 'NULL') {
 
 add_default($nl, 'ocn_in', 'val'=>"docn_ocn_in$INST_STRING");
 add_default($nl, 'decomp');
+add_default($nl, 'force_prognostic_true', 'val'=>'.false.');
 
 if ( $RUN_TYPE =~ /branch/ ) {
    # The docn master restart file is currently unused
@@ -831,16 +823,4 @@ sub quote_string {
 }
 
 #-------------------------------------------------------------------------------
-
-sub expand_env_xml {
-
-    my $value = shift;
-
-    if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
-	$value =~ s/\$${1}/$subst/g;
-    }
-    return $value; 
-}	 
-
 

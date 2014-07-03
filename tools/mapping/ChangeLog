@@ -1,8 +1,131 @@
 ================================================================================
-SVN $Id: ChangeLog 46983 2013-05-09 22:08:12Z tcraig $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/ChangeLog $
+SVN $Id: ChangeLog 59443 2014-04-22 22:57:10Z mlevy@ucar.edu $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
+================================================================================
+Originator: mlevy
+Date: Apr 22 2014
+Model: mapping
+Version: mapping_140422a
+One-line summary: Three more changes
+                  1) gen_domain does not assume nv = 4
+                  2) runoff_to_ocn tool has better support for skipping
+                     steps / using ESMF to build nearest neighbor map
+                  3) check_map utility prints ESMF version to screen
+
+M       gen_domain_files/src/gen_domain.F90
+M       gen_mapping_files/runoff_to_ocn/src/main.F90
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+================================================================================
+Originator: mlevy
+Date: Apr 22 2014
+Model: mapping
+Version: mapping_140422
+One-line summary: Three changes
+                  1) map_field utility works with mapping to / from unstructured
+                     grids
+                  2) create_ESMF_map.sh script uses ESMF 6.3.0r on yellowstone
+                     (6.1.1 and 6.2.0 are no longer available)
+                  3) check_map utility does better job determining dimension
+                     of grids being mapped
+
+M       map_field/src/map_field.F90
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M       check_maps/src/ESMF_RegridWeightGenCheck.F90
+================================================================================
+Originator: mlevy
+Date: Dec 17 2013
+Model: mapping
+Version: mapping_131217
+One-line summary: Realized the mapping utility was hard-coding in the number
+                  of vertices in a gridcell as 4. That's not the case for
+                  MPAS grids, so I added a little more flexibility to the
+                  mapping. There's large differences when using ESMF
+                  instead of this utility for nearest-neighbor that I
+                  still need to work out.
+
+M       gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90
+M       gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+================================================================================
+Originator: mlevy
+Date: Dec 14 2013
+Model: mapping
+Version: mapping_131214
+One-line summary: Major update - got runoff_map tool working with ESMF-generated
+                  nearest neighbor maps (use nearestdtos!). It requires a step
+                  after creating the ESMF map: run the nearestdtos.area_fix.sh
+                  script (with the -update_S option). This will copy the
+                  area fields from the original grids to the map (ESMF by
+                  default leaves area_a and area_b = 0) and then reweight
+                  S to account for the different areas.
+                  Minor update - updated svn:ignore in a couple of directories
+                  to reduce the noise from an "svn status" call.
+
+ M      map_field
+ M      map_field/src
+ M      gen_domain_files
+ M      gen_domain_files/src
+ M      gen_mapping_files
+ M      gen_mapping_files/runoff_to_ocn
+ M      gen_mapping_files/runoff_to_ocn/src
+M       gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+ M      gen_mapping_files/gen_ESMF_mapping_file
+A       gen_mapping_files/gen_ESMF_mapping_file/nearestdtos.area_fix.sh
+A       gen_mapping_files/gen_ESMF_mapping_file/overwrite_map_area.ncl
+================================================================================
+Originator: mlevy
+Date: Dec 13 2013
+Model: mapping
+Version: mapping_131213
+One-line summary: Add option to runoff_map tool to just create a SCRIP file
+                  from the runoff map so we can use it with the ESMF tool for
+                  the nearest-neighbor search. This works, but I need to
+                  tweak the mapping tool to use the ESMF grid (formatting
+                  isn't quite the same in step1 as in ESMF)
+
+M       gen_mapping_files/runoff_to_ocn/src/main.F90
+M       gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+================================================================================
+Originator: mlevy
+Date: Dec 12 2013
+Model: mapping
+Version: mapping_131213
+One-line summary: Support ocean grids that use "degrees" instead of "radians",
+                  support ocean grids that don't use (i,j) coordinates in
+                  horizontal, and add example for rx1 runoff.
+
+A       gen_mapping_files/runoff_to_ocn/runoff_map_rx1_gx1v6.nml
+M       gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+================================================================================
+Originator: mlevy
+Date: July 16 2013
+Model: mapping
+Version: mapping_130716
+One-line summary: To get the rtm -> ocn mapping tool working on yellowstone, I
+                  had to set compile_threaded to false in the Makefile. Also,
+                  my last tag inadvertently changed the file paths in
+                  runoff_map.nml to the frankfurt inputdata/ directory, so I
+                  reset it to the yellowstone paths.
+
+M       gen_mapping_files/runoff_to_ocn/runoff_map.nml
+M       gen_mapping_files/runoff_to_ocn/src/Makefile
+================================================================================
+Originator: mlevy
+Date: July 10 2013
+Model: mapping
+Version: mapping_130710, mapping_130710a
+One-line summary: update homegrown tools to build on any machine that supports
+                  CESM (two tags because I forgot to update ChangeLog in the
+									first one)
+
+M       map_field/README
+D       gen_domain_files/src/build.yellowstone.csh
+M       gen_domain_files/README
+M       gen_mapping_files/runoff_to_ocn/runoff_map.nml
+D       gen_mapping_files/runoff_to_ocn/src/Macros.yellowstone
+M       gen_mapping_files/runoff_to_ocn/src/Makefile
+M       gen_mapping_files/runoff_to_ocn/README
 ================================================================================
 Originator: tcraig
 Date: May 9 2013

@@ -76,7 +76,7 @@ subroutine mkCH4inversion(ldomain, mapfname, datfname, ndiag, &
   integer  :: ier                             ! error status
   
   real(r8), parameter :: min_valid_f0    = 0._r8
-  real(r8), parameter :: max_valid_f0    = 1._r8
+  real(r8), parameter :: max_valid_f0    = 1._r8 + 1.0e-14_r8
   real(r8), parameter :: min_valid_p3    = 0._r8
   real(r8), parameter :: min_valid_zwt0  = 0._r8
 

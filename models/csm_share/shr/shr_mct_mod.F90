@@ -31,12 +31,12 @@ module shr_mct_mod
 
    public :: shr_mct_sMatReadnc
    interface shr_mct_sMatPInitnc
-      module procedure shr_mct_sMatPInitnc_configfile
       module procedure shr_mct_sMatPInitnc_mapfile
    end interface
    public :: shr_mct_sMatPInitnc
    public :: shr_mct_sMatReaddnc
    public :: shr_mct_sMatWritednc
+   public :: shr_mct_queryConfigFile
 
 !EOP
 
@@ -181,137 +181,92 @@ subroutine shr_mct_sMatReadnc(sMat,fileName)
    call shr_sys_flush(s_logunit)
 
 end subroutine shr_mct_sMatReadnc
+
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: shr_mct_sMatPInitnc_configfile - initialize a SparseMatrixPlus.
+! !IROUTINE: shr_mct_queryConfigFile - get mct config file info
 !
 ! !DESCRIPTION:
-!   Read in mapping matrix data from a SCRIP netCDF data file in first an
-!   Smat and then an SMatPlus
+!   Query MCT config file variables
 !
 ! !REMARKS:
 !
 ! !REVISION HISTORY:
-!     2006 Nov 27: R. Jacob
+!     2013 Aug 17: T. Craig
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine shr_mct_sMatPInitnc_configfile(sMatP, gsMapX, gsMapY, ConfigFileName, &
-                            MapLabel, MapTypeLabel, mpicom,&
-	                    ni_i, nj_i, ni_o, nj_o, &
-	                    areasrc, areadst)
+subroutine shr_mct_queryConfigFile(mpicom, ConfigFileName, &
+           Label1,Value1,Label2,Value2,Label3,Value3)
 
 ! !INPUT/OUTPUT PARAMETERS:
-
-   type(mct_sMatP),intent(inout)         :: sMatP
-   type(mct_gsMap),intent(in)            :: gsMapX
-   type(mct_gsMap),intent(in)            :: gsMapY
-   character(*)   ,intent(in)            :: ConfigFileName  ! config file to read
-   character(*)   ,intent(in)            :: MapLabel        ! map name
-   character(*)   ,intent(in)            :: MapTypeLabel    ! map type
-   integer        ,intent(in)            :: mpicom
-   integer        ,intent(out), optional :: ni_i            ! number of longitudes on input grid
-   integer        ,intent(out), optional :: nj_i            ! number of latitudes  on input grid
-   integer        ,intent(out), optional :: ni_o            ! number of longitudes on output grid
-   integer        ,intent(out), optional :: nj_o            ! number of latitudes  on output grid
-   type(mct_Avect),intent(out), optional :: areasrc         ! area of src grid from mapping file
-   type(mct_Avect),intent(out), optional :: areadst         ! area of src grid from mapping file
+   integer          ,intent(in)  :: mpicom
+   character(len=*), intent(in)  :: ConfigFileName
+   character(len=*), intent(in)  :: Label1
+   character(len=*), intent(out) :: Value1
+   character(len=*), intent(in) ,optional :: Label2
+   character(len=*), intent(out),optional :: Value2
+   character(len=*), intent(in) ,optional :: Label3
+   character(len=*), intent(out),optional :: Value3
 
 !EOP
-   type(mct_sMat ) :: sMati    ! initial sMat from read (either root or decomp)
-   type(mct_Avect) :: areasrc_map ! area of src grid from mapping file
-   type(mct_Avect) :: areadst_map ! area of dst grid from mapping file
+   integer :: iret
+   character(*),parameter :: subName = '(shr_mct_queryConfigFile) '
 
-   integer          :: lsize
-   integer          :: iret
-   integer          :: pe_loc
-   character(256)   :: fileName
-   character(1)     :: maptype
-   logical          :: usevector 
-   character(len=3) :: Smaptype
-   character(*),parameter :: areaAV_field = 'aream'
-   character(*),parameter :: F00 = "('(shr_mct_sMatPInitnc) ',4a)"
-   character(*),parameter :: F01 = "('(shr_mct_sMatPInitnc) ',a,i10)"
-
-   call shr_mpi_commrank(mpicom,pe_loc)
-
-   if (s_loglev > 0) write(s_logunit,*) " "
-   if (s_loglev > 0) write(s_logunit,F00) "Initializing SparseMatrixPlus"
    call I90_allLoadF(ConfigFileName,0,mpicom,iret)
+   if(iret /= 0) then
+      write(s_logunit,*) trim(subname),"Cant find config file ",ConfigFileName
+      call shr_sys_abort(trim(subname)//' File Not Found')
+   endif
+
+   call i90_label(trim(Label1),iret)
+   if(iret /= 0) then
+      write(s_logunit,*) trim(subname),"Cant find label ",Label1
+      call shr_sys_abort(trim(subname)//' Label1 Not Found')
+   endif
+
+   call i90_gtoken(Value1,iret)
+   if(iret /= 0) then
+      write(s_logunit,*) trim(subname),"Error reading token ",Value1
+      call shr_sys_abort(trim(subname)//' Error on read value1')
+   endif
+
+   if (present(Label2) .and. present(Value2)) then
+
+      call i90_label(trim(Label2),iret)
       if(iret /= 0) then
-        write(s_logunit,*)"Cant find config file ",ConfigFileName
-        call mct_die("mct_sMapP_initnc","File Not Found")
+         write(s_logunit,*) trim(subname),"Cant find label ",Label2
+         call shr_sys_abort(trim(subname)//' Label2 Not Found')
       endif
 
-   call i90_label(trim(MapLabel),iret)
+      call i90_gtoken(Value2,iret)
       if(iret /= 0) then
-        write(s_logunit,*)"Cant find label ",MapLabel
-        call mct_die("mct_sMapP_initnc","Label Not Found")
+         write(s_logunit,*)"Error reading token ",Value2
+         call shr_sys_abort(trim(subname)//' Error on read value2')
       endif
 
-   call i90_gtoken(fileName,iret)
+   endif
+
+   if (present(Label3) .and. present(Value3)) then
+
+      call i90_label(trim(Label3),iret)
       if(iret /= 0) then
-        write(s_logunit,*)"Error reading token ",fileName
-        call mct_die("mct_sMapP_initnc","Error on read")
+         write(s_logunit,*) trim(subname),"Cant find label ",Label3
+         call shr_sys_abort(trim(subname)//' Label3 Not Found')
       endif
-   if (s_loglev > 0) write(s_logunit,F00) "map weight filename ",trim(fileName)
 
-   call i90_label(trim(MapTypeLabel),iret)
-   call i90_gtoken(maptype,iret)
+      call i90_gtoken(Value3,iret)
+      if(iret /= 0) then
+         write(s_logunit,*)"Error reading token ",Value3
+         call shr_sys_abort(trim(subname)//' Error on read value3')
+      endif
 
-   if (s_loglev > 0) write(s_logunit,F00) "SmatP maptype ",maptype
+   endif
 
-   if (maptype == "X") then
-      Smaptype = "src"
-   else if(maptype == "Y") then
-      Smaptype = "dst"
-   end if
-
-   call shr_mpi_commrank(mpicom, pe_loc)
-
-   lsize = mct_gsMap_lsize(gsMapX, mpicom)
-   call mct_aVect_init(areasrc_map, rList=areaAV_field, lsize=lsize)
-
-   lsize = mct_gsMap_lsize(gsMapY, mpicom)
-   call mct_aVect_init(areadst_map, rList=areaAV_field, lsize=lsize)
-
-   if (present(ni_i) .and. present(nj_i) .and. present(ni_o) .and. present(nj_o)) then
-      call shr_mct_sMatReaddnc(sMati, gsMapX, gsMapY, Smaptype, areasrc_map, areadst_map, &
-           fileName, pe_loc, mpicom, ni_i, nj_i, ni_o, nj_o)
-   else
-      call shr_mct_sMatReaddnc(sMati, gsMapX, gsMapY, Smaptype, areasrc_map, areadst_map, &
-           fileName, pe_loc, mpicom)
-   end if
-   call mct_sMatP_Init(sMatP, sMati, gsMapX, gsMapY, 0, mpicom, gsMapX%comp_id)
-
-#ifdef CPP_VECTOR
-   !--- initialize the vector parts of the sMat ---
-   call mct_sMatP_Vecinit(sMatP)
-#endif
-
-   lsize = mct_smat_gNumEl(sMatP%Matrix,mpicom)
-   if (s_loglev > 0) write(s_logunit,F01) "Done initializing SmatP, nElements = ",lsize
-
-#ifdef CPP_VECTOR
-   usevector = .true.
-#else
-   usevector = .false.
-#endif
-   if (present(areasrc)) then
-      call mct_aVect_copy(aVin=areasrc_map, aVout=areasrc, vector=usevector)
-   end if
-   if (present(areadst)) then
-      call mct_aVect_copy(aVin=areadst_map, aVout=areadst, vector=usevector)
-   end if
-
-   call mct_aVect_clean(areasrc_map)
-   call mct_aVect_clean(areadst_map)
-
-   call mct_sMat_Clean(sMati)
    call I90_Release(iret)
 
-end subroutine shr_mct_sMatPInitnc_configfile
+end subroutine shr_mct_queryConfigFile
 
 !===============================================================================
 !BOP ===========================================================================
@@ -367,7 +322,8 @@ subroutine shr_mct_sMatPInitnc_mapfile(sMatP, gsMapX, gsMapY, &
 
    if (s_loglev > 0) write(s_logunit,*) " "
    if (s_loglev > 0) write(s_logunit,F00) "Initializing SparseMatrixPlus"
-   if (s_loglev > 0) write(s_logunit,F00) "SmatP maptype ",maptype
+   if (s_loglev > 0) write(s_logunit,F00) "SmatP mapname ",trim(filename)
+   if (s_loglev > 0) write(s_logunit,F00) "SmatP maptype ",trim(maptype)
 
    if (maptype == "X") then
       Smaptype = "src"

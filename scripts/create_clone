@@ -208,13 +208,15 @@ $cfg_ref->set('CASE'        , "$case");
 $cfg_ref->set('CCSMROOT'    , "$ccsmroot");
 $cfg_ref->set('CONTINUE_RUN', "FALSE");
 $cfg_ref->set('RESUBMIT'    , 0);
-
+if ($opts{'mach_dir'}) {
+   $cfg_ref->set('CCSM_MACHDIR'    , $opts{'mach_dir'});
+}
 # Set env_build variables
-my $repotag;
+my $repotag="tag unknown";
 if (-f "$ccsmroot/ChangeLog") { 
-    $repotag =`cat $ccsmroot/ChangeLog | grep 'Tag name:' | head -1`;
-} else {
-    $repotag =`cat $ccsmroot/models/atm/cam/doc/ChangeLog | grep 'Tag name:' | head -1`;
+    $repotag =`grep 'Tag name:' $ccsmroot/ChangeLog | head -1`;
+} elsif (-f  "$ccsmroot/models/atm/cam/doc/ChangeLog"){
+    $repotag =`grep 'Tag name:'  $ccsmroot/models/atm/cam/doc/ChangeLog | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = @repotag[2]; 
@@ -300,6 +302,10 @@ my $scriptsroot = $xmlvars{SCRIPTSROOT};
 my $machdir     = $xmlvars{CCSM_MACHDIR};
 my $ccsmuser    = $xmlvars{CCSMUSER};
 my $mach        = $xmlvars{MACH};
+
+# --- env_archive.xml doesn't use the id / value pairs do needs to be read from
+# --- config_archive.xml file in the scriptsroot/ccsm_utils/Case.template directory
+$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/ccsm_utils/Case.template");
 
 # --- Create $case.build
 my $file = "${caseroot}/${case}.build";

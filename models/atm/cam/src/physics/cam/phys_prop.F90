@@ -103,8 +103,7 @@ type (physprop_type), pointer :: physprop(:)
 ! to properties.  The unique filenames specified in the namelist are the identifiers of
 ! the properties.  Searching the uniquefilenames array provides the index into the physprop
 ! array.
-integer, parameter :: maxuniquefiles = 50
-character(len=256) :: uniquefilenames(maxuniquefiles) 
+character(len=256), allocatable :: uniquefilenames(:)
  
 !================================================================================================
 contains
@@ -122,7 +121,10 @@ subroutine physprop_accum_unique_files(radname, type)
    integer :: ncnst, i
    character(len=*), parameter :: subname = 'physprop_accum_unique_files'
    !------------------------------------------------------------------------------------
-  
+
+   ! Initial guess for number of files we need.
+   if (.not. allocated(uniquefilenames)) allocate(uniquefilenames(50))
+
    ncnst = ubound(radname, 1)
 
    do i = 1, ncnst
@@ -134,15 +136,40 @@ subroutine physprop_accum_unique_files(radname, type)
          ! then add it to the list of unique names.
          if (physprop_get_id(radname(i)) < 0) then
             numphysprops = numphysprops + 1
-            if (numphysprops > maxuniquefiles) then
-               write(iulog,*) subname//': request for more than ',maxuniquefiles, ' values'
-               call endrun(subname//': need to increase maxuniquefiles value')
+            if (numphysprops > size(uniquefilenames)) then
+               call double_capacity(uniquefilenames)
             end if
             uniquefilenames(numphysprops) = trim(radname(i))
          endif
 
       endif
    enddo
+
+ contains
+
+   ! Simple routine to re-allocate an array with twice the size, but with
+   ! the inital values being preserved.
+   subroutine double_capacity(array)
+     character(len=256), intent(inout), allocatable :: array(:)
+
+     character(len=256), allocatable :: tmp(:)
+     integer :: ierr
+
+     allocate(tmp(size(array)*2), stat=ierr)
+     if ( ierr /= 0 ) then
+        call endrun('physprop_accum_unique_files: Allocation error.')
+     end if
+
+     tmp(:size(array)) = array
+
+     deallocate(array, stat=ierr)
+     if ( ierr /= 0 ) then
+        call endrun('physprop_accum_unique_files: Deallocation error.')
+     end if
+
+     call move_alloc(tmp, array)
+
+   end subroutine double_capacity
 
 end subroutine physprop_accum_unique_files
 
@@ -913,7 +940,8 @@ subroutine refindex_aer_init(phys_prop, nc_id)
       ! successfully read refindex data -- set complex values in physprop object
       allocate(phys_prop%refindex_aer_sw(nswbands))
       do i = 1, nswbands
-         phys_prop%refindex_aer_sw(i) = cmplx(ref_real(i), abs(ref_im(i)))
+         phys_prop%refindex_aer_sw(i) = cmplx(ref_real(i), abs(ref_im(i)),&
+              kind=r8)
       end do
 
       deallocate(ref_real, ref_im)
@@ -940,7 +968,8 @@ subroutine refindex_aer_init(phys_prop, nc_id)
       ! successfully read refindex data -- set complex value in physprop object
       allocate(phys_prop%refindex_aer_lw(nlwbands))
       do i = 1, nlwbands
-         phys_prop%refindex_aer_lw(i) = cmplx(ref_real(i), abs(ref_im(i)))
+         phys_prop%refindex_aer_lw(i) = cmplx(ref_real(i), abs(ref_im(i)),&
+              kind=r8)
       end do
 
       deallocate(ref_real, ref_im)

@@ -173,6 +173,13 @@ module seq_comm_mct
   character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
   integer :: Global_Comm
 
+
+  character(len=32), public :: &
+       atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
+       ocn_layout, wav_layout
+  
+
+
 !=======================================================================
 contains
 !=======================================================================
@@ -219,10 +226,6 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
-    character(len=32) :: &
-         atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
-         ocn_layout, wav_layout
-
     namelist /ccsm_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
          lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &

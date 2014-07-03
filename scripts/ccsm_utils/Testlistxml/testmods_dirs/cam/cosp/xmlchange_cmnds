@@ -1,0 +1,1 @@
+./xmlchange -append CAM_CONFIG_OPTS="-cosp"

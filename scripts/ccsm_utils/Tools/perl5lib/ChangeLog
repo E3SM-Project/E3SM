@@ -1,6 +1,14 @@
 ==============================================================
   Description of changes
 ==============================================================
+==============================================================
+Tag name:  perl5lib_130718
+Originator(s):  jedwards
+Date: July 18, 2013
+One-lne Summary: Fix to expand environment variables
+
+M    Streams/TemplateGeneric.pm
+
 
 ==============================================================
 Tag name:  perl5lib_130424

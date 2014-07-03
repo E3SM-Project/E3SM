@@ -1,3 +1,0 @@
-site_code,soil_depth,n_layers,layer_depth,layer_sand%,layer_clay%
-BR-Sa3,-999,1,-999,52.0,40.0
-BR-Sa1,-999,1,-999,19.0,65.0

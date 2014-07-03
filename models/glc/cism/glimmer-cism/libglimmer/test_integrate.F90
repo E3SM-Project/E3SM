@@ -29,8 +29,10 @@
 #endif
 
 module test_integ
+
   use glimmer_global, only : dp, sp
   implicit none
+
 contains
   
   ! integrate $\int_0^\pi\a*sin(x+b)dx$
@@ -52,31 +54,36 @@ contains
     df = p(1)*sin(p(2)*x)
   end function df
 
-  real(sp) function sfp(x,p)
+  real(dp) function sfp(x,p)
     implicit none
-    real(sp), intent(in) :: x
-    real(sp), intent(in), dimension(:) :: p
+    real(dp), intent(in) :: x
+    real(dp), intent(in), dimension(:) :: p
     
     sfp =  p(1)*sin(p(2)*x)
   end function sfp
   
-  real(sp) function sf(x)
+  real(dp) function sf(x)
     implicit none
-    real(sp), intent(in) :: x
+    real(dp), intent(in) :: x
 
-    real(sp), dimension(2) :: p = (/3.,0.5/)
+    real(dp), dimension(2) :: p = (/3.,0.5/)
     
     sf = p(1)*sin(p(2)*x)
   end function sf
+
 end module test_integ
 
 !TODO - Move this program to another directory so that this directory contains no programs?
 
 program test_integrate
+
   !*FD test numerical integration schemes
+  !WHL - Leaving the sp variables for now since they are used to test
+  !      single-precision Romberg integration subroutines
+
   use test_integ
   use glimmer_physcon, only : pi
-  use glimmer_global, only : sp,dp
+  use glimmer_global, only : dp, sp
   use glimmer_integrate
   implicit none
 

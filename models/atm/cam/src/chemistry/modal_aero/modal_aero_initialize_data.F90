@@ -3,7 +3,6 @@ module modal_aero_initialize_data
   use abortutils,            only: endrun
   use spmd_utils,            only: masterproc, iam
   use ppgrid,                only: pcols, pver, begchunk, endchunk
-  use phys_control,          only: phys_getopts
   use modal_aero_data
   use time_manager,          only: is_first_step
 
@@ -248,7 +247,6 @@ contains
   !==============================================================
   subroutine modal_aero_initialize(pbuf2d)
 
-       use cam_history,           only: addfld, add_default, phys_decomp
        use constituents,          only: pcnst
        use physconst,             only: rhoh2o, mwh2o
        use modal_aero_calcsize,   only: modal_aero_calcsize_init
@@ -257,7 +255,6 @@ contains
        use modal_aero_gasaerexch, only: modal_aero_gasaerexch_init
        use modal_aero_newnuc,     only: modal_aero_newnuc_init
        use modal_aero_rename,     only: modal_aero_rename_init
-       use mz_aerosols_intr,      only: modal_aero_bcscavcoef_init
        use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_aer_props, &
                                         rad_cnst_get_mode_props
        use aerodep_flx,           only: aerodep_flx_prescribed
@@ -281,12 +278,9 @@ contains
        real(r8), pointer :: qqcw(:,:)
        real(r8), parameter :: huge_r8 = huge(1._r8)
        character(len=*), parameter :: routine='modal_aero_initialize'
-       logical  :: history_aerosol      ! Output the MAM aerosol tendencies
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
-
-       call phys_getopts( history_aerosol_out        = history_aerosol   )
 
        ! safety check on modal_aero, and modal_aero_3mode, modal_aero_7mode
 #if ( defined MODAL_AERO_3MODE ) && ( defined MODAL_AERO_7MODE )
@@ -408,46 +402,6 @@ contains
        !
        call initaermodes_setspecptrs
 
-       if ( masterproc ) write(iulog,*)
-
-
-
-       !
-       !   add to history
-       !
-       do m = 1, ntot_amode
-
-          l = lptr_so4_cw_amode(m)
-          if (l > 0) then
-             call addfld (&
-                  trim(cnst_name_cw(l))//'AQSO4','kg/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(l))//' aqueous phase chemistry',phys_decomp)
-             call addfld (&
-                  trim(cnst_name_cw(l))//'AQH2SO4','kg/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(l))//' aqueous phase chemistry',phys_decomp)
-             if ( history_aerosol ) then 
-                call add_default (trim(cnst_name_cw(l))//'AQSO4', 1, ' ')
-                call add_default (trim(cnst_name_cw(l))//'AQH2SO4', 1, ' ')
-             endif
-          end if
-
-       end do
-
-       call addfld ('AQSO4_H2O2','kg/m2/s ',1,  'A', &
-            'SO4 aqueous phase chemistry due to H2O2',phys_decomp)
-       call addfld ('AQSO4_O3','kg/m2/s ',1,  'A', &
-            'SO4 aqueous phase chemistry due to O3',phys_decomp)
-       call addfld( 'XPH_LWC','kg/kg   ',pver, 'A', &
-            'pH value multiplied by lwc', phys_decomp)
-
-       if ( history_aerosol ) then    
-          call add_default ('AQSO4_H2O2', 1, ' ')
-          call add_default ('AQSO4_O3', 1, ' ')    
-          call add_default ('XPH_LWC', 1, ' ')
-       endif
-
-
-
        !
        !   set threshold for reporting negatives from subr qneg3
        !   for aerosol number species set this to
@@ -492,12 +446,11 @@ contains
        !
        call modal_aero_rename_init
        !   calcsize call must follow rename call
-       call modal_aero_calcsize_init
+       call modal_aero_calcsize_init( pbuf2d )
        call modal_aero_gasaerexch_init
        !   coag call must follow gasaerexch call
        call modal_aero_coag_init
        call modal_aero_newnuc_init
-       call modal_aero_bcscavcoef_init
 
        ! call modal_aero_deposition_init only if the user has not specified 
        ! prescribed aerosol deposition fluxes

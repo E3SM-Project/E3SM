@@ -33,8 +33,7 @@ use physconst,    only: epsilo, &
                         h2otrip
 
 use wv_sat_methods, only: &
-     svp_to_qsat => wv_sat_svp_to_qsat, &
-     svp_to_qmmr => wv_sat_svp_to_qmmr
+     svp_to_qsat => wv_sat_svp_to_qsat
 
 implicit none
 private
@@ -54,7 +53,6 @@ public svp_ice
 public estblf
 
 public svp_to_qsat
-public svp_to_qmmr
 
 ! Subroutines that return both SVP and humidity
 ! Optional arguments do temperature derivatives
@@ -64,11 +62,6 @@ public qsat_ice       ! SVP over ice only
 
 ! Wet bulb temperature solver
 public findsp_vc
-
-! Unusual/non-default methods.
-! Zhang-McFarlane scheme uses mass mixing ratio rather than
-! specific humidity.
-public qmmr
 
 ! Data
 
@@ -461,37 +454,6 @@ end subroutine deriv_outputs
 !---------------------------------------------------------------------
 ! QSAT (SPECIFIC HUMIDITY) PROCEDURES
 !---------------------------------------------------------------------
-
-elemental subroutine qmmr(t, p, es, qm)
-  !------------------------------------------------------------------!
-  ! Purpose:                                                         !
-  !     Provide saturation mass mixing ratio.                        !
-  !                                                                  !
-  ! Note that qmmr is a ratio over dry air, whereas qsat is a ratio  !
-  ! over total mass. These differ mainly at low pressures, where     !
-  ! SVP may exceed the actual pressure, and therefore qmmr can blow  !
-  ! up.                                                              !
-  !------------------------------------------------------------------!
-  use wv_sat_methods, only: &
-       wv_sat_svp_water
-
-
-  ! Inputs
-  real(r8), intent(in) :: t    ! Temperature
-  real(r8), intent(in) :: p    ! Pressure
-  ! Outputs
-  real(r8), intent(out) :: es  ! Saturation vapor pressure
-  real(r8), intent(out) :: qm  ! Saturation mass mixing ratio
-                               ! (vapor mass over dry mass)
-
-  es = wv_sat_svp_water(t)
-
-  qm = svp_to_qmmr(es, p)
-
-  ! Ensures returned es is consistent with limiters on qmmr.
-  es = min(es, p)
-
-end subroutine qmmr
 
 elemental subroutine qsat(t, p, es, qs, gam, dqsdt, enthalpy)
   !------------------------------------------------------------------!

@@ -4,19 +4,18 @@
 ! HAVE_ERF_INTRINSICS: erf, erfc, and erfc_scaled
 ! erfc_scaled(x) = (exp(x**2)*erfc(x))
 
-! Use this flag for compilers that don't have
-! real intrinsics, but link in a library for you.
+! Use this flag for compilers that don't have real intrinsics, but link in
+! a library for you.
 ! HAVE_ERF_EXTERNALS: erf and erfc
 
 ! These compilers have the intrinsics.
-#if defined CPRIBM || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY || defined CPRLAHEY
+#if defined CPRIBM || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY
 #define HAVE_GAMMA_INTRINSICS
 #define HAVE_ERF_INTRINSICS
 #endif
 
-! PGI has external erf/derf and erfc/derfc,
-! and will link them for you, but does not
-! consider them "intrinsics" right now.
+! PGI has external erf/derf and erfc/derfc, and will link them for you, but
+! it does not consider them "intrinsics" right now.
 #if defined CPRPGI
 #define HAVE_ERF_EXTERNALS
 #endif
@@ -26,8 +25,8 @@
 module shr_spfn_mod
 ! Module for common mathematical functions
 
-! This #ifdef is to allow the module to be compiled
-! with no dependencies, even on shr_kind_mod.
+! This #ifdef is to allow the module to be compiled with no dependencies,
+! even on shr_kind_mod.
 #ifndef NO_CSM_SHARE
 use shr_kind_mod, only: &
      r4 => shr_kind_r4, &
@@ -66,64 +65,33 @@ interface shr_spfn_erfc_scaled
    module procedure shr_spfn_erfc_scaled_r8
 end interface
 
-! To preserve answers for code that linked
-! to the local versions of each function,
-! provide these functions under the "nonintrinsic"
-! name.
-
-public :: shr_spfn_erf_nonintrinsic
-public :: shr_spfn_erfc_nonintrinsic
-public :: shr_spfn_erfc_scaled_nonintrinsic
-
-interface shr_spfn_erf_nonintrinsic
-   module procedure erf_r4
-   module procedure erf_r8
-end interface
-
-interface shr_spfn_erfc_nonintrinsic
-   module procedure erfc_r4
-   module procedure erfc_r8
-end interface
-
-interface shr_spfn_erfc_scaled_nonintrinsic
-   module procedure erfcx_r4
-   module procedure erfcx_r8
-end interface
-
 ! Gamma functions
-! Note that we lack an implementation of log_gamma,
-! but do have an implementation of the upper incomplete
-! gamma function, which is not in F2008.
+! Note that we lack an implementation of log_gamma, but we do have an
+! implementation of the upper incomplete gamma function, which is not in
+! Fortran 2008.
 
-! Note also that this gamma function is only for
-! doubles. We haven't needed an r4 version yet.
+! Note also that this gamma function is only for double precision. We
+! haven't needed an r4 version yet.
 
 public :: shr_spfn_gamma
 public :: shr_spfn_igamma
 
-public :: shr_spfn_gamma_nonintrinsic
-
 interface shr_spfn_gamma
    module procedure shr_spfn_gamma_r8
-end interface
-
-interface shr_spfn_gamma_nonintrinsic
-   module procedure shr_spfn_gamma_nonintrinsic_r8
 end interface
 
 ! Mathematical constants
 ! sqrt(pi)
 real(r8), parameter :: sqrtpi = 1.77245385090551602729_r8
 
-! Define machine-specific constants needed in this module
-! These were used by the original gamma and calerf functions
-! to guarantee safety against overflow, and precision, on
-! many different machines.
+! Define machine-specific constants needed in this module.
+! These were used by the original gamma and calerf functions to guarantee
+! safety against overflow, and precision, on many different machines.
 
-! By defining the constants in this way, we assume
-! that 1/xmin is representable (i.e. does not overflow
-! the real type). This assumption was not in the original
-! code, but is valid for IEEE single and double precision.
+! By defining the constants in this way, we assume that 1/xmin is
+! representable (i.e. does not overflow the real type). This assumption was
+! not in the original code, but is valid for IEEE single and double
+! precision.
 
 ! Double precision
 !---------------------------------------------------------------------
@@ -136,7 +104,7 @@ real(r8), parameter :: xminr8 = tiny(1._r8)
 ! Largest number that, when added to 1., yields 1.
 real(r8), parameter :: xsmallr8 = epsr8/2._r8
 ! Largest argument for which erfcx > 0.
-real(r8), parameter :: xmaxr8 = 1/(sqrtpi*xminr8)
+real(r8), parameter :: xmaxr8 = 1._r8/(sqrtpi*xminr8)
 
 ! Single precision
 !---------------------------------------------------------------------
@@ -149,7 +117,7 @@ real(r4), parameter :: xminr4 = tiny(1._r4)
 ! Largest number that, when added to 1., yields 1.
 real(r4), parameter :: xsmallr4 = epsr4/2._r4
 ! Largest argument for which erfcx > 0.
-real(r4), parameter :: xmaxr4 = 1/(sqrtpi*xminr4)
+real(r4), parameter :: xmaxr4 = 1._r4/(real(sqrtpi,r4)*xminr4)
 
 
 ! For gamma/igamma
@@ -169,7 +137,7 @@ function shr_spfn_erf_r4(x) result(res)
   ! explicit interface here.
   interface
      function erf(x)
-       integer, parameter :: r4 = selected_real_kind(6)  ! 4 byte real
+       import :: r4
        real(r4) :: x, erf
      end function erf
   end interface
@@ -187,7 +155,7 @@ function shr_spfn_erf_r4(x) result(res)
   res = erf(x)
 #else
   ! No compiler-provided erf, so call local version.
-  res = shr_spfn_erf_nonintrinsic(x)
+  call calerf_r4(x, res, 0)
 #endif
 
 #endif
@@ -203,7 +171,7 @@ function shr_spfn_erf_r8(x) result(res)
   ! explicit interface here.
   interface
      function derf(x)
-       integer, parameter :: r8 = selected_real_kind(12) ! 8 byte real
+       import :: r8
        real(r8) :: x, derf
      end function derf
   end interface
@@ -220,7 +188,7 @@ function shr_spfn_erf_r8(x) result(res)
   res = derf(x)
 #else
   ! No compiler-provided erf, so call local version.
-  res = shr_spfn_erf_nonintrinsic(x)
+  call calerf_r8(x, res, 0)
 #endif
 
 #endif
@@ -237,7 +205,7 @@ function shr_spfn_erfc_r4(x) result(res)
   ! explicit interface here.
   interface
      function erfc(x)
-       integer, parameter :: r4 = selected_real_kind(6)  ! 4 byte real
+       import :: r4
        real(r4) :: x, erfc
      end function erfc
   end interface
@@ -254,7 +222,7 @@ function shr_spfn_erfc_r4(x) result(res)
   res = erfc(x)
 #else
   ! No compiler-provided erfc, so call local version.
-  res = shr_spfn_erfc_nonintrinsic(x)
+  call calerf_r4(x, res, 1)
 #endif
 
 #endif
@@ -270,7 +238,7 @@ function shr_spfn_erfc_r8(x) result(res)
   ! explicit interface here.
   interface
      function derfc(x)
-       integer, parameter :: r8 = selected_real_kind(12) ! 8 byte real
+       import :: r8
        real(r8) :: x, derfc
      end function derfc
   end interface
@@ -287,7 +255,7 @@ function shr_spfn_erfc_r8(x) result(res)
   res = derfc(x)
 #else
   ! No compiler-provided erfc, so call local version.
-  res = shr_spfn_erfc_nonintrinsic(x)
+  call calerf_r8(x, res, 1)
 #endif
 
 #endif
@@ -299,13 +267,13 @@ function shr_spfn_erfc_scaled_r4(x) result(res)
   real(r4), intent(in) :: x
   real(r4) :: res
 
-#if defined HAVE_ERF_INTRINSICS && ! defined CPRLAHEY && ! defined CPRIBM
+#if defined HAVE_ERF_INTRINSICS
   ! Call intrinsic erfc_scaled.
   intrinsic erfc_scaled
   res = erfc_scaled(x)
 #else
-  ! No intrinsic
-  res = shr_spfn_erfc_scaled_nonintrinsic(x)
+  ! No intrinsic.
+  call calerf_r4(x, res, 2)
 #endif
 
 end function shr_spfn_erfc_scaled_r4
@@ -314,18 +282,18 @@ function shr_spfn_erfc_scaled_r8(x) result(res)
   real(r8), intent(in) :: x
   real(r8) :: res
 
-#if defined HAVE_ERF_INTRINSICS && ! defined CPRLAHEY && ! defined CPRIBM
+#if defined HAVE_ERF_INTRINSICS
   ! Call intrinsic erfc_scaled.
   intrinsic erfc_scaled
   res = erfc_scaled(x)
 #else
-  ! No intrinsic
-  res = shr_spfn_erfc_scaled_nonintrinsic(x)
+  ! No intrinsic.
+  call calerf_r8(x, res, 2)
 #endif
 
 end function shr_spfn_erfc_scaled_r8
 
-pure function shr_spfn_gamma_r8(x) result(res)
+elemental function shr_spfn_gamma_r8(x) result(res)
   real(r8), intent(in) :: x
   real(r8) :: res
 
@@ -335,7 +303,7 @@ pure function shr_spfn_gamma_r8(x) result(res)
   res = gamma(x)
 #else
   ! No intrinsic
-  res = shr_spfn_gamma_nonintrinsic(x)
+  res = shr_spfn_gamma_nonintrinsic_r8(x)
 #endif
 
 end function shr_spfn_gamma_r8
@@ -779,162 +747,6 @@ SUBROUTINE CALERF_r4(ARG, RESULT, JINT)
    END IF
 80 continue
 end SUBROUTINE CALERF_r4
-
-!------------------------------------------------------------------------------------------
-
-FUNCTION ERF_R8(X)
-!--------------------------------------------------------------------
-!
-! This subprogram computes approximate values for erf(x).
-!   (see comments heading CALERF).
-!
-!   Author/date: W. J. Cody, January 8, 1985
-!
-!--------------------------------------------------------------------
-   integer, parameter :: rk = r8 ! 8 byte real
-
-   ! argument
-   real(rk), intent(in) :: X
-
-   ! return value
-   real(rk) :: ERF_R8
-
-   ! local variables
-   INTEGER :: JINT = 0
-   !------------------------------------------------------------------
-
-   CALL CALERF_r8(X, ERF_R8, JINT)
-END FUNCTION ERF_R8
-
-!------------------------------------------------------------------------------------------
-
-FUNCTION ERF_r4(X)
-!--------------------------------------------------------------------
-!
-! This subprogram computes approximate values for erf(x).
-!   (see comments heading CALERF).
-!
-!   Author/date: W. J. Cody, January 8, 1985
-!
-!--------------------------------------------------------------------
-   integer, parameter :: rk = r4 ! 4 byte real
-
-   ! argument
-   real(rk), intent(in) :: X
-
-   ! return value
-   real(rk) :: ERF_r4
-
-   ! local variables
-   INTEGER :: JINT = 0
-   !------------------------------------------------------------------
-
-   CALL CALERF_r4(X, ERF_r4, JINT)
-END FUNCTION ERF_r4
-
-!------------------------------------------------------------------------------------------
-
-FUNCTION ERFC_R8(X)
-!--------------------------------------------------------------------
-!
-! This subprogram computes approximate values for erfc(x).
-!   (see comments heading CALERF).
-!
-!   Author/date: W. J. Cody, January 8, 1985
-!
-!--------------------------------------------------------------------
-   integer, parameter :: rk = r8 ! 8 byte real
-
-   ! argument
-   real(rk), intent(in) :: X
-
-   ! return value
-   real(rk) :: ERFC_R8
-
-   ! local variables
-   INTEGER :: JINT = 1
-   !------------------------------------------------------------------
-
-   CALL CALERF_r8(X, ERFC_R8, JINT)
-END FUNCTION ERFC_R8
-
-!------------------------------------------------------------------------------------------
-
-FUNCTION ERFC_r4(X)
-!--------------------------------------------------------------------
-!
-! This subprogram computes approximate values for erfc(x).
-!   (see comments heading CALERF).
-!
-!   Author/date: W. J. Cody, January 8, 1985
-!
-!--------------------------------------------------------------------
-   integer, parameter :: rk = r4 ! 4 byte real
-
-   ! argument
-   real(rk), intent(in) :: X
-
-   ! return value
-   real(rk) :: ERFC_r4
-
-   ! local variables
-   INTEGER :: JINT = 1
-   !------------------------------------------------------------------
-
-   CALL CALERF_r4(X, ERFC_r4, JINT)
-END FUNCTION ERFC_r4
-
-!------------------------------------------------------------------------------------------
-
-FUNCTION ERFCX_R8(X)
-!--------------------------------------------------------------------
-!
-! This subprogram computes approximate values for exp(x*x) * erfc(x).
-!   (see comments heading CALERF).
-!
-!   Author/date: W. J. Cody, March 30, 1987
-!
-!--------------------------------------------------------------------
-   integer, parameter :: rk = r8 ! 8 byte real
-
-   ! argument
-   real(rk), intent(in) :: X
-
-   ! return value
-   real(rk) :: ERFCX_R8
-
-   ! local variables
-   INTEGER :: JINT = 2
-   !------------------------------------------------------------------
-
-   CALL CALERF_r8(X, ERFCX_R8, JINT)
-END FUNCTION ERFCX_R8
-
-!------------------------------------------------------------------------------------------
-
-FUNCTION ERFCX_R4(X)
-!--------------------------------------------------------------------
-!
-! This subprogram computes approximate values for exp(x*x) * erfc(x).
-!   (see comments heading CALERF).
-!
-!   Author/date: W. J. Cody, March 30, 1987
-!
-!--------------------------------------------------------------------
-   integer, parameter :: rk = r4 ! 8 byte real
-
-   ! argument
-   real(rk), intent(in) :: X
-
-   ! return value
-   real(rk) :: ERFCX_R4
-
-   ! local variables
-   INTEGER :: JINT = 2
-   !------------------------------------------------------------------
-
-   CALL CALERF_r4(X, ERFCX_R4, JINT)
-END FUNCTION ERFCX_R4
 
 !------------------------------------------------------------------------------------------
 

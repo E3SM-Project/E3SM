@@ -1,7 +1,7 @@
 #!/bin/bash
 #===============================================================================
 # SVN $Id: gen_cesm_maps.sh 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
-# SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/gen_cesm_maps.sh $
+# SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140422a/gen_mapping_files/gen_cesm_maps.sh $
 #
 # Create needed mapping files for gen_domain and coupler mapping
 # Currently supported on yellowstone, geyser, caldera, and jaguarpf

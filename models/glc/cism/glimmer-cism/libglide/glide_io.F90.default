@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! WARNING: this file was automatically generated on
-! Wed, 24 Apr 2013 18:24:59 +0000
+! Mon, 28 Apr 2014 16:25:16 +0000
 ! from ncdf_template.F90.in
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -236,7 +236,8 @@ contains
           call write_log('Adding restart variables has made the list of output variables too long for file ' // NCO%filename, GM_FATAL)
        else
           ! Expand the restart variable list 
-          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  ! Need to maintain a space at beginning and end of list
+          ! Need to maintain a space at beginning and end of list
+          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  
           ! Set the xtype to be double (required for an exact restart)
           outfile%default_xtype = NF90_DOUBLE   
        endif
@@ -651,6 +652,24 @@ contains
        end if
      end if
 
+    !     dissip -- dissipation divided by rhoi Ci
+    pos = index(NCO%vars,' dissip ')
+    status = parallel_inq_varid(NCO%id,'dissip',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+6) = '      '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable dissip')
+       status = parallel_def_var(NCO%id,'dissip',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'dissipation divided by rhoi Ci')
+       status = parallel_put_att(NCO%id, varid, 'units', 'deg C')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
     !     dthckdtm -- tendency of ice thickness
     pos = index(NCO%vars,' dthckdtm ')
     status = parallel_inq_varid(NCO%id,'dthckdtm',varid)
@@ -756,7 +775,7 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_flwa))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Pre-exponential flow law parameter')
-       status = parallel_put_att(NCO%id, varid, 'units', 'pascal/year')
+       status = parallel_put_att(NCO%id, varid, 'units', 'pascal^(-n) year^(-1)')
        if (glimmap_allocated(model%projection)) then
           status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
           status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
@@ -775,7 +794,7 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_flwa))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Pre-exponential flow law parameter')
-       status = parallel_put_att(NCO%id, varid, 'units', 'pascal/year')
+       status = parallel_put_att(NCO%id, varid, 'units', 'pascal^(-n) year^(-1)')
        if (glimmap_allocated(model%projection)) then
           status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
           status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
@@ -818,7 +837,7 @@ contains
        end if
      end if
 
-    !     gline_flux -- grounding line flux
+    !     gline_flux -- grounding line fluxu
     pos = index(NCO%vars,' gline_flux ')
     status = parallel_inq_varid(NCO%id,'gline_flux',varid)
     if (pos.ne.0) then
@@ -828,11 +847,30 @@ contains
        call write_log('Creating variable gline_flux')
        status = parallel_def_var(NCO%id,'gline_flux',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
-       status = parallel_put_att(NCO%id, varid, 'long_name', 'grounding line flux')
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'grounding line fluxu')
        status = parallel_put_att(NCO%id, varid, 'units', 'meter2/year')
        if (glimmap_allocated(model%projection)) then
           status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
-          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon f')
+       end if
+     end if
+
+    !     gravity -- gravitational acceleration
+    pos = index(NCO%vars,' gravity ')
+    status = parallel_inq_varid(NCO%id,'gravity',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+7) = '       '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable gravity')
+       status = parallel_def_var(NCO%id,'gravity',get_xtype(outfile,NF90_FLOAT),(/time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'scale_factor',1.0)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'gravitational acceleration')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'gravity')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter/s/s')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
        end if
      end if
 
@@ -890,22 +928,41 @@ contains
        end if
      end if
 
-    !     init_phaml -- phaml initial conditions
-    pos = index(NCO%vars,' init_phaml ')
-    status = parallel_inq_varid(NCO%id,'init_phaml',varid)
+    !     ice_specific_heat -- ice specific heat
+    pos = index(NCO%vars,' ice_specific_heat ')
+    status = parallel_inq_varid(NCO%id,'ice_specific_heat',varid)
     if (pos.ne.0) then
-      NCO%vars(pos+1:pos+10) = '          '
+      NCO%vars(pos+1:pos+17) = '                 '
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
-       call write_log('Creating variable init_phaml')
-       status = parallel_def_var(NCO%id,'init_phaml',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call write_log('Creating variable ice_specific_heat')
+       status = parallel_def_var(NCO%id,'ice_specific_heat',get_xtype(outfile,NF90_FLOAT),(/time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
-       status = parallel_put_att(NCO%id, varid, 'long_name', 'phaml initial conditions')
-       status = parallel_put_att(NCO%id, varid, 'standard_name', 'phaml_initial_conditions')
-       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+       status = parallel_put_att(NCO%id, varid, 'scale_factor',1.0)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'ice specific heat')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'ice_specific_heat')
+       status = parallel_put_att(NCO%id, varid, 'units', 'J/kg/K')
        if (glimmap_allocated(model%projection)) then
           status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
-          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     ice_thermal_conductivity -- ice thermal conductivity
+    pos = index(NCO%vars,' ice_thermal_conductivity ')
+    status = parallel_inq_varid(NCO%id,'ice_thermal_conductivity',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+24) = '                        '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable ice_thermal_conductivity')
+       status = parallel_def_var(NCO%id,'ice_thermal_conductivity',get_xtype(outfile,NF90_FLOAT),(/time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'scale_factor',1.0)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'ice thermal conductivity')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'ice_thermal_conductivity')
+       status = parallel_put_att(NCO%id, varid, 'units', 'J/(K kg)')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
        end if
      end if
 
@@ -1017,25 +1074,6 @@ contains
        end if
      end if
 
-    !     phaml -- phaml true solution
-    pos = index(NCO%vars,' phaml ')
-    status = parallel_inq_varid(NCO%id,'phaml',varid)
-    if (pos.ne.0) then
-      NCO%vars(pos+1:pos+5) = '     '
-    end if
-    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
-       call write_log('Creating variable phaml')
-       status = parallel_def_var(NCO%id,'phaml',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
-       call nc_errorhandle(__FILE__,__LINE__,status)
-       status = parallel_put_att(NCO%id, varid, 'long_name', 'phaml true solution')
-       status = parallel_put_att(NCO%id, varid, 'standard_name', 'phaml_solution')
-       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
-       if (glimmap_allocated(model%projection)) then
-          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
-          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
-       end if
-     end if
-
     !     relx -- relaxed bedrock topography
     pos = index(NCO%vars,' relx ')
     status = parallel_inq_varid(NCO%id,'relx',varid)
@@ -1052,6 +1090,63 @@ contains
        if (glimmap_allocated(model%projection)) then
           status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
           status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     rho_ice -- ice density
+    pos = index(NCO%vars,' rho_ice ')
+    status = parallel_inq_varid(NCO%id,'rho_ice',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+7) = '       '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable rho_ice')
+       status = parallel_def_var(NCO%id,'rho_ice',get_xtype(outfile,NF90_FLOAT),(/time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'scale_factor',1.0)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'ice density')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'rho_ice')
+       status = parallel_put_att(NCO%id, varid, 'units', 'kg/meter^3')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+       end if
+     end if
+
+    !     rho_seawater -- seawater density
+    pos = index(NCO%vars,' rho_seawater ')
+    status = parallel_inq_varid(NCO%id,'rho_seawater',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+12) = '            '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable rho_seawater')
+       status = parallel_def_var(NCO%id,'rho_seawater',get_xtype(outfile,NF90_FLOAT),(/time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'scale_factor',1.0)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'seawater density')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'rho_seawater')
+       status = parallel_put_att(NCO%id, varid, 'units', 'kg/meter^3')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+       end if
+     end if
+
+    !     seconds_per_year -- seconds per year
+    pos = index(NCO%vars,' seconds_per_year ')
+    status = parallel_inq_varid(NCO%id,'seconds_per_year',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+16) = '                '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable seconds_per_year')
+       status = parallel_def_var(NCO%id,'seconds_per_year',get_xtype(outfile,NF90_FLOAT),(/time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'scale_factor',1.0)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'seconds per year')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'seconds_per_year')
+       status = parallel_put_att(NCO%id, varid, 'units', 's/yr')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
        end if
      end if
 
@@ -1550,6 +1645,24 @@ contains
        end if
      end if
 
+    !     waterfrac -- internal water fraction
+    pos = index(NCO%vars,' waterfrac ')
+    status = parallel_inq_varid(NCO%id,'waterfrac',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+9) = '         '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable waterfrac')
+       status = parallel_def_var(NCO%id,'waterfrac',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'internal water fraction')
+       status = parallel_put_att(NCO%id, varid, 'units', 'unitless [0,1]')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
     !     wgrd -- Vertical grid velocity
     pos = index(NCO%vars,' wgrd ')
     status = parallel_inq_varid(NCO%id,'wgrd',varid)
@@ -1727,6 +1840,15 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
+    status = parallel_inq_varid(NCO%id,'dissip',varid)
+    if (status .eq. nf90_noerr) then
+       do up=1,NCO%nlevel
+          status = distributed_put_var(NCO%id, varid, &
+               data%tempwk%dissip, (/1,1,up,outfile%timecounter/))
+          call nc_errorhandle(__FILE__,__LINE__,status)
+       end do
+    end if
+
     status = parallel_inq_varid(NCO%id,'dthckdtm',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
@@ -1803,6 +1925,13 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
+    status = parallel_inq_varid(NCO%id,'gravity',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            grav, (/outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
     status = parallel_inq_varid(NCO%id,'iarea',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
@@ -1824,10 +1953,17 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
-    status = parallel_inq_varid(NCO%id,'init_phaml',varid)
+    status = parallel_inq_varid(NCO%id,'ice_specific_heat',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
-            data%phaml%init_phaml, (/1,1,outfile%timecounter/))
+            shci, (/outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'ice_thermal_conductivity',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            coni, (/outfile%timecounter/))
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
@@ -1873,17 +2009,31 @@ contains
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
-    status = parallel_inq_varid(NCO%id,'phaml',varid)
-    if (status .eq. nf90_noerr) then
-       status = distributed_put_var(NCO%id, varid, &
-            data%phaml%uphaml, (/1,1,outfile%timecounter/))
-       call nc_errorhandle(__FILE__,__LINE__,status)
-    end if
-
     status = parallel_inq_varid(NCO%id,'relx',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
             data%isostasy%relx, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'rho_ice',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            rhoi, (/outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'rho_seawater',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            rhoo, (/outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'seconds_per_year',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            scyr, (/outfile%timecounter/))
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
@@ -1943,14 +2093,14 @@ contains
     status = parallel_inq_varid(NCO%id,'taux',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
-            data%stress%tau_x, (/1,1,outfile%timecounter/))
+            data%velocity%tau_x, (/1,1,outfile%timecounter/))
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
     status = parallel_inq_varid(NCO%id,'tauy',varid)
     if (status .eq. nf90_noerr) then
        status = distributed_put_var(NCO%id, varid, &
-            data%stress%tau_y, (/1,1,outfile%timecounter/))
+            data%velocity%tau_y, (/1,1,outfile%timecounter/))
        call nc_errorhandle(__FILE__,__LINE__,status)
     end if
 
@@ -2083,6 +2233,15 @@ contains
        do up=1,NCO%nlevel
           status = distributed_put_var(NCO%id, varid, &
                data%velocity%vvel_icegrid(up,:,:), (/1,1,up,outfile%timecounter/))
+          call nc_errorhandle(__FILE__,__LINE__,status)
+       end do
+    end if
+
+    status = parallel_inq_varid(NCO%id,'waterfrac',varid)
+    if (status .eq. nf90_noerr) then
+       do up=1,NCO%nlevel
+          status = distributed_put_var(NCO%id, varid, &
+               data%temper%waterfrac(up,:,:), (/1,1,up,outfile%timecounter/))
           call nc_errorhandle(__FILE__,__LINE__,status)
        end do
     end if
@@ -2363,22 +2522,6 @@ contains
        end do
     end if
 
-    status = parallel_inq_varid(NCI%id,'init_phaml',varid)
-    if (status .eq. nf90_noerr) then
-       call write_log('  Loading init_phaml')
-       status = distributed_get_var(NCI%id, varid, &
-            data%phaml%init_phaml, (/1,1,infile%current_time/))
-       call nc_errorhandle(__FILE__,__LINE__,status)
-       status = parallel_get_att(NCI%id, varid,'scale_factor',scaling_factor)
-       if (status.ne.NF90_NOERR) then
-          scaling_factor = 1.0d0
-       end if
-       if (abs(scaling_factor-1.0d0).gt.1.d-17) then
-          call write_log("scaling init_phaml",GM_DIAGNOSTIC)
-          data%phaml%init_phaml = data%phaml%init_phaml*scaling_factor
-       end if
-    end if
-
     status = parallel_inq_varid(NCI%id,'kinbcmask',varid)
     if (status .eq. nf90_noerr) then
        call write_log('  Loading kinbcmask')
@@ -2440,22 +2583,6 @@ contains
        if (abs(scaling_factor-1.0d0).gt.1.d-17) then
           call write_log("scaling lon",GM_DIAGNOSTIC)
           data%climate%loni = data%climate%loni*scaling_factor
-       end if
-    end if
-
-    status = parallel_inq_varid(NCI%id,'phaml',varid)
-    if (status .eq. nf90_noerr) then
-       call write_log('  Loading phaml')
-       status = distributed_get_var(NCI%id, varid, &
-            data%phaml%uphaml, (/1,1,infile%current_time/))
-       call nc_errorhandle(__FILE__,__LINE__,status)
-       status = parallel_get_att(NCI%id, varid,'scale_factor',scaling_factor)
-       if (status.ne.NF90_NOERR) then
-          scaling_factor = 1.0d0
-       end if
-       if (abs(scaling_factor-1.0d0).gt.1.d-17) then
-          call write_log("scaling phaml",GM_DIAGNOSTIC)
-          data%phaml%uphaml = data%phaml%uphaml*scaling_factor
        end if
     end if
 
@@ -2707,6 +2834,24 @@ contains
           if (abs(scaling_factor-1.0d0).gt.1.d-17) then
              call write_log("scaling vvel",GM_DIAGNOSTIC)
              data%velocity%vvel(up,:,:) = data%velocity%vvel(up,:,:)*scaling_factor
+          end if
+       end do
+    end if
+
+    status = parallel_inq_varid(NCI%id,'waterfrac',varid)
+    if (status .eq. nf90_noerr) then
+       call write_log('  Loading waterfrac')
+       do up=1,NCI%nlevel
+          status = distributed_get_var(NCI%id, varid, &
+               data%temper%waterfrac(up,:,:), (/1,1,up,infile%current_time/))
+          call nc_errorhandle(__FILE__,__LINE__,status)
+          status = parallel_get_att(NCI%id, varid,'scale_factor',scaling_factor)
+          if (status.ne.NF90_NOERR) then
+             scaling_factor = 1.0d0
+          end if
+          if (abs(scaling_factor-1.0d0).gt.1.d-17) then
+             call write_log("scaling waterfrac",GM_DIAGNOSTIC)
+             data%temper%waterfrac(up,:,:) = data%temper%waterfrac(up,:,:)*scaling_factor
           end if
        end do
     end if
@@ -2965,7 +3110,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_acab)*(data%climate%acab)
   end subroutine glide_get_acab
@@ -2976,7 +3121,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%climate%acab = inarray/(scale_acab)
   end subroutine glide_set_acab
@@ -2987,7 +3132,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%climate%artm
   end subroutine glide_get_artm
@@ -2998,7 +3143,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%climate%artm = inarray
   end subroutine glide_set_artm
@@ -3009,7 +3154,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_beta)*(data%velocity%beta)
   end subroutine glide_get_beta
@@ -3020,7 +3165,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%beta = inarray/(scale_beta)
   end subroutine glide_set_beta
@@ -3031,7 +3176,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_bflx)*(data%temper%bheatflx)
   end subroutine glide_get_bheatflx
@@ -3042,7 +3187,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%temper%bheatflx = inarray/(scale_bflx)
   end subroutine glide_set_bheatflx
@@ -3053,7 +3198,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_acab)*(data%temper%bmlt)
   end subroutine glide_get_bmlt
@@ -3064,7 +3209,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%temper%bmlt = inarray/(scale_acab)
   end subroutine glide_set_bmlt
@@ -3075,7 +3220,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%temper%temp(data%general%upn,1:data%general%ewn,1:data%general%nsn)
   end subroutine glide_get_btemp
@@ -3086,7 +3231,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_tau)*(data%velocity%btraction(1,:,:))
   end subroutine glide_get_btractx
@@ -3097,7 +3242,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%btraction(1,:,:) = inarray/(scale_tau)
   end subroutine glide_set_btractx
@@ -3108,7 +3253,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_tau)*(data%velocity%btraction(2,:,:))
   end subroutine glide_get_btracty
@@ -3119,7 +3264,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%btraction(2,:,:) = inarray/(scale_tau)
   end subroutine glide_set_btracty
@@ -3130,7 +3275,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_btrc)*(data%velocity%btrc)
   end subroutine glide_get_btrc
@@ -3141,7 +3286,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%btrc = inarray/(scale_btrc)
   end subroutine glide_set_btrc
@@ -3152,7 +3297,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%temper%bwat)
   end subroutine glide_get_bwat
@@ -3163,7 +3308,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%temper%bwat = inarray/(thk0)
   end subroutine glide_set_bwat
@@ -3174,7 +3319,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%temper%bwatflx)
   end subroutine glide_get_bwatflx
@@ -3185,7 +3330,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%temper%bwatflx = inarray/(thk0)
   end subroutine glide_set_bwatflx
@@ -3196,7 +3341,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%climate%calving)
   end subroutine glide_get_calving
@@ -3207,7 +3352,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%climate%calving = inarray/(thk0)
   end subroutine glide_set_calving
@@ -3218,7 +3363,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_diffu)*(data%velocity%diffu)
   end subroutine glide_get_diffu
@@ -3229,7 +3374,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%diffu = inarray/(scale_diffu)
   end subroutine glide_set_diffu
@@ -3240,7 +3385,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_acab)*(data%geomderv%dthckdtm)
   end subroutine glide_get_dthckdtm
@@ -3251,7 +3396,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geomderv%dthckdtm = inarray/(scale_acab)
   end subroutine glide_set_dthckdtm
@@ -3262,7 +3407,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_acab)*(data%geomderv%dusrfdtm)
   end subroutine glide_get_dusrfdtm
@@ -3273,7 +3418,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geomderv%dusrfdtm = inarray/(scale_acab)
   end subroutine glide_set_dusrfdtm
@@ -3306,7 +3451,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(out) :: outarray
+    real(dp), intent(out) :: outarray
 
     outarray = (thk0)*(data%climate%eus)
   end subroutine glide_get_eus
@@ -3317,7 +3462,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(in) :: inarray
+    real(dp), intent(in) :: inarray
 
     data%climate%eus = inarray/(thk0)
   end subroutine glide_set_eus
@@ -3328,7 +3473,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%ground%gl_ew
   end subroutine glide_get_gl_ew
@@ -3339,7 +3484,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%ground%gl_ew = inarray
   end subroutine glide_set_gl_ew
@@ -3350,7 +3495,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%ground%gl_ns
   end subroutine glide_get_gl_ns
@@ -3361,7 +3506,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%ground%gl_ns = inarray
   end subroutine glide_set_gl_ns
@@ -3372,7 +3517,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%ground%gline_flux
   end subroutine glide_get_gline_flux
@@ -3383,10 +3528,32 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%ground%gline_flux = inarray
   end subroutine glide_set_gline_flux
+
+  subroutine glide_get_gravity(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(out) :: outarray
+
+    outarray = grav
+  end subroutine glide_get_gravity
+
+  subroutine glide_set_gravity(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(in) :: inarray
+
+!  no rescaling here
+  end subroutine glide_set_gravity
 
   subroutine glide_get_iarea(data,outarray)
     use glimmer_scales
@@ -3394,7 +3561,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(out) :: outarray
+    real(dp), intent(out) :: outarray
 
     outarray = (len0*len0*1.e-6)*(data%geometry%iarea)
   end subroutine glide_get_iarea
@@ -3405,7 +3572,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(in) :: inarray
+    real(dp), intent(in) :: inarray
 
     data%geometry%iarea = inarray/(len0*len0*1.e-6)
   end subroutine glide_set_iarea
@@ -3416,7 +3583,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(out) :: outarray
+    real(dp), intent(out) :: outarray
 
     outarray = (len0*len0*1.e-6)*(data%geometry%iareaf)
   end subroutine glide_get_iareaf
@@ -3427,7 +3594,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(in) :: inarray
+    real(dp), intent(in) :: inarray
 
     data%geometry%iareaf = inarray/(len0*len0*1.e-6)
   end subroutine glide_set_iareaf
@@ -3438,7 +3605,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(out) :: outarray
+    real(dp), intent(out) :: outarray
 
     outarray = (len0*len0*1.e-6)*(data%geometry%iareag)
   end subroutine glide_get_iareag
@@ -3449,32 +3616,54 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(in) :: inarray
+    real(dp), intent(in) :: inarray
 
     data%geometry%iareag = inarray/(len0*len0*1.e-6)
   end subroutine glide_set_iareag
 
-  subroutine glide_get_init_phaml(data,outarray)
+  subroutine glide_get_ice_specific_heat(data,outarray)
     use glimmer_scales
     use glimmer_paramets
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), intent(out) :: outarray
 
-    outarray = data%phaml%init_phaml
-  end subroutine glide_get_init_phaml
+    outarray = shci
+  end subroutine glide_get_ice_specific_heat
 
-  subroutine glide_set_init_phaml(data,inarray)
+  subroutine glide_set_ice_specific_heat(data,inarray)
     use glimmer_scales
     use glimmer_paramets
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), intent(in) :: inarray
 
-    data%phaml%init_phaml = inarray
-  end subroutine glide_set_init_phaml
+!  no rescaling here
+  end subroutine glide_set_ice_specific_heat
+
+  subroutine glide_get_ice_thermal_conductivity(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(out) :: outarray
+
+    outarray = coni
+  end subroutine glide_get_ice_thermal_conductivity
+
+  subroutine glide_set_ice_thermal_conductivity(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(in) :: inarray
+
+!  no rescaling here
+  end subroutine glide_set_ice_thermal_conductivity
 
   subroutine glide_get_ivol(data,outarray)
     use glimmer_scales
@@ -3482,7 +3671,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(out) :: outarray
+    real(dp), intent(out) :: outarray
 
     outarray = (thk0*len0*len0*1.e-9)*(data%geometry%ivol)
   end subroutine glide_get_ivol
@@ -3493,7 +3682,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, intent(in) :: inarray
+    real(dp), intent(in) :: inarray
 
     data%geometry%ivol = inarray/(thk0*len0*len0*1.e-9)
   end subroutine glide_set_ivol
@@ -3526,7 +3715,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%climate%lati
   end subroutine glide_get_lat
@@ -3537,7 +3726,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%climate%lati = inarray
   end subroutine glide_set_lat
@@ -3548,7 +3737,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%climate%loni
   end subroutine glide_get_lon
@@ -3559,7 +3748,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%climate%loni = inarray
   end subroutine glide_set_lon
@@ -3570,7 +3759,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%geometry%lsrf)
   end subroutine glide_get_lsurf
@@ -3581,32 +3770,10 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geometry%lsrf = inarray/(thk0)
   end subroutine glide_set_lsurf
-
-  subroutine glide_get_phaml(data,outarray)
-    use glimmer_scales
-    use glimmer_paramets
-    use glide_types
-    implicit none
-    type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
-
-    outarray = data%phaml%uphaml
-  end subroutine glide_get_phaml
-
-  subroutine glide_set_phaml(data,inarray)
-    use glimmer_scales
-    use glimmer_paramets
-    use glide_types
-    implicit none
-    type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
-
-    data%phaml%uphaml = inarray
-  end subroutine glide_set_phaml
 
   subroutine glide_get_relx(data,outarray)
     use glimmer_scales
@@ -3614,7 +3781,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%isostasy%relx)
   end subroutine glide_get_relx
@@ -3625,10 +3792,76 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%isostasy%relx = inarray/(thk0)
   end subroutine glide_set_relx
+
+  subroutine glide_get_rho_ice(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(out) :: outarray
+
+    outarray = rhoi
+  end subroutine glide_get_rho_ice
+
+  subroutine glide_set_rho_ice(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(in) :: inarray
+
+!  no rescaling here
+  end subroutine glide_set_rho_ice
+
+  subroutine glide_get_rho_seawater(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(out) :: outarray
+
+    outarray = rhoo
+  end subroutine glide_get_rho_seawater
+
+  subroutine glide_set_rho_seawater(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(in) :: inarray
+
+!  no rescaling here
+  end subroutine glide_set_rho_seawater
+
+  subroutine glide_get_seconds_per_year(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(out) :: outarray
+
+    outarray = scyr
+  end subroutine glide_get_seconds_per_year
+
+  subroutine glide_set_seconds_per_year(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glide_types
+    implicit none
+    type(glide_global_type) :: data
+    real(dp), intent(in) :: inarray
+
+!  no rescaling here
+  end subroutine glide_set_seconds_per_year
 
   subroutine glide_get_slc(data,outarray)
     use glimmer_scales
@@ -3636,7 +3869,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%isostasy%relx - data%geometry%topg)
   end subroutine glide_get_slc
@@ -3647,7 +3880,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_btrc)*(data%velocity%bed_softness)
   end subroutine glide_get_soft
@@ -3658,7 +3891,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%bed_softness = inarray/(scale_btrc)
   end subroutine glide_set_soft
@@ -3669,7 +3902,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%geomderv%stagthck)
   end subroutine glide_get_stagthk
@@ -3680,7 +3913,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geomderv%stagthck = inarray/(thk0)
   end subroutine glide_set_stagthk
@@ -3691,7 +3924,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = data%climate%artm
   end subroutine glide_get_surftemp
@@ -3702,7 +3935,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%climate%artm = inarray
   end subroutine glide_set_surftemp
@@ -3713,7 +3946,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_tau)*(data%basalproc%minTauf)
   end subroutine glide_get_tauf
@@ -3724,7 +3957,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%basalproc%minTauf = inarray/(scale_tau)
   end subroutine glide_set_tauf
@@ -3735,9 +3968,9 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
-    outarray = (1e-3*thk0*thk0/len0)*(data%stress%tau_x)
+    outarray = (1e-3*thk0*thk0/len0)*(data%velocity%tau_x)
   end subroutine glide_get_taux
 
   subroutine glide_set_taux(data,inarray)
@@ -3746,9 +3979,9 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
-    data%stress%tau_x = inarray/(1e-3*thk0*thk0/len0)
+    data%velocity%tau_x = inarray/(1e-3*thk0*thk0/len0)
   end subroutine glide_set_taux
 
   subroutine glide_get_tauy(data,outarray)
@@ -3757,9 +3990,9 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
-    outarray = (1e-3*thk0*thk0/len0)*(data%stress%tau_y)
+    outarray = (1e-3*thk0*thk0/len0)*(data%velocity%tau_y)
   end subroutine glide_get_tauy
 
   subroutine glide_set_tauy(data,inarray)
@@ -3768,9 +4001,9 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
-    data%stress%tau_y = inarray/(1e-3*thk0*thk0/len0)
+    data%velocity%tau_y = inarray/(1e-3*thk0*thk0/len0)
   end subroutine glide_set_tauy
 
   subroutine glide_get_thk(data,outarray)
@@ -3779,7 +4012,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%geometry%thck)
   end subroutine glide_get_thk
@@ -3790,7 +4023,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geometry%thck = inarray/(thk0)
   end subroutine glide_set_thk
@@ -3823,7 +4056,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%geometry%topg)
   end subroutine glide_get_topg
@@ -3834,7 +4067,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geometry%topg = inarray/(thk0)
   end subroutine glide_set_topg
@@ -3845,7 +4078,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_uvel)*(data%velocity%ubas)
   end subroutine glide_get_ubas
@@ -3856,7 +4089,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%ubas = inarray/(scale_uvel)
   end subroutine glide_set_ubas
@@ -3867,7 +4100,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_uflx)*(data%velocity%uflx)
   end subroutine glide_get_uflx
@@ -3878,7 +4111,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%uflx = inarray/(scale_uflx)
   end subroutine glide_set_uflx
@@ -3889,7 +4122,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (thk0)*(data%geometry%usrf)
   end subroutine glide_get_usurf
@@ -3900,7 +4133,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%geometry%usrf = inarray/(thk0)
   end subroutine glide_set_usurf
@@ -3911,7 +4144,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_uvel)*(data%velocity%vbas)
   end subroutine glide_get_vbas
@@ -3922,7 +4155,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%vbas = inarray/(scale_uvel)
   end subroutine glide_set_vbas
@@ -3933,7 +4166,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(out) :: outarray
+    real(dp), dimension(:,:), intent(out) :: outarray
 
     outarray = (scale_uflx)*(data%velocity%vflx)
   end subroutine glide_get_vflx
@@ -3944,7 +4177,7 @@ contains
     use glide_types
     implicit none
     type(glide_global_type) :: data
-    real, dimension(:,:), intent(in) :: inarray
+    real(dp), dimension(:,:), intent(in) :: inarray
 
     data%velocity%vflx = inarray/(scale_uflx)
   end subroutine glide_set_vflx

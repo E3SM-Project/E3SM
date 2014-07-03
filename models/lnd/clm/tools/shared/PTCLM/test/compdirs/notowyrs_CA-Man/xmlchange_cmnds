@@ -1,0 +1,13 @@
+# xmlchange commands written by PTCLMmkdata:
+# ../PTCLMmkdata --verbose --donot_use_tower_yrs --cesm_root ../../../../../../.. -s CA-Man -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/notower_file_creation 
+./xmlchange CLM_USRDAT_NAME=1x1pt_CA-Man
+./xmlchange CLM_BLDNML_OPTS='-mask navy'
+./xmlchange MPILIB=mpi-serial
+./xmlchange ATM_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/notower_file_creation/1x1pt_CA-Man
+./xmlchange LND_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/notower_file_creation/1x1pt_CA-Man
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_CA-Man_navy.140204.nc
+./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_CA-Man_navy.140204.nc
+./xmlchange CALENDAR=GREGORIAN
+./xmlchange DOUT_S=FALSE
+./xmlchange ATM_NCPL=48
+./xmlchange DIN_LOC_ROOT=/glade/p/cesmdata/cseg/inputdata

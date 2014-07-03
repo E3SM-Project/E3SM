@@ -437,7 +437,7 @@ contains
          write(6,*) 'create ',trim(fn_out)
          call check_ret(nf_create(fn_out(1:len_trim(fn_out)),NF_CLOBBER,fid))
          write(6,*) 'write ',trim(fn_out)
-         call write_file(fid, fmap, units_xc, units_yc, n, ni, nj, &
+         call write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, &
               xc, yc, xv, yv, area, omask, ofrac, suffix, eps, pole_fix, &
               fmaxval, fminval, str_da, str_db, str_grido, str_grida)
          call check_ret(nf_close(fid))
@@ -449,7 +449,7 @@ contains
          end if
          call check_ret(nf_create(fn_out_lnd(1:len_trim(fn_out_lnd)),NF_CLOBBER,fid))
          write(6,*) 'write ',trim(fn_out_lnd)
-         call write_file(fid, fmap, units_xc, units_yc, n, ni, nj, &
+         call write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, &
               xc, yc, xv, yv, area, lmask, lfrac, suffix, eps, pole_fix, &
               fmaxval, fminval, str_da, str_db, str_grido, str_grida)
          call check_ret(nf_close(fid))
@@ -457,7 +457,7 @@ contains
 
          call check_ret(nf_create(fn_out_ocn(1:len_trim(fn_out_ocn)),NF_CLOBBER,fid))
          write(6,*) 'write ',trim(fn_out_ocn)
-         call write_file(fid, fmap, units_xc, units_yc, n, ni, nj, &
+         call write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, &
               xc, yc, xv, yv, area, omask, ofrac, suffix, eps, pole_fix, &
               fmaxval, fminval, str_da, str_db, str_grido, str_grida)
          call check_ret(nf_close(fid))
@@ -528,7 +528,7 @@ contains
 
 !===========================================================================
 
-  subroutine write_file(fid, fmap, units_xc, units_yc, n, ni, nj, &
+  subroutine write_file(fid, fmap, units_xc, units_yc, n, ni, nj, nv, &
        xc, yc, xv, yv, area, mask, frac, suffix, eps, pole_fix, &
        fmaxval, fminval, str_da, str_db, str_grido, str_grida)
        
@@ -543,6 +543,7 @@ contains
     integer         , intent(in) :: n            ! size of 1d domain
     integer         , intent(in) :: ni           ! size of i-axis of 2d domain
     integer         , intent(in) :: nj           ! size of j-axis of 2d domain
+    integer         , intent(in) :: nv           ! number of vertices
     real(r8)        , pointer    :: xc(:)        ! x-coords of center    
     real(r8)        , pointer    :: yc(:)        ! y-coords of center   
     real(r8)        , pointer    :: xv(:,:)      ! x-coords of verticies 
@@ -573,7 +574,7 @@ contains
     integer               :: rcode       ! routine return error code
     
     real(r8),parameter    :: pi  = 3.14159265358979323846
-    character(*),parameter:: version = 'SVN $Id: gen_domain.F90 41914 2012-11-13 21:58:37Z mlevy@ucar.edu $'
+    character(*),parameter:: version = 'SVN $Id: gen_domain.F90 59443 2014-04-22 22:57:10Z mlevy@ucar.edu $'
 
     ! global attributes
     str   = 'CESM domain data: '
@@ -638,7 +639,7 @@ contains
     call check_ret(nf_def_dim(fid, 'n' , n , did)) ! # of points total
     call check_ret(nf_def_dim(fid, 'ni', ni, did)) ! # of points wrt i
     call check_ret(nf_def_dim(fid, 'nj', nj, did)) ! # of points wrt j
-    call check_ret(nf_def_dim(fid, 'nv',  4, did)) ! # of verticies per cell
+    call check_ret(nf_def_dim(fid, 'nv', nv, did)) ! # of verticies per cell
 
     !-----------------------------------------------------------------
     ! define data -- coordinates, input grid

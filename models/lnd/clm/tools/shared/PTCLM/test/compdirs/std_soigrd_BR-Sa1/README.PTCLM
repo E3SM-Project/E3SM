@@ -1,0 +1,1 @@
+../PTCLMmkdata --verbose --soilgrid --cesm_root ../../../../../../.. -s BR-Sa1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/soigrid_file_creation 

@@ -4,13 +4,14 @@ module seq_flux_mct
   use shr_sys_mod,       only: shr_sys_abort
   use shr_flux_mod,      only: shr_flux_atmocn
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
-  use shr_mct_mod
+  use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
   use mct_mod
   use seq_flds_mod
   use seq_comm_mct
-  use seq_cdata_mod
   use seq_infodata_mod
+
+  use component_type_mod
 
   implicit none
   private 	
@@ -22,7 +23,9 @@ module seq_flux_mct
 
   public seq_flux_init_mct
   public seq_flux_initexch_mct
+
   public seq_flux_ocnalb_mct
+
   public seq_flux_atmocn_mct
   public seq_flux_atmocnexch_mct
 
@@ -30,9 +33,9 @@ module seq_flux_mct
 ! Private data
 !--------------------------------------------------------------------------
 
-  real(r8), pointer     :: lats(:)    ! latitudes  (degrees)
-  real(r8), pointer     :: lons(:)    ! longitudes (degrees)
-  integer(in),allocatable ::  mask(:) ! ocn domain mask: 0 <=> inactive cell
+  real(r8), pointer       :: lats(:)  ! latitudes  (degrees)
+  real(r8), pointer       :: lons(:)  ! longitudes (degrees)
+  integer(in),allocatable :: mask(:)  ! ocn domain mask: 0 <=> inactive cell
   integer(in),allocatable :: emask(:) ! ocn mask on exchange grid decomp
 
   real(r8), allocatable ::  uocn (:)  ! ocn velocity, zonal
@@ -108,30 +111,30 @@ module seq_flux_mct
 contains
 !===============================================================================
 
-  subroutine seq_flux_init_mct( cdata, fractions)
+  subroutine seq_flux_init_mct(comp, fractions)
 
     !-----------------------------------------------------------------------
     !
     ! Arguments
     !
-    type(seq_cdata), intent(in)  :: cdata
+    type(component_type), intent(in) :: comp
     type(mct_aVect), intent(in)  :: fractions
     !
     ! Local variables
     !
-    integer(in)                     :: nloc
-    type(mct_gGrid), pointer        :: dom
-    type(mct_gsMap), pointer        :: gsMap
-    integer                         :: mpicom
-    integer                         :: kx,kr   ! fractions indices
-    integer                         :: ier
-    real(r8), pointer     ::  rmask(:)  ! ocn domain mask
-    character(*),parameter :: subName =   '(seq_flux_init_mct) '
+    type(mct_gsMap), pointer :: gsMap
+    type(mct_gGrid), pointer :: dom
+    integer(in)              :: nloc
+    integer                  :: kx,kr     ! fractions indices
+    integer                  :: ier
+    real(r8), pointer        :: rmask(:)  ! ocn domain mask
+    character(*),parameter   :: subName =   '(seq_flux_init_mct) '
     !-----------------------------------------------------------------------
 
-    ! Set cdata pointers
-    call seq_cdata_setptrs(cdata, gsMap=gsMap, dom=dom, mpicom=mpicom)
-    nloc = mct_gsMap_lsize(gsMap, mpicom)
+    gsmap => component_get_gsmap_cx(comp) 
+    dom   => component_get_dom_cx(comp) 
+
+    nloc = mct_avect_lsize(dom%data)
 
     ! Input fields atm
     allocate( zbot(nloc),stat=ier)
@@ -197,10 +200,10 @@ contains
     call mct_gGrid_exportRAttr(dom, 'lat' , lats , nloc) 
     call mct_gGrid_exportRAttr(dom, 'lon' , lons , nloc) 
     call mct_gGrid_exportRAttr(dom, 'mask', rmask, nloc)
-!tcx, want to mask properly, but applying this changes answers to roundoff for some reason
-!    kx = mct_aVect_indexRA(fractions,"ofrac")
-!    mask = 0
-!    where (fractions%rAttr(kx,:) > 0.0_r8) mask = nint(rmask)
+    !tcx, want to mask properly, but applying this changes answers to roundoff for some reason
+    !    kx = mct_aVect_indexRA(fractions,"ofrac")
+    !    mask = 0
+    !    where (fractions%rAttr(kx,:) > 0.0_r8) mask = nint(rmask)
     mask = nint(rmask)
     deallocate(rmask)
     emask = mask
@@ -211,45 +214,45 @@ contains
 
 !===============================================================================
 
-  subroutine seq_flux_initexch_mct(cdata_a,cdata_o)
+  subroutine seq_flux_initexch_mct(atm, ocn, mpicom_cplid, cplid)
 
     !-----------------------------------------------------------------------
     !
     ! Arguments
     !
-    type(seq_cdata), intent(in)  :: cdata_a
-    type(seq_cdata), intent(in)  :: cdata_o
+    type(component_type), intent(in) :: atm 
+    type(component_type), intent(in) :: ocn
+    integer(in)         , intent(in) :: mpicom_cplid
+    integer(in)         , intent(in) :: cplid
     !
     ! Local variables
     !
-
-    integer(in) :: kw,ka,ko,iw,ia,io,n
-    type(mct_gGrid), pointer        :: dom_a
-    type(mct_gGrid), pointer        :: dom_o
-    type(mct_gsMap), pointer        :: gsmap_a
-    type(mct_gsMap), pointer        :: gsmap_o
-    integer(in)                     :: mpicom_a, mpicom_o
-    integer(in)                     :: ID_a, ID_o
-    character(len=128)              :: strat
-    integer                         :: ier
-    integer                         :: mytask
-    integer(in)                     :: kmsk  ! field indices
-    character(len=128)              :: ConfigFileName  ! config file to read
-    character(len=128)              :: MapLabel        ! map name
-    character(len=128)              :: MapTypeLabel    ! map type
-    character(len=256)              :: fileName
-    character(len=1)                :: maptype
-    character(len=3)                :: Smaptype
-    type(mct_aVect)                 :: avdom_oe
-    type(mct_list)                  :: sort_keys
+    type(mct_gsMap), pointer :: gsmap_a
+    type(mct_gGrid), pointer :: dom_a
+    type(mct_gsMap), pointer :: gsmap_o
+    type(mct_gGrid), pointer :: dom_o
+    integer(in)              :: kw,ka,ko,iw,ia,io,n
+    character(len=128)       :: strat
+    integer                  :: ier
+    integer                  :: mytask
+    integer(in)              :: kmsk            ! field indices
+    character(len=128)       :: ConfigFileName  ! config file to read
+    character(len=128)       :: MapLabel        ! map name
+    character(len=128)       :: MapTypeLabel    ! map type
+    character(len=256)       :: fileName
+    character(len=1)         :: maptype
+    character(len=3)         :: Smaptype
+    type(mct_aVect)          :: avdom_oe
+    type(mct_list)           :: sort_keys
     character(*),parameter :: subName =   '(seq_flux_initexch_mct) '
     !-----------------------------------------------------------------------
 
-    !--- Set cdata pointers
-    call seq_cdata_setptrs(cdata_a, dom=dom_a, gsmap=gsmap_a, mpicom=mpicom_a, ID=ID_a)
-    call seq_cdata_setptrs(cdata_o, dom=dom_o, gsmap=gsmap_o, mpicom=mpicom_o, ID=ID_o)
+    gsmap_a => component_get_gsmap_cx(atm) ! gsmap_ax
+    gsmap_o => component_get_gsmap_cx(ocn) ! gsmap_ox
+    dom_a   => component_get_dom_cx(atm)   ! dom_ax
+    dom_o   => component_get_dom_cx(ocn)   ! dom_ox
 
-    call shr_mpi_commrank(mpicom_o,mytask)
+    call shr_mpi_commrank(mpicom_cplid, mytask)
 
     !--- Get mapping file info
     do n = 1,2
@@ -264,36 +267,18 @@ contains
           call shr_sys_abort(trim(subname)//' do error1')
        endif
 
-       call I90_allLoadF(ConfigFileName,0,mpicom_o,ier)
-       if(ier /= 0) then
-          write(logunit,*) trim(subname)," Cant find config file = ",ConfigFileName
-          call mct_die("mct_sMapP_initnc","File Not Found")
-       endif
-       call i90_label(trim(MapLabel),ier)
-       if(ier /= 0) then
-          write(logunit,*) trim(subname)," Cant find label = ",MapLabel
-          call mct_die("mct_sMapP_initnc","Label Not Found")
-       endif
-       call i90_gtoken(fileName,ier)
-       if(ier /= 0) then
-          write(logunit,*) trim(subname)," Error reading token = ",fileName
-          call mct_die("mct_sMapP_initnc","Error on read")
-       endif
-       write(logunit,*) trim(subname)," map weight filename = ",trim(fileName)
-       call i90_label(trim(MapTypeLabel),ier)
-       call i90_gtoken(maptype,ier)
-
-       call i90_Release(ier)
+       call shr_mct_queryConfigFile(mpicom_cplid, ConfigFilename, &
+          trim(MapLabel),fileName,trim(MapTypeLabel),maptype)
 
        !--- hardwire decomposition to gsmap_o
        if (n == 1) then
           Smaptype = "src"
           call shr_mct_sMatReaddnc(sMata2o, gsmap_a, gsmap_o, Smaptype, &
-             filename=fileName, mytask=mytask, mpicom=mpicom_o)
+             filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
        elseif (n == 2) then
           Smaptype = "dst"
           call shr_mct_sMatReaddnc(sMato2a, gsmap_o, gsmap_a, Smaptype, &
-             filename=fileName, mytask=mytask, mpicom=mpicom_o)
+             filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
        else
           call shr_sys_abort(trim(subname)//' do error2')
        endif
@@ -342,21 +327,23 @@ contains
 
     !--- instantiate/create/compute various datatypes
 
-    call mct_sMat_2XgsMap(sMata2o, gsmap_ae, 0, mpicom_a, ID_a)
-    call mct_sMat_2YgsMap(sMata2o, gsmap_oe, 0, mpicom_a, ID_a)
-    call mct_rearr_init(gsmap_a, gsmap_ae, mpicom_a, Re_a2e)
-    call mct_rearr_init(gsmap_ae,gsmap_a,  mpicom_a, Re_e2a)
-    call mct_rearr_init(gsmap_o, gsmap_oe, mpicom_a, Re_o2e)
-    call mct_rearr_init(gsmap_oe,gsmap_o,  mpicom_a, Re_e2o)
-    call mct_sMat_g2lMat(sMata2o,gsmap_ae,'column',mpicom_a)
-    call mct_sMat_g2lMat(sMata2o,gsmap_oe,'row',   mpicom_a)
-    call mct_sMat_g2lMat(sMato2a,gsmap_ae,'row',   mpicom_a)
-    call mct_sMat_g2lMat(sMato2a,gsmap_oe,'column',mpicom_a)
+    call mct_sMat_2XgsMap(sMata2o , gsmap_ae, 0, mpicom_cplid, cplid)
+    call mct_sMat_2YgsMap(sMata2o , gsmap_oe, 0, mpicom_cplid, cplid)
 
-    nloc_a  = mct_gsmap_lsize(gsmap_a,mpicom_a)
-    nloc_o  = mct_gsmap_lsize(gsmap_o,mpicom_a)
-    nloc_ae = mct_gsmap_lsize(gsmap_ae,mpicom_a)
-    nloc_oe = mct_gsmap_lsize(gsmap_oe,mpicom_a)
+    call mct_rearr_init(gsmap_a   , gsmap_ae, mpicom_cplid, Re_a2e)
+    call mct_rearr_init(gsmap_ae  , gsmap_a,  mpicom_cplid, Re_e2a)
+    call mct_rearr_init(gsmap_o   , gsmap_oe, mpicom_cplid, Re_o2e)
+    call mct_rearr_init(gsmap_oe  , gsmap_o,  mpicom_cplid, Re_e2o)
+
+    call mct_sMat_g2lMat(sMata2o  , gsmap_ae, 'column',mpicom_cplid)
+    call mct_sMat_g2lMat(sMata2o  , gsmap_oe, 'row',   mpicom_cplid)
+    call mct_sMat_g2lMat(sMato2a  , gsmap_ae, 'row',   mpicom_cplid)
+    call mct_sMat_g2lMat(sMato2a  , gsmap_oe, 'column',mpicom_cplid)
+
+    nloc_a  = mct_gsmap_lsize(gsmap_a  , mpicom_cplid)
+    nloc_o  = mct_gsmap_lsize(gsmap_o  , mpicom_cplid)
+    nloc_ae = mct_gsmap_lsize(gsmap_ae , mpicom_cplid)
+    nloc_oe = mct_gsmap_lsize(gsmap_oe , mpicom_cplid)
 
     call mct_gsmap_clean(gsmap_ae)
     call mct_gsmap_clean(gsmap_oe)
@@ -434,43 +421,43 @@ contains
 
 !===============================================================================
 
-  subroutine seq_flux_ocnalb_mct( cdata_o, xao_o, fractions_o)
+  subroutine seq_flux_ocnalb_mct( infodata, ocn, fractions_o, xao_o )
 
     !-----------------------------------------------------------------------
     !
     ! Arguments
     !
-    type(seq_cdata), intent(in)    :: cdata_o
-    type(mct_aVect), intent(inout) :: xao_o
-    type(mct_aVect), intent(inout) :: fractions_o
+    type(seq_infodata_type) , intent(in)    :: infodata
+    type(component_type)    , intent(in)    :: ocn
+    type(mct_aVect)         , intent(inout) :: xao_o
+    type(mct_aVect)         , intent(inout) :: fractions_o
     !
     ! Local variables
     !
-    type(seq_infodata_type),pointer :: infodata
-    type(mct_gGrid), pointer        :: dom_o
-    integer(in) :: n,i          ! indices
-    real(r8)    :: rlat         ! gridcell latitude in radians
-    real(r8)    :: rlon         ! gridcell longitude in radians
-    real(r8)    :: cosz         ! Cosine of solar zenith angle
-    real(r8)    :: eccen        ! Earth orbit eccentricity
-    real(r8)    :: mvelpp       ! Earth orbit
-    real(r8)    :: lambm0       ! Earth orbit
-    real(r8)    :: obliqr       ! Earth orbit
-    real(r8)    :: delta        ! Solar declination angle  in radians
-    real(r8)    :: eccf         ! Earth orbit eccentricity factor
-    real(r8)    :: calday       ! calendar day including fraction, at 0e
-    real(r8)    :: nextsw_cday  ! calendar day of next atm shortwave
-    real(r8)    :: anidr        ! albedo: near infrared, direct
-    real(r8)    :: avsdr        ! albedo: visible      , direct
-    real(r8)    :: anidf        ! albedo: near infrared, diffuse
-    real(r8)    :: avsdf        ! albedo: visible      , diffuse
-    integer(in) :: ID           ! comm ID
-    integer(in) :: ier          ! error code
-    logical     :: flux_albav   ! flux avg option
-    integer(in) :: kx,kr        ! fractions indices
-    integer(in) :: klat,klon,kmsk  ! field indices
-    logical     :: update_alb   ! was albedo updated
-    logical,save:: first_call = .true. 
+    type(mct_gGrid), pointer :: dom_o
+    logical		:: flux_albav		! flux avg option
+    integer(in)		:: n,i			! indices
+    real(r8)		:: rlat			! gridcell latitude in radians
+    real(r8)		:: rlon			! gridcell longitude in radians
+    real(r8)		:: cosz			! Cosine of solar zenith angle
+    real(r8)		:: eccen		! Earth orbit eccentricity
+    real(r8)		:: mvelpp		! Earth orbit
+    real(r8)		:: lambm0		! Earth orbit
+    real(r8)		:: obliqr		! Earth orbit
+    real(r8)		:: delta		! Solar declination angle  in radians
+    real(r8)		:: eccf			! Earth orbit eccentricity factor
+    real(r8)		:: calday		! calendar day including fraction, at 0e
+    real(r8)		:: nextsw_cday		! calendar day of next atm shortwave
+    real(r8)		:: anidr		! albedo: near infrared, direct
+    real(r8)		:: avsdr		! albedo: visible      , direct
+    real(r8)		:: anidf		! albedo: near infrared, diffuse
+    real(r8)		:: avsdf		! albedo: visible      , diffuse
+    integer(in)		:: ID			! comm ID
+    integer(in)		:: ier			! error code
+    integer(in)		:: kx,kr		! fractions indices
+    integer(in)		:: klat,klon,kmsk	! field indices
+    logical		:: update_alb		! was albedo updated
+    logical,save	:: first_call = .true. 
     !
     real(R8),parameter :: albdif = 0.06_R8 ! 60 deg reference albedo, diffuse
     real(R8),parameter :: albdir = 0.07_R8 ! 60 deg reference albedo, direct 
@@ -478,12 +465,14 @@ contains
     !
     !-----------------------------------------------------------------------
 
+    dom_o => component_get_dom_cx(ocn) ! dom_ox
+
+    call seq_infodata_getData(infodata , &
+         flux_albav=flux_albav)
+
     ! Determine indices
 
     update_alb = .false.
-
-    call seq_cdata_setptrs(cdata_o, infodata=infodata, ID=ID)
-    call seq_infodata_GetData(infodata,flux_albav=flux_albav)
 
     if (first_call) then
        index_xao_So_anidr  = mct_aVect_indexRA(xao_o,'So_anidr')
@@ -491,7 +480,6 @@ contains
        index_xao_So_avsdr  = mct_aVect_indexRA(xao_o,'So_avsdr')
        index_xao_So_avsdf  = mct_aVect_indexRA(xao_o,'So_avsdf')
 
-       call seq_cdata_setptrs(cdata_o, dom=dom_o)
        nloc_o  = mct_ggrid_lsize(dom_o)
        klat = mct_gGrid_indexRA(dom_o,"lat" ,dieWith=subName)
        klon = mct_gGrid_indexRA(dom_o,"lon" ,dieWith=subName)
@@ -507,6 +495,7 @@ contains
     endif
 
     if (flux_albav) then
+
        do n=1,nloc_o   
           anidr = albdir
           avsdr = albdir
@@ -529,6 +518,7 @@ contains
        update_alb = .true.
 
     else
+
        ! Solar declination 
        ! Will only do albedo calculation if nextsw_cday is not -1.
        
@@ -582,32 +572,34 @@ contains
 
 !===============================================================================
 
-  subroutine seq_flux_atmocnexch_mct( cdata_a, cdata_o, a2x, o2x, xao_a, xao_o, fractions_a, fractions_o)
+  subroutine seq_flux_atmocnexch_mct( infodata, atm, ocn, fractions_a, fractions_o, &
+       xao_a, xao_o)
 
     !-----------------------------------------------------------------------
     !
     ! Arguments
     !
-    type(seq_cdata), intent(in)    :: cdata_a
-    type(seq_cdata), intent(in)    :: cdata_o
-    type(mct_aVect), intent(in)    :: a2x  
-    type(mct_aVect), intent(in)    :: o2x
-    type(mct_aVect), intent(inout) :: xao_a
-    type(mct_aVect), intent(inout) :: xao_o
-    type(mct_aVect), intent(in)    :: fractions_a
-    type(mct_aVect), intent(in)    :: fractions_o
+    type(seq_infodata_type) , intent(in)    :: infodata
+    type(component_type)    , intent(in)    :: atm
+    type(component_type)    , intent(in)    :: ocn
+    type(mct_aVect)         , intent(in)    :: fractions_a
+    type(mct_aVect)         , intent(in)    :: fractions_o
+    type(mct_aVect)         , intent(inout) :: xao_a
+    type(mct_aVect)         , intent(inout) :: xao_o
     !
     ! Local variables
     !
-    type(seq_infodata_type),pointer :: infodata
+    type(mct_aVect) , pointer :: a2x
+    type(mct_aVect) , pointer :: o2x
+    type(mct_gsmap) , pointer :: gsmap_a
+    type(mct_gsmap) , pointer :: gsmap_o
+
     type(mct_aVect) :: a2x_e
     type(mct_aVect) :: o2x_e
     type(mct_aVect) :: xaop_ae
     type(mct_aVect) :: xaop_oe
     type(mct_aVect) :: xaop_a
     type(mct_aVect) :: xaop_o
-    type(mct_gsmap),pointer :: gsmap_a
-    type(mct_gsmap),pointer :: gsmap_o
     type(mct_aVect) :: fractions_oe
 
     integer(in) :: kw,ka,ko,iw,ia,io,kf
@@ -635,21 +627,22 @@ contains
     !
     !-----------------------------------------------------------------------
 
+    gsmap_a => component_get_gsmap_cx(atm) 
+    gsmap_o => component_get_gsmap_cx(ocn) 
+    a2x     => component_get_c2x_cx(atm)  ! a2x_ax
+    o2x     => component_get_c2x_cx(ocn)  ! o2x_ox 
+
     if (trim(fluxsetting) /= trim(fluxsetting_exchange)) then
        call shr_sys_abort(trim(subname)//' ERROR with init')
     endif
 
-    call seq_cdata_setptrs(cdata_o, infodata=infodata)
-    call seq_cdata_setptrs(cdata_a, gsmap=gsmap_a)
-    call seq_cdata_setptrs(cdata_o, gsmap=gsmap_o)
-    !-----------------------------------------------------
-
     ! Update ocean surface fluxes 
     ! Must fabricate "reasonable" data (using dead components)
 
-    call seq_infodata_GetData(infodata, dead_comps=dead_comps, &
-        atm_nx=atm_nx, atm_ny=atm_ny, &
-        ocn_nx=ocn_nx, ocn_ny=ocn_ny)
+    call seq_infodata_GetData(infodata, &
+         dead_comps=dead_comps,         &
+         atm_nx=atm_nx, atm_ny=atm_ny,  &
+         ocn_nx=ocn_nx, ocn_ny=ocn_ny)
 
     if (dead_comps) then
        do n = 1,nloc_a2o
@@ -794,8 +787,10 @@ contains
 
     !--- rearrange and sum from exchange grid to gsmap_a and gsmap_o decomps
 
-    call mct_rearr_rearrange(xaop_ae, xaop_a, Re_e2a, sum=.true., VECTOR=mct_usevector, ALLTOALL=mct_usealltoall)
-    call mct_rearr_rearrange(xaop_oe, xaop_o, Re_e2o, sum=.true., VECTOR=mct_usevector, ALLTOALL=mct_usealltoall)
+    call mct_rearr_rearrange(xaop_ae, xaop_a, Re_e2a, sum=.true., &
+         VECTOR=mct_usevector, ALLTOALL=mct_usealltoall)
+    call mct_rearr_rearrange(xaop_oe, xaop_o, Re_e2o, sum=.true., &
+         VECTOR=mct_usevector, ALLTOALL=mct_usealltoall)
 
     !--- normalize by sum of wts associated with mapping
 
@@ -834,20 +829,24 @@ contains
 
 !===============================================================================
 
-  subroutine seq_flux_atmocn_mct( cdata, a2x, o2x, xao)
+  subroutine seq_flux_atmocn_mct(infodata, comp, c2x, grid, xao)
 
     !-----------------------------------------------------------------------
     !
     ! Arguments
     !
-    type(seq_cdata), intent(in)    :: cdata
-    type(mct_aVect), intent(in)    :: a2x  
-    type(mct_aVect), intent(in)    :: o2x
-    type(mct_aVect), intent(inout) :: xao
+    type(seq_infodata_type) , intent(in)         :: infodata
+    type(component_type)    , intent(in)         :: comp ! ocn or atm
+    type(mct_aVect)         , intent(in), target :: c2x  ! a2x_ox or o2x_ax
+    character(len=3)        , intent(in)         :: grid 
+    type(mct_aVect)         , intent(inout)      :: xao
     !
     ! Local variables
     !
-    type(seq_infodata_type),pointer :: infodata
+    type(mct_aVect), pointer :: o2x  
+    type(mct_avect), pointer :: a2x
+    logical     :: flux_albav   ! flux avg option
+    logical     :: dead_comps   ! .true.  => dead components are used
     integer(in) :: n,i          ! indices
     real(r8)    :: rlat         ! gridcell latitude in radians
     real(r8)    :: rlon         ! gridcell longitude in radians
@@ -866,8 +865,6 @@ contains
     real(r8)    :: avsdf        ! albedo: visible      , diffuse
     integer(in) :: nloc         ! number of gridcells
     integer(in) :: ID           ! comm ID
-    logical     :: flux_albav   ! flux avg option
-    logical     :: dead_comps   ! .true.  => dead components are used
     logical     :: first_call = .true.
     !
     real(R8),parameter :: albdif = 0.06_R8 ! 60 deg reference albedo, diffuse
@@ -875,6 +872,20 @@ contains
     character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
     !
     !-----------------------------------------------------------------------
+
+    if (trim(grid) == 'ocn') then  
+       o2x => component_get_c2x_cx(comp)
+       a2x => c2x
+    end if
+
+    if (trim(grid) == 'atm') then  
+       o2x => c2x
+       a2x => component_get_c2x_cx(comp)
+    end if
+
+    call seq_infodata_getData(infodata , &
+         flux_albav=flux_albav, &
+         dead_comps=dead_comps) 
 
     if (first_call) then
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
@@ -909,15 +920,10 @@ contains
        call shr_sys_abort(trim(subname)//' ERROR with init')
     endif
 
-    call seq_cdata_setptrs(cdata, infodata=infodata, ID=ID)
-    call seq_infodata_GetData(infodata,flux_albav=flux_albav)
-
     nloc = mct_aVect_lsize(xao)
 
     ! Update ocean surface fluxes 
     ! Must fabricate "reasonable" data (using dead components)
-
-    call seq_infodata_GetData(infodata, dead_comps=dead_comps)
 
     emask = mask
     if (dead_comps) then
@@ -960,8 +966,9 @@ contains
                           shum , dens , tbot, uocn, vocn , &
                           tocn , emask, sen , lat , lwup , &
                           evap , taux , tauy, tref, qref , &
-! missval should not be needed if flux calc consistent with mrgx2a fraction
-!                         duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+                          !missval should not be needed if flux calc 
+                          !consistent with mrgx2a fraction
+                          !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
                           duu10n,ustar, re  , ssq)
 
     do n = 1,nloc

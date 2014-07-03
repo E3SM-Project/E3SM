@@ -504,10 +504,15 @@ sub expandXMLVar {
             my $startvar  = $1;
             my $varnm     = $2;
             my $endvar    = $3;
-            if ( ! defined($varhash{$varnm}) ) {
-               die "${nm}:: variable $varnm is in a variable ($value) -- but NOT defined\n";
+	    my $var;
+            if (defined($varhash{$varnm}) ) {
+		$var = $varhash{$varnm};
+	    }elsif(defined $ENV{$varnm}){
+		$var = $ENV{$varnm};
+	    }else{
+		die "${nm}:: variable $varnm is in a variable ($value) -- but NOT defined\n";
             }
-            my $var = $varhash{$varnm};
+
             $value  = "${startvar}${var}${endvar}";
             if ( $value =~ /\$/ ) {
                $value = &Streams::TemplateGeneric::expandXMLVar( $value, $varhash_ref );

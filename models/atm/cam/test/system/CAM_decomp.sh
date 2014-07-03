@@ -44,7 +44,7 @@ else
 
 	    if grep -ic NOSMP ${CAM_SCRIPTDIR}/config_files/$1 > /dev/null; then
                 ##mpi only
-		ntasks=`expr $CAM_TASKS "*" $CAM_THREADS / $3`
+                ntasks=$(( $CAM_TASKS * $CAM_THREADS / ( $min_cpus_per_task * $3 ) ))
 	    else
                 ##hybrid
 		ntasks=$CAM_TASKS

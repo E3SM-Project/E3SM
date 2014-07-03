@@ -18,6 +18,9 @@
   <!ENTITY cesm_setup        "<command>cesm_setup</command>">
   <!ENTITY create_clone      "<command>create_clone</command>">
   <!ENTITY create_newcase    "<command>create_newcase</command>">
+  <!ENTITY create_test       "<command>create_test</command>">
+  <!ENTITY create_production_test "<command>create_production_test</command>">
+  <!ENTITY query_tests       "<command>query_tests</command>">
   <!ENTITY gmake             "<command>gmake</command>">
   <!ENTITY link_dirtree      "<command>link_dirtree</command>">
   <!ENTITY make              "<command>make</command>">

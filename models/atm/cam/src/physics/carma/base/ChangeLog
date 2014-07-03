@@ -1,5 +1,176 @@
 ===============================================================
-Tag name: carma3_34
+Tag name:
+Originator(s): Sean Santos
+Date: Dec 27, 2013
+
+One-line Summary:
+
+Support for the NAG Fortran compiler within CAM (nagfor).
+
+Purpose of changes:
+
+Made many changes to work with the NAG compiler within CAM. These include
+mostly changes to deal with kind in a standard-conforming way (as opposed
+to using non-standard intrinsics), and changes to ensure that the code
+contains no more than 132 characters per line.
+
+miess.F90 has more extensive changes; this module used "equivalence" in a
+way not allowed by the standard, and so much of the code had to be
+re-written to work on complex numbers without associating their components
+to reals.
+
+The Makefile is not currently updated with support for nagfor.
+
+===============================================================
+Tag name: 
+Originator(s): Chuck Bardeen
+Date: Nov 15, 2013
+
+One-line Summary:
+
+Support for the gfortran compiler.
+
+Purpose of changes:
+
+Support was added to the Makefile for the gfortran compiler, and
+some compatibility bugs were fixed in the code so that it would
+compile and link under gfortran.
+
+===============================================================
+Tag name: 
+Originator(s): Chuck Bardeen, Mike Mills
+Date: Nov 14, 2013
+
+One-line Summary:
+
+Sulfates wet radius and density includes the Kelvin effect on water.
+
+Purpose of changes:
+
+Changed the wetr code to take into account the Kelvin effect on the
+water in determining the weight percent, density and particle size.
+This is a simpler alternative to the weight percent per bin approach
+that MIke has used in other CARMA models.
+
+NOTE: There was also a fix for a related bug in rhopart.F90, where
+the wrong gas concentration was being used for the sulfate weight
+percent calculation.
+
+===============================================================
+Tag name: 
+Originator(s): Chuck Bardeen
+Date: Nov 3, 2013
+
+One-line Summary:
+
+Neutralized sulfates as a function of volume fraction of core mass.
+
+Purpose of changes:
+
+Changes to allow for neutralization of sulfates where the neutralization
+is a function of the volume fraction of the core mass. This replaces
+neutralization by scaling the saturation vapor pressure. NOTE: This
+solution is currently not used for ice particles or when particle
+heating is being used.
+
+===============================================================
+Tag name: 
+Originator(s): Sean Santos
+Date: July 15, 2013
+
+One-line Summary:
+
+Set rprat to 1 for all non-fractals.
+
+Purpose of changes:
+
+Setting rprat to 1._r8 for I_HEXAGON and I_CYLINDER shapes will prevent
+errors due to uninitialized data for the cirrus/dust model.
+
+===============================================================
+Tag name: 
+Originator(s): Sean Santos
+Date: July 2, 2013
+
+One-line Summary:
+
+Fix build with debug options on and on compilers other than Intel.
+
+Purpose of changes:
+
+Fix several compatibility issues with PGI and Lahey. fractal_meanfield_mod
+in particular used Intel compiler extensions throughout.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: June 14, 2013
+
+One-line Summary:
+
+Added sulfate heterogeneous nucleation and allow sulfuric acid
+vapor pressure to be adjusted for neutralization
+
+Purpose of changes:
+
+Add heterogeneous nucleation of sulfate aerosols to the binary
+homogeneous nucleation. Also reduced the vapor pressure for
+"neutralized" aerosols based upon Marti et al. 1997. Neutralization
+is treated very simplistically and is either all or none and just
+affects the vapor pressure.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: May 17, 2013
+
+One-line Summary:
+
+Changed way optical properties are handled
+
+Purpose of changes:
+
+The optical properties used to be initialized by default to be
+used by particle heating; however, the fractal code can take a
+long time to calculate the optical properties. So only do the
+internal initialization if particle heating is enabled. Added
+another interface to the Group to set the optical properties to
+allow them to come from an external source.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen, Pete Colarco
+Date: May 13, 2013
+
+One-line Summary:
+
+Fixed bug in nucleation rate statistic
+
+Purpose of changes:
+
+Changed how the nucleation rate statistic is calculated to work
+around two previous bugs that involved try to calculate the
+statistic after the particle count had been updated and not
+including the nucleation loss rate in the calculation.
+
+===============================================================
+Tag name: 
+Originator(s): Eric Wolf, Charles Bardeen
+Date: May 9, 2013
+
+One-line Summary:
+
+Added support for fractal particles.
+
+Purpose of changes:
+
+Allows particles to grow fractally, which means that particles are made
+up of monomers of a single size that will aggregate together in patterns
+that depend on the particles fractal dimension. This will affect growth,
+sedimentation, coagulation, deposition and optical properties.
+
+===============================================================
+Tag name: 
 Originator(s): Sean Santos
 Date: April 24, 2013
 

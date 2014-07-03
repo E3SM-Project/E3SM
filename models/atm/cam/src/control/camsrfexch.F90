@@ -27,7 +27,6 @@ module camsrfexch
 !
   public atm2hub_alloc              ! Atmosphere to surface data allocation method
   public hub2atm_alloc              ! Merged hub surface to atmosphere data allocation method
-  public hub2atm_setopts            ! Set options to allocate optional parts of data type
   public atm2hub_deallocate
   public hub2atm_deallocate
   public cam_export
@@ -113,14 +112,14 @@ module camsrfexch
      real(r8), pointer, dimension(:) :: ram1  !aerodynamical resistance (s/m) (pcols)
      real(r8), pointer, dimension(:) :: fv    !friction velocity (m/s) (pcols)
      real(r8), pointer, dimension(:) :: soilw !volumetric soil water (m3/m3)
-     real(r8) :: cflx(pcols,pcnst)      ! constituent flux (evap)
+     real(r8) :: cflx(pcols,pcnst)       ! constituent flux (emissions)
      real(r8) :: ustar(pcols)            ! atm/ocn saved version of ustar
      real(r8) :: re(pcols)               ! atm/ocn saved version of re
      real(r8) :: ssq(pcols)              ! atm/ocn saved version of ssq
      real(r8), pointer, dimension(:,:) :: depvel ! deposition velocities
+     real(r8), pointer, dimension(:,:) :: dstflx ! dust fluxes
+     real(r8), pointer, dimension(:,:) :: meganflx ! MEGAN fluxes
   end type cam_in_t    
-
-  logical :: dust = .false.     ! .true. => aerosol dust package is being used
 
 !===============================================================================
 CONTAINS
@@ -142,8 +141,11 @@ CONTAINS
 ! !INTERFACE
 !
   subroutine hub2atm_alloc( cam_in )
-    use seq_drydep_mod, only : lnd_drydep, n_drydep
-    use cam_cpl_indices, only: index_x2a_Sl_soilw
+    use seq_drydep_mod,  only: lnd_drydep, n_drydep
+    use cam_cpl_indices, only: index_x2a_Sl_ram1, index_x2a_Sl_fv, index_x2a_Sl_soilw, index_x2a_Fall_flxdst1
+    use cam_cpl_indices, only: index_x2a_Fall_flxvoc
+    use shr_megan_mod,   only: shr_megan_mechcomps_n
+
 !
 !!ARGUMENTS:
 !
@@ -169,19 +171,32 @@ CONTAINS
        nullify(cam_in(c)%fv)
        nullify(cam_in(c)%soilw)
        nullify(cam_in(c)%depvel)
+       nullify(cam_in(c)%dstflx)
+       nullify(cam_in(c)%meganflx)
     enddo  
-    if ( dust ) then
-       do c = begchunk,endchunk 
+    do c = begchunk,endchunk 
+       if (index_x2a_Sl_ram1>0) then
           allocate (cam_in(c)%ram1(pcols), stat=ierror)
           if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ram1')
+       endif
+       if (index_x2a_Sl_fv>0) then
           allocate (cam_in(c)%fv(pcols), stat=ierror)
           if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fv')
-          if (index_x2a_Sl_soilw /= 0) then
-             allocate (cam_in(c)%soilw(pcols), stat=ierror)
-             if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error soilw')
-          end if
-       end do
-    endif  !dust
+       endif
+       if (index_x2a_Sl_soilw /= 0) then
+          allocate (cam_in(c)%soilw(pcols), stat=ierror)
+          if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error soilw')
+       end if
+       if (index_x2a_Fall_flxdst1>0) then
+          ! Assume 4 bins from surface model ....
+          allocate (cam_in(c)%dstflx(pcols,4), stat=ierror)
+          if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error dstflx')
+       endif
+       if ( index_x2a_Fall_flxvoc>0 .and. shr_megan_mechcomps_n>0 ) then
+          allocate (cam_in(c)%meganflx(pcols,shr_megan_mechcomps_n), stat=ierror)
+          if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error meganflx')
+       endif
+    end do
 
     if (lnd_drydep .and. n_drydep>0) then
        do c = begchunk,endchunk 
@@ -189,7 +204,7 @@ CONTAINS
           if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error depvel')
        end do
     endif
-          
+
     do c = begchunk,endchunk
        cam_in(c)%lchnk = c
        cam_in(c)%ncol  = get_ncols_p(c)
@@ -215,12 +230,18 @@ CONTAINS
        cam_in(c)%landfrac (:) = posinf
        cam_in(c)%icefrac  (:) = posinf
        cam_in(c)%ocnfrac  (:) = posinf
-       if ( dust ) then
-          cam_in(c)%ram1  (:) = 0.1_r8
-          cam_in(c)%fv    (:) = 0.1_r8
-          if (associated(cam_in(c)%soilw)) &
-               cam_in(c)%soilw (:) = 0.0_r8
-       endif
+
+       if (associated(cam_in(c)%ram1)) &
+            cam_in(c)%ram1  (:) = 0.1_r8
+       if (associated(cam_in(c)%fv)) &
+            cam_in(c)%fv    (:) = 0.1_r8
+       if (associated(cam_in(c)%soilw)) &
+            cam_in(c)%soilw (:) = 0.0_r8
+       if (associated(cam_in(c)%dstflx)) &
+            cam_in(c)%dstflx(:,:) = 0.0_r8
+       if (associated(cam_in(c)%meganflx)) &
+            cam_in(c)%meganflx(:,:) = 0.0_r8
+
        cam_in(c)%cflx   (:,:) = 0._r8
        cam_in(c)%ustar    (:) = 0._r8
        cam_in(c)%re       (:) = 0._r8
@@ -341,6 +362,14 @@ CONTAINS
              deallocate(cam_in(c)%soilw)
              nullify(cam_in(c)%soilw)
           end if
+          if(associated(cam_in(c)%dstflx)) then
+             deallocate(cam_in(c)%dstflx)
+             nullify(cam_in(c)%dstflx)
+          end if
+          if(associated(cam_in(c)%meganflx)) then
+             deallocate(cam_in(c)%meganflx)
+             nullify(cam_in(c)%meganflx)
+          end if
           if(associated(cam_in(c)%depvel)) then
              deallocate(cam_in(c)%depvel)
              nullify(cam_in(c)%depvel)
@@ -355,43 +384,7 @@ CONTAINS
   end subroutine hub2atm_deallocate
 
 
-
 !======================================================================
-! 
-! BOP
-!
-! !IROUTINE: hub2atm_setopts
-!
-! !DESCRIPTION:
-!
-!   Method for outside packages to influence what is allocated
-!   (For now, just aerosol dust controls if fv, ram1, and soilw
-!   arrays are allocated.)
-! 
-!-----------------------------------------------------------------------
-!
-! !INTERFACE
-!
-  subroutine hub2atm_setopts( aero_dust_in )
-!
-!!USES:
-!
-!
-!!ARGUMENTS:
-!
-    logical, intent(in),optional :: aero_dust_in
-
-
-!----------------------------------------------------------------------- 
-! 
-! EOP
-!
-
-    if ( present (aero_dust_in ) ) then
-       dust = aero_dust_in
-    endif
-
-end subroutine hub2atm_setopts
 
 subroutine cam_export(state,cam_out,pbuf)
 

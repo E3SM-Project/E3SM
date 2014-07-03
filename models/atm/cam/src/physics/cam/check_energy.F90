@@ -21,7 +21,7 @@ module check_energy
 !---------------------------------------------------------------------------------
 
   use shr_kind_mod,    only: r8 => shr_kind_r8
-  use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
+  use ppgrid,          only: pcols, pver, begchunk, endchunk
   use spmd_utils,      only: masterproc
   
   use phys_gmean,      only: gmean
@@ -73,6 +73,7 @@ module check_energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
+
 !===============================================================================
 contains
 !===============================================================================
@@ -117,14 +118,20 @@ end subroutine check_energy_setopts
 ! 
 !-----------------------------------------------------------------------
     
-    use physics_buffer, only : pbuf_add_field, dtype_r8, pbuf_times
+    use physics_buffer, only : pbuf_add_field, dtype_r8, dyn_time_lvls
+    use physics_buffer, only : pbuf_register_subcol
+    use subcol_utils,   only : is_subcol_on
 
 !-----------------------------------------------------------------------
 
 ! Request physics buffer space for fields that persist across timesteps.
 
-    call pbuf_add_field('TEOUT', 'global',dtype_r8 , (/pcols,pbuf_times/),     teout_idx)
-    call pbuf_add_field('DTCORE','global',dtype_r8,  (/pcols,pver,pbuf_times/),dtcore_idx )
+    call pbuf_add_field('TEOUT', 'global',dtype_r8 , (/pcols,dyn_time_lvls/),      teout_idx)
+    call pbuf_add_field('DTCORE','global',dtype_r8,  (/pcols,pver,dyn_time_lvls/),dtcore_idx)
+    if(is_subcol_on()) then
+      call pbuf_register_subcol('TEOUT', 'phys_register', teout_idx)
+      call pbuf_register_subcol('DTCORE', 'phys_register', dtcore_idx)
+    end if
 
   end subroutine check_energy_register
 
@@ -157,27 +164,39 @@ end subroutine check_energy_get_integrals
 ! Initialize the energy conservation module
 ! 
 !-----------------------------------------------------------------------
-    use cam_history,       only: addfld, phys_decomp
+    use cam_history,       only: addfld, add_default, phys_decomp
+    use phys_control,      only: phys_getopts
 
     implicit none
+
+    logical          :: history_budget
+    integer          :: history_budget_histfile_num ! output history file number for budget fields
+
 !-----------------------------------------------------------------------
+
+    call phys_getopts( history_budget_out = history_budget, &
+                       history_budget_histfile_num_out = history_budget_histfile_num)
 
 ! register history variables
     call addfld('TEINP   ', 'W/m2', 1,    'A', 'Total energy of physics input',    phys_decomp)
     call addfld('TEOUT   ', 'W/m2', 1,    'A', 'Total energy of physics output',   phys_decomp)
     call addfld('TEFIX   ', 'W/m2', 1,    'A', 'Total energy after fixer',         phys_decomp)
-    call addfld('DTCORE'  , 'K/s' , pver, 'I', 'T tendency due to dynamical core', phys_decomp)
+    call addfld('DTCORE'  , 'K/s' , pver, 'A', 'T tendency due to dynamical core', phys_decomp)
 
     if (masterproc) then
        write (iulog,*) ' print_energy_errors is set', print_energy_errors
     endif
 
+    if ( history_budget ) then
+       call add_default ('DTCORE   '  , history_budget_histfile_num, ' ')
+    end if
+
   end subroutine check_energy_init
 
 !===============================================================================
 
-  subroutine check_energy_timestep_init(state, tend, pbuf)
-    use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_times
+  subroutine check_energy_timestep_init(state, tend, pbuf, col_type)
+    use physics_buffer, only : physics_buffer_desc, pbuf_set_field
 !-----------------------------------------------------------------------
 ! Compute initial values of energy and water integrals, 
 ! zero cumulative tendencies
@@ -187,24 +206,20 @@ end subroutine check_energy_get_integrals
     type(physics_state),   intent(inout)    :: state
     type(physics_tend ),   intent(inout)    :: tend
     type(physics_buffer_desc), pointer      :: pbuf(:)
+    integer, optional                       :: col_type  ! Flag inidicating whether using grid or subcolumns
 !---------------------------Local storage-------------------------------
 
-    real(r8) :: ke(pcols)                          ! vertical integral of kinetic energy
-    real(r8) :: se(pcols)                          ! vertical integral of static energy
-    real(r8) :: wv(pcols)                          ! vertical integral of water (vapor)
-    real(r8) :: wl(pcols)                          ! vertical integral of water (liquid)
-    real(r8) :: wi(pcols)                          ! vertical integral of water (ice)
-    real(r8) :: tr(pcols)                          ! vertical integral of tracer
-    real(r8) :: trpdel(pcols, pver)                ! pdel for tracer
+    real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
+    real(r8) :: se(state%ncol)                     ! vertical integral of static energy
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
 
-    integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
-    integer :: itim                                ! pbuf time index
 !-----------------------------------------------------------------------
 
-    lchnk = state%lchnk
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
@@ -249,7 +264,7 @@ end subroutine check_energy_get_integrals
 
 ! initialize physics buffer
     if (is_first_step()) then
-       call pbuf_set_field(pbuf, teout_idx, state%te_ini)
+       call pbuf_set_field(pbuf, teout_idx, state%te_ini, col_type=col_type)
     end if
 
   end subroutine check_energy_timestep_init
@@ -269,10 +284,10 @@ end subroutine check_energy_get_integrals
     character*(*),intent(in) :: name               ! parameterization name for fluxes
     integer , intent(in   ) :: nstep               ! current timestep number
     real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time increment)
-    real(r8), intent(in   ) :: flx_vap(pcols)      ! boundary flux of vapor         (kg/m2/s)
-    real(r8), intent(in   ) :: flx_cnd(pcols)      ! boundary flux of liquid+ice    (m/s) (precip?)
-    real(r8), intent(in   ) :: flx_ice(pcols)      ! boundary flux of ice           (m/s) (snow?)
-    real(r8), intent(in   ) :: flx_sen(pcols)      ! boundary flux of sensible heat (w/m2)
+    real(r8), intent(in   ) :: flx_vap(:)          ! (pcols) - boundary flux of vapor         (kg/m2/s)
+    real(r8), intent(in   ) :: flx_cnd(:)          ! (pcols) -boundary flux of liquid+ice    (m/s) (precip?)
+    real(r8), intent(in   ) :: flx_ice(:)          ! (pcols) -boundary flux of ice           (m/s) (snow?)
+    real(r8), intent(in   ) :: flx_sen(:)          ! (pcols) -boundary flux of sensible heat (w/m2)
 
 !******************** BAB ******************************************************
 !******* Note that the precip and ice fluxes are in precip units (m/s). ********
@@ -282,30 +297,29 @@ end subroutine check_energy_get_integrals
 
 !---------------------------Local storage-------------------------------
 
-    real(r8) :: te_xpd(pcols)                   ! expected value (f0 + dt*boundary_flux)
-    real(r8) :: te_dif(pcols)                   ! energy of input state - original energy
-    real(r8) :: te_tnd(pcols)                   ! tendency from last process
-    real(r8) :: te_rer(pcols)                   ! relative error in energy column
+    real(r8) :: te_xpd(state%ncol)                 ! expected value (f0 + dt*boundary_flux)
+    real(r8) :: te_dif(state%ncol)                 ! energy of input state - original energy
+    real(r8) :: te_tnd(state%ncol)                 ! tendency from last process
+    real(r8) :: te_rer(state%ncol)                 ! relative error in energy column
 
-    real(r8) :: tw_xpd(pcols)                   ! expected value (w0 + dt*boundary_flux)
-    real(r8) :: tw_dif(pcols)                   ! tw_inp - original water
-    real(r8) :: tw_tnd(pcols)                   ! tendency from last process
-    real(r8) :: tw_rer(pcols)                   ! relative error in water column
+    real(r8) :: tw_xpd(state%ncol)                 ! expected value (w0 + dt*boundary_flux)
+    real(r8) :: tw_dif(state%ncol)                 ! tw_inp - original water
+    real(r8) :: tw_tnd(state%ncol)                 ! tendency from last process
+    real(r8) :: tw_rer(state%ncol)                 ! relative error in water column
 
-    real(r8) :: ke(pcols)                          ! vertical integral of kinetic energy
-    real(r8) :: se(pcols)                          ! vertical integral of static energy
-    real(r8) :: wv(pcols)                          ! vertical integral of water (vapor)
-    real(r8) :: wl(pcols)                          ! vertical integral of water (liquid)
-    real(r8) :: wi(pcols)                          ! vertical integral of water (ice)
+    real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
+    real(r8) :: se(state%ncol)                     ! vertical integral of static energy
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
 
-    real(r8) :: te(pcols)                          ! vertical integral of total energy
-    real(r8) :: tw(pcols)                          ! vertical integral of total water
+    real(r8) :: te(state%ncol)                     ! vertical integral of total energy
+    real(r8) :: tw(state%ncol)                     ! vertical integral of total water
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
-    logical :: flag
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -407,7 +421,7 @@ end subroutine check_energy_get_integrals
 !===============================================================================
   subroutine check_energy_gmean(state, pbuf2d, dtime, nstep)
 
-    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk, pbuf_old_tim_idx
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
     
 !-----------------------------------------------------------------------
 ! Compute global mean total energy of physics input and output states
@@ -422,7 +436,6 @@ end subroutine check_energy_get_integrals
 
 !---------------------------Local storage-------------------------------
     integer :: ncol                      ! number of active columns
-    integer :: itim                      ! time  index in pbuf
     integer :: lchnk                     ! chunk index
 
     real(r8) :: te(pcols,begchunk:endchunk,3)   
@@ -430,9 +443,6 @@ end subroutine check_energy_get_integrals
     real(r8) :: te_glob(3)               ! global means of total energy
     real(r8), pointer :: teout(:)
 !-----------------------------------------------------------------------
-
-    ! Find previous total energy in buffer
-    itim = pbuf_old_tim_idx()
 
     ! Copy total energy out of input and output states
 !DIR$ CONCURRENT
@@ -486,7 +496,7 @@ end subroutine check_energy_get_integrals
     real(r8), intent(out  ) :: eshflx(pcols)  ! effective sensible heat flux
 
 !---------------------------Local storage-------------------------------
-    integer  :: i,k                      ! column, level indexes
+    integer  :: i                        ! column
     integer  :: ncol                     ! number of atmospheric columns in chunk
 !-----------------------------------------------------------------------
     ncol = state%ncol
@@ -529,14 +539,12 @@ end subroutine check_energy_get_integrals
     real(r8) :: tr(pcols)                          ! vertical integral of tracer
     real(r8) :: trpdel(pcols, pver)                ! pdel for tracer
 
-    integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k,m                                 ! column, level,constituent indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
 
 !-----------------------------------------------------------------------
 
-    lchnk = state%lchnk
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)

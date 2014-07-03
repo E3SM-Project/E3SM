@@ -15,7 +15,7 @@ use shr_kind_mod,  only: r8 => shr_kind_r8
 use ppgrid,        only: pcols, pver
 use physics_types, only: physics_state, physics_ptend, physics_ptend_init
 
-use physics_buffer,          only : physics_buffer_desc
+use physics_buffer, only : physics_buffer_desc
 
 implicit none
 private
@@ -23,8 +23,7 @@ save
 
 ! Public interfaces
 public  &
-   radheat_defaultopts,   &!
-   radheat_setopts,       &!
+   radheat_readnl,        &!
    radheat_init,          &!
    radheat_timestep_init, &!
    radheat_tend            ! return net radiative heating
@@ -33,37 +32,13 @@ public  &
 contains
 !===============================================================================
 
-subroutine radheat_defaultopts( &
-   nlte_use_mo_out, itgcmcyc_out, cftgcm_out)
+subroutine radheat_readnl(nlfile)
 
-!----------------------------------------------------------------------- 
-! Purpose: Return default runtime options
-!-----------------------------------------------------------------------
+  character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
-   use chemistry, only: chem_is
+  ! No options for this version of radheat; this is just a stub.
 
-   logical,          intent(out), optional :: nlte_use_mo_out
-   integer,          intent(out), optional :: itgcmcyc_out
-   character(len=*), intent(out), optional :: cftgcm_out
-!-----------------------------------------------------------------------
-
-end subroutine radheat_defaultopts
-
-!================================================================================================
-
-subroutine radheat_setopts( &
-   nlte_use_mo_in, itgcmcyc_in, cftgcm_in)
-
-!----------------------------------------------------------------------- 
-! Purpose: Set runtime options
-!-----------------------------------------------------------------------
-
-   logical,          intent(in), optional :: nlte_use_mo_in
-   integer,          intent(in), optional :: itgcmcyc_in
-   character(len=*), intent(in), optional :: cftgcm_in
-!-----------------------------------------------------------------------
-
-end subroutine radheat_setopts
+end subroutine radheat_readnl
 
 !================================================================================================
 

@@ -25,6 +25,8 @@ module dyn_grid
   !      dyn_grid_get_elem_coords get coordinates of a specified block element 
   !                               of the dynamics grid
   !      dyn_grid_find_gcols      finds nearest column for given lat/lon
+  !      dyn_grid_get_colndx      get element block/column and MPI process indices 
+  !                               corresponding to a specified global column index
   !
   ! Author: Jim Edwards and Patrick Worley
   ! 
@@ -64,6 +66,7 @@ module dyn_grid
 
   public :: dyn_grid_get_elem_coords
   public :: dyn_grid_find_gcols
+  public :: dyn_grid_get_colndx
 
   integer, pointer :: fdofP_local(:,:,:) => null()
 
@@ -953,6 +956,39 @@ subroutine dyn_grid_find_gcols( lat, lon, nclosest, owners, col, lbk, rlat, rlon
 
  endsubroutine dyn_grid_find_gcols
 
+!#######################################################################
+subroutine dyn_grid_get_colndx( igcol, nclosest, owners, col, lbk ) 
+  use spmd_utils, only: iam
+  use dimensions_mod, only: np
+
+  integer, intent(in)  :: nclosest
+  integer, intent(in)  :: igcol(nclosest)
+  integer, intent(out) :: owners(nclosest)
+  integer, intent(out) :: col(nclosest)
+  integer, intent(out) :: lbk(nclosest)
+
+  integer  :: i,j,k, ii
+  integer  :: blockid(1), bcid(1), lclblockid(1)
+
+  do i = 1,nclosest
+
+     call  get_gcol_block_d( igcol(i), 1, blockid, bcid, lclblockid )
+     owners(i) = get_block_owner_d(blockid(1))
+     
+     if (owners(i)==iam) then
+        lbk(i) = lclblockid(1)
+        ii = igcol(i)-elem(lbk(i))%idxp%UniquePtoffset+1
+        k=elem(lbk(i))%idxp%ia(ii)
+        j=elem(lbk(i))%idxp%ja(ii)
+        col(i) = k+(j-1)*np
+     else
+        lbk(i) = -1
+        col(i) = -1
+     endif
+     
+  end do
+
+end subroutine dyn_grid_get_colndx
 !#######################################################################
 ! this returns coordinates of a specified block element of the dyn grid
 subroutine dyn_grid_get_elem_coords( ie, rlon, rlat, cdex )

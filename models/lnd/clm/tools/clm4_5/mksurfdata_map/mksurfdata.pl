@@ -394,7 +394,7 @@ EOF
 	  $queryopts = "-res $res -csmdata $CSMDATA -silent -justvalue";
       }
       $queryfilopts = "$queryopts -onlyfiles -phys clm4_5 ";
-      my $mkcrop = "";
+      my $mkcrop = ",crop='off'";
       my $setnumpft = "";
       if ( defined($opts{'crop'}) ) {
          $mkcrop    = ",crop='on'";
@@ -553,10 +553,7 @@ EOF
 EOF
             my $urbdesc = "urb3den";
 
-            my $resol = "";
-            if ( $res ne "1x1_tropicAtl" ) {
-               $resol = "-res $hgrd{'veg'}";
-            }
+            my $resol = "-res $hgrd{'veg'}";
             my $sim_yr0 = $sim_year;
             my $sim_yrn = $sim_year;
             if ( $sim_year =~ /([0-9]+)-([0-9]+)/ ) {
@@ -768,7 +765,7 @@ EOF
                   }
                }
    
-            } else {
+            } elsif ( ! $opts{'debug'} ) {
               die "ERROR files were NOT created: nc=$ncfiles[0] log=$lfiles[0]\n";
             }
             if ( (! $opts{'debug'}) && $opts{'mv'} && (-f "$ncfiles[0]" || -f "$lfiles[0]") ) {

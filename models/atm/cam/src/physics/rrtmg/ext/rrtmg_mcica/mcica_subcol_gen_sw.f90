@@ -583,14 +583,18 @@
       integer(i8) :: kiss
       integer :: i
 
+      logical :: big_endian
+
+      big_endian = (transfer(1_i8, 1) == 0)
+
       do i = 1, size(ran_arr)
          kiss = 69069_i8 * seed1(i) + 1327217885
-         seed1(i) = transfer(kiss,1)
+         seed1(i) = low_byte(kiss)
          seed2(i) = m (m (m (seed2(i), 13), - 17), 5)
          seed3(i) = 18000 * iand (seed3(i), 65535) + ishft (seed3(i), - 16)
          seed4(i) = 30903 * iand (seed4(i), 65535) + ishft (seed4(i), - 16)
          kiss = int(seed1(i), i8) + seed2(i) + ishft (seed3(i), 16) + seed4(i)
-         ran_arr(i) = transfer(kiss,1)*2.328306e-10_r8 + 0.5_r8
+         ran_arr(i) = low_byte(kiss)*2.328306e-10_r8 + 0.5_r8
       end do
     
       contains
@@ -602,6 +606,17 @@
           m = ieor (k, ishft (k, n) )
 
         end function m
+
+        pure integer function low_byte(i)
+          integer(i8), intent(in) :: i
+
+          if (big_endian) then
+             low_byte = transfer(ishft(i,bit_size(1)),1)
+          else
+             low_byte = transfer(i,1)
+          end if
+
+        end function low_byte
 
       end subroutine kissvec
 

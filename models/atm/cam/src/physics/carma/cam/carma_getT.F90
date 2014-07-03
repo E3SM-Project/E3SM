@@ -23,13 +23,14 @@
     nullify(init_t)
 
     allocate(init_t(plon,pver,plat))
-    call infld('T', ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, pver, 1, plat, init_t, found, grid_map='GLOBAL', array_order_in='xyz')
+    call infld('T', ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, pver, 1, &
+         plat, init_t, found, grid_map='GLOBAL', array_order_in='xyz')
             
     if (.not. found) then
       call endrun('carma_init::infld failed to find field T.')
     end if
 
-    ! Just do a simple average. Could get gw and do a wieghted average.
+    ! Just do a simple average. Could get gw and do a weighted average.
     do iz = 1, pver
       T(iz) = sum(init_t(:, iz, :)) / plat / plon
     end do

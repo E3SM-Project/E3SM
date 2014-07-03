@@ -36,6 +36,7 @@ program glint_ebm_ex
 
   use glint_main
   use glimmer_log
+  use glimmer_global, only: dp
   use glint_global_interp
   use glint_ebm_ex_clim
   use glint_commandline
@@ -50,34 +51,34 @@ program glint_ebm_ex
 
   ! Arrays which hold the global fields used as input to GLIMMER ------------------------
 
-  real(rk),dimension(:,:),allocatable :: temp      ! Temperature     (degC)
-  real(rk),dimension(:,:),allocatable :: precip    ! Precipitation   (mm/s)
-  real(rk),dimension(:,:),allocatable :: zonwind   ! Zonal wind      (m/s)
-  real(rk),dimension(:,:),allocatable :: merwind   ! Meridional wind (m/s)
-  real(rk),dimension(:,:),allocatable :: orog      ! Orography       (m)
-  real(rk),dimension(:,:),allocatable :: humid     ! Surface Humidity (%)
-  real(rk),dimension(:,:),allocatable :: lwdown    ! Downwelling LW  (W/m^2)
-  real(rk),dimension(:,:),allocatable :: swdown    ! Downwelling SW  (W/m^2)
-  real(rk),dimension(:,:),allocatable :: airpress  ! Surface air pressure (Pa)
+  real(dp),dimension(:,:),allocatable :: temp      ! Temperature     (degC)
+  real(dp),dimension(:,:),allocatable :: precip    ! Precipitation   (mm/s)
+  real(dp),dimension(:,:),allocatable :: zonwind   ! Zonal wind      (m/s)
+  real(dp),dimension(:,:),allocatable :: merwind   ! Meridional wind (m/s)
+  real(dp),dimension(:,:),allocatable :: orog      ! Orography       (m)
+  real(dp),dimension(:,:),allocatable :: humid     ! Surface Humidity (%)
+  real(dp),dimension(:,:),allocatable :: lwdown    ! Downwelling LW  (W/m^2)
+  real(dp),dimension(:,:),allocatable :: swdown    ! Downwelling SW  (W/m^2)
+  real(dp),dimension(:,:),allocatable :: airpress  ! Surface air pressure (Pa)
 
   ! Arrays which hold information about the ice model instances -------------------------
 
-  real(rk),dimension(:,:),allocatable :: coverage ! Coverage map for normal global grid
-  real(rk),dimension(:,:),allocatable :: cov_orog ! Coverage map for orography grid
+  real(dp),dimension(:,:),allocatable :: coverage ! Coverage map for normal global grid
+  real(dp),dimension(:,:),allocatable :: cov_orog ! Coverage map for orography grid
 
   ! Arrays which hold output from the model ---------------------------------------------
   ! These are all on the normal global grid, except for the orography
 
-  real(rk),dimension(:,:),allocatable :: albedo   ! Fractional albedo
-  real(rk),dimension(:,:),allocatable :: orog_out ! Output orography (m)
-  real(rk),dimension(:,:),allocatable :: ice_frac ! Ice coverage fraction
-  real(rk),dimension(:,:),allocatable :: fw       ! Freshwater output flux (mm/s)
-  real(rk),dimension(:,:),allocatable :: fw_in    ! Freshwater input flux (mm/s)
+  real(dp),dimension(:,:),allocatable :: albedo   ! Fractional albedo
+  real(dp),dimension(:,:),allocatable :: orog_out ! Output orography (m)
+  real(dp),dimension(:,:),allocatable :: ice_frac ! Ice coverage fraction
+  real(dp),dimension(:,:),allocatable :: fw       ! Freshwater output flux (mm/s)
+  real(dp),dimension(:,:),allocatable :: fw_in    ! Freshwater input flux (mm/s)
 
   ! Arrays which hold information about the global grid ---------------------------------
 
-  real(rk),dimension(:),  allocatable :: lats_orog      ! Latitudes of global orography gridpoints
-  real(rk),dimension(:),  allocatable :: lons_orog      ! Longitudes of global oropraphy gridpoints
+  real(dp),dimension(:),  allocatable :: lats_orog      ! Latitudes of global orography gridpoints
+  real(dp),dimension(:),  allocatable :: lons_orog      ! Longitudes of global oropraphy gridpoints
 
   ! Scalars which hold information about the global grid --------------------------------
 
@@ -86,16 +87,16 @@ program glint_ebm_ex
 
   ! Scalar model outputs ----------------------------------------------------------------
 
-  real(rk) :: twin     ! Timestep-integrated input water flux (kg)
-  real(rk) :: twout    ! Timestep-integrated output water flux (kg)
-  real(rk) :: ice_vol  ! Total ice volume (m^3)
+  real(dp) :: twin     ! Timestep-integrated input water flux (kg)
+  real(dp) :: twout    ! Timestep-integrated output water flux (kg)
+  real(dp) :: ice_vol  ! Total ice volume (m^3)
   
   ! Other variables ---------------------------------------------------------------------
 
   logical :: out    ! Outputs set flag
   integer :: i,j    ! Array index counters
   integer :: time   ! Current time (hours)
-  real(kind=dp) t1,t2
+  real(dp):: t1,t2
   integer clock,clock_rate
   integer :: ierr
 
@@ -131,30 +132,30 @@ program glint_ebm_ex
 
   ! Initialise array contents
 
-  temp=0.0
-  precip=0.0
-  zonwind=0.0
-  merwind=0.0
-  humid=0.0
-  lwdown=0.0
-  swdown=0.0
-  airpress=0.0
-  albedo=0.0
-  orog_out=0.0
-  orog=real(climate%orog_clim)                    ! Put orography where it belongs
+  temp=0.d0
+  precip=0.d0
+  zonwind=0.d0
+  merwind=0.d0
+  humid=0.d0
+  lwdown=0.d0
+  swdown=0.d0
+  airpress=0.d0
+  albedo=0.d0
+  orog_out=0.d0
+  orog=real(climate%orog_clim,dp)                   ! Put orography where it belongs
 
   ! Set up global grids ----------------------------------------------------------------
 
   ! Calculate example orographic latitudes
 
   do j=1,nyo
-    lats_orog(j)=-(180.0/nyo)*j+90.0+(90.0/nyo)
+    lats_orog(j) = -(180.d0/nyo)*j + 90.d0 + (90.d0/nyo)
   enddo
 
   ! Calculate example orographic longitudes
 
   do i=1,nxo
-    lons_orog(i)=(360.0/nxo)*i-(180.0/nxo)
+    lons_orog(i) = (360.d0/nxo)*i - (180.d0/nxo)
   enddo
 
   ! Initialise the ice model
@@ -188,7 +189,7 @@ program glint_ebm_ex
   time=climate%climate_tstep
 
   do
-     call ebm_ex_climate(climate,precip,temp,zonwind,merwind,humid,lwdown,swdown,airpress,real(time,rk))
+     call ebm_ex_climate(climate,precip,temp,zonwind,merwind,humid,lwdown,swdown,airpress,real(time,dp))
      call glint(ice_sheet,time,temp,precip,orog, &
           zonwind=zonwind,     merwind=merwind,       humid=humid, &
           lwdown=lwdown,       swdown=swdown,         airpress=airpress, &

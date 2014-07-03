@@ -32,7 +32,7 @@
 !!
 module glimmer_map_types
 
-  use glimmer_global, only: rk
+  use glimmer_global, only: dp
   use glimmer_physcon, only: pi
 
   implicit none
@@ -50,12 +50,12 @@ module glimmer_map_types
 
   !> Lambert Azimuthal Equal Area
   type proj_laea
-     real(rk) :: longitude_of_central_meridian  !< longitude of central meridian
-     real(rk) :: latitude_of_projection_origin  !< latitude of projection origin
-     real(rk) :: false_easting                  !< false easting
-     real(rk) :: false_northing                 !< false northing
-     real(rk) :: sinp                           !< Sine of latitude_of_projection_origin
-     real(rk) :: cosp                           !< Cosine of latitude_of_projection_origin
+     real(dp) :: longitude_of_central_meridian  !< longitude of central meridian
+     real(dp) :: latitude_of_projection_origin  !< latitude of projection origin
+     real(dp) :: false_easting                  !< false easting
+     real(dp) :: false_northing                 !< false northing
+     real(dp) :: sinp                           !< Sine of latitude_of_projection_origin
+     real(dp) :: cosp                           !< Cosine of latitude_of_projection_origin
      integer :: pole                            !< Set to 1 for N pole, -1 for S pole, 0 otherwise
   end type proj_laea
 
@@ -63,61 +63,62 @@ module glimmer_map_types
 
   !> Albers Equal-Area Conic
   type proj_aea
-     real(rk),dimension(2) :: standard_parallel !< two standard parallels
-     real(rk) :: longitude_of_central_meridian  !< longitude of central meridian
-     real(rk) :: latitude_of_projection_origin  !< latitude of projection origin
-     real(rk) :: false_easting                  !< false easting
-     real(rk) :: false_northing                 !< false northing
-     real(rk) :: rho0                           !< Convenience constant
-     real(rk) :: rho0_R                         !< Convenience constant (is rho0/EQ_RAD)
-     real(rk) :: c                              !< Convenience constant
-     real(rk) :: n                              !< Convenience constant
-     real(rk) :: i_n                            !< Convenience constant (inverse of n)
+     real(dp),dimension(2) :: standard_parallel !< two standard parallels
+     real(dp) :: longitude_of_central_meridian  !< longitude of central meridian
+     real(dp) :: latitude_of_projection_origin  !< latitude of projection origin
+     real(dp) :: false_easting                  !< false easting
+     real(dp) :: false_northing                 !< false northing
+     real(dp) :: rho0                           !< Convenience constant
+     real(dp) :: rho0_R                         !< Convenience constant (is rho0/EQ_RAD)
+     real(dp) :: c                              !< Convenience constant
+     real(dp) :: n                              !< Convenience constant
+     real(dp) :: i_n                            !< Convenience constant (inverse of n)
   end type proj_aea
 
   !-------------------------------------------------------------
 
   !> Lambert Conic Conformal
   type proj_lcc
-     real(rk),dimension(2) :: standard_parallel !< two standard parallels
-     real(rk) :: longitude_of_central_meridian  !< longitude of central meridian
-     real(rk) :: latitude_of_projection_origin  !< latitude of projection origin
-     real(rk) :: false_easting                  !< false easting
-     real(rk) :: false_northing                 !< false northing
-     real(rk) :: rho0                           !< Convenience constant
-     real(rk) :: f                              !< Convenience constant
-     real(rk) :: n                              !< Convenience constant
-     real(rk) :: i_n                            !< Convenience constant (inverse of n)
+     real(dp),dimension(2) :: standard_parallel !< two standard parallels
+     real(dp) :: longitude_of_central_meridian  !< longitude of central meridian
+     real(dp) :: latitude_of_projection_origin  !< latitude of projection origin
+     real(dp) :: false_easting                  !< false easting
+     real(dp) :: false_northing                 !< false northing
+     real(dp) :: rho0                           !< Convenience constant
+     real(dp) :: f                              !< Convenience constant
+     real(dp) :: n                              !< Convenience constant
+     real(dp) :: i_n                            !< Convenience constant (inverse of n)
   end type proj_lcc
 
   !-------------------------------------------------------------
 
   !> Stereographic projection derived type 
   type proj_stere
-     real(rk) :: longitude_of_central_meridian    !< longitude of central meridian        
-     real(rk) :: latitude_of_projection_origin    !< latitude of projection origin         
-     real(rk) :: scale_factor_at_proj_origin = 0. !< scale factor at origin 
-     real(rk) :: standard_parallel = 0.           !< a standard parallel
-     real(rk) :: false_easting                    !< false easting
-     real(rk) :: false_northing                   !< false northing
-     integer :: pole                              !< Set to 1 for N pole, -1 for S pole, 0 otherwise
-     logical :: equatorial                        !< Set true if equatorial aspect
-     real(rk) :: k0                               !< scale factor or std par converted to scale factor
-     real(rk) :: ik0                              !< inverse of k0
-     real(rk) :: sinp                             !< sin of latitude_of_projection_origin
-     real(rk) :: cosp                             !< cos of latitude_of_projection_origin
+     real(dp) :: longitude_of_central_meridian      !< longitude of central meridian        
+     real(dp) :: latitude_of_projection_origin      !< latitude of projection origin         
+     real(dp) :: scale_factor_at_proj_origin = 0.d0 !< scale factor at origin 
+     real(dp) :: standard_parallel = 0.d0           !< a standard parallel
+     real(dp) :: false_easting                      !< false easting
+     real(dp) :: false_northing                     !< false northing
+     integer :: pole                                !< Set to 1 for N pole, -1 for S pole, 0 otherwise
+     logical :: equatorial                          !< Set true if equatorial aspect
+     real(dp) :: k0                                 !< scale factor or std par converted to scale factor
+     real(dp) :: ik0                                !< inverse of k0
+     real(dp) :: sinp                               !< sin of latitude_of_projection_origin
+     real(dp) :: cosp                               !< cos of latitude_of_projection_origin
   end type proj_stere
 
   ! Global mapping parameters ----------------------------------
 
-!  real(rk),parameter :: pi         = 3.141592654    !< The value of $\pi$.  ! defined in glimmer_physcon
-  real(rk),parameter :: M_PI_4     = pi/4.          !< The value of $\pi/4$.
-  real(rk),parameter :: M_PI_2     = pi/2.          !< The value of $\pi/2$.
-  real(rk),parameter :: D2R        = pi/180.0       !< Degrees-to-radians conversion factor.
-  real(rk),parameter :: R2D        = 180.0/pi       !< Radians-to-degrees conversion factor.
-  real(rk),parameter :: EQ_RAD     = 6.37e6         !< Radius of the earth (m)
-  real(rk),parameter :: i_EQ_RAD   = 1.0_rk/EQ_RAD  !< Inverse radius of the earth (m^-1)
-  real(rk),parameter :: CONV_LIMIT = 1.0e-8         !< Convergence limit (a small number).
+!TODO - Change to lower-case?
+!  real(dp),parameter :: pi         = 3.141592654    !< The value of $\pi$.  ! defined in glimmer_physcon
+  real(dp),parameter :: M_PI_4     = pi/4.d0        !< The value of $\pi/4$.
+  real(dp),parameter :: M_PI_2     = pi/2.d0        !< The value of $\pi/2$.
+  real(dp),parameter :: D2R        = pi/180.d0      !< Degrees-to-radians conversion factor.
+  real(dp),parameter :: R2D        = 180.d0/pi      !< Radians-to-degrees conversion factor.
+  real(dp),parameter :: EQ_RAD     = 6.37d6         !< Radius of the earth (m)
+  real(dp),parameter :: i_EQ_RAD   = 1.d0/EQ_RAD  !< Inverse radius of the earth (m^-1)
+  real(dp),parameter :: CONV_LIMIT = 1.0d-8         !< Convergence limit (a small number).
 
   integer, parameter :: GMAP_LAEA=1  !< ID for Lambert azimuthal equal area projection
   integer, parameter :: GMAP_AEA=2   !< ID for Lambert azimuthal equal area projection

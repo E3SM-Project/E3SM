@@ -26,6 +26,8 @@ module dyn_grid
 !      dyn_grid_get_elem_coords get coordinates of a specified element (latitude) 
 !                               of the dynamics grid (lat slice of the block)
 !      dyn_grid_find_gcols      finds nearest column for given lat/lon
+!      dyn_grid_get_colndx      get global lat and lon coordinate and MPI process indices 
+!                               corresponding to a specified global column index
 !
 ! Author: John Drake and Patrick Worley
 ! 
@@ -688,6 +690,38 @@ subroutine dyn_grid_find_gcols( lat, lon, nclosest, owners, indx, jndx, rlat, rl
 
 end subroutine dyn_grid_find_gcols
 
+!#######################################################################
+subroutine dyn_grid_get_colndx( igcol, nclosest, owners, indx, jndx ) 
+  use spmd_utils, only: iam
+  use pmgrid,     only: plon
+
+  integer, intent(in)  :: nclosest
+  integer, intent(in)  :: igcol(nclosest)
+  integer, intent(out) :: owners(nclosest)
+  integer, intent(out) :: indx(nclosest)
+  integer, intent(out) :: jndx(nclosest)
+
+  integer  :: i
+  integer :: blockid(1), bcid(1), lclblockid(1)
+
+  do i = 1,nclosest
+
+     call  get_gcol_block_d( igcol(i), 1, blockid, bcid, lclblockid )
+     owners(i) = get_block_owner_d(blockid(1))
+
+     if ( iam==owners(i) ) then
+        ! get global lat and lon coordinate indices from global column index
+        ! -- plon is global number of longitude grid points
+        jndx(i) = (igcol(i)-1)/plon + 1 
+        indx(i) = igcol(i) - (jndx(i)-1)*plon
+     else
+        jndx(i) = -1
+        indx(i) = -1
+     endif
+
+  end do
+
+end subroutine dyn_grid_get_colndx
 !#######################################################################
 
 ! this returns coordinates of a latitude slice of the block corresponding 

@@ -1,8 +1,80 @@
 ================================================================================
- SVN $Id: ChangeLog 44779 2013-03-13 22:19:53Z tcraig $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_130313/ChangeLog $
+ SVN $Id: ChangeLog 55707 2013-12-01 08:23:09Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_131201/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
+================================================================================
+Originator: tcraig
+Date: Dec 01 2013
+Model: dice7
+Version: dice8_131201
+One-line summary: add force_prognostic_true namelist
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_definition_dice.xml
+M       dice_comp_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: Nov 07 2013
+Model: dice7
+Version: dice8_131107
+One-line summary: fix build-namelist parsing issue
+
+M   bld/build-namelist
+
+================================================================================
+Originator: mvertens
+Date: Sep 24 2013
+Model: dice7
+Version: dice8_130924
+One-line summary: move cpl/ code into dice/ directory
+
+M       bld/dice.buildexe.csh
+A  +    ice_comp_esmf.F90
+M       ChangeLog
+D       cpl
+D       cpl/ice_comp_esmf.F90
+D       cpl/ice_comp_mct.F90
+A  +    ice_comp_mct.F90
+	
+
+================================================================================
+Originator: mvertens
+Date: Sep 20 2013
+Model: dice7
+Version: dice8_130920
+One-line summary: merge comptype branch to trunk
+	
+cpl_esmf/ is gone, cpl_mct/ is gone and cpl/ is new 
+with both ice_comp_esmf and ice_comp_mct - this will only 
+work with new cpl7 intrastructure in drvseq4_3_05 and beyond
+
+M       bld/dice.buildexe.csh
+D       cpl_mct
+D       cpl_mct/ice_comp_mct.F90
+M       ChangeLog
+D       cpl_esmf
+D       cpl_esmf/ice_comp_mct.F90
+D       cpl_esmf/ice_comp_esmf.F90
+A  +    cpl
+A  +    cpl/ice_comp_esmf.F90
+
+================================================================================
+Originator: tcraig
+Date: Sep 05 2012
+Model: dice7
+Version: dice8_130905
+One-line summary: Merge cplupa branch
+- modify intents on init/run/finalize coupling interfaces
+- add ifdef USE_ESMF_METADATA around esmf attribute calls
+- add iceberg_prognostic flag
+svn merge $SVNREPO/dice7/trunk_tags/dice8_130313 $SVNREPO/dice7/branch_tags/cplupa_tags/cplupa_n03_dice8_130313
+
+M       cpl_mct/ice_comp_mct.F90
+M       cpl_esmf/ice_comp_esmf.F90
+M       dice_comp_mod.F90
+
 ================================================================================
 Originator: tcraig
 Date: Mar 13 2012

@@ -31,7 +31,7 @@ module ccsm_comp_mod
    use shr_map_mod,       only: shr_map_setDopole
    use shr_mpi_mod,       only: shr_mpi_min, shr_mpi_max
    use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
-   use shr_cal_mod,       only: shr_cal_date2ymd
+   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
    use shr_orb_mod,       only: shr_orb_params
    use shr_reprosum_mod,  only: shr_reprosum_setopts
    use mct_mod            ! mct_ wrappers for mct lib
@@ -41,47 +41,129 @@ module ccsm_comp_mod
    !----------------------------------------------------------------------------
    ! component model interfaces (init, run, final methods)
    !----------------------------------------------------------------------------
-   use atm_comp_mct, only: atm_init_mct, atm_run_mct, atm_final_mct
-   use lnd_comp_mct, only: lnd_init_mct, lnd_run_mct, lnd_final_mct
-   use ocn_comp_mct, only: ocn_init_mct, ocn_run_mct, ocn_final_mct
-   use ice_comp_mct, only: ice_init_mct, ice_run_mct, ice_final_mct
-   use glc_comp_mct, only: glc_init_mct, glc_run_mct, glc_final_mct
-   use wav_comp_mct, only: wav_init_mct, wav_run_mct, wav_final_mct
-   use rof_comp_mct, only: rof_init_mct, rof_run_mct, rof_final_mct
+
+#ifdef ESMF_INTERFACE
+   use atm_comp_esmf , only: atm_register_esmf
+   use lnd_comp_esmf , only: lnd_register_esmf
+   use ocn_comp_esmf , only: ocn_register_esmf
+   use ice_comp_esmf , only: ice_register_esmf
+   use glc_comp_esmf , only: glc_register_esmf
+   use wav_comp_esmf , only: wav_register_esmf
+   use rof_comp_esmf , only: rof_register_esmf
+#else
+   use atm_comp_mct  , only: atm_init=>atm_init_mct, atm_run=>atm_run_mct, atm_final=>atm_final_mct
+   use lnd_comp_mct  , only: lnd_init=>lnd_init_mct, lnd_run=>lnd_run_mct, lnd_final=>lnd_final_mct
+   use ocn_comp_mct  , only: ocn_init=>ocn_init_mct, ocn_run=>ocn_run_mct, ocn_final=>ocn_final_mct
+   use ice_comp_mct  , only: ice_init=>ice_init_mct, ice_run=>ice_run_mct, ice_final=>ice_final_mct
+   use glc_comp_mct  , only: glc_init=>glc_init_mct, glc_run=>glc_run_mct, glc_final=>glc_final_mct
+   use wav_comp_mct  , only: wav_init=>wav_init_mct, wav_run=>wav_run_mct, wav_final=>wav_final_mct
+   use rof_comp_mct  , only: rof_init=>rof_init_mct, rof_run=>rof_run_mct, rof_final=>rof_final_mct
+#endif
 
    !----------------------------------------------------------------------------
    ! cpl7 modules
    !----------------------------------------------------------------------------
 
-   !--- modules with public read/write data ---
-   use seq_avdata_mod    ! drv aVects & associated domain, fraction, cdata
-   use seq_diag_mct      ! diagnostic routines
+   ! mpi comm data & routines, plus logunit and loglevel
+    use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel
+    use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID,WAVID
+    use seq_comm_mct, only: ALLATMID,ALLLNDID,ALLOCNID,ALLICEID,ALLGLCID,ALLROFID,ALLWAVID
+    use seq_comm_mct, only: CPLALLATMID,CPLALLLNDID,CPLALLOCNID,CPLALLICEID
+    use seq_comm_mct, only: CPLALLGLCID,CPLALLROFID,CPLALLWAVID
+    use seq_comm_mct, only: CPLATMID,CPLLNDID,CPLOCNID,CPLICEID,CPLGLCID,CPLROFID,CPLWAVID
+    use seq_comm_mct, only: num_inst_atm, num_inst_lnd, num_inst_rof
+    use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
+    use seq_comm_mct, only: num_inst_wav, num_inst_xao, num_inst_frc, num_inst_phys
+    use seq_comm_mct, only: num_inst_total, num_inst_max
+    use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
+    use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
+    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs 
+    use seq_comm_mct, only: seq_comm_petlist 
+#ifdef USE_ESMF_LIB
+    use seq_comm_mct, only: seq_comm_getcompstates, seq_comm_setcompstates
+#endif
 
-   !--- other ---
-   use seq_comm_mct      ! mpi comm data & routines, plus logunit and loglevel
-   use seq_timemgr_mod   ! clock & alarm routines 
-   use seq_infodata_mod  ! "infodata" gathers various control flags into one datatype
-   use seq_cdata_mod     ! "cdata" type & methods (domain + decomp + infodata in one datatype)
-   use seq_domain_mct    ! domain related routines
-   use seq_flux_mct      ! flux calc routines
-   use seq_frac_mct      ! domain fraction routines
-   use seq_rest_mod      ! restart file routines
-   use seq_hist_mod      ! history file routines
-   use seq_io_mod        ! i/o subroutines
-   use seq_mctext_mod    ! rearrange type routines
-   use seq_flds_mod
+   ! clock & alarm routines 
+   use seq_timemgr_mod
 
-   !--- merging routines ---
-   use mrg_mod          ! merge gridded components
+   ! "infodata" gathers various control flags into one datatype   
+   use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
+   use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
+   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
+   use seq_infodata_mod, only: seq_infodata_print
+        
+   ! domain related routines   
+   use seq_domain_mct, only : seq_domain_check
+
+   ! history file routines
+   use seq_hist_mod, only : seq_hist_write, seq_hist_writeavg, seq_hist_writeaux
+
+   ! restart file routines
+   use seq_rest_mod, only : seq_rest_read, seq_rest_write
+
+   ! flux calc routines
+   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
+   use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct
+
+   ! domain fraction routines
+   use seq_frac_mct, only : seq_frac_init, seq_frac_set
+
+   ! i/o subroutines
+   use seq_io_mod, only : seq_io_cpl_init
+
+   ! rearrange type routines
+   use cplcomp_exchange_mod, only: seq_mctext_decomp
+
+   ! diagnostic routines
+   use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
+   use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
+   use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
+
+   ! list of fields transferred between components
+   use seq_flds_mod, only : seq_flds_a2x_fluxes, seq_flds_x2a_fluxes
+   use seq_flds_mod, only : seq_flds_i2x_fluxes, seq_flds_x2i_fluxes
+   use seq_flds_mod, only : seq_flds_l2x_fluxes, seq_flds_x2l_fluxes
+   use seq_flds_mod, only : seq_flds_o2x_fluxes, seq_flds_x2o_fluxes
+   use seq_flds_mod, only : seq_flds_g2x_fluxes, seq_flds_x2g_fluxes
+   use seq_flds_mod, only : seq_flds_w2x_fluxes, seq_flds_x2w_fluxes
+   use seq_flds_mod, only : seq_flds_r2x_fluxes, seq_flds_x2r_fluxes
+   use seq_flds_mod, only : seq_flds_set
+
+   ! component type and accessor functions
+   use component_type_mod , only: component_get_iamin_compid, component_get_suffix
+   use component_type_mod , only: component_get_name
+   use component_type_mod , only: atm, lnd, ice, ocn, rof, glc, wav 
+   use component_mod      , only: component_init_pre 
+   use component_mod      , only: component_init_cc, component_init_cx, component_run, component_final
+   use component_mod      , only: component_init_areacor, component_init_aream
+   use component_mod      , only: component_exch, component_diag
+#ifdef ESMF_INTERFACE
+   use component_mod      , only: component_init_update_petlist
+   use cpl_comp_esmf
+#endif
+
+   ! prep routines (includes mapping routines between components and merging routines) 
+   use prep_lnd_mod
+   use prep_ice_mod
+   use prep_wav_mod
+   use prep_rof_mod
+   use prep_glc_mod
+   use prep_ocn_mod
+   use prep_atm_mod
+   use prep_aoflux_mod
 
    !--- mapping routines ---
+   use seq_map_type_mod
    use seq_map_mod      ! generic mapping
+
+   ! --- timing routines --- 
+   use t_drv_timers_mod
 
    implicit none
 
    private
 
-   public ccsm_pre_init, ccsm_init, ccsm_run, ccsm_final
+   public ccsm_pre_init1, ccsm_pre_init2, ccsm_init, ccsm_run, ccsm_final
 #ifdef USE_ESMF_LIB
    public ccsm_comp_register
 #endif
@@ -89,129 +171,67 @@ module ccsm_comp_mod
 
 #include <mpif.h>
 
+#ifdef ESMF_INTERFACE
+   type(ESMF_GridComp)   :: cplgc
+   type(ESMF_State)      :: c2x_cx_state, x2c_cx_state
+#endif
+
+   !----------------------------------------------------------------------------
+   ! temporary variables
+   !----------------------------------------------------------------------------
+
+   type(mct_aVect) , pointer :: a2x_ox(:) => null()
+   type(mct_aVect) , pointer :: o2x_ax(:) => null()
+   type(mct_aVect) , pointer :: xao_ox(:) => null()
+   type(mct_aVect) , pointer :: xao_ax(:) => null()
+
+   character(len=CL) :: suffix
+   logical           :: iamin_id 
+   logical           :: iamroot_id 
+   integer           :: mpicom
+   character(len=seq_comm_namelen) :: compname 
+
    !----------------------------------------------------------------------------
    ! domains & related
    !----------------------------------------------------------------------------
 
-   !--- domain decomps (MCT Global Seg Maps) ---
-   type(mct_gsMap), target  :: gsMap_aa(num_inst_atm)    ! on component pes
-   type(mct_gsMap), target  :: gsMap_ll(num_inst_lnd)
-   type(mct_gsMap), target  :: gsMap_oo(num_inst_ocn)
-   type(mct_gsMap), target  :: gsMap_ii(num_inst_ice)
-   type(mct_gsMap), target  :: gsMap_rr(num_inst_rof)
-   type(mct_gsMap), target  :: gsMap_gg(num_inst_glc)
-   type(mct_gsMap), target  :: gsMap_ss(num_inst_lnd)
-   type(mct_gsMap), target  :: gsMap_ww(num_inst_wav)
-
-   type(mct_gsMap), target  :: gsMap_ax    ! on cpl pes
-   type(mct_gsMap), target  :: gsMap_lx
-   type(mct_gsMap), target  :: gsMap_ox
-   type(mct_gsMap), target  :: gsMap_ix
-   type(mct_gsMap), target  :: gsMap_rx
-   type(mct_gsMap), target  :: gsMap_gx
-   type(mct_gsMap), target  :: gsMap_sx
-   type(mct_gsMap), target  :: gsMap_wx
-
-   type(mct_gGrid)  :: dom_tmp   ! temporary
-
-   integer          :: lsize_a   ! local size of atm AV
-   integer          :: lsize_l
-   integer          :: lsize_r
-   integer          :: lsize_s
-   integer          :: lsize_o
-   integer          :: lsize_i
-   integer          :: lsize_g
-   integer          :: lsize_w
-
-   !--- domain area correction factors (only defined on cpl pes) ---
-
-   type AreaCorrectFactor
-      real(r8), pointer :: drv2mdl(:), mdl2drv(:)
-   end type AreaCorrectFactor
-
-   type(AreaCorrectFactor) :: areacor_aa(num_inst_atm)
-   type(AreaCorrectFactor) :: areacor_ll(num_inst_lnd)
-   type(AreaCorrectFactor) :: areacor_rr(num_inst_rof)
-   type(AreaCorrectFactor) :: areacor_ii(num_inst_ice)
-   type(AreaCorrectFactor) :: areacor_oo(num_inst_ocn)
-   type(AreaCorrectFactor) :: areacor_gg(num_inst_glc)
-   type(AreaCorrectFactor) :: areacor_ss(num_inst_lnd)
-   type(AreaCorrectFactor) :: areacor_ww(num_inst_wav)
+   !--- domain fractions (only defined on cpl pes) ---
+   type(mct_aVect) , pointer :: fractions_ax(:)   ! Fractions on atm grid, cpl processes
+   type(mct_aVect) , pointer :: fractions_lx(:)   ! Fractions on lnd grid, cpl processes
+   type(mct_aVect) , pointer :: fractions_ix(:)   ! Fractions on ice grid, cpl processes
+   type(mct_aVect) , pointer :: fractions_ox(:)   ! Fractions on ocn grid, cpl processes
+   type(mct_aVect) , pointer :: fractions_gx(:)   ! Fractions on glc grid, cpl processes
+   type(mct_aVect) , pointer :: fractions_rx(:)   ! Fractions on rof grid, cpl processes
+   type(mct_aVect) , pointer :: fractions_wx(:)   ! Fractions on wav grid, cpl processes
 
    !--- domain equivalent 2d grid size ---
-   integer          :: atm_nx, atm_ny  ! nx, ny of 2d grid, if known
-   integer          :: lnd_nx, lnd_ny
-   integer          :: ice_nx, ice_ny
-   integer          :: ocn_nx, ocn_ny
-   integer          :: rof_nx, rof_ny
-   integer          :: glc_nx, glc_ny
-   integer          :: sno_nx, sno_ny
-   integer          :: wav_nx, wav_ny
-
+   integer  :: atm_nx, atm_ny  ! nx, ny of 2d grid, if known
+   integer  :: lnd_nx, lnd_ny
+   integer  :: ice_nx, ice_ny
+   integer  :: ocn_nx, ocn_ny
+   integer  :: rof_nx, rof_ny
+   integer  :: glc_nx, glc_ny
+   integer  :: wav_nx, wav_ny
 
    !----------------------------------------------------------------------------
-   ! mappers 
-   !   _C are component/coupler rearrangers
-   !   _S are for states
-   !   _F are for fluxes
-   !   _SF are for states and fluxes
+   ! Infodata: inter-model control flags, domain info
    !----------------------------------------------------------------------------
 
-   type(seq_map), SAVE :: mapper_Ca2x(num_inst_atm)
-   type(seq_map), SAVE :: mapper_Cx2a(num_inst_atm)
-   type(seq_map), SAVE :: mapper_Cl2x(num_inst_lnd)
-   type(seq_map), SAVE :: mapper_Cx2l(num_inst_lnd)
-   type(seq_map), SAVE :: mapper_Cs2x(num_inst_lnd)
-   type(seq_map), SAVE :: mapper_Cx2s(num_inst_lnd)
-   type(seq_map), SAVE :: mapper_Cr2x(num_inst_rof)
-   type(seq_map), SAVE :: mapper_Cx2r(num_inst_rof)
-   type(seq_map), SAVE :: mapper_Ci2x(num_inst_ice)
-   type(seq_map), SAVE :: mapper_Cx2i(num_inst_ice)
-   type(seq_map), SAVE :: mapper_Co2x(num_inst_ocn)
-   type(seq_map), SAVE :: mapper_Cx2o(num_inst_ocn)
-   type(seq_map), SAVE :: mapper_Cg2x(num_inst_glc)
-   type(seq_map), SAVE :: mapper_Cx2g(num_inst_glc)
-   type(seq_map), SAVE :: mapper_Cw2x(num_inst_wav)
-   type(seq_map), SAVE :: mapper_Cx2w(num_inst_wav)
-
-   type(seq_map), SAVE :: mapper_Sa2o
-   type(seq_map), SAVE :: mapper_Va2o
-   type(seq_map), SAVE :: mapper_Fa2o
-   type(seq_map), SAVE :: mapper_So2a
-   type(seq_map), SAVE :: mapper_Fo2a
-   type(seq_map), SAVE :: mapper_Sa2l
-   type(seq_map), SAVE :: mapper_Fa2l
-   type(seq_map), SAVE :: mapper_Sl2a
-   type(seq_map), SAVE :: mapper_Fl2a
-   type(seq_map), SAVE :: mapper_Fl2r
-   type(seq_map), SAVE :: mapper_Si2a
-   type(seq_map), SAVE :: mapper_Fi2a
-   type(seq_map), SAVE :: mapper_Fr2o
-   type(seq_map), SAVE :: mapper_Rr2o
-   type(seq_map), SAVE :: mapper_Fr2l
-   type(seq_map), SAVE :: mapper_Sr2l
-   type(seq_map), SAVE :: mapper_SFi2o
-   type(seq_map), SAVE :: mapper_SFo2i
-   type(seq_map), SAVE :: mapper_SFg2s
-   type(seq_map), SAVE :: mapper_SFs2g
-   type(seq_map), SAVE :: mapper_Sa2w
-   type(seq_map), SAVE :: mapper_So2w
-   type(seq_map), SAVE :: mapper_Si2w
-   type(seq_map), SAVE :: mapper_Sw2o
+   type (seq_infodata_type), target :: infodata ! single instance for cpl and all comps
 
    !----------------------------------------------------------------------------
    ! time management
    !----------------------------------------------------------------------------
 
    type (seq_timemgr_type), SAVE :: seq_SyncClock ! array of all clocks & alarm
-   type (ESMF_Clock), target, SAVE       :: EClock_d      ! driver clock
-   type (ESMF_Clock), target, SAVE       :: EClock_a
-   type (ESMF_Clock), target, SAVE       :: EClock_l
-   type (ESMF_Clock), target, SAVE       :: EClock_o
-   type (ESMF_Clock), target, SAVE       :: EClock_i
-   type (ESMF_Clock), target, SAVE       :: EClock_g
-   type (ESMF_Clock), target, SAVE       :: EClock_r
-   type (ESMF_Clock), target, SAVE       :: EClock_w
+   type (ESMF_Clock), target :: EClock_d      ! driver clock
+   type (ESMF_Clock), target :: EClock_a
+   type (ESMF_Clock), target :: EClock_l
+   type (ESMF_Clock), target :: EClock_o
+   type (ESMF_Clock), target :: EClock_i
+   type (ESMF_Clock), target :: EClock_g
+   type (ESMF_Clock), target :: EClock_r
+   type (ESMF_Clock), target :: EClock_w
 
    logical  :: restart_alarm          ! restart alarm
    logical  :: history_alarm          ! history alarm
@@ -243,6 +263,8 @@ module ccsm_comp_mod
    integer  :: month                  ! Current date (MM)
    integer  :: day                    ! Current date (DD)
    integer  :: tod                    ! Current time of day (seconds)
+   integer  :: ymdtmp                 ! temporary date (YYYYMMDD)
+   integer  :: todtmp                 ! temporary time of day (seconds)
    character(CL) :: orb_mode          ! orbital mode
    integer  :: orb_iyear              ! orbital year
    integer  :: orb_iyear_align        ! associated with model year
@@ -254,11 +276,18 @@ module ccsm_comp_mod
    real(r8) :: orb_obliqr             ! Earths obliquity in rad
    real(r8) :: orb_lambm0             ! Mean long of perihelion at vernal equinox (radians)
    real(r8) :: orb_mvelpp             ! moving vernal equinox long
+   real(r8) :: wall_time_limit        ! wall time limit in hours
+   real(r8) :: wall_time              ! current wall time used
+   character(CS) :: force_stop_at     ! force stop at next (month, day, etc)
+   logical  :: force_stop             ! force the model to stop
+   integer  :: force_stop_ymd         ! force stop ymd
+   integer  :: force_stop_tod         ! force stop tod
 
    !--- for documenting speed of the model ---
    character( 8) :: dstr              ! date string
    character(10) :: tstr              ! time string
    integer       :: begStep, endStep  ! Begining and ending step number
+   character(CL) :: calendar          ! calendar name
    real(r8)      :: simDays           ! Number of simulated days
    real(r8)      :: SYPD              ! Simulated years per day
    real(r8)      :: Time_begin        ! Start time
@@ -283,86 +312,119 @@ module ccsm_comp_mod
    logical  :: ice_present            ! .true.  => ice is present
    logical  :: ocn_present            ! .true.  => ocn is present
    logical  :: glc_present            ! .true.  => glc is present
+   logical  :: glclnd_present         ! .true.  => glc is computing land coupling
+   logical  :: glcocn_present         ! .true.  => glc is computing ocean runoff
+   logical  :: glcice_present         ! .true.  => glc is computing icebergs
+   logical  :: rofice_present         ! .true.  => rof is computing icebergs
    logical  :: rof_present            ! .true.  => rof is present
    logical  :: flood_present          ! .true.  => rof is computing flood
-   logical  :: sno_present            ! .true.  => land sno is present
    logical  :: wav_present            ! .true.  => wav is present
 
    logical  :: atm_prognostic         ! .true.  => atm comp expects input
    logical  :: lnd_prognostic         ! .true.  => lnd comp expects input
    logical  :: ice_prognostic         ! .true.  => ice comp expects input
+   logical  :: iceberg_prognostic     ! .true.  => ice comp can handle iceberg input
    logical  :: ocn_prognostic         ! .true.  => ocn comp expects input
    logical  :: ocnrof_prognostic      ! .true.  => ocn comp expects runoff input
    logical  :: glc_prognostic         ! .true.  => glc comp expects input
    logical  :: rof_prognostic         ! .true.  => rof comp expects input
-   logical  :: sno_prognostic         ! .true.  => sno comp expects input
    logical  :: wav_prognostic         ! .true.  => wav comp expects input
+
+   logical  :: atm_c2_lnd             ! .true.  => atm to lnd coupling on
+   logical  :: atm_c2_ocn             ! .true.  => atm to ocn coupling on
+   logical  :: atm_c2_ice             ! .true.  => atm to ice coupling on
+   logical  :: atm_c2_wav             ! .true.  => atm to wav coupling on
+   logical  :: lnd_c2_atm             ! .true.  => lnd to atm coupling on
+   logical  :: lnd_c2_rof             ! .true.  => lnd to rof coupling on
+   logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
+   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
+   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
+   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
+   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
+   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
+   logical  :: ice_c2_wav             ! .true.  => ice to wav coupling on
+   logical  :: rof_c2_lnd             ! .true.  => rof to lnd coupling on
+   logical  :: rof_c2_ocn             ! .true.  => rof to ocn coupling on
+   logical  :: rof_c2_ice             ! .true.  => rof to ice coupling on
+   logical  :: glc_c2_lnd             ! .true.  => glc to lnd coupling on
+   logical  :: glc_c2_ocn             ! .true.  => glc to ocn coupling on
+   logical  :: glc_c2_ice             ! .true.  => glc to ice coupling on
+   logical  :: wav_c2_ocn             ! .true.  => wav to ocn coupling on
 
    logical  :: dead_comps             ! .true.  => dead components 
    logical  :: esmf_map_flag          ! .true.  => use esmf for mapping
 
+   logical  :: areafact_samegrid      ! areafact samegrid flag
    logical  :: single_column          ! scm mode logical
    real(r8) :: scmlon                 ! single column lon
    real(r8) :: scmlat                 ! single column lat
    logical  :: aqua_planet            ! aqua planet mode
    real(r8) :: nextsw_cday            ! radiation control
    logical  :: atm_aero               ! atm provides aerosol data
-   real(r8) :: flux_epbalfact         ! precip factor
 
    logical  :: ocean_tight_coupling   ! couple ocn as frequently as lnd & ice
    logical  :: skip_ocean_run         ! skip the ocean model first pass
    logical  :: cpl2ocn_first          ! use to call initial cpl2ocn timer
+   logical  :: run_barriers           ! barrier the component run calls
+
    character(CS) :: aoflux_grid       ! grid for a/o flux calc: atm xor ocn 
    character(CS) :: vect_map          ! vector mapping type
-   logical  :: run_barriers           ! barrier the component run calls
+
+   character(CL) :: atm_gnam          ! atm grid
+   character(CL) :: lnd_gnam          ! lnd grid
+   character(CL) :: ocn_gnam          ! ocn grid
+   character(CL) :: ice_gnam          ! ice grid
+   character(CL) :: rof_gnam          ! rof grid
+   character(CL) :: glc_gnam          ! glc grid
+   character(CL) :: wav_gnam          ! wav grid
+
    logical  :: samegrid_ao            ! samegrid atm and ocean
    logical  :: samegrid_al            ! samegrid atm and land
+   logical  :: samegrid_lr            ! samegrid land and rof
+   logical  :: samegrid_oi            ! samegrid ocean and ice
    logical  :: samegrid_ro            ! samegrid runoff and ocean
    logical  :: samegrid_aw            ! samegrid atm and wave
    logical  :: samegrid_ow            ! samegrid ocean and wave
+   logical  :: samegrid_lg            ! samegrid glc and land
+   logical  :: samegrid_og            ! samegrid glc and ocean
+   logical  :: samegrid_ig            ! samegrid glc and ice
+   logical  :: samegrid_alo           ! samegrid atm, lnd, ocean
 
    logical       :: read_restart      ! local read restart flag
    character(CL) :: rest_file         ! restart file path + filename
 
-   logical  :: domain_check           ! .true.  => check consistency of domains
    logical  :: shr_map_dopole         ! logical for dopole in shr_map_mod
+   logical  :: domain_check           ! .true.  => check consistency of domains
    logical  :: reprosum_use_ddpdd     ! setup reprosum, use ddpdd
    real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
    !--- history & budgets ---
-   logical       :: do_budgets        ! heat/water budgets on
-   logical       :: do_histinit       ! initial hist file
-   logical       :: do_histavg        ! histavg on or off
-   logical       :: do_hist_r2x       ! create aux files: r2x
-   logical       :: do_hist_l2x       ! create aux files: l2x
-   logical       :: do_hist_a2x24hr   ! create aux files: a2x
-   logical       :: do_hist_s2x1yr    ! create aux files: s2x
-   logical       :: do_hist_a2x       ! create aux files: a2x
-   logical       :: do_hist_a2x3hrp   ! create aux files: a2x 3hr precip
-   logical       :: do_hist_a2x3hr    ! create aux files: a2x 3hr states
+   logical :: do_budgets              ! heat/water budgets on
+   logical :: do_histinit             ! initial hist file
+   logical :: do_histavg              ! histavg on or off
+   logical :: do_hist_r2x             ! create aux files: r2x
+   logical :: do_hist_l2x             ! create aux files: l2x
+   logical :: do_hist_a2x24hr         ! create aux files: a2x
+   logical :: do_hist_l2x1yr          ! create aux files: l2x
+   logical :: do_hist_a2x             ! create aux files: a2x
+   logical :: do_hist_a2x3hrp         ! create aux files: a2x 3hr precip
+   logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
+   integer :: budget_inst             ! instantaneous budget flag
+   integer :: budget_daily            ! daily budget flag
+   integer :: budget_month            ! monthly budget flag
+   integer :: budget_ann              ! annual budget flag
+   integer :: budget_ltann            ! long term budget flag for end of year writing
+   integer :: budget_ltend            ! long term budget flag for end of run writing
+
 !  character(CL) :: hist_r2x_flds     = 'all'
 !  character(CL) :: hist_l2x_flds     = 'all'
    character(CL) :: hist_a2x_flds     = 'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 !  character(CL) :: hist_a2x24hr_flds = 'all'
    character(CL) :: hist_a2x3hrp_flds = 'Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl'
-   character(CL) :: hist_a2x3hr_flds  = 'Sa_z:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn'
-   integer  :: budget_inst            ! instantaneous budget flag
-   integer  :: budget_daily           ! daily budget flag
-   integer  :: budget_month           ! monthly budget flag
-   integer  :: budget_ann             ! annual budget flag
-   integer  :: budget_ltann           ! long term budget flag for end of year writing
-   integer  :: budget_ltend           ! long term budget flag for end of run writing
-
-   ! --- field indexes used in ccsm_comp ---
-   integer  :: index_r2x_Forr_roff
-   integer  :: index_r2x_Forr_ioff
-   integer  :: index_r2x_Flrr_flood
-   integer  :: index_r2x_Slrr_volr
-   integer  :: index_l2x_Flrl_rofliq
-   integer  :: index_l2x_Flrl_rofice
-   integer  :: index_x2r_Flrl_rofliq
-   integer  :: index_x2r_Flrl_rofice
+   character(CL) :: hist_a2x3hr_flds  = 'Sa_z:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
+        &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
+        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 
    ! --- other ---
    integer  :: ka,km,k1,k2,k3         ! aVect field indices
@@ -371,7 +433,6 @@ module ccsm_comp_mod
    integer  :: ierr                   ! MPI error return
    integer  :: rc                     ! return code
    logical  :: cdf64                  ! true => use 64 bit addressing in netCDF files
-   type(mct_aVect) :: x2r_rx_tmp      ! temporary
 
    character(*), parameter :: NLFileName = "drv_in"  ! input namelist filename
 
@@ -398,109 +459,54 @@ module ccsm_comp_mod
 
    integer  :: pethreads_GLOID        ! OMP number of threads per task
 
-   integer  :: nthreads_CPLATMID      ! OMP cpl-atm number of threads
-   integer  :: nthreads_CPLLNDID      ! OMP cpl-lnd number of threads
-   integer  :: nthreads_CPLICEID      ! OMP cpl-ice number of threads
-   integer  :: nthreads_CPLOCNID      ! OMP cpl-ocn number of threads
-   integer  :: nthreads_CPLGLCID      ! OMP cpl-glc number of threads
-   integer  :: nthreads_CPLROFID      ! OMP cpl-glc number of threads
-   integer  :: nthreads_CPLWAVID      ! OMP cpl-wav number of threads
-
    logical  :: drv_threading          ! driver threading control
 
    !----------------------------------------------------------------------------
    ! communicator groups and related
    !----------------------------------------------------------------------------
    integer  :: Global_Comm
-   integer  :: mpicom_GLOID                         ! MPI global communicator
-   integer  :: mpicom_CPLID                         ! MPI cpl communicator
 
-   integer  :: mpicom_CPLALLATMID                   ! MPI comm for CPLALLATMID
-   integer  :: mpicom_CPLALLLNDID                   ! MPI comm for CPLALLLNDID
-   integer  :: mpicom_CPLALLICEID                   ! MPI comm for CPLALLICEID
-   integer  :: mpicom_CPLALLOCNID                   ! MPI comm for CPLALLOCNID
-   integer  :: mpicom_CPLALLGLCID                   ! MPI comm for CPLALLGLCID
-   integer  :: mpicom_CPLALLROFID                   ! MPI comm for CPLALLROFID
-   integer  :: mpicom_CPLALLWAVID                   ! MPI comm for CPLALLWAVID
+   integer  :: mpicom_GLOID          ! MPI global communicator
+   integer  :: mpicom_CPLID          ! MPI cpl communicator
+   integer  :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
 
-   integer  :: mpicom_ATMID(num_inst_atm)           ! MPI atm communicator
-   integer  :: mpicom_LNDID(num_inst_lnd)           ! MPI lnd communicator
-   integer  :: mpicom_ICEID(num_inst_ice)           ! MPI ice communicator
-   integer  :: mpicom_OCNID(num_inst_ocn)           ! MPI ocn communicator
-   integer  :: mpicom_GLCID(num_inst_glc)           ! MPI glc communicator
-   integer  :: mpicom_ROFID(num_inst_rof)           ! MPI rof communicator
-   integer  :: mpicom_WAVID(num_inst_wav)           ! MPI wav communicator
+   integer  :: mpicom_CPLALLATMID    ! MPI comm for CPLALLATMID
+   integer  :: mpicom_CPLALLLNDID    ! MPI comm for CPLALLLNDID
+   integer  :: mpicom_CPLALLICEID    ! MPI comm for CPLALLICEID
+   integer  :: mpicom_CPLALLOCNID    ! MPI comm for CPLALLOCNID
+   integer  :: mpicom_CPLALLGLCID    ! MPI comm for CPLALLGLCID
+   integer  :: mpicom_CPLALLROFID    ! MPI comm for CPLALLROFID
+   integer  :: mpicom_CPLALLWAVID    ! MPI comm for CPLALLWAVID
 
-   integer  :: mpicom_CPLATMID(num_inst_atm)        ! MPI cpl-atm communicator
-   integer  :: mpicom_CPLLNDID(num_inst_lnd)        ! MPI cpl-lnd communicator
-   integer  :: mpicom_CPLICEID(num_inst_ice)        ! MPI cpl-ice communicator
-   integer  :: mpicom_CPLOCNID(num_inst_ocn)        ! MPI cpl-ocn communicator
-   integer  :: mpicom_CPLGLCID(num_inst_glc)        ! MPI cpl-glc communicator
-   integer  :: mpicom_CPLROFID(num_inst_rof)        ! MPI cpl-rof communicator
-   integer  :: mpicom_CPLWAVID(num_inst_wav)        ! MPI cpl-wav communicator
+   integer  :: iam_GLOID             ! pe number in global id
+   logical  :: iamin_CPLID           ! pe associated with CPLID
+   logical  :: iamroot_GLOID         ! GLOID masterproc
+   logical  :: iamroot_CPLID         ! CPLID masterproc
 
-   logical  :: iamroot_GLOID                        ! GLOID masterproc
-   logical  :: iamroot_CPLID                        ! CPLID masterproc
-   logical  :: iamroot_ATMID(num_inst_atm)          ! ATMID masterproc
-   logical  :: iamroot_LNDID(num_inst_lnd)          ! LNDID masterproc
-   logical  :: iamroot_ICEID(num_inst_ice)          ! ICEID masterproc
-   logical  :: iamroot_OCNID(num_inst_ocn)          ! OCNID masterproc
-   logical  :: iamroot_GLCID(num_inst_glc)          ! GLCID masterproc
-   logical  :: iamroot_ROFID(num_inst_rof)          ! ROFID masterproc
-   logical  :: iamroot_WAVID(num_inst_wav)          ! WAVID masterproc
+   logical  :: iamin_CPLALLATMID     ! pe associated with CPLALLATMID
+   logical  :: iamin_CPLALLLNDID     ! pe associated with CPLALLLNDID
+   logical  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
+   logical  :: iamin_CPLALLOCNID     ! pe associated with CPLALLOCNID
+   logical  :: iamin_CPLALLGLCID     ! pe associated with CPLALLGLCID
+   logical  :: iamin_CPLALLROFID     ! pe associated with CPLALLROFID
+   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
 
-   logical  :: iamin_CPLID                          ! pe associated with CPLID
-   logical  :: iamin_CPLALLATMID                    ! pe associated with CPLALLATMID
-   logical  :: iamin_CPLALLLNDID                    ! pe associated with CPLALLLNDID
-   logical  :: iamin_CPLALLICEID                    ! pe associated with CPLALLICEID
-   logical  :: iamin_CPLALLOCNID                    ! pe associated with CPLALLOCNID
-   logical  :: iamin_CPLALLGLCID                    ! pe associated with CPLALLGLCID
-   logical  :: iamin_CPLALLROFID                    ! pe associated with CPLALLROFID
-   logical  :: iamin_CPLALLWAVID                    ! pe associated with CPLALLWAVID
-
-   logical  :: iamin_ATMID(num_inst_atm)            ! pe associated with ATMID
-   logical  :: iamin_LNDID(num_inst_lnd)            ! pe associated with LNDID
-   logical  :: iamin_ICEID(num_inst_ice)            ! pe associated with ICEID
-   logical  :: iamin_OCNID(num_inst_ocn)            ! pe associated with OCNID
-   logical  :: iamin_GLCID(num_inst_glc)            ! pe associated with GLCID
-   logical  :: iamin_ROFID(num_inst_rof)            ! pe associated with ROFID
-   logical  :: iamin_WAVID(num_inst_wav)            ! pe associated with WAVID
-
-   logical  :: iamin_CPLATMID(num_inst_atm)         ! pe associated with CPLATMID
-   logical  :: iamin_CPLLNDID(num_inst_lnd)         ! pe associated with CPLLNDID
-   logical  :: iamin_CPLICEID(num_inst_ice)         ! pe associated with CPLICEID
-   logical  :: iamin_CPLOCNID(num_inst_ocn)         ! pe associated with CPLOCNID
-   logical  :: iamin_CPLGLCID(num_inst_glc)         ! pe associated with CPLGLCID
-   logical  :: iamin_CPLROFID(num_inst_rof)         ! pe associated with CPLROFID
-   logical  :: iamin_CPLWAVID(num_inst_wav)         ! pe associated with CPLWAVID
-
+   !----------------------------------------------------------------------------
    ! complist: list of comps on this pe
+   !----------------------------------------------------------------------------
+
    ! allow enough room for names of all physical components + coupler, 
    ! where each string can be up to (max_inst_name_len+1) characters
    ! long (+1 allows for a space before each name)
    character(len=(seq_comm_namelen+1)*(num_inst_phys+1)) :: complist
+   
+   !----------------------------------------------------------------------------
+   ! misc
+   !----------------------------------------------------------------------------
 
-   integer  :: iam_GLOID              ! pe number in global id
-   integer, pointer :: atm_petlist(:), lnd_petlist(:), ice_petlist(:), ocn_petlist(:), &
-                       glc_petlist(:), cpl_petlist(:), rof_petlist(:), wav_petlist(:)
-
-   integer, parameter :: ens1=1        ! use first instance of ensemble only
-   integer, parameter :: fix1=1        ! temporary hard-coding to first ensemble, needs to be fixed
-   integer :: eai, eli, eoi, eii, egi, eri, ewi, exi, efi  ! component instance counters
-   character(len=seq_comm_namelen) :: atm_name(num_inst_atm)  !! For holding component instance names
-   character(len=seq_comm_namelen) :: lnd_name(num_inst_lnd)
-   character(len=seq_comm_namelen) :: ocn_name(num_inst_ocn)
-   character(len=seq_comm_namelen) :: ice_name(num_inst_ice)
-   character(len=seq_comm_namelen) :: glc_name(num_inst_glc)
-   character(len=seq_comm_namelen) :: rof_name(num_inst_rof)
-   character(len=seq_comm_namelen) :: wav_name(num_inst_wav)
-   character(CL)                   :: atm_suffix(num_inst_atm) !! for holding per-instance suffix
-   character(CL)                   :: lnd_suffix(num_inst_lnd)
-   character(CL)                   :: ocn_suffix(num_inst_ocn)
-   character(CL)                   :: ice_suffix(num_inst_ice)
-   character(CL)                   :: glc_suffix(num_inst_glc)
-   character(CL)                   :: rof_suffix(num_inst_rof)
-   character(CL)                   :: wav_suffix(num_inst_wav)
+   integer, parameter :: ens1=1         ! use first instance of ensemble only
+   integer, parameter :: fix1=1         ! temporary hard-coding to first ensemble, needs to be fixed
+   integer :: eai, eli, eoi, eii, egi, eri, ewi, exi, efi, emi  ! component instance counters
 
    !----------------------------------------------------------------------------
    ! formats
@@ -509,6 +515,7 @@ module ccsm_comp_mod
    character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
    character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
    character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
+   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
    character(*), parameter :: F0R = "('"//subname//" : ', A, 2g23.15 )"
    character(*), parameter :: FormatA = '(A,": =============== ", A41,          " ===============")'
    character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,5x,   " ===============")'
@@ -521,11 +528,11 @@ module ccsm_comp_mod
 contains
 !===============================================================================
 
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
+!===============================================================================
+!*******************************************************************************
+!===============================================================================
 
-subroutine ccsm_pre_init()
+subroutine ccsm_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
    implicit none
    !--------------------------------------------------------------------------
@@ -542,209 +549,133 @@ subroutine ccsm_pre_init()
 
    Global_Comm=MPI_COMM_WORLD
    comp_comm = MPI_COMM_NULL
+   time_brun = mpi_wtime()
 
    call shr_pio_init1(num_inst_total,NLFileName, Global_Comm)
-!
-! If pio_async_interface is true Global_Comm is MPI_COMM_NULL on the servernodes
-! and server nodes do not return from shr_pio_init2
-!
-!   if (Global_Comm /= MPI_COMM_NULL) then
-      call seq_comm_init(Global_Comm, NLFileName)
+   !
+   ! If pio_async_interface is true Global_Comm is MPI_COMM_NULL on the servernodes
+   ! and server nodes do not return from shr_pio_init2
+   !
+   !   if (Global_Comm /= MPI_COMM_NULL) then
 
-      !--- set task based threading counts ---
-      call seq_comm_setptrs(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID)
-      call seq_comm_setnthreads(pethreads_GLOID)
+   call seq_comm_init(Global_Comm, NLFileName)
 
-      !--- get some general data ---
-      call seq_comm_setptrs(GLOID,mpicom=mpicom_GLOID,iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)
-      it=1
-      call seq_comm_setptrs(CPLID,mpicom=mpicom_CPLID,iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,iam=comp_comm_iam(it))
-      comp_id(it) = CPLID
-      comp_comm(it) = mpicom_CPLID
-      iamin_CPLID    = seq_comm_iamin(CPLID)
-      comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-      comp_name(it) = seq_comm_name(comp_id(it))
-      complist = " "
-      if (iamin_CPLID) complist = trim(complist)//' cpl'
-      
-      do eai = 1,num_inst_atm
-         it=it+1
-         comp_id(it) = ATMID(eai)
-         comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(ATMID(eai), &
-              mpicom=mpicom_ATMID(eai), &
-              iamroot=iamroot_ATMID(eai), &
-              nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
-         iamin_ATMID(eai) = seq_comm_iamin (ATMID(eai))
-         atm_name   (eai) = seq_comm_name  (ATMID(eai))
-         atm_suffix (eai) = seq_comm_suffix(ATMID(eai))
-         comp_comm(it) = mpicom_ATMID(eai)
-         if (iamin_ATMID(eai)) then
-            complist = trim(complist)//' '//trim(atm_name(eai))
-         end if
+   !--- set task based threading counts ---
+   call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID)
+   call seq_comm_setnthreads(pethreads_GLOID)
 
-         call seq_comm_setptrs(CPLATMID(eai), &
-              mpicom=mpicom_CPLATMID(eai), &
-              nthreads=nthreads_CPLATMID)
-         iamin_CPLATMID(eai) = seq_comm_iamin(CPLATMID(eai))
-      enddo
-      call seq_comm_setptrs(CPLALLATMID, mpicom=mpicom_CPLALLATMID)
-      iamin_CPLALLATMID = seq_comm_iamin(CPLALLATMID)
+   !--- get some general data ---
+   it=1
+   call seq_comm_getinfo(GLOID,mpicom=mpicom_GLOID,&
+        iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)
+   call seq_comm_getinfo(CPLID,mpicom=mpicom_CPLID,&
+        iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,&
+        iam=comp_comm_iam(it))
 
-      do eli = 1,num_inst_lnd
-         it=it+1
-         comp_id(it) = LNDID(eli)
-         comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(LNDID(eli), &
-              mpicom=mpicom_LNDID(eli), &
-              iamroot=iamroot_LNDID(eli), &
-              nthreads=nthreads_LNDID, iam=comp_comm_iam(it))
-         iamin_LNDID(eli) = seq_comm_iamin (LNDID(eli))
-         lnd_name   (eli) = seq_comm_name  (LNDID(eli))
-         lnd_suffix (eli) = seq_comm_suffix(LNDID(eli))
-         comp_comm(it)=mpicom_lndid(eli)
-         if (iamin_LNDID(eli)) then
-            complist = trim(complist)//' '//trim(lnd_name(eli))
-         end if
+   if (iamin_CPLID) complist = trim(complist)//' cpl'
 
-         call seq_comm_setptrs(CPLLNDID(eli), &
-              mpicom=mpicom_CPLLNDID(eli), &
-              nthreads=nthreads_CPLLNDID)
-         iamin_CPLLNDID(eli) = seq_comm_iamin(CPLLNDID(eli))
-      enddo
-      call seq_comm_setptrs(CPLALLLNDID, mpicom=mpicom_CPLALLLNDID)
-      iamin_CPLALLLNDID = seq_comm_iamin(CPLALLLNDID)
+   comp_id(it)    = CPLID
+   comp_comm(it)  = mpicom_CPLID
+   iamin_CPLID    = seq_comm_iamin(CPLID)
+   comp_iamin(it) = seq_comm_iamin(comp_id(it))
+   comp_name(it)  = seq_comm_name(comp_id(it))
 
-      do eoi = 1,num_inst_ocn
-         it=it+1
-         comp_id(it) = OCNID(eoi)
-         comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(OCNID(eoi), &
-              mpicom=mpicom_OCNID(eoi), &
-              iamroot=iamroot_OCNID(eoi), &
-              nthreads=nthreads_OCNID, &
-              iam=comp_comm_iam(it))
-         iamin_OCNID(eoi) = seq_comm_iamin (OCNID(eoi))
-         ocn_name   (eoi) = seq_comm_name  (OCNID(eoi))
-         ocn_suffix (eoi) = seq_comm_suffix(OCNID(eoi))
-         comp_comm(it) = mpicom_ocnid(eoi)
-         if (iamin_OCNID(eoi)) then
-            complist = trim(complist)//' '//trim(ocn_name(eoi))
-         end if
-         
-         call seq_comm_setptrs(CPLOCNID(eoi), &
-              mpicom=mpicom_CPLOCNID(eoi), &
-              nthreads=nthreads_CPLOCNID)
-         iamin_CPLOCNID(eoi) = seq_comm_iamin(CPLOCNID(eoi))
-      enddo
-      call seq_comm_setptrs(CPLALLOCNID, mpicom=mpicom_CPLALLOCNID)
-      iamin_CPLALLOCNID = seq_comm_iamin(CPLALLOCNID)
+   do eai = 1,num_inst_atm
+      it=it+1
+      comp_id(it)    = ATMID(eai)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(ATMID(eai), mpicom=comp_comm(it), & 
+           nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin(ATMID(eai))) then
+         complist = trim(complist)//' '//trim(seq_comm_name(ATMID(eai)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLATMID, mpicom=mpicom_CPLALLATMID)
+   iamin_CPLALLATMID = seq_comm_iamin(CPLALLATMID)
 
-      do eii = 1,num_inst_ice
-         it=it+1
-         comp_id(it) = ICEID(eii)
-         comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(ICEID(eii), &
-              mpicom=mpicom_ICEID(eii), &
-              iamroot=iamroot_ICEID(eii), &
-              nthreads=nthreads_ICEID, &
-              iam=comp_comm_iam(it))
-         iamin_ICEID(eii) = seq_comm_iamin (ICEID(eii))
-         ice_name   (eii) = seq_comm_name  (ICEID(eii))
-         ice_suffix (eii) = seq_comm_suffix(ICEID(eii))
-         comp_comm(it) = mpicom_iceid(eii)
-         if (iamin_ICEID(eii)) then
-            complist = trim(complist)//' '//trim(ice_name(eii))
-         end if
+   do eli = 1,num_inst_lnd
+      it=it+1
+      comp_id(it)    = LNDID(eli)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(LNDID(eli), mpicom=comp_comm(it), &
+           nthreads=nthreads_LNDID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin(LNDID(eli))) then
+         complist = trim(complist)//' '//trim(seq_comm_name(LNDID(eli)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLLNDID, mpicom=mpicom_CPLALLLNDID)
+   iamin_CPLALLLNDID = seq_comm_iamin(CPLALLLNDID)
 
-         call seq_comm_setptrs(CPLICEID(eii), &
-              mpicom=mpicom_CPLICEID(eii), &
-              nthreads=nthreads_CPLICEID)
-         iamin_CPLICEID(eii) = seq_comm_iamin(CPLICEID(eii))
-      enddo
-      call seq_comm_setptrs(CPLALLICEID, mpicom=mpicom_CPLALLICEID)
-      iamin_CPLALLICEID = seq_comm_iamin(CPLALLICEID)
-      
-      do egi = 1,num_inst_glc
-         it=it+1
-         comp_id(it) = GLCID(egi)
-         comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(GLCID(egi), &
-              mpicom=mpicom_GLCID(egi), &
-              iamroot=iamroot_GLCID(egi), &
-              nthreads=nthreads_GLCID, &
-              iam=comp_comm_iam(it))
-         comp_comm(it) = mpicom_glcid(egi)
-         iamin_GLCID(egi) = seq_comm_iamin (GLCID(egi))
-         glc_name   (egi) = seq_comm_name  (GLCID(egi))
-         glc_suffix (egi) = seq_comm_suffix(GLCID(egi))
-         if (iamin_GLCID(egi)) then
-            complist = trim(complist)//' '//trim(glc_name(egi))
-         end if
+   do eoi = 1,num_inst_ocn
+      it=it+1
+      comp_id(it)    = OCNID(eoi)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(OCNID(eoi), mpicom=comp_comm(it), &
+           nthreads=nthreads_OCNID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin (OCNID(eoi))) then
+         complist = trim(complist)//' '//trim(seq_comm_name(OCNID(eoi)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLOCNID, mpicom=mpicom_CPLALLOCNID)
+   iamin_CPLALLOCNID = seq_comm_iamin(CPLALLOCNID)
 
-         call seq_comm_setptrs(CPLGLCID(egi), &
-              mpicom=mpicom_CPLGLCID(egi), &
-              nthreads=nthreads_CPLGLCID)
-         iamin_CPLGLCID(egi) = seq_comm_iamin(CPLGLCID(egi))
-      enddo
-      call seq_comm_setptrs(CPLALLGLCID, mpicom=mpicom_CPLALLGLCID)
-      iamin_CPLALLGLCID = seq_comm_iamin(CPLALLGLCID)
+   do eii = 1,num_inst_ice
+      it=it+1
+      comp_id(it)    = ICEID(eii)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(ICEID(eii), comp_comm(it), &
+           nthreads=nthreads_ICEID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin (ICEID(eii))) then
+         complist = trim(complist)//' '//trim(seq_comm_name(ICEID(eii)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLICEID, mpicom=mpicom_CPLALLICEID)
+   iamin_CPLALLICEID = seq_comm_iamin(CPLALLICEID)
 
-      do eri = 1,num_inst_rof
-         it=it+1
-         comp_id(it) = ROFID(eri)
-         comp_iamin(it) = seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(ROFID(eri), &
-              mpicom=mpicom_ROFID(eri), &
-              iamroot=iamroot_ROFID(eri), &
-              nthreads=nthreads_ROFID, iam=comp_comm_iam(it))
-         iamin_ROFID(eri) = seq_comm_iamin (ROFID(eri))
-         rof_name   (eri) = seq_comm_name  (ROFID(eri))
-         rof_suffix (eri) = seq_comm_suffix(ROFID(eri))
-         comp_comm(it)=mpicom_rofid(eri)
-         if (iamin_ROFID(eri)) then
-            complist = trim(complist)//' '//trim(rof_name(eri))
-         end if
+   do egi = 1,num_inst_glc
+      it=it+1
+      comp_id(it)    = GLCID(egi)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(GLCID(egi), mpicom=comp_comm(it), nthreads=nthreads_GLCID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin (GLCID(egi))) then
+         complist = trim(complist)//' '//trim(seq_comm_name(GLCID(egi)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLGLCID, mpicom=mpicom_CPLALLGLCID)
+   iamin_CPLALLGLCID = seq_comm_iamin(CPLALLGLCID)
 
-         call seq_comm_setptrs(CPLROFID(eri), &
-              mpicom=mpicom_CPLROFID(eri), &
-              nthreads=nthreads_CPLROFID)
-         iamin_CPLROFID(eri) = seq_comm_iamin(CPLROFID(eri))
-      enddo
-      call seq_comm_setptrs(CPLALLROFID, mpicom=mpicom_CPLALLROFID)
-      iamin_CPLALLROFID = seq_comm_iamin(CPLALLROFID)
+   do eri = 1,num_inst_rof
+      it=it+1
+      comp_id(it)    = ROFID(eri)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(ROFID(eri), mpicom=comp_comm(it), &
+           nthreads=nthreads_ROFID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin(ROFID(eri))) then
+         complist = trim(complist)//' '//trim( seq_comm_name(ROFID(eri)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLROFID, mpicom=mpicom_CPLALLROFID)
+   iamin_CPLALLROFID = seq_comm_iamin(CPLALLROFID)
 
-      do ewi = 1,num_inst_wav
-         it=it+1
-         comp_id(it) = WAVID(ewi)
-         comp_iamin(it) =  seq_comm_iamin(comp_id(it))
-         comp_name(it) = seq_comm_name(comp_id(it))
-         call seq_comm_setptrs(WAVID(ewi), &
-              mpicom=mpicom_WAVID(ewi), &
-              iamroot=iamroot_WAVID(ewi), &
-              nthreads=nthreads_WAVID, &
-              iam=comp_comm_iam(it))
-         comp_comm(it) = mpicom_wavid(ewi)
-         iamin_WAVID(ewi) = seq_comm_iamin (WAVID(ewi))
-         wav_name   (ewi) = seq_comm_name  (WAVID(ewi))
-         wav_suffix (ewi) = seq_comm_suffix(WAVID(ewi))
-         if (iamin_WAVID(ewi)) then
-            complist = trim(complist)//' '//trim(wav_name(ewi))
-         end if
-
-         call seq_comm_setptrs(CPLWAVID(ewi), &
-              mpicom=mpicom_CPLWAVID(ewi), &
-              nthreads=nthreads_CPLWAVID)
-         iamin_CPLWAVID(ewi) = seq_comm_iamin(CPLWAVID(ewi))
-      enddo
-      call seq_comm_setptrs(CPLALLWAVID, mpicom=mpicom_CPLALLWAVID)
-      iamin_CPLALLWAVID = seq_comm_iamin(CPLALLWAVID)
+   do ewi = 1,num_inst_wav
+      it=it+1
+      comp_id(it)    = WAVID(ewi)
+      comp_iamin(it) = seq_comm_iamin(comp_id(it))
+      comp_name(it)  = seq_comm_name(comp_id(it))
+      call seq_comm_getinfo(WAVID(ewi), mpicom=comp_comm(it), &
+           nthreads=nthreads_WAVID, iam=comp_comm_iam(it))
+      if (seq_comm_iamin(WAVID(ewi))) then
+         complist = trim(complist)//' '//trim(seq_comm_name(WAVID(ewi)))
+      end if
+   enddo
+   call seq_comm_getinfo(CPLALLWAVID, mpicom=mpicom_CPLALLWAVID)
+   iamin_CPLALLWAVID = seq_comm_iamin(CPLALLWAVID)
 
    !--------------------------------------------------------------------------
    ! Set logging parameters both for shr code and locally
@@ -781,31 +712,21 @@ subroutine ccsm_pre_init()
       write(logunit,'(2A)') subname,' ESMF_INTERFACE is set'
 #endif
    endif
-!
-!  When using io servers (pio_async_interface=.true.) the server tasks do not return from 
-!  shr_pio_init2 
-!
-
+   !
+   !  When using io servers (pio_async_interface=.true.) the server tasks do not return from 
+   !  shr_pio_init2 
+   !
    call shr_pio_init2(comp_id,comp_name,comp_iamin,comp_comm,comp_comm_iam)
 
+end subroutine ccsm_pre_init1
 
+!===============================================================================
+!*******************************************************************************
+!===============================================================================
 
-end subroutine ccsm_pre_init
-
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
-
-subroutine ccsm_init()
+subroutine ccsm_pre_init2()
 
    implicit none
-
- 101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
- 102  format( A, 2i8, A, 8L3 )
- 103  format( 5A )
- 104  format( A, 2i8)
- 105  format( A, 2i8, A, f10.2, A, f10.2, A, A, i5, A, A)
- 106  format( A, f23.12)
 
    !--------------------------------------------------------------------------
    ! Print Model heading and copyright message
@@ -829,6 +750,7 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
    ! Memory test
    !-----------------------------------------------------------------------------
+
    call shr_mem_init(prt=.true.)
 
    !-----------------------------------------------------------------------------
@@ -841,49 +763,80 @@ subroutine ccsm_init()
    ! Initialize infodata
    !-----------------------------------------------------------------------------
 
-   call seq_infodata_init(infodata,nlfilename,GLOID)
-   if (iamroot_CPLID) then
+   call seq_infodata_init(infodata, &
+        nlfilename, GLOID)
+
+   call seq_infodata_GetData(infodata, &
+        info_debug=info_debug)
+
+   if (info_debug > 1 .and. iamroot_CPLID) then
       write(logunit,*) ' '
       write(logunit,'(2A)') 'Status of infodata after seq_infodata_init'
       call seq_infodata_print( infodata )
       write(logunit,*) ' '
    endif
+   
+   call seq_infodata_GetData(infodata             , &
+        read_restart=read_restart                 , &
+        restart_file=rest_file                    , &
+        timing_dir=timing_dir                     , &
+        tchkpt_dir=tchkpt_dir                     , &
+        info_debug=info_debug                     , &
+        atm_present=atm_present                   , &
+        lnd_present=lnd_present                   , &
+        ice_present=ice_present                   , &
+        ocn_present=ocn_present                   , &
+        glc_present=glc_present                   , &
+        rof_present=rof_present                   , &
+        wav_present=wav_present                   , &
+        single_column=single_column               , &
+        aqua_planet=aqua_planet                   , &
+        ocean_tight_coupling=ocean_tight_coupling , &
+        drv_threading=drv_threading               , &
+        do_histinit=do_histinit                   , &
+        do_budgets=do_budgets                     , &
+        budget_inst=budget_inst                   , &
+        budget_daily=budget_daily                 , &
+        budget_month=budget_month                 , &
+        budget_ann=budget_ann                     , &
+        budget_ltann=budget_ltann                 , &
+        budget_ltend=budget_ltend                 , &
+        histaux_a2x=do_hist_a2x                   , &
+        histaux_a2x3hr =do_hist_a2x3hr            , &
+        histaux_a2x3hrp=do_hist_a2x3hrp           , &
+        histaux_a2x24hr=do_hist_a2x24hr           , &
+        histaux_l2x=do_hist_l2x                   , &
+        histaux_l2x1yr=do_hist_l2x1yr             , &
+        histaux_r2x=do_hist_r2x                   , &
+        run_barriers=run_barriers                 , &
+        mct_usealltoall=mct_usealltoall           , &
+        mct_usevector=mct_usevector               , &
+        aoflux_grid=aoflux_grid                   , &
+        vect_map=vect_map                         , &
+        atm_gnam=atm_gnam                         , &
+        lnd_gnam=lnd_gnam                         , &
+        ocn_gnam=ocn_gnam                         , &
+        ice_gnam=ice_gnam                         , &
+        rof_gnam=rof_gnam                         , &
+        glc_gnam=glc_gnam                         , &
+        wav_gnam=wav_gnam                         , &
+        cpl_decomp=seq_mctext_decomp              , & 
+        shr_map_dopole=shr_map_dopole             , &
+        wall_time_limit=wall_time_limit           , &
+        force_stop_at=force_stop_at               , &
+        reprosum_use_ddpdd=reprosum_use_ddpdd     , &
+        reprosum_diffmax=reprosum_diffmax         , &
+        reprosum_recompute=reprosum_recompute)
 
-   call seq_infodata_GetData(infodata,read_restart=read_restart, restart_file=rest_file, &
-        timing_dir=timing_dir, tchkpt_dir=tchkpt_dir)
-   call seq_infodata_GetData(infodata, info_debug=info_debug, atm_present=atm_present, &
-        lnd_present=lnd_present, ice_present=ice_present, ocn_present=ocn_present, &
-        glc_present=glc_present, sno_present=sno_present, rof_present=rof_present, &
-        wav_present=wav_present, &
-        single_column=single_column, aqua_planet=aqua_planet, &
-        ocean_tight_coupling=ocean_tight_coupling, drv_threading=drv_threading)
-   call seq_infodata_GetData(infodata, do_histinit=do_histinit)
-   call seq_infodata_GetData(infodata, do_budgets=do_budgets, budget_inst=budget_inst, &
-        budget_daily=budget_daily, budget_month=budget_month, budget_ann=budget_ann, &
-        budget_ltann=budget_ltann, budget_ltend=budget_ltend)
-   call seq_infodata_GetData(infodata, &
-        histaux_a2x    =do_hist_a2x    , histaux_a2x3hr =do_hist_a2x3hr , &
-        histaux_a2x3hrp=do_hist_a2x3hrp, histaux_a2x24hr=do_hist_a2x24hr, &
-        histaux_l2x    =do_hist_l2x    , histaux_r2x    =do_hist_r2x,     &
-        histaux_s2x1yr=do_hist_s2x1yr      )
-   call seq_infodata_GetData(infodata, run_barriers = run_barriers)
-   call seq_infodata_GetData(infodata, mct_usealltoall=mct_usealltoall, &
-        mct_usevector=mct_usevector)
+   ! above - cpl_deocmp is set to pass the cpl_decomp value to seq_mctext_decomp 
+   ! (via a use statement)
 
-   call seq_infodata_GetData(infodata, aoflux_grid=aoflux_grid, vect_map=vect_map)
-   call seq_infodata_GetData(infodata, samegrid_ao=samegrid_ao, samegrid_al=samegrid_al, &
-        samegrid_ro=samegrid_ro, samegrid_aw=samegrid_aw, samegrid_ow=samegrid_ow)
-   ! pass the cpl_decomp value to seq_mctext_decomp
-   call seq_infodata_GetData(infodata, cpl_decomp = seq_mctext_decomp)
-
-   call seq_infodata_GetData(infodata, shr_map_dopole=shr_map_dopole)
    call shr_map_setDopole(shr_map_dopole)
 
-   call seq_infodata_GetData(infodata, reprosum_use_ddpdd = reprosum_use_ddpdd, &
-        reprosum_diffmax = reprosum_diffmax, reprosum_recompute = reprosum_recompute)
-   call shr_reprosum_setopts(repro_sum_use_ddpdd_in = reprosum_use_ddpdd, &
+   call shr_reprosum_setopts(&
+        repro_sum_use_ddpdd_in    = reprosum_use_ddpdd, &
         repro_sum_rel_diff_max_in = reprosum_diffmax, &
-        repro_sum_recompute_in = reprosum_recompute)
+        repro_sum_recompute_in    = reprosum_recompute)
 
    !-----------------------------------------------------------------------------
    ! Test Threading Setup in driver, happens to be valid on all pes for all IDs
@@ -893,134 +846,137 @@ subroutine ccsm_init()
       if (iamroot_GLOID) write(logunit,*) ' '
       if (iamroot_GLOID) write(logunit,'(2A)    ') subname,' Test Threading in driver'
       call seq_comm_setnthreads(nthreads_GLOID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_GLOID = ',nthreads_GLOID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_GLOID = ',&
+           nthreads_GLOID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_CPLID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_CPLID = ',nthreads_CPLID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_CPLID = ',&
+           nthreads_CPLID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_ATMID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_ATMID = ',nthreads_ATMID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_ATMID = ',&
+           nthreads_ATMID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_LNDID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_LNDID = ',nthreads_LNDID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_LNDID = ',&
+           nthreads_LNDID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_OCNID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_OCNID = ',nthreads_OCNID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_OCNID = ',&
+           nthreads_OCNID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_ICEID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_ICEID = ',nthreads_ICEID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_ICEID = ',&
+           nthreads_ICEID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_GLCID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_GLCID = ',nthreads_GLCID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_GLCID = ',&
+           nthreads_GLCID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_ROFID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_ROFID = ',nthreads_ROFID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_ROFID = ',&
+           nthreads_ROFID,seq_comm_getnthreads()
       call seq_comm_setnthreads(nthreads_WAVID)
-      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_WAVID = ',nthreads_WAVID,seq_comm_getnthreads()
+      if (iamroot_GLOID) write(logunit,'(2A,2I4)') subname,'    nthreads_WAVID = ',&
+           nthreads_WAVID,seq_comm_getnthreads()
       if (iamroot_GLOID) write(logunit,*) ' '
 
       call seq_comm_setnthreads(nthreads_GLOID)
    endif
 
    !-----------------------------------------------------------------------------
-   ! Setup cdata types, call on all pes so the ID is set on all pes even 
-   ! though other data may be invalid
-   !-----------------------------------------------------------------------------
-
-   call seq_cdata_init(cdata_ax, CPLID, dom_ax, gsMap_ax, infodata, name='cdata_ax' )
-   call seq_cdata_init(cdata_lx, CPLID, dom_lx, gsMap_lx, infodata, name='cdata_lx' )
-   call seq_cdata_init(cdata_rx, CPLID, dom_rx, gsMap_rx, infodata, name='cdata_rx' )
-   call seq_cdata_init(cdata_ix, CPLID, dom_ix, gsMap_ix, infodata, name='cdata_ix' )
-   call seq_cdata_init(cdata_ox, CPLID, dom_ox, gsMap_ox, infodata, name='cdata_ox' )
-   call seq_cdata_init(cdata_gx, CPLID, dom_gx, gsMap_gx, infodata, name='cdata_gx' )
-   call seq_cdata_init(cdata_sx, CPLID, dom_sx, gsMap_sx, infodata, name='cdata_sx' )
-   call seq_cdata_init(cdata_wx, CPLID, dom_wx, gsMap_wx, infodata, name='cdata_wx' )
-
-   do eai = 1,num_inst_atm
-      call seq_cdata_init(cdata_aa(eai), ATMID(eai), &
-                          dom_aa(eai), gsmap_aa(eai), infodata, &
-                          name='cdata_aa'//trim(atm_name(eai)))
-   enddo
-
-   do eli = 1,num_inst_lnd
-      call seq_cdata_init(cdata_ll(eli), LNDID(eli), &
-                          dom_ll(eli), gsMap_ll(eli), infodata, &
-                          name=('cdata_ll' // trim(lnd_name(eli))))
-      call seq_cdata_init(cdata_ss(eli), LNDID(eli), &
-                          dom_ss(eli), gsMap_ss(eli), infodata, &
-                          name=('cdata_ss' // trim(lnd_name(eli))))
-   enddo
-
-   do eri = 1,num_inst_rof
-      call seq_cdata_init(cdata_rr(eri), ROFID(eri), &
-                          dom_rr(eri), gsMap_rr(eri), infodata, &
-                          name=('cdata_rr' // trim(rof_name(eri))))
-   end do
-
-   do eii = 1,num_inst_ice
-      call seq_cdata_init(cdata_ii(eii), ICEID(eii), &
-                          dom_ii(eii), gsmap_ii(eii), infodata, &
-                          name='cdata_ii'//trim(ice_name(eii)))
-   enddo
-
-   do eoi = 1,num_inst_ocn
-      call seq_cdata_init(cdata_oo(eoi), OCNID(eoi), &
-                          dom_oo(eoi), gsmap_oo(eoi), infodata, &
-                          name='cdata_oo'//trim(ocn_name(eoi)))
-   enddo
-
-   do egi = 1,num_inst_glc
-      call seq_cdata_init(cdata_gg(egi), GLCID(egi), &
-                          dom_gg(egi), gsmap_gg(egi), infodata, &
-                          name='cdata_gg'//trim(glc_name(egi)))
-   enddo
-
-   do ewi = 1,num_inst_wav
-      call seq_cdata_init(cdata_ww(ewi), WAVID(ewi), &
-                          dom_ww(ewi), gsmap_ww(ewi), infodata, &
-                          name='cdata_ww'//trim(wav_name(ewi)))
-   enddo
-
-   !-----------------------------------------------------------------------------
    ! Initialize time manager
    !-----------------------------------------------------------------------------
 
-   call seq_timemgr_clockInit(seq_SyncClock,nlfilename,read_restart,rest_file,mpicom_gloid, &
-        EClock_d, EClock_a, EClock_l, EClock_o, EClock_i, Eclock_g, Eclock_r, Eclock_w)
+   call seq_timemgr_clockInit(seq_SyncClock, nlfilename, &
+        read_restart, rest_file, mpicom_gloid,           &
+        EClock_d, EClock_a, EClock_l, EClock_o,          &
+        EClock_i, Eclock_g, Eclock_r, Eclock_w)
+
    if (iamroot_CPLID) then
        call seq_timemgr_clockPrint(seq_SyncClock)
    endif
 
-   call seq_infodata_getData(infodata,orb_iyear=orb_iyear,orb_iyear_align=orb_iyear_align, &
-      orb_mode=orb_mode)
+   call seq_infodata_getData(infodata,   &
+        orb_iyear=orb_iyear,             &
+        orb_iyear_align=orb_iyear_align, &
+        orb_mode=orb_mode)
+
    if (trim(orb_mode) == trim(seq_infodata_orb_variable_year)) then
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd)
+
       call shr_cal_date2ymd(ymd,year,month,day)
       orb_cyear = orb_iyear + (year - orb_iyear_align)
+
       call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
                           orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_CPLID)
-      call seq_infodata_putData(infodata,orb_eccen=orb_eccen,orb_obliqr=orb_obliqr, &
-           orb_lambm0=orb_lambm0,orb_mvelpp=orb_mvelpp)
+
+      call seq_infodata_putData(infodata, &
+           orb_eccen=orb_eccen,           &
+           orb_obliqr=orb_obliqr,         &
+           orb_lambm0=orb_lambm0,         &
+           orb_mvelpp=orb_mvelpp)
    endif
 
-   call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1, &
-                                      glc_phase=1,wav_phase=1)
+   call seq_infodata_putData(infodata, &
+        atm_phase=1,                   &
+        lnd_phase=1,                   &
+        ocn_phase=1,                   &
+        ice_phase=1,                   &
+        glc_phase=1,                   &
+        wav_phase=1)
 
    !-----------------------------------------------------------------------------
    ! If in single column mode, overwrite flags according to focndomain file
-   ! in ocn_in namelist. SCAM can reset the "present" flags for lnd, sno,
+   ! in ocn_in namelist. SCAM can reset the "present" flags for lnd, 
    ! ocn, ice, rof, and flood.
    !-----------------------------------------------------------------------------
 
    if (.not.aqua_planet .and. single_column) then
-      call seq_infodata_getData( infodata, scmlon=scmlon, scmlat=scmlat)
-      call shr_scam_checkSurface(scmlon, scmlat, OCNID(ens1), mpicom_OCNID(ens1), &
-           lnd_present=lnd_present, sno_present=sno_present, &
-           ocn_present=ocn_present, ice_present=ice_present, &
-           rof_present=rof_present, flood_present=flood_present)
-      call seq_infodata_putData( infodata, &
-           lnd_present=lnd_present, sno_present=sno_present, &
-           ocn_present=ocn_present, ice_present=ice_present, &
-           rof_present=rof_present, flood_present=flood_present)
+      call seq_infodata_getData( infodata, &
+           scmlon=scmlon, scmlat=scmlat)
+
+      call seq_comm_getinfo(OCNID(ens1), mpicom=mpicom_OCNID)
+
+      call shr_scam_checkSurface(scmlon, scmlat, &
+           OCNID(ens1), mpicom_OCNID,            &
+           lnd_present=lnd_present,              &
+           ocn_present=ocn_present,              &
+           ice_present=ice_present,              &
+           rof_present=rof_present,              &
+           flood_present=flood_present,          &
+           rofice_present=rofice_present)
+
+      call seq_infodata_putData(infodata,  &
+           lnd_present=lnd_present,        &
+           ocn_present=ocn_present,        &
+           ice_present=ice_present,        &
+           rof_present=rof_present,        &
+           flood_present=flood_present,    &
+           rofice_present=rofice_present)
    endif
+
+end subroutine ccsm_pre_init2
+
+!===============================================================================
+!*******************************************************************************
+!===============================================================================
+
+#ifdef USE_ESMF_LIB
+subroutine ccsm_init(drvcomp)
+#else
+subroutine ccsm_init()
+#endif
+
+  implicit none
+#ifdef USE_ESMF_LIB
+  type(ESMF_CplComp) :: drvcomp
+#endif
+
+ 101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
+ 102  format( A, 2i8, A, 8L3 )
+ 103  format( 5A )
+ 104  format( A, 2i8)
+ 105  format( A, 2i8, A, f10.2, A, f10.2, A, A, i5, A, A)
+ 106  format( A, f23.12)
 
    !-----------------------------------------------------------------------------
    ! Component Initialization
    ! Note that within each component initialization, the relevant x_pxresent flag 
-   ! part of CCSMInit (contained as a pointer in cdata_xc) can be modified
+   ! part of CCSMInit can be modified
    ! By default, all these flags are set to true
    ! The atm can reset the lnd_present, ice_present and ocn_present flags based
    ! on aqua_planet, ideal_phys and adiabatic modes
@@ -1037,179 +993,95 @@ subroutine ccsm_init()
 
    call t_adj_detailf(+2)
 
-   !-----------------------------------------------------------------------------
-   ! Initialization atmospheric component
-   !-----------------------------------------------------------------------------
+   call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
+   call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
+   call component_init_pre(rof, ROFID, CPLROFID, CPLALLROFID, infodata, ntype='rof')
+   call component_init_pre(ocn, OCNID, CPLOCNID, CPLALLOCNID, infodata, ntype='ocn')
+   call component_init_pre(ice, ICEID, CPLICEID, CPLALLICEID, infodata, ntype='ice')
+   call component_init_pre(glc, GLCID, CPLGLCID, CPLALLGLCID, infodata, ntype='glc')
+   call component_init_pre(wav, WAVID, CPLWAVID, CPLALLWAVID, infodata, ntype='wav')
 
-   if (iamin_CPLALLATMID) then
-      call seq_infodata_exchange(infodata,CPLALLATMID,'cpl2atm_init')
-   endif
+#ifdef ESMF_INTERFACE
+   call component_init_cc(Eclock_a, drvcomp, atm, atm_register_esmf, infodata, NLFilename)
+   call component_init_cc(Eclock_l, drvcomp, lnd, lnd_register_esmf, infodata, NLFilename)
+   call component_init_cc(Eclock_r, drvcomp, rof, rof_register_esmf, infodata, NLFilename)
+   call component_init_cc(Eclock_o, drvcomp, ocn, ocn_register_esmf, infodata, NLFilename)
+   call component_init_cc(Eclock_i, drvcomp, ice, ice_register_esmf, infodata, NLFilename)
+   call component_init_cc(Eclock_g, drvcomp, glc, glc_register_esmf, infodata, NLFilename)
+   call component_init_cc(Eclock_w, drvcomp, wav, wav_register_esmf, infodata, NLFilename)
+#else
+   call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
+   call component_init_cc(Eclock_l, lnd, lnd_init, infodata, NLFilename)
+   call component_init_cc(Eclock_r, rof, rof_init, infodata, NLFilename)
+   call component_init_cc(Eclock_o, ocn, ocn_init, infodata, NLFilename)
+   call component_init_cc(Eclock_i, ice, ice_init, infodata, NLFilename)
+   call component_init_cc(Eclock_g, glc, glc_init, infodata, NLFilename)
+   call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
+#endif
+
+   call component_init_cx(atm, infodata)
+   call component_init_cx(lnd, infodata)
+   call component_init_cx(rof, infodata)
+   call component_init_cx(ocn, infodata)
+   call component_init_cx(ice, infodata)
+   call component_init_cx(glc, infodata)
+   call component_init_cx(wav, infodata)
+
+#ifdef ESMF_INTERFACE
+   if (iamin_CPLID) then
+      call ESMF_GridCompInitialize(cplgc, importState=c2x_cx_state, exportState=x2c_cx_state, &
+           rc=rc)
+      if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+   end if
+#endif
+
+   ! Determine complist (list of comps for each id)
+
+   complist = " "
+   if (iamin_CPLID) complist = trim(complist)//' cpl'
+
    do eai = 1,num_inst_atm
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize atm component '//trim(atm_name(eai))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_ATMID(eai) .and. atm_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_ATMID)
-         call shr_sys_flush(logunit)
-         call atm_init_mct( EClock_a, cdata_aa(eai), x2a_aa(eai), a2x_aa(eai), NLFilename=NLFilename )
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
-   enddo
-   if (iamin_CPLATMID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLATMID(ens1),'atm2cpl_init')
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! Initialization land component
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLALLLNDID) then
-      call seq_infodata_exchange(infodata,CPLALLLNDID,'cpl2lnd_init')
-   endif
-   do eli = 1,num_inst_lnd
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize lnd component '//trim(lnd_name(eli))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_LNDID(eli) .and. lnd_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_LNDID)
-         call shr_sys_flush(logunit)
-         call lnd_init_mct( EClock_l, &
-                            cdata_ll(eli), x2l_ll(eli), l2x_ll(eli), &
-                            cdata_ss(eli), x2s_ss(eli), s2x_ss(eli), &
-                            NLFilename=NLFilename )
+      iamin_ID = component_get_iamin_compid(atm(eai))
+      if (iamin_ID) then
+         compname = component_get_name(atm(eai))
+         complist = trim(complist)//' '//trim(compname)
       end if
    end do
-   if (iamin_CPLLNDID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLLNDID(ens1),'lnd2cpl_init')
-   endif
-
-   !----------------------------------------------------
-   ! Initialization river runoff component 
-   !----------------------------------------------------
-
-   if (iamin_CPLALLROFID) then
-      call seq_infodata_exchange(infodata,CPLALLROFID,'cpl2rof_init')
-   endif
-   do eri = 1,num_inst_rof
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize rof component '//trim(rof_name(eri))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_ROFID(eri) .and. rof_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_ROFID)
-         call rof_init_mct( EClock_r, &
-                            cdata_rr(eri),  x2r_rr(eri), r2x_rr(eri), &
-                            NLFilename=NLFilename)
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
-   enddo
-   if (iamin_CPLROFID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLROFID(ens1),'rof2cpl_init')
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! Initialization ocean component
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLALLOCNID) then
-      call seq_infodata_exchange(infodata,CPLALLOCNID,'cpl2ocn_init')
-   endif
-   do eoi = 1,num_inst_ocn
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize ocn component '//trim(ocn_name(eoi))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_OCNID(eoi) .and. ocn_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_OCNID)
-         call shr_sys_flush(logunit)
-         call ocn_init_mct( EClock_o, &
-                            cdata_oo(eoi), x2o_oo(eoi), o2x_oo(eoi), &
-                            NLFilename=NLFilename )
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
-   enddo
-   if (iamin_CPLOCNID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLOCNID(ens1),'ocn2cpl_init')
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! Initialization ice component
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLALLICEID) then
-      call seq_infodata_exchange(infodata,CPLALLICEID,'cpl2ice_init')
-   endif
+   do eli = 1,num_inst_lnd
+      iamin_ID = component_get_iamin_compid(lnd(eli))
+      if (iamin_ID) then
+         compname = component_get_name(lnd(eli))
+         complist = trim(complist)//' '//trim(compname)
+      end if
+   end do
    do eii = 1,num_inst_ice
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize ice component '//trim(ice_name(eii))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_ICEID(eii) .and. ice_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_ICEID)
-         call shr_sys_flush(logunit)
-         call ice_init_mct( EClock_i, &
-                            cdata_ii(eii), x2i_ii(eii), i2x_ii(eii), &
-                            NLFilename=NLFilename )
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
-   enddo
-   if (iamin_CPLICEID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLICEID(ens1),'ice2cpl_init')
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! Initialization glc component
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLALLGLCID) then
-      call seq_infodata_exchange(infodata,CPLALLGLCID,'cpl2glc_init')
-   endif
+      iamin_ID = component_get_iamin_compid(ice(eii))
+      if (iamin_ID) then
+         compname = component_get_name(ice(eii))
+         complist = trim(complist)//' '//trim(compname)
+      end if
+   end do
+   do eoi = 1,num_inst_ocn
+      iamin_ID = component_get_iamin_compid(ocn(eoi))
+      if (iamin_ID) then
+         compname = component_get_name(ocn(eoi))
+         complist = trim(complist)//' '//trim(compname)
+      end if
+   end do
    do egi = 1,num_inst_glc
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize glc component '//trim(glc_name(egi))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_GLCID(egi) .and. glc_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLCID)
-         call shr_sys_flush(logunit)
-         call glc_init_mct( EClock_g, &
-                            cdata_gg(egi), x2g_gg(egi), g2x_gg(egi), &
-                            NLFilename=NLFilename )
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
-   enddo
-   if (iamin_CPLGLCID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLGLCID(ens1),'glc2cpl_init')
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! Initialization wav component
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLALLWAVID) then
-      call seq_infodata_exchange(infodata,CPLALLWAVID,'cpl2wav_init')
-   endif
+      iamin_ID = component_get_iamin_compid(glc(egi))
+      if (iamin_ID) then
+         compname = component_get_name(glc(egi))
+         complist = trim(complist)//' '//trim(compname)
+      end if
+   end do
    do ewi = 1,num_inst_wav
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'Initialize wav component '//trim(wav_name(ewi))
-         call shr_sys_flush(logunit)
-      endif
-      if (iamin_WAVID(ewi) .and. wav_present) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_WAVID)
-         call shr_sys_flush(logunit)
-         call wav_init_mct( EClock_w, &
-                            cdata_ww(ewi), x2w_ww(ewi), w2x_ww(ewi), &
-                            NLFilename=NLFilename )
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
-   enddo
-   if (iamin_CPLWAVID(ens1)) then
-      call seq_infodata_exchange(infodata,CPLWAVID(ens1),'wav2cpl_init')
-   endif
-
-   !-----------------------------------------------------------------------------
+      iamin_ID = component_get_iamin_compid(wav(ewi))
+      if (iamin_ID) then
+         compname = component_get_name(wav(ewi))
+         complist = trim(complist)//' '//trim(compname)
+      end if
+   end do
 
    call t_adj_detailf(-2)
 
@@ -1219,119 +1091,139 @@ subroutine ccsm_init()
    ! Determine final settings for presence of land, ice and ocean and the prognostic flags
    !-----------------------------------------------------------------------------
 
-   if (iamin_CPLALLATMID) then
-      call seq_infodata_exchange(infodata,CPLALLATMID,'cpl2atm_init')
-   endif
-   if (iamin_CPLALLLNDID) then
-      call seq_infodata_exchange(infodata,CPLALLLNDID,'cpl2lnd_init')
-   endif
-   if (iamin_CPLALLOCNID) then
-      call seq_infodata_exchange(infodata,CPLALLOCNID,'cpl2ocn_init')
-   endif
-   if (iamin_CPLALLICEID) then
-      call seq_infodata_exchange(infodata,CPLALLICEID,'cpl2ice_init')
-   endif
-   if (iamin_CPLALLGLCID) then
-      call seq_infodata_exchange(infodata,CPLALLGLCID,'cpl2glc_init')
-   endif
-   if (iamin_CPLALLROFID) then
-      call seq_infodata_exchange(infodata,CPLALLROFID,'cpl2rof_init')
-   endif
-   if (iamin_CPLALLWAVID) then
-      call seq_infodata_exchange(infodata,CPLALLWAVID,'cpl2wav_init')
-   endif
+   if (iamin_CPLALLATMID) call seq_infodata_exchange(infodata,CPLALLATMID,'cpl2atm_init')
+   if (iamin_CPLALLLNDID) call seq_infodata_exchange(infodata,CPLALLLNDID,'cpl2lnd_init')
+   if (iamin_CPLALLOCNID) call seq_infodata_exchange(infodata,CPLALLOCNID,'cpl2ocn_init')
+   if (iamin_CPLALLICEID) call seq_infodata_exchange(infodata,CPLALLICEID,'cpl2ice_init')
+   if (iamin_CPLALLGLCID) call seq_infodata_exchange(infodata,CPLALLGLCID,'cpl2glc_init')
+   if (iamin_CPLALLROFID) call seq_infodata_exchange(infodata,CPLALLROFID,'cpl2rof_init')
+   if (iamin_CPLALLWAVID) call seq_infodata_exchange(infodata,CPLALLWAVID,'cpl2wav_init')
 
    if (iamroot_CPLID) then
       write(logunit,F00) 'Determine final settings for presence of surface components'
       call shr_sys_flush(logunit)
    endif
 
-   call seq_infodata_getData(infodata, &
-        atm_present=atm_present, &
-        lnd_present=lnd_present, &
-        ice_present=ice_present, &
-        ocn_present=ocn_present, & 
-        glc_present=glc_present, & 
-        rof_present=rof_present, &
-        wav_present=wav_present, & 
-        flood_present=flood_present, &
-        sno_present=sno_present, & 
-        atm_prognostic=atm_prognostic, &
-        lnd_prognostic=lnd_prognostic, &
-        ice_prognostic=ice_prognostic, &
-        ocn_prognostic=ocn_prognostic, &
-        ocnrof_prognostic=ocnrof_prognostic, &
-        glc_prognostic=glc_prognostic, &
-        rof_prognostic=rof_prognostic, &
-        sno_prognostic=sno_prognostic, &
-        wav_prognostic=wav_prognostic, &
-        dead_comps=dead_comps, &
-        esmf_map_flag=esmf_map_flag, &
-        atm_nx=atm_nx, atm_ny=atm_ny, &
-        lnd_nx=lnd_nx, lnd_ny=lnd_ny, &
-        rof_nx=rof_nx, rof_ny=rof_ny, &
-        ice_nx=ice_nx, ice_ny=ice_ny, &
-        glc_nx=glc_nx, glc_ny=glc_ny, &
-        sno_nx=sno_nx, sno_ny=sno_ny, &
-        ocn_nx=ocn_nx, ocn_ny=ocn_ny, &
-        wav_nx=wav_nx, wav_ny=wav_ny, &
-        cpl_cdf64=cdf64, &
+   call seq_infodata_getData(infodata,         &
+        atm_present=atm_present,               &
+        lnd_present=lnd_present,               &
+        ice_present=ice_present,               &
+        ocn_present=ocn_present,               & 
+        glc_present=glc_present,               & 
+        glclnd_present=glclnd_present,         & 
+        glcocn_present=glcocn_present,         & 
+        glcice_present=glcice_present,         & 
+        rof_present=rof_present,               &
+        rofice_present=rofice_present,         &
+        wav_present=wav_present,               & 
+        flood_present=flood_present,           &
+        atm_prognostic=atm_prognostic,         &
+        lnd_prognostic=lnd_prognostic,         &
+        ice_prognostic=ice_prognostic,         &
+        iceberg_prognostic=iceberg_prognostic, &
+        ocn_prognostic=ocn_prognostic,         &
+        ocnrof_prognostic=ocnrof_prognostic,   &
+        glc_prognostic=glc_prognostic,         &
+        rof_prognostic=rof_prognostic,         &
+        wav_prognostic=wav_prognostic,         &
+        dead_comps=dead_comps,                 &
+        esmf_map_flag=esmf_map_flag,           &
+        atm_nx=atm_nx, atm_ny=atm_ny,          &
+        lnd_nx=lnd_nx, lnd_ny=lnd_ny,          &
+        rof_nx=rof_nx, rof_ny=rof_ny,          &
+        ice_nx=ice_nx, ice_ny=ice_ny,          &
+        glc_nx=glc_nx, glc_ny=glc_ny,          &
+        ocn_nx=ocn_nx, ocn_ny=ocn_ny,          &
+        wav_nx=wav_nx, wav_ny=wav_ny,          &
+        cpl_cdf64=cdf64,                       &
         atm_aero=atm_aero )
 
-   if (ocnrof_prognostic .and. .not.rof_present) then
-      if (iamroot_CPLID) then
-         write(logunit,F00) 'WARNING: ocnrof_prognostic is TRUE but rof_present is FALSE'
-         call shr_sys_flush(logunit)
-      endif
-   endif
-   if (ocn_prognostic .and. .not.ocn_present) then
-      call shr_sys_abort('if prognostic ocn must also have ocn present')
-   endif
-   if (lnd_prognostic .and. .not.lnd_present) then
-      call shr_sys_abort('if prognostic lnd must also have lnd present')
-   endif
-   if (ice_prognostic .and. .not.ice_present) then
-      call shr_sys_abort('if prognostic ice must also have ice present')
-   endif
-   if (glc_prognostic .and. .not.glc_present) then
-      call shr_sys_abort('if prognostic glc must also have glc present')
-   endif
-   if (rof_prognostic .and. .not.rof_present) then
-      call shr_sys_abort('if prognostic rof must also have rof present')
-   endif
-   if (sno_prognostic .and. .not.sno_present) then
-      call shr_sys_abort('if prognostic sno must also have sno present')
-   endif
-   if (wav_prognostic .and. .not.wav_present) then
-      call shr_sys_abort('if prognostic wav must also have wav present')
-   endif
-   if ((ice_prognostic .or. ocn_prognostic .or. lnd_prognostic) .and. .not. atm_present) then
-      call shr_sys_abort('if prognostic surface model must also have atm present')
-   endif
-! tcx remove temporarily for development
-!   if (glc_prognostic .and. .not.sno_present) then
-!      call shr_sys_abort('if prognostic glc must also have sno present')
-!   endif
-!   if (sno_prognostic .and. .not.glc_present) then
-!      call shr_sys_abort('if prognostic sno must also have glc present')!
-!   endif
+   ! derive samegrid flags
 
-   ! Prognostic components must be consistent with num_inst_max for coupling 
+   samegrid_ao  = .true.
+   samegrid_al  = .true. 
+   samegrid_lr  = .true. 
+   samegrid_oi  = .true.
+   samegrid_ro  = .true.
+   samegrid_aw  = .true.
+   samegrid_ow  = .true.
+   samegrid_lg  = .true.
+   samegrid_og  = .true.
+   samegrid_ig  = .true.
+   samegrid_alo = .true.
 
-   if (atm_prognostic .and. num_inst_atm /= num_inst_max) &
-      call shr_sys_abort('atm_prognostic but num_inst_atm not num_inst_max')
-   if (lnd_prognostic .and. num_inst_lnd /= num_inst_max) &
-      call shr_sys_abort('lnd_prognostic but num_inst_lnd not num_inst_max')
-   if (ocn_prognostic .and. num_inst_ocn /= num_inst_max) &
-      call shr_sys_abort('ocn_prognostic but num_inst_ocn not num_inst_max')
-   if (ice_prognostic .and. num_inst_ice /= num_inst_max) &
-      call shr_sys_abort('ice_prognostic but num_inst_ice not num_inst_max')
-   if (glc_prognostic .and. num_inst_glc /= num_inst_max) &
-      call shr_sys_abort('glc_prognostic but num_inst_glc not num_inst_max')
-   if (rof_prognostic .and. num_inst_rof /= num_inst_max) &
-      call shr_sys_abort('rof_prognostic but num_inst_rof not num_inst_max')
-   if (wav_prognostic .and. num_inst_wav /= num_inst_max) &
-      call shr_sys_abort('wav_prognostic but num_inst_wav not num_inst_max')
+   ! set samegrid to true for single column
+   if (.not. single_column) then
+      if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
+      if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+      if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
+      if (trim(rof_gnam) /= trim(ocn_gnam)) samegrid_ro = .false.
+      if (trim(ocn_gnam) /= trim(ice_gnam)) samegrid_oi = .false.
+      if (trim(atm_gnam) /= trim(wav_gnam)) samegrid_aw = .false.
+      if (trim(ocn_gnam) /= trim(wav_gnam)) samegrid_ow = .false.
+      if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
+      if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_og = .false.
+      if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
+      samegrid_alo = (samegrid_al .and. samegrid_ao)
+   end if
+
+   ! derive coupling connection flags
+
+   atm_c2_lnd = .false.
+   atm_c2_ocn = .false.
+   atm_c2_ice = .false.
+   atm_c2_wav = .false.
+   lnd_c2_atm = .false.
+   lnd_c2_rof = .false.
+   lnd_c2_glc = .false.
+   ocn_c2_atm = .false.
+   ocn_c2_ice = .false.
+   ocn_c2_wav = .false.
+   ice_c2_atm = .false.
+   ice_c2_ocn = .false.
+   ice_c2_wav = .false.
+   rof_c2_lnd = .false.
+   rof_c2_ocn = .false.
+   rof_c2_ice = .false.
+   glc_c2_lnd = .false.
+   glc_c2_ocn = .false.
+   glc_c2_ice = .false.
+   wav_c2_ocn = .false.
+
+   if (atm_present) then
+      if (lnd_prognostic) atm_c2_lnd = .true.
+      if (ocn_present   ) atm_c2_ocn = .true. ! needed for aoflux calc if ocn_present and atm_present
+      if (ice_prognostic) atm_c2_ice = .true.
+      if (wav_prognostic) atm_c2_wav = .true.
+   endif
+   if (lnd_present) then
+      if (atm_prognostic) lnd_c2_atm = .true.
+      if (rof_prognostic) lnd_c2_rof = .true.
+      if (glc_prognostic) lnd_c2_glc = .true.
+   endif
+   if (ocn_present) then
+      if (atm_prognostic) ocn_c2_atm = .true.
+      if (ice_prognostic) ocn_c2_ice = .true.
+      if (wav_prognostic) ocn_c2_wav = .true.
+   endif
+   if (ice_present) then
+      if (atm_prognostic) ice_c2_atm = .true.
+      if (ocn_prognostic) ice_c2_ocn = .true.
+      if (wav_prognostic) ice_c2_wav = .true.
+   endif
+   if (rof_present) then
+      if (lnd_prognostic   ) rof_c2_lnd = .true.
+      if (ocnrof_prognostic) rof_c2_ocn = .true.
+      if (rofice_present .and. iceberg_prognostic) rof_c2_ice = .true.
+   endif
+   if (glc_present) then
+      if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
+      if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+      if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
+   endif
+   if (wav_present) then
+      if (ocn_prognostic) wav_c2_ocn = .true.
+   endif
 
    !-----------------------------------------------------------------------------
    ! Set domain check and other flag
@@ -1368,29 +1260,59 @@ subroutine ccsm_init()
       write(logunit,F0L)'ocn model present     = ',ocn_present
       write(logunit,F0L)'ice model present     = ',ice_present
       write(logunit,F0L)'glc model present     = ',glc_present
-      write(logunit,F0L)'sno model present     = ',sno_present
+      write(logunit,F0L)'glc/lnd   present     = ',glclnd_present
+      write(logunit,F0L)'glc/ocn   present     = ',glcocn_present
+      write(logunit,F0L)'glc/ice   present     = ',glcice_present
       write(logunit,F0L)'rof model present     = ',rof_present
+      write(logunit,F0L)'rof/ice   present     = ',rofice_present
       write(logunit,F0L)'rof/flood present     = ',flood_present
       write(logunit,F0L)'wav model present     = ',wav_present
+
       write(logunit,F0L)'atm model prognostic  = ',atm_prognostic
       write(logunit,F0L)'lnd model prognostic  = ',lnd_prognostic
       write(logunit,F0L)'ocn model prognostic  = ',ocn_prognostic
       write(logunit,F0L)'ice model prognostic  = ',ice_prognostic
+      write(logunit,F0L)'iceberg   prognostic  = ',iceberg_prognostic
       write(logunit,F0L)'glc model prognostic  = ',glc_prognostic
-      write(logunit,F0L)'sno model prognostic  = ',sno_prognostic
       write(logunit,F0L)'rof model prognostic  = ',rof_prognostic
       write(logunit,F0L)'ocn rof   prognostic  = ',ocnrof_prognostic
       write(logunit,F0L)'wav model prognostic  = ',wav_prognostic
+
+      write(logunit,F0L)'atm_c2_lnd            = ',atm_c2_lnd
+      write(logunit,F0L)'atm_c2_ocn            = ',atm_c2_ocn
+      write(logunit,F0L)'atm_c2_ice            = ',atm_c2_ice
+      write(logunit,F0L)'atm_c2_wav            = ',atm_c2_wav
+      write(logunit,F0L)'lnd_c2_atm            = ',lnd_c2_atm
+      write(logunit,F0L)'lnd_c2_rof            = ',lnd_c2_rof
+      write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
+      write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
+      write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
+      write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
+      write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
+      write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
+      write(logunit,F0L)'ice_c2_wav            = ',ice_c2_wav
+      write(logunit,F0L)'rof_c2_lnd            = ',rof_c2_lnd
+      write(logunit,F0L)'rof_c2_ocn            = ',rof_c2_ocn
+      write(logunit,F0L)'rof_c2_ice            = ',rof_c2_ice
+      write(logunit,F0L)'glc_c2_lnd            = ',glc_c2_lnd
+      write(logunit,F0L)'glc_c2_ocn            = ',glc_c2_ocn
+      write(logunit,F0L)'glc_c2_ice            = ',glc_c2_ice
+      write(logunit,F0L)'wav_c2_ocn            = ',wav_c2_ocn
+
       write(logunit,F0L)'dead components       = ',dead_comps
       write(logunit,F0L)'domain_check          = ',domain_check
-      write(logunit,F0I)'atm_nx,atm_ny         = ',atm_nx,atm_ny
-      write(logunit,F0I)'lnd_nx,lnd_ny         = ',lnd_nx,lnd_ny
-      write(logunit,F0I)'rof_nx,rof_ny         = ',rof_nx,rof_ny
-      write(logunit,F0I)'ice_nx,ice_ny         = ',ice_nx,ice_ny
-      write(logunit,F0I)'ocn_nx,ocn_ny         = ',ocn_nx,ocn_ny
-      write(logunit,F0I)'glc_nx,glc_ny         = ',glc_nx,glc_ny
-      write(logunit,F0I)'sno_nx,sno_ny         = ',sno_nx,sno_ny
-      write(logunit,F0I)'wav_nx,wav_ny         = ',wav_nx,wav_ny
+      write(logunit,F01)'atm_nx,atm_ny         = ',atm_nx,atm_ny,trim(atm_gnam)
+      write(logunit,F01)'lnd_nx,lnd_ny         = ',lnd_nx,lnd_ny,trim(lnd_gnam)
+      write(logunit,F01)'rof_nx,rof_ny         = ',rof_nx,rof_ny,trim(rof_gnam)
+      write(logunit,F01)'ice_nx,ice_ny         = ',ice_nx,ice_ny,trim(ice_gnam)
+      write(logunit,F01)'ocn_nx,ocn_ny         = ',ocn_nx,ocn_ny,trim(ocn_gnam)
+      write(logunit,F01)'glc_nx,glc_ny         = ',glc_nx,glc_ny,trim(glc_gnam)
+      write(logunit,F01)'wav_nx,wav_ny         = ',wav_nx,wav_ny,trim(wav_gnam)
+      write(logunit,F0L)'samegrid_ao           = ',samegrid_ao
+      write(logunit,F0L)'samegrid_al           = ',samegrid_al
+      write(logunit,F0L)'samegrid_ro           = ',samegrid_ro
+      write(logunit,F0L)'samegrid_aw           = ',samegrid_aw
+      write(logunit,F0L)'samegrid_ow           = ',samegrid_ow
       write(logunit,F0L)'skip init ocean run   = ',skip_ocean_run
       write(logunit,F0L)'ocean tight coupling  = ',ocean_tight_coupling
       write(logunit,F0L)'cpl_cdf64             = ',cdf64
@@ -1400,530 +1322,227 @@ subroutine ccsm_init()
       call shr_sys_flush(logunit)
    endif
 
-   !-----------------------------------------------------------------------------
-   ! Need to initialize aream, set it to area for now until maps are read
-   !   in some cases, maps are not read at all !!
-   ! Entire domain must have reasonable values before calling xxx2xxx init
-   ! NOTE (tcx) : use cdata%dom instead of dom% due to seg fault on bluevista I, why?
-   !-----------------------------------------------------------------------------
+   ! Basic present and prognostic consistency checks
 
-   if (atm_present) then
-      do eai = 1,num_inst_atm
-         if (iamin_ATMID(eai)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_ATMID)
-            k1 = mct_aVect_indexRa(cdata_aa(eai)%dom%data,"area"  ,perrWith='aa area ')
-            k2 = mct_aVect_indexRa(cdata_aa(eai)%dom%data,"aream" ,perrWith='aa aream')
-            cdata_aa(eai)%dom%data%rAttr(k2,:) = cdata_aa(eai)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
+   if (atm_prognostic .and. .not.atm_present) then
+      call shr_sys_abort('ERROR: if prognostic lnd must also have lnd present')
+   endif
+   if (ocn_prognostic .and. .not.ocn_present) then
+      call shr_sys_abort('ERROR: if prognostic ocn must also have ocn present')
+   endif
+   if (lnd_prognostic .and. .not.lnd_present) then
+      call shr_sys_abort('ERROR: if prognostic lnd must also have lnd present')
+   endif
+   if (ice_prognostic .and. .not.ice_present) then
+      call shr_sys_abort('ERROR: if prognostic ice must also have ice present')
+   endif
+   if (iceberg_prognostic .and. .not.ice_prognostic) then
+      call shr_sys_abort('ERROR: if prognostic iceberg must also have ice prognostic')
+   endif
+   if (glc_prognostic .and. .not.glc_present) then
+      call shr_sys_abort('ERROR: if prognostic glc must also have glc present')
+   endif
+   if (rof_prognostic .and. .not.rof_present) then
+      call shr_sys_abort('ERROR: if prognostic rof must also have rof present')
+   endif
+   if (wav_prognostic .and. .not.wav_present) then
+      call shr_sys_abort('ERROR: if prognostic wav must also have wav present')
+   endif
+   if ((ice_prognostic .or. ocn_prognostic .or. lnd_prognostic) .and. .not. atm_present) then
+      call shr_sys_abort('ERROR: if prognostic surface model must also have atm present')
+   endif
+   if (glc_prognostic .and. .not.lnd_present) then
+      call shr_sys_abort('ERROR: if prognostic glc must also have lnd present')
+   endif
+   if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
+      call shr_sys_abort('ERROR: if glcxxx present must also have glc present')
+   endif
+   if (rofice_present .and. .not.rof_present) then
+      call shr_sys_abort('ERROR: if rofice present must also have rof present')
+   endif
+   if (ocnrof_prognostic .and. .not.rof_present) then
+      if (iamroot_CPLID) then
+         write(logunit,F00) 'WARNING: ocnrof_prognostic is TRUE but rof_present is FALSE'
+         call shr_sys_flush(logunit)
+      endif
    endif
 
-   if (lnd_present) then
-      do eli = 1,num_inst_lnd
-         if (iamin_LNDID(eli)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_LNDID)
-            k1 = mct_aVect_indexRa(cdata_ll(eli)%dom%data,"area"  ,perrWith='ll area ')
-            k2 = mct_aVect_indexRa(cdata_ll(eli)%dom%data,"aream" ,perrWith='ll aream')
-            cdata_ll(eli)%dom%data%rAttr(k2,:) = cdata_ll(eli)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
-   end if
+   ! Samegrid checks
 
-   if (sno_present) then
-      do eli = 1,num_inst_lnd
-         if (iamin_LNDID(eli)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_LNDID)
-            k1 = mct_aVect_indexRa(cdata_ss(eli)%dom%data,"area"  ,perrWith='ss area ')
-            k2 = mct_aVect_indexRa(cdata_ss(eli)%dom%data,"aream" ,perrWith='ss aream')
-            cdata_ss(eli)%dom%data%rAttr(k2,:) = cdata_ss(eli)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
-   end if
-
-   if (rof_present) then
-      do eri = 1,num_inst_rof
-         if (iamin_ROFID(eri)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_ROFID)
-            k1 = mct_aVect_indexRa(cdata_rr(eri)%dom%data,"area"  ,perrWith='rr area ')
-            k2 = mct_aVect_indexRa(cdata_rr(eri)%dom%data,"aream" ,perrWith='rr aream')
-            cdata_rr(eri)%dom%data%rAttr(k2,:) = cdata_rr(eri)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
-   end if
-
-   if (ocn_present) then
-      do eoi = 1,num_inst_ocn
-         if (iamin_OCNID(eoi)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_OCNID)
-            k1 = mct_aVect_indexRa(cdata_oo(eoi)%dom%data,"area"  ,perrWith='oo area ')
-            k2 = mct_aVect_indexRa(cdata_oo(eoi)%dom%data,"aream" ,perrWith='oo aream')
-            cdata_oo(eoi)%dom%data%rAttr(k2,:) = cdata_oo(eoi)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
+   if (.not. samegrid_oi) then
+      call shr_sys_abort('ERROR: samegrid_oi is false')
    endif
 
-   if (ice_present) then
-      do eii = 1,num_inst_ice
-         if (iamin_ICEID(eii)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_ICEID)
-            k1 = mct_aVect_indexRa(cdata_ii(eii)%dom%data,"area"  ,perrWith='ii area ')
-            k2 = mct_aVect_indexRa(cdata_ii(eii)%dom%data,"aream" ,perrWith='ii aream')
-            cdata_ii(eii)%dom%data%rAttr(k2,:) = cdata_ii(eii)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
+   if (.not. samegrid_lg) then
+      call shr_sys_abort('ERROR: samegrid_lg is false')
    endif
 
-   if (glc_present) then
-      do egi = 1,num_inst_glc
-         if (iamin_GLCID(egi)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLCID)
-            k1 = mct_aVect_indexRa(cdata_gg(egi)%dom%data,"area"  ,perrWith='gg area ')
-            k2 = mct_aVect_indexRa(cdata_gg(egi)%dom%data,"aream" ,perrWith='gg aream')
-            cdata_gg(egi)%dom%data%rAttr(k2,:) = cdata_gg(egi)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
-   endif
+   ! Prognostic components must be consistent with num_inst_max for coupling 
 
-   if (wav_present) then
-      do ewi = 1,num_inst_wav
-         if (iamin_WAVID(ewi)) then
-            if (drv_threading) call seq_comm_setnthreads(nthreads_WAVID)
-            k1 = mct_aVect_indexRa(cdata_ww(ewi)%dom%data,"area"  ,perrWith='ww area ')
-            k2 = mct_aVect_indexRa(cdata_ww(ewi)%dom%data,"aream" ,perrWith='ww aream')
-            cdata_ww(ewi)%dom%data%rAttr(k2,:) = cdata_ww(ewi)%dom%data%rAttr(k1,:)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif
-      enddo
-   endif
+   if (atm_prognostic .and. num_inst_atm /= num_inst_max) &
+      call shr_sys_abort('ERROR: atm_prognostic but num_inst_atm not num_inst_max')
+   if (lnd_prognostic .and. num_inst_lnd /= num_inst_max) &
+      call shr_sys_abort('ERROR: lnd_prognostic but num_inst_lnd not num_inst_max')
+   if (ocn_prognostic .and. (num_inst_ocn /= num_inst_max .and. num_inst_ocn /= 1)) &
+      call shr_sys_abort('ERROR: ocn_prognostic but num_inst_ocn not 1 or num_inst_max')
+   if (ice_prognostic .and. num_inst_ice /= num_inst_max) &
+      call shr_sys_abort('ERROR: ice_prognostic but num_inst_ice not num_inst_max')
+   if (glc_prognostic .and. num_inst_glc /= num_inst_max) &
+      call shr_sys_abort('ERROR: glc_prognostic but num_inst_glc not num_inst_max')
+   if (rof_prognostic .and. num_inst_rof /= num_inst_max) &
+      call shr_sys_abort('ERROR: rof_prognostic but num_inst_rof not num_inst_max')
+   if (wav_prognostic .and. num_inst_wav /= num_inst_max) &
+      call shr_sys_abort('ERROR: wav_prognostic but num_inst_wav not num_inst_max')
 
    !-----------------------------------------------------------------------------
-   ! Initialize driver rearrangers and AVs on driver
-   ! Initialize cdata_*x data
-   ! Zero out x2*_** in case it never gets used then it'll produce zeros in diags
-   ! For ensembles, create only a single dom_*x for the coupler based on the
-   !   first ensemble member.  otherwise, just extend the dom_** and dom_*x to
-   !   other ensemble members.
-   !-----------------------------------------------------------------------------
-   call t_startf('driver_init_xxx2xxx')
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (atm_present) then
-      do eai = 1,num_inst_atm
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLATMID(eai)) then
-            if (eai == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_ax'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_aa(eai), ATMID(eai), gsmap_ax, CPLID, CPLATMID(eai))
-            endif  
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Ca2x',eai
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Ca2x(eai), gsmap_aa(eai), ATMID(eai), gsmap_ax, CPLID   , CPLATMID(eai))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2a',eai
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2a(eai), gsmap_ax, CPLID   , gsmap_aa(eai), ATMID(eai), CPLATMID(eai))
-            call seq_mctext_avInit(x2a_aa(eai), ATMID(eai), x2a_ax(eai), CPLID, gsmap_ax, CPLATMID(eai))
-            call seq_mctext_avInit(a2x_aa(eai), ATMID(eai), a2x_ax(eai), CPLID, gsmap_ax, CPLATMID(eai))
-            if (eai == 1) then  ! create dom_ax
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_ax'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_aa(eai), ATMID(eai), dom_ax, CPLID, gsmap_ax, CPLATMID(eai))
-               call seq_map_map(mapper_Ca2x(eai), dom_aa(eai)%data, dom_ax%data, msgtag=CPLATMID(eai)*100+eai*10+1)
-            else                ! veryify other ensembles have same domain by comparing to dom_ax
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing atm domain ensemble number ',eai
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_ax%data,      CPLID,      CPLATMID(eai))
-               call seq_mctext_gGridInit(dom_aa(eai), ATMID(eai), dom_tmp, CPLID, gsmap_ax, CPLATMID(eai))
-               call seq_map_map(mapper_Ca2x(eai), dom_aa(eai)%data, dom_tmp%data, msgtag=CPLATMID(eai)*100+eai*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_ax,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2a_aa(eai))
-            call seq_map_map(mapper_Ca2x(eai), x2a_aa(eai), x2a_ax(eai), msgtag=CPLATMID(eai)*100+eai*10+3)
-        endif
-     enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (lnd_present) then
-      do eli = 1,num_inst_lnd
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLLNDID(eli)) then
-            if (eli == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_lx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_ll(eli), LNDID(eli), gsmap_lx, CPLID, CPLLNDID(eli))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cl2x',eli
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cl2x(eli), gsmap_ll(eli), LNDID(eli), gsmap_lx, CPLID, CPLLNDID(eli))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2l',eli
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2l(eli), gsmap_lx, CPLID, gsmap_ll(eli), LNDID(eli), CPLLNDID(eli))
-            call seq_mctext_avInit(x2l_ll(eli), LNDID(eli), x2l_lx(eli), CPLID, gsmap_lx, CPLLNDID(eli))
-            call seq_mctext_avInit(l2x_ll(eli), LNDID(eli), l2x_lx(eli), CPLID, gsmap_lx, CPLLNDID(eli))
-            if (eli == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_lx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_ll(eli), LNDID(eli), dom_lx, CPLID, gsmap_lx, CPLLNDID(eli))
-               call seq_map_map(mapper_Cl2x(eli), dom_ll(eli)%data, dom_lx%data, msgtag=CPLLNDID(eli)*100+eli*10+1)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing lnd domain ensemble number ',eli
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_lx%data,      CPLID,      CPLLNDID(eli))
-               call seq_mctext_gGridInit(dom_ll(eli), LNDID(eli), dom_tmp, CPLID, gsmap_lx, CPLLNDID(eli))
-               call seq_map_map(mapper_Cl2x(eli), dom_ll(eli)%data, dom_tmp%data, msgtag=CPLLNDID(eli)*100+eli*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_lx,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2l_ll(eli))
-            call seq_map_map(mapper_Cl2x(eli), x2l_ll(eli), x2l_lx(eli), msgtag=CPLLNDID(eli)*100+eli*10+3)
-         endif
-      enddo
-   end if
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (sno_present) then
-      do eli = 1,num_inst_lnd
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLLNDID(eli)) then
-            if (eli == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_sx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_ss(eli), LNDID(eli), gsmap_sx, CPLID, CPLLNDID(eli))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cs2x',eli
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cs2x(eli), gsmap_ss(eli), LNDID(eli), gsmap_sx, CPLID    , CPLLNDID(eli))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2s',eli
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2s(eli), gsmap_sx, CPLID    , gsmap_ss(eli), LNDID(eli), CPLLNDID(eli))
-            call seq_mctext_avInit(x2s_ss(eli), LNDID(eli), x2s_sx(eli), CPLID, gsmap_sx, CPLLNDID(eli))
-            call seq_mctext_avInit(s2x_ss(eli), LNDID(eli), s2x_sx(eli), CPLID, gsmap_sx, CPLLNDID(eli))
-            if (eli == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_sx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_ss(eli), LNDID(eli), dom_sx, CPLID, gsmap_sx, CPLLNDID(eli))
-               call seq_map_map(mapper_Cs2x(eli), dom_ss(eli)%data, dom_sx%data, msgtag=CPLLNDID(eli)*100+eli*10+1001)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing sno domain ensemble number ',eli
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_sx%data     , CPLID     , CPLLNDID(eli))
-               call seq_mctext_gGridInit(dom_ss(eli), LNDID(eli), dom_tmp, CPLID, gsmap_sx, CPLLNDID(eli))
-               call seq_map_map(mapper_Cs2x(eli), dom_ss(eli)%data, dom_tmp%data, msgtag=CPLLNDID(eli)*100+eli*10+1001)
-               if (iamin_CPLID) call seq_domain_compare(dom_sx,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2s_ss(eli))
-            call seq_map_map(mapper_Cs2x(eli), x2s_ss(eli), x2s_sx(eli), msgtag=CPLLNDID(eli)*100+eli*10+1003)
-         endif
-      enddo
-   end if
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (rof_present) then
-      do eri = 1,num_inst_rof
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLROFID(eri)) then
-            if (eri == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_rx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_rr(eri), ROFID(eri), gsmap_rx, CPLID, CPLROFID(eri))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cr2x',eri
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cr2x(eri), gsmap_rr(eri), ROFID(eri), gsmap_rx, CPLID, CPLROFID(eri))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2r',eri
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2r(eri), gsmap_rx, CPLID, gsmap_rr(eri), ROFID(eri), CPLROFID(eri))
-            call seq_mctext_avInit(x2r_rr(eri), ROFID(eri), x2r_rx(eri), CPLID, gsmap_rx, CPLROFID(eri))
-            call seq_mctext_avInit(r2x_rr(eri), ROFID(eri), r2x_rx(eri), CPLID, gsmap_rx, CPLROFID(eri))
-            if (eri == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_rx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_rr(eri), ROFID(eri), dom_rx, CPLID, gsmap_rx, CPLROFID(eri))
-               call seq_map_map(mapper_Cr2x(eri), dom_rr(eri)%data, dom_rx%data, msgtag=CPLROFID(eri)*100+eri*10+1)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing rof domain ensemble number ',eri
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_rx%data,      CPLID,      CPLROFID(eri))
-               call seq_mctext_gGridInit(dom_rr(eri), ROFID(eri), dom_tmp, CPLID, gsmap_rx, CPLROFID(eri))
-               call seq_map_map(mapper_Cr2x(eri), dom_rr(eri)%data, dom_tmp%data, msgtag=CPLROFID(eri)*100+eri*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_rx,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2r_rr(eri))
-            call seq_map_map(mapper_Cr2x(eri), x2r_rr(eri), x2r_rx(eri), msgtag=CPLROFID(eri)*100+eri*10+3)
-         endif
-      enddo
-   end if
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (ice_present) then
-      do eii = 1,num_inst_ice
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLICEID(eii)) then
-            if (eii == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_ix'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_ii(eii), ICEID(eii), gsmap_ix, CPLID, CPLICEID(eii))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Ci2x',eii
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Ci2x(eii), gsmap_ii(eii), ICEID(eii), gsmap_ix, CPLID   , CPLICEID(eii))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2i',eii
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2i(eii), gsmap_ix, CPLID   , gsmap_ii(eii), ICEID(eii), CPLICEID(eii))
-            call seq_mctext_avInit(x2i_ii(eii), ICEID(eii), x2i_ix(eii), CPLID, gsmap_ix, CPLICEID(eii))
-            call seq_mctext_avInit(i2x_ii(eii), ICEID(eii), i2x_ix(eii), CPLID, gsmap_ix, CPLICEID(eii))
-            if (eii == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_ix'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_ii(eii), ICEID(eii), dom_ix, CPLID, gsmap_ix, CPLICEID(eii))
-               call seq_map_map(mapper_Ci2x(eii), dom_ii(eii)%data, dom_ix%data, msgtag=CPLICEID(eii)*100+eii*10+1)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing ice domain ensemble number ',eii
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_ix%data     , CPLID     , CPLICEID(eii))
-               call seq_mctext_gGridInit(dom_ii(eii), ICEID(eii), dom_tmp, CPLID, gsmap_ix, CPLICEID(eii))
-               call seq_map_map(mapper_Ci2x(eii), dom_ii(eii)%data, dom_tmp%data, msgtag=CPLICEID(eii)*100+eii*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_ix,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2i_ii(eii))
-            call seq_map_map(mapper_Ci2x(eii), x2i_ii(eii), x2i_ix(eii), msgtag=CPLICEID(eii)*100+eii*10+3)
-         endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (glc_present) then
-      do egi = 1,num_inst_glc
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLGLCID(egi)) then
-            if (egi == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_gx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_gg(egi), GLCID(egi), gsmap_gx, CPLID, CPLGLCID(egi))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cg2x',egi
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cg2x(egi), gsmap_gg(egi), GLCID(egi), gsmap_gx, CPLID   , CPLGLCID(egi))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2g',egi
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2g(egi), gsmap_gx, CPLID   , gsmap_gg(egi), GLCID(egi), CPLGLCID(egi))
-            call seq_mctext_avInit(x2g_gg(egi), GLCID(egi), x2g_gx(egi), CPLID, gsmap_gx, CPLGLCID(egi))
-            call seq_mctext_avInit(g2x_gg(egi), GLCID(egi), g2x_gx(egi), CPLID, gsmap_gx, CPLGLCID(egi))
-            if (egi == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_gx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_gg(egi), GLCID(egi), dom_gx, CPLID, gsmap_gx, CPLGLCID(egi))
-               call seq_map_map(mapper_Cg2x(egi), dom_gg(egi)%data, dom_gx%data, msgtag=CPLGLCID(egi)*100+egi*10+1)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing glc domain ensemble number ',egi
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_gx%data     , CPLID     , CPLGLCID(egi))
-               call seq_mctext_gGridInit(dom_gg(egi), GLCID(egi), dom_tmp, CPLID, gsmap_gx, CPLGLCID(egi))
-               call seq_map_map(mapper_Cg2x(egi), dom_gg(egi)%data, dom_tmp%data, msgtag=CPLGLCID(egi)*100+egi*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_gx,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2g_gg(egi))
-            call seq_map_map(mapper_Cg2x(egi), x2g_gg(egi), x2g_gx(egi), msgtag=CPLGLCID(egi)*100+egi*10+3)
-         endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (wav_present) then
-      do ewi = 1,num_inst_wav
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLWAVID(ewi)) then
-            if (ewi == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_wx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_ww(ewi), WAVID(ewi), gsmap_wx, CPLID, CPLWAVID(ewi))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cw2x',ewi
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cw2x(ewi), gsmap_ww(ewi), WAVID(ewi), gsmap_wx, CPLID   , CPLWAVID(ewi))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2w',ewi
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2w(ewi), gsmap_wx, CPLID   , gsmap_ww(ewi), WAVID(ewi), CPLWAVID(ewi))
-            call seq_mctext_avInit(x2w_ww(ewi), WAVID(ewi), x2w_wx(ewi), CPLID, gsmap_wx, CPLWAVID(ewi))
-            call seq_mctext_avInit(w2x_ww(ewi), WAVID(ewi), w2x_wx(ewi), CPLID, gsmap_wx, CPLWAVID(ewi))
-            if (ewi == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_wx'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_ww(ewi), WAVID(ewi), dom_wx, CPLID, gsmap_wx, CPLWAVID(ewi))
-               call seq_map_map(mapper_Cw2x(ewi), dom_ww(ewi)%data, dom_wx%data, msgtag=CPLWAVID(ewi)*100+ewi*10+1)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing wav domain ensemble number ',ewi
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_wx%data     , CPLID     , CPLWAVID(ewi))
-               call seq_mctext_gGridInit(dom_ww(ewi), WAVID(ewi), dom_tmp, CPLID, gsmap_wx, CPLWAVID(ewi))
-               call seq_map_map(mapper_Cw2x(ewi), dom_ww(ewi)%data, dom_tmp%data, msgtag=CPLWAVID(ewi)*100+ewi*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_wx,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2w_ww(ewi))
-            call seq_map_map(mapper_Cw2x(ewi), x2w_ww(ewi), x2w_wx(ewi), msgtag=CPLWAVID(ewi)*100+ewi*10+3)
-         endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (ocn_present) then
-      do eoi = 1,num_inst_ocn
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) call shr_sys_flush(logunit)
-         if (iamin_CPLOCNID(eoi)) then
-            if (eoi == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating gsmap_ox'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gsmapInit(gsmap_oo(eoi), OCNID(eoi), gsmap_ox, CPLID, CPLOCNID(eoi))
-            endif
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Co2x',eoi
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Co2x(eoi), gsmap_oo(eoi), OCNID(eoi), gsmap_ox, CPLID   , CPLOCNID(eoi))
-            if (iamroot_CPLID) write(logunit,F0I) 'Initializing mapper_Cx2o',eoi
-            if (iamroot_CPLID) call shr_sys_flush(logunit)
-            call seq_map_init_rearrsplit(mapper_Cx2o(eoi), gsmap_ox, CPLID   , gsmap_oo(eoi), OCNID(eoi), CPLOCNID(eoi))
-            call seq_mctext_avInit(x2o_oo(eoi), OCNID(eoi), x2o_ox(eoi), CPLID, gsmap_ox, CPLOCNID(eoi))
-            call seq_mctext_avInit(o2x_oo(eoi), OCNID(eoi), o2x_ox(eoi), CPLID, gsmap_ox, CPLOCNID(eoi))
-            if (eoi == 1) then
-               if (iamroot_CPLID) write(logunit,F0I) 'creating dom_ox'
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_gGridInit(dom_oo(eoi), OCNID(eoi), dom_ox, CPLID, gsmap_ox, CPLOCNID(eoi))
-               call seq_map_map(mapper_Co2x(eoi), dom_oo(eoi)%data, dom_ox%data, msgtag=CPLOCNID(eoi)*100+eoi*10+1)
-            else
-               if (iamroot_CPLID) write(logunit,F0I) 'comparing ocn domain ensemble number ',eoi
-               if (iamroot_CPLID) call shr_sys_flush(logunit)
-               call seq_mctext_avExtend(dom_ox%data     , CPLID     , CPLOCNID(eoi))
-               call seq_mctext_gGridInit(dom_oo(eoi), OCNID(eoi), dom_tmp, CPLID, gsmap_ox, CPLOCNID(eoi))
-               call seq_map_map(mapper_Co2x(eoi), dom_oo(eoi)%data, dom_tmp%data, msgtag=CPLOCNID(eoi)*100+eoi*10+1)
-               if (iamin_CPLID) call seq_domain_compare(dom_ox,dom_tmp,mpicom_CPLID)
-               call mct_ggrid_clean(dom_tmp,rc)
-            endif
-            call mct_avect_zero(x2o_oo(eoi))
-            call seq_map_map(mapper_Co2x(eoi), x2o_oo(eoi), x2o_ox(eoi), msgtag=CPLOCNID(eoi)*100+eoi*10+3)
-
-            !--- this needs to be here because it's used on cplocn pes for mapping
-            call mct_avect_init(x2oacc_ox(eoi), x2o_ox(eoi), mct_aVect_lsize(x2o_ox(eoi)))
-            call mct_aVect_zero(x2oacc_ox(eoi))
-            x2oacc_ox_cnt = 0
-         endif
-      enddo
-   endif
-
-   call t_stopf  ('driver_init_xxx2xxx')
-
-   !-----------------------------------------------------------------------------
-   ! Initialize Remaining Coupler AVects
+   ! CPL PES
+   ! Initialize attribute vectors for prep_c2C_init_avs routines and fractions
+   ! and initialize mapping between components 
    !-----------------------------------------------------------------------------
 
    if (iamin_CPLID) then
-      lsize_a = mct_aVect_lsize(a2x_ax(ens1))
-      lsize_l = mct_aVect_lsize(l2x_lx(ens1))
-      lsize_s = mct_aVect_lsize(s2x_sx(ens1))
-      lsize_r = mct_aVect_lsize(r2x_rx(ens1))
-      lsize_o = mct_aVect_lsize(o2x_ox(ens1))
-      lsize_i = mct_aVect_lsize(i2x_ix(ens1))
-      lsize_g = mct_aVect_lsize(g2x_gx(ens1))
-      lsize_w = mct_aVect_lsize(w2x_wx(ens1))
 
-      do eai = 1,num_inst_atm
-         call mct_aVect_init(a2x_ix(eai), rList=seq_flds_a2x_fields, lsize=lsize_i)
-         call mct_aVect_init(a2x_lx(eai), rList=seq_flds_a2x_fields, lsize=lsize_l)
-         call mct_aVect_init(a2x_ox(eai), rList=seq_flds_a2x_fields, lsize=lsize_o)
-         call mct_aVect_init(a2x_wx(eai), rList=seq_flds_a2x_fields, lsize=lsize_w)
-         call mct_aVect_zero(a2x_ix(eai))
-         call mct_aVect_zero(a2x_lx(eai))
-         call mct_aVect_zero(a2x_ox(eai))
-         call mct_aVect_zero(a2x_wx(eai))
-      enddo
+      call t_startf('driver_init_maps')
+      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-      do eli = 1,num_inst_lnd
-         call mct_aVect_init(l2x_ax(eli), rList=seq_flds_l2x_fields, lsize=lsize_a)
-         call mct_aVect_init(s2x_gx(eli), rList=seq_flds_s2x_fields, lsize=lsize_g)
-         call mct_aVect_zero(l2x_ax(eli))
-         call mct_aVect_zero(s2x_gx(eli))
-         call mct_avect_init(x2racc_lx(eli), rlist=seq_flds_x2r_fields, lsize=lsize_l)
-         call mct_aVect_zero(x2racc_lx(eli))
-      enddo
-      x2racc_lx_cnt = 0
-      call mct_avect_init(x2r_rx_tmp, rList=seq_flds_x2r_fields, lsize=lsize_r)
-      call mct_avect_zero(x2r_rx_tmp)
+      call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
+      
+      call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
 
-      do eri = 1,num_inst_rof
-         call mct_aVect_init(r2x_ox(eri), rList=seq_flds_r2x_fields, lsize=lsize_o)
-         call mct_aVect_zero(r2x_ox(eri))
-         call mct_aVect_init(r2x_lx(eri), rlist=seq_flds_r2x_fields, lsize=lsize_l)
-         call mct_aVect_zero(r2x_lx(eri)) 
-         call mct_avect_init(r2xacc_rx(eri), rList=seq_flds_r2x_fields, lsize=lsize_r)
-         call mct_aVect_zero(r2xacc_rx(eri))
-      enddo
-      r2xacc_rx_cnt = 0
+      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn) 
 
-      do eoi = 1,num_inst_ocn
-         call mct_aVect_init(o2x_ax(eoi), rList=seq_flds_o2x_fields, lsize=lsize_a)
-         call mct_aVect_init(o2x_ix(eoi), rList=seq_flds_o2x_fields, lsize=lsize_i)
-         call mct_aVect_init(o2x_wx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_w)
-         call mct_aVect_zero(o2x_ax(eoi))
-         call mct_aVect_zero(o2x_ix(eoi))
-         call mct_aVect_zero(o2x_wx(eoi))
-      enddo
+      call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
 
-      do eii = 1,num_inst_ice
-         call mct_aVect_init(i2x_ax(eii), rList=seq_flds_i2x_fields, lsize=lsize_a)
-         call mct_aVect_init(i2x_ox(eii), rList=seq_flds_i2x_fields, lsize=lsize_o)
-         call mct_aVect_init(i2x_wx(eii), rList=seq_flds_i2x_fields, lsize=lsize_w)
-         call mct_aVect_zero(i2x_ax(eii))
-         call mct_aVect_zero(i2x_ox(eii))
-         call mct_aVect_zero(i2x_wx(eii))
-      enddo
+      call prep_rof_init(infodata, lnd_c2_rof)
 
-      do egi = 1,num_inst_glc
-         call mct_aVect_init(g2x_sx(egi), rList=seq_flds_g2x_fields, lsize=lsize_s)
-         call mct_aVect_zero(g2x_sx(egi))
-      enddo
+      call prep_glc_init(infodata, lnd_c2_glc)
 
-      do ewi = 1,num_inst_wav
-         call mct_aVect_init(w2x_ox(ewi), rList=seq_flds_w2x_fields, lsize=lsize_o)
-         call mct_aVect_zero(w2x_ox(ewi))
-      enddo
+      call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
-      allocate(xao_ax(num_inst_xao))
-      allocate(xao_ox(num_inst_xao))
-      do exi = 1,num_inst_xao
-         call mct_aVect_init(xao_ax(exi), rList=seq_flds_xao_fields, lsize=lsize_a)
-         call mct_aVect_zero(xao_ax(exi))
-         call mct_aVect_init(xao_ox(exi), rList=seq_flds_xao_fields, lsize=lsize_o)
-         call mct_aVect_zero(xao_ox(exi))
-      enddo
+      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+      call t_stopf  ('driver_init_maps')
 
+   end if
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! Update aream in domains where appropriate
+   !-----------------------------------------------------------------------------
+
+   if (iamin_CPLID) then
+      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+      call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, samegrid_ro)
+
+      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+   end if ! iamin_CPLID
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! Check domains if appropriate
+   ! This must be done after the mappers are initialized since
+   ! checking is done on each processor and not with a global gather
+   !-----------------------------------------------------------------------------
+
+   if (iamin_CPLID) then
+      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+      if (domain_check) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Performing domain checking'
+            call shr_sys_flush(logunit)
+         end if
+
+         call seq_domain_check( infodata,                                             &
+              atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1),       &
+              samegrid_al, samegrid_ao, samegrid_ro)
+
+      endif
+      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+   endif ! iamin_CPLID
+
+   !-----------------------------------------------------------------------------
+   ! COMPONENT PES
+   ! Initialize area corrections based on aream (read in map_init) and area
+   ! Area correct component initialization output fields
+   ! Map initial component AVs from component to coupler pes
+   !-----------------------------------------------------------------------------
+
+   areafact_samegrid = .false.
+#if (defined BFB_CAM_SCAM_IOP )
+   if (.not.samegrid_alo) then 
+      call shr_sys_abort('ERROR: samegrid_alo is false - Must run with same atm/ocn/lnd grids when configured for scam iop')
+   else
+      areafact_samegrid = .true.
+   end if
+#endif
+   if (single_column) areafact_samegrid = .true.
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES 
+   ! global sum diagnostics for IC data
+   !-----------------------------------------------------------------------------
+
+   if (iamin_CPLID .and. info_debug > 1) then
+      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+      if (atm_present) then
+         call component_diag(infodata, atm, flow='c2x', comment='recv IC atm', &
+              info_debug=info_debug)
+      end if
+      if (ice_present) then
+         call component_diag(infodata, ice, flow='c2x', comment='recv IC ice', &
+              info_debug=info_debug)
+      end if
+      if (lnd_present) then
+         call component_diag(infodata, lnd, flow='c2x', comment='recv IC lnd', &
+              info_debug=info_debug)
+      end if
+      if (rof_present) then
+         call component_diag(infodata, rof, flow='c2x', comment='recv IC rof', &
+              info_debug=info_debug)
+      end if
+      if (ocn_present) then
+         call component_diag(infodata, ocn, flow='c2x', comment='recv IC ocn', &
+              info_debug=info_debug)
+      endif
+      if (glc_present) then
+         call component_diag(infodata, glc, flow='c2x', comment='recv IC glc', &
+              info_debug=info_debug)
+      endif
+      if (wav_present) then
+         call component_diag(infodata, wav, flow='c2x', comment='recv IC wav', &
+              info_debug=info_debug)
+      endif
+      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+   end if
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! Initialize fractions
+   !-----------------------------------------------------------------------------
+
+   if (iamin_CPLID) then
       allocate(fractions_ax(num_inst_frc))
       allocate(fractions_lx(num_inst_frc))
       allocate(fractions_ox(num_inst_frc))
@@ -1932,611 +1551,190 @@ subroutine ccsm_init()
       allocate(fractions_rx(num_inst_frc))
       allocate(fractions_wx(num_inst_frc))
 
-      if (rof_present) then
-         index_r2x_Forr_roff  = mct_avect_indexRA(r2x_rx(ens1)   ,"Forr_roff" ,perrWith='indexa Forr_roff')
-         index_r2x_Forr_ioff  = mct_avect_indexRA(r2x_rx(ens1)   ,"Forr_ioff" ,perrWith='indexa Forr_ioff')
-         index_r2x_Flrr_flood = mct_avect_indexRA(r2x_rx(ens1)   ,"Flrr_flood",perrWith='indexa Flrr_flood')
-      endif
-      if (lnd_present) then
-         index_l2x_Flrl_rofliq = mct_avect_indexRA(l2x_lx(ens1)   ,"Flrl_rofliq",perrWith='indexb Flrl_rofliq')
-         index_l2x_Flrl_rofice = mct_avect_indexRA(l2x_lx(ens1)   ,"Flrl_rofice",perrWith='indexb Flrl_rofice')
-         index_x2r_Flrl_rofliq = mct_avect_indexRA(x2racc_lx(ens1),"Flrl_rofliq",perrWith='indexa Flrl_rofliq')
-         index_x2r_Flrl_rofice = mct_avect_indexRA(x2racc_lx(ens1),"Flrl_rofice",perrWith='indexa Flrl_rofice')
-      endif
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! Remainder of initialization
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLID) then
-      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-      !-----------------------------------------------------------------------------
-      ! Initialize mapping
-      ! Read aream into domains!
-      !-----------------------------------------------------------------------------
-
-      call t_startf('driver_init_maps')
-
-      if (ocn_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Sa2o'
-         call seq_map_init_rcfile(mapper_Sa2o,gsmap_ax,gsmap_ox,mpicom_CPLID, &
-             'seq_maps.rc','atm2ocn_smapname:','atm2ocn_smaptype:',samegrid_ao, &
-             'mapper_Sa2o initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Va2o'
-         call seq_map_init_rcfile(mapper_Va2o,gsmap_ax,gsmap_ox,mpicom_CPLID, &
-             'seq_maps.rc','atm2ocn_vmapname:','atm2ocn_vmaptype:',samegrid_ao, &
-             'mapper_Va2o initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fa2o'
-         call seq_map_init_rcfile(mapper_Fa2o,gsmap_ax,gsmap_ox,mpicom_CPLID, &
-             'seq_maps.rc','atm2ocn_fmapname:','atm2ocn_fmaptype:',samegrid_ao, &
-             'mapper_Fa2o initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_So2a'
-         call seq_map_init_rcfile(mapper_So2a,gsmap_ox,gsmap_ax,mpicom_CPLID, &
-             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-             'mapper_So2a initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fo2a'
-         call seq_map_init_rcfile(mapper_Fo2a,gsmap_ox,gsmap_ax,mpicom_CPLID, &
-             'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-             'mapper_Fo2a initialization',esmf_map_flag)
-
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Va2o vect'
-         call seq_map_initvect(mapper_Va2o,vect_map,dom_ax,dom_ox, &
-              gsmap_s=gsmap_ax,ni=atm_nx,nj=atm_ny,string='mapper_Va2o initvect')
-
-         if (samegrid_ao) then
-            ka = mct_aVect_indexRa(dom_ax%data, "area" )
-            km = mct_aVect_indexRa(dom_ax%data, "aream" )
-            dom_ax%data%rAttr(km,:) = dom_ax%data%rAttr(ka,:)
-            call seq_map_map(mapper_Fa2o, dom_ax%data, dom_ox%data, fldlist='aream')
-         else
-            call seq_map_readdata('seq_maps.rc','ocn2atm_fmapname:',mpicom_CPLID, CPLID, &
-               gsmap_s=gsmap_ox, av_s=dom_ox%data, avfld_s='aream',filefld_s='area_a', &
-               gsmap_d=gsmap_ax, av_d=dom_ax%data, avfld_d='aream',filefld_d='area_b', &
-               string='ocn2atm aream initialization')
-         endif
-      endif
-      call shr_sys_flush(logunit)
-      if (ice_present .and. ocn_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_SFo2i'
-         call seq_map_init_rearrolap(mapper_SFo2i, gsmap_ox, gsmap_ix, mpicom_CPLID, 'mapper_SFo2i')
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_SFi2o'
-         call seq_map_init_rearrolap(mapper_SFi2o, gsmap_ix, gsmap_ox, mpicom_CPLID, 'mapper_SFi2o')
-         call seq_map_map(mapper_SFo2i, dom_ox%data, dom_ix%data, fldlist='aream')
-      endif
-      call shr_sys_flush(logunit)
-      if (ice_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Si2a'
-         call seq_map_init_rcfile(mapper_Si2a,gsmap_ix,gsmap_ax,mpicom_CPLID, &
-             'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
-             'mapper_Si2a initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fi2a'
-         call seq_map_init_rcfile(mapper_Fi2a,gsmap_ix,gsmap_ax,mpicom_CPLID, &
-             'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
-             'mapper_Fi2a initialization',esmf_map_flag)
-      endif
-      call shr_sys_flush(logunit)
-      if (rof_present .and. ocnrof_prognostic) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Rr2o'
-         call seq_map_init_rcfile(mapper_Rr2o,gsmap_rx,gsmap_ox,mpicom_CPLID, &
-             'seq_maps.rc','rof2ocn_rmapname:','rof2ocn_rmaptype:',samegrid_ro, &
-             'mapper_Rr2o initialization',esmf_map_flag)
-         if (.not.samegrid_ro) then
-            call seq_map_readdata('seq_maps.rc','rof2ocn_rmapname:',mpicom_CPLID, CPLID, &
-               gsmap_s=gsmap_rx, av_s=dom_rx%data, avfld_s='aream',filefld_s='area_a', &
-               string='rof2ocn aream initialization')
-         endif
-         if (flood_present) then
-            if (iamroot_CPLID) write(logunit,*) ' '
-            if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fr2o'
-            call seq_map_init_rcfile( mapper_Fr2o,gsmap_rx,gsmap_ox,mpicom_CPLID, &
-                 'seq_maps.rc','rof2ocn_fmapname:', 'rof2ocn_fmaptype:',samegrid=.false., &
-                 string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
-         endif
-      endif
-      call shr_sys_flush(logunit)
-      if (rof_present .and. lnd_present ) then ! TODO - land and rof might be on the same grid (see below)
-         if (rof_prognostic) then 
-            if (iamroot_CPLID) write(logunit,*) ' '
-            if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fl2r'
-            call seq_map_init_rcfile( mapper_Fl2r,gsmap_lx,gsmap_rx,mpicom_CPLID, &
-                 'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid=.false., &
-                 string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
-
-            if (iamroot_CPLID) write(logunit,*) ' '
-            if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Sr2l'
-            call seq_map_init_rcfile(mapper_Sr2l,gsmap_rx,gsmap_lx,mpicom_CPLID, &
-             'seq_maps.rc','rof2lnd_smapname:','rof2lnd_smaptype:',samegrid=.false., &
-             string='mapper_Sr2l initialization',esmf_map=esmf_map_flag)
-
-
-         end if
-         if (flood_present .and. lnd_prognostic) then
-            if (iamroot_CPLID) write(logunit,*) ' '
-            if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fr2l'
-            call seq_map_init_rcfile( mapper_Fr2l,gsmap_rx,gsmap_lx,mpicom_CPLID, &
-                 'seq_maps.rc','rof2lnd_fmapname:', 'rof2lnd_fmaptype:',samegrid=.false., &
-                 string='mapper_Fr2l initialization', esmf_map=esmf_map_flag)
-         endif
-      end if
-      call shr_sys_flush(logunit)
-      if (lnd_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Sa2l'
-         call seq_map_init_rcfile(mapper_Sa2l,gsmap_ax,gsmap_lx,mpicom_CPLID, &
-             'seq_maps.rc','atm2lnd_smapname:','atm2lnd_smaptype:',samegrid_al, &
-             'mapper_Sa2l initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fa2l'
-         call seq_map_init_rcfile(mapper_Fa2l,gsmap_ax,gsmap_lx,mpicom_CPLID, &
-             'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
-             'mapper_Fa2l initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Sl2a'
-         call seq_map_init_rcfile(mapper_Sl2a,gsmap_lx,gsmap_ax,mpicom_CPLID, &
-             'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
-             'mapper_Sl2a initialization',esmf_map_flag)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Fl2a'
-         call seq_map_init_rcfile(mapper_Fl2a,gsmap_lx,gsmap_ax,mpicom_CPLID, &
-             'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
-             'mapper_Fl2a initialization',esmf_map_flag)
-         if (samegrid_al) then
-            call seq_map_map(mapper_Sa2l, dom_ax%data, dom_lx%data, fldlist='aream')
-         else
-            call seq_map_readdata('seq_maps.rc','atm2lnd_fmapname:',mpicom_CPLID, CPLID, &
-               gsmap_d=gsmap_lx, av_d=dom_lx%data, avfld_d='aream',filefld_d='area_b', &
-               string='atm2lnd aream initialization')
-         endif
-      endif
-      call shr_sys_flush(logunit)
-      if (sno_present .and. glc_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_SFs2g'
-         call seq_map_init_rearrolap(mapper_SFs2g, gsmap_sx, gsmap_gx, mpicom_CPLID, 'mapper_SFs2g')
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_SFg2s'
-         call seq_map_init_rearrolap(mapper_SFg2s, gsmap_gx, gsmap_sx, mpicom_CPLID, 'mapper_SFg2s')
-         call seq_map_map(mapper_SFs2g, dom_sx%data, dom_gx%data, fldlist='aream')
-      endif
-      call shr_sys_flush(logunit)
-      if (wav_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Sa2w'
-         call seq_map_init_rcfile(mapper_Sa2w,gsmap_ax,gsmap_wx,mpicom_CPLID, &
-             'seq_maps.rc','atm2wav_smapname:','atm2wav_smaptype:',samegrid_aw, &
-             'mapper_Sa2w initialization')
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_So2w'
-         call seq_map_init_rcfile(mapper_So2w,gsmap_ox,gsmap_wx,mpicom_CPLID, &
-             'seq_maps.rc','ocn2wav_smapname:','ocn2wav_smaptype:',samegrid_ow, &
-             'mapper_So2w initialization')
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Si2w'
-         call seq_map_init_rcfile(mapper_Si2w,gsmap_ox,gsmap_wx,mpicom_CPLID, &
-             'seq_maps.rc','ice2wav_smapname:','ice2wav_smaptype:',samegrid_ow, &
-             'mapper_Si2w initialization')
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing mapper_Sw2o'
-         call seq_map_init_rcfile(mapper_Sw2o,gsmap_wx,gsmap_ox,mpicom_CPLID, &
-             'seq_maps.rc','wav2ocn_smapname:','wav2ocn_smaptype:',samegrid_ow, &
-             'mapper_Sw2o initialization')
-      endif
-      call shr_sys_flush(logunit)
-
-      call t_stopf  ('driver_init_maps')
-
-      !-----------------------------------------------------------------------------
-      ! Check domains if appropriate
-      ! This must be done after the mappers are initialized since
-      ! checking is done on each processor and not with a global gather
-      !-----------------------------------------------------------------------------
-
-      if (domain_check) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Performing domain checking'
-         call shr_sys_flush(logunit)
-         call seq_domain_check( cdata_ax, cdata_ix, cdata_lx, cdata_ox, &
-                                cdata_rx, cdata_gx, cdata_sx, &
-                                mapper_Fi2a, mapper_SFi2o, mapper_Fo2a, &
-                                mapper_SFs2g, mapper_Fa2l, mapper_Fl2a)
-      endif
-
-      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-   endif ! iamin_CPLID
-
-   !-----------------------------------------------------------------------------
-   ! Map  dom_*x to dom_** in case any domain fields have been updated on cpl pes
-   ! Initialize area corrections based on aream (read in map_init) and area
-   ! Area correct component initialization output fields
-   ! Map initial component AVs from component to coupler pes
-   !-----------------------------------------------------------------------------
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (atm_present) then
-      do eai = 1,num_inst_atm
-         if (iamin_CPLATMID(eai)) then
-            call seq_map_map(mapper_Cx2a(eai), dom_ax%data, dom_aa(eai)%data, msgtag=CPLATMID(eai)*100+eai*10+5)
-            if (iamin_ATMID(eai)) then
-               call seq_domain_areafactinit(cdata_aa(eai),areacor_aa(eai)%mdl2drv,areacor_aa(eai)%drv2mdl,&
-                    'areafact_a_'//trim(atm_name(eai)))
-               call mct_avect_vecmult(a2x_aa(eai),areacor_aa(eai)%mdl2drv,seq_flds_a2x_fluxes)
-            endif
-            call seq_map_map(mapper_Ca2x(eai), a2x_aa(eai), a2x_ax(eai), msgtag=CPLATMID(eai)*100+eai*10+7)
-         endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (lnd_present) then
-      do eli = 1,num_inst_lnd
-         if (iamin_CPLLNDID(eli)) then
-            call seq_map_map(mapper_Cx2l(eli), dom_lx%data, dom_ll(eli)%data, msgtag=CPLLNDID(eli)*100+eli*10+5)
-            if (iamin_LNDID(eli)) then
-               call seq_domain_areafactinit(cdata_ll(eli),areacor_ll(eli)%mdl2drv,areacor_ll(eli)%drv2mdl,&
-                    'areafact_l_'//trim(lnd_name(eli)))
-               call mct_avect_vecmult(l2x_ll(eli),areacor_ll(eli)%mdl2drv,seq_flds_l2x_fluxes)
-            endif
-            call seq_map_map(mapper_Cl2x(eli), l2x_ll(eli), l2x_lx(eli), msgtag=CPLLNDID(eli)*100+eli*10+7)
-         endif
-      enddo
-   end if
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (sno_present) then
-      do eli = 1,num_inst_lnd
-         if (iamin_CPLLNDID(eli)) then
-            call seq_map_map(mapper_Cx2s(eli), dom_sx%data, dom_ss(eli)%data, msgtag=CPLLNDID(eli)*100+eli*10+1005)
-            if (iamin_LNDID(eli)) then
-               call seq_domain_areafactinit(cdata_ss(eli),areacor_ss(eli)%mdl2drv,areacor_ss(eli)%drv2mdl,&
-                    'areafact_s_'//trim(lnd_name(eli)))
-               call mct_avect_vecmult(s2x_ss(eli),areacor_ss(eli)%mdl2drv,seq_flds_s2x_fluxes)
-            endif
-            call seq_map_map(mapper_Cs2x(eli), s2x_ss(eli), s2x_sx(eli), msgtag=CPLLNDID(eli)*100+eli*10+1007)
-         endif
-      enddo
-   end if
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (rof_present) then
-      do eri = 1,num_inst_rof
-         if (iamin_CPLROFID(eri)) then
-            call seq_map_map(mapper_Cx2r(eri), dom_rx%data, dom_rr(eri)%data, msgtag=CPLROFID(eri)*100+eri*10+5)
-            if (iamin_ROFID(eri)) then
-               call seq_domain_areafactinit(cdata_rr(eri),areacor_rr(eri)%mdl2drv,areacor_rr(eri)%drv2mdl,&
-                    'areafact_r_'//trim(rof_name(eri)))
-               call mct_avect_vecmult(r2x_rr(eri),areacor_rr(eri)%mdl2drv,seq_flds_r2x_fluxes)
-            endif
-            call seq_map_map(mapper_Cr2x(eri), r2x_rr(eri), r2x_rx(eri), msgtag=CPLROFID(eri)*100+eri*10+7)
-         endif
-      enddo
-   end if
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (ocn_present) then
-      do eoi = 1,num_inst_ocn
-         if (iamin_CPLOCNID(eoi)) then
-            call seq_map_map(mapper_Cx2o(eoi), dom_ox%data, dom_oo(eoi)%data, msgtag=CPLOCNID(eoi)*100+eoi*10+5)
-            if (iamin_OCNID(eoi)) then
-               call seq_domain_areafactinit(cdata_oo(eoi),areacor_oo(eoi)%mdl2drv,areacor_oo(eoi)%drv2mdl,&
-                    'areafact_o_'//trim(ocn_name(eoi)))
-               call mct_avect_vecmult(o2x_oo(eoi),areacor_oo(eoi)%mdl2drv,seq_flds_o2x_fluxes)
-            endif
-           call seq_map_map(mapper_Co2x(eoi), o2x_oo(eoi), o2x_ox(eoi), msgtag=CPLOCNID(eoi)*100+eoi*10+7)
-        endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (ice_present) then
-      do eii = 1,num_inst_ice
-         if (iamin_CPLICEID(eii)) then
-            call seq_map_map(mapper_Cx2i(eii), dom_ix%data, dom_ii(eii)%data, msgtag=CPLICEID(eii)*100+eii*10+5)
-            if (iamin_ICEID(eii)) then
-               call seq_domain_areafactinit(cdata_ii(eii),areacor_ii(eii)%mdl2drv,areacor_ii(eii)%drv2mdl,&
-                    'areafact_i_'//trim(ice_name(eii)))
-               call mct_avect_vecmult(i2x_ii(eii),areacor_ii(eii)%mdl2drv,seq_flds_i2x_fluxes)
-            endif
-            call seq_map_map(mapper_Ci2x(eii), i2x_ii(eii), i2x_ix(eii), msgtag=CPLICEID(eii)*100+eii*10+7)
-         endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (glc_present) then
-      do egi = 1,num_inst_glc
-         if (iamin_CPLGLCID(egi)) then
-            call seq_map_map(mapper_Cx2g(egi), dom_gx%data, dom_gg(egi)%data, msgtag=CPLGLCID(egi)*100+egi*10+5)
-            if (iamin_GLCID(egi)) then
-               call seq_domain_areafactinit(cdata_gg(egi),areacor_gg(egi)%mdl2drv,areacor_gg(egi)%drv2mdl,&
-                    'areafact_g_'//trim(glc_name(egi)))
-               call mct_avect_vecmult(g2x_gg(egi),areacor_gg(egi)%mdl2drv,seq_flds_g2x_fluxes)
-            endif
-            call seq_map_map(mapper_Cg2x(egi), g2x_gg(egi), g2x_gx(egi), msgtag=CPLGLCID(egi)*100+egi*10+7)
-         endif
-      enddo
-   endif
-
-   call mpi_barrier(mpicom_GLOID,ierr)
-
-   if (wav_present) then
-      do ewi = 1,num_inst_wav
-         if (iamin_CPLWAVID(ewi)) then
-            call seq_map_map(mapper_Cx2w(ewi), dom_wx%data, dom_ww(ewi)%data, msgtag=CPLWAVID(ewi)*100+ewi*10+5)
-            if (iamin_WAVID(ewi)) then
-               call seq_domain_areafactinit(cdata_ww(ewi),areacor_ww(ewi)%mdl2drv,areacor_ww(ewi)%drv2mdl,&
-                    'areafact_w_'//trim(wav_name(ewi)))
-               call mct_avect_vecmult(w2x_ww(ewi),areacor_ww(ewi)%mdl2drv,seq_flds_w2x_fluxes)
-            endif
-            call seq_map_map(mapper_Cw2x(ewi), w2x_ww(ewi), w2x_wx(ewi), msgtag=CPLWAVID(ewi)*100+ewi*10+7)
-         endif
-      enddo
-   endif
-
-   !-----------------------------------------------------------------------------
-   ! global sum diagnostics for IC data
-   !-----------------------------------------------------------------------------
-   if (iamin_CPLID .and. info_debug > 1) then
-      if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-      if (atm_present) then
-         do eai = 1,num_inst_atm
-            call seq_diag_avect_mct(cdata_ax,a2x_ax(eai),'recv atm'//trim(atm_suffix(eai))//' IC')
-         enddo
-      endif
-
-      if (ice_present) then
-         do eii = 1,num_inst_ice
-            call seq_diag_avect_mct(cdata_ix,i2x_ix(eii),'recv ice'//trim(ice_suffix(eii))//' IC')
-         enddo
-      endif
-
-      if (lnd_present .or. sno_present) then
-         do eli = 1,num_inst_lnd
-            if (lnd_present) then 
-               call seq_diag_avect_mct(cdata_lx, l2x_lx(eli),'recv lnd'//trim(lnd_suffix(eli))//' IC')
-            end if
-            if (sno_present) then
-               call seq_diag_avect_mct(cdata_sx, s2x_sx(eli),'recv sno'//trim(lnd_suffix(eli))//' IC')
-            end if
-         enddo
-      end if
-
-      if (rof_present) then
-         do eri = 1,num_inst_rof
-            call seq_diag_avect_mct(cdata_rx, r2x_rx(eri),'recv roff'//trim(lnd_suffix(eri))//' IC')
-         end do
-      end if
-
-      if (ocn_present) then
-         do eoi = 1,num_inst_ocn
-            call seq_diag_avect_mct(cdata_ox,o2x_ox(eoi),'recv ocn'//trim(ocn_suffix(eoi))//' IC')
-         enddo
-      endif
-
-      if (glc_present) then
-         do egi = 1,num_inst_glc
-            call seq_diag_avect_mct(cdata_gx,g2x_gx(egi),'recv glc'//trim(glc_suffix(egi))//' IC')
-         enddo
-      endif
-
-      if (wav_present) then
-         do ewi = 1,num_inst_wav
-            call seq_diag_avect_mct(cdata_wx,w2x_wx(ewi),'recv wav'//trim(wav_suffix(ewi))//' IC')
-         enddo
-      endif
-
-      if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-   end if
-
-   !-----------------------------------------------------------------------------
-   ! Initialize fractions
-   !-----------------------------------------------------------------------------
-
-   if (iamin_CPLID) then
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       do efi = 1,num_inst_frc
          eii = mod((efi-1),num_inst_ice) + 1
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID .and. efi == 1) write(logunit,F00) 'Initializing fractions'
-         call seq_frac_init(cdata_ax, cdata_ix, cdata_lx, cdata_ox, cdata_gx, cdata_rx, &
-                         cdata_wx, &
-                         ice_present, ocn_present, lnd_present, glc_present, rof_present, &
-                         wav_present, dead_comps, &
-                         fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
-                         fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
-                         fractions_wx(efi), &
-                         mapper_Fi2a, mapper_SFo2i, mapper_SFi2o, mapper_Fo2a, &
-                         mapper_Fa2o, mapper_Fa2l, mapper_Fl2a, mapper_Fl2r, mapper_Fr2l)
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID .and. efi == 1) write(logunit,F00) 'Setting fractions'
-         call seq_frac_set(i2x_ix(eii), &
-                        cdata_ax, cdata_ix, cdata_lx, cdata_ox, cdata_gx, cdata_rx, cdata_wx, &
-                        ice_present, ocn_present, lnd_present, glc_present, rof_present, wav_present, &
-                        fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
-                        fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
-                        fractions_wx(efi), &
-                        mapper_Fi2a, mapper_SFi2o)
+
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            if (efi == 1) write(logunit,F00) 'Initializing fractions'
+         end if
+
+         call seq_frac_init(infodata,                                  &
+              atm(ens1), ice(ens1), lnd(ens1),                         &
+              ocn(ens1), glc(ens1), rof(ens1),                         &
+              wav(ens1),                                               &
+              fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
+              fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
+              fractions_wx(efi))
+         
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            if (efi == 1) write(logunit,F00) 'Setting fractions'
+         end if
+
+         call seq_frac_set(infodata, ice(eii), &
+              fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
+
       enddo
-
-      !-----------------------------------------------------------------------------
-      ! Initialize atm/ocn flux component and compute ocean albedos
-      !-----------------------------------------------------------------------------
-      if (ocn_present) then
-         if (iamroot_CPLID) write(logunit,*) ' '
-         if (iamroot_CPLID) write(logunit,F00) 'Initializing atm/ocn flux component'
-         ! note: albedo_only mode doesn't use a2x_ox(eai) or o2x_ox(eoi) or a2x_ax(eai) or o2x_ax(eoi)
-         ! Initialize attribute vector
-         if (trim(aoflux_grid) == 'ocn') then
-            call seq_flux_init_mct(cdata_ox,fractions_ox(ens1))
-         elseif (trim(aoflux_grid) == 'atm') then
-            call seq_flux_init_mct(cdata_ax,fractions_ax(ens1))
-         elseif (trim(aoflux_grid) == 'exch') then
-            call seq_flux_initexch_mct(cdata_ax,cdata_ox)
-         endif
-         do exi = 1,num_inst_xao
-!tcx is this correct? relation between xao and frc for ifrad and ofrad
-            efi = mod((exi-1),num_inst_frc) + 1
-            call seq_flux_ocnalb_mct(cdata_ox,xao_ox(exi),fractions_ox(efi))
-         enddo
-      endif
-
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-   endif
+   end if
 
    !-----------------------------------------------------------------------------
-   ! Recalculate initial solar. Merge atmosphere input state and run atmospheric radiation
-   ! tcx - for initialization only?
+   ! CPL PES
+   ! Initialize prep_aoflux_mod module variables
    !-----------------------------------------------------------------------------
 
-   call t_startf('driver_init_atminit')
+   if (iamin_CPLID) then
+      call prep_aoflux_init(infodata, fractions_ox, fractions_ax) 
+   end if
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! Initialize atm/ocn flux component and compute ocean albedos
+   !-----------------------------------------------------------------------------
+
+   if (iamin_CPLID) then
+      if (ocn_present) then
+         if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing atm/ocn flux component'
+         end if
+
+         if (trim(aoflux_grid) == 'ocn') then
+
+            call seq_flux_init_mct(ocn(ens1), fractions_ox(ens1))
+
+         elseif (trim(aoflux_grid) == 'atm') then
+
+            call seq_flux_init_mct(atm(ens1), fractions_ax(ens1))
+
+         elseif (trim(aoflux_grid) == 'exch') then
+
+            call seq_flux_initexch_mct(atm(ens1), ocn(ens1), mpicom_cplid, cplid)
+
+         endif
+
+         do exi = 1,num_inst_xao
+            !tcx is this correct? relation between xao and frc for ifrad and ofrad
+            efi = mod((exi-1),num_inst_frc) + 1
+
+            xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
+            call seq_flux_ocnalb_mct(infodata, ocn(1), fractions_ox(efi), xao_ox(exi))
+         enddo
+
+         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+      endif
+   end if
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! ATM PREP for recalculation of initial solar 
+   ! Note that ocean albedos are ALWAYS CALCULATED on the ocean grid
+   ! If aoflux_grid = 'ocn' , xao_ox is input for atm/ocn fluxes and xao_ax is output
+   ! If aoflux_grid = 'atm' , xao_ax is input for atm/ocn fluxes and xao_ox is not used 
+   ! If aoflux_grid = 'exch', xao_ax is input for atm/ocn /fluxes and xao_ox is not used 
+   ! Merge atmosphere input state and run atmospheric radiation
+   !-----------------------------------------------------------------------------
 
    if (atm_prognostic) then
       if (iamin_CPLID) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-         if (lnd_present) then
-            if (iamroot_CPLID) write(logunit,F00) 'Calling map_lnd2atm_mct'
-            do eli = 1,num_inst_lnd
-               efi = mod((eli-1),num_inst_frc) + 1
-               call seq_map_map(mapper_Sl2a,l2x_lx(eli),l2x_ax(eli), &
-                                fldlist=seq_flds_l2x_states, norm=.true., &
-                                avwts_s=fractions_lx(efi),avwtsfld_s='lfrin')
-               call seq_map_map(mapper_Fl2a,l2x_lx(eli),l2x_ax(eli), &
-                                fldlist=seq_flds_l2x_fluxes, norm=.true., &
-                                avwts_s=fractions_lx(efi),avwtsfld_s='lfrin')
-            enddo
-         endif
-         if (ocn_present) then
-            if (iamroot_CPLID) write(logunit,F00) 'Calling map_ocn2atm_mct for mapping o2x_ox(eoi) to o2x_ax(eoi)'
-            do eoi = 1,num_inst_ocn
-               efi = mod((eoi-1),num_inst_frc) + 1
-               call seq_map_map(mapper_So2a,o2x_ox(eoi),o2x_ax(eoi),fldlist=seq_flds_o2x_states,norm=.true., &
-                                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-               call seq_map_map(mapper_Fo2a,o2x_ox(eoi),o2x_ax(eoi),fldlist=seq_flds_o2x_fluxes,norm=.true.)
-            enddo
-            do exi = 1,num_inst_xao
-               efi = mod((exi-1),num_inst_frc) + 1
-               call seq_map_map(mapper_So2a,xao_ox(exi),xao_ax(exi),fldlist=seq_flds_xao_albedo,norm=.true., &
-                                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-               if (trim(aoflux_grid) == 'ocn') then
-                  if (iamroot_CPLID .and. exi == 1) &
-                     write(logunit,F00) 'Calling map_ocn2atm_mct for mapping xao_ox to xao_ax'
-                  call seq_map_map(mapper_So2a,xao_ox(exi),xao_ax(exi),fldlist=seq_flds_xao_states,norm=.true., &
-                                   avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-                  call seq_map_map(mapper_Fo2a,xao_ox(exi),xao_ax(exi),fldlist=seq_flds_xao_fluxes,norm=.true., &
-                                   avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-               endif
-               if (trim(aoflux_grid) == 'atm') then
-                  if (iamroot_CPLID .and. exi == 1) &
-                       write(logunit,F00) 'Calling map_atm2ocn_mct for mapping xao_ax to xao_ox'
-                  ! tcraig: this mapping has to be done with area overlap mapping for all fields 
-                  ! due to the masking of the xao_ax data and the fact that states are mapped with 
-                  ! bilinear mapping currently
-                  call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true.)
-               endif
-            enddo
-         endif
-         if (ice_present) then
-            if (iamroot_CPLID) write(logunit,F00) 'Calling map_ice2atm_mct for mapping i2x_ix(eii) to i2x_ax(eii)'
-            do eii = 1,num_inst_ice
-               efi = mod((eii-1),num_inst_frc) + 1
-               call seq_map_map(mapper_Si2a, i2x_ix(eii), i2x_ax(eii), fldlist=seq_flds_i2x_states, &
-                    avwts_s=fractions_ix(eii), avwtsfld_s='ifrac')
-               call seq_map_map(mapper_Fi2a, i2x_ix(eii), i2x_ax(eii), fldlist=seq_flds_i2x_fluxes, &
-                    avwts_s=fractions_ix(eii), avwtsfld_s='ifrac')
-            enddo
-         endif
-         if (lnd_present .or. ocn_present) then
-            if (iamroot_CPLID) write(logunit,F00) 'Calling mrg_x2a_run_mct'
-            ! Use fortran mod to address ensembles in merge
-            do eai = 1,num_inst_atm
-               eli = mod((eai-1),num_inst_lnd) + 1
-               eoi = mod((eai-1),num_inst_ocn) + 1
-               eii = mod((eai-1),num_inst_ice) + 1
-               exi = mod((eai-1),num_inst_xao) + 1
-               efi = mod((eai-1),num_inst_frc) + 1
-               call mrg_x2a_run_mct( cdata_ax, l2x_ax(eli), o2x_ax(eoi), xao_ax(exi), i2x_ax(eii), fractions_ax(efi), x2a_ax(eai))
-            enddo
-         endif
-   
-         if (info_debug > 1) then
-            do eai = 1,num_inst_atm
-               call seq_diag_avect_mct(cdata_ax,x2a_ax(eai),'send atm'//trim(atm_suffix(eai))//' IC2')
-            enddo
-         endif
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      endif
 
-      do eai = 1,num_inst_atm
-         if (iamin_CPLATMID(eai)) then
-            call seq_map_map(mapper_Cx2a(eai), x2a_ax(eai), x2a_aa(eai), msgtag=CPLATMID(eai)*100+eai*10+2)
-         endif
-      enddo
-      if (iamin_CPLALLATMID) then
-         call seq_infodata_exchange(infodata,CPLALLATMID,'cpl2atm_init')
-      endif
+         if (lnd_present) then
+            ! Get lnd output on atm grid
+            call prep_atm_calc_l2x_ax(fractions_lx, timer='driver_init_atminit')
+         end if
+
+         if (ice_present) then
+            ! Get ice output on atm grid
+            call prep_atm_calc_i2x_ax(fractions_ix, timer='driver_init_atminit')
+         end if
+
+         if (ocn_present) then
+            ! Get ocn output on atm grid
+            call prep_atm_calc_o2x_ax(fractions_ox, timer='driver_init_atminit')
+         end if
+
+         if (ocn_present) then
+            ! Get albedos on atm grid
+            call prep_aoflux_calc_xao_ax(fractions_ox, flds='albedos', &
+                 timer='driver_init_atminit')
+
+            ! Get atm/ocn fluxes on atm grid
+            if (trim(aoflux_grid) == 'ocn') then
+               call prep_aoflux_calc_xao_ax(fractions_ox, flds='states_and_fluxes', &
+                    timer='driver_init_atminit') 
+            end if
+
+            ! Get atm ocn fluxes on ocn grid
+            if (trim(aoflux_grid) == 'atm') then
+               call prep_aoflux_calc_xao_ox(timer='driver_init_atminit')
+            end if
+         end if
+
+         if (lnd_present .or. ocn_present) then
+            ! Merge input to atmosphere on coupler pes
+            xao_ax => prep_aoflux_get_xao_ax()
+            if (associated(xao_ax)) then  
+               call  prep_atm_mrg(infodata, &
+                    fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='driver_init_atminit')
+            end if
+         end if
+
+         call component_diag(infodata, atm, flow='x2c', comment='send atm', info_debug=info_debug)
+
+      end if
+
    endif  ! atm_prognostic
 
    !-----------------------------------------------------------------------------
+   ! COMPONENT/CPL PES
    ! Second phase of atmosphere component initialization, recalculate solar based 
    ! on input albedo's from surface components. Data or dead atmosphere may just
    ! return on this phase.
    !-----------------------------------------------------------------------------
 
    if (atm_present) then
-      if (iamroot_CPLID) write(logunit,F00) 'Calling atm_init_mct phase 2'
+      if (iamroot_CPLID) then
+         write(logunit,F00) 'Calling atm_init_mct phase 2'
+      end if
+
+      ! Send atm input data from coupler pes to atm pes
+      if (atm_prognostic) then
+         call component_exch(atm, flow='x2c', infodata=infodata, &
+              infodata_string='cpl2atm_init')
+      end if
+
+      ! Set atm init phase to 2 for all atm instances on component instance pes
       do eai = 1,num_inst_atm
-         if (iamin_ATMID(eai)) then
-            call t_adj_detailf(+2)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_ATMID)
-            if (iamroot_ATMID(eai)) write(logunit,F00) 'Initialize atm component phase 2 '//trim(atm_name(eai))
-            call seq_infodata_putData(infodata,atm_phase=2)
-            call mct_avect_vecmult(x2a_aa(eai),areacor_aa(eai)%drv2mdl,seq_flds_x2a_fluxes)
-            call atm_init_mct( EClock_a, cdata_aa(eai), x2a_aa(eai), a2x_aa(eai))
-            call mct_avect_vecmult(a2x_aa(eai),areacor_aa(eai)%mdl2drv,seq_flds_a2x_fluxes)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_adj_detailf(-2)
-         endif
-      enddo
-      do eai = 1,num_inst_atm
-         if (iamin_CPLATMID(eai)) then
-            call seq_map_map(mapper_Ca2x(eai), a2x_aa(eai), a2x_ax(eai), msgtag=CPLATMID(eai)*100+eai*10+4)
-         endif
-      enddo
-      if (iamin_CPLATMID(ens1)) then
-         call seq_infodata_exchange(infodata,CPLATMID(ens1),'atm2cpl_init')
-      endif
+         if (component_get_iamin_compid(atm(eai))) then
+            call seq_infodata_putData(infodata, atm_phase=2)
+         end if
+      end do
+
+      ! Run atm_init_mct with init phase of 2
+#ifdef ESMF_INTERFACE
+      call component_init_cc(Eclock_a, drvcomp, atm, atm_register_esmf, &
+#else
+      call component_init_cc(Eclock_a, atm, atm_init,                   &
+#endif
+           infodata, NLFilename,                                        &
+           seq_flds_x2c_fluxes=seq_flds_x2a_fluxes,                     &
+           seq_flds_c2x_fluxes=seq_flds_a2x_fluxes)
+
+      ! Map atm output data from atm pes to cpl pes
+      call component_exch(atm, flow='c2x', infodata=infodata, &
+           infodata_string='atm2cpl_init')
 
       if (iamin_CPLID) then
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-         if (info_debug > 1) then
-            do eai = 1,num_inst_atm
-               call seq_diag_avect_mct(cdata_ax,a2x_ax(eai),'recv atm'//trim(atm_suffix(eai))//' IC2')
-            enddo
-         endif
+         call component_diag(infodata, atm, flow='c2x', comment= 'recv IC2 atm', &
+              info_debug=info_debug)
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
       endif
-   endif   ! atm present
 
-   call t_stopf  ('driver_init_atminit')
+   endif   ! atm present
 
    !-----------------------------------------------------------------------------
    ! Read driver restart file, overwrite anything previously sent or computed
@@ -2544,8 +1742,44 @@ subroutine ccsm_init()
 
    call t_startf('driver_init_readrestart')
    call seq_diag_zero_mct(mode='all')
-   if (read_restart) call seq_rest_read(rest_file)
+   if (read_restart) then
+      call seq_rest_read(rest_file, infodata, &
+           atm, lnd, ice, ocn, rof, glc, wav, &
+           fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+           fractions_rx, fractions_gx, fractions_wx)
+   end if
    call t_stopf  ('driver_init_readrestart')
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! Initialize r2x_* and g2x_* from r2x_rx and g2x_gx from init or restart
+   !-----------------------------------------------------------------------------
+
+   if (iamin_CPLID ) then
+      if (rof_c2_ocn) then
+         call prep_ocn_calc_r2x_ox(timer='driver_init_rof2ocn')
+      end if
+      if (glc_c2_ocn) then
+         call prep_ocn_calc_g2x_ox(timer='driver_init_glc2ocn') 
+      end if
+      if (rof_c2_ice) then
+         call prep_ice_calc_r2x_ix(timer='driver_init_rof2ice') 
+      end if
+      if (glc_c2_ice) then
+         call prep_ice_calc_g2x_ix(timer='driver_init_glc2ice') 
+      end if
+      if (rof_c2_lnd) then
+         call prep_lnd_calc_r2x_lx(timer='driver_init_rof2lnd') 
+      end if
+      if (glc_c2_lnd) then
+         call prep_lnd_calc_g2x_lx(timer='driver_init_gllndnd')
+      end if
+   end if
+
+   !-----------------------------------------------------------------------------
+   ! CPL PES
+   ! histinit output file 
+   !-----------------------------------------------------------------------------
 
    if (do_histinit) then
       if (iamin_CPLID) then
@@ -2555,7 +1789,10 @@ subroutine ccsm_init()
             write(logunit,104) ' Write history file at ',ymd,tod
             call shr_sys_flush(logunit)
          endif
-         call seq_hist_write(EClock_d)
+         call seq_hist_write(infodata, EClock_d, &
+              atm, lnd, ice, ocn, rof, glc, wav, &
+              fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+              fractions_rx, fractions_gx, fractions_wx)
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
       endif
    endif
@@ -2571,36 +1808,45 @@ subroutine ccsm_init()
 
 end subroutine ccsm_init
 
+ !===============================================================================
+ !*******************************************************************************
+ !===============================================================================
 
-!===============================================================================
-
-subroutine ccsm_run()
+ subroutine ccsm_run()
+   use seq_comm_mct, only : atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
+         ocn_layout, wav_layout
 
    implicit none
 
- 101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
- 102  format( A, 2i8, A, 8L3 )
- 103  format( 5A )
- 104  format( A, 2i8)
- 105  format( A, 2i8, A, f10.2, A, f10.2, A, A, i5, A, A)
- 106  format( A, f23.12)
- 107  format( A, 2i8, A, f12.4, A, f12.4 )
+101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
+102 format( A, 2i8, A, 8L3 )
+103 format( 5A )
+104 format( A, 2i8)
+105 format( A, 2i8, A, f10.2, A, f10.2, A, A, i5, A, A)
+106 format( A, f23.12)
+107 format( A, 2i8, A, f12.4, A, f12.4 )
+108 format( A, f10.2, A, i8.8)
+109 format( A, 2f10.3)
 
    call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
    call seq_timemgr_EClockGetData( EClock_d, stepno=begstep)
    call seq_timemgr_EClockGetData( EClock_d, dtime=dtime)
+   call seq_timemgr_EClockGetData( EClock_d, calendar=calendar)
    ncpl = 86400/dtime
    cktime_acc = 0._r8
    cktime_cnt = 0
    stop_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
    if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,103) subname,' NOTE: Stopping from alarm STOP DATE'
-          write(logunit,*) ' '
+         write(logunit,*) ' '
+         write(logunit,103) subname,' NOTE: Stopping from alarm STOP DATE'
+         write(logunit,*) ' '
       endif
       stop_alarm = .true.
    endif
+   force_stop = .false.
+   force_stop_ymd = -1
+   force_stop_tod = -1
 
    !----------------------------------------------------------
    ! Beginning of basic time step loop
@@ -2621,7 +1867,7 @@ subroutine ccsm_run()
       ! they return to the driver).  Write timestamp and run alarm status
       !----------------------------------------------------------
 
-      call seq_timemgr_clockAdvance( seq_SyncClock)
+      call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
       call shr_cal_date2ymd(ymd,year,month,day)
       stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
@@ -2658,9 +1904,9 @@ subroutine ccsm_run()
 
       if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,103) subname,' NOTE: Stopping from alarm STOP DATE'
-             write(logunit,*) ' '
+            write(logunit,*) ' '
+            write(logunit,103) subname,' NOTE: Stopping from alarm STOP DATE'
+            write(logunit,*) ' '
          endif
          stop_alarm = .true.
       endif
@@ -2671,7 +1917,7 @@ subroutine ccsm_run()
          if (orb_nyear /= orb_cyear) then
             orb_cyear = orb_nyear
             call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
-                                orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_CPLID)
+                 orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_CPLID)
             call seq_infodata_putData(infodata,orb_eccen=orb_eccen,orb_obliqr=orb_obliqr, &
                  orb_lambm0=orb_lambm0,orb_mvelpp=orb_mvelpp)
          endif
@@ -2692,12 +1938,12 @@ subroutine ccsm_run()
       if (iamroot_CPLID) then
          if (loglevel > 1) then
             write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
-               ' aliogrw run alarms = ',  atmrun_alarm, lndrun_alarm, &
-                         icerun_alarm, ocnrun_alarm, glcrun_alarm, &
-                         rofrun_alarm, wavrun_alarm
+                 ' aliogrw run alarms = ',  atmrun_alarm, lndrun_alarm, &
+                 icerun_alarm, ocnrun_alarm, glcrun_alarm, &
+                 rofrun_alarm, wavrun_alarm
             write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
-               ' 1.2.3.6.12.24 run alarms = ',  t1hr_alarm, t2hr_alarm, &
-                         t3hr_alarm, t6hr_alarm, t12hr_alarm, t24hr_alarm
+                 ' 1.2.3.6.12.24 run alarms = ',  t1hr_alarm, t2hr_alarm, &
+                 t3hr_alarm, t6hr_alarm, t12hr_alarm, t24hr_alarm
             call shr_sys_flush(logunit)
          endif
       endif
@@ -2706,30 +1952,21 @@ subroutine ccsm_run()
 
       !----------------------------------------------------------
       ! OCN/ICE PREP
-      ! Map for ice prep and atmocn flux
+      ! Set a2x_ox as a module variable in prep_ocn_mod
+      ! This will be used later in the ice prep and in the 
+      ! atm/ocn flux calculation
       !----------------------------------------------------------
 
-      if (iamin_CPLID .and. (ice_present.or.ocn_present) .and. atm_present) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_OCNPREP_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_OCNPREP_BARRIER')
-         endif
+      if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_OCNPREP_BARRIER')
          call t_drvstartf ('DRIVER_OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-         call t_drvstartf ('driver_ocnprep_atm2ocn',barrier=mpicom_CPLID)
-         do eai = 1,num_inst_atm
-            call seq_map_map(mapper_Sa2o, a2x_ax(eai), a2x_ox(eai), fldlist=seq_flds_a2x_states, norm=.true.)
-            call seq_map_map(mapper_Fa2o, a2x_ax(eai), a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true.)
-            !--- tcx this Va2o call will not be necessary when npfix goes away
-            call seq_map_map(mapper_Va2o, a2x_ax(eai), a2x_ox(eai), fldlist='Sa_u:Sa_v', norm=.true.)
-            !--- tcx the norm should be true below, it's false for bfb backwards compatability
-            call seq_map_mapvect(mapper_Va2o,vect_map,a2x_ax(eai),a2x_ox(eai),'Sa_u','Sa_v',norm=.false.)
-         enddo
-         call t_drvstopf  ('driver_ocnprep_atm2ocn')
+
+         call prep_ocn_calc_a2x_ox(timer='driver_ocnprep_atm2ocn')
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('DRIVER_OCNPREP',cplrun=.true.)
-      endif
+      end if
 
       !----------------------------------------------------------
       ! OCN SETUP
@@ -2741,124 +1978,55 @@ subroutine ccsm_run()
          ! "startup" wait
          !----------------------------------------------------
 
-         if (iamin_CPLALLOCNID .and. cpl2ocn_first) then
+         if (iamin_CPLALLOCNID) then
             ! want to know the time the ocean pes waited for the cpl pes
-            !   at the first ocnrun_alarm, min ocean wait is wait time
+            ! at the first ocnrun_alarm, min ocean wait is wait time
             ! do not use t_barrierf here since it can be "off", use mpi_barrier
             do eoi = 1,num_inst_ocn
-               if (iamin_OCNID(eoi)) call t_drvstartf ('DRIVER_C2O_INITWAIT')
+               if (ocn(eoi)%iamin_compid) call t_drvstartf ('DRIVER_C2O_INITWAIT')
             enddo
             call mpi_barrier(mpicom_CPLALLOCNID,ierr)
             do eoi = 1,num_inst_ocn
-               if (iamin_OCNID(eoi)) call t_drvstopf  ('DRIVER_C2O_INITWAIT')
+               if (ocn(eoi)%iamin_compid) call t_drvstopf  ('DRIVER_C2O_INITWAIT')
             enddo
             cpl2ocn_first = .false.
-         endif
+         end if
 
          !----------------------------------------------------
          ! ocn prep
-         ! note due to x2oacc and r2xacc, need to be careful filling x2o_oo
-         ! average x2oacc and r2xacc first, separately, now averages in those AVs
-         ! map r2xacc_rx to r2x_ox then copy r2x_ox into x2oacc_ox
-         ! finally, rearrange x2oacc_ox to x2o_oo
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ocn_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_OCNPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_OCNPREP_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_OCNPREP_BARRIER')
             call t_drvstartf ('DRIVER_OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            call t_drvstartf ('driver_ocnprep_avg',barrier=mpicom_CPLID)
-            do eoi = 1,num_inst_ocn
-               ! temporary formation of average
-!              call mct_aVect_average(x2oacc_ox(eoi))
-               if (x2oacc_ox_cnt > 0) then
-                  x2oacc_ox(eoi)%rAttr = x2oacc_ox(eoi)%rAttr / (x2oacc_ox_cnt*1.0_r8)
-               endif
-            enddo
-            x2oacc_ox_cnt = 0
-            call t_drvstopf  ('driver_ocnprep_avg')
-            if (rof_present .and. ocnrof_prognostic) then
-               ! Map runoff to ocn, average, put in x2oacc_ox(eoi)
-               if (r2xacc_rx_cnt > 0) then
-                  call t_drvstartf ('driver_ocnprep_ravg',barrier=mpicom_CPLID)
-                  do eri = 1,num_inst_rof
-                     r2xacc_rx(eri)%rAttr = r2xacc_rx(eri)%rAttr / (r2xacc_rx_cnt*1.0_r8)
-                  enddo
-                  r2xacc_rx_cnt = 0
-                  call t_drvstopf ('driver_ocnprep_ravg')
 
-                  call t_drvstartf ('driver_ocnprep_rof2ocn',barrier=mpicom_CPLID)
-                  do eri = 1,num_inst_rof
-                     call seq_map_map(mapper_Rr2o, r2xacc_rx(eri), r2x_ox(eri), &
-                                      fldlist='Forr_roff:Forr_ioff', norm=.false.)
-                     if (flood_present) then
-                        call seq_map_map(mapper_Fr2o, r2xacc_rx(eri), r2x_ox(eri), &
-                                         fldlist='Flrr_flood', norm=.true.)
-                        ! add flood to roff and zero flood
-                        r2x_ox(eri)%rAttr(index_r2x_Forr_roff,:) = r2x_ox(eri)%rAttr(index_r2x_Forr_roff,:) + &
-                                                                   r2x_ox(eri)%rAttr(index_r2x_Flrr_flood,:)
-                        r2x_ox(eri)%rAttr(index_r2x_Flrr_flood,:) = 0.0_r8
-                     endif
-                  enddo
-                  if (do_hist_r2x) then
-                     do eri = 1,num_inst_rof
-                        call seq_hist_writeaux(EClock_d,'r2xacc'//trim(lnd_suffix(eri)), &
-                                'domr',cdata_rx, r2xacc_rx(eri), rof_nx,rof_ny,1)
-                     enddo
-                  endif
-                  call t_drvstopf  ('driver_ocnprep_rof2ocn')
+            ! finish accumulating ocean inputs
+            ! reset the value of x2o_ox with the value in x2oacc_ox 
+            ! (module variable in prep_ocn_mod)
+            call prep_ocn_accum_avg(timer_accum='driver_ocnprep_avg')
 
-                  ! Use fortran mod to address ensembles in merge
-                  call t_drvstartf ('driver_ocnprep_rofcopy',barrier=mpicom_CPLID)
-                  do eoi = 1,num_inst_ocn
-                     eri = mod((eoi-1),num_inst_rof) + 1
-                     ! The following copies field Forr_roff and Forr_ioff 
-                     ! from r2x_ox to x2oacc_ox
-                     call mct_aVect_copy(aVin=r2x_ox(eri), aVout=x2oacc_ox(eoi))
-                     call mct_aVect_copy(aVin=r2x_ox(eri), aVout=x2o_ox(eoi))   ! for history file
-                  enddo
-                  call t_drvstopf  ('driver_ocnprep_rofcopy')
-               endif
-            endif
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_ocnprep_diagav',barrier=mpicom_CPLID)
-               do eoi = 1,num_inst_ocn
-                  call seq_diag_avect_mct(cdata_ox,x2oacc_ox(eoi),'send ocn'//trim(ocn_suffix(eoi)))
-               enddo
-               call t_drvstopf  ('driver_ocnprep_diagav')
-            endif
+            call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
+                 info_debug=info_debug, timer_diag='driver_ocnprep_diagav')
+
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_OCNPREP',cplrun=.true.)
-         endif
+         end if
 
          !----------------------------------------------------
          ! cpl -> ocn
          !----------------------------------------------------
+
          if (iamin_CPLALLOCNID .and. ocn_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2O_BARRIER')
-               call mpi_barrier(mpicom_CPLALLOCNID,ierr)
-               call t_drvstopf ('DRIVER_C2O_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2O',cplcom=.true.,barrier=mpicom_CPLALLOCNID)
-            do eoi = 1,num_inst_ocn
-               if (iamin_CPLOCNID(eoi)) then
-                  call t_drvstartf ('driver_c2o_ocnx2ocno',barrier=mpicom_CPLOCNID(eoi))
-                  call seq_map_map(mapper_Cx2o(eoi), x2oacc_ox(eoi), x2o_oo(eoi), msgtag=CPLOCNID(eoi)*100+eoi*10+2)
-                  call t_drvstopf  ('driver_c2o_ocnx2ocno')
-               endif
-            enddo
-            call t_drvstartf ('driver_c2o_infoexch',barrier=mpicom_CPLALLOCNID)
-            call seq_infodata_exchange(infodata,CPLALLOCNID,'cpl2ocn_run')
-            call t_drvstopf  ('driver_c2o_infoexch')
-            call t_drvstopf  ('DRIVER_C2O',cplcom=.true.)
+            call component_exch(ocn, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2ocn_run', &
+                 mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2O_BARRIER', timer_comp_exch='DRIVER_C2O', &
+                 timer_map_exch='driver_c2o_ocnx2ocno', timer_infodata_exch='driver_c2o_infoexch')
          endif
-      endif
-  
+
+      end if ! end of OCN SETUP
+
       !----------------------------------------------------------
       ! LND SETUP
       !----------------------------------------------------------
@@ -2870,69 +2038,20 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_LNDPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_LNDPREP_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_LNDPREP_BARRIER')
             call t_drvstartf ('DRIVER_LNDPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
+            if (atm_c2_lnd) then
+               call prep_lnd_calc_a2x_lx(timer='driver_lndprep_atm2lnd')
+            end if
+
             if (lnd_prognostic) then
-               call t_drvstartf ('driver_lndprep_atm2lnd',barrier=mpicom_CPLID)
-               do eai = 1,num_inst_atm
-                  call seq_map_map(mapper_Fa2l, a2x_ax(eai), a2x_lx(eai), norm=.true.)
-               enddo
-               call t_drvstopf  ('driver_lndprep_atm2lnd')
-               if (flood_present) then
-                  call t_drvstartf ('driver_lndprep_rof2lnd',barrier=mpicom_CPLID)
-                  ! Obtain flooding input from rof to be sent back to land 
-                  do eri = 1,num_inst_rof
-                     efi = mod((eri-1),num_inst_frc) + 1
-                     call seq_map_map(mapper_Fr2l, r2x_rx(eri), r2x_lx(eri), &
-                          fldlist=seq_flds_r2x_fluxes, norm=.true.)
-                  end do
-                  call t_drvstopf  ('driver_lndprep_rof2lnd')
-               end if
+               call prep_lnd_mrg(infodata, timer_mrg='driver_lndprep_mrgx2l')
 
-               if (rof_present) then
-                  call t_drvstartf ('driver_lndprep_rof2lnd',barrier=mpicom_CPLID)
-                  ! Obtain volr from rof to be sent back to land 
-                  do eri = 1,num_inst_rof
-                     efi = mod((eri-1),num_inst_frc) + 1
-                     call seq_map_map(mapper_Sr2l,r2x_rx(eri),r2x_lx(eri), &
-                                fldlist=seq_flds_r2x_states, norm=.true.)
-                  end do
-                  call t_drvstopf  ('driver_lndprep_rof2lnd')
-               end if
-
-               call t_drvstartf ('driver_lndprep_mrgx2l',barrier=mpicom_CPLID)
-               ! Use fortran mod to address ensembles in merge
-               do eli = 1,num_inst_lnd
-                  eai = mod((eli-1),num_inst_atm) + 1
-                  eri = mod((eri-1),num_inst_rof) + 1
-                  call mrg_x2l_run_mct( cdata_lx, a2x_lx(eai), r2x_lx(eri), x2l_lx(eli))
-               enddo
-               call t_drvstopf  ('driver_lndprep_mrgx2l')
-
-               if (info_debug > 1) then
-                  call t_drvstartf ('driver_lndprep_diagav',barrier=mpicom_CPLID)
-                  do eli = 1,num_inst_lnd
-                     call seq_diag_avect_mct(cdata_lx,x2l_lx(eli),'send lnd'//trim(lnd_suffix(eli)))
-                  enddo
-                  call t_drvstopf  ('driver_lndprep_diagav')
-               endif
-            endif
-
-            if (glc_present .and. sno_prognostic) then
-               if (info_debug > 1) then
-                  call t_drvstartf ('driver_lndprep_diagav',barrier=mpicom_CPLID)
-                  do eli = 1,num_inst_lnd
-                     call seq_diag_avect_mct(cdata_sx,x2s_sx(eli),'send sno'//trim(lnd_suffix(eli)))
-                  enddo
-                  call t_drvstopf  ('driver_lndprep_diagav')
-               endif
-            endif
+               call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
+                    info_debug=info_debug, timer_diag='driver_lndprep_diagav')
+            end if
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_LNDPREP',cplrun=.true.)
@@ -2943,39 +2062,14 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLALLLNDID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2L_BARRIER')
-               call mpi_barrier(mpicom_CPLALLLNDID,ierr)
-               call t_drvstopf ('DRIVER_C2L_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2L',cplcom=.true.,barrier=mpicom_CPLALLLNDID)
-            do eli = 1,num_inst_lnd
-               if (iamin_CPLLNDID(eli)) then
-                  if (lnd_prognostic) then
-                     call t_drvstartf ('driver_c2l_lndx2lndl', &
-                                       barrier=mpicom_CPLLNDID(eli))
-                     call seq_map_map(mapper_Cx2l(eli), x2l_lx(eli), x2l_ll(eli), msgtag=CPLLNDID(eli)*100+eli*10+2)
-                     call t_drvstopf  ('driver_c2l_lndx2lndl')
-                  endif
-
-                  if (glc_present .and. sno_prognostic) then
-                     call t_drvstartf ('driver_c2l_snox2snos', &
-                                       barrier=mpicom_CPLLNDID(eli))
-                     call seq_map_map(mapper_Cx2s(eli), x2s_sx(eli), x2s_ss(eli), msgtag=CPLLNDID(eli)*100+eli*10+4)
-                     call t_drvstopf  ('driver_c2l_snox2snos')
-                  endif
-               endif
-            enddo
-            if (lnd_prognostic .or. sno_prognostic) then
-               call t_drvstartf ('driver_c2l_infoexch',barrier=mpicom_CPLALLLNDID)
-               call seq_infodata_exchange(infodata,CPLALLLNDID,'cpl2lnd_run')
-               call t_drvstopf  ('driver_c2l_infoexch')
-            endif
-            call t_drvstopf  ('DRIVER_C2L',cplcom=.true.)
+            call component_exch(lnd, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2lnd_run', &
+                 mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2L_BARRIER', timer_comp_exch='DRIVER_C2L', &
+                 timer_map_exch='driver_c2l_lndx2lndl', timer_infodata_exch='driver_c2l_infoexch')
          endif
 
-
-      endif
+      end if
 
       !----------------------------------------------------------
       ! ICE SETUP
@@ -2991,42 +2085,29 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ice_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ICEPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ICEPREP_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ICEPREP_BARRIER')
+
             call t_drvstartf ('DRIVER_ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            call t_drvstartf ('driver_iceprep_ocn2ice',barrier=mpicom_CPLID)
-            do eoi = 1,num_inst_ocn
-               call seq_map_map(mapper_SFo2i, o2x_ox(eoi), o2x_ix(eoi), norm=.true.)
-            enddo
-            call t_drvstopf  ('driver_iceprep_ocn2ice')
-            
-            call t_drvstartf ('driver_iceprep_atm2ice',barrier=mpicom_CPLID)
-            do eai = 1,num_inst_atm
-               call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true.)
-!tcx fails     call map_atm2ice_mct( cdata_ax, a2x_ax(eai), cdata_ix, a2x_ix(eai) )
-            enddo
-            call t_drvstopf  ('driver_iceprep_atm2ice')
-            
-            call t_drvstartf ('driver_iceprep_mrgx2i',barrier=mpicom_CPLID)
-            ! Use fortran mod to address ensembles in merge
-            do eii = 1,num_inst_ice
-               eai = mod((eii-1),num_inst_atm) + 1
-               eoi = mod((eii-1),num_inst_ocn) + 1
-               call mrg_x2i_run_mct( cdata_ix, a2x_ix(eai), o2x_ix(eoi), x2i_ix(eii) )
-            enddo
-            call t_drvstopf  ('driver_iceprep_mrgx2i')
 
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_iceprep_diagav',barrier=mpicom_CPLID)
-               do eii = 1,num_inst_ice
-                  call seq_diag_avect_mct(cdata_ix,x2i_ix(eii),'send ice'//trim(ice_suffix(eii)))
-               enddo
-               call t_drvstopf  ('driver_iceprep_diagav')
-            endif
+
+            if (ocn_c2_ice) then
+               call prep_ice_calc_o2x_ix(timer='driver_iceprep_ocn2ice')
+            end if
+
+            if (atm_c2_ice) then
+               ! This is special to avoid remapping atm to ocn
+               ! Note it is constrained that different prep modules cannot
+               ! use or call each other 
+               a2x_ox => prep_ocn_get_a2x_ox() ! array
+               call prep_ice_calc_a2x_ix(a2x_ox, timer='driver_iceprep_atm2ice')  
+            end if
+
+            call prep_ice_mrg(infodata, timer_mrg='driver_iceprep_mrgx2i')
+
+            call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
+                 info_debug=info_debug, timer_diag='driver_iceprep_diagav')
+
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_ICEPREP',cplrun=.true.)
          endif
@@ -3036,26 +2117,14 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLALLICEID .and. ice_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2I_BARRIER')
-               call mpi_barrier(mpicom_CPLALLICEID,ierr)
-               call t_drvstopf ('DRIVER_C2I_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2I',cplcom=.true.,barrier=mpicom_CPLALLICEID)
-            do eii = 1,num_inst_ice
-               if (iamin_CPLICEID(eii)) then
-                  call t_drvstartf ('driver_c2i_icex2icei',barrier=mpicom_CPLICEID(eii))
-                  call seq_map_map(mapper_Cx2i(eii), x2i_ix(eii), x2i_ii(eii), msgtag=CPLICEID(eii)*100+eii*10+2)
-                  call t_drvstopf  ('driver_c2i_icex2icei')
-               endif
-            enddo
-            call t_drvstartf ('driver_c2i_infoexch',barrier=mpicom_CPLALLICEID)
-            call seq_infodata_exchange(infodata,CPLALLICEID,'cpl2ice_run')
-            call t_drvstopf  ('driver_c2i_infoexch')
-            call t_drvstopf  ('DRIVER_C2I',cplcom=.true.)
+            call component_exch(ice, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2ice_run', &
+                 mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2I_BARRIER', timer_comp_exch='DRIVER_C2I', &
+                 timer_map_exch='driver_c2i_icex2icei', timer_infodata_exch='driver_ice_infoexch')
          endif
 
-      endif
+      end if
 
       !----------------------------------------------------------
       ! WAV Setup
@@ -3068,50 +2137,28 @@ subroutine ccsm_run()
          !----------------------------------------------------------
 
          if (iamin_CPLID .and. wav_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_WAVPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_WAVPREP_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_WAVPREP_BARRIER')
+
             call t_drvstartf ('DRIVER_WAVPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            call t_drvstartf ('driver_wavprep_atm2wav',barrier=mpicom_CPLID)
-            do eai = 1,num_inst_atm
-               call seq_map_map(mapper_Sa2w, a2x_ax(eai), a2x_wx(eai), norm=.true.)
-            enddo
-            call t_drvstopf  ('driver_wavprep_atm2wav')
 
-            call t_drvstartf ('driver_wavprep_ocn2wav',barrier=mpicom_CPLID)
-            do eoi = 1,num_inst_ocn
-               call seq_map_map(mapper_So2w, o2x_ox(eoi), o2x_wx(eoi), norm=.true.)
-            enddo
-            call t_drvstopf  ('driver_wavprep_ocn2wav')
+            if (atm_c2_wav) then
+               call prep_wav_calc_a2x_wx(timer='driver_wavprep_atm2wav')
+            end if
 
-            call t_drvstartf ('driver_wavprep_ice2wav',barrier=mpicom_CPLID)
-            do eii = 1,num_inst_ice
-               call seq_map_map(mapper_Si2w, i2x_ix(eii), i2x_wx(eii), norm=.true.)
-            enddo
-            call t_drvstopf  ('driver_wavprep_ice2wav')
+            if (ocn_c2_wav) then
+               call prep_wav_calc_o2x_wx(timer='driver_wavprep_ocn2wav')
+            end if
 
-            ! Merge wav inputs
-            ! Use fortran mod to address ensembles in merge
-            call t_drvstartf ('driver_wavprep_mrgx2w',barrier=mpicom_CPLID)
-            do ewi = 1,num_inst_wav
-               eai = mod((ewi-1),num_inst_atm) + 1
-               eoi = mod((ewi-1),num_inst_ocn) + 1
-               eii = mod((ewi-1),num_inst_ice) + 1
-               efi = mod((ewi-1),num_inst_frc) + 1
-               call mrg_x2w_run_mct( cdata_wx, a2x_wx(eai), o2x_wx(eoi), i2x_wx(eii), fractions_wx(efi), x2w_wx(ewi))
-            enddo
-            call t_drvstopf  ('driver_wavprep_mrgx2w')
+            if (ice_c2_wav) then
+               call prep_wav_calc_i2x_wx(timer='driver_wavprep_ice2wav')
+            end if
 
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_wavprep_diagav',barrier=mpicom_CPLID)
-               do ewi = 1,num_inst_wav
-                  call seq_diag_avect_mct(cdata_wx,x2w_wx(ewi),'send wav'//trim(wav_suffix(ewi)))
-               enddo
-               call t_drvstopf  ('driver_wavprep_diagav')
-            endif
+            call prep_wav_mrg(infodata, fractions_wx, timer_mrg='driver_wavprep_mrgx2w')
+
+            call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
+                 info_debug=info_debug, timer_diag='driver_wavprep_diagav')
+
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_WAVPREP',cplrun=.true.)
          end if
@@ -3121,24 +2168,13 @@ subroutine ccsm_run()
          !----------------------------------------------------------
 
          if (iamin_CPLALLWAVID .and. wav_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2W_BARRIER')
-               call mpi_barrier(mpicom_CPLALLWAVID,ierr)
-               call t_drvstopf ('DRIVER_C2W_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2W',cplcom=.true.,barrier=mpicom_CPLALLWAVID)
-            do ewi = 1,num_inst_wav
-               if (iamin_CPLWAVID(ewi)) then
-                  call t_drvstartf ('driver_c2w_wavx2wavw',barrier=mpicom_CPLWAVID(ewi))
-                  call seq_map_map(mapper_Cx2w(ewi), x2w_wx(ewi), x2w_ww(ewi))
-                  call t_drvstopf  ('driver_c2w_wavx2wavw')
-               endif
-            enddo
-            call t_drvstartf ('driver_c2w_infoexch',barrier=mpicom_CPLALLWAVID)
-            call seq_infodata_exchange(infodata,CPLALLWAVID,'cpl2wav_run')
-            call t_drvstopf  ('driver_c2w_infoexch')
-            call t_drvstopf  ('DRIVER_C2W',cplcom=.true.)
-         endif
+            call component_exch(wav, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2wav_run', &
+                 mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2W_BARRIER', timer_comp_exch='DRIVER_C2W', &
+                 timer_map_exch='driver_c2w_wavx2wavw', timer_infodata_exch='driver_c2w_infoexch')
+         end if
+
       end if
 
       !----------------------------------------------------------
@@ -3152,41 +2188,22 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLID .and. rof_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ROFPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ROFPREP_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_ROFPREP',cplrun=.true.,barrier=mpicom_CPLID)
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROF_PREP_BARRIER')
+
+            call t_drvstartf ('DRIVER_ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            do eri = 1,num_inst_rof
-               eli = mod((eri-1),num_inst_lnd) + 1
-               efi = mod((eri-1),num_inst_frc) + 1
-               call t_drvstartf ('driver_rofprep_l2xavg',barrier=mpicom_CPLID)
-               if (x2racc_lx_cnt > 0) then
-                  x2racc_lx(eli)%rAttr = x2racc_lx(eli)%rAttr / (x2racc_lx_cnt*1.0_r8)
-               endif
-               call t_drvstopf ('driver_rofprep_l2xavg')
 
-               call t_drvstartf ('driver_rofprep_lnd2rof',barrier=mpicom_CPLID)
-               call seq_map_map(mapper_Fl2r, x2racc_lx(eli), x2r_rx_tmp, &
-                  fldlist=seq_flds_x2r_fluxes, norm=.true., &
-                  avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
-               call t_drvstopf ('driver_rofprep_lnd2rof')
+            call prep_rof_accum_avg(timer='driver_rofprep_l2xavg')
 
-               call t_drvstartf ('driver_rofprep_mrgx2r',barrier=mpicom_CPLID)
-               call mrg_x2r_run_mct( cdata_rx, x2r_rx_tmp, fractions_rx(efi), x2r_rx(eri))
-               call t_drvstopf ('driver_rofprep_mrgx2r')
-            end do
-            x2racc_lx_cnt = 0 
-
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_rofprep_diagav',barrier=mpicom_CPLID)
-               do eri = 1,num_inst_rof
-                  call seq_diag_avect_mct(cdata_rx, x2r_rx(eri),'send roff'//trim(rof_suffix(eri)))
-               enddo
-               call t_drvstopf ('driver_rofprep_diagav')
+            if (lnd_c2_rof) then
+               call prep_rof_calc_l2r_rx(fractions_lx, timer='driver_rofprep_lnd2rof')
             end if
+
+            call prep_rof_mrg(infodata, fractions_rx, timer_mrg='driver_rofprep_mrgx2r')
+
+            call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
+                 info_debug=info_debug, timer_diag='driver_rofprep_diagav')
+
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_ROFPREP',cplrun=.true.)
          end if
@@ -3196,444 +2213,268 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLALLROFID .and. rof_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2R_BARRIER')
-               call mpi_barrier(mpicom_CPLALLROFID,ierr)
-               call t_drvstopf ('DRIVER_C2R_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2R',cplcom=.true.,barrier=mpicom_CPLALLLNDID)
-            do eri = 1,num_inst_rof
-               if (iamin_CPLROFID(eri)) then
-                  call t_drvstartf ('driver_c2r_rofx2rofi',barrier=mpicom_CPLROFID(eri))
-                  call seq_map_map(mapper_Cx2r(eri), x2r_rx(eri), x2r_rr(eri), msgtag=CPLROFID(eri)*100+eri*10+2)
-                  call t_drvstopf  ('driver_c2r_rofx2rofi')
-               end if
-            end do
-            call t_drvstartf ('driver_c2r_infoexch',barrier=mpicom_CPLALLROFID)
-            call seq_infodata_exchange(infodata,CPLALLROFID,'cpl2rof_run')
-            call t_drvstopf  ('driver_c2r_infoexch')
-            call t_drvstopf  ('DRIVER_C2R',cplcom=.true.)
+            call component_exch(rof, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2rof_run', &
+                 mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2R_BARRIER', timer_comp_exch='DRIVER_C2R', &
+                 timer_map_exch='driver_c2r_rofx2rofr', timer_infodata_exch='driver_c2r_infoexch')
          end if
 
       end if
 
       !----------------------------------------------------------
-      ! Run Ice Model
+      ! Run ice model
       !----------------------------------------------------------
 
       if (ice_present .and. icerun_alarm) then
-         do eii = 1,num_inst_ice
-            if (iamin_ICEID(eii)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_ICE_RUN_BARRIER')
-                  call mpi_barrier(mpicom_ICEID(eii),ierr)
-                  call t_drvstopf ('DRIVER_ICE_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_ICE_RUN',barrier=mpicom_ICEID(eii))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_ICEID)
-               if (ice_prognostic) call mct_avect_vecmult(x2i_ii(eii),areacor_ii(eii)%drv2mdl,seq_flds_x2i_fluxes)
-               call ice_run_mct( EClock_i, cdata_ii(eii), x2i_ii(eii), i2x_ii(eii))
-               call mct_avect_vecmult(i2x_ii(eii),areacor_ii(eii)%mdl2drv,seq_flds_i2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_ICE_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(4) = cktime_acc(4) + cktime
-                  cktime_cnt(4) = cktime_cnt(4) + 1
-                  write(logunit,107) ' rstamp ice_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(4)/cktime_cnt(4),' dt = ',cktime
-               endif
-            endif
-         enddo
+#ifdef ESMF_INTERFACE
+         call component_run(Eclock_i, ice, infodata, &
+#else
+         call component_run(Eclock_i, ice, ice_run, infodata, &
+#endif
+              seq_flds_x2c_fluxes=seq_flds_x2i_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_i2x_fluxes, &       
+              comp_prognostic=ice_prognostic, comp_num=4, &
+              timer_barrier= 'DRIVER_ICE_RUN_BARRIER', timer_comp_run='DRIVER_ICE_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ice_layout)
       endif
 
       !----------------------------------------------------------
-      ! Run Land Model 
+      ! Run land model 
       !----------------------------------------------------------
 
-      if ((lnd_present .or. sno_present) .and. lndrun_alarm) then
-         do eli = 1,num_inst_lnd
-            if (iamin_LNDID(eli)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_LND_RUN_BARRIER')
-                  call mpi_barrier(mpicom_LNDID(eli),ierr)
-                  call t_drvstopf ('DRIVER_LND_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_LND_RUN',barrier=mpicom_LNDID(eli))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_LNDID)
-               if (lnd_prognostic) call mct_avect_vecmult(x2l_ll(eli),areacor_ll(eli)%drv2mdl,seq_flds_x2l_fluxes)
-               if (sno_prognostic) call mct_avect_vecmult(x2s_ss(eli),areacor_ss(eli)%drv2mdl,seq_flds_x2s_fluxes)
-               call lnd_run_mct( EClock_l, cdata_ll(eli), x2l_ll(eli), l2x_ll(eli), &
-                                           cdata_ss(eli), x2s_ss(eli), s2x_ss(eli))
-               if (lnd_present) call mct_avect_vecmult(l2x_ll(eli),areacor_ll(eli)%mdl2drv,seq_flds_l2x_fluxes)
-               if (sno_present) call mct_avect_vecmult(s2x_ss(eli),areacor_ss(eli)%mdl2drv,seq_flds_s2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_LND_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(3) = cktime_acc(3) + cktime
-                  cktime_cnt(3) = cktime_cnt(3) + 1
-                  write(logunit,107) ' rstamp lnd_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(3)/cktime_cnt(3),' dt = ',cktime
-               endif
-            endif   ! iamin_LNDID(eli)
-         enddo   ! eli
-      endif   ! lnd_present or sno_present and lndrun_alarm
+      if (lnd_present .and. lndrun_alarm) then
+#ifdef ESMF_INTERFACE
+         call component_run(Eclock_l, lnd, infodata, &
+#else
+         call component_run(Eclock_l, lnd, lnd_run, infodata, &
+#endif
+              seq_flds_x2c_fluxes=seq_flds_x2l_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_l2x_fluxes, &       
+              comp_prognostic=lnd_prognostic, comp_num=3, &
+              timer_barrier= 'DRIVER_LND_RUN_BARRIER', timer_comp_run='DRIVER_LND_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=lnd_layout)
+      endif
 
       !----------------------------------------------------------
-      ! Run River Runoff model
+      ! Run river model
       !----------------------------------------------------------
 
       if (rof_present .and. rofrun_alarm) then
-         do eri = 1,num_inst_rof
-            if (iamin_ROFID(eri)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_ROF_RUN_BARRIER')
-                  call mpi_barrier(mpicom_ROFID(eri),ierr)
-                  call t_drvstopf ('DRIVER_ROF_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf  ('DRIVER_ROF_RUN',barrier=mpicom_ROFID(eri))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_ROFID)
-               if (rof_prognostic) call mct_avect_vecmult(x2r_rr(eri),areacor_rr(eri)%drv2mdl,seq_flds_x2r_fluxes)
-               call rof_run_mct(Eclock_r, cdata_rr(eri), x2r_rr(eri), r2x_rr(eri))
-               call mct_avect_vecmult(r2x_rr(eri),areacor_rr(eri)%mdl2drv,seq_flds_r2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_ROF_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(7) = cktime_acc(7) + cktime
-                  cktime_cnt(7) = cktime_cnt(7) + 1
-                  write(logunit,107) ' rstamp rof_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(7)/cktime_cnt(7),' dt = ',cktime
-               endif
-            end if
-         enddo
-      end if 
+#ifdef ESMF_INTERFACE
+         call component_run(Eclock_r, rof, infodata, &
+#else
+         call component_run(Eclock_r, rof, rof_run, infodata, &
+#endif
+              seq_flds_x2c_fluxes=seq_flds_x2r_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_r2x_fluxes, &       
+              comp_prognostic=rof_prognostic, comp_num=8, &
+              timer_barrier= 'DRIVER_ROF_RUN_BARRIER', timer_comp_run='DRIVER_ROF_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=rof_layout)
+      end if
 
       !----------------------------------------------------------
       ! Run wave model
       !----------------------------------------------------------
 
       if (wav_present .and. wavrun_alarm) then
-         do ewi = 1,num_inst_wav
-            if (iamin_WAVID(ewi)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_WAV_RUN_BARRIER')
-                  call mpi_barrier(mpicom_WAVID(ewi),ierr)
-                  call t_drvstopf ('DRIVER_WAV_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_WAV_RUN',barrier=mpicom_WAVID(ewi))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_WAVID)
-               if (wav_prognostic) call mct_avect_vecmult(x2w_ww(ewi),areacor_ww(ewi)%drv2mdl,seq_flds_x2w_fluxes)
-               call wav_run_mct( EClock_w, cdata_ww(ewi), x2w_ww(ewi), w2x_ww(ewi))
-               call mct_avect_vecmult(w2x_ww(ewi),areacor_ww(ewi)%mdl2drv,seq_flds_w2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_WAV_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(8) = cktime_acc(8) + cktime
-                  cktime_cnt(8) = cktime_cnt(8) + 1
-                  write(logunit,107) ' rstamp wav_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(8)/cktime_cnt(8),' dt = ',cktime
-               endif
-            endif
-         enddo
+#ifdef ESMF_INTERFACE
+         call component_run(Eclock_w, wav, infodata, &
+#else
+         call component_run(Eclock_w, wav, wav_run, infodata, &
+#endif
+              seq_flds_x2c_fluxes=seq_flds_x2w_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_w2x_fluxes, &       
+              comp_prognostic=wav_prognostic, comp_num=8, &
+              timer_barrier= 'DRIVER_WAV_RUN_BARRIER', timer_comp_run='DRIVER_WAV_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=wav_layout)
       end if
 
       !----------------------------------------------------------
-      ! Run Ocn Model HERE, if ocean_tight_coupling
+      ! Run ocn model HERE IF ocean_tight_coupling
       !----------------------------------------------------------
 
-      if (ocean_tight_coupling) then
-      if (ocn_present .and. ocnrun_alarm) then
-         do eoi = 1,num_inst_ocn
-            if (iamin_OCNID(eoi)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_OCN_RUN_BARRIER')
-                  call mpi_barrier(mpicom_OCNID(eoi),ierr)
-                  call t_drvstopf ('DRIVER_OCN_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_OCN_RUN',barrier=mpicom_OCNID(eoi))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_OCNID)
-               if (ocn_prognostic) call mct_avect_vecmult(x2o_oo(eoi),areacor_oo(eoi)%drv2mdl,seq_flds_x2o_fluxes)
-               call ocn_run_mct( EClock_o, cdata_oo(eoi), x2o_oo(eoi), o2x_oo(eoi))
-               call mct_avect_vecmult(o2x_oo(eoi),areacor_oo(eoi)%mdl2drv,seq_flds_o2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_OCN_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(5) = cktime_acc(5) + cktime
-                  cktime_cnt(5) = cktime_cnt(5) + 1
-                  write(logunit,107) ' rstamp ocn_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(5)/cktime_cnt(5),' dt = ',cktime
-               endif
-            endif
-         enddo
+      IF (ocn_present .and. ocnrun_alarm) then
+         if (ocean_tight_coupling) then
+#ifdef ESMF_INTERFACE
+            call component_run(Eclock_o, ocn, infodata, &
+#else
+            call component_run(Eclock_o, ocn, ocn_run, infodata, &
+#endif
+                 seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
+                 seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &       
+                 comp_prognostic=ocn_prognostic, comp_num=5, &
+                 timer_barrier= 'DRIVER_OCN_RUN_BARRIER', timer_comp_run='DRIVER_OCN_RUN', &
+                 run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
+         endif
       endif
-      endif
- 
+
       !----------------------------------------------------------
       ! ocn -> cpl, tight coupling (sequential type mode)
       !----------------------------------------------------------
 
       if (ocean_tight_coupling) then
-      if (iamin_CPLALLOCNID) then
-      if (ocn_present .and. ocnnext_alarm) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_O2CT_BARRIER')
-            call mpi_barrier(mpicom_CPLALLOCNID,ierr)
-            call t_drvstopf ('DRIVER_O2CT_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_O2CT',cplcom=.true.,barrier=mpicom_CPLALLOCNID)
-         do eoi = 1,num_inst_ocn
-            if (iamin_CPLOCNID(eoi)) then
-               call t_drvstartf ('driver_o2ct_ocno2ocnx',barrier=mpicom_CPLOCNID(eoi))
-               call seq_map_map(mapper_Co2x(eoi), o2x_oo(eoi), o2x_ox(eoi), msgtag=CPLOCNID(eoi)*100+eoi*10+4)
-               call t_drvstopf  ('driver_o2ct_ocno2ocnx')
+         if (ocn_present .and. ocnnext_alarm) then
+            if (iamin_CPLALLOCNID) then
+
+               call component_exch(ocn, flow='c2x', &
+                    infodata=infodata, infodata_string='ocn2cpl_run', &
+                    mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
+                    timer_barrier='DRIVER_OC2_BARRIER', timer_comp_exch='DRIVER_O2C', &
+                    timer_map_exch='driver_o2ct_ocno2ocnx', timer_infodata_exch='driver_o2ct_infoexch')
+
+               if (iamin_CPLID) then
+                  call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_OCNPOSTT_BARRIER')
+                  call t_drvstartf  ('DRIVER_OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
+                  if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+                  call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
+                       info_debug=info_debug, timer_diag='driver_ocnpostt_diagav')
+
+                  if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+                  call t_drvstopf  ('DRIVER_OCNPOSTT',cplrun=.true.)
+               endif
+
             endif
-         enddo
-         if (iamin_CPLOCNID(ens1)) then
-            call t_drvstartf ('driver_o2ct_infoexch',barrier=mpicom_CPLOCNID(ens1))
-            call seq_infodata_exchange(infodata,CPLOCNID(ens1),'ocn2cpl_run')
-            call t_drvstopf  ('driver_o2ct_infoexch')
          endif
-         call t_drvstopf  ('DRIVER_O2CT',cplcom=.true.)
-         if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_OCNPOSTT_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_OCNPOSTT_BARRIER')
-            endif
-            call t_drvstartf  ('DRIVER_OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_ocnpostt_diagav',barrier=mpicom_CPLID)
-               do eoi = 1,num_inst_ocn
-                  call seq_diag_avect_mct(cdata_ox,o2x_ox(eoi),'recv ocn'//trim(ocn_suffix(eoi)))
-               enddo
-               call t_drvstopf  ('driver_ocnpostt_diagav')
-            endif
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('DRIVER_OCNPOSTT',cplrun=.true.)
-         endif
-      endif
-      endif
       endif
 
       !----------------------------------------------------------
-      ! OCN PREP
+      ! OCN PREP  
       !----------------------------------------------------------
 
-      if (ocn_present .and. iamin_CPLID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_ATMOCNP_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_ATMOCNP_BARRIER')
-         endif
+      if (iamin_CPLID .and. ocn_present) then
+
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ATMOCNP_BARRIER')
          call t_drvstartf ('DRIVER_ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-         if (ocn_prognostic) then
 
-            ! Map ice to ocn
-            if (ice_present) then
-               call t_drvstartf ('driver_atmocnp_ice2ocn',barrier=mpicom_CPLID)
-               do eii = 1,num_inst_ice
-                  call seq_map_map(mapper_SFi2o, i2x_ix(eii), i2x_ox(eii), norm=.true.)
-               enddo
-               call t_drvstopf  ('driver_atmocnp_ice2ocn')
-            endif
+         ! Compute atm/ocn fluxes (virtual "recv" from ocn) on
+         ! ocn grid or exchange grid
 
-            ! Map wav to ocn
-            if (wav_present) then
-               call t_drvstartf ('driver_atmocnp_wav2ocn',barrier=mpicom_CPLID)
-               do ewi = 1,num_inst_wav
-                  call seq_map_map(mapper_Sw2o, w2x_wx(ewi), w2x_ox(ewi), norm=.true.)
-               enddo
-               call t_drvstopf  ('driver_atmocnp_wav2ocn')
-            endif
-
-            ! Merge ocn inputs
-            call t_drvstartf ('driver_atmocnp_mrgx2o',barrier=mpicom_CPLID)
-            ! Use fortran mod to address ensembles in merge
-            do eoi = 1,num_inst_ocn
-               eai = mod((eoi-1),num_inst_atm) + 1
-               eii = mod((eoi-1),num_inst_ice) + 1
-               ewi = mod((eoi-1),num_inst_wav) + 1
-               exi = mod((eoi-1),num_inst_xao) + 1
-               efi = mod((eoi-1),num_inst_frc) + 1
-               call mrg_x2o_run_mct( cdata_ox, a2x_ox(eai), i2x_ox(eii), w2x_ox(ewi), &
-                    xao_ox(exi), fractions_ox(efi), x2o_ox(eoi) )
-            enddo
-            call t_drvstopf  ('driver_atmocnp_mrgx2o')
-
-            ! Accumulate ocn inputs
-            ! Form partial sum of tavg ocn inputs (virtual "send" to ocn) 
-            call t_drvstartf ('driver_atmocnp_accum',barrier=mpicom_CPLID)
-            do eoi = 1,num_inst_ocn
-!     !        call mct_aVect_accumulate(x2o_ox(eoi), x2oacc_ox(eoi))
-               if (x2oacc_ox_cnt == 0) then
-                  x2oacc_ox(eoi)%rAttr = x2o_ox(eoi)%rAttr
-               else
-                  x2oacc_ox(eoi)%rAttr = x2oacc_ox(eoi)%rAttr + x2o_ox(eoi)%rAttr
-               endif
-            enddo
-            x2oacc_ox_cnt = x2oacc_ox_cnt + 1
-            call t_drvstopf  ('driver_atmocnp_accum')
-         endif
- 
-         ! Compute atm/ocn fluxes (virtual "recv" from ocn)
          do exi = 1,num_inst_xao
             eai = mod((exi-1),num_inst_atm) + 1
             eoi = mod((exi-1),num_inst_ocn) + 1
             efi = mod((exi-1),num_inst_frc) + 1
+
             if (trim(aoflux_grid) == 'ocn') then
+               a2x_ox => prep_ocn_get_a2x_ox()
+               xao_ox => prep_aoflux_get_xao_ox()
+
                call t_drvstartf ('driver_atmocnp_fluxo',barrier=mpicom_CPLID)
-               call seq_flux_atmocn_mct( cdata_ox, a2x_ox(eai), o2x_ox(eoi), xao_ox(exi))
-               call seq_flux_ocnalb_mct(cdata_ox,xao_ox(exi),fractions_ox(efi))
+               call seq_flux_atmocn_mct(infodata, ocn(eoi), a2x_ox(eai), 'ocn', xao_ox(exi))
                call t_drvstopf  ('driver_atmocnp_fluxo')
+
             else if (trim(aoflux_grid) == 'atm') then
                !--- compute later ---
+
             else if (trim(aoflux_grid) == 'exch') then
+               xao_ax   => prep_aoflux_get_xao_ax()
+               xao_ox   => prep_aoflux_get_xao_ox()
+
                call t_drvstartf ('driver_atmocnp_fluxe',barrier=mpicom_CPLID)
-               call seq_flux_atmocnexch_mct( cdata_ax, cdata_ox, a2x_ax(eai), o2x_ox(eoi), xao_ax(exi), xao_ox(exi), &
-                                          fractions_ax(efi), fractions_ox(efi))
-               call seq_flux_ocnalb_mct(cdata_ox,xao_ox(exi),fractions_ox(efi))
+               call seq_flux_atmocnexch_mct( infodata, atm(eai), ocn(eoi), &
+                    fractions_ax(efi), fractions_ox(efi), xao_ax(exi), xao_ox(exi) )
                call t_drvstopf  ('driver_atmocnp_fluxe')
             endif  ! aoflux_grid
          enddo
-         
+
+         ! Compute ocean inputs
+
+         if (ocn_prognostic) then
+            ! Map ice to ocn
+            if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='driver_atmocnp_ice2ocn')
+
+            ! Map wav to ocn
+            if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='driver_atmocnp_wav2ocn')
+
+            ! Merge ocn inputs
+            xao_ox => prep_aoflux_get_xao_ox()
+            call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='driver_atmocnp_mrgx2o')
+
+            ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn) 
+            call prep_ocn_accum(timer='driver_atmocnp_accum') 
+         end if
+
+         ! Compute ocean albedos (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
+         do exi = 1,num_inst_xao
+            eoi = mod((exi-1),num_inst_ocn) + 1
+            efi = mod((exi-1),num_inst_frc) + 1
+
+            if ((trim(aoflux_grid) == 'ocn') .or. (trim(aoflux_grid) == 'exch')) then
+
+               xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
+               call t_drvstartf ('driver_atmocnp_ocnalb', barrier=mpicom_CPLID)
+               call seq_flux_ocnalb_mct(infodata, ocn(1), fractions_ox(efi), xao_ox(exi))
+               call t_drvstopf  ('driver_atmocnp_ocnalb')
+            else if (trim(aoflux_grid) == 'atm') then
+               !--- compute later ---
+            end if
+         end do
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('DRIVER_ATMOCNP',cplrun=.true.)
-      endif
+      end if
 
       !----------------------------------------------------------
       ! lnd -> cpl
       !----------------------------------------------------------
 
-      if ((lnd_present.or.sno_present) .and. lndrun_alarm) then
-      if (iamin_CPLALLLNDID) then
+      if (lnd_present .and. lndrun_alarm) then
+         if (iamin_CPLALLLNDID) then
 
-         do eli = 1,num_inst_lnd
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_L2C_BARRIER')
-               call mpi_barrier(mpicom_CPLALLLNDID,ierr)
-               call t_drvstopf ('DRIVER_L2C_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_L2C',cplcom=.true.,barrier=mpicom_CPLALLLNDID)
-            if (iamin_CPLLNDID(eli)) then
-               if (lnd_present) then
-                  call t_drvstartf ('driver_l2c_lndl2lndx',barrier=mpicom_CPLLNDID(eli))
-                  call seq_map_map(mapper_Cl2x(eli), l2x_ll(eli), l2x_lx(eli), msgtag=CPLLNDID(eli)*100+eli*10+6)
-                  call t_drvstopf  ('driver_l2c_lndl2lndx')
-               endif
-
-               if (sno_present .and. glc_prognostic .and. glcrun_alarm) then
-                  call t_drvstartf ('driver_l2c_snos2snox',barrier=mpicom_CPLLNDID(eli))
-                  call seq_map_map(mapper_Cs2x(eli), s2x_ss(eli), s2x_sx(eli), msgtag=CPLLNDID(eli)*100+eli*10+8)
-                  call t_drvstopf  ('driver_l2c_snos2snox')
-               endif
-
-            endif
-            if (eli == 1 .and. iamin_CPLLNDID(ens1)) then
-               call t_drvstartf ('driver_l2c_infoexch', barrier=mpicom_CPLLNDID(ens1))
-               call seq_infodata_exchange(infodata,CPLLNDID(ens1),'lnd2cpl_run')
-               call t_drvstopf  ('driver_l2c_infoexch')
-            endif
-            call t_drvstopf  ('DRIVER_L2C',cplcom=.true.)
+            call component_exch(lnd, flow='c2x', infodata=infodata, infodata_string='lnd2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_L2C_BARRIER', timer_comp_exch='DRIVER_L2C', &
+                 timer_map_exch='driver_l2c_lndl2lndx', timer_infodata_exch='lnd2cpl_run')
 
             if (iamin_CPLID) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_LNDPOST_BARRIER')
-                  call mpi_barrier(mpicom_CPLID,ierr)
-                  call t_drvstopf ('DRIVER_LNDPOST_BARRIER')
-               endif
+               call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_LNDPOST_BARRIER')
                call t_drvstartf  ('DRIVER_LNDPOST',cplrun=.true.,barrier=mpicom_CPLID)
                if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-               if (info_debug > 1) then
-                  call t_drvstartf ('driver_lndpost_diagav',barrier=mpicom_CPLID)
 
-                  if (lnd_present) then
-                     call seq_diag_avect_mct(cdata_lx, l2x_lx(eli),'recv lnd'//trim(lnd_suffix(eli)))
-                  endif
+               call component_diag(infodata, lnd, flow='c2x', comment='recv lnd', &
+                    info_debug=info_debug, timer_diag='driver_lndpost_diagav')
+            end if
 
-                  if (sno_present .and. glc_prognostic .and. glcrun_alarm) then
-                     call seq_diag_avect_mct(cdata_sx, s2x_sx(eli),'recv sno'//trim(lnd_suffix(eli)))
-                  endif
+            ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
+            if (iamin_CPLID .and. lnd_c2_rof) then
+               call prep_rof_accum(timer='driver_lndpost_accl2r')
+            end if
+            if (iamin_CPLID .and. lnd_c2_glc) then
+               call prep_glc_accum(timer='driver_lndpost_accl2g' )
+            end if
 
-                  call t_drvstopf  ('driver_lndpost_diagav')
-               endif
-
+            if (iamin_CPLID) then
                if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
                call t_drvstopf  ('DRIVER_LNDPOST',cplrun=.true.)
-            endif
-         enddo   ! eli
-      endif   ! CPLALLLNDID
-
-      if (iamin_CPLID .and. lnd_present) then
-         do eli = 1,num_inst_lnd
-            ! want to do mct_avect_copy but need to accumulate so do it manually
-            if (x2racc_lx_cnt == 0) then
-               x2racc_lx(eli)%rAttr(index_x2r_Flrl_rofliq,:) = l2x_lx(eli)%rAttr(index_l2x_Flrl_rofliq,:)
-               x2racc_lx(eli)%rAttr(index_x2r_Flrl_rofice,:) = l2x_lx(eli)%rAttr(index_l2x_Flrl_rofice,:)
-            else
-               x2racc_lx(eli)%rAttr(index_x2r_Flrl_rofliq,:) = x2racc_lx(eli)%rAttr(index_x2r_Flrl_rofliq,:) + &
-                                                               l2x_lx(eli)%rAttr(index_l2x_Flrl_rofliq,:)
-               x2racc_lx(eli)%rAttr(index_x2r_Flrl_rofice,:) = x2racc_lx(eli)%rAttr(index_x2r_Flrl_rofice,:) + &
-                                                               l2x_lx(eli)%rAttr(index_l2x_Flrl_rofice,:)
-            endif
-         end do
-         x2racc_lx_cnt = x2racc_lx_cnt + 1
-      end if
-
+            end if
+         endif   ! CPLALLLNDID
       endif   ! run alarm, lnd_present
 
       !----------------------------------------------------------
       ! GLC SETUP
       !----------------------------------------------------------
 
-      if (sno_present .and. glcrun_alarm) then
+      if (glc_present .and. glcrun_alarm) then
+
+         !----------------------------------------------------
+         ! glc prep
+         !----------------------------------------------------
+
          if (iamin_CPLID .and. glc_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_GLCPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_GLCPREP_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_GLCPREP_BARRIER')
             call t_drvstartf ('DRIVER_GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-            ! Map sno to glc
-            call t_drvstartf ('driver_glcprep_sno2glc',barrier=mpicom_CPLID)
-            do eli = 1,num_inst_lnd
-               call seq_map_map(mapper_SFs2g, s2x_sx(eli), s2x_gx(eli), norm=.true.)
-            enddo
-            call t_drvstopf  ('driver_glcprep_sno2glc')
+            if (lnd_c2_glc) then
+               call prep_glc_accum_avg(timer='driver_glcprep_avg')
 
-            ! Merge glc inputs
-            call t_drvstartf ('driver_glcprep_mrgx2g',barrier=mpicom_CPLID)
-            ! Use fortran mod to address ensembles in merge
-            do egi = 1,num_inst_glc
-               eli = mod((egi-1),num_inst_lnd) + 1
-               call mrg_x2g_run_mct( cdata_gx, s2x_gx(eli), x2g_gx(egi))
-            enddo
-            call t_drvstopf  ('driver_glcprep_mrgx2g')
+               ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+               call prep_glc_calc_l2x_gx(timer='driver_glcprep_lnd2glc')
 
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_glcprep_diagav',barrier=mpicom_CPLID)
-               do egi = 1,num_inst_glc
-                  call seq_diag_avect_mct(cdata_gx,x2g_gx(egi),'send glc'//trim(glc_suffix(egi)))
-               enddo
-               call t_drvstopf  ('driver_glcprep_diagav')
-            endif
+               call prep_glc_mrg(infodata, timer_mrg='driver_glcprep_mrgx2g', timer_diag='driver_glcprep_diagav')
+            end if
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_GLCPREP',cplrun=.true.)
@@ -3644,24 +2485,13 @@ subroutine ccsm_run()
          !----------------------------------------------------
 
          if (iamin_CPLALLGLCID .and. glc_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2G_BARRIER')
-               call mpi_barrier(mpicom_CPLALLGLCID,ierr)
-               call t_drvstopf ('DRIVER_C2G_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2G',cplcom=.true.,barrier=mpicom_CPLALLGLCID)
-            do egi = 1,num_inst_glc
-               if (iamin_CPLGLCID(egi)) then
-                  call t_drvstartf ('driver_c2g_glcx2glcg',barrier=mpicom_CPLGLCID(egi))
-                  call seq_map_map(mapper_Cx2g(egi), x2g_gx(egi), x2g_gg(egi), msgtag=CPLGLCID(egi)*100+egi*10+2)
-                  call t_drvstopf  ('driver_c2g_glcx2glcg')
-               endif
-            enddo
-            call t_drvstartf ('driver_c2g_infoexch',barrier=mpicom_CPLALLGLCID)
-            call seq_infodata_exchange(infodata,CPLALLGLCID,'cpl2glc_run')
-            call t_drvstopf  ('driver_c2g_infoexch')
-            call t_drvstopf  ('DRIVER_C2G',cplcom=.true.)
+            call component_exch(glc, flow='x2c', &
+                 infodata=infodata, infodata_string='cpl2glc_run', &
+                 mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2G_BARRIER', timer_comp_exch='DRIVER_C2G', &
+                 timer_map_exch='driver_c2g_glcx2glcg', timer_infodata_exch='driver_c2g_infoexch')
          endif
+
       endif
 
       !----------------------------------------------------------
@@ -3669,64 +2499,50 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (rof_present .and. rofrun_alarm) then
-      if (iamin_CPLALLROFID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_R2C_BARRIER')
-            call mpi_barrier(mpicom_CPLALLROFID,ierr)
-            call t_drvstopf ('DRIVER_R2C_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_R2C',cplcom=.true., barrier=mpicom_CPLALLROFID)
-         do eri = 1,num_inst_rof
-            if (iamin_CPLROFID(eri)) then
-               call t_drvstartf ('driver_r2c_rofr2rofx',barrier=mpicom_CPLROFID(eri))
-               call seq_map_map(mapper_Cr2x(eri), r2x_rr(eri), r2x_rx(eri), msgtag=CPLROFID(eri)*100+eri*10+4)
-               call t_drvstopf ('driver_r2c_rofr2rofx')
-            end if
-         enddo
-         if (iamin_CPLROFID(ens1)) then
-            call t_drvstartf ('driver_r2c_infoexch',barrier=mpicom_CPLROFID(ens1))
-            call seq_infodata_exchange(infodata,CPLROFID(ens1),'rof2cpl_run')
-            call t_drvstopf  ('driver_r2c_infoexch')
-         endif
-         call t_drvstopf  ('DRIVER_R2C',cplcom=.true.)
+         if (iamin_CPLALLROFID) then
+            call component_exch(rof, flow='c2x', &
+                 infodata=infodata, infodata_string='rof2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_R2C_BARRIER', timer_comp_exch='DRIVER_R2C', &
+                 timer_map_exch='driver_r2c_rofr2rofx', timer_infodata_exch='driver_r2c_infoexch')
+         end if
+      end if
 
+      if (rof_present .and. rofrun_alarm) then
          if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ROFPOST_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ROFPOST_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
             call t_drvstartf  ('DRIVER_ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_rofpost_diagav',barrier=mpicom_CPLID)
+
+            call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
+                 info_debug=info_debug, timer_diag='driver_rofpost_diagav')
+
+            if (do_hist_r2x) then
                do eri = 1,num_inst_rof
-                  call seq_diag_avect_mct(cdata_rx, r2x_rx(eri),'recv roff'//trim(rof_suffix(eri)))
+                  suffix =  component_get_suffix(rof(eri)) 
+                  call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
+                       aname='r2x'//trim(suffix), dname='domrb', &
+                       nx=rof_nx, ny=rof_ny, nt=1)
                enddo
-               call t_drvstopf ('driver_rofpost_diagav')
             endif
 
-            if (ocnrof_prognostic) then
-               call t_drvstartf ('driver_rofpost_raccum',barrier=mpicom_CPLID)
-               ! better to flux correct here if flux_epbalfact varies
-               ! over the accumulation period
-               call seq_infodata_GetData(infodata, flux_epbalfact = flux_epbalfact)
-               ! copy and accumulate only r2o fields 
-               do eri = 1,num_inst_rof
-                  if (r2xacc_rx_cnt == 0) then
-                     r2xacc_rx(eri)%rAttr = r2x_rx(eri)%rAttr * flux_epbalfact
-                  else
-                     r2xacc_rx(eri)%rAttr = r2xacc_rx(eri)%rAttr + r2x_rx(eri)%rAttr * flux_epbalfact
-                  endif
-               enddo
-               r2xacc_rx_cnt = r2xacc_rx_cnt + 1
-               call t_drvstopf ('driver_rofpost_raccum')
-            endif
-               call t_drvstopf  ('DRIVER_ROFPOST', cplrun=.true.)
+            if (rof_c2_lnd) then
+               call prep_lnd_calc_r2x_lx(timer='driver_rofpost_rof2lnd') 
+            end if
+
+            if (rof_c2_ice) then
+               call prep_ice_calc_r2x_ix(timer='driver_rofpost_rof2ice') 
+            end if
+
+            if (rof_c2_ocn) then
+               call prep_ocn_calc_r2x_ox(timer='driver_rofpost_rof2ocn') 
+            end if
+
+            call t_drvstopf  ('DRIVER_ROFPOST', cplrun=.true.)
          endif ! CPLID
-      endif  ! CPLALLROFID
+
       endif  ! (rof_present .and. rofrun_alarm)
-      
+
       !----------------------------------------------------------
       ! budget with old fractions
       !----------------------------------------------------------
@@ -3739,24 +2555,23 @@ subroutine ccsm_run()
       ! consistent with the ocean coupling
 
       if (iamin_CPLID .and. do_budgets) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_BUDGET1_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_BUDGET1_BARRIER')
-         endif
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_BUDGET1_BARRIER')
          call t_drvstartf ('DRIVER_BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (lnd_present) then
-            call seq_diag_lnd_mct(dom_lx, fractions_lx(ens1), l2x_l=l2x_lx(ens1), x2l_l=x2l_lx(ens1))
+            call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), &
+                 do_l2x=.true., do_x2l=.true.)
          endif
          if (rof_present) then
-            call seq_diag_rtm_mct(dom_rx, fractions_rx(ens1), r2x_r=r2x_rx(ens1), x2r_r=x2r_rx(ens1))
+            call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1))
          endif
          if (ocn_present) then
-            call seq_diag_ocn_mct(dom_ox, fractions_ox(ens1), o2x_o=o2x_ox(ens1), x2o_o=x2o_ox(ens1), &
-                 xao_o=xao_ox(ens1), r2x_o=r2x_ox(ens1))
+            xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), &
+                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
          endif
          if (ice_present) then
-            call seq_diag_ice_mct(dom_ix, fractions_ix(ens1), x2i_i=x2i_ix(ens1))
+            call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), &
+                 do_x2i=.true.)
          endif
          call t_drvstopf  ('DRIVER_BUDGET1',cplrun=.true.,budget=.true.)
       endif
@@ -3766,46 +2581,27 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (ice_present .and. icerun_alarm) then
-      if (iamin_CPLALLICEID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_I2C_BARRIER')
-            call mpi_barrier(mpicom_CPLALLICEID,ierr)
-            call t_drvstopf ('DRIVER_I2C_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_I2C',cplcom=.true.,barrier=mpicom_CPLALLICEID)
-         do eii = 1,num_inst_ice
-            if (iamin_CPLICEID(eii)) then
-               call t_drvstartf ('driver_i2c_icei2icex',barrier=mpicom_CPLICEID(eii))
-               call seq_map_map(mapper_Ci2x(eii), i2x_ii(eii), i2x_ix(eii), msgtag=CPLICEID(eii)*100+eii*10+4)
-               call t_drvstopf  ('driver_i2c_icei2icex')
-            endif
-         enddo
-         if (iamin_CPLICEID(ens1)) then
-            call t_drvstartf ('driver_i2c_infoexch',barrier=mpicom_CPLICEID(ens1))
-            call seq_infodata_exchange(infodata,CPLICEID(ens1),'ice2cpl_run')
-            call t_drvstopf  ('driver_i2c_infoexch')
-         endif
-         call t_drvstopf  ('DRIVER_I2C',cplcom=.true.)
+         if (iamin_CPLALLICEID) then
+            call component_exch(ice, flow='c2x', &
+                 infodata=infodata, infodata_string='ice2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_I2C_BARRIER', timer_comp_exch='DRIVER_I2C', &
+                 timer_map_exch='driver_i2c_icei2icex', timer_infodata_exch='driver_r2c_infoexch')
+         end if
+      end if
 
+      if (ice_present .and. icerun_alarm) then
          if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ICEPOST_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ICEPOST_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ICEPOST_BARRIER')
             call t_drvstartf  ('DRIVER_ICEPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_icepost_diagav',barrier=mpicom_CPLID)
-               do eii = 1,num_inst_ice
-                  call seq_diag_avect_mct(cdata_ix,i2x_ix(eii),'recv ice'//trim(ice_suffix(eii)))
-               enddo
-               call t_drvstopf  ('driver_icepost_diagav')
-            endif
+
+            call component_diag(infodata, ice, flow='c2x', comment= 'recv ice', &
+                 info_debug=info_debug, timer_diag='driver_icepost_diagav')
+
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_ICEPOST',cplrun=.true.)
          endif
-      endif   ! CPLALLICEID
       endif   ! run alarm, ice_present
 
       !----------------------------------------------------------
@@ -3813,25 +2609,19 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (iamin_CPLID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_FRACSET_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_FRACSET_BARRIER')
-         endif
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_FRACSET_BARRIER')
          call t_drvstartf ('DRIVER_FRACSET',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          call t_drvstartf ('driver_fracset_fracset',barrier=mpicom_CPLID)
+
          do efi = 1,num_inst_frc
             eii = mod((efi-1),num_inst_ice) + 1
-            call seq_frac_set(i2x_ix(eii), &
-                        cdata_ax, cdata_ix, cdata_lx, cdata_ox, cdata_gx, cdata_rx, cdata_wx, &
-                        ice_present, ocn_present, lnd_present, glc_present, rof_present, wav_present, &
-                        fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
-                        fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
-                        fractions_wx(efi), &
-                        mapper_Fi2a, mapper_SFi2o)
-         enddo
+
+            call seq_frac_set(infodata, ice(eii), &
+                 fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
+         end do
          call t_drvstopf  ('driver_fracset_fracset')
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('DRIVER_FRACSET',cplrun=.true.)
       endif
@@ -3843,46 +2633,34 @@ subroutine ccsm_run()
       if (ocn_present .and. iamin_CPLID) then
          ! Compute atm/ocn fluxes (virtual "recv" from ocn)
          if (trim(aoflux_grid) == 'atm') then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ATMOCNQ_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ATMOCNQ_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ATMOCNQ_BARRIER')
             call t_drvstartf ('DRIVER_ATMOCNQ',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            do eoi = 1,num_inst_ocn
-               efi = mod((eoi-1),num_inst_frc) + 1
-               call t_drvstartf ('driver_atmocnq_ocn2atm1',barrier=mpicom_CPLID)
-               call seq_map_map(mapper_So2a,o2x_ox(eoi),o2x_ax(eoi),fldlist=seq_flds_o2x_states,norm=.true., &
-                                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-               call t_drvstopf ('driver_atmocnq_ocn2atm1')
-               call t_drvstartf ('driver_atmocnq_ocn2atm2',barrier=mpicom_CPLID)
-               call seq_map_map(mapper_Fo2a,o2x_ox(eoi),o2x_ax(eoi),fldlist=seq_flds_o2x_fluxes,norm=.true.)
-               call t_drvstopf ('driver_atmocnq_ocn2atm2')
-            enddo
-            call t_drvstartf ('driver_atmocnq_fluxa',barrier=mpicom_CPLID)
-            do exi = 1,num_inst_xao 
-               eai = mod((exi-1),num_inst_atm) + 1
-               eoi = mod((exi-1),num_inst_ocn) + 1
-               efi = mod((exi-1),num_inst_frc) + 1
-               call seq_flux_atmocn_mct( cdata_ax, a2x_ax(eai), o2x_ax(eoi), xao_ax(exi))
-               call seq_flux_ocnalb_mct(cdata_ox,xao_ox(exi),fractions_ox(efi))
-!               call seq_hist_spewav('a2x_ax(eai)',gsmap_ax,a2x_ax(eai),atm_nx,atm_ny,1)
-!               call seq_hist_spewav('o2x_ax(eoi)',gsmap_ax,o2x_ax(eoi),atm_nx,atm_ny,1)
-!               call seq_hist_spewav('xao_ax',gsmap_ax,xao_ax,atm_nx,atm_ny,1)
-            enddo
-            call t_drvstopf  ('driver_atmocnq_fluxa')
 
-            call t_drvstartf ('driver_atmocnq_atm2ocnf',barrier=mpicom_CPLID)
-! this mapping has to be done with area overlap mapping for all fields 
-! due to the masking of the xao_ax data and the fact that a2oS is bilinear
-            do exi = 1,num_inst_xao 
-               call seq_map_map(mapper_Fa2o,xao_ax(exi),xao_ox(exi),norm=.true.)
-            enddo
-            call t_drvstopf  ('driver_atmocnq_atm2ocnf')
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('DRIVER_ATMOCNQ',cplrun=.true.)
-         endif
+            if (ocn_c2_atm)  then
+               call prep_atm_calc_o2x_ax(fractions_ox, timer='driver_atmocnq_ocn2atm12')
+
+               call t_drvstartf ('driver_atmocnq_fluxa',barrier=mpicom_CPLID)
+               do exi = 1,num_inst_xao 
+                  eai = mod((exi-1),num_inst_atm) + 1
+                  eoi = mod((exi-1),num_inst_ocn) + 1
+                  emi = mod((exi-1),num_inst_max) + 1
+                  efi = mod((exi-1),num_inst_frc) + 1
+
+                  xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
+                  o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
+                  call seq_flux_atmocn_mct(infodata, atm(ens1), o2x_ax(emi), 'atm', xao_ax(exi))
+
+                  xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
+                  call seq_flux_ocnalb_mct(infodata, ocn(1), fractions_ox(efi), xao_ox(exi))
+               enddo
+               call t_drvstopf  ('driver_atmocnq_fluxa')
+            end if
+
+            if (atm_c2_ocn) then
+               call prep_aoflux_calc_xao_ox(timer='driver_atmocnq_atm2ocnf')
+            end if
+         end if
       endif
 
       !----------------------------------------------------------
@@ -3890,273 +2668,145 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (atm_present .and. atmrun_alarm) then
- 
+
          !----------------------------------------------------------
          ! atm prep
          !----------------------------------------------------------
 
          if (iamin_CPLID .and. atm_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ATMPREP_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ATMPREP_BARRIER')
-            endif
+            call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ATMPREP_BARRIER')
             call t_drvstartf ('DRIVER_ATMPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (ocn_present) then
+
+            if (ocn_c2_atm) then
                if (trim(aoflux_grid) == 'ocn') then
-                  call t_drvstartf ('driver_atmprep_ocn2atmf',barrier=mpicom_CPLID)
-                  do exi = 1,num_inst_xao
-                     efi = mod((exi-1),num_inst_frc) + 1
-                     call seq_map_map(mapper_So2a,xao_ox(exi),xao_ax(exi),fldlist=seq_flds_xao_states,norm=.true., &
-                                      avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-                     call seq_map_map(mapper_Fo2a,xao_ox(exi),xao_ax(exi),fldlist=seq_flds_xao_fluxes,norm=.true., &
-                                      avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-                  enddo
-                  call t_drvstopf  ('driver_atmprep_ocn2atmf')
-               endif
-            endif  ! ocn_present
-            if (ocn_present) then
-               if (trim(aoflux_grid) /= 'atm') then
-                  do eoi = 1,num_inst_ocn
-                     efi = mod((eoi-1),num_inst_frc) + 1
-                     call t_drvstartf ('driver_atmprep_ocn2atm1',barrier=mpicom_CPLID)
-                     call seq_map_map(mapper_So2a,o2x_ox(eoi),o2x_ax(eoi),fldlist=seq_flds_o2x_states,norm=.true., &
-                                      avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-                     call t_drvstopf  ('driver_atmprep_ocn2atm1')
-                     call t_drvstartf ('driver_atmprep_ocn2atm2',barrier=mpicom_CPLID)
-                     call seq_map_map(mapper_Fo2a,o2x_ox(eoi),o2x_ax(eoi),fldlist=seq_flds_o2x_fluxes,norm=.true.)
-                     call t_drvstopf  ('driver_atmprep_ocn2atm2')
-                  enddo
-               endif
-               call t_drvstartf ('driver_atmprep_ocn2atmb',barrier=mpicom_CPLID)
-               do exi = 1,num_inst_xao
-                  efi = mod((exi-1),num_inst_frc) + 1
-                  call seq_map_map(mapper_So2a,xao_ox(exi),xao_ax(exi),fldlist=seq_flds_xao_albedo,norm=.true., &
-                                   avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
-               enddo
-               call t_drvstopf  ('driver_atmprep_ocn2atmb')
-            endif
-            if (ice_present) then
-               call t_drvstartf ('driver_atmprep_ice2atm',barrier=mpicom_CPLID)
-               do eii = 1,num_inst_ice
-                  efi = mod((eii-1),num_inst_frc) + 1
-                  call seq_map_map(mapper_Si2a, i2x_ix(eii), i2x_ax(eii), fldlist=seq_flds_i2x_states, &
-                       avwts_s=fractions_ix(efi), avwtsfld_s='ifrac')
-                  call seq_map_map(mapper_Fi2a, i2x_ix(eii), i2x_ax(eii), fldlist=seq_flds_i2x_fluxes, &
-                       avwts_s=fractions_ix(efi), avwtsfld_s='ifrac')
-               enddo
-               call t_drvstopf  ('driver_atmprep_ice2atm')
-            endif
-            if (lnd_present) then
-               call t_drvstartf ('driver_atmprep_lnd2atm',barrier=mpicom_CPLID)
-               do eli = 1,num_inst_lnd
-                  efi = mod((eli-1),num_inst_frc) + 1
-                  call seq_map_map(mapper_Sl2a,l2x_lx(eli),l2x_ax(eli), &
-                                   fldlist=seq_flds_l2x_states, norm=.true., &
-                                   avwts_s=fractions_lx(efi),avwtsfld_s='lfrin')
-                  call seq_map_map(mapper_Fl2a,l2x_lx(eli),l2x_ax(eli), &
-                                   fldlist=seq_flds_l2x_fluxes, norm=.true., &
-                                   avwts_s=fractions_lx(efi),avwtsfld_s='lfrin')
-               enddo
-               call t_drvstopf  ('driver_atmprep_lnd2atm')
-            endif
-            call t_drvstartf ('driver_atmprep_mrgx2a',barrier=mpicom_CPLID)
+                  ! Get atm/ocn fluxes on atm grid
+                  call prep_aoflux_calc_xao_ax(fractions_ox, &
+                       flds='states_and_fluxes', timer='driver_init_atminit') 
+               end if
 
-            ! Use fortran mod to address ensembles in merge
-            do eai = 1,num_inst_atm
-               eli = mod((eai-1),num_inst_lnd) + 1
-               eoi = mod((eai-1),num_inst_ocn) + 1
-               eii = mod((eai-1),num_inst_ice) + 1
-               exi = mod((eai-1),num_inst_xao) + 1
-               efi = mod((eai-1),num_inst_frc) + 1
-               call mrg_x2a_run_mct( cdata_ax, l2x_ax(eli), o2x_ax(eoi), xao_ax(exi), i2x_ax(eii), fractions_ax(efi), x2a_ax(eai))
-            enddo
-!            call seq_hist_spewav('x2a_ax(eai)',gsmap_ax,x2a_ax(eai),atm_nx,atm_ny,1)
-            call t_drvstopf  ('driver_atmprep_mrgx2a')
+               if (trim(aoflux_grid) == 'ocn' .or. trim(aoflux_grid) == 'exch') then 
+                  ! Get ocn output on atm grid
+                  call prep_atm_calc_o2x_ax(fractions_ox, &
+                       timer='driver_atmocnq_atm2ocn12')
+               end if
 
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_atmprep_diagav',barrier=mpicom_CPLID)
-               do eai = 1,num_inst_atm
-                  call seq_diag_avect_mct(cdata_ax,x2a_ax(eai),'send atm'//trim(atm_suffix(eai)))
-               enddo
-               call t_drvstopf  ('driver_atmprep_diagav')
-            endif
+               ! Get albedos on atm grid
+               call prep_aoflux_calc_xao_ax(fractions_ox, &
+                    flds='albedos', timer='driver_atmocnq_atm2ocnb')
+            end if
+
+            if (ice_c2_atm) then
+               call prep_atm_calc_i2x_ax(fractions_ix, timer='driver_atmprep_ice2atm')
+            end if
+
+            if (lnd_c2_atm) then
+               call prep_atm_calc_l2x_ax(fractions_lx, timer='driver_atmprep_lnd2atm')
+            end if
+
+            ! Merge inputs to atm 
+            if (associated(xao_ax)) then  
+               call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='driver_atmprep_mrgx2a') 
+            end if
+
+            call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
+                 timer_diag='driver_atmprep_diagav')
+
             call t_drvstopf  ('DRIVER_ATMPREP',cplrun=.true.)
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-         endif  ! CPLID
+         end if
 
          !----------------------------------------------------------
          ! cpl -> atm
          !----------------------------------------------------------
 
-         if (iamin_CPLALLATMID) then
-         if (atm_prognostic) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_C2A_BARRIER')
-               call mpi_barrier(mpicom_CPLALLATMID,ierr)
-               call t_drvstopf ('DRIVER_C2A_BARRIER')
-            endif
-            call t_drvstartf ('DRIVER_C2A',cplcom=.true.,barrier=mpicom_CPLALLATMID)
-            do eai = 1,num_inst_atm
-               if (iamin_CPLATMID(eai)) then
-                  call t_drvstartf ('driver_c2a_atmx2atma',barrier=mpicom_CPLATMID(eai))
-                  call seq_map_map(mapper_Cx2a(eai), x2a_ax(eai), x2a_aa(eai), msgtag=CPLATMID(eai)*100+eai*10+2)
-                  call t_drvstopf  ('driver_c2a_atmx2atma')
-               endif
-            enddo
-            call t_drvstartf ('driver_c2a_infoexch',barrier=mpicom_CPLALLATMID)
-            call seq_infodata_exchange(infodata,CPLALLATMID,'cpl2atm_run')
-            call t_drvstopf  ('driver_c2a_infoexch')
-            call t_drvstopf  ('DRIVER_C2A',cplcom=.true.)
-         endif
+         if (iamin_CPLALLATMID .and. atm_prognostic) then
+            call component_exch(atm, flow='x2c', infodata=infodata, infodata_string='cpl2atm_run', &
+                 mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_C2A_BARRIER', timer_comp_exch='DRIVER_C2A', &
+                 timer_map_exch='driver_c2a_atmx2atmg', timer_infodata_exch='driver_c2a_infoexch') 
          endif
 
       endif
 
       !----------------------------------------------------------
-      ! Run Ocn Model HERE if NOT ocean_tight_coupling
+      ! Run ocn model HERE if NOT ocean_tight_coupling
       !----------------------------------------------------------
 
-      if (.not.ocean_tight_coupling) then
       if (ocn_present .and. ocnrun_alarm) then
-         do eoi = 1,num_inst_ocn
-            if (iamin_OCNID(eoi)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_OCN_RUN_BARRIER')
-                  call mpi_barrier(mpicom_OCNID(eoi),ierr)
-                  call t_drvstopf ('DRIVER_OCN_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_OCN_RUN',barrier=mpicom_OCNID(eoi))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_OCNID)
-               if (ocn_prognostic) call mct_avect_vecmult(x2o_oo(eoi),areacor_oo(eoi)%drv2mdl,seq_flds_x2o_fluxes)
-               call ocn_run_mct( EClock_o, cdata_oo(eoi), x2o_oo(eoi), o2x_oo(eoi))
-               call mct_avect_vecmult(o2x_oo(eoi),areacor_oo(eoi)%mdl2drv,seq_flds_o2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_OCN_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(5) = cktime_acc(5) + cktime
-                  cktime_cnt(5) = cktime_cnt(5) + 1
-                  write(logunit,107) ' rstamp ocn_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(5)/cktime_cnt(5),' dt = ',cktime
-               endif
-            endif
-         enddo
-      endif
-      endif
- 
+         if (.not.ocean_tight_coupling) then
+#ifdef ESMF_INTERFACE
+            call component_run(Eclock_o, ocn, infodata, &
+#else
+            call component_run(Eclock_o, ocn, ocn_run, infodata, &
+#endif
+                 seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
+                 seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &       
+                 comp_prognostic=ocn_prognostic, comp_num=5, &
+                 timer_barrier= 'DRIVER_OCN_RUN_BARRIER', timer_comp_run='DRIVER_OCN_RUN', &
+                 run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
+         endif
+      end if
+
       !----------------------------------------------------------
-      ! RUN atm model
+      ! Run atm model
       !----------------------------------------------------------
 
       if (atm_present .and. atmrun_alarm) then
-         do eai = 1,num_inst_atm
-            if (iamin_ATMID(eai)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_ATM_RUN_BARRIER')
-                  call mpi_barrier(mpicom_ATMID(eai),ierr)
-                  call t_drvstopf ('DRIVER_ATM_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_ATM_RUN',barrier=mpicom_ATMID(eai))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_ATMID)
-               if (atm_prognostic) call mct_avect_vecmult(x2a_aa(eai),areacor_aa(eai)%drv2mdl,seq_flds_x2a_fluxes)
-               call atm_run_mct( EClock_a, cdata_aa(eai), x2a_aa(eai), a2x_aa(eai))
-               call mct_avect_vecmult(a2x_aa(eai),areacor_aa(eai)%mdl2drv,seq_flds_a2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_ATM_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(2) = cktime_acc(2) + cktime
-                  cktime_cnt(2) = cktime_cnt(2) + 1
-                  write(logunit,107) ' rstamp atm_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(2)/cktime_cnt(2),' dt = ',cktime
-               endif
-            endif
-         enddo
-      endif
+#ifdef ESMF_INTERFACE
+         call component_run(Eclock_a, atm, infodata, &
+#else
+         call component_run(Eclock_a, atm, atm_run, infodata, &
+#endif
+              seq_flds_x2c_fluxes=seq_flds_x2a_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_a2x_fluxes, &       
+              comp_prognostic=atm_prognostic, comp_num=2, &
+              timer_barrier= 'DRIVER_ATM_RUN_BARRIER', timer_comp_run='DRIVER_ATM_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod, comp_layout=atm_layout)
+      end if
 
       !----------------------------------------------------------
-      ! Run Glc Model
+      ! Run glc model
       !----------------------------------------------------------
 
       if (glc_present .and. glcrun_alarm) then
-         do egi = 1,num_inst_glc
-            if (iamin_GLCID(egi)) then
-               if (run_barriers) then
-                  call t_drvstartf ('DRIVER_GLC_RUN_BARRIER')
-                  call mpi_barrier(mpicom_GLCID(egi),ierr)
-                  call t_drvstopf ('DRIVER_GLC_RUN_BARRIER')
-                  time_brun = mpi_wtime()
-               endif
-               call t_drvstartf ('DRIVER_GLC_RUN',barrier=mpicom_GLCID(egi))
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLCID)
-               if (glc_prognostic) call mct_avect_vecmult(x2g_gg(egi),areacor_gg(egi)%drv2mdl,seq_flds_x2g_fluxes)
-               call glc_run_mct( EClock_g, cdata_gg(egi), x2g_gg(egi), g2x_gg(egi))
-               call mct_avect_vecmult(g2x_gg(egi),areacor_gg(egi)%mdl2drv,seq_flds_g2x_fluxes)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('DRIVER_GLC_RUN')
-               if (run_barriers) then
-                  time_erun = mpi_wtime()
-                  cktime = time_erun-time_brun
-                  cktime_acc(6) = cktime_acc(6) + cktime
-                  cktime_cnt(6) = cktime_cnt(6) + 1
-                  write(logunit,107) ' rstamp glc_run_time: model date = ', &
-                     ymd,tod,' avg dt = ',cktime_acc(6)/cktime_cnt(6),' dt = ',cktime
-               endif
-            endif
-         enddo
+#ifdef ESMF_INTERFACE
+         call component_run(Eclock_g, glc, infodata, &
+#else
+         call component_run(Eclock_g, glc, glc_run, infodata, &
+#endif
+              seq_flds_x2c_fluxes=seq_flds_x2g_fluxes, &
+              seq_flds_c2x_fluxes=seq_flds_g2x_fluxes, &       
+              comp_prognostic=glc_prognostic, comp_num=6, &
+              timer_barrier= 'DRIVER_GLC_RUN_BARRIER', timer_comp_run='DRIVER_GLC_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=glc_layout)
       endif
- 
+
       !----------------------------------------------------------
       ! wav -> cpl
       !----------------------------------------------------------
 
       if (wav_present .and. wavrun_alarm) then
-      if (iamin_CPLALLWAVID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_W2C_BARRIER')
-            call mpi_barrier(mpicom_CPLALLWAVID,ierr)
-            call t_drvstopf ('DRIVER_W2C_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_W2C',cplcom=.true.,barrier=mpicom_CPLALLWAVID)
-         do ewi = 1,num_inst_wav
-            if (iamin_CPLWAVID(ewi)) then
-               call t_drvstartf ('driver_w2c_wavw2wavx',barrier=mpicom_CPLWAVID(ewi))
-               call seq_map_map(mapper_Cw2x(ewi), w2x_ww(ewi), w2x_wx(ewi))
-               call t_drvstopf  ('driver_w2c_wavw2wavx')
-            endif
-         enddo
-         if (iamin_CPLWAVID(ens1)) then
-            call t_drvstartf ('driver_w2c_infoexch',barrier=mpicom_CPLWAVID(ens1))
-            call seq_infodata_exchange(infodata,CPLWAVID(ens1),'wav2cpl_run')
-            call t_drvstopf  ('driver_w2c_infoexch')
-         endif
-         call t_drvstopf  ('DRIVER_W2C',cplcom=.true.)
+         if (iamin_CPLALLWAVID) then
 
-         if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_WAVPOST_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_WAVPOST_BARRIER')
+            call component_exch(wav, flow='c2x', infodata=infodata, infodata_string='wav2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_W2C_BARRIER', timer_comp_exch='DRIVER_W2C', &
+                 timer_map_exch='driver_w2c_wavw2wavx', timer_infodata_exch='driver_w2c_infoexch')
+
+            if (iamin_CPLID) then
+               call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_WAVPOST_BARRIER')
+               call t_drvstartf  ('DRIVER_WAVPOST',cplrun=.true.,barrier=mpicom_CPLID)
+               if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+               call component_diag(infodata, wav, flow='c2x', comment= 'recv wav', &
+                    info_debug=info_debug, timer_diag='driver_wavpost_diagav')
+
+               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+               call t_drvstopf  ('DRIVER_WAVPOST',cplrun=.true.)
             endif
-            call t_drvstartf  ('DRIVER_WAVPOST',cplrun=.true.,barrier=mpicom_CPLID)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_wavpost_diagav',barrier=mpicom_CPLID)
-               do ewi = 1,num_inst_wav
-                  call seq_diag_avect_mct(cdata_wx,w2x_wx(ewi),'recv wav'//trim(wav_suffix(ewi)))
-               enddo
-               call t_drvstopf  ('driver_wavpost_diagav')
-            endif
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('DRIVER_WAVPOST',cplrun=.true.)
-         endif
-      endif   ! CPLALLWAVID
+
+         endif   ! CPLALLWAVID
       endif   ! run alarm, wav_present
 
       !----------------------------------------------------------
@@ -4164,63 +2814,38 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (glc_present .and. glcrun_alarm) then
-      if (iamin_CPLALLGLCID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_G2C_BARRIER')
-            call mpi_barrier(mpicom_CPLALLGLCID,ierr)
-            call t_drvstopf ('DRIVER_G2C_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_G2C',cplcom=.true.,barrier=mpicom_CPLALLGLCID)
-         do egi = 1,num_inst_glc
-            if (iamin_CPLGLCID(egi)) then
-               call t_drvstartf ('driver_g2c_glcg2glcx',barrier=mpicom_CPLGLCID(egi))
-               call seq_map_map(mapper_Cg2x(egi), g2x_gg(egi), g2x_gx(egi), msgtag=CPLGLCID(egi)*100+egi*10+4)
-               call t_drvstopf  ('driver_g2c_glcg2glcx')
-            endif
-         enddo
-         if (iamin_CPLGLCID(ens1)) then
-            call t_drvstartf ('driver_g2c_infoexch',barrier=mpicom_CPLGLCID(ens1))
-            call seq_infodata_exchange(infodata,CPLGLCID(ens1),'glc2cpl_run')
-            call t_drvstopf  ('driver_g2c_infoexch')
-         endif
-         call t_drvstopf  ('DRIVER_G2C',cplcom=.true.)
+         if (iamin_CPLALLGLCID) then
 
-         if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_GLCPOST_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_GLCPOST_BARRIER')
-            endif
-            call t_drvstartf  ('DRIVER_GLCPOST',cplrun=.true.,barrier=mpicom_CPLID)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_glcpost_diagav',barrier=mpicom_CPLID)
-               do egi = 1,num_inst_glc
-                  call seq_diag_avect_mct(cdata_gx,g2x_gx(egi),'recv glc'//trim(glc_suffix(egi)))
-               enddo
-               call t_drvstopf  ('driver_glcpost_diagav')
-            endif
-            
-            if (sno_prognostic) then
-               call t_drvstartf ('driver_glcpost_glc2sno',barrier=mpicom_CPLID)
-               do egi = 1,num_inst_glc
-                  call seq_map_map(mapper_SFg2s, g2x_gx(egi), g2x_sx(egi), norm=.true.)
-               enddo
-               call t_drvstopf  ('driver_glcpost_glc2sno')
+            call component_exch(glc, flow='c2x', infodata=infodata, infodata_string='glc2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_G2C_BARRIER', timer_comp_exch='DRIVER_G2C', &
+                 timer_map_exch='driver_g2c_glcg2glcx', timer_infodata_exch='driver_g2c_infoexch')
 
-               call t_drvstartf ('driver_glcpost_mrgx2s',barrier=mpicom_CPLID)
-               ! Use fortran mod to address ensembles in merge
-               do eli = 1,num_inst_lnd
-                  egi = mod((eli-1),num_inst_glc) + 1
-                  call mrg_x2s_run_mct( cdata_sx, g2x_sx(egi), x2s_sx(eli) )
-               enddo
-               call t_drvstopf  ('driver_glcpost_mrgx2s')
-            end if
+            if (iamin_CPLID) then
+               call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_GLCPOST_BARRIER')
+               call t_drvstartf  ('DRIVER_GLCPOST',cplrun=.true.,barrier=mpicom_CPLID)
+               if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('DRIVER_GLCPOST',cplrun=.true.)
-         endif
-      endif   ! CPLALLGLCID
+               call component_diag(infodata, glc, flow='c2x', comment= 'recv glc', &
+                    info_debug=info_debug, timer_diag='driver_glcpost_diagav')
+
+               if (glc_c2_lnd) then
+                  call prep_lnd_calc_g2x_lx(timer='driver_glcpost_glc2lnd')
+               end if
+
+               if (glc_c2_ice) then
+                  call prep_ice_calc_g2x_ix(timer='driver_glcpost_glc2ice')
+               end if
+
+               if (glc_c2_ocn) then
+                  call prep_ocn_calc_g2x_ox(timer='driver_glcpost_glc2ocn')
+               end if
+
+               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+               call t_drvstopf  ('DRIVER_GLCPOST',cplrun=.true.)
+            endif
+
+         endif   ! CPLALLGLCID
       endif   ! run alarm, glc_present
 
       !----------------------------------------------------------
@@ -4228,46 +2853,26 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (atm_present .and. atmrun_alarm) then
-      if (iamin_CPLALLATMID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_A2C_BARRIER')
-            call mpi_barrier(mpicom_CPLALLATMID,ierr)
-            call t_drvstopf ('DRIVER_A2C_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_A2C',cplcom=.true.,barrier=mpicom_CPLALLATMID)
-         do eai = 1,num_inst_atm
-            if (iamin_CPLATMID(eai)) then
-               call t_drvstartf ('driver_a2c_atma2atmx',barrier=mpicom_CPLATMID(eai))
-               call seq_map_map(mapper_Ca2x(eai), a2x_aa(eai), a2x_ax(eai), msgtag=CPLATMID(eai)*100+eai*10+4)
-               call t_drvstopf  ('driver_a2c_atma2atmx')
-            endif
-         enddo
-         if (iamin_CPLATMID(ens1)) then
-            call t_drvstartf ('driver_a2c_infoexch',barrier=mpicom_CPLATMID(ens1))
-            call seq_infodata_exchange(infodata,CPLATMID(ens1),'atm2cpl_run')
-            call t_drvstopf  ('driver_a2c_infoexch')
-         endif
-         call t_drvstopf  ('DRIVER_A2C',cplcom=.true.)
+         if (iamin_CPLALLATMID) then
 
-         if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_ATMPOST_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_ATMPOST_BARRIER')
+            call component_exch(atm, flow='c2x', infodata=infodata, infodata_string='atm2cpl_run', &
+                 mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
+                 timer_barrier='DRIVER_A2C_BARRIER', timer_comp_exch='DRIVER_A2C', &
+                 timer_map_exch='driver_a2c_atma2atmx', timer_infodata_exch='driver_a2c_infoexch')
+
+            if (iamin_CPLID) then
+               call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ATMPOST_BARRIER')
+               call t_drvstartf ('DRIVER_ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
+               if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+               call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
+                    info_debug=info_debug, timer_diag='driver_atmpost_diagav')
+
+               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+               call t_drvstopf  ('DRIVER_ATMPOST',cplrun=.true.)
             endif
-            call t_drvstartf ('DRIVER_ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_atmpost_diagav',barrier=mpicom_CPLID)
-               do eai = 1,num_inst_atm
-                  call seq_diag_avect_mct(cdata_ax,a2x_ax(eai),'recv atm'//trim(atm_suffix(eai)))
-               enddo
-               call t_drvstopf  ('driver_atmpost_diagav')
-            endif
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('DRIVER_ATMPOST',cplrun=.true.)
-         endif
-      endif ! CPLALLATMID
+
+         endif ! CPLALLATMID
       endif ! run alarm
 
       !----------------------------------------------------------
@@ -4275,17 +2880,16 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if (iamin_CPLID .and. do_budgets) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_BUDGET2_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_BUDGET2_BARRIER')
-         endif
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_BUDGET2_BARRIER')
+
          call t_drvstartf ('DRIVER_BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (atm_present) then
-            call seq_diag_atm_mct(dom_ax, fractions_ax(ens1), a2x_a=a2x_ax(ens1), x2a_a=x2a_ax(ens1))
+            call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), &
+                 do_a2x=.true., do_x2a=.true.)
          endif
          if (ice_present) then
-            call seq_diag_ice_mct(dom_ix, fractions_ix(ens1), i2x_i=i2x_ix(ens1))
+            call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), &
+                 do_i2x=.true.)
          endif
          call t_drvstopf  ('DRIVER_BUDGET2',cplrun=.true.,budget=.true.)
 
@@ -4294,9 +2898,12 @@ subroutine ccsm_run()
          call t_drvstopf  ('DRIVER_BUDGET3',cplrun=.true.,budget=.true.)
 
          call t_drvstartf ('DRIVER_BUDGETF',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
-         if (.not. dead_comps) call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
-            budget_daily, budget_month, budget_ann, budget_ltann, budget_ltend)
+         if (.not. dead_comps) then
+            call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
+                 budget_daily, budget_month, budget_ann, budget_ltann, budget_ltend)
+         end if
          call seq_diag_zero_mct(EClock=EClock_d)
+
          call t_drvstopf  ('DRIVER_BUDGETF',cplrun=.true.,budget=.true.)
       endif
 
@@ -4304,49 +2911,32 @@ subroutine ccsm_run()
       ! ocn -> cpl, loose coupling (concurrent type mode)
       !----------------------------------------------------------
 
-      if (.not.ocean_tight_coupling) then
-      if (iamin_CPLALLOCNID) then
       if (ocn_present .and. ocnnext_alarm) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_O2C_BARRIER')
-            call mpi_barrier(mpicom_CPLALLOCNID,ierr)
-            call t_drvstopf ('DRIVER_O2C_BARRIER')
-         endif
-         call t_drvstartf ('DRIVER_O2C',cplcom=.true.,barrier=mpicom_CPLALLOCNID)
-         do eoi = 1,num_inst_ocn
-            if (iamin_CPLOCNID(eoi)) then
-               call t_drvstartf ('driver_o2c_ocno2ocnx',barrier=mpicom_CPLOCNID(eoi))
-               call seq_map_map(mapper_Co2x(eoi), o2x_oo(eoi), o2x_ox(eoi), msgtag=CPLOCNID(eoi)*100+eoi*10+6)
-               call t_drvstopf  ('driver_o2c_ocno2ocnx')
-            endif
-         enddo
-         if (iamin_CPLOCNID(ens1)) then
-            call t_drvstartf ('driver_o2c_infoexch',barrier=mpicom_CPLOCNID(ens1))
-            call seq_infodata_exchange(infodata,CPLOCNID(ens1),'ocn2cpl_run')
-            call t_drvstopf  ('driver_o2c_infoexch')
-         endif
-         call t_drvstopf  ('DRIVER_O2C',cplcom=.true.)
+         if (.not.ocean_tight_coupling) then
+            if (iamin_CPLALLOCNID) then
+               call component_exch(ocn, flow='c2x', &
+                    infodata=infodata, infodata_string='ocn2cpl_run', &
+                    mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
+                    timer_barrier='DRIVER_OC2_BARRIER', timer_comp_exch='DRIVER_O2C', &
+                    timer_map_exch='driver_o2c_ocno2ocnx', timer_infodata_exch='driver_o2c_infoexch')
+            end if
+         end if
+      end if
 
-         if (iamin_CPLID) then
-            if (run_barriers) then
-               call t_drvstartf ('DRIVER_OCNPOST_BARRIER')
-               call mpi_barrier(mpicom_CPLID,ierr)
-               call t_drvstopf ('DRIVER_OCNPOST_BARRIER')
+      if (ocn_present .and. ocnnext_alarm) then
+         if (.not.ocean_tight_coupling) then
+            if (iamin_CPLID) then
+               call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_OCNPOST_BARRIER')
+               call t_drvstartf  ('DRIVER_OCNPOST',cplrun=.true.,barrier=mpicom_CPLID)
+               if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+               call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
+                    info_debug=info_debug, timer_diag='driver_ocnpost_diagav')
+
+               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+               call t_drvstopf  ('DRIVER_OCNPOST',cplrun=.true.)
             endif
-            call t_drvstartf  ('DRIVER_OCNPOST',cplrun=.true.,barrier=mpicom_CPLID)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-            if (info_debug > 1) then
-               call t_drvstartf ('driver_ocnpost_diagav',barrier=mpicom_CPLID)
-               do eoi = 1,num_inst_ocn
-                  call seq_diag_avect_mct(cdata_ox,o2x_ox(eoi),'recv ocn'//trim(ocn_suffix(eoi)))
-               enddo
-               call t_drvstopf  ('driver_ocnpost_diagav')
-            endif
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('DRIVER_OCNPOST',cplrun=.true.)
          endif
-      endif
-      endif
       endif
 
       !----------------------------------------------------------
@@ -4354,18 +2944,19 @@ subroutine ccsm_run()
       !----------------------------------------------------------
 
       if ( restart_alarm .and. iamin_CPLID) then
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_RESTART_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_RESTART_BARRIER')
-         endif
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_RESTART_BARRIER')
          call t_drvstartf ('DRIVER_RESTART',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
             write(logunit,104) ' Write restart file at ',ymd,tod
             call shr_sys_flush(logunit)
          endif
-         call seq_rest_write(EClock_d,seq_SyncClock)
+
+         call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
+              atm, lnd, ice, ocn, rof, glc, wav,                      &
+              fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+              fractions_rx, fractions_gx, fractions_wx)
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('DRIVER_RESTART',cplrun=.true.)
       endif
@@ -4376,11 +2967,7 @@ subroutine ccsm_run()
 
       if (iamin_CPLID) then
 
-         if (run_barriers) then
-            call t_drvstartf ('DRIVER_HISTORY_BARRIER')
-            call mpi_barrier(mpicom_CPLID,ierr)
-            call t_drvstopf ('DRIVER_HISTORY_BARRIER')
-         endif
+         call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_HISTORY_BARRIER')
          call t_drvstartf ('DRIVER_HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
          if ( history_alarm) then
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -4388,70 +2975,91 @@ subroutine ccsm_run()
                write(logunit,104) ' Write history file at ',ymd,tod
                call shr_sys_flush(logunit)
             endif
-            call seq_hist_write(EClock_d)
+
+            call seq_hist_write(infodata, EClock_d, &
+                 atm, lnd, ice, ocn, rof, glc, wav, &
+                 fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
+                 fractions_rx, fractions_gx, fractions_wx)
+
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          endif
 
          if (do_histavg) then
-            call seq_hist_writeavg(EClock_d,histavg_alarm)
+            call seq_hist_writeavg(infodata, EClock_d, &
+                 atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm)
          endif
 
          if (do_hist_a2x) then
             do eai = 1,num_inst_atm
+               suffix =  component_get_suffix(atm(eai))
                if (trim(hist_a2x_flds) == 'all') then
-                  call seq_hist_writeaux(EClock_d,'a2x'//trim(atm_suffix(eai)),'doma', &
-                       cdata_ax,a2x_ax(eai),atm_nx,atm_ny,ncpl)
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=ncpl)
                else
-                  call seq_hist_writeaux(EClock_d,'a2x'//trim(atm_suffix(eai)),'doma', &
-                       cdata_ax,a2x_ax(eai),atm_nx,atm_ny,ncpl,flds=hist_a2x_flds)
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=ncpl, flds=hist_a2x_flds)
                endif
             enddo
          endif
 
          if (do_hist_a2x3hr) then
             do eai = 1,num_inst_atm
+               suffix =  component_get_suffix(atm(eai))
                if (trim(hist_a2x3hr_flds) == 'all') then
-                  call seq_hist_writeaux(EClock_d,'a2x3h'//trim(atm_suffix(eai)),'doma', &
-                       cdata_ax,a2x_ax(eai),atm_nx,atm_ny,8,t3hr_alarm)
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x3h'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
                else
-                  call seq_hist_writeaux(EClock_d,'a2x3h'//trim(atm_suffix(eai)),'doma', &
-                       cdata_ax,a2x_ax(eai),atm_nx,atm_ny,8,t3hr_alarm,flds=hist_a2x3hr_flds)
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x3h'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hr_flds)
                end if
             enddo
          endif
 
          if (do_hist_a2x3hrp) then
             do eai = 1,num_inst_atm
+               suffix = component_get_suffix(atm(eai))
                if (trim(hist_a2x3hrp_flds) == 'all') then
-                  call seq_hist_writeaux(EClock_d,'a2x3h_prec'//trim(atm_suffix(eai)),'doma', &
-                       cdata_ax,a2x_ax(eai),atm_nx,atm_ny,8,t3hr_alarm)
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x3h_prec'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
                else
-                  call seq_hist_writeaux(EClock_d,'a2x3h_prec'//trim(atm_suffix(eai)),'doma', &
-                       cdata_ax,a2x_ax(eai),atm_nx,atm_ny,8,t3hr_alarm,flds=hist_a2x3hrp_flds)
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x3h_prec'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hrp_flds)
                end if
             enddo
          endif
 
          if (do_hist_a2x24hr) then
             do eai = 1,num_inst_atm
-               call seq_hist_writeaux(EClock_d,'a2x1d'//trim(atm_suffix(eai)),'doma', &
-                    cdata_ax,a2x_ax(eai),atm_nx,atm_ny,1,t24hr_alarm)
+               suffix = component_get_suffix(atm(eai))
+               call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                    aname='a2x1d'//trim(suffix), dname='doma', &
+                    nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
             enddo
          endif
 
-         if (do_hist_s2x1yr .and. glcrun_alarm) then
+         if (do_hist_l2x1yr .and. glcrun_alarm) then
+            ! Use yr_offset=-1 so the file with fields from year 1 has time stamp 
+            ! 0001-01-01 rather than 0002-01-01, etc.
             do eli = 1,num_inst_lnd
-               ! Use yr_offset=-1 so the file with fields from year 1 has time stamp 
-               ! 0001-01-01 rather than 0002-01-01, etc.
-               call seq_hist_writeaux(EClock_d,'s2x'//trim(lnd_suffix(eli)),'doml', &
-                    cdata_sx,s2x_sx(eli),lnd_nx,lnd_ny,1,t1yr_alarm,yr_offset=-1)
+               suffix = component_get_suffix(lnd(eli))
+               call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
+                    aname='l2x'//trim(suffix), dname='doml', &
+                    nx=lnd_nx, ny=lnd_ny, nt=1, write_now=t1yr_alarm, yr_offset=-1)
             enddo
          endif
 
          if (do_hist_l2x) then
             do eli = 1,num_inst_lnd
-               call seq_hist_writeaux(EClock_d,'l2x'//trim(lnd_suffix(eli)),'doml', &
-                    cdata_lx,l2x_lx(eli),lnd_nx,lnd_ny,ncpl)
+               suffix =  component_get_suffix(lnd(eli))
+               call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
+                    aname='l2x'//trim(suffix), dname='doml', &
+                    nx=lnd_nx, ny=lnd_ny, nt=ncpl)
             enddo
          endif
          call t_drvstopf  ('DRIVER_HISTORY',cplrun=.true.)
@@ -4468,29 +3076,63 @@ subroutine ccsm_run()
             cktime_acc(1) = cktime_acc(1) + cktime
             cktime_cnt(1) = cktime_cnt(1) + 1
             write(logunit,101) ' tStamp_write: model date = ',ymd,tod, &
-               ' wall clock = ',dstr(1:4),'-',dstr(5:6),'-',dstr(7:8),' ',&
-                                tstr(1:2),':',tstr(3:4),':',tstr(5:6), &
-               ' avg dt = ',cktime_acc(1)/cktime_cnt(1),' dt = ',cktime 
+                 ' wall clock = ',dstr(1:4),'-',dstr(5:6),'-',dstr(7:8),' ',&
+                 tstr(1:2),':',tstr(3:4),':',tstr(5:6), &
+                 ' avg dt = ',cktime_acc(1)/cktime_cnt(1),' dt = ',cktime 
             Time_bstep = mpi_wtime()
             call shr_sys_flush(logunit)
+         endif
+      endif
+      if (tod == 0 .and. wall_time_limit > 0.0_r8 .and. .not. force_stop) then
+         time_erun = mpi_wtime()
+         ! time_*run is seconds, wall_time_limit is hours
+         wall_time = (time_erun - time_brun) / 3600._r8   ! convert secs to hrs
+         write(logunit,109) subname//' check wall_time_limit: ',wall_time, wall_time_limit
+         if (wall_time > wall_time_limit) then
+            force_stop = .true.
+            force_stop_tod = 0
+            if (trim(force_stop_at) == 'month') then
+               call shr_cal_date2ymd(ymd,year,month,day)
+               month = month + 1
+               do while (month > 12)
+                  month = month - 12
+                  year = year + 1
+               enddo
+               call shr_cal_ymd2date(year,month,1,force_stop_ymd)
+            elseif (trim(force_stop_at) == 'year') then  ! next year
+               call shr_cal_date2ymd(ymd,year,month,day)
+               call shr_cal_ymd2date(year+1,1,1,force_stop_ymd)
+            elseif (trim(force_stop_at) == 'day') then   ! next day
+               ymdtmp = ymd
+               call shr_cal_advDateInt(1,'days'  ,ymdtmp,0,force_stop_ymd,todtmp,calendar)
+            else    ! day is default
+               ymdtmp = ymd
+               call shr_cal_advDateInt(1,'days'  ,ymdtmp,0,force_stop_ymd,todtmp,calendar)
+            endif
+            write(logunit,108) subname//' reached wall_time_limit (hours) =',wall_time_limit, &
+                               ' :stop at ',force_stop_ymd
          endif
       endif
       if (tod == 0 .or. info_debug > 1) then
          !! Report on memory usage
          !! For now, just look at the first instance of each component
-         if (iamroot_CPLID .or. iamroot_OCNID(ens1) .or. iamroot_ATMID(ens1) .or. &
-             iamroot_LNDID(ens1) .or. iamroot_ICEID(ens1) .or. iamroot_GLCID(ens1) .or. &
-             iamroot_WAVID(ens1)) then
+         if ( iamroot_CPLID .or. &
+              ocn(ens1)%iamroot_compid .or. &
+              atm(ens1)%iamroot_compid .or. &
+              lnd(ens1)%iamroot_compid .or. &
+              ice(ens1)%iamroot_compid .or. &
+              glc(ens1)%iamroot_compid .or. &
+              wav(ens1)%iamroot_compid) then
             call shr_mem_getusage(msize,mrss)
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
-               ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
-               '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
+                 ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
+                 '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
          endif
       endif
       if (info_debug > 1) then
          if (iamroot_CPLID) then
             call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday)
-!            write(logunit,106) ' nextsw_cday = ',nextsw_cday
+            !            write(logunit,106) ' nextsw_cday = ',nextsw_cday
             write(logunit,*) '  nextsw_cday = ',nextsw_cday
          endif
       endif
@@ -4506,7 +3148,7 @@ subroutine ccsm_run()
 
          write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/ccsm_timing_",ymd,"_",tod
          call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
-                    num_outpe=1)
+              num_outpe=1)
 
          call t_startf("sync2_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
@@ -4526,20 +3168,20 @@ subroutine ccsm_run()
    ! Ending of basic time step loop
    !----------------------------------------------------------
 
-end subroutine ccsm_run
-
+ end subroutine ccsm_run
 
 !===============================================================================
+!*******************************************************************************
+!===============================================================================
 
-subroutine ccsm_final()
-  use shr_pio_mod, only : shr_pio_finalize
+ subroutine ccsm_final()
+
+   use shr_pio_mod, only : shr_pio_finalize
    implicit none
+
    !------------------------------------------------------------------------
    ! Finalization of all models
    !------------------------------------------------------------------------
-
- 103  format( 5A )
-   ! TODO finalize routines need to be cleaned up 
 
    call t_barrierf ('DRIVER_FINAL_BARRIER', mpicom_GLOID)
    call t_startf ('DRIVER_FINAL')
@@ -4547,62 +3189,23 @@ subroutine ccsm_final()
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
    call shr_mem_getusage(msize,mrss)
 
-   do ewi = 1,num_inst_wav
-      if (iamin_WAVID(ewi)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_WAVID)
-         call wav_final_mct( EClock_w, cdata_ww(ewi), x2w_ww(ewi), w2x_ww(ewi))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
-
-   do eai = 1,num_inst_atm
-      if (iamin_ATMID(eai)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_ATMID)
-         call atm_final_mct( EClock_a, cdata_aa(eai), x2a_aa(eai), a2x_aa(eai))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
-
-   do eli = 1,num_inst_lnd
-      if (iamin_LNDID(eli)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_LNDID)
-         call lnd_final_mct( EClock_l, cdata_ll(eli), x2l_ll(eli), l2x_ll(eli), &
-                                       cdata_ss(eli), x2s_ss(eli), s2x_ss(eli))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
-
-   do eri = 1,num_inst_rof
-      if (iamin_ROFID(eri)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_ROFID)
-         call rof_final_mct( EClock_l, cdata_rr(eri), x2r_rr(eri), r2x_rr(eri))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
-
-   do eii = 1,num_inst_ice
-      if (iamin_ICEID(eii)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_ICEID)
-         call ice_final_mct( EClock_i, cdata_ii(eii), x2i_ii(eii), i2x_ii(eii))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
-
-   do eoi = 1,num_inst_ocn
-      if (iamin_OCNID(eoi)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_OCNID)
-         call ocn_final_mct( EClock_o, cdata_oo(eoi), x2o_oo(eoi), o2x_oo(eoi))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
-
-   do egi = 1,num_inst_glc
-      if (iamin_GLCID(egi)) then
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLCID)
-         call glc_final_mct( EClock_g, cdata_gg(egi), x2g_gg(egi), g2x_gg(egi))
-         if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-      end if
-   enddo
+#ifdef ESMF_INTERFACE
+   call component_final(EClock_a, atm)
+   call component_final(EClock_l, lnd)
+   call component_final(EClock_r, rof)
+   call component_final(EClock_i, ice)
+   call component_final(EClock_o, ocn)
+   call component_final(EClock_g, glc)
+   call component_final(EClock_w, wav)
+#else
+   call component_final(EClock_a, atm, atm_final)
+   call component_final(EClock_l, lnd, lnd_final)
+   call component_final(EClock_r, rof, rof_final)
+   call component_final(EClock_i, ice, ice_final)
+   call component_final(EClock_o, ocn, ocn_final)
+   call component_final(EClock_g, glc, glc_final)
+   call component_final(EClock_w, wav, wav_final)
+#endif
 
    !------------------------------------------------------------------------
    ! End the run cleanly
@@ -4610,16 +3213,17 @@ subroutine ccsm_final()
 
    call shr_pio_finalize( )
    
-   call shr_mpi_min(msize,msize0,mpicom_GLOID,'driver msize0',all=.true.)
-   call shr_mpi_max(msize,msize1,mpicom_GLOID,'driver msize1',all=.true.)
-   call shr_mpi_min(mrss,mrss0,mpicom_GLOID,'driver mrss0',all=.true.)
-   call shr_mpi_max(mrss,mrss1,mpicom_GLOID,'driver mrss1',all=.true.)
+   call shr_mpi_min(msize ,msize0,mpicom_GLOID,' driver msize0', all=.true.)
+   call shr_mpi_max(msize ,msize1,mpicom_GLOID,' driver msize1', all=.true.)
+   call shr_mpi_min(mrss  ,mrss0,mpicom_GLOID,'  driver mrss0',  all=.true.)
+   call shr_mpi_max(mrss  ,mrss1,mpicom_GLOID,'  driver mrss1',  all=.true.)
+
    if (iamroot_CPLID )then
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, dtime=dtime)
+      simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
       write(logunit,'(//)')
       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-CCSM'
       write(logunit,FormatD) subname, '  at YMD,TOD = ',ymd,tod
-      simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
       write(logunit,FormatR) subname, '# simulated days (this run) = ', simDays
       write(logunit,FormatR) subname, 'compute time (hrs)          = ', (Time_end-Time_begin)/3600._r8
       if ( (Time_end /= Time_begin) .and. (simDays /= 0.0_r8) )then
@@ -4640,111 +3244,8 @@ subroutine ccsm_final()
 
 end subroutine ccsm_final
 
-
 !===============================================================================
-
-subroutine t_drvstartf(string,cplrun,cplcom,budget,barrier)
-
-   implicit none
-
-   character(len=*),intent(in) :: string
-   logical,intent(in),optional :: cplrun
-   logical,intent(in),optional :: cplcom
-   logical,intent(in),optional :: budget
-   integer,intent(in),optional :: barrier
-
-   character(len=128) :: strbar
-   character(len=*),parameter :: strcpl = 'DRIVER_CPL_RUN'
-   character(len=*),parameter :: strcom = 'DRIVER_CPL_COMM'
-   character(len=*),parameter :: strbud = 'DRIVER_BUDGET'
-   logical :: lcplrun,lcplcom,lbudget
-
-!-------------------------------------------------------------------------------
-
-   lcplrun  = .false.
-   lcplcom  = .false.
-   lbudget  = .false.
-   if (present(cplrun)) then
-      lcplrun = cplrun
-   endif
-   if (present(cplcom)) then
-      lcplcom = cplcom
-   endif
-   if (present(budget)) then
-      lbudget = budget
-   endif
-
-   if (present(barrier)) then
-      strbar = trim(string)//'_BARRIER'
-      call t_barrierf (trim(strbar), barrier)
-   endif
-
-   if (lcplrun) then
-      call t_startf   (trim(strcpl))
-   endif
-
-   if (lcplcom) then
-      call t_startf   (trim(strcom))
-   endif
-
-   if (lbudget) then
-      call t_startf   (trim(strbud))
-   endif
-
-   call t_startf   (trim(string))
-
-end subroutine t_drvstartf
-
-!===============================================================================
-
-subroutine t_drvstopf(string,cplrun,cplcom,budget)
-
-   implicit none
-
-   character(len=*),intent(in) :: string
-   logical,intent(in),optional :: cplrun
-   logical,intent(in),optional :: cplcom
-   logical,intent(in),optional :: budget
-
-   character(len=128) :: strbar
-   character(len=*),parameter :: strcpl = 'DRIVER_CPL_RUN'
-   character(len=*),parameter :: strcom = 'DRIVER_CPL_COMM'
-   character(len=*),parameter :: strbud = 'DRIVER_BUDGET'
-   logical :: lcplrun,lcplcom,lbudget
-
-!-------------------------------------------------------------------------------
-
-   lcplrun = .false.
-   lcplcom = .false.
-   lbudget = .false.
-   if (present(cplrun)) then
-      lcplrun = cplrun
-   endif
-   if (present(cplcom)) then
-      lcplcom = cplcom
-   endif
-   if (present(budget)) then
-      lbudget = budget
-   endif
-
-!  strbar = trim(string)//'_BARRIER'
-
-   call t_stopf   (trim(string))
-
-   if (lbudget) then
-      call t_stopf   (trim(strbud))
-   endif
-
-   if (lcplrun) then
-      call t_stopf   (trim(strcpl))
-   endif
-
-   if (lcplcom) then
-      call t_stopf   (trim(strcom))
-   endif
-
-end subroutine t_drvstopf
-
+!*******************************************************************************
 !===============================================================================
 
 subroutine seq_ccsm_printlogheader()
@@ -4792,38 +3293,33 @@ subroutine seq_ccsm_printlogheader()
 
 end subroutine seq_ccsm_printlogheader
 
+!===============================================================================
 
 #ifdef USE_ESMF_LIB
 
-!===============================================================================
-
-subroutine ccsm_comp_init(comp, importState, exportState, clock, rc)
+subroutine ccsm_comp_init(drvcomp, importState, exportState, clock, rc)
    use esmfshr_attribute_mod
-#ifdef ESMF_INTERFACE
-   use atm_comp_mct, only: atm_register
-   use lnd_comp_mct, only: lnd_register
-   use ocn_comp_mct, only: ocn_register
-   use ice_comp_mct, only: ice_register
-   use glc_comp_mct, only: glc_register
-   use rof_comp_mct, only: rof_register
-   use wav_comp_mct, only: wav_register
-#endif
    implicit none
 
-   type(ESMF_CplComp)   :: comp
-   type(ESMF_State)     :: importState, exportState
+   !---------------------------------------------------------------
+   !
+   ! Arguments
+   type(ESMF_CplComp)   :: drvcomp  !top level cap gridded component
+   type(ESMF_State)     :: importState, exportState !not used 
    type(ESMF_Clock)     :: clock
    integer, intent(out) :: rc
 
    ! Local variables
-   type(ESMF_State)    :: attState, imp_state, exp_state
-   integer             :: localrc
-   type(ESMF_GridComp) :: atmComp, lndComp, iceComp, ocnComp, glcComp, &
-                          rofComp, wavComp, cplComp
-   type(ESMF_VM)       :: vm
-   character(len=80)   :: str
-   integer             :: rc2
-   integer, dimension(1) :: rootList
+   type(ESMF_State)      :: attState
+   type(ESMF_GridComp)   :: mapComp
+   type(ESMF_State)      :: map_imp_state, map_exp_state
+   type(ESMF_GridComp)   :: atmComp, lndComp, iceComp, ocnComp 
+   type(ESMF_GridComp)   :: rofComp, glcComp, wavComp
+   type(ESMF_VM)         :: vm
+   integer, pointer      :: cpl_petlist(:) 
+   integer, pointer      :: petlist(:)
+   integer               :: localrc
+   !---------------------------------------------------------------
 
    rc = ESMF_SUCCESS
 
@@ -4834,136 +3330,86 @@ subroutine ccsm_comp_init(comp, importState, exportState, clock, rc)
    attState = ESMF_StateCreate(name="ccsm_atts", rc=localrc)
    if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to create state for attributes')
 
-   call ESMF_AttributeLink(comp, attState, rc=localrc)
+   call ESMF_AttributeLink(drvcomp, attState, rc=localrc)
    if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to link attributes')
 
    !------
-   ! Create and setup the model components
+   ! Create and setup cplgc and mapComp gridded components on the pl pes
    ! import and export states are inout variables to register subroutines and their
    ! values are changed in each iteration and saved in the seq_comm_type array.
    !------
 
    call seq_comm_petlist(CPLID, cpl_petlist)
-   call seq_map_register(cpl_petlist, comp, cplComp, imp_state, exp_state)
-   call seq_comm_setcompstates(CPLID, cplComp, imp_state, exp_state)
+
+   mapComp = ESMF_GridCompCreate(name="seq map comp", petList=cpl_petlist, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create seq map comp')
+   call ESMF_GridCompSetServices(mapComp, seq_map_esmf_register, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to register mapComp')
+   map_imp_state = ESMF_StateCreate(name="seq map import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create import seq map state')
+   map_exp_state = ESMF_StateCreate(name="seq map export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create export seq map state')
+
+   call seq_comm_setcompstates(CPLID, mapComp, map_imp_state, map_exp_state)
 
 #ifdef ESMF_INTERFACE
-   do eai = 1, num_inst_atm
-      call seq_comm_petlist(ATMID(eai),atm_petlist)
-      call atm_register(atm_petlist, comp, atmComp, imp_state, exp_state)
-      call seq_comm_setcompstates(ATMID(eai), atmComp, imp_state, exp_state)
-   enddo
-   do eli = 1, num_inst_lnd
-      call seq_comm_petlist(LNDID(eli),lnd_petlist)
-      call lnd_register(lnd_petlist, comp, lndComp, imp_state, exp_state)
-      call seq_comm_setcompstates(LNDID(eli), lndComp, imp_state, exp_state)
-   enddo
-   do eii = 1, num_inst_ice
-      call seq_comm_petlist(ICEID(eii),ice_petlist)
-      call ice_register(ice_petlist, comp, iceComp, imp_state, exp_state)
-      call seq_comm_setcompstates(ICEID(eii), iceComp, imp_state, exp_state)
-   enddo
-   do eoi = 1, num_inst_ocn
-      call seq_comm_petlist(OCNID(eoi),ocn_petlist)
-      call ocn_register(ocn_petlist, comp, ocnComp, imp_state, exp_state)
-      call seq_comm_setcompstates(OCNID(eoi), ocnComp, imp_state, exp_state)
-   enddo
-   do egi = 1, num_inst_glc
-      call seq_comm_petlist(GLCID(egi),glc_petlist)
-      call glc_register(glc_petlist, comp, glcComp, imp_state, exp_state)
-      call seq_comm_setcompstates(GLCID(egi), glcComp, imp_state, exp_state)
-   enddo
-   do eri = 1, num_inst_rof
-      call seq_comm_petlist(ROFID(eri),rof_petlist)
-      call rof_register(rof_petlist, comp, rofComp, imp_state, exp_state)
-      call seq_comm_setcompstates(ROFID(eri), rofComp, imp_state, exp_state)
-   enddo
-   do ewi = 1, num_inst_wav
-      call seq_comm_petlist(WAVID(ewi),wav_petlist)
-      call wav_register(wav_petlist, comp, wavComp, imp_state, exp_state)
-      call seq_comm_setcompstates(WAVID(ewi), wavComp, imp_state, exp_state)
-   enddo
+   cplgc = ESMF_GridCompCreate(name="seq cpl comp", petList=cpl_petlist, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create seq cpl comp')
+   call ESMF_GridCompSetServices(cplgc, cpl_esmf_register, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to register cplgc')
+   c2x_cx_state = ESMF_StateCreate(name="seq cpl import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create import seq cpl state')
+   x2c_cx_state = ESMF_StateCreate(name="seq cpl export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
+   if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create export seq cpl state')
+
+   call seq_comm_setcompstates(CPLID, cplgc, c2x_cx_state, x2c_cx_state)
 #endif
 
    !------
    ! Process the CESM initialization
    !------
-   call ccsm_init()
+   call ccsm_init(drvcomp)
 
+#ifdef USE_ESMF_METADATA
    !------
    ! Set the application and field level attributes
    !------
-   call esmfshr_attribute_appl_init(comp, rc=localrc)
+   call esmfshr_attribute_appl_init(drvcomp, rc=localrc)
    !call esmfshr_attribute_fields_init(attState, rc=localrc)
+#endif
 
    !------
    ! Get the VM and root pet list to be used for the AttributeUpdate call
    !------
-! get current
-   !call ESMF_VMGetGlobal(vm, rc=localrc)
    call ESMF_VMGetCurrent(vm, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to get VM')
 
 #ifdef ESMF_INTERFACE
-!-------------------------------------------------------------------------
-! The attribute handling part of the code is updated to loop
-! through ensemble instances.
-!-------------------------------------------------------------------------
-   do eai = 1, num_inst_atm
-      call seq_comm_petlist(ATMID(eai),atm_petlist)
-      call seq_comm_getcompstates(ATMID(eai), atmComp)
-      call ESMF_AttributeUpdate(atmComp, vm, rootList=atm_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update atm attributes')
-   enddo 
-   do eli = 1, num_inst_lnd
-      call seq_comm_petlist(LNDID(eli),lnd_petlist)
-      call seq_comm_getcompstates(LNDID(eli), lndComp)
-      call ESMF_AttributeUpdate(lndComp, vm, rootList=lnd_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update lnd attributes')
-   enddo 
-   do eii = 1, num_inst_ice
-      call seq_comm_petlist(ICEID(eii),ice_petlist)
-      call seq_comm_getcompstates(ICEID(eii), iceComp)
-      call ESMF_AttributeUpdate(iceComp, vm, rootList=ice_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update ice attributes')
-   enddo
-   do eoi = 1, num_inst_ocn
-      call seq_comm_petlist(OCNID(eoi),ocn_petlist)
-      call seq_comm_getcompstates(OCNID(eoi), ocnComp)
-      call ESMF_AttributeUpdate(ocnComp, vm, rootList=ocn_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update ocn attributes')
-   enddo
-   do egi = 1, num_inst_glc
-      call seq_comm_petlist(GLCID(egi),glc_petlist)
-      call seq_comm_getcompstates(GLCID(egi), glcComp)
-      call ESMF_AttributeUpdate(glcComp, vm, rootList=glc_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update glc attributes')
-   enddo
-   do eri = 1, num_inst_rof
-      call seq_comm_petlist(ROFID(eri),rof_petlist)
-      call seq_comm_getcompstates(ROFID(eri), rofComp)
-      call ESMF_AttributeUpdate(rofComp, vm, rootList=rof_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update rof attributes')
-   enddo 
-   do ewi = 1, num_inst_wav
-      call seq_comm_petlist(WAVID(ewi),wav_petlist)
-      call seq_comm_getcompstates(WAVID(ewi), wavComp)
-      call ESMF_AttributeUpdate(wavComp, vm, rootList=wav_petlist, rc=localrc)
-      if (localrc /= ESMF_SUCCESS) call shr_sys_abort('failed to update wav attributes')
-   enddo
+   !-------------------------------------------------------------------------
+   ! The attribute handling part of the code is updated to loop
+   ! through ensemble instances.
+   !-------------------------------------------------------------------------
+   call component_init_update_petlist(atm, vm)
+   call component_init_update_petlist(lnd, vm)
+   call component_init_update_petlist(ice, vm)
+   call component_init_update_petlist(ocn, vm)
+   call component_init_update_petlist(glc, vm)
+   call component_init_update_petlist(rof, vm)
+   call component_init_update_petlist(wav, vm)
 
+#ifdef USE_ESMF_METADATA
    !------
    ! Write out all of the attributes to the CIM compliant XML file
    !------
    if (iamroot_GLOID) then
-
       call ESMF_AttributeWrite( &
               comp, &
               convention='CIM', &
               purpose='Model Component Simulation Description', &
               attwriteflag=ESMF_ATTWRITE_XML, rc=localrc)
-
    endif
+#endif
+
 #endif
 
    rc = localrc
@@ -4972,9 +3418,9 @@ end subroutine ccsm_comp_init
 
 !===============================================================================
 
-subroutine ccsm_comp_run(comp, importState, exportState, clock, rc)
+subroutine ccsm_comp_run(drvcomp, importState, exportState, clock, rc)
    implicit none
-   type(ESMF_CplComp)   :: comp
+   type(ESMF_CplComp)   :: drvcomp
    type(ESMF_State)     :: importState, exportState
    type(ESMF_Clock)     :: clock
    integer, intent(out) :: rc
@@ -4987,9 +3433,9 @@ end subroutine ccsm_comp_run
 
 !===============================================================================
 
-subroutine ccsm_comp_final(comp, importState, exportState, clock, rc)
+subroutine ccsm_comp_final(drvcomp, importState, exportState, clock, rc)
    implicit none
-   type(ESMF_CplComp)   :: comp
+   type(ESMF_CplComp)   :: drvcomp
    type(ESMF_State)     :: importState, exportState
    type(ESMF_Clock)     :: clock
    integer, intent(out) :: rc
@@ -5004,20 +3450,22 @@ end subroutine ccsm_comp_final
 !===============================================================================
 !
 ! This subroutine registers the initialization, run and finalization routines
-! for the specified coupler component.  
+! for the specified driver/coupler component.  
 !
-subroutine ccsm_comp_register(comp, rc)
+subroutine ccsm_comp_register(drvcomp, rc)
    implicit none
-   type(ESMF_CplComp) :: comp
+   type(ESMF_CplComp)   :: drvcomp
    integer, intent(out) :: rc
 
    rc = ESMF_SUCCESS
 
-   call ESMF_CplCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &
+   call ESMF_CplCompSetEntryPoint(drvcomp, ESMF_METHOD_INITIALIZE, &
                                   userRoutine=ccsm_comp_init, rc=rc)
-   call ESMF_CplCompSetEntryPoint(comp, ESMF_METHOD_RUN, &
+
+   call ESMF_CplCompSetEntryPoint(drvcomp, ESMF_METHOD_RUN, &
                                   userRoutine=ccsm_comp_run, rc=rc)
-   call ESMF_CplCompSetEntryPoint(comp, ESMF_METHOD_FINALIZE, &
+
+   call ESMF_CplCompSetEntryPoint(drvcomp, ESMF_METHOD_FINALIZE, &
                                   userRoutine=ccsm_comp_final, rc=rc)
 
 end subroutine ccsm_comp_register
@@ -5025,6 +3473,21 @@ end subroutine ccsm_comp_register
 !===============================================================================
 
 #endif
+
+!===============================================================================
+
+subroutine ccsm_comp_barriers(mpicom, timer)
+  implicit none
+  integer         , intent(in) :: mpicom
+  character(len=*), intent(in) :: timer
+  integer :: ierr
+
+  if (run_barriers) then
+     call t_drvstartf (trim(timer))
+     call mpi_barrier(mpicom,ierr)
+     call t_drvstopf (trim(timer))
+  endif
+end subroutine ccsm_comp_barriers
 
 end module ccsm_comp_mod
 

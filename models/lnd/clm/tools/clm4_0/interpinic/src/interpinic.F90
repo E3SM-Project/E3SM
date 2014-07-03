@@ -125,6 +125,7 @@ contains
     integer :: dimids(3) = -1      ! netCDF dimension ids
     integer :: dimlen              ! input dimension length       
     integer :: ret                 ! netcdf return code
+    integer :: ncformat            ! netcdf file format
     character(len=256) :: varname  !variable name
     real(r8), allocatable :: rbufmlo (:,:) !output array
     !--------------------------------------------------------------------
@@ -135,6 +136,11 @@ contains
 
     call check_ret (nf90_open(fin,  NF90_NOWRITE, ncidi ))
     call check_ret (nf90_open(fout, NF90_WRITE,   ncido ))
+    call check_ret (nf_inq_format( ncido, ncformat ))
+    if ( ncformat /= NF_FORMAT_64BIT )then
+       write (6,*) 'Warning: output file is NOT in NetCDF large-file format!'
+       !stop
+    end if
 
     call addglobal (ncido, cmdline)
 
@@ -1383,8 +1389,8 @@ contains
     character(len= 5) :: zone
     character(len=18) :: datetime
     character(len=256):: version = &
-         "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/cesm1_2_rel_tags/cesm1_2_0_n02_clm4_5_07/models/lnd/clm/tools/clm4_0/interpinic/src/interpinic.F90 $"
-    character(len=256)  :: revision_id = "$Id: interpinic.F90 43810 2013-02-07 06:12:57Z erik $"
+         "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_71/models/lnd/clm/tools/clm4_0/interpinic/src/interpinic.F90 $"
+    character(len=256)  :: revision_id = "$Id: interpinic.F90 55582 2013-11-23 21:15:59Z erik $"
     character(len=16)   :: logname
     character(len=16)   :: hostname
     character(len=256)  :: str

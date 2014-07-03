@@ -1,10 +1,211 @@
 ================================================================================
- SVN $Id: ChangeLog 46293 2013-04-24 15:44:52Z erik $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_130424/ChangeLog $
+ SVN $Id: ChangeLog 59519 2014-04-24 17:05:19Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_140424/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
 ================================================================================
+
+================================================================================
+Originator: tcraig
+Date: Apr 24 2014
+Model: datm7
+Version: datm8_140424
+One-line summary:  update pioinit call
+
+M       datm_comp_mod.F90
+
+================================================================================
 Originator: erik
+Date: Mar 12 2014
+Model: datm7
+Version: datm8_140312
+One-line summary:  Set path using DIN_LOC_ROOT_CLMFORC for CLMUSRDAT, abort if 
+      user stream file is readonly, get build-namelist testing working again.
+      remove WRF options
+
+Set the path of data for CLM1PT CLM_USRDAT based on $DIN_LOC_ROOT_CLMFORC so that
+you can easily set it to a non-standard location. This also interfaces with 
+PTCLM better now as PTCLM2_140311 now sets DIN_LOC_ROOT_CLMFORC to the -mydatadir
+directory. So the path is now set to $DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data.
+
+Also check if the user_ streams file is readonly if it is abort as this causes
+nasty problems.
+
+D       bld/datm.template.streams.xml ---- delete -- no longer used
+
+M       bld/build-namelist --------------- Stop if user_datm_ stream file is readonly.
+M       bld/namelist_files/namelist_defaults_datm.xml --- Change filepath for CLM1PT.CLM_USRDAT.
+           remove WRF streams.
+M       bld/namelist_files/namelist_definition_datm.xml - Remove WRF stream option
+M       bld/unit_testers/build-namelist_test.pl --------- Get unit tester working again
+           add DATM_CO2_TSERIES and user_stream writable/readonly to tests. Remove WRF tests.
+
+================================================================================
+Originator: erik
+Date: Jan 14 2013
+Model: datm7
+Version: datm8_140114
+One-line summary:  Add in DATM_CO2_TSERIES
+
+Requires scripts tag that includes DATM_CO2_TSERIES (scripts4_140114b)
+
+Add env option DATM_CO2_TSERIES. If set also read in streams file for CO2
+can be set to: 20tr, rcp2.6, rcp4.5, rcp6.0, rcp8.5. Move CO2_TSERIES_n02_datm8_131201
+tag to trunk. Shorten some BC filenames by using the %y identifier. Note,
+you may need to adjust the starting and align year for a case, if you start
+the case at a non-standard starting year.
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: tcraig
+Date: Dec 01 2013
+Model: datm7
+Version: datm8_131201
+One-line summary: Add force_prognostic_true namelist
+
+M       datm_comp_mod.F90
+M       bld/build-namelist
+M       bld/namelist_files/namelist_definition_datm.xml
+
+================================================================================
+Originator: muszala
+Date: Nov. 15 2013
+Model: datm7
+Version: datm8_131116
+One-line summary: Swenson anomaly forcing - Part 1
+
+add additional data streams to modify existing
+data streams for purposes such as bias correction or specifying
+future changes relative to baseline data streams, e.g. specifying
+future atmospheric forcing anomalies when running CLM with data atmosphere.
+Paired with clm4_5_49.
+
+See CLM ChangeLog for what to set in user namelists.
+
+This is part 1 of 2.  Part 2 will address a general way to handle
+streams in the DATM that is triggered off of an AF compset.
+
+M       datm_comp_mod.F90
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_datm.xml
+M       bld/namelist_files/namelist_definition_datm.xml
+
+================================================================================
+Originator: erik
+Date: Nov 04 2013
+Model: datm7
+Version: datm8_131104
+One-line summary: Add defaults for strm_offset, strm_tintalgo, and strm_domvar
+
+Added defaults (and the value most commonly used by far) for streams: offset,
+tintalgo, and domvar. This makes it a bit easier to add new streams. You still
+have to set: start, end, align, directories, and filenames as well as data variable 
+names for a new stream or else it will fail to generate. Those are too
+specific to have standard defaults.
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+
+Originator: erik
+Date: Nov 02 2013
+Model: datm7
+Version: datm8_131102
+One-line summary: Get build-namelist unit-tester working again, add -user_xml_dir option
+
+    Fix build-namelist unit-tester working again. 
+    Add -user_xml_dir option to build-namelist which is by default set to SoureMods/src.datm so you
+    can add namelist_definition_datm.xml and/or namelist_defaults_datm.xml to SourceMods
+    and have it used first. It can be a full or partial file with just the changes you want.
+
+M       bld/build-namelist
+M       bld/datm.buildnml.csh
+M       bld/unit_testers/build-namelist_test.pl
+A       bld/unit_testers/user_xml_dir
+A       bld/unit_testers/user_xml_dir/namelist_defaults_datm.xml
+A       bld/unit_testers/user_xml_dir/namelist_definition_datm.xml
+
+================================================================================
+Originator: mvertens
+Date: Sep 24 2013
+Model: datm7
+Version: datm8_130924
+One-line summary: move cpl/ code into datm/ directory
+	
+A  +    atm_comp_mct.F90
+A  +    atm_comp_esmf.F90
+M       bld/datm.buildexe.csh
+D       cpl
+D       cpl/atm_comp_mct.F90
+D       cpl/atm_comp_esmf.F90
+	
+================================================================================
+Originator: mvertens
+Date: Sep 19 2013
+Model: datm7
+Version: datm8_130920
+One-line summary: merge comptype branch to trunk
+	
+cpl_esmf/ is gone, cpl_mct/ is gone and cpl/ is new 
+with both atm_comp_esmf and atm_comp_mct - this will only 
+work with new cpl7 intrastructure in drvseq4_3_05 and beyond
+
+M       bld/datm.buildexe.csh
+D       cpl_mct
+D       cpl_mct/atm_comp_mct.F90
+M       ChangeLog
+D       cpl_esmf
+D       cpl_esmf/atm_comp_mct.F90
+D       cpl_esmf/atm_comp_esmf.F90
+A  +    cpl
+A  +    cpl/atm_comp_esmf.F90
+================================================================================
+	
+Originator: erik
+Date: Sep 19 2013
+Model: datm7
+Version: datm8_130919
+One-line summary:  By default for CLM_USRDAT use ATM_DOMAIN_PATH/FILE rather than explict path for file
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: tcraig
+Date: Sep 05 2013
+Model: datm7
+Version: datm8_130905
+One-line summary: merge cplupa branch to trunk
+ - modify intents on init/run/finalize coupling interfaces
+ - add ifdef USE_ESMF_METADATA around esmf attribute calls
+
+svn merge $SVNREPO/datm7/trunk_tags/datm8_130424 $SVNREPO/datm7/branch_tags/cplupa_tags/cplupa_n02_datm8_130424
+
+M       cpl_mct/atm_comp_mct.F90
+M       cpl_esmf/atm_comp_esmf.F90
+
+================================================================================
+Originator: erik
+Date: Aug 29 2013
+Model: datm7
+Version: datm8_130829
+One-line summary: Use share/domains/domain.clm for CLM_USRDAT domain file
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: erik
+Date: Aug 26 2013
+Model: datm7
+Version: datm8_130826
+One-line summary: Fix vectors for CPLHIST3HrWx mode (bugzilla #1790)
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: erik
+>>>>>>> .merge-right.r56032
 Date: Apr 24 2013
 Model: datm7
 Version: datm8_130424

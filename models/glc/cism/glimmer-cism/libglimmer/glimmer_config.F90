@@ -49,7 +49,7 @@
 !! data structure.
 module glimmer_config
 
-  use glimmer_global, only : dp, msg_length
+  use glimmer_global, only : sp, dp, msg_length
 
   implicit none
 
@@ -477,12 +477,12 @@ contains
     implicit none
     type(ConfigSection), pointer :: section     !< the section from which the value is loaded
     character(len=*),intent(in) :: name         !< the name of the key
-    real(kind=dp), pointer, dimension(:) :: val !< on exit this will hold the values
+    real(dp), pointer, dimension(:) :: val !< on exit this will hold the values
     integer,intent(in), optional :: numval      !< maximum number of values to be read
 
     ! local variables
     character(len=valuelen) :: value,tmp
-    real(kind=dp), dimension(:),allocatable :: tempval
+    real(dp), dimension(:),allocatable :: tempval
     integer i,numv,inds,indc,ind
 
     if (present(numval)) then
@@ -531,16 +531,18 @@ contains
 
   !> get real array value
   subroutine GetValueRealArray(section,name,val,numval)
+
     use glimmer_log
     implicit none
+
     type(ConfigSection), pointer :: section !< the section from which the value is loaded
     character(len=*),intent(in) :: name     !< the name of the key
-    real, pointer, dimension(:) :: val      !< on exit this will hold the values
+    real(sp), pointer, dimension(:) :: val  !< on exit this will hold the values
     integer,intent(in), optional :: numval  !< maximum number of values to be read
 
     ! local variables
     character(len=valuelen) :: value,tmp
-    real, dimension(:),allocatable :: tempval
+    real(sp), dimension(:),allocatable :: tempval
     integer i,numv,inds,indc,ind
 
     if (present(numval)) then
@@ -711,11 +713,11 @@ contains
     implicit none
     type(ConfigSection), pointer :: section !< the section from which the value is loaded
     character(len=*),intent(in) :: name     !< the name of the key
-    real, intent(inout) :: val              !< the value
+    real(sp), intent(inout) :: val              !< the value
 
     ! local variables
     character(len=valuelen) :: value
-    real temp
+    real(sp) :: temp
     integer ios
 
     value=''
@@ -732,12 +734,12 @@ contains
     implicit none
     type(ConfigSection), pointer :: section !< the section from which the value is loaded
     character(len=*),intent(in) :: name     !< the name of the key
-    real(kind=dp), intent(inout) :: val     !< the value
+    real(dp), intent(inout) :: val     !< the value
 
     ! local variables
     character(len=valuelen) :: value
 
-    real(kind=dp) :: temp
+    real(dp) :: temp
 
     integer ios
 

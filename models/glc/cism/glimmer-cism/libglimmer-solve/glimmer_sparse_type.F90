@@ -186,7 +186,7 @@ contains
     type(sparse_matrix_type) :: matrix !*FD matrix
     integer, intent(in) :: i,j         !*FD column and row
     real(kind=dp), intent(in) :: val   !*FD value
-    if (val /= 0.0 .and. i > 0 .and. j > 0 .and. i <= matrix%order .and. j <= matrix%order) then
+    if (val /= 0.d0 .and. i > 0 .and. j > 0 .and. i <= matrix%order .and. j <= matrix%order) then
         matrix%nonzeros =  matrix%nonzeros + 1
         matrix%row(matrix%nonzeros) = i
         matrix%col(matrix%nonzeros) = j

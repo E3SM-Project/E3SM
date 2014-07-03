@@ -1,0 +1,104 @@
+#!/bin/bash
+#
+# buildtools
+#
+# Build the clm tools that PTCLM will need to run when creating files.
+#
+# Environment variables to set:
+#
+# CESM_ROOT:        To build with a separate root to CLM/CESM code set the
+#                   env variable CESM_ROOT to the root directory to use.
+#
+
+pwd=`pwd`
+host=`hostname`
+echo "Build clm tools for PTCLM on "$host""
+
+#
+# Get path to root
+#
+if [ -z "$CESM_ROOT" ]; then
+   cd "../../../../../.."
+   CESM_ROOT=`pwd`
+   cd -
+fi
+if [ ! -d "$CESM_ROOT" ];then
+   echo "Directory $CESM_ROOT does not exist"
+   echo "Set env variable CESM_ROOT"
+   exit -1
+fi
+#
+# Machine dependent stuff
+#
+toolsmake=""
+if [[  "$host" =~ ys ]]; then
+  echo "Setup for yellowstone"
+  module load netcdf/4.3.0-rc4
+  module load ncl
+  gmake="gmake"
+  parcmp=32
+  machine="yellowstone"
+  compiler="intel"
+  netcdf=$NETCDF
+elif [[ "$host" =~ frankfurt ]]; then
+  echo "Setup for frankfurt"
+  gmake="gmake"
+  parcmp=2
+  machine="frankfurt"
+  compiler="intel"
+  netcdf=/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183
+  export PATH="${PATH}:/usr/bin"
+elif [[ "$host" =~ yongi ]] || [[ "$host" =~ vpn ]]; then
+  echo "Setup for yongi"
+  gmake="make"
+  parcmp=12
+  machine="userdefined"
+  compiler="intel"
+  netcdf="/opt/local"
+  toolsmake="USER_FC=ifort USER_LINKER=ifort USER_CC=icc "
+  case='$CASE'
+  export NETCDF_PATH=$netcdf
+else
+  echo "Bad host to run on: know about yellowstone, frankfurt, or yongi"
+  exit -3
+fi
+export INC_NETCDF=${netcdf}/include
+export LIB_NETCDF=${netcdf}/lib
+#
+# Build the tools
+#
+echo "Build the tools"
+dirs=( \
+       $CESM_ROOT/models/lnd/clm/tools/clm4_0/mksurfdata_map/src \
+       $CESM_ROOT/models/lnd/clm/tools/clm4_5/mksurfdata_map/src \
+       $CESM_ROOT/tools/mapping/gen_domain_files/src \
+     )
+for dir in ${dirs[*]}; do
+   echo "Build in $dir"
+   cd $dir
+   if [[ "$dir" =~ gen_domain ]]; then
+      export CCSMROOT=$CESM_ROOT
+      cmd="$CESM_ROOT/scripts/ccsm_utils/Machines/configure -mach $machine -compiler $compiler"
+      echo "$cmd"
+      $cmd
+      if [ $? != 0 ]; then
+         echo "Problem with configure: $?"
+         exit -1
+      fi
+   fi
+   $gmake clean
+   cmd="$gmake OPT=TRUE SMP=TRUE -j $parcmp $toolsmake"
+   echo "$cmd"
+   $cmd
+   if [ $? != 0 ]; then
+      echo "Problem with build: $?"
+      exit -1
+   fi
+   if [[ "$dir" =~ gen_domain ]]; then
+      /bin/rm *.o
+   else
+      $gmake clean
+   fi
+done
+
+echo -e "\n\nSuccessfully built CLM tools needed to create datasets for PTCLM\n"

@@ -20,7 +20,11 @@ endif
 
 if (`./check_input_data -inputdata $DIN_LOC_ROOT -check | grep "unknown" | wc -l` > 0) then
    echo " "
-   echo "The following files were not found, this is informational only"
+   echo 'Any files with "status unknown" below were not found in the'
+   echo 'expected location, and are not from the input data repository.'
+   echo 'This is informational only; this script will not attempt to'
+   echo 'find these files. If CESM can find (or does not need) these files'
+   echo 'at run time, no error will result.'
    ./check_input_data -inputdata $DIN_LOC_ROOT -check
    echo " "
 endif

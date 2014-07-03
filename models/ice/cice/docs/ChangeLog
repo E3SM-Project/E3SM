@@ -1,4 +1,113 @@
 ===============================================================
+cice4_0_20140224
+Originator: santos
+Date: 2014/02/24
+Version: 4.0
+One-line Summary: Speed up CESM namelist build a bit.
+
+M       bld/cice.buildnml.csh
+         - Call xmlchange once with 5 arguments instead of 5
+           separate times, since this takes a couple of seconds
+           and pauses the preview_namelists script for CESM.
+
+===============================================================
+cice4_0_20131002
+Originator: mvertens
+Date: Tue Sep 24 2013
+Version: 4.0
+One-line Summary:  removed mct2emsf calls from ice_comp_esmf.F90
+
+M       src/drivers/cpl/ice_comp_esmf.F90
+	
+===============================================================
+cice4_0_20130925
+Originator: mvertens
+Date: Tue Sep 24 2013
+Version: 4.0
+One-line Summary:  removed cdata reference from ice_comp_esmf.F90
+
+M       src/drivers/cpl/ice_comp_esmf.F90
+	
+===============================================================
+cice4_0_20130924
+Originator: mvertens
+Date: Tue Sep 24 2013
+Version: 4.0
+One-line Summary:  Create new cpl/ directory and new ice_import_export.F90
+	Remove cpl_esmf/ cpl_mct/ and cpl_share/
+	Move the contents of those directories into cpl/
+	This enables much more code reuse between esmf/ and mct/ interfaces
+	with the creation of ice_import_export.F90
+
+M       bld/configure
+D       src/drivers/cpl_share
+D       src/drivers/cpl_share/CICE.F90
+D       src/drivers/cpl_share/ice_scam.F90
+D       src/drivers/cpl_share/ice_communicate.F90
+D       src/drivers/cpl_share/ice_restart.F90
+D       src/drivers/cpl_share/CICE_InitMod.F90
+D       src/drivers/cpl_share/CICE_RunMod.F90
+D       src/drivers/cpl_share/ice_pio.F90
+D       src/drivers/cpl_share/ice_history_write.F90
+D       src/drivers/cpl_share/ice_constants.F90
+D       src/drivers/cpl_share/ice_cpl_indices.F90
+D       src/drivers/cpl_share/ice_prescribed_mod.F90
+D       src/drivers/cpl_mct
+D       src/drivers/cpl_mct/ice_comp_mct.F90
+D       src/drivers/cpl_esmf
+D       src/drivers/cpl_esmf/ice_comp_esmf.F90
+D       src/drivers/cpl_esmf/ice_comp_mct.F90
+A  +    src/drivers/cpl
+A  +    src/drivers/cpl/CICE.F90
+A  +    src/drivers/cpl/ice_scam.F90
+A  +    src/drivers/cpl/ice_communicate.F90
+A  +    src/drivers/cpl/ice_restart.F90
+A  +    src/drivers/cpl/CICE_InitMod.F90
+A  +    src/drivers/cpl/CICE_RunMod.F90
+A  +    src/drivers/cpl/ice_pio.F90
+A  +    src/drivers/cpl/ice_comp_esmf.F90
+A  +    src/drivers/cpl/ice_history_write.F90
+A  +    src/drivers/cpl/ice_import_export.F90
+A  +    src/drivers/cpl/ice_constants.F90
+A  +    src/drivers/cpl/ice_cpl_indices.F90
+A  +    src/drivers/cpl/ice_comp_mct.F90
+A  +    src/drivers/cpl/ice_prescribed_mod.F90
+	
+===============================================================
+cice4_0_20130917
+Originator: tcraig
+Date: Tue Sep 17 2013
+Version: 4.0
+One-line Summary:  Fix errors in input data list generation
+
+M       bld/build-namelist
+
+===============================================================
+cice4_0_20130905
+Originator: tcraig
+Date: Thu Sep 05 2013
+Version: 4.0
+One-line Summary:  Merge cplupa branch to trunk
+ - modify intents on init/run/finalize coupling interfaces
+ - add ifdef USE_ESMF_METADATA around esmf attribute calls
+ - fix build-namelist bug that prevented input file list from
+   being generated
+svn merge $SVNREPO/cice/trunk_tags/cice4_0_20130825 $SVNREPO/cice/branch_tags/cplupa_tags/cplupa_n04_cice4_0_20130825
+
+M       bld/build-namelist
+M       src/drivers/cpl_mct/ice_comp_mct.F90
+M       src/drivers/cpl_esmf/ice_comp_esmf.F90
+
+===============================================================
+cice4_0_20130825
+Originator: tcraig
+Date: Sun Aug 25 2013
+Version: 4.0
+One-line Summary:  Fix bounds checking error in mask halo
+ - did not affect answers
+
+M       src/mpi/ice_boundary.F90
+===============================================================
 cice4_0_20130524
 Originator: jedwards
 Date: Fri May 24 2013

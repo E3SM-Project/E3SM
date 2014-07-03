@@ -15,7 +15,6 @@ subroutine iniTimeConst
 !
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use nanMod      , only : nan
   use clmtype
   use decompMod   , only : get_proc_bounds, get_proc_global
   use decompMod   , only : gsMap_lnd_gdc2glo

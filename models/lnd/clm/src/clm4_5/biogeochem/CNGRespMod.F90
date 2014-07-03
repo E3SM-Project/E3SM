@@ -1,166 +1,88 @@
 module CNGRespMod
-#ifdef CN
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: CNGRespMod
-!
-! !DESCRIPTION:
-! Module for growth respiration fluxes,
-! for coupled carbon-nitrogen code.
-!
-! !USES:
-   use shr_kind_mod, only: r8 => shr_kind_r8
-   implicit none
-   save
-   private
-! !PUBLIC MEMBER FUNCTIONS:
-   public :: CNGResp
-!
-! !REVISION HISTORY:
-! 9/12/03: Created by Peter Thornton
-! 10/27/03, Peter Thornton: migrated to vector data structures
-!
-!EOP
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! Module for growth respiration fluxes,
+  ! for coupled carbon-nitrogen code.
+  !
+  ! !USES:
+  use shr_kind_mod, only: r8 => shr_kind_r8
+  implicit none
+  save
+  private
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public :: CNGResp
+  !-----------------------------------------------------------------------
 
 contains
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: CNGResp
-!
-! !INTERFACE:
-subroutine CNGResp(num_soilp, filter_soilp)
-!
-! !DESCRIPTION:
-! On the radiation time step, update all the prognostic carbon state
-! variables
-!
-! !USES:
-   use clmtype
-   use pftvarcon, only : npcropmin, grperc, grpnow
-!
-! !ARGUMENTS:
-   implicit none
-   integer, intent(in) :: num_soilp       ! number of soil pfts in filter
-   integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
-!
-! !CALLED FROM:
-! subroutine CNEcosystemDyn, in module CNEcosystemDynMod.F90
-!
-! !REVISION HISTORY:
-! 8/1/03: Created by Peter Thornton
-!
-! !LOCAL VARIABLES:
-! local pointers to implicit in scalars
-!
-   integer , pointer :: ivt(:)                           ! pft vegetation type
-   real(r8), pointer :: cpool_to_leafc(:)
-   real(r8), pointer :: cpool_to_leafc_storage(:)
-   real(r8), pointer :: cpool_to_frootc(:)
-   real(r8), pointer :: cpool_to_frootc_storage(:)
-   real(r8), pointer :: cpool_to_livestemc(:)
-   real(r8), pointer :: cpool_to_livestemc_storage(:)
-   real(r8), pointer :: cpool_to_deadstemc(:)
-   real(r8), pointer :: cpool_to_deadstemc_storage(:)
-   real(r8), pointer :: cpool_to_livecrootc(:)
-   real(r8), pointer :: cpool_to_livecrootc_storage(:)
-   real(r8), pointer :: cpool_to_deadcrootc(:)           ! allocation to dead coarse root C (gC/m2/s)
-   real(r8), pointer :: cpool_to_deadcrootc_storage(:)   ! allocation to dead coarse root C storage (gC/m2/s)
-   real(r8), pointer :: cpool_to_grainc(:)               ! allocation to grain C (gC/m2/s)
-   real(r8), pointer :: cpool_to_grainc_storage(:)       ! allocation to grain C storage (gC/m2/s)
-   real(r8), pointer :: grainc_xfer_to_grainc(:)         ! grain C growth from storage (gC/m2/s)
-   real(r8), pointer :: leafc_xfer_to_leafc(:)           ! leaf C growth from storage (gC/m2/s)
-   real(r8), pointer :: frootc_xfer_to_frootc(:)         ! fine root C growth from storage (gC/m2/s)
-   real(r8), pointer :: livestemc_xfer_to_livestemc(:)   ! live stem C growth from storage (gC/m2/s)
-   real(r8), pointer :: deadstemc_xfer_to_deadstemc(:)   ! dead stem C growth from storage (gC/m2/s)
-   real(r8), pointer :: livecrootc_xfer_to_livecrootc(:) ! live coarse root C growth from storage (gC/m2/s)
-   real(r8), pointer :: deadcrootc_xfer_to_deadcrootc(:) ! dead coarse root C growth from storage (gC/m2/s)
-   real(r8), pointer :: woody(:)                         ! binary flag for woody lifeform (1=woody, 0=not woody)
-!
-! local pointers to implicit in/out scalars
-!
-   real(r8), pointer :: cpool_grain_gr(:)
-   real(r8), pointer :: cpool_grain_storage_gr(:)
-   real(r8), pointer :: transfer_grain_gr(:)
-   real(r8), pointer :: cpool_leaf_gr(:)
-   real(r8), pointer :: cpool_leaf_storage_gr(:)
-   real(r8), pointer :: transfer_leaf_gr(:)
-   real(r8), pointer :: cpool_froot_gr(:)
-   real(r8), pointer :: cpool_froot_storage_gr(:)
-   real(r8), pointer :: transfer_froot_gr(:)
-   real(r8), pointer :: cpool_livestem_gr(:)
-   real(r8), pointer :: cpool_livestem_storage_gr(:)
-   real(r8), pointer :: transfer_livestem_gr(:)
-   real(r8), pointer :: cpool_deadstem_gr(:)
-   real(r8), pointer :: cpool_deadstem_storage_gr(:)
-   real(r8), pointer :: transfer_deadstem_gr(:)
-   real(r8), pointer :: cpool_livecroot_gr(:)
-   real(r8), pointer :: cpool_livecroot_storage_gr(:)
-   real(r8), pointer :: transfer_livecroot_gr(:)
-   real(r8), pointer :: cpool_deadcroot_gr(:)
-   real(r8), pointer :: cpool_deadcroot_storage_gr(:)
-   real(r8), pointer :: transfer_deadcroot_gr(:)
-!
-! local pointers to implicit out scalars
-!
-!
-! !OTHER LOCAL VARIABLES:
-   integer :: p                ! indices
-   integer :: fp               ! lake filter pft index
+  !-----------------------------------------------------------------------
+  subroutine CNGResp(num_soilp, filter_soilp)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update all the prognostic carbon state
+    ! variables
+    !
+    ! !USES:
+    use clmtype
+    use pftvarcon, only : npcropmin, grperc, grpnow
+    !
+    ! !ARGUMENTS:
+    implicit none
+    integer, intent(in) :: num_soilp       ! number of soil pfts in filter
+    integer, intent(in) :: filter_soilp(:) ! filter for soil pfts
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p                ! indices
+    integer :: fp               ! lake filter pft index
+    !-----------------------------------------------------------------------
 
-!EOP
-!-----------------------------------------------------------------------
-   ! Assign local pointers to derived type arrays (in)
-   ivt                           => clm3%g%l%c%p%itype
-   cpool_to_leafc                => clm3%g%l%c%p%pcf%cpool_to_leafc
-   cpool_to_leafc_storage        => clm3%g%l%c%p%pcf%cpool_to_leafc_storage
-   cpool_to_frootc               => clm3%g%l%c%p%pcf%cpool_to_frootc
-   cpool_to_frootc_storage       => clm3%g%l%c%p%pcf%cpool_to_frootc_storage
-   cpool_to_livestemc            => clm3%g%l%c%p%pcf%cpool_to_livestemc
-   cpool_to_livestemc_storage    => clm3%g%l%c%p%pcf%cpool_to_livestemc_storage
-   cpool_to_deadstemc            => clm3%g%l%c%p%pcf%cpool_to_deadstemc
-   cpool_to_deadstemc_storage    => clm3%g%l%c%p%pcf%cpool_to_deadstemc_storage
-   cpool_to_livecrootc           => clm3%g%l%c%p%pcf%cpool_to_livecrootc
-   cpool_to_livecrootc_storage   => clm3%g%l%c%p%pcf%cpool_to_livecrootc_storage
-   cpool_to_deadcrootc           => clm3%g%l%c%p%pcf%cpool_to_deadcrootc
-   cpool_to_deadcrootc_storage   => clm3%g%l%c%p%pcf%cpool_to_deadcrootc_storage
-   cpool_to_grainc               => clm3%g%l%c%p%pcf%cpool_to_grainc
-   cpool_to_grainc_storage       => clm3%g%l%c%p%pcf%cpool_to_grainc_storage
-   grainc_xfer_to_grainc         => clm3%g%l%c%p%pcf%grainc_xfer_to_grainc
-   leafc_xfer_to_leafc           => clm3%g%l%c%p%pcf%leafc_xfer_to_leafc
-   frootc_xfer_to_frootc         => clm3%g%l%c%p%pcf%frootc_xfer_to_frootc
-   livestemc_xfer_to_livestemc   => clm3%g%l%c%p%pcf%livestemc_xfer_to_livestemc
-   deadstemc_xfer_to_deadstemc   => clm3%g%l%c%p%pcf%deadstemc_xfer_to_deadstemc
-   livecrootc_xfer_to_livecrootc => clm3%g%l%c%p%pcf%livecrootc_xfer_to_livecrootc
-   deadcrootc_xfer_to_deadcrootc => clm3%g%l%c%p%pcf%deadcrootc_xfer_to_deadcrootc
-   woody => pftcon%woody
-
-   ! Assign local pointers to derived type arrays (out)
-   cpool_grain_gr                => clm3%g%l%c%p%pcf%cpool_grain_gr
-   cpool_grain_storage_gr        => clm3%g%l%c%p%pcf%cpool_grain_storage_gr
-   transfer_grain_gr             => clm3%g%l%c%p%pcf%transfer_grain_gr
-   cpool_leaf_gr                 => clm3%g%l%c%p%pcf%cpool_leaf_gr
-   cpool_leaf_storage_gr         => clm3%g%l%c%p%pcf%cpool_leaf_storage_gr
-   transfer_leaf_gr              => clm3%g%l%c%p%pcf%transfer_leaf_gr
-   cpool_froot_gr                => clm3%g%l%c%p%pcf%cpool_froot_gr
-   cpool_froot_storage_gr        => clm3%g%l%c%p%pcf%cpool_froot_storage_gr
-   transfer_froot_gr             => clm3%g%l%c%p%pcf%transfer_froot_gr
-   cpool_livestem_gr             => clm3%g%l%c%p%pcf%cpool_livestem_gr
-   cpool_livestem_storage_gr     => clm3%g%l%c%p%pcf%cpool_livestem_storage_gr
-   transfer_livestem_gr          => clm3%g%l%c%p%pcf%transfer_livestem_gr
-   cpool_deadstem_gr             => clm3%g%l%c%p%pcf%cpool_deadstem_gr
-   cpool_deadstem_storage_gr     => clm3%g%l%c%p%pcf%cpool_deadstem_storage_gr
-   transfer_deadstem_gr          => clm3%g%l%c%p%pcf%transfer_deadstem_gr
-   cpool_livecroot_gr            => clm3%g%l%c%p%pcf%cpool_livecroot_gr
-   cpool_livecroot_storage_gr    => clm3%g%l%c%p%pcf%cpool_livecroot_storage_gr
-   transfer_livecroot_gr         => clm3%g%l%c%p%pcf%transfer_livecroot_gr
-   cpool_deadcroot_gr            => clm3%g%l%c%p%pcf%cpool_deadcroot_gr
-   cpool_deadcroot_storage_gr    => clm3%g%l%c%p%pcf%cpool_deadcroot_storage_gr
-   transfer_deadcroot_gr         => clm3%g%l%c%p%pcf%transfer_deadcroot_gr
+   associate(& 
+   ivt                                 =>   pft%itype                                    , & ! Input:  [integer (:)]  pft vegetation type                                
+   cpool_to_leafc                      =>    pcf%cpool_to_leafc                          , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_leafc_storage              =>    pcf%cpool_to_leafc_storage                  , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_frootc                     =>    pcf%cpool_to_frootc                         , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_frootc_storage             =>    pcf%cpool_to_frootc_storage                 , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_livestemc                  =>    pcf%cpool_to_livestemc                      , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_livestemc_storage          =>    pcf%cpool_to_livestemc_storage              , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_deadstemc                  =>    pcf%cpool_to_deadstemc                      , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_deadstemc_storage          =>    pcf%cpool_to_deadstemc_storage              , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_livecrootc                 =>    pcf%cpool_to_livecrootc                     , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_livecrootc_storage         =>    pcf%cpool_to_livecrootc_storage             , & ! Input:  [real(r8) (:)]                                                    
+   cpool_to_deadcrootc                 =>    pcf%cpool_to_deadcrootc                     , & ! Input:  [real(r8) (:)]  allocation to dead coarse root C (gC/m2/s)        
+   cpool_to_deadcrootc_storage         =>    pcf%cpool_to_deadcrootc_storage             , & ! Input:  [real(r8) (:)]  allocation to dead coarse root C storage (gC/m2/s)
+   cpool_to_grainc                     =>    pcf%cpool_to_grainc                         , & ! Input:  [real(r8) (:)]  allocation to grain C (gC/m2/s)                   
+   cpool_to_grainc_storage             =>    pcf%cpool_to_grainc_storage                 , & ! Input:  [real(r8) (:)]  allocation to grain C storage (gC/m2/s)           
+   grainc_xfer_to_grainc               =>    pcf%grainc_xfer_to_grainc                   , & ! Input:  [real(r8) (:)]  grain C growth from storage (gC/m2/s)             
+   leafc_xfer_to_leafc                 =>    pcf%leafc_xfer_to_leafc                     , & ! Input:  [real(r8) (:)]  leaf C growth from storage (gC/m2/s)              
+   frootc_xfer_to_frootc               =>    pcf%frootc_xfer_to_frootc                   , & ! Input:  [real(r8) (:)]  fine root C growth from storage (gC/m2/s)         
+   livestemc_xfer_to_livestemc         =>    pcf%livestemc_xfer_to_livestemc             , & ! Input:  [real(r8) (:)]  live stem C growth from storage (gC/m2/s)         
+   deadstemc_xfer_to_deadstemc         =>    pcf%deadstemc_xfer_to_deadstemc             , & ! Input:  [real(r8) (:)]  dead stem C growth from storage (gC/m2/s)         
+   livecrootc_xfer_to_livecrootc       =>    pcf%livecrootc_xfer_to_livecrootc           , & ! Input:  [real(r8) (:)]  live coarse root C growth from storage (gC/m2/s)  
+   deadcrootc_xfer_to_deadcrootc       =>    pcf%deadcrootc_xfer_to_deadcrootc           , & ! Input:  [real(r8) (:)]  dead coarse root C growth from storage (gC/m2/s)  
+   woody                               =>    pftcon%woody                                , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
+   cpool_grain_gr                      =>    pcf%cpool_grain_gr                          , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_grain_storage_gr              =>    pcf%cpool_grain_storage_gr                  , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_grain_gr                   =>    pcf%transfer_grain_gr                       , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_leaf_gr                       =>    pcf%cpool_leaf_gr                           , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_leaf_storage_gr               =>    pcf%cpool_leaf_storage_gr                   , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_leaf_gr                    =>    pcf%transfer_leaf_gr                        , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_froot_gr                      =>    pcf%cpool_froot_gr                          , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_froot_storage_gr              =>    pcf%cpool_froot_storage_gr                  , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_froot_gr                   =>    pcf%transfer_froot_gr                       , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_livestem_gr                   =>    pcf%cpool_livestem_gr                       , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_livestem_storage_gr           =>    pcf%cpool_livestem_storage_gr               , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_livestem_gr                =>    pcf%transfer_livestem_gr                    , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_deadstem_gr                   =>    pcf%cpool_deadstem_gr                       , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_deadstem_storage_gr           =>    pcf%cpool_deadstem_storage_gr               , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_deadstem_gr                =>    pcf%transfer_deadstem_gr                    , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_livecroot_gr                  =>    pcf%cpool_livecroot_gr                      , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_livecroot_storage_gr          =>    pcf%cpool_livecroot_storage_gr              , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_livecroot_gr               =>    pcf%transfer_livecroot_gr                   , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_deadcroot_gr                  =>    pcf%cpool_deadcroot_gr                      , & ! InOut:  [real(r8) (:)]                                                    
+   cpool_deadcroot_storage_gr          =>    pcf%cpool_deadcroot_storage_gr              , & ! InOut:  [real(r8) (:)]                                                    
+   transfer_deadcroot_gr               =>    pcf%transfer_deadcroot_gr                     & ! InOut:  [real(r8) (:)]                                                    
+   )
 
    ! Loop through pfts
    ! start pft loop
@@ -217,8 +139,7 @@ subroutine CNGResp(num_soilp, filter_soilp)
 
    end do
 
-end subroutine CNGResp
-
-#endif
+    end associate 
+ end subroutine CNGResp
 
 end module CNGRespMod

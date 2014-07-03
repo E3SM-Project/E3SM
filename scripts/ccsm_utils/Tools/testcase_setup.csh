@@ -12,7 +12,7 @@ source ./Tools/ccsm_getenv || exit -2
 #-------------------------------------------------------------
 # Modify env_run.xml in test directory 
 #-------------------------------------------------------------
-if ( $?GENERATE_BASELINE || $?COMPARE_BASELINE ) then
+if ( "$GENERATE_BASELINE" == "TRUE" || "$COMPARE_BASELINE" == "TRUE" ) then
   ./xmlchange -file env_run.xml -id HIST_OPTION -val '$STOP_OPTION'
   ./xmlchange -file env_run.xml -id HIST_N      -val '$STOP_N'
 endif
@@ -61,6 +61,12 @@ cp ${CCSMROOT}/scripts/ccsm_utils/Tools/check_exactrestart.pl ./Tools/ || exit -
 cp ${CCSMROOT}/scripts/ccsm_utils/Tools/check_memory.pl       ./Tools/ || exit -8
 cp ${CCSMROOT}/scripts/ccsm_utils/Tools/compare_throughput.pl ./Tools/ || exit -8
 cp ${CCSMROOT}/scripts/ccsm_utils/Tools/hist_compare.csh      ./Tools/ || exit -9
+
+# copy over component history compare scripts
+#-------------------------------------------------------------
+cp ${CCSMROOT}/scripts/ccsm_utils/Tools/component_generate.sh ./Tools/ || exit -9
+cp ${CCSMROOT}/scripts/ccsm_utils/Tools/component_compare.sh  ./Tools/ || exit -9
+
 
 chmod 755 $CASE* *pl
 

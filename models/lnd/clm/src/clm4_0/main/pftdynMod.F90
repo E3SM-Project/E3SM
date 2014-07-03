@@ -236,7 +236,13 @@ contains
 
     ! Get pctpft time samples bracketing the current time
 
+    if (masterproc) then
+       write(iulog,*) 'Get PFTDYN data for year: ', yearspft(nt1)
+    end if
     call pftdyn_getdata(nt1, wtpft1, begg,endg,0,numpft)
+    if (masterproc) then
+       write(iulog,*) 'Get PFTDYN data for year: ', yearspft(nt2)
+    end if
     call pftdyn_getdata(nt2, wtpft2, begg,endg,0,numpft)
     
     if (use_cn) then
@@ -364,6 +370,9 @@ contains
           end do
        end do
 
+       if (masterproc) then
+          write(iulog,*) 'Get PFTDYN data for year: ', yearspft(nt2)
+       end if
        call pftdyn_getdata(nt2, wtpft2, begg,endg,0,numpft)
        if (use_cn) then
           call pftdyn_getharvest(nt1,begg,endg)

@@ -1,0 +1,22 @@
+ wrtdia         = .true.
+ hist_dov2xy    = .true.,.false.
+ hist_ndens     = 1,1
+ hist_nhtfrq    = 0,-240
+ hist_mfilt     = 1,3
+ hist_fincl1    = 'TRAFFICFLUX', 'SNOWLIQ:A','SNOWICE:A',
+                  'SNO_EXISTENCE', 'SNO_ABS', 'SNO_T:M', 'SNO_GS:X'
+ hist_fincl2    = 'TG','TBOT','FIRE','FIRA','FLDS','FSDS',
+                  'FSR','FSA','FGEV','FSH','FGR','TSOI',
+                  'ERRSOI','SABV','SABG',
+                  'FSDSVD','FSDSND','FSDSVI','FSDSNI',
+                  'FSRVD','FSRND','FSRVI','FSRNI',
+                  'TSA','FCTR','FCEV','QBOT','RH2M','H2OSOI',
+                  'H2OSNO','SOILLIQ','SOILICE', 
+                  'TSA_U', 'TSA_R',
+                  'TREFMNAV_U', 'TREFMNAV_R',
+                  'TREFMXAV_U', 'TREFMXAV_R',
+                  'TG_U', 'TG_R',
+                  'RH2M_U', 'RH2M_R',
+                  'QRUNOFF_U', 'QRUNOFF_R',
+                  'SoilAlpha_U',
+                  'SWup', 'LWup', 'URBAN_AC', 'URBAN_HEAT'

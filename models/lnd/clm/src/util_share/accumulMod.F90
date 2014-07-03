@@ -1,38 +1,33 @@
 module accumulMod
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !MODULE: accumulMod
-!
-! !DESCRIPTION:
-! This module contains generic subroutines that can be used to
-! define, accumulate and extract  user-specified fields over
-! user-defined intervals. Each interval  and accumulation type is
-! unique to each field processed.
-! Subroutine [init_accumulator] defines the values of the accumulated
-! field data structure. Subroutine [update_accum_field] does
-! the actual accumulation for a given field.
-! Four types of accumulations are possible:
-! - Average over time interval. Time average fields are only
-!   valid at the end of the averaging interval.
-! - Running mean over time interval. Running means are valid once the
-!   length of the simulation exceeds the
-! - Running accumulation over time interval. Accumulated fields are
-!   continuously accumulated. The trigger value "-99999." resets
-!   the accumulation to zero.
-!
-! !USES:
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
+  ! This module contains generic subroutines that can be used to
+  ! define, accumulate and extract  user-specified fields over
+  ! user-defined intervals. Each interval  and accumulation type is
+  ! unique to each field processed.
+  ! Subroutine [init_accumulator] defines the values of the accumulated
+  ! field data structure. Subroutine [update_accum_field] does
+  ! the actual accumulation for a given field.
+  ! Four types of accumulations are possible:
+  ! - Average over time interval. Time average fields are only
+  !   valid at the end of the averaging interval.
+  ! - Running mean over time interval. Running means are valid once the
+  !   length of the simulation exceeds the
+  ! - Running accumulation over time interval. Accumulated fields are
+  !   continuously accumulated. The trigger value "-99999." resets
+  !   the accumulation to zero.
+  !
+  ! !USES:
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use abortutils  , only: endrun
+  use shr_sys_mod , only: shr_sys_abort
   use clm_varctl  , only: iulog
-  use nanMod      , only: bigint
-!
-! !PUBLIC TYPES:
+  !
+  ! !PUBLIC TYPES:
   implicit none
   save
-!
-! !PUBLIC MEMBER FUNCTIONS:
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
   public :: accumulRest          ! Write/read restart of accumulation fields
   public :: init_accum_field     ! Initialize an accumulator field
   public :: print_accum_fields   ! Print info about accumulator fields
@@ -47,18 +42,9 @@ module accumulMod
      module procedure update_accum_field_sl  ! Update single-level accumulator field
      module procedure update_accum_field_ml  ! Update multi-level accumulator field
   end interface
-!
-! !REVISION HISTORY:
-! Created by Sam Levis
-! Updated to clm2.1 data structures by Mariana Vertenstein
-! Updated to include all subgrid type and multilevel fields, M. Vertenstein 03/2003
-!
-!
   private
-!
-! !PRIVATE TYPES:
-!EOP
-!
+  !
+  ! !PRIVATE TYPES:
   type accum_field
      character(len=  8) :: name     !field name
      character(len=128) :: desc     !field description
@@ -66,63 +52,59 @@ module accumulMod
      character(len=  8) :: acctype  !accumulation type: ["timeavg","runmean","runaccum"]
      character(len=  8) :: type1d   !subgrid type: ["gridcell","landunit","column" or "pft"]
      character(len=  8) :: type2d   !type2d ('','levsoi','numrad',..etc. )
-     integer :: beg1d               !subgrid type beginning index
-     integer :: end1d               !subgrid type ending index
-     integer :: num1d               !total subgrid points
-     integer :: numlev              !number of vertical levels in field
-     real(r8):: initval             !initial value of accumulated field
-     real(r8), pointer :: val(:,:)  !accumulated field
-     integer :: period              !field accumulation period (in model time steps)
+     integer            :: beg1d    !subgrid type beginning index
+     integer            :: end1d    !subgrid type ending index
+     integer            :: num1d    !total subgrid points
+     integer            :: numlev   !number of vertical levels in field
+     real(r8)           :: initval  !initial value of accumulated field
+     real(r8), pointer  :: val(:,:) !accumulated field
+     integer            :: period   !field accumulation period (in model time steps)
   end type accum_field
+
+  real(r8), parameter, public :: accumResetVal = -99999._r8 ! used to do an annual reset ( put in for bug 1858)
 
   integer, parameter :: max_accum = 100    !maximum number of accumulated fields
   type (accum_field) :: accum(max_accum)   !array accumulated fields
   integer :: naccflds = 0                  !accumulator field counter
-!------------------------------------------------------------------------
+
+  integer :: iflag_interp = 1
+  integer :: iflag_copy   = 2
+  integer :: iflag_skip   = 3
+  !------------------------------------------------------------------------
 
 contains
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: init_accum_field
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine init_accum_field (name, units, desc, &
        accum_type, accum_period, numlev, subgrid_type, init_value, type2d)
-!
-! !DESCRIPTION:
-! Initialize accumulation fields. This subroutine sets:
-! o name  of accumulated field
-! o units of accumulated field
-! o accumulation type of accumulated field
-! o description of accumulated fields: accdes
-! o accumulation period for accumulated field (in iterations)
-! o initial value of accumulated field
-!
-! !USES:
+    !
+    ! !DESCRIPTION:
+    ! Initialize accumulation fields. This subroutine sets:
+    ! o name  of accumulated field
+    ! o units of accumulated field
+    ! o accumulation type of accumulated field
+    ! o description of accumulated fields: accdes
+    ! o accumulation period for accumulated field (in iterations)
+    ! o initial value of accumulated field
+    !
+    ! !USES:
     use shr_const_mod, only: SHR_CONST_CDAY
     use clm_time_manager, only : get_step_size
     use decompMod, only : get_proc_bounds, get_proc_global
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
-    character(len=*), intent(in) :: name             !field name
-    character(len=*), intent(in) :: units            !field units
-    character(len=*), intent(in) :: desc             !field description
-    character(len=*), intent(in) :: accum_type       !field type: tavg, runm, runa, ins
-    integer , intent(in) :: accum_period             !field accumulation period
-    character(len=*), intent(in) :: subgrid_type     !["gridcell","landunit","column" or "pft"]
-    integer , intent(in) :: numlev                   !number of vertical levels
-    real(r8), intent(in) :: init_value               !field initial or reset value
-    character(len=*), intent(in), optional :: type2d !level type (optional) - needed if numlev > 1
-!
-! !REVISION HISTORY:
-! Created by Mariana Vertenstein 03/2003
-!
-!
-! !LOCAL VARIABLES:
-!EOP
+    character(len=*), intent(in)           :: name         !field name
+    character(len=*), intent(in)           :: units        !field units
+    character(len=*), intent(in)           :: desc         !field description
+    character(len=*), intent(in)           :: accum_type   !field type: tavg, runm, runa, ins
+    integer , intent(in)                   :: accum_period !field accumulation period
+    character(len=*), intent(in)           :: subgrid_type !["gridcell","landunit","column" or "pft"]
+    integer , intent(in)                   :: numlev       !number of vertical levels
+    real(r8), intent(in)                   :: init_value   !field initial or reset value
+    character(len=*), intent(in), optional :: type2d       !level type (optional) - needed if numlev > 1
+    !
+    ! !LOCAL VARIABLES:
     integer :: nf           ! field index
     integer :: beg1d,end1d  ! beggining and end subgrid indices
     integer :: num1d        ! total number subgrid indices
@@ -134,7 +116,7 @@ contains
     integer :: numl         ! total number of landunits across all processors
     integer :: numc         ! total number of columns across all processors
     integer :: nump         ! total number of pfts across all processors
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     ! Determine necessary indices
 
@@ -148,7 +130,7 @@ contains
     if (naccflds > max_accum) then
        write(iulog,*) 'ACCUMULINIT error: user-defined accumulation fields ', &
             'equal to ',naccflds,' exceeds max_accum'
-       call endrun
+       call shr_sys_abort()
     end if
     nf = naccflds
 
@@ -184,7 +166,7 @@ contains
        num1d = nump
     case default
        write(iulog,*)'ACCUMULINIT: unknown subgrid type ',subgrid_type
-       call endrun ()
+       call shr_sys_abort ()
     end select
 
     accum(nf)%type1d = trim(subgrid_type)
@@ -206,30 +188,20 @@ contains
 
   end subroutine init_accum_field
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: print_accum_fields
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine print_accum_fields()
-!
-! !DESCRIPTION:
-! Diagnostic printout of accumulated fields
-!
-! !USES:
+    !
+    ! !DESCRIPTION:
+    ! Diagnostic printout of accumulated fields
+    !
+    ! !USES:
     use spmdMod, only : masterproc
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
-!
-! !REVISION HISTORY:
-! Created by Mariana Vertenstein 03/2003
-!
-!EOP
-!
+    !
     integer :: i,nf   !indices
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     if (masterproc) then
        write(iulog,*)
@@ -239,7 +211,7 @@ contains
        write(iulog,1002)
        write(iulog,'(72a1)') ("_",i=1,71)
        do nf = 1, naccflds
-          if (accum(nf)%period /= bigint) then
+          if (accum(nf)%period /= huge(1)) then
              write(iulog,1003) nf,accum(nf)%name,accum(nf)%units,&
                   accum(nf)%acctype, accum(nf)%period, accum(nf)%initval, &
                   accum(nf)%desc
@@ -261,41 +233,29 @@ contains
 
   end subroutine print_accum_fields
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: extract_accum_field_sl
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine extract_accum_field_sl (name, field, nstep)
-!
-! !DESCRIPTION:
-! Extract single-level accumulated field.
-! This routine extracts the field values from the multi-level
-! accumulation field. It extracts the current value except if
-! the field type is a time average. In this case, an absurd value
-! is assigned to  indicate the time average is not yet valid.
-!
-! !USES:
-    use clm_varcon, only : spval
-!
-! !ARGUMENTS:
+    !
+    ! !DESCRIPTION:
+    ! Extract single-level accumulated field.
+    ! This routine extracts the field values from the multi-level
+    ! accumulation field. It extracts the current value except if
+    ! the field type is a time average. In this case, an absurd value
+    ! is assigned to  indicate the time average is not yet valid.
+    !
+    ! !USES:
+    use clm_varcon, only : spval, ispval
+    !
+    ! !ARGUMENTS:
     implicit none
     character(len=*), intent(in) :: name     !field name
     real(r8), pointer, dimension(:) :: field !field values for current time step
     integer , intent(in) :: nstep            !timestep index
-!
-! !REVISION HISTORY:
-! Created by Sam Levis
-! Updated to clm2.1 data structures by Mariana Vertenstein
-! Updated to include all subgrid type and multilevel fields, Mariana Vertenstein 03-2003
-!
-!
-! !LOCAL VARIABLES:
-!EOP
+    !
+    ! !LOCAL VARIABLES:
     integer :: i,k,nf        !indices
     integer :: beg,end         !subgrid beginning,ending indices
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     ! find field index. return if "name" is not on list
 
@@ -305,7 +265,7 @@ contains
     end do
     if (nf == 0) then
        write(iulog,*) 'EXTRACT_ACCUM_FIELD_SL error: field name ',name,' not found'
-       call endrun
+       call shr_sys_abort
     endif
 
     ! error check
@@ -316,7 +276,7 @@ contains
        write(iulog,*)'ERROR in extract_accum_field for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',&
             size(field,dim=1),' and should be ',end-beg+1
-       call endrun
+       call shr_sys_abort
     endif
 
     ! extract field
@@ -334,42 +294,30 @@ contains
 
   end subroutine extract_accum_field_sl
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: extract_accum_field_ml
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine extract_accum_field_ml (name, field, nstep)
-!
-! !DESCRIPTION:
-! Extract mutli-level accumulated field.
-! This routine extracts the field values from the multi-level
-! accumulation field. It extracts the current value except if
-! the field type is a time average. In this case, an absurd value
-! is assigned to  indicate the time average is not yet valid.
-!
-! !USES:
+    !
+    ! !DESCRIPTION:
+    ! Extract mutli-level accumulated field.
+    ! This routine extracts the field values from the multi-level
+    ! accumulation field. It extracts the current value except if
+    ! the field type is a time average. In this case, an absurd value
+    ! is assigned to  indicate the time average is not yet valid.
+    !
+    ! !USES:
     use clm_varcon, only : spval
-!
-! !ARGUMENTS:
+    !
+    ! !ARGUMENTS:
     implicit none
     character(len=*), intent(in) :: name       !field name
     real(r8), pointer, dimension(:,:) :: field !field values for current time step
     integer, intent(in) :: nstep               !timestep index
-!
-! !REVISION HISTORY:
-! Created by Sam Levis
-! Updated to clm2.1 data structures by Mariana Vertenstein
-! Updated to include all subgrid type and multilevel fields, M. Vertenstein 03/2003
-!
-!
-! !LOCAL VARIABLES:
-!EOP
+    !
+    ! !LOCAL VARIABLES:
     integer :: i,j,k,nf        !indices
     integer :: beg,end         !subgrid beginning,ending indices
     integer :: numlev          !number of vertical levels
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     ! find field index. return if "name" is not on list
 
@@ -379,7 +327,7 @@ contains
     end do
     if (nf == 0) then
        write(iulog,*) 'EXTRACT_ACCUM_FIELD_ML error: field name ',name,' not found'
-       call endrun
+       call shr_sys_abort
     endif
 
     ! error check
@@ -391,12 +339,12 @@ contains
        write(iulog,*)'ERROR in extract_accum_field for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',&
             size(field,dim=1),' and should be ',end-beg+1
-       call endrun
+       call shr_sys_abort
     else if (size(field,dim=2) /= numlev) then
        write(iulog,*)'ERROR in extract_accum_field for field ',accum(nf)%name
        write(iulog,*)'size of second dimension of field iis ',&
             size(field,dim=2),' and should be ',numlev
-       call endrun
+       call shr_sys_abort
     endif
 
     !extract field
@@ -418,36 +366,24 @@ contains
 
   end subroutine extract_accum_field_ml
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: update_accum_field_sl
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine update_accum_field_sl (name, field, nstep)
-!
-! !DESCRIPTION:
-! Accumulate single level field over specified time interval.
-! The appropriate field is accumulated in the array [accval].
-!
-! !ARGUMENTS:
+    !
+    ! !DESCRIPTION:
+    ! Accumulate single level field over specified time interval.
+    ! The appropriate field is accumulated in the array [accval].
+    !
+    ! !ARGUMENTS:
     implicit none
     character(len=*), intent(in) :: name     !field name
     real(r8), pointer, dimension(:) :: field !field values for current time step
     integer , intent(in) :: nstep            !time step index
-!
-! !REVISION HISTORY:
-! Created by Sam Levis
-! Updated to clm2.1 data structures by Mariana Vertenstein
-! Updated to include all subgrid type and multilevel fields by M. Vertenstein 03/2003
-!
-!
-! !LOCAL VARIABLES:
-!EOP
+    !
+    ! !LOCAL VARIABLES:
     integer :: i,k,nf              !indices
     integer :: accper              !temporary accumulation period
     integer :: beg,end             !subgrid beginning,ending indices
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     ! find field index. return if "name" is not on list
 
@@ -457,7 +393,7 @@ contains
     end do
     if (nf == 0) then
        write(iulog,*) 'UPDATE_ACCUM_FIELD_SL error: field name ',name,' not found'
-       call endrun
+       call shr_sys_abort
     endif
 
     ! error check
@@ -468,7 +404,7 @@ contains
        write(iulog,*)'ERROR in UPDATE_ACCUM_FIELD_SL for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',size(field,dim=1),&
             ' and should be ',end-beg+1
-       call endrun
+       call shr_sys_abort
     endif
 
     ! accumulate field
@@ -480,7 +416,7 @@ contains
        write(iulog,*) ' was specified for field ',name
        write(iulog,*)' accumulation type specified is ',accum(nf)%acctype
        write(iulog,*)' only [timeavg, runmean, runaccum] are currently acceptable'
-       call endrun()
+       call shr_sys_abort()
     end if
 
 
@@ -523,36 +459,24 @@ contains
 
   end subroutine update_accum_field_sl
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: update_accum_field_ml
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine update_accum_field_ml (name, field, nstep)
-!
-! !DESCRIPTION:
-! Accumulate multi level field over specified time interval.
-!
-! !ARGUMENTS:
+    !
+    ! !DESCRIPTION:
+    ! Accumulate multi level field over specified time interval.
+    !
+    ! !ARGUMENTS:
     implicit none
     character(len=*), intent(in) :: name       !field name
     real(r8), pointer, dimension(:,:) :: field !field values for current time step
     integer , intent(in) :: nstep              !time step index
-!
-! !REVISION HISTORY:
-! Created by Sam Levis
-! Updated to clm2.1 data structures by Mariana Vertenstein
-! Updated to include all subgrid type and multilevel fields by M. Vertenstein 03/2003
-!
-!
-! !LOCAL VARIABLES:
-!EOP
+    !
+    ! !LOCAL VARIABLES:
     integer :: i,j,k,nf            !indices
     integer :: accper              !temporary accumulation period
     integer :: beg,end             !subgrid beginning,ending indices
     integer :: numlev              !number of vertical levels
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     ! find field index. return if "name" is not on list
 
@@ -562,7 +486,7 @@ contains
     end do
     if (nf == 0) then
        write(iulog,*) 'UPDATE_ACCUM_FIELD_ML error: field name ',name,' not found'
-       call endrun
+       call shr_sys_abort
     endif
 
     ! error check
@@ -574,12 +498,12 @@ contains
        write(iulog,*)'ERROR in UPDATE_ACCUM_FIELD_ML for field ',accum(nf)%name
        write(iulog,*)'size of first dimension of field is ',size(field,dim=1),&
             ' and should be ',end-beg+1
-       call endrun
+       call shr_sys_abort
     else if (size(field,dim=2) /= numlev) then
        write(iulog,*)'ERROR in UPDATE_ACCUM_FIELD_ML for field ',accum(nf)%name
        write(iulog,*)'size of second dimension of field is ',size(field,dim=2),&
             ' and should be ',numlev
-       call endrun
+       call shr_sys_abort
     endif
 
     ! accumulate field
@@ -591,7 +515,7 @@ contains
        write(iulog,*) ' was specified for field ',name
        write(iulog,*)' accumulation type specified is ',accum(nf)%acctype
        write(iulog,*)' only [timeavg, runmean, runaccum] are currently acceptable'
-       call endrun()
+       call shr_sys_abort()
     end if
 
     ! accumulate field
@@ -639,40 +563,33 @@ contains
 
   end subroutine update_accum_field_ml
 
-!------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: accumulRest
-!
-! !INTERFACE:
+  !------------------------------------------------------------------------
   subroutine accumulRest( ncid, flag )
-!
-! !DESCRIPTION:
-! Read/write accumulation restart data
-!
-! !USES:
+    !
+    ! !DESCRIPTION:
+    ! Read/write accumulation restart data
+    !
+    ! !USES:
     use clm_time_manager, only : is_restart
+    use clm_varcon      , only : ispval
     use ncdio_pio
-!
-! !ARGUMENTS:
+    use pio
+    !
+    ! !ARGUMENTS:
     implicit none
     type(file_desc_t), intent(inout) :: ncid   !netcdf unit
     character(len=*) , intent(in) :: flag   !'define','read', or 'write'
-!
-! !REVISION HISTORY:
-! Created by Mariana Vertenstein
-!
-!
-! !LOCAL VARIABLES:
-!EOP
-    integer :: nf,k,j              ! indices
-    integer :: beg1d, end1d        ! buffer bounds
-    integer :: ier                 ! error status
-    real(r8), pointer :: rbuf1d(:) ! temporary 1d buffer
-    logical :: readvar             ! determine if variable is on initial file
-    character(len=128) :: varname  ! temporary
+    !
+    ! !LOCAL VARIABLES:
+    integer :: nf,k,j                         ! indices
+    integer :: beg1d, end1d                   ! buffer bounds
+    integer :: ier                            ! error status
+    logical :: readvar                        ! determine if variable is on initial file
+    real(r8), pointer  :: rbuf1d(:)           ! temporary 1d buffer
+    type(var_desc_t)   :: vardesc             ! local vardesc
+    character(len=128) :: varname             ! temporary
     character(len= 32) :: subname='AccumRest' ! subroutine name
-!------------------------------------------------------------------------
+    !------------------------------------------------------------------------
 
     do nf = 1,naccflds
 
@@ -685,6 +602,8 @@ contains
              call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_double,  &
                   dim1name=accum(nf)%type1d, &
                   long_name=accum(nf)%desc, units=accum(nf)%units) 
+             ier = PIO_inq_varid(ncid, trim(varname), vardesc)
+             ier = PIO_put_att(ncid, vardesc%varid, 'interpinic_flag', iflag_interp)
           else
              call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_double,  &
                   dim1name=accum(nf)%type1d, dim2name=accum(nf)%type2d, &
@@ -699,32 +618,31 @@ contains
                 rbuf1d(beg1d:end1d) = accum(nf)%val(beg1d:end1d,1) 
              end if
              call ncd_io(varname=varname, data=rbuf1d, &
-                  dim1name=accum(nf)%type1d, &
-                  ncid=ncid, flag=flag, readvar=readvar)
+                  dim1name=accum(nf)%type1d, ncid=ncid, flag=flag, readvar=readvar)
              if (flag == 'read' .and. readvar) then
                 accum(nf)%val(beg1d:end1d,1) = rbuf1d(beg1d:end1d)
              end if
              deallocate(rbuf1d)
           else
              call ncd_io(varname=varname, data=accum(nf)%val, &
-                  dim1name=accum(nf)%type1d, &
-                  ncid=ncid, flag=flag, readvar=readvar)
+                  dim1name=accum(nf)%type1d, ncid=ncid, flag=flag, readvar=readvar)
           end if
           if (flag=='read' .and. .not. readvar) then
-             if (is_restart()) call endrun()
+             if (is_restart()) call shr_sys_abort()
           end if
        end if
 
        varname = trim(accum(nf)%name) // '_PERIOD'
        if (flag == 'define') then
           call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_int,  &
-               long_name='', units='time steps', imissing_value=bigint, &
-               ifill_value=bigint)
+               long_name='', units='time steps', imissing_value=ispval, &
+               ifill_value=huge(1))
+          ier = PIO_inq_varid(ncid, trim(varname), vardesc)
+          ier = PIO_put_att(ncid, vardesc%varid, 'interpinic_flag', iflag_copy)
        else if (flag == 'read' .or. flag == 'write') then
-          call ncd_io(varname=varname, data=accum(nf)%period, &
-               ncid=ncid, flag=flag, readvar=readvar)
+          call ncd_io(varname=varname, data=accum(nf)%period, ncid=ncid, flag=flag, readvar=readvar)
           if (flag=='read' .and. .not. readvar) then
-             if (is_restart()) call endrun()
+             if (is_restart()) call shr_sys_abort()
           end if
        end if
 

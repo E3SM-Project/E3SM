@@ -1,7 +1,68 @@
 Tag                   Who      Date  Summary
 ============================================================================================================================
-cesm1_2_0_n02         erik 06/05/2013 Update scripts/machines, update README files
-cesm1_2_0_n01        erik 05/31/2013 Fix 1850 CLM45BGC f09 Initial condition file
+   clm4_5_71        sacks 05/02/2014 2-way feedbacks for glacier, veg columns compute glacier SMB, and related changes
+   clm4_5_70      muszala 04/18/2014 bring in SHR_ASSERT macros
+   clm4_5_69        andre 03/18/2014 start unit testing build-namelist
+   clm4_5_68         erik 03/07/2014 Update scripts to version that turns on transient CO2 streams for transient compsets, and update CISM (changes answers)
+   clm4_5_65     mvertens 03/06/2014 Turn off MEGAN vocs when crops is running
+   clm4_5_64      muszala 02/19/2014 fix and clean ncdio_pio.F90.in.  clean clm_time_manager.  update externals.
+   clm4_5_63        sacks 02/14/2014 add some code needed for dynamic landunits; activate 0-weight veg landunit sometimes
+   clm4_5_62         erik 02/10/2014 Get PTCLM working robustly, US-UMB test working, add CO2 streams to datm, add more consistency testing between compsets and user settings
+   clm4_5_61        sacks 02/04/2014 add 3-d snow history fields; continue harvest past end of pftdyn timeseries
+   clm4_5_60        andre 01/30/2014 refactor build-namelist
+   clm4_5_59        sacks 01/22/2014 use new get_curr_yearfrac function in clm_time_manager
+   clm4_5_58        sacks 01/22/2014 major refactor of transient pft code, in prep for dynamic landunits
+   clm4_5_57        sacks 01/07/2014 change CNDV water conservation to use the pftdyn method
+   clm4_5_56        sacks 01/02/2014 update scripts external to fix I20TRCLM45BGC compset
+   clm4_5_55        sacks 12/27/2013 add hooks to Sean Santos's unit test frameworks, and begin to add CLM unit tests
+   clm4_5_54        sacks 12/27/2013 update externals to cesm1_3_beta06
+   clm4_5_53      muszala 12/19/2013 refactor restart interfaces
+   clm4_5_52        sacks 11/26/2013 turn on longwave radiation downscaling for glc_mec by default
+   clm4_5_51        sacks 11/26/2013 rework downscaling of atm fields for glc_mec
+   clm4_5_50         erik 11/24/2013 Bring in a bunch of b4b bugfixes, fix getregional script, start move of PTCLM to PTCLMmkdata tool
+   clm4_5_49      muszala 11/16/2013 swenson anomaly forcing - part 1
+   clm4_5_48      muszala 11/14/2013 bug fixes for CLM dry deposition and MEGAN VOC emissions
+   clm4_5_47      muszala 11/12/2013 fix Bug 1858 - AGDD now reset annually
+   clm4_5_46        sacks 11/08/2013 remove zeroing out of slope for special landunits
+   clm4_5_45        sacks 11/08/2013 refactor daylength calculation, and other minor changes
+   clm4_5_44        sacks 11/08/2013 temporary hack to daylength initialization to provide baselines for the next tag
+   clm4_5_43        sacks 11/06/2013 allocate memory for most landunits in every grid cell (needed for dynamic landunits)
+   clm4_5_42        sacks 11/04/2013 fix bug 1857 for CLM4.5 - CNDV running temperature means are incorrect
+   clm4_5_41        andre 10/30/2013 update scripts to convert clm4_5 CPP flags to namelist variables.
+   clm4_5_40      muszala 10/24/2013 fix Bug 1752 - urban conductances depend on weights in an undesirable way
+   clm4_5_39      muszala 10/23/2013 bug fix from santos - h2osoi_vol not passed to atmosphere model on restart
+   clm4_5_38        sacks 10/18/2013 change irrigation variables to be pft-level
+   clm4_5_37      muszala 10/10/2013 Modifications to bring clm up to date with major driver refactoring in drvseq5_0_01
+   clm4_5_36        sacks 10/04/2013 new surface datasets, and other minor fixes
+   clm4_5_35        sacks 10/01/2013 get CLM running on edison
+   clm4_5_34         erik 09/30/2013 Get PTCLM working, fix a few small bugs
+   clm4_5_33      muszala 09/26/2013 clean up from mistakes in previous tag
+   clm4_5_32      muszala 09/26/2013 bug fix tag - 1798, 1810
+   clm4_5_31        sacks 09/25/2013 fix bug 1820: incomplete conditional in CNSoyfix leads to buggy results and decomposition dependence
+   clm4_5_30        sacks 09/24/2013 fix performance bug in decomposition initialization
+   clm4_5_29        sacks 09/24/2013 fix threading in CLM4.5, and other misc fixes
+   clm4_5_28        sacks 09/20/2013 fix FracH2oSfc bug
+   clm4_5_27        sacks 09/20/2013 fix crop nyrs bug
+   clm4_5_26      muszala 09/19/2013 water balance and SMS_Ly1.f19_g16.ICLM45BGCCROP fix
+   clm4_5_25         erik 09/13/2013 Bring in Tony's changes to kick sno all the way up to the coupler layer, makes all 
+                                     CESM components more similar to each other
+   clm4_5_24        sacks 09/03/2013 update externals to cesm1_3_beta02 or later
+   clm4_5_23      muszala 08/22/2013 refactor to allow CH4 params. to be read from netcdf file and clean up clm4_5_20
+   clm4_5_22      muszala 07/30/2013 aux_clm testlist reorganization
+   clm4_5_21      muszala 07/24/2013 ifdef and bounds refactor
+   clm4_5_20      muszala 07/20/2013 refactor to allow CN and BGC params. to be read from netcdf file
+   clm4_5_19        sacks 07/17/2013 fix setting of bd in iniTimeConst
+   clm4_5_18        sacks 07/09/2013 rework urban indexing
+   clm4_5_17        sacks 07/03/2013 misc cleanup and bug fixes
+   clm4_5_16        sacks 07/02/2013 only run filters over 'active' points
+   clm4_5_15      muszala 07/01/2013 complete associate refactor for pointers in clm4_5 source
+   clm4_5_14      muszala 06/20/2013 preparation for associate refactor in clm4_5_15
+   clm4_5_13        andre 06/14/2013 hydrology reordering from Jinyun Tang
+   clm4_5_12      muszala 06/13/2013 NoVS test, NAG mods and remove TWS from restart file
+   clm4_5_11        sacks 06/11/2013 Change pct_pft and related surface dataset variables to be % of landunit
+   clm4_5_10      muszala 06/10/2013 refactor clmtype
+   clm4_5_09      muszala 06/04/2013 volr and vic fix, update mct and rtm
+   clm4_5_08      muszala 06/03/2013 port for NAG compiler
    clm4_5_07         erik 05/31/2013 New spinup files for CLM45 AND RTM, work on PTCLM, turn drydep off by default, update externals
    clm4_5_06         erik 05/15/2013 A few small bug fixes, more updates to README files
    clm4_5_05      muszala 05/14/2013 hcru bug fixes
@@ -24,7 +85,8 @@ cesm1_2_0_n01        erik 05/31/2013 Fix 1850 CLM45BGC f09 Initial condition fil
    clm4_0_71      muszala 04/10/2013 compsets refactoring by mvertens
    clm4_0_70      muszala 04/01/2013 bring in vic hydrology
    clm4_0_69      muszala 03/26/2013 remove hydro reorder, volr and esmf mods
-   clm4_0_68         erik 03/16/2013  Fix some issues in mksurfdata_map for generation of ne120np surface data file. Put error back in CLM if weights don't sum to 100. Add in Keith's photosynthesis change for  CLM45.
+   clm4_0_68         erik 03/16/2013 Fix some issues in mksurfdata_map for generation of ne120np surface data file. 
+                                     Put error back in CLM if weights don't sum to 100. Add in Keith's photosynthesis change for  CLM45.
    clm4_0_67      muszala 03/12/2013 Jinyun photosynthesis and hydrology reorder
    clm4_0_66        sacks 03/07/2013 turn off subgrid topography snow parameterization for glc_mec landunits
    clm4_0_65        sacks 03/07/2013 back out Machines external to get more tests to pass, especially IG

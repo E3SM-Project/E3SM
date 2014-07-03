@@ -1,0 +1,24 @@
+Typing "gmake" in this directory will build an executable named
+interpaerosols that can be used to generate a resolution-specific aerosol
+mass dataset suitable for input to CAM.  Required command-line arguments to
+interpaerosols are 1) input "master" aerosol netcdf dataset on a rectangular
+grid; 2) input/output template netcdf dataset on the target CAM grid.  On
+output this second dataset will contain horizontally interpolated and
+vertically summed versions of the input fields.  Optionally, the -d argument
+can be included which will produce 64-bit output fields.  The default is
+32-bit fields.  At this writing the most current master aerosol mass dataset
+is named AerosolMass_192x94_L28_clim_c030418.nc and lives in
+/fs/cgd/csm/inputdata/atm/cam2/rad.
+
+Perl script REGRID.pl is included to enable easy creation of the
+template dataset at a specific resolution.  Usage of the perl script is:
+REGRID.pl <resolution>, where currently supported resolutions can be found by
+running the script without arguments.  The output netcdf file will be named
+regrid.<resolution>.nc.  An example sequence of steps to create
+a T42 aerosol dataset for input to CAM would be:
+
+REGRID.pl T42
+gmake
+./interpaerosols /fs/cgd/csm/inputdata/atm/cam2/rad/AerosolMass_192x94_L28_clim_c030418.nc \
+                 regrid.T42.nc
+
