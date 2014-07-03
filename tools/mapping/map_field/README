@@ -1,0 +1,101 @@
+==========================================================================
+$Id: README 39483 2012-08-16 17:35:52Z mlevy@ucar.edu $
+$URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120929/map_field/README $
+==========================================================================
+
+
+===============
+ABOUT THIS TOOL
+===============
+
+The src/ directory here contains an F90 file and a Makefile to produce the
+map_fields executable, which reads in a mapping file and input field and
+maps that field to an output file.
+
+============
+HOW TO BUILD
+============
+
+Prior to building, you must make sure $CCSMROOT is set.
+
+$ cd src
+$ $CCSMROOT/scripts/ccsm_utils/Machines/configure -mach [machine name]
+$ gmake
+
+Note: in the second step, replace [machine name] with the machine you are
+building on. Also, some machines (such as janus) have dedicated build nodes,
+so you might need to SSH to another node before the 'gmake' step.
+
+==================================
+COMMON BUILD / RUN ISSUES ON JANUS
+==================================
+
+1) As hinted at in the "How to Build" section, you can not build on the login
+  nodes on janus. If you see the error
+
+  ld: cannot find -lrdmacm
+  ld: cannot find -libverbs
+
+  you are still on the headnode and need to SSH to node0001.
+
+2) At present, the netCDF libraries available on janus have all been built
+   with mpif90, which means that everything linking with netCDF must also
+   be built in parallel. Unfortunately, this means you can not run map_fields
+   from the head node -- you either need to push it through the queue or just
+   run it from node0001. Running on node0001 is easier, but to run from the
+   queue, edit map_field.janus.run (both the header info to set the requested
+   walltime and the body of the script to point to the correct mapping file and
+   name the domain files appropriately), and then run
+
+   qsub map_field.janus.run
+
+
+==========
+HOW TO RUN
+==========
+
+$ map_field -m <filemap>
+            -if <input_file>
+            -iv <input_varname>
+            -of <output_file>
+            -ov <output_varname>
+           [-c <user comment map_field.nml>]
+
+where:
+    filemap = input mapping file name  (character string)
+    input_file = input file name
+    input_varname = input variable name
+    output_file = output file name
+    output_varname = output variable name
+    usercomment = optional, netcdf global attribute (character string)
+
+The following files are read
+  filemap
+  input_file
+The following files are created
+  output_file
+
+=======
+EXAMPLE
+=======
+
+To build:
+
+> cd src
+> setenv CCSMROOT ~/cesm1_1_0
+> $CCSMROOT/scripts/ccsm_utils/Machines/configure -mach yellowstone
+> gmake
+> cd ../
+
+To run:
+
+> ./map_field -m "/glade/p/cesm/cseg/inputdata/cpl/cpl6/map_ar9v4_to_wr50a_aave_da_110107.nc" -if "/glade/u/home/tcraig/racm_masks_121108.nc" -iv POP_MASK -of x1.nc -ov atm_pop_frac
+
+=====
+NOTES
+=====
+
+(a) The output file is ALWAYS CLOBBERED in the current implementation.
+
+(b) There is limited error checking at this time.
+

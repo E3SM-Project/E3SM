@@ -1,0 +1,2643 @@
+================================================================================
+SVN $Id: ChangeLog 30292 2011-09-12 22:46:25Z jedwards $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/ChangeLog $
+
+This file describes what tags were created and why
+=================================================================================
+Originator: erik
+Date: 05 Jun 2013
+Model: Machines
+Version: Machines_130605a
+One-line: set pio_buffer_size_limit=0 for f09 and hcru_hcru grids as well
+
+Bugzilla bug 1730 occurs for clm40 cases as well. This sets pio_buffer_size_limit=0
+for f09 and hcru_hcru whether for clm40 or clm45. This does mean we are likely to
+still have a potential bug for ne120, ne30 or on BGP or BGQ for both CLM40 and CLM45.
+But, it requires a CLM setting that would be rare to use for these cases.
+
+M       config_pes.xml
+
+=================================================================================
+Originator: jedwards
+Date: 05 Jun 2013
+Model: Machines
+Version: Machines_130605
+One-line: set pio_buffer_size_limit=0 for clm45
+
+M       config_pes.xml
+
+=================================================================================
+Originator: jshollen
+Date: 01 Jun 2013
+Model: Machines
+Version: Machines_130601
+One-line: SLIB updates for Mira. 
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: erik
+Date: 30 May 2013
+Model: Machines
+Version: Machines_130530
+One-line: Use $ENV variable in place of hard-coded path
+
+M       config_machines.xml - Use $ENV variable for head of CESMDATA on yellowstone
+
+=================================================================================
+Originator: erik
+Date: 29 May 2013
+Model: Machines
+Version: Machines_130529
+One-line: Added PE layouts for hcru_hcru grid and f09_g16 yellowstone for I compsets
+
+Set 384 tasks for default hcru grid
+64 when on frankfurt
+and 630 concurrent on yellowstone
+
+for yellowstone and f09_g16 for I compsets use same 630 concurrent layout
+
+M       config_pes.xml
+
+=================================================================================
+Originator: srinathv
+Date: 24 May 2013
+Model: Machines
+Version: Machines_130524
+One-line:Added Stampdede Machine for SNB (build/run) and MIC (build)
+
+M       config_compilers.xml
+A       env_mach_specific.stampede
+M       ChangeLog
+A       mkbatch.stampede
+M       config_machines.xml
+M       config_pes.xml
+
+
+===============================================================================
+Originator: jedwards
+Date: 20 May 2013
+Model: Machines
+Version: Machines_130520
+One-line:Set MP_EAGER_LIMIT 0 on yellowstone, new pelayout for clm45 I cases
+
+M     config_pes.xml
+M     env_mach_specific.yellowstone
+
+
+================================================================================
+Originator: jedwards
+Date: 16 May 2013
+Model: Machines
+Version: Machines_130516
+One-line: Fixes for mira and edison
+
+M             config_compilers.xml
+M             config_pes.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 15 May 2013
+Model: Machines
+Version: Machines_130515
+One-line: Add mkl lib on edison, pnetcdf on pleiades
+	
+M              config_compilers.xml
+M              env_mach_specific.pleiades-har
+M              env_mach_specific.pleiades-san
+M              env_mach_specific.edison
+M              env_mach_specific.pleiades-wes
+
+
+================================================================================
+Originator: erik
+Date: 09 May 2013
+Model: Machines
+Version: Machines_130509
+One-line: Fix DIN_LOC_ROOT_CLMFORC and set correctly it for frankfurt and janus
+
+The specific Qian subdirectory: atm_forcing.datm7.Qian.T62.c080727 was included
+in many instances of DIN_LOC_ROOT_CLMFORC and should NOT have been. Also added
+it for janus, and set it to /project/tss for frankfurt.
+
+M       config_machines.xml
+
+================================================================================
+Originator: santos
+Date: 06 May 2013
+Model: Machines
+Version: Machines_130506a
+One-line: Re-enable threading for WACCM-SE.
+
+M      config_pes.xml
+        - Remove recently added workaround for WACCM-SE memory leak, as it will
+          be fixed in CAM.
+
+================================================================================
+Originator: jedwards
+Date: 06 May 2013
+Model: Machines
+Version: Machines_130506
+One-line: Update bluewaters
+
+M      config_compilers.xml
+M      env_mach_specific.bluewaters
+M      mkbatch.bluewaters
+
+
+================================================================================
+Originator: jedwards
+Date: 02 May 2013
+Model: Machines
+Version: Machines_130502
+One-line: Update bluewaters, remove bluefire
+	
+M            config_compilers.xml
+D            mkbatch.bluefire
+D            env_mach_specific.bluefire
+M            env_mach_specific.bluewaters
+M            config_machines.xml
+
+
+================================================================================
+Originator: santos
+Date: 01 May 2013
+Model: Machines
+Version: Machines_130501b
+One-line: Disable threading by default for WACCM-SE on yellowstone.
+
+M  config_pes.xml
+    - For WACCM on ne30np4, use CAM F case default settings, except disable
+      threading due to memory leak.
+
+================================================================================
+Originator: jedwards
+Date: 01 May 2013
+Model: Machines
+Version: Machines_130501a
+One-line: Updates for yellowstone
+
+M  env_mach_specific.yellowstone
+
+
+================================================================================
+Originator: mickelso
+Date: 01 May 2013
+Model: Machines
+Version: Machines_130501
+One-line: Port to Mira
+
+M       config_machines.xml
+	- Set correct Mira paths
+
+M       config_pes.xml
+	- Modified Mira PE layouts
+
+================================================================================
+Originator: santos
+Date: 26 Apr 2013
+Model: Machines
+Version: Machines_130426b
+One-line: Add cesm.log to batch scripts that didn't have it.
+
+M       mkbatch.ubgl
+M       mkbatch.intrepid
+         - Add cesm.log.
+
+M       mkbatch.frankfurt
+         - Correct typo in redirect for PGI.
+
+================================================================================
+Originator: jedwards
+Date: 26 Apr 2013
+Model: Machines
+Version: Machines_130426a
+One-line: Correct accidental overwrite of 130425 tag with 130426
+
+M               config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: 26 Apr 2013
+Model: Machines
+Version: Machines_130426
+One-line: Port to Mira
+
+M               config_compilers.xml
+M               mkbatch.mira
+M               config_pes.xml
+M               config_machines.xml
+
+================================================================================
+Originator: jedwards
+Date: 25 Apr 2013
+Model: Machines
+Version: Machines_130425
+One-line:  Update gnu compiler on yellowstone, forces netcdf for io (pnetcdf has problems)
+
+M       env_mach_specific.yellowstone
+
+================================================================================
+Originator: fischer
+Date: 19 Apr 2013
+Model: Machines
+Version: Machines_130419
+One-line: Disable threading for CLUBB
+
+M       config_pes.xml
+
+================================================================================
+Originator: fvitt
+Date: 17 Apr 2013
+Model: Machines
+Version: Machines_130417a
+One-line: Remove workaround for SC-WACCM threading problem
+
+M       config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 17 Apr 2013
+Model: Machines
+Version: Machines_130417
+One-line: Updates for yellowstone (nano timers, ocean threading)
+
+M              config_compilers.xml
+M              env_mach_specific.yellowstone
+M              mkbatch.yellowstone
+M              config_pes.xml
+
+
+================================================================================
+Originator: santos
+Date: 12 Apr 2013
+Model: Machines
+Version: Machines_130412
+One-line: fix NAG experimental options and CESM log names.
+
+M       Makefile
+         - compile_threaded is now set to "false" if not "true"
+
+M       config_compilers.xml
+         - Remove "HAVE_F2008_CONTIGUOUS" CPP macro that HOMME no
+           longer uses.
+
+M       mkbatch.olympus
+M       mkbatch.brutus
+M       mkbatch.bluefire
+M       mkbatch.bluewaters
+M       mkbatch.eastwind
+M       mkbatch.sierra
+M       mkbatch.userdefined
+M       mkbatch.gaea
+M       mkbatch.pleiades-san
+M       mkbatch.titan
+M       mkbatch.hera
+M       mkbatch.janus
+M       mkbatch.edison
+M       mkbatch.pleiades-wes
+M       mkbatch.evergreen
+M       mkbatch.hopper
+M       mkbatch.lynx
+M       mkbatch.pleiades-har
+M       mkbatch.frankfurt
+         - Change the name "ccsm.log" to "cesm.log" (had already been
+           done for yellowstone).
+
+================================================================================
+Originator: mai
+Date: 08 Apr 2013
+Model: Machines
+Version: Machines_130408
+One-line: add compression of ocn/ice history files to long-term archiver
+
+M mkbatch.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 03 Apr 2013
+Model: Machines
+Version: Machines_130403
+One-line: update build for pio (genf90.pl has moved)
+
+M buildlib.pio
+
+================================================================================
+Originator: jedwards
+Date: 01 Apr 2013
+Model: Machines
+Version: Machines_130401
+One-line: Update PrgEnv-pgi on hopper.
+
+M env_mach_specific.hopper
+
+================================================================================
+Originator: santos
+Date: 29 Mar 2013
+Model: Machines
+Version: Machines_130329
+One-line: NAG OpenMP tweaks
+
+M       config_compilers.xml
+
+OpenMP with NAG is not really ready yet, but these changes bring it closer.
+
+================================================================================
+Originator: tcraig
+Date: 26 Mar 2013
+Model: Machines
+Version: Machines_130326
+One-line: Add wave model, update mkDepends 
+
+mkDepends:
+  - Restore ability to recognize .mod files in the path, if there's no source
+    file that provides the same module.
+
+M       config_compilers.xml
+M       env_mach_specific.yellowstone
+M       Makefile
+M       buildlib.csm_share
+M       mkDepends
+M       config_pes.xml
+
+================================================================================
+Originator: sacks
+Date: 25 Mar 2013
+Model: Machines
+Version: Machines_130325
+One-line: Fix some PE layouts, mira fix from Sheri
+
+M       config_pes.xml
+        - Move TG compset layout to final override section, to fix
+          problem with TG layout at T31_g37
+        - Add yellowstone PE layout for f09, to prevent use of partial
+          nodes (applies to I compsets at f09, and maybe others)
+
+M       mkbatch.mira
+        - Fixes from Sheri
+	
+================================================================================
+Originator: jedwards
+Date: 20 Mar 2013
+Model: Machines
+Version: Machines_130320
+One-line: Changes in config_pes.xml necessary for scripts refactoring in scripts4_130318 
+
+M config_pes.xml
+	
+================================================================================
+Originator: jedwards
+Date: 19 Mar 2013
+Model: Machines
+Version: Machines_130319
+One-line: Update Titan modules
+
+M config_compilers.xml
+M env_mach_specific.titan
+
+
+================================================================================
+Originator: santos
+Date: 15 Mar 2013
+Model: Machines
+Version: Machines_130315
+One-line: Further tweaking of NAG flags.
+
+M       config_compilers.xml
+        - Turn off some unsupported and buggy runtime features for cases that
+          use OpenMP. Later the runtime checks that are not buggy should be
+          re-enabled...
+        - Bump Fortran version for diagnostic output to Fortran 2003.
+
+================================================================================
+Originator: santos
+Date: 08 Mar 2013
+Model: Machines
+Version: Machines_130308
+One-line: Change debug-specific NAG flags.
+
+M       config_compilers.xml
+
+================================================================================
+Originator: sacks
+Date: 07 Mar 2013
+Model: Machines
+Version: Machines_130307b
+One-line: Change where gnu fixed and free options are defined to allow cism's cmake to work
+
+M       config_compilers.xml
+
+================================================================================
+Originator: sacks
+Date: 07 Mar 2013
+Model: Machines
+Version: Machines_130307
+One-line: Allow extra options to mkDepends call in Makefile
+
+M       Makefile
+
+================================================================================
+
+Originator: santos
+Date: 04 Mar 2013
+Model: Machines
+Version: Machines_130304b
+One-line: Fix mkDepends with -m upper
+
+M       mkDepends
+        - Fix bug where lowercase .mod was being specified in a rule
+	  even with "-m upper".
+
+================================================================================
+
+Originator: santos
+Date: 04 Mar 2013
+Model: Machines
+Version: Machines_130304
+One-line: Update mkDepends, fix COSP build with gfortran
+
+M       Makefile
+        - Remove COSP object file dependencies; these are redundant with
+          mkDepends output, and radar_simulator_types.o erroneously depended
+          on itself.
+
+M       config_compilers.xml
+        - Fix gfortran FIXEDFLAGS (COSP will not compile without these).
+
+M       mkDepends
+        - Several new features:
+          - Properly creates dependencies on a module that has a different
+            name from the file it is defined in.
+          - Allows double-colon in use statement (e.g. "use :: shr_kind_mod").
+          - Dependencies between object files have become indirect dependencies
+            via .mod files, to allow faster building on gfortran.
+          - Add "-m" option to specify how a module name relates to the name
+            of the corresponding .mod file.
+
+================================================================================
+
+Originator: jedwards
+Date: 01 Mar 2013
+Model: Machines
+Version: Machines_130301
+One-line: Add totalview and debug modules for debug mode on yellowstone, avoid compiler warning from intel compiler
+
+M       config_compilers.xml
+M       env_mach_specific.yellowstone
+	
+================================================================================
+
+
+Originator: mlevy
+Date: 28 Feb 2013
+Model: Machines
+Version: Machines_130228
+One-line: update makefile and mkDepends to avoid recompiling all modules if one
+          module is changed.
+
+M       Makefile
+M       mkDepends
+
+================================================================================
+
+Originator: jedwards
+Date: 26 Feb 2013
+Model: Machines
+Version: Machines_130226
+One-line: update pgi compiler on cray systems, requires a change in pio	build
+
+M           44206   config_compilers.xml
+M           44206   env_mach_specific.hopper
+M           44206   Makefile
+M           44206   mkbatch.bluewaters
+M           44206   env_mach_specific.bluewaters
+M           44206   buildlib.pio
+M           44206   env_mach_specific.titan
+M           44206   config_pes.xml
+M           44206   config_machines.xml
+
+================================================================================
+
+Originator: sacks
+Date: 25 Feb 2013
+Model: Machines
+Version: Machines_130225
+One-line: change default PE count to 15 on yellowstone; get netcdf libs more
+          robustly on hopper
+
+M       config_pes.xml
+        - change yellowstone default to 15 PEs rather than 16 (for compsets /
+	resolutions that do not have an explicitly-specified PE layout)
+M       config_compilers.xml
+        - for pgi, get netcdf settings from nf-config, now that it is fixed
+
+================================================================================
+
+Originator: santos
+Date: 15 Feb 2013
+Model: Machines
+Version: Machines_130215
+One-line: Settings for NAG port
+
+M       https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/config_compilers.xml
+        - Add nagfor flags and libraries.
+
+A       https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/Depends.nag
+        - Exempt two files from NAG runtime checks.
+
+M       https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/Makefile
+        - Add workarounds when gcc and nagfor need different flags for linking.
+        - Include *.mod files for GPTL interface.
+        - Pass SLIBS to configure using LIBS, not LDFLAGS.
+        - Add FPPDEFS to FFLAGS_NOOPT.
+
+M       https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/env_mach_specific.frankfurt
+M       https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/mkbatch.frankfurt
+M       https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/config_machines.xml
+        - Add NAG to frankfurt compilers.
+
+================================================================================
+
+Originator: jshollen
+Date: 14 Feb 2013
+Model: Machines
+Version: Machines_130214
+One-line: PE layout update for intrepid
+
+M       config_pes.xml
+
+================================================================================
+
+Originator: jedwards
+Date: 13 Feb 2013
+Model: Machines
+Version: Machines_130213
+One-line: updates for intrepid, compiler update and ICE workaround 
+
+A   Depends.intrepid
+M   env_mach_specific.intrepid
+
+================================================================================
+
+Originator: jedwards
+Date: 11 Feb 2013
+Model: Machines
+Version: Machines_130211
+One-line: add support for edison.nersc.gov
+
+M              config_compilers.xml
+A              mkbatch.edison
+A              env_mach_specific.edison
+M              config_machines.xml
+
+
+
+================================================================================
+Originator: sacks
+Date: 6 Feb 2013
+Model: Machines
+Version: Machines_130206
+One-line: add support for cism2, including c++, trilinos and cmake
+
+- Add C++ support for some machine/compiler combos
+- Add trilinos support for yellowstone (intel), hopper (pgi, gnu),
+  titan (pgi)
+- Add support to drive CISM's cmake script from the CESM makefile. Add
+  cmake support on bluefire, intrepid, yellowstone, hopper, lynx,
+  titan, janus.
+- Add lapack & blas support on the main testing platforms
+- Change PE layouts to support parallel operation of CISM: For any
+  compset that can potentially include an active GLC (B,E,F,I, in
+  addition to TG), GLC by default uses the same number of PEs as
+  ATM. For cism1 or cism2-serial, this is later changed to 1 PE. Also,
+  add PE layouts for cism2 (parallel) TG compsets.
+
+M       config_compilers.xml
+M       config_pes.xml
+M       Makefile
+M       mkSrcfiles
+M       env_mach_specific.bluefire
+M       env_mach_specific.intrepid
+M       env_mach_specific.yellowstone
+M       env_mach_specific.hopper
+M       env_mach_specific.lynx
+M       env_mach_specific.titan
+M       env_mach_specific.janus
+
+================================================================================
+Originator: jedwards
+Date: 5 Feb 2013
+Model: Machines
+Version: Machines_130205
+One-line: Improve pe layout for ne30 F cases, run tests in small queue on yellowstone
+
+M            43732   mkbatch.yellowstone
+M            43732   config_pes.xml
+
+
+================================================================================
+Originator: sacks
+Date: 4 Feb 2013
+Model: Machines
+Version: Machines_130204
+One-line: restore change that sets nthrds to 1 for CLM45 compsets
+
+The changes I made in Machines_130118a were accidentally removed. I am
+putting these back.
+
+M     config_pes.xml
+
+================================================================================
+riginator: jedwards
+Date: 30 Jan 2013
+Model: Machines
+Version: Machines_130130a
+One-line: correct issue in pelayout for f09_g16.B1850BPRP on yellowstone
+
+M     config_pes.xml
+
+================================================================================
+
+Originator: jedwards
+Date: 30 Jan 2013
+Model: Machines
+Version: Machines_130130
+One-line: improve pe-layout for ne120 on titan
+
+M      config_pes.xml
+M      config_compilers.xml
+	
+================================================================================
+Originator: jedwards
+Date: 28 Jan 2013
+Model: Machines
+Version: Machines_130128
+One-line: Workaround some threading issues on yellowstone
+
+M      config_pes.xml
+M      env_mach_specific.yellowstone
+
+================================================================================
+Originator: jshollen
+Date: 25 Jan 2013
+Model: Machines
+Version: Machines_130125
+One-line: titan walltime fix, intrepid pnetcdf path update
+
+M       config_compilers.xml
+M       mkbatch.titan
+
+================================================================================
+Originator: sacks
+Date: 18 Jan 2013
+Model: Machines
+Version: Machines_130118a
+One-line: set NTHRDS to 1 for all clm4.5 compsets
+
+M              config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 18 Jan 2013
+Model: Machines
+Version: Machines_130118
+One-line: set ocn threading to 1 for all cases on yellowstone
+
+M              config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 16 Jan 2013
+Model: Machines
+Version: Machines_130116
+One-line: update titan build, improve yellowstone pe layouts
+
+M            43280   config_compilers.xml
+M            43280   mkbatch.titan
+M            43280   env_mach_specific.yellowstone
+M            43280   mkbatch.yellowstone
+M            43280   Depends.intel
+M            43280   env_mach_specific.titan
+M            43280   config_pes.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 08 Jan 2013
+Model: Machines
+Version: Machines_130108a
+One-line: irevert hopper pgi to 12.4.0 due to a bug in 12.9.0
+
+M  env_mach_specific.hopper
+
+================================================================================
+Originator: jedwards
+Date: 08 Jan 2013
+Model: Machines
+Version: Machines_130108
+One-line:  One more pe layout change for yellowstone, compiler update on
+hopper
+M    env_mach_specific.hopper
+M    config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 07 Jan 2013
+Model: Machines
+Version: Machines_130107
+One-line: reworked pe layouts for ptiles=15 on yellowstone
+
+M       env_mach_specific.yellowstone
+M       mkbatch.yellowstone
+M       config_machines.xml
+M       config_pes.xml
+
+================================================================================
+Originator: sacks
+Date: 04 Jan 2013
+Model: Machines
+Version: Machines_130104
+One-line: restored mkl module for yellowstone
+
+M       env_mach_specific.yellowstone
+
+================================================================================
+Originator: jshollen
+Date: 03 Jan 2013
+Model: Machines
+Version: Machines_130103
+One-line: commented out mkl module for yellowstone
+
+M       env_mach_specific.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 19 Dec 2012
+Model: Machine
+Version: Machines_121219a
+One-line: Updates for gaea
+
+M        mkbatch.gaea
+M        config_machines.xml
+
+================================================================================
+Originator: fvitt
+Date: 19 Dec 2012
+Model: Machine
+Version: Machines_121219
+One-line: Updates for pleiades
+
+M       mkbatch.pleiades-wes
+M       mkbatch.pleiades-har
+M       mkbatch.pleiades-san
+
+================================================================================
+Originator: tcraig
+Date: 17 Dec 2012
+Model: Machine
+Version: Machines_121217b
+One-line: update cost analysis (COST_PES) and task geom for yellowstone
+
+M       mkbatch.erebus
+M       mkbatch.bluefire
+M       mkbatch.intrepid
+M       mkbatch.yellowstone
+M       mkbatch.mira
+
+================================================================================
+Originator: jedwards
+Date: 17 Dec 2012
+Model: Machine
+Version: Machines_121217a
+One-line: correct ptiles on yellowstone 
+
+M              mkbatch.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 17 Dec 2012
+Model: Machine
+Version: Machines_121217
+One-line: updates for yellowstone and for gaea
+
+M              config_compilers.xml
+M              env_mach_specific.yellowstone
+M              mkbatch.yellowstone
+M              mkbatch.gaea
+M              config_pes.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 14 Dec 2012
+Model: Machine
+Version: Machines_121214
+One-line: updates for hera and sierra from Art Mirin
+
+M            42697   config_compilers.xml
+M            42697   mkbatch.hera
+M            42697   env_mach_specific.sierra
+M            42697   mkbatch.sierra
+M            42697   env_mach_specific.hera
+M            42697   config_machines.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 12 Dec 2012
+Model: Machine
+Version: Machines_121212
+One-line: added gaea as a new machine
+
+A    mkbatch.gaea
+A    env_mach_specific.gaea	
+M    config_machines.xml
+	
+================================================================================
+Originator: jedwards
+Date: 11 Dec 2012
+Model: Machine
+Version: Machines_121211
+One-line: update for intel compiler (removed workaround for erfc bug)  
+
+M    Depends.intel
+
+================================================================================
+Originator: jedwards
+Date: 07 Dec 2012
+Model: Machine
+Version: Machines_121207
+One-line: update for intel compiler  
+
+M    Depends.intel
+
+================================================================================
+Originator: jedwards
+Date: 04 Dec 2012
+Model: Machine
+Version: Machines_121204a
+One-line: update for gfortran compiler compatiblity with share3_121204a 
+
+M    Depends.gnu
+
+================================================================================
+Originator: jedwards
+Date: 04 Dec 2012
+Model: Machine
+Version: Machines_121204
+One-line: lt archive for yellowstone, gnu and pathscale compiler updates 
+
+M               config_compilers.xml
+M               env_mach_specific.yellowstone
+M               mkbatch.yellowstone
+
+================================================================================
+Originator: jedwards
+Date: 03 Dec 2012
+Model: Machine
+Version: Machines_121203
+One-line: Workaround ecosys_mod error on yellowstone
+
+A    Depends.intel
+M    env_mach_specific.yellowstone
+
+
+================================================================================
+Originator: erik
+Date: 02 Dec 2012
+Model: Machine
+Version: Machines_121202
+One-line: Bring clm45 branch to trunk (bfICEprob09_Machines_121129a)
+
+M       config_compilers.xml ---- Add LAPACK on frankfurt, and different ESMF_LIB when mpi-serial
+M       env_mach_specific.yellowstone - Add module load of LAPACK
+M       mkbatch.frankfurt --- Fix mpi-serial run
+M       config_machines.xml - Set DIN_LOC_CLMFORC on yellowstone
+
+================================================================================
+Originator: fvitt
+Date: 29 Nov 2012
+Model: Machine
+Version: Machines_121129a
+One-line: Updates for pleiades
+
+compiler update and new machine added for Sandy Bridge nodes and
+renamed "pleiades" and "pleiades-westmere". Pleiades mach options are:
+ pleiades-har (Harpertown 8 cores/node)
+ pleiades-wes (Westmere 12 cores/node)
+ pleiades-san (Sandy Bridge 16 cores/node)
+
+D      env_mach_specific.pleiades
+D      env_mach_specific.pleiades-westmere
+A      env_mach_specific.pleiades-har
+A      env_mach_specific.pleiades-san
+A      env_mach_specific.pleiades-wes
+D      mkbatch.pleiades
+D      mkbatch.pleiades-westmere
+A      mkbatch.pleiades-har
+A      mkbatch.pleiades-san
+A      mkbatch.pleiades-wes
+M      config_compilers.xml
+M      config_machines.xml
+M      config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 29 Nov 2012
+Model: Machine
+Version: Machines_121129
+One-line: Updates for yellowstone 
+
+M            env_mach_specific.yellowstone
+M            mkbatch.yellowstone
+M            config_pes.xml   	
+
+================================================================================
+Originator: santos
+Date: 26 Nov 2012
+Model: Machine
+Version: Machines_121126
+One-line: Fix pleiades MPI module
+
+(See svn log message for detailed notes on what was changed, and cases
+for which this changes the PE layout)
+
+M       config_compilers.xml
+M       env_mach_specific.pleiades-westmere
+M       env_mach_specific.pleiades
+
+================================================================================
+Originator: sacks
+Date: 15 Nov 2012
+Model: Machine
+Version: Machines_121115
+One-line: use compset longname rather than shortname in config_pes.xml
+
+(See svn log message for detailed notes on what was changed, and cases
+for which this changes the PE layout)
+
+M       config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 14 Nov 2012
+Model: Machine
+Version: Machines_121114e
+One-line: make user stacksize unlimited on lynx, yellowstone, hopper
+
+M  env_mach_specific.lynx
+M  env_mach_specific.hopper
+M  env_mach_specific.yellowstone 
+
+================================================================================
+Originator: jedwards
+Date: 14 Nov 2012
+Model: Machine
+Version: Machines_121114d
+One-line: add machine mira 
+
+M     config_machines.xml
+M     config_compilers.xml
+A     mkbatch.mira
+A     env_mach_specific.mira
+
+================================================================================
+Originator: jshollen
+Date: 14 Nov 2012
+Model: Machine
+Version: Machines_121114c
+One-line: update intel compiler, fix pgi LD_LIBRARY_PATH for frankfurt
+
+M       env_mach_specific.frankfurt
+
+================================================================================
+Originator: jedwards
+Date: 14 Nov 2012
+Model: Machine
+Version: Machines_121114b
+One-line: machines update for web documents 
+
+M     config_machines.xml
+
+================================================================================
+Originator: jedwards
+Date: 14 Nov 2012
+Model: Machine
+Version: Machines_121114a
+One-line: intrepid fix
+
+M     config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 14 Nov 2012
+Model: Machine
+Version: Machines_121114
+One-line: hopper fix
+
+M     env_mach_specific.hopper
+M     config_pes.xml 
+M     mkbatch.hopper
+
+================================================================================
+Originator: jedwards
+Date: 13 Nov 2012
+Model: Machine
+Version: Machines_121113
+One-line: janus fix
+
+M     config_pes.xml
+
+================================================================================
+Originator: tcraig
+Date: 06 Nov 2012
+Model: Machine
+Version: Machines_121106
+One-line: olympus fix
+
+M       mkbatch.olympus
+M       config_machines.xml
+	
+================================================================================
+Originator: jedwards
+Date: 05 Nov 2012
+Model: Machine
+Version: Machines_121105a
+One-line: Workaround for ice in xlf11 on intrepid
+
+M  config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 05 Nov 2012
+Model: Machine
+Version: Machines_121105
+One-line: Add ESMF path for yellowstone
+
+M  config_compilers.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 01 Nov 2012
+Model: Machine
+Version: Machines_121101a
+One-line: Recover from poor testing of the previous commit
+	
+M            buildlib.csm_share
+
+================================================================================
+Originator: jedwards
+Date: 01 Nov 2012
+Model: Machine
+Version: Machines_121101
+One-line: Fix issue in configure, set_compiler was not found, moved to new SetupTools.pm in scripts
+	
+M            configure
+M            buildlib.csm_share
+
+
+================================================================================
+Originator: jedwards
+Date: 30 Oct 2012
+Model: Machine
+Version: Machines_121030
+One-line: update yellowstone setup
+M               env_mach_specific.yellowstone
+M               mkbatch.yellowstone
+M               config_pes.xml
+================================================================================
+Originator: tcraig
+Date: 29 Oct 2012
+Model: Machine
+Version: Machines_121029
+One-line: update userdefined defaults, rename to env_mach_pes.xml, update 1 pe 
+  layouts, remove nxm layouts (handled automatically by confopts)
+
+svn merge $SVNREPO/Machines/trunk_tags/Machines_121025a $SVNREPO/Machines/branch_tags/tbld_tags/tbld03_Machines_121025a
+	
+M       config_compilers.xml
+M       mkbatch.erebus
+M       mkbatch.bluefire
+A  +    env_mach_specific.userdefined
+M       mkbatch.intrepid
+M       mkbatch.yellowstone
+M       mkbatch.userdefined
+M       config_machines.xml
+MM      config_pes.xml
+================================================================================
+Originator: jshollen
+Date: 25 Oct 2012
+Model: Machine
+Version: Machines_121025a
+One-line: Modified mpirun statement for frankfurt
+
+M       mkbatch.frankfurt
+
+================================================================================
+Originator: jedwards
+Date: 25 Oct 2012
+Model: Machine
+Version: Machines_121025
+One-line: Update intrepid for 1024x4 task on ne30 grids
+
+M   config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 12 Oct 2012
+Model: Machine
+Version: Machines_121012a
+One-line: Update janus to avoid lustre filesystem issue
+
+M       config_machines.xml
+
+================================================================================
+Originator: jedwards
+Date: 12 Oct 2012
+Model: Machine
+Version: Machines_121012
+One-line: Update mkbatch.yellowstone to run small jobs on caldera
+
+M       mkbatch.yellowstone
+================================================================================
+Originator: tcraig
+Date: 11 Oct 2012
+Model: Machine
+Version: Machines_121011
+One-line: Update mkbatch.yellowstone for account number
+
+M       mkbatch.yellowstone
+
+================================================================================
+Originator: jshollen
+Date: 10 Oct 2012
+Model: Machine
+Version: Machines_121010
+One-line: Fix typo in config_pes.xml, fix for mkbatch.yellowstone
+
+M       mkbatch.yellowstone
+M       config_pes.xml
+
+================================================================================
+Originator: jshollen
+Date: 09 Oct 2012
+Model: Machine
+Version: Machines_121009a
+One-line: set NTHRDS = 1 atm,lnd,ocn,ice. NTHRDS = 4 for cpl, compset F,res ne30_g16,f09_f09 on intrepid.
+
+M      config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 09 Oct 2012
+Model: Machine
+Version: Machines_121009
+One-line: additional updates to yellowstone port
+
+M            40883   config_compilers.xml
+M            40883   env_mach_specific.yellowstone
+M            40883   ChangeLog
+M            40883   mkbatch.yellowstone
+M            40883   config_machines.xml
+M            40883   config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 04 Oct 2012
+Model: Machine
+Version: Machines_121004
+One-line: add path to ESMF on hopper
+
+M               config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: 03 Oct 2012
+Model: Machine
+Version: Machines_121003
+One-line: update port to erebus and yellowstone
+
+M               config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: 02 Oct 2012
+Model: Machine
+Version: Machines_121002
+One-line: fix mkbatch.intrepid, update port to erebus and yellowstone
+
+M               config_compilers.xml
+M               mkbatch.erebus
+M               env_mach_specific.yellowstone
+M               mkbatch.intrepid
+M               env_mach_specific.erebus
+M               config_machines.xml
+M               config_pes.xml
+
+
+================================================================================
+Originator: tcraig
+Date: 01 Oct 2012
+Model: Machine
+Version: Machines_121001
+One-line: fix EXEROOT in mkbatch scripts
+
+M       mkbatch.olympus
+M       mkbatch.janus
+M       mkbatch.evergreen
+M       mkbatch.brutus
+M       mkbatch.frankfurt
+================================================================================
+Originator: jshollen
+Date: 21 Sep 2012
+Model: Machine
+Version: Machines_120921
+One-line: Changed all <OS>Linux</OS> entries to LINUX
+
+M       config_machines.xml
+================================================================================
+Originator: mvertens
+Date: 20 Sep 2012
+Model: Machine
+Version: Machines_120920
+One-line: Fixes for userdefined machine
+	
+M       config_compilers.xml
+M       config_machines.xml
+
+================================================================================
+Originator: tcraig
+Date: 18 Sep 2012
+Model: Machine
+Version: Machines_120918
+One-line: Add rof component
+
+  svn merge $SVNREPO/Machines/trunk_tags/Machines_120916 $SVNREPO/Machines/branch_tags/rtmcomp_tags/rtmcomp03_Machines_120916
+
+M       config_compilers.xml
+M       Makefile
+M       buildlib.csm_share
+MM      config_pes.xml
+================================================================================
+Originator: jshollen
+Date: 16 Sep 2012
+Model: Machine
+Version: Machines_120916
+One-line: Intial port to frankfurt, may need refinements
+
+M       config_compilers.xml
+M       config_machines.xml
+A       env_mach_specific.frankfurt
+A       mkbatch.frankfurt
+
+================================================================================
+Originator: erik
+Date: 15 Sep 2012
+Model: Machine
+Version: Machines_120915
+One-line: Fix comment that commented out single-point grid settings
+
+M       config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 14 Sep 2012
+Model: Machine
+Version: Machines_120914a
+One-line: replace configure which should not have been deleted in Machines_120912
+
+A         configure
+
+================================================================================
+Originator: sacks
+Date: 14 Sep 2012
+Model: Machine
+Version: Machines_120914
+One-line: add documentation for attributes in config_pes.xml
+
+M       config_pes.xml
+
+================================================================================
+
+Originator: mvertens
+Date: 12 Sep 2012
+Model: Machine
+Version: Machines_120912
+One-line: changes for userdefined rather than generic machine
+	
+Only compatible with scripts4_120912
+	
+D       configure
+M       mkbatch.erebus
+D       mkbatch.generic
+M       mkbatch.yellowstone
+A       mkbatch.userdefined
+M       config_machines.xml
+	
+================================================================================
+Originator: fvitt
+Date: 11 Sep 2012
+Model: Machine
+Version: Machines_120911
+One-line: set default threaded PE configuration for f19_f19 FSTRAT* compsets on bluefire
+M       config_pes.xml
+	
+================================================================================
+Originator: jedwards
+Date: 05 Sept 2012
+Model: Machine
+Version: Machines_120905
+One-line: fix cprnc path on janus
+     M config_machines.xml
+	
+================================================================================
+Originator: sacks
+Date: 29 August 2012
+Model: Machine
+Version: Machines_120829
+One-line: run <= 4 PE bluefire jobs in share queue
+
+Previously, only single-PE jobs were run in the share queue by
+default; I have changed the logic so 1-4 PE jobs are run in the share
+queue
+
+M       mkbatch.bluefire
+
+================================================================================
+Originator: jshollen
+Date: 28 August 2012
+Model: Machine
+Version: Machines_120828
+One-line: Fix bug in mkbatch.janus, mixed up variable initialization order. 
+
+M       mkbatch.janus
+================================================================================
+Originator: jshollen
+Date: 27 August 2012
+Model: Machine
+Version: Machines_120827
+One-line: Fix bug in mkbatch.janus, ccsm_getenv not needed for make_larch phase. 
+
+M       mkbatch.janus
+
+================================================================================
+Originator: sacks
+Date: 26 August 2012
+Model: Machine
+Version: Machines_120826
+One-line: add T31 I compset PE layout for bluefire that uses a full node
+
+M       config_pes.xml
+
+================================================================================
+Originator: mvertens
+Date: 24 August 2012
+Model: Machine
+Version: Machines_120824
+One-line: changes to be consistent with scripts4_120824
+	
+M       mkbatch.olympus
+M       mkbatch.titan
+M       mkbatch.hera
+M       mkbatch.janus
+M       mkbatch.evergreen
+M       mkbatch.brutus
+M       mkbatch.pleiades
+M       mkbatch.ubgl
+M       mkbatch.bluefire
+M       mkbatch.hopper
+M       mkbatch.generic
+M       mkbatch.bluewaters
+M       mkbatch.eastwind
+M       mkbatch.intrepid
+M       mkbatch.pleiades-westmere
+M       mkbatch.sierra
+M       mkbatch.lynx
+        - main changes above are renaming env_configure.xml with env_pesetup.xml
+	  and cleanup of long term archiving of the scripts to make them more compact
+	
+M       config_machines.xml
+        - EXEROOT has an added /bld at the end
+	
+================================================================================
+Originator: erik
+Date: 23 August 2012
+Model: Machine
+Version: Machines_120823
+One-line: Add some pure OMP PE configurations use thread-safe LAPACK on bluefire
+
+M       config_compilers.xml -- use /contrib version of LAPACK on bluefire which
+            is thread-safe.
+M       config_pes.xml -------- Add 1x2,1x4,1x12,1x16,1x64 pure threaded PE layouts.
+
+================================================================================
+Originator: erik
+Date: 22 August 2012
+Model: Machine
+Version: Machines_120822
+One-line: Add supported_by field to machines, and set MPILIB to mpi-serial for 1-pe cases
+
+M       config_pes.xml
+M       config_machines.xml
+	
+================================================================================
+Originator: jedwards
+Date: 17 August 2012
+Model: Machine
+Version: Machines_120817
+One-line: Updates for hopper (new pgi compiler may change answers)
+	
+M            39497   env_mach_specific.hopper
+M            39497   config_compilers.xml
+M            39497   config_machines.xml
+
+	
+================================================================================
+Originator: mlevy
+Date: 16 August 2012
+Model: Machine
+Version: Machines_120816
+One-line: Set SFC and SCC to mpi compilers on janus (needed for linking with
+          netCDF) -- non-MPI executables now must be run on node0001.
+M               config_compilers.xml
+
+
+================================================================================
+Originator: jedwards
+Date: 15 August 2012
+Model: Machine
+Version: Machines_120815
+One-line: Cleanup directory, remove old machines
+M               config_compilers.xml
+M               config_pes.xml
+M               config_machines.xml
+D               env_mach_specific.nyblue
+D               mkbatch.ranger
+D               env_mach_specific.atlas
+D               README.compilers
+D               mkbatch.chester
+D               mkbatch.franklin
+D               mkbatch.edinburgh
+D               mkbatch.hector
+D               env_mach_specific.ranger
+D               mkbatch.frost
+D               mkbatch.hadley
+D               env_mach_specific.chester
+D               mkbatch.kraken
+D               env_mach_specific.franklin
+D               env_mach_specific.edinburgh
+D               mkbatch.nyblue
+D               env_mach_specific.hector
+D               mkbatch.atlas
+D               env_mach_specific.frost
+D               env_mach_specific.hadley
+D               env_mach_specific.kraken
+
+
+================================================================================
+Originator: jedwards
+Date: 10 August 2012
+Model: Machine
+Version: Machines_120810
+One-line: trap return code from buildlib.csm_share, remove debug flag from mkbatch.janus
+M               buildlib.csm_share
+M               mkbatch.janus
+ 
+
+================================================================================
+Originator: jedwards
+Date: 09 August 2012
+Model: Machine
+Version: Machines_120809
+One-line: initial port to erebus and yellowstone
+
+M               config_compilers.xml
+A               mkbatch.erebus
+A               env_mach_specific.erebus
+A               mkbatch.yellowstone
+A               env_mach_specific.yellowstone
+M               config_machines.xml
+
+
+
+================================================================================
+Originator: jedwards
+Date: 03 August 2012
+Model: Machine
+Version: Machines_120803
+One-line: correct pe layout on intrepid
+
+M config_pes.xml
+
+================================================================================
+Originator: jedwards
+Date: 02 August 2012
+Model: Machine
+Version: Machines_120802
+One-line: undo tag 120719a which was a mistake
+
+M mkbatch.janus
+
+================================================================================
+Originator: jedwards
+Date: 01 August 2012
+Model: Machine
+Version: Machines_120801
+One-line: pes adjustments, serial build fix
+
+M         Makefile
+M         config_pes.xml
+	
+================================================================================
+Originator: jshollen
+Date: 19 July 2012
+Model: Machine
+Version: Machines_120719a
+One-line: enforce ppn=12 for the janus-wide queue 
+
+M          mkbatch.janus
+
+================================================================================
+Originator: jedwards
+Date: 19 July 2012
+Model: Machine
+Version: Machines_120719
+One-line: mkbatch on janus, correct buildlib.csm_share error, remove pio restrictions on ocn
+
+M          mkbatch.janus
+M          config_pes.xml
+M          buildlib.csm_share
+
+================================================================================
+Originator: jedwards
+Date: 18 July 2012
+Model: Machine
+Version: Machines_120718b
+One-line: Correct mkbatch on janus
+
+M          mkbatch.janus
+
+================================================================================
+Originator: jedwards
+Date: 18 July 2012
+Model: Machine
+Version: Machines_120718a
+One-line: Correct default compiler on janus
+
+M          config_machines.xml
+
+================================================================================
+Originator: jedwards
+Date: 18 July 2012
+Model: Machine
+Version: Machines_120718
+One-line: Correct some issues with build dependancies, update intrepid pe layouts
+M            38766   Makefile
+M            38766   buildlib.csm_share
+M            38766   mkSrcfiles
+M            38766   buildlib.gptl
+M            38766   config_pes.xml
+
+
+
+================================================================================
+Originator: jedwards
+Date: 09 July 2012
+Model: Machine
+Version: Machines_120709
+One-line: Build gptl library seperatly and prior to PIO lib
+	 mkbatch.bluefire  (added time to default runlength)
+	 Makefile             
+	 buildlib.csm_share
+	 buildlib.gptl
+	 buildlib.pio      (turn on timing instrumentation)
+
+================================================================================
+Originator: jedwards
+Date: 29 June 2012
+Model: Machine
+Version: Machines_120629
+One-line: Refactor config_pes.xml, remove a flag from aix compiler, update
+bluefire externals (requires scripts4_120629a )
+	
+
+M           38288   config_compilers.xml
+M           38288   config_pes.xml
+M           38288   config_machines.xml
+
+
+================================================================================
+Originator: mvertens
+Date: 26 June 2012
+Model: Machine
+Version: Machines_120626
+One-line: support for building executable in one directory and running in another
+	  and removeal of DIN_LOC_ROOT_CSMDATA (only keeping DIN_LOC_ROOT)
+
+M       mkbatch.olympus
+M       mkbatch.ranger
+M       mkbatch.brutus
+M       mkbatch.pleiades
+M       mkbatch.ubgl
+M       mkbatch.chester
+M       mkbatch.bluefire
+M       mkbatch.franklin
+M       mkbatch.edinburgh
+M       mkbatch.bluewaters
+M       mkbatch.eastwind
+M       mkbatch.pleiades-westmere
+M       buildlib.csm_share
+M       mkbatch.hector
+M       mkbatch.sierra
+M       mkbatch.frost
+M       mkbatch.hadley
+M       mkbatch.kraken
+M       mkbatch.hera
+M       mkbatch.titan
+M       mkbatch.janus
+M       mkbatch.evergreen
+M       mkbatch.hopper
+M       mkbatch.nyblue
+M       mkbatch.atlas
+M       mkbatch.generic
+M       mkbatch.intrepid
+M       mkbatch.lynx
+M       config_machines.xml
+	
+- removed EXEROOT, OBJROOT and LIBROOT and introduced RUNDIR	
+- all mkbatch scripts now use $CASEROOT/Tools/taskmaker.pl rather than 
+  $UTILROOT/Tools/taskmaker.pl
+	
+================================================================================
+Originator: fvitt
+Date: 25 June 2012
+Model: Machine
+Version: Machines_120625
+One-line: Change to pleiades archiving node and PE layout for FSTRAT* chemistry 
+          compsets on bluefire.
+
+M       mkbatch.pleiades
+M       mkbatch.pleiades-westmere
+M       config_pes.xml
+
+================================================================================
+Originator: tcraig
+Date: 29 May 2012
+Model: Machine
+Version: Machines_120529
+One-line: add pe layout for wrf configurations, removed accidently
+          in Machines_120514a
+	
+M       config_pes.xml
+================================================================================
+Originator: mvertens
+Date: 28 May 2012
+Model: Machine
+Version: Machines_120528
+One-line: change env_mach_pes.xml to env_configure.xml
+	  replace din_loc_root_csmdata in configure with din_loc_root
+  
+M       configure
+M       mkbatch.bluefire
+M       mkbatch.intrepid
+	
+================================================================================
+Originator: jedwards
+Date: 23 May 2012
+Model: Machine
+Version: Machines_120523
+One-line: Update modules on titan for pgi 12.4 
+  
+M     config_compilers.xml
+M     env_mach_specific.titan
+
+================================================================================
+Originator: jedwards
+Date: 17 May 2012
+Model: Machine
+Version: Machines_120517b
+One-line: Add HAVE_F2008_CONTIGUOUS for intel, cray and gnu compilers
+  
+M     config_compilers.xml
+
+================================================================================
+Originator: mvertens
+Date: 17 May 2012
+Model: Machine
+Version: Machines_120517a
+One-line:  set DIN_LOC_ROOT to DIN_LOC_ROOT_CSMDATA explicitly
+
+   - This is in preparation of removing DIN_LOC_ROOT_CSMDATA from the
+     scripts and only using DIN_LOC_ROOT
+	
+M       config_machines.xml
+
+	
+================================================================================
+Originator: jedwards
+Date: 17 May 2012
+Model: Machine
+Version: Machines_120517
+One-line:  update intel compiler dot files on Janus
+
+M    env_mach_specific.janus
+
+================================================================================
+Originator: jedwards
+Date: 15 May 2012
+Model: Machine
+Version: Machines_120515
+One-line:  update intel compiler flags on Janus
+
+M    config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: 14 May 2012
+Model: Machine
+Version: Machines_120514a
+One-line:  bug fix on bluefire, updates for bluewaters
+
+M            37044   mkbatch.bluefire
+M            37044   Makefile
+M            37044   mkbatch.bluewaters
+M            37044   env_mach_specific.bluewaters
+M            37044   config_pes.xml
+
+================================================================================
+Originator: fvitt
+Date: 14 May 2012
+Model: Machine
+Version: Machines_120514
+One-line:  changes for pleiades and FSTRAT* compset on bluefire
+	
+     - changes for pleiades 
+       - switch to SGI MPI lib
+       - use later intel compiler version
+       - inputdata in common location
+     - change default pe layout for FSTRAT* compset on bluefire
+
+M       config_compilers.xml
+M       mkbatch.pleiades
+M       mkbatch.pleiades-westmere
+M       env_mach_specific.pleiades
+M       env_mach_specific.pleiades-westmere
+M       config_pes.xml
+M       config_machines.xml
+
+================================================================================
+Originator: tcraig
+Date: May 9 2012
+Model: Machine
+Version: Machines_120509a
+One-line: new config_pes for wrf configurations, new machines
+
+A  +    mkbatch.olympus
+M       config_compilers.xml
+A  +    mkbatch.eastwind
+A  +    env_mach_specific.olympus
+A  +    mkbatch.evergreen
+A  +    env_mach_specific.eastwind
+A  +    env_mach_specific.evergreen
+MM      config_pes.xml
+M       config_machines.xml
+	
+================================================================================
+Originator: jedwards
+Date: May 9 2012
+Model: Machine
+Version: Machines_120509
+One-line: config_pes.xml change for FWX test on lynx
+	
+================================================================================
+Originator: jedwards
+Date: Apr 24 2012
+Model: Machine
+Version: Machines_120424
+One-line: NO_MPIMOD on intrepid
+
+M       config_compilers.xml
+
+====================================================================================
+Originator: jedwards
+Date: Apr 20 2012
+Model: Machine
+Version: Machines_120420
+One-line: remove mass libs on intrepid
+
+M       config_compilers.xml
+
+================================================================================
+Originator: tcraig
+Date: Apr 18 2012
+Model: Machine
+Version: Machines_120418a
+One-line: bluefire share queue on 1 pe, add TG compset, default pe count mod
+
+M       mkbatch.bluefire
+M       config_pes.xml
+
+================================================================================
+Originator: mlevy
+Date: Apr 18 2012
+Model: Machine
+Version: Machines_120418
+One-line: added walltime to janus run / test scripts
+
+================================================================================
+
+Originator: jedwards
+Date: Apr 16 2012
+Model: Machine
+Version: Machines_120416
+One-line: add pgi 11.10 compiler on bluewaters
+
+================================================================================
+
+Originator: jedwards
+Date: Apr 13 2012
+Model: Machine
+Version: Machines_120413
+One-line: bugfix bluefire mkbatch found in prealpha testing
+
+M     mkbatch.bluefire
+================================================================================
+
+Originator: jedwards
+Date: Apr 12 2012
+Model: Machine
+Version: Machines_120412
+One-line: updates to bluefire mkbatch
+
+M     mkbatch.bluefire
+
+================================================================================
+
+Originator: jedwards
+Date: Apr 10 2012 
+Model: Machine
+Version: Machines_120410a
+One-line: updates to janus configuration
+
+M    mkbatch.janus
+M    env_mach_specific.janus
+
+
+
+================================================================================
+
+Originator: mvertens
+Date: Apr 10 2012 
+Model: Machine
+Version: Machines_120410
+One-line:  added changes to build moby library (invoked from pop2.cpl7.template)
+
+M       config_compilers.xml
+M       Makefile
+	
+================================================================================
+	
+Originator: jedwards
+Date: Apr 06 2012 
+Model: Machine
+Version: Machines_120406
+One-line: correct new pe setting for lynx, intel -heap-arrays flag for Darwin
+
+M config_pes.xml
+M config_compilers.xml
+	
+================================================================================
+	
+Originator: jshollen
+Date: Apr 03 2012 
+Model: Machine
+Version: Machines_120403
+One-line: new pe setting for ne30_g16 on lynx
+
+M config_pes.xml
+
+================================================================================
+
+Originator: jedwards
+Date: Apr 02 2012
+Model: Machine
+Version: Machines_120402
+One-line:  Add bluewaters NCSA machine
+ A env_mach_specific.bluewaters
+ A mkbatch.bluewaters
+ M config_machines.xml 
+ M config_compilers.xml
+
+
+================================================================================
+
+Originator: sacks
+Date: Mar 28 2012
+Model: Machine
+Version: Machines_120328
+One-line: Update pe counts for titan; bluefire archiving runs on archive queue
+
+>>> remove redundant titan section for (grid_match="1.9x2.5_gx1" compset_match="B");
+>>> update titan PE counts for (grid_match="0.9x1.25_gx1" compset_match="B") and
+>>> (grid_match="0.23x0.31_tx0.1v2" compset_match="B") to use full nodes
+M       config_pes.xml
+
+>>> bluefire archiving runs on archive queue (from Jim Edwards)
+M       mkbatch.bluefire
+
+================================================================================
+
+Originator: jedwards
+Date: Mar 27 2012
+Model: Machine
+Version: Machines_120327a
+One-line: Update compiler flags for lynx_intel, frost, Darwin_intel, update lt_archiving lynx, titan
+ M config_compilers.xml 
+ M mkbatch.lynx
+ M mkbatch.titan
+	
+
+================================================================================
+
+Originator: jshollen
+Date: Mar 27 2012
+Model: Machine
+Version: Machines_120327
+One-line: change pe count for ne30np4 to 128 for bluefire, 120 for lynx. 
+
+M		config_pes.xml
+
+================================================================================
+
+Originator: santos
+Date: Mar 26 2012
+Model: Machine
+Version: Machines_120326
+One-line: Add WACCM-X processor counts.
+
+M       config_pes.xml
+
+================================================================================
+
+Originator: jedwards
+Date: Mar 23 2012
+Model: Machine
+Version: Machines_120323a
+One-line:  Fix compiler issues kraken, titan, janus
+
+M       config_compilers.xml
+M       Makefile
+M       env_mach_specific.kraken
+M       env_mach_specific.janus
+
+================================================================================
+
+Originator: jedwards
+Date: Mar 23 2012
+Model: Machine
+Version: Machines_120323
+One-line:  Fix titan pgi compiler issues
+
+M       config_compilers.xml
+M       env_mach_specific.titan	
+
+================================================================================
+
+Originator: erik
+Date: Mar 22 2012
+Model: Machine
+Version: Machines_120322
+One-line: Set PE's for CLM single-point resolutions to 1, and 5 for 5x5_ regional
+
+M       config_pes.xml
+
+================================================================================
+
+Originator: jedwards
+Date: Mar 16 2012
+Model: Machine
+Version: Machines_120316
+One-line: Updates for Darwin build and changes in csm_share
+
+M Makefile
+M config_compilers.xml
+
+================================================================================
+
+Originator: jedwards
+Date: Mar 14 2012
+Model: Machine
+Version: Machines_120314
+One-line: Updates for Darwin build
+
+M Makefile
+M config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: Mar 09 2012
+Model: Machine
+Version: Machines_120309
+One-line: move set_compiler to scripts ConfigCase.pm
+
+M configure
+================================================================================
+Originator: jedwards
+Date: Mar 07 2012
+Model: Machine
+Version: Machines_120307
+One-line: Update ibm compile flags 
+
+M config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: Mar 05 2012
+Model: Machine
+Version: Machines_120305a
+One-line: Update PGI build flags
+
+M config_compilers.xml
+
+================================================================================
+Originator: jedwards
+Date: Mar 05 2012
+Model: Machine
+Version: Machines_120305
+One-line: Update PGI build flags
+
+M config_compilers.xml
+
+
+
+
+================================================================================
+Originator: jedwards
+Date: Mar 03 2012
+Model: Machine
+Version: Machines_120303a
+One-line: Update intrepid build flags
+
+M config_compilers.xml
+M config_pes.xml
+================================================================================
+Originator: jedwards
+Date: Mar 03 2012
+Model: Machine
+Version: Machines_120303
+One-line: Update titan and bluefire build flags
+
+M config_compilers.xml
+M env_mach_specific.titan
+	
+================================================================================
+Originator: dfeddema
+Date: Feb 28 2012
+Model: Machine
+Version: Machines_120228
+One-line: Update intrepid pnetcdf path (upgrade to pnetcdf 1.2.0) 
+
+M config_compilers.xml
+================================================================================
+Originator: jedwards
+Date: Feb 24 2012
+Model: Machine
+Version: Machines_120224
+One-line: Update CRAY flags
+
+M config_compilers.xml
+M Makefile
+================================================================================
+Originator: jedwards
+Date: Feb 22 2012
+Model: Machine
+Version: Machines_120222
+One-line: Update bluegene flags
+
+M config_compilers.xml
+================================================================================
+Originator: jedwards
+Date: Feb 21 2012
+Model: Machine
+Version: Machines_120221
+One-line: Add a build.csh to the output of configure
+	
+M configure
+M config_compilers.xml
+	
+================================================================================
+Originator: jedwards
+Date: Feb 17 2012
+Model: Machine
+Version: Machines_120217
+One-line: added file configure to read config_machines.xml and config_compilers.xml and
+          produce Macros file for building auxilary tools distributed with cesm
+A configure
+
+================================================================================
+Originator: jedwards
+Date: Feb 16 2012
+Model: Machine
+Version: Machines_120216
+One-line: mv Makefile macros to config_compilers.xml
+
+U    env_mach_specific.hopper
+A    config_compilers.xml
+U    env_mach_specific.bluefire
+U    env_mach_specific.chester
+U    env_mach_specific.nyblue
+U    env_mach_specific.franklin
+U    env_mach_specific.atlas
+U    README.compilers
+U    env_mach_specific.edinburgh
+U    env_mach_specific.intrepid
+A    env_mach_specific.pleiades-westmere
+U    env_mach_specific.hector
+U    env_mach_specific.sierra
+U    Makefile
+U    env_mach_specific.lynx
+U    env_mach_specific.frost
+A    mkbatch.generic
+A    mkbatch.pleiades-westmere
+U    env_mach_specific.hadley
+U    README
+U    env_mach_specific.kraken
+U    env_mach_specific.ranger
+U    env_mach_specific.hera
+U    env_mach_specific.titan
+U    env_mach_specific.janus
+U    env_mach_specific.brutus
+U    env_mach_specific.pleiades
+U    config_machines.xml
+U    config_pes.xml
+D    env_mach_specific.genericLINUX
+D    mkbatch.genericCNL
+D    env_mach_specific.genericAIX
+D    mkbatch.genericLINUX
+D    mkbatch.genericAIX
+D    env_mach_specific.pleiades_wes
+D    mkbatch.pleiades_wes
+D    env_mach_specific.genericCNL
+D    env_mach_specific.ubgl
+
+
+================================================================================
+Originator: jedwards, Art Mirin
+Date: Feb 06 2012
+Model: Machine
+Version: Machines_120206
+One-line: port to sierra, updates to llnl machines
+  M            34441   mkbatch.sierra
+  M            34441   mkbatch.hera 
+  M            34441   env_mach_specific.sierra
+  M            34441   mkbatch.atlas
+  M            34441   config_machines.xml
+  M            34441   config_pes.xml
+
+
+================================================================================
+Originator: jedwards, Art Mirin
+Date: Febi 02 2012
+Model: Machine
+Version: Machines_120202
+One-line: port to sierra, updates to llnl machines
+Sending        config_machines.xml
+Sending        config_pes.xml
+Sending        env_mach_specific.hera
+Adding         env_mach_specific.sierra
+Sending        env_mach_specific.titan
+Adding         mkbatch.sierra
+
+
+
+================================================================================
+Originator: jedwards
+Date: Feb01 2012
+Model: Machine
+Version: Machines_120201
+One-line: Fixes for intrepid, frost
+
+================================================================================
+Originator: jedwards
+Date: Jan 31 2012
+Model: Machine
+Version: Machines_120131
+One-line: Fixes for titan, add esmf for titan
+M            34223   buildlib.csm_share
+M            34223   env_mach_specific.titan
+
+================================================================================
+Originator: jedwards
+Date: Jan 30 2012
+Model: Machine
+Version: Machines_120130
+One-line: Fixes for frost, titan, janus esmf build updates for lynx and bluefire
+
+
+M            34201   Makefile
+M            34201   env_mach_specific.lynx
+M            34201   buildlib.csm_share
+M            34201   env_mach_specific.bluefire
+M            34201   buildlib.mct
+M            34201   buildlib.pio
+M            34201   env_mach_specific.frost
+M            34201   buildlib.gptl
+M            34201   env_mach_specific.titan
+M            34201   env_mach_specific.janus
+
+================================================================================
+Originator: jedwards
+Date: Jan 28 2012
+Model: Machine
+Version: Machines_120128
+One-line: Fix for intrepid
+        M         env_mach_specific.intrepid
+	M         Makefile
+================================================================================
+Originator: jedwards
+Date: Jan 25 2012
+Model: Machine
+Version: Machines_120125b
+One-line: Fix for bluefire
+        M         env_mach_specific.bluefire
+================================================================================
+Originator: jedwards
+Date: Jan 25 2012
+Model: Machine
+Version: Machines_120125a
+One-line: Fixes for hopper, intrepid, franklin
+	M         env_mach_specific.hopper
+        M         env_mach_specific.franklin
+        M         Makefile
+        M         env_mach_specific.hera
+        M         env_mach_specific.intrepid
+        M         env_mach_specific.bluefire
+	
+================================================================================
+Originator: mvertens, jedwards
+Date: Jan 25 2012
+Model: Machine
+Version: Machines_120125
+One-line: Major restructure of Machines and scripts
+	Remove all Macros, place generic compiler settings in Makefile
+	rename env_mach_opts to env_mach_specific 
+	rename hopp2 -> hopper
+	rename jaguarpf -> titan
+	Remove USE_MPISERIAL
+	
+
+================================================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: Machine
+Version: Machines_120123
+One-line: update esmf lib on bluefire to esmf-5.2.0rp1bs18-64-O
+
+M       config_machines.xml
+================================================================================
+Originator: jedwards
+Date: Jan 13 2012
+Model: Machine
+Version: Machines_120113
+One-line: port to titan
+
+D            33577   Macros.titan_cray
+A  +             -   env_machopts.titan
+A  +             -   mkbatch.titan
+D            33577   mkbatch.titan_pgi
+D            33577   Macros.titan_pgi
+M            33577   config_pes.xml
+M            33577   config_machines.xml
+D            33577   env_machopts.titan_cray
+D            33577   mkbatch.titan_cray
+D            33577   env_machopts.titan_pgi
+A  +             -   Macros.titan
+
+
+================================================================================
+Originator: jedwards
+Date: Jan 10 2012
+Model: Machine
+Version: Machines_120110
+One-line: port to titan_pgi
+
+Deleting       Macros.jaguarpf
+Adding         Macros.titan_pgi
+Sending        config_pes.xml
+Deleting       env_machopts.jaguarpf
+Sending        env_machopts.titan_cray
+Adding         env_machopts.titan_pgi
+Deleting       mkbatch.jaguarpf
+Adding         mkbatch.titan_pgi
+	
+================================================================================
+Originator: dfeddema
+Date: Jan 20 2012
+Model: Machine
+Version: Machines_120120
+One-line:  Change pe layout for ne240_f02_t12 on intrepid, reducing the number of 
+           processors to 16,384 nodes (from 16,828) resulting in the same model throughput
+ 
+M            33974   config_pes.xml
+
+================================================================================
+Originator: mvertens
+Date: Dec 20 2011
+Model: Machine
+Version: Machines_111220
+One-line: changed all mkbatch scripts to enable a TESTMODE environment variable
+	  (needed to have the batch commands appear in the test script)
+
+This had already been done in lynx_pgi for Machines_111218 - but not for the 
+platforms - - so this is in effect a bug fix
+	
+M       mkbatch.brutus_im
+M       mkbatch.brutus_io
+M       mkbatch.chester
+M       mkbatch.bluefire
+M       mkbatch.prototype_ranger
+M       mkbatch.prototype_hera
+M       mkbatch.lynx_cray
+M       mkbatch.generic_darwin_pgi
+M       mkbatch.prototype_columbia
+M       mkbatch.hopp2
+M       mkbatch.jaguarpf
+M       mkbatch.lynx_gnu
+M       mkbatch.janus_intel
+M       mkbatch.generic_xt
+M       mkbatch.generic_linux_lahey
+M       mkbatch.prototype_nyblue
+M       mkbatch.lynx_intel
+M       mkbatch.edinburgh_lahey
+M       mkbatch.generic_darwin_intel
+M       mkbatch.pingo
+M       mkbatch.pleiades
+M       mkbatch.titan_cray
+M       mkbatch.generic_ibm
+M       mkbatch.franklin
+M       mkbatch.prototype_frost
+M       mkbatch.hector
+M       mkbatch.generic_linux_pgi
+M       mkbatch.midnight
+M       mkbatch.pleiades_wes
+M       mkbatch.edinburgh_pgi
+M       mkbatch.hadley
+M       mkbatch.kraken
+M       mkbatch.generic_linux_pathscale
+M       mkbatch.generic_linux_intel
+M       mkbatch.prototype_atlas
+M       mkbatch.edinburgh_intel
+M       mkbatch.prototype_ubgl
+M       mkbatch.intrepid
+M       mkbatch.lynx_pathscale
+M       mkbatch.brutus_pm
+M       mkbatch.brutus_po
+
+	
+================================================================================
+Originator: jedwards
+Date: Dec 19 2011
+Model: Machine
+Version: Machines_111219a
+One-line: Remove no longer used lt archive variables
+         M env_machopts.bluefire
+         M env_machopts.hadley
+         M env_machopts.prototype_frost
+         M env_machopts.prototype_ubgl
+================================================================================
+Originator: jedwards
+Date: Dec 19 2011
+Model: Machine
+Version: Machines_111219
+One-line: Update lynx machines to load ESMF lib, update ne30npf layout on intrepid
+            M   env_machopts.lynx_pgi
+            M   env_machopts.lynx_intel
+            M   config_pes.xml
+            M   config_machines.xml
+
+	
+================================================================================
+Originator: mvertens
+Date: Dec 18 2011
+Model: Machines
+Version: Machines_111218
+One-line: change all mkbatch scripts to not have leverage $mach name in .run 
+	  or .l_archive scripts
+
+M       Macros.cppdefs
+	- removed CCSM_BGC, VOC and GLC_NEC_NN as cpp-defs
+	
+M       mkbatch.brutus_im
+M       mkbatch.brutus_io
+M       mkbatch.chester
+M       mkbatch.bluefire
+M       mkbatch.prototype_ranger
+M       mkbatch.prototype_hera
+M       mkbatch.lynx_cray
+M       mkbatch.generic_darwin_pgi
+M       mkbatch.prototype_columbia
+M       mkbatch.hopp2
+M       mkbatch.jaguarpf
+M       mkbatch.lynx_gnu
+M       mkbatch.janus_intel
+M       mkbatch.generic_xt
+M       mkbatch.generic_linux_lahey
+M       mkbatch.prototype_nyblue
+M       mkbatch.lynx_intel
+M       mkbatch.edinburgh_lahey
+M       mkbatch.generic_darwin_intel
+M       mkbatch.pingo
+M       mkbatch.pleiades
+M       mkbatch.lynx_pgi
+M       mkbatch.titan_cray
+M       mkbatch.generic_ibm
+M       mkbatch.franklin
+M       mkbatch.prototype_frost
+M       mkbatch.hector
+M       mkbatch.generic_linux_pgi
+M       mkbatch.midnight
+M       mkbatch.pleiades_wes
+M       mkbatch.edinburgh_pgi
+M       mkbatch.hadley
+M       mkbatch.kraken
+M       mkbatch.generic_linux_pathscale
+M       mkbatch.generic_linux_intel
+M       mkbatch.prototype_atlas
+M       mkbatch.edinburgh_intel
+M       mkbatch.prototype_ubgl
+M       mkbatch.intrepid
+M       mkbatch.lynx_pathscale
+M       mkbatch.brutus_pm
+M       mkbatch.brutus_po
+
+================================================================================
+Originator: jedwards
+Date: Dec 14 2011
+Model: Machines
+Version: Machines_111214
+One-line: Refactor config_machines.xml to make it more extendable
+
+M       config_machines.xml
+================================================================================
+
+================================================================================
+Originator: tcraig
+Date: Dec 13 2011
+Model: Machines
+Version: Machines_111213
+One-line: Add sleep 10 for bluefire before running ccsm
+
+M       mkbatch.bluefire
+================================================================================
+Originator: jedwards
+Date: Dec 8 2011
+Model: Machines
+Version: Machines_111208b
+One-line: Correct typo for janus, add pnetcdf for titan
+M    Macros.titan_cray
+M    config_pes.xml
+M    env_machopts.titan_cray
+M    config_machines.xml
+
+
+================================================================================
+Originator: jedwards
+Date: Dec 8 2011
+Model: Machines
+Version: Machines_111208a
+One-line: Correct location of netcdf library flag in Macros
+M            32572   Macros.janus_intel
+M            32572   Macros.bluefire
+M            32572   Macros.jaguarpf
+================================================================================
+
+
+
+Originator: jedwards
+Date: Dec 8 2011
+Model: Machines
+Version: Machines_111208
+One-line: Add jaguarpf replacement titan_cray, update config_pes.xml
+
+A    Macros.titan_cray
+A    env_machopts.titan_cray 
+A    env_machopts.titan_cray
+M    Macros.postdefs
+M    config_machines.xml
+M    config_pes.xml
+
+	
+================================================================================
+Originator: jedwards
+Date: Dec 6 2011
+Model: Machines
+Version: Machines_111206
+One-line: update lynx intel to 12.1.0
+
+M    Macros.lynx_intel
+M    env_machopts.lynx_intel
+
+================================================================================
+Originator: jedwards
+Date: Nov 30, 2011
+Model: Machines
+Version: Machines_111130
+One-line: update lynx pgi to 11.10.0
+
+M    Macros.lynx_pgi
+M    env_machopts.lynx_pgi
+
+================================================================================
+Originator: erik
+Date: Nov 29, 2011
+Model: Machines
+Version: Machines_111129
+One-line: Remove DIN_LOC_ROOT_CLMQIAN, add DIN_LOC_ROOT_CLM_FORC
+
+M       config_machines.xml
+
+================================================================================
+Originator: jedwards
+Date: Nov 22, 2011
+Model: Machines
+Version: Machines_111122
+One-line: Updates for hopper - ESMF library added - initial port to janus_intel
+        M Macros.hopp2
+        M config_machines.xml
+        A         Macros.janus_intel
+        A         mkbatch.janus_intel
+        A         env_machopts.janus_intel
+
+================================================================================    
+
+Originator: jedwards
+Date: Nov 01, 2011
+Model: Machines
+Version: Machines_111101
+One-line: Add -D_NO_MPI_RSEND work around for bad rsend performance on hopper
+         M Macros.hopp2
+
+
+
+
+
+================================================================================        
+Originator: jedwards
+Date: Oct 27, 2011
+Model: Machines
+Version: Machines_111027
+One-line: Updates for intrepid - change working directory
+	  change pe layout for several compsets 
+
+	M        config_machines.xml
+        M        config_pes.xml
+        M        env_machopts.intrepid
+        M        mkbatch.intrepid
+
+================================================================================        
+Originator: trey
+Date: Oct 11, 2011
+Model: Machines
+Version: Machines_111011
+One-line: Change mkbatch so it uses lt_archive.csh.
+
+M      mkbatch.lynx_pgi
+M      mkbatch.bluefire
+M      mkbatch.chester
+M      mkbatch.franklin
+M      mkbatch.lynx_cray
+M      mkbatch.hopp2
+M      mkbatch.jaguarpf
+M      mkbatch.lynx_gnu
+M      mkbatch.edinburgh_pgi
+M      mkbatch.kraken
+M      mkbatch.edinburgh_intel
+M      mkbatch.intrepid
+M      mkbatch.lynx_pathscale
+M      mkbatch.lynx_intel
+M      mkbatch.edinburgh_lahey	
+
+================================================================================        
+Originator: jedwards
+Date: Oct 10, 2011
+Model: Machines
+Version: Machines_111010
+One-line: Update ESMF library path on bluefire to be compatible with netcdf 4.1.3
+
+================================================================================        
+Originator: jedwards
+Date: Oct 7, 2011
+Model: Machines
+Version: Machines_111007
+One-line: Update jaguarpf, hopp2 and franklin to use netcdf 4.1.3 and pgi 11.7.0
+
+================================================================================        
+Originator: jedwards
+Date: Sep 20 2011
+Model: Machines
+Version: Machines_110920
+One-line: Moved from scripts/ccsm_utils/Machines to decouple Machine configurations from other scripts changes
+
+================================================================================        	

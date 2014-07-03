@@ -1,0 +1,140 @@
+===============================================================
+Originator: santos
+Date: Feb 13, 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_130213
+One-line Summary: Update for NAG port.
+
+- svn merge $SVNREPO/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_120427 $SVNREPO/esmf_wrf_timemgr/branch_tags/nag_port_tags/nag_port_n01_esmf_wrf_timemgr_120427
+M       ESMF_ShrTimeMod.F90
+M       ESMF_ClockMod.F90
+M       ESMF_AlarmMod.F90
+M       ESMF_TimeMod.F90
+===============================================================
+Originator: tcraig
+Date: Apr 27 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_120427
+One-line Summary: add ShrTimeMod to ESMF.F90 module for use in wrf
+
+M       ESMF.F90
+===============================================================
+Originator: tcraig
+Date: Apr 13 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_120413
+One-line Summary: Remove dead code and minor mods for wrf usage
+
+M       ESMF.F90
+M       wrf_message.F90
+M       ESMF_TimeMod.F90
+M       ESMF_TimeIntervalMod.F90
+M       wrf_error_fatal.F90
+===============================================================
+Originator: fischer
+Date: Apr 4 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_120404
+One-line Summary: Change type ESMF_DaysPerYear from private to public 
+
+M       ESMF_CalendarMod.F90
+===============================================================
+Originator: tcraig
+Date: Mar 27 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_120327
+One-line Summary: update TimeInc and TimeDiff to improve performance
+	and make calculation more consistent with ESMF.
+
+M       unittests/test.F90
+M       unittests/test.out.base
+M       ESMF_TimeMod.F90
+M       ESMF_TimeIntervalMod.F90
+===============================================================
+Originator: tcraig
+Date: Feb 18 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_120218
+One-line Summary: significant refactor to support multiple calendars
+	at the same time.  
+
+M       ESMF_CalendarMod.F90
+A  +    ESMF_ShrTimeMod.F90
+D       Meat.F90
+A  +    MeatMod.F90
+M       ESMF_TimeMgr.inc
+A  +    README
+M       ESMF_BaseTimeMod.F90
+D       ESMF.inc
+A  +    unittests/go.csh
+D       unittests/Depends
+D       unittests/ESMF.inc
+A  +    unittests/wrf_stuff.F90
+D       unittests/Test1.out.correct.noleap
+D       unittests/testall.csh
+D       unittests/Test1.out.correct
+D       unittests/standard.sed
+A  +    unittests/test.F90
+M       unittests/Makefile
+D       unittests/Test1.F90
+A  +    unittests/test.out.base
+M       ESMF_TimeMod.F90
+M       ESMF_Stubs.F90
+M       ESMF_TimeIntervalMod.F90
+===============================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_120123
+One-line Summary: update for esmf 520r including change from
+	"use esmf_mod" to "use esmf"
+
+M       ESMF_CalendarMod.F90
+D       ESMF_Mod.F90
+A  +    ESMF.F90
+M       unittests/Test1.F90
+M       ESMF_Stubs.F90
+===============================================================
+Originator: tcraig
+Date: Oct 18, 2010
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_101018
+One-line Summary: merge racm03_esmf_wrf_timemgr_090402 to trunk
+
+- fix circular logic related to defaultCal.
+- make more routines public.
+- add some methods.
+- add WRFADDITION interfaces for wrf.  these are
+  modifications of some of the current interfaces for 
+  use in WRF.  These need to be reconciled to be used
+  with the ESMF library.
+- also add support for d_ in ESMF_TimeIntervalSet for CAM.
+
+M      ESMF_TimeMgr.inc
+M      ESMF_TimeMod.F90
+M      ESMF_TimeIntervalMod.F90
+M      ESMF_CalendarMod.F90
+M      ESMF_Stubs.F90
+	
+===============================================================
+Originator: tcraig
+Date: Apr 2, 2009
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_090402
+One-line Summary:  Add alarmcount to ESMF_ClockGet interface
+
+Required to support alarms properly in ccsm4
+Also add ChangeLog
+
+A      ChangeLog
+M      ESMF_ClockMod.F90
+	
+===============================================================
+
+Originator: 
+Date: 
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_080717
+One-line Summary:  
+
+===============================================================

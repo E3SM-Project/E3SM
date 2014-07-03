@@ -1,0 +1,1170 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!---------------------------->
+<!-- domain_nml -->
+<!---------------------------->
+
+<clinic_distribution_type decomptype="cartesian" >cartesian</clinic_distribution_type>
+<clinic_distribution_type decomptype="spacecurve">spacecurve</clinic_distribution_type>
+<clinic_distribution_type decomptype="blockone"  >blockone</clinic_distribution_type>
+
+<tropic_distribution_type decomptype="cartesian" >cartesian</tropic_distribution_type>
+<tropic_distribution_type decomptype="spacecurve">spacecurve</tropic_distribution_type>
+<tropic_distribution_type decomptype="blockone"  >blockone</tropic_distribution_type>
+
+<ew_boundary_type>cyclic</ew_boundary_type>
+
+<ns_boundary_type>closed</ns_boundary_type>
+<ns_boundary_type ocn_grid="tx1v1"  >tripole</ns_boundary_type>
+<ns_boundary_type ocn_grid="tx0.1v2">tripole</ns_boundary_type>
+
+<num_iotasks>1</num_iotasks> 
+<lredirect_stdout>.true.</lredirect_stdout> 
+<luse_pointer_files>.true.</luse_pointer_files> 
+<luse_nf_64bit_offset>.true.</luse_nf_64bit_offset> 
+
+<!---------------------------->
+<!-- time_manager_nml -->
+<!---------------------------->
+
+<time_mix_opt>avgfit</time_mix_opt>
+<time_mix_freq>17</time_mix_freq>
+
+<dt_option>steps_per_day</dt_option>
+<dt_count ocn_grid="gx3v7"  > 12</dt_count>
+<dt_count ocn_grid="gx1v6"  > 23</dt_count>
+<dt_count ocn_grid="tx1v1"  > 23</dt_count>
+<dt_count ocn_grid="tx0.1v2">300</dt_count>
+<dt_count ocn_grid="tx0.1v2" ocn_coupling="partial">500</dt_count>
+
+<impcor>.true.</impcor>
+
+<laccel>.false.</laccel>
+
+<dtuxcel>1.0</dtuxcel>
+
+<allow_leapyear calendar="GREGORIAN">.true.</allow_leapyear> 
+<allow_leapyear>.false.</allow_leapyear>
+
+<date_separator>'-'</date_separator>
+
+<stop_option>nyear</stop_option>
+<stop_count>1000</stop_count>
+
+<fit_freq>1</fit_freq> 
+
+<!---------------------------->
+<!-- grid_nml -->
+<!---------------------------->
+
+<sfc_layer_opt>'varthick'</sfc_layer_opt>
+
+<horiz_grid_opt>file</horiz_grid_opt>
+<vert_grid_opt >file</vert_grid_opt>
+
+<lremove_points topography_opt="file"      >.false.</lremove_points> 
+<lremove_points topography_opt="bathymetry">.true.</lremove_points> 
+
+<horiz_grid_file ocn_grid="gx3v7"  >ocn/pop/gx3v7/grid/horiz_grid_20030806.ieeer8</horiz_grid_file>
+<horiz_grid_file ocn_grid="gx1v6"  >ocn/pop/gx1v6/grid/horiz_grid_20010402.ieeer8</horiz_grid_file>
+<horiz_grid_file ocn_grid="tx1v1"  >ocn/pop/tx1v1/grid/horiz_grid_20050510.ieeer8</horiz_grid_file>
+<horiz_grid_file ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/grid/horiz_grid_200709.ieeer8</horiz_grid_file>
+
+<topography_file ocn_grid="gx1v6"  >ocn/pop/gx1v6/grid/topography_20090204.ieeei4</topography_file>
+<topography_file ocn_grid="gx3v7"  >ocn/pop/gx3v7/grid/topography_20100105.ieeei4</topography_file>
+<topography_file ocn_grid="tx1v1"  >ocn/pop/tx1v1/grid/topography_20050510.ieeei4</topography_file>
+<topography_file ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/grid/topography_200709.ieeei4</topography_file>
+
+<region_mask_file ocn_grid="gx3v7"  >ocn/pop/gx3v7/grid/region_mask_20090831.ieeei4</region_mask_file>
+<region_mask_file ocn_grid="gx1v6"  >ocn/pop/gx1v6/grid/region_mask_20090205.ieeei4</region_mask_file> 
+<region_mask_file ocn_grid="tx1v1"  >ocn/pop/tx1v1/grid/region_mask_20050510.ieeei4</region_mask_file>
+<region_mask_file ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/grid/region_mask_20080702.ieeei4</region_mask_file>
+
+<kmt_kmin>3</kmt_kmin>
+
+<partial_bottom_cells>.false.</partial_bottom_cells>
+<partial_bottom_cells ocn_grid="tx0.1v2">.true.</partial_bottom_cells>
+
+<bottom_cell_file ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/grid/dzbc_pbc_s2.0_200709.ieeer8</bottom_cell_file>
+
+<n_topo_smooth>0</n_topo_smooth>
+
+<flat_bottom>.false.</flat_bottom>
+
+<!---------------------------->
+<!-- init_ts_nml -->
+<!---------------------------->
+
+<init_ts_file ocn_grid="gx3v7">  ocn/pop/gx3v7/ic/ts_PHC2_jan_ic_gx3v7_20100107.ieeer8</init_ts_file>
+<init_ts_file ocn_grid="gx1v6">  ocn/pop/gx1v6/ic/ts_PHC2_jan_ic_gx1v6_20090205.ieeer8</init_ts_file>
+<init_ts_file ocn_grid="tx1v1">  ocn/pop/tx1v1/ic/ts_jan_ic_20050510.ieeer8</init_ts_file>
+<init_ts_file ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/ic/GC007v3.pop.r.0001-01-16-00000</init_ts_file>
+<init_ts_hdr_file ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/ic/GC007v3.pop.r.0001-01-16-00000.hdr</init_ts_hdr_file>
+
+<init_ts_suboption>'null'</init_ts_suboption>
+<init_ts_suboption ocn_grid="tx0.1v2">'spunup'</init_ts_suboption>
+
+<init_ts_outfile_fmt>'nc'</init_ts_outfile_fmt>
+<init_ts_outfile_fmt ocn_grid="tx0.1v2">'bin'</init_ts_outfile_fmt>
+
+<!---------------------------->
+<!-- diagnostics_nml -->
+<!---------------------------->
+
+<diag_global_freq_opt>'nmonth'</diag_global_freq_opt>
+<diag_global_freq_opt ocn_grid="tx0.1v2">'nday'</diag_global_freq_opt>
+<diag_global_freq>1</diag_global_freq>
+
+<diag_cfl_freq_opt>'nmonth'</diag_cfl_freq_opt>
+<diag_cfl_freq_opt ocn_grid="tx0.1v2">'nday'</diag_cfl_freq_opt>
+<diag_cfl_freq>1</diag_cfl_freq>
+
+<diag_transp_freq_opt>'nmonth'</diag_transp_freq_opt>
+<diag_transp_freq_opt ocn_grid="tx0.1v2">'nday'</diag_transp_freq_opt>
+<diag_transp_freq>1</diag_transp_freq>
+
+<cfl_all_levels>.false.</cfl_all_levels>
+
+<diag_all_levels>.false.</diag_all_levels>
+
+<ldiag_velocity>.true.</ldiag_velocity>
+<ldiag_velocity ocn_grid="tx1v1"  >.false.</ldiag_velocity>
+<ldiag_velocity ocn_grid="tx0.1v2">.false.</ldiag_velocity>
+
+<!---------------------------->
+<!-- budget_diagnostics_nml ***-->
+<!---------------------------->
+
+<ldiag_global_tracer_budgets>.true.</ldiag_global_tracer_budgets>
+<ldiag_global_tracer_budgets ocn_grid="tx1v1"  >.false.</ldiag_global_tracer_budgets>
+<ldiag_global_tracer_budgets ocn_grid="tx0.1v2">.false.</ldiag_global_tracer_budgets>
+
+<!---------------------------->
+<!-- bsf_diagnostics_nml -->
+<!---------------------------->
+
+<ldiag_bsf>.true.</ldiag_bsf>
+<ldiag_bsf ocn_grid="tx1v1"  >.false.</ldiag_bsf>
+<ldiag_bsf ocn_grid="tx0.1v2">.false.</ldiag_bsf>
+
+<!---------------------------->
+<!-- restart_nml -->
+<!---------------------------->
+
+<restart_freq_opt>'nyear'</restart_freq_opt> 
+<restart_freq>100000</restart_freq>
+<restart_start_opt>'nstep'</restart_start_opt>
+<restart_start> 0</restart_start>
+<restart_fmt>'nc'</restart_fmt>
+<leven_odd_on>.false.</leven_odd_on> 
+<even_odd_freq>100000</even_odd_freq>
+<pressure_correction>.false.</pressure_correction>
+
+<!---------------------------->
+<!-- history_nml -->
+<!---------------------------->
+
+<history_freq_opt>'never'</history_freq_opt>
+<history_freq>1</history_freq>
+<history_fmt>'nc'</history_fmt>
+
+<!---------------------------->
+<!-- movie_nml -->
+<!---------------------------->
+
+<movie_freq_opt>'never'</movie_freq_opt>
+<movie_freq>1</movie_freq>
+<movie_fmt>'nc'</movie_fmt>
+
+<!---------------------------->
+<!-- solvers -->
+<!---------------------------->
+
+<solverChoice>'ChronGear'</solverChoice>
+<convergenceCriterion>1.0e-13</convergenceCriterion>
+<maxIterations>1000</maxIterations>
+<convergenceCheckFreq>10</convergenceCheckFreq>
+<preconditionerChoice>'diagonal'</preconditionerChoice>
+<preconditionerFile>'unknownPrecondFile'</preconditionerFile>
+
+<!---------------------------->
+<!-- vertical_mix_nml -->
+<!---------------------------->
+
+<vmix_choice>'kpp'</vmix_choice>
+<aidif>1.0</aidif>
+<implicit_vertical_mix>.true.</implicit_vertical_mix>
+<convection_type>'diffusion'</convection_type>
+<nconvad>2</nconvad>
+<convect_diff>10000.0</convect_diff>
+<convect_visc>10000.0</convect_visc>
+<bottom_drag>1.0e-3</bottom_drag>
+<bottom_heat_flx>0.0</bottom_heat_flx>
+<bottom_heat_flx_depth>1000.0e2</bottom_heat_flx_depth>
+
+<!---------------------------->
+<!-- vmix_const_nml -->
+<!---------------------------->
+
+<const_vvc>0.25</const_vvc>
+<const_vdc>0.25</const_vdc>
+
+<!---------------------------->
+<!-- vmix_rich_nml -->
+<!---------------------------->
+
+<bckgrnd_vvc>1.0</bckgrnd_vvc>
+<bckgrnd_vdc>0.1</bckgrnd_vdc>
+<rich_mix>50.0</rich_mix>
+
+<!---------------------------->
+<!-- tidal_nml -->
+<!---------------------------->
+
+<ltidal_mixing>.true.</ltidal_mixing>
+<ltidal_mixing ocn_grid="tx1v1"  >.false.</ltidal_mixing>
+<ltidal_mixing ocn_grid="tx0.1v2">.false.</ltidal_mixing>
+
+<tidal_energy_file ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/tidal_energy_gx3v7_20100107.ieeer8</tidal_energy_file>
+<tidal_energy_file ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/tidal_energy_gx1v6_20090205.ieeer8</tidal_energy_file>
+
+<tidal_energy_file_fmt>'bin'</tidal_energy_file_fmt>
+
+<local_mixing_fraction>0.33</local_mixing_fraction>
+<mixing_efficiency>0.2</mixing_efficiency>
+<vertical_decay_scale>500.0e02</vertical_decay_scale>
+<tidal_mix_max>100.0</tidal_mix_max>
+
+<!---------------------------->
+<!-- vmix_kpp_nml -->
+<!---------------------------->
+
+<linertial>.false.</linertial>
+<llangmuir>.false.</llangmuir>
+<Prandtl>10.0</Prandtl>
+<lrich>.true.</lrich>
+<ldbl_diff>.true.</ldbl_diff>
+<lshort_wave>.true.</lshort_wave>
+<lcheckekmo>.false.</lcheckekmo>
+<num_v_smooth_Ri>1</num_v_smooth_Ri>
+<bckgrnd_vdc_linv>4.5e-05</bckgrnd_vdc_linv>
+<lhoriz_varying_bckgrnd ocn_grid="gx1v6"  >.true.</lhoriz_varying_bckgrnd>
+<lhoriz_varying_bckgrnd ocn_grid="gx3v7"  >.true.</lhoriz_varying_bckgrnd>
+<lhoriz_varying_bckgrnd ocn_grid="tx1v1"  >.false.</lhoriz_varying_bckgrnd>
+<lhoriz_varying_bckgrnd ocn_grid="tx0.1v2">.false.</lhoriz_varying_bckgrnd>
+
+<bckgrnd_vdc_dpth ocn_grid="gx1v6"  >1000.0e02</bckgrnd_vdc_dpth>
+<bckgrnd_vdc_dpth ocn_grid="gx3v7"  >1000.0e02</bckgrnd_vdc_dpth>
+<bckgrnd_vdc_dpth ocn_grid="tx1v1"  >2500.0e02</bckgrnd_vdc_dpth>
+<bckgrnd_vdc_dpth ocn_grid="tx0.1v2">2500.0e02</bckgrnd_vdc_dpth>
+
+<bckgrnd_vdc1 ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".true."  ltidal_mixing=".true." >0.16</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".true."  ltidal_mixing=".true." >0.0</bckgrnd_vdc2>  
+<bckgrnd_vdc1 ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".true." >0.16</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".true." >0.0</bckgrnd_vdc2>  
+<bckgrnd_vdc1 ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".false.">0.524</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".false.">0.313</bckgrnd_vdc2>  
+
+<bckgrnd_vdc1 ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".true."  ltidal_mixing=".true." >0.16</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".true."  ltidal_mixing=".true." >0.0</bckgrnd_vdc2>  
+<bckgrnd_vdc1 ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".true." >0.16</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".true." >0.0</bckgrnd_vdc2>  
+<bckgrnd_vdc1 ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".false.">0.524</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false." ltidal_mixing=".false.">0.313</bckgrnd_vdc2>  
+
+<bckgrnd_vdc1 ocn_grid="tx1v1" lhoriz_varying_bckgrnd=".false." >0.55</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="tx1v1" lhoriz_varying_bckgrnd=".false." >0.303615</bckgrnd_vdc2>  
+
+<bckgrnd_vdc1 ocn_grid="tx0.1v2" lhoriz_varying_bckgrnd=".false." >0.55</bckgrnd_vdc1>  
+<bckgrnd_vdc2 ocn_grid="tx0.1v2" lhoriz_varying_bckgrnd=".false." >0.303615</bckgrnd_vdc2>  
+
+<bckgrnd_vdc_eq   ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".true." >0.01</bckgrnd_vdc_eq>  
+<bckgrnd_vdc_psim ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".true." >0.13</bckgrnd_vdc_psim>  
+<bckgrnd_vdc_ban  ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".true." >1.0</bckgrnd_vdc_ban>  
+<bckgrnd_vdc_eq   ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false.">0.0</bckgrnd_vdc_eq>  
+<bckgrnd_vdc_psim ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false.">0.0</bckgrnd_vdc_psim>  
+<bckgrnd_vdc_ban  ocn_grid="gx3v7" lhoriz_varying_bckgrnd=".false.">0.0</bckgrnd_vdc_ban>  
+
+<bckgrnd_vdc_eq   ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".true." >0.01</bckgrnd_vdc_eq>  
+<bckgrnd_vdc_psim ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".true." >0.13</bckgrnd_vdc_psim>  
+<bckgrnd_vdc_ban  ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".true." >1.0</bckgrnd_vdc_ban>  
+<bckgrnd_vdc_eq   ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false.">0.0</bckgrnd_vdc_eq>  
+<bckgrnd_vdc_psim ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false.">0.0</bckgrnd_vdc_psim>  
+<bckgrnd_vdc_ban  ocn_grid="gx1v6" lhoriz_varying_bckgrnd=".false.">0.0</bckgrnd_vdc_ban>  
+
+<bckgrnd_vdc_eq   ocn_grid="tx1v1" >0.0</bckgrnd_vdc_eq>
+<bckgrnd_vdc_psim ocn_grid="tx1v1" >0.0</bckgrnd_vdc_psim>  
+<bckgrnd_vdc_ban  ocn_grid="tx1v1" >0.0</bckgrnd_vdc_ban>  
+
+<bckgrnd_vdc_eq   ocn_grid="tx0.1v2" >0.0</bckgrnd_vdc_eq>  
+<bckgrnd_vdc_psim ocn_grid="tx0.1v2" >0.0</bckgrnd_vdc_psim>  
+<bckgrnd_vdc_ban  ocn_grid="tx0.1v2" >0.0</bckgrnd_vdc_ban>  
+
+<!---------------------------->
+<!-- advect_nml -->
+<!---------------------------->
+
+<tadvect_ctype ocn_grid="gx3v7"  >upwind3</tadvect_ctype>
+<tadvect_ctype ocn_grid="gx1v6"  >upwind3</tadvect_ctype>
+<tadvect_ctype ocn_grid="tx1v1"  >centered</tadvect_ctype>
+<tadvect_ctype ocn_grid="tx0.1v2">centered</tadvect_ctype>
+
+<!---------------------------->
+<!-- hmix_nml -->
+<!---------------------------->
+
+<hmix_momentum_choice ocn_grid="gx3v7"  >'anis'</hmix_momentum_choice>
+<hmix_momentum_choice ocn_grid="gx1v6"  >'anis'</hmix_momentum_choice>
+<hmix_momentum_choice ocn_grid="tx1v1"  >'del4'</hmix_momentum_choice>
+<hmix_momentum_choice ocn_grid="tx0.1v2">'del4'</hmix_momentum_choice>
+
+<hmix_tracer_choice ocn_grid="gx3v7"   >'gent'</hmix_tracer_choice>
+<hmix_tracer_choice ocn_grid="gx1v6"   >'gent'</hmix_tracer_choice>
+<hmix_tracer_choice ocn_grid="tx1v1"   >'del4'</hmix_tracer_choice>
+<hmix_tracer_choice ocn_grid="tx0.1v2" >'del4'</hmix_tracer_choice>
+
+<lsubmesoscale_mixing ocn_grid="gx3v7"  >.true.</lsubmesoscale_mixing>
+<lsubmesoscale_mixing ocn_grid="gx1v6"  >.true.</lsubmesoscale_mixing>
+<lsubmesoscale_mixing ocn_grid="tx1v1"  >.false.</lsubmesoscale_mixing>
+<lsubmesoscale_mixing ocn_grid="tx0.1v2">.false.</lsubmesoscale_mixing>
+
+<!---------------------------->
+<!-- hmix_gm_nml -->
+<!---------------------------->
+
+<kappa_isop_choice ocn_grid="gx3v7"  >bfre</kappa_isop_choice>
+<kappa_isop_choice ocn_grid="gx1v6"  >bfre</kappa_isop_choice>
+<kappa_isop_choice ocn_grid="tx1v1"  >bfre</kappa_isop_choice>
+<kappa_isop_choice ocn_grid="tx0.1v2">bfre</kappa_isop_choice>
+
+<kappa_thic_choice ocn_grid="gx3v7"  >bfre</kappa_thic_choice>
+<kappa_thic_choice ocn_grid="gx1v6"  >bfre</kappa_thic_choice>
+<kappa_thic_choice ocn_grid="tx1v1"  >bfre</kappa_thic_choice>
+<kappa_thic_choice ocn_grid="tx0.1v2">bfre</kappa_thic_choice>
+
+<diag_gm_bolus ocn_grid="gx3v7"  >.true.</diag_gm_bolus>
+<diag_gm_bolus ocn_grid="gx1v6"  >.true.</diag_gm_bolus>
+<diag_gm_bolus ocn_grid="tx1v1"  >.false.</diag_gm_bolus>
+<diag_gm_bolus ocn_grid="tx0.1v2">.false.</diag_gm_bolus>
+
+<use_const_ah_bkg_srfbl>.true.</use_const_ah_bkg_srfbl>
+<use_const_ah_bkg_srfbl kappa_isop_choice="edgr" kappa_thic_choice="edgr" >.false.</use_const_ah_bkg_srfbl>
+
+<ah_bolus                    kappa_isop_choice="edgr"     kappa_thic_choice="edgr"    >1.0</ah_bolus>  
+<ah_bolus ocn_grid="gx3v7"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.87e7</ah_bolus>  
+<ah_bolus ocn_grid="gx3v7"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >4.0e7</ah_bolus>  
+<ah_bolus ocn_grid="gx1v6"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah_bolus>  
+<ah_bolus ocn_grid="gx1v6"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah_bolus>  
+<ah_bolus ocn_grid="tx1v1"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah_bolus>  
+<ah_bolus ocn_grid="tx1v1"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah_bolus>  
+<ah_bolus ocn_grid="tx0.1v2" kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah_bolus>  
+<ah_bolus ocn_grid="tx0.1v2" kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah_bolus>  
+
+<ah_bkg_srfbl                    kappa_isop_choice="edgr"     kappa_thic_choice="edgr"    >1.0</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="gx3v7"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.87e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="gx3v7"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >4.0e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="gx1v6"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="gx1v6"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="tx1v1"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="tx1v1"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="tx0.1v2" kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah_bkg_srfbl>  
+<ah_bkg_srfbl ocn_grid="tx0.1v2" kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah_bkg_srfbl>  
+
+<kappa_freq_choice>once_a_day</kappa_freq_choice>
+<slope_control_choice>notanh</slope_control_choice>
+<kappa_depth_1>1.0</kappa_depth_1>
+<kappa_depth_2>0.0</kappa_depth_2>
+<kappa_depth_scale>150000.0</kappa_depth_scale>
+<ah_bkg_bottom>0.0</ah_bkg_bottom>
+<slm_r>0.3</slm_r>
+<slm_b>0.3</slm_b>
+<transition_layer_on>.true.</transition_layer_on>
+<read_n2_data>.false.</read_n2_data>
+<buoyancy_freq_fmt>nc</buoyancy_freq_fmt>
+<const_eg>1.2</const_eg>
+<gamma_eg>500.0</gamma_eg>
+<kappa_min_eg>0.35e7</kappa_min_eg>
+<kappa_max_eg>2.0e7</kappa_max_eg>
+
+
+<!---------------------------->
+<!-- mix_submeso_nml -->
+<!---------------------------->
+
+<efficiency_factor>0.07</efficiency_factor>
+<time_scale_constant>8.64e4</time_scale_constant>
+<luse_const_horiz_len_scale>.false.</luse_const_horiz_len_scale>
+<hor_length_scale>5.0e5</hor_length_scale>
+
+<!---------------------------->
+<!-- hmix_aniso_nml -->
+<!---------------------------->
+
+<hmix_alignment_choice ocn_grid="gx3v7"> grid</hmix_alignment_choice> 
+<lvariable_hmix_aniso  ocn_grid="gx3v7">.true.</lvariable_hmix_aniso>  
+<lsmag_aniso ocn_grid="gx3v7">.false.</lsmag_aniso>
+<visc_para   ocn_grid="gx3v7">1.0</visc_para> 
+<visc_perp   ocn_grid="gx3v7">1.0</visc_perp> 
+<c_para      ocn_grid="gx3v7">0.0</c_para>
+<c_perp      ocn_grid="gx3v7">0.0</c_perp>
+<u_para      ocn_grid="gx3v7">0.0</u_para>
+<u_perp      ocn_grid="gx3v7">0.0</u_perp>
+<vconst_1    ocn_grid="gx3v7">1.0e7</vconst_1>
+<vconst_2    ocn_grid="gx3v7">24.5</vconst_2>
+<vconst_3    ocn_grid="gx3v7">0.2</vconst_3>
+<vconst_4    ocn_grid="gx3v7">1.0e-8</vconst_4>
+<vconst_5    ocn_grid="gx3v7">3</vconst_5>
+<vconst_6    ocn_grid="gx3v7">1.0e7</vconst_6>
+<vconst_7    ocn_grid="gx3v7">90.0</vconst_7>
+
+<hmix_alignment_choice ocn_grid="gx1v6">east</hmix_alignment_choice>
+<lvariable_hmix_aniso  ocn_grid="gx1v6">.true.</lvariable_hmix_aniso>
+<lsmag_aniso ocn_grid="gx1v6">.false.</lsmag_aniso>
+<visc_para   ocn_grid="gx1v6">50.0e7</visc_para>
+<visc_perp   ocn_grid="gx1v6">50.0e7</visc_perp>
+<c_para      ocn_grid="gx1v6">8.0</c_para>
+<c_perp      ocn_grid="gx1v6">8.0</c_perp>
+<u_para      ocn_grid="gx1v6">5.0</u_para>
+<u_perp      ocn_grid="gx1v6">5.0</u_perp>
+<vconst_1    ocn_grid="gx1v6">0.6e7</vconst_1>
+<vconst_2    ocn_grid="gx1v6">0.5</vconst_2>
+<vconst_3    ocn_grid="gx1v6">0.16</vconst_3>
+<vconst_4    ocn_grid="gx1v6">2.e-8</vconst_4>
+<vconst_5    ocn_grid="gx1v6">3</vconst_5>
+<vconst_6    ocn_grid="gx1v6">0.6e7</vconst_6>
+<vconst_7    ocn_grid="gx1v6">45.0</vconst_7>
+
+<hmix_alignment_choice ocn_grid="tx1v1"> east</hmix_alignment_choice>
+<lvariable_hmix_aniso  ocn_grid="tx1v1">.true.</lvariable_hmix_aniso>
+<lsmag_aniso ocn_grid="tx1v1">.false.</lsmag_aniso>
+<visc_para   ocn_grid="tx1v1">50.0e7</visc_para>
+<visc_perp   ocn_grid="tx1v1">50.0e7</visc_perp>
+<c_para      ocn_grid="tx1v1">8.0</c_para>
+<c_perp      ocn_grid="tx1v1">8.0</c_perp>
+<u_para      ocn_grid="tx1v1">5.0</u_para>
+<u_perp      ocn_grid="tx1v1">5.0</u_perp>
+<vconst_1    ocn_grid="tx1v1">0.6e7</vconst_1>
+<vconst_2    ocn_grid="tx1v1">0.5</vconst_2>
+<vconst_3    ocn_grid="tx1v1">0.16</vconst_3>
+<vconst_4    ocn_grid="tx1v1">2.e-8</vconst_4>
+<vconst_5    ocn_grid="tx1v1">3</vconst_5>
+<vconst_6    ocn_grid="tx1v1">0.6e7</vconst_6>
+<vconst_7    ocn_grid="tx1v1">45.0</vconst_7>
+
+<hmix_alignment_choice ocn_grid="tx0.1v2"> east</hmix_alignment_choice>
+<lvariable_hmix_aniso  ocn_grid="tx0.1v2">.true.</lvariable_hmix_aniso>
+<lsmag_aniso ocn_grid="tx0.1v2">.false.</lsmag_aniso>
+<visc_para   ocn_grid="tx0.1v2">50.0e7</visc_para>
+<visc_perp   ocn_grid="tx0.1v2">50.0e7</visc_perp>
+<c_para      ocn_grid="tx0.1v2">8.0</c_para>
+<c_perp      ocn_grid="tx0.1v2">8.0</c_perp>
+<u_para      ocn_grid="tx0.1v2">5.0</u_para>
+<u_perp      ocn_grid="tx0.1v2">5.0</u_perp>
+<vconst_1    ocn_grid="tx0.1v2">0.6e7</vconst_1>
+<vconst_2    ocn_grid="tx0.1v2">0.5</vconst_2>
+<vconst_3    ocn_grid="tx0.1v2">0.16</vconst_3>
+<vconst_4    ocn_grid="tx0.1v2">2.e-8</vconst_4>
+<vconst_5    ocn_grid="tx0.1v2">3</vconst_5>
+<vconst_6    ocn_grid="tx0.1v2">0.6e7</vconst_6>
+<vconst_7    ocn_grid="tx0.1v2">45.0</vconst_7>
+
+<smag_lat>20.0</smag_lat>
+<smag_lat_fact>0.98</smag_lat_fact>
+<smag_lat_gauss>98.0</smag_lat_gauss>
+<var_viscosity_infile>ccsm-internal</var_viscosity_infile>
+<var_viscosity_infile_fmt>'bin'</var_viscosity_infile_fmt>
+<var_viscosity_outfile_fmt>'nc'</var_viscosity_outfile_fmt>
+
+<!---------------------------->
+<!-- state_nml -->
+<!---------------------------->
+
+<state_choice>'mwjf'</state_choice>
+<state_file>'internal'</state_file>
+<state_range_opt>'enforce'</state_range_opt>
+<state_range_freq>100000</state_range_freq>
+
+<!---------------------------->
+<!-- baroclinic_nml -->
+<!---------------------------->
+
+<reset_to_freezing>.false.</reset_to_freezing>
+
+<!---------------------------->
+<!-- ice_nml -->
+<!---------------------------->
+
+<ice_freq_opt>'coupled'</ice_freq_opt>
+
+<ice_freq>100000</ice_freq>
+
+<kmxice>1</kmxice>
+
+<lactive_ice>.true.</lactive_ice>
+<lactive_ice ocn_ice_forcing="inactive">.false.</lactive_ice>
+
+<!---------------------------->
+<!-- pressure_grad_nml -->
+<!---------------------------->
+
+<lpressure_avg>.true.</lpressure_avg>
+<lbouss_correct>.false.</lbouss_correct>
+
+<!---------------------------->
+<!-- topostress_nml -->
+<!---------------------------->
+
+<ltopostress>.false.</ltopostress>
+<nsmooth_topo>0</nsmooth_topo>
+
+<!---------------------------->
+<!-- forcing_ws_nml -->
+<!---------------------------->
+
+<ws_data_renorm>10., 19*1.</ws_data_renorm> 
+<ws_data_type>'none'</ws_data_type>
+<ws_data_inc>24.</ws_data_inc>
+<ws_interp_freq>'every-timestep'</ws_interp_freq>
+<ws_interp_type>'linear'</ws_interp_type>
+<ws_interp_inc>72.</ws_interp_inc>
+<ws_filename>'unknown-ws'</ws_filename>
+<ws_file_fmt>'bin'</ws_file_fmt>
+
+<!---------------------------->
+<!-- forcing_shf_nml  -->
+<!---------------------------->
+
+<shf_formulation>restoring</shf_formulation>  
+<shf_formulation ocn_coupling="partial">partially-coupled</shf_formulation>
+
+<shf_data_type>none</shf_data_type>  
+<shf_data_type ocn_coupling="partial">monthly</shf_data_type>
+
+<luse_cpl_ifrac>.false.</luse_cpl_ifrac>  
+<luse_cpl_ifrac ocn_coupling="partial">.true.</luse_cpl_ifrac>
+
+<shf_data_renorm(3)>0.94</shf_data_renorm(3)>
+
+<shf_data_inc>24.</shf_data_inc>
+<shf_interp_freq>'every-timestep'</shf_interp_freq>
+<shf_interp_type>'linear'</shf_interp_type>
+<shf_interp_inc>72.</shf_interp_inc>
+<shf_restore_tau>30.</shf_restore_tau>
+<shf_file_fmt>'bin'</shf_file_fmt>
+<shf_weak_restore>0.</shf_weak_restore>
+<shf_strong_restore>0.0</shf_strong_restore>
+<shf_strong_restore_ms>92.64</shf_strong_restore_ms>
+
+<shf_filename ocn_grid="gx3v7"  >ocn/pop/gx3v7/forcing/shf_20090831.ieeer8</shf_filename>
+<shf_filename ocn_grid="gx1v6"  >ocn/pop/gx1v6/forcing/shf_mm_all_85-88_20010308.ieeer8</shf_filename>
+<shf_filename ocn_grid="tx1v1"  >ocn/pop/tx1v1/forcing/shf_mm_all_85-88_20080505.ieeer8</shf_filename>
+<shf_filename ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/forcing/shf_20100318.ieeer8</shf_filename>
+
+<!---------------------------->
+<!-- forcing_sfwf_nml -->
+<!---------------------------->
+
+<sfwf_formulation>restoring</sfwf_formulation>  
+<sfwf_formulation ocn_coupling="partial">partially-coupled</sfwf_formulation>
+
+<sfwf_data_type>none</sfwf_data_type>  
+<sfwf_data_type ocn_coupling="partial">monthly</sfwf_data_type>
+
+<ladjust_precip>.false.</ladjust_precip>  
+<ladjust_precip ocn_coupling="partial">.true.</ladjust_precip>
+
+<lms_balance>.true.</lms_balance>  
+<lms_balance ocn_coupling="partial">.false.</lms_balance>
+
+<lsend_precip_fact>.false.</lsend_precip_fact>  
+<lsend_precip_fact ocn_coupling="partial">.true.</lsend_precip_fact>
+
+<sfwf_data_inc>24.</sfwf_data_inc>
+<sfwf_interp_freq>'every-timestep'</sfwf_interp_freq>
+<sfwf_interp_type>'linear'</sfwf_interp_type>
+<sfwf_interp_inc>72.</sfwf_interp_inc>
+<sfwf_restore_tau>30.</sfwf_restore_tau>
+<sfwf_file_fmt>'bin'</sfwf_file_fmt>
+<sfwf_strong_restore>0.0</sfwf_strong_restore>
+<sfwf_strong_restore_ms>0.6648</sfwf_strong_restore_ms>
+<lfw_as_salt_flx>.true.</lfw_as_salt_flx>
+<sfwf_data_renorm>0.001, 19*1.</sfwf_data_renorm>
+
+<sfwf_filename ocn_grid="gx3v7"  >ocn/pop/gx3v7/forcing/sfwf_mm_PHC2_salx_flxio_20090831.ieeer8</sfwf_filename>
+<sfwf_filename ocn_grid="gx1v6"  >ocn/pop/gx1v6/forcing/sfwf_mm_PHC2_salx_flxio_20090205.ieeer8</sfwf_filename>
+<sfwf_filename ocn_grid="tx1v1"  >ocn/pop/tx1v1/forcing/sfwf_mm_PHC2_salx_flxio_20080502.ieeer8</sfwf_filename>
+<sfwf_filename ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/forcing/sfwf_mm_PHC2_salx_flxio_20100323.ieeer8</sfwf_filename>
+
+<sfwf_weak_restore ocn_grid="gx3v7"  >0.0115</sfwf_weak_restore>
+<sfwf_weak_restore ocn_grid="gx1v6"  >0.0115</sfwf_weak_restore>
+<sfwf_weak_restore ocn_grid="tx1v1"  >0.0115</sfwf_weak_restore>
+<sfwf_weak_restore ocn_grid="tx0.1v2">0.0115</sfwf_weak_restore>
+
+<!---------------------------->
+<!-- forcing_pt_interior_nml-->
+<!---------------------------->
+
+<pt_interior_data_renorm>20*1.</pt_interior_data_renorm>
+<pt_interior_data_type>'none'</pt_interior_data_type>
+<pt_interior_data_inc>24.</pt_interior_data_inc>
+<pt_interior_interp_freq>'every-timestep'</pt_interior_interp_freq>
+<pt_interior_interp_type>'linear'</pt_interior_interp_type>
+<pt_interior_interp_inc>72.</pt_interior_interp_inc>
+<pt_interior_restore_tau>365.</pt_interior_restore_tau>
+<pt_interior_filename>'unknown-pt_interior'</pt_interior_filename>
+<pt_interior_file_fmt>'bin'</pt_interior_file_fmt>
+<pt_interior_restore_max_level>0</pt_interior_restore_max_level>
+<pt_interior_formulation>'restoring'</pt_interior_formulation>
+<pt_interior_variable_restore>.false.</pt_interior_variable_restore>
+<pt_interior_restore_filename>'unknown-pt_interior_restore'</pt_interior_restore_filename>
+<pt_interior_restore_file_fmt>'bin'</pt_interior_restore_file_fmt>
+
+<!---------------------------->
+<!--forcing_s_interior_nml -->
+<!---------------------------->
+
+<s_interior_data_renorm>20*1.</s_interior_data_renorm>
+<s_interior_data_type>none</s_interior_data_type>
+<s_interior_data_inc>24.</s_interior_data_inc>
+<s_interior_interp_freq>every-timestep</s_interior_interp_freq>
+<s_interior_interp_type>linear</s_interior_interp_type>
+<s_interior_interp_inc>72.</s_interior_interp_inc>
+<s_interior_restore_tau>365.</s_interior_restore_tau>
+<s_interior_filename>'unknown-s_interior'</s_interior_filename>
+<s_interior_file_fmt>'bin'</s_interior_file_fmt>
+<s_interior_restore_max_level>0</s_interior_restore_max_level>
+<s_interior_formulation>'restoring'</s_interior_formulation>
+<s_interior_variable_restore>.false.</s_interior_variable_restore>
+<s_interior_restore_filename>'unknown-s_interior_restore'</s_interior_restore_filename>
+<s_interior_restore_file_fmt>'bin'</s_interior_restore_file_fmt>
+
+<!---------------------------->
+<!--forcing_ap_interior_nml -->
+<!---------------------------->
+
+<ap_data_type>none</ap_data_type>
+<ap_data_inc>1.e20</ap_data_inc>
+<ap_interp_freq>never</ap_interp_freq>
+<ap_interp_type>nearest</ap_interp_type>
+<ap_interp_inc>1.e20</ap_interp_inc>
+<ap_filename>unknown-ap</ap_filename>
+<ap_file_fmt>bin</ap_file_fmt>
+<ap_data_renorm>20*1.</ap_data_renorm>
+
+<!---------------------------->
+<!--sw_absorption_nml -->
+<!---------------------------->
+
+<sw_absorption_type>chlorophyll</sw_absorption_type>
+<chl_file_fmt>bin</chl_file_fmt>
+<jerlov_water_type>3</jerlov_water_type>
+
+<chl_option ocn_chl_type="prognostic">model</chl_option>
+<chl_option ocn_chl_type="diagnostic">file</chl_option>
+
+<chl_filename ocn_grid="gx3v7"  >ocn/pop/gx3v7/forcing/chl_mm_SeaWiFs97-01_20031205.ieeer8</chl_filename>
+<chl_filename ocn_grid="gx1v6"  >ocn/pop/gx1v6/forcing/chl_filled_20061230.ieeer8</chl_filename>
+<chl_filename ocn_grid="tx1v1"  >ocn/pop/tx1v1/forcing/chl_filled_tx1v1_20090701.ieeer8</chl_filename>
+<chl_filename ocn_grid="tx0.1v2">ocn/pop/tx0.1v2/forcing/chlorophyll_1998-2003_monthly_20080418.ieeer8</chl_filename>
+
+
+<!---------------------------->
+<!--coupled_nml -->
+<!---------------------------->
+
+<qsw_distrb_opt ocn_grid="gx1v6" ocn_coupling="partial">cosz</qsw_distrb_opt>
+<qsw_distrb_opt ocn_grid="gx1v6" ocn_coupling="full"   >cosz</qsw_distrb_opt>
+<qsw_distrb_opt ocn_grid="gx3v7"  >cosz</qsw_distrb_opt>   
+<qsw_distrb_opt ocn_grid="tx1v1"  >const</qsw_distrb_opt>
+<qsw_distrb_opt ocn_grid="tx0.1v2">const</qsw_distrb_opt> 
+
+
+<!---------------------------->
+<!--transports_nml -->
+<!---------------------------->
+
+<lat_aux_grid_type>southern</lat_aux_grid_type>
+<lat_aux_begin>-90.0</lat_aux_begin>
+<lat_aux_end>90.0</lat_aux_end>
+<n_lat_aux_grid>180</n_lat_aux_grid>
+<n_transport_reg>2</n_transport_reg>
+
+<moc_requested ocn_grid="gx3v7"  >.true.</moc_requested>
+<moc_requested ocn_grid="gx1v6"  >.true.</moc_requested>
+<moc_requested ocn_grid="tx1v1"  >.false.</moc_requested>
+<moc_requested ocn_grid="tx0.1v2">.false.</moc_requested>
+
+<n_heat_trans_requested ocn_grid="gx3v7"  >.true.</n_heat_trans_requested>
+<n_heat_trans_requested ocn_grid="gx1v6"  >.true.</n_heat_trans_requested>
+<n_heat_trans_requested ocn_grid="tx1v1"  >.false.</n_heat_trans_requested>
+<n_heat_trans_requested ocn_grid="tx0.1v2">.false.</n_heat_trans_requested>
+
+<n_salt_trans_requested ocn_grid="gx3v7"  >.true.</n_salt_trans_requested>
+<n_salt_trans_requested ocn_grid="gx1v6"  >.true.</n_salt_trans_requested>
+<n_salt_trans_requested ocn_grid="tx1v1"  >.false.</n_salt_trans_requested>
+<n_salt_trans_requested ocn_grid="tx0.1v2">.false.</n_salt_trans_requested>
+
+<!---------------------------->
+<!--context_nml -->
+<!---------------------------->
+
+<lcoupled>.true.</lcoupled>
+<lccsm>.true.</lccsm>
+<b4b_flag>.false.</b4b_flag>
+
+<lccsm_control_compatible ocn_grid="gx3v7"  >.false.</lccsm_control_compatible> 
+<lccsm_control_compatible ocn_grid="gx1v6"  >.false.</lccsm_control_compatible> 
+<lccsm_control_compatible ocn_grid="tx1v1"  >.false.</lccsm_control_compatible> 
+<lccsm_control_compatible ocn_grid="tx0.1v2">.false.</lccsm_control_compatible> 
+
+<!---------------------------->
+<!--overflows_nml -->
+<!---------------------------->
+
+<overflows_on ocn_grid="gx3v7"  >.true.</overflows_on>
+<overflows_on ocn_grid="gx1v6"  >.true.</overflows_on>
+<overflows_on ocn_grid="tx1v1"  >.false.</overflows_on>
+<overflows_on ocn_grid="tx0.1v2">.false.</overflows_on>
+
+<overflows_interactive ocn_grid="gx3v7"  >.true.</overflows_interactive>
+<overflows_interactive ocn_grid="gx1v6"  >.true.</overflows_interactive>
+<overflows_interactive ocn_grid="tx1v1"  >.false.</overflows_interactive>
+<overflows_interactive ocn_grid="tx0.1v2">.false.</overflows_interactive>
+
+<!---------------------------->
+<!--niw_nml                 -->
+<!---------------------------->
+
+<lniw_mixing ocn_grid="gx3v7"  >.false.</lniw_mixing>
+<lniw_mixing ocn_grid="gx1v6"  >.false.</lniw_mixing>
+<lniw_mixing ocn_grid="tx1v1"  >.false.</lniw_mixing>
+<lniw_mixing ocn_grid="tx0.1v2">.false.</lniw_mixing>
+
+<niw_local_mixing_fraction>0.5</niw_local_mixing_fraction>
+
+<niw_mixing_efficiency>0.2</niw_mixing_efficiency>
+
+<niw_obs2model_ratio>2.0</niw_obs2model_ratio>
+
+<niw_boundary_layer_absorption> 0.7</niw_boundary_layer_absorption>
+
+<niw_vert_decay_scale>2000.0e02</niw_vert_decay_scale>
+
+<niw_mix_max>100.0</niw_mix_max>
+
+<niw_energy_type>'blke'</niw_energy_type>
+
+<niw_energy_file ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/niw_gx1v6_20100915.ieeer8</niw_energy_file>
+
+<niw_energy_file_fmt>'bin'</niw_energy_file_fmt>
+
+<!---------------------------->
+<!--        cfc_nml         -->
+<!---------------------------->
+
+<cfc_formulation>model</cfc_formulation>
+
+<data_year>1981</data_year>
+<data_year ocn_transient="1850-2000">1850</data_year>
+
+<init_cfc_init_file>same_as_TS</init_cfc_init_file>
+
+<model_year>1</model_year>
+<model_year ocn_transient="1850-2000">1850</model_year>
+
+<pcfc_file>ocn/pop/res_indpt/forcing/pcfc1112_atm_20130410.nc</pcfc_file>
+
+<!---------------------------->
+<!--       ecosys_nml       -->
+<!---------------------------->
+
+<init_ecosys_init_file ocn_grid="gx3v7">ocn/pop/gx3v7/ic/ecosys_jan_IC_gx3v7_Nov2012_corrO2.nc</init_ecosys_init_file>
+<init_ecosys_init_file ocn_grid="gx1v6">ocn/pop/gx1v6/ic/ecosys_jan_IC_gx1v6_corrO2_Feb2013.nc</init_ecosys_init_file>
+
+<init_ecosys_init_file_fmt>nc</init_ecosys_init_file_fmt>
+
+<tracer_init_ext(1)%mod_varname&ecosys_nml>ALK</tracer_init_ext(1)%mod_varname&ecosys_nml>
+<tracer_init_ext(2)%mod_varname&ecosys_nml>DIC</tracer_init_ext(2)%mod_varname&ecosys_nml>
+<tracer_init_ext(3)%mod_varname&ecosys_nml>DIC_ALT_CO2</tracer_init_ext(3)%mod_varname&ecosys_nml>
+<tracer_init_ext(4)%mod_varname&ecosys_nml>O2</tracer_init_ext(4)%mod_varname&ecosys_nml>
+
+<lflux_gas_o2 >.true.</lflux_gas_o2>
+<lflux_gas_co2>.true.</lflux_gas_co2>
+
+<ecosys_tadvect_ctype>base_model</ecosys_tadvect_ctype>
+
+<gas_flux_forcing_opt>drv</gas_flux_forcing_opt>
+
+<lmarginal_seas>.true.</lmarginal_seas>
+
+<lsource_sink>.true.</lsource_sink>
+
+<comp_surf_avg_freq_opt>never</comp_surf_avg_freq_opt>
+
+<comp_surf_avg_freq>1</comp_surf_avg_freq>
+
+<use_nml_surf_vals>.false.</use_nml_surf_vals>
+<use_nml_surf_vals runtype="startup">.true.</use_nml_surf_vals>
+
+<surf_avg_dic_const>1944.0</surf_avg_dic_const>          
+
+<surf_avg_alk_const>2225.0</surf_avg_alk_const>          
+
+<ecosys_qsw_distrb_const>.false.</ecosys_qsw_distrb_const>     
+
+<iron_dust_flx_data_type>monthly</iron_dust_flx_data_type>     
+
+<dust_flux_input%file_fmt>nc</dust_flux_input%file_fmt>    
+
+<dust_flux_input%file_varname>DSTSF</dust_flux_input%file_varname>
+
+<dust_flux_input%scale_factor>1.0e-1</dust_flux_input%scale_factor>
+
+<iron_flux_input%file_fmt>nc</iron_flux_input%file_fmt>
+
+<iron_flux_input%file_varname>DSTSF</iron_flux_input%file_varname>
+
+<!-- 6.2668e4 = kg/m^2/sec -> nmol/cm^2/sec, 3.5%Fe Wt. Dust file -->
+<!-- 1.79e6 = kgFe/m^2/sec -> nmol/cm^2/sec, var. solFe file -->
+<iron_flux_input%scale_factor ocn_grid="gx3v7">1.79e6</iron_flux_input%scale_factor>
+<iron_flux_input%scale_factor ocn_grid="gx1v6">1.79e6</iron_flux_input%scale_factor>
+
+<fesedflux_input%file_varname>FESEDFLUXIN</fesedflux_input%file_varname>
+
+<fesedflux_input%file_fmt>nc</fesedflux_input%file_fmt>
+
+<fesedflux_input%scale_factor>1.1574e-6</fesedflux_input%scale_factor>
+
+<din_riv_flux_input%file_varname>din_riv_flux</din_riv_flux_input%file_varname>
+
+<din_riv_flux_input%file_fmt>nc</din_riv_flux_input%file_fmt>
+
+<din_riv_flux_input%scale_factor>1.0</din_riv_flux_input%scale_factor>
+
+<dip_riv_flux_input%file_varname>dip_riv_flux</dip_riv_flux_input%file_varname>
+
+<dip_riv_flux_input%file_fmt>nc</dip_riv_flux_input%file_fmt>
+
+<dip_riv_flux_input%scale_factor>1.0</dip_riv_flux_input%scale_factor>
+
+<don_riv_flux_input%file_varname>don_riv_flux</don_riv_flux_input%file_varname>
+
+<don_riv_flux_input%file_fmt>nc</don_riv_flux_input%file_fmt>
+
+<don_riv_flux_input%scale_factor>1.0</don_riv_flux_input%scale_factor>
+
+<dop_riv_flux_input%file_varname>dop_riv_flux</dop_riv_flux_input%file_varname>
+
+<dop_riv_flux_input%file_fmt>nc</dop_riv_flux_input%file_fmt>
+
+<dop_riv_flux_input%scale_factor>1.0</dop_riv_flux_input%scale_factor>
+
+<dsi_riv_flux_input%file_varname>dsi_riv_flux</dsi_riv_flux_input%file_varname>
+
+<dsi_riv_flux_input%file_fmt>nc</dsi_riv_flux_input%file_fmt>
+
+<dsi_riv_flux_input%scale_factor>1.0</dsi_riv_flux_input%scale_factor>
+
+<dfe_riv_flux_input%file_varname>dfe_riv_flux</dfe_riv_flux_input%file_varname>
+
+<dfe_riv_flux_input%file_fmt>nc</dfe_riv_flux_input%file_fmt>
+
+<dfe_riv_flux_input%scale_factor>1.0</dfe_riv_flux_input%scale_factor>
+
+<dic_riv_flux_input%file_varname>dic_riv_flux</dic_riv_flux_input%file_varname>
+
+<dic_riv_flux_input%file_fmt>nc</dic_riv_flux_input%file_fmt>
+
+<dic_riv_flux_input%scale_factor>1.0</dic_riv_flux_input%scale_factor>
+
+<alk_riv_flux_input%file_varname>alk_riv_flux</alk_riv_flux_input%file_varname>
+
+<alk_riv_flux_input%file_fmt>nc</alk_riv_flux_input%file_fmt>
+
+<alk_riv_flux_input%scale_factor>1.0</alk_riv_flux_input%scale_factor>
+
+<doc_riv_flux_input%file_varname>doc_riv_flux</doc_riv_flux_input%file_varname>
+
+<doc_riv_flux_input%file_fmt>nc</doc_riv_flux_input%file_fmt>
+
+<doc_riv_flux_input%scale_factor>1.0</doc_riv_flux_input%scale_factor>
+
+<ndep_data_type>monthly-calendar</ndep_data_type>
+
+<nox_flux_monthly_input%file_fmt>nc</nox_flux_monthly_input%file_fmt>
+
+<nox_flux_monthly_input%file_varname>NOy_deposition</nox_flux_monthly_input%file_varname>
+
+<nox_flux_monthly_input%scale_factor>7.1429e+06</nox_flux_monthly_input%scale_factor>
+
+<nhy_flux_monthly_input%file_fmt>nc</nhy_flux_monthly_input%file_fmt>    
+
+<nhy_flux_monthly_input%file_varname>NHx_deposition</nhy_flux_monthly_input%file_varname>
+
+<nhy_flux_monthly_input%scale_factor>7.1429e+06</nhy_flux_monthly_input%scale_factor>
+
+<ndep_data_type ocn_transient="unset"    >monthly-calendar</ndep_data_type>
+<ndep_data_type ocn_transient="1850-2000">shr_stream</ndep_data_type>              
+
+<ndep_shr_stream_year_first>1849</ndep_shr_stream_year_first>  
+
+<ndep_shr_stream_year_last>2006</ndep_shr_stream_year_last>   
+
+<ndep_shr_stream_year_align>1849</ndep_shr_stream_year_align>  
+
+<ndep_shr_stream_scale_factor>7.1429e+06</ndep_shr_stream_scale_factor>
+
+<lecovars_full_depth_tavg>.false.</lecovars_full_depth_tavg>    
+
+<tracer_init_ext(1)%scale_factor&ecosys_nml ocn_grid="gx3v7">1.025</tracer_init_ext(1)%scale_factor&ecosys_nml>
+<tracer_init_ext(1)%scale_factor&ecosys_nml ocn_grid="gx1v6">1.025</tracer_init_ext(1)%scale_factor&ecosys_nml> 
+ 
+<tracer_init_ext(2)%scale_factor&ecosys_nml ocn_grid="gx3v7">1.025</tracer_init_ext(2)%scale_factor&ecosys_nml>
+<tracer_init_ext(2)%scale_factor&ecosys_nml ocn_grid="gx1v6">1.025</tracer_init_ext(2)%scale_factor&ecosys_nml> 
+ 
+<tracer_init_ext(3)%scale_factor&ecosys_nml ocn_grid="gx3v7">1.025</tracer_init_ext(3)%scale_factor&ecosys_nml>
+<tracer_init_ext(3)%scale_factor&ecosys_nml ocn_grid="gx1v6">1.025</tracer_init_ext(3)%scale_factor&ecosys_nml> 
+
+<tracer_init_ext(4)%scale_factor&ecosys_nml ocn_grid="gx3v7">1.0</tracer_init_ext(4)%scale_factor&ecosys_nml>
+<tracer_init_ext(4)%scale_factor&ecosys_nml ocn_grid="gx1v6">1.0</tracer_init_ext(4)%scale_factor&ecosys_nml> 
+
+<dust_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/dst79gnx_gx3v7_20100305.nc</dust_flux_input%filename> 
+<dust_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/dst79gnx_gx1v6_090416.nc</dust_flux_input%filename> 
+
+<iron_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/solFe_scenario4_current_gx3v7.nc</iron_flux_input%filename> 
+<iron_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/solFe_scenario4_current_gx1v6.nc</iron_flux_input%filename> 
+
+<fesedflux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/fesedflux_CCSM4gx3v7_orgc_etopo2v2_Dec2012.nc</fesedflux_input%filename> 
+<fesedflux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/fesedflux_gx1v6_etopo2v2_Dec2012.nc</fesedflux_input%filename>
+
+<din_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</din_riv_flux_input%filename> 
+<dip_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</dip_riv_flux_input%filename> 
+<don_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</don_riv_flux_input%filename> 
+<dop_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</dop_riv_flux_input%filename> 
+<dsi_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</dsi_riv_flux_input%filename> 
+<dfe_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</dfe_riv_flux_input%filename> 
+<dic_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</dic_riv_flux_input%filename> 
+<alk_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</alk_riv_flux_input%filename> 
+<doc_riv_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/river_nutrients_GNEWS2000_gx3v7.nc</doc_riv_flux_input%filename> 
+
+<din_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</din_riv_flux_input%filename> 
+<dip_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</dip_riv_flux_input%filename> 
+<don_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</don_riv_flux_input%filename> 
+<dop_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</dop_riv_flux_input%filename> 
+<dsi_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</dsi_riv_flux_input%filename> 
+<dfe_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</dfe_riv_flux_input%filename> 
+<dic_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</dic_riv_flux_input%filename> 
+<alk_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</alk_riv_flux_input%filename> 
+<doc_riv_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/river_nutrients_GNEWS2000_gx1v6.nc</doc_riv_flux_input%filename> 
+
+<nox_flux_monthly_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/ndep_ocn_1850_gx3v7_c100428.nc</nox_flux_monthly_input%filename> 
+<nox_flux_monthly_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/ndep_ocn_1850_gx1v6_c100428.nc</nox_flux_monthly_input%filename>  
+
+<nhy_flux_monthly_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/ndep_ocn_1850_gx3v7_c100428.nc</nhy_flux_monthly_input%filename> 
+<nhy_flux_monthly_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/ndep_ocn_1850_gx1v6_c100428.nc</nhy_flux_monthly_input%filename>  
+
+<ndep_shr_stream_file ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/ndep_ocn_1850-2005_gx3v7_c100612.nc</ndep_shr_stream_file> 
+<ndep_shr_stream_file ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/ndep_ocn_1850-2005_gx1v6_c100612.nc</ndep_shr_stream_file> 
+
+<!---------------------------->
+<!--    ecosys_parms_nml    -->
+<!---------------------------->
+
+<parm_Fe_bioavail>    1.0        </parm_Fe_bioavail>
+<parm_o2_min>         4.0        </parm_o2_min>
+<parm_o2_min_delta>   2.0        </parm_o2_min_delta>
+<parm_kappa_nitrif>   6.9444e-07 </parm_kappa_nitrif>
+<parm_nitrif_par_lim> 1.0        </parm_nitrif_par_lim>
+<parm_z_mort_0>       1.1574e-06 </parm_z_mort_0>
+<parm_z_mort2_0>      4.6296e-06 </parm_z_mort2_0>
+<parm_labile_ratio>   0.85       </parm_labile_ratio>
+
+<parm_POMbury ocn_grid="gx3v7">5.0</parm_POMbury>
+<parm_POMbury                 >1.4</parm_POMbury>
+
+<parm_BSIbury ocn_grid="gx3v7">0.58</parm_BSIbury>
+<parm_BSIbury                 >0.44</parm_BSIbury>
+
+<parm_fe_scavenge_rate0 ocn_grid="gx3v7">1.6</parm_fe_scavenge_rate0>
+<parm_fe_scavenge_rate0                 >1.3</parm_fe_scavenge_rate0>
+
+<parm_f_prod_sp_CaCO3 ocn_grid="gx3v7">0.053</parm_f_prod_sp_CaCO3>
+<parm_f_prod_sp_CaCO3                 >0.055</parm_f_prod_sp_CaCO3>
+
+<parm_POC_diss  > 88.0e2</parm_POC_diss>
+<parm_SiO2_diss >250.0e2</parm_SiO2_diss>
+<parm_CaCO3_diss>150.0e2</parm_CaCO3_diss>
+
+<parm_scalelen_z                    >130.0e2, 290.0e2, 670.0e2, 1700.0e2</parm_scalelen_z>
+<parm_scalelen_vals ocn_grid="gx3v7">    1.0,     3.0,     5.0,      9.0</parm_scalelen_vals>
+<parm_scalelen_vals                 >    1.0,     3.0,     5.0,      9.0</parm_scalelen_vals>
+
+<autotrophs(1)%sname>sp</autotrophs(1)%sname>
+<autotrophs(1)%kFe  >0.04e-3 </autotrophs(1)%kFe>
+<autotrophs(1)%kPO4 >0.01    </autotrophs(1)%kPO4>
+<autotrophs(1)%kDOP >0.26    </autotrophs(1)%kDOP>
+<autotrophs(1)%kNO3 >0.1     </autotrophs(1)%kNO3>
+<autotrophs(1)%kNH4 >0.01    </autotrophs(1)%kNH4>
+<autotrophs(1)%kSiO3>0.0     </autotrophs(1)%kSiO3>
+<autotrophs(1)%z_umax_0 ocn_grid="gx3v7">3.7847e-05</autotrophs(1)%z_umax_0>
+<autotrophs(1)%z_umax_0                 >3.8194e-05</autotrophs(1)%z_umax_0>
+
+<autotrophs(2)%sname>diat</autotrophs(2)%sname>
+<autotrophs(2)%kFe  >0.06e-3 </autotrophs(2)%kFe>
+<autotrophs(2)%kPO4 >0.05    </autotrophs(2)%kPO4>
+<autotrophs(2)%kDOP >0.9     </autotrophs(2)%kDOP>
+<autotrophs(2)%kNO3 >0.5     </autotrophs(2)%kNO3>
+<autotrophs(2)%kNH4 >0.05    </autotrophs(2)%kNH4>
+<autotrophs(2)%kSiO3>0.8     </autotrophs(2)%kSiO3>
+<autotrophs(2)%z_umax_0 ocn_grid="gx3v7">3.6227e-05</autotrophs(2)%z_umax_0>
+<autotrophs(2)%z_umax_0                 >3.5648e-05</autotrophs(2)%z_umax_0>
+
+<autotrophs(3)%sname>diaz</autotrophs(3)%sname>
+<autotrophs(3)%kFe  >0.04e-3 </autotrophs(3)%kFe>
+<autotrophs(3)%kPO4 >0.02    </autotrophs(3)%kPO4>
+<autotrophs(3)%kDOP >0.09    </autotrophs(3)%kDOP>
+<autotrophs(3)%kNO3 >1.0     </autotrophs(3)%kNO3>
+<autotrophs(3)%kNH4 >0.15    </autotrophs(3)%kNH4>
+<autotrophs(3)%kSiO3>0.0     </autotrophs(3)%kSiO3>
+<autotrophs(3)%z_umax_0>6.9444e-06</autotrophs(3)%z_umax_0>
+
+<!---------------------------->
+<!--moby_nml -->
+<!---------------------------->
+
+<lmoby>.true.</lmoby>
+
+<ldarwin>.true.</ldarwin>
+
+<moby_comp_surf_avg_freq>1</moby_comp_surf_avg_freq>
+
+<moby_comp_surf_avg_freq_opt>never</moby_comp_surf_avg_freq_opt>
+
+<moby_iron_flux_input%filename ocn_grid="gx3v7">ocn/pop/gx3v7/forcing/dst79gnx_gx3v7_20100305.nc</moby_iron_flux_input%filename> 
+<moby_iron_flux_input%filename ocn_grid="gx1v6">ocn/pop/gx1v6/forcing/dst79gnx_gx1v6_090416.nc</moby_iron_flux_input%filename> 
+
+<moby_iron_flux_input%file_fmt>nc</moby_iron_flux_input%file_fmt>
+
+<moby_iron_flux_input%file_varname>DSTSF</moby_iron_flux_input%file_varname>
+
+<moby_iron_flux_input%scale_factor>0.62668</moby_iron_flux_input%scale_factor> <!--# kg/m^2/sec->mol/m^2/sec, 3.5% iron by weight-->
+
+<moby_lecovars_full_depth_tavg>.false.</moby_lecovars_full_depth_tavg>    
+
+<moby_lflux_gas_co2>.false.</moby_lflux_gas_co2>
+
+<moby_lmarginal_seas>.true.</moby_lmarginal_seas>
+
+<moby_lrest_no3>.false.</moby_lrest_no3>
+
+<moby_lrest_po4>.false.</moby_lrest_po4>
+
+<moby_lrest_sio3>.false.</moby_lrest_sio3>
+
+<moby_nutr_rest_file>'unknown'</moby_nutr_rest_file>
+
+<moby_qsw_distrb_const>.false.</moby_qsw_distrb_const> 
+
+<moby_surf_avg_alk_const>2225.0</moby_surf_avg_alk_const>
+
+<moby_surf_avg_dic_const>1944.0</moby_surf_avg_dic_const>
+
+<moby_tadvect_ctype>base_model</moby_tadvect_ctype>
+
+<moby_tracer_init_ext(1)%mod_varname>ALK</moby_tracer_init_ext(1)%mod_varname>
+
+<moby_tracer_init_ext(1)%scale_factor ocn_grid="gx3v7">1.025</moby_tracer_init_ext(1)%scale_factor>
+<moby_tracer_init_ext(1)%scale_factor ocn_grid="gx1v6">1.025</moby_tracer_init_ext(1)%scale_factor> 
+
+<moby_tracer_init_ext(2)%mod_varname>DIC</moby_tracer_init_ext(2)%mod_varname>
+
+<moby_tracer_init_ext(2)%scale_factor ocn_grid="gx3v7">1.025</moby_tracer_init_ext(2)%scale_factor>
+<moby_tracer_init_ext(2)%scale_factor ocn_grid="gx1v6">1.025</moby_tracer_init_ext(2)%scale_factor> 
+
+<moby_use_nml_surf_vals>.false.</moby_use_nml_surf_vals>
+<moby_use_nml_surf_vals runtype="startup">.true.</moby_use_nml_surf_vals>
+
+<!----------------------------------->
+<!--derived - thare are temporary --->
+<!--names for variables with the  --->
+<!--same name in multiple groups  --->
+<!----------------------------------->
+
+<lauto_hmix&hmix_del2u_nml ocn_grid="gx3v7"  >.false.</lauto_hmix&hmix_del2u_nml> 
+<lauto_hmix&hmix_del2u_nml ocn_grid="gx1v6"  >.false.</lauto_hmix&hmix_del2u_nml> 
+<lauto_hmix&hmix_del2u_nml ocn_grid="tx1v1"  >.true.</lauto_hmix&hmix_del2u_nml> 
+<lauto_hmix&hmix_del2u_nml ocn_grid="tx0.1v2">.true.</lauto_hmix&hmix_del2u_nml> 
+
+<lauto_hmix&hmix_del2t_nml ocn_grid="gx3v7"  >.false.</lauto_hmix&hmix_del2t_nml> 
+<lauto_hmix&hmix_del2t_nml ocn_grid="gx1v6"  >.false.</lauto_hmix&hmix_del2t_nml> 
+<lauto_hmix&hmix_del2t_nml ocn_grid="tx1v1"  >.false.</lauto_hmix&hmix_del2t_nml> 
+<lauto_hmix&hmix_del2t_nml ocn_grid="tx0.1v2">.false.</lauto_hmix&hmix_del2t_nml> 
+
+<lauto_hmix&hmix_del4u_nml ocn_grid="gx3v7"  >.false.</lauto_hmix&hmix_del4u_nml> 
+<lauto_hmix&hmix_del4u_nml ocn_grid="gx1v6"  >.false.</lauto_hmix&hmix_del4u_nml> 
+<lauto_hmix&hmix_del4u_nml ocn_grid="tx1v1"  >.false.</lauto_hmix&hmix_del4u_nml> 
+<lauto_hmix&hmix_del4u_nml ocn_grid="tx0.1v2">.false.</lauto_hmix&hmix_del4u_nml> 
+
+<lauto_hmix&hmix_del4t_nml ocn_grid="gx3v7"  >.false.</lauto_hmix&hmix_del4t_nml> 
+<lauto_hmix&hmix_del4t_nml ocn_grid="gx1v6"  >.false.</lauto_hmix&hmix_del4t_nml> 
+<lauto_hmix&hmix_del4t_nml ocn_grid="tx1v1"  >.false.</lauto_hmix&hmix_del4t_nml> 
+<lauto_hmix&hmix_del4t_nml ocn_grid="tx0.1v2">.false.</lauto_hmix&hmix_del4t_nml> 
+
+<lvariable_hmix&hmix_del2u_nml ocn_grid="gx3v7"  >.false.</lvariable_hmix&hmix_del2u_nml> 
+<lvariable_hmix&hmix_del2u_nml ocn_grid="gx1v6"  >.false.</lvariable_hmix&hmix_del2u_nml> 
+<lvariable_hmix&hmix_del2u_nml ocn_grid="tx1v1"  >.false.</lvariable_hmix&hmix_del2u_nml> 
+<lvariable_hmix&hmix_del2u_nml ocn_grid="tx0.1v2">.false.</lvariable_hmix&hmix_del2u_nml> 
+
+<lvariable_hmix&hmix_del2t_nml ocn_grid="gx3v7"  >.false.</lvariable_hmix&hmix_del2t_nml> 
+<lvariable_hmix&hmix_del2t_nml ocn_grid="gx1v6"  >.false.</lvariable_hmix&hmix_del2t_nml> 
+<lvariable_hmix&hmix_del2t_nml ocn_grid="tx1v1"  >.true.</lvariable_hmix&hmix_del2t_nml> 
+<lvariable_hmix&hmix_del2t_nml ocn_grid="tx0.1v2">.true.</lvariable_hmix&hmix_del2t_nml> 
+
+<lvariable_hmix&hmix_del4u_nml ocn_grid="gx3v7"  >.false.</lvariable_hmix&hmix_del4u_nml> 
+<lvariable_hmix&hmix_del4u_nml ocn_grid="gx1v6"  >.false.</lvariable_hmix&hmix_del4u_nml> 
+<lvariable_hmix&hmix_del4u_nml ocn_grid="tx1v1"  >.false.</lvariable_hmix&hmix_del4u_nml> 
+<lvariable_hmix&hmix_del4u_nml ocn_grid="tx0.1v2">.true.</lvariable_hmix&hmix_del4u_nml> 
+
+<lvariable_hmix&hmix_del4t_nml ocn_grid="gx3v7"  >.false.</lvariable_hmix&hmix_del4t_nml> 
+<lvariable_hmix&hmix_del4t_nml ocn_grid="gx1v6"  >.false.</lvariable_hmix&hmix_del4t_nml> 
+<lvariable_hmix&hmix_del4t_nml ocn_grid="tx1v1"  >.false.</lvariable_hmix&hmix_del4t_nml> 
+<lvariable_hmix&hmix_del4t_nml ocn_grid="tx0.1v2">.true.</lvariable_hmix&hmix_del4t_nml> 
+
+<am&hmix_del2u_nml ocn_grid="gx3v7"  >3.0e9</am&hmix_del2u_nml>
+<am&hmix_del2u_nml ocn_grid="gx1v6"  >0.5e8</am&hmix_del2u_nml>
+<am&hmix_del2u_nml ocn_grid="tx1v1"  >0.5e8</am&hmix_del2u_nml>
+<am&hmix_del2u_nml ocn_grid="tx0.1v2">1.e8</am&hmix_del2u_nml>
+
+<ah&hmix_del2t_nml ocn_grid="gx3v7"  >1.0e7</ah&hmix_del2t_nml>
+<ah&hmix_del2t_nml ocn_grid="gx1v6"  >0.6e7</ah&hmix_del2t_nml>
+<ah&hmix_del2t_nml ocn_grid="tx1v1"  >0.6e7</ah&hmix_del2t_nml>
+<ah&hmix_del2t_nml ocn_grid="tx0.1v2">1.e8</ah&hmix_del2t_nml>
+
+<am&hmix_del4u_nml ocn_grid="gx3v7"  >-0.6e20</am&hmix_del4u_nml>
+<am&hmix_del4u_nml ocn_grid="gx1v6"  >-0.6e20</am&hmix_del4u_nml>
+<am&hmix_del4u_nml ocn_grid="tx1v1"  >-0.6e20</am&hmix_del4u_nml>
+<am&hmix_del4u_nml ocn_grid="tx0.1v2">-27.0e17</am&hmix_del4u_nml>
+
+<ah&hmix_del4t_nml ocn_grid="gx3v7"  >-0.2e20</ah&hmix_del4t_nml>
+<ah&hmix_del4t_nml ocn_grid="gx1v6"  >-0.2e20</ah&hmix_del4t_nml>
+<ah&hmix_del4t_nml ocn_grid="tx1v1"  >-0.2e20</ah&hmix_del4t_nml>
+<ah&hmix_del4t_nml ocn_grid="tx0.1v2">-3.0e17</ah&hmix_del4t_nml>
+
+<ah&hmix_gm_nml                    kappa_isop_choice="edgr"     kappa_thic_choice="edgr"    >1.0</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="gx3v7"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.8e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="gx3v7"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >4.0e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="gx1v6"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="gx1v6"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="tx1v1"   kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="tx1v1"   kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="tx0.1v2" kappa_isop_choice="constant" kappa_thic_choice="constant">0.6e7</ah&hmix_gm_nml>  
+<ah&hmix_gm_nml ocn_grid="tx0.1v2" kappa_isop_choice="bfre"     kappa_thic_choice="bfre"    >3.0e7</ah&hmix_gm_nml>  
+
+<rich_mix&vmix_rich_nml>50.0</rich_mix&vmix_rich_nml>
+
+<rich_mix&vmix_kpp_nml>50.0</rich_mix&vmix_kpp_nml>
+
+</namelist_defaults>
+

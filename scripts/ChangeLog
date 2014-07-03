@@ -1,0 +1,181 @@
+================================================================================
+SVN $Id: ChangeLog 47753 2013-06-05 17:28:00Z jedwards $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/cesm1_2_0_rel_tags/cesm1_2_0_n13_scripts4_130530/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+================================================================================
+
+================================================================================
+Originator: jedwards
+Date: Jun 05 2013
+Model: scripts
+Version: cesm1_2_0_n13_scripts4_130530
+One-line:  add support for setting PIO_BUFFER_SIZE_LIMIT in env_pes.xml
+
+M      create_newcase
+
+=========================
+Originator: jshollen
+Date: Jun 03 2013
+Model: scripts
+Version: cesm1_2_0_n12_scripts4_130530
+One-line:  create_test was not setting the baseline_root properly. 
+
+M      create_test
+
+================================================================================
+Originator: jshollen
+Date: Jun 03 2013
+Model: scripts
+Version: cesm1_2_0_n11_scripts4_130530
+One-line:  grid_file option, doc fix for create_newcase
+
+M       create_newcase
+
+================================================================================
+Originator: erik
+Date: May 31 2013
+Model: scripts
+Version: cesm1_2_0_n10_scripts4_130530
+One-line:  Add comment end so config_definition.xml can actually be used
+
+M       ccsm_utils/Case.template/config_definition.xml
+
+================================================================================
+Originator: aliceb
+Date: May 30 2013
+Model: scripts
+Version: cesm1_2_0_n09_scripts4_130530
+One-line:  updating archive_metadata.sh to include user namelists (user_nl_xxx) (Alice)
+	   Correct SST dataset for 1850-pday compsets (Jim)
+
+M       ccsm_utils/Case.template/config_compsets.xml
+M	ccsm_utils/Tools/archive_metadata.sh
+
+================================================================================
+
+Originator: tcraig
+Date: May 29 2013
+Model: scripts
+Version: cesm1_2_0_n08_scripts4_130529a
+One-line:  Remove WRF and WW3 compsets and grids
+
+M       ccsm_utils/Case.template/config_compsets.xml
+M       ccsm_utils/Case.template/config_grid.xml
+================================================================================
+Originator: erik
+Date: May 29 2013
+Model: scripts
+Version: cesm1_2_0_n08_scripts4_130529
+One-line:  Update PTCLM, remove VIC temp files, set RTM to either 1850/2000 startup
+           fix 1x1_urbanc_alpha 
+
+Update PTCLM
+
+M       SVN_EXTERNAL_DIRECTORIES -- Update PTCLM
+M       ccsm_utils/Case.template/config_compsets.xml --- Fix
+            some settings for 1x1_urbanc_alpha. Add settings for
+            1850 or 2000 startup year for RTM
+M       ccsm_utils/Case.template/config_definition.xml -- add note
+            about where restart files for DOUT_S_SAVE_INT_REST_FILES
+M       ccsm_utils/Testlistxml/testlist.xml -- Remove user_nl_clm
+            from VIC tests
+
+------------ Delete the VIC temporary datasets
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic/vic_f09
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic/vic_f09/user_nl_clm
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic/vic_f19
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic/vic_f19/user_nl_clm
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic/vic_vrtlay
+D       ccsm_utils/Testlistxml/nl_dirs/clm/vic/vic_vrtlay/user_nl_clm
+
+================================================================================
+Originator: santos
+Date: May 28 2013
+Model: scripts
+Version: cesm1_2_0_n07_scripts4_130520 (corresponds to scripts4_130528a)
+One-line: Short term archiver no longer deletes data if "mv" errors.
+
+M       ccsm_utils/Tools/st_archive.sh
+         - If data couldn't be moved out of a temporary directory, this
+           script would end up deleting it all. Now it doesn't do that.
+
+================================================================================
+Originator: jshollen
+Date: May 28 2013
+Model: scripts
+Version: cesm1_2_0_n06_scripts4_130520 (corresponds to scripts4_130528)
+One-line: query_tests will now output xml-based test lists.  
+
+M       query_tests
+
+================================================================================
+Originator: sacks
+Date: May 24 2013
+Model: scripts
+Version: cesm1_2_0_n05_scripts4_130520 (corresponds to scripts4_130524)
+One-line: update documentation: note cmake requirement for cism
+
+(changes merged from scripts4_130524)
+
+M       doc/usersguide/introduction.xml
+
+================================================================================
+Originator: jshollen
+Date: May 23 2013
+Model: scripts
+Version: cesm1_2_0_n04_scripts4_130520 (corresponds to scripts4_130523)
+One-line: Documentation fixes for Bill and Tony. 
+
+M       create_test
+
+================================================================================
+Originator: sacks
+Date: May 22 2013
+Model: scripts
+Version: cesm1_2_0_n03_scripts4_130520 (corresponds to scripts4_130522a)
+One-line: Fix some I compsets
+
+Bring in changes from scripts4_130522a; in particular:
+
+(1) Fix I_1850_CLM45_CN_GLC_CISM1 (IG1850CLM45CN) so that it is truly
+    using CLM4.5 (changes answers for this compset)
+
+(2) Fix sname of IG4804: change I_1948-2004_CLM45_GLC_CISM1 to
+    I_1948-2004_GLC_CISM1
+
+(3) Fix sname: change I_RCP2.6_CLML45_CN to I_RCP2.6_CLM45_CN (note
+    extra "L" before the 45 in the old name)
+
+M       ccsm_utils/Case.template/config_compsets.xml
+
+================================================================================
+Originator: jshollen
+Date: May 22 2013
+Model: scripts
+Version: cesm1_2_0_n02_scripts4_130520 (corresponds to scripts4_130522)
+One-line: testreporter update for namelist test summaries.
+
+M       ccsm_utils/Tools/testreporter.pl
+
+================================================================================
+Originator: sacks
+Date: May 21 2013
+Model: scripts
+Version: cesm1_2_0_n01_scripts4_130520
+One-line: Remove CISM2 compsets and all associated tests; update ChangeLog for release
+
+M       ccsm_utils/Case.template/config_compsets.xml
+M       ccsm_utils/Testlistxml/testlist.xml
+M       ChangeLog
+
+================================================================================
+Originator: sacks
+Date: May 21 2013
+Model: scripts
+Version: cesm1_2_0_n00_scripts4_130520
+One-line: Baseline release tag corresponding to scripts4_130520
+
+===============================================================
+===============================================================

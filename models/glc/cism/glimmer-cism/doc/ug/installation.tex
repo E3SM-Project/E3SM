@@ -1,0 +1,113 @@
+\section{Getting and Installing GLIMMER}
+GLIMMER is a relatively complex system of libraries and programs which build on other libraries. This section documents how to get GLIMMER and its prerequisites, compile and install it. Please report problems and bugs to the \href{http://forge.nesc.ac.uk/mailman/listinfo/glimmer-discuss}{GLIMMER mailing list}.
+%
+\subsection{Prerequisites}
+GLIMMER is distributed as source code; a sane build environment is therefore required to compile the model. On UNIX systems \href{http://www.gnu.org/software/make/}{GNU make} is suggested, since the Makefiles may rely on some GNU make specific features. There are two ways of getting the source code:
+%
+\begin{enumerate}
+\item download a {\it released} version from the \href{http://glimmer.forge.nesc.ac.uk}{GLIMMER website}\footnote{\texttt{http://glimmer.forge.nesc.ac.uk}}, or
+\item download the latest developers' version of GLIMMER and friends from \href{http://forge.nesc.ac.uk/}{NeSCForge} using \href{http://www.gnu.org/software/cvs/}{CVS}.
+\end{enumerate}
+%
+For beginners, the latest release is recommended. More experienced users may want to try the CVS version, as it will have all the latest bug-fixes and new features.
+
+In either case, a good f95 compiler is required. GLIMMER is known to work with the NAGware f95, Intel ifort and later versions of GNU gfortran compilers. GLIMMER does not compile with the SUN WS 7.0 f95 compiler due to a compiler bug. The current SUN f95 compiler might work, but has not been tested yet.
+
+The other important prerequisite is the \href{http://www.unidata.ucar.edu/packages/netcdf/index.html}{netCDF} library, which GLIMMER uses for data I/O. You will most likely need to compile and install the netCDF library yourself, since the binary packages usually do not contain the Fortran 90 bindings which are used by GLIMMER.
+
+Additional packages are required if you want to build GLIMMER from CVS. You need GNU autoconf and automake to generate the build system, as well as \href{http://www.python.org}{Python}, which is used for analysing dependencies and for automatically generating parts of the code. Furthermore, the Python scripts rely on language features which were only introduced with Python version 2.3.
+%
+\subsection{The GLIMMER Directory Structure}
+The following commands describe the setup if you use the \texttt{bash} shell. The setup works similarly for other shells. We suggest that you install glimmer and friends in its own directory, e.g. \texttt{/home/user/glimmer}. Assign the shell variable \texttt{\$GLIMMER\_PREFIX} to this directory, i.e. \texttt{export GLIMMER\_PREFIX=/home/user/glimmer}. This directory will contain the following sub--directories:
+\begin{center}
+ \begin{tabular}{lp{9.5cm}}
+   \texttt{\$GLIMMER\_PREFIX/bin} & executables are installed in this directory. Set your path to include this directory, i.e. \texttt{export PATH=\$PATH:\$GLIMMER\_PREFIX/bin}.  \\
+   \texttt{\$GLIMMER\_PREFIX/include} & include and f95 module files will be installed in this directory. If you want to compile your own climate drivers set the compiler search path to include this directory. \\
+   \texttt{\$GLIMMER\_PREFIX/lib} & the libraries get installed here. Set your linker to look in this directory for the GLIMMER libraries if you want to compile your own climate drivers. \\
+   \texttt{\$GLIMMER\_PREFIX/share} & data files get installed here. \\
+   \texttt{\$GLIMMER\_PREFIX/src} & this is the only directory you need to create yourself. Unpack the GLIMMER sources here.
+ \end{tabular}
+\end{center}
+%
+\subsection{Installing a Released Version of GLIMMER}\label{ug.sec.tarball}
+Download the GLIMMER tarball from the GLIMMER site and unpack it in the \texttt{\$GLIMMER\_PREFIX/src} directory using
+\begin{verbatim}
+tar -xvzf glimmer-VERS.tar.gz
+\end{verbatim}
+where \texttt{VERS} is the package version.
+
+The package is then compiled using the usual GNU sequence of commands:
+\begin{verbatim}
+./configure --prefix=$GLIMMER_PREFIX [other_options]
+make
+make install
+\end{verbatim}
+%
+The options and relevant environment variables are described in Table \ref{ug.tab.env}. 
+%
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    Variable & Description \\
+    \hline
+    \texttt{FC} & f95 compiler to be used \\
+    \texttt{FCFLAGS} & flags passed to the f95 compiler \\
+    \texttt{LDFLAGS} & linker flags\\
+    \hline
+    Option  & Description \\
+    \hline
+    \texttt{--help} & print help \\
+    \texttt{--prefix=}{\it prefix} & the installation prefix, e.g. \texttt{GLIMMER} \\
+    \texttt{--with-netcdf=}{\it location} & prefix where the netCDF library is installed \\
+    \texttt{--with-blas=}{\it location} & extra libraries used to provide BLAS functionality. A built--in, non--optimised version of BLAS is used if this option is not used. \\
+    \texttt{--enable-doc} & build documentation.\\
+    \texttt{--enable-profile} & enable profiling of GLIMMER (see Sec.~\ref{ug.sec.profile})\\
+    \texttt{--enable-restarts} & enable full restarts (see Sec.~\ref{ug.sec.restarts})\\
+    \hline
+  \end{tabular}
+  \caption{Environment variables and \texttt{configure} options used by GLIMMER.}
+  \label{ug.tab.env}
+\end{table}
+%
+\subsection{Installing from CVS}
+Revisions of GLIMMER are managed using CVS. You can download the latest development version of GLIMMER using the following sequence of cvs commands:
+\begin{verbatim}
+cvs -d:pserver:anonymous@forge.nesc.ac.uk:/cvsroot/glimmer login
+cvs -z3 -d:pserver:anonymous@forge.nesc.ac.uk:/cvsroot/glimmer co glimmer
+\end{verbatim}
+
+The cvs version does not include some automatically generated files. In order to be able to compile the cvs version you need the GNU autotools and python. The build scripts are generated by running
+\begin{verbatim}
+./bootstrap
+\end{verbatim}
+in the \texttt{\$GLIMMER\_PREFIX/src} directory. The package is then configured and built as described in Section \ref{ug.sec.tarball}.
+%
+\subsection{Profiling}\label{ug.sec.profile}
+If you run the \texttt{configure} script with the option \texttt{--enable-profile} you enable profiling of the model. By default times are integrated over 100 time steps. You can cheange this behaviour by setting the variable \texttt{PROFILE\_PERIOD}. The timing data is written to the file \texttt{glide.profile} which contains 5 columns of data (see Table \ref{ug.tab.profile_format}).
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{|l|l|}
+    \hline
+    Column 1 &total CPU time elapsed when data is written to file\\
+    Column 2 &accumulated time spent on this block of calculations\\
+    Column 3 &integer ID used to identify this block of calculations\\
+    Column 4 &model year\\
+    Column 5 &description of this block of calculations\\
+    \hline
+  \end{tabular}
+  \caption{File format of profile data file.}
+  \label{ug.tab.profile_format}
+\end{table}
+A python script using the PyGMT library to visualise the profile is provided.
+%
+\subsection{Restarts}\label{ug.sec.restarts}
+%
+GLIMMER provides {\it two} mechanisms for initialising the state of the model from results of a previous run, written to a file:
+%
+\begin{itemize}
+\item {\bf Hotstarts:} This is the simpler of the two mechanisms. A NetCDF file containing \emph{hotstart} data may be written as part of the regular output from the model, along with other output files. The variables written to the hotstart file are limited to those describing the state of the ice sheet, such as thickness, temperature distribution, etc --- only those that are necessary to initialise the model cleanly. The model may be initialised from any of the time-slices in the hotstart file during the usual initialisation sequence. For most applications, hotstarting should be entirely adequate.
+\item {\bf Restarts:} Sometimes, however, it is desireable to be able to write the entire state of the model, including all temporary variables, accumulation arrays, etc, to file. The \emph{restart} mechanism enables this to be done. The difference in this case is that the model doesn't need to be initialised in the usual way - its state is simply read from file, and the run continues as before. The implementation of this is complex, as it involves writing all elements of each derived type and all its sub-types to file. Consequently, full restarts are disabled by default at build-time, and must be enabled with the \texttt{--enable-restarts} option when the build is configured.
+\end{itemize}
+%
+A full description of both methods are provided later in this manual.

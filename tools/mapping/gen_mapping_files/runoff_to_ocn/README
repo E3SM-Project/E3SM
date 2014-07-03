@@ -1,0 +1,89 @@
+================================================================================
+SVN $Id: README 46983 2013-05-09 22:08:12Z tcraig $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/runoff_to_ocn/README $
+===============================================================================
+
+           How to create a runoff map for CCSM4
+
+
+----------------------------------------------------------------------
+This computes an initial nearest neighbor mapping from the rof grid
+  cells to active ocean grid cells.
+Then a smoothing matrix is computed on the ocean grid.
+The two matrices are multipled together and a final mapping file is
+  produced.
+
+In this directory:
+ Build
+ Setup a namelist file
+ Run
+
+----------------------------------------------------------------------
+Build:
+
+run build.yellowstone.csh on yellowstone (or adapt this for your machine)
+
+the build generates a runoff_map executable.
+
+----------------------------------------------------------------------
+Setup a namelist file:
+
+The namelist file must be called "runoff_map.nml".  That name is hardwired
+into the executable.
+
+The namelist looks like this
+
+  &input_nml
+   gridtype     = 'scrip'
+   file_roff    = '/glade/p/cesm/cseg/mapping/grids/wr50a_090614.nc'
+   file_ocn     = '/glade/p/cesm/cseg/mapping/grids/ar9v4_100920.nc'
+   file_nn      = 'map_wr50a_ar9v4_nn.nc '
+   file_smooth  = 'map_ar9v4_ar9v4_smoother.nc '
+   file_new     = 'map_wr50a_to_ar9v4_e1000r300_130507.nc'
+   title        = 'runoff map: wr50a -> ar9v4, smoothed '
+   eFold        = 1000000.0
+   rMax         =  300000.0
+   step1 = .true.
+   step2 = .false.
+   step3 = .false.
+  /
+
+where
+
+Input grid files:
+  file_roff =   an ascii rdirc file OR an obs rtm file OR a script grid file
+  gridtype  =  type of file_roff file, "rtm" or "obs" or "scrip"
+     rtm is a 720 x 360 grid ascii file
+     obs is a netcdf file with xc, yc, xv, yv, mask and area variable names
+     scrip is a scrip type grid file
+  file_ocn  =  a scrip ocean grid file.
+
+Input parameters:
+  eFold  = smoothing eFold distance in meters
+  rMax   = maximum radius of effect in meters
+
+Settings:
+  title = ascii string to add to mapping files
+  step1 = computes nearest neighbor map
+  step2 = computes smooth map
+  step3 = multiple two maps together
+
+Output fields:
+  file_nn     = nearest neighbor mapping file
+  file_smooth = smoother mapping file
+  file_new    = combined file
+
+
+----------------------------------------------------------------------
+Run:
+
+on yellowstone, login to geyser, 
+
+  bsub -Is -q geyser -W 20:00 -n 1 -P P???????? tcsh
+
+then execute the binary.
+
+  ./runoff_map
+
+----------------------------------------------------------------------
+

@@ -1,0 +1,185 @@
+#! /bin/tcsh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+# Determine tasks and threads for batch queue 
+
+set max_tasks_per_node = $MAX_TASKS_PER_NODE
+set pes_per_node = $PES_PER_NODE
+
+set maxthrds = 0
+set minthrds = $max_tasks_per_node
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  if ($NTHRDS[$n] > $max_tasks_per_node ) then
+     echo "ERROR, NTHRDS maximum is $max_tasks_per_node"
+     echo "you have set NTHRDS = ( $NTHRDS[$n] ) - must reset"
+     exit 1
+  endif   
+  if ($NTHRDS[$n] > $maxthrds) then
+     set maxthrds = $NTHRDS[$n]
+  endif
+  if ($NTHRDS[$n] < $minthrds) then
+     set minthrds = $NTHRDS[$n]
+  endif
+end
+
+
+if ($maxthrds > $minthrds) then
+  set ntasks_tot = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+  set task_geo   = `${CASEROOT}/Tools/taskmaker.pl`
+  set thrd_geo   = `${CASEROOT}/Tools/taskmaker.pl -thrdgeom`
+  set ptile = 16
+else
+  set ntasks_tot = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+  @ ptile = 16 / $maxthrds
+endif
+@ nodes = ${ntasks_tot} / ${ptile}
+if ( ${ntasks_tot} % ${ptile} > 0) then
+  @ nodes = $nodes + 1
+endif
+@ batchpes = ${nodes} * ${PES_PER_NODE}
+./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
+
+#if ($?ACCOUNT) then
+#  set account_name = $ACCOUNT
+#else
+#  set account_name = `grep -i "^${CCSMUSER}:" /etc/project.ncar | cut -f 1 -d "," | cut -f 2 -d ":" `
+#  if (-e ~/.ccsm_proj) then
+#set account_name = `head -1 ~/.ccsm_proj`
+#endif
+#endif
+
+set queue_x = "-x"
+if ($?QUEUE) then
+  set queue_name = $QUEUE
+else
+  set queue_name = ampsrt
+endif
+
+if (${ntasks_tot} == 1) then
+   set queue_name = share
+   set queue_x = ""
+endif
+
+set time_limit = "1:30"
+if ($CCSM_ESTCOST > 0) set time_limit = "2:50"
+if ($CCSM_ESTCOST > 1) set time_limit = "4:00"
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#! /bin/tcsh -f
+#BSUB -n $ntasks_tot
+#BSUB -R "span[ptile=${ptile}]"
+#BSUB -q ${queue_name}
+#BSUB -N
+#BSUB -a poe
+#BSUB ${queue_x}
+#BSUB -o ccsm.stdout.%J
+#BSUB -e ccsm.stderr.%J
+#BSUB -J $CASE
+#BSUB -W ${time_limit}
+#BSUB -P SSSG0002
+
+setenv OMP_NUM_THREADS $maxthrds
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+# -------------------------------------------------------------------------
+# Run the model
+# -------------------------------------------------------------------------
+
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+
+setenv MP_LABELIO yes
+sleep 10
+if ( "\$MPILIB" == "mpi-serial" ) then
+    \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+else
+   mpirun.lsf  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+endif
+
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+# -------------------------------------------------------------------------
+# For Postprocessing
+# -------------------------------------------------------------------------
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+if (-e ${CASEROOT}/${CASE}.l_archive) then
+   echo ERROR: generate_batch.csh file ${CASE}.l_archive already exists in ${CASEROOT}
+   exit -1
+endif
+
+# Create the archive script
+touch ${CASEROOT}/${CASE}.l_archive
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+#set account_name = `grep -i "^${CCSMUSER}:" /etc/project.ncar | cut -f 1 -d "," | cut -f 2 -d ":" `
+#if (-e ~/.ccsm_proj) then
+#   set account_name = `head -1 ~/.ccsm_proj`
+#endif
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#BSUB -n 1
+#BSUB -o poe.harout.%J
+#BSUB -e poe.harerr.%J
+#BSUB -W 3:00
+#BSUB -q archive
+#BSUB -J $CASE.l_archive
+
+#-----------------------------------------------------------------------
+# Determine necessary environment variables
+#-----------------------------------------------------------------------
+
+cd $CASEROOT 
+
+source ./Tools/ccsm_getenv || exit -1
+
+#----------------------------------------------
+# run the long term archiver
+#----------------------------------------------
+
+cd \$DOUT_S_ROOT
+\$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################
+ 
+

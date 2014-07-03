@@ -1,0 +1,175 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set max_tasks_per_node = $MAX_TASKS_PER_NODE
+set ntasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+set mthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+
+if (${mthrds} > ${max_tasks_per_node}) then
+   echo "ERROR max threads greater than max tasks per node"
+   exit 1
+endif
+
+@ nodes = (${ntasks} * ${mthrds}) / ${max_tasks_per_node}
+if ((${nodes} * ${max_tasks_per_node}) < (${ntasks} * ${mthrds})) then
+  @ nodes = ${nodes} + 1
+endif
+
+@ batchpes = ${nodes} * ${max_tasks_per_node}
+./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#! /bin/csh -f
+#==============================================================================
+#  This is a CCSM coupled model job script.  The job scheduler on
+#  this platform does not currently support batch scripts, so this script must
+#  be run by the user directly instead.  Please redirect the output from this
+#  script, if desired.
+#==============================================================================
+
+cd $CASEROOT
+source ./Tools/ccsm_getenv || exit -1
+
+# Set walltime
+set wt = 90
+if ($CCSM_ESTCOST > -3) set wt = 180
+if ($CCSM_ESTCOST > 0) set wt = 360
+
+# Determine tasks and threads for batch queue 
+
+set max_tasks_per_node = \$MAX_TASKS_PER_NODE
+set ntasks = \`${CASEROOT}/Tools/taskmaker.pl -sumtasks\`
+set npes   = \`${CASEROOT}/Tools/taskmaker.pl -sumpes\`
+set mthrds = \`${CASEROOT}/Tools/taskmaker.pl -maxthrds\`
+
+if (\${mthrds} > \${max_tasks_per_node}) then
+   echo "ERROR max threads greater than max tasks per node"
+   exit 1
+endif
+
+@ nodes = (\${ntasks} * \${mthrds}) / \${max_tasks_per_node}
+if ((\${nodes} * \${max_tasks_per_node}) < (\${ntasks} * \${mthrds})) then
+  @ nodes = \${nodes} + 1
+endif
+
+echo "nodes  = \${nodes}"
+echo "ntasks = \${ntasks}"
+echo "mthrds = \${mthrds}"
+
+if ( \${nodes} >= 512 ) then
+ set queue = prod
+else
+  echo "ERROR Intrepid jobs must use at least 512 nodes \${nodes}"
+  exit 1
+endif
+
+if ( \${?COBALT_JOBID} == 0 && \$MPILIB != "mpi-serial" ) then
+    echo "COBALT_JOBID not set, submitting job"
+    echo "qsub -n \${nodes} -t \${wt} -q \${queue} --mode script \$0 -backend"
+    qsub -n \${nodes} -t \${wt} -q \${queue} --mode script \$0 -backend
+    exit 0
+else
+    echo "COBALT_JOBID detected, assuming back-end invocation"
+endif
+
+
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+
+# -------------------------------------------------------------------------
+# Set up the model.  For the single executable, this means determining the
+# total number of tasks.  determine by largest max task of any component
+# -------------------------------------------------------------------------
+
+set max_tasks_per_node = \$MAX_TASKS_PER_NODE
+set ntasks = \`${CASEROOT}/Tools/taskmaker.pl -sumtasks\`
+set npes   = \`${CASEROOT}/Tools/taskmaker.pl -sumpes\`
+set mthrds = \`${CASEROOT}/Tools/taskmaker.pl -maxthrds\`
+
+if (\${mthrds} == 1) then
+  set mode = vn
+else if (\${mthrds} == 2) then
+  set mode = dual
+else if (\${mthrds} == 4) then
+  set mode = smp
+else
+  echo "ERROR illegal max thread count \${mthrds}"
+  exit 1
+endif
+
+echo "ntasks = \${ntasks}"
+echo "mthrds = \${mthrds}"
+echo "mode   = \${mode}"
+
+# -------------------------------------------------------------------------
+# Run the model
+# -------------------------------------------------------------------------
+
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE"
+cobalt-mpirun -np  \${ntasks} -mode \${mode} -verbose 2 -cwd \`pwd\` -env "XLSMPOPTS=stack=64000000 OMP_NUM_THREADS=\${mthrds} DCMF_COLLECTIVES=1 BG_MAPPING=TXYZ LOGNAME=\$USER" \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+unsetenv COBALT_JOBID 
+
+EOF1
+
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+if (-e ${CASEROOT}/${CASE}.l_archive) then
+   echo ERROR: generate_batch.csh file ${CASE}.l_archive already exists in ${CASEROOT}
+   exit -1
+endif
+
+# Create the archive script
+touch ${CASEROOT}/${CASE}.l_archive
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+
+cd $CASEROOT 
+source ./Tools/ccsm_getenv || exit -1
+
+cd \$DOUT_S_ROOT
+$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################
+
+
+

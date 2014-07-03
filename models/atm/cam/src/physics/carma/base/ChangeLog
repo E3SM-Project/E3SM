@@ -1,0 +1,371 @@
+===============================================================
+Tag name: carma3_34
+Originator(s): Sean Santos
+Date: April 24, 2013
+
+One-line Summary: Fix problems with different compilers and debug flags.
+
+Purpose of changes:
+
+Some cases where the carma_type object had "intent(inout)" were changed to
+"intent(in)". This would have been required if those routines had had
+explicit interfaces, because intent(in) arguments can only be passed as
+arguments that are also intent(in), or as arguments with no explicitly
+specified intent.
+
+Since Fortran 90, imag and aimag are identical generic intrinsics on most
+compilers. However, aimag is the name in the Fortran standards, while imag
+is a compiler extension. Therefore "imag" has been changed to "aimag" and
+comments that are no longer relevant have been removed.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen, Mike Mills
+Date: March 18, 2013
+
+One-line Summary:
+
+Some bug fixes related to sulfates, to evaporation, mie code
+and coagulation kernels.
+
+Purpose of changes:
+
+The wet radius for sulfates was not being calculated properly, since
+it was missing a dry particle density term. The new wet radius will be
+roughly twice what it was before. Also made some changes to allow specification
+of sulfuric acid in CARMASTATE_CreateFromReference, so that initialization
+from a reference profile can be used with sulfate models. Put some limits
+on calculations in sulfate utilities for practical temperature ranges.
+
+Fixed a problem with total evaporation that affected some models.
+
+Fixed a problem with types in the optical properties calculation when
+using Bohren and Huffman.
+
+Fixed a problem with the way the coagulation due to convection was
+being calculated that caused asymmetric coagulation kernels.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: September 7, 2012
+
+One-line Summary:
+
+Fix bug in pheat.F90 when no solute is specified.
+
+Purpose of changes:
+
+A check to exclude a calculation in the particle growth code when
+no solutes are present was coded incorrectly causing the model
+to crash when growth is enabled, core elements exist in the group
+and no solutes are defined for the cores.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: January 26, 2011
+
+One-line Summary:
+
+Add capability for clear sky processing when using in-cloud
+and gridbox average particles.
+
+Purpose of changes:
+
+Allows two sets of microphysical calculations to be done in one
+Step call. One is for the fraction of the grid box that is
+in-cloud and the other is for the remaining clear sky portion.
+The entire mass of particle groups that are "cloud" are only
+processed in the in-cloud portion. Other groups can also
+condense liquid, but be over the entire gridbox. These would
+have "is cloud" as false and will be processed in both the
+in-cloud and clear sky portions of the grid box. Sedimentation
+is only done once on the gridbox average values, but coagulation
+and growth are done twice.
+
+Two tests have been added for this :
+  - GROWINTEST  = in-cloud test
+  - GROWCLRTEST = in-cloud & clear sky test
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen, Mike Mills
+Date: December 1, 2011
+
+One-line Summary:
+
+Bug fixes for sulfate aerosols and some additional diagnostic
+information.
+
+Purpose of changes:
+
+Fixes problems found while trying to test sulfates aerosols in
+WACCM/CARMA, where every cold temperatures are possible. Also
+Also producing some additional diagnostics to help diagnose the
+sulfate physics.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: November 8, 2011
+
+One-line Summary:
+
+Allow configurable selection of aerosol freezing method and cleanup
+error messages.
+
+Purpose of changes:
+
+Made nucproc a bit field, so that the aerosol freezing method can
+be specified without needing to modify the code, and so that it can
+be combined with nucleation of glassy aerosols. Also surpress an
+error message from negative temperature unless it is the last
+retry. Added a test case (NUC2TEST.exe) to see at what supersaturation
+aerosol freezing begins.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen, Mike Mills
+Date: October 9, 2011
+
+One-line Summary:
+
+Fixes to support high (thermospheric) temperatures in the sulfate
+code.
+
+Purpose of changes:
+
+Modified some of the sulfate code to handle temperatures that
+result in 0 wtpct. This was causing WACCM to crash with the
+sulfate model.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen, Tianyi Fan
+Date: September 3, 2011
+
+One-line Summary:
+
+Added sulfate aerosols.
+
+Purpose of changes:
+
+Added support for sulfuric acid and sulfate aerosols. Also fixed
+some problems with the way latent and particle heats were applied
+when substepping was being used. Made the convergence criteria
+more configurable. The sulfate aerosol code is a significantly
+modified version of code from that provided by Tianyi Fan. Her
+code started with work done by Mike Mills and then was modified
+by Jason English, Tianyi Fan and Chuck Bardeen.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: August 19, 2011
+
+One-line Summary:
+
+Bug fixes and enhancements to the particle heating code.
+
+Purpose of changes:
+
+Fixed a few bugs found running in the debugger, and changed
+dry deposition so that surface friction and aerodynamic resistance
+are provided and used per land surface type.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: August 9, 2011
+
+One-line Summary:
+
+Enhancements to the particle heating code.
+
+Purpose of changes:
+
+Added band integrals for the planck function to provide a more
+accurate estimate of outgoing radiation for particle heating. Also
+modified the test case to start the SW band at a non-zero wavelength.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: August 4, 2011
+
+One-line Summary:
+
+Enhancements to the particle heating code.
+
+Purpose of changes:
+
+Added the ability to flag overlap bands in for the particle heating
+calculation. These are bands which have added energy coming in; however,
+the emission should only be done in one of the bands. This is needed
+for the CAM radiation bands. Added the Bohren and Huffman mie routine,
+to provide a routine that handles a broader array of sizes and refractive
+indicies. Also changed the output from particle temperature to the difference
+in particle temperature, since that is more relevant to the impact on
+growth rates and temperatures may change for other reasons making it hard
+to do the difference later.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: July 14, 2011
+
+One-line Summary:
+
+Setup tests to be run as regression tests.
+
+Purpose of changes:
+
+Added two new scripts run-all.csh and run-regress.csh. run-regress.csh
+runs the tests and then compares the answer to previously generated
+results in tests/bench. An error is generated if the results differ.
+To make this usable, all of the tests have be modified to have minimal
+output to the screen for normal operation.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: July 13, 2011
+
+One-line Summary:
+
+Support for particle heating and some bug fixes
+
+Purpose of changes:
+
+Added support for passing radiative intensity into CARMA and
+having that affect the particle growth rates and partcile
+temperature.This is exercised by carma_pheattest.F90. Changed
+initialization, so pkernel is only calcualted once to speed
+things up a little. Made area ratio and radius ratio group
+properties, so there is more flexibility for setting group
+shape.
+
+===============================================================
+Tag name: 
+Originator(s): Charles Bardeen
+Date: June 8, 2011
+
+One-line Summary:
+
+Support for PGI and g95 compilers
+
+Purpose of changes:
+
+Some Fortran compilers have preprocessors that failed to correctly handle
+the macros because they recursively tried to replace the name multiple
+times. To prevent this, the field names have been changes to have f_XXX
+so they don't conflict with the macro name XXX.
+
+===============================================================
+
+Tag name: 3.0.1
+Originator(s): Tianyi Fan, Charles Bardeen
+Date: December 1, 2010
+
+One-line Summary:
+
+Add wet deposition to sedimentation.
+
+Purpose of changes:
+
+Added support for dry deposition to the sedimentation routine in CARMA.
+Surface friction and land fraction are supplied by the parent model.
+
+===============================================================
+
+Tag name: 3.0.0
+Originator(s): Charles Bardeen
+Date: August 11, 2010
+
+One-line Summary:
+
+Initial release of the F90 version of CARMA based upon F77 CARMA 2.3
+
+Purpose of changes:
+
+A major revision of CARMA 2.3, with design goals of porting it to
+Fortran 90, and designing it to be embedded in other models like CAM
+and GEOS.
+
+Changes for F90:
+- All code converted to F90 (wrappers to keep core code similar to F77 code)
+- Use modules to replace common blocks
+- Dynamic memory allocation
+- Thread safe
+- Use array operations when possible
+- Use implicit none
+
+Changes for embedded models:
+- Single column
+- Programmatic interface to define microphysical model
+- Initialize from parent model state (mks units)
+- Step() can be multithreaded
+- Generate optical properties (mie coefficients)
+- Scale for cloud fraction
+- Detrain particles
+- Store information about CARMA needed for parent models (e.g. wet deposition coefficients, diagnostic group, ...)
+- Allow a fixed defintion of latent heat, consitent with parent model
+
+Updated algortihms:
+- Aerosol freezing (Koop 2000)
+- Water saturation vapor pressure (Murphy & Koop 2005)
+
+New algorithms:
+- Nucleation of glassy aerosols (Murray et al. 2010)
+- Ice particle density as a function of size (Heymsfield & Schmitt, 2010)
+- Ice fall velocity (Heymsfield & Westbrook, 2010)
+- Particle swelling with relative humidity, wet radius (Gerber 1985; Fitzgerald 1975)
+- Brownian Diffusion
+
+New features:
+- Allow specification of minimum mass rather than just radius
+- Variable density (per bin) within an element
+- Determine sedimentation to the surface
+- Dynamically allocate ACAP in miess based upon NXM1
+
+Performance:
+- Only initialize the components needed for the model configuration
+- Add retry logic to newstate/microfast, to minimize the number of substeps needed
+- Reduce size of data structures used by CARMA
+- Reorder some operations for faster array access
+- Optional initialization to a fixed reference temperature profile
+- Optional explicit sedimentation (substepped)
+- Reuse allocated memory in CARMASTATE to reduce memory allocation
+
+Bugs fixed:
+- Mass & energy conservation
+- Various bugs in fall velocity calculation
+- Scaling problems with rlheat
+- Optional Initialize every timestep for maximum accuracy
+- Various problems with setting up the model configuration (nucleation tables, scrit, nucgas, ...)
+- Improved growth stability and convergence
+- Improved stability of aerosol freezing (tabazadeh 2000)
+- Evaporation bugs (cmf not getting set, total evaporation ncore=0)
+- Modified growth equation for better approximation
+- Correct usage of SMALL_PC and FEW_PC
+
+Algorithms eliminated:
+- Horizontal advection
+- Hydrostatic approximation
+- Eddy diffusion
+- Mixed phase particles
+- Radiative Transfer
+
+Known Issues:
+- PPM advection code has noisy sedimentation when using hybrid coordinates
+- Growth code is not mass or energy conserving, so rlheat and gc are recalculated based upon condensed mass change
+- PPM advection code does not return fluxes out the top and bottom of the column, so a kludge was added to get flux out the bottom as column difference
+- Estimates for the number of substeps needed (ntsubsteps) are not very accurate
+- Full initialization (rather than to reference T) can be very slow, particularly for coagulation
+- Parameterizations for latent heats give odd values at low temperatures, use fixed values instead
+- Standard fall velocity routine has odd kinks in areas where it transitions between different Reynolds regimes
+- Standard shape fall velocity routine is not handling all shapes and aspect ratios correctly
+- Mie calculation code can still exceed IACAP estimates even though dynamically allocating ACAP
+- Core mass is sometimes larger than total mass, can happen from parent model advection, but perhaps other sources
+===============================================================

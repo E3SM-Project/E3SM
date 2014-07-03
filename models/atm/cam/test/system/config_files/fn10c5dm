@@ -1,0 +1,7 @@
+-spmd -nosmp
+-dyn fv
+-res 10x15
+-chem none
+-debug
+-phys cam5
+-s

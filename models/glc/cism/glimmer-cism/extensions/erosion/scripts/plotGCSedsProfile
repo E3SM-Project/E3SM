@@ -1,0 +1,115 @@
+#! /usr/bin/env python
+
+# Copyright (C) 2010
+# Glimmer-CISM contributors - see AUTHORS file for list of contributors
+#
+# This file is part of Glimmer-CISM.
+#
+# Glimmer-CISM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or (at
+# your option) any later version.
+#
+# Glimmer-CISM is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Glimmer-CISM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Glimmer-CISM is hosted on BerliOS.de:
+# https://developer.berlios.de/projects/glimmer-cism/
+
+"""A plot of a sediment profile."""
+
+import PyGC
+import matplotlib.pyplot,numpy,pylab
+from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
+
+# creating option parser
+parser = PyGC.GCOptParser()
+parser.width=15.
+parser.profile_file()
+parser.time()
+parser.epoch()
+parser.region1d(onlyx=True)
+parser.plot()
+opts = PyGC.GCOptions(parser,1)
+
+epoch = None
+if opts.options.epoch != None:
+    epoch = PyGC.IO.GCEpoch(opts.options.epoch,sharedir=PyGC.GC_sharedir)
+
+fig = matplotlib.pyplot.figure(figsize=opts.plotsize)
+if epoch == None:
+    axes = fig.add_axes([0.1,0.1,0.8,0.8])
+else:
+    axes = fig.add_axes([0.1,0.1,0.7,0.8])
+
+infile = opts.cfprofile()
+endTime = opts.times(infile,0)
+if endTime<0:
+    endTime = infile.numt + endTime
+time = [0,endTime]
+times = infile.time(time)
+
+# extract data
+seds1 = infile.getprofile('seds1').getProfileTS(time=time)
+seds2 = infile.getprofile('seds2').getProfileTS(time=time)
+seds3 = infile.getprofile('seds3').getProfileTS(time=time)
+    
+init_seds = seds1[:,0] + seds2[:,0] + seds3[:,0]
+hb = infile.getprofile('erosion').getProfile(time=endTime) - init_seds
+
+# loop over time
+for j in range(0,len(seds1[0,:])):
+    seds1[:,j] = seds1[:,j] + seds2[:,j] + seds3[:,j] - init_seds[:]
+
+
+legendData = []
+# loop over time
+for j in range(1,len(seds1[0,:])):
+    if epoch==None:
+        colour="blue"
+    else:
+        colour = epoch.get_colour(times[j])
+    upper = numpy.min(seds1[:,j:],axis=1)
+    lower = numpy.minimum(seds1[:,j-1],upper)
+    axes.fill_between(infile.xvalues,lower,upper,color=colour)
+    s = numpy.where(seds1[:,j]<=upper,seds1[:,j],pylab.NaN)
+    axes.plot(infile.xvalues,s,'k')
+
+    if epoch!=None:
+        e = epoch.get_epoch(times[j])
+        if e not in legendData and e!=None:
+            legendData.append(e)
+
+if epoch != None:
+    legenTitles = []
+    patches = []
+    for i in range(0,len(legendData)):
+        e = epoch.data[legendData[i]]
+        patches.append(matplotlib.patches.Patch(facecolor=e['colour']))
+        #legenTitles.append("%s (%.2f - %.2f)"%(e['name'],e['start']*epoch.timescale,e['end']*epoch.timescale))
+        legenTitles.append(e['name'])
+
+    axes.legend(patches,legenTitles,loc=2, bbox_to_anchor=(1.05, 1))
+
+#plot upper surface
+axes.plot(infile.xvalues,seds1[:,-1],color='k')
+#plot lower surface
+axes.plot(infile.xvalues,numpy.min(seds1[:,:],axis=1),color='k')
+
+axes.set_xlabel('distance along profile [km]')
+axes.set_ylabel('sediment thickness [m]')
+
+# display title
+if opts.options.title:
+    matplotlib.pyplot.title(infile.title)
+
+if opts.options.output==None:
+    matplotlib.pyplot.show()
+else:
+    matplotlib.pyplot.savefig(opts.options.output)
+

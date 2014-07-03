@@ -1,0 +1,153 @@
+%=======================================================================
+% SVN: $Id: ice_usrdoc.tex 5 2005-12-12 17:41:05Z mvr $
+%=======================================================================
+
+\documentclass[]{article}
+\usepackage{natbib}
+\usepackage{supertabular}
+\usepackage{ifthen}
+\setcounter{tocdepth}{7}
+\setcounter{secnumdepth}{10}
+
+% create conditional that senses pdf output
+\newif\ifpdf
+\ifx\pdfoutput\undefined
+   \pdffalse
+\else
+   \pdfoutput=1
+   \pdftrue
+\fi
+
+% supply correct option to graphicx
+\ifpdf
+   \usepackage[pdftex]{graphicx}
+   \pdfcompresslevel=9
+\else
+   \usepackage{graphicx}
+   \usepackage{html}
+\fi
+
+\textheight=9.0in
+\textwidth=6.5in
+\evensidemargin=0.0in
+\oddsidemargin=0.0in
+\footskip=0.4in   % Positions page number 1 in is too big%
+\topmargin=0.0in
+\headheight=0.0in
+\headsep = 0.0in
+
+% Alter some LaTeX defaults for better treatment of figures:
+    % See p.105 of "TeX Unbound" for suggested values.
+    % See pp. 199-200 of Lamport's "LaTeX" book for details.
+    %   General parameters, for ALL pages:
+    \renewcommand{\topfraction}{0.9}	% max fraction of floats at top
+    \renewcommand{\bottomfraction}{0.8}	% max fraction of floats at bottom
+    %   Parameters for TEXT pages (not float pages):
+    \setcounter{topnumber}{2}
+    \setcounter{bottomnumber}{2}
+    \setcounter{totalnumber}{4}     % 2 may work better
+    \setcounter{dbltopnumber}{2}    % for 2-column pages
+    \renewcommand{\dbltopfraction}{0.9}	% fit big float above 2-col. text
+    \renewcommand{\textfraction}{0.07}	% allow minimal text w. figs
+    %   Parameters for FLOAT pages (not text pages):
+    \renewcommand{\floatpagefraction}{0.7}	% require fuller float pages
+	% N.B.: floatpagefraction MUST be less than topfraction !!
+    \renewcommand{\dblfloatpagefraction}{0.7}	% require fuller float pages
+
+	% remember to use [htp] or [htpb] for placement
+
+\begin{document}
+\ifpdf
+\else
+\bodytext{BGCOLOR=white LINK=BLUE VLINK=PURPLE}
+\fi
+
+% This is a modified definition of Ventry from The Latex Companion, p. 64
+ \newenvironment{Ventry}[1]%
+   {\begin{list}{}{\renewcommand{\makelabel}[1]{\textsf{##1:}\hfil}%
+      \settowidth{\labelwidth}{\textsf{#1:}}%
+      \setlength{\leftmargin}{1.5cm}%
+      \setlength{\labelwidth}{1.0cm}%
+      \setlength{\itemsep}{0pt}%
+      \setlength{\parsep}{0pt}}}%
+   {\end{list}}
+
+\begin{titlepage}
+
+\noindent {\bf Community Earth System Model} \\
+\noindent National Center for Atmospheric Research, Boulder, CO \\
+\noindent http://www.cesm.ucar.edu/models \\
+\vspace{2in}
+
+\begin{center}
+{\Large
+  {\bf Community Ice CodE (CICE) User's Guide} \\
+  {\bf Version 4.0} \\
+  \vspace{0.2in}
+  {Released with CESM1.0} \\
+  \vspace{0.5in}
+  David Bailey \\
+  Marika Holland \\
+  Elizabeth Hunke \\
+  Bill Lipscomb \\
+  Bruce Briegleb \\
+  Cecilia Bitz  \\
+  Julie Schramm \\
+}
+\end{center}
+
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+\section{Introduction}
+  \input ice_what_is_cice4.tex
+
+\section{The CICE Scripts}
+    \input ice_setup.tex
+
+    \input ice_build.tex
+
+\section{Namelist Variables}
+  \label{namelist}
+  \input ice_nml_var.tex
+    \subsection{Example Namelists}
+    \input ice_nml_example.tex
+
+\section{Model Input Datasets}
+  \input ice_input_data.tex
+
+\section{Run Types}
+  \label{runtypes}
+  \input ice_runtypes.tex
+
+\section{Prescribed Ice Mode}
+  \label{prescribed}
+  \input ice_prescribed.tex
+
+\section{Prescribed Aerosol Mode}
+  \label{prescraero}
+  \input ice_prescraero.tex
+
+\section{Changing the Number of Ice Thickness Categories}
+  \label{ncat}
+  \input ice_change_ncat.tex
+
+\section{Output Data}
+  \input ice_stdout.tex
+    \subsection{Restart Files}
+      \label{restart_files}
+      \input ice_restart.tex
+    \subsection{History Files}
+      \label{history_files}
+      \label{history}
+      \input ice_history.tex
+
+\section{Troubleshooting}
+  \input ice_troubleshoot.tex
+
+\newpage
+\bibliographystyle{jas} \bibliography{master_list}
+
+\end{document}

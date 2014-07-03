@@ -1,0 +1,5 @@
+-spmd -smp
+-dyn se
+-res ne30np4
+-phys cam5
+-s

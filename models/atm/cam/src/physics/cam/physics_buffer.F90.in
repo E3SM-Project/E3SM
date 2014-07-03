@@ -1,0 +1,1007 @@
+!#define DEBUG 1
+module physics_buffer
+
+  !----------------------------------------------------------------------- 
+  ! 
+  ! Purpose: 
+  !    Buffer managment for persistant variables 
+  !
+  ! Author: J. Edwards
+  !
+  ! This file is used with genf90.pl to generate buffer.F90  
+  ! 
+  !-----------------------------------------------------------------------
+
+  use shr_kind_mod, only: r8 => shr_kind_r8, r4=> shr_kind_r4, i4=> shr_kind_i4
+  use constituents, only: pcnst
+  use ppgrid, only: pcols, pver, begchunk, endchunk
+  use cam_logfile,     only: iulog
+  use pio, only : var_desc_t
+  use dyn_grid, only : ptimelevels
+  use abortutils, only : endrun
+  use buffer, only : buffer_field_allocate, buffer_field_deallocate, buffer_get_field_ptr, buffer_set_field, &
+       dtype_i4, dtype_r4, dtype_r8, buffer_field_default_type
+
+  implicit none
+  private
+
+  ! 
+  ! physics_buffer_hdr carries the description info for each buffer, only one header 
+  ! is allocated for each field and each chunk of the field points to it. 
+  ! It is carried as a linkedlist for initialization only.
+  !
+
+
+  type physics_buffer_hdr
+     character(len=16) :: name
+     integer :: dtype
+     integer :: persistance
+     integer :: dimsizes(6)   
+     type(var_desc_t) :: vardesc  ! var id for restart files
+     type(physics_buffer_hdr), pointer :: nexthdr => null()
+
+  end type physics_buffer_hdr
+
+  !
+  ! The default type for a buffer field is buffer_field_double (r8) since that is the 
+  ! type most often used in the model.   The F90 transfer function is used to move
+  ! data of other types into and out of the pbuf2d
+  ! 
+
+  type physics_buffer_desc
+     private
+     type(physics_buffer_hdr), pointer :: hdr => null()
+     type(buffer_field_default_type) :: bfg
+  end type physics_buffer_desc
+
+  interface pbuf_get_field
+     ! TYPE int,double,real 
+     ! DIMS 1,2,3,4,5,6
+     module procedure get_pbuf1d_field_by_index_{DIMS}d_{TYPE}
+     ! TYPE int,double,real 
+     ! DIMS 1,2,3,4,5,6
+     module procedure get_pbuf2d_field_by_index_{DIMS}d_{TYPE}
+  end interface
+
+
+  interface pbuf_set_field
+     ! TYPE int,double,real 
+     ! DIMS 1,2,3,4,5,6
+     module procedure  set_pbuf2d_field_by_index_{DIMS}d_{TYPE}
+     ! TYPE int,double,real 
+     ! DIMS 1,2,3,4,5,6
+     module procedure  set_pbuf1d_field_by_index_{DIMS}d_{TYPE}
+     ! TYPE int,double,real 
+     module procedure  set_pbuf1d_field_const_by_index_{TYPE}
+     ! TYPE int,double,real 
+     module procedure  set_pbuf2d_field_const_by_index_{TYPE}
+  end interface
+
+  interface pbuf_add_field
+     ! TYPE int,double,real 
+     module procedure pbuf_add_field_{TYPE}
+  end interface
+
+  public :: pbuf_initialize, &
+            pbuf_defaultopts,   &! set namelist defaults
+            pbuf_setopts,       &! set user specified namelist values
+            pbuf_init_time,     &! Initialize pbuf_times
+            pbuf_old_tim_idx,   &! return the index for the oldest time
+            pbuf_update_tim_idx,&! update the index for the oldest time
+            pbuf_get_field_name, &
+            pbuf_get_field, &
+            pbuf_add_field, &
+            physics_buffer_desc, &
+            pbuf_get_index, &
+            pbuf_get_chunk, &
+            pbuf_allocate, &
+            pbuf_deallocate, &
+            pbuf_set_field, &
+            pbuf_init_restart, &
+            pbuf_write_restart, &
+            pbuf_read_restart, &
+            dtype_r8, dtype_r4, dtype_i4, &
+            pbuf_set_test_field, pbuf_check_test_field
+
+   integer, public :: pbuf_times  ! number of time levels in physics buffer (dycore dependent)
+
+
+  !
+  !  Currentpbufflds is incremented in calls to pbuf_add_field and determines the size
+  !  of the allocated pbuf2d
+  !
+
+  integer :: currentpbufflds=0
+  type(physics_buffer_hdr), pointer :: hdrbuffertop => null()
+
+  ! The API has strings 'GLOBAL' and 'PHYSPKG' which correspond to these integer constants
+  ! if global_allocate_all is false fields allocated with PHYSPKG persistance are deallocated
+  ! at the end of each physics time step and reallocated at the beginning of the next.   If 
+  ! global_allocate_all is true then all fields are allocated at model start and persist until model
+  ! completion.
+
+  integer :: old_time_idx = 1
+  integer, parameter :: persistance_global=1,persistance_physpkg=2
+  logical :: global_allocate_all=.true.   ! can be used to make all persistance global
+
+
+  ! 
+  ! Insures that we do not attempt to allocate physics_buffer more than once
+  !
+
+  logical :: buffer_initialized=.false.
+
+  !
+  ! private pio descriptor for time
+  !
+
+  type(var_desc_t) :: timeidx_desc
+
+
+
+CONTAINS
+
+  !
+  ! Purpose: Return default runtime options
+  !
+
+  subroutine pbuf_defaultopts(pbuf_global_allocate_out)
+     logical, intent(out), optional :: pbuf_global_allocate_out
+     if ( present(pbuf_global_allocate_out) ) then
+        pbuf_global_allocate_out = global_allocate_all
+     endif
+  end subroutine pbuf_defaultopts
+
+
+  !
+  ! Purpose: Set runtime options
+  !
+
+  subroutine pbuf_setopts(pbuf_global_allocate_in)
+     logical, intent(in), optional :: pbuf_global_allocate_in
+     if ( present(pbuf_global_allocate_in) ) then
+        global_allocate_all = pbuf_global_allocate_in
+     endif
+  end subroutine pbuf_setopts
+
+  !
+  ! Initialize pbuf_times
+  !
+  subroutine pbuf_init_time()
+     pbuf_times = ptimelevels - 1
+  end subroutine pbuf_init_time
+
+  !
+  ! Return index of oldest time sample in the physics buffer.
+  !
+
+  function pbuf_old_tim_idx()
+     integer :: pbuf_old_tim_idx
+     pbuf_old_tim_idx = old_time_idx
+  end function pbuf_old_tim_idx
+
+  !
+  ! Update index of old time sample in the physics buffer.
+  !
+
+  subroutine pbuf_update_tim_idx()
+     old_time_idx = mod(old_time_idx, pbuf_times) + 1
+  end subroutine pbuf_update_tim_idx
+
+  ! 
+  !  Return a pointer to the current chunks physics_buffer.
+  !
+
+  function pbuf_get_field_name(index)
+    integer, intent(in) :: index
+    character(len=16) :: pbuf_get_field_name
+    integer :: i
+    type(physics_buffer_hdr), pointer :: hdrbuffer
+
+    hdrbuffer => hdrbuffertop
+    do i=1,index
+       hdrbuffer=>hdrbuffer%nexthdr
+    end do
+    pbuf_get_field_name = hdrbuffer%name
+
+  end function pbuf_get_field_name
+
+
+  function pbuf_get_chunk(pbuf2d, lchnk)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: lchnk
+
+    type(physics_buffer_desc), pointer :: pbuf_get_chunk(:)
+
+    pbuf_get_chunk => pbuf2d(:,lchnk)
+
+
+  end function pbuf_get_chunk
+
+  !
+  !  Initialize the buffer, should be called after all pbuf_add_field calls 
+  !  have been completed and should only be called once in a run
+  !
+  subroutine pbuf_initialize(pbuf2d)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    
+    integer :: i, c
+    type(physics_buffer_hdr), pointer :: hdrbuffer
+
+    !
+    ! Allocate memory
+    !
+    if(buffer_initialized) return
+    ! Allocate at least 1 to avoid unallocated error in ideal physics
+    allocate(pbuf2d(max(1,currentpbufflds),begchunk:endchunk)) 
+    if(currentpbufflds<1) return
+
+    do c=begchunk,endchunk
+       hdrbuffer => hdrbuffertop
+       do i=1,currentpbufflds
+          pbuf2d(i,c)%hdr => hdrbuffer
+          hdrbuffer=>hdrbuffer%nexthdr
+       end do
+    end do
+    
+    buffer_initialized=.true.
+    call pbuf_allocate(pbuf2d, 'global')
+#ifdef DEBUG
+    call pbuf2d_print(pbuf2d)
+#endif
+    return
+  end subroutine pbuf_initialize
+
+  subroutine pbuf_set_test_field (pbuf2d, index)
+    use phys_grid, only: get_gcol_all_p
+
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: index
+
+    integer :: c, colid(pcols,31,2), k, t
+    integer :: dimsizes(6)
+
+
+    dimsizes = pbuf2d(index,begchunk)%hdr%dimsizes
+    call pbuf_set_field(pbuf2d, index,0)
+
+    do c=begchunk,endchunk
+       call get_gcol_all_p(c, pcols, colid(:,1,1))
+       do t=1,2
+       do k=1,dimsizes(2)
+          colid(:,k,t) = colid(:,1,1)+(k-1)*1000+(t-1)*100000
+       end do
+    end do
+       call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,colid)
+
+    end do
+    
+
+  end subroutine pbuf_set_test_field
+
+  subroutine pbuf_check_test_field (lchnk, fld, it)
+    use phys_grid, only: get_gcol_all_p
+    
+    integer, intent(in) :: lchnk, it
+    integer, intent(in) :: fld(:,:)
+    integer :: colid(pcols,31), k, i, t
+
+
+    call get_gcol_all_p(lchnk, pcols, colid(:,1))
+    do k=1,31
+       colid(:,k) = colid(:,1)+(k-1)*1000+(it-1)*100000
+    end do
+
+    do k=1,31
+       do i=1,pcols
+          if(fld(i,k)/=colid(i,k)) then
+             print *,__FILE__,__LINE__,lchnk,i,k,it,fld(i,k),colid(i,k)
+          end if
+       end do
+    end do
+
+
+  end subroutine pbuf_check_test_field
+
+
+
+
+
+
+
+  subroutine pbuf_allocate(pbuf2d, persistance)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    character(len=*), intent(in) :: persistance
+    integer :: i
+    logical :: allocate_all
+
+    ! allocate_all is used to force allocation of all fields at same time as allocation
+    ! for global scope.
+    allocate_all = .false.
+    if ( global_allocate_all ) then
+       if ( persistance == 'global' ) then
+          allocate_all = .true.
+       else
+          return
+       end if
+    end if
+
+    if(allocate_all) then
+       do i=1,currentpbufflds
+          select case(pbuf2d(i,begchunk)%hdr%dtype)
+          case(TYPEDOUBLE)
+             call pbuf_allocate_field_double(pbuf2d, i, dtype_r8)
+          case(TYPEREAL)
+             call pbuf_allocate_field_real(pbuf2d, i, dtype_r4)
+!          case(i8)
+!             call pbuf_allocate_field_long(pbuf2d, i)
+          case(TYPEINT)
+             call pbuf_allocate_field_int(pbuf2d, i, dtype_i4)
+          end select
+       end do
+    else if(persistance .eq. 'physpkg') then
+       do i=1,currentpbufflds
+          if(pbuf2d(i,begchunk)%hdr%persistance==persistance_physpkg) then
+             select case(pbuf2d(i,begchunk)%hdr%dtype)
+             case(TYPEDOUBLE)
+                call pbuf_allocate_field_double(pbuf2d, i, dtype_r8)
+             case(TYPEREAL)
+                call pbuf_allocate_field_real(pbuf2d, i, dtype_r4)
+!             case(i8)
+!                call pbuf_allocate_field_long(pbuf2d, i)
+             case(TYPEINT)
+                call pbuf_allocate_field_int(pbuf2d, i, dtype_i4)
+             end select
+          end if
+       end do
+    else if(persistance .eq. 'global') then
+       do i=1,currentpbufflds
+          if(pbuf2d(i,begchunk)%hdr%persistance==persistance_global) then
+
+             select case(pbuf2d(i,begchunk)%hdr%dtype)
+             case(TYPEDOUBLE)
+                call pbuf_allocate_field_double(pbuf2d, i, dtype_r8)
+             case(TYPEREAL)
+                call pbuf_allocate_field_real(pbuf2d, i, dtype_r4)
+!             case(i8)
+!                call pbuf_allocate_field_long(pbuf2d, i)
+             case(TYPEINT)
+                call pbuf_allocate_field_int(pbuf2d, i, dtype_i4)
+             end select
+          end if
+       end do
+    end if
+  end subroutine pbuf_allocate
+
+  ! TYPE int,double,real 
+  subroutine pbuf_allocate_field_{TYPE}(pbuf2d, index, dtype)
+    {VTYPE}, intent(in) :: dtype
+    type(physics_buffer_desc),pointer :: pbuf2d(:,:)
+    integer, intent(in) :: index
+
+    integer, pointer :: dimsizes(:)
+    integer :: c
+
+    dimsizes=>pbuf2d(index,begchunk)%hdr%dimsizes
+
+    do c=begchunk,endchunk
+       call buffer_field_allocate(pbuf2d(index,c)%bfg,dimsizes,dtype)
+    end do
+    
+  end subroutine pbuf_allocate_field_{TYPE}
+
+
+
+
+
+  subroutine pbuf_deallocate(pbuf2d, persistance)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    character(len=*) :: persistance
+
+    integer :: i, c
+
+    if( global_allocate_all .and. persistance .eq. 'physpkg') return
+
+    if(persistance .eq. 'physpkg') then
+       do i=1,currentpbufflds
+          if(pbuf2d(i,begchunk)%hdr%persistance==persistance_physpkg) then
+             do c=begchunk,endchunk
+                select case(pbuf2d(i,begchunk)%hdr%dtype)
+                case(TYPEDOUBLE)
+                   call buffer_field_deallocate(pbuf2d(i,c)%bfg, dtype_r8)
+                case(TYPEREAL)
+                   call buffer_field_deallocate(pbuf2d(i,c)%bfg, dtype_r4)
+                case(TYPEINT)
+                   call buffer_field_deallocate(pbuf2d(i,c)%bfg, dtype_i4)
+                end select
+             end do
+          end if
+       end do
+    else          
+       do i=1,currentpbufflds
+          do c=begchunk,endchunk
+             select case(pbuf2d(i,begchunk)%hdr%dtype)
+             case(TYPEDOUBLE)
+                call buffer_field_deallocate(pbuf2d(i,c)%bfg, dtype_r8)
+             case(TYPEREAL)
+                call buffer_field_deallocate(pbuf2d(i,c)%bfg, dtype_r4)
+             case(TYPEINT)
+                call buffer_field_deallocate(pbuf2d(i,c)%bfg, dtype_i4)
+             end select
+          end do
+       end do
+    end if
+  end subroutine pbuf_deallocate
+
+  !
+  !  Add a field to the pbuf, this should be called from physics register routines
+  !  name is required to be unique, 
+  !  persistance must be 'global' or 'physpkg' 
+  !  dtype can be any of r8, r4, i4 as defined in shr_kinds_mod.F90
+
+  ! TYPE int,double,real 
+  subroutine pbuf_add_field_{TYPE}(name, persistance, dtype, dimsizes, index)
+    character(len=*), intent(in) :: name, persistance
+    {VTYPE}, intent(in) :: dtype   ! used only to differentiate specific calls
+    integer, intent(in) :: dimsizes(:)
+
+    integer, intent(out) :: index
+
+    type(physics_buffer_hdr), pointer :: bufptr
+    integer :: dimcnt
+
+
+    if(buffer_initialized) then
+       call endrun('Attempt to add pbuf field after buffer initialized')
+    end if
+    if(.not. associated(hdrbuffertop)) then
+       allocate(hdrbuffertop)
+    end if
+    
+    dimcnt=1
+    bufptr=>hdrbuffertop
+    do while(associated(bufptr%nexthdr))
+       if((bufptr%name) .eq. name) then
+          call endrun('Attempt to redefine pbuf field in use: '//trim(name))
+       end if
+       bufptr=>bufptr%nexthdr
+    end do
+    
+
+    currentpbufflds=currentpbufflds+1
+    index=currentpbufflds
+    bufptr%name=name
+
+    if(persistance .eq. "global") then
+       bufptr%persistance=persistance_global
+    else
+       bufptr%persistance=persistance_physpkg
+    endif
+
+    bufptr%dtype={ITYPE}
+
+    dimcnt=size(dimsizes)
+
+    bufptr%dimsizes=1
+    bufptr%dimsizes(1:dimcnt) = dimsizes
+
+    allocate(bufptr%nexthdr)
+
+
+  end subroutine pbuf_add_field_{TYPE}
+
+  subroutine pbuf2d_print(pbuf2d)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+    call pbuf1d_print(pbuf_get_chunk(pbuf2d,begchunk))
+
+
+  end subroutine pbuf2d_print
+
+  subroutine pbuf1d_print(pbuf)
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    integer :: i
+    type(physics_buffer_desc), pointer :: pbufPtr
+
+    print *,__FILE__,__LINE__,currentpbufflds,size(pbuf)
+    do i=1,currentpbufflds
+       pbufPtr => pbuf(i)
+       print *,__FILE__,__LINE__,i,trim(pbufPtr%hdr%name),pbufPtr%hdr%dtype,pbufPtr%hdr%persistance,pbufPtr%hdr%dimsizes
+    end do
+
+  end subroutine pbuf1d_print
+  !
+  ! Given a pbuf field name return an integer index to the field.  
+  ! This index can be used to retreave the field and is much faster
+  ! than using the name in most cases  
+  ! 
+
+  function pbuf_get_index(name, errcode) result(index)
+    character(len=*), intent(in)     :: name
+    integer, intent(inout), optional :: errcode
+    integer :: index
+    integer :: i
+    type(physics_buffer_hdr), pointer :: bufptr
+
+
+    bufptr=>hdrbuffertop
+    index = -1
+    do i=1,currentpbufflds
+       if(bufptr%name .eq. name) then
+          index=i
+          exit
+       end if
+       bufptr=>bufptr%nexthdr
+    end do
+
+    if (present(errcode)) then
+        errcode = index 
+    else if(index<0) then
+       call endrun('Attempt to find undefined name in pbuf '//trim(name))
+    end if
+
+
+  end function pbuf_get_index
+
+  !=========================================================================================
+
+  ! 
+  ! Given a pbuf2d chunk and an index return a pointer to a field chunk 
+  ! 
+  !
+
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine get_pbuf1d_field_by_index_{DIMS}d_{TYPE}(pbuf, index, field, start,kount)
+    type(physics_buffer_desc), pointer:: pbuf(:)
+    integer, intent(in) :: index
+    {VTYPE}, pointer :: field{DIMSTR}
+    integer, intent(in), optional :: start(:),kount(:)
+
+
+    ! Copy the generic type to one compatable with the request
+    if(index<1 .or. index>size(pbuf)) then
+       print *,__FILE__,__LINE__,index
+       call endrun('index out of range')
+    end if
+
+    if(present(start) .and. present(kount)) then
+       call buffer_get_field_ptr(pbuf(index)%bfg,field,start,kount )
+    else
+       call buffer_get_field_ptr(pbuf(index)%bfg,field)
+    end if
+       
+  end subroutine get_pbuf1d_field_by_index_{DIMS}d_{TYPE}
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine get_pbuf2d_field_by_index_{DIMS}d_{TYPE}(pbuf2d, lchnk, index, field, start, kount)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: lchnk
+    integer, intent(in) :: index
+    integer, intent(in), optional :: start(:),kount(:)
+
+    {VTYPE}, pointer :: field{DIMSTR}
+
+    if(present(start) .and. present(kount)) then
+       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk), index, field, start,kount)
+    else
+       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk), index, field)
+    end if
+  end subroutine get_pbuf2d_field_by_index_{DIMS}d_{TYPE}
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine set_pbuf2d_field_const_by_index_{TYPE}(pbuf2d,index,const)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: index
+    {VTYPE},intent(in) :: const
+
+    integer :: c
+    
+    do c=begchunk,endchunk
+       call set_pbuf1d_field_const_by_index_{TYPE}(pbuf_get_chunk(pbuf2d,c),index,const)
+    enddo
+
+  end subroutine set_pbuf2d_field_const_by_index_{TYPE}
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine set_pbuf1d_field_const_by_index_{TYPE}(pbuf,index,const,start,kount)
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    integer, intent(in) :: index
+    {VTYPE},intent(in) :: const
+    integer, intent(in), optional :: start(:),kount(:)
+
+    if(present(start) .and. present(kount)) then
+       call buffer_set_field(pbuf(index)%bfg,const,start,kount)
+    else
+       call buffer_set_field(pbuf(index)%bfg,const)
+    end if
+  end subroutine set_pbuf1d_field_const_by_index_{TYPE}
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine set_pbuf2d_field_by_index_{DIMS}d_{TYPE}(pbuf2d,index,field, start, kount)
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: index
+    integer,intent(in),optional :: start(:), kount(:)
+
+    integer :: c
+    {VTYPE}, pointer :: fld{DIMSTR}
+
+
+#if ({DIMS}==1)
+    {VTYPE},pointer :: field(:,:)
+#elif ({DIMS}==2)
+    {VTYPE},pointer :: field(:,:,:)
+#elif ({DIMS}==3)
+    {VTYPE},pointer :: field(:,:,:,:)
+#elif ({DIMS}==4)
+    {VTYPE},pointer :: field(:,:,:,:,:)
+#elif ({DIMS}==5)
+    {VTYPE},pointer :: field(:,:,:,:,:,:)
+#elif ({DIMS}==6)
+    {VTYPE},pointer :: field(:,:,:,:,:,:,:)
+#endif
+    do c=begchunk,endchunk
+       fld => get_field_chunk_{DIMS}d_{TYPE}(field,c)
+       if(present(start) .and. present(kount)) then
+          call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,fld,start,kount)
+       else
+          call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,fld)
+       end if
+    enddo
+  end subroutine set_pbuf2d_field_by_index_{DIMS}d_{TYPE}
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  function get_field_chunk_{DIMS}d_{TYPE}(field, c) result(fld) 
+    ! module private helper function
+    {VTYPE}, pointer :: fld{DIMSTR}
+    integer, intent(in) :: c
+
+#if ({DIMS}==1)
+    {VTYPE},pointer :: field(:,:)
+    fld => field(:,c)
+#elif ({DIMS}==2)
+    {VTYPE},pointer :: field(:,:,:)
+    fld => field(:,:,c)
+#elif ({DIMS}==3)
+    {VTYPE},pointer :: field(:,:,:,:)
+    fld => field(:,:,:,c)
+#elif ({DIMS}==4)
+    {VTYPE},pointer :: field(:,:,:,:,:)
+    fld => field(:,:,:,:,c)
+#elif ({DIMS}==5)
+    {VTYPE},pointer :: field(:,:,:,:,:,:)
+    fld => field(:,:,:,:,:,c)
+#elif ({DIMS}==6)
+    {VTYPE},pointer :: field(:,:,:,:,:,:,:)
+    fld => field(:,:,:,:,:,:,c)
+#endif    
+
+  end function get_field_chunk_{DIMS}d_{TYPE}
+
+
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine set_pbuf1d_field_by_index_{DIMS}d_{TYPE}(pbuf,index,field, start, kount)
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    integer, intent(in) :: index
+    {VTYPE}, intent(in) :: field{DIMSTR}
+    integer,intent(in),optional :: start(:), kount(:)
+
+
+    if(present(start) .and. present(kount)) then
+       call buffer_set_field(pbuf(index)%bfg,field,start,kount)      
+    else if(present(start) .or. present(kount)) then
+       call endrun('Both start and kount must be present')
+    else
+       call buffer_set_field(pbuf(index)%bfg,field)
+    endif
+  end subroutine set_pbuf1d_field_by_index_{DIMS}d_{TYPE}
+
+
+!
+! Initialize a restart file to write - all additional dims in a field are bundled into a 
+! single dimension for output and a dim pbuf_xxxxx is declared in the file if it 
+! does not already exist.   
+!
+  subroutine pbuf_init_restart(File, pbuf2d)
+    use pio, only : file_desc_t, pio_seterrorhandling, pio_bcast_error, pio_internal_error, &
+         pio_inq_dimid, pio_def_dim, pio_def_var, pio_noerr, pio_int
+    type(file_desc_t), intent(inout) :: file
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+    type(physics_buffer_desc), pointer :: pbuf
+    integer :: ierr
+    integer :: adimid(3), hdimcnt, dimcnt
+
+    character(len=10) dimname
+    integer :: i, mdimsize
+
+    call pio_seterrorhandling(File, pio_bcast_error)
+    ierr = pio_inq_dimid(File, 'lon', adimid(1))
+    if(ierr==PIO_NOERR) then
+       ierr = pio_inq_dimid(File, 'lat', adimid(2))
+       hdimcnt=2
+    else
+       ierr = pio_inq_dimid(File, 'ncol', adimid(1))
+       hdimcnt=1
+    endif
+    call pio_seterrorhandling(File, pio_internal_error)
+
+    do i=1,currentpbufflds
+       pbuf => pbuf2d(i,begchunk)
+
+       if(pbuf%hdr%persistance == persistance_physpkg) cycle
+       mdimsize=product(pbuf%hdr%dimsizes(2:))
+
+       if(mdimsize>1) then
+          call pio_seterrorhandling(File, pio_bcast_error)
+          write(dimname,'(a,i5.5)') 'pbuf_',mdimsize
+          ierr = pio_inq_dimid(File,dimname, adimid(hdimcnt+1))
+          call pio_seterrorhandling(File, pio_internal_error)
+          if(ierr /= PIO_NOERR) then
+             ierr = pio_def_dim(File, dimname, mdimsize, adimid(hdimcnt+1))
+          end if
+          dimcnt=hdimcnt+1
+       else
+          dimcnt=hdimcnt
+       end if
+       ierr = pio_def_var(File, trim(pbuf%hdr%name), pbuftype2piotype(pbuf%hdr%dtype), &
+            adimid(1:dimcnt),pbuf%hdr%vardesc)
+    end do
+
+    ierr = pio_def_var(File, 'pbuf_time_idx', pio_int, timeidx_desc)
+
+  end subroutine pbuf_init_restart
+
+  function pbuftype2piotype(pbuftype) result(piotype)
+    use pio, only : pio_double, pio_int, pio_real
+
+    integer, intent(in) :: pbuftype
+    integer :: piotype
+
+    select case(pbuftype)
+    case (TYPEDOUBLE)
+       piotype = pio_double
+    case(TYPEINT)
+       piotype = pio_int
+    case(TYPEREAL)
+       piotype = pio_real
+!    case(TYPELONG)
+!       piotype = pio_int
+    case default
+       write(iulog, *) 'Dtype = ', pbuftype
+       call endrun('No restart support for dtype')
+    end select
+  end function pbuftype2piotype
+
+
+
+  subroutine pbuf_write_restart(File, pbuf2d)
+    use pio, only : file_desc_t, pio_put_var
+    type(file_desc_t), intent(inout) :: file
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+    type(physics_buffer_desc), pointer :: pbuf(:)
+
+    integer :: i,ierr
+
+    pbuf => pbuf_get_chunk(pbuf2d,begchunk)
+
+
+    do i=1,currentpbufflds
+       if(pbuf(i)%hdr%persistance == persistance_global) then
+          call pbuf_write_field(File, pbuf2d, i)
+       end if
+    end do
+    ierr = pio_put_var(File, timeidx_desc, (/old_time_idx/))
+
+
+
+  end subroutine pbuf_write_restart
+
+
+  subroutine pbuf_write_field(File, pbuf2d, index)
+    use pio, only : file_desc_t, io_desc_t, pio_write_darray
+    use cam_pio_utils, only : get_phys_decomp
+
+    use spmd_utils, only : iam
+
+    type(File_desc_t) :: File
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), pointer :: pbuf
+    integer, intent(in) :: index
+    type(io_desc_t), pointer                :: iodesc=> null()
+    integer :: piodtype, mdimsize, lchnk
+
+    integer, allocatable ::  fldi(:,:,:)
+    real(r8), allocatable :: fldd(:,:,:)
+    real(r4), allocatable :: fldr(:,:,:)
+    integer, pointer ::  bufi(:,:,:,:)
+    real(r8), pointer :: bufd(:,:,:,:)
+    real(r4), pointer :: bufr(:,:,:,:)
+
+    integer :: ierr
+
+
+
+    pbuf=> pbuf2d(index,begchunk)
+    piodtype = pbuftype2piotype(pbuf%hdr%dtype)
+
+    mdimsize=product(pbuf%hdr%dimsizes(2:))
+
+    call get_phys_decomp(iodesc, 1, mdimsize, 1, piodtype)
+
+    select case(pbuf%hdr%dtype)
+    case(TYPEDOUBLE)
+       allocate(fldd(pcols,mdimsize,begchunk:endchunk))
+       fldd = 0_r8
+       do lchnk=begchunk,endchunk
+          call pbuf_get_field(pbuf2d, lchnk, index, bufd)
+          fldd(:,:,lchnk) = reshape(bufd,(/pcols,mdimsize/))
+       end do
+       call pio_write_darray(File, pbuf%hdr%vardesc, iodesc, fldd, ierr)
+       deallocate(fldd)
+    case(TYPEREAL)
+       allocate(fldr(pcols,mdimsize,begchunk:endchunk))
+       fldr = 0_r4
+       do lchnk=begchunk,endchunk
+          call pbuf_get_field(pbuf2d, lchnk, index, bufr)
+          fldr(:,:,lchnk) = reshape(bufr,(/pcols,mdimsize/))
+       end do
+       call pio_write_darray(File, pbuf%hdr%vardesc, iodesc, fldr, ierr)
+       deallocate(fldr)
+    case(TYPEINT)
+       allocate(fldi(pcols,mdimsize,begchunk:endchunk))
+       fldi=0_i4
+       do lchnk=begchunk,endchunk
+          call pbuf_get_field(pbuf2d, lchnk, index, bufi)
+        
+          fldi(:,:,lchnk) = reshape(bufi,(/pcols,mdimsize/))
+       end do
+       call pio_write_darray(File, pbuf%hdr%vardesc, iodesc, fldi, ierr)
+       deallocate(fldi)
+
+    case default
+    end select
+
+  end subroutine pbuf_write_field
+
+
+  subroutine pbuf_read_restart(File, pbuf2d)
+    use pio, only : file_desc_t, pio_inq_varid, io_desc_t, pio_internal_error, &
+         pio_bcast_error, pio_noerr, pio_inq_dimid, pio_seterrorhandling, pio_get_var
+    use cam_pio_utils, only : get_phys_decomp
+
+    type(File_desc_t) :: File
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), pointer :: pbufhdr(:)
+
+    integer :: mdimsize
+    integer :: index
+    integer :: dtype
+
+
+    type(io_desc_t), pointer                :: iodesc=>null()
+    integer :: ierr, lchnk, c
+    integer :: dimsizes(6)
+    integer :: ndims, k
+
+    call pbuf_initialize(pbuf2d)
+    
+    pbufhdr=> pbuf_get_chunk(pbuf2d,begchunk)
+
+    ierr = pio_inq_varid(File, 'pbuf_time_idx', timeidx_desc)
+    ierr = pio_get_var(File, timeidx_desc, old_time_idx)
+
+    do index=1,currentpbufflds
+
+       if(pbufhdr(index)%hdr%persistance == persistance_physpkg) cycle
+       dimsizes=pbufhdr(index)%hdr%dimsizes
+
+       ierr = pio_inq_varid(File, trim(pbufhdr(index)%hdr%name), pbufhdr(index)%hdr%vardesc)
+       ndims=0
+       do k=1,6
+          if(dimsizes(k)==1) then
+             exit
+          end if
+          ndims=ndims+1
+       end do
+       mdimsize=product(dimsizes(2:))
+
+       dtype = pbufhdr(index)%hdr%dtype
+
+       call get_phys_decomp(iodesc, 1, mdimsize, 1, pbuftype2piotype(dtype))
+
+
+       select case(dtype)
+       case(TYPEDOUBLE)
+          select case(ndims)
+          case(1)
+             call pio_read_restart_field_1d_double(File, pbuf2d, index, iodesc, dimsizes)
+          case(2)
+             call pio_read_restart_field_2d_double(File, pbuf2d, index, iodesc, dimsizes)
+          case(3)
+             call pio_read_restart_field_3d_double(File, pbuf2d, index, iodesc, dimsizes)
+          case(4)
+             call pio_read_restart_field_4d_double(File, pbuf2d, index, iodesc, dimsizes)
+          case(5)
+             call pio_read_restart_field_5d_double(File, pbuf2d, index, iodesc, dimsizes)
+          case(6)
+             call pio_read_restart_field_6d_double(File, pbuf2d, index, iodesc, dimsizes)
+          end select
+       case(TYPEREAL)
+          select case(ndims)
+          case(1)
+             call pio_read_restart_field_1d_real(File, pbuf2d, index, iodesc, dimsizes)
+          case(2)
+             call pio_read_restart_field_2d_real(File, pbuf2d, index, iodesc, dimsizes)
+          case(3)
+             call pio_read_restart_field_3d_real(File, pbuf2d, index, iodesc, dimsizes)
+          case(4)
+             call pio_read_restart_field_4d_real(File, pbuf2d, index, iodesc, dimsizes)
+          case(5)
+             call pio_read_restart_field_5d_real(File, pbuf2d, index, iodesc, dimsizes)
+          case(6)
+             call pio_read_restart_field_6d_real(File, pbuf2d, index, iodesc, dimsizes)
+          end select
+       case(TYPEINT)
+          select case(ndims)
+          case(1)
+             call pio_read_restart_field_1d_int(File, pbuf2d, index, iodesc, dimsizes)
+          case(2)
+             call pio_read_restart_field_2d_int(File, pbuf2d, index, iodesc, dimsizes)
+          case(3)
+             call pio_read_restart_field_3d_int(File, pbuf2d, index, iodesc, dimsizes)
+          case(4)
+             call pio_read_restart_field_4d_int(File, pbuf2d, index, iodesc, dimsizes)
+          case(5)
+             call pio_read_restart_field_5d_int(File, pbuf2d, index, iodesc, dimsizes)
+          case(6)
+             call pio_read_restart_field_6d_int(File, pbuf2d, index, iodesc, dimsizes)
+          end select
+       case default
+       end select
+
+    end do
+
+  end subroutine pbuf_read_restart
+
+  ! TYPE int,double,real 
+  ! DIMS 1,2,3,4,5,6
+  subroutine pio_read_restart_field_{DIMS}d_{TYPE} (File, pbuf2d, index, iodesc, dimsizes)
+    use pio, only : file_desc_t, pio_read_darray,  io_desc_t
+    type(file_desc_t) :: File
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: index
+    integer, intent(in) :: dimsizes(:)
+    type(io_desc_t) :: iodesc
+    integer :: ierr, c
+    {VTYPE}, pointer :: fld7(:,:,:,:,:,:,:)
+
+    allocate(fld7(dimsizes(1),dimsizes(2),dimsizes(3),dimsizes(4),dimsizes(5),dimsizes(6),begchunk:endchunk))
+    call pio_read_darray(File, pbuf2d(index,begchunk)%hdr%vardesc, iodesc, fld7, ierr)
+    do c=begchunk,endchunk
+       call buffer_set_field(pbuf2d(index,c)%bfg, fld7(:,:,:,:,:,:,c))
+    end do
+
+    deallocate(fld7)
+
+  end subroutine pio_read_restart_field_{DIMS}d_{TYPE}
+
+
+
+
+
+end module physics_buffer
+
+
+
+
+

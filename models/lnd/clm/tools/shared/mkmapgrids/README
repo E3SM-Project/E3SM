@@ -1,0 +1,27 @@
+models/lnd/clm/tools/shared/mkmapgrids/README		Jun/04/2013
+
+The routines in this directory create a grid map dataset in SCRIP format
+that can be read by the mkmapdata utility to create mapping files for
+mksurfdata_map. 
+
+The deprecated FORTRAN program mkmapgrids can read in CLM fraction files in 
+either the old CLM4.0.32 (CESM1.0.5) format or CAM file format.
+
+There is also an NCL script that can create a SCRIP grid file for a regular
+lat/lon grid. The script assumes that ALL data points are over land. So
+a regional land grid, NOT a coastal region or a global grid.
+
+See Also: See the models/lnd/clm/tools/README file for notes about setting
+          the path for NetCDF and running the CLM tools.
+
+Important files:
+
+  mkscripgrid.ncl ----------- NCL script to create a SCRIP grid file for a regular lat/lon grid
+                              (assumes ALL data is over land).
+
+  mkmapgrids.namelist ------- Sample global grid namelist for mkmapgrids program
+  src/Makefile -------------- GNU makefile
+  src/Makefile.common ------- GNU makefile common between tools
+  src/Srcfiles -------------- List of source files needed (includes files outside this directory)
+  src/Filepath -------------- Filepath location to source files needed
+

@@ -1,0 +1,9 @@
+Changes in libdycore and its subdirectories:
+
+10/4/10 (DFM)
+(a) BISICLES/BisiclesToGlimmer.[H,cpp] -- removed hardwired path to bike_driver.H
+
+(b) dycore_to_glimmer_extern.cpp -- included <malloc.h> and <cstring> in order to compile on my machine here at LBL
+
+(c) DyCoreToGlimmer.cpp -- include <cstring>
+

@@ -1,0 +1,86 @@
+  
+  
+     Solution species
+      (  1)  H2O2            
+      (  2)  SO2             
+      (  3)  SO4             
+      (  4)  DMS                (CH3SCH3)
+      (  5)  OC1                (C)
+      (  6)  OC2                (C)
+      (  7)  CB1                (C)
+      (  8)  CB2                (C)
+      (  9)  SSLT01             (NaCl)
+      ( 10)  SSLT02             (NaCl)
+      ( 11)  SSLT03             (NaCl)
+      ( 12)  SSLT04             (NaCl)
+      ( 13)  DST01              (AlSiO5)
+      ( 14)  DST02              (AlSiO5)
+      ( 15)  DST03              (AlSiO5)
+      ( 16)  DST04              (AlSiO5)
+  
+  
+     Invariant species
+      (  1)  M               
+      (  2)  N2              
+      (  3)  O2              
+      (  4)  O3              
+      (  5)  OH              
+      (  6)  NO3             
+      (  7)  HO2             
+  
+  
+     Column integrals
+   ( 1)  O3               -  0.000E+00
+   ( 2)  O2               -  0.000E+00
+  
+Class List
+==========
+  
+ Implicit  
+ --------
+      (  1)  H2O2            
+      (  2)  SO2             
+      (  3)  SO4             
+      (  4)  DMS             
+      (  5)  CB1             
+      (  6)  CB2             
+      (  7)  OC1             
+      (  8)  OC2             
+      (  9)  SSLT01          
+      ( 10)  SSLT02          
+      ( 11)  SSLT03          
+      ( 12)  SSLT04          
+      ( 13)  DST01           
+      ( 14)  DST02           
+      ( 15)  DST03           
+      ( 16)  DST04           
+  
+     Photolysis
+  
+     Reactions
+                   (  1)   CB1 ->  CB2                                                          rate = 1.01E-05                   (  1)
+                   (  2)   OC1 ->  OC2                                                          rate = 1.01E-05                   (  2)
+  
+Extraneous prod/loss species
+ ( 1)   SO2   (dataset)
+ ( 2)   SO4   (dataset)
+  
+  
+ Equation Report
+  
+    d(H2O2)/dt = 0                                                                                                      
+    d(SO2)/dt = 0                                                                                                       
+    d(SO4)/dt = 0                                                                                                       
+    d(DMS)/dt = 0                                                                                                       
+    d(OC1)/dt =  - r2*OC1                                                                                               
+    d(OC2)/dt = r2*OC1                                                                                                  
+    d(CB1)/dt =  - r1*CB1                                                                                               
+    d(CB2)/dt = r1*CB1                                                                                                  
+    d(SSLT01)/dt = 0                                                                                                    
+    d(SSLT02)/dt = 0                                                                                                    
+    d(SSLT03)/dt = 0                                                                                                    
+    d(SSLT04)/dt = 0                                                                                                    
+    d(DST01)/dt = 0                                                                                                     
+    d(DST02)/dt = 0                                                                                                     
+    d(DST03)/dt = 0                                                                                                     
+    d(DST04)/dt = 0                                                                                                     

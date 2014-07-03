@@ -1,0 +1,35 @@
+<bookinfo>
+
+<title>CESM1.1 Data Model v8: User's Guide </title>
+
+<authorgroup>
+
+<author>
+   <firstname>Mariana</firstname>
+   <surname>Vertenstein</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+
+<author>
+   <firstname>Tony</firstname>
+   <surname>Craig</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+
+<author>
+   <firstname>Brian</firstname>
+   <surname>Kauffman</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+
+</authorgroup>
+
+<date>2012-01-01</date>
+
+</bookinfo>

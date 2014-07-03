@@ -1,0 +1,75 @@
+models/lnd/clm/tools/README.testing				Jun/04/2013
+
+There is automated testing for all of the tools and scripts under this tools directory.
+The tests are in the models/lnd/clm/test/tools directory. There are several assumptions 
+made in order for the testing to work.
+
+
+1.) Executable name is the same as the directory name
+
+The name of the executable program is the same as the directory name of the tool.
+
+2.) Build works the same for any Fortran tools
+
+The build for any Fortran tools should work the same way, with the same options
+and required files for it. The files: Makefile, Makefile.common, Mkdepends, Filepath and Srcfiles
+are expected to exist in the tool "src" sub-directory. To make maintaining these files easier
+in general the Makefile.common and Mkdepends files should be kept identical. Any
+customization is then placed in the main Makefile (with such things as executable name, 
+default settings for OPT and SMP and the output executable name).
+
+Options to the Makefile:
+
+ LIB_NETCDF --- Library directory location of NetCDF. (defaults to /usr/local/lib)
+ INC_NETCDF --- Include directory location of NetCDF. (defaults to /usr/local/include)
+ MOD_NETCDF --- Module directory location of NetCDF.  (defaults to $LIB_NETCDF)
+ USER_FC ------ Allow user to override the default Fortran compiler specified in Makefile.
+ USER_FCTYP --- Allow user to override the default type of Fortran compiler 
+                (Linux and USER_FC=ftn only).
+ USER_CC ------ Allow user to override the default C compiler specified in Makefile
+                (Linux only).
+ USER_CPPDEFS - Additional CPP defines.
+ USER_CFLAGS -- Additional C compiler flags that the user wishes to set.
+ USER_FFLAGS -- Additional Fortran compiler flags that the user wishes to set.
+ USER_LDFLAGS - Additional load flags that the user wishes to set.
+ USER_LINKER -- Allow user to override the default linker specified in Makefile.
+ SMP ---------- Shared memory Multi-processing (TRUE or FALSE) [default is FALSE]
+ OPT ---------- Use optimized options. (TRUE or FALSE)
+
+3.) Successful completion of the tool ends with "Successfully created ..."
+
+After the tool completes it should have an unique string telling of the 
+successful completion of the file that is searchable in the log file starting
+with "Successfully created ". If this string isn't found in the log file, it
+will be assumed by the test setup that the test failed.
+
+4.) NetCDF files are created or modified
+
+It is assumed that NetCDF files are created and/or modified by the process. And if
+NetCDF files are NOT created -- something went wrong. For some scripts that copy files
+to other locations this means an "-nomv" option needs to be invoked (and one provided)
+so that it leaves the files created in the current directory.
+
+5.) Either <toolname>.* namelist files exist or <toolname>.runoptions files
+    (but also see 6 below for another option)
+
+To specify options for the running of the tool, either sample namelist files
+are provided or a sample run options file. These files can EITHER be in the 
+tool directory OR the ../test/tools/nl_files directory.
+
+  a. Namelist files
+
+     If namelists are used to run the tool, sample namelist files exist with the
+     directory name followed by a "." and then a descriptive name. In general the
+     namelists will use filepaths that will only work on the NCAR machine bluefire.
+
+  b. runoptions files
+
+     If command line options are used to run the tool, a file with sample command 
+     line options exist called "<toolname>.runoptions". Again filepaths are only
+     expected to work on the NCAR machine bluefire.
+  
+6.) Specific tests for perl run scripts
+
+For tools that have perl scripts to create namelists and run the tool for you, there
+are customized tests to run these tools.

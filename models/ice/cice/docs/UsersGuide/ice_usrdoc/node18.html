@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Example 1: CESM Fully Coupled</TITLE>
+<META NAME="description" CONTENT="Example 1: CESM Fully Coupled">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node19.html">
+<LINK REL="previous" HREF="node17.html">
+<LINK REL="up" HREF="node17.html">
+<LINK REL="next" HREF="node19.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html310"
+  HREF="node19.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html306"
+  HREF="node17.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html300"
+  HREF="node17.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html308"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html311"
+  HREF="node19.html">Example 2: History File</A>
+<B>Up:</B> <A NAME="tex2html307"
+  HREF="node17.html">Example Namelists</A>
+<B> Previous:</B> <A NAME="tex2html301"
+  HREF="node17.html">Example Namelists</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H3><A NAME="SECTION00049100000000000000"></A>
+<A NAME="example1_nml"></A>
+<BR>
+Example 1: CESM Fully Coupled
+</H3>
+
+<P>
+The following example is the namelist used for CESM fully coupled, or
+the B configuration.  The variables that are still set to shell script
+variables have been set at the top of <B>cice.buildnml.csh</B>
+or in other scripts.  A completely resolved version of the namelist will
+be written to <B>ice_in</B> in the executable directory.
+
+<P>
+<PRE>
+&amp;setup_nml
+ diagfreq               =  24   
+ hist_avg               = .true.  
+ histfreq               = 'm','x','x','x','x'
+ histfreq_n             = 1,1,1,1,1           
+ ice_ic         = 'b40.1850.track1.1deg.006.cice.r.0301-01-01-00000.nc'
+ lcdf64         = .false. 
+ pointer_file           = 'rpointer.ice'
+ xndt_dyn               =  1.0 
+/
+&amp;grid_nml
+ grid_file              = '/fis/cgd/cseg/csm/inputdata/ice/cice/global_gx1v6_200
+10402.grid'
+ grid_format            = 'bin'
+ grid_type              = 'displaced_pole'
+ kcatbound              =  0 
+ kmt_file               = '/fis/cgd/cseg/csm/inputdata/ice/cice/global_gx1v6_200
+90204.kmt'
+/
+&amp;ice_nml
+ advection              = 'remap'
+ albedo_type            = 'default'
+ albicei                = 0.45
+ albicev                = 0.75
+ albsnowi               = 0.73
+ albsnowv               = 0.98
+ evp_damping            = .false.
+ kdyn           =  1 
+ kitd           =  1 
+ krdg_partic            = 1
+ krdg_redist            = 1
+ kstrength              =  1 
+ ndte           =  120 
+ r_snw          =  1.5 
+ shortwave              = 'dEdd'
+/
+&amp;tracer_nml
+ tr_aero        = .true.
+ tr_FY          = .true.
+ tr_iage        = .true.
+ tr_pond        = .true.
+/
+&amp;domain_nml
+ distribution_type              = 'cartesian'
+ ew_boundary_type               = 'cyclic'
+ ns_boundary_type               = 'open'
+ processor_shape                = 'square-pop'
+/
+&amp;ice_prescribed_nml
+ prescribed_ice         = .false.
+/
+</PRE>
+
+<P>
+<BR> <HR>
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

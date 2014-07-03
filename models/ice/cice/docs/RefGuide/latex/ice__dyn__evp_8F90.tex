@@ -1,0 +1,57 @@
+\hypertarget{ice__dyn__evp_8F90}{
+\section{ice\_\-dyn\_\-evp.F90 File Reference}
+\label{ice__dyn__evp_8F90}\index{ice\_\-dyn\_\-evp.F90@{ice\_\-dyn\_\-evp.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__dyn__evp}{ice\_\-dyn\_\-evp}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_a918e64924a8bc6d83610141982c8f5dd}{ice\_\-dyn\_\-evp::evp} (dt)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_a58b637b31c877db0c8ac033d2249f49a}{ice\_\-dyn\_\-evp::init\_\-evp} (dt)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_ae005a696d21f367a95138aca2aa5bb07}{ice\_\-dyn\_\-evp::set\_\-evp\_\-parameters} (dt)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_acc726e42608cf46cb1990178a3ec0bf0}{ice\_\-dyn\_\-evp::evp\_\-prep1} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, aice, vice, vsno, tmask, strairxT, strairyT, strairx, strairy, tmass, icetmask)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_a8b2b9cdda98c21801a3180641ba3f000}{ice\_\-dyn\_\-evp::evp\_\-prep2} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, icellt, icellu, indxti, indxtj, indxui, indxuj, aiu, umass, umassdtei, fcor, umask, uocn, vocn, strairx, strairy, ss\_\-tltx, ss\_\-tlty, icetmask, iceumask, fm, strtltx, strtlty, strocnx, strocny, strintx, strinty, waterx, watery, forcex, forcey, stressp\_\-1, stressp\_\-2, stressp\_\-3, stressp\_\-4, stressm\_\-1, stressm\_\-2, stressm\_\-3, stressm\_\-4, stress12\_\-1, stress12\_\-2, stress12\_\-3, stress12\_\-4, uvel, vvel)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_a14a0351cda0756eaf7905bdec6b9e326}{ice\_\-dyn\_\-evp::stress} (nx\_\-block, ny\_\-block, ksub, icellt, indxti, indxtj, uvel, vvel, dxt, dyt, dxhy, dyhx, cxp, cyp, cxm, cym, tarear, tinyarea, strength, stressp\_\-1, stressp\_\-2, stressp\_\-3, stressp\_\-4, stressm\_\-1, stressm\_\-2, stressm\_\-3, stressm\_\-4, stress12\_\-1, stress12\_\-2, stress12\_\-3, stress12\_\-4, shear, divu, prs\_\-sig, rdg\_\-conv, rdg\_\-shear, str)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_ac9b44f5692202d76ab19930c44aa8766}{ice\_\-dyn\_\-evp::stepu} (nx\_\-block, ny\_\-block, icellu, indxui, indxuj, aiu, str, uocn, vocn, waterx, watery, forcex, forcey, umassdtei, fm, uarear, strocnx, strocny, strintx, strinty, uvel, vvel)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_a98d3c4b7bf9a4ca30d3c1d133792920e}{ice\_\-dyn\_\-evp::evp\_\-finish} (nx\_\-block, ny\_\-block, icellu, indxui, indxuj, uvel, vvel, uocn, vocn, aiu, strocnx, strocny, strocnxT, strocnyT)
+\item 
+subroutine \hyperlink{namespaceice__dyn__evp_ad8621c859aae602cd6702347e2db568b}{ice\_\-dyn\_\-evp::principal\_\-stress} (nx\_\-block, ny\_\-block, stressp\_\-1, stressm\_\-1, stress12\_\-1, prs\_\-sig, sig1, sig2)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__dyn__evp_a53c5f7c9741c708ff3519f05aed59469}{ice\_\-dyn\_\-evp::kdyn}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__dyn__evp_a8eac575311a1794f1e0157b0f91c48e0}{ice\_\-dyn\_\-evp::ndte}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__dyn__evp_a79e497f85715426c0f09259d8fe336ed}{ice\_\-dyn\_\-evp::evp\_\-damping}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__dyn__evp_a9dd00f965aaf1ddc6bd6921083e9abb1}{ice\_\-dyn\_\-evp::yield\_\-curve}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__dyn__evp_af77fabaa9bdeaa579c4f55bf5d6b2628}{ice\_\-dyn\_\-evp::dragw} = dragio $\ast$ rhow
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__dyn__evp_a74e9b0358ea08911b4d29dec60340f51}{ice\_\-dyn\_\-evp::ecci}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__dyn__evp_a17c3a9aa810fbb29c6eda85ab2fb24dd}{ice\_\-dyn\_\-evp::dtei}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__dyn__evp_a48f316b1e91781f36049db60d9d57d82}{ice\_\-dyn\_\-evp::dte2T}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__dyn__evp_a485b3d193095e8d99aca4d1fc974ff56}{ice\_\-dyn\_\-evp::denom1}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__dyn__evp_a7277e6c34976f4ccf320ab21b4d4f65f}{ice\_\-dyn\_\-evp::denom2}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__dyn__evp_aa1005dc0bcfae1c38b0932bacec32121}{ice\_\-dyn\_\-evp::rcon}
+\item 
+real(kind=dbl\_\-kind), dimension(:,:,:), allocatable \hyperlink{namespaceice__dyn__evp_a1eeebacd4068f5555d3f66448b8acc64}{ice\_\-dyn\_\-evp::fcor\_\-blk}
+\end{DoxyCompactItemize}

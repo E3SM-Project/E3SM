@@ -1,0 +1,3474 @@
+#!/usr/bin/env perl
+#-----------------------------------------------------------------------------------------------
+#
+# configure
+#
+#
+# This utility allows the CAM user to specify compile-time configuration
+# options via a commandline interface.  The output from configure is a
+# Makefile and a cache file that contains all configuration parameters
+# required to produce the Makefile.  A subsequent invocation of configure
+# can use the cache file as input (via the -defaults argument) to reproduce
+# the CAM configuration contained in it.  Note that when a cache file is
+# used to set default values only the model parameters are used.  The
+# parameters that are platform dependent (e.g., compiler options, library
+# locations, etc) are ignored.
+#
+# As the build time configurable options of CAM are changed, this script
+# must also be changed.  Thus configure is maintained under revision
+# control in the CAM source tree and it is assumed that only the version of
+# configure in the source tree will be used to build CAM.  Thus we assume
+# that the root of the source tree can be derived from the location of this
+# script.
+#
+# configure has an optional test mode to check that the Fortran90 compiler
+# works and that external references to the netCDF and MPI libraries can be
+# resolved at link time.
+#
+#
+# Date        Contributor         Modification
+# -----------------------------------------------------------------------------------------------------
+# 2012-09-10  Fischer             Use MCT configure script, and build as seperate library.
+# 2011-08-18  Eaton               Produce a config.h file needed by the latest PIO and MCT source.
+#
+# 2011-08-05  Fischer             Set number of instances when running cam stand alone.  Otherwise use
+#                                 values set by CESM1 scripts.
+#
+# 2010-01-22  Kay, Eaton          Added COSP simulator option.
+#
+# 2008-09-22  Edwards             Removed obsolete macros DYN_STATE_INTERFACE and LSMLON, LSMLAT
+#
+# 2008-08-26  Edwards             Added support for external pnetcdf library (-pnc_inc and -pnc_lib) as
+#                                 well as PIO support for Spectral Element dycore
+#
+# 2008-07-30  Eaton               Revise the default calculation of nadv.  Add new option to specify
+#                                 the number of test tracers.  Add new option to specify a non-default
+#                                 microphysics option.
+#
+# 2007-04-13  Eaton               Restore the commandline option -phys so that it can be used with the
+#                                 adiabatic and ideal physics options.
+#
+# 2007-03-04  Eaton               The script has been refactored to move the generic configuration file
+#                                 functionality into a separate module (Build::Config).
+#
+# 2006-09-14  Eaton               Add support for linking to external ESMF library.
+#                                 Deprecate interactive mode.
+#
+# 2006-02-14  Eaton               Remove -cam_cfg option and CAM_CFGDIR environment variable: require all
+#                                 configuration files to be in the same directory as the configure script.
+#                                 Remove -cam_root option and CAM_ROOT environment variable: require
+#                                 configure to be located in the CAM src tree.
+#                                 Modifications for CCSM build: delete setting of locations for all
+#                                 external include/mod/lib directories.  These are only needed for the
+#                                 CAM Makefile which is not produced when doing a CCSM build.
+#                                 Remove -esmf_* options.  This was used with the ESMF prototype
+#                                 library which is no longer supported.  Will re-implement ESMF options
+#                                 when we start linking the new ESMF library.
+#
+# 2005-05-05  Eaton               Add -lapack_libdir option to specify directory that contains
+#                                 lapack and blas libraries.  Can also set LAPACK_LIBDIR environment
+#                                 variable.  Currently only used by waccm_mozart on IBM.
+#
+# 2004-12-01  Eaton               Add phys option waccm.  Because this must be consistent
+#                                 with the -chem option, remove commandline option -phys.
+#                                 phys="waccm" is needed so that WACCM specific initial files
+#                                 can be present in DefaultCAMEXPNamelist.xml.
+#
+# 2004-11-15  Eaton               Add -chem options waccm_ghg or waccm_mozart.  Remove old code
+#                                 for ccm366 and lsm options.
+#
+# 2002-05-03  Brian Eaton         Original version
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+#use warnings;
+#use diagnostics;
+
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+
+use FindBin qw($Bin);
+use lib "$Bin/perl5lib";
+use Build::ChemPreprocess qw(chem_preprocess);
+use File::Copy;
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     configure [options]
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+  Options used to determine the CAM model configuration.  These options will have an
+  effect whether running CAM as part of CCSM or running in a CAM standalone mode:
+
+     -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
+     -carma <name>      Build CAM with specified CARMA microphysics model
+                        [ none | bc_strat | cirrus | dust | meteor_smoke | pmc | sea_salt | sulfate | 
+                         test_detrain | test_growth | test_passive | test_radiative | test_swelling |
+                         test_tracers].
+                        Default: none.
+     -chem <name>       Build CAM with specified prognostic chemistry package 
+                        [ waccm_mozart | waccm_mozart_sulfur | waccm_ghg |
+                          trop_mozart | trop_mozart_mam3 | trop_mozart_soa | trop_ghg | trop_bam |
+                          trop_mam3 | trop_mam7 | super_fast_llnl | super_fast_llnl_mam3 |
+                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
+     -clubb_sgs         Turns on CLUBB_SGS
+     -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
+                        CAM configuration by increasing the number of advected constituents by 4.
+     -comp_intf         Specify the component interfaces [mct | esmf] (default: mct).
+     -cppdefs <string>  A string of user specified CPP defines.  Appended to
+                        Makefile defaults.  E.g. -cppdefs '-DVAR1 -DVAR2'
+     -dyn <name>        Build CAM with specified dynamical core [eul | sld | fv | se].
+     -edit_chem_mech    Invokes CAMCHEM_EDITOR to allow the user to edit the chemistry mechanism file
+     -hgrid <name>      Specify horizontal grid.  Use nlatxnlon for spectral grids;
+                        dlatxdlon for fv grids (dlat and dlon are the grid cell size
+			in degrees for latitude and longitude respectively); nexnp for
+                        se grids.
+     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | rk].
+     -nadv <n>          Set total number of advected species to <n>.
+     -nadv_tt <n>       Set number of advected test tracers <n>.
+     -nlev <n>          Set number of levels to <n>.
+     -offline_dyn       Switch enables the use of offline driver for FV dycore.
+     -pbl <name>        Specify the PBL option [uw | hb | hbr].
+     -pcols <n>         Set maximum number of columns in a chunk to <n>.
+     -pergro            Switch enables building CAM for perturbation growth tests.
+     -phys <name>       Physics option [cam3 | cam4 | cam5 | ideal | adiabatic].  Default: cam5.
+     -prog_species <list>Comma-separate list of prognostic mozart species packages.
+                        Currently available: DST,SSLT,SO4,GHG,OC,BC,CARBON16
+     -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
+     -rad <name>        Specify the radiation package [rrtmg | camrt]
+     -res <name>        Specify horizontal grid.  ***DEPRECATED***  Use the -hgrid option.
+     -usr_mech_infile   Path and file name of the user supplied chemistry mechanism file.
+     -waccm_phys        Switch enables the use of WACCM physics in any chemistry configuration.
+                        The user does not need to set this if one of the waccm chemistry options
+                        is chosen.
+     -waccmx            Build CAM/WACCM with WACCM upper Thermosphere/Ionosphere extended package
+
+
+  Options relevent to SCAM mode:
+
+     -camiop            Configure CAM to generate an IOP file that can be used to drive SCAM.
+                        This switch only works with the Eulerian dycore.
+     -scam              Compiles model in single column mode.  Only works with Eulerian dycore.
+
+  CAM parallelization:
+
+     -[no]smp           Switch on [off] SMP parallelism.
+     -[no]spmd          Switch on [off] SPMD parallelism.
+
+  CAM parallelization when running standalone with CICE:
+
+     -cice_bsizex <n>   Size of cice block in first horizontal dimension.
+     -cice_bsizey <n>   Size of cice block in second horizontal dimension.
+     -cice_maxblocks <n> Max number of cice blocks per processor.
+     -cice_decomptype <type> Either "cartesian", "spacecurve"," rake", or "roundrobin".
+                        *** Note ***
+                        Either set all of -cice_bsizex, -cice_bsizey, -cice_maxblocks and cice_decomptype
+                        or set -ntasks and/or -nthreads which are used to determine defaults for the
+                        cice decomposition.
+                        ************
+     -ntasks <n>        Number of MPI tasks.  Setting ntasks > 0 implies -spmd.  Use -nospmd to turn off
+                        linking with an MPI library.  To configure for pure MPI specify "-ntasks N -nosmp".
+                        ntasks is used to determine default grid decompositions.  Currently only used by CICE.
+     -nthreads <n>      Number of OMP threads per process.  Setting nthreads > 0 implies -smp.  Use -nosmp to
+                        turn off compilation of OMP directives.  For pure OMP set "-nthreads N -nospmd"
+                        nthreads is used to determine default grid decompositions.  Currently only used by CICE.
+
+  Configure options:
+
+     -cache <file>      Name of output cache file (default: config_cache.xml).
+     -cachedir <file>   Name of directory where output cache file is written (default: CAM build directory).
+     -ccsm_seq          Switch to specify that CAM is being built from within sequential CCSM scripts.
+     -help [or -h]      Print usage to STDOUT.
+     -silent [or -s]    Turns on silent mode - only fatal messages issued.
+     -test              Switch on testing of Fortran compiler and external libraries.
+     -verbose [or -v]   Turn on verbose echoing of settings made by configure.
+     -version           Echo the CVS tag name used to check out this CAM distribution.
+
+  Options for surface components used in standalone CAM mode:
+
+     -ice <name>        Build CAM with sea ice model [cice | sice | none ]. Default: cice.
+     -ocn <name>        Build CAM with ocean model [docn | dom | socn | aquaplanet | pop2]. Default: docn.
+     -lnd <name>        Build CAM with land model [clm | slnd | none]. Default: clm.
+     -rof <name>        Build CAM with runoff model [rtm | srof | none]. Default: rtm.
+
+  Options for building CAM via standalone scripts:
+
+     -cam_bld <dir>     Directory where CAM will be built.  This is where configure will write the
+                        output files it generates (Makefile, Filepath, etc...)
+     -cam_exe <name>    Name of the CAM executable (default: cam).
+     -cam_exedir <dir>  Directory where CAM executable will be created (default: CAM build directory).
+     -cc <name>         User specified C compiler (linux only).  Overrides Makefile default.
+     -cflags <string>   A string of user specified C compiler options.  Appended to
+                        Makefile defaults.
+     -cosp              Enable the COSP simulator.
+     -debug             Switch to turn on building CAM with debugging compiler options.
+     -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
+                        one of the config_files/defaults_*.xml files.  This file is used to specify model
+                        configuration parameters only.  Parameters relating to the build which
+                        are system dependent will be ignored.
+     -esmf_libdir <dir> Directory containing ESMF library and esmf.mk file.
+     -fc <name>         User specified Fortran compiler.  Overrides Makefile default.
+     -fc_type <name>    Type of Fortran compiler [pgi | lahey | intel |
+                        pathscale].  This argument is used in conjunction
+                        with the -fc argument when the name of the fortran
+                        compiler refers to a wrapper script (e.g., mpif90
+                        or ftn).  In this case the user needs to specify
+                        the type of Fortran compiler that is being invoked
+                        by the wrapper script.  Default: pgi
+     -fflags <string>   A string of user specified Fortran compiler flags.  Appended to
+                        Makefile defaults.  See -fopt to override optimization flags.
+     -fopt <string>     A string of user specified Fortran compiler optimization flags.  
+                        Overrides Makefile defaults.
+     -gmake <name>      Name of the GNU make program on your system.  Supply the absolute
+                        pathname if the program is not in your path (or fix your path).
+     -lapack_libdir <dir>  
+                        Directory containing LAPACK library.
+     -ldflags <string>  A string of user specified load options.  Appended to
+                        Makefile defaults.
+     -linker <name>     User specified linker.  Overrides Makefile default of \$(FC).
+     -mpi_inc <dir>     Directory containing MPI include files.
+     -mpi_lib <dir>     Directory containing MPI library.
+     -nc_inc <dir>      Directory containing netCDF include files.
+     -nc_lib <dir>      Directory containing netCDF library.
+     -nc_mod <dir>      Directory containing netCDF module files.
+     -pnc_inc <dir>     Directory containing PnetCDF include files.
+     -pnc_lib <dir>     Directory containing PnetCDF library.
+     -target_os         Override the os setting for cross platform compilation [aix | darwin | dec_osf | irix | 
+                        linux | solaris | super-ux | unicosmp | bgl | bgp ].  Default: OS on which configure is
+			executing as defined by the perl \$OSNAME variable.
+     -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
+                        Directories containing user source code.
+     -offline_drv <name> Specify offline unit driver [ rad | stub ]
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CAM configuration scripts.  If the configure command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = absolute_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+#-----------------------------------------------------------------------------------------------
+# Save commandline
+my $commandline = "$cfgdir/configure @ARGV";
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+	    cache       => "config_cache.xml",
+	    );
+GetOptions(
+    "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
+    "cache=s"                   => \$opts{'cache'},
+    "cachedir=s"                => \$opts{'cachedir'},
+    "carma=s"                   => \$opts{'carma'},
+    "cam_bld=s"                 => \$opts{'cam_bld'},
+    "cam_exe=s"                 => \$opts{'cam_exe'},
+    "cam_exedir=s"              => \$opts{'cam_exedir'},
+    "camiop"                    => \$opts{'camiop'},
+    "cc=s"                      => \$opts{'cc'},
+    "ccsm_seq"                  => \$opts{'ccsm_seq'},
+    "cflags=s"                  => \$opts{'cflags'},
+    "chem=s"                    => \$opts{'chem'},
+    "cice_bsizex=s"             => \$opts{'cice_bsizex'},
+    "cice_bsizey=s"             => \$opts{'cice_bsizey'},
+    "cice_maxblocks=s"          => \$opts{'cice_maxblocks'},
+    "cice_decomptype=s"         => \$opts{'cice_decomptype'},
+    "clubb_sgs"                 => \$opts{'clubb_sgs'},
+    "co2_cycle"                 => \$opts{'co2_cycle'},
+    "comp_intf=s"               => \$opts{'comp_intf'},
+    "cosp"                      => \$opts{'cosp'},
+    "cppdefs=s"                 => \$opts{'cppdefs'},
+    "debug"                     => \$opts{'debug'},
+    "defaults=s"                => \$opts{'defaults'},
+    "dyn=s"                     => \$opts{'dyn'},
+    "edit_chem_mech"            => \$opts{'edit_chem_mech'},
+    "waccm_phys"                => \$opts{'waccm_phys'},
+    "offline_dyn"               => \$opts{'offline_dyn'},
+    "waccmx"                    => \$opts{'waccmx'},
+    "esmf_libdir=s"             => \$opts{'esmf_libdir'},
+    "mct_libdir=s"              => \$opts{'mct_libdir'},
+    "fc=s"                      => \$opts{'fc'},
+    "fc_type=s"                 => \$opts{'fc_type'},
+    "fflags=s"                  => \$opts{'fflags'},
+    "fopt=s"                    => \$opts{'fopt'},
+    "gmake=s"                   => \$opts{'gmake'},
+    "h|help"                    => \$opts{'help'},
+    "hgrid=s"                   => \$opts{'hgrid'},
+    "ice=s"                     => \$opts{'ice'},
+    "lapack_libdir=s"           => \$opts{'lapack_libdir'},
+    "ldflags=s"                 => \$opts{'ldflags'},
+    "linker=s"                  => \$opts{'linker'},
+    "lnd=s"                     => \$opts{'lnd'},
+    "microphys=s"               => \$opts{'microphys'},
+    "mpi_inc=s"                 => \$opts{'mpi_inc'},
+    "mpi_lib=s"                 => \$opts{'mpi_lib'},
+    "nadv=s"                    => \$opts{'nadv'},
+    "nadv_tt=s"                 => \$opts{'nadv_tt'},
+    "nc_inc=s"                  => \$opts{'nc_inc'},
+    "nc_lib=s"                  => \$opts{'nc_lib'},
+    "nc_mod=s"                  => \$opts{'nc_mod'},
+    "nlev=s"                    => \$opts{'nlev'},
+    "ntasks=s"                  => \$opts{'ntasks'},
+    "nthreads=s"                => \$opts{'nthreads'},
+    "ocn=s"                     => \$opts{'ocn'},
+    "pbl=s"                     => \$opts{'pbl'},
+    "pcols=s"                   => \$opts{'pcols'},
+    "p|pergro"                  => \$opts{'pergro'},
+    "phys=s"                    => \$opts{'phys'},
+    "pnc_inc=s"                 => \$opts{'pnc_inc'},
+    "pnc_lib=s"                 => \$opts{'pnc_lib'},
+    "prog_species=s"            => \$opts{'prog_species'},
+    "psubcols=s"                => \$opts{'psubcols'},
+    "rad=s"                     => \$opts{'rad'},
+    "offline_drv=s"             => \$opts{'offline_drv'},
+    "res=s"                     => \$opts{'res'},
+    "rof=s"                     => \$opts{'rof'},
+    "scam"                      => \$opts{'scam'},
+    "s|silent"                  => \$opts{'silent'},
+    "smp!"                      => \$opts{'smp'},
+    "spmd!"                     => \$opts{'spmd'},
+    "target_os=s"               => \$opts{'target_os'},
+    "test"                      => \$opts{'test'},
+    "usr_mech_infile=s"         => \$opts{'usr_mech_infile'},
+    "usr_src=s"                 => \$opts{'usr_src'},
+    "v|verbose"                 => \$opts{'verbose'},
+    "version"                   => \$opts{'version'},
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Echo version info.
+version($cfgdir) if $opts{'version'};    
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+# Define 3 print levels:
+# 0 - only issue fatal error messages
+# 1 - only informs what files are created (default)
+# 2 - verbose
+my $print = 1;
+if ($opts{'silent'})  { $print = 0; }
+if ($opts{'verbose'}) { $print = 2; }
+my $eol = "\n";
+
+my %cfg = ();           # build configuration
+
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the configure script.
+
+# Check for the configuration definition file.
+my $config_def_file = "config_files/definition.xml";
+(-f "$cfgdir/$config_def_file")  or  die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory \"$cfgdir\" **
+EOF
+
+# Since the chemistry package plays a role in determining the configuration
+# defaults, it must be decided which chemistry package is used before
+# initializing the configuration object.  But the default chemistry depends
+# on the physics package.  So we need to start by setting the physics
+# package.
+
+# The default physics package is cam5.  This works for all chemistry packages whose name
+# matches /_mam/.  If the chem_pkg name doesn't match /_mam/ then set the default physics
+# package to cam4.
+my $phys_pkg = 'cam5';
+if (defined $opts{'chem'} and $opts{'chem'} !~ /_mam/) {$phys_pkg = 'cam4';}
+
+if (defined $opts{'phys'}) {
+    $phys_pkg = lc($opts{'phys'});
+    # For backwards compatibility accept cam3_5_1 as an alias for cam4.
+    if ($phys_pkg eq 'cam3_5_1') {$phys_pkg = 'cam4';}
+}
+
+if ($print>=2) { print "Physics package: $phys_pkg$eol"; }
+
+# Next set the default chemistry package.
+my $chem_pkg = 'trop_mam3';
+if (defined $opts{'prog_species'}) {
+    $chem_pkg = 'none';
+}
+
+# Change the default if user has specified a non-default physics package.
+if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
+    $chem_pkg = 'none';
+}
+
+# Allow the user to override the default chemistry via the commandline.
+if (defined $opts{'chem'}) {
+    $chem_pkg = lc($opts{'chem'});
+
+    # But do some consistency checks...
+
+    # If the user has specified adiabatic or ideal physics...
+    if ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic') {
+
+	# the only valid chemistry option is 'none'
+	if ($chem_pkg ne 'none') {
+	    die "configure ERROR: -phys is set to $opts{'phys'}.\n".
+		"                 -chem can only be set to 'none'.\n";
+	}
+    }
+    elsif ($phys_pkg eq 'cam3' or $phys_pkg eq 'cam4') {
+        # The modal aerosols are not valid with cam3 or cam4 physics
+	if ($chem_pkg =~ /_mam/) {
+            die "configure ERROR: -phys is set for cam3 or cam4 physics.\n".
+		"                 -chem cannot be set to a modal aerosol option.\n";
+	}
+    }
+}
+
+if ($print>=2) { print "Chemistry package: $chem_pkg$eol"; }
+
+# The configuration defaults file overrides the generic defaults in the configuration
+# definition file.  The -defaults argument has precedence for setting the configuration
+# defaults file.  If -defaults is not used, the file is determined by the chemistry package,
+# or if no chemistry, by the dynamics package.
+my $config_defaults_file;
+if    ($opts{'defaults'})                    {$config_defaults_file = $opts{'defaults'}}
+elsif ($opts{'waccmx'})                      {$config_defaults_file = 'config_files/defaults_waccmx.xml'}
+elsif ($chem_pkg =~ /waccm_/) {
+    if ($phys_pkg eq 'cam5')                 {$config_defaults_file = 'config_files/defaults_waccm5.xml'}
+    else                                     {$config_defaults_file = 'config_files/defaults_waccm.xml'}
+}
+elsif ($opts{'dyn'}  eq 'eul')               {$config_defaults_file = 'config_files/defaults_eul.xml'}
+elsif ($opts{'dyn'}  eq 'sld')               {$config_defaults_file = 'config_files/defaults_sld.xml'}
+elsif ($opts{'dyn'}  eq 'se')             {$config_defaults_file = 'config_files/defaults_se.xml'}
+else                                         {$config_defaults_file = 'config_files/defaults_fv.xml'}
+(-f "$cfgdir/$config_defaults_file")  or  die <<"EOF";
+** Cannot find configuration defaults file \"$config_defaults_file\" in directory \"$cfgdir\" **
+EOF
+
+# Horizontal grid and spectral resolution parameters.
+my $horiz_grid_file = 'config_files/horiz_grid.xml';
+(-f "$cfgdir/$horiz_grid_file")  or  die <<"EOF";
+** Cannot find horizonal grid parameters file \"$horiz_grid_file\" in directory \"$cfgdir\" **
+EOF
+
+# System defaults (currently for spmd and smp settings)
+my $sys_defaults_file = 'config_files/sys_defaults.xml';
+(-f "$cfgdir/$sys_defaults_file")  or  die <<"EOF";
+** Cannot find system defaults file \"$sys_defaults_file\" in directory \"$cfgdir\" **
+EOF
+
+# The XML::Lite module is required to parse the XML configuration files.
+(-f "$cfgdir/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/perl5lib\" **
+EOF
+
+# The Build::Config module provides utilities to store and manipulate the configuration.
+(-f "$cfgdir/perl5lib/Build/Config.pm")  or  die <<"EOF";
+** Cannot find perl module \"Build/Config.pm\" in directory \"$cfgdir/perl5lib\" **
+EOF
+
+if ($print>=2) { print "CAM configuration script directory: $cfgdir$eol"; }
+if ($print>=2) { print "Configuration defaults file: $config_defaults_file$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
+unshift @INC, "$cfgdir/perl5lib";
+unshift @INC, "$cfgdir";
+require XML::Lite;
+require Build::Config;
+
+# Initialize the configuration.  The $config_def_file provides the definition of a CAM
+# configuration, and the $config_defaults_file provides default values for a specific CAM
+# configuration.   $cfg_ref is a reference to the new configuration object.
+my $cfg_ref = Build::Config->new("$cfgdir/$config_def_file", "$cfgdir/$config_defaults_file");
+
+#-----------------------------------------------------------------------------------------------
+# Building from within ccsm scripts?
+my $ccsm_seq = (defined $opts{'ccsm_seq'}) ? 1 : 0;
+$cfg_ref->set('ccsm_seq', $ccsm_seq);
+
+# Note that when building within the CCSM scripts the CAM Makefile is not written
+# since the CCSM build does not use it.  Many of the checks to ensure that a working
+# CAM Makefile is produced are disabled when the ccsm option is set.  Use the $cam_build
+# variable to turn on CAM specific tests.
+my $cam_build = 1;
+if (($ccsm_seq)) {
+    $cam_build = 0;
+}
+
+#-----------------------------------------------------------------------------------------------
+# CAM root directory.  
+my $cam_root = absolute_path("$cfgdir/../../../..");
+
+if (-d "$cam_root/models/atm/cam/src") {
+    $cfg_ref->set('cam_root', $cam_root);
+} else {
+    die <<"EOF";
+** Invalid CAM root directory: $cam_root
+** 
+** The CAM root directory must contain the subdirectory models/atm/cam/src/.
+** It is derived from "config_dir/../../../.." where config_dir is the
+** directory in the CAM distribution that contains the configuration
+** scripts.
+EOF
+}
+
+if ($print>=2) { print "CAM root directory: $cam_root$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# CAM build directory.
+my $cam_bld;
+if (defined $opts{'cam_bld'}) {
+    $cam_bld = absolute_path($opts{'cam_bld'});
+}
+else { # use default value
+    $cam_bld = absolute_path($cfg_ref->get('cam_bld'));
+}
+
+if (-d $cam_bld or mkdirp($cam_bld)) {
+    # If the build directory exists or can be made then set the value...
+    $cfg_ref->set('cam_bld', $cam_bld);
+}
+else {
+    die <<"EOF";
+** Could not create the specified CAM build directory: $cam_bld
+EOF
+}
+
+if ($print>=2) { print "CAM build directory: $cam_bld$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# CAM install directory.
+my $cam_exedir;
+if (defined $opts{'cam_exedir'}) {
+    $cam_exedir = absolute_path($opts{'cam_exedir'});
+}
+else { # use default value
+    $cam_exedir = absolute_path($cfg_ref->get('cam_exedir'));
+}
+
+if ($cam_build) {
+
+    if (-d $cam_exedir or mkdirp($cam_exedir)) {
+	# If the install directory exists or can be made then set the value...
+	$cfg_ref->set('cam_exedir', $cam_exedir);
+    } else {
+	die <<"EOF";
+** Could not create the specified CAM installation directory: $cam_exedir
+EOF
+    }
+
+    if ($print>=2) { print "CAM executable will be created in: $cam_exedir$eol"; }
+}
+
+#-----------------------------------------------------------------------------------------------
+# User source directories.
+my $usr_src = '';
+if (defined $opts{'usr_src'}) {
+    my @dirs = split ',', $opts{'usr_src'};
+    my @adirs;
+    while ( my $dir = shift @dirs ) {
+	if (-d "$dir") {
+	    push @adirs, absolute_path($dir);
+	} else {
+	    die "** User source directory does not exist: $dir\n";
+	}
+    }
+    $usr_src = join ',', @adirs;
+    $cfg_ref->set('usr_src', $usr_src);
+}
+
+if ($print>=2) { print "User source directories: $usr_src$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# configuration cache directory and file.
+my $config_cache_dir;
+my $config_cache_file;
+if (defined $opts{'cachedir'}) {
+    $config_cache_dir = absolute_path($opts{'cachedir'});
+}
+else {
+    $config_cache_dir = $cfg_ref->get('cam_bld');
+}
+
+if (-d $config_cache_dir or mkdirp($config_cache_dir)) {
+    $config_cache_file = "$config_cache_dir/$opts{'cache'}";
+} else {
+    die <<"EOF";
+** Could not create the specified directory for configuration cache file: $config_cache_dir
+EOF
+}
+
+if ($print>=2) { print "Configuration cache file: $config_cache_file$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Platform properties ##########################################################################
+#-----------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------
+# Determine target OS -- allow cross compilation only if target_os is specified on commandline.
+my $target_os = $OSNAME;
+if (defined $opts{'target_os'}) {
+    $target_os = $opts{'target_os'};
+}
+$cfg_ref->set('target_os', $target_os);
+
+if ($print>=2) { print "Target OS: $target_os$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Read system defaults file.
+my %sys_defaults = get_sys_defaults("$cfgdir/$sys_defaults_file", $target_os);
+
+#-----------------------------------------------------------------------------------------------
+# SPMD
+my $spmd_val = (defined $opts{'spmd'}) ? $opts{'spmd'} : $sys_defaults{'spmd'};
+
+# Check whether ntasks specified.
+my $ntasks;
+if (defined $opts{'ntasks'}) {
+    $cfg_ref->set('ntasks', $opts{'ntasks'});
+    $ntasks = $opts{'ntasks'};
+
+    # Check for legal ntasks value
+    if ($ntasks < 1) {
+	die "ERROR: ntasks value < 1: ntasks= $ntasks $eol";
+    }
+    else {
+	# a positive value of ntasks implies -spmd
+	$spmd_val = 1;
+    }
+}
+
+$cfg_ref->set('spmd', $spmd_val);
+my $spmd = $spmd_val ? 'ON': 'OFF';
+
+if ($print>=2) { print "SPMD parallelism: $spmd$eol";}
+if ($print>=2 and $ntasks) { print "Number of MPI tasks: $ntasks$eol";}
+
+#-----------------------------------------------------------------------------------------------
+# SMP
+my $smp_val = (defined $opts{'smp'}) ? $opts{'smp'} : $sys_defaults{'smp'};
+
+# Check whether nthreads specified.
+my $nthreads;
+if (defined $opts{'nthreads'}) {
+    $cfg_ref->set('nthreads', $opts{'nthreads'});
+    $nthreads = $opts{'nthreads'};
+
+    # Check for legal nthreads value
+    if ($nthreads < 1) {
+	die "ERROR: nthreads value < 1: nthreads= $nthreads $eol";
+    }
+    else {
+	# a positive value of nthreads implies -smp
+	$smp_val = 1;
+    }
+}
+
+$cfg_ref->set('smp', $smp_val);
+my $smp = $smp_val ? 'ON': 'OFF';
+
+if ($print>=2) { print "SMP parallelism: $smp$eol";}
+if ($print>=2 and $nthreads) { print "Number of OMP threads: $nthreads$eol";}
+
+#-----------------------------------------------------------------------------------------------
+# Determine which packages/component to include  ###############################################
+#-----------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------
+# Component interfaces
+if (defined $opts{'comp_intf'}) {
+    $cfg_ref->set('comp_intf', lc($opts{'comp_intf'}) );
+}
+my $comp_intf = $cfg_ref->get('comp_intf');
+
+if ($print>=2) { print "Component interface: $comp_intf$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Physics package
+# The physics package is determined before the configuration object is initialized.
+# So add it to the config object now.
+$cfg_ref->set('phys', $phys_pkg);
+
+#-----------------------------------------------------------------------------------------------
+# Dynamics package, override homme and set to se
+if (defined $opts{'dyn'}) {
+    if ($opts{'dyn'} eq "homme"){
+      $cfg_ref->set('dyn', "se" );
+      print "+------------------------------------------------+\n";
+      print  "|                                               |\n";
+      print  "|WARNING: -dyn homme is no longer valid, please |\n";
+      print  "|          use -dyn se instead.                 |\n";
+      print  "|                                               |\n";
+      print  "|       Automatically switching to se.          |\n";
+      print  "|                                               |\n";
+      print "+------------------------------------------------+\n";
+    } else {
+      $cfg_ref->set('dyn', lc($opts{'dyn'}) );
+    }
+}
+
+my $dyn_pkg = $cfg_ref->get('dyn');
+
+if ($print>=2) { print "Dynamics package: $dyn_pkg$eol"; }
+
+
+# offline driver
+if (defined $opts{'offline_dyn'}) {
+    $cfg_ref->set('offline_dyn', $opts{'offline_dyn'});
+}
+my $offline_dyn = $cfg_ref->get('offline_dyn');
+
+# offline driver only runs with FV dycore
+if ( ($offline_dyn) and ($dyn_pkg ne 'fv') ) {
+    die <<"EOF";
+** ERROR: Offline driver only applicable to the FV dycore.
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Test tracer package
+if (defined $opts{'nadv_tt'}) {
+    $cfg_ref->set('nadv_tt', $opts{'nadv_tt'});
+}
+my $ttrac_nadv = $cfg_ref->get('nadv_tt');
+
+if ($print>=2) { print "Number of user requested test tracers: $ttrac_nadv$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Chemistry package
+# The chemistry package is determined before the configuration object is initialized.
+# So add it to the config object now.
+$cfg_ref->set('chem', $chem_pkg);
+
+# waccm physics
+if (defined $opts{'waccm_phys'}) {
+    $cfg_ref->set('waccm_phys', $opts{'waccm_phys'});
+}
+my $waccm_phys = $cfg_ref->get('waccm_phys');
+
+# offline unit driver
+if (defined $opts{'offline_drv'}) {
+    $cfg_ref->set('offline_drv', $opts{'offline_drv'});
+}
+
+# WACCM only runs with FV dycore
+if ( ($waccm_phys) and ($dyn_pkg ne 'fv') and ($dyn_pkg ne 'se') ) {
+    die <<"EOF";
+** ERROR: WACCM physics only runs with FV or Spectral Element as the dycore.
+EOF
+}
+
+# WACCM includes 4 air of air tracers by default
+if ($waccm_phys) {
+    $cfg_ref->set('age_of_air_trcs', 1);
+}
+
+# Allow user to override WACCM default, or turn on the age of air tracers
+# in non-WACCM runs.
+if (defined $opts{'age_of_air_trcs'}) {
+    $cfg_ref->set('age_of_air_trcs', $opts{'age_of_air_trcs'});
+}
+my $age_of_air_trcs = $cfg_ref->get('age_of_air_trcs') ? "ON" : "OFF";
+
+if ($print>=2) { print "Age of air tracer package: $age_of_air_trcs$eol"; }
+
+# waccmx option
+if (defined $opts{'waccmx'}) {
+    $cfg_ref->set('waccmx', $opts{'waccmx'});
+}
+my $waccmx = $cfg_ref->get('waccmx');
+
+#-----------------------------------------------------------------------------------------------
+
+# Prognostic species package(s)
+if (defined $opts{'prog_species'}) {
+    $cfg_ref->set('prog_species', $opts{'prog_species'});
+    if ($chem_pkg ne 'none'){
+	die "ERROR: chem and prog_species cannot be both specified.\n";
+      }
+}
+if (defined $opts{'edit_chem_mech'}) {
+    $cfg_ref->set('edit_chem_mech', $opts{'edit_chem_mech'});
+}
+if (defined $opts{'usr_mech_infile'}) {
+    $cfg_ref->set('usr_mech_infile', $opts{'usr_mech_infile'});
+}
+
+#-----------------------------------------------------------------------------------------------
+# Prognostic aerosol/GHG package(s)
+my $prog_species = $cfg_ref->get('prog_species');
+
+if (($waccm_phys) and ($chem_pkg eq 'none') and !($prog_species)) {
+    die <<"EOF";
+** ERROR: WACCM physics only runs with chemistry.
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Biogeochemistry option
+if (defined $opts{'co2_cycle'}) {
+    $cfg_ref->set('co2_cycle', $opts{'co2_cycle'});
+}
+my $co2_cycle = $cfg_ref->get('co2_cycle');
+
+if ($co2_cycle and $print>=2) { print "co2_cycle option: ON$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Micro-physics package
+# The default for the current physics package is:
+my $microphys_pkg = 'mg1';
+# But if the physics package is adiabatic, ideal, cam3, cam4, change the default
+if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
+    $microphys_pkg = 'rk';
+}
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'microphys'}) {
+    $microphys_pkg = lc($opts{'microphys'});
+}
+
+# Alias mg -> mg1.
+if ($microphys_pkg eq 'mg') {
+    $microphys_pkg = 'mg1';
+}
+
+$cfg_ref->set('microphys', $microphys_pkg);
+
+if ($print>=2) { print "Microphysics package: $microphys_pkg$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# CARMA sectional microphysics package
+# The default for the current physics package is:
+my  $carma_pkg = 'none';
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'carma'}) {
+    $carma_pkg = lc($opts{'carma'});
+  
+    if ($print>=2 and ($carma_pkg ne 'none')) { print "Using CARMA for the microphysical model $carma_pkg.$eol"; }
+}
+
+if ($carma_pkg =~ m/cirrus/i) {
+    unless ($microphys_pkg =~ /^mg/) {
+	die <<"EOF";
+**    ERROR: microphysics package set to: $microphys_pkg
+**    The CARMA cirrus model only works with MG microphysics (CAM5 default).
+EOF
+    }
+}
+
+$cfg_ref->set('carma', $carma_pkg);
+
+#-----------------------------------------------------------------------------------------------
+# CLUBB
+
+if (defined $opts{'clubb_sgs'}) {
+    $cfg_ref->set('clubb_sgs', $opts{'clubb_sgs'});
+}
+my $clubb_sgs = $cfg_ref->get('clubb_sgs');
+
+# consistency checks...
+
+# CLUBB_SGS only works with mg microphysics
+if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
+    die <<"EOF";
+**    ERROR: microphysics package set to: $microphys_pkg
+**    CLUBB_SGS only works with MG microphysics (default for the cam5 physics package)
+EOF
+}
+
+#CLUBB_SGS doesn't work when threading is turned on
+if ($clubb_sgs and ($smp eq 'ON' or $ENV{'NTHRDS_ATM'} > 1)) {
+  die <<"EOF";
+**
+**    ERROR: CLUBB_SGS doesn't support multiple threads in this version.
+**
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Macro-physics package
+# The default for the current physics package is:
+my $macrophys_pkg = 'park';
+
+# But if the physics package is adiabatic, ideal, cam3, cam4, change the default
+if ($phys_pkg =~ /cam[34]/) {$macrophys_pkg = 'rk';}
+elsif ($phys_pkg =~ /ideal|adiabatic/) {$macrophys_pkg = 'none';}
+
+# CLUBB_SGS override
+if ($clubb_sgs == 1) {
+  $macrophys_pkg = 'clubb_sgs';
+}
+
+$cfg_ref->set('macrophys', $macrophys_pkg);
+
+if ($print>=2) { print "Macrophysics package: $macrophys_pkg$eol"; }
+
+
+#-----------------------------------------------------------------------------------------------
+# PBL package
+# The default for the current physics package is:
+my $pbl_pkg = 'uw';
+# But if the physics package is adiabatic, ideal, cam3 or cam4, change the default
+if ($phys_pkg =~ m/ideal|adiabatic|cam3|cam4/) {
+    $pbl_pkg = 'hb';
+}
+
+# CLUBB_SGS override
+if ($clubb_sgs == 1) {
+  $pbl_pkg = 'clubb_sgs';
+}
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'pbl'}) {
+    $pbl_pkg = lc($opts{'pbl'});
+}
+
+# consistency checks...
+
+# UW PBL only works with mg microphysics
+if ($pbl_pkg =~ m/uw/i) {
+    unless ($microphys_pkg =~ /^mg/) {
+	die <<"EOF";
+**    ERROR: microphysics package set to: $microphys_pkg
+**    The UW PBL scheme only works with MG microphysics.
+EOF
+    }
+}
+
+$cfg_ref->set('pbl', $pbl_pkg);
+
+if ($print>=2) { print "Using $pbl_pkg PBL scheme.$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Radiation package
+# The default for the current physics package is:
+my $rad_pkg = 'rrtmg';
+# But if the physics package is adiabatic, ideal, cam3, cam4 or chemistry is waccm_*, change the default
+if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
+    $rad_pkg = 'camrt';
+}
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'rad'}) {
+    $rad_pkg = lc($opts{'rad'});
+}
+
+# consistency checks...
+
+if ($rad_pkg eq 'camrt') {
+
+    # The camrt radiation doesn't work with the modal aerosols
+    if ($chem_pkg =~ /_mam/) {
+	die "configure ERROR: radiation package: $rad_pkg is not compatible\n".
+	    "                 with aerosol package $chem_pkg\n";
+    }
+}
+elsif ($rad_pkg eq 'rrtmg') {
+
+    # The rrtmg package doesn't work with the CAM3 prescribed aerosols
+    if ($phys_pkg eq 'cam3') {
+	die "configure ERROR: radiation package: $rad_pkg is not compatible\n".
+	    "                 with physics package $phys_pkg\n";
+    }
+}
+
+$cfg_ref->set('rad', $rad_pkg);
+
+if ($print>=2) { print "Radiation package: $rad_pkg$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Option to build the COSP simulator
+if (defined $opts{'cosp'}) {
+    $cfg_ref->set('cosp', $opts{'cosp'});
+}
+my $cosp = $cfg_ref->get('cosp');
+
+# consistency check
+if ($cosp) {
+    if ($phys_pkg eq 'cam5') {
+	print "physics package: $phys_pkg is still being tested\n".
+	    "                 with the COSP simulator\n";
+    }
+}
+
+if ($cosp and $print>=2) { print "COSP simulator enabled$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Ocean model
+my $ocn_pkg = 'docn';
+# If the physics package is adiabatic, or ideal, change the default
+if ($phys_pkg =~ m/ideal|adiabatic/) {
+    $ocn_pkg = 'socn';
+}
+elsif (defined $opts{'offline_drv'}) {
+    $ocn_pkg = 'socn';
+} 
+
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'ocn'}) {
+    $ocn_pkg = lc($opts{'ocn'});
+}
+
+$cfg_ref->set('ocn', $ocn_pkg);
+
+if ($print>=2) { print "Ocean package: $ocn_pkg$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Land model 
+my $lnd_pkg = 'clm';
+# If the physics package is adiabatic, or ideal, change the default
+if ($phys_pkg =~ m/ideal|adiabatic/) {
+    $lnd_pkg = 'slnd';
+}
+elsif ($ocn_pkg eq 'aquaplanet') {
+    $lnd_pkg = 'slnd';
+}
+elsif (defined $opts{'offline_drv'}) {
+    $lnd_pkg = 'slnd';
+}
+
+# If building for CESM then do nothing for land component
+if ($ccsm_seq) {
+    $lnd_pkg = 'none';
+}
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'lnd'}) {
+    $lnd_pkg = lc($opts{'lnd'});
+}
+
+
+$cfg_ref->set('lnd', $lnd_pkg);
+
+if ($print>=2) { print "Land package: $lnd_pkg$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Sea ice model
+my $ice_pkg = 'cice';
+# If the physics package is adiabatic, ideal, or cam3, change the default
+if ($phys_pkg =~ m/ideal|adiabatic/) {
+    $ice_pkg = 'sice';
+}
+elsif ($phys_pkg eq 'cam3') {
+    $ice_pkg = 'cice';
+}
+elsif ($ocn_pkg eq 'aquaplanet') {
+    $ice_pkg = 'sice';
+}
+elsif (defined $opts{'offline_drv'}) {
+    $ice_pkg = 'sice';
+}
+# If building for CESM then do nothing for sea ice component
+if ($ccsm_seq) {
+    $ice_pkg = 'none';
+}
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'ice'}) {
+    $ice_pkg = lc($opts{'ice'});
+}
+
+$cfg_ref->set('ice', $ice_pkg);
+
+if ($print>=2) { print "Sea ice package: $ice_pkg$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Runoff model
+my $rof_pkg = 'rtm';
+# If the physics package is adiabatic, or ideal, change the default
+if ($phys_pkg =~ m/ideal|adiabatic/) {
+    $rof_pkg = 'srof';
+}
+elsif ($ocn_pkg eq 'aquaplanet') {
+    $rof_pkg = 'srof';
+}
+elsif (defined $opts{'offline_drv'}) {
+    $rof_pkg = 'srof';
+}
+
+# If building for CESM then do nothing for runoff component
+if ($ccsm_seq) {
+    $rof_pkg = 'none';
+}
+
+# Allow the user to override the default via the commandline.
+if (defined $opts{'rof'}) {
+    $rof_pkg = lc($opts{'rof'});
+}
+
+
+$cfg_ref->set('rof', $rof_pkg);
+
+if ($print>=2) { print "Runoff package: $rof_pkg$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Use modifications for perturbation growth testing?
+if (defined $opts{'pergro'}) {
+    $cfg_ref->set('pergro', $opts{'pergro'});
+}
+my $pergro = $cfg_ref->get('pergro') ? "ON" : "OFF";
+
+if ($print>=2) { print "Perturbation growth testing: $pergro$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Single column mode
+if (defined $opts{'scam'}) {
+    $cfg_ref->set('scam', 1);
+}
+my $scam = $cfg_ref->get('scam') ? "ON" : "OFF";
+
+# The only dycore supported in SCAM mode is Eulerian
+if ($scam eq 'ON' and $dyn_pkg ne 'eul') {
+    die <<"EOF";
+**  ERROR: SCAM mode only works with Eulerian dycore.
+**         Requested dycore is: $dyn_pkg
+EOF
+}
+
+# Check that model is configured for serial execution.  Note that configuring with spmd
+# and running with 1 task doesn't work because the EUL dycore expects at least 2 tasks.
+# The model should run if built for threading.
+if ($scam eq 'ON' and $spmd ne 'OFF') {
+    die <<"EOF";
+**  ERROR: SCAM mode assumes a serial build.
+**         Requested parallel modes are: spmd=$spmd  smp=$smp
+EOF
+}
+
+if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Generate IOP
+if (defined $opts{'camiop'}) {
+    $cfg_ref->set('camiop', 1);
+}
+my $camiop = $cfg_ref->get('camiop') ? "ON" : "OFF";
+
+# The only dycore supported in CAMIOP mode is Eulerian
+if ($camiop eq 'ON' and $dyn_pkg ne 'eul') {
+    die <<"EOF";
+**  ERROR: CAMIOP mode only works with Eulerian dycore.
+**         Requested dycore is: $dyn_pkg
+EOF
+}
+
+if ($print>=2) { print "Produce IOP file for SCAM: $camiop$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Horizontal grid parameters
+if (defined $opts{'hgrid'}) {
+    $cfg_ref->set('hgrid', $opts{'hgrid'});
+}
+elsif (defined $opts{'res'}) {
+    $cfg_ref->set('hgrid', $opts{'res'});
+}
+my $hgrid = $cfg_ref->get('hgrid');
+
+# set_horiz_grid sets the parameters for specific dycore/hgrid combinations.
+set_horiz_grid("$cfgdir/$horiz_grid_file", $cfg_ref);
+
+if ($print>=2) { print "Horizontal grid specifier: $hgrid$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Maximum number of columns in a chunk.
+if (defined $opts{'pcols'}) {
+    $cfg_ref->set('pcols', $opts{'pcols'});
+}
+my $pcols = $cfg_ref->get('pcols');
+
+# Override PCOLS setting if configuring for SCAM
+if ($scam eq 'ON') {
+    $pcols = 1;
+    $cfg_ref->set('pcols', $pcols);
+}
+
+# Check valid value of pcols
+unless ( $pcols >= 1 ) {
+    die <<"EOF";
+** ERROR: invalid chunk size: $pcols
+EOF
+}
+
+if ($print>=2) { print "Maximum number of columns in a chunk: $pcols$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Maximum number of sub-columns in a chunk.
+if (defined $opts{'psubcols'}) {
+    $cfg_ref->set('psubcols', $opts{'psubcols'});
+}
+my $psubcols = $cfg_ref->get('psubcols');
+
+# Check valid value of psubcols
+unless ( $psubcols >= 1 ) {
+    die <<"EOF";
+** ERROR: invalid size for sub-columns: $psubcols
+EOF
+}
+
+if ($print>=2) { print "Maximum number of sub-columns per column: $psubcols$eol"; }
+#-----------------------------------------------------------------------------------------------
+# Number of vertical levels
+if (defined $opts{'nlev'}) {
+    $cfg_ref->set('nlev', $opts{'nlev'});
+}
+else {
+
+    # If the chemistry package isn't waccm and the physics package is cam3 or cam4, then
+    # set the default number of levels to 26
+    if ($chem_pkg !~ m/waccm/i) {
+	if ($phys_pkg eq 'cam3' or $phys_pkg eq 'cam4') {
+	    $cfg_ref->set('nlev', 26);
+	}
+    }
+
+}
+my $nlev = $cfg_ref->get('nlev');
+
+# Check valid value of nlev
+unless ( $nlev >= 1 ) {
+    die <<"EOF";
+** ERROR: invalid number of vertical levels: $nlev
+EOF
+}
+
+if ($print>=2) { print "Number of vertical levels: $nlev$eol"; }
+
+#------------------------------------------------------------------------------------------------
+# chemistry preprocessor.... 
+#  -- avoid using the chem_preprocessor unless it's required
+#------------------------------------------------------------------------------------------------
+my $chem_nadv = 0;
+my $chem_cppdefs = '';
+my $chem_src_dir = '';
+
+if (!$prog_species) {
+  $chem_src_dir = "$cam_root/models/atm/cam/src/chemistry/pp_$chem_pkg";
+  $cfg_ref->set('chem_src_dir', $chem_src_dir);
+}
+
+if (($chem_pkg ne 'none') || ($prog_species)) {
+
+    if ($chem_pkg eq 'super_fast_llnl') {
+	$chem_nadv = 15;
+    }
+    elsif ($chem_pkg eq 'super_fast_llnl_mam3') {
+	$chem_nadv = 31; $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
+    }
+    elsif ($chem_pkg eq 'trop_mozart') {
+	$chem_nadv = 103;
+    }
+    elsif ($chem_pkg eq 'trop_mozart_soa') {
+	$chem_nadv = 120;
+    }
+    elsif ($chem_pkg eq 'trop_strat_mam3') {
+	$chem_nadv = 144; $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
+    }
+    elsif ($chem_pkg eq 'trop_strat_mam7') {
+	$chem_nadv = 159; $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
+    }
+    elsif ($chem_pkg eq 'trop_mozart_mam3') {
+	$chem_nadv = 108; $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
+    }
+    elsif ($chem_pkg eq 'trop_strat_soa') {
+	$chem_nadv = 156;
+    }
+    elsif ($chem_pkg eq 'trop_ghg') {
+	$chem_nadv = 4;
+    }
+    elsif ($chem_pkg eq 'waccm_mozart') {
+	$chem_nadv = 58; $chem_cppdefs = ' -DWACCM_MOZART ';
+    }
+    elsif ($chem_pkg eq 'waccm_mozart_mam3') {
+	$chem_nadv = 77; $chem_cppdefs = ' -DWACCM_MOZART -DDUST -DPROGSSLT -DMODAL_AERO -DMODAL_AERO_3MODE ';
+    }
+    elsif ($chem_pkg eq 'waccm_mozart_sulfur') {
+	$chem_nadv = 65; $chem_cppdefs = ' -DWACCM_MOZART ';
+    }
+    elsif ($chem_pkg eq 'waccm_ghg') {
+	$chem_nadv = 4; $chem_cppdefs = ' -DWACCM_GHG ';
+    }
+    elsif ($chem_pkg eq 'trop_mam3') {
+	$chem_nadv = 20; $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
+    }
+    elsif ($chem_pkg eq 'trop_mam7') {
+	$chem_nadv = 37; $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
+    }
+    elsif ($chem_pkg eq 'trop_bam') {
+	$chem_nadv = 16;
+    }
+
+    # customize chemistry
+    my $edit_chem_mech = $cfg_ref->get('edit_chem_mech');
+    my $usr_mech_infile = $cfg_ref->get('usr_mech_infile');
+    my $prog_species = $cfg_ref->get('prog_species');
+    
+    my $customize = $prog_species || $edit_chem_mech || $usr_mech_infile;
+
+    if ($customize) {
+        my $chem_proc_src ;
+        $chem_proc_src = "$cam_bld/chem_proc/source";
+	$cfg_ref->set('chem_proc_src', $chem_proc_src) ;
+	my $fc_type;
+        if (defined $ENV{COMPILER}) {
+	    $fc_type = $ENV{COMPILER};
+	} elsif (defined $opts{'fc_type'}) { 
+	    $fc_type = $opts{'fc_type'};
+	}
+	($chem_nadv) = chem_preprocess($cfg_ref,$print,$fc_type);
+    } else {
+       # copy over chem docs
+	copy("$chem_src_dir/chem_mech.doc",$cam_bld) or die "copy failed $! \n";
+	copy("$chem_src_dir/chem_mech.in" ,$cam_bld) or die "copy failed $! \n";
+    } 
+
+}
+
+my $carma_nadv = 0;
+my $carma_cppdefs = '';
+
+
+# CARMA sectional microphysics
+#
+# New CARMA models need to define the number of advected constituents.
+#
+# New CARMA models that want to do dry depostion need to provide the ccp_def PROGSSLT, so that
+# clm will return aerodynamic resistances and surface friction velocity.
+if ($carma_pkg eq 'bc_strat') {
+    $carma_nadv = 1;
+}
+elsif ($carma_pkg eq 'cirrus') {
+    $carma_nadv = 84;
+}
+elsif ($carma_pkg eq 'dust') {
+    $carma_nadv = 16;
+}
+elsif ($carma_pkg eq 'meteor_smoke') {
+    $carma_nadv = 28;
+}
+elsif ($carma_pkg eq 'pmc') {
+    $carma_nadv = 84;
+}
+elsif ($carma_pkg eq 'sea_salt') {
+    $carma_nadv = 16;
+}
+elsif ($carma_pkg eq 'sulfate') {
+    $carma_nadv = 30;
+}
+elsif ($carma_pkg eq 'test_detrain') {
+    $carma_nadv = 66;
+}
+elsif ($carma_pkg eq 'test_growth') {
+    $carma_nadv = 32;
+}
+elsif ($carma_pkg eq 'test_passive') {
+    $carma_nadv = 16;
+}
+elsif ($carma_pkg eq 'test_radiative') {
+    $carma_nadv = 16;
+}
+elsif ($carma_pkg eq 'test_swelling') {
+    $carma_nadv = 48;
+}
+elsif ($carma_pkg eq 'test_tracers') {
+    $carma_nadv = 372;
+}
+
+
+#-----------------------------------------------------------------------------------------------
+# Number of advected constituents
+my $nadv;
+if (defined $opts{'nadv'}) {
+    $cfg_ref->set('nadv', $opts{'nadv'});
+}
+else {
+
+    # If the user hasn't specified the number of advected constituents via the -nadv
+    # commandline arg, then determine the default number.
+
+    # There is always at least one advected constituent, the specific humidity, even
+    # if it's set to zero which is the case for adiabatic or ideal physics.
+    $nadv = 1;
+
+    # If neither adiabatic nor ideal physics are used, then accumulate advected constituents
+    # from the moist physics and chemistry processes.
+
+    unless ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic') {
+
+        # Microphysics parameterization
+        if ($microphys_pkg eq 'rk') {
+            $nadv += 2;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 2$eol"; }
+        }
+        elsif ($microphys_pkg =~ /^mg/) {
+            $nadv += 4;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 4$eol"; }
+        }
+
+        # co2_cycle
+        if ($co2_cycle) {
+            $nadv += 4;
+            if ($print>=2) { print "Advected constituents added by co2_cycle: 4$eol"; }
+        }
+
+        # Chemistry package:
+        $nadv += $chem_nadv;
+        if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
+  
+        # CARMA package:
+        if ($carma_nadv > 0) {
+            $nadv += $carma_nadv;
+            if ($print>=2) { print "Advected constituents added by CARMA model $carma_pkg: $carma_nadv$eol"; }
+        }
+    }
+
+    # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
+    $nadv += $ttrac_nadv;
+    if ($print>=2 and $ttrac_nadv) { print "Advected constituents added by test tracer package: $ttrac_nadv$eol"; }
+
+    if ($age_of_air_trcs eq "ON") { 
+	$nadv += 4;
+        if ($print>=2) { print "Advected constituents added by the age of air tracer package: 4$eol"; }
+    }
+
+    $cfg_ref->set('nadv', $nadv);
+}
+
+$nadv = $cfg_ref->get('nadv');
+if ($print>=2) { print "Total advected constituents: $nadv$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Setup the CICE build
+
+my $cice_cppdefs = '';
+my $cice_decomp = '';
+
+if ($ice_pkg eq 'cice') {
+
+    # Get the CAM grid
+    my $hgrid     = $cfg_ref->get('hgrid');
+    my $nx        = $cfg_ref->get('nlon');
+    my $ny        = $cfg_ref->get('nlat');
+    my $scam_mode = $cfg_ref->get('scam');
+
+    # Set the CICE decomposition
+    my $bsizex;
+    my $bsizey;
+    my $maxblocks;
+    my $decomptype;
+
+    # First, check to see if user has specified it.
+    my $cice_decomp_params = 0;
+
+    if (defined $opts{'cice_bsizex'}) {
+	$bsizex = $opts{'cice_bsizex'};
+	++$cice_decomp_params;
+    }
+    if (defined $opts{'cice_bsizey'}) {
+	$bsizey = $opts{'cice_bsizey'};
+	++$cice_decomp_params;
+    }
+    if (defined $opts{'cice_maxblocks'}) {
+	$maxblocks = $opts{'cice_maxblocks'};
+	++$cice_decomp_params;
+    }
+
+    if (defined $opts{'cice_decomptype'}) {
+       $decomptype = $opts{'cice_decomptype'};
+       ++$cice_decomp_params;
+    }
+
+    # Check that if the user has specified any of the decomp parameters,
+    # they must all be specified.
+    if ($cice_decomp_params) {
+	unless ($cice_decomp_params == 4) {
+	    die <<"EOF";
+**    ERROR: If any of the CICE decomposition parameters are specified, then they
+**    must all be specified.  The settings were:
+**    cice_bsizex=$bsizex cice_bsizey=$bsizey cice_maxblocks=$maxblocks cice_decomptype=$decomptype
+EOF
+        }
+       $cice_decomp = "-nx $nx -ny $ny -bsizex $bsizex -bsizey $bsizey ".
+           "-maxblocks $maxblocks -decomptype $decomptype";
+    }
+    # Special case: SCAM
+    elsif ($scam_mode) {
+       $cice_decomp = "-nx 1 -ny 1 -bsizex 1 -bsizey 1 ".
+           "-maxblocks 1 -decomptype 'cartesian'";
+    }
+    else {
+
+	# User hasn't specified CICE decomp so get default values.
+
+	# The defaults depend on the total number of execution threads available.  These must
+	# be specified by the user.
+	my $cice_ntasks;
+	my $cice_nthreads;
+
+	if ($spmd eq 'OFF'  and  $smp eq 'OFF') {
+
+	    # serial case:
+	    $cice_ntasks   = 1;
+	    $cice_nthreads = 1;
+	}
+	elsif ($spmd eq 'OFF' and $smp eq 'ON') {
+
+	    # OMP only -- user must define nthreads
+	    if (defined $nthreads) {
+		$cice_ntasks   = 1;
+		$cice_nthreads = $nthreads;
+	    }
+	    else {
+		die <<"EOF";
+**    ERROR: If CICE decomposition parameters are not specified, then
+**    -nthreads must be specified to determine a default decomposition
+**    for a pure OMP run.  The setting was:  nthreads=$nthreads
+EOF
+	    }
+	}
+	elsif ($spmd eq 'ON' and $smp eq 'OFF') {
+
+	    # MPI only -- user must define ntasks
+	    if (defined $ntasks) {
+		$cice_ntasks   = $ntasks;
+		$cice_nthreads = 1;
+	    }
+	    else {
+		die <<"EOF";
+**    ERROR: If CICE decomposition parameters are not specified, then
+**    -ntasks must be specified to determine a default decomposition
+**    for a pure MPI run.  The setting was:  ntasks=$ntasks
+EOF
+	    }
+	}
+	elsif ($spmd eq 'ON' and $smp eq 'ON') {
+
+	    # Hybrid -- user must define both ntasks and nthreads
+	    if (defined $ntasks and defined $nthreads) {
+		$cice_ntasks   = $ntasks;
+		$cice_nthreads = $nthreads;
+	    }
+	    else {
+		die <<"EOF";
+**    ERROR: If CICE decomposition parameters are not specified, then
+**    -ntasks and -nthreads must be specified to determine a default decomposition
+**    for a hybrid run.  The settings were:  ntasks=$ntasks  nthreads=$nthreads
+EOF
+	    }
+	}
+
+	# Workaround for bug in cice configure.  In tag cice4_0_20130320 calling the
+        # configure script with -ntasks and -nthreads arguments is not giving the same 
+        # decomp as when generate_cice_decomp.pl is called with those same args.  So
+	# for now we need to call generate_cice_decomp.pl directly.
+        #$cice_decomp = "-nx $nx -ny $ny -ntasks $cice_ntasks -nthreads $cice_nthreads";
+
+	my $cice_gen_decomp = 
+	    "$cam_root/models/ice/cice/bld/generate_cice_decomp.pl ".
+	    "-res $hgrid -nproc $cice_ntasks -thrds $cice_nthreads -nx $nx -ny $ny";
+
+	my $cice_decomp_str = `$cice_gen_decomp`;
+	my @decomp = split " ", $cice_decomp_str;
+
+	$cice_decomp = "-nx $nx -ny $ny -bsizex $decomp[2] -bsizey $decomp[3] ".
+           "-maxblocks $decomp[4] -decomptype $decomp[5]";
+
+    }
+
+    my $cice_config  = "$cam_root/models/ice/cice/bld/configure";
+
+    # Run the CICE configure.  In CAM standalone mode the CICE code is being built
+    # by using the CAM Makefile.  The CICE configure is only supplying the CPP defines
+    # that need to be included in the Makefile.
+
+    # For now write the CICE config_cache file to the same location as CAM's
+    my $cice_config_cache_file = "config_cache_cice.xml";
+    $cfg_ref->set('cice_config_cache_dir', $config_cache_dir);
+    $cfg_ref->set('cice_config_cache_file', $cice_config_cache_file);
+
+    my $cice_config_commandline = "$cice_config -hgrid $hgrid -cice_mode prescribed -ntr_aero 0 ".
+	"$cice_decomp -cache $cice_config_cache_file -cachedir $config_cache_dir";
+
+    print "Issuing command to the CICE configure utility:\n  $cice_config_commandline\n";
+
+    system($cice_config_commandline) == 0  or die "configure: CICE configure returned: $?\n";
+
+    # The CICE configure writes CPP defines to the file CICE_cppdefs
+    $cice_cppdefs = `cat CICE_cppdefs`;
+    $cice_cppdefs =~ s/^\s+//;
+    $cice_cppdefs =~ s/\s+$//;
+    $cice_cppdefs = " $cice_cppdefs ";
+
+}
+
+#-----------------------------------------------------------------------------------------------
+# Makefile configuration #######################################################################
+#-----------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------
+# Name of CAM executable.
+if (defined $opts{'cam_exe'}) {
+    $cfg_ref->set('cam_exe', $opts{'cam_exe'});
+}
+my $cam_exe = $cfg_ref->get('cam_exe');
+
+if ($print>=2) { print "Name of CAM executable: $cam_exe$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Set default Fortran and C compilers
+my $fc = '';
+my $fc_type = '';
+my $cc = '';
+
+if ($target_os eq 'aix') {
+    if ($spmd eq 'ON') {
+	$fc = 'mpxlf95_r';
+    }
+    else {
+	$fc = 'xlf95_r';
+    }
+    $fc_type = 'xlf';
+    $cc = 'mpcc_r';
+}
+elsif ($target_os eq 'linux') {
+    $fc='pgf95';
+}
+elsif ($target_os eq 'darwin') {
+
+    my $uname_m = `uname -m`;
+    if ($uname_m =~ /ppc/) {
+
+	if ($spmd eq 'ON') {
+	    $fc = 'mpxlf95_r;'
+	}
+	else {
+	    $fc = 'xlf95_r';
+	}
+	$fc_type = 'xlf';
+	$cc = 'xlc';
+    }
+    else {
+	$fc = 'ifort';
+	$cc = 'gcc';
+    }
+}
+elsif ($target_os eq 'bgl') {
+    $fc = 'blrts_xlf95';
+    $cc = 'blrts_xlc';
+}
+elsif ($target_os eq 'bgp') {
+    $fc = 'mpixlf95_r';
+    $cc = 'mpixlc_r';
+}
+
+# User override for Fortran compiler
+if (defined $opts{'fc'}) { $fc = $opts{'fc'}; }
+
+if ($fc) {
+    $cfg_ref->set('fc', $fc);
+    if ($print>=2) { print "Fortran compiler: $fc$eol"; }
+}
+else {
+    # If no default or user specification for Fortran compiler then die.
+    die "Default for Fortran compiler not found.  Specify using the '-fc' argument.$eol";
+}
+
+# fc_type is used to identify the type of fortran compiler when it is being invoked
+# using a generic name such as mpif90 or ftn.  This is currently only used in the Linux
+# section of the Makefile.
+
+if    ($fc =~ /pgf/)    { $fc_type = 'pgi'; }
+elsif ($fc =~ /^lf/)    { $fc_type = 'lahey'; }
+elsif ($fc =~ /ifort/)  { $fc_type = 'intel'; }
+elsif ($fc =~ /^nag/)    { $fc_type = 'nag'; }
+elsif ($fc =~ /path/)   { $fc_type = 'pathscale'; }
+elsif ($fc =~ /gfort/)  { $fc_type = 'gnu'; }
+elsif ($fc =~ /xlf/)    { $fc_type = 'xlf'; }
+
+# User override for Fortran compiler type
+if (defined $opts{'fc_type'}) { $fc_type = $opts{'fc_type'}; }
+
+if ($fc_type) {
+    $cfg_ref->set('fc_type', $fc_type);
+    if ($print>=2) { print "Fortran compiler type: $fc_type$eol"; }
+}
+else {
+
+    # The Linux section of the Makefile depends on the FC_TYPE macro.  Fail if
+    # target_os is linux and fc_type hasn't been set.
+    if ($target_os eq 'linux') {
+	die "Fortran compiler type must be set on Linux platform.  Specify using the '-fc_type' argument.$eol";
+    }
+}
+
+# If a default hasn't been set yet for CC then set one now.
+if ($cc eq '') {
+
+    # On platforms where the programming environment is set up using a package managing
+    # tool like "module" or "dotkit" then the compilers are invoked using scripts with
+    # generic names like "ftn" and "cc".  The following code to set the default CC
+    # compiler recognizes this special case:
+
+    if ($fc eq 'ftn') {
+
+	$cc = 'cc';
+
+    }
+    elsif ($fc eq 'mpif90') {
+
+	$cc = 'mpicc';
+
+    }
+    else {
+
+	# Set default C compiler based on fc_type
+	if    ($fc_type eq 'pgi')       { $cc = 'pgcc'; }
+	elsif ($fc_type eq 'lahey')     { $cc = 'gcc'; }
+	elsif ($fc_type eq 'intel')     { $cc = 'icc'; }
+        elsif ($fc_type eq 'nag')       { $cc = 'gcc'; }
+	elsif ($fc_type eq 'pathscale') { $cc = 'pathcc'; }
+	elsif ($fc_type eq 'gnu')       { $cc = 'gcc'; }
+	elsif ($fc_type eq 'xlf')       { $cc = 'xlc'; }
+    }
+}
+
+# User override for C compiler
+if (defined $opts{'cc'}) { $cc = $opts{'cc'}; }
+
+# If the C compiler has not been set yet...
+unless ($cc) { $cc = 'cc';}
+
+$cfg_ref->set('cc', $cc);
+if ($print>=2) { print "C compiler: $cc$eol"; }
+
+
+#-----------------------------------------------------------------------------------------------
+# Allow override of Makefile default linker
+my $linker = '';
+if (defined $opts{'linker'}) {
+    $linker = $opts{'linker'};
+}
+$cfg_ref->set('linker', $linker);
+
+if ($linker and $print>=2) { print "Setting linker to: $linker$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Use compiler debugging options?
+my $debug_opt = (defined $opts{'debug'}) ? 1 : 0;
+$cfg_ref->set('debug', $debug_opt);
+my $debug = $debug_opt ? 'ON': 'OFF';
+
+if ($print>=2) { print "Compiler debugging options: $debug$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Append to Makefile default C compiler options
+my $cflags = '';
+if (defined $opts{'cflags'}) {
+    $cflags = $opts{'cflags'};
+}
+$cfg_ref->set('cflags', $cflags);
+
+if ($cflags and $print>=2) { print "Setting additional C compiler options: \'$cflags\'$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Append to Makefile default Fortran compiler options
+my $fflags = '';
+if (defined $opts{'fflags'}) {
+    $fflags = $opts{'fflags'};
+}
+$cfg_ref->set('fflags', $fflags);
+
+if ($fflags and $print>=2) { print "Setting additional Fortran compiler options: \'$fflags\'$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Fortran compiler optimization overrides Makefile defaults
+my $fopt = '';
+if (defined $opts{'fopt'}) {
+    $fopt = $opts{'fopt'};
+}
+$cfg_ref->set('fopt', $fopt);
+
+if ($fopt and $print>=2) { print "Override default Fortran optimization flags with: \'$fopt\'$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Load options appended to Makefile defaults
+my $ldflags = '';
+if (defined $opts{'ldflags'}) {
+    $ldflags = $opts{'ldflags'};
+}
+$cfg_ref->set('ldflags', $ldflags);
+
+if ($ldflags and $print>=2) { print "Load options appended to Makefile defaults: \'$ldflags\'$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# For the CPP tokens, start with the defaults (from defaults file) and append the specifications
+# from the commandline.  That way the user can override defaults since the commandline versions
+# occur last.
+my $usr_cppdefs = $cfg_ref->get('cppdefs');
+if (defined $opts{'cppdefs'}) {
+    $usr_cppdefs .= " $opts{'cppdefs'}";
+}
+$cfg_ref->set('cppdefs', $usr_cppdefs);
+
+if ($usr_cppdefs and $print>=2) { print "Default and user CPP definitions: \'$usr_cppdefs\'$eol";}
+
+# The following CPP macro definitions are used to implement the compile-time options.  They are
+# determined by the configuration parameters that have been set above.  They will be appended to
+# the CPP definitions that were explicitly set in the defaults file or by the user on the commandline.
+my $cfg_cppdefs = ' ';
+
+# Fortran name mangling
+if ($cam_build) {
+    if ( $fc_type eq 'xlf') {
+	$cfg_cppdefs .= " -DFORTRAN_SAME";
+    }
+    else {
+	$cfg_cppdefs .= " -DFORTRANUNDERSCORE";
+    }
+}
+
+# cpl7 defines
+# currently the only BGC scenario implemented is CO2A.  This must be set to
+# allocate fields so that the land listens to the atmosphere to recieve the
+# surface layer CO2 value.
+$cfg_cppdefs .= " -DCO2A";
+
+# Building for CLM
+$cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
+
+# Building for perturbation growth tests
+if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
+
+# Building for DOM
+if ($ocn_pkg eq 'dom') { $cfg_cppdefs .= " -DCOUP_DOM"; }
+
+# Configure CAM to produce IOP files for SCAM
+if ($camiop eq 'ON') { $cfg_cppdefs .= " -DBFB_CAM_SCAM_IOP"; }
+
+# Resolution parameters for rectangular lat/lon grids
+my $nlon = $cfg_ref->get('nlon');
+my $nlat = $cfg_ref->get('nlat');
+$cfg_cppdefs .= " -DPLON=$nlon -DPLAT=$nlat";
+
+
+# Parameters for multiple instances
+if (!$ccsm_seq){
+    $cfg_cppdefs .= " -DNUM_COMP_INST_ATM=1 -DNUM_COMP_INST_LND=1 -DNUM_COMP_INST_OCN=1 -DNUM_COMP_INST_ICE=1 -DNUM_COMP_INST_GLC=1 -DNUM_COMP_INST_ROF=1 -DNUM_COMP_INST_WAV=1";
+}
+
+# Resolution parameters for spectral element cubed sphere grids.
+# F2003 definition turns on standard-conforming method of causing edge
+# buffers to overlap. This method works in all CAM compilers, but fails
+# on some older compilers used by HOMME standalone.
+if ($dyn_pkg eq 'se') {
+    my $csnp = $cfg_ref->get('csnp');
+    $cfg_cppdefs .= " -DNP=$csnp -DNC=4 -DHAVE_F2003_PTR_BND_REMAP";
+}
+
+# Resolution parameters for vertical grid, number of constituents, chunk size
+my $nlev = $cfg_ref->get('nlev');
+my $nadv = $cfg_ref->get('nadv');
+my $pcols = $cfg_ref->get('pcols');
+my $psubcols = $cfg_ref->get('psubcols');
+$cfg_cppdefs .= " -DPLEV=$nlev -DPCNST=$nadv -DPCOLS=$pcols -DPSUBCOLS=$psubcols";
+
+# Spectral truncation parameters
+my $trm = $cfg_ref->get('trm');
+my $trn = $cfg_ref->get('trn');
+my $trk = $cfg_ref->get('trk');
+$cfg_cppdefs .= " -DPTRM=$trm -DPTRN=$trn -DPTRK=$trk";
+
+# FV dycore
+if ($dyn_pkg eq 'fv') { $cfg_cppdefs .= " -DSTAGGERED "; }
+
+# offline driver for FV dycore
+if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
+
+# Spectral Element dycore
+if($dyn_pkg eq 'se'){
+    if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
+    $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
+}
+
+# CICE ice model
+$cfg_cppdefs .= $cice_cppdefs;
+
+# -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
+if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
+
+# Chem CPP defs
+$cfg_cppdefs .= $chem_cppdefs;
+if ($waccm_phys) { $cfg_cppdefs .= ' -DWACCM_PHYS'; }
+
+# CARMA CPP defs
+$cfg_cppdefs .= $carma_cppdefs;
+
+#WACCM-X extended thermosphere/ionosphere model
+if ($waccmx) { $cfg_cppdefs .= ' -DWACCMX'; }
+
+# PIO
+if ($cam_build) {
+    $cfg_cppdefs .= " -D_USEBOX";
+}
+
+# COSP simulator
+if ($cosp) { $cfg_cppdefs .= ' -DUSE_COSP'; }
+
+# CLUBB, hardcode CLUBB precision to kind=8
+
+if ($clubb_sgs == 1) {
+    $cfg_cppdefs .= ' -DCLUBB_SGS';
+    $cfg_cppdefs .= ' -DCLUBB_CAM';
+    $cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
+    $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
+}
+
+#-----------------------------------------------------------------------------------------------
+# External libraries ###########################################################################
+#-----------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------
+# NetCDF include
+my $nc_inc = '';
+if ($cam_build) {
+    if (defined $opts{'nc_inc'}) {
+	$nc_inc = $opts{'nc_inc'};
+    }
+    elsif (defined $ENV{INC_NETCDF}) {
+	$nc_inc = $ENV{INC_NETCDF};
+    }
+
+    $cfg_ref->set('nc_inc', $nc_inc);
+
+    if ($nc_inc and $print>=2) { print "Will look for NetCDF include file in: $nc_inc$eol"; }
+}
+
+# NetCDF library
+my $nc_lib = '';
+my $nc_ldflags = '';
+if ($cam_build) {
+    if (defined $opts{'nc_lib'}) {
+	$nc_lib = $opts{'nc_lib'};
+    }
+    elsif (defined $ENV{LIB_NETCDF}) {
+	$nc_lib = $ENV{LIB_NETCDF};
+    }
+
+    $cfg_ref->set('nc_lib', $nc_lib);
+
+    # If the location of the NetCDF libraries has not been specified, then
+    # assume the compiler wrapper script is providing the information.
+    # Otherwise we attempt to set the necessary link arguments in the
+    # nc_ldflags variable.
+    if ($nc_lib ne '') {
+	if (-f "$nc_lib/../bin/nf-config") {
+	    $nc_ldflags = `$nc_lib/../bin/nf-config --flibs`;
+	    chomp $nc_ldflags;
+	    if ($?) { 
+		print "Encountered error in nf-config --flibs call.\n";
+		$nc_ldflags = '';
+	    }
+	}
+	elsif (-f "$nc_lib/../bin/nc-config") {
+	    $nc_ldflags = `$nc_lib/../bin/nc-config --flibs`;
+	    chomp $nc_ldflags;
+	    if ($?) {
+		print "Encountered error in nc-config --flibs call.\n";
+		$nc_ldflags = '';
+	    }
+	}
+
+	# If the nf-config or nc-config scripts were not found, or if they
+	# returned an error status, then try default link args.
+	unless ($nc_ldflags) {
+	    $nc_ldflags = "-L$nc_lib -lnetcdf -lnetcdff";
+	}
+
+	# Set rpath for shared libs.  First check whether the nf-config or
+	# nc-config script has already set an arg to be passed to the linker.
+	if ($nc_ldflags !~ m/-Wl/) {
+	    if ($fc_type eq 'nag') {
+		$nc_ldflags .= " -Wl,-Wl,,-rpath=$nc_lib";
+	    }
+	    else {
+		$nc_ldflags .= " -Wl,-rpath=$nc_lib";
+	    }
+	}
+
+	$cfg_ref->set('nc_ldflags', $nc_ldflags);
+
+	if ($print>=2) { print "Will look for netCDF library in: $nc_lib$eol"; }
+    }
+
+    # PIO Support
+    $cfg_cppdefs .= " -D_NETCDF  ";
+}
+
+# NetCDF module files
+my $nc_mod = '';
+if ($cam_build) {
+    if (defined $opts{'nc_mod'}) {
+	$nc_mod = $opts{'nc_mod'};
+    }
+    elsif (defined $ENV{MOD_NETCDF}) {
+	$nc_mod = $ENV{MOD_NETCDF};
+    }
+
+    # check for the mod files in the user specified location
+    if ($nc_mod and (-f "$nc_mod/netcdf.mod"    or -f "$nc_mod/NETCDF.mod")
+                and (-f "$nc_mod/typesizes.mod" or -f "$nc_mod/TYPESIZES.mod") ) {
+    }
+    # if not there check in the netcdf lib directory
+    elsif ($nc_lib and (-f "$nc_lib/netcdf.mod"    or -f "$nc_lib/NETCDF.mod")
+                   and (-f "$nc_lib/typesizes.mod" or -f "$nc_lib/TYPESIZES.mod") ) { 
+	$nc_mod = $nc_lib;
+    } 
+    # then check in the netcdf include directory
+    elsif ($nc_inc and (-f "$nc_inc/netcdf.mod"    or -f "$nc_inc/NETCDF.mod")
+                   and (-f "$nc_inc/typesizes.mod" or -f "$nc_inc/TYPESIZES.mod") ) { 
+	$nc_mod = $nc_inc;
+    }
+    else {
+	$nc_mod = '';
+    }
+    $cfg_ref->set('nc_mod', $nc_mod);
+
+    if ($nc_mod and $print>=2) { print "Found netCDF module files in: $nc_mod$eol"; }
+}
+
+# PNetCDF include
+my $pnc_inc = '';
+if ($cam_build) {
+    if (defined $opts{'pnc_inc'}) {
+      $pnc_inc = $opts{'pnc_inc'};
+    }
+    elsif (defined $ENV{INC_PNETCDF}) {
+      $pnc_inc = $ENV{INC_PNETCDF};
+    }
+    else {
+      $pnc_inc = '/usr/local/include';
+    }
+
+    if (-f "$pnc_inc/pnetcdf.inc") {
+      $cfg_ref->set('pnc_inc', $pnc_inc);
+      if ($print>=2) { print "Found PnetCDF include file in: $pnc_inc$eol"; }
+    }else{
+      undef $pnc_inc;
+    }
+}
+
+# PNetCDF library
+my $pnc_lib = '';
+if ($cam_build) {
+    if (defined $opts{'pnc_lib'}) {
+      $pnc_lib = $opts{'pnc_lib'};
+    }
+    elsif (defined $ENV{LIB_PNETCDF}) {
+      $pnc_lib = $ENV{LIB_PNETCDF};
+    }
+    else {
+      $pnc_lib = '/usr/local/lib';
+    }
+
+    if (-f "$pnc_lib/libpnetcdf.a" and $spmd eq 'ON') {
+      $cfg_ref->set('pnc_lib', $pnc_lib);
+      if ($print>=2) { print "Found PnetCDF library in: $pnc_lib$eol"; }
+      # PIO Support
+      $cfg_cppdefs .= " -D_PNETCDF ";
+    }else{
+      undef $pnc_lib;
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
+# LAPACK library
+my $lapack_libdir = '';
+if ($cam_build) {
+    if (defined $opts{'lapack_libdir'}) {
+	$lapack_libdir = $opts{'lapack_libdir'};
+    }
+    elsif (defined $ENV{LAPACK_LIBDIR}) {
+	$lapack_libdir = $ENV{LAPACK_LIBDIR};
+    }
+
+    if ($lapack_libdir ne '') {
+	if (-f "$lapack_libdir/liblapack.a") {
+	    $cfg_ref->set('lapack_libdir', $lapack_libdir);
+	}
+	else {
+	    die <<"EOF";
+** Cannot find liblapack.a in specified directory: $lapack_libdir
+** 
+** The LAPACK library directory is determined from the following set of options listed
+** from highest to lowest precedence:
+** * by the command-line option -lapack_libdir
+** * by the environment variable LAPACK_LIBDIR
+EOF
+        }
+    }
+
+    if ($lapack_libdir and $print>=2) { print "Found LAPACK library in: $lapack_libdir$eol"; }
+}
+
+#-----------------------------------------------------------------------------------------------
+# ESSL library -- add this library to the LDFLAGS for CAMChem when we're on an AIX system.
+#                 Assume that the xlf compiler is used to link.
+if ($cam_build) {
+    if ($chem_pkg and $target_os eq 'aix') {
+	$ldflags = $cfg_ref->get('ldflags');
+	$ldflags .= " -lessl";
+	$cfg_ref->set('ldflags', $ldflags);
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
+# MPI
+# Only check for the MPI include or library files if the user has explicitly specified
+# where to look.  Often the Fortran compiler knows where to look for these files and so
+# not specifying them is the best strategy.
+my $mpi_inc = '';
+my $mpi_lib = '';
+my $mpi_lib_name = '';
+if ($cam_build and $spmd eq 'ON') {
+
+    # MPI include
+    if (defined $opts{'mpi_inc'}) {
+	$mpi_inc = $opts{'mpi_inc'};
+    }
+    elsif (defined $ENV{INC_MPI}) {
+	$mpi_inc = $ENV{INC_MPI};
+    }
+
+    if ($mpi_inc eq '' or -f "$mpi_inc/mpif.h") {
+	$cfg_ref->set('mpi_inc', $mpi_inc);
+    }
+    else {
+	die <<"EOF";
+** Cannot find mpif.h in specified directory: $mpi_inc
+** 
+** The MPI include directory is determined from the following set of options listed
+** from highest to lowest precedence:
+** * by the command-line option -mpi_inc
+** * by the environment variable INC_MPI
+EOF
+    }
+
+    if ($mpi_inc and $print>=2) { print "Found MPI include file in: $mpi_inc$eol"; }
+
+    # MPI library
+    if (defined $opts{'mpi_lib'}) {
+	$mpi_lib = $opts{'mpi_lib'};
+    }
+    elsif (defined $ENV{LIB_MPI}) {
+	$mpi_lib = $ENV{LIB_MPI};
+    }
+
+    if ($mpi_lib eq '') {
+	$cfg_ref->set('mpi_lib', $mpi_lib);
+	$cfg_ref->set('mpi_lib_name', '');
+    }
+    elsif (-f "$mpi_lib/libmpi.a" or -f "$mpi_lib/libmpi.so") {
+	$cfg_ref->set('mpi_lib', $mpi_lib);
+	$cfg_ref->set('mpi_lib_name', 'mpi');
+    }
+    elsif (-f "$mpi_lib/libmpich.a") {
+	$cfg_ref->set('mpi_lib', $mpi_lib);
+	$cfg_ref->set('mpi_lib_name', 'mpich');
+	if (-f  "$mpi_lib/../bin/mpich2version") {
+	    $cfg_cppdefs .= " -DNO_SIZEOF";
+	} else {
+	    $cfg_cppdefs .= " -DNO_MPI2 -DNO_MPIMOD -DNO_SIZEOF";
+	}
+    }
+    else {
+	die <<"EOF";
+** Cannot find libmpi.a, libmpi.so or libmpich.a in specified directory: $mpi_lib
+** 
+** The MPI library directory is determined from the following set of options listed
+** from highest to lowest precedence:
+** * by the command-line option -mpi_lib
+** * by the environment variable LIB_MPI
+EOF
+    }
+
+    if ($mpi_lib and $print>=2) { print "Found MPI library in: $mpi_lib$eol"; }
+
+}
+
+#-----------------------------------------------------------------------------------------------
+# ESMF library.
+
+my $esmf_libdir = '';
+if (defined $opts{'esmf_libdir'}) {
+    $esmf_libdir = $opts{'esmf_libdir'};
+}
+elsif (defined $ENV{ESMF_LIBDIR}) {
+    $esmf_libdir = $ENV{ESMF_LIBDIR};
+}
+
+if ($cam_build and $esmf_libdir) {
+
+    # Check that both the library and the esmf.mk file are found.  Makefile macros
+    # defined in esmf.mk are referenced by the Makefile.
+    if ( (-f "$esmf_libdir/libesmf.a" or -f "$esmf_libdir/libesmf.so") and -f "$esmf_libdir/esmf.mk" ) {
+	$cfg_ref->set('esmf_libdir', $esmf_libdir);
+	if ($print>=2 ) { print "Found ESMF library in: $esmf_libdir$eol"; }
+    }
+    else {
+	die <<"EOF";
+** Cannot find libesmf.a, libesmf.so, or esmf.mk in specified directory: $esmf_libdir
+** 
+** The ESMF library directory is determined from the following set of options listed
+** from highest to lowest precedence:
+** * by the command-line option -esmf_libdir
+** * by the environment variable ESMF_LIBDIR
+EOF
+    }
+
+}
+
+#-----------------------------------------------------------------------------------------------
+# CPP defines to put on Makefile
+
+my $make_cppdefs = "$usr_cppdefs $cfg_cppdefs";
+
+if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol"; }
+
+
+#-----------------------------------------------------------------------------------------------
+# COSP library.
+
+# Only build COSP as a separate library if doing a CAM standalone build.
+if ($cosp and $cam_build) {
+
+    # Set the directory used to build cosp.  Add location and library name
+    # to the user specified load flags.
+    my $cosp_libdir = "$cam_bld/cosp";
+    $cfg_ref->set('cosp_libdir', "$cosp_libdir");
+
+    my $ldflags = $cfg_ref->get('ldflags');
+    $ldflags .= " -L$cosp_libdir -lcosp ";
+    $cfg_ref->set('ldflags', $ldflags);
+
+    # create the build directory for cosp
+    my $bld_dir = $cosp_libdir;
+    unless (-d $bld_dir or mkdirp($bld_dir)) {
+        die "** Could not create the cosp build directory: $bld_dir\n";
+    }
+
+    # Create the COSP Makefile from a template and copy it into the cosp bld directory
+    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cam_bld/cosp/Makefile");
+    if ($print) { print "creating $cam_bld/cosp/Makefile\n"; }
+}
+
+
+#-----------------------------------------------------------------------------------------------
+# MCT library.
+# Only build MCT as a separate library if doing a CAM standalone build.
+
+if ($cam_build) {
+    my $mct_libdir = '$cam_bld/mct';
+    if (defined $opts{'mct_libdir'}) {
+        $mct_libdir = $opts{'mct_libdir'};
+    }
+    elsif (defined $ENV{MCT_LIBDIR}) {
+        $mct_libdir = $ENV{MCT_LIBDIR};
+    } else {
+      $mct_libdir = "$cam_bld/mct"; 
+    }
+    $cfg_ref->set('mct_libdir', "$mct_libdir");
+
+
+    my $ldflags = $cfg_ref->get('ldflags');
+    $ldflags .= " -L$mct_libdir/mct -lmct -L$mct_libdir/mpeu -lmpeu ";
+    if ($spmd eq 'OFF') { 
+      $ldflags .= " -L$mct_libdir/mpi-serial -lmpi-serial ";
+    }
+    $cfg_ref->set('ldflags', $ldflags);
+   
+    unless (-d $mct_libdir or mkdirp($mct_libdir)) {
+        die "** Could not create the mct build directory: $mct_libdir\n";
+    }
+    unless (-d "$mct_libdir/mct" or mkdirp("$mct_libdir/mct")) {
+        die "** Could not create the mct build directory: $mct_libdir/mct\n";
+    }
+    unless (-d "$mct_libdir/mpeu" or mkdirp("$mct_libdir/mpeu")) {
+        die "** Could not create the mct build directory: $mct_libdir/mpeu\n";
+    }
+    if ($spmd eq 'OFF') { 
+         unless (-d "$mct_libdir/mpi-serial" or mkdirp("$mct_libdir/mpi-serial")) {
+             die "** Could not create the mct build directory: $mct_libdir/mpi-serial\n";
+         }
+    }
+
+    system("cp $cam_root/models/utils/mct/Makefile $mct_libdir/.") == 0
+	or die "Unable to copy mct/Makefile\n";
+    system("cp $cam_root/models/utils/mct/mct/Makefile $mct_libdir/mct/.") == 0
+	or die "Unable to copy mct/Makefile\n";
+    system("cp $cam_root/models/utils/mct/mpeu/Makefile $mct_libdir/mpeu/.") == 0
+	or die "Unable to copy mpeu/Makefile\n";
+    if ($spmd eq 'OFF') { 
+       system("cp $cam_root/models/utils/mct/mpi-serial/Makefile $mct_libdir/mpi-serial/.") == 0
+	   or die "Unable to copy mpi-serial/Makefile\n";
+    }
+
+    my $mct_quiet = '> /dev/null 2>&1';
+    if ($print >= 2) {$mct_quiet = '';}
+
+    my $mct_debug = '';
+    if ($debug eq 'ON') {$mct_debug = '--enable-debugging';}
+
+    my $mpi_serial = '--enable-mpiserial';
+    if ($spmd eq 'ON') {$mpi_serial = '';}
+
+    my $mpi_hdr = '';
+    if ($spmd eq 'ON') {
+        if ($mpi_inc) {$mpi_hdr = "MPIHEADER=-I$mpi_inc"; }
+    }
+
+    # Set F[C]FLAGS for MCT for compilers where the defaults won't work.
+    # Blank string does nothing, letting MCT's configure decide.
+    my $mct_flags_str = " ";
+    if ($fc_type eq "nag") {
+        # Take options from CESM's Machines directory.
+        $mct_flags_str = " -O2 -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,".
+            "mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,".
+            "mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,".
+            "mpi_file_write_all,mpibcast,mpiscatterv ";
+        if ($debug eq 'ON') { $mct_flags_str .= " -g -gline -time -f95 -C=all "; }
+
+        # Set to both FFLAGS and FCFLAGS to ensure all files use this.
+        $mct_flags_str = " FFLAGS=\"$mct_flags_str\" ".
+                           "FCFLAGS=\"$mct_flags_str\" ";
+
+        # This workaround tells gcc how to link to the NAG runtime,
+        # which is the only way to run MCT's configure with runtime
+        # checks enabled.
+        # Note that this hard-codes the NAG path, and libf53, for NAG 5.3.1.
+        if ($debug eq 'ON') {
+            $mct_flags_str .= " CFLAGS=\" -g -Wl,--as-needed,--allow-shlib-undefined\" ";
+            $mct_flags_str .= " LIBS=\" -L/usr/local/nag/lib/NAG_Fortran -lf53 \" ";
+        }
+    }
+
+    my $cfg_cmnd = "$cam_root/models/utils/mct/configure FC=$fc ".
+        "$mct_flags_str --srcdir=$cam_root/models/utils/mct $mpi_hdr ".
+        "$mpi_serial $mct_debug $mct_quiet";
+
+    chdir $mct_libdir      or die "FAILURE: cd to $mct_libdir\n";
+    system($cfg_cmnd) == 0 or die "FAILURE: MCT configure\n";
+    chdir $cam_bld         or die "FAILURE: cd to $cam_bld\n";
+       
+    print "MCT configure is done.\n";
+}
+
+
+#-----------------------------------------------------------------------------------------------
+# Write configuration files ####################################################################
+#-----------------------------------------------------------------------------------------------
+
+my $fp_filename      = 'Filepath';             # name of output filepath file
+my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for cam's cppdefs in ccsm
+
+# Write the filepath file.
+write_filepath("$cam_bld/$fp_filename", $cfg_ref);
+if ($print) { print "creating $cam_bld/$fp_filename\n"; }
+
+if (($ccsm_seq)) {
+
+    # Write the file for cam's cppdefs needed in ccsm.
+    write_cppdefs("$cam_bld/$cpp_filename", $make_cppdefs);
+    if ($print) { print "creating $cam_bld/$cpp_filename\n"; }
+
+} else {
+
+    # Write the Makefile.
+    write_makefile("$cfgdir/Makefile.in", "$cam_bld/Makefile", $cfg_ref, $make_cppdefs);
+    if ($print) { print "creating $cam_bld/Makefile\n"; }
+
+    # Write the config.h file for PIO and MCT
+    write_config_h("$cam_bld/config.h");
+    if ($print) { print "creating $cam_bld/config.h\n"; }
+
+}
+
+# Write the configuration cache file.
+$cfg_ref->write_file($config_cache_file, $commandline);
+if ($print) { print "creating $config_cache_file\n"; }
+
+#-----------------------------------------------------------------------------------------------
+# Finished unless testing requested ############################################################
+#-----------------------------------------------------------------------------------------------
+unless ($cam_build and $opts{'test'}) {
+    if ($print) { print "CAM configure done.\n"; }
+    exit;
+}
+
+# create a subdirectory of the current directory for testing
+my $test_dir = "$cam_bld/configure-tests";
+unless (-d $test_dir or mkdirp($test_dir)) {
+    die <<"EOF";
+** Could not create the testing directory: $test_dir
+EOF
+}
+chdir( $test_dir ) || die <<"EOF";
+** Trouble changing directory to $test_dir
+**
+EOF
+
+# check for GNU make in the user's path
+if ($print) { print "Looking for a valid GNU make... "; }
+my @makenames = qw(gmake gnumake make);
+if ($opts{'gmake'}) { unshift @makenames, $opts{'gmake'}; }
+my $gmake = get_gmake(@makenames);
+if ($gmake) {
+    if ($print) { print "using $gmake$eol"; }
+} else {
+    print "\n".
+          "** Cannot find a valid GNU make.  Tried:\n".
+          "@makenames\n";
+    die "The name of GNU make on your system can be specified to configure via\n".
+	"the -gmake option.  Make sure this\n".
+	"name is in your path (add the appropriate directory to your PATH\n".
+	"environment variable) or specify an absolute pathname.\n";
+}
+
+# The CAM Makefile requires a Filepath file.  To run the tests construct a Filepath file
+# that contains only the test directory.
+write_tests_filepath($test_dir);
+
+# Test for Fortran 90 compatible compiler
+if ($print) { print "Testing for Fortran 90 compatible compiler... "; }
+my $fc = check_fc($gmake, "$cam_bld/Makefile");
+if ($fc) {
+    if ($print) { print "using $fc$eol"; }
+}
+
+# Test NetCDF library
+if ($print) { print "Test linking to NetCDF library... "; }
+if (check_netcdf($gmake, "$cam_bld/Makefile")==0) { if ($print) { print "ok$eol"; } }
+
+# Test MPI library
+if ($spmd eq 'ON') {
+    if ($print) { print "Test linking to MPI library... "; }
+    if (check_mpi($gmake, "$cam_bld/Makefile")==0) { if ($print) { print "ok$eol"; } }
+}
+
+# Test ESMF library
+if ($esmf_libdir) {
+    if ($print) { print "Test linking to ESMF library... "; }
+    if (check_esmf($gmake, "$cam_bld/Makefile")==0) { if ($print) { print "ok$eol"; } }
+}
+
+#-----------------------------------------------------------------------------------------------
+# Done testing.
+chdir( $cwd ) || die <<"EOF";
+** Trouble changing directory back to $cwd
+**
+EOF
+if ($print) { print "CAM configure done.\n"; }
+exit;
+
+#-----------------------------------------------------------------------------------------------
+# REALLY FINISHED ##############################################################################
+#-----------------------------------------------------------------------------------------------
+
+sub write_filepath
+{
+    my ($file, $cfg_ref) = @_;
+    my  $fh = new IO::File;
+
+    $fh->open(">$file") or die "** can't open filepath file: $file\n";
+
+    # configuration parameters used to determine paths
+    my $cam_root      = $cfg_ref->get('cam_root');
+    my $usr_src       = $cfg_ref->get('usr_src');
+    my $chem_proc_src = $cfg_ref->get('chem_proc_src');
+    my $chem_src_dir  = $cfg_ref->get('chem_src_dir');
+    my $chem          = $cfg_ref->get('chem');
+    my $waccm_phys    = $cfg_ref->get('waccm_phys');
+    my $waccmx        = $cfg_ref->get('waccmx');
+    my $carma         = $cfg_ref->get('carma');
+    my $rad           = $cfg_ref->get('rad');
+    my $dyn           = $cfg_ref->get('dyn');
+    my $cppdefs       = $cfg_ref->get('cppdefs');
+    my $cosp          = $cfg_ref->get('cosp');
+    my $spmd          = $cfg_ref->get('spmd');
+    my $esmf_libdir   = $cfg_ref->get('esmf_libdir');
+    my $ocn           = $cfg_ref->get('ocn');
+    my $lnd           = $cfg_ref->get('lnd');
+    my $ice           = $cfg_ref->get('ice');
+    my $rof           = $cfg_ref->get('rof');
+    my $offline_drv   = $cfg_ref->get('offline_drv');
+
+    # Root directory
+    my $srcdir = "$cam_root/models";
+
+    # Component interface specifier
+    my $comp_intf = $cfg_ref->get('comp_intf');
+
+    # Start writing paths to the file.  *** Order is important ***  The
+    # sequence of paths will be used to set the GNU Makefile's VPATH macro
+    # which tells make where to search for dependencies.
+
+    # User specified source directories.
+    if ($usr_src  =~ /\S+/) {
+	my @dirs = split ',', $usr_src;
+	while ( my $dir = shift @dirs ) {
+	    print $fh "$dir\n";
+        }
+    }
+
+    # CESM has a standard source mods location.
+    if ($ccsm_seq) {
+	my $CASEROOT = "$ENV{'CASEROOT'}";
+	print $fh "$CASEROOT/SourceMods/src.cam\n";
+    }
+
+    # offline unit driver
+    if ($offline_drv) {
+	if (!($offline_drv eq 'stub')) {
+	    print $fh "$srcdir/atm/cam/src/unit_drivers/${offline_drv}\n";
+	    if ($rad eq 'camrt') {
+		print $fh "$srcdir/atm/cam/src/unit_drivers/${offline_drv}/$rad\n";
+	    }
+	}
+    }
+
+
+    if ($carma ne 'none') {
+	# This directory needs to precede physics/cam/ to replace
+	# the CARMA stub package with CARMA. Putting it first allows
+	# any CAM file to be overridden by a particular CARMA model.
+	print $fh "$srcdir/atm/cam/src/physics/carma/models/$carma\n";
+	print $fh "$srcdir/atm/cam/src/physics/carma/cam\n";
+	print $fh "$srcdir/atm/cam/src/physics/carma/base\n";
+    }
+
+    # CAM chemistry, dynamics, physics, control and shared utilities.
+    if ($chem_proc_src) {
+        print $fh "$chem_proc_src\n";
+    }
+    if ($chem_src_dir) {
+        print $fh "$chem_src_dir\n";
+    }
+    if ($chem =~ /_mam/) {
+	print $fh "$srcdir/atm/cam/src/chemistry/modal_aero\n";
+    }
+    print $fh "$srcdir/atm/cam/src/chemistry/mozart\n";
+    if ($waccm_phys) {
+	print $fh "$srcdir/atm/cam/src/physics/waccm\n";
+    }
+
+    if ($waccmx) {
+        print $fh "$srcdir/atm/cam/src/physics/waccmx\n";
+    }
+
+    print $fh "$srcdir/atm/cam/src/chemistry/bulk_aero\n";
+    print $fh "$srcdir/atm/cam/src/chemistry/utils\n";
+
+    if ($rad eq 'rrtmg') {
+	# These directories need to precede physics/cam/ to replace
+	# the CAM3 radiation package with RRTMG
+	print $fh "$srcdir/atm/cam/src/physics/rrtmg\n";
+	print $fh "$srcdir/atm/cam/src/physics/rrtmg/ext/rrtmg_mcica\n";
+	print $fh "$srcdir/atm/cam/src/physics/rrtmg/ext/rrtmg_lw\n";
+	print $fh "$srcdir/atm/cam/src/physics/rrtmg/ext/rrtmg_sw\n";
+    }
+
+    print $fh "$srcdir/atm/cam/src/physics/cam\n";
+    if ($clubb_sgs eq '1') {
+       print $fh "$srcdir/atm/cam/src/physics/clubb\n";
+    }
+
+    print $fh "$srcdir/atm/cam/src/dynamics/$dyn\n";
+    if($dyn eq 'se') {
+	print $fh "$srcdir/atm/cam/src/dynamics/se/share\n";
+    }
+
+    # Parallelization utilies
+    if ($dyn eq 'fv' or $cppdefs =~ /MODCM_DP_TRANSPOSE/) {
+	print $fh "$srcdir/atm/cam/src/utils/pilgrim\n";
+    }
+
+    # Advective transport
+    if ($dyn eq 'eul' or $dyn eq 'sld') {
+	print $fh "$srcdir/atm/cam/src/advection/slt\n";
+    }
+
+    print $fh "$srcdir/atm/cam/src/cpl_$comp_intf\n";
+    print $fh "$srcdir/atm/cam/src/cpl_share\n";
+    print $fh "$srcdir/atm/cam/src/control\n";
+    print $fh "$srcdir/atm/cam/src/utils\n";
+
+    if ($ccsm_seq) {
+
+	# These paths are only needed for the CESM build which builds COSP
+	# as a part of the atm component library.  The CAM standalone build
+	# issues a sub-make call to build COSP in it's own library.
+	if ($cosp) {
+	    # COSP simulator
+	    print $fh "$srcdir/atm/cam/src/physics/cosp\n";
+	    print $fh "$srcdir/atm/cam/src/physics/icarus-scops\n";
+	    print $fh "$srcdir/atm/cam/src/physics/cosp/quickbeam\n";
+	    print $fh "$srcdir/atm/cam/src/physics/cosp/actsim\n";
+	    print $fh "$srcdir/atm/cam/src/physics/cosp/llnl\n";
+	    print $fh "$srcdir/atm/cam/src/physics/cosp/MISR_simulator\n";
+	    print $fh "$srcdir/atm/cam/src/physics/cosp/MODIS_simulator\n";
+	}
+
+    }
+    else {
+
+	# The rest of these paths are only needed for CAM standalone builds
+
+	print $fh "$srcdir/utils/timing\n";
+	print $fh "$srcdir/utils/pio\n";
+
+	unless ($esmf_libdir) { 
+	    print $fh "$srcdir/utils/esmf_wrf_timemgr\n";
+	}
+
+	# Sequential Driver
+	print $fh "$srcdir/drv/driver\n";
+	print $fh "$srcdir/drv/shr\n";
+	if ($comp_intf eq 'esmf') {
+	    print $fh "$srcdir/drv/shr_esmf\n";
+	}
+
+	# Ocean package.
+	if ($ocn eq 'dom') {
+	    print $fh "$srcdir/atm/cam/src/utils/cam_dom\n";
+	    print $fh "$srcdir/atm/cam/src/utils/cam_dom/cpl_$comp_intf\n";
+	}
+	elsif ($ocn eq 'docn') {
+	    print $fh "$srcdir/ocn/docn\n";
+	    print $fh "$srcdir/ocn/docn/cpl_$comp_intf\n";
+	}
+	elsif ($ocn eq 'aquaplanet') {
+	    print $fh "$srcdir/atm/cam/src/utils/cam_aqua\n";
+	    print $fh "$srcdir/atm/cam/src/utils/cam_aqua/cpl_$comp_intf\n";
+	}
+	elsif ($ocn eq 'socn') {
+	    print $fh "$srcdir/ocn/socn/cpl_$comp_intf\n";
+	}
+
+	# Land package
+	if ($lnd eq 'clm') {
+	    print $fh "$srcdir/lnd/clm/src/cpl_$comp_intf\n";
+	    print $fh "$srcdir/lnd/clm/src/cpl_share\n";
+	    print $fh "$srcdir/lnd/clm/src/clm4_0/main\n";
+	    print $fh "$srcdir/lnd/clm/src/clm4_0/biogeochem\n";
+	    print $fh "$srcdir/lnd/clm/src/clm4_0/biogeophys\n";
+	    print $fh "$srcdir/lnd/clm/src/util_share\n";
+	}
+	elsif ($lnd eq 'slnd') {
+	    print $fh "$srcdir/lnd/slnd/cpl_$comp_intf\n";
+	}
+
+	# Sea ice package
+	if ($ice eq 'csim4') {
+	    print $fh "$srcdir/atm/cam/src/utils/cam_csim4\n";
+	    print $fh "$srcdir/atm/cam/src/utils/cam_csim4/cpl_$comp_intf\n";
+	}
+	elsif ($ice eq 'sice') {
+	    print $fh "$srcdir/ice/sice/cpl_$comp_intf\n";
+	}
+	elsif ($ice eq 'cice') {
+	    print $fh "$srcdir/ice/cice/src/drivers/cpl_$comp_intf\n";
+	    print $fh "$srcdir/ice/cice/src/drivers/cpl_share\n";
+	    print $fh "$srcdir/ice/cice/src/mpi\n";
+	    print $fh "$srcdir/ice/cice/src/source\n";
+	}
+
+	# Land ice package
+	print $fh "$srcdir/glc/sglc/cpl_$comp_intf\n";
+
+        # Runoff package
+        if ($rof eq 'rtm') {
+	    print $fh "$srcdir/rof/rtm/src/cpl_$comp_intf\n";
+	    print $fh "$srcdir/rof/rtm/src/cpl_share\n";
+            print $fh "$srcdir/rof/rtm/src/riverroute\n";
+        }
+        elsif ($rof eq 'srof') {
+            print $fh "$srcdir/rof/srof/cpl_$comp_intf\n";
+        }
+
+	# Wave package
+	print $fh "$srcdir/wav/swav/cpl_$comp_intf\n";
+
+	print $fh "$srcdir/csm_share/shr\n";
+	print $fh "$srcdir/csm_share/dshr\n";
+    }
+
+    $fh->close;
+}
+
+#-------------------------------------------------------------------------------
+
+sub write_cppdefs
+{
+    my ($file, $make_cppdefs) = @_;
+    my  $fh = new IO::File;
+
+    $fh->open(">$file") or die "** can't open cpp defs file: $file\n";
+
+    print $fh "$make_cppdefs\n";
+
+    $fh->close;
+}
+
+#-------------------------------------------------------------------------------
+
+sub write_makefile
+{
+    # Add macro definitions to the beginning of the Makefile
+    # in the CAM configuration script directory
+
+    my ($file_in, $file_out, $cfg_ref, $make_cppdefs) = @_;
+    my  $fh_in = new IO::File;
+    my  $fh_out = new IO::File;
+
+    $fh_out->open(">$file_out") or die "** can't open file: $file_out\n";
+
+    # configuration parameters
+    my $target_os    = $cfg_ref->get('target_os');
+    my $cam_root     = $cfg_ref->get('cam_root');
+    my $cam_exe      = $cfg_ref->get('cam_exe');
+    my $cam_exedir   = $cfg_ref->get('cam_exedir');
+    my $nc_inc       = $cfg_ref->get('nc_inc');
+    my $nc_lib       = $cfg_ref->get('nc_lib');
+    my $nc_mod       = $cfg_ref->get('nc_mod');
+    my $mpi_inc      = $cfg_ref->get('mpi_inc');
+    my $mpi_lib      = $cfg_ref->get('mpi_lib');
+    my $mpi_lib_name = $cfg_ref->get('mpi_lib_name');
+    my $debug        = $cfg_ref->get('debug') ? 'TRUE' : 'FALSE';
+    my $spmd         = $cfg_ref->get('spmd') ? 'TRUE' : 'FALSE';
+    my $smp          = $cfg_ref->get('smp') ? 'TRUE' : 'FALSE';
+    my $fc           = $cfg_ref->get('fc');
+    my $fc_type      = $cfg_ref->get('fc_type');
+    my $cc           = $cfg_ref->get('cc');
+    my $linker       = $cfg_ref->get('linker');
+    my $cflags       = $cfg_ref->get('cflags');
+    my $fflags       = $cfg_ref->get('fflags');
+    my $fopt         = $cfg_ref->get('fopt');
+    my $ldflags      = $cfg_ref->get('ldflags');
+    my $cosp_libdir  = $cfg_ref->get('cosp_libdir');
+    my $mct_libdir   = $cfg_ref->get('mct_libdir');
+
+
+
+    # map between local os names ($OSNAME) and names which are
+    # used in the Makefile (return value from "uname -s" command).
+    my %uname_map = ( 'aix'      => 'AIX',
+		      'darwin'   => 'Darwin',
+		      'dec_osf'  => 'OSF1',
+		      'es'       => 'ES',
+		      'irix'     => 'IRIX64',
+		      'linux'    => 'Linux',
+		      'solaris'  => 'SunOS',
+		      'super-ux' => 'SUPER-UX',
+		      'unicosmp' => 'UNICOS/mp',
+                      'bgl'      => 'BGL',
+                      'bgp'      => 'BGP',
+		      );
+
+    print $fh_out  <<"EOF";
+# Make macros for CAM.
+
+UNAMES       := $uname_map{$target_os}
+ROOTDIR      := $cam_root
+EXENAME      := $cam_exe
+MODEL_EXEDIR := $cam_exedir
+INC_NETCDF   := $nc_inc
+LIB_NETCDF   := $nc_lib
+NC_LDFLAGS   := $nc_ldflags
+MOD_NETCDF   := $nc_mod
+INC_PNETCDF  := $pnc_inc
+LIB_PNETCDF  := $pnc_lib
+INC_MPI      := $mpi_inc
+LIB_MPI      := $mpi_lib
+MPI_LIB_NAME := $mpi_lib_name
+LAPACK_LIBDIR:= $lapack_libdir
+ESMF_LIBDIR  := $esmf_libdir
+DEBUG        := $debug
+SPMD         := $spmd
+SMP          := $smp
+FC           := $fc
+FC_TYPE      := $fc_type
+CC           := $cc
+USER_LINKER  := $linker
+USER_CPPDEFS := $make_cppdefs
+USER_CFLAGS  := $cflags
+USER_FFLAGS  := $fflags
+F_OPTIMIZATION_OVERRIDE := $fopt
+USER_LDFLAGS := $ldflags
+COSP_LIBDIR  := $cosp_libdir
+MCT_LIBDIR   := $mct_libdir
+
+
+EOF
+
+    # Copy the "template" makefile to the new makefile.
+    $fh_in->open("<$file_in") or die "** can't open file: $file_in\n";
+    while (<$fh_in>) {
+	print $fh_out $_;
+    }
+
+    $fh_out->close;
+    $fh_in->close;
+}
+
+#-------------------------------------------------------------------------------
+
+sub write_cosp_makefile
+{
+
+    my ($file_in, $file_out) = @_;
+    my  $fh_in = new IO::File;
+    my  $fh_out = new IO::File;
+
+    $fh_out->open(">$file_out") or die "** can't open file: $file_out\n";
+
+    print $fh_out  <<"EOF";
+
+
+CAM_BLD    := $cam_bld
+COSP_PATH  := $cam_root/models/atm/cam/src/physics/cosp
+ISCCP_PATH := $cam_root/models/atm/cam/src/physics/icarus-scops
+RS_PATH    := $cam_root/models/atm/cam/src/physics/cosp/quickbeam
+CS_PATH    := $cam_root/models/atm/cam/src/physics/cosp/actsim
+LLNL_PATH  := $cam_root/models/atm/cam/src/physics/cosp/llnl
+MISR_PATH  := $cam_root/models/atm/cam/src/physics/cosp/MISR_simulator
+MODIS_PATH := $cam_root/models/atm/cam/src/physics/cosp/MODIS_simulator
+
+EOF
+
+    # Copy the "template" makefile to the new makefile.
+    $fh_in->open("<$file_in") or die "** can't open file: $file_in\n";
+    while (<$fh_in>) {
+	print $fh_out $_;
+    }
+
+    $fh_out->close;
+    $fh_in->close;
+}
+
+
+#-------------------------------------------------------------------------------
+
+sub write_config_h
+{
+    my ($file) = @_;
+    my  $fh = new IO::File;
+
+    $fh->open(">$file") or die "** can't open config.h file for PIO and MCT: $file\n";
+
+    print $fh <<"EOF";
+#ifdef FORTRAN_SAME
+#define FC_FUNC(name,NAME) name
+#elif FORTRANUNDERSCORE
+#define FC_FUNC(name,NAME) name ##_
+#elif FORTRANDOUBLEUNDERSCORE
+#define FC_FUNC(name,NAME)  name ##__
+#endif
+EOF
+
+    $fh->close;
+}
+
+#-------------------------------------------------------------------------------
+
+sub set_horiz_grid
+{
+    # Set the parameters for the specified dycore and horizontal grid.  The
+    # parameters are read from an input file, and if no dycore/grid matches are
+    # found then issue error message.
+    # This routine uses the configuration defined at the package level ($cfg_ref).
+
+    my ($hgrid_file, $cfg_ref) = @_;
+    my $xml = XML::Lite->new( $hgrid_file );
+    my $root = $xml->root_element();
+
+    # Check for valid root node
+    my $name = $root->get_name();
+    $name eq "config_horiz_grid" or die
+	"file $hgrid_file is not a horizontal grid parameters file\n";
+
+    # Get dycore/grid from the package's configuration
+    my $dyn_pkg = $cfg_ref->get('dyn');
+    my $hgrid   = $cfg_ref->get('hgrid');
+
+    # Special case -- If running a PERGRO test with the SLD dycore, use the
+    #                 spectral truncation parameters appropriate for the EUL
+    #                 dycore.  Implement this case by overriding the local
+    #                 value of $dyn_pkg.
+    my $pergro = $cfg_ref->get('pergro');
+    if ( $pergro and ($dyn_pkg eq 'sld') ) { $dyn_pkg = 'eul'; }
+
+    # Read the grid parameters from $hgrid_file.
+    my @e = $xml->elements_by_name( "horiz_grid" );
+    my %a = ();
+
+    # Search for matching dycore/grid.
+    my $found = 0;
+  HGRID:
+    while ( my $e = shift @e ) {
+	%a = $e->get_attributes();
+	if ( $dyn_pkg eq $a{'dyn'} and $hgrid eq $a{'hgrid'} ) {
+	    $found = 1;
+	    last HGRID;
+	}
+    }
+
+    # Die unless search was successful.
+    unless ($found) { die "set_horiz_grid: no match for dycore $dyn_pkg and hgrid $hgrid\n"; }
+
+    # Set parameter values -- dycore specific.
+    if ( $dyn_pkg =~ m/eul|sld/ ) {
+	$cfg_ref->set('nlat', $a{'nlat'});
+	$cfg_ref->set('nlon', $a{'nlon'});
+	$cfg_ref->set('trm',  $a{'m'});
+	$cfg_ref->set('trn',  $a{'n'});
+	$cfg_ref->set('trk',  $a{'k'});
+    }
+    elsif ( $dyn_pkg eq 'fv' ) {
+	$cfg_ref->set('nlat', $a{'nlat'});
+	$cfg_ref->set('nlon', $a{'nlon'});
+    }
+    elsif ( $dyn_pkg eq 'fvcubed' ) {
+        $cfg_ref->set('csnp', $a{'csnp'});
+    }
+    elsif ( $dyn_pkg eq 'se' ) {
+	$cfg_ref->set('csne', $a{'csne'});
+	$cfg_ref->set('csnp', $a{'csnp'});
+	# needed for cice configure script.  sets nlat=1 and nlon=ncol
+	$cfg_ref->set('nlat', 1);
+	$cfg_ref->set('nlon', $a{'ncol'});
+    }
+
+    # Override resolution settings to configure for SCAM mode.  The override is needed
+    # because in SCAM mode the -hgrid option is used to specify the resolution of default
+    # datasets from which single data columns are extracted.
+    my $scam = $cfg_ref->get('scam');
+    if ($scam) {
+	$cfg_ref->set('nlat', 1);
+	$cfg_ref->set('nlon', 1);
+	$cfg_ref->set('trm',  1);
+	$cfg_ref->set('trn',  1);
+	$cfg_ref->set('trk',  1);
+    }
+
+}
+
+#-------------------------------------------------------------------------------
+
+sub get_sys_defaults
+{
+    my ($file, $os) = @_;
+    my $xml = XML::Lite->new( $file );
+    my $root = $xml->root_element();
+    my $e;          # xml element
+    my %a;          # element attributes
+    my %sys = ();   # return values
+
+    # Check for valid root node
+    my $name = $root->get_name();
+    $name eq "system_defaults" or die
+	"file $file is not a system defaults file\n";
+
+    # SPMD
+    $e = $xml->elements_by_name( "spmd" );
+    %a = $e->get_attributes();
+    $sys{'spmd'} = $a{$os};
+
+    # SMP
+    $e = $xml->elements_by_name( "smp" );
+    %a = $e->get_attributes();
+    $sys{'smp'} = $a{$os};
+
+    return %sys;
+}
+
+#-------------------------------------------------------------------------------
+
+sub absolute_path {
+#
+# Convert a pathname into an absolute pathname, expanding any . or .. characters.
+# Assumes pathnames refer to a local filesystem.
+# Assumes the directory separator is "/".
+#
+  my $path = shift;
+  my $cwd = getcwd();  # current working directory
+  my $abspath;         # resulting absolute pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+# Convert relative to absolute path.
+
+  if ($path =~ m!^\.$!) {          # path is "."
+      return $cwd;
+  } elsif ($path =~ m!^\./!) {     # path starts with "./"
+      $path =~ s!^\.!$cwd!;
+  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+      $path = "$cwd/..";
+  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+      $path = "$cwd/$path";
+  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+      $path = "$cwd/$path";
+  }
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+  # Remove any "" that are not leading.
+  for (my $i=0; $i<=$#dirs; ++$i) {
+      if ($i == 0 or $dirs[$i] ne "") {
+	  push @dirs2, $dirs[$i];
+      }
+  }
+  @dirs = ();
+
+  # Remove any "."
+  foreach $dir (@dirs2) {
+      unless ($dir eq ".") {
+	  push @dirs, $dir;
+      }
+  }
+  @dirs2 = ();
+
+  # Remove the "subdir/.." parts.
+  foreach $dir (@dirs) {
+    if ( $dir !~ /^\.\.$/ ) {
+        push @dirs2, $dir;
+    } else {
+        pop @dirs2;   # remove previous dir when current dir is ..
+    }
+  }
+  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+  $abspath = join '/', @dirs2;
+  return( $abspath );
+}
+
+#-------------------------------------------------------------------------------
+
+sub subst_env_path {
+#
+# Substitute for any environment variables contained in a pathname.
+# Assumes the directory separator is "/".
+#
+  my $path = shift;
+  my $newpath;         # resulting pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+  foreach $dir (@dirs) {
+    if ( $dir =~ /^\$(.+)$/ ) {
+        push @dirs2, $ENV{$1};
+    } else {
+        push @dirs2, $dir;
+    }
+  }
+  $newpath = join '/', @dirs2;
+  return( $newpath );
+}
+
+#-------------------------------------------------------------------------------
+
+sub mkdirp {
+    my ($dir) = @_;
+    my (@dirs) = split /\//, $dir;
+    my (@subdirs, $path);
+
+    # if $dir is absolute pathname then @dirs will start with ""
+    if ($dirs[0] eq "") { push @subdirs, shift @dirs; }  
+
+    while ( @dirs ) { # check that each subdir exists and mkdir if it doesn't
+	push @subdirs, shift @dirs;
+	$path = join '/', @subdirs;
+	unless (-d $path or mkdir($path, 0777)) { return 0; }
+    }
+    return 1;
+}
+
+#-------------------------------------------------------------------------------
+
+sub get_gmake {
+
+# check for a valid version of GNU make in the user's path
+
+    my @makenames = @_;
+    my ($make, $retval);
+
+    foreach $make (@makenames) {
+	$retval = `$make -v 2>&1`;
+	return $make if ($retval =~ /GNU Make/);
+    }
+    return;
+}
+
+#-------------------------------------------------------------------------------
+
+sub write_tests_filepath
+{
+    my ($test_dir) = @_;
+    my  $fh = new IO::File;
+
+    $fh->open(">Filepath") or die "** can't open file: $test_dir/Filepath\n";
+
+    print $fh "$test_dir\n";
+
+    $fh->close;
+}
+
+#-------------------------------------------------------------------------------
+
+sub run_test
+{
+    # Return true if the test should be run after a successful build.
+    # Note that this function is depending on the main package variables
+    # main::$spmd and main:: $target_os.
+
+    # Default is to try running a test that's been successfully built.
+    my $result = 1;
+
+    # But don't attempt to run a test if...
+    if ( $spmd eq 'ON'                     # SPMD is enabled
+	 or $target_os ne $OSNAME          # cross compilation
+	 ) {$result = 0;}
+
+    return $result;
+}
+
+#-------------------------------------------------------------------------------
+
+sub check_fc {
+
+# Create a "hello world" test code in Fortran 90 syntax to check the compiler.
+# If successful then the name of the compiler used is returned.
+
+    my ($gmake, $makefile) = @_;
+    my $fh = new IO::File;
+    my $file = 'test_fc.F90';
+
+    # create test program
+    $fh->open(">$file") or die "** can't open file: $file\n";
+    print $fh  <<"EOF";
+module m1
+   private
+   public :: hello
+contains
+subroutine hello()
+   implicit none
+   print *, 'hello world'
+end subroutine hello
+end module m1
+program main
+   use m1, only: hello
+   implicit none
+   call hello
+end program main
+EOF
+    $fh->close;
+
+    # Build the test_fc target in the CAM Makefile
+    my $cmd = "$gmake -f $makefile test_fc 2>&1";
+    my $out = `$cmd`;
+    my $cmd_error = $CHILD_ERROR;
+    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+    if ($cmd_error) { 
+	die "**** FAILED ****\n$test_output";
+    } elsif ($print>=2) {
+	print "**** PASS ****\n$test_output";
+    }
+
+    # search make output for name of Fortran compiler -- Assume that the Makefile
+    # rule has the syntax "$(FC) -c ..."
+    $out =~ m{ ^\s*      # leading whitespace
+	       (\w+)     # 1st word (name of compiler)
+	       \s+       # followed by one or more spaces
+	       -c        # and the -c option
+	       \s   
+	     }xm;
+
+    my $fc_compiler_name = $1;
+
+    if (run_test()) {
+	# Run test_fc.
+	my $cmd = "./test_fc";
+	my $out = `$cmd`;
+	my $cmd_error = $CHILD_ERROR;
+	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+	if ($cmd_error) { 
+	    die "**** FAILED ****\n$test_output";
+	} elsif ($print>=2) {
+	    print "**** PASS ****\n$test_output";
+	}
+    }
+
+    # clean-up (Srcfiles and Depends are created by the makefile)
+    unlink 'test_fc.F90', 'test_fc.o', 'test_fc', 'Depends', 'Srcfiles', glob("[Mm]1.[Mm][Oo][Dd]");
+
+    return $fc_compiler_name;
+}
+
+#-------------------------------------------------------------------------------
+
+sub check_netcdf {
+
+# Create a test code that has an external reference to the netCDF library
+# and check that the Makefile can build it.  Returns 0 on success.
+
+    my ($gmake, $makefile) = @_;
+    my $fh = new IO::File;
+    my $file = 'test_nc.F90';
+
+    # create test program
+    $fh->open(">$file") or die "** can't open file: $file\n";
+    print $fh  <<"EOF";
+program main
+   use netcdf
+   implicit none
+   integer :: ncid, ret
+   ret = nf90_create('foo.nc', NF90_CLOBBER, ncid)
+   if ( ret == NF90_NOERR ) then
+      print *, 'created foo.nc'
+   else
+      print *, nf90_strerror( ret )
+   end if
+end program main
+EOF
+    $fh->close;
+
+    # Build the test_nc target in the CAM Makefile
+    my $cmd = "$gmake -f $makefile test_nc 2>&1";
+    my $out = `$cmd`;
+    my $cmd_error = $CHILD_ERROR;
+    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+    if ($cmd_error) { 
+	die "**** FAILED ****\n$test_output";
+    } elsif ($print>=2) {
+	print "**** PASS ****\n$test_output";
+    }
+
+    if (run_test()) {
+	# Run test_nc.
+	my $cmd = "./test_nc";
+	my $out = `$cmd`;
+	my $cmd_error = $CHILD_ERROR;
+	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+	if ($cmd_error) { 
+	    die "**** FAILED ****\n$test_output";
+	} elsif ($print>=2) {
+	    print "**** PASS ****\n$test_output";
+	}
+    }
+
+    # clean-up
+    unlink 'test_nc.F90', 'test_nc.o', 'test_nc', 'foo.nc', 'Depends', 'Srcfiles';
+
+    return 0;
+}
+
+#-------------------------------------------------------------------------------
+
+sub check_mpi {
+
+# Create a test code that has an external reference to the MPI library
+# and check that the Makefile can build it.  Returns 0 on success.
+
+    my ($gmake, $makefile) = @_;
+    my $fh = new IO::File;
+    my $file = 'test_mpi.F90';
+
+    # create the test program
+    $fh->open(">$file") or die "** can't open file: $file\n";
+    print $fh  <<"EOF";
+      program test_mpi
+      implicit none
+#include <mpif.h>
+      integer :: ierr
+      call mpi_init(ierr)
+      if ( ierr == MPI_SUCCESS ) then
+         print *, 'successfully called mpi_init'
+      else
+         print *, 'ERROR returned from mpi_init'
+      end if
+      end program test_mpi
+EOF
+    $fh->close;
+
+    # Build the test_mpi target in the CAM Makefile
+    my $cmd = "$gmake -f $makefile test_mpi 2>&1";
+    my $out = `$cmd`;
+    my $cmd_error = $CHILD_ERROR;
+    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+    if ($cmd_error) { 
+	die "**** FAILED ****\n$test_output";
+    } elsif ($print>=2) {
+	print "**** PASS ****\n$test_output";
+    }
+
+    if (run_test()) {
+	# Run test_mpi.
+	my $cmd = "./test_mpi";
+	my $out = `$cmd`;
+	my $cmd_error = $CHILD_ERROR;
+	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+	if ($cmd_error) { 
+	    die "**** FAILED ****\n$test_output";
+	} elsif ($print>=2) {
+	    print "**** PASS ****\n$test_output";
+	}
+    }
+
+    # clean-up
+    unlink 'test_mpi.F90', 'test_mpi.o', 'test_mpi', 'Depends', 'Srcfiles';
+
+    return 0;
+}
+
+#-------------------------------------------------------------------------------
+
+sub check_esmf {
+
+# Create a test code that has an external reference to the ESMF library
+# and check that the Makefile can build it.  Returns 0 on success.
+
+    my ($gmake, $makefile) = @_;
+    my $fh = new IO::File;
+    my $file = 'test_esmf.F90';
+
+    # create the test program
+    $fh->open(">$file") or die "** can't open file: $file\n";
+    print $fh  <<"EOF";
+      program test_esmf
+      use ESMF_Mod
+      implicit none
+      integer :: ierr
+
+      ! Writes a log called ESMF_LogFile to bld/configure-tests
+      call ESMF_Initialize(rc=ierr,defaultlogtype=ESMF_LOG_SINGLE)
+
+      if ( ierr == ESMF_SUCCESS ) then
+         print *, 'successfully called ESMF_Initialize'
+      else
+         print *, 'ERROR returned from ESMF_Initialize'
+      end if
+
+      ! Close the log file in order to flush it
+      call ESMF_Finalize(rc=ierr)
+
+      end program test_esmf
+EOF
+    $fh->close;
+
+    # Build the test_esmf target in the CAM Makefile
+    my $cmd = "$gmake -f $makefile test_esmf 2>&1";
+    my $out = `$cmd`;
+    my $cmd_error = $CHILD_ERROR;
+    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+    if ($cmd_error) { 
+	die "**** FAILED ****\n$test_output";
+    } elsif ($print>=2) {
+	print "**** PASS ****\n$test_output";
+    }
+
+    if (run_test()) {
+	# Run test_esmf.
+	$cmd = "./test_esmf";
+	my $out = `$cmd`;
+	my $cmd_error = $CHILD_ERROR;
+	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
+
+
+	if ($cmd_error) { 
+	    die "**** FAILED ****\n$test_output";
+	} elsif ($print>=2) {
+	    print "**** PASS ****\n$test_output";
+	}
+    }
+
+    # clean-up
+    unlink 'test_esmf.F90', 'test_esmf.o', 'test_esmf', 'Depends', 'Srcfiles';
+
+    return 0;
+}
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+
+sub version {
+# The version is found in CAM's ChangeLog file.
+# $cfgdir is set by the configure script to the name of its directory.
+
+    my ($cfgdir) = @_;
+
+    my $logfile = "$cfgdir/../doc/ChangeLog";
+
+    my $fh = IO::File->new($logfile, '<') or die "** can't open ChangeLog file: $logfile\n";
+
+    while (my $line = <$fh>) {
+
+	if ($line =~ /^Tag name:\s*(\w+)/ ) {
+	    print "$1\n";
+	    exit;
+	}
+    }
+
+}
+
+
+#-------------------------------------------------------------------------------
+
+sub print_hash {
+    my %h = @_;
+    my ($k, $v);
+    while ( ($k,$v) = each %h ) { print "$k => $v\n"; }
+}
+

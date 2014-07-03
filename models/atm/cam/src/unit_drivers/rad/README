@@ -1,0 +1,12 @@
+Parallel Offline Radiation Tool (PORT)
+
+Creators :
+  Andrew Conley (aconley.ucar.edu)
+  Francis Vitt (fvitt@ucar.edu)
+
+Only the CAMRT radiation package is supportted by PORT.
+
+To configure PORT use the CAM configure option:
+ -offline_drv rad
+
+

@@ -1,0 +1,48 @@
+# Requires (command line or in  .bashrc):
+#   module load cmake
+#
+# cmake configuration script that works on jaguar with PGI
+# This script needs to be run from a subdirectory (e.g. build-pgi)
+# of the main seacism repository (reflected in the several 
+# instances of # ".." below).
+#
+# After this executes, do:
+#   make -j 8
+#   cp example-drivers/simple_glide/src/sgcmake .
+#  --If you get an error about missing mod files, try make multiple times.
+
+
+rm -f ./CMakeCache.txt
+
+echo
+echo "Doing CMake Configuration step"
+
+cmake \
+  -D GLIMMER_TRILINOS_DIR=/ccs/proj/cli054/trilinos-10.12/AUG_PGI_BUILD/install \
+  -D GLIMMER_NETCDF_DIR=$NETCDF_DIR \
+  -D CMAKE_CXX_FLAGS="-g -O0" \
+  -D CMAKE_C_FLAGS="-g -O0" \
+  -D CMAKE_Fortran_FLAGS="-g -O0" \
+  -D GLIMMER_FMAIN="/opt/pgi/12.5.0/linux86-64/12.5/lib/f90main.o" \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+ ..
+
+# Note: last argument above  ".."  is path to top seacism directory 
+ 
+# If you dont depend on  netcdff AND netcdf, but just netcdf, use this line
+#   -D GLIMMER_NETCDF_LIBS="netcdf" \
+#
+# 8/15/2012 this the PrgEnv that both the trilinos build above and the current
+# successful build and run of seacism on Jaguar xk6
+
+#Currently Loaded Modulefiles:
+#  1) modules/3.2.6.6                      10) xpmem/0.1-2.0400.31280.3.1.gem       19) DefApps
+#  2) xtpe-network-gemini                  11) xe-sysroot/4.0.46                    20) altd/1.0
+#  3) pgi/12.5.0                           12) xt-asyncpe/5.11                      21) subversion/1.6.17
+#  4) xt-libsci/11.1.00                    13) atp/1.4.4                            22) python/2.7.2
+#  5) udreg/2.3.2-1.0400.5038.0.0.gem      14) PrgEnv-pgi/4.0.46                    23) cmake/2.8.6
+#  6) ugni/2.3-1.0400.4374.4.88.gem        15) xt-mpich2/5.5.0                      24) hdf5-parallel/1.8.8
+#  7) pmi/3.0.0-1.0000.8661.28.2807.gem    16) xtpe-interlagos                      25) netcdf-hdf5parallel/4.2.0
+#  8) dmapp/3.2.1-1.0400.4782.3.1.gem      17) eswrap/1.0.9
+#  9) gni-headers/2.1-1.0400.4351.3.1.gem  18) lustredu/1.0
+

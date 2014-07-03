@@ -1,0 +1,7 @@
+-spmd -nosmp
+-dyn fv
+-res 1.9x2.5
+-chem trop_ghg
+-debug
+-phys cam4
+-s

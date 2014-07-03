@@ -1,0 +1,86 @@
+<id>  <run command>
+
+smc#4 TSMscript_tools.sh shared mkprocdata_map mkprocdata_map_wrap mkprocdata_ne30_to_f19_I2000^tools__ds
+blc#4 TBLscript_tools.sh shared mkprocdata_map mkprocdata_map_wrap mkprocdata_ne30_to_f19_I2000^tools__ds
+
+smd54 TSMtools.sh shared mkmapgrids   tools__ds namelist
+bld54 TBLtools.sh shared mkmapgrids   tools__ds namelist
+
+sme14 TSMCFGtools.sh shared gen_domain   CFGtools__ds T31.runoptions
+ble14 TBLCFGtools.sh shared gen_domain   CFGtools__ds T31.runoptions
+sme@4 TSMCFGtools.sh shared gen_domain   CFGtools__ds ne30.runoptions
+ble@4 TBLCFGtools.sh shared gen_domain   CFGtools__ds ne30.runoptions
+
+sm754 TSMtools.sh clm4_0 mksurfdata_map   tools__s  namelist
+bl754 TBLtools.sh clm4_0 mksurfdata_map   tools__s  namelist
+
+smg54 TSMtools.sh clm4_5 mksurfdata_map   tools__s  namelist
+blg54 TBLtools.sh clm4_5 mksurfdata_map   tools__s  namelist
+
+sm854 TSMtools.sh clm4_0 interpinic   tools__ds runoptions
+bl854 TBLtools.sh clm4_0 interpinic   tools__ds runoptions
+
+sm853 TSMtools.sh clm4_0 interpinic   tools__do runoptions
+bl853 TBLtools.sh clm4_0 interpinic   tools__do runoptions
+op853 TOPtools.sh clm4_0 interpinic   tools__do runoptions
+
+sm857 TSMtools.sh clm4_0 interpinic   tools__o  runoptions
+bl857 TBLtools.sh clm4_0 interpinic   tools__o  runoptions
+op857 TOPtools.sh clm4_0 interpinic   tools__o  runoptions
+
+smh54 TSMtools.sh clm4_5 interpinic   tools__ds runoptions
+blh54 TBLtools.sh clm4_5 interpinic   tools__ds runoptions
+
+smh53 TSMtools.sh clm4_5 interpinic   tools__do runoptions
+blh53 TBLtools.sh clm4_5 interpinic   tools__do runoptions
+oph53 TOPtools.sh clm4_5 interpinic   tools__do runoptions
+
+smh57 TSMtools.sh clm4_5 interpinic   tools__o  runoptions
+blh57 TBLtools.sh clm4_5 interpinic   tools__o  runoptions
+oph57 TOPtools.sh clm4_5 interpinic   tools__o  runoptions
+
+sm924 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_T31_crpglc_2000^tools__ds
+bl924 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_T31_crpglc_2000^tools__ds
+
+sm953 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_10x15_irr_1850^tools__o
+bl953 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_10x15_irr_1850^tools__o
+sm954 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_10x15_irr_1850^tools__ds
+bl954 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_10x15_irr_1850^tools__ds
+sm957 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_10x15_irr_1850^tools__do
+bl957 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_10x15_irr_1850^tools__do
+
+sm974 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850-2000^tools__ds
+bl974 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850-2000^tools__ds
+sm978 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850^tools__ds
+bl978 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850^tools__ds
+sm9T4 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_1x1_numaIA_mp20irrcr_2000^tools__ds
+bl9T4 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl clm4_0_mksrfdt_1x1_numaIA_mp20irrcr_2000^tools__ds
+sm9C4 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_vancouverCAN_2000^tools__ds
+bl9C4 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_vancouverCAN_2000^tools__ds
+
+smi24 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_T31_crpglc_2000^tools__ds
+bli24 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_T31_crpglc_2000^tools__ds
+
+smi53 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_10x15_1850^tools__o
+bli53 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_10x15_1850^tools__o
+smi54 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_10x15_1850^tools__ds
+bli54 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_10x15_1850^tools__ds
+smi57 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_10x15_1850^tools__do
+bli57 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_10x15_1850^tools__do
+
+smi74 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850-2000^tools__ds
+bli74 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850-2000^tools__ds
+smi78 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850^tools__ds
+bli78 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850^tools__ds
+smiT4 TSMscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_numaIA_mp24_2000^tools__ds
+bliT4 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_numaIA_mp24_2000^tools__ds
+
+sm9#2 TSMscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_ne30np4_clm4_0
+bl9#2 TBLscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_ne30np4_clm4_0
+smi#2 TSMscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_ne30np4
+bli#2 TBLscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_ne30np4
+smi59 TSMscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_if10
+bli59 TBLscript_tools.sh shared mkmapdata   mkmapdata.sh            mkmapdata_if10
+
+smiS4 TSMscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional
+bliS4 TBLscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional

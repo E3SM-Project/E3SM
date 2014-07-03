@@ -1,0 +1,117 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set ntasks      = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds    = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set mpp         = `${CASEROOT}/Tools/taskmaker.pl -sumpes`
+@ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
+if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
+  @ nodes = $nodes + 1
+  @ ntasks = $nodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+set qname       = batch
+set tlimit      = "00:59:00"
+set jobname     = `echo ${CASE} | cut -c1-15` # first fifteen chars of case name 
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+
+#BSUB -J $CASE
+#BSUB -n $mpp
+#BSUB -W 7:59
+#BSUB -o out.%J
+#BSUB -e err.%J
+
+# MPI jobs on brutus can run on different processors: Opteron 8220, 8380 or 8384
+# To choose a specific processor type, remove one "#" from the line below
+
+##BSUB -R "select[model==Opteron8384]"
+##BSUB -R "select[model==Opteron8380]"
+##BSUB -R "select[model==Opteron8220]"
+
+##BSUB -l nodes=${nodes}:ppn=${taskpernode}:walltime=${tlimit}
+##BSUB -q ${qname}
+##BSUB -k eo
+
+#limit coredumpsize 1000000
+#limit stacksize unlimited
+
+# not all run scripts contain mpirun command
+mpirun sorry_for_the_fake___just_ignore_this >&/dev/null
+
+EOF1
+
+if ( $MPILIB == "mpich" ) then
+cat >! $file << EOF1
+# not all run scripts contain mpirun command
+mpirun sorry_for_the_fake___just_ignore_this >&/dev/null
+EOF1
+endif
+
+if ( $MPILIB == "openmpi" ) then
+cat >! $file << EOF1
+# not all run scripts contain ompirun command
+ompirun sorry_for_the_fake___just_ignore_this >&/dev/null
+EOF1
+endif
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+
+if (\$MPILIB != "mpi-serial") then
+   if ( \$LIBMPI == "mpich" ) then
+      mpirun -np ${maxtasks} --bind-to-core --bysocket \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+   endif
+   if ( \$LIBMPI == "openmpi" ) then
+      ompirun \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+   endif
+else
+  \$EXEROOT/esm.exe >&! cesm.log.\$LID
+endif
+wait
+
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+
+   #This is a place holder for a long-term archiving script
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

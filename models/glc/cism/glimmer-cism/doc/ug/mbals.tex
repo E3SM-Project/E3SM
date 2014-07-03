@@ -1,0 +1,245 @@
+\section{Supplied mass-balance schemes}
+\subsection{Overview}
+The user is, of course, free to supply their own mass-balance model for use
+with GLIDE. However, GLIMMER includes within it a annual positive-degree-day model
+for mass balance, shortly to be augmented by a similar daily model and an
+hourly energy balance model. This section gives details of how to configure
+and call these models.
+\subsection{Annual PDD scheme}
+\label{ug.mbal.pdd_scheme}
+The annual PDD scheme is contained in the f90 module \texttt{glimmer\_pdd},
+and the model parameters are contained in the derived type
+\texttt{glimmer\_pdd\_params}. Configuration data is contained in a standard
+GLIMMER config file, which needs to be read from file before initialising the
+mass-balance model. The model is initialised by calling the subroutine
+\texttt{glimmer\_pdd\_init}, and the mass-balance may be calculated annually
+by calling \texttt{glimmer\_pdd\_mbal}. 
+
+\subsubsection{Example of use:}
+\begin{verbatim}
+  use glimmer_pdd
+  use glimmer_config
+
+  ...
+
+  type(glimmer_pdd_params) :: pdd_scheme
+  type(ConfigSection),pointer :: config
+
+  ...
+
+  call glimmer_pdd_init(pdd_scheme,config)
+
+  ...
+
+  call glimmer_pdd_mbal(pdd_scheme,artm,arng,prcp,ablt,acab)
+\end{verbatim}
+In the subroutine call to \texttt{glimmer\_pdd\_mbal}, apart from the
+parameter variable \texttt{pdd\_scheme}, there are three input fields
+(\texttt{artm}, \texttt{arng} and \texttt{prcp}), which are, respectively, the
+annual mean air temperature, annual temperature half-range, and annual
+accumulated precipitation fields. The final two arguments are output fields
+--- annual ablation (\texttt{ablt}) and annual mass-balance
+(\texttt{acab}). All arrays are of type \texttt{real(sp)}. Temperatures are
+degrees Celcius, and precipitation, ablation and mass-balance are measured in
+m of water equivalent.
+%
+%
+%
+\subsubsection{Day-degree calculation}
+%
+The greater part of the information held in the \texttt{glimmer\_pdd\_params}
+derived type comprises a look-up table (the \emph{PDD table}). The model is
+implemented this way for computational efficiency.
+
+The table has two dimensions: mean annual air temperature ($T_a$)
+(as the second index) and annual air temperature half range (i.e.,
+from July's mean to the annual mean $\Delta T_a$) (as the first
+index).  Following \emph{Huybrechts and others} [1991], daily air
+temperatures ($T_a^\prime$) are assumed to follow a sinusoidal
+cycle
+\begin{equation}
+    T_a^\prime = T_a + \Delta T_a \cos \left( \frac{2 \pi t}{A}
+    \right) + \textbf{R}(0,\sigma)
+\end{equation}
+where $A$ is the period of a year and $R$ is a random fluctuation
+drawn from a normal distribution with mean 0 $^\circ$C and
+standard deviation $\sigma$ $^\circ$C. \emph{Huybrechts and
+others} [1991] indicate that the number of positive degree days
+(D, $^\circ$C days) for this temperature series can be evaluated
+as
+\begin{equation}\label{pdd}
+    D = \frac{1}{\sigma \sqrt{2 \pi}}
+    \int\limits_0^A
+    \int\limits_0^{T_a^\prime+2.5\sigma}
+    T_a \times \exp \left( \frac{-(T_a-T_a^\prime)^2}{2 \sigma^2} \right) dT
+    dt
+\end{equation}
+where $t$ is time.  The table is completed by evaluating this integral using a
+public-domain algorithm (Romberg integration), by {\it Bauer} [1961]. The
+inner and outer integrals are coded as two subroutines
+(\texttt{inner\_integral} and \texttt{pdd\_integrand}), which call the Romburg
+integration recursively.
+
+The main parameter needed is the assumed standard deviation of
+daily air temperatures, which can be set in the configuration file (the
+default is 5 $^\circ $C). 
+
+The positive-degree days are then looked up in the table (as a function of
+$T_a$ and $\Delta T_a$). We take care to check that this look up is in done
+within the bounds of the table.  The final value of $P$ is determined using
+bi-linear interpolation given the four nearest entries in the table to the
+actual values of $T_a$ and $\Delta T_a$.
+
+The remainder of the loop completes the calculation of the
+ablation and accumulation given this value for $P$.
+%
+\subsubsection{Mass balance calculation} 
+%
+We use the following symbols: $a$ is total annual ablation; $a_s$
+is potential snow ablation; $b_0$ is the capacity of the snowpack
+to hold meltwater by refreezing; the total number of positive
+degree days ($D$); day-degree factors for snow and ice ($f_s$ and
+$f_i$); and the fraction of snowfall that can be held in the
+snowpack as refrozen meltwater ($W_max$). Note that the
+day-degree factors have been converted from ice to water
+equivalents using the ratio of densities.
+
+ First,
+determine the depth of superimposed ice ($b_0$) that would have to
+be formed before runoff (mass loss) occurs as a constant fraction
+($W_{max}$) of precipitation ($P$)
+\begin{equation}
+    b_0=W_{max} P.
+\end{equation}
+Now determine the amount of snow melt by applying a constant
+day-degree factor for snow to the number of positive day-degrees
+\begin{equation}
+    a_s=f_s D.
+\end{equation}
+We now compare the potential amount of snow ablation with the
+ability of the snow layer to absorb the melt.  Three cases are
+possible. First, all snow melt is held within the snowpack and no
+runoff occurs ($a=0$).  Second, the ability of the snowpack to
+hold meltwater is exceeded but the potential snow ablation is
+still less than the total amount of precipitation so that
+$a=a_s-b_0$. Finally, the potential snow melt is greater than the
+precipitation (amount of snow available), so that ice melt ($a_i$)
+has to be considered as well.  The total ablation is therefore the
+sum of snow melt (total precipitation minus meltwater held in
+refreezing) and ice melt (deduct from total number of degree days,
+the number of degree days needed to melt all snowfall and convert
+to ice melt)
+\begin{equation}
+    a=a_s + a_i = P - b_0 + f_i \left( D-\frac{P}{f_s} \right).
+\end{equation}
+We now have a total annual ablation, and can find total net mass
+balance as the difference between the total annual precipitation
+and the total annual ablation.
+
+Note that this methodology is fairly standard and stems from a
+series of Greenland papers by Huybrechts, Letreguilly and Reeh in
+the early 1990s.
+%
+%
+%
+\subsubsection{Configuration}
+The annual PDD scheme is configured using a single section in the
+configuration file:
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{2}{|p{0.98\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{2}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular}{|l|p{11cm}|}
+%%%% 
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[GLIMMER annual pdd]}}\\
+    \hline
+    \multicolumn{2}{|p{0.98\textwidth}|}{Specifies parameters for the PDD
+    table and mass-balance calculation}\\
+    \hline
+    \texttt{dx} & Table spacing in the $x$-direction ($^{\circ}$C) (default=1.0)\\
+    \texttt{dy} & Table spacing in the $y$-direction ($^{\circ}$C) (default=1.0)\\
+    \texttt{ix} & Lower bound of $x$-axis ($^{\circ}$C) (default=0.0)\\
+    \texttt{iy} & Lower bound of $y$-axis ($^{\circ}$C) (default=-50.0)\\
+    \texttt{nx} & Number of values in x-direction (default=31)\\
+    \texttt{ny} & Number of values in x-direction (default=71)\\
+    \texttt{wmax} & Fraction of melted snow that refreezes (default=0.6) \\
+    \texttt{pddfac\_ice} & PDD factor for ice (m day$^{-1}\,^{\circ}$C$^{-1}$)
+    (default=0.008)\\
+    \texttt{pddfac\_snow} & PDD factor for snow (m day$^{-1}\,^{\circ}$C$^{-1}$) (default=0.003)\\
+  \end{supertabular}
+\end{center}
+\subsubsection{References}
+
+\noindent Bauer (1961) \emph{Comm. ACM} \textbf{4}, 255.
+
+\noindent Huybrechts, Letreguilly and Reeh (1991) \emph{Palaeogeography,
+Palaeoclimatology, Palaeoecology (Global and Planetary Change)}
+\textbf{89}, 399-412.
+
+\noindent Letreguilly, Reeh and  Huybrechts (1991) \emph{Palaeogeography,
+Palaeoclimatology, Palaeoecology (Global and Planetary Change)}
+\textbf{90}, 385-394.
+
+\noindent Letreguilly, Huybrechts  and  Reeh (1991) \emph{Journal of
+Glaciology} \textbf{37}, 149-157.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Daily PDD scheme
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\subsection{Daily PDD scheme}
+\label{ug.mbal.daily_pdd_scheme}
+The other PDD scheme supplied with GLIMMER is a daily scheme. This is simpler than the annual scheme in that it does not incorporate any stochastic variations. The mass-balance is calculated on a daily basis, given the daily mean temperature and half-range, and assuming a sinusoidal diurnal cycle. Consequently, the firn model is more sophisticated than with the annual scheme, and includes a snow-densification parameterization.
+%
+\subsubsection{Configuration}
+The daily PDD scheme is configured using a single section in the configuration file:
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{2}{|p{0.98\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{2}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular}{|l|p{11cm}|}
+%%%% 
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[GLIMMER daily pdd]}}\\
+    \hline
+    \multicolumn{2}{|p{0.98\textwidth}|}{Specifies parameters for the PDD
+    table and mass-balance calculation}\\
+    \hline
+    \texttt{wmax} & Fraction of melted snow that refreezes (default=0.6) \\
+    \texttt{pddfac\_ice} & PDD factor for ice (m day$^{-1}\,^{\circ}$C$^{-1}$)
+    (default=0.008)\\
+    \texttt{pddfac\_snow} & PDD factor for snow (m day$^{-1}\,^{\circ}$C$^{-1}$) (default=0.003)\\
+    \texttt{rain\_threshold} & Temperature above which precipitation is held to be rain ($^{\circ}$C) (default=1.0)\\
+    \texttt{whichrain} & {\raggedright
+      Which method to use to partition precipitation into rain and snow:\\
+      \begin{tabular}{lp{7cm}}
+        {\bf 1} & Use sinusoidal diurnal temperature variation \\
+        2 & Use mean temperature only\\
+      \end{tabular}}\\
+    \texttt{tau0} & Snow densification timescale (s) (default=10 years)\\
+    \texttt{constC} & Snow density profile factor C (m$^{-1}$) (default=0.0165)\\
+    \texttt{firnbound} & Ice-firn boundary as fraction of density of ice (default=0.872)\\
+    \texttt{snowdensity} & Density of fresh snow ($\mathrm{kg}\,\mathrm{m}^{-3}$) (default=300.0)\\
+  \end{supertabular}
+\end{center}

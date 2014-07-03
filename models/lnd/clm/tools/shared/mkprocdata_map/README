@@ -1,0 +1,171 @@
+models/lnd/clm/tools/shared/mkprocdata_map/README                Jun/04/2013
+
+This directory contains scripts for regridding CLM output from an
+unstructured grid (1-d output using the lndgrid dimension) to a 2-d
+(lat/lon) grid. The regridding method is area-conservative.
+
+The following steps provide a method to create the necessary inputs to
+this script, produce an executable, and regrid output:
+
+------------------------------------------------------------------------
+I. Step by step instructions
+------------------------------------------------------------------------
+
+In the following instructions, the "original" resolution is the
+resolution of the run on an unstructured grid, and the "target"
+resolution is the regular lat/lon resolution to which you will regrid
+the output.
+
+(0) Install prerequisites:
+
+  (a) If you do not already have a mapping file from the original
+      resolution to the target resolution, you will need the
+      ESMF_RegridWeightGen tool installed on your system.
+
+  (b) The wrapper scripts describe below require the netCDF operators
+      (NCO). These nco tools (ncks, ncap2, etc.) must be in your path.
+
+(1) Determine the target resolution. This resolution must be a regular
+    lat/lon resolution. Generally, this should be a resolution close
+    to the resolution of the CLM run. For example, when running CLM at
+    ne30_np4 resolution, a good target resolution is 0.9x1.25 (i.e.,
+    finite volume 1 degree: f09); when running CLM at ne120_np4
+    resolution, a good target resolution is 0.23x0.31 (i.e., finite
+    volume 1/4 degree: f02).
+
+(2) Perform a short CLM run at the target resolution, producing at
+    least one history file. After this run completes, set the
+    environment variable $TEMPLATE_FILE to point to one of the history
+    files created by this run.
+
+(3) Create a conservative mapping file from the original resolution to
+    the target resolution using the ESMF regrid weight generator. The
+    basic method for doing this is:
+
+    $ESMF_PATH/bin/ESMF_RegridWeightGen -s $INGRID -d $OUTGRID -m conserve -w $MAP_FILE -i
+
+    where $INGRID gives the path to a SCRIP grid file at the original
+    resolution, $OUTGRID gives the path to a SCRIP grid file at the
+    template resolution, and $MAP_FILE gives the name of the mapping
+    file that will be generated.
+
+    However, you may want to wrap this in a job script to run it on
+    multiple processors (using mpirun), and you may have to set other
+    machine-specific environment variables. You can follow the method
+    used in tools/mkmapdata/mkmapdata.sh.
+
+(4) Build the mkprocdata_map tool. From the current directory, do the
+    following:
+
+   > cd src
+   > gmake
+   > cd ..
+
+   By default code compiles optimized so it's reasonably fast. If you want
+   to use the debugger, with bounds-checking, and float trapping on do the 
+   following:
+      gmake OPT=FALSE
+   See Also: See the models/lnd/clm/tools/README file for notes about setting
+   the path for NetCDF.
+
+   This builds the mkprocdata_map executable. However, you generally
+   will not want to run this executable directly: instead, you should
+   use one of the wrapper scripts described below.
+
+(5) Do the regridding using one of the wrapper scripts in this
+    directory. To determine which script is most appropriate: Do you
+    need to regrid just one or a few output files, or most/all of the
+    output files in a directory?
+
+  (a) If you are regridding just one or a few output files, you can
+      use mkprocdata_map_wrap. Its usage is:
+
+      > mkprocdata_map_wrap -i input_file -o output_file -m $MAP_FILE -t $TEMPLATE_FILE
+
+      where:
+      - input_file is the CLM history file you want to regrid
+      - output_file is the name of the regridded file that will be
+        created
+      - $MAP_FILE is the ESMF conservative mapping file created in
+        step (3)
+      - $TEMPLATE_FILE is a CLM history file at the target resolution,
+        created in step (2)
+
+      You may also specify the '-l' option to this script. This option
+      determines whether to determine landfrac and related variables
+      by regridding the input file (when you don't give the '-l'
+      option), or by copying these variables from the template file
+      (when you give the '-l' option). These variables are important
+      for computing regional and global averages, e.g., as is done in
+      the land diagnostics package. Each method may be reasonable,
+      depending on the purposes of the regridding. For example, if you
+      want regional/global integrals to be as true as possible to the
+      original run, you should run withOUT the '-l' option; but if you
+      want to compare regional/global integrals between the original
+      run and a run at the target resolution, then you may want to run
+      WITH the '-l' option.
+
+      Run 'mkprocdata_map_wrap -h' for full usage
+
+  (b) If you need to regrid most or all of the output files in a
+      directory, you can use the convenience script
+      mkprocdata_map_all. This script runs mkprocdata_map_wrap on all
+      files matching a given pattern within a directory. Its basic
+      usage is the following, done from a directory containing many
+      CLM history files:
+
+      > /path/to/mkprocdata_map_all -p $CASE -m $MAP_FILE -t $TEMPLATE_FILE
+
+      where:
+      - $CASE is the case name of the original run (this -p argument
+        is actually more general: it provides the prefix of files on
+        which mkprocdata_map_wrap should be run; run
+        'mkprocdata_map_all -h' for details)
+      - $MAP_FILE is the ESMF conservative mapping file created in
+        step (3)
+      - $TEMPLATE_FILE is a CLM history file at the target resolution,
+        created in step (2)
+
+      There are a number of additional optional arguments to this
+      script, including the '-l' option described in (a), above. Run
+      'mkprocdata_map_all -h' for full usage.
+    
+------------------------------------------------------------------------
+II. Some miscellaneous notes on the scripts contained here
+------------------------------------------------------------------------
+
+- area vs. area_regridded in the output of mkprocdata_map_wrap and
+  mkprocdata_map_all: The 'area' variable gives the actual grid cell
+  area on the destination grid. The 'area_regridded' variable is the
+  result of performing the regridding procedure on the 'area' variable
+  in the original source data. This seems to be the wrong way to
+  regrid areas (e.g., it leads to global totals that do not make
+  sense). However, area_regridded is left in the regridded files as a
+  diagnostic. BUT PLEASE USE CAUTION IF USING THIS AREA_REGRIDDED
+  VALUE, UNLESS YOU KNOW WHAT IT REALLY REPRESENTS!
+ 
+- At least as of this writing (Oct 29, 2012), there is insufficient
+  metadata on the CLM history files to regrid all variables
+  perfectly. In particular, note that many CLM history variables apply
+  only over a subset of the grid cell (e.g., over the non-lake portion
+  of the grid cell). Thus, to regrid these variables appropriately, we
+  would need to weight each grid cell's value by the portion of the
+  grid cell over which the field applies. However, doing this would
+  require metadata about each field that is not currently
+  available.
+
+------------------------------------------------------------------------
+III. General Directory Structure:
+------------------------------------------------------------------------
+
+mkprocdata_map_all ------------ Run mapping on all files matching a given pattern
+mkprocdata_map_wrap ----------- Run mapping for a single history file
+
+mkprocdata_map_in ------------- Sample namelist
+mkprocdata_map_functions.bash - utility functions used by other scripts
+
+Sample files for mapping
+
+clm4054_f19g16_I2000.clm2.h0.2000-01_c121107.nc ----------- Sample output f19 resolution history file
+clm4054_ne30g16_I2000.clm2.h0.2000-01_c121107.nc ---------- Sample input ne30 resolution history file
+map_ne30np4_nomask_to_fv1.9x2.5_nomask_aave_da_c121107.nc - Mapping file from ne30 to f19 resolution

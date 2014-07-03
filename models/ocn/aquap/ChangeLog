@@ -1,0 +1,24 @@
+==================================================
+Originator: jedwards
+Date: 05/03/2013
+Model: aquap
+Version: aquap_130503
+One-line summary: Return 0 status from buildnml script
+
+Change made:
+
+M       bld/aquap.buildnml.csh
+
+==================================================
+Originator: jedwards
+Date: 04/30/2013
+Model: aquap
+Version: aquap_130430
+One-line summary: Added to support building CAM in aquaplanent mode using cesm
+tools
+Change made:
+A       bld/aquap.buildexe.csh
+A       bld/aquap.buildnml.csh
+A       ChangeLog
+A       README
+

@@ -1,0 +1,7 @@
+-spmd -nosmp
+-chem super_fast_llnl_mam3
+-dyn fv
+-res 4x5
+-phys cam5
+-debug
+-s

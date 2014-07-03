@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!-- =========================================  -->
+<!--- seq_timemgr_inparm                        -->
+<!-- =========================================  -->
+
+<restart_option>$REST_OPTION</restart_option>
+<restart_n>$REST_N</restart_n>
+<restart_ymd>$REST_DATE</restart_ymd>
+
+<stop_option>$STOP_OPTION</stop_option>
+<stop_n>$STOP_N</stop_n>
+<stop_ymd>$STOP_DATE</stop_ymd>
+
+<history_init>.false.</history_init>
+<history_option>$HIST_OPTION</history_option>
+<history_n>$HIST_N</history_n>
+<history_ymd>$HIST_DATE</history_ymd>
+
+<histavg_init>.false.</histavg_init>
+<histavg_option>never</histavg_option>
+<histavg_n>-999</histavg_n>
+<histavg_ymd>-999</histavg_ymd> 
+
+<!-- =========================================  -->
+<!--- seq_infodata_inparm                       -->
+<!-- =========================================  -->
+
+<do_histinit>.false.</do_histinit>
+<end_restart>.false.</end_restart>
+
+<mct_usealltoall>.false.</mct_usealltoall>
+<mct_usevector>.false.</mct_usevector>
+
+<mct_usealltoall>.false.</mct_usealltoall>
+<mct_usevector>.false.</mct_usevector>
+
+<histaux_a2x    >.false.</histaux_a2x    >
+<histaux_a2x3hr >.false.</histaux_a2x3hr >
+<histaux_a2x3hrp>.false.</histaux_a2x3hrp>
+<histaux_a2x24hr>.false.</histaux_a2x24hr>
+<histaux_l2x    >.false.</histaux_l2x    >
+<histaux_r2x    >.false.</histaux_r2x    >
+<histaux_s2x1yr >.false.</histaux_s2x1yr >
+
+<budget_inst >0</budget_inst>
+<budget_daily>0</budget_daily> 
+<budget_month>1</budget_month>
+<budget_ann  >1</budget_ann>
+<budget_ltann>1</budget_ltann>
+<budget_ltend>0</budget_ltend>
+ 
+<tprof_option>never</tprof_option>
+<tprof_n>-999</tprof_n>
+<tprof_ymd>-999</tprof_ymd> 
+
+<orb_mode>fixed_year</orb_mode>
+<orb_iyear>1990</orb_iyear>
+<orb_iyear_align>1990</orb_iyear_align>
+
+<timing_dir>./timing</timing_dir>
+
+<tchkpt_dir>./timing/checkpoints</tchkpt_dir>
+
+<shr_map_dopole>.true.</shr_map_dopole>
+
+<aoflux_grid>ocn</aoflux_grid>
+
+<cpl_decomp>0</cpl_decomp>
+
+<cpl_cdf64>.true.</cpl_cdf64>
+
+<vect_map>$VECT_MAP</vect_map>  
+<eps_frac>$EPS_FRAC</eps_frac> 
+<eps_amask>$EPS_AMASK</eps_amask>
+<eps_agrid>$EPS_AGRID</eps_agrid>
+<eps_aarea>$EPS_AAREA</eps_aarea>
+<eps_omask>$EPS_OMASK</eps_omask>
+<eps_ogrid>$EPS_OGRID</eps_ogrid>
+<eps_oarea>$EPS_OAREA</eps_oarea>
+
+<info_debug>$INFO_DBUG</info_debug>
+<cpl_decomp>$CPL_DECOMP</cpl_decomp>
+<flux_epbal>$CPL_EPBAL</flux_epbal>
+<flux_albav>.$CPL_ALBAV.</flux_albav> 
+
+<run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers> 
+<run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers> 
+
+<drv_threading DRV_THREADING="TRUE">.true.</drv_threading> 
+<drv_threading DRV_THREADING="FALSE">.false.</drv_threading> 
+
+<ocean_tight_coupling OCN_TIGHT_COUPLING="TRUE">.true.</ocean_tight_coupling> 
+<ocean_tight_coupling OCN_TIGHT_COUPLING="FALSE">.false.</ocean_tight_coupling> 
+
+<do_budgets BUDGETS="TRUE" >.true.</do_budgets> 
+<do_budgets BUDGETS="FALSE">.false.</do_budgets> 
+
+<bfbflag BFBFLAG="TRUE">.true.</bfbflag> 
+<bfbflag BFBFLAG="FALSE">.false.</bfbflag> 
+
+<brnch_retain_casename BRNCH_RETAIN_CASENAME="TRUE">.true.</brnch_retain_casename> 
+<brnch_retain_casename BRNCH_RETAIN_CASENAME="FALSE">.false.</brnch_retain_casename> 
+
+<!-- =========================================  -->
+<!--- prof_inparm                               -->
+<!-- =========================================  -->
+
+<profile_detail_limit>0</profile_detail_limit>
+<profile_barrier     >.false.</profile_barrier>
+<profile_single_file >.false.</profile_single_file>
+<profile_global_stats>.true.</profile_global_stats>
+
+<profile_timer>4</profile_timer> <!-- mpiwtime -->
+<profile_timer MPILIB="mpi-serial">1</profile_timer> <!-- gettimeofday -->
+<profile_timer MPILIB="mpi-serial" OS="AIX">3</profile_timer> <!-- read_real_time -->
+
+<profile_depth_limit TIMER_LEVEL="neg">20</profile_depth_limit>
+<profile_depth_limit TIMER_LEVEL="pos">$TIMER_LEVEL</profile_depth_limit>
+
+<profile_disable TIMER_LEVEL="neg">.true.</profile_disable>
+<profile_disable TIMER_LEVEL="pos">.false.</profile_disable>
+
+<!-- =========================================  -->
+<!--- pio_default_inparm                        -->
+<!-- =========================================  -->
+
+<pio_stride           >$PIO_STRIDE</pio_stride>
+<pio_root             >$PIO_ROOT</pio_root>
+<pio_numiotasks       >$PIO_NUMTASKS</pio_numiotasks> 
+<pio_typename         >$PIO_TYPENAME</pio_typename>
+<pio_debug_level      >$PIO_DEBUG_LEVEL</pio_debug_level>
+<pio_blocksize        >$PIO_BLOCKSIZE</pio_blocksize>
+<pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
+<pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
+<pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
+
+<!-- =========================================  -->
+<!--- seq_maps.rc                               -->
+<!-- =========================================  -->
+
+<atm2ocn_fmapname>$ATM2OCN_FMAPNAME</atm2ocn_fmapname>
+<atm2ocn_smapname>$ATM2OCN_SMAPNAME</atm2ocn_smapname>
+<atm2ocn_vmapname>$ATM2OCN_VMAPNAME</atm2ocn_vmapname>
+<ocn2atm_fmapname>$OCN2ATM_FMAPNAME</ocn2atm_fmapname>
+<ocn2atm_smapname>$OCN2ATM_SMAPNAME</ocn2atm_smapname>
+<atm2lnd_fmapname>$ATM2LND_FMAPNAME</atm2lnd_fmapname>
+<atm2lnd_smapname>$ATM2LND_SMAPNAME</atm2lnd_smapname>
+<lnd2atm_fmapname>$LND2ATM_FMAPNAME</lnd2atm_fmapname>
+<lnd2atm_smapname>$LND2ATM_SMAPNAME</lnd2atm_smapname>
+<lnd2rof_fmapname>$LND2ROF_FMAPNAME</lnd2rof_fmapname>
+<rof2lnd_fmapname>$ROF2LND_FMAPNAME</rof2lnd_fmapname>
+<rof2lnd_smapname>$ROF2LND_SMAPNAME</rof2lnd_smapname>
+<rof2ocn_rmapname>$ROF2OCN_RMAPNAME</rof2ocn_rmapname>
+<rof2ocn_fmapname>$ROF2OCN_FMAPNAME</rof2ocn_fmapname>
+<rof2ocn_smapname>$ROF2OCN_SMAPNAME</rof2ocn_smapname>
+<atm2wav_smapname>$ATM2WAV_SMAPNAME</atm2wav_smapname>
+<ocn2wav_smapname>$OCN2WAV_SMAPNAME</ocn2wav_smapname>
+<ice2wav_smapname>$ICE2WAV_SMAPNAME</ice2wav_smapname>
+<wav2ocn_smapname>$WAV2OCN_SMAPNAME</wav2ocn_smapname>
+
+<atm2ocn_fmaptype>X</atm2ocn_fmaptype>
+<atm2ocn_smaptype>X</atm2ocn_smaptype>
+<atm2ocn_vmaptype>X</atm2ocn_vmaptype>
+<ocn2atm_fmaptype>Y</ocn2atm_fmaptype>
+<ocn2atm_smaptype>Y</ocn2atm_smaptype>
+<atm2lnd_fmaptype>X</atm2lnd_fmaptype>
+<atm2lnd_smaptype>X</atm2lnd_smaptype>
+<lnd2atm_fmaptype>Y</lnd2atm_fmaptype>
+<lnd2atm_smaptype>Y</lnd2atm_smaptype>
+<lnd2rof_fmaptype>X</lnd2rof_fmaptype>
+<rof2lnd_fmaptype>Y</rof2lnd_fmaptype>
+<rof2ocn_fmaptype>Y</rof2ocn_fmaptype>
+<rof2ocn_rmaptype>Y</rof2ocn_rmaptype>
+<rof2lnd_smaptype>Y</rof2lnd_smaptype>
+<atm2wav_smaptype>Y</atm2wav_smaptype>
+<ocn2wav_smaptype>Y</ocn2wav_smaptype>
+<ice2wav_smaptype>Y</ice2wav_smaptype>
+<wav2ocn_smaptype>X</wav2ocn_smaptype>
+
+<atm2ocn_fmaptype BFBFLAG="TRUE">X</atm2ocn_fmaptype>
+<atm2ocn_smaptype BFBFLAG="TRUE">X</atm2ocn_smaptype>
+<atm2ocn_vmaptype BFBFLAG="TRUE">X</atm2ocn_vmaptype>
+<ocn2atm_fmaptype BFBFLAG="TRUE">X</ocn2atm_fmaptype>
+<ocn2atm_smaptype BFBFLAG="TRUE">X</ocn2atm_smaptype>
+<atm2lnd_fmaptype BFBFLAG="TRUE">X</atm2lnd_fmaptype>
+<atm2lnd_smaptype BFBFLAG="TRUE">X</atm2lnd_smaptype>
+<lnd2atm_fmaptype BFBFLAG="TRUE">X</lnd2atm_fmaptype>
+<lnd2atm_smaptype BFBFLAG="TRUE">X</lnd2atm_smaptype>
+<lnd2rof_fmaptype BFBFLAG="TRUE">X</lnd2rof_fmaptype>
+<rof2lnd_fmaptype BFBFLAG="TRUE">X</rof2lnd_fmaptype>
+<rof2ocn_fmaptype BFBFLAG="TRUE">X</rof2ocn_fmaptype>
+<rof2ocn_rmaptype BFBFLAG="TRUE">X</rof2ocn_rmaptype>
+<rof2lnd_smaptype BFBFLAG="TRUE">X</rof2lnd_smaptype>
+<atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
+<ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+<ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
+<ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+
+</namelist_defaults>

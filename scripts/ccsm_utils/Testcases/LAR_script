@@ -1,0 +1,89 @@
+
+#======================================================================
+# Clear coupler log files for validation test
+#======================================================================
+unsetenv CPLLOG_INIT
+
+#======================================================================
+# do an initial run test
+#======================================================================
+cd $CASEROOT
+
+echo "doing an initial test" >>& $TESTSTATUS_LOG 
+
+source ./Tools/ccsm_getenv || exit -1
+
+set start_date = $RUN_STARTDATE
+set start_year = `echo $start_date | cut -f 1 -d "-"`
+set start_date = $start_year-11-01
+
+./xmlchange -file env_run.xml   -id START_DATE     -val $start_yearp2-01-01
+./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id REST_OPTION  -val none
+
+./$CASE.run
+
+echo "running long-term archiver" >>& $TESTSTATUS_LOG 
+./$CASE.l_archive
+
+echo "doing a continue run" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+
+./$CASE.run
+
+set CplLogFile = `ls -1t ${DOUT_S_ROOT}/cpl/cpl.log* | head -1`
+set mycpllog = $RUNDIR/logfile.hold
+cp $CplLogFile ${mycpllog}.gz
+gunzip ${mycpllog}.gz
+setenv CPLLOG_INIT $mycpllog
+
+echo "running long-term archiver" >>& $TESTSTATUS_LOG 
+./$CASE.l_archive
+
+#======================================================================
+# runs complete
+#======================================================================
+setenv CPLLOG_GENCMP $CPLLOG_INIT
+echo "Initial Test log is $CPLLOG_INIT" >>& $TESTSTATUS_LOG 
+
+#======================================================================
+# Check case validation first
+#======================================================================
+
+set basestatus = "UNDEF"
+
+if ( $?CPLLOG_INIT ) then
+  set basestatus = "PASS "
+  echo "Checking successful completion in cpl log file" >>& $TESTSTATUS_LOG
+  set pass = `grep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
+  if ( $pass == 0 ) then
+    echo "ERROR in ${0}:  coupler log file incomplete" >>& $TESTSTATUS_LOG
+    set basestatus = "FAIL "
+  endif
+else
+  echo "ERROR in ${0}:  coupler log file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "FAIL"
+endif
+
+set pass = `$UTILROOT/Tools/ccsm_msls ${DOUT_L_MSROOT}/restart.tars | grep 0002-01-01 | wc -l`
+if ($pass == 0) then
+   echo "ERROR in ${0}:  0002-01-01 restart.tar not long-term archived" >>& $TESTSTATUS_LOG
+   set basestatus = "FAIL"
+endif
+
+set pass = `ls -1 ${DOUT_S_ROOT}/restart.tars | grep 0002-01-01 | wc -l`
+if ($pass == 1) then
+   echo "ERROR in ${0}:  0002-01-01 restart.tar not removed in short-term archive" >>& $TESTSTATUS_LOG
+   set basestatus = "FAIL"
+endif
+
+set pass = `$UTILROOT/Tools/ccsm_msls ${DOUT_L_MSROOT}/restart.tars | grep 0002-03-01 | wc -l`
+if ($pass == 0) then
+   echo "ERROR in ${0}:  0002-03-01 restart.tar not long-term archived" >>& $TESTSTATUS_LOG
+   set basestatus = "FAIL"
+endif
+
+echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+

@@ -1,0 +1,96 @@
+#[]
+#dimensions:    time, level, y1, x1
+#units:         
+#long_name:     
+#data:          
+#factor:        
+
+# setup for code generator
+[VARSET]
+# prefix of the generated module
+name:     erosion
+# f90 type containing all necessary data
+datatype: erosion_type
+# module where type is defined
+datamod:  erosion_types
+
+[erate]
+dimensions:    time, y0, x0
+units:         meter/year
+long_name:     hard bedrock erosion rate
+data:          data%erosion_rate
+factor:        vel0/len0*scyr
+coordinates:   lon lat
+
+[erosion]
+dimensions:    time, y0, x0
+units:         1
+long_name:     total hard bedrock erosion
+data:          data%erosion
+factor:        1
+coordinates:   lon lat
+load:          1
+hot:           1
+
+[seds1]
+dimensions:    time, y0, x0
+units:         meter
+long_name:     thickness of dirty basal ice layer
+data:          data%seds1
+factor:        1
+coordinates:   lon lat
+hot:           1
+
+[seds2]
+dimensions:    time, y0, x0
+units:         meter
+long_name:     thickness of deforming sediment layer
+data:          data%seds2
+factor:        1
+load:          1
+hot:           1
+
+[seds2_vx]
+dimensions:    time, y0, x0
+units:         meter/year
+long_name:     average velocity of deforming sediment layer (x-component)
+data:          data%seds2_vx
+factor:        scale3d_f1
+
+[seds2_vy]
+dimensions:    time, y0, x0
+units:         meter/year
+long_name:     average velocity of deforming sediment layer (y-component
+data:          data%seds2_vy
+factor:        scale3d_f1
+
+[seds2_max]
+dimensions:    time, y0, x0
+units:         meter
+long_name:     maximum thickness of deforming sediment layer
+data:          data%seds2_max
+factor:        1
+coordinates:   lon lat
+
+[seds3]
+dimensions:    time, y0, x0
+units:         meter
+long_name:     thickness of non-deforming sediment layer
+data:          data%seds3
+factor:        1
+load:          1
+hot:           1
+
+[tau_mag]
+dimensions:    time, y0, x0
+long_name:     magnitude of basal stress
+unit:          kilopascal
+data:          data%tau_mag
+factor:        1
+
+[tau_dir]
+dimensions:    time, y0, x0
+unit:          degree
+long_name:     direction of basal stress
+data:          data%tau_dir
+factor:        1

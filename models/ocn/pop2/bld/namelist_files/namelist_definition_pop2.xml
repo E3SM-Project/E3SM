@@ -1,0 +1,5939 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition_CICE.xsl"?>
+
+<namelist_definition>
+
+<!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other aspects of the variable's definition are expressed as
+     attributes of the <entry> element.  Note that it is an XML requirement
+     that the attribute values are enclosed in quotes.  The attributes are:
+
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+
+     type
+          An abbreviation of the fortran declaration for the variable.
+	  Valid declarations are:
+
+          char*n  
+	  integer
+	  logical
+	  real
+
+	  Any of these types may be followed by a comma separated list of
+	  integers enclosed in parenthesis to indicate an array.
+
+	  The current namelist validation code only distinquishes between
+	  string and non-string types.
+
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset that resides in the
+          CESM inputdata directory tree.  
+
+	  The recognized values are "abs" to indicate that an absolute
+          pathname is required, or "rel:var_name" to indicate that the
+          pathname is relative and that the namelist variable "var_name"
+          contains the absolute root directory.
+
+     category
+          A category assigned for organizing the documentation.
+
+     group
+          The namelist group that the variable is declared in.
+
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+                                                                        -->
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: domain_nml               - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="nprocs_clinic" 
+type="integer" 
+category="decomp" 
+group="domain_nml" >
+Number of processors in the baroclinic distribution.
+
+Default: Set by CESM scripts
+</entry>
+
+<entry 
+id="nprocs_tropic" 
+type="integer" 
+category="decomp" 
+group="domain_nml" >
+Number of processors in the barotropic distribution.
+
+Default: Set by CESM scripts
+</entry>
+
+<entry 
+id="clinic_distribution_type" 
+type="char*256" 
+category="decomp" 
+group="domain_nml" 
+valid_values="cartesian,balanced,spacecurve,blockone" >
+Method to use to distribute blocks in baroclinic distribution.
+
+Valid Values: 'cartesian', 'balanced', 'spacecurve', 'blockone'
+Default: 'cartesian'
+</entry>
+
+<entry 
+id="tropic_distribution_type" 
+type="char*256" 
+category="decomp" 
+group="domain_nml" 
+valid_values="cartesian,balanced,spacecurve,blockone" >
+Method to use to distribute blocks in barotropic distribution.
+
+Valid Values: 'cartesian', 'balanced', 'spacecurve', 'blockone'
+Default: 'cartesian'
+</entry>
+
+<entry 
+id="ew_boundary_type" 
+type="char*256" 
+category="decomp" 
+group="domain_nml"
+valid_values="cyclic,closed" >
+Type of boundary in the logical east-west direction for global domain.
+
+Valid Values: 'cyclic', 'closed'
+Default: 'cyclic'
+</entry>
+
+<entry 
+id="ns_boundary_type" 
+type="char*256" 
+category="decomp" 
+group="domain_nml"
+valid_values="cyclic,closed,tripole" >
+Type of boundary in the logical north-south direction for global domain.
+
+Valid Values: 'cyclic', 'closed', 'tripole'
+Default: 'closed'
+</entry>
+
+<entry
+id="profile_barrier"
+type="logical"
+category="decomp"
+group="domain_nml" >
+Flag to add MPI_Barrier calls for timing studies in time-step module.
+
+Default: .false. 
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: io_nml                   - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="num_iotasks" 
+type="integer" 
+category="io" 
+group="io_nml" >
+Number of input / output tasks.
+
+Default: 1
+</entry>
+
+<entry 
+id="lredirect_stdout" 
+type="logical" 
+category="io" 
+group="io_nml" >
+Flag to redirect stdout to a log file.
+
+Default: '.true.'
+</entry>
+
+<entry 
+id="log_filename" 
+type="char*256" 
+category="io" 
+group="io_nml" >
+Root name for log file.
+
+Default: Set by CESM scripts.
+</entry>
+
+<entry 
+id="luse_pointer_files" 
+type="logical" 
+category="io" 
+group="io_nml" >
+Flag to use files to point to location of restarts.
+
+Default: '.true.'
+</entry>
+
+<entry 
+id="pointer_filename"
+type="char*256"
+category="io"
+group="io_nml" >
+Name of file that points to location of restarts.
+
+Default: rpointer.ocn.* (found in $RUNDIR)
+</entry>
+
+<entry 
+id="luse_nf_64bit_offset" 
+type="logical" 
+category="io" 
+group="io_nml" >
+Flag to use 64-bit offset in netCDF files.
+
+Default: '.true.'
+</entry>
+
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: time_manager_nml         - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="runid"
+type="char*256"
+category="timemgr"
+group="time_manager_nml" >
+An identifier for the run.
+
+Default: $CASENAME
+</entry>
+
+<entry 
+id="time_mix_opt"
+type="char*256"
+category="timemgr"
+group="time_manager_nml"
+valid_values="matsuno,avg,avgbb,avgfit" >
+Option for time mixing (Matsuno or averaging).
+
+Valid Values: 'matsuno', 'avg', 'avgbb', 'avgfit'
+Default: 'avgfit' 
+</entry>
+
+<entry 
+id="time_mix_freq"
+type="integer" 
+category="timemgr"
+group="time_manager_nml" >
+Frequency of mixing.
+
+Default: 17
+</entry>
+
+<entry 
+id="impcor"
+type="logical"
+category="timemgr"
+group="time_manager_nml" >
+Flag for implicit treatment of Coriolis terms.
+
+Default: .true.
+</entry>
+
+<entry 
+id="laccel"
+type="logical"
+category="timemgr"
+group="time_manager_nml" >
+Flag for acceleration.
+
+Default: .false.
+</entry>
+
+<entry 
+id="accel_file"
+type="char*256"
+category="timemgr"
+group="time_manager_nml" >
+File containing acceleration factors.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="dtuxcel"
+type="real"
+category="timemgr"
+group="time_manager_nml" >
+Factor to multiply MOMENTUM timestep.
+
+Default: 1.0
+</entry>
+
+<entry 
+id="iyear0"            
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Initial start date and time (year).
+
+Default: 1
+</entry>
+
+<entry 
+id="imonth0"      
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Initial start date and time (month).
+
+Default: 1
+</entry>
+
+<entry 
+id="iday0"       
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Initial start date and time (day).
+
+Default: 2
+</entry>
+
+<entry 
+id="ihour0"
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Initial start date and time (hour).
+
+Default: 0
+</entry>
+
+<entry 
+id="iminute0"         
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Initial start date and time (minute).
+
+Default: 0
+</entry>
+
+<entry 
+id="isecond0"        
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Initial start date and time (second).
+
+Default: 0
+</entry>
+
+<entry 
+id="dt_option"
+type="char*256" 
+category="timemgr"
+group="time_manager_nml"
+valid_values="auto_dt,steps_per_year,steps_per_day,seconds,hours" >
+Method to determine tracer timestep size.
+
+Valid Values: 'auto_dt', 'steps_per_year', 'steps_per_day', 'seconds', 'hours'
+Default: 'steps_per_day'
+</entry>
+
+<entry 
+id="dt_count"
+type="integer" 
+category="timemgr"
+group="time_manager_nml" >
+Input count to determine tracer timestep.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="stop_option"
+type="char*256"
+category="timemgr"
+group="time_manager_nml"
+valid_values="never,eoy,eom,eod,nyear,nyears,nmonth,nmonths,nday,ndays,nstep,nsteps,date" >
+Specify how to determine stopping time.
+
+Valid Values: 'never', 'eoy', 'eom', 'eod', 'nyear', 'nyears', 'nmonth', 'nmonths', 'nday', 'ndays', 'nstep', 'nsteps', 'date'
+Default: 'nyear'
+</entry>
+
+<entry 
+id="stop_count"
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Number of stop_option intervals before stop OR date (yyyymmdd) at which model stops.
+
+Default: 1000
+</entry>
+
+<entry 
+id="date_separator"
+type="char*1"
+category="timemgr"
+group="time_manager_nml" >
+Character to separate yyyy-mm-dd.
+
+Default: "-"
+</entry>
+
+<entry 
+id="allow_leapyear"
+type="logical"
+category="timemgr"
+group="time_manager_nml" >
+Flag to allow leap years.
+
+Default: .false.
+</entry>
+
+<entry 
+id="fit_freq"
+type="integer"
+category="timemgr"
+group="time_manager_nml" >
+Number of intervals / days into which full and half timesteps must exactly "fit".
+
+Default: 1
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: grid_nml                 - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="horiz_grid_opt"
+type="char*256"
+category="grid"
+group="grid_nml"
+valid_values="internal,file" >
+Horizontal grid option.
+
+Valid Values: 'internal', 'file'
+Default: 'file'
+</entry>
+
+<entry 
+id="vert_grid_opt"
+type="char*256"
+category="grid"
+group="grid_nml"
+valid_values="internal,file" >
+Vertical grid option.
+
+Valid Values: 'internal', 'file'
+Default: 'file'
+</entry>
+
+<entry 
+id="topography_opt"
+type="char*256"
+category="grid"
+group="grid_nml"
+valid_values="internal,bathymetry,file" >
+Topography (KMT) option.
+
+Valid Values: 'internal', 'bathymetry', 'file'
+Default: 'file'
+</entry>
+
+<entry 
+id="horiz_grid_file"
+type="char*256"
+category="grid"
+group="grid_nml"
+input_pathname="abs" >
+Input file for reading horizontal grid info.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="vert_grid_file"
+type="char*256"
+category="grid"
+group="grid_nml" >
+Input file for reading vertical grid info.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="topography_file"
+type="char*256"
+category="grid"
+group="grid_nml"
+input_pathname="abs" >
+Input file for reading topography info.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="topography_outfile"
+type="char*256"
+category="grid"
+group="grid_nml" >
+Output file for writing horizontal grid info.
+
+Default: '$RUNDIR/$CASENAME.pop.h.topography_bathymetry.ieeer8'
+</entry>
+
+<entry 
+id="bathymetry_file"
+type="char*256"
+category="grid"
+group="grid_nml" >
+Input file for reading bathymetry info.
+
+Default: 'unknown_bathymetry'
+</entry>
+
+<entry 
+id="n_topo_smooth"
+type="integer"
+category="grid"
+group="grid_nml" >
+Number of topo smoothing passes.
+
+Default: 0
+</entry>
+
+<entry 
+id="flat_bottom"
+type="logical"
+category="grid"
+group="grid_nml" >
+Flag for flat bottom topography.
+
+Default: .false.
+</entry>
+
+<entry 
+id="lremove_points"
+type="logical"
+category="grid"
+group="grid_nml" >
+Flag for removing isolated points.
+
+Default: .false.
+</entry>
+
+<entry 
+id="region_mask_file"
+type="char*256"
+category="grid"
+group="grid_nml"
+input_pathname="abs" >
+Input file for reading region mask.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="region_info_file"
+type="char*256"
+category="grid"
+group="grid_nml" >
+Input file with region identification info.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="sfc_layer_opt"
+type="char*256"
+category="grid"
+group="grid_nml"
+valid_values="varthick,rigid,oldfree" >
+Choice for surface layer type.
+
+Valid Values: 'varthick', 'rigid', 'oldfree'
+Default: 'varthick'
+</entry>
+
+<entry 
+id="partial_bottom_cells"
+type="logical"
+category="grid"
+group="grid_nml" >
+Flag for partial bottom cells.
+
+Default: .false.
+</entry>
+
+<entry 
+id="bottom_cell_file"
+type="char*256"
+category="grid"
+group="grid_nml"
+input_pathname="abs" >
+Input file for thickness of partial bottom cells.
+
+Default: 'unknown_bottom_cell'
+</entry>
+
+<entry 
+id="kmt_kmin"
+type="integer"
+category="grid"
+group="grid_nml" >
+Minimum allowed non-zero KMT value.
+
+Default: 3
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: init_ts_option           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="init_ts_option"
+type="char*256"
+category="init_ts"
+group="init_ts_nml" >
+Option for initializing temperature and salinity.
+
+Default: 'ccsm_startup'
+</entry>
+
+<entry 
+id="init_ts_file"
+type="char*256"
+category="init_ts"
+group="init_ts_nml"
+input_pathname="abs" >
+Input file for initial temperature and salinity.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="init_ts_file_fmt"
+type="char*256"
+category="init_ts"
+group="init_ts_nml"
+valid_values="bin,nc" >
+init_ts_file format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="init_ts_suboption"
+type="char*256"
+category="init_ts"
+group="init_ts_nml" >
+Suboption for initializing temperature and salinity.
+
+Default: 'null'
+</entry>
+
+<entry 
+id="init_ts_outfile"
+type="char*256"
+category="init_ts"
+group="init_ts_nml" >
+Output file for writing temperature and salinity.
+
+Default: '$RUNDIR/$CASENAME.pop.h.ts_ic'
+</entry>
+
+<entry 
+id="init_ts_outfile_fmt"
+type="char*256"
+category="init_ts"
+group="init_ts_nml"
+valid_values="bin,nc" >
+init_ts_outfile format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'nc'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: diagnostics_nml          - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="diag_global_freq_opt"
+type="char*256"
+category="diag"
+group="diagnostics_nml"
+valid_values="never,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Units of diag_global_freq (frequency of global diagnostics).
+
+Valid Values: 'never', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'nmonth'
+</entry>
+
+<entry 
+id="diag_global_freq"
+type="integer"
+category="diag"
+group="diagnostics_nml" >
+Frequency of global diagnostics.
+
+Default: 1
+</entry>
+
+<entry 
+id="diag_cfl_freq_opt"
+type="char*256"
+category="diag"
+group="diagnostics_nml"
+valid_values="never,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Units of diag_cfl_freq (frequency of CFL diagnostics).
+
+Valid Values: 'never', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'nmonth'
+</entry>
+
+<entry 
+id="diag_cfl_freq"
+type="integer"
+category="diag"
+group="diagnostics_nml" >
+Frequency of CFL diagnostics.
+Default: 1
+</entry>
+
+<entry 
+id="diag_transp_freq_opt"
+type="char*256"
+category="diag"
+group="diagnostics_nml"
+valid_values="never,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Units of diag_transp_freq (frequency of transport diagnostics).
+
+Valid Values: 'never', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'nmonth'
+</entry>
+
+<entry 
+id="diag_transp_freq"
+type="integer"
+category="diag"
+group="diagnostics_nml" >
+Frequency of transport diagnostics.
+
+Default: 1
+</entry>
+
+<entry 
+id="diag_transport_file"
+type="char*256"
+category="diag"
+group="diagnostics_nml" >
+Filename for choosing fields for output.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="diag_all_levels"
+type="logical"
+category="diag"
+group="diagnostics_nml" >
+Flag to write some global diagnostics for all vertical levels.
+
+Default: .false.
+</entry>
+
+<entry 
+id="cfl_all_levels"
+type="logical"
+category="diag"
+group="diagnostics_nml" >
+Flag to write some CFL diagnostics for all vertical levels.
+
+Default: .false.
+</entry>
+
+<entry 
+id="diag_outfile"
+type="char*256"
+category="diag"
+group="diagnostics_nml" >
+Filename for diagnostic output.
+
+Default: '$RUNDIR/$CASENAME.pop.dd'
+</entry>
+
+<entry 
+id="diag_transport_outfile"
+type="char*256"
+category="diag"
+group="diagnostics_nml" >
+Filename for transport output.
+
+Default: '$RUNDIR/$CASENAME.pop.dt'
+</entry>
+
+<entry 
+id="diag_velocity_outfile"
+type="char*256"
+category="diag"
+group="diagnostics_nml" >
+Filename for velocity output.
+
+Default: '$RUNDIR/$CASENAME.pop.dv'
+</entry>
+
+<entry 
+id="ldiag_velocity"
+type="logical"
+category="diag"
+group="diagnostics_nml" >
+Flag to compute velocity diagnostics.
+
+Default: .true.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: budget_diagnostics_nml   - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ldiag_global_tracer_budgets"
+type="logical"
+category="diag"
+group="budget_diagnostics_nml" >
+Flag for global budget diagnostics for tracers.
+
+Default: .true.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: bsf_diagnostic_nml       - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ldiag_bsf"
+type="logical"
+category="diag"
+group="bsf_diagnostic_nml" >
+Flag for barotropic stream function diagnostics.
+
+Default: .true.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: restart_nml              - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="restart_freq_opt"
+type="char*256"
+category="restart"
+group="restart_nml"
+valid_values="never,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Units of restart_freq (restart frequency).
+
+Valid Values: 'never', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'nyear' 
+</entry>
+
+<entry 
+id="restart_freq"
+type="integer"
+category="restart"
+group="restart_nml" >
+Restart frequency.
+
+Default: 100000
+</entry>
+
+<entry 
+id="restart_outfile"
+type="char*256"
+category="restart"
+group="restart_nml" >
+Restart output filename root.
+
+Default: '$RUNDIR/$CASENAME.pop.r'
+</entry>
+
+<entry 
+id="restart_fmt"
+type="char*256"
+category="restart"
+group="restart_nml"
+valid_values="bin,nc" >
+restart_outfile format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'nc'
+</entry>
+
+<entry 
+id="leven_odd_on"
+type="logical"
+category="restart"
+group="restart_nml" >
+Flag to turn even_odd restarts on.
+
+Default: .false. 
+</entry>
+
+<entry 
+id="even_odd_freq"
+type="integer"
+category="restart"
+group="restart_nml" >
+Frequency to write even/odd restart files (units = nstep).
+
+Default: 100000
+</entry>
+
+<entry 
+id="pressure_correction"
+type="logical"
+category="restart"
+group="restart_nml" >
+Flag to fix pressure for exact restart.
+
+Default: .false.
+</entry>
+
+<entry 
+id="restart_start_opt"
+type="char*256"
+category="restart"
+group="restart_nml"
+valid_values="nstep,nday,nyear,date" >
+Units of restart_start (when to begin writing regular restart files).
+
+Default: 'nstep'
+</entry>
+
+<entry 
+id="restart_start"
+type="integer"
+category="restart"
+group="restart_nml" >
+Wait prior to beginning to output restart files.
+
+Default:  0
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: history_nml              - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="history_freq_opt"
+type="char*256"
+category="history"
+group="history_nml"
+valid_values="never,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Units of history_freq (frequency of writing history files).
+
+Valid Values: 'never', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'never'
+</entry>
+
+<entry 
+id="history_freq"
+type="integer"
+category="history"
+group="history_nml" >
+Frequency of writing history files.
+
+Default: 1
+</entry>
+
+<entry 
+id="history_outfile"
+type="char*256"
+category="history"
+group="history_nml" >
+Root filename for history files.
+
+Default: '$CASENAME.pop.hs'
+</entry>
+
+<entry 
+id="history_contents"
+type="char*256"
+category="history"
+group="history_nml" >
+Filename for choosing fields for output in history file.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="history_fmt"
+type="char*256"
+category="history"
+group="history_nml"
+valid_values="bin,nc" >
+history_outfile format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'nc'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: movie_nml                - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="movie_freq_opt"
+type="char*256"
+category="history"
+group="movie_nml"
+valid_values="never,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Units of movie_freq (frequency of writing movie files).
+
+Valid Values: 'never', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'never'
+</entry>
+
+<entry 
+id="movie_freq"
+type="integer"
+category="history"
+group="movie_nml" >
+Frequency of writing movie files.
+
+Default: 1
+</entry>
+
+<entry 
+id="movie_outfile"
+type="char*256"
+category="history"
+group="movie_nml" >
+Root filename for movie files.
+
+Default: '$CASENAME.pop.hm'
+</entry>
+
+<entry 
+id="movie_contents"
+type="char*256"
+category="history"
+group="movie_nml" >
+Filename for choosing fields for output in movie file.
+
+Default: Set by CESM scripts based on ocean grid
+</entry>
+
+<entry 
+id="movie_fmt"
+type="char*256"
+category="history"
+group="movie_nml"
+valid_values="bin,nc" >
+movie_outfile format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'nc'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: solvers                  - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="solverChoice"
+type="char*256"
+category="solvers"
+group="solvers"
+valid_values="pcg,ChronGear" >
+Solver to use for elliptic system for surface pressure in barotropic mode.
+
+Valid Values: 'pcg', 'ChronGear'
+Default: 'ChronGear'
+</entry>
+
+<entry 
+id="convergenceCriterion"
+type="real"
+category="solvers"
+group="solvers" >
+Convergence error criterion.
+
+Default: 1.0e-13 
+</entry>
+
+<entry 
+id="maxIterations"
+type="integer"
+category="solvers"
+group="solvers" >
+Max number of solver iterations.
+
+Default: 1000
+</entry>
+
+<entry 
+id="convergenceCheckFreq"
+type="integer"
+category="solvers"
+group="solvers" >
+Frequency (number of steps) in which to check check for convergence.
+
+Default: 10
+</entry>
+
+<entry 
+id="preconditionerChoice"
+type="char*256"
+category="solvers"
+group="solvers"
+valid_values="diagonal,file" >
+Preconditioner choice.
+
+Valid Values: 'diagonal', 'file'
+Default: 'diagonal'
+</entry>
+
+<entry 
+id="preconditionerFile"
+type="char*256"
+category="solvers"
+group="solvers" >
+File containing the preconditioner (if preconditionerChoice='file').
+
+Default: 'unknownPrecondFile'
+</entry>
+
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: vertical_mix_nml         - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="vmix_choice"
+type="char*256"
+category="vmix"
+group="vertical_mix_nml"
+valid_values="const,rich,kpp" >
+Vertical mixing parameterization.
+
+Valid Values: 'const', 'rich', 'kpp'
+Default: 'kpp'
+</entry>
+
+<entry 
+id="aidif"
+type="real"
+category="vmix"
+group="vertical_mix_nml" >
+Time-centering parameter for implicit vertical mixing.
+
+Default: 1.0
+</entry>
+
+<entry 
+id="bottom_drag"
+type="real"
+category="vmix"
+group="vertical_mix_nml" >
+Drag coefficient for bottom drag.
+
+Default: 1.0e-3
+</entry>
+
+<entry 
+id="bottom_heat_flx"
+type="real"
+category="vmix"
+group="vertical_mix_nml" >
+Bottom (geothermal) heat flux [W/m^2].
+
+Default: 0.0
+</entry>
+
+<entry 
+id="bottom_heat_flx_depth"
+type="real"
+category="vmix"
+group="vertical_mix_nml" >
+Depth below which bottom heat is applied.
+
+Default: 1000.0e2
+</entry>
+
+<entry 
+id="implicit_vertical_mix"
+type="logical"
+category="vmix"
+group="vertical_mix_nml" >
+Flag for computing vertical mixing implicitly in time.
+
+Default: .true.
+</entry>
+
+<entry 
+id="convection_type"
+type="char*256"
+category="vmix"
+group="vertical_mix_nml"
+valid_values="adjustment,diffusion" >
+Method for convection.
+
+Valid Values: 'adjustment', 'diffusion'
+Default: 'diffusion'
+</entry>
+
+<entry 
+id="nconvad"
+type="integer"
+category="vmix"
+group="vertical_mix_nml" >
+Number of times to convectively adjust.
+
+Default: 2
+</entry>
+
+<entry 
+id="convect_diff"
+type="real"
+category="vmix"
+group="vertical_mix_nml" >
+Tracer diffusion to use for convection.
+
+Default: 10000.0
+</entry>
+
+<entry 
+id="convect_visc"
+type="real"
+category="vmix"
+group="vertical_mix_nml" >
+Viscosity to use for convection (momentum).
+
+Default: 10000.0
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: vmix_const_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="const_vvc"
+type="real"
+category="vmix"
+group="vmix_const_nml" >
+Constant value for viscosity.
+
+Default: 0.25
+</entry>
+
+<entry 
+id="const_vdc"
+type="real"
+category="vmix"
+group="vmix_const_nml" >
+Constant value for diffusivity.
+
+Default: 0.25
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: vmix_rich_nml            - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="bckgrnd_vvc"
+type="real"
+category="vmix"
+group="vmix_rich_nml" >
+Background value for viscosity.
+
+Default: 1.0
+</entry>
+
+<entry 
+id="bckgrnd_vdc"
+type="real"
+category="vmix"
+group="vmix_rich_nml" >
+Background value for diffusivity.
+
+Default: 0.1
+</entry>
+
+<entry 
+id="rich_mix&vmix_rich_nml"
+type="real"
+category="vmix"
+group="derived" >
+Coefficient for Richardson number term.
+
+Default: 50.0
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: tidal_nml                - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ltidal_mixing"
+type="logical"
+category="tidal"
+group="tidal_nml" >
+Flag for tidal mixing.
+
+Default: .true.
+</entry>
+
+<entry 
+id="local_mixing_fraction"
+type="real"
+category="tidal"
+group="tidal_nml" >
+Fraction of energy available for mixing local to the generation region.
+
+Default: 0.33
+</entry>
+
+<entry 
+id="mixing_efficiency"
+type="real"
+category="tidal"
+group="tidal_nml" >
+Mixing efficiency.
+
+Default: 0.2
+</entry>
+
+<entry 
+id="vertical_decay_scale"
+type="real"
+category="tidal"
+group="tidal_nml" >
+Vertical decay scale for turbulence (cm)
+
+Default: 500.0e02
+</entry>
+
+<entry 
+id="tidal_energy_file"
+type="char*256"
+category="tidal"
+group="tidal_nml"
+input_pathname="abs" >
+Input file for reading tidal energy flux.
+
+Default: 'unknown_tidal_mixing'
+</entry>
+
+<entry 
+id="tidal_mix_max"
+type="real"
+category="tidal"
+group="tidal_nml" >
+Maximum for vertical diffusivity and viscosity (cm^2/s).
+
+Default: 100.0
+</entry>
+
+<entry 
+id="tidal_energy_file_fmt"
+type="char*256"
+category="tidal"
+group="tidal_nml"
+valid_values="bin,nc" >
+tidal_energy_file format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: vmix_kpp_nml             - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="bckgrnd_vdc1"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Background diffusivity (Ledwell).
+
+Default: 0.16
+</entry>
+
+<entry 
+id="bckgrnd_vdc2"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Variation in diffusivity.
+
+Default: 0.0
+</entry>
+
+<entry 
+id="bckgrnd_vdc_eq"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Equatorial diffusivity (Gregg).
+
+Default: 0.01
+</entry>
+
+<entry 
+id="bckgrnd_vdc_psim"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Maximum PSI-induced diffusivity (MacKinnon).
+
+Default: 0.13
+</entry>
+
+<entry 
+id="bckgrnd_vdc_ban"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Banda Sea diffusivity (Gordon).
+
+Default: 1.0
+</entry>
+
+<entry 
+id="bckgrnd_vdc_dpth"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Depth at which diffusivity equals vdc1
+Default: 1000.0e02
+</entry>
+
+<entry 
+id="bckgrnd_vdc_linv"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Inverse length for transition region.
+
+Default: 4.5e-05
+</entry>
+
+<entry 
+id="Prandtl"
+type="real"
+category="kpp"
+group="vmix_kpp_nml" >
+Prandtl number.
+
+Default: 10.0
+</entry>
+
+<entry 
+id="rich_mix&vmix_kpp_nml"
+type="real"
+category="kpp"
+group="derived" >
+Coefficient for Richardson number term.
+
+Default: 50.0
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="num_v_smooth_Ri"
+type="integer"
+category="kpp"
+group="vmix_kpp_nml" >
+Number of times to vertically smooth Ri.
+
+Default: 1
+</entry>
+
+<entry 
+id="lrich"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag for computing Ri-dependent mixing.
+
+Default: .true.
+</entry>
+
+<entry 
+id="ldbl_diff"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag for computing double-diffusive mixing.
+
+Default: .true.
+</entry>
+
+<entry 
+id="lshort_wave"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag for computing short-wave forcing.
+
+Default: .true.
+</entry>
+
+<entry 
+id="lcheckekmo"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag to check Ekman, Monin-Obhukov depth limit.
+
+Default: .false.
+</entry>
+
+<entry 
+id="lhoriz_varying_bckgrnd"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag to allow horizontally-varying background (need bckgrnd_vdc2=0.0).
+
+Default: .true.
+</entry>
+
+<entry 
+id="llangmuir"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag for using Langmuir parameterization.
+
+Default: .false.
+</entry>
+
+<entry 
+id="linertial"
+type="logical"
+category="kpp"
+group="vmix_kpp_nml" >
+Flag for using inertial mixing parameterization.
+
+Default: .false.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: advect_nml               - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="tadvect_ctype"
+type="char*256"
+category="advect"
+group="advect_nml"
+valid_values="centered,upwind3,lw_lim" >
+Tracer advection choice.
+
+Valid Values: 'center','upwind','lw_lim'
+Default: 'upwind3'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_nml                 - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="hmix_momentum_choice"
+type="char*256"
+category="hmix"
+group="hmix_nml"
+valid_values="del2,del4,anis,gent" >
+Type of horizontal momentum mixing.
+
+Valid Values: 'del2', 'del4', 'anis', 'gent'
+Default: 'anis'
+</entry>
+
+<entry 
+id="hmix_tracer_choice"
+type="char*256"
+category="hmix"
+group="hmix_nml"
+valid_values="del2,del4,gent" >
+Type of horizontal tracer mixing.
+
+Valid Values: 'del2','del4','gent'
+Default: 'gent'
+</entry>
+
+<entry 
+id="lsubmesoscale_mixing"
+type="logical"
+category="hmix"
+group="hmix_nml" >
+Flag for submesoscale mixing.
+
+Default: .true.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_del2u_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lauto_hmix&hmix_del2u_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to internally compute mixing coefficient.
+
+Default: .false.
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="lvariable_hmix&hmix_del2u_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to enable spatially-varying mixing.
+
+Default: .false. 
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="am&hmix_del2u_nml"
+type="real"
+category="hmix"
+group="derived" >
+Horizontal momentum mixing coefficient.
+
+Default: 0.5e8
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_del2t_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lauto_hmix&hmix_del2t_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to internally compute mixing coefficient.
+
+Default: .false.
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="lvariable_hmix&hmix_del2t_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to enable spatially-varying mixing.
+
+Default: .false.
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="ah&hmix_del2t_nml"
+type="real"
+category="hmix"
+group="derived" >
+Horizontal tracer mixing coefficient.
+
+Default: 0.6e7
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_del4u_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lauto_hmix&hmix_del4u_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to internally compute mixing coefficient.
+
+Default: .false. 
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="lvariable_hmix&hmix_del4u_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to enable spatially-varying mixing.
+
+Default: .false.
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="am&hmix_del4u_nml"
+type="real"
+category="hmix"
+group="derived" >
+Horizontal momentum mixing coefficient.
+
+Default: -0.6e20
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_del4t_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lauto_hmix&hmix_del4t_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to internally compute mixing coefficient.
+
+Default: .false.
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="lvariable_hmix&hmix_del4t_nml"
+type="logical"
+category="hmix"
+group="derived" >
+Flag to enable spatially-varying mixing.
+
+Default: .false.
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="ah&hmix_del4t_nml"
+type="real"
+category="hmix"
+group="derived" >
+Horizontal tracer mixing coefficient.
+
+Default: -0.2e20
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_gm_nml              - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="kappa_isop_choice"
+type="char*256"
+category="hmix"
+group="hmix_gm_nml"
+valid_values="cons,dept,depth,vmhs,hdgr,drad,bfre,bfvm,bfhd,bfdr,edgr" >
+Choice for KAPPA_ISOP (isopycnal).
+
+Valid Values: 'cons', 'depth', 'vmhs', 'hdgr', 'drad', 'bfre', 'bfvm', 'bfhd', 'bfdr', 'edgr'
+Default: 'bfre'
+</entry>
+
+<entry 
+id="kappa_thic_choice"
+type="char*256"
+category="hmix"
+group="hmix_gm_nml"
+valid_values="cons,dept,depth,vmhs,hdgr,drad,bfre,bfvm,bfhd,bfdr,edgr" >
+Choice for KAPPA_THIC (thickness).
+
+Valid Values: 'cons', 'depth', 'vmhs', 'hdgr', 'drad', 'bfre', 'bfvm', 'bfhd', 'bfdr', 'edgr'
+Default: 'bfre'
+</entry>
+
+<entry 
+id="kappa_freq_choice"
+type="char*256"
+category="hmix"
+group="hmix_gm_nml"
+valid_values="never,every_time_step,once_a_day" >
+Frequency of KAPPA computation.
+
+Valid Values: 'never', 'every_time_step', 'once_a_day'
+Default: 'once_a_day'
+</entry>
+
+<entry 
+id="slope_control_choice"
+type="char*256"
+category="hmix"
+group="hmix_gm_nml"
+valid_values="tanh,notanh,clip,Gerd" >
+Choice for slope control.
+
+Valid Values: 'tanh', 'notanh', 'clip', 'Gerd'
+Default: 'notanh'
+</entry>
+
+<entry 
+id="kappa_depth_1"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+1 of 2 parameters for variation of KAPPA with kappa_type_depth option.
+
+Default: 1.0
+</entry>
+
+<entry 
+id="kappa_depth_2"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+1 of 2 parameters for variation of KAPPA with kappa_type_depth option.
+
+Default: 0.0
+</entry>
+
+<entry 
+id="kappa_depth_scale"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Depth scale for variation of KAPPA with kappa_type_depth.
+
+Default: 150000.0
+</entry>
+
+<entry 
+id="ah&hmix_gm_nml"
+type="real"
+category="hmix"
+group="derived" >
+Isopycnal diffusivity.
+
+Default: 3.0e7
+Note: You must specify both the variable name and namelist name if you change this variable in user_nl_pop2!
+</entry>
+
+<entry 
+id="ah_bolus"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Thickness (GM bolus) diffusivity.
+
+Default: 3.0e7
+</entry>
+
+<entry 
+id="use_const_ah_bkg_srfbl"
+type="logical"
+category="hmix"
+group="hmix_gm_nml" >
+Flag to use ag_bkg_srfbl as maxmium background horizontal diffusivity within the surface boundary layer (rather than using KAPPA_ISOP).
+
+Default: .true.
+</entry>
+
+<entry 
+id="ah_bkg_srfbl"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Background horizontal diffusivity within the surface boundary layer.
+
+Default: 3.0e7
+</entry>
+
+<entry 
+id="ah_bkg_bottom"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Background horizontal diffusivity at k = KMT
+
+Default: 0.0
+</entry>
+
+<entry 
+id="slm_r"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Maximum slope allowed for redi diffusion.
+
+Default: 0.3
+</entry>
+
+<entry 
+id="slm_b"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Maximum slope allowed for bolus transport.
+
+Default: 0.3
+</entry>
+
+<entry 
+id="diag_gm_bolus"
+type="logical"
+category="hmix"
+group="hmix_gm_nml" >
+Flag for diagnostic bolus velocity computation.
+
+Default: .true.
+</entry>
+
+<entry 
+id="transition_layer_on"
+type="logical"
+category="hmix"
+group="hmix_gm_nml" >
+Flag for transition layer parameterization.
+
+Default: .true.
+</entry>
+
+<entry 
+id="read_n2_data"
+type="logical"
+category="hmix"
+group="hmix_gm_nml" >
+Flag to use climatoligical N^2 data instead of model-dependent N^2.
+
+Default: .false.
+</entry>
+
+<entry 
+id="buoyancy_freq_filename"
+type="char*256"
+category="hmix"
+group="hmix_gm_nml" >
+File name for the time-dependent buoyancy frequency (squared).
+
+Default: '$RUNDIR/buoyancy_freq'
+</entry>
+
+<entry 
+id="buoyancy_freq_fmt"
+type="char*256"
+category="hmix"
+group="hmix_gm_nml"
+valid_values="bin,nc" >
+buoyancy_freq_filename format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'nc'
+</entry>
+
+<entry 
+id="const_eg"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Unitless tuning parameter.
+
+Default: 1.2
+</entry>
+
+<entry 
+id="gamma_eg"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Effective upper limit for inverse eddy timescale (unitless).
+
+Default: 500.0
+</entry>
+
+<entry 
+id="kappa_min_eg"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Minimum value for KAPPA (cm^2/s).
+
+Default: 0.35e7
+</entry>
+
+<entry 
+id="kappa_max_eg"
+type="real"
+category="hmix"
+group="hmix_gm_nml" >
+Maximum value for KAPPA (cm^2/s).
+
+Default: 2.0e7
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: mix_submeso_nml          - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="efficiency_factor"
+type="real"
+category="hmix"
+group="mix_submeso_nml" >
+Efficiency factor: must be between 0.06 and 0.08 [inclusive].
+
+Default: 0.07
+</entry>
+
+<entry 
+id="time_scale_constant"
+type="real"
+category="hmix"
+group="mix_submeso_nml" >
+Time scale constant in seconds -- must be between 1 and 4 days [86400 and 345600 seconds].
+
+Default: 8.64e4 (1 day)
+</entry>
+
+<entry 
+id="luse_const_horiz_len_scale"
+type="logical"
+category="hmix"
+group="mix_submeso_nml" >
+Flag to use constant horizontal length scale given by hor_length_scale rather than varying length scale with space and time.
+
+Default: .false.
+</entry>
+
+<entry 
+id="hor_length_scale"
+type="real"
+category="hmix"
+group="mix_submeso_nml" >
+Constant horizontal length scale in cm (if luse_const_horiz_len_scale=.true.).
+
+Default: 5.0e5 (5 km)
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: hmix_aniso_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="hmix_alignment_choice"
+type="char*256"
+category="hmix"
+group="hmix_aniso_nml"
+valid_values="flow,east,grid" >
+Direction that breaks isotropy.
+
+Valid Values: 'flow', 'east', 'grid'
+Default: 'east'
+</entry>
+
+<entry 
+id="lvariable_hmix_aniso"
+type="logical"
+category="hmix"
+group="hmix_aniso_nml" >
+Flag to allow spatially variable anisotropic viscosity. 
+
+Default: .true.
+</entry>
+
+<entry 
+id="lsmag_aniso"
+type="logical"
+category="hmix"
+group="hmix_aniso_nml" >
+Flag to use nonlinear Smagorinski viscosities (c_para/perp and u_para/perp) rather than input anisotropic viscosities (visc_para/perp).
+
+Default: .false.
+</entry>
+
+<entry 
+id="visc_para"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Viscosity parallel to alignment direction.
+
+Default: 50.0e7
+</entry>
+
+<entry 
+id="visc_perp"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Viscosity perpendicular to alignment direction.
+
+Default: 50.0e7
+</entry>
+
+<entry 
+id="c_para"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Dimensionless Smagorinksi coefficient parallel to alignment direction.
+
+Default: 8.0
+</entry>
+
+<entry 
+id="c_perp"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Dimensionless Smagorinksi coefficient perpendicular to alignment direction.
+
+Default: 8.0
+</entry>
+
+<entry 
+id="u_para"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Velocity for grid Reynolds number viscous limit (parallel to alignment direction).
+
+Default: 5.0
+</entry>
+
+<entry 
+id="u_perp"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Velocity for grid Reynolds number viscous limit (perpendicular to alignment direction).
+
+Default: 5.0
+</entry>
+
+<entry 
+id="vconst_1"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form. Units are cm^2/s.
+
+Default: 0.6e7
+</entry>
+
+<entry 
+id="vconst_2"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form.
+
+Default: 0.5
+</entry>
+
+<entry 
+id="vconst_3"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form.
+
+Default: 0.16
+</entry>
+
+<entry 
+id="vconst_4"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form. Units are 1/cm.
+
+Default: 2.e-8
+</entry>
+
+<entry 
+id="vconst_5"
+type="integer"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form.
+
+Default: 3
+</entry>
+
+<entry 
+id="vconst_6"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form. Units are cm^2/s.
+
+Default: 0.6e7
+</entry>
+
+<entry 
+id="vconst_7"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+1 of 7 coefficients for variable viscosity form. Units are degrees of latitude.
+
+Default: 45.0
+</entry>
+
+<entry 
+id="smag_lat"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Latitude at which to vary perpendicular Smagorinsky viscosity.
+
+Default: 20.0
+</entry>
+
+<entry 
+id="smag_lat_fact"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Coefficient of latitude-dependent Smagorinsky viscosity.
+
+Default: 0.98
+</entry>
+
+<entry 
+id="smag_lat_gauss"
+type="real"
+category="hmix"
+group="hmix_aniso_nml" >
+Gaussian width of latitude-dependent Smagorinksy viscosity.
+
+Default: 98.0
+</entry>
+
+<entry 
+id="var_viscosity_infile"
+type="char*256"
+category="hmix"
+group="hmix_aniso_nml" >
+File name for variable viscosity factor.
+
+Default: 'ccsm-internal'
+</entry>
+
+<entry 
+id="var_viscosity_infile_fmt"
+type="char*256"
+category="hmix"
+group="hmix_aniso_nml"
+valid_values="bin,nc" >
+var_viscosity_infile format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="var_viscosity_outfile"
+type="char*256"
+category="hmix"
+group="hmix_aniso_nml" >
+File for output of internally-computed viscosity.
+
+Default: '$RUNDIR/$CASENAME.pop.hv'
+</entry>
+
+<entry 
+id="var_viscosity_outfile_fmt"
+type="char*256"
+category="hmix"
+group="hmix_aniso_nml"
+valid_values="bin,nc" >
+var_viscosity_outfile format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'nc'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: state_nml                - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="state_choice"
+type="char*256"
+category="state"
+group="state_nml"
+valid_values="jmcd,mwjf,poly,line" >
+Which equation of state to use.
+
+Valid Values: 'jmcd', 'mwjf', 'poly', 'line'
+Default: 'mwjf'
+</entry>
+
+<entry 
+id="state_file"
+type="char*256"
+category="state"
+group="state_nml" >
+File containing polynomial equation of state coefficients.
+
+Default: 'internal'
+</entry>
+
+<entry 
+id="state_range_opt"
+type="char*256"
+category="state"
+group="state_nml"
+valid_values="ignore,check,enforce" >
+Option for checking for valid temperature and salinity ranges.
+
+Valid Values: 'ignore', 'check', 'enforce'
+Default: 'enforce'
+</entry>
+
+<entry 
+id="state_range_freq"
+type="integer"
+category="state"
+group="state_nml" >
+Frequency (in steps) for checking validity of temperature and salinity ranges.
+
+Default: 100000
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: baroclinic_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="reset_to_freezing"
+type="logical"
+category="baroclinic"
+group="baroclinic_nml" >
+Flag to prevent very cold water.
+
+Default: .false.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: ice_nml                  - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="kmxice"
+type="integer"
+category="ice"
+group="ice_nml" >
+Lowest level from which to integrate ice formation.
+
+Default: 1
+</entry>
+
+<entry 
+id="ice_freq_opt"
+type="char*256"
+category="ice"
+group="ice_nml"
+valid_values="never,coupled,nyear,nmonth,nday,nhour,nsecond,nstep" >
+Option for frequency of computing ice.
+
+Valid Values: 'never', 'coupled', 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep'
+Default: 'coupled'
+</entry>
+
+<entry 
+id="ice_freq"
+type="integer"
+category="ice"
+group="ice_nml" >
+Frequency with which to compute ice (units of ice_freq_opt).
+
+Default:  100000
+</entry>
+
+<entry 
+id="lactive_ice"
+type="logical"
+category="ice"
+group="ice_nml" >
+Flag for whether POP is coupled to an active ice model.
+
+Default: Depends on $OCN_ICE_FORCING ("inactive" => .false.)
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: pressure_grad_nml        - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lpressure_avg"
+type="logical"
+category="presgrad"
+group="pressure_grad_nml" >
+Flag to turn on averaging of pressure across three time steps.
+
+Default: .true.
+</entry>
+
+<entry 
+id="lbouss_correct"
+type="logical"
+category="presgrad"
+group="pressure_grad_nml" >
+Flag for adding correction to Boussinesq approximation.
+
+Default: .false.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: topo_stress_nml          - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ltopostress"
+type="logical"
+category="topostress"
+group="topostress_nml" >
+Flag to turn on topographic stress.
+
+Default: .false.
+</entry>
+
+<entry 
+id="nsmooth_topo"
+type="integer"
+category="topostress"
+group="topostress_nml" >
+Number of passes the topography smoother will make.
+
+Default: 0
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: forcing_ws_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ws_data_type"
+type="char*256"
+category="forcing"
+group="forcing_ws_nml"
+valid_values="none,analytic,annual,monthly,monthly-calendar,monthly-equal,n-hour" >
+Type or periodicity of wind stress forcing.
+
+Valid Values: 'none', 'analytic', 'annual', 'monthly', 'monthly-calendar', 'monthly-equal', 'n-hour'
+LANL Default: 'analytic'
+CESM Default: 'none'
+</entry>
+
+<entry 
+id="ws_data_inc"
+type="real"
+category="forcing"
+group="forcing_ws_nml" >
+Increment (in hours) between forcing times if ws_data_type='nhour'.
+
+LANL Default: 1e20
+CESM Default: 24.
+</entry>
+
+<entry 
+id="ws_interp_freq"
+type="char*256"
+category="forcing"
+group="forcing_ws_nml"
+valid_values="never,n-hour,every-timestep" >
+How often to temporally interpolate wind stress data to current time; value in namelist is ignored and value set to 'never' if ws_data_type is 'analytic', 'none', or 'annual'.
+
+Valid Values: 'never', 'n-hour', 'every-timestep'
+LANL Default: 'never'
+CESM Default: 'every-timestep'
+</entry>
+
+<entry 
+id="ws_interp_type"
+type="char*256"
+category="forcing"
+group="forcing_ws_nml"
+valid_values="nearest,linear,4point" >
+Type of temporal interpolation for wind stress data.
+
+Valid Values: 'nearest', 'linear', '4point'
+LANL Default: 'nearest'
+CESM Default: 'linear'
+</entry>
+
+<entry 
+id="ws_interp_inc"
+type="real"
+category="forcing"
+group="forcing_ws_nml" >
+Increment (in hours) between interpolation times if ws_interp_freq = 'n-hour'.
+LANL Default: 1e20
+CESM Default: 72.
+</entry>
+
+<entry 
+id="ws_filename"
+type="char*256"
+category="forcing"
+group="forcing_ws_nml" >
+Name of file containing wind stress, or root of filenames if ws_data_type='n-hour'
+
+Default: 'unknown-ws'
+</entry>
+
+<entry 
+id="ws_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_ws_nml"
+valid_values="bin,nc" >
+ws_filename format (binary of netCDF)
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="ws_data_renorm"
+type="real(20)"
+category="forcing"
+group="forcing_ws_nml" >
+Renormalization constants for the components in the wind stress forcing file.
+
+LANL Default: 20*1.
+CESM Default: 10., 19*1.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: forcing_shf_nml          - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="shf_formulation"
+type="char*256"
+category="forcing"
+group="forcing_shf_nml"
+valid_values="restoring,Barnier-restoring,bulk-NCEP,partially-coupled" >
+Surface heat flux formation.
+
+Valid Values: 'restoring', 'Barnier-restoring', 'bulk-NCEP', 'partially-coupled'
+LANL Default: 'restoring'
+CESM Default: 'partially-coupled' or 'restoring' depending on configuration
+</entry>
+
+<entry 
+id="shf_data_type"
+type="char*256"
+category="forcing"
+group="forcing_shf_nml"
+valid_values="none,analytic,annual,monthly,monthly-equal,monthly-calendar,n-hour" >
+Type or periodicity of surface heat flux forcing.
+
+Valid Values='none', 'analytic', 'annual', 'monthly', 'monthly-equal', 'monthly-calendar', 'n-hour'
+LANL Default: 'analytic'
+CESM Default: 'monthly' if formulation is 'partially-coupled', 'none' otherwise
+</entry>
+
+<entry 
+id="shf_data_inc"
+type="real"
+category="forcing"
+group="forcing_shf_nml" >
+Increment (in hours) between forcing times if shf_data_type='n-hour'.
+
+LANL Default: 1e20
+CESM Default: 24.
+</entry>
+
+<entry 
+id="shf_interp_freq"
+type="char*256"
+category="forcing"
+group="forcing_shf_nml"
+valid_values="never,n-hour,every-timestep" >
+How often to temporally interpolate surface heat flux data to current time.
+
+Valid Values: 'never', 'n-hour', 'every-timestep'
+LANL Default: 'never'
+CESM Default: 'every-timestep'
+</entry>
+
+<entry 
+id="shf_interp_type"
+type="char*256"
+category="forcing"
+group="forcing_shf_nml"
+valid_values="nearest,linear,4point" >
+Type of temporal interpolation for surface heat flux data.
+
+LANL Default: 'nearest'
+CESM Default: 'linear'
+</entry>
+
+<entry 
+id="shf_interp_inc"
+type="real"
+category="forcing"
+group="forcing_shf_nml" >
+Increment (in hours) between interpolation times if shf_interp_freq = 'n-hour'.
+
+LANL Default: 1e20
+CESM Default: 72.
+</entry>
+
+<entry 
+id="shf_restore_tau"
+type="real"
+category="forcing"
+group="forcing_shf_nml" >
+Restoring timescale (days) if shf_formulation='restoring'.
+
+LANL Default: 1e20
+CESM Default: 30.
+</entry>
+
+<entry 
+id="shf_filename"
+type="char*256"
+category="forcing"
+group="forcing_shf_nml"
+input_pathname="abs" >
+Name of file containing surface heat flux data, or root of filenames if shf_data_type='n-hour'.
+
+LANL Default: 'unknown-shf'
+CESM Default: '$shf_filename', auto-filled by CESM scripts
+</entry>
+
+<entry 
+id="shf_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_shf_nml"
+valid_values="bin,nc" >
+shf_filename format (binary or netCDF)
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="shf_data_renorm"
+type="real(20)"
+category="forcing"
+group="forcing_shf_nml" >
+Renormalization constants for the components in the surface heat flux forcing file.
+
+LANL Default: 20*1.
+CESM Default: (0.94, 19*1.)
+</entry>
+
+<entry 
+id="shf_weak_restore"
+type="real"
+category="forcing"
+group="forcing_shf_nml" >
+Restoring flux for weak restoring in bulk-NCEP
+
+Default: 0.
+</entry>
+
+<entry 
+id="shf_strong_restore"
+type="real"
+category="forcing"
+group="forcing_shf_nml" >
+Restoring flux for strong restoring in bulk-NCEP
+
+LANL Default: 92.64
+CESM Default: 0.0
+</entry>
+
+<entry 
+id="luse_cpl_ifrac"
+type="logical"
+category="forcing"
+group="forcing_shf_nml" >
+Flag to control use of fractional ice coverage.
+
+LANL Default: N/A, CESM only
+CESM Default: .true. if shf_formulation='partially-coupled', .false. otherwise
+</entry>
+
+<entry
+id="shf_strong_restore_ms"
+type="real"
+category="forcing"
+group="forcing_shf_nml" >
+Restoring flux for strong restoring over marginal seas in bulk-NCEP
+
+LANL Default: N/A, CESM only
+CESM Default: 92.64
+</entry>
+
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: forcing_sfwf_nml         - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="sfwf_formulation"
+type="char*256"
+category="forcing"
+group="forcing_sfwf_nml"
+valid_values="restoring,bulk-NCEP,partially-coupled" >
+Surface fresh water flux formulation.
+
+Valid Values: 'restoring', 'bulk-NCEP', 'partially-coupled'
+LANL Default: 'restoring'
+CESM Default: 'restoring' or 'partially-coupled', depending on configuration
+</entry>
+
+<entry 
+id="sfwf_data_type"
+type="char*256"
+category="forcing"
+group="forcing_sfwf_nml"
+valid_values="none,analytic,annual,monthly,monthly-equal,monthly-calendar,n-hour" >
+Type or periodicity of surface fresh water flux forcing.
+
+Valid Values: 'none', 'analytic', 'annual', 'monthly', 'monthly-equal', 'monthly-calendar', 'n-hour'
+LANL Default: 'analytic'
+CESM Default: 'none' or 'monthly'
+</entry>
+
+<entry 
+id="sfwf_data_inc"
+type="real"
+category="forcing"
+group="forcing_sfwf_nml" >
+Increment (hours) between forcing times if sfwf_data_type='n-hour'.
+
+LANL Default: 1e20
+CESM Default: 24.
+</entry>
+
+<entry 
+id="sfwf_interp_freq"
+type="char*256"
+category="forcing"
+group="forcing_sfwf_nml"
+valid_values="never,n-hour,every-timestep" >
+How often to temporally interpolate surface fresh water flux data to current time.
+
+Valid Values: 'never', 'n-hour', 'every-timestep'
+LANL Default: 'never'
+CESM Default: 'every-timestep'
+</entry>
+
+<entry 
+id="sfwf_interp_type"
+type="char*256"
+category="forcing"
+group="forcing_sfwf_nml"
+valid_values="nearest,linear,4point" >
+Type of temporal interpolation for surface fresh water flux data.
+
+Valid Values: 'nearest', 'linear', '4point'
+LANL Default: 'nearest'
+CESM Default: 'linear'
+</entry>
+
+<entry 
+id="sfwf_interp_inc"
+type="real"
+category="forcing"
+group="forcing_sfwf_nml" >
+Increment (hours) between interpolation times if sfwf_interp_freq='n-hour'.
+
+LANL Default: 1e20
+CESM Default: 72.
+</entry>
+
+<entry 
+id="sfwf_restore_tau"
+type="real"
+category="forcing"
+group="forcing_sfwf_nml" >
+Restoring timescale (days) if sfwf_formulation='restoring'.
+
+LANL Default: 1e20
+CESM Default: 30.
+</entry>
+
+<entry 
+id="sfwf_filename"
+type="char*256"
+category="forcing"
+group="forcing_sfwf_nml"
+input_pathname="abs" >
+Name of file containing surface fresh water flux data, or root of filenames if sfwf_data_type='n-hour'.
+
+LANL Default: 'unknown_sfwf'
+CESM Default: '$sfwf_filename', auto-filled by CESM scripts
+</entry>
+
+<entry 
+id="sfwf_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_sfwf_nml"
+valid_values="bin,nc" >
+sfwf_filename format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="sfwf_data_renorm"
+type="real(20)"
+category="forcing"
+group="forcing_sfwf_nml" >
+Renormalization constants for components in sfwf forcing file.
+
+LANL Default: 20*1.
+CESM Default: 0.001, 19*1.
+</entry>
+
+<entry 
+id="sfwf_weak_restore"
+type="real"
+category="forcing"
+group="forcing_sfwf_nml" >
+Restoring flux for weak restoring in 'bulk-NCEP' and 'partially-coupled' formulation.
+
+LANL Default: 0.092
+CESM Default: 0.0115
+</entry>
+
+<entry 
+id="sfwf_strong_restore"
+type="real"
+category="forcing"
+group="forcing_sfwf_nml" >
+Restoring flux for strong restoring in 'bulk-NCEP' and 'partially-coupled' formulation.
+
+LANL Default: 0.6648
+CESM Default: 0.0
+</entry>
+
+<entry 
+id="sfwf_strong_restore_ms"
+type="real"
+category="forcing"
+group="forcing_sfwf_nml" >
+Restoring flux for strong restoring over marginal seas in CESM 'bulk-NCEP' and 'partially-coupled' formulations.
+
+LANL Default: N/A, CESM only
+CESM Default: 0.6648
+</entry>
+
+<entry 
+id="ladjust_precip"
+type="logical"
+category="forcing"
+group="forcing_sfwf_nml" >
+Adjust precipitation to balance water budget.
+
+LANL Default: .false.
+CESM Default: .true. if sfwf_formulation='partially-coupled', .false. otherwise
+</entry>
+
+<entry 
+id="lms_balance"
+type="logical"
+category="forcing"
+group="forcing_sfwf_nml" >
+Balance E, P, M, R, and S in marginal seas.
+
+LANL Default: N/A, CESM only
+CESM Default: .true. if sfwf_formulation='partially-coupled', .false. otherwise
+</entry>
+
+<entry 
+id="lfw_as_salt_flx"
+type="logical"
+category="forcing"
+group="forcing_sfwf_nml" >
+Treat fresh water flux as virtual salt flux when using varthick sfc layer.
+
+LANL Default: .false.
+CESM Default: .true.
+</entry>
+
+<entry 
+id="lsend_precip_fact"
+type="logical"
+category="forcing"
+group="forcing_sfwf_nml" >
+Flag for sending precip_fact to CESM coupler for use in fresh-water balance.
+
+LANL Default: N/A, CESM only
+CESM Default: .true. if sfwf_formulation='partially-coupled', .false. otherwise
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: forcing_pt_interior_nml  - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="pt_interior_data_type"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml"
+valid_values="none,annual,monthly,monthly-equal,monthly-calendar,n-hour" >
+Type or periodicity of interior potential temperature forcing.
+
+Valid Values: 'none', 'annual', 'monthly', 'monthly-equal', 'monthly-calendar', 'n-hour'
+Default: 'none'
+</entry>
+
+<entry 
+id="pt_interior_data_inc"
+type="real"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Increment (hours) between forcing times if pt_interior_data_type='n-hour'.
+
+LANL Default: 1e20
+CESM Default: 24
+</entry>
+
+<entry 
+id="pt_interior_interp_freq"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml"
+valid_values="never,n-hour,every-timestep" >
+How often to temporally interpolate interior potential temperature data to current time.
+
+Valid Values: 'never', 'n-hour', 'every-timestep'
+LANL Default: 'never'
+CESM Default: 'every-timestep'
+</entry>
+
+<entry 
+id="pt_interior_interp_type"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml"
+valid_values="nearest,linear,4point" >
+Type of temporal interpolation for interior potential temperature data.
+
+Valid Values: 'nearest', 'linear', '4point'
+LANL Default: 'nearest'
+CESM Default: 'linear'
+</entry>
+
+<entry 
+id="pt_interior_interp_inc"
+type="real"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Increment (hours) between interpolation times if interp_freq='n-hour'
+
+LANL Default: 1e20
+CESM Default: 72
+</entry>
+
+<entry 
+id="pt_interior_restore_tau"
+type="real"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Restoring timescale (days) if pt_interior_formulation='restoring'.
+
+LANL Default: 1e20
+CESM Default: 365
+</entry>
+
+<entry 
+id="pt_interior_filename"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml" >
+File containing interior potential temperature data, or root of filenames if pt_interior_data_type='n--hour'.
+
+Default: 'unknown-pt_interior'
+</entry>
+
+<entry 
+id="pt_interior_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml"
+valid_values="bin,nc" >
+pt_interior_filename format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="pt_interior_restore_max_level"
+type="integer"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Maximum level for interior potential temperature restoring.
+
+Default: 0 
+</entry>
+
+<entry 
+id="pt_interior_formulation"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Interior potential temperature formulation.
+
+Default: 'restoring'
+</entry>
+
+<entry 
+id="pt_interior_data_renorm"
+type="real(20)"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Renormalization constants for components in interior potential temperature forcing file.
+
+Default: 20*1.
+</entry>
+
+<entry 
+id="pt_interior_variable_restore"
+type="logical"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Enable variable interior potential temperature restoring.
+
+Default: .false.
+</entry>
+
+<entry 
+id="pt_interior_restore_filename"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml" >
+Name of file containing variable interior potential temperature restoring data.
+
+Default: 'unknown-pt_interior_restore'
+</entry>
+
+<entry 
+id="pt_interior_restore_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_pt_interior_nml"
+valid_values="bin,nc" >
+pt_interior_restore_filename format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: forcing_s_interior_nml   - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="s_interior_data_type"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml"
+valid_values="none,annual,monthly,monthly-equal,monthly-calendar,n-hour" >
+Type or periodicity of interior salinity forcing.
+
+Valid Values: 'none', 'annual' ,'monthly', 'monthly-equal', 'monthly-calendar', 'n-hour'
+Default: 'none'
+</entry>
+
+<entry 
+id="s_interior_data_inc"
+type="real"
+category="forcing"
+group="forcing_s_interior_nml" >
+Increment (hours) between forcing times if s_interior_data_type='n-hour'.
+
+LANL Default: 1e20
+CESM Default: 24
+</entry>
+
+<entry 
+id="s_interior_interp_freq"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml"
+valid_values="never,n-hour,every-timestep" >
+How often to temporally interpolate interior salinity data to current time.
+
+Valid Values: 'never', 'n-hour', 'every-timestep'
+LANL Default: 'never'
+CESM Default: 'every-timestep'
+</entry>
+
+<entry 
+id="s_interior_interp_type"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml"
+valid_values="nearest,linear,4point" >
+Type of temporal interpolation for interior salinity data.
+
+Valid Values: 'nearest', 'linear', '4point'
+LANL Default: 'nearest'
+CESM Default: 'linear'
+</entry>
+
+<entry 
+id="s_interior_interp_inc"
+type="real"
+category="forcing"
+group="forcing_s_interior_nml" >
+Increment (hours) between interpolation times if s_interior_interp_freq='n-hour'.
+
+LANL Default: 1e20
+CESM Default: 72
+</entry>
+
+<entry 
+id="s_interior_restore_tau"
+type="real"
+category="forcing"
+group="forcing_s_interior_nml" >
+Restoring timescale (days) if s_interior_formulation='restoring'.
+
+LANL Default: 1e20
+CESM Default: 365
+</entry>
+
+<entry 
+id="s_interior_filename"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml" >
+Name of file containing interior salinity data, or root of filenames if s_interior_data_type='n-hour'.
+
+Default: 'unknown-s_interior'
+</entry>
+
+<entry 
+id="s_interior_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml"
+valid_values="bin,nc" >
+s_interior_filename format (binary or netCDF)
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="s_interior_restore_max_level"
+type="integer"
+category="forcing"
+group="forcing_s_interior_nml" >
+Maximum level for interior salinity restoring.
+
+Default: 0 
+</entry>
+
+<entry 
+id="s_interior_formulation"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml" >
+Interior salinity formulation.
+
+Default: 'restoring'
+</entry>
+
+<entry 
+id="s_interior_data_renorm"
+type="real(20)"
+category="forcing"
+group="forcing_s_interior_nml" >
+Renormalization constants for components in interior salinity forcing file.
+
+Default: 20*1.
+</entry>
+
+<entry 
+id="s_interior_variable_restore"
+type="logical"
+category="forcing"
+group="forcing_s_interior_nml" >
+Enable variable interior salinity restoring.
+
+Default: .false.
+</entry>
+
+<entry 
+id="s_interior_restore_filename"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml" >
+Name of file containing variable interior salinity restoring data.
+
+Default: 'unknown-s_interior_restore'
+</entry>
+
+<entry 
+id="s_interior_restore_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_s_interior_nml"
+valid_values="bin,nc" >
+s_interior_restore_filename format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: forcing_ap_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ap_data_type"
+type="char*256"
+category="forcing"
+group="forcing_ap_nml"
+valid_values="none,analytic,annual,monthly,monthly-equal,monthly-calendar,n-hour" >
+Type or periodicity of atmospheric forcing.
+
+Valid Values: 'none', 'analytic', 'annual', 'monthly', 'monthly-equal', 'monthly-calendar', 'n-hour'
+Default: 'none'
+</entry>
+
+<entry 
+id="ap_data_inc"
+type="real"
+category="forcing"
+group="forcing_ap_nml" >
+Increment (in hours) between forcing times if ap_data_type='n-hour'.
+
+Default: 1.e20
+</entry>
+
+<entry 
+id="ap_interp_freq"
+type="char*256"
+category="forcing"
+group="forcing_ap_nml"
+valid_values="never,n-hour,every-timestep" >
+How often to temporally interpolate atmospheric forcing data to current time.
+
+Valid Values: 'never','n-hour','every-timestep'
+Default: 'never'
+</entry>
+
+<entry 
+id="ap_interp_type"
+type="char*256"
+category="forcing"
+group="forcing_ap_nml"
+valid_values="nearest,linear,4point" >
+Type of temporal interpolation for atmospheric pressure forcing data.
+
+Valid Values: 'nearest', 'linear', '4point'
+Default: 'nearest'
+</entry>
+
+<entry 
+id="ap_interp_inc"
+type="real"
+category="forcing"
+group="forcing_ap_nml" >
+Increment (in hours) between interpolation times if ap_interp_freq = 'n-hour'.
+
+Default: 1e20
+</entry>
+
+<entry 
+id="ap_filename"
+type="char*256"
+category="forcing"
+group="forcing_ap_nml" >
+Name of file containing atmospheric pressure forcing, or root of filenames if ap_data_type='n-hour'.
+
+Default: 'unknown-ap'
+</entry>
+
+<entry 
+id="ap_file_fmt"
+type="char*256"
+category="forcing"
+group="forcing_ap_nml"
+valid_values="bin,nc" >
+ap_filename format (binary or netCDF)
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="ap_data_renorm"
+type="real(20)"
+category="forcing"
+group="forcing_ap_nml" >
+Renormalization constants for the components in the atmospheric pressure forcing file.
+
+Default: 20*1.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: coupled_nml              - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="coupled_freq_opt"
+type="char*256"
+category="coupled"
+group="coupled_nml"
+valid_values="nyear,nmonth,nday,nhour,nsecond,nstep,never" >
+Units of coupled_freq (frequency POP is coupled to atmosphere / sea ice models via CESM flux coupler).
+
+Valid Values: 'nyear', 'nmonth', 'nday', 'nhour', 'nsecond', 'nstep', 'never'
+Default: 'nhour'
+</entry>
+
+<entry 
+id="coupled_freq"
+type="integer"
+category="coupled"
+group="coupled_nml" >
+Frequency POP is coupled to atmosphere / sea ice models via CESM flux coupler (units given by coupled_freq_opt).
+
+Default:  24
+</entry>
+
+<entry 
+id="qsw_distrb_opt"
+type="char*256"
+category="coupled"
+group="coupled_nml"
+valid_values="const,12hr,cosz" >
+Option for distributing net shortwave heat flux over a coupling interval (all options preserve time-integrated flux).
+
+Valid Values: 'const','12hr','cosz'
+Default: 'cosz'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: sw_absorption_nml        - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="sw_absorption_type"
+type="char*256"
+category="swabs"
+group="sw_absorption_nml" 
+valid_values="top-layer,jerlov,chlorophyll" >
+Short-wave absorption type.
+
+Valid Values: 'top-layer', 'jerlov', 'chlorophyll'
+Default: 'chlorophyll'
+</entry>
+
+<entry 
+id="chl_option"
+type="char*256"
+category="swabs"
+group="sw_absorption_nml"
+valid_values="file,model" >
+Chlorophyll option.
+
+Valid Values: 'file', 'model'
+Default: auto-filled by CESM scripts
+</entry>
+
+<entry 
+id="chl_filename"
+type="char*256"
+category="swabs"
+group="sw_absorption_nml"
+input_pathname="abs" >
+Chlorophyll input filename.
+
+Default: auto-filled by CESM scripts
+</entry>
+
+<entry 
+id="chl_file_fmt"
+type="char*256"
+category="swabs"
+group="sw_absorption_nml"
+valid_values="bin,nc" >
+chl_filename format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="jerlov_water_type"
+type="integer"
+category="swabs"
+group="sw_absorption_nml"
+valid_values="1,2,3,4,5" >
+Jerlov water type.
+
+Valid Values: 1-5 (correspond to I, IA, IB, II, and III, respectively)
+Default: 3
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: transports_nml           - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lat_aux_grid_type"
+type="char*256"
+category="transdiag"
+group="transports_nml"
+valid_values="southern,full,user-specified" >
+Type of the auxiliary latitudinal grid.
+
+Valid Values: 'southern', 'full', 'user-specified'
+Default: 'southern'
+</entry>
+
+<entry 
+id="lat_aux_begin"
+type="real"
+category="transdiag"
+group="transports_nml" >
+Beginning latitude for the auxiliary grid (degrees north).
+
+Default: -90.0
+</entry>
+
+<entry 
+id="lat_aux_end"
+type="real"
+category="transdiag"
+group="transports_nml" >
+Ending latitude for the auxiliary grid (degrees north).
+
+Default:  90.0
+</entry>
+
+<entry 
+id="n_lat_aux_grid"
+type="integer"
+category="transdiag"
+group="transports_nml" >
+Auxiliary grid dimension.
+
+Default: 180 
+</entry>
+
+<entry 
+id="moc_requested"
+type="logical"
+category="transdiag"
+group="transports_nml" >
+Flag for turning on output for meridional overturning circulation.
+
+Default: .true. for displaced pole grids, .false. for tripole grids.
+</entry>
+
+<entry 
+id="n_heat_trans_requested"
+type="logical"
+category="transdiag"
+group="transports_nml" >
+Flag for outputting northward heat transport.
+
+Default: .true. for displaced pole grids, .false. for tripole grids.
+</entry>
+
+<entry 
+id="n_salt_trans_requested"
+type="logical"
+category="transdiag"
+group="transports_nml" >
+Flag for outputting northward salt transport.
+
+Default: .true. for displaced pole grids, .false. for tripole grids.
+</entry>
+
+<entry 
+id="transport_reg2_names"
+type="char*256(6)"
+category="transdiag"
+group="transports_nml" >
+Names of the selected input regions when n_transport_reg = 2.
+
+Default: 'Atlantic Ocean','Mediterranean Sea','Labrador Sea','GIN Sea','Arctic Ocean','Hudson Bay'
+</entry>
+
+<entry 
+id="n_transport_reg"
+type="integer"
+category="transdiag"
+group="transports_nml" >
+Number of regions for all transport diagnostics.
+
+Default: 2
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: context_nml              - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="lcoupled"
+type="logical"
+category="context"
+group="context_nml" >
+Flag for whether POP is coupled to another system.
+
+Default: .true.
+</entry>
+
+<entry 
+id="lccsm"
+type="logical"
+category="context"
+group="context_nml" >
+Flag to run pop in the CESM context.
+
+Default: .true.
+</entry>
+
+<entry 
+id="b4b_flag"
+type="logical"
+category="context"
+group="context_nml" >
+Flag to run POP in bit-for-bit mode.
+
+Default: .false.
+</entry>
+
+<entry 
+id="lccsm_control_compatible"
+type="logical"
+category="context"
+group="context_nml" >
+Flag to run POP with code that is bit-for-bit with the ccsm4 control run. (According to source notes, this option should have been removed in ccsm4_0_1!).
+
+Default: .false.
+</entry>
+
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: overflows_nml            - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="overflows_on"
+type="logical"
+category="overflows"
+group="overflows_nml" >
+Flag for using parameterized overflows.
+
+Default: .true. for displaced pole grids, .false. for tripole grids.
+</entry>
+
+<entry 
+id="overflows_interactive"
+type="logical"
+category="overflows"
+group="overflows_nml" >
+Flag for using interactive overflows.
+
+Default: .true. for displaced pole grids, .false. for tripole grids.
+</entry>
+
+<entry 
+id="overflows_infile"
+type="char*256"
+category="overflows"
+group="overflows_nml" >
+File with overflow information.
+
+Default: Set by CESM scripts based on ocean grid.
+</entry>
+
+<entry 
+id="overflows_diag_outfile"
+type="char*256"
+category="overflows"
+group="overflows_nml" >
+File for writing overflow diagnostics output.
+
+Default: '$RUNDIR/$CASENAME.do'
+</entry>
+
+<entry 
+id="overflows_restart_type"
+type="char*256"
+category="overflows"
+group="overflows_nml"
+valid_values="ccsm_startup,ccsm_continue,ccsm_hybrid,ccsm_branch" >
+Overflow restart type.
+
+Valid Values: 'ccsm_startup', 'ccsm_continue', 'ccsm_hybrid', 'ccsm_branch'
+Default: 'ccsm_$RUNTYPE'
+</entry>
+
+<entry 
+id="overflows_restfile"
+type="char*256"
+category="overflows"
+group="overflows_nml" >
+Overflow restart file name.
+
+Default: '$RUNDIR/$CASENAME.ro'
+</entry>
+
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: niw_nml                  - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry
+id="lniw_mixing"
+type="logical"
+category="vmix"
+group="niw_nml" >
+Flag for using near inertial wave mixing.
+
+Default: .false.
+</entry>
+
+<entry
+id="niw_local_mixing_fraction"
+type="real"
+category="vmix"
+group="niw_nml" >
+Fraction of near inertial wave energy available for mixing local to the generation region.
+
+Default: 0.5
+</entry>
+
+<entry
+id="niw_mixing_efficiency"
+type="real"
+category="vmix"
+group="niw_nml" >
+Mixing efficiency (portion producing mixing rather than thermal heating).
+
+Default: 0.2
+</entry>
+
+<entry
+id="niw_obs2model_ratio"
+type="real"
+category="vmix"
+group="niw_nml" >
+Ratio between observed and modeled near inertial wave strength.
+
+Default: 2.0
+</entry>
+
+<entry
+id="niw_boundary_layer_absorption"
+type="real"
+category="vmix"
+group="niw_nml" >
+Fraction of near inertial wave energy absorbed in the boundary layer.
+
+Default: 0.7
+</entry>
+
+<entry
+id="niw_vert_decay_scale"
+type="real"
+category="vmix"
+group="niw_nml" >
+Vertical decay scale for turbulence (cm).
+
+Default: 500.0e02
+</entry>
+
+<entry
+id="niw_mix_max"
+type="real"
+category="vmix"
+group="niw_nml" >
+Maximum diffusivity for near inertial waves (cm^2/s).
+
+Default: 100.0
+</entry>
+
+<entry
+id="niw_energy_type"
+type="char*256"
+category="vmix"
+group="niw_nml" >
+Type (internal or external) for near inertial wave energy source.
+
+Default: 'blke'
+</entry>
+
+<entry
+id="niw_energy_file"
+type="char*256"
+category="vmix"
+group="niw_nml"
+input_pathname="abs" >
+Input file for reading near inertial wave energy flux.
+
+Default: Resolution-dependent
+</entry>
+
+<entry
+id="niw_energy_file_fmt"
+type="char*256"
+category="vmix"
+group="niw_nml"
+valid_values="bin,nc" >
+niw_energy_file_fmt (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: tavg_nml                 - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="n_tavg_streams"
+type="integer"
+category="tavg"
+group="tavg_nml" >
+Default: 3
+</entry>
+
+<entry 
+id="ltavg_ignore_extra_streams"
+type="logical"
+category="tavg"
+group="tavg_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="ltavg_streams_index_present"
+type="logical"
+category="tavg"
+group="tavg_nml" >
+Default: .true.
+</entry>
+
+<entry 
+id="tavg_freq_opt"
+type="char*256(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 'nmonth' 'nday' 'once'
+</entry>
+
+<entry 
+id="tavg_freq"
+type="integer(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 1 1 1
+</entry>
+
+<entry 
+id="tavg_file_freq_opt"
+type="char*256(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 'nmonth' 'nmonth' 'once'
+</entry>
+
+<entry 
+id="tavg_file_freq"
+type="integer(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 1 1 1
+</entry>
+
+<entry 
+id="tavg_stream_filestrings"
+type="char*256(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 'nmonth1' 'nday1' 'once'
+</entry>
+
+<entry 
+id="tavg_start_opt"
+type="char*256(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 'nstep' 'nstep' 'nstep'
+</entry>
+
+<entry 
+id="tavg_start"
+type="integer(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 0 0 0
+</entry>
+
+<entry 
+id="tavg_fmt_in"
+type="char*256(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 'nc' 'nc' 'nc'
+</entry>
+
+<entry 
+id="tavg_fmt_out"
+type="char*256(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 'nc' 'nc' 'nc'
+</entry>
+
+<entry 
+id="tavg_contents"
+type="char*256"
+category="tavg"
+group="tavg_nml" >
+Default: ' '
+</entry>
+
+<entry 
+id="ltavg_nino_diags_requested"
+type="logical"
+category="tavg"
+group="tavg_nml" >
+Default: .true.
+</entry>
+
+<entry 
+id="tavg_infile"
+type="char*256"
+category="tavg"
+group="tavg_nml" >
+Default: ' ' 
+</entry>
+
+<entry 
+id="tavg_outfile"
+type="char*256"
+category="tavg"
+group="tavg_nml" >
+Default: ' ' 
+</entry>
+
+<entry 
+id="ltavg_has_offset_date"
+type="logical(9)"
+category="tavg"
+group="tavg_nml" >
+Default: .false. .false. .false.
+</entry>
+
+<entry 
+id="tavg_offset_years"
+type="integer(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 1 1 1
+</entry>
+
+<entry 
+id="tavg_offset_months"
+type="integer(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 1 1 1
+</entry>
+
+<entry 
+id="tavg_offset_days"
+type="integer(9)"
+category="tavg"
+group="tavg_nml" >
+Default: 2 2 2
+</entry>
+
+<entry 
+id="ltavg_one_time_header"
+type="logical(9)"
+category="tavg"
+group="tavg_nml" >
+Default: .false. .false. .false.
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: passive_tracers_on_nml   - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="ecosys_on"
+type="logical" 
+category="passive_tracers"
+group="passive_tracers_on_nml" >
+Flag for using ecosys module.
+
+Default: 'Set by CESM scripts based on $OCN_TRACER_MODULES'
+</entry>
+
+<entry 
+id="cfc_on"
+type="logical" 
+category="passive_tracers"
+group="passive_tracers_on_nml" >
+Flag for using cfc module.
+
+Default: 'Set by CESM scripts based on $OCN_TRACER_MODULES'
+</entry>
+
+<entry 
+id="iage_on"
+type="logical" 
+category="passive_tracers"
+group="passive_tracers_on_nml" >
+Flag for using iage module.
+
+Default: 'Set by CESM scripts based on $OCN_TRACER_MODULES'
+</entry>
+
+<entry 
+id="moby_on"
+type="logical" 
+category="passive_tracers"
+group="passive_tracers_on_nml" >
+Flag for using moby module.
+
+Default: 'Set by CESM scripts based on $OCN_TRACER_MODULES'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: iage_nml                 - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="init_iage_option"
+type="char*256"
+category="passive_tracers"
+group="iage_nml"
+valid_values="ccsm_startup,zero,ccsm_startup_spunup,restart,ccsm_continue,ccsm_branch,ccsm_hybrid,file" >
+Option for initialization of iage.
+
+Valid Values: 'ccsm_startup', 'zero', 'ccsm_startup_spunup', 'restart', 'ccsm_continue', 'ccsm_branch', 'ccsm_hybrid', 'file'
+Default: 'ccsm_$RUNTYPE'
+</entry>
+
+<entry 
+id="init_iage_init_file"
+type="char*256" 
+category="passive_tracers"
+group="iage_nml"
+input_pathname="abs" >
+Filename for initializing iage (if init_iage_option='file').
+
+Default: 'same_as_TS'
+</entry>
+
+<entry 
+id="tracer_init_ext%mod_varname&iage_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%filename&iage_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%file_varname&iage_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%file_fmt&iage_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%scale_factor&iage_nml"
+type="dtype(1)%real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%default_val&iage_nml"
+type="dtype(1)%real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="init_iage_init_file_fmt"
+type="char*256" 
+category="passive_tracers"
+group="iage_nml"
+valid_values="bin,nc" >
+init_iage_init_file format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: cfc_nml                  - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="init_cfc_option"
+type="char*256"
+category="passive_tracers"
+group="cfc_nml"
+valid_values="ccsm_startup,zero,ccsm_startup_spunup,restart,ccsm_continue,ccsm_branch,ccsm_hybrid,file" >
+Option for initialization of cfc.
+
+Valid Values: 'ccsm_startup', 'zero', 'ccsm_startup_spunup', 'restart', 'ccsm_continue', 'ccsm_branch', 'ccsm_hybrid', 'file'
+Default: Set by CESM scripts ('zero' for starting 1850-2000 transient run, 'ccsm_$runtype'otherwise)
+</entry>
+
+<entry 
+id="init_cfc_init_file"
+type="char*256" 
+category="passive_tracers"
+group="cfc_nml"
+input_pathname="abs" >
+Filename for initializing cfc (if init_cfc_option='file').
+
+Default: 'same_as_TS'
+</entry>
+
+<entry 
+id="init_cfc_init_file_fmt"
+type="char*256" 
+category="passive_tracers"
+group="cfc_nml"
+valid_values="bin,nc" >
+init_cfc_init_file format (binary or netCDF).
+
+Valid Values: 'bin', 'nc'
+Default: 'bin'
+</entry>
+
+<entry 
+id="tracer_init_ext%mod_varname&cfc_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%filename&cfc_nml"
+type="dtype(2)%char*256" 
+category="passive_tracers"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%file_varname&cfc_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%file_fmt&cfc_nml"
+type="dtype(1)%char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%scale_factor&cfc_nml"
+type="dtype(1)%real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%default_val&cfc_nml"
+type="dtype(1)%real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="pcfc_file"
+type="char*256" 
+category="passive_tracers"
+group="cfc_nml"
+input_pathname="abs" >
+File name for ascii time series of atm cfc11.
+
+Default: '$DIN_LOC_ROOT/ocn/pop/res_indpt/forcing/pcfc1112_atm_20091117.nc'
+</entry>
+
+<entry 
+id="model_year"
+type="integer" 
+category="passive_tracers"
+group="cfc_nml" >
+Arbitrary model year.
+
+Default: 1850 for 1850-2000 transient run, 1 otherwise. 
+</entry>
+
+<entry 
+id="data_year"
+type="integer" 
+category="passive_tracers"
+group="cfc_nml" >
+Year in data that corresponds to model_year.
+
+Default: 1850 for 1850-2000 transient run, 1981 otherwise. 
+</entry>
+
+<entry 
+id="cfc_formulation"
+type="char*256" 
+category="passive_tracers"
+group="cfc_nml"
+valid_values="ocmip,model" >
+Flux formulation.
+
+Valid Values: 'ocmip', 'model'
+Default: 'model'
+</entry>
+
+<entry 
+id="gas_flux_fice%filename&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%file_fmt&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%file_varname&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%scale_factor&cfc_nml"
+type="real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%default_val&cfc_nml"
+type="real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%filename&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%file_fmt&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%file_varname&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%scale_factor&cfc_nml"
+type="real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%default_val&cfc_nml"
+type="real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%filename&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%file_fmt&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%file_varname&cfc_nml"
+type="char*256" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%scale_factor&cfc_nml"
+type="real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%default_val&cfc_nml"
+type="real" 
+category="passive_tracers"
+group="derived" >
+Default: 
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: ecosys_nml               - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="init_ecosys_option"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="init_ecosys_init_file"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%mod_varname&ecosys_nml"
+type="dtype(27)%char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%filename&ecosys_nml"
+type="dtype(27)%char*256" 
+category="ecosys"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%file_varname&ecosys_nml"
+type="dtype(27)%char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%file_fmt&ecosys_nml"
+type="dtype(27)%char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%scale_factor&ecosys_nml"
+type="dtype(27)%real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="tracer_init_ext%default_val&ecosys_nml"
+type="dtype(27)%real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="init_ecosys_init_file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 'nc'
+</entry>
+
+<entry 
+id="dust_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="dust_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dust_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dust_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dust_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="iron_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="iron_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="iron_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="iron_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="iron_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="fesedflux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="fesedflux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="fesedflux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="fesedflux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="fesedflux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="din_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="din_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="din_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="din_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="din_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dip_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="dip_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dip_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dip_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dip_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="don_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="don_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="don_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="don_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="don_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dop_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="dop_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dop_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dop_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dop_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dsi_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="dsi_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dsi_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dsi_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dsi_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dfe_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="dfe_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dfe_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dfe_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dfe_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dic_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="dic_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dic_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dic_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="dic_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="alk_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="alk_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="alk_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="alk_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="alk_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="doc_riv_flux_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="doc_riv_flux_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="doc_riv_flux_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="doc_riv_flux_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="doc_riv_flux_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ndep_data_type"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nox_flux_monthly_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="nox_flux_monthly_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nox_flux_monthly_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nox_flux_monthly_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nox_flux_monthly_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nhy_flux_monthly_input%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="nhy_flux_monthly_input%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nhy_flux_monthly_input%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nhy_flux_monthly_input%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nhy_flux_monthly_input%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ndep_shr_stream_year_first"
+type="integer" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ndep_shr_stream_year_last"
+type="integer" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ndep_shr_stream_year_align"
+type="integer" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ndep_shr_stream_file"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="ndep_shr_stream_scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_forcing_opt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_forcing_file"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+path="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%filename&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%file_fmt&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%file_varname&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%scale_factor&ecosys_nml"
+type="real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_fice%default_val&ecosys_nml"
+type="real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%filename&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%file_fmt&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%file_varname&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%scale_factor&ecosys_nml"
+type="real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ws%default_val&ecosys_nml"
+type="real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%filename&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%file_fmt&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%file_varname&ecosys_nml"
+type="char*256" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%scale_factor&ecosys_nml"
+type="real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="gas_flux_ap%default_val&ecosys_nml"
+type="real" 
+category="ecosys"
+group="derived" >
+Default: 
+</entry>
+
+<entry 
+id="lrest_po4"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="lrest_no3"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="lrest_sio3"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="rest_time_inv_surf"
+type="real"
+category="ecosys"
+group="ecosys_nml" >
+Default:
+</entry>
+
+<entry 
+id="rest_time_inv_deep"
+type="real"
+category="ecosys"
+group="ecosys_nml" >
+Default:
+</entry>
+
+<entry 
+id="rest_time_inv_z0"
+type="real"
+category="ecosys"
+group="ecosys_nml" >
+Default:
+</entry>
+
+<entry 
+id="rest_time_inv_z1"
+type="real"
+category="ecosys"
+group="ecosys_nml" >
+Default:
+</entry>
+
+<entry 
+id="nutr_rest_file"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 'unknown'
+</entry>
+
+<entry 
+id="po4_rest%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="po4_rest%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="po4_rest%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="po4_rest%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="po4_rest%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="no3_rest%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="no3_rest%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="no3_rest%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="no3_rest%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="no3_rest%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="sio3_rest%filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="sio3_rest%file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="sio3_rest%file_varname"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="sio3_rest%scale_factor"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="sio3_rest%default_val"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="comp_surf_avg_freq_opt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="comp_surf_avg_freq"
+type="integer" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="use_nml_surf_vals"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="surf_avg_dic_const"
+type="real"
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="surf_avg_alk_const"
+type="real"
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ecosys_qsw_distrb_const"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="lmarginal_seas"
+type="logical"
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="lsource_sink"
+type="logical"
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="lflux_gas_o2"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="lflux_gas_co2"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="locmip_k1_k2_bug_fix"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="lnutr_variable_restore"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="nutr_variable_rest_file"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="nutr_variable_rest_file_fmt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="atm_co2_opt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+valid_values="const,drv_prog,drv_diag" >
+Default: 
+</entry>
+
+<entry 
+id="atm_co2_const"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="atm_alt_co2_opt"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+valid_values="const" >
+Default: 
+</entry>
+
+<entry 
+id="atm_alt_co2_const"
+type="real" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="ecosys_tadvect_ctype"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="liron_patch"
+type="logical"
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="iron_patch_flux_filename"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="iron_patch_month"
+type="char*256" 
+category="ecosys"
+group="ecosys_nml" >
+Default: 
+</entry>
+
+<entry 
+id="lecovars_full_depth_tavg"
+type="logical" 
+category="ecosys"
+group="ecosys_nml" >
+Default:  
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: ecosys_parms_nml         - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="parm_Fe_bioavail"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_o2_min"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_o2_min_delta"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_kappa_nitrif"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_nitrif_par_lim"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_z_mort_0"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_z_mort2_0"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_labile_ratio"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_POMbury"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_BSIbury"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_fe_scavenge_rate0"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_f_prod_sp_CaCO3"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_POC_diss"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_SiO2_diss"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_CaCO3_diss"
+type="real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_scalelen_z"
+type="real(4)" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="parm_scalelen_vals"
+type="real(4)" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%sname"
+type="dtype(3)%char*256" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%kFe"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%kPO4"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%kDOP"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%kNO3"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%kNH4"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%kSiO3"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<entry 
+id="autotrophs%z_umax_0"
+type="dtype(3)%real" 
+category="ecosys"
+group="ecosys_parms_nml" >
+Default:  
+</entry>
+
+<!-- - - - - - - - - - - - - - - - - - -->
+<!-- Group: moby_nml                 - -->
+<!-- - - - - - - - - - - - - - - - - - -->
+
+<entry 
+id="moby_log_filename" 
+type="char*128" 
+category="pop2" 
+group="moby_nml" >
+Default: ''
+</entry>
+
+<entry 
+id="lmoby"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .true.
+</entry>
+
+<entry 
+id="ldarwin"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .true.
+</entry>
+
+<entry 
+id="init_moby_option"
+type="char*256"
+category="pop2"
+group="moby_nml" >
+Default: '$ccsm_runtype'
+</entry>
+
+<entry 
+id="init_moby_init_file"
+type="char*256" 
+category="pop2"
+group="moby_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="init_moby_init_file_fmt"
+type="char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 'nc'
+</entry>
+
+<entry 
+id="moby_comp_surf_avg_freq"
+type="integer"
+category="pop2"
+group="moby_nml" >
+Default: 1
+</entry>
+
+<entry 
+id="moby_comp_surf_avg_freq_opt"
+type="char*256"
+category="pop2"
+group="moby_nml" >
+Default: 'never'
+</entry>
+
+<entry 
+id="moby_iron_flux_input%filename"
+type="char*256" 
+category="pop2"
+group="moby_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="moby_iron_flux_input%file_fmt"
+type="char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_iron_flux_input%file_varname"
+type="char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_iron_flux_input%scale_factor"
+type="real" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_lecovars_full_depth_tavg"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="moby_lflux_gas_co2"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="moby_lmarginal_seas"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .true.
+</entry>
+
+<entry 
+id="moby_lrest_no3"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="moby_lrest_po4"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="moby_lrest_sio3"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="moby_nutr_rest_file"
+type="char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 'unknown'
+</entry>
+
+<entry 
+id="moby_qsw_distrb_const"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: .false.
+</entry>
+
+<entry 
+id="moby_surf_avg_alk_const"
+type="real"
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_surf_avg_dic_const"
+type="real"
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tadvect_ctype"
+type="char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tracer_init_ext%mod_varname"
+type="dtype(47)%char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tracer_init_ext%filename"
+type="dtype(47)%char*256" 
+category="pop2"
+group="moby_nml"
+input_pathname="abs" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tracer_init_ext%file_varname"
+type="dtype(47)%char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tracer_init_ext%file_fmt"
+type="dtype(47)%char*256" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tracer_init_ext%scale_factor"
+type="dtype(47)%real" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_tracer_init_ext%default_val"
+type="dtype(47)%real" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+<entry 
+id="moby_use_nml_surf_vals"
+type="logical" 
+category="pop2"
+group="moby_nml" >
+Default: 
+</entry>
+
+</namelist_definition>

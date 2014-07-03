@@ -1,0 +1,31 @@
+
+/bin/cp ../../../build/GNUmakefile .
+
+mkdir build
+/bin/cp -r ../../../build/*.awk build
+/bin/cp -r ../../../build/*.mk  build
+/bin/cp -r ../../../build/*.gnu build
+
+/bin/cp ../../../mpi/POP_CommMod.F90 .
+/bin/cp ../../../mpi/POP_RedistributeMod.F90 .
+/bin/cp ../../../source/POP_KindsMod.F90 .
+/bin/cp ../../../source/POP_ErrorMod.F90 .
+/bin/cp ../../../source/POP_IOUnitsMod.F90 .
+/bin/cp ../../../source/POP_BlocksMod.F90 .
+/bin/cp ../../../source/POP_DistributionMod.F90 .
+
+gmake
+mpirun -np 4 pop
+
+/bin/rm -r build
+/bin/rm -r compile
+/bin/rm GNUmakefile
+/bin/rm POP_CommMod.F90
+/bin/rm POP_RedistributeMod.F90
+/bin/rm POP_KindsMod.F90
+/bin/rm POP_ErrorMod.F90
+/bin/rm POP_IOUnitsMod.F90
+/bin/rm POP_BlocksMod.F90
+/bin/rm POP_DistributionMod.F90
+/bin/rm pop
+

@@ -1,0 +1,35 @@
+&driver_nml
+iyear_end=3 
+imonth_end=1
+iday_end=2
+/
+
+&time_manager_nml
+  runid             = 'test_time_manager'
+  time_mix_opt      = 'avgfit'
+  time_mix_freq     = 17
+  dt_option         = 'steps_per_day'
+  dt_count          = 180
+  impcor            = .true.
+  laccel            = .false.
+  accel_file        = 'unknown'
+  dtuxcel           = 1.0
+  allow_leapyear    = .false.
+  iyear0            = 1
+  imonth0           = 1
+  iday0             = 1
+  ihour0            = 0
+  iminute0          = 0
+  isecond0          = 0
+  date_separator    = '-'
+  stop_option       = 'nyear'
+  stop_count        =  3
+  fit_freq          = 72
+/
+
+&coupled_nml
+   coupled_freq_opt  = 'nsecond'
+   coupled_freq      =  1200
+   qsw_distrb_opt    = 'cosz'
+/
+

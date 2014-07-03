@@ -1,0 +1,7 @@
+This directory contains files that can be used to test simple_bisicles on
+hopper.nersc.gov.  To run this test type:
+start_qsub
+cd <back to this directory>
+run_test_dome32
+
+Last Revised: 04/19/12 DMR

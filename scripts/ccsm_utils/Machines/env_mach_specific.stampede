@@ -1,0 +1,87 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# Stampede build specific settings
+# -------------------------------------------------------------------------
+source /opt/apps/lmod/5.0rc2/init/csh
+
+
+module purge
+module load  TACC TACC-paths Linux cluster cluster-paths
+
+if ( $COMPILER == "intel" ) then
+  module load intel/13.0.2.146
+#  module load mkl/13.0.2.146
+# Currently trilinos is only supported with the INTEL compiler
+#  module load trilinos/11.0.3
+# Currently esmf is only supported with the INTEL compiler
+  #module load esmf
+  if ( $MPILIB == "mvapich2") then
+    module load mvapich2
+  endif
+  if ( $MPILIB == "impi") then
+     module swap mvapich2 impi
+  endif
+module load hdf5
+module load netcdf
+#module load parallel-netcdf/4.2.1.1
+endif
+
+if ( $COMPILER == "intel-mic" ) then
+  module load intel/13.0.2.146
+#  module load mkl/13.0.2.146
+# Currently trilinos is only supported with the INTEL compiler
+#  module load trilinos/11.0.3
+# Currently esmf is only supported with the INTEL compiler
+  #module load esmf
+#  if ( $MPILIB == "mvapich2") then
+#    module load mvapich2/1.9a2
+#  endif
+  if ( $MPILIB == "impi") then
+	module swap mvapich2 impi
+  endif
+#module load netcdf/4.2.1.1
+setenv TACC_NETCDF_DIR /work/02463/srinathv/netcdf/mic
+#module load parallel-netcdf/4.2.1.1
+endif
+
+#transfer netcdf from stampdede var to cesm var
+setenv NETCDF_PATH $TACC_NETCDF_DIR
+module load cmake
+
+# -------------------------------------------------------------------------
+# Build and runtime environment variables - edit before the initial build 
+# -------------------------------------------------------------------------
+limit stacksize unlimited
+limit datasize  unlimited
+
+setenv OMP_STACKSIZE 256M
+#setenv MP_LABELIO yes
+
+# MPI Environment
+#setenv MP_INFOLEVEL                   2
+#setenv MP_SHARED_MEMORY             yes
+#setenv MP_EUILIB                    us
+#setenv MP_MPILIB                    $MPILIB
+#setenv MP_STDOUTMODE                unordered
+#
+#setenv MP_RC_USE_LMC                yes
+
+# setting MP_EUILIBPATH is a temporary work-around for occasional mpi hangs 
+# on yellowstone.  this should be removed when yellowstone is patched.
+#setenv MP_EUILIBPATH                /glade/u/home/archerc/EFIX5
+
+# Set a host file so that mpi can run on login node
+#if ( $HOSTNAME =~ {*login*} ) then
+#  echo $HOSTNAME > $CASEROOT/hostfile
+#  setenv MP_HOSTFILE $CASEROOT/hostfile
+#  setenv MP_PROCS 1
+#endif
+#if ( $DEBUG == "TRUE" ) then
+#  module load debug
+#  module load totalview
+#  setenv MP_EUIDEVELOP yes
+#  setenv MP_EAGER_LIMIT               0
+#else
+#  setenv MP_EUIDEVELOP min
+#endif

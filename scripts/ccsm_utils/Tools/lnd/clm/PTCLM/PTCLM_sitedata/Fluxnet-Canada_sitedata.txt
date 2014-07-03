@@ -1,0 +1,19 @@
+site_code,name,country,lon,lat,elev,startyear,endyear,alignyear
+CA-Ca1,"British Columbia- Campbell River - Mature Forest Site",CAN,-125.3336,49.8673,300,1998,2006,1851
+CA-Ca2,"British Columbia- Campbell River - Clearcut Site",CAN,-125.2909,49.8705,180,2001,2006,1851
+CA-Ca3,"British Columbia- Campbell River - Young Plantation Site",CAN,-124.9004,49.5346,165,2002,2006,1851
+CA-Gro,"Ontario- Groundhog River-Mat. Boreal Mixed Wood",CAN,-82.1556,48.2167,300,2004,2006,1851
+CA-Let,"Lethbridge",CAN,-112.9402,49.7093,960,1998,2007,1851
+CA-Man,"BOREAS NSA - Old Black Spruce",CAN,-98.4808,55.8796,259,1994,2003,1851
+CA-Mer,"Eastern Peatland- Mer Bleue",CAN,-75.5200,45.4094,70,1999,2006,1851
+CA-Oas,"Sask.- SSA Old Aspen",CAN,-106.19779,53.6289,530,1997,2006,1851
+CA-Obs,"Sask.- SSA Old Black Spruce",CAN,-105.1178,53.9872,629,2000,2006,1851
+CA-Ojp,"Sask.- SSA Old Jack Pine",CAN,-104.6920,53.9163,579,2000,2006,1851
+CA-Qfo,"Quebec Mature Boreal Forest Site",CAN,-74.3421,49.6925,382,2004,2006,1851
+CA-SJ2,"Sask.- 2002 Harvested Jack Pine",CAN,-104.6490,53.8450,518,2003,2006,1851
+CA-SJ3,"Sask.- SSA 1975 Harv. Yng Jack Pine",CAN,-104.6560,53.9080,511,2005,2006,1851
+CA-TP1,"Ontario- Turkey Point Seedling White Pine",CAN,-80.5595,42.6606,190,2003,2007,1851
+CA-TP2,"Ontario- Turkey Point Young White Pine",CAN,-80.4588,42.7744,230,2003,2007,1851
+CA-TP3,"Ontario- Turkey Point Middle-aged White Pine",CAN,-80.3483,42.7068,219,2003,2007,1851
+CA-TP4,"Ontario- Turkey Point Mature White Pine",CAN,-80.3574,42.7098,219,2002,2007,1851
+CA-WP1,"Western Peatland- LaBiche-Black Spruce/Larch Fen",CAN,-112.4670,54.9538,540,2003,2007,1851

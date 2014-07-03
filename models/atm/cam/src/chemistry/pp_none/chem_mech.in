@@ -1,0 +1,50 @@
+SPECIES
+
+  Solution
+  End Solution
+
+  Fixed
+    M
+  End Fixed
+
+  Col-int
+    O3 = 0.
+    O2 = 0.
+  End Col-int
+
+End SPECIES
+
+Solution Classes
+  Explicit
+  End Explicit
+  Implicit
+  End Implicit
+End Solution Classes
+
+CHEMISTRY
+  Photolysis
+  End Photolysis
+
+  Reactions
+  End Reactions
+
+  Ext Forcing
+  End Ext Forcing
+
+END CHEMISTRY
+
+SIMULATION PARAMETERS
+
+  Version Options
+    model   = cam
+    machine = intel
+    architecture = hybrid
+    vec_ftns  = on
+    multitask = on
+    namemod = on
+    modules = on
+  End Version Options
+
+END SIMULATION PARAMETERS
+
+

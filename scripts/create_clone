@@ -1,0 +1,583 @@
+#!/usr/bin/env perl
+#-----------------------------------------------------------------------------------------------
+#
+# create_clone
+#
+# This utility allows the CCSM user to specify configuration
+# options via a commandline interface.
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+#use warnings;
+#use diagnostics;
+
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CCSM configuration scripts.  If the create_newcase command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = absolute_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+my $ccsmroot = absolute_path("$cfgdir/..");
+(-d "$ccsmroot")  or  die <<"EOF";
+** Cannot find ccsmroot directory \"$ccsmroot\" **
+EOF
+
+#-----------------------------------------------------------------------------------------------
+# Save commandline
+my $commandline = "$cfgdir/create_clone @ARGV";
+
+#-----------------------------------------------------------------------------------------------
+
+if ($#ARGV == -1) {
+    print "Invoke create_clone -help [or -h] for usage\n";
+    exit;
+}
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     create_clone [options]
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -help [or -h]        Print usage to STDOUT.
+     -case <caseroot>     Specify the new case directory.
+     -clone <cloneroot>   Specify the case to be cloned.
+     -mach_dir            Optional location of Machines directory
+                          Default: $cfgdir/ccsm_utils/Machines
+     -silent [or -s]      Turns on silent mode - only fatal messages issued.
+     -verbose [or -v]     Turn on verbose echoing of settings.
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+	    );
+GetOptions(
+    "h|help"                    => \$opts{'help'},
+    "case=s"                    => \$opts{'case'},
+    "clone=s"                   => \$opts{'clone'},
+    "mach_dir=s"                => \$opts{'mach_dir'},
+    "s|silent"                  => \$opts{'silent'},
+    "testname=s"                => \$opts{'testname'},
+    "v|verbose"                 => \$opts{'verbose'},
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+# Check for manditory case input if not just listing valid values
+
+my $case;
+my $clone;
+my $caseroot;
+my $cloneroot;
+my $testname;
+
+# Check for manditory case input
+if ($opts{'case'}) {
+    $case = $opts{'case'};
+} else {
+    die "Must provide case as input argument \n";
+}
+$caseroot = absolute_path("$case");
+if (-d $caseroot) {
+    die "New caseroot directory $caseroot already exists \n";
+}
+my @dirs = split "/", $caseroot, -1; 
+my $num = scalar @dirs;
+$case = @dirs[$num-1];
+
+# Check for manditory clone input
+if ($opts{'clone'}) {
+    $clone = $opts{'clone'};
+} else {
+    die "Must provide clone as input argument \n";
+}
+$cloneroot = absolute_path("$clone");
+(-d "$cloneroot")  or  die <<"EOF";
+** Cannot find cloneroot directory \"$cloneroot\" **
+EOF
+my @dirs = split "/", $cloneroot, -1; 
+my $num = scalar @dirs;
+$clone = @dirs[$num-1];
+
+# Check for optional testname input
+if ($opts{'testname'}) {
+    $testname = $opts{'testname'};
+}
+# Define 3 print levels:
+# 0 - only issue fatal error messages
+# 1 - only informs what files are created (default)
+# 2 - verbose
+my $print = 1;
+if ($opts{'silent'})  { $print = 0; }
+if ($opts{'verbose'}) { $print = 2; }
+my $eol = "\n";
+
+my %cfg = ();           # build configuration
+
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the create_newcase script.
+
+# Check for the configuration definition file.
+my $config_def_file = "config_definition.xml";
+(-f "$cloneroot/Tools/$config_def_file")  or  die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory 
+    \"$cloneroot/Tools/$config_def_file\" **
+EOF
+
+# The XML::Lite module is required to parse the XML configuration files.
+(-f "$cloneroot/Tools/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory 
+    \"$cloneroot/Tools\" **
+EOF
+
+# The ConfigCase module provides utilities to store and manipulate the configuration.
+(-f "$cloneroot/Tools/ConfigCase.pm")  or  die <<"EOF";
+** Cannot find perl module \"ConfigCase.pm\" in directory 
+    \"$cloneroot/Tools/Case.template\" **
+EOF
+
+# Tests file
+my $tests_file = 'config_tests.xml';
+(-f "$cfgdir/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
+** Cannot find test parameters file \"$tests_file\" in directory 
+    \"$cfgdir/ccsm_utils/Testcases\" **
+EOF
+
+if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Add $caseroot Tools to the list of paths that Perl searches for modules
+my @dirs = ("$cloneroot/Tools");
+unshift @INC, @dirs;
+require XML::Lite;
+require ConfigCase;
+require SetupTools;
+
+#-----------------------------------------------------------------------------------------------
+# Create new config object if not just listing valid values and 
+# reset the config definition file with all of the values from the xml file in the directory
+my $cfg_ref = ConfigCase->new("$cloneroot/Tools/config_definition.xml"); 
+$cfg_ref->reset_setup("$cloneroot/env_case.xml");
+$cfg_ref->reset_setup("$cloneroot/env_run.xml");
+$cfg_ref->reset_setup("$cloneroot/env_build.xml");
+$cfg_ref->reset_setup("$cloneroot/env_mach_pes.xml");
+
+# Set env_run variables 
+$cfg_ref->set('CCSMUSER'    , "$ENV{'LOGNAME'}");
+$cfg_ref->set('CASEROOT'    , "$caseroot");
+$cfg_ref->set('CASE'        , "$case");
+$cfg_ref->set('CCSMROOT'    , "$ccsmroot");
+$cfg_ref->set('CONTINUE_RUN', "FALSE");
+$cfg_ref->set('RESUBMIT'    , 0);
+
+# Set env_build variables
+my $repotag;
+if (-f "$ccsmroot/ChangeLog") { 
+    $repotag =`cat $ccsmroot/ChangeLog | grep 'Tag name:' | head -1`;
+} else {
+    $repotag =`cat $ccsmroot/models/atm/cam/doc/ChangeLog | grep 'Tag name:' | head -1`;
+}
+my @repotag = split(/ /,$repotag); 
+$repotag = @repotag[2]; 
+chomp($repotag);
+$cfg_ref->set('CCSM_REPOTAG', $repotag);
+$cfg_ref->set('BUILD_COMPLETE', "FALSE");
+
+#-----------------------------------------------------------------------------------------------
+# Testname parameters
+# First determine if debug option is to be set for test, then determine
+# all of the other test settings by evaluating config_tests.xml for the testname
+if (defined $opts{'testname'}) {
+    $testname = $opts{'testname'};
+    if ($testname =~ "_D") {
+	# remove _D from testname
+	chop($testname);
+	chop($testname);
+	$cfg_ref->set('DEBUG', "TRUE");
+    }
+    set_test("$cfgdir/ccsm_utils/Testcases/config_tests.xml", $testname, $cfg_ref);
+    print "Test specifier $testname will overwrite env variable definitions.$eol"; 
+}
+
+#-----------------------------------------------------------------------------------------------
+# Create the case directory tree utilizing the clone tree 
+
+my $sysmod;
+
+# Note - script files are named using the first 12-15 chars of $clone and
+# we want to remove those as well
+
+$sysmod = "mkdir -p $caseroot"; 
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+$sysmod = "cp -pr $cloneroot/* $caseroot/"; 
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+my $clonesubname = substr($clone,0,12);
+$sysmod = "rm -f $caseroot/$clonesubname*"; 
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+$sysmod = "rm -f $caseroot/*~";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# Overwrite the following xml files 
+$cfg_ref->write_file("$caseroot/env_case.xml"   , "xml");
+$cfg_ref->write_file("$caseroot/env_build.xml"  , "xml");
+$cfg_ref->write_file("$caseroot/env_run.xml"    , "xml");
+$cfg_ref->write_file("$caseroot/env_mach_pes.xml", "xml");
+
+# Delete locked files
+$sysmod = "rm -f $caseroot/LockedFiles/*";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# Delete old log files
+$sysmod = "rm -rf $caseroot/logs/*";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/timing/*";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# Delete TestStatus files
+$sysmod = "rm -rf $caseroot/TestStatus*";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# Copy env_case.xml in locked files
+$sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked";
+system($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+print "Locking file $caseroot/env_case.xml \n";
+
+#-----------------------------------------------------------------------------------------------
+# Read $caseroot xml files - put results in %xmlvars hash
+my %xmlvars = ();
+
+SetupTools::getxmlvars($caseroot, \%xmlvars);
+
+foreach my $attr (keys %xmlvars) {
+    $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr},\%xmlvars);
+}	
+
+
+my $compset     = $xmlvars{CCSM_COMPSET};
+my $scriptsroot = $xmlvars{SCRIPTSROOT};
+my $machdir     = $xmlvars{CCSM_MACHDIR};
+my $ccsmuser    = $xmlvars{CCSMUSER};
+my $mach        = $xmlvars{MACH};
+
+# --- Create $case.build
+my $file = "${caseroot}/${case}.build";
+$sysmod = "cp ${caseroot}/Tools/cesm_buildstart $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "cat ${caseroot}/Tools/cesm_prestage >> $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "cat ${caseroot}/Tools/cesm_buildexe >> $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "chmod 755 $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# --- Create $case.clean_build
+$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+# --- Create $case.submit
+$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+# --- Create $case.l_archive
+my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot env PHASE=set_larch ${machdir}/mkbatch.$mach";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+# --- Create preview_namelist file
+my $file = "${caseroot}/preview_namelists"; 
+$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/preview_namelists $file"; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "chmod 755 $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+my $stats = print_stats("$cfgdir/ccsm_utils/Case.template/config_compsets.xml", $compset, $cfg_ref);
+
+print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";
+exit;
+
+#-----------------------------------------------------------------------------------------------
+# FINISHED ####################################################################################
+#-----------------------------------------------------------------------------------------------
+
+sub absolute_path {
+#
+# Convert a pathname into an absolute pathname, expanding any . or .. characters.
+# Assumes pathnames refer to a local filesystem.
+# Assumes the directory separator is "/".
+#
+  my $path = shift;
+  my $cwd = getcwd();  # current working directory
+  my $abspath;         # resulting absolute pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+# Convert relative to absolute path.
+
+  if ($path =~ m!^\.$!) {          # path is "."
+      return $cwd;
+  } elsif ($path =~ m!^\./!) {     # path starts with "./"
+      $path =~ s!^\.!$cwd!;
+  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+      $path = "$cwd/..";
+  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+      $path = "$cwd/$path";
+  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+      $path = "$cwd/$path";
+  }
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+  # Remove any "" that are not leading.
+  for (my $i=0; $i<=$#dirs; ++$i) {
+      if ($i == 0 or $dirs[$i] ne "") {
+	  push @dirs2, $dirs[$i];
+      }
+  }
+  @dirs = ();
+
+  # Remove any "."
+  foreach $dir (@dirs2) {
+      unless ($dir eq ".") {
+	  push @dirs, $dir;
+      }
+  }
+  @dirs2 = ();
+
+  # Remove the "subdir/.." parts.
+  foreach $dir (@dirs) {
+    if ( $dir !~ /^\.\.$/ ) {
+        push @dirs2, $dir;
+    } else {
+        pop @dirs2;   # remove previous dir when current dir is ..
+    }
+  }
+  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+  $abspath = join '/', @dirs2;
+  return( $abspath );
+}
+
+#-------------------------------------------------------------------------------
+
+sub subst_env_path {
+#
+# Substitute for any environment variables contained in a pathname.
+# Assumes the directory separator is "/".
+#
+  my $path = shift;
+  my $newpath;         # resulting pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+  foreach $dir (@dirs) {
+    if ( $dir =~ /^\$(.+)$/ ) {
+        push @dirs2, $ENV{$1};
+    } else {
+        push @dirs2, $dir;
+    }
+  }
+  $newpath = join '/', @dirs2;
+  return( $newpath );
+}
+
+#-------------------------------------------------------------------------------
+
+sub get_option {
+
+    my ($mes, @expect) = @_;
+    my ($ans, $expect, $max_tries);
+
+    $max_tries = 5;
+    print $mes;
+    while ($max_tries) {
+	$ans = <>; chomp $ans;
+	--$max_tries;
+	$ans =~ s/^\s+//;
+	$ans =~ s/\s+$//;
+	# Check for null response which indicates that default is accepted.
+	unless ($ans) { return ""; }
+	foreach $expect (@expect) {
+	    if ($ans =~ /^$expect$/i) { return $expect; }
+	}
+	if ($max_tries > 1) {
+	    print "$ans does not match any of the expected values: @expect\n";
+	    print "Please try again: ";
+	} elsif ($max_tries == 1) {
+	    print "$ans does not match any of the expected values: @expect\n";
+	    print "Last chance! ";
+	}
+    }
+    die "Failed to get answer to question: $mes\n";
+}
+
+#-------------------------------------------------------------------------------
+
+sub print_hash {
+    my %h = @_;
+    my ($k, $v);
+    while ( ($k,$v) = each %h ) { print "$k => $v\n"; }
+}
+
+
+#-------------------------------------------------------------------------------
+
+
+sub set_test
+{
+    # Set the parameters for the specified testname.  The
+    # parameters are read from an input file, and if no testname matches are
+    # found then issue error message.
+    # This routine uses the configuration defined at the package level ($cfg_ref).
+
+    my ($test_file, $testname, $cfg_ref) = @_;
+    my $xml = XML::Lite->new( $test_file );
+    my $root = $xml->root_element();
+
+    # Check for valid root node
+    my $name = $root->get_name();
+    $name eq "config_ccsmtest" or die
+	"file $test_file is not a test parameters file\n";
+
+    # Read the test parameters from $test_file.
+    my @e = $xml->elements_by_name( "ccsmtest" );
+    my %a = ();
+
+    # Search for matching test.
+    my $found = 0;
+  CCSMTEST:
+    while ( my $e = shift @e ) {
+	%a = $e->get_attributes();
+	if ( ($testname eq $a{'NAME'}) )  {
+	    $found = 1;
+	    last CCSMTEST;
+	}
+    }
+
+    # Die unless search was successful.
+    unless ($found) { 
+	print "set_test: no match for test $testname - possible testnames are \n";
+	my @e_err = $xml->elements_by_name( "ccsmtest" );
+	my %a_err = ();
+	while ( my $e_err = shift @e_err ) {
+	    %a_err = $e_err->get_attributes();
+	    print " $a_err{'NAME'} ($a_err{'DESC'}) \n" ;
+	}
+	die "set_test: exiting\n"; 
+    }
+
+    # Loop through all entry_ids of the $cfg_ref object and if the corresponding 
+    # attributed is defined in the testname hash, then reset the cfg_ref object to
+    # that value
+
+    my @ids = keys %$cfg_ref;
+    foreach my $id (sort @ids) {
+	foreach my $attr (keys %a) {
+	    if ($attr eq $id) {
+		my $value = $a{$attr};
+		$cfg_ref->set($id, $value);
+		if ($print >=2) {print " id is $id and value is $value \n"};
+	    }
+	}
+    }
+}
+
+#-------------------------------------------------------------------------------
+
+sub print_stats
+{
+    # Prints required status
+
+    my ($compset_file, $compset, $cfg_ref) = @_;
+    my $xml = XML::Lite->new( $compset_file );
+    my $root = $xml->root_element();
+
+    # Check for valid root node
+    my $name = $root->get_name();
+    $name eq "config_compset" or die
+	"file $compset_file is not a compset parameters file\n";
+
+    # Read the compset parameters from $compset_file.
+    my @e = $xml->elements_by_name( "compset" );
+    my %a = ();
+
+    # Search for matching compset.
+    my $found = 0;
+  COMPSET:
+    while ( my $e = shift @e ) {
+	%a = $e->get_attributes();
+	if ( ($compset =~ $a{'NAME'}) ) {
+	    $found = 1;
+            print " \n";
+            print "***********************************************************\n";
+	    print "Cloning compset $a{'NAME'} \n";
+            print "***********************************************************\n\n";
+	    last COMPSET;
+	}
+    }
+}
+
+
+#-------------------------------------------------------------------------------
+
+sub expand_env_xml {
+
+    my $value = shift;
+
+    if ($value =~ /\$([\w_]+)(.*)$/) {
+	my $subst = $xmlvars{$1};
+	$value =~ s/\$${1}/$subst/g;
+    }
+    return $value; 
+}	 

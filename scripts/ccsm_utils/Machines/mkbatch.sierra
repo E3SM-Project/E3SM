@@ -1,0 +1,164 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set maxthrds = 0
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  if ($NTHRDS[$n] > $MAX_TASKS_PER_NODE ) then
+     echo "ERROR, NTHRDS maximum is $MAX_TASKS_PER_NODE"
+     echo "you have set NTHRDS = ( $NTHRDS[$n] ) - must reset"
+     exit 1
+  endif   
+  if ($NTHRDS[$n] > $maxthrds) then
+     set maxthrds = $NTHRDS[$n]
+  endif
+end
+
+set npes_tot = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+
+@ nodes = $npes_tot / $MAX_TASKS_PER_NODE
+@ tmpValue = $nodes * $MAX_TASKS_PER_NODE
+if( $tmpValue < $npes_tot ) then
+  @ nodes = $nodes + 1
+endif
+
+# If tasks must be equivalent to full nodes:
+@ mpp = $npes_tot
+###@ mpp = $nodes * $MAX_TASKS_PER_NODE
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#! /bin/csh -f
+#MSUB -V
+#MSUB -q pbatch             ##which queue to use. Options = pdebug, pbatch
+#MSUB -A ees                ##bank (other users will need to change this)
+#MSUB -l nodes=$nodes       ##Number of nodes to use.
+#MSUB -l walltime=12:00:00  ##How long to run for (users will want to change)
+#MSUB -l gres=lscratchd     ##Specify needed Lustre systems (users might need to change)
+#MSUB -m be                 ##Send email when job starts/stops
+#MSUB -e ${CASE}.err        ##File to use for standard error
+#MSUB -o ${CASE}.out        ##File to use for standard out.
+#MSUB -N ${CASE}            ##runname to print for checkjob.
+
+# End of options
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+setenv SLURM_NPROCS $mpp
+setenv SLURM_CPUS_PER_TASK 1
+setenv OMP_STACKSIZE 1000M
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+
+echo " "
+echo "Here are the environment variables"
+echo " "
+env | sort
+echo " "
+set sleeptime = 10
+echo "Getting ready to sleep for \$sleeptime seconds"
+sleep \$sleeptime
+echo "Awakening after \$sleeptime seconds"
+echo " "
+
+cd \$RUNDIR
+echo "`date` -- CSM EXECUTION BEGINS HERE" 
+if (\$MPILIB != "mpi-serial") then
+   srun \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+   wait
+else
+   \$EXEROOT/cesm.exe  >&! cesm.log.\$LID
+endif
+echo "`date` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+   #This is a long-term archiving script on sierra
+
+if (-e ${CASEROOT}/${CASE}.l_archive) then
+   echo ERROR: generate_batch.csh file ${CASE}.l_archive already exists in 
+${CASEROOT}
+   exit -
+1                                                                            
+endif                                                                            
+     
+
+# Create the archive script
+touch ${CASEROOT}/${CASE}.l_archive
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+cat >> $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f                            
+#MSUB -V                                  
+
+#MSUB -q pdebug             ##which queue to use. Options = pdebug, pbatch
+#MSUB -A ees                ##bank (other users will need to change this) 
+#MSUB -l nodes=1            ##Use 1 node to archive                       
+#MSUB -l walltime=00:30:00  ##How long to run for (users will want to change)
+#MSUB -l gres=lscratchd     ##Specify needed Lustre systems (users might need to 
+change)
+#MSUB -m be                 ##Send email when job 
+starts/stops                          
+#MSUB -e ${CASE}.arch.err   ##File to use for standard 
+error                            
+#MSUB -o ${CASE}.arch.out   ##File to use for standard 
+out.                             
+#MSUB -N ${CASE}.arch       ##runname to print for 
+checkjob.                            
+#-----------------------------------------------------------------------
+                
+# Determine necessary environment 
+variables                                             
+#-----------------------------------------------------------------------
+                
+
+cd $CASEROOT
+
+source ./Tools/ccsm_getenv || exit -1
+
+#----------------------------------------------
+# run the long term archiver
+#----------------------------------------------
+
+cd \$DOUT_S_ROOT
+\$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################
+ 
+

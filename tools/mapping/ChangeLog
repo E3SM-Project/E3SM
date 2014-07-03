@@ -1,0 +1,929 @@
+================================================================================
+SVN $Id: ChangeLog 46983 2013-05-09 22:08:12Z tcraig $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+================================================================================
+Originator: tcraig
+Date: May 9 2013
+Model: mapping
+Version: mapping_130509
+One-line summary: update gen_mapping_files/runoff_to_ocn and check_maps
+
+ - updated READMEs
+ - new sample namelist for runoff_to_ocn
+ - add scrip grid file option for runoff grid input
+ - fix step1,2,3 logic in runoff_to_ocn code
+ - add src_grid_dims and dst_grid_dims to runoff mapping file
+ - check_maps now writes out netcdf file with fields
+ - add local smm option and set it as default in check_maps (>100x faster)
+
+D       map_field/INSTALL
+M       map_field/README
+D       gen_mapping_files/runoff_to_ocn/runoff_map_gx1.nml
+M       gen_mapping_files/runoff_to_ocn/runoff_map.nml
+D       gen_mapping_files/runoff_to_ocn/runoff_map_gx3.nml
+A       gen_mapping_files/runoff_to_ocn/runoff_map_wr50a_ar9v4.nml
+A       gen_mapping_files/runoff_to_ocn/runoff_map_r05_gx3v7.nml
+M       gen_mapping_files/runoff_to_ocn/src/main.F90
+M       gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+M       gen_mapping_files/runoff_to_ocn/README
+M       gen_mapping_files/runoff_to_ocn/runoff_map_tx01.nml
+A       gen_mapping_files/runoff_to_ocn/runoff_map_wr50a_gx3v7.nml
+D       check_maps/INSTALL
+M       check_maps/src/ESMF_RegridWeightGenCheck.F90
+M       check_maps/README
+
+================================================================================
+Originator: mlevy
+Date: Apr 26 2013
+Model: mapping
+Version: mapping_130426b
+One-line summary: Improve metadata in create_ESMF_map.sh
+
+Modified files:
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+================================================================================
+Originator: mlevy
+Date: Apr 26 2013
+Model: mapping
+Version: mapping_130426
+One-line summary: create_ESMF_map.sh didn't work when launched from tcsh because
+                  of an issue with running module through a bash script. The
+                  CISL helpdesk showed me what to load to make it work.
+
+Modified files:
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+================================================================================
+Originator: mlevy
+Date: Apr 19 2013
+Model: mapping
+Version: mapping_130419
+One-line summary: Cleaning up references to bluefire through directory.
+
+Modified files:
+M       map_field/INSTALL
+M       map_field/README
+M       gen_domain_files/INSTALL
+D       gen_mapping_files/runoff_to_ocn/src/Macros.bluefire
+D       gen_mapping_files/runoff_to_ocn/ChangeLog
+D       gen_mapping_files/runoff_to_ocn/build.bluefire.csh
+D       gen_mapping_files/runoff_to_ocn/runoff.bluefire.run
+MM      gen_mapping_files/runoff_to_ocn/build.yellowstone.csh
+D       gen_mapping_files/regridbatch.bluefire.sh
+M       gen_mapping_files/gen_cesm_maps.sh
+M       gen_mapping_files/regridbatch.yellowstone.sh
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+D       gen_mapping_files/gen_ESMF_mapping_file/regridbatch.bluefire.sh
+M       gen_mapping_files/gen_ESMF_mapping_file/regridbatch.yellowstone.sh
+M       check_maps/check_map.sh
+M       check_maps/INSTALL
+M       check_maps/src/Makefile
+M       check_maps/README
+================================================================================
+Originator: mlevy
+Date: Apr 10 2013
+Model: mapping
+Version: mapping_130410
+One-line summary: Lots of updates to create_ESMF_map.sh to make it more robust.
+                  Hopefully these changes will let CLM use this tool instead
+                  of pointing directly to ESMF tools itself.
+                  1) geyser is supported again
+                  2) Bilinear interpolation available via "bilin" instead of
+                     just "blin"
+                  3) The CLM naming convention can be envoked via the
+                     "--clm_name" flag.
+                  4) Flags can be passed directly to ESMF_RegridWeightGen with
+                     --pass2esmf option
+                  5) The serial ESMF tools can be used on yellowstone, geyser,
+                     or caldera via the "--serial" flag
+                  6) You can specify what machine you are running on with the
+                     "-mach" flag (if omitted, same logic as before determines
+                     machine from hostname)
+                  7) Bluefire is no longer supported by the tool
+
+Modified files:
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M       gen_mapping_files/gen_ESMF_mapping_file/README
+M       gen_mapping_files/README
+================================================================================
+Originator: mlevy
+Date: Apr 03 2013
+Model: mapping
+Version: mapping_130403
+One-line summary: Use ESMF module on yellowstone / caldera rather than pointing
+                  to Silverio Vasquez's work directory. (Tools will error out
+                  if you try to run on geyser since executables only work on
+                  yellowstone or caldera.) Also fixed the documentation for the
+                  check_maps tool so it works on yellowstone as well. Oh, and I
+                  fixed a small bug in the map_field tool (setting na = nai*naj
+                  only if nai and naj are defined).
+
+Modified files:
+M       map_field/src/map_field.F90
+ M      gen_mapping_files
+M       gen_mapping_files/gen_cesm_maps.sh
+ M      gen_mapping_files/gen_ESMF_mapping_file
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M       gen_mapping_files/gen_ESMF_mapping_file/README
+M       gen_mapping_files/README
+M       check_maps/README
+================================================================================
+Originator: mlevy
+Date: Mar 08 2013
+Model: mapping
+Version: mapping_130308
+One-line summary: Add "-big" flag to create_ESMF_map.sh to allow creation of
+                  netCDF files with large variables (> 2GB)... see info on
+                  --64bit_offset in ESMF documentation for details.
+
+Modified files:
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+================================================================================
+Originator: mlevy
+Date: Feb 22 2013
+Model: mapping
+Version: mapping_130222
+One-line summary: Got runoff_to_ocn to build on yellowstone (need to verify
+                  maps are comparable to those generated on bluefire). Also
+                  updated check_maps utility to recognize "degrees east" and
+                  "degrees north" as valid units for lon / lat (respectively).
+
+Modified files:
+ M      gen_domain_files
+A       gen_domain_files/src/build.yellowstone.csh
+ M      gen_mapping_files/runoff_to_ocn
+A       gen_mapping_files/runoff_to_ocn/tools
+A  +    gen_mapping_files/runoff_to_ocn/tools/makdep.c
+D       gen_mapping_files/runoff_to_ocn/src/makdep.c
+M       gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90
+A       gen_mapping_files/runoff_to_ocn/src/Macros.yellowstone
+M       gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+A       gen_mapping_files/runoff_to_ocn/build.yellowstone.csh
+ M      gen_mapping_files/gen_ESMF_mapping_file
+ M      check_maps
+M       check_maps/src/ESMF_RegridWeightGenCheck.F90
+================================================================================
+Originator: mlevy
+Date: Feb 21 2013
+Model: mapping
+Version: mapping_130221
+One-line summary: Update ESMF path for yellowstone, add ability to do nearest
+                  neighbor map.
+
+Modified files:
+M       gen_mapping_files/gen_cesm_maps.sh
+M       gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M       check_maps/check_map.sh
+M       check_maps/src/Makefile
+================================================================================
+Originator: tcraig
+Date: Jan 25 2013
+Model: mapping
+Version: mapping_130125
+One-line summary: Add map_field tool
+
+A       map_field
+A       map_field/INSTALL
+A       map_field/src
+A       map_field/src/Filepath
+A       map_field/src/Makefile
+A       map_field/src/map_field.F90
+A       map_field/README
+================================================================================
+Originator: mlevy
+Date: Nov 13 2012
+Model: mapping
+Version: mapping_121113b
+One-line summary: Bug fix in gen_domain tool (previously wasn't calculating
+                  the mask in domain.ocn.lnd_ocn.nc correctly, resulting in
+                  some cases where the mask was 0 but the fraction was not).
+
+Modified files:
+M            41913   gen_domain_files/src/gen_domain.F90
+================================================================================
+Originator: mlevy
+Date: Nov 13 2012
+Model: mapping
+Version: mapping_121113
+One-line summary: Bug fix in check_map utility (previously wasn't checking
+                  frac_a and frac_b correctly). Also reverted rtm2ocn default
+                  to r0.5 runoff and updated some documentation for
+                  gen_cesm_maps.sh.
+
+Modified files:
+M            41882   gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+M            41882   gen_mapping_files/runoff_to_ocn/runoff.bluefire.run
+M            41882   gen_mapping_files/gen_cesm_maps.sh
+M            41882   gen_mapping_files/README
+M            41882   check_maps/src/ESMF_RegridWeightGenCheck.F90
+================================================================================
+Originator: mlevy
+Date: Nov 6 2012
+Model: mapping
+Version: mapping_121106
+One-line summary: Generate ocn -> lnd aave map (for trigrid domain file gen)
+
+Modified files:
+M            41628   gen_mapping_files/gen_cesm_maps.sh
+================================================================================
+Originator: mlevy
+Date: Nov 2 2012
+Model: mapping
+Version: mapping_121102
+One-line summary: Steps towards tools working on yellowstone (can build check_maps
+                  and gen_domain, haven't tried gen_runoff yet)
+
+Temporary issues:
+                  1) ESMF is not installed w/ netCDF support, so no tools work
+                  2) ESMF is installed in temp location (/glade/p/work/svasquez)
+                  3) CESM/cseg directory not fully populated, temporarily pointing
+                     to grid files in /glade/scratch/mlevy/grids
+Modified files:
+M            41513   gen_mapping_files/regridbatch.bluefire.sh
+A                0   gen_mapping_files/regridbatch.yellowstone.sh
+M            41513   gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M            41513   gen_mapping_files/gen_ESMF_mapping_file/regridbatch.bluefire.sh
+A                0   gen_mapping_files/gen_ESMF_mapping_file/regridbatch.yellowstone.sh
+M            41513   check_maps/check_map.sh
+M            41513   examples/wrf_clm
+================================================================================
+Originator: mlevy
+Date: Oct 31 2012
+Model: mapping
+Version: mapping_121031
+One-line summary: Improved documentation / added batch script for creating a
+                  single mapping file.
+
+Modified files:
+M            41416   gen_mapping_files/regridbatch.bluefire.sh
+M            41416   gen_mapping_files/gen_cesm_maps.sh
+A                0   gen_mapping_files/gen_ESMF_mapping_file/regridbatch.bluefire.sh
+A                0   gen_mapping_files/gen_ESMF_mapping_file/README
+M            41416   gen_mapping_files/README
+M            41416   examples/wrf_clm
+================================================================================
+Originator: mlevy
+Date: Oct 30 2012
+Model: mapping
+Version: mapping_121030a
+One-line summary: Using more descriptive file names, adding flexibility to
+                  gen_cesm_maps.sh (no longer primarily for ocn / atm maps)
+
+Modified files:
+D            41390   gen_mapping_files/gen_atm_ocn_maps.sh
+A  +             -   gen_mapping_files/gen_cesm_maps.sh
+M            41390   gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+================================================================================
+Originator: mlevy
+Date: Oct 30 2012
+Model: mapping
+Version: mapping_121030
+One-line summary: Using more descriptive file names
+
+Modified files:
+D            41382   gen_domain/gen_domain.janus.run
+D            41382   gen_domain/INSTALL
+D            41382   gen_domain/src
+D            41382   gen_domain/src/Filepath
+D            41382   gen_domain/src/Makefile
+D            41382   gen_domain/src/gen_domain.F90
+D            41382   gen_domain/README
+D            41382   gen_domain
+A  +             -   gen_domain_files
+M  +             -   gen_mapping_files/gen_atm_ocn_maps.sh
+D            41382   gen_mapping_files/ESMF_maps
+D            41382   gen_mapping_files/ESMF_maps/gen_map.sh
+A  +             -   gen_mapping_files/gen_ESMF_mapping_file
+D            41382   gen_mapping_files/gen_ESMF_mapping_file/gen_map.sh
+A  +             -   gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+A  +             -   gen_mapping_files
+D            41382   gen_maps/runoff_to_ocn
+D            41382   gen_maps/runoff_to_ocn/runoff_map_gx1.nml
+D            41382   gen_maps/runoff_to_ocn/runoff_map.nml
+D            41382   gen_maps/runoff_to_ocn/runoff_map_gx3.nml
+D            41382   gen_maps/runoff_to_ocn/src
+D            41382   gen_maps/runoff_to_ocn/src/fixroff_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/Macros.bluefire
+D            41382   gen_maps/runoff_to_ocn/src/kind_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/main.F90
+D            41382   gen_maps/runoff_to_ocn/src/mapsort_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/makdep.c
+D            41382   gen_maps/runoff_to_ocn/src/smooth_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/shr_sys_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/shr_timer_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/map_mod.F90
+D            41382   gen_maps/runoff_to_ocn/src/Makefile
+D            41382   gen_maps/runoff_to_ocn/src/shr_kind_mod.F90
+D            41382   gen_maps/runoff_to_ocn/ChangeLog
+D            41382   gen_maps/runoff_to_ocn/build.bluefire.csh
+D            41382   gen_maps/runoff_to_ocn/README
+D            41382   gen_maps/runoff_to_ocn/runoff_map_tx01.nml
+D            41382   gen_maps/runoff_to_ocn/runoff.bluefire.run
+D            41382   gen_maps/gen_atm_ocn_maps.sh
+D            41382   gen_maps/regridbatch.bluefire.sh
+D            41382   gen_maps/ESMF_maps
+D            41382   gen_maps/ESMF_maps/gen_map.sh
+D            41382   gen_maps/README
+D            41382   gen_maps
+================================================================================
+Originator: mlevy
+Date: Oct 29 2012
+Model: mapping
+Version: mapping_121029
+One-line summary: Breaking gen_atm_ocn_maps.sh into smaller wrapper for ESMF,
+                  reorganizing mapping directory.
+
+Modified files:
+D            41339   gen_runoff_ocn_maps/runoff_map_gx1.nml
+D            41339   gen_runoff_ocn_maps/runoff_map.nml
+D            41339   gen_runoff_ocn_maps/runoff_map_gx3.nml
+D            41339   gen_runoff_ocn_maps/src
+D            41339   gen_runoff_ocn_maps/src/fixroff_mod.F90
+D            41339   gen_runoff_ocn_maps/src/Macros.bluefire
+D            41339   gen_runoff_ocn_maps/src/kind_mod.F90
+D            41339   gen_runoff_ocn_maps/src/main.F90
+D            41339   gen_runoff_ocn_maps/src/mapsort_mod.F90
+D            41339   gen_runoff_ocn_maps/src/makdep.c
+D            41339   gen_runoff_ocn_maps/src/smooth_mod.F90
+D            41339   gen_runoff_ocn_maps/src/shr_sys_mod.F90
+D            41339   gen_runoff_ocn_maps/src/shr_timer_mod.F90
+D            41339   gen_runoff_ocn_maps/src/map_mod.F90
+D            41339   gen_runoff_ocn_maps/src/Makefile
+D            41339   gen_runoff_ocn_maps/src/shr_kind_mod.F90
+D            41339   gen_runoff_ocn_maps/ChangeLog
+D            41339   gen_runoff_ocn_maps/build.bluefire.csh
+D            41339   gen_runoff_ocn_maps/README
+D            41339   gen_runoff_ocn_maps/runoff_map_tx01.nml
+D            41339   gen_runoff_ocn_maps/runoff.bluefire.run
+D            41339   gen_runoff_ocn_maps
+D            41339   gen_atm_ocn_maps/gen_atm_ocn_maps.sh
+D            41339   gen_atm_ocn_maps/regridbatch.bluefire.sh
+D            41339   gen_atm_ocn_maps/README
+D            41339   gen_atm_ocn_maps
+A  +             -   gen_maps/runoff_to_ocn
+M  +             -   gen_maps/gen_atm_ocn_maps.sh
+A                0   gen_maps/ESMF_maps
+A  +             -   gen_maps/ESMF_maps/gen_map.sh
+A  +             -   gen_maps
+
+================================================================================
+Originator: sacks
+Date: Oct 4 2012
+Model: mapping
+Version: mapping_121004
+One-line summary: Add examples directory
+
+Modified files:
+A       examples
+A       examples/wrf_clm
+
+================================================================================
+Originator: mlevy
+Date: Sept 29 2012
+Model: mapping
+Version: mapping_120929
+One-line summary: Should be rtm <-> lnd, not rtm <-> atm
+
+Modified files:
+M            40651   gen_atm_ocn_maps/gen_atm_ocn_maps.sh
+M            40651   gen_atm_ocn_maps/README
+
+================================================================================
+Originator: mlevy
+Date: Sept 28 2012
+Model: mapping
+Version: mapping_120928a
+One-line summary: Add rtm <-> atm conservative mapping to gen_atm_ocn_maps/
+
+Modified files:
+M            40650   gen_atm_ocn_maps/gen_atm_ocn_maps.sh
+M            40650   gen_atm_ocn_maps/regridbatch.bluefire.sh
+M            40650   gen_atm_ocn_maps/README
+
+================================================================================
+Originator: mlevy
+Date: Sept 28 2012
+Model: mapping
+Version: mapping_120928
+One-line summary: gen_runoff_ocn_maps - adding OMP threading to nearest-neighbor
+                  step and put in hooks for improving smoothing algorithm (at
+                  this time, the smoothing algorithm hasn't actually changed).
+
+                  check_maps - small change to Makefile to allow for building
+                  with verbose output; `make verbose` works the same as
+                  `make VERBOSE=TRUE` Haven't migrated change to any other
+                  scripts yet.
+
+                  gen_atm_ocn_maps - style change to if statement in bash script
+
+Modified files:
+M            40621   gen_runoff_ocn_maps/src/smooth_mod.F90
+M            40621   gen_runoff_ocn_maps/src/map_mod.F90
+M            40621   gen_runoff_ocn_maps/runoff.bluefire.run
+M            40621   gen_atm_ocn_maps/gen_atm_ocn_maps.sh
+M            40621   check_maps/src/Makefile
+
+================================================================================
+Originator: mlevy
+Date: Aug 16 2012
+Model: mapping
+Version: mapping_120816
+One-line summary: Update to gen_domain: clarified installation instructions for
+                  non-bluefire machines, added a PBS script for running on janus
+                  (though running on node0001 is preferable). Building on janus
+                  requires Machines_120816 or later because you need to build
+                  with mpif90 in order to link with netCDF.
+
+Modified files:
+A                0   gen_domain/gen_domain.janus.run
+M            39482   gen_domain/INSTALL
+M            39482   gen_domain/src/gen_domain.F90
+M            39482   gen_domain/README
+
+================================================================================
+Originator: mlevy
+Date: July 18 2012
+Model: mapping
+Version: mapping_120718
+One-line summary: Removing output of "ERROR" from gen_domain when the hostname
+                  can not be found to be added as attribute to domain_*.nc
+
+Modified files:
+M            38787   gen_domain/src/gen_domain.F90
+
+================================================================================
+Originator: mlevy
+Date: May 25 2012
+Model: mapping
+Version: mapping_120525
+One-line summary: Updating relative paths so that you can run gen_atm_ocn_maps.sh
+or check_maps.sh from any directory.
+
+Previously, you needed to be in mapping/gen_atm_ocn_maps/ to run the script
+because it ran "../check_maps/check_maps.sh"; this caused problems when running
+from collections. Similarly, check_maps.sh ran "../check_maps/ESMF_...". Now
+both scripts use `dirname $0` to determine what directory they are in and find
+the proper executable relative to that location.
+
+Also, if the ESMF regrid weight check tool has not been compiled check_maps
+spits out a WARNING rather than an ERROR. (In my mind, ERROR implies that
+something went wrong and the output is bad... in this case, the mapping files
+were generated correctly they just haven't been checked yet.)
+
+Modified files:
+M            37346   gen_atm_ocn_maps/gen_atm_ocn_maps.sh
+M            37346   check_maps/check_map.sh
+
+================================================================================
+Originators: mlevy, sacks
+Date: May 24 2012
+Model: mapping
+Version: mapping_120524
+One-line summary: More minor tweaks to documentation and Bill added ability to
+run gen_atm_ocn_maps through the queue on bluefire.
+
+mlevy changes: broke README in check_maps/ into README and INSTALL files,
+updated documentation to account for change from recompiling tool as default
+to not recompiling as default. Allowed gen_atm_ocn_maps.sh to pass -rc flag
+to check_maps.sh. This was actually meant to be in a late-March tag that
+apparently never got made.
+
+sacks changes: added batch option to gen_atm_ocn_maps, as well as bluefire
+submission script. Also cleaned up some NCO calls (calling ncatted once per
+file instead of three times)
+
+================================================================================
+Originator: mlevy
+Date: Mar 23 2012
+Model: mapping
+Version: mapping_120323
+One-line summary: Continued improving mapping suite, added gen_runoff_ocn_map
+
+Big improvement: Brian Kauffman brought the runoff mapping tools into this
+directory.
+
+Smaller changes: I updated the output of check_maps utility to include the
+number of tests run ("Passed all $NumTests" or "Failed $NumFailed of 
+$NumTests"), changed the tolerance for each of the tests so that everything in
+inputdata/cpl/cpl6/ and inputdata/cpl/gridmaps passes, and started to work on
+documentation for all of the tools, so there is a README in every directory and
+also an INSTALL file in gen_domains.
+
+================================================================================
+Originator: mlevy
+Date: Mar 20 2012
+Model: mapping
+Version: mapping_120320
+One-line summary: Continued improving mapping suite
+
+Fixed bug in ESMF_RegridWeightGenCheck.F90 that was producing a "Pass" as long
+as the final test passed, regardless of result of first tests. ESMF tool now
+looks at min / max frac_a and frac_b (need between -1e-6 and 1+1e-6). Fixed the
+Makefile, which was originially just a template provided by ESMF. 
+
+Improved standalone check_map.sh script to allow command-line input of files
+to check. Also added some flags to rebuild ESMF tool / rebuild using verbose
+output.
+
+gen_atm_ocn_maps.sh still builds ESMF tool by default, now will build it in
+verbose mode if given the -v flag.
+
+================================================================================
+
+Originator: mlevy
+Date: Mar 15 2012
+Model: mapping
+Version: mapping_120315
+One-line summary: Updated map consistency check tool
+
+Tool now just prints out a simple Pass or Fail (with details on what Failed)
+rather than a ton of statistics*. It also adds a check to make sure the function
+actually gets mapped from the source grid to the destination, the previous 
+version would actually pass all tests if the destination field was all
+_FillValues.
+
+* There is a Verbose logical flag available in the source code, setting to
+true outputs all computed statistics (which is still a subset of the original
+ESMF tool)
+
+================================================================================
+
+Originator: mlevy
+Date: Mar 9 2012
+Model: mapping
+Version: mapping_120309
+One-line summary: Restructured gen_domain and other mapping tools
+
+gen_domain was starting to incorporate many other mapping tools, including
+utilities to generate maps between atm and ocn grids and the ESMF tool to
+check the consistency of these maps. To account for these additions, the
+directory structure now looks like
+
+/tools/mapping/trunk[_tag]/
+
+gen_atm_ocn_maps/
+gen_atm_ocn_maps/gen_atm_ocn_maps.sh
+gen_domain/
+gen_domain/src/
+gen_domain/src/gen_domain.F90
+gen_domain/src/Makefile
+gen_runoff_ocn_maps/
+check_maps/
+check_maps/src/
+check_maps/src/ESMF_RegridWeightGenCheck.F90
+check_maps/src/Makefile
+
+I didn't change gen_domain.F90 or its Makefile. gen_atm_ocn_maps.sh was
+gen_maps.sh in /tools/mapping/gen_domain/trunk/, but has been renamed to
+make way for the addition of a gen_runoff_ocn_maps.sh script. Also, by default
+gen_atm_ocn_maps.sh will build check_maps/src/ESMF_RegridWeightGenCheck.F90 and
+run it on all 5 generated maps. The goal is to update the RegridWeightGenCheck
+utility to simply output "Pass" or "Fail" (with details for the latter), but
+currently the executable calculates various error norms and outputs them. To
+bypass the check, run gen_atm_ocn_maps.sh --nogridcheck
+
+
+================================================================================
+
+Originator: erik
+Date: Jan 17 2012
+Model: gen_domain
+Version: gen_domain_120117
+One-line summary: Remove some of the gen_domain_111221 changes
+
+The changes in gen_domain_111221 forced the clm testing for
+gen_domain to fail. I removed some of these changes so that
+the CLM testing would still work. I kept some of the simplifications
+in the code and Makefile, but got it so that it should still work
+with the CLM testing. This also means that the build files for
+gen_domain is different than the build files for other CLM tools. As
+long as the build works similarly this should NOT be a problem moving
+forward. But, it does mean maintaining slighlty different builds which is
+always awkward, error-prone and consumes more time.
+
+A  +    src/Filepath ------- Add the Filepath back in just pointing to ".".
+           The clm tests overwrite this with a different location so that
+           the build can be done in a different directory.
+M       src/Makefile ------- Use the Filepath
+M       src/gen_domain.F90 - Add back in hostname, but don't fail if it isn't set.
+M       README ------------- Update instructions
+A       README.testing ----- Add a file to describe the CLM testing
+          requirements.
+
+================================================================================
+
+Originator: kauff
+Date: Jan 04 2012
+Model: gen_domain
+Version: gen_domain_120104
+One-line summary: added atm -> ocn patch mapping
+
+M       src/gen_map.sh
+
+================================================================================
+
+Originator: mvertens
+Date: Dec 26 2011
+Model: gen_domain
+Version: gen_domain_111226
+One-line summary: fixed calculation of ocean fraction for land/ocean on same grid
+
+M       src/gen_domain.F90
+
+================================================================================
+	
+Originator: mvertens
+Date: Dec 22 2011
+Model: gen_domain
+Version: gen_domain_111222
+One-line summary: correct help command for gen_maps.sh
+
+M       gen_maps.sh
+	
+================================================================================
+	
+Originator: mvertens
+Date: Dec 21 2011
+Model: gen_domain
+Version: gen_domain_111221a
+One-line summary: put in date in filename and fixed usercomment in gen_domain output
+
+M       src/gen_domain.F90
+M       README
+
+================================================================================
+	
+Originator: mvertens
+Date: Dec 21 2011
+Model: gen_domain
+Version: gen_domain_111221
+One-line summary: simplified make procedure for gen_domain
+
+D       src/shr_sys_mod.F90
+D       src/shr_log_mod.F90
+D       src/Mkdepends
+D       src/Srcfiles
+D       src/Filepath
+D       src/Macros.custom
+M       src/Makefile
+M       src/gen_domain.F90
+D       src/shr_kind_mod.F90
+D       src/README.filecopies
+M       README
+	
+================================================================================
+	
+Originator: mvertens
+Date: Nov 22 2011
+Model: gen_domain
+Version: gen_domain_111122
+One-line summary: added functionality to write out 3 files
+	domain.lnd.<atmgrid_ocnmask>.nc
+	domain.ocn.<atmgrid_ocnmask>.nc
+	domain.ocn.<ocngrid>
+
+This now enables all the creation of datasets needed to run F compsets with
+everyone on the same grid - and B compsets with ocn/atm on different grids
+	
+M       gen_maps.sh
+M       src/gen_domain.F90
+	
+================================================================================
+	
+Originator: mvertens
+Date: Nov 10 2011
+Model: gen_domain
+Version: gen_domain_111110
+One-line summary: added capability to generate all coupler mapping files
+	
+================================================================================
+Originator: mvertens
+Date: Nov 09 2011
+Model: gen_domain
+Version: gen_domain_111109
+One-line summary: fixed arguments for gen_domain_map.sh
+	
+M       gen_domain_map.sh
+	
+================================================================================
+Originator: mvertens
+Date: Nov 08 2011
+Model: gen_domain
+Version: gen_domain_111108
+One-line summary: fixed problem with outputting 2d field for ocn
+	
+M       src/gen_domain.F90
+	
+================================================================================
+Originator: mvertens
+Date: Nov 07 2011
+Model: gen_domain
+Version: gen_domain_111107
+One-line summary: fixed compiler bug
+	
+M       src/gen_domain.F90
+	
+================================================================================
+Originator: mvertens
+Date: Nov 06 2011
+Model: gen_domain
+Version: gen_domain_111106
+One-line summary: added gen_domain_map.sh and made gen_domain command line driven
+	
+Files removed	
+D       gen_domain.namelist
+	
+Files added	
+A       gen_domain_map.sh
+	
+Files changed	
+M       src/gen_domain.F90
+M       ChangeLog
+M       README
+M       src/gen_domain.F90
+
+Workflow is to use
+(1) gen_domain_map to generate output mapping file using input SCRIP grid files
+(2) gen_domain to use map file from (1) to generate land and oceandomain files
+	
+================================================================================
+Originator: mvertens
+Date: Oct 25 2011
+Model: gen_domain
+Version: gen_domain_111025
+One-line summary: Add capability to check on units of input grid and transform
+	          to output degrees accordingly
+	
+M       src/gen_domain.F90
+M       gen_domain.namelist
+	
+Also added namelist that was used for mpas mapping	
+	
+================================================================================
+	
+Originator: mvertens
+Date: Oct 04 2011
+Model: gen_domain
+Version: gen_domain_111004
+One-line summary: Add capability to write out 2d output if mapping file rank is 2d
+	
+Changes made: 
+   As an example - needed for creating a fv domain when mapping an mpas 120km mask
+   to a fv 1.9x2.5 grid
+
+ src/gen_domain.F90
+	
+================================================================================
+	
+Originator: erik
+Date: Nov 02 2011
+Model: gen_domain
+Version: gen_domain_111102
+One-line summary: Toggle Compiler_optimized attribute
+	
+M       src/Makefile - Toggle OPT to on when compiler optimized
+	
+================================================================================
+	
+Originator: erik
+Date: Sep 05 2011
+Model: gen_domain
+Version: gen_domain_110905c
+One-line summary: Add Compiler_Optimized attribute, and enable ability to read _src/_dst or _ocn/_atm
+                  grid_file attributes from parent mapping file
+Changes made: 
+
+ src/gen_domain.F90
+================================================================================
+
+Originator: erik
+Date: Sep 05 2011
+Model: gen_domain
+Version: gen_domain_110905b
+One-line summary: Make sure frac_min/frac_max is initialized to something before used/remove tabs
+Changes made: 
+
+ src/gen_domain.F90
+
+================================================================================
+
+Originator: erik
+Date: Sep 05 2011
+Model: gen_domain
+Version: gen_domain_110905
+One-line summary: Use glade path for sample namelist
+Changes made: 
+
+M       gen_domain.namelist ---- Use glade path on bluefire rather than /fis/cgd path
+>>>>>>> Use common makefile for clm tools, and a custom macros for gen_domain specific settings
+M       src/Makefile ----------- On AIX/bluefire update to using NetCDF4.1.3
+A       src/Macros.custom
+
+
+================================================================================
+
+Originator: erik
+Date: Aug 19 2011
+Model: gen_domain
+Version: gen_domain_110819
+One-line summary: Work on Makefile
+Changes made: 
+
+Update Makefile to similar to clm4_0_34 tools. Get setting of FC working correctly.
+
+M       src/Makefile
+
+================================================================================
+
+Originator: erik
+Date: Jul 16 2011
+Model: gen_domain
+Version: gen_domain_110716
+One-line summary: Move source to src directory
+Changes made: 
+
+>>>>>> Rename files to src directory
+D       Mkdepends
+D       Srcfiles
+D       Filepath
+D       Makefile
+D       gen_domain.F90
+D       gen_domain.nml -- Rename to gen_domain.namelist
+
+A       src
+A  +    src/Mkdepends
+A  +    src/Srcfiles
+A  +    src/Filepath
+A  +    src/gen_domain.F90 -- Use shr_ code, add hostname
+                              add error checking, change CCSM => CESM
+A  +    src/Makefile -------- Bring updates from latest clm/tools
+                              makefile over, make exe in directory above.
+
+>>>>>>>>> New files copies of csm_share/shr code
+>>>>>>>>> This helps enable running gen_domain on other platforms
+A       src/shr_sys_mod.F90
+A       src/shr_log_mod.F90
+A       src/shr_kind_mod.F90
+A       src/README.filecopies -- Document about copied csm_share files
+
+A  +    gen_domain.namelist ---- renamed
+
+================================================================================
+
+Originator: mvertens
+Date: Wed Mar 30 21:56:01 MDT 2011
+Model: gen_domain
+Version: gen_domain_110330
+One-line summary:
+Changes made: put in new make process 
+and fixed problems in gen_domain related to reading in cubed sphere mapping files
+
+M       gen_domain.nml
+M       ChangeLog
+D       make.AIX.csh
+A       Mkdepends
+A       Srcfiles
+A       Filepath
+M       README
+M       gen_domain.F90
+D       make.IRIX64.csh
+A       Makefile
+
+================================================================================
+	
+Originator: mvertens
+Date: Mon Mar 28 18:39:47 MDT 2011
+Model: gen_domain
+Version: gen_domain_110328
+One-line summary:
+Changes made: added support for non lat/lon grid
+
+- for non lat/lon grid nj = 1 and will not appear in the input mapping file
+
+================================================================================
+	
+Originator: kauff
+Date: Mon Oct  1 16:18:23 MDT 2007
+Model: gen_domain
+Version: gen_domain_071001
+One-line summary:
+Changes made: add pole-fix option, efficiency/speed improvements, reports frac range
+
+- add fv pole-fix option 
+- efficiency/speed improvements (non-error causing bug wrt where statement inside do-loop)
+- reports frac error, always completes regardless of frac error, error namelist value not used
+
+================================================================================
+
+Originator: kauff
+Date: 2007-08-13
+Model: gen_domain
+Version:  gen_domain_051011
+One-line summary: 1st SVN tag, identical to CVS $Name: gen_domain_051011 $
+Changes made: 
+
+- import gen_domain from CVS to SVN 
+- identical to CVS tag $Name: gen_domain_051011 $
+
+================================================================================

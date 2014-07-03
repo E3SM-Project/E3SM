@@ -1,0 +1,305 @@
+<appendix id="editing_templates">
+<title>Editing Template Files Before Configure</title>
+<para>
+The last kind of customization that you can do for a case, before configure is run 
+is to edit the templates. The &clm; template is in
+<filename>models/lnd/clm/bld/clm.cpl7.template</filename>, the &datm; template is
+in <filename>models/atm/datm/bld/datm.cpl7.template</filename>, and the driver templates
+are in the <filename>models/drv/bld</filename> directory and are named:
+<filename>ccsm.template</filename> and <filename>cpl.template</filename>. When a case is
+created they are also copied to the <filename>Tools/Templates</filename> directory 
+underneath your case. If you want to make changes that will impact all your cases, you
+should edit the template files under the <filename>models</filename> directory, but
+if you want to make a change ONLY for a particular case you should edit the template
+under that specific case.
+</para>
+<note>
+<para>
+Editing the template files is NOT for the faint of heart! We recommend this ONLY for
+experts! It's difficult to do because the template is a script that actually creates 
+another script. So part of the script is echoing the script to be created and part of
+it is a script that is run when "configure -case" is run. As a result any variables 
+in the part of the script that is being echoed have to be escaped like this:
+<screen width="99">
+\$VARIABLE
+</screen>
+But, in other parts of the script that is run, you can NOT escape variables. So you 
+need to understand if you are in a part of the script that is echoing the script to
+be created, or in the part of the script that is actually run.
+</para>
+</note>
+<para>
+If you can customize your case using: compsets, <filename>env_*.xml</filename> variables,
+or a user namelist, as outlined in <xref linkend="customize"></xref> you should do so.
+The main reason to actually edit the template files, is if you are in a situation where
+the template aborts when you try it run it when "configure -case" is run. The other
+reason to edit the template is if you are &clm; developer and need to make adjustments
+to the template because of code or script updates. An example of modifying the &datm; 
+template is in <xref linkend="ownforce"></xref> where sed is used to modify the path
+for &CPLHIST; data.
+</para>
+<sect1 id="clm_template_outline">
+<title>Outline of the &clm; template</title>
+<para>
+The outline of the &clm; template is as follows:
+<screen width="99">
+# set up options for clm configure and then run clm configure
+$CODEROOT/lnd/clm*/bld/configure &lt;options&gt;
+# set up options for clm build-namelist and then run clm build-namelist
+$CODEROOT/lnd/clm*/bld/build-namelist &lt;options&gt;
+# echo the $CASEBUILD/clm.buildnml.csh script out
+cat &gt;! $CASEBUILD/clm.buildnml.csh &lt;&lt; EOF1
+# NOTE: variables in this section must be escaped
+EOF1
+# Remove temporary namelist files
+
+# echo the $CASEBUILD/clm.buildexe.csh script out
+cat &gt; $CASEBUILD/clm.buildexe.csh &lt;&lt;EOF2
+# NOTE: variables in this section must be escaped
+EOF2
+# Remove temporary configure files
+</screen>
+</para>
+</sect1>
+
+<sect1 id="datm_template_outline">
+<title>Outline of the &datm; template</title>
+<para>
+The outline of the &datm; template is as follows:
+<screen width="99">
+# Check $GRID to set the $DOMAINFILE and $DOMAINPATH
+
+# Check <envar>DATM_PRESAERO</envar> to set the prescribed aerosol option
+# If &CLMUSRDAT; is set and $DOMAINFILE is NOT -- set it by &CLMUSRDAT;
+# Ensure $DOMAINFILE is set or else abort
+
+#==============================================================================
+# Create resolved prestage data script
+#==============================================================================
+cat &gt;! $CASEBUILD/datm.buildnml.csh &lt;&lt; EOF1
+# NOTE: variables in this section must be escaped
+EOF1
+# Major if blocks look at <envar>DATM_MODE</envar>:
+# the if blocks setup streams and run Tools/build_streams to create stream files
+#----- CLM_QIAN mode ----------------------------------------------------------
+else if ($DATM_MODE == "&CLMQIAN;" ) then
+.
+   # Customize &CLMQIAN; options here
+
+   # A.) Setup datm_atm_in namelist
+cat &gt;! $CASEBUILD/datm.buildnml.csh &lt;&lt; EOF
+cat &gt;! datm_atm_in &lt;&lt; EOF1
+# NOTE: variables in this section must be escaped
+EOF1
+EOF
+
+   # B.) Setup options to build_streams
+.
+.
+.
+#----- CLM1PT   mode ----------------------------------------------------------
+else if ($DATM_MODE == "CLM1PT" ) then
+.
+   # Customize CLM1PT options here
+
+   # A.) Setup datm_atm_in namelist
+cat &gt;! $CASEBUILD/datm.buildnml.csh &lt;&lt; EOF
+cat &gt;! datm_atm_in &lt;&lt; EOF1
+# NOTE: variables in this section must be escaped
+EOF1
+EOF
+
+   # B.) Setup options to build_streams
+.
+.
+.
+.
+#----- CPLHIST 3-hourly time-averaging mode
+----------------------------------------------------------
+else if ($DATM_MODE == "&CPLHIST;" ) then
+.
+   # Customize &CPLHIST; options here
+
+   # A.) Setup datm_atm_in namelist
+cat &gt;! $CASEBUILD/datm.buildnml.csh &lt;&lt; EOF
+cat &gt;! datm_atm_in &lt;&lt; EOF1
+# NOTE: variables in this section must be escaped
+EOF1
+EOF
+
+   # B.) Setup options to build_streams
+.
+.
+.
+.
+
+#----- INVALID mode -----------------------------------------------------------else
+  echo "ERROR: unrecognized DATM_MODE = \$DATM_MODE "
+  exit -1
+endif
+
+#==============================================================================
+# Create prescribed aero streams if appropriate
+#==============================================================================
+.
+.
+.
+#==============================================================================
+# Create remaining resolved namelist
+#==============================================================================
+
+cat &gt;! $CASEBUILD/datm.buildnml.csh &lt;&lt; EOF
+cat &gt;! datm_in &lt;&lt; EOF1
+# NOTE: variables in this section must be escaped
+.
+.
+.
+EOF1
+
+EOF
+
+#==============================================================================
+#  Create script to build executable
+#==============================================================================
+
+cat &gt; $CASEBUILD/datm.buildexe.csh &lt;&lt;EOF
+#! /bin/csh -f 
+# NOTE: variables in this section must be escaped
+EOF
+
+#==============================================================================
+# end of script
+#==============================================================================
+</screen>
+</para>
+</sect1>
+
+<sect1 id="adding_new_DATM_MODE">
+<title>Adding a new DATM_MODE to the &datm; template</title>
+<procedure>
+<title> The steps to adding a new DATM_MODE</title>
+<step>
+<title>Add a new "if" block to the &datm; template</title>
+<para>
+As you can see from <xref linkend="datm_template_outline"></xref> above
+there are major "if" blocks for the different DATM_MODE's. So adding a new
+DATM_MODE means adding a new "if" block. The two major parts of each DATM_MODE
+block are:
+<simplelist>
+<member>Setup <filename>datm_atm_in</filename> namelist</member>
+<member>Setup options to <command>build_streams</command></member>
+</simplelist>
+</para>
+</step>
+<step>
+<title>In the "if" block create the <filename>datm_atm_in</filename> namelist</title>
+<para>
+See <xref linkend="customizing_datmnmlstr"></xref> for some notes about the
+&datm; namelist and streams files. That and the 
+<ulink url="http://www.cesm.ucar.edu/models/cesm1.0/data8/data8_doc/book1.html">
+&datm; User's Guide</ulink> should give you guidance on how to
+setup the namelist for your case.
+</para>
+</step>
+<step>
+<title>In the "if" block create options to and call <command>build_streams</command></title>
+<para>
+The next part of the "if" block in the &datm; template file to work with is the
+call to <command>build_streams</command>. You may need to add additional options
+to it. You may also need to call it multiple times for multiple streams. You will
+also likely need to add a new source option to it with the "-s" option. For more
+information on <command>build_streams</command> do the following.
+<example id="getting_help_w_build_streams">
+<title>Getting help with <command>build_streams</command> for &datm;</title>
+<screen width="99">
+> scripts/ccsm_utils/Tools/build_streams -help
+</screen>
+<para>
+The output of the above command is:
+</para>
+<screen width="99">
+&build_streams_help;
+</screen>
+</example>
+</para>
+</step>
+<step>
+<title>Add new streams templates to the &datm;
+<filename>datm.template.streams.xml</filename> file</title>
+<para>
+As part of modifying the behavior of <command>build_streams</command> you will also
+have to edit the <filename>models/atm/datm7/bld/datm.template.streams.xml</filename>
+file as well (or the local version in your 
+<filename>$CASENAME/Tools/Templates</filename> directory for a particular case).
+The template is an XML file much like the output streams file, but there are attributes
+to distinguish which fields will be used based on things like: RESOLUTION or datasource.
+And there are filename indicators (starting with a "%") that get translated into various
+things such as:
+<screen width="99">
+%c   = Case (from above -case command line option)
+%do  = Use domain file
+%y   = Year (through range given from begyear to endyear)
+%ym  = Year-Month (all 12 months through year range)
+%6ym = Like %ym but 6 digit year (ie. %YYYYYY-MM).  (can replace the 6 with any digit 1-9)
+</screen>
+</para>
+</step>
+<step>
+<title>Add a new valid_value to the <filename>config_definition.xml</filename> file in
+scripts.</title>
+<para>
+Adding a new DATM_MODE also requires adding a new valid_value to
+<filename>scripts/ccsm_utils/Case.template/config_definition.xml</filename>. This
+enables the scripts to recognize the new value as a valid option to DATM_MODE
+in the &envconf; file.
+</para>
+</step>
+</procedure>
+</sect1>
+</appendix>
+
+<appendix id="doc_build">
+<title>Building the Users-Guide Documentation for &clm;</title>
+<para>
+All of the documentation for &clm; can be built using GNU Makefiles that are
+available in the appropriate directories. The Makefiles require the following 
+utilities: <command>docbook2html</command>, <command>docbook2pdf</command>, 
+<command>protex</command>, and <command>latex2html</command>.
+</para>
+<para>
+To build the Users Guide for &clm; (requires docbook).
+<screen width="99">
+> cd models/lnd/clm/doc/UsersGuide
+> gmake
+</screen>
+Note, that when the Users-Guide is built it will get output from other &clm;
+utilities that by nature abort, and hence stop the make from continuing. However,
+this is expected so you should simply run <command>gmake</command> again until
+it either completes or comes upon a legitimate issue. Here is what a sample
+warning looks like when <command>gmake</command> is run.
+<screen width="99">
+The following line will fail in the make as it calls die -- but that is expected
+Check that the output config_help.tlog is good and redo your make
+../../bld/configure -help &gt;&amp;` config_help.tlog
+make: *** [config_help.tlog] Error 255
+</screen>
+To build the Code Reference Guide for &clm; (requires <command>protex</command> and
+<command>latex2html</command>). The make here uses a <filename>Filepath</filename>
+file that points to the list of directories that you want <command>protex</command>
+to run over. You should examine this file and make sure it is appropriate for what
+you need to do, before running the make.
+<screen width="99">
+> cd models/lnd/clm/doc/CodeReference
+> gmake
+</screen>
+To build the table of tests for the &clm; test suite. The make here runs a UNIX
+shell script to create a html table of the list of tests run on the different machines
+from the &clm; test suite.
+<screen width="99">
+> cd models/lnd/clm/test/system
+> gmake
+</screen>
+
+</para>
+
+</appendix>

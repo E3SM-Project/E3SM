@@ -1,0 +1,342 @@
+===============================================================
+Tag name:  rtm1_0_27
+Originator(s): erik
+Date: May 22, 2013
+One-line Summary: Initial conditions for 1850/2000 and fix logic for startup files
+
+Fix bugs: 1707, and 1708
+
+M       bld/rtm.buildnml.csh -- Fix bug 1707 where logic for setting hybrid
+                 or branch startup file was wrong.
+M       bld/build-namelist ---- Add ability to set simyr and finidat_rtm file
+M       bld/namelist_files/namelist_defaults_rtm.xml -- Add r05 1850/2000
+                 finidat_rtm files
+
+===============================================================
+Tag name:  rtm1_0_26
+Originator(s): jedwards
+Date: May 14, 2013
+One-line Summary: fix multi-inst. support 
+
+M       bld/rtm.buildnml.csh
+
+===============================================================
+Tag name:  rtm1_0_25
+Originator(s): muszala
+Date: May 10, 2013
+One-line Summary: add multi-inst. support 
+
+M       bld/rtm.buildnml.csh
+===============================================================
+Tag name:  rtm1_0_24
+Originator(s): muszala
+Date: May 10, 2013
+One-line Summary: add 'null' as option to grid check in rtm.buildnml.csh
+
+M       bld/rtm.buildnml.csh
+===============================================================
+Tag name:  rtm1_0_23
+Originator(s): tcraig
+Date: May 3, 2013
+One-line Summary: add some grid checks
+
+M       bld/rtm.buildnml.csh
+===============================================================
+Tag name:  rtm1_0_22
+Originator(s): muszala
+Date: Mar 18, 2013
+One-line Summary: esmf volr addition and volrlnd init fix
+
+M    src/riverroute/RunoffMod.F90 
+M    src/cpl_esmf/rof_comp_esmf.F90
+
+===============================================================
+Tag name:  rtm1_0_21
+Originator(s): tcraig
+Date: Mar 13, 2013
+One-line Summary:  minor cleanup and fix to RTM_MODE setting
+
+M       bld/rtm.buildnml.csh
+M       bld/build-namelist
+===============================================================
+Tag name:  rtm1_0_20
+Originator(s): muszala
+Date: Feb 21, 2013
+One-line Summary:  mods to a few lines for NAG port from Santos
+
+M       nag_rtm1_0_19/src/riverroute/RtmSpmd.F90
+M       nag_rtm1_0_19/src/riverroute/RtmTimeManager.F90
+
+===============================================================
+Tag name:  rtm1_0_19
+Originator(s): muszala
+Date: Feb 19, 2013
+One-line Summary:  bring in tws, Volr, r01 rdric file
+
+   Bring VOLR through coupler to CLM.  New r01 rdirc file.  
+   Added rtm tests in CLM (test_system).
+
+M    bld/namelist_files/namelist_defaults_rtm.xml
+M    src/cpl_share/rtm_cpl_indices.F90
+M    src/cpl_mct/rof_comp_mct.F90
+M    src/riverroute/RtmMod.F90
+M    src/riverroute/RtmHistFlds.F90
+M    src/riverroute/RtmHistFile.F90
+
+
+===============================================================
+Tag name:  rtm1_0_18
+Originator(s): muszala
+Date: Feb 4, 2013
+One-line Summary: change rtm_effvel to NULL as default for Erik
+
+   Change rtm_effvel to 'NULL' so 40 is the default physics behavior.
+   This is a change from what effvel was set to in rtm1_0_14.
+
+M       src/riverroute/RtmMod.F90
+
+===============================================================
+Tag name:  rtm1_0_17
+Originator(s): muszala
+Date: Feb 1, 2013
+One-line Summary:  fix esmf synch error & add RTM_NAMELIST_OPTS/RTM_BLDNML_OPTS 
+
+   Fix bug in esmf clock sync error.  Add  RTM_NAMELIST_OPTS/RTM_BLDNML_OPTS
+   to build-namelist in prep. for clm4_0_60 in which 40 and 45 source are
+   broken out.  This tag needs to be paired with scripts4_130130.
+
+M       bld/rtm.buildnml.csh
+M       src/cpl_esmf/rof_comp_esmf.F90
+
+===============================================================
+Tag name:  rtm1_0_16
+Originator(s): muszala
+Date: Jan 11, 2013
+One-line Summary:  add fix for restarts and add history file vars.
+
+	Put in fix from mvertens for restarts.  Add RTMTHRESH and RTMFLOOD as default 
+	netcdf output variables.
+
+M       src/riverroute/RtmTimeManager.F90
+M       src/riverroute/RtmHistFlds.F90
+
+===============================================================
+Tag name:  rtm1_0_15
+Originator(s): muszala
+Date: Jan 8, 2013
+One-line Summary:  add fix for h0 output and change comments in RtmMod.F90
+
+   Put in a fix from mvertens for h0 history file output.  the last rtm hist file
+	wasn't being written.  change some confusing comments in RtmMod.F90
+
+M       src/cpl_mct/rof_comp_mct.F90
+M       src/riverroute/RtmMod.F90
+
+===============================================================
+Tag name:  rtm1_0_14
+Originator(s): muszala
+Date: Jan 2, 2013
+One-line Summary:  change default effvel value to that needed in sci45 branch
+
+  The namelist variable, rtm_effvel is now preset to ACTIVE and effvel_active is set to 
+  true.  This forces rtm to use slope in the velocity calculation.  If a user wants
+  backward compatibilty with clm4_0_* tags, rtm_effvel will have to be set to NULL.
+
+M    rtm/src/riverroute/RtmMod.F90
+
+===============================================================
+Tag name:  rtm1_0_13
+Originator(s): muszala
+Date: Nov 28, 2012
+One-line Summary:  Add effVel as namelist.  cleanup RtmFloodInit logic
+
+	- Add effective velocity as a namelist variable.
+	- Change rdirc file.
+	- Add RTM tests to test_system batch CLM tests.
+	- Clean up logic in RtmFloodInit so R01 works without SLOPE and MAX_VOLR.
+	- The modification to effvel (for the default case) changes the amount
+	    of runoff (r2x_Forr_roff & r2x_Forr_ioff) in the system and does change climate.
+	    The value is what is in CLM4.5
+   - Change rdirc file to rdirc_0.5x0.5_simyr2000_slpmxvl_c120717.nc which is
+	    correct and contains FLOOD and MAX_VOLR.  This fixes an error in choice
+	    of rdirc file from clm4_0_55 / rtm1_0_10
+
+M    rtm/bld/namelist_files/namelist_defaults_rtm.xml
+M    rtm/bld/namelist_files/namelist_definition_rtm.xml
+M    rtm/src/riverroute/RtmMod.F90
+M    rtm/src/riverroute/RtmVar.F90
+
+===============================================================
+Tag name:  rtm1_0_12
+Originator(s): tcraig
+Date: Nov 25, 2012
+One-line Summary: fix esmf coupling, update rtm and flood active logic
+ - fix esmf coupling
+ - modify rtm and flood active logic for better reuse and robustness
+ - add rtm_mode and flood_mode to namelist, remove do_rtm and do_rtmflood
+ - remove some redundant command line arguments to rtm build-namelist
+
+M       bld/rtm.buildnml.csh
+M       bld/build-namelist
+M       bld/user_nl_rtm
+M       bld/namelist_files/namelist_definition_rtm.xml
+M       doc/ChangeLog
+M       src/riverroute/RtmMod.F90
+M       src/cpl_esmf/rof_comp_mct.F90
+M       src/cpl_esmf/rof_comp_esmf.F90
+
+===============================================================
+Tag name:  rtm1_0_11
+Originator(s): mvertens
+Date: Nov 23, 2012
+One-line Summary: Rewrite RtmFloodInit to use pio_darray not
+	global arrays  
+	
+M       src/riverroute/RtmMod.F90
+	- rewrite rtmfloodinit to remove use of global arrays
+	
+M       src/cpl_mct/rof_comp_mct.F90
+M       src/riverroute/RtmVar.F90
+	- introduced rtm_active and flood_active in RtmVar.F90 
+	  to be consistent with changes coming into rtm1_0_12
+
+	verified that results were bit-for-bit with rtm1_0_10
+	with and without flooding on
+
+===============================================================
+Tag name:  rtm1_0_10
+Originator(s): muszala
+Date: Nov 13, 2012
+One-line Summary: Rewrite RtmFloodInit to read SLOPE and MAX_VOLR
+  from file and change to newer rdirc file
+
+M       models/ro/rtm/src/riverroute/RtmMod.F90
+M       models/rof/rtm/src/bld/namelist_files/namelist_defaults_rtm.xml
+
+===============================================================
+Tag name:  rtm1_0_09
+Originator(s): mvertens
+Date: Sep 24, 2012
+One-line Summary: fixed bug when RTM ran on different processors
+	          from CLM
+
+M       src/riverroute/RtmHistFile.F90
+A       src/riverroute/RtmDateTime.F90
+M       src/riverroute/RtmRestFile.F90
+
+===============================================================
+Tag name:  rtm1_0_08
+Originator(s): mvertens
+Date: Sep 24, 2012
+One-line Summary: removed references to finidat, fatmlndfrc and nrevsn
+                  and clm_rtm_inparm   
+
+M       riverroute/RtmMod.F90
+	
+===============================================================
+Tag name:  rtm1_0_07
+Originator(s): mvertens
+Date: Sep 24, 2012
+One-line Summary: update documentation in config_definition.xml
+	          and user_nl_rtm
+
+M       bld/user_nl_rtm
+M       bld/namelist_files/namelist_definition_rtm.xml
+	
+M       src/riverroute/RtmMod.F90
+        - no longer output fatmlndfrc to standard out
+
+===============================================================
+Tag name:  rtm1_0_06
+Originator(s): tcraig
+Date: Sep 24, 2012
+One-line Summary: fix rtm_nsteps usage when rtm if off
+
+M       src/riverroute/RtmMod.F90
+===============================================================
+Tag name:  rtm1_0_05
+Originator(s): mvertens
+Date: Sep 23, 2012
+One-line Summary: bugfix for rtm history restarts files using pnetcdf
+
+fixed reference to finc and fexcl - plus other minor cleanups	
+
+M       src/riverroute/RtmMod.F90
+M       src/riverroute/RtmHistFile.F90
+M       src/cpl_esmf/rof_comp_esmf.F90
+	
+===============================================================
+Tag name:  rtm1_0_04
+Originator(s): tcraig
+Date: Sep 13, 2012
+One-line Summary: updates from clm4_0_44 to clm4_0_46 for rtm
+
+M       bld/namelist_files/namelist_defaults_rtm.xml
+M       src/riverroute/RtmMod.F90
+===============================================================
+Tag name:  rtm1_0_03
+Originator(s): tcraig
+Date: Mon Sep 4, 2012
+One-line Summary: add budget check, minor cleanup
+
+M       src/cpl_mct/rof_comp_mct.F90
+M       src/riverroute/RtmMod.F90
+M       src/riverroute/RunoffMod.F90
+	
+===============================================================
+Tag name:  rtm1_0_02
+Originator(s): tcraig
+Date: Mon Aug 27, 2012
+One-line Summary: Clean up, flood_present=false, remove land_frac
+  usage, fix sign convention, set mask global, fix multi-instance,
+  fix esmf.
+
+M       src/cpl_share/rtm_cpl_indices.F90
+M       src/cpl_mct/rof_comp_mct.F90
+M       src/riverroute/RtmMod.F90
+M       src/riverroute/RtmIO.F90
+M       src/riverroute/RunoffMod.F90
+M       src/cpl_esmf/rof_comp_mct.F90
+M       src/cpl_esmf/rof_comp_esmf.F90
+===============================================================
+Tag name:  rtm1_0_01
+Originator(s): mvertens (Mariana Vertenstein)
+Date: Mon Aug 4
+One-line Summary: First commit of rtm as a separate component
+
+Purpose of changes:
+
+First commit of rtm as a separate component
+
+Requirements for tag:
+    Requirements: test on bluefire (CESM)
+
+Test level of tag: std-test
+
+Bugs fixed (include bugzilla ID):
+
+Known bugs (include bugzilla ID):
+	
+Known Limitations:
+	
+Describe any changes made to build system: 
+   New introductin of cesm build scripts
+	
+Describe any changes made to the namelist: Yes!
+   New introductin of namelist scripts
+
+Describe any substantial timing or memory changes: No
+
+Code reviewed by: self
+
+List all files eliminated: None
+
+List all files added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+
+CESM or CLM tag used for the baseline comparison tests if applicable: 
+
+Changes answers relative to baseline: Yes
+
+===============================================================

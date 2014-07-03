@@ -1,0 +1,23 @@
+\begin{center}
+    \tablefirsthead{%
+    \hline
+        Name&  Description & Units\\
+    \hline
+    \hline}
+  \tablehead{%
+    \hline
+    \multicolumn{3}{|p{0.98\textwidth}|}{\emph{\small continued from previous page}}\\
+    \hline
+        Name&  Description & Units\\
+    \hline
+    \hline}
+  \tabletail{%
+    \hline
+    \multicolumn{3}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular}{|l|p{8cm}|c|}
+    \hline
+    !GENVARS!
+  \end{supertabular}
+\end{center}

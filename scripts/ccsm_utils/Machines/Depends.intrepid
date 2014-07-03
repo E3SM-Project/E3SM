@@ -1,0 +1,6 @@
+#
+# Needed to avoid an ICE in the Jan2013 compiler install
+#
+spmd_utils.o: spmd_utils.F90
+	$(FC) -c $(INCLDIR) $(INCS) -g -qfullpath $(FPPDEFS) $(FREEFLAGS) $<
+

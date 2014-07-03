@@ -1,0 +1,832 @@
+================================================================================
+ SVN $Id: ChangeLog 43934 2013-02-13 16:21:41Z sacks $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_130213/ChangeLog $
+================================================================================
+This file describes what main-trunk tags were created and why
+================================================================================
+Date: Feb 13 2013
+Who: sacks
+Model: dlnd7
+Version: dlnd8_130213
+One-line summary: fix syntax error in dlnd8_130131
+
+Needed to pad some character strings with spaces
+
+M       dlnd_comp_mod.F90
+
+================================================================================
+Date: Jan 31 2013
+Who: sacks
+Model: dlnd7
+Version: dlnd8_130131
+One-line summary: determine list of glc-related fields dynamically,
+                  based on glc_nec
+
+M       dlnd_comp_mod.F90
+
+================================================================================
+Date: Jan 10 2013
+Who: sacks
+Model: dlnd7
+Version: dlnd8_130110
+One-line summary: generalize sno streams file to work with any GLC_NEC value
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+
+================================================================================
+Date: Dec 11 2012
+Who: jshollen
+Model: dlnd7
+Version: dlnd8_121211
+One-line summary: Remove rof.diatren_iaf_rx1, rof.diatren_ann_rx1 from namelist defaults
+
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+
+================================================================================
+Date: Oct 1 2012
+Who: sacks
+Model: dlnd7
+Version: dlnd8_121001
+One-line summary: Change sno cplhist stream file naming convention
+
+Change default sno cplhist stream file names: rather than %y-01-02,
+use %y-01-01, to match what is coming out of latest version of drv
+
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+
+================================================================================
+Date: Sept 18 2012
+Who: tcraig
+Model: dlnd7
+Version: dlnd8_120918
+One-line summary: Remove runoff component
+
+- svn merge $SVNREPO/dlnd7/trunk_tags/dlnd8_120626 $SVNREPO/dlnd7/branch_tags/rtmcomp_tags/rtmcomp03_dlnd8_120626
+- mvertens did most of this work
+	
+M       bld/dlnd.cpl7.template
+D       bld/user_nl_drof
+M       bld/dlnd.buildnml.csh
+M       bld/build-namelist
+M       bld/namelist_files/namelist_definition_dlnd.xml
+MM      cpl_mct/lnd_comp_mct.F90
+M       ChangeLog
+M       cpl_esmf/lnd_comp_esmf.F90
+M       cpl_esmf/lnd_comp_mct.F90
+M       dlnd_comp_mod.F90
+================================================================================
+Date: June 26 2012
+Model: dlnd7
+Version: dlnd8_120626
+One-line summary: Updated documentation in namelist_definition_dlnd.xml
+
+	
+M       bld/dlnd.buildnml.csh
+M       bld/namelist_files/namelist_definition_dlnd.xml
+M       bld/dlnd.cpl7.template
+	
+================================================================================
+Date: May 28 2012
+Model: dlnd7
+Version: dlnd8_120528
+One-line summary: Removed copy of dlnd.buildnml.csh and dlnd.buildexe.csh from 
+	          dlnd.cpl7.template
+	
+M       bld/dlnd.cpl7.template
+	
+================================================================================
+Date: May 21 2012
+Model: dlnd7
+Version: dlnd8_120521a
+One-line summary: Fixed bug for user_nl_xxx changes
+	
+M       bld/build-namelist
+	
+================================================================================
+Date: May 21 2012
+Model: dlnd7
+Version: dlnd8_120521
+One-line summary: Fixed bug for sno mode (neede in TG compset)
+	
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+	
+================================================================================
+Date: May 20 2012
+Model: dlnd7
+Version: dlnd8_120520
+One-line summary: Ability to not depend on env_conf.xml and more general 
+	          expand_env_xml subroutine 
+	
+M       bld/build-namelist
+	
+================================================================================
+Date: May 17 2012
+Model: dlnd7
+Version: dlnd8_120517
+One-line summary: New build-namelist functionlality
+	- no environment variables in build-namelist (replaced by %xmlvars)
+	- to introduce a new stream just change namelist_defaults_dlnd.xml and
+	  namelist_definition_dlnd.xml
+	- generic stream template no longer written from build-namelist
+	
+M       bld/dlnd.buildnml.csh
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+	
+================================================================================
+Originator: sacks
+Date: May 7 2012
+Model: dlnd7
+Version: dlnd8_120507
+One-line summary: changed sno stream offset to 0
+
+The new convention for cpl hist times gives the time in the middle of
+the interval rather than at the end; this removes the need for having
+an offset of -43200 on this stream.
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+
+================================================================================
+Originator: mvertens
+Date: Apr 19 2012
+Model: dlnd7
+Version: dlnd8_120419
+One-line summary: added dlnd.buildnml.csh and dlnd.buildexe.csh and simplified 
+	          dlnd.cpl7.template
+	
+A       bld/dlnd.buildexe.csh
+M       bld/dlnd.cpl7.template
+A       bld/dlnd.buildnml.csh
+M       dlnd_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Apr 18 2012
+Model: dlnd7
+Version: dlnd8_120418
+One-line summary: add support for TG runs
+
+M       bld/namelist_files/namelist_defaults_dlnd.xml
+M       dlnd_comp_mod.F90
+================================================================================
+Originator: mvertens
+Date: Apr 15 2012
+Model: dlnd7
+Version: dlnd8_120415
+One-line summary: fixed error for branch run
+
+M       bld/build-namelist
+
+Note - this is a temporary fix - assuming that restart files are not needed
+for dlnd
+	
+================================================================================
+Originator: tcraig
+Date: Apr 10 2012
+Model: dlnd7
+Version: dlnd8_120410
+One-line summary: new build-namelist functionality (from bldnml branch)
+
+A       bld/user_nl_drof
+D       bld/dlnd.template.streams.xml
+A       bld/user_nl_dlnd
+A       bld/build-namelist
+A       bld/user_nl_dsno
+A       bld/namelist_files
+A       bld/namelist_files/namelist_defaults_dlnd.xml
+A       bld/namelist_files/namelist_definition_dlnd.xml
+	
+================================================================================
+Originator: tcraig
+Date: Feb 2 2012
+Model: dlnd7
+Version: dlnd8_120202
+One-line summary: update field names based on changes in drvseq4_0_11
+	
+M       dlnd_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: dlnd7
+Version: dlnd8_120123
+One-line summary: update esmf interfaces to 520r, add multi-instance support
+	for esmf coupling interfaces
+
+MM      cpl_mct/lnd_comp_mct.F90
+M       cpl_esmf/lnd_comp_esmf.F90
+M       cpl_esmf/lnd_comp_mct.F90
+M       dlnd_comp_mod.F90
+================================================================================
+Originator: mvertens
+Date: Nov 9 2011
+Model: dlnd7
+Version: dlnd8_111109
+One-line summary: removed references to domains from dlnd.cpl7.template
+
+This is only compatible with scripts4_111109+	
+
+M       bld/dlnd.cpl7.template
+================================================================================
+Originator: tcraig
+Date:  Aug 30 2011
+Model: dlnd7
+Version: dlnd8_110830
+One-line summary: fix multi-instance restart
+
+M       dlnd_comp_mod.F90
+================================================================================
+Originator: kauff
+Date:  Wed Aug  3 16:36:05 MDT 2011
+Model: dlnd7
+Version: dlnd8_110803
+One-line summary: new DLND_RUNOFF_MODE options
+
+requires corresponding changes in scripts & coupler/bld
+
+M       bld/dlnd.cpl7.template
+M       bld/dlnd.template.streams.xml
+M       dlnd_comp_mod.F90
+
+-else if ($DLND_RUNOFF_MODE  == "RX1" ) then
++else if ($DLND_RUNOFF_MODE  == "DIATREN_ANN_RX1" ) then
++else if ($DLND_RUNOFF_MODE  == "DIATREN_IAF_RX1" ) then
+
+Note: "RX1" is renamed "DIATREN_ANN_RX1", the IAF option is new
+
+================================================================================
+Originator: tcraig
+Date: Jul 17 2011
+Model: dlnd7
+Version: dlnd8_110717
+One-line summary: Add ensemble capability
+
+M       bld/dlnd.cpl7.template
+ M      cpl_mct/lnd_comp_mct.F90
+M       cpl_esmf/lnd_comp_esmf.F90
+M       cpl_esmf/lnd_comp_mct.F90
+M       dlnd_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Apr 19 2011
+Model: dlnd7
+Version: dlnd8_110419
+One-line summary: Update ESMF interfaces
+
+M       cpl_esmf/lnd_comp_esmf.F90
+M       cpl_esmf/lnd_comp_mct.F90
+================================================================================
+Originator: mvertens
+Date: Thu Jan 18 2011
+Model: dlnd7
+Version: dlnd8_110118
+One-line summary: remove use of seq_flds_indices (bfb)
+
+M       dlnd_comp_mod.F90 
+	
+================================================================================
+Originator: tcraig
+Date: Thu Jan 6 2011
+Model: dlnd7
+Version: dlnd8_110106
+One-line summary: add esmf metadata feature and update esmf register routine
+
+- and reimplement stream calendar initialization from dlnd8_101101
+
+>svn merge $SVNREPO/dlnd7/trunk_tags/dlnd8_100517 $SVNREPO/dlnd7/branch_tags/cesm1_0_esmf01_tags/esmf01_02_dlnd8_100517
+
+U    cpl_esmf/lnd_comp_esmf.F90
+U    cpl_esmf/lnd_comp_mct.F90
+M    dlnd_comp_mod.F90
+	
+================================================================================
+Originator: jedwards
+Date: Fri Nov 5 2010
+Model: dlnd7
+Version: dlnd8_101105
+One-line summary: mv pio initialize and namelist to driver
+
+M      dlnd_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Mon Nov 1 2010
+Model: dlnd7
+Version: dlnd8_101101
+One-line summary: update strdata initialization with calendar name
+
+M      dlnd_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Thu Sep 23 2010
+Model: dlnd7
+Version: dlnd8_100923
+One-line summary: add support for support ar9v4 racm grid
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Mon May 17 2010
+Model: dlnd7
+Version: dlnd8_100517
+One-line summary: add support for support 0.23x0.31_gx1v6 domain
+
+also rm gx1v4, gx1v5 related domain files
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Sat Apr 17 2010
+Model: dlnd7
+Version: dlnd8_100417
+One-line summary: add support for racm grids, fix dtlimit with lnd CPLHIST mode
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Tue Apr 6 2010
+Model: dlnd7
+Version: dlnd8_100406
+One-line summary: remove extra use seq_flds_mod, migrate Makefile use to CASETOOLS
+
+M      bld/dlnd.cpl7.template
+M      dlnd_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon Feb 15 2010
+Model: dlnd7
+Version: dlnd8_100215
+One-line summary: update streams txt file generation
+
+M      bld/dlnd.cpl7.template
+M      bld/dlnd.template.streams.xml
+	
+================================================================================
+Originator: kuaff
+Date: Fri Dec 18 14:30:20 MST 2009
+Model: dlnd7
+Version: dlnd8_091218
+One-line summary: add support for fv4x5_gx3v7, fv0.47x0.63_gx1v6
+
+M      bld/dlnd.cpl7.template
+
++if ( $GRID =~ 4x5_gx3v7        ) set DOMAINFILE = domain.lnd.fv4x5_gx3v7.091218.nc
++if ( $GRID =~ 0.47x0.63_gx1v6  ) set DOMAINFILE = domain.lnd.fv0.47x0.63_gx1v6.090407.nc
+
+================================================================================
+Originator: tcraig
+Date: Mon Dec 14 2009
+Model: dlnd7
+Version: dlnd8_091214
+One-line summary: remove shr_strdata_setlogunit call
+
+M      dlnd_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Wed Dec 8 2009
+Model: dlnd7
+Version: dlnd8_091208
+One-line summary: add restart namelist and single column mode
+
+M      dlnd_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Tue Nov 10 2009
+Model: dlnd7
+Version: dlnd8_091110
+One-line summary: add esmf support
+
+M      cpl_esmf/lnd_comp_esmf.F90
+M      cpl_esmf/lnd_comp_mct.F90
+M      dlnd_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Nov 6 2009
+Model: dlnd7
+Version: dlnd8_091106
+One-line summary: dlnd7 to dlnd usage
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Fri Oct 30 2009
+Model: dlnd7
+Version: dlnd8_091030
+One-line summary: move lnd_comp_mct to dlnd_comp_mod and tag as dlnd8
+
+M      cpl_mct/lnd_comp_mct.F90
+A      dlnd_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Tue Oct 13 2009
+Model: dlnd7
+Version: dlnd7_091013
+One-line summary: remove shr_strdata_mod, shr_dmodel_mod, moved to csm_share
+
+D      shr_strdata_mod.F90
+D      shr_dmodel_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Thu Oct 1 2009
+Model: dlnd7
+Version: dlnd7_091001
+One-line summary: update to new dlnd model
+
+- merge tcmepar03_dlnd7_090915 tag to trunk
+- new dlnd component with mct and esmf
+- bfb except for vector mapping which is roundoff
+
+M      bld/dlnd.cpl7.template
+M      cpl_mct/lnd_comp_mct.F90
+M      cpl_esmf/lnd_comp_esmf.F90
+M      cpl_esmf/lnd_comp_mct.F90
+A  +   shr_strdata_mod.F90
+A  +   shr_dmodel_mod.F90
+D      dshr_strdata_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Tue Sep 15 14:55:19 MDT 2009
+Model: dlnd7
+Version: dlnd7_090915
+One-line summary: add support for T62_gx3v7
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Mon Sep 7 2009
+Model: dlnd7
+Version: dlnd7_090907
+One-line summary: update esmf support
+
+M      bld/dlnd.cpl7.template
+M      cpl_esmf/lnd_comp_mct.F90
+
+================================================================================
+Originator: kauff
+Date: Fri Sep  4 10:25:41 MDT 2009
+Model: dlnd7
+Version: dlnd7_090904
+One-line summary: updated T31_gx3v7 domain file
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Thu Sep  3 10:42:20 MDT 2009
+Model: dlnd7
+Version: dlnd7_090903
+One-line summary: add support for T31_gx3v7
+
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: feiliu
+Date: Sep 02 2009
+Model: dlnd7
+Version: dlnd7_090902
+One-line summary: added ESMF data land component
+	
+A      cpl_esmf/lnd_comp_esmf.F90
+A      cpl_esmf/lnd_comp_mct.F90
+
+================================================================================
+Originator: mvertens
+Date: Thu Jul 16 15:13:09 MDT 2009
+Model: dlnd7
+Version: dlnd7_090720
+One-line summary: fixed memory leak introduced when MCT scatter was brought in
+	
+M      cpl_mct/lnd_comp_mct.F90
+	
+================================================================================
+Originator: kauff
+Date: Wed Jul 15 21:10:44 MDT 2009
+Model: dlnd7
+Version:  dlnd7_090715
+One-line summary: now supports:  $GRID =~ f19_tx1
+	
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Thu Jun 25 17:14:05 MDT 2009
+Model: dlnd7
+Version: dlnd7_090625b
+One-line summary: now supports:  $GRID =~ T62_tx0.1v2 
+	
+M      bld/dlnd.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: June 25 2009
+Model: dlnd7
+Version: dlnd7_090625
+One-line summary: new directory structure to bring in ESMF interfaces
+
+M      bld/dlnd.cpl7.template
+A      cpl_mct
+A  +   cpl_mct/lnd_comp_mct.F90
+A      cpl_esmf
+D      lnd_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Apr 30 2009
+Model: dlnd7
+Version: dlnd7_090430
+One-line summary: refactor, add CPLHIST mode for lnd and rof
+
+M      lnd_comp_mct.F90
+M      bld/dlnd.cpl7.template
+M      bld/dlnd.template.streams.xml
+A      dshr_strdata_mod.F90
+D      dlnd_physUSER.F90
+D      dlnd_init.F90
+D      dlnd_phys.F90
+D      dlnd_physTEST.F90
+D      dlnd_diag.F90
+D      dlnd_nml.F90
+D      dlnd_data.F90
+D      dlnd_final.F90
+D      dlnd_physCPLHIST.F90
+D      dlnd_control.F90
+
+================================================================================
+Originator: mvertens
+Date: Mar 18 2009
+Model: dlnd7
+Version: dlnd7_090318b
+One-line summary: fixed bugs for gx1v6 support
+	
+Changes made:
+M      bld/dlnd.cpl7.template
+M      bld/dlnd.template.streams.xml
+
+================================================================================
+	
+Originator: mvertens
+Date: Mar 18 2009
+Model: dlnd7
+Version: dlnd7_090318
+One-line summary: add support for gx1v6
+	
+Changes made:
+M      bld/dlnd.cpl7.template
+
+================================================================================
+	
+Originator: jwolfe
+Date: Feb 9 2009
+Model: dlnd7
+Version: dlnd7_090209
+One-line summary: add support for tx1v1
+	
+Changes made:
+M      bld/dlnd.cpl7.template
+
+================================================================================
+	
+Originator: tcraig
+Date: Jan 7 2009
+Model: dlnd7
+Version: dlnd7_090107
+One-line summary: major template update
+	
+Changes made:
+M	dlnd.cpl7.template
+
+================================================================================
+	
+Originator: tcraig
+Date: Fri Dec 26 2008
+Model: dlnd7
+Version: dlnd7_081226
+One-line summary: add sno interfaces to init and run methods
+	
+Changes made:
+M      lnd_comp_mct.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Dec 12 2008
+Model: dlnd7
+Version: dlnd7_081212
+One-line summary: fix curr date initialization in lnd_comp_mct
+	
+Changes made:
+M      lnd_comp_mct.F90
+       initialize curr date properly in lnd_comp_mct 
+
+================================================================================
+Originator: mvertens
+Date: Thu Sep 25 16:24:25 MDT 2008
+Model: dlnd7
+Version: dlnd7_080925
+One-line summary: modifications for new unified build
+	
+Changes made:
+M      bld/dlnd.cpl7.template
+	
+================================================================================
+	
+Originator: mvertens
+Date: Sun Sep  7 21:07:05 MDT 2008
+Model: dlnd7
+Version: dlnd7_080907
+One-line summary: removed all cpl6 and hubinfo references 
+
+Changes made:
+M      dlnd_init.F90
+M      dlnd_data.F90
+M      dlnd_control.F90
+D      dlnd_main.F90
+D      dlnd_msg.F90
+D      dlnd_run.F90
+D      bld/dlnd.cpl6.template
+
+================================================================================
+Originator: santos,mvr
+Date: Thur Jul 31 2008
+Model: dlnd7
+Version: dlnd7_080731
+One-line summary: added inputdata list generation to dlnd.cpl7.template
+
+Changes made:
+M  dlnd.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Tue Jul  8 15:09:05 MDT 2008
+Model: dlnd7
+Version: dlnd7_080708
+One-line summary: removed sourcing of env_xxx from dlnd.cpl7.template
+
+Changes made:
+M  dlnd.cpl7.template
+
+================================================================================
+	
+Originator: tcraig
+Date: Wed May 14 19:49:46 MDT 2008
+Model: dlnd7
+Version: dlnd7_080514
+One-line summary: merge drva06_dlnd7_071129 to trunk
+
+Changes made:
+- update for cpl7
+- code cleanup
+- improve logging
+
+M      dlnd_physUSER.F90
+M      dlnd_physTEST.F90
+M      dlnd_phys.F90
+M      dlnd_main.F90
+M      dlnd_nml.F90
+M      dlnd_msg.F90
+M      dlnd_final.F90
+A  +   lnd_comp_mct.F90
+D      dlnd_esmf.F90.hide
+A  +   bld/dlnd.cpl7.template
+M      dlnd_init.F90
+M      dlnd_run.F90
+M      dlnd_diag.F90
+M      dlnd_data.F90
+M      dlnd_physCPLHIST.F90
+M      dlnd_control.F90
+
+================================================================================
+Originator: mvertens
+Date: Thu Nov 29 20:58:42 MST 2007
+Model: dlnd7
+Version: dlnd7_071129
+One-line summary: added bld/ and corresponding template and xml files
+
+Changes made:
+
+A      bld
+A      bld/dlnd.cpl6.template
+A      bld/dlnd.template.streams.xml
+- added above files (Components/dlnd.template now simply sources dlnd.cpl6.template)
+
+================================================================================
+Originator: kauff
+Date: Fri Aug 24 15:22:32 MDT 2007
+Model: dlnd7
+Version: dlnd7_070824
+One-line summary: minor code mods wrt last tag, bugz #569, share3_070824
+
+Changes made:
+
+- new shr_stream_getDomainInfo() API
+- no file names returned from any shr_stream routine have path prepended
+- makes use of new routine shr_stream_getFile
+
+================================================================================
+Originator: kauff
+Date: Fri Aug 10 16:41:32 MDT 2007
+Model: dlnd7
+Version: dlnd7_070810
+One-line summary: supports non-local stream.txt data (bugz #72)
+
+Changes made:
+
+- dlnd_init now calls a new routine: shr_stream_parseInput(str,fileName,...)
+  so fileName's can contain a dir path
+    (which helps support functionality requested in bugz #72)
+- dlnd_int bug fix: map-bilin = T would force map-fill = T even if src data was global
+- now constructs domain names and sends them to dshr_domain_readData()
+  which requires use of share3_070810 or later
+
+================================================================================
+
+Originator: kauff
+Date: Tue Oct 24 20:11:41 EDT 2006
+Model: dlnd7
+Version: dlnd7_061024
+One-line summary: Mods to save for pgi compiler bug
+Changes made:
+
+- mods to save for pgi compiler bug and general cleanup
+
+================================================================================
+
+Originator: kauff
+Date: Mon Oct  2 15:59:36 MDT 2006
+Model: dlnd7
+Version: dlnd7_061002
+One-line summary: work around Cray problem in dlnd_nml.F90 wrt char(CL) vs. char(*)
+Changes made:
+
+- work around Cray problem in dlnd_nml.F90 wrt char(CL) vs. char(*) dummy arg.
+  dlnd_nml_readNml()  which used character(*) as a dummy arg, failed on
+  ORNL Crays for some unknown reason, thus changed arg to character(CL)
+
+================================================================================
+
+Originator: kauff
+Date: Thu Sep 21 16:33:19 MDT 2006
+Model: dlnd7
+Version: dlnd7_060921
+One-line summary: remove SPMD if-def's wrt MPH/threading (model is not threaded)
+Changes made:
+
+- remove SPMD if-def's wrt MPH/threading (model is not threaded)
+
+=============================================================================
+
+Originator: kauff
+Date: Fri Sep 15 12:40:23 MDT 2006
+Model: dlnd7
+Version: dlnd7_060915
+One-line summary:  add program/subroutine if-def's to support SPMD
+Changes made:
+
+- add program/subroutine if-def's to support SPMD
+- add nml var called "unused" to avoid errors due to empty nml
+
+================================================================================
+
+Originator: kauff
+Date: Mon Jun  5 17:27:29 MDT 2006
+Model: dlnd7
+Version: dlnd7_060605
+One-line summary: reduced amount of default stdout messages
+Changes made:
+
+- reduced stdout output for debug level = 1 (recommended/default level)
+
+================================================================================
+
+Originator: kauff
+Date: Thu Jun  1 19:24:12 MDT 2006
+Model: dlnd7
+Version: dlnd7_060601
+One-line summary: first fully functional version
+Changes made:
+
+first fully functional version
+
+================================================================================
+
+Originator: kauff
+Date: Thu Feb 23 16:27:52 MST 2006
+Model: dlnd7
+Version: untagged ~ initial import
+One-line summary: initial import, code taken from existing docn7 code
+Changes made:
+
+took ccsm3_1_beta18/models/docn7 code, changed "ocn" to "lnd"
+doesn't work, but it's a starting point
+
+================================================================================

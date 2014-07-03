@@ -1,0 +1,17 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# USERDEFINED
+# Edit this file to add module load or other paths needed for the build
+# and run on the system.  Can also include general env settings for machine.
+# Some samples are below
+# -------------------------------------------------------------------------
+
+#source /opt/modules/default/init/csh
+#if ( $COMPILER == "pgi" ) then
+#  module load pgi
+#endif
+#module load netcdf
+
+#limit coredumpsize unlimited
+

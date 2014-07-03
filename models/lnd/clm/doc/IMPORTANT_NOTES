@@ -1,0 +1,72 @@
+IMPORTANT_NOTES							May/07/2013
+								Erik Kluzek
+
+I.) For clm4_0:
+
+Configure Modes NOT scientifically validated, documented, supported or even advised to be used:
+(options to CLM_CONFIG_OPTS)
+
+   SNICAR_FRC 	(-snicar_frc)
+       This mode is tested and functional, but is NOT constantly scientifcally validated, and should be 
+       considered experimental.
+
+Namelist items that should NOT be exercised:
+
+  glc_dyntopo            Change topographic height over glacier MEC (Not functional)
+  suplnitro='ALL'        (suplnitro='ALL' with -bgc cn)
+                         The suplemental Nitrogen mode of the CN model is known 
+                         to be too productive.
+  urban_traffic:         Not currently functional
+
+II.) For clm4_5:
+
+Configure Modes NOT scientifically validated, documented, supported or even advised to be used:
+(options to CLM_CONFIG_OPTS)
+
+    VIC		      (-vichydro)
+        VIC hydrology has just been added, and this mode is experimental.
+
+    EXTRALAKELAYERS   (-exlaklayers)
+        Experimental and not normally exercised.
+
+    (-vsoilc_centbgc no-cent,no-nitrif) 
+        CLM4.5 BGC is normally exercised with vertical soil carbon, Century pools, and 
+        Nitrification/Denitrification with the CLM4Me Methane model. Turning Century pools
+        off and/or Nitrification/Denitrification off is experimental and NOT normally exercised.
+        We do limited testing with CLM4.5 BGC without vertically resolved Carbon pools.
+
+Namelist items that should NOT be exercised:
+
+    See
+
+    ../bld/namelist_files/namelist_definition_clm4_5.xml -- for definitions
+
+    All of these are experimental, and most are NOT tested, some aren't even functional.
+    The two thare ARE tested are: more_vertlayers and allowlakeprod
+
+    allowlakeprod                  Turn methane production on for lake columns
+    anoxia_wtsat                   Weight calculation of oxygen limitation by the inundated fraction
+                                   if anoxia is on.
+                                   (NOT functional -- Deprecated will be removed)
+    atm_c14_filename               C14 dataset -- No dataset provided
+    exponential_rooting_profile    Use exponential rooting profile.
+    fin_use_fsat                   Use the saturated fraction (fsat) calculated 
+                                   in Soil Hydrology to diagnose the inundated fraction 
+    glc_dyntopo                    Change topographic height over glacier MEC (Not functional)
+    lake_decomp_fact               Used if allowlakeprod is on
+    more_vertlayers                Increase number of vertical layers
+    no_frozen_nitrif_denitrif      No denitrification or nitrification in frozen soil layer
+    perchroot                      Weight btran by unfrozen layers
+    perchroot_alt                  Weight btran by active layer
+    replenishlakec                 Maintain constant soil carbon under lakes
+    use_c14_bombspike              Use C14 dataset -- No datasets provided
+    usefrootc                      Use the fine root carbon predicted by CN
+
+See KnownBugs/KnownLimitations files for Known Problems:
+
+    See the KnownBugs file in this directory for the list of known problems. We expect
+    that eventually we will fix the bugs in this list. In the KnownLimitations file
+    we list limitations in the code that we have workarounds for that we do NOT expect
+    to fix.
+
+

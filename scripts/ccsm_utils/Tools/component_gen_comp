@@ -1,0 +1,486 @@
+#!/bin/bash
+
+# Bill Sacks
+# 8-22-12
+
+#======================================================================
+# Overview
+#======================================================================
+
+# This script generates baselines for a single CESM component, and/or
+# compares with previous baselines for a component, for all tests that
+# were run in a single test suite. It compares the last history file
+# from that component, similarly to what is done in testcase_end for
+# cpl hist files (though the meaning of the test results differs
+# slightly from that in testcase_end). If there are multiple history
+# file types for a component (e.g., h0 and h1 files), it compares the
+# last of each type. It then outputs the test status (PASS/FAIL/etc.)
+# for each comparison / generation.
+#
+# This is meant to be run after all tests in a given test suite are
+# complete. The test suite must have been run with '-clean off'. In
+# addition to some of the options given to create_test_suite, you also
+# need to provide the script with (1) the unique test ID of the test
+# suite, (2) the name of the component you wish to generate / compare
+# baselines for, and (3) the directory in which the various test run
+# directories can be found.
+#
+# See usage message for details on inputs.
+
+#======================================================================
+# Limitations
+#======================================================================
+
+# - Currently only set up for a subset of CESM components (clm, cism, cpl)
+#
+# - Only uses last history file for a given component. This has three
+#   implications:
+#
+#   - Does not use earlier history files if there are history files
+#     from multiple times for a component. This is probably okay.
+#
+#   - For a multi-instance run, only uses a history file from the last
+#     instance. This is probably okay.
+#
+# - Doesn't look at the PASS/FAIL status of a test. This means, for
+#   example, that a -generate may copy files to the baseline directory
+#   from a test that failed; these files might not be the correct,
+#   end-of-run history files, and so could later result in a
+#   misleading FAIL message from a -compare.
+#
+# - Only looks for history files in the run directory. This will fail
+#   to find a history file if things have been moved to the short-term
+#   archive directory. This could be fixed to look in the short-term
+#   archive directory if a file can't be found in the run directory,
+#   as is done in testcase_end. I haven't done this yet, partly
+#   because it adds an extra directory that the user has to specify
+#   (because we don't have access to the DOUT_S_ROOT variable), and
+#   partly because this shouldn't matter for most tests.
+
+#======================================================================
+# Testing
+#======================================================================
+
+# There currently is no unit test script for this. Here are the tests
+# that should be done on this script:
+#
+# - Missing arguments
+#
+# --- Do the following with just the -generate flag ---
+# 
+# (the following can be done together with a single run, if some
+# directories with a given test id have history files for a given
+# component, and others don't)
+#
+# - test PASS for generate, with multiple extensions, but not all extensions
+#   (e.g., have a .h0 and .h1 for clm, but not the other extensions)
+#   - should get multiple PASS messages
+#
+# - test PASS for generate, with only one possible extension (e.g., for a cpl test)
+#
+# - test BFAIL1 for generate due to no hist file for any extension
+#   - should get a single BFAIL1 message
+#
+# - test BFAIL1 for h0, PASS for h1: should just see a PASS message
+#
+# - test BFAIL1 for generate, with only one possible extension (e.g., for a cpl test)
+#
+# - test with multiple history files for the component: make sure the
+#   right one is chosen
+#
+# --- Do the following with just the -compare flag ---
+#
+# (You can do the following by first running -generate tag01, then
+# running -compare tag01 using the same testid)
+#
+# (as with the -generate tests, you can combine some of these tests
+# into a single run of the script)
+#
+# - test PASS for compare, with multiple extensions, but not all extensions
+#   (e.g., have a .h0 and .h1 for clm, but not the other extensions)
+#   - should get multiple PASS messages
+#
+# - test PASS for compare, with only one possible extension (e.g., for a cpl test)
+#
+# - test BFAIL1 for compare due to no hist file for any extension in either test case or baseline
+#   - should get a single BFAIL1 message
+#
+# - test BFAIL1 for h0, PASS for h1: should just see a PASS message
+#
+# - test BFAIL1 for compare, with only one possible extension (e.g., for a cpl test)
+#
+# - test BFAIL2 for compare due to no baseline directory
+#
+# - test FAIL for compare due to no hist file (can do this by
+# temporarily removing a history file from one test directory)
+#
+# - test FAIL for compare due to difference in values (can do this by
+# modifying a history file with: ncap2 -s
+# 'vvel[$time,$level,$y0,$x0]=1.7')
+#
+# --- Do the following with both '-generate' and '-compare'
+#
+# - one test with both options - e.g., 
+#   component_gen_comp -baselineroot /glade/scratch/sacks/cesm_baselines -compare tag01 -generate tag02 -testid 114029 -model cism
+
+#======================================================================
+# Set parameters here
+#======================================================================
+
+# For each model component, the list of possible history file extensions
+# Note that this program can only be run for the components listed here
+extensions_cism=(h)
+extensions_clm2=(h0 h1 h2 h3 h4 h5)
+extensions_cpl=(hi)
+
+#======================================================================
+# Local functions
+#======================================================================
+
+function Usage {
+    echo "SYNOPSIS"
+    echo "     $progname [options]"
+    echo ""
+    echo "     Generates baselines for a single CESM component, and/or compares with previous"
+    echo "     baselines for a component, for all tests that were run in a single test suite."
+    echo "     If there are multiple history file types for the component (e.g., h0 & h1),"
+    echo "     it uses one of each type (e.g., the latest h0 file and the latest h1 file)."
+    echo "     It then outputs the test status (PASS/FAIL/etc.) for each comparison / generation."
+    echo ""
+    echo "     This is meant to be run after all tests in a given test suite are complete."
+    echo "     The test suite must have been run with '-clean off'."
+    echo ""
+    echo "     The -baselineroot, -generate and -compare arguments will usually match the arguments"
+    echo "     given to create_test_suite. The -testid argument will match the -testid argument"
+    echo "     given to create_test_suite, if provided; otherwise, it will be the testid created"
+    echo "     on the fly by that script."
+    echo ""
+    echo "OPTIONS"
+    echo "     -baselineroot <path>  Path to directory containing baselines (required)"
+    echo ""
+    echo "     -generate <tag>       Tag name to use for generation (optional)"
+    echo "                           A directory with this name is created in baselineroot,"
+    echo "                           if it doesn't already exist."
+    echo "                           Either -generate or -compare must be given"
+    echo ""
+    echo "     -compare <tag>        Tag name to use for comparison (optional)"
+    echo "                           Baselines are found in a directory with the name of this tag"
+    echo "                           within baselineroot."
+    echo "                           Either -generate or -compare must be given"
+    echo ""
+    echo "     -testid <id>          ID of the test suite on which to run this script (required)"
+    echo "                           (e.g., 123456)"
+    echo ""
+    echo "     -model <model>        Name of model component (required)"
+    echo "                           This provides the name as in history file names (e.g., clm2)"
+    echo "                           This is also used to determine the possible history file name extensions"
+    echo "                           (e.g., .h0, .h1, etc.)"
+    echo "                           Allowable options: cism clm2 cpl"
+    echo ""
+    echo "     -runloc <path>        Path to directory containing test run directories (optional)"
+    echo "                           A given test's run directory can be found in:"
+    echo "                           \$runloc/\$CASE/run"
+    echo "                           If not given, defaults to: $runloc_default"
+    echo ""
+    echo "     -help                 Print this help message and exit"
+    echo ""
+    echo "EXAMPLES"
+    echo "     $progname"
+    echo "       -baselineroot /glade/scratch/\$USER/cesm_baselines"
+    echo "       -generate cesm1_1_beta17"
+    echo "       -compare cesm1_1_beta16"
+    echo "       -testid 123456"
+    echo "       -model clm2"
+    echo "       -runloc /glade/scratch/\$USER"
+    echo "     This will find directories in /glade/scratch/\$USER whose name ends with"
+    echo "     the testid, 123456. For each such test (say, SMS.f09_g16.IG.yellowstone_intel.GC.123456)"
+    echo "     it will find the last clm history files in the run directory of that test,"
+    echo "     for each possible clm history file extension (.h0, .h1, etc.)."
+    echo "     It will then copy those history files to"
+    echo "     /glade/scratch/\$USER/cesm_baselines/cesm1_1_beta17/SMS.f09_g16.IG.yellowstone_intel"
+    echo "     and will compare that history file with the existing baseline in"
+    echo "     /glade/scratch/\$USER/cesm_baselines/cesm1_1_beta16/SMS.f09_g16.IG.yellowstone_intel"
+    echo ""
+}
+
+# Given a status_and_info string, return just the status portion
+# Inputs:
+#   - status_and_info: colon-delimited string of the format
+#     "STATUS:Extra info about failure". The string before the colon
+#     is the test status. The string after the colon is extra
+#     information abaout a failure (this may be blank, but the colon
+#     must be present). (It is okay for the extra info to itself
+#     contain one or more colons.)
+function get_status {
+    local status_and_info="$1"
+    echo $status_and_info | cut -d ':' -f 1
+}
+
+# Given a status_and_info string, return just the info portion
+# Inputs:
+#   - status_and_info: colon-delimited string of the format
+#     "STATUS:Extra info about failure". The string before the colon
+#     is the test status. The string after the colon is extra
+#     information abaout a failure (this may be blank, but the colon
+#     must be present). (It is okay for the extra info to itself
+#     contain one or more colons.)
+function get_info {
+    local status_and_info="$1"
+    echo $status_and_info | cut -d ':' -f 2-
+}
+
+# Update a variable saying whether everything we have seen is a BFAIL1
+# Inputs:
+#   - status of the last comparison / generate
+#   - all_bfail1: 1 if everything so far has been a BFAIL1, 0 if not
+# Output:
+#   - 1 if everything so far has been a BFAIL1, including the latest
+#     comparison; 0 if not
+function still_all_bfail1 {
+    local status="$1"
+    local all_bfail1=$2
+
+    if [ $all_bfail1 -eq 0 ]; then
+	echo 0
+    elif [ $all_bfail1 -eq 1 ]; then
+	if [ "$status" = "BFAIL1" ]; then
+	    echo 1
+	else
+	    echo 0
+	fi
+    else
+	echo "Unexpected value for all_bfail1: $all_bfail1" 1>&2
+	exit 1
+    fi
+}
+	
+    
+
+# Prints the status of the test in a standardized format for test results
+# Inputs:
+#   - status
+#   - info
+#   - testcase: name of test case
+#   - qualifier: additional string to tack on to the end of testcase
+function print_status {
+    local status="$1"
+    local info="$2"
+    local testcase="$3"
+    local qualifier="$4"
+
+    # Enclose info in parentheses
+    if [ -n "$info" ]; then
+	info_str="($info)"
+    else
+	info_str=""
+    fi    
+
+    # Print formatted test result
+    printf '%-6s %s %s\n' "$status" "${testcase}.${qualifier}" "$info_str"
+}
+
+#======================================================================
+# Begin main script
+#======================================================================
+
+progname=`basename $0`
+tools_dir=`dirname $0`
+
+#----------------------------------------------------------------------
+# Define default values for command-line arguments
+#----------------------------------------------------------------------
+baselineroot=''
+generate_tag=''
+compare_tag=''
+testid=''
+model=''
+
+runloc_default="/glade/scratch/$USER"
+runloc=$runloc_default
+
+#----------------------------------------------------------------------
+# Process command-line arguments
+#----------------------------------------------------------------------
+while [ $# -gt 0 ]; do
+    case $1 in
+	-baselineroot )
+	    baselineroot=$2
+	    shift
+	    ;;
+	-generate )
+	    generate_tag=$2
+	    shift
+	    ;;
+	-compare )
+	    compare_tag=$2
+	    shift
+	    ;;
+	-testid )
+	    testid=$2
+	    shift
+	    ;;
+	-model )
+	    model=$2
+	    shift
+	    ;;
+	-runloc )
+	    runloc=$2
+	    shift
+	    ;;
+	-help )
+	    Usage
+	    exit 0
+	    ;;
+	* )
+	    echo "Unknown argument: $1" >&2
+	    echo "Run $progname -help for usage" >&2
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+
+#----------------------------------------------------------------------
+# Exit if required command-line arguments weren't provided 
+#----------------------------------------------------------------------
+error=0  # no errors yet
+if [ -z "$baselineroot" ]; then
+    echo "$progname: baselineroot must be provided" >&2
+    error=1
+fi
+# Either -generate or -compare must be provided, but not necessarily both
+if [[ -z "$generate_tag" && -z "$compare_tag" ]]; then
+    echo "$progname: At least one of generate_tag or compare_tag must be provided" >&2
+    error=1
+fi
+if [ -z "$testid" ]; then
+    echo "$progname: testid must be provided" >&2
+    error=1
+fi
+if [ -z "$model" ]; then
+    echo "$progname: model must be provided" >&2
+    error=1
+fi
+if [ -z "$runloc" ]; then
+    echo "$progname: runloc must be provided" >&2
+    error=1
+fi
+
+if [ $error -gt 0 ]; then
+    echo "" >&2
+    echo "Run $progname -help for usage" >&2
+    exit 1
+fi
+
+#----------------------------------------------------------------------
+# Print possible test results
+#----------------------------------------------------------------------
+
+echo "Possible test result outcomes:"
+echo "  UNDEF  - undefined result (may be an error in the script)"
+echo "  BFAIL1 - compare:  no history file in baseline or in test case"
+echo "         - generate: no history file in test case"
+echo "  BFAIL2 - compare:  no baseline history file, despite existence of history file in test case"
+echo "         - generate: error creating baseline directory or copying baseline file into place"
+echo "  FAIL   - compare test fails (including: baseline exists but no history file for the test case)"
+echo "           (see *.cprnc.out in the test's run directory for details)"
+echo "  PASS   - test passes"
+echo ""
+
+#----------------------------------------------------------------------
+# Determine possible extensions to check
+#----------------------------------------------------------------------
+
+if [ "$model" = "cism" ]; then
+    extensions=${extensions_cism[*]}
+elif [ "$model" = "clm2" ]; then
+    extensions=${extensions_clm2[*]}
+elif [ "$model" = "cpl" ]; then
+    extensions=${extensions_cpl[*]}
+else
+    echo "Unsupported model: $model"
+    echo "Supported models are: cism clm2 cpl"
+    exit 1
+fi
+
+#----------------------------------------------------------------------
+# Loop over directories with the given testid
+#----------------------------------------------------------------------
+tests=`cd $runloc; ls -1d *.${testid}`
+for testcase in $tests; do
+    # testcase will look like: SMS.T31_g37.IG4804.yellowstone_intel.134426
+    # optionally with .C or .G or .GC before the testid
+    # Form testcase_base by stripping off the trailing testid and the optional .C, .G or .GC:
+    testcase_base=`echo $testcase | perl -p -e "s/(\.G?C?)?\.$testid\$//"`
+
+    rundir=${runloc}/${testcase}/run
+
+    #------------------------------------------------------------------
+    # Initialize variables tracking whether all results are BFAIL1
+    #------------------------------------------------------------------
+    # For both compare & generate, BFAIL1 is acceptable unless it
+    # occurs for all possible history file extensions. Thus, we only
+    # print a BFAIL1 result if it occurs for all history file
+    # extensions. All other status options (PASS, FAIL, and other
+    # types of BFAIL) are printed for each history file extension.
+    compare_all_bfail1=1
+    generate_all_bfail1=1
+
+    #------------------------------------------------------------------
+    # Loop over history file extensions
+    #------------------------------------------------------------------
+    for extension in ${extensions[*]}; do
+
+        #--------------------------------------------------------------
+        # Find last component hist file in this run directory, and
+        # determine corresponding name of the baseline file (used for
+        # either generation or comparison)
+        #--------------------------------------------------------------
+        # Note that we find the last alphabetically rather than by time
+        # stamp, because the last by time stamp can be non-deterministic.
+        # Note that we need a * after ${model} to capture multi-instance
+        # output
+	test_hist=`cd $rundir; ls -1 ${testcase}.${model}*.${extension}*.nc 2>/dev/null | tail -1`
+
+        # Note that this name drops (1) the timestamp, and (2) the
+	# instance number for multi-instance runs
+	baseline_hist=${model}.${extension}.nc
+
+        #-------------------------------------------------------------
+        # Do comparison, if desired
+        #-------------------------------------------------------------
+	if [ -n "$compare_tag" ]; then
+	    baseline_dir=${baselineroot}/${compare_tag}/${testcase_base}
+	    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$baseline_dir" -baseline_hist "$baseline_hist" -test_dir "$rundir" -test_hist "$test_hist"`
+	    compare_status=`get_status "$compare_result"`
+	    compare_info=`get_info "$compare_result"`
+	    compare_all_bfail1=`still_all_bfail1 $compare_status $compare_all_bfail1`
+	    if [ "$compare_status" != "BFAIL1" ]; then
+		print_status "$compare_status" "$compare_info" "$testcase_base" "compare_hist.${compare_tag}.$model.$extension"
+	    fi
+	fi
+
+        #--------------------------------------------------------------
+        # Do baseline generation, if desired
+        #--------------------------------------------------------------
+	if [ -n "$generate_tag" ]; then
+	    baseline_dir=${baselineroot}/${generate_tag}/${testcase_base}
+	    generate_result=`${tools_dir}/component_generate.sh -baseline_dir "$baseline_dir" -baseline_hist "$baseline_hist" -test_dir "$rundir" -test_hist "$test_hist"`
+	    generate_status=`get_status "$generate_result"`
+	    generate_info=`get_info "$generate_result"`
+	    generate_all_bfail1=`still_all_bfail1 $generate_status $generate_all_bfail1`
+	    if [ "$generate_status" != "BFAIL1" ]; then
+		print_status "$generate_status" "$generate_info" "$testcase_base" "generate.$model.$extension"
+	    fi
+	fi
+    done  # loop over history file extensions
+
+    if [ -n "$compare_tag" -a $compare_all_bfail1 -eq 1 ]; then
+	print_status "BFAIL1" "encountered BFAIL1 for all possible history extensions" "$testcase_base" "compare_hist.${compare_tag}.$model"
+    fi
+    
+    if [ -n "$generate_tag" -a $generate_all_bfail1 -eq 1 ]; then
+	print_status "BFAIL1" "encountered BFAIL1 for all possible history extensions" "$testcase_base" "generate.$model"
+    fi
+done
+

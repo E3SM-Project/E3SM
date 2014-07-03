@@ -1,0 +1,38 @@
+#! /bin/csh -f
+
+#===============================================================================
+# Janus machine specific settings
+#===============================================================================
+if ( ! $?DK_ROOT ) then
+  setenv DK_ROOT /curc/tools/dotkit
+endif
+eval `$DK_ROOT/init -c`
+
+if ( $COMPILER == "intel" ) then
+
+  # Init dotkit if not already done, if DK_ROOT is set preserve it.
+
+#  use -q ICS
+#  use -q OpenMPI-1.4-ICS
+  use -q Moab
+  use -q Torque
+  use -q Perl
+  use -q .ncar-parallel-intel-12.1.4
+endif
+
+if ( $COMPILER == "pgi" ) then
+  use -q Moab
+  use -q Torque
+  use -q Perl
+  use -q NCAR-Parallel-PGI
+
+endif
+
+use -q .cmake-2.8.8
+
+setenv USER_INCLDIR
+setenv NETCDF_PATH $NETCDF
+
+# Run time variables
+
+setenv OMP_STACKSIZE 64M

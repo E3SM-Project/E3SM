@@ -1,0 +1,58 @@
+# install script for Jaguar-interlagos: 12/2011
+# build instructions for top level directory 
+# (1) module load subversion netcdf/4.1.2 p-netcdf/1.2.0
+# (2) ./bootstrap
+# (3) find . -exec touch -r configure {} +
+# (4) configure-scripts/xk6-config (this file)
+# (5) make
+#
+./configure \
+  FC="ftn -Minform=inform -Mbounds -g -Mchkptr" \
+  F77="ftn -Minform=inform -Mbounds -g -Mchkptr" \
+  CC="cc -Minform=inform -Mbounds -g" \
+  CXX="CC -Minform=inform -Mbounds -g  --diag_suppress 554,111,611" \
+  CPPFLAGS="-DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK" \
+  FCFLAGS="-Mfree" \
+  F77FLAGS="-Mfixed" \
+  CFLAGS="-tp bulldozer-64,istanbul-64" \
+  FFLAGS="-tp bulldozer-64,istanbul-64" \
+  --disable-python \
+  --disable-shared \
+  --with-netcdf=$NETCDF_DIR \
+  EXTRA_LDLIBS="/opt/pgi/11.10.0/linux86-64/11.10/lib/f90main.o" \
+  --with-trilinos=/ccs/proj/cli054/trilinos-10.8.4-interlagos/NOX_BUILD-FAST \
+  --with-blas=-lsci_pgi \
+  --enable-mpi="yes" \
+
+#worked with the following environment on 12/15/2011:
+#Currently Loaded Modulefiles from these commands:
+
+#  1) modules/3.2.6.6
+#  2) DefApps
+#  3) torque/2.4.1b1-snap.200905191614
+#  4) moab/5.3.6
+#  5) nodestat/2.2-1.0400.29866.4.3.gem
+#  6) sdb/1.0-1.0400.30000.6.18.gem
+#  7) MySQL/5.0.64-1.0000.4667.20.1
+#  8) lustre-cray_gem_s/1.8.4_2.6.32.45_0.3.2_1.0400.6221.1.1-1.0400.30303.0.0novmap1
+#  9) udreg/2.3.1-1.0400.3911.5.6.gem
+# 10) ugni/2.3-1.0400.3912.4.29.gem
+# 11) gni-headers/2.1-1.0400.3906.5.1.gem
+# 12) dmapp/3.2.1-1.0400.3965.10.12.gem
+# 13) xpmem/0.1-2.0400.29883.4.6.gem
+# 14) hss-llm/6.0.0
+# 15) Base-opts/1.0.2-1.0400.29823.8.1.gem
+# 16) xtpe-network-gemini
+# 17) pgi/11.10.0
+# 18) xt-libsci/11.0.04.4
+# 19) pmi/3.0.0-1.0000.8661.28.2807.gem
+# 20) xt-asyncpe/5.04
+# 21) atp/1.4.0
+# 22) PrgEnv-pgi/4.0.30
+# 23) xt-mpich2/5.4.0
+# 24) xtpe-interlagos
+# 25) subversion/1.6.17
+# 26) hdf5/1.8.6
+# 27) netcdf/4.1.2
+# 28) p-netcdf/1.2.0
+

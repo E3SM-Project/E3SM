@@ -1,0 +1,40 @@
+# Build script and notes on Bluefire to run with SLAP velocity solve in serial KJE 8/2011
+
+#!/bin/sh
+. /contrib/Modules/3.2.6/init/ksh
+
+module load python
+export PATH=/contrib/libtool/2.4/bin:/contrib/automake/1.11.1/bin:/contrib/autoconf/2.67/bin:$PATH
+./bootstrap
+
+export OMP_NUM_THREADS=1
+export MP_EUILIB=ip
+hostname > hostfile
+export MP_HOSTFILE=`pwd`/hostfile
+export MP_PROCS=1
+
+# Set the PREFIX_DIR installation location
+if [[ $1 != "" ]]; then 
+   PREFIX_DIR=$1
+else
+   PREFIX_DIR="/ptmp/evanskj/seacism/install"
+fi
+
+#
+./configure \
+--prefix=${PREFIX_DIR} \
+CFLAGS="-O2 -qcpluscmt" \
+CXXFLAGS="-O2 -qmaxmem=-1 -qminimaltoc -qrtti=all" \
+FCFLAGS="-O2 -qmaxmem=-1 -WF,-C! -qalias_size=107374182" \
+F77FLAGS="-O2 -qmaxmem=-1 -WF,-C!" \
+FC=xlf95_r  \
+F90=xlf95_r \
+F77=xlf_r \
+CC=xlc_r  \
+CXX=xlC_r  \
+LDFLAGS="-lm -btextpsize:64k -bdatapsize:64k -bstackpsize:64k -bbigtoc" \
+LIBS="-lC_r -lxlf90_r" \
+--with-netcdf=/usr/local \
+--enable-mpi="no" \
+--with-blas=-lblas   
+

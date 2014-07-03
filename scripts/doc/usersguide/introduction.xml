@@ -1,0 +1,1223 @@
+<chapter id="intro">
+<title>Introduction</title>
+
+<sect1 id="howtouse">
+<title>How To Use This Document</title>
+
+<para>
+This guide instructs both novice and experienced users on building and
+running &cesm;.  If you are a new user, we recommend that the introductory
+sections be read before moving onto other sections or the Quick Start procedure.
+This document is written so that, as much as possible, individual sections
+stand on their own and the user's guide can be scanned and sections
+read in a relatively ad hoc order.  In addition, the web version provides clickable
+links that tie different sections together.
+</para>
+
+<para>
+The chapters attempt to provide relatively detailed information about
+specific aspects of CESM1.1 such as setting up a case, building the
+model, running the model, porting, and testing.  There is also a large
+section of <link linkend="use_case_intro">use cases and FAQs</link>.
+</para>
+
+<screen>
+Throughout the document, this presentation style indicates shell
+commands and options, fragments of code, namelist variables, etc.
+Where examples from an interactive shell session are presented,
+lines starting with '>' indicate the shell prompt.
+</screen>
+
+<para>
+Please feel free to provide feedback to CESM about how to improve
+the documentation.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="ccsm_overview">
+<title>CESM Overview</title>
+
+<para>
+The Community Earth System Model (CESM) is a coupled climate model
+for simulating Earth's climate system. Composed of separate
+models simultaneously simulating the Earth's atmosphere, ocean, land,
+land-ice, and sea-ice, plus one central coupler component, CESM
+allows researchers to conduct fundamental research into the Earth's
+past, present, and future climate states.
+</para>
+
+<para>
+The CESM system can be configured a number of different ways from both 
+a science and technical perspective.  CESM supports numerous
+<ulink url="../modelnl/grid.html">resolutions</ulink>,
+and 
+<ulink url="../modelnl/compsets.html">component configurations</ulink>.
+
+In addition, each model component has input options to configure
+specific model physics and parameterizations.  CESM can be run on a
+number of different
+<ulink url="../modelnl/machines.html">hardware platforms</ulink>, 
+and has a relatively flexible design with respect
+to <link linkend="case_conf_setting_pes"> processor layout
+</link> of components.
+CESM also supports both an internally developed set of component interfaces
+and the ESMF compliant component interfaces (See <xref linkend="use_case_esmfint"/>)
+</para>
+
+<para>
+The CESM project is a cooperative effort among U.S. climate
+researchers. Primarily supported by the National Science Foundation
+(NSF) and centered at the National Center for Atmospheric Research
+(NCAR) in Boulder, Colorado, the CESM project enjoys close collaborations
+with the U.S. Department of Energy and the National Aeronautics
+and Space Administration. Scientific development of the CESM is guided
+by the CESM working groups, which meet twice a year. The main CESM
+workshop is held each year in June to showcase results from the
+various working groups and coordinate future CESM developments among
+the working groups. The <ulink url="http://www.cesm.ucar.edu/">CESM website</ulink>
+provides more information on the
+CESM project, such as the management structure, the scientific working
+groups, downloadable source code, and online archives of data from
+previous CESM experiments.
+</para>
+
+<!-- ======================================================================= -->
+<sect2 id="software_system_prerequisites">
+<title>CESM Software/Operating System Prerequisites</title>
+
+<para> The following are the external system and software requirements for
+installing and running CESM1.1.
+</para>
+<itemizedlist>
+<listitem> 
+<para> UNIX style operating system such as CNL, AIX and Linux
+</para>
+</listitem>
+<listitem> 
+<para> csh, sh, and perl scripting languages
+</para>
+</listitem>
+<listitem> 
+<para> subversion client version 1.4.2 or greater
+</para>
+</listitem>
+<listitem> 
+<para> Fortran 90 and C compilers.  pgi, intel, and xlf are recommended compilers.
+</para>
+</listitem>
+<listitem> 
+<para> MPI (although CESM does not absolutely require it for running on one processor)
+</para>
+</listitem>
+<listitem> 
+<para> <ulink url="http://www.unidata.ucar.edu/software/netcdf/">NetCDF 4.2.0 or newer</ulink>.
+</para>
+</listitem>
+<listitem> 
+<para> <ulink url="http://www.earthsystemmodeling.org/">ESMF 5.2.0 or newer (optional)</ulink>.
+</para>
+</listitem>
+<listitem> 
+<para> <ulink url="http://trac.mcs.anl.gov/projects/parallel-netcdf/">pnetcdf 1.2.0 or newer (optional)</ulink>
+</para>
+</listitem>
+<listitem>
+<para> <ulink url="http://trilinos.sandia.gov/"> Trilinos</ulink> may be required for certain configurations
+</para>
+</listitem>
+<listitem>
+<para> <ulink url="http://www.netlib.org/lapack/"> LAPACKm</ulink> or a vendor supplied equivalent may also be required for some configurations.
+</para>
+</listitem>
+<listitem>
+<para> <ulink url="http://www.cmake.org/"> CMake 2.8.6 or newer</ulink> is required for configurations that include CISM.
+</para>
+</listitem>
+</itemizedlist>
+
+<para> The following table contains the version in use at the time of release.  These
+versions are known to work at the time of the release for the specified hardware.
+</para>
+<table  id='required_software_table'><title>Recommmended Software Package Versions by Machine</title>
+<tgroup cols="2">
+<thead>
+<row>
+<entry>Machine  </entry>
+<entry>Version Recommendations</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry>Cray XT Series</entry>
+<entry>pgf95 12.4.0 </entry>
+</row>
+<row>
+<entry>IBM Power Series</entry>
+<entry>xlf 12.1, xlC 10.1</entry>
+</row>
+<row>
+<entry>IBM Bluegene/P</entry>
+<entry>xlf 12.01, xlC 10.01</entry>
+</row>
+<row>
+<entry>Linux Machine</entry>
+<entry>ifort, icc (intel64) 12.1.4 </entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+
+<caution><para>NetCDF must be built with the same Fortran compiler as
+CESM.  In the netCDF build the FC environment variable specifies which
+Fortran compiler to use.  CESM is written mostly in Fortran, netCDF is
+written in C.  Because there is no standard way to call a C program
+from a Fortran program, the Fortran to C layer between CESM and netCDF
+will vary depending on which Fortran compiler you use for CESM.  When
+a function in the netCDF library is called from a Fortran application,
+the netCDF Fortran API calls the netCDF C library. If you do not use
+the same compiler to build netCDF and CESM you will in most cases get
+errors from netCDF saying certain netCDF functions cannot be
+found.</para></caution>
+<para>Parallel-netCDF, also referred to as pnetcdf, is optional.  If a
+user chooses to use pnetcdf, version 1.2.0 or later should be used
+with CESM1.1.  It is a library that is file-format compatible with
+netCDF, and provides higher performance by using MPI-IO.  Pnetcdf is
+enabled by setting the PNETCDF_PATH variable in the Macros file. 
+You must also specify that you want pnetcdf at runtime via the io_typename 
+argument that can be set to either "netcdf" or "pnetcdf" for each component.  </para>
+
+</sect2>
+<!-- ======================================================================= -->
+<sect2 id="ccsm_components">
+<title>CESM Components</title>
+
+<para>
+CESM consists of six geophysical models: atmosphere (atm), sea-ice
+(ice), land (lnd), river-runoff (rof), ocean (ocn), and land-ice
+(glc), plus a coupler (cpl) that coordinates the geophysics models
+time evolution and passes information between them.  Each model may
+have "active," "data," "dead," or "stub" component version allowing
+for a variety of "plug and play" combinations.
+</para>
+
+<para>
+During the course of a CESM run, the model components integrate
+forward in time, periodically stopping to exchange information with
+the coupler. The coupler meanwhile receives fields from the component
+models, computes, maps, and merges this information, then sends the
+fields back to the component models. The coupler brokers this sequence
+of communication interchanges and manages the overall time progression
+of the coupled system. A CESM component set is comprised of six
+components: one component from each model (atm, lnd, rof, ocn, ice,
+and glc) plus the coupler. Model components are written primarily in
+Fortran 90/95.
+</para>
+
+<para>
+The active (dynamical) components are generally fully prognostic, and
+they are state-of-the-art climate prediction and analysis
+tools. Because the active models are relatively expensive to run, data
+models that cycle input data are included for testing, spin-up, and
+model parameterization development. The dead components generate
+scientifically invalid data and exist only to support technical system
+testing.  The dead components must all be run together and should
+never be combined with any active or data versions of models.  Stub
+components exist only to satisfy interface requirements when the
+component is not needed for the model configuration (e.g., the active
+land component forced with atmospheric data does not need ice, ocn, or
+glc components, so ice, ocn, and glc stubs are used).
+</para>
+
+<para>
+The &cesm; components can be summarized as follows:
+</para>
+
+<informaltable>
+  <tgroup cols="5">
+   <thead>
+     <row>
+      <entry>Model Type</entry>
+      <entry>Model Name </entry>
+      <entry>Component Name</entry>
+      <entry>Type</entry>  
+      <entry>Description</entry>  
+     </row>
+   </thead>
+   <tbody>
+
+     <row>
+       <entry>atmosphere</entry>
+       <entry>atm</entry>
+       <entry>cam</entry>
+       <entry>active</entry>
+       <entry>The Community Atmosphere Model (CAM) is a global atmospheric general circulation model developed from the NCAR CCM3.</entry>
+     </row>
+     <row>
+       <entry>atmosphere</entry>
+       <entry>atm</entry>
+       <entry>datm</entry>
+       <entry>data</entry>
+       <entry>The data atmosphere component is a pure data component that reads in atmospheric forcing data</entry>
+     </row>
+     <row>
+       <entry>atmosphere</entry>
+       <entry>atm</entry>
+       <entry>xatm</entry>
+       <entry>dead</entry>
+     </row>
+     <row>
+       <entry>atmosphere</entry>
+       <entry>atm</entry>
+       <entry>satm</entry>
+       <entry>stub</entry>
+     </row>
+
+     <row>
+       <entry>land</entry>
+       <entry>lnd</entry>
+       <entry>clm</entry>
+       <entry>active</entry>
+       <entry>The Community Land Model (CLM) is the result of a
+       collaborative project between scientists in the Terrestrial
+       Sciences Section of the Climate and Global Dynamics Division
+       (CGD) at NCAR and the CESM Land Model Working Group. Other
+       principal working groups that also contribute to the CLM are
+       Biogeochemistry, Paleoclimate, and Climate Change and
+       Assessment.</entry>
+     </row>
+     <row>
+       <entry>land</entry>
+       <entry>lnd</entry>
+       <entry>dlnd</entry>
+       <entry>data</entry>
+       <entry>The data land component no longer has data runoff functionality.
+       It works as a purely data-land component (reading in coupler
+       history data for atm/land fluxes and land albedos produced by a
+       previous run) or both.</entry>
+     </row>
+     <row>
+       <entry>land</entry>
+       <entry>lnd</entry>
+       <entry>xlnd</entry>
+       <entry>dead</entry>
+     </row>
+     <row>
+       <entry>land</entry>
+       <entry>lnd</entry>
+       <entry>slnd</entry>
+       <entry>stub</entry>
+     </row>
+
+
+     <row>
+       <entry>river-runoff</entry>
+       <entry>rof</entry>
+       <entry>rtm</entry>
+       <entry>active</entry>
+       <entry>The river transport model (RTM) was previously part of
+       CLM and was developed to route total runoff from the land
+       surface model to either the active ocean or marginal seas which
+       enables the hydrologic cycle to be closed (Branstetter 2001,
+       Branstetter and Famiglietti 1999). This is needed to model
+       ocean convection and circulation, which is affected by
+       freshwater input. </entry>
+     </row>
+     <row>
+       <entry>river-runoff</entry>
+       <entry>rof</entry>
+       <entry>drof</entry>
+       <entry>data</entry>
+       <entry>The data runoff model was previously part of the data land model
+       and functions as a purely data-runoff model (reading in runoff data).</entry>
+     </row>
+     <row>
+       <entry>river-runoff</entry>
+       <entry>rof</entry>
+       <entry>xrof</entry>
+       <entry>dead</entry>
+     </row>
+     <row>
+       <entry>river-runoff</entry>
+       <entry>rof</entry>
+       <entry>srof</entry>
+       <entry>stub</entry>
+     </row>
+
+
+     <row>
+       <entry>ocean</entry>
+       <entry>ocn</entry>
+       <entry>pop</entry>
+       <entry>active</entry>
+       <entry>The ocean model is an extension of the Parallel Ocean
+       Program (POP) Version 2 from Los Alamos National Laboratory
+       (LANL). </entry>
+     </row>
+     <row>
+       <entry>ocean</entry>
+       <entry>ocn</entry>
+       <entry>docn</entry>
+       <entry>data</entry>
+       <entry>The data ocean component has two distinct modes of
+       operation. It can run as a pure data model, reading ocean SSTs
+       (normally climatological) from input datasets, interpolating in
+       space and time, and then passing these to the
+       coupler. Alternatively, docn can compute updated SSTs based on
+       a slab ocean model where bottom ocean heat flux convergence and
+       boundary layer depths are read in and used with the
+       atmosphere/ocean and ice/ocean fluxes obtained from the
+       coupler.</entry>
+     </row>
+     <row>
+       <entry>ocean</entry>
+       <entry>ocn</entry>
+       <entry>xocn</entry>
+       <entry>dead</entry>
+     </row>
+     <row>
+       <entry>ocean</entry>
+       <entry>ocn</entry>
+       <entry>socn</entry>
+       <entry>stub</entry>
+     </row>
+
+     <row>
+       <entry>sea-ice</entry>
+       <entry>ice</entry>
+       <entry>cice</entry>
+       <entry>active</entry>
+       <entry>The sea-ice component (CICE) is an extension of the Los
+       Alamos National Laboratory (LANL) sea-ice model and was
+       developed though collaboration within the CESM Polar Climate
+       Working Group (PCWG).  In CESM, CICE can run as a fully
+       prognostic component or in prescribed mode where ice coverage
+       (normally climatological) is read in. </entry>
+     </row>
+     <row>
+       <entry>sea-ice</entry>
+       <entry>ice</entry>
+       <entry>dice</entry>
+       <entry>data</entry>
+       <entry>The data ice component is a partially prognostic
+       model. The model reads in ice coverage and receives atmospheric
+       forcing from the coupler, and then it calculates the
+       ice/atmosphere and ice/ocean fluxes.  The data ice component
+       acts very similarly to CICE running in prescribed mode.</entry>
+     </row>
+     <row>
+       <entry>sea-ice</entry>
+       <entry>ice</entry>
+       <entry>xice</entry>
+       <entry>dead</entry>
+     </row>
+     <row>
+       <entry>sea-ice</entry>
+       <entry>ice</entry>
+       <entry>sice</entry>
+       <entry>stub</entry>
+     </row>
+
+     <row>
+       <entry>land-ice</entry>
+       <entry>glc</entry>
+       <entry>cism</entry>
+       <entry>active</entry>
+       <entry>The CISM component is an extension of the Glimmer ice sheet model.</entry>
+     </row>
+     <row>
+       <entry>land-ice</entry>
+       <entry>glc</entry>
+       <entry>sglc</entry>
+       <entry>stub</entry>
+     </row>
+
+     <row>
+       <entry>coupler</entry>
+       <entry>cpl</entry>
+       <entry>cpl</entry>
+       <entry>active</entry>
+       <entry>The CESM1 coupler was built primarily through a
+       collaboration of the NCAR CESM Software Engineering Group and
+       the Argonne National Laboratory (ANL).  The MCT coupling
+       library provides much of the infrastructure.  
+       </entry>
+     </row>
+
+   </tbody>
+   </tgroup>
+</informaltable>   
+
+
+</sect2>
+
+<!-- ======================================================================= -->
+<sect2 id="ccsm_component_sets">
+<title>CESM Component Sets</title>
+
+<para>
+The &cesm; components can be combined in numerous ways to carry
+out various scientific or software experiments. A particular mix of
+components, <emphasis>along with</emphasis> component-specific
+configuration and/or namelist settings is called a component set
+or "compset." &cesm; has a shorthand naming convention
+for component sets that are supported out-of-the-box.  </para>
+
+<para> The compset name usually has a well defined first letter followed
+by some characters that are indicative of the configuration setup.  Each
+compset name has a corresponding short name.
+Users are not limited to the predefined component set
+combinations. A user may <link linkend="faq_createowncompset">define
+their own component set</link>.
+</para>
+
+<para> See <ulink url="../modelnl/compsets.html">supported component
+sets</ulink> for a complete list of supported compset options.
+Running <link linkend= "how_to_create_case">&create_newcase;</link>
+with the option "-list" will also always provide a listing of the
+supported out-of-the-box component sets for the local version of
+CESM1.  In general, the first letter of a compset name indicates which
+components are used.  An exception to this rule is the use of "G" as a
+second letter to indicate use of the active glc model, CISM.  The list
+of first letters and their corresponding component sets each denotes
+appears below:
+</para>
+
+<informaltable>
+<tgroup cols="3">
+<thead>
+<row>
+<entry>Designation </entry>
+<entry>Components</entry>
+<entry>Details</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry>A</entry>
+<entry>datm,dlnd,dice,docn,sglc</entry>
+<entry>All DATA components with stub glc (used primarily for testing)</entry>
+</row>
+<row>
+<entry>B</entry>
+<entry>cam,clm,cice,pop2,sglc</entry>
+<entry>FULLY ACTIVE components with stub glc</entry>
+</row>
+<row>
+<entry>C</entry>
+<entry>datm,slnd,drof,dice,pop2,sglc</entry>
+<entry>POP active with data atm, data rof, and data ice plus stub lnd and glc</entry>
+</row>
+<row>
+<entry>D</entry>
+<entry>datm,slnd,srof,cice,docn,sglc</entry>
+<entry>CICE active with data atm and ocean plus stub land, rof and glc</entry>
+</row>
+<row>
+<entry>E</entry>
+<entry>cam,clm,rtm,cice,docn,sglc</entry>
+<entry>CAM, CLM, RTM, and CICE active with data ocean (som mode) plus stub glc</entry>
+</row>
+<row>
+<entry>F</entry>
+<entry>cam,clm,rtm,cice,docn,sglc</entry>
+<entry>CAM, CLM, RTM, and CICE(prescribed mode) active with data ocean (sstdata mode) plus stub glc</entry>
+</row>
+<row>
+<entry>G</entry>
+<entry>datm,slnd,drof,cice,pop2,sglc</entry>
+<entry>POP and CICE active with data atm and data rof, plus stub lnd and glc</entry>
+</row>
+<row>
+<entry>H</entry>
+<entry>datm,slnd,srof,cice,pop2,sglc</entry>
+<entry>POP and CICE active with data atm and stub land, rof and glc</entry>
+</row>
+<row>
+<entry>I</entry>
+<entry>datm,clm,rtm,sice,socn,sglc</entry>
+<entry>CLM and RTM active with data atm and stub ice, ocean, and glc</entry>
+</row>
+<row>
+<entry>S</entry>
+<entry>satm,slnd,srof,sice,socn,sglc</entry>
+<entry>All STUB components (used for testing only)</entry>
+</row>
+<row>
+<entry>TG</entry>
+<entry>satm,dlnd,srof,sice,socn,cism</entry>
+<entry>CISM active with data lnd, plus stub atm, rof, ice and ocn</entry>
+</row>
+<row>
+<entry>X</entry>
+<entry>xatm,xlnd,srof,xice,xocn,sglc</entry>
+<entry>All DEAD components except for stub glc (used for testing only)</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+
+
+</sect2>
+
+<!-- ======================================================================= -->
+<sect2 id="ccsm_grids">
+<title>CESM Grids</title>
+
+<para>
+The grids are specified in CESM1 by setting an
+overall model resolution.  Once the overall model resolution is set,
+components will read in appropriate grids files and
+the coupler will read in appropriate mapping weights files.
+Coupler mapping weights are always generated externally in CESM1.
+The components will send the grid data to the coupler at initialization,
+and the coupler will check that the component grids
+are consistent with each other and with the mapping weights files.
+</para>
+<para>
+In CESM1, the ocean and ice must be on the same
+grid, but unlike CCSM3, the atmosphere and land can now be on
+different grids. Each component determines its own unique grid
+decomposition based upon the total number of pes assigned to that
+component. 
+</para>
+<para>
+CESM1 supports several types of grids out-of-the-box including
+single point, finite volume, spectral, cubed sphere, displaced pole, and tripole.
+These grids are used internally by the models.  Input datasets
+are usually on the same grid but in some cases, they can be interpolated 
+from regular lon/lat grids in the data models.
+The finite volume and spectral grids are generally associated
+with atmosphere and land models but the data ocean and data ice
+models are also supported on those grids.  The cubed sphere grid is used only by the active atmosphere
+model, cam.  And the displaced pole and tripole grids are used by the ocean
+and ice models.  Not every grid can be run by every component.
+</para>
+
+<para>
+CESM1 has a specific naming convention for individual grids
+as well as the overall resolution.  The grids are named as follows:
+</para>
+
+<itemizedlist>
+<listitem>
+<para>"[dlat]x[dlon]" are regular lon/lat finite volume grids where dlat and dlon are the
+approximate grid spacing.  The shorthand convention is "fnn" where nn is 
+generally a pair of numbers indicating the resolution.  An example
+is 1.9x2.5 or f19 for the approximately "2-degree" finite volume grid.  Note that CAM
+uses an [nlat]x[nlon] naming convection internally for this grid. </para>
+</listitem>
+
+<listitem>
+<para>"Tnn" are spectral lon/lat grids where nn is the spectral truncation
+value for the resolution.  The shorthand name is identical. An example
+is T85.</para>
+</listitem>
+
+<listitem>
+<para>"ne[X]np[Y]" are cubed sphere resolutions where X and Y are integers.  
+The short name is generally ne[X].  An example is ne30np4 or ne30.</para>
+</listitem>
+
+<listitem>
+<para>"pt1" is a single grid point.</para>
+</listitem>
+
+<listitem>
+<para>"gx[D]v[n]" is a displaced pole grid where D is the approximate resolution
+in degrees and n is the grid version.  The short name is generally g[D][n].  An example is
+gx1v6 or g16 for a grid of approximately 1-degree resolution.</para>
+</listitem>
+
+<listitem>
+<para>"tx[D]v[n]" is a tripole grid where D is the approximate resolution
+in degrees and n is the grid version.  The short name is [agrid]_[lgrid]_[oigrid].  An example is ne30_f19_g16. 
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+The model resolution is specified by setting a combination of these 
+resolutions.  In general, the overall resolution is specified in one of the
+two following ways for resolutions where the atmosphere and land grids
+are identical or not.
+</para>
+
+<variablelist>
+
+<varlistentry><term>"[algrid]_[oigrid]"</term>
+<listitem><para> In this grid, the atmosphere and land grid are
+identical and specified by the value of "algrid".  The ice and ocean 
+grids are always identical and specified by "oigrid".  
+For instance, f19_g16 is the finite volume 1.9x2.5 grid
+for the atmosphere and land components combined with the gx1v6 displaced
+pole grid for the ocean and ice components.  
+</para> </listitem>
+</varlistentry>
+
+<varlistentry><term>"[agrid]_[lgrid]_[oigrid]" or "[agrid][lgrid]_[oigrid]" (for short names) </term>
+<listitem><para> In this case, the atmosphere, land, and ocean/ice
+grids are all unique.  For example ne30_f19_g16 is the cubed sphere ne30np4 atmospheric
+grid running with the finite volume 1.9x2.5 grid for the land model combined with the
+gx1v6 displaced pole grid running on the ocean and ice models.  </para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+
+<para> For a complete list of currently supported grid resolutions, see the
+<ulink url="../modelnl/grid.html">supported resolutions page</ulink>.
+</para>
+
+<para>
+The ocean and ice models run on either a Greenland dipole or
+a tripole grid (see figures). The Greenland Pole grid is a
+latitude/longitude grid, with the North Pole displaced over Greenland
+to avoid singularity problems in the ocn and ice models. Similarly,
+the Poseidon tripole grid (<ulink
+url="http://climate.lanl.gov/Models/POP/"/> ) is a latitude/longitude
+grid with three poles that are all centered over land.</para>
+
+<screenshot>
+<screeninfo>Greenland Pole Grid</screeninfo>
+<mediaobject>
+<imageobject><imagedata fileref="greenland_pole_grid.jpg" format="JPEG"/></imageobject>
+<caption>
+<para>Greenland Pole Grid</para>
+</caption>
+</mediaobject>
+</screenshot>
+
+<screenshot>
+<screeninfo>Tripole Grid</screeninfo>
+<mediaobject>
+<imageobject><imagedata fileref="tripolegrid.jpg" format="JPEG"/></imageobject>
+<caption>
+<para>Poseidon Tripole Grid</para>
+</caption>
+</mediaobject>
+</screenshot>
+
+</sect2>
+
+<!-- ======================================================================= -->
+<sect2 id="ccsm_machines">
+<title>CESM Machines</title>
+
+<para> Scripts for supported machines and userdefined machines are
+provided with the CESM1.1 release.  Supported machines have machine
+specific files and settings added to the CESM1 scripts and are
+machines that should run CESM cases out-of-the-box.  Machines are
+supported in CESM on an individual basis and are usually listed by
+their common site-specific name.  To get a machine ported and
+functionally supported in CESM, local batch, run, environment, and
+compiler information must be configured in the CESM scripts.  The
+machine name "userdefined" machines refer to any machine that the user
+defines and requires that a user edit the resulting xml files to fill
+in information required for the target platform.
+This functionality is handy in accelerating the porting process and 
+quickly getting a case running on a new platform.
+For more information on porting, see <xref linkend="port"/>.  
+The list of available machines are documented in 
+<ulink url="../modelnl/machines.html">&cesm; supported
+machines</ulink>.
+Running <link linkend="how_to_create_case">create_newcase</link> with
+the "-list" option will also show the list of available machines for
+the current local version of CESM1.  Supported machines have undergone
+the full CESM <link linkend="port">porting process</link>.  The
+machines available in each of these categories changes as access to
+machines change over time.
+</para>
+
+</sect2>
+
+<!-- ======================================================================= -->
+<sect2 id="ccsm_validation">
+<title>CESM Validation</title>
+
+<para>
+Although CESM1.1 can be run out-of-the-box for a variety of
+resolutions, component combinations, and machines, MOST combinations
+of component sets, resolutions, and machines have not undergone
+rigorous scientific climate validation.  Control runs accompany
+"scientifically supported" component sets and resolution and are
+documented on the release page.  These control runs should be
+scientifically reproducible on the original platform or other
+platforms.  Bit-for-bit reproducibility cannot be guaranteed due to
+variations in compiler or system versions.  Users should carry out
+their own validations on any platform prior to doing scientific runs
+or scientific analysis and documentation.
+</para>
+
+</sect2>
+</sect1>
+<!-- ======================================================================= -->
+<sect1 id="download_ccsm">
+<title>Downloading CESM1.1</title>
+
+<sect2 id="download_ccsm_code"> 
+<title> Downloading the code and scripts </title>
+
+<para>
+CESM release code will be made available through a Subversion repository.  Access to 
+the code will require Subversion client software in place that is compatible with 
+our Subversion server software, such as a recent version of the command line client, svn.
+Currently, our server software is at version 1.4.2.  We recommend using a client at 
+version 1.5 or later, though older versions may suffice.  We cannot guarantee a client 
+older than 1.4.2.  For more information or to download open source tools, visit: 
+</para>
+<screen>
+<ulink url="http://subversion.tigris.org">http://subversion.tigris.org/</ulink>
+</screen>
+
+<para>
+With a valid svn client installed on the machine where CESM1 will be built and run, 
+the user may download the latest version of the release code.  First view the available 
+release versions with the following command:
+</para>
+
+<screen>
+> svn list https://svn-ccsm-release.cgd.ucar.edu/model_versions
+</screen>
+
+<para>
+When contacting the Subversion server for the first time, the following
+certificate message will likely be generated:
+</para>
+
+<screen>
+Error validating server certificate for 'https://svn-ccsm-release.cgd.ucar.edu:443':
+ - The certificate is not issued by a trusted authority. Use the
+   fingerprint to validate the certificate manually!
+ - The certificate hostname does not match.
+ - The certificate has expired.
+Certificate information:
+ - Hostname: localhost.localdomain
+ - Valid: from Feb 20 23:32:25 2008 GMT until Feb 19 23:32:25 2009 GMT
+ - Issuer: SomeOrganizationalUnit, SomeOrganization, SomeCity, SomeState, --
+ - Fingerprint: 86:01:bb:a4:4a:e8:4d:8b:e1:f1:01:dc:60:b9:96:22:67:a4:49:ff
+(R)eject, accept (t)emporarily or accept (p)ermanently? 
+</screen>
+
+<para>
+After accepting the certificate, the repository will request a
+username and password.  Be aware that the request may set
+current machine login id as the default username.  Once correctly
+entered, the username and password will be cached in a protected
+subdirectory of the user's home directory so that repeated entry of
+this information will not required for a given machine.
+</para>
+
+<para>
+The release tags should follow a recognizable naming pattern, and
+they can be checked out from the central source repository into a local sandbox directory. 
+The following example shows how to checkout model version
+CESM1.1:
+</para>
+
+<screen>
+> svn co https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1 cesm1_1
+</screen>
+
+<caution><para>If a problem was encountered during checkout, which may happen 
+with an older version of the client software, it may appear to have downloaded
+successfully, but in fact only a partial checkout has occurred.  
+To ensure a successful download, make sure the last line of svn output 
+has the following statement:
+</para>
+<screen>
+Checked out revision XXXXX.
+</screen>
+<para>
+Or, in the case of an 'svn update' or 'svn switch':
+</para>
+<screen>
+Updated to revision XXXXX.
+</screen></caution>
+
+
+<para>
+This will create a directory called
+<filename>cesm1_1</filename> that can be used to modify,
+build, and run the model.  The following Subversion subcommands can
+be executed in the working sandbox directory.
+</para>
+
+<para>
+For various information regarding the release version checked out...
+</para>
+<screen>
+> svn info       
+</screen>
+
+<para>
+For a listing of files that have changed since checkout...
+</para>
+<screen>
+> svn status 
+</screen>
+
+<para>
+For a description of the changes made to the working copy...
+</para>
+<screen>
+> svn diff 
+</screen>
+</sect2>
+
+<sect2 id="obtaining_new_verions"> 
+<title>Obtaining new release versions of CESM</title>
+<para>
+To update to a newer version of the release code you can download a new version of CESM1.1 from the svn central source repository in the following way:  
+</para>
+<para>
+Suppose for example that a new version of CESM1.1 is available at https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;newversion&gt;.
+This version can be checked out directly using the same standard <link linkend="download_ccsm">CESM download method</link>.
+</para>
+<para>
+As an alternative, some users may find the svn switch operation
+useful. In particular, if you've used svn to check out the previous
+release, cesm1_1_&lt;previousversion&gt;, and if you've made
+modifications to that code, you should consider using the svn switch
+operation.  This operation will not only upgrade your code to the
+version cesm1_1_&lt;newversion&gt;, but will also attempt to reapply
+your modifications to the newer version.
+</para>
+<procedure>
+<para>
+How to use the svn switch operation:
+</para>
+<para>
+Suppose you've used svn to check out cesm1_1_&lt;previousversion&gt; into the directory
+called /home/user/cesm1_1
+</para>
+<step>
+<para>
+Make a backup copy of /home/user/cesm1_1 -- this is important in case
+   you encounter any problems with the update
+</para>
+</step>
+<step>
+<para>
+cd to the top level of your cesm1_1 code tree...
+</para>
+<screen>
+   > cd /home/user/cesm1_1
+</screen>
+</step>
+<step>
+<para>
+Issue the following svn command...
+</para>
+<screen>
+   > svn switch https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;newversion&gt;  
+</screen>
+</step>
+</procedure>
+<para>
+The svn switch operation will upgrade all the code to the new cesm1_1_&lt;newversion&gt; version, and for any files that have been modified, will attempt to reapply those modifications to the newer code.
+</para>
+
+<para>
+Note that an update to a newer version of the release code may result in conflicts with modified 
+files in the local working copy.  These conflicts will likely require that differences
+be resolved manually before use of the working copy may continue.  For help in 
+resolving svn conflicts, please visit the subversion website,
+</para><para>
+<ulink url="http://svnbook.red-bean.com/en/1.5/svn.tour.cycle.html#svn.tour.cycle.resolve">
+http://svnbook.red-bean.com/en/1.5/svn.tour.cycle.html#svn.tour.cycle.resolve</ulink>
+</para>
+
+<para>
+A read-only option is available for users to view via a web browser at
+</para>
+<para>
+<ulink url="https://svn-ccsm-release.cgd.ucar.edu">https://svn-ccsm-release.cgd.ucar.edu</ulink>
+</para>
+<para>
+where the entire CESM1 release directory tree can be navigated.
+</para>
+
+<para>
+The following examples show common problems and their solutions.
+</para>
+
+<para>
+Problem 1: If the hostname is typed incorrectly:
+</para>
+<screen>
+> svn list https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;version&gt; 
+svn: PROPFIND request failed on '/model_versions/cesm1_1_&lt;version&gt;'
+svn: PROPFIND of '/model_versions/cesm1_1_&lt;version&gt;': Could not resolve hostname `svn-ccsm-releese': Host not found (https://svn-ccsm-releese)
+</screen>
+
+<para>
+Problem 2: If http is typed instead of https:
+</para>
+
+<screen>
+> svn list http://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;version&gt;   
+svn: PROPFIND request failed on '/model_versions/cesm1_1_&lt;version&gt;'
+svn: PROPFIND of '/model_versions/cesm1_1_&lt;version&gt;': could not connect to server (http://svn-ccsm-release.cgd.ucar.edu)
+</screen>
+
+</sect2>
+
+<!-- ======================================================================= -->
+
+<sect2 id="download_ccsm_inputdata"> 
+<title> Downloading input data </title>
+
+<para> Input datasets are needed to run the model. CESM input data will 
+be made available through a separate Subversion input data repository.
+The username and password for the input data repository will be the same
+as for the code repository.  
+</para>
+
+<note><para>
+The input data repository contains
+datasets for many configurations and resolutions and is well over 1 TByte in 
+total size.  
+DO NOT try to download the entire dataset.  
+</para></note>
+
+<para>Datasets can be downloaded on a 
+case by case basis as needed and CESM now provides tools to check and
+download input data automatically.</para>
+
+<para> A local input data directory should exist on the local disk, 
+and it also needs to be set in the CESM scripts via the variable
+$&DIN_LOC_ROOT;. For supported machines, this
+variable is preset. For generic machines, this variable
+is set as an argument to &create_newcase;. Multiple
+users can share the same $&DIN_LOC_ROOT; directory.</para>
+
+<para>The files in the subdirectories of
+$&DIN_LOC_ROOT; should be write-protected. This prevents these
+files from being accidentally modified or deleted.  The directories
+in $&DIN_LOC_ROOT; should generally be group writable, 
+so the directory can be shared among multiple users.</para>
+
+<para>As part of the process of generating the &cesm; executable, the
+utility, <link linkend="input_data_server"><command>check_input_data</command></link>
+is called, and it attempts to locate all required input data for the case 
+based upon file lists generated by components.  If the required data is not found 
+on local disk in $&DIN_LOC_ROOT;, then the data will be downloaded
+automatically by the scripts or it can be downloaded by the user by invoking
+&check_input_data; with the -export command argument.  If you want to download
+the input data manually you should do it before you build CESM.</para> 
+
+<para>It is possible for users to download the data using
+svn subcommands directly, but use of the &check_input_data; script is highly 
+recommended to ensure that only the required datasets are downloaded. 
+Again, users are STRONGLY DISCOURAGED from downloading the entire input dataset
+from the repository due to the size.</para>
+
+</sect2> 
+
+</sect1> 
+
+<!-- ======================================================================= -->
+<sect1 id="quick_start">
+<title>Quick Start (CESM Workflow)</title>
+
+<para> The following quick start guide is for versions of &cesm; that
+have already been ported to the local target machine.  If &cesm has not
+yet been ported to the target machine, please see 
+<xref linkend="port"/>.  If you are new to CESM1, please consider reading
+the <link linkend="ccsm_overview">introduction</link> first</para>
+
+<para> These definitions are required to understand this section: </para>
+<itemizedlist>
+<listitem>
+<para>$&COMPSET; refers to the component set. </para>
+</listitem>
+<listitem>
+<para>$&RES; refers to the model resolution. </para>
+</listitem>
+<listitem>
+<para> $&MACH; refers to the target machine. </para>
+</listitem>
+<listitem>
+<para>$&CCSMROOT; refers to the CESM root directory. </para>
+</listitem>
+<listitem>
+<para>$&CASE; refers to the case name.</para>
+</listitem>
+<listitem>
+<para>$&CASEROOT; refers to the full pathname of the root directory
+where the case ($&CASE;) will be created.</para>
+</listitem>
+<listitem>
+<para>$&EXEROOT; refers to the executable directory.  ($&EXEROOT is
+normally NOT the same as $&CASEROOT;). </para> 
+</listitem>
+<listitem>
+<para>$&RUNDIR; refers to the directory where CESM actually runs.  This is normally
+set to $&EXEROOT/run.</para>
+</listitem>
+</itemizedlist>
+
+<procedure>
+
+<para>This is the procedure for quickly setting up and running a &cesm;
+case. </para>
+
+<step>
+<para> Download &cesm; (see <link linkend="download_ccsm">Download
+CESM</link>).</para>
+</step>
+
+<step>
+<para>Select a machine, a component set, and a resolution from the list
+displayed after invoking this command: </para>
+<screen>
+> cd $CCSMROOT/scripts
+> create_newcase -list
+</screen>
+
+<para>See the <ulink url="../modelnl/compsets.html">supported
+component sets</ulink>, <ulink url="../modelnl/grid.html">supported
+model resolutions</ulink> and 
+<ulink url="../modelnl/machines.html">supported machines</ulink>.
+for a complete list of CESM1.1 supported component
+sets, grids and computational platforms.</para>
+</step>
+
+<step>
+<para>
+Create a case.
+</para>
+
+<para> The &create_newcase; command creates a case directory containing
+the scripts and xml files to configure a case (see below) for the
+requested resolution, component set, and machine. &create_newcase; has
+several required arguments and if a generic machine is used, several
+additional options must be set (invoke create_newcase -h for help).
+</para>
+
+<para>If running on a supported machine,  
+($MACH), then invoke &create_newcase; as follows: 
+</para>
+
+<screen>
+> create_newcase -case $CASEROOT \
+         -mach $MACH \
+         -compset $COMPSET \
+         -res $RES 
+</screen>
+
+<para>If running on a new target machine, see porting in
+<xref linkend="port"/>. </para>
+
+</step>
+
+<step>
+<para> Setting up the case run script </para> 
+
+<para>Issuing the &cesm_setup; command creates a $&CASEROOT;/$&CASE;.run
+script along with user_nl_xxx files, where xxx denotes the set of
+components for the given case configuraiton. Before invoking &cesm_setup;,
+modify the env_mach_pes.xml file in $&CASEROOT; as needed for the
+experiment.</para>
+
+<substeps>
+<step>
+<para> <command>cd</command> to the $&CASEROOT; directory. </para>
+
+<screen>
+> cd $&CASEROOT;
+</screen>
+</step>
+
+<step>
+<para> Modify settings in &env_mach_pes.xml; (optional).
+(Note: To edit any of the env xml files, use the <link linkend="faq_xmlchange">xmlchange</link> command. 
+invoke &xmlchange; -h for help.)</para>
+</step>
+
+<step>
+<para> Invoke the &cesm_setup; command. </para>
+<screen>
+> ./cesm_setup  
+</screen>
+</step>
+</substeps>
+</step>
+
+<step>
+<para> Build the executable. </para> 
+<substeps>
+
+<step>
+<para> Modify build settings in &env_build.xml; (optional).</para>
+</step>
+
+<step>
+<para> Run the build script.</para>
+<screen>
+> $CASE.build 
+</screen>
+</step>
+</substeps>
+</step>
+
+<step>
+<para> Run the case. </para>
+<substeps>
+<step>
+<para> Modify runtime settings in &env_run.xml; (optional).  In particular, 
+set the $&DOUT_S; variable to FALSE.</para>
+</step>
+
+<step>
+<para> Submit the job to the batch queue. This example uses a
+submission command for a Cray computer:</para>
+<screen>
+> qsub $CASE.run 
+</screen>
+</step>
+</substeps>
+</step>
+
+<step>
+<para> When the job is complete, review the following directories and files</para>
+<substeps>
+<step><para>
+$&RUNDIR;.  This directory is set in the env_build.xml file.  This is the location where CESM was run.
+There should be log files there for every component (ie. of the form cpl.log.yymmdd-hhmmss).  Each
+component writes its own log file.  Also see whether any restart or history files were written.
+To check that a run completed successfully, check the last several lines of the cpl.log file
+for the string " SUCCESSFUL TERMINATION OF CPL7-CCSM ".
+</para></step>
+<step><para>
+$&CASEROOT;/logs.  The log files should have been copied into this directory if the
+run completed successfully.
+</para></step>
+<step><para>
+$&CASEROOT;.  There could be a standard out and/or standard error file.
+</para></step>
+<step><para>
+$&CASEROOT;/CaseDocs.  The case namelist files are copied into this directory from the
+$&RUNDIR;.
+</para></step>
+<step><para>
+$&CASEROOT;/timing.  There should be a couple of timing files there that summarize the
+model performance.
+</para></step>
+<step><para> 
+$&DOUT_S_ROOT;/$&CASE;.  This is the archive directory.  If $&DOUT_S;
+is FALSE, then no archive directory should exist.  If $&DOUT_S; is
+TRUE, then log, history, and restart files should have been copied
+into a directory tree here.
+</para></step>
+</substeps>
+</step>
+
+</procedure>
+
+</sect1>
+
+<!-- ======================================================================= -->
+</chapter>

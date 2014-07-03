@@ -1,0 +1,316 @@
+#!/usr/bin/env perl
+#-----------------------------------------------------------------------------------------------
+#
+# xmlquery
+#
+# This utility allows the CESM user to view a field in a env_*xml file via a commandline interface.
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+#use warnings;
+#use diagnostics;
+
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     xmlquery id [options]
+DESCRIPTION
+     allows user to view a field in a env*.xml file
+REQUIRED INPUT
+     id                   Variable name of the field to view (such as CASE, GRID or MACH)
+                          (can also be a comma-seperated list of id's to query [NO-WHITESPACE])
+                          (list to list ALL variables)
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -fileonly            Only print the filename that the field is in.
+     -valonly             Only print the value of the field.
+     -noexpandenv         Don't expand any env variables that the value is dependent on.
+     -help [or -h]        Print usage to STDOUT.
+     -silent [or -s]      Turns on silent mode - only return the value.
+     -verbose [or -v]     Turn on verbose echoing of what xmlquery is doing.
+
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+
+if ($#ARGV == -1) {
+    print "ERROR: no arguments sent in -- id  name is REQUIRED\n";
+    usage();
+}
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = absolute_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+               fileonly=>0,
+               valonly=>0,
+               noexpandenv=>0,
+               help=>0,
+               silent=>0,
+               listall=>0,
+               verbose=>0,
+            );
+GetOptions(
+    "fileonly"     => \$opts{'fileonly'},
+    "valonly"      => \$opts{'valonly'},
+    "noexpandenv"  => \$opts{'noexpandenv'},
+    "h|help"       => \$opts{'help'},
+    "s|silent"     => \$opts{'silent'},
+    "v|verbose"    => \$opts{'verbose'},
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Get id from anything left over
+my $idlist = shift( @ARGV );
+my @ids;
+if ( $idlist eq "list" ) {
+  $opts{'listall'} = 1;
+} else {
+  @ids = split( /,/, $idlist );
+}
+
+# Check for unparsed arguments
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
+    usage();
+}
+#
+if ($opts{'valonly'} && $opts{'fileonly'} ) {
+    die "valonly and fileonly modes can NOT both be set\n";
+}
+if ($opts{'listall'} && $opts{'fileonly'} && $opts{'silent'}) {
+    die "list all id's, fileonly and silent mode can NOT all be set together\n";
+}
+
+# Define 3 print levels:
+# 0 - only issue fatal error messages
+# 1 - only informs what files are created (default)
+# 2 - verbose
+my $print = 1;
+if ($opts{'silent'})  { $print = 0; }
+if ($opts{'verbose'}) { $print = 2; }
+if ($opts{'silent'} && $opts{'verbose'} ) {
+    die "silent and verbose modes can NOT both be set\n";
+}
+my $eol = "\n";
+
+my %cfg = ();           # build configuration
+
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the configure script.
+
+# Check for the configuration definition file.
+my $config_def_file = "config_definition.xml";
+my $dir  = "$cfgdir/Tools";
+my $cdir = absolute_path( "$cfgdir/../Case.template" );
+my $pdir;
+if      ( -f "$dir/$config_def_file" )  {
+   $config_def_file = "$dir/$config_def_file";
+   $pdir = "$cfgdir/Tools";
+} elsif ( -f "$cfgdir/../Case.template/$config_def_file" ) {
+   $dir  = $cdir;
+   $pdir = "$cfgdir/perl5lib";
+   $config_def_file = "$cdir/$config_def_file";
+} else {
+   die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory ./Tools **
+EOF
+}
+
+# The XML::Lite module is required to parse the XML configuration files.
+(-f "$pdir/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory $pdir **
+EOF
+
+# The ConfigCase module provides utilities to store and manipulate the configuration.
+(-f "$dir/ConfigCase.pm")  or  die <<"EOF";
+** Cannot find perl module \"ConfigCase.pm\" in directory $dir **
+EOF
+
+if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
+my @dirs = (  $cfgdir, "$cfgdir/Tools", "$cfgdir/perl5lib", "$cfgdir/../Case.template" );
+unshift @INC, @dirs;
+require XML::Lite;
+require ConfigCase;
+require SetupTools;
+#-----------------------------------------------------------------------------------------------
+
+my @filenames = glob( "env_*.xml" );
+
+# Create new config object if not just listing valid values
+my $cfg_ref = ConfigCase->new("$config_def_file"); 
+if ($print>=2) { print "A new config object was created$eol";}
+
+# exit early if id is NOT a valid name
+if ( ! $opts{'listall'} ) {
+   foreach my $id ( @ids ) {
+      if ( ! $cfg_ref->is_valid_name($id ) ) {
+         die "ERROR: id $id NOT a valid name in the config_definition file\n"; 
+      }
+   }
+}
+
+# Loop over all of the files and fill the hashes
+my %myfile;
+my %envvars;
+FILELOOP:
+foreach my $file ( @filenames ) {
+   # Verify that file is NOT empty
+   if ( ! -r $file ) {
+      die "ERROR: file $file does NOT exist\n"; 
+   }
+   # Add the list of ALL env fields to a hash
+   my $xml = XML::Lite->new( $file );
+   my @e = $xml->elements_by_name( "entry");
+   while ( my $e = shift @e ) {
+      my %a = $e->get_attributes();
+      $envvars{$a{'id'}} = $a{'value'};
+      # check if any of the id's input are in this file
+      if ( ! $opts{'listall'} ) {
+         foreach my $id ( @ids ) {
+            if ($id eq $a{'id'}) {
+                $myfile{$id} = $file;
+            }
+         }
+      # if listall option is set, add this id to id array, and add file to myfile hash
+      } else {
+         push( @ids, $a{'id'} );
+         $myfile{$a{'id'}} = $file;
+      }
+   }
+}
+
+# Report the results
+foreach my $id ( @ids ) {
+   unless (defined($myfile{$id}) ) { 
+       die "ERROR: id $id not found in any of the files: @filenames \n"; 
+   }
+
+   if ( ! $opts{'valonly'} ) {
+      print "$myfile{$id}";
+      print ": ";
+   }
+   print "$id" if $print > 0;
+   if ( ! $opts{'fileonly'} ) {
+      print " = " if $print > 0;
+      my $value = $envvars{$id};
+      if ( ! $opts{'noexpandenv'} ) {
+         $value = SetupTools::expand_env_var( $value, \%envvars );
+      }
+      print "$value";
+   }
+   print "\n";
+}
+
+if ($print>=2) { print "$ProgName done.\n"; }
+exit;
+
+#-----------------------------------------------------------------------------------------------
+# FINNISHED ####################################################################################
+#-----------------------------------------------------------------------------------------------
+
+sub absolute_path {
+#
+# Convert a pathname into an absolute pathname, expanding any . or .. characters.
+# Assumes pathnames refer to a local filesystem.
+# Assumes the directory separator is "/".
+#
+  my $path = shift;
+  my $cwd = getcwd();  # current working directory
+  my $abspath;         # resulting absolute pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+# Convert relative to absolute path.
+
+  if ($path =~ m!^\.$!) {          # path is "."
+      return $cwd;
+  } elsif ($path =~ m!^\./!) {     # path starts with "./"
+      $path =~ s!^\.!$cwd!;
+  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+      $path = "$cwd/..";
+  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+      $path = "$cwd/$path";
+  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+      $path = "$cwd/$path";
+  }
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+  # Remove any "" that are not leading.
+  for (my $i=0; $i<=$#dirs; ++$i) {
+      if ($i == 0 or $dirs[$i] ne "") {
+          push @dirs2, $dirs[$i];
+      }
+  }
+  @dirs = ();
+
+  # Remove any "."
+  foreach $dir (@dirs2) {
+      unless ($dir eq ".") {
+          push @dirs, $dir;
+      }
+  }
+  @dirs2 = ();
+
+  # Remove the "subdir/.." parts.
+  foreach $dir (@dirs) {
+    if ( $dir !~ /^\.\.$/ ) {
+        push @dirs2, $dir;
+    } else {
+        pop @dirs2;   # remove previous dir when current dir is ..
+    }
+  }
+  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+  $abspath = join '/', @dirs2;
+  return( $abspath );
+}
+
+#-------------------------------------------------------------------------------
+

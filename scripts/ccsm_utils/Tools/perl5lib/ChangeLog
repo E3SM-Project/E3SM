@@ -1,0 +1,594 @@
+==============================================================
+  Description of changes
+==============================================================
+
+==============================================================
+Tag name:  perl5lib_130424
+Originator(s):  jshollen
+Date: Apr 19, 2013
+One-line Summary:  update SCAM iop dataset to atm/cam/scam/iop/arm0795v1.2.nc
+
+M       t/namelist_defaults_cam.xml
+
+==============================================================
+Tag name:  perl5lib_130419
+Originator(s):  fischer
+Date: Apr 19, 2013
+One-line Summary: rename homme to se
+
+M       t/namelist_defaults_cam.xml
+M       t/01.t
+M       t/config_cache.xml
+M       t/namelist_definition_cam.xml
+M       t/config_definition.xml
+
+==============================================================
+
+Tag name:  perl5lib_130313
+Originator(s):  eaton
+Date: Mar 13, 2013
+One-line Summary: fix namelist parser to ignore lines that contain
+ only a comment, and added delete_variable method
+
+M       Build/Namelist.pm
+
+==============================================================
+
+Tag name:  perl5lib_130108
+Originator(s):  sacks
+Date: Jan 8, 2013
+One-line Summary: add capability to replace '%glc' in field list
+
+>>>>> Add __SubFields__ method to replace '%glc' in field list
+M       Streams/TemplateGeneric.pm
+
+>>>>> Add tests of new functionality, along with known good output
+>>>>> file for test comparisons
+M       t/05.t
+M       t/namelist_defaults_datm.xml
+A       t/dlnd.sno.streams.txt
+
+>>>>> Remove deprecated file, per Erik's suggestion
+D       Streams/Template.pm
+
+==============================================================
+
+Tag name:  perl5lib_121125
+Originator(s):  tcraig
+Date: Nov 25, 2012
+One-line Summary: update coupler mapping name convention to
+ be all lower case
+
+M       Build/Namelist.pm
+==============================================================
+
+Tag name:  perl5lib_121008
+Originator(s):  sacks
+Date: Oct 08, 2012
+One-line Summary: add get_defined_vars_in_group namelist method
+
+>>>>> Add new method
+M       Build/Namelist.pm
+
+>>>>> Add tests for new method
+M       t/04.t
+
+==============================================================
+
+Tag name:  perl5lib_121001
+Originator(s):  erik
+Date: Oct 01, 2012
+One-line Summary: Add expandXMLVars method to TemplateGeneric
+                  update unit testing for TemplateGeneric
+                  add NMLTest files
+
+D       t/02.t - delete unit test for Streams::Template.pm not used anymore
+
+>>>>> Add new files needed to test TemplateGeneric.pm/NMLTest
+A       t/05.t ------------ Test TemplateGeneric
+A       t/lnd_in.same
+A       t/06.t ------------ Test NMLTest::CompFiles
+A       t/namelist_defaults_datm.xml
+A       t/run.log.same
+A       t/lnd_in.different
+
+>>>>> Add some test infrastructure for comparing namelists
+A  +    NMLTest
+M  +    NMLTest/CompFiles.pm
+
+M       Build/Namelist.pm ----------- Add documentation about write_rc
+M       Streams/TemplateGeneric.pm -- add expandXMLVars method
+
+>>>>> Change test files for TemplateGeneric
+M       t/datm.streams.txt
+M       t/datm.ymd.streams.txt
+M       t/datm.template.streams.xml
+
+==============================================================
+
+Tag name:  perl5lib_120812
+Originator(s):  erik
+Date: Aug 12, 2012
+One-line Summary: New generic template for build-namelist functionality in data models
+
+>>>>>> Remove old Template unit-test and add a unit-tester for TemplateGeneric
+>>>>>> Add a module for testing model component build-namelist's
+
+D       t/02.t --- Old unit tester for Template.pm (Template.pm is deprecated, but still n
+                    needed for CLM stand alone testing)
+
+A       t/05.t -------- Unit tester for TemplateGeneric
+A       t/06.t -------- Unit tester for NMLTest
+A       t/namelist_defaults_datm.xml -- File for TempalteGeneric
+A       t/lnd_in.same -------- for NMLTest
+A       t/run.log.same ------- for NMLTest
+A       t/lnd_in.different --- for NMLTest
+
+>>>>>>>> Copied in from clm4_0_45
+A  +    NMLTest
+M  +    NMLTest/CompFiles.pm
+
+>>>>>>> Get TemplateGeneric unit tests working
+M       t/datm.streams.txt
+M       t/datm.ymd.streams.txt
+M       t/datm.template.streams.xml
+
+==============================================================
+	
+Tag name:  perl5lib_120626
+Originator(s):  mvertens
+Date: June 26, 2012
+One-line Summary: New category support for auto-generation of
+	          namelists
+
+M       Build/NamelistDefinition.pm
+	
+==============================================================
+Tag name:  perl5lib_120608a
+Originator(s):  mlevy
+Date: June 8, 2012
+One-line Summary: Forgot to update ChangeLog in previous tag
+
+M       ChangeLog
+	
+==============================================================
+Tag name:  perl5lib_120608
+Originator(s):  mlevy
+Date: June 8, 2012
+One-line Summary: Changed how build-namelist handles arrays
+                  (Actual work done by B. Eaton)
+
+M       Build/Namelist.pm
+M       Build/NamelistDefinitions.pm
+	
+==============================================================
+Tag name:  perl5lib_120517
+Originator(s):  mvertens
+Date: May 17, 2012
+One-line Summary: Changed TemplateGeneric.pm so that now write
+       template directly from module and have a much smaller
+       required input hash	  
+
+M       Build/Namelist.pm
+	- add new Vmap output needed for seq_map.rc output 
+M       Streams/TemplateGeneric.pm
+        - now write template directly from module and have
+	  a much smaller required input hash 
+	
+==============================================================
+Tag name:  perl5lib_120509
+Originator(s):  mvertens
+Date: May 09, 2012
+One-line Summary: New method to write cism.config from namelist
+
+M       Build/Namelist.pm
+	
+==============================================================
+Tag name:  perl5lib_120326
+Originator(s):  erik
+Date: Mar 26, 2012
+One-line Summary: Allow strings to be empty and add test for it
+
+Allow strings in namelist's to be empty ('' or "") and add a test
+to the namelist unit test for it.
+
+M       Build/Namelist.pm
+M       t/04.t
+M       t/output_test_namelist.nl
+
+==============================================================
+Tag name:  perl5lib_120225
+Originator(s):  mvertens
+Date: Feb 25, 2012
+One-line Summary: Remove tabs in output namelist
+
+M       Build/Namelist.pm
+
+==============================================================
+Tag name:  perl5lib_111115
+Originator(s):  erik
+Date: Nov 15, 2011
+One-line Summary: Fix hanging problem with double quotes
+
+Fix bug 1425 where the namelist read hangs when it finds a double quotes
+in a string value. Something like...
+
+hist_fincl1 =
+'NET_NMIN_vr',''GROSS_NMIN_vr','POTENTIAL_IMMOB_vr','ACTUAL_IMMOB_vr','SMINN_TO_PLANT_vr'
+
+Do this by checking that the line actually changes after a parsing operation.
+If the line doesn't change abort with an error.
+
+Add some simple parsing tests and a test for this specific problem.
+
+M       Build/Namelist.pm
+M       t/04.t
+M       t/output_test_namelist.nl
+
+==============================================================
+Tag name:  perl5lib_110726
+Originator(s):  erik
+Date: Jul 26, 2011
+One-line Summary: Add option to overwrite variables in merge_nl
+
+M       Build/Namelist.pm - Add options to merge_nl method
+M       t/04.t ------------ Add tests that standard merge_nl and overwrite both
+                            do the right thing.
+
+==============================================================
+Tag name:  perl5lib_100111
+Originator(s):  mvr
+Date: Jan 11, 2010
+One-line Summary: changed filenames for files with ':' in their name - was
+hampering checkout of ccsm code on machines that can't handle such filenames
+
+D      XML/man3/XML::Lite::Element.3
+D      XML/man3/XML::Lite.3
+A  +   XML/man3/XML_Lite_Element.3
+A  +   XML/man3/XML_Lite.3
+
+==============================================================
+Tag name:  perl5lib_091027
+Originator(s):  erik
+Date: Oct 27, 2009
+One-line Summary: Add ability to set filepath for user name based on env var
+
+M      Build/NamelistDefaults.pm - When testing filename for get_usr_file
+                                   allow filename to have an ENV variable in
+                                   it at the begining that will be expanded
+                                   for the test.
+M      t/04.t -------------------- Test new capability
+
+==============================================================
+Tag name:  perl5lib_090829
+Originator(s):  erik
+Date: Aug 29, 2009
+One-line Summary: Add option to get_usr_file to not test for file existance
+
+M      Build/NamelistDefaults.pm --- Don't test for file existance if notest option set
+
+M      t/04.t ---------------------------- Add tests for non file existance for get_usr_file.
+M      t/output_test_namelist.nl --------- Add orb_eccen to output namelist.
+M      t/namelist_defaults_usr_files.xml - Add sim_year_range="constant" to faerdep, and
+                                              fndepdat as appropriate
+M      t/namelist_definition_clm.xml ----- Add faerdep correct fndepdat to ndepdat.
+
+==============================================================
+Tag name:  perl5lib_090804
+Originator(s):  erik
+Date: Tue Aug 04, 2009
+One-line Summary:  Add get_usr_file method to NamelistDefaults and test it
+
+M      Build/NamelistDefaults.pm ---------- Add get_usr_file method
+M      t/04.t ----------------------------- Add test for get_usr_file
+A      t/namelist_defaults_usr_files.xml -- User file name definitions
+>>>>>>>>>> Add test user files to find with the get_usr_file method
+A      t/usrfiles
+A      t/usrfiles/aerosoldep_monthly_1850_1x1_boulderCO_c090804.nc
+A      t/usrfiles/fracdata_1x1_boulderCO_c090804_USGS.nc
+A      t/usrfiles/surfdata_1x1_boulderCO_c090804_simyr1850.nc
+A      t/usrfiles/topodata_1x1_boulderCO_c090804.nc
+A      t/usrfiles/surfdata.pftdyn_1x1_boulderCO_c090804_simyr1850-2000.nc
+A      t/usrfiles/griddata_1x1_boulderCO_c090804.nc
+
+==============================================================
+Tag name:  perl5lib_090717
+Originator(s):  erik
+Date: Fri Jul 17, 2009
+One-line Summary: Change chng_din_lc option to turn on expand env variable setting
+                  move expandenv setting to inside __Sub__.
+
+M      t/02.t ----------------- Set DIN_LOC_ROOT env variable
+M      t/datm.ymd.streams.txt - Expand DIN_LOC_ROOT value out
+M      Streams/Template.pm ---- Move expansion of env vars into __Sub__
+                                routine with an optional argument. Change
+                                optional arguments to __Sub__ to a hash.
+                                if chng_din_lc option is on, turn the expandenv
+                                option on in __Sub__.
+
+==============================================================
+Tag name:  perl5lib_090714
+Originator(s):  erik
+Date: Sat Jul 14, 2009
+One-line Summary: Add option to replace DIN_LOC_ROOT with $DIN_LOC_ROOT
+
+M      Streams/Template.pm --- When chng_din_lc set to true replace DIN_LOC_ROOT
+                               with $DIN_LOC_ROOT.
+M      t/02.t ----------------------- Change CPLHIST test to do replacement
+M      t/datm.ymd.streams.txt ------- Add $DIN_LOC_ROOT to fieldInfo filePath
+M      t/datm.template.streams.xml -- Add DIN_LOC_ROOT to CPLHIST fieldInfo filepath
+
+==============================================================
+Tag name:  perl5lib_090613
+Originator(s):  erik
+Date: Sat Jun 13, 2009
+One-line Summary: Add %ymd indicator for streams so can do year-month-days
+
+M      Streams/Template.pm ---- Add ability to write out %ymd year-month-day 
+                                for filenames in streams. It assumes a noleap
+                                calendar -- could easily be extended to make
+                                Gregorian optional.
+M      t/01.t ---- Change formatting of successful test
+M      t/02.t ---- Add more tests for %ymd, and offset
+M      t/03.t ---- Change formatting of successful test
+M      t/04.t ---- Change formatting of successful test
+M      t/datm.streams.txt ---------- Add another year and the last-month 
+                                     to start for testing
+A      t/datm.ymd.streams.txt ------ Add streams test file with %ymd
+M      t/datm.template.streams.xml - Add CPLHIST test section with %ymd
+M      README --- Add notes about Streams and Decomp directories.
+
+==============================================================
+Tag name:  perl5lib_090609
+Originator(s):  tcraig
+Date: Tue Jun 9, 2009
+One-line Summary: add offset support for streams template
+
+M      Streams/Template.pm
+	
+==============================================================
+Tag name:  perl5lib_090424
+Originator(s):  erik
+Date: Fri Apr 24 14:10:42 MDT 2009
+One-line Summary: Allow opt hash to be sent to is_valid_value method
+
+M      Build/NamelistDefinition.pm --- Allow an opt hash be sent to the
+                                       is_valid_value method. This way
+                                       noquotes or other options can be
+                                       given to the get_valid_values method
+                                       used within is_valid_value.
+
+==============================================================
+Tag name:  perl5lib_081008
+Originator(s):  erik
+Date: Wed Oct  8 21:39:24 MDT 2008
+One-line Summary: Get unit tests working
+
+M Build/Namelist.pm --- Be more careful with spacing between array elements
+                        Get complex to work, make sure long lists with new-lines
+                        can be parsed correctly.
+M t/01.t -------- Comment out last test as it fails (Config object with no files)
+M t/04.t -------- Add in test for integer array with new lines, and add some tests
+                  that are commented that currently fail (complex and character multi-lines).
+                  Also set variable names with mixed case variable names.
+M t/namelist_definition_cam.xml --- Add a complex variable so can be tested
+M t/output_test_namelist.nl ------- New longer namelist testing more aspects
+
+==============================================================
+Tag name:  perl5lib_081007
+Originator(s):  eaton
+Date: Tue Oct  7 18:32:46 MDT 2008
+One-line Summary: Modify Build::Namelist* user interfaces to be case insensitive.
+
+Modify the user interfaces of the Build::Namelist* modules.  The user
+interfaces include the object methods and the xml definition and defaults
+files.  By storing the variable names internally as lower case strings in
+the Namelist* objects, the xml files can contain variable names in mixed
+case without affecting the objects' internal representations.  Similarly,
+by converting variable names that are passed as method arguments to lower
+case, the user can supply mixed case variable names as arguments, and the
+correct variables from the definition and defaults files will be found
+regardless of the case that appeared in those files.
+
+Build/Config.pm
+. die if no definition file is supplied to the new() method.
+
+Build/Namelist.pm
+. Change validate_variable_value() from an object method to a class method,
+  and remove the unused argument.
+. add fix to _split_namelist_value method to replace embedded newlines by
+  spaces. 
+
+Build/NamelistDefaults.pm
+. make the method interfaces case insensitive by converting all variable
+  names passed as arguments to lower case, and by maintaining the variable
+  names in lower case in the internal data structures.
+. Changed behavior of adding additional defaults from multiple files.
+  Previously an exception was triggered if the same variable contained
+  defaults in multiple files.  The new behavior just accumulates all
+  default specifications for a variable, whether they come from a single
+  file or from multiple files.  It's the responsibility of the get_value
+  method to find the best match among all possible default values.
+
+Build/NamelistDefinition.pm
+. added methods for extracting data from the namelist definition file for
+  the purpose of producing documentation
+. moved the validate_variable_value call to the _validate_pair method
+. make the method interfaces case insensitive by converting all variable
+  names passed as arguments to lower case, and by maintaining the variable
+  names in lower case in the internal data structures.
+
+==============================================================
+Tag name:  perl5lib_081001
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Oct  1 19:18:52 MDT 2008
+One-line Summary:  Fix validate_variable_value so will work from a generic namelist
+
+Add unit test to set a variable in a generic namelist and use validate_variable_value
+to verify it's value is correct for the right one. This required sending the variable
+value into valicate_variable_value.
+
+M      Build/NamelistDefinition.pm
+M      Build/Namelist.pm
+M      t/04.t
+M      t/output_test_namelist.nl
+
+==============================================================
+Tag name:  perl5lib_080924
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Sep 24 17:22:07 MDT 2008
+One-line Summary:  Add ability to read in additional files for defaults and definition, add empty config, and add lastmonth option to streams
+
+M      Build/NamelistDefaults.pm ------- Add "add" method to read in an additional file
+                                         after object already constructed.
+M      Build/Config.pm ----------------- Add ability to create an empty config object.
+M      Build/NamelistDefinition.pm ----- Add "add" method to read in an additional file
+                                         after object already constructed.
+M      Streams/Template.pm ------------- Add option to output previous year December in
+                                         list of filenames for %ym (lastmonth option)
+>>>>>>>>>>>>>> Get testing working with above changes and features added
+M      t/datm.streams.txt
+M      t/01.t ----------------------- Test that empty config works
+M      t/namelist_defaults_cam.xml -- Separate defaults into cam and clm parts
+M      t/02.t ----------------------- Test that lastmonth option works for streams
+D      t/namelist_definition.xml ---- Separate definition into cam and clm parts
+M      t/04.t ----------------------- Test that add method works for both defaults
+                                      and namelistdefinition.
+A      t/namelist_defaults_clm.xml -- Just the clm defaults
+A  +   t/namelist_definition_clm.xml  Just the clm part of the definition
+A      t/namelist_definition_cam.xml  Everything but the clm part of the definition
+
+==============================================================
+Tag name:  perl5lib_080715
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Mon Aug 11 10:44:52 MDT 2008
+One-line Summary: Turn off printing of file existance if NOT -verbose
+
+M      Streams/Template.pm ----------- Turn off printing of file 
+                checking if NOT $printing;
+
+==============================================================
+Tag name:  perl5lib_080715
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Tue Jul 15 15:51:06 MDT 2008
+One-line Summary: Add ability to optionally include tInterpAlgo
+
+M      Streams/Template.pm ----------- Add optional ability to deal with tInterpAlgo
+M      t/02.t ------------------------ Add tInterpAlgo unit test
+M      t/datm.template.streams.xml --- Add new stream with tInterpAlgo
+
+==============================================================
+Tag name:  perl5lib_080701
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Tue Jul  1 14:52:20 MDT 2008
+One-line Summary: Include previous year December for streams %ym form
+
+M      Streams/Template.pm ---- Include the year before beg_year December when listing
+       year-month files with the %ym form.
+>>>>>>>> Change so unit-test for streams will work
+M      t/datm.streams.txt
+M      t/02.t
+
+==============================================================
+Tag name:  perl5lib_080611
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Jun 11 13:10:37 MDT 2008
+One-line Summary: Increase line length to 90 characters before split up values...
+
+M Build/Namelist.pm --- Split up line after 90 characters long instead of 70.
+
+==============================================================
+Tag name:  perl5lib_080604
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Jun  4 13:11:56 MDT 2008
+One-line Summary: Finalize validation changes
+
+Improve documentation, make sure all public methods are documented. Remove notes
+about needing to do validation as is done now. Change the validate methods a bit
+and make them more robust.
+
+M  Build/Config.pm --------------- Add get_valid_values method and use it internally.
+M  Build/NamelistDefinition.pm --- Add namelist validate_variable_value to validate 
+                                   method. Add option to return without quotes to 
+                                   get_valid_values method.
+M  Build/Namelist.pm ------------- Make validate_variable_value more robust.
+
+>>>>> Get unit tests to work with above changes and add tests for new methods.
+
+M  t/01.t
+M  t/namelist_definition.xml
+M  t/04.t
+M  t/config_cache.xml
+M  t/config_definition.xml
+
+==============================================================
+Tag name:  perl5lib_080522
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Thu May 22 23:41:48 MDT 2008
+One-line Summary: Add methods to check valid values
+
+M     Build/Namelist.pm ------------- Add validate_variable_value method
+M     Build/NamelistDefinition.pm --- Add get_valid_values method
+M     t/04.t ------------------------ Add tests for new methods
+M     t/output_test_namelist.nl ----- Add new variables that are being checked
+
+==============================================================
+Tag name:  perl5lib_080517
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Apr 30 16:45:02 MDT 2008
+One-line Summary: Add optional method to add comments to end of namelist file
+
+M      Build/Namelist.pm ------------- new method and option to write method
+M      t/datm.streams.txt ------------ add comments
+M      t/output_test_namelist.nl ----- add comments
+M      t/04.t ------------------------ add new option
+M      t/config_definition.xml ------- change so sets needed data
+
+==============================================================
+Tag name:  perl5lib_080430
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Apr 30 16:45:02 MDT 2008
+One-line Summary: Add file check for DIN_LOC_ROOT and add Namelist stuff
+
+Add file check for DIN_LOC_ROOT in Streams/Template.pm
+Add new files and simple tests for Namelist objects from cam3_5_43.
+
+------------ New namelist objects from cam3_5_43
+A      Build/NamelistDefaults.pm
+A      Build/NamelistDefinition.pm --- change hgrid attribute to res.
+A      Build/Namelist.pm
+------------ Tests for namelist objects.
+A      t/namelist_defaults_cam.xml
+A      t/namelist_definition.xml
+A      t/output_test_namelist.nl
+A      t/04.t
+------------ Changes
+M      t/config_cache.xml ----- Set resolution and dyn to something.
+M      Streams/Template.pm ---- Change so can test for files with DIN_LOC_ROOT in them.
+
+==============================================================
+Tag name:  perl5lib_071204
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Tue Dec  4 13:13:42 MST 2007
+One-line Summary: Add in decomposition stuff
+
+Add Decomp::Config object and add tests for it in the test directory.
+
+==============================================================
+Tag name:  perl5lib_070928
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Fri Sep 28 12:56:01 MDT 2007
+One-line Summary: Add in Streams Template stuff
+
+Also add a get_names method to Build/Config.pm
+And add in tests to Streams::Template. Modify Config
+tests to use relative path rather than a specific absolute
+path to a directory for Brian Eaton.
+
+==============================================================
+==============================================================
+Tag name:  perl5lib_070817
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Fri Aug 17 15:24:50 MDT 2007
+One-line Summary: Initial checkin from cam3_5_08
+==============================================================

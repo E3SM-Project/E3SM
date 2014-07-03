@@ -1,0 +1,60 @@
+# install script for Jaguar-interlagos: 07/2012
+# build instructions for top level directory 
+# (1) module load subversion netcdf/4.1.2 p-netcdf/1.2.0
+# (2) module swap pgi pgi/12.5.0 
+# (3) ./bootstrap
+# (5) configure-scripts/xk6-config (this file)
+# (6) make
+#
+./configure \
+  FC=ftn  F77=ftn   \
+  CC=cc  CXX=CC \
+  CXXFLAGS="-O2 --diag_suppress 554,111,611" \
+  CPPFLAGS="-I/tmp/proj/cli054/libgptl -DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK -DCESMTIMERS" \
+  FCFLAGS="-Mfree -O2" \
+  F77FLAGS="-Mfixed" \
+  CFLAGS="-O2 -tp bulldozer-64,istanbul-64" \
+  FFLAGS="-O2 -tp bulldozer-64,istanbul-64" \
+  --disable-python \
+  --disable-shared \
+  --with-netcdf=$NETCDF_DIR \
+  EXTRA_LDLIBS="/opt/pgi/12.5.0/linux86-64/12.5/lib/f90main.o /tmp/proj/cli054/libgptl/libgptl.a "\
+  --with-trilinos=/ccs/proj/cli054/trilinos-10.10.1/NOX_BUILD-FAST \
+  --with-blas=-lsci_pgi \
+  --enable-mpi="yes" \
+  --prefix="$HOME/seacism"
+
+#worked with the following environment on 7/27/2012
+#Currently Loaded Modulefiles from these commands:
+#  1) modules/3.2.6.6                      14) PrgEnv-pgi/4.0.46
+#  2) xtpe-network-gemini                  15) xt-mpich2/5.4.1
+#  3) pgi/12.5.0                           16) xtpe-interlagos
+#  4) xt-libsci/11.0.05                    17) eswrap/1.0.9
+#  5) udreg/2.3.2-1.0400.5038.0.0.gem      18) lustredu/1.0
+#  6) ugni/2.3-1.0400.4374.4.88.gem        19) DefApps
+#  7) pmi/3.0.0-1.0000.8661.28.2807.gem    20) altd/1.0
+#  8) dmapp/3.2.1-1.0400.4782.3.1.gem      21) subversion/1.6.17
+#  9) gni-headers/2.1-1.0400.4351.3.1.gem  22) python/2.7.2
+# 10) xpmem/0.1-2.0400.31280.3.1.gem       23) hdf5/1.8.6
+# 11) xe-sysroot/4.0.46                    24) netcdf/4.1.2
+# 12) xt-asyncpe/5.09                      25) p-netcdf/1.2.0
+# 13) atp/1.4.1
+
+#NOTE this code has also been tested with the new PrgEnv that will
+# become default on 8/7/2012. Everything SHOULD be default except
+# need to switch back to netcdf/4.1.2 instead of netcdf/4.2.0
+#Currently Loaded Modulefiles:
+#  1) modules/3.2.6.6                      14) PrgEnv-pgi/4.0.46
+#  2) xtpe-network-gemini                  15) xt-mpich2/5.4.1
+#  3) pgi/12.5.0                           16) xtpe-interlagos
+#  4) xt-libsci/11.1.00                    17) eswrap/1.0.9
+#  5) udreg/2.3.2-1.0400.5038.0.0.gem      18) lustredu/1.0
+#  6) ugni/2.3-1.0400.4374.4.88.gem        19) DefApps
+#  7) pmi/3.0.0-1.0000.8661.28.2807.gem    20) altd/1.0
+#  8) dmapp/3.2.1-1.0400.4782.3.1.gem      21) subversion/1.6.17
+#  9) gni-headers/2.1-1.0400.4351.3.1.gem  22) python/2.7.2
+# 10) xpmem/0.1-2.0400.31280.3.1.gem       23) netcdf/4.1.2
+# 11) xe-sysroot/4.0.46                    24) hdf5/1.8.6
+# 12) xt-asyncpe/5.11                      25) p-netcdf/1.2.0
+# 13) atp/1.4.4
+

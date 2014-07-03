@@ -1,0 +1,89 @@
+\section{DATA STRUCTURES}\label{ch:modelinput}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Introduction}\label{sec:chp3intro}
+
+Important to any software system are the data structures which guide the flow and storage of the information which the software needs.  This is increasingly important when dealing with a modeling simulation where the method in which the data is stored directly affects how it can be used and how useful the data stored is.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{NetCDF}\label{sec:chp3netcdf}
+
+The input and output data format that GLIMMER-CISM uses is NetCDF (network Common Data Form) which is commonly used for modeling applications of this nature.  Technically it is ``a set of interfaces for array-oriented data access" and is widely used in scientific research due the modularity of the framework and the number of accessible libraries provided for it. \citep{NetCDF:website}
+
+NetCDF allows for any array-based data to be stored in a single file which can encapsulate several variables, time stepping, and multiple dimensions.  These attributes make it an excellent form to store the simulation of an ice-sheet as it changes through time, keeping all the variables associated with the simulation.  Although the latest versions of NetCDF are able to store data in formats that aren't simply array-based, the simulation data of GLIMMER-CISM only uses the grid based storage.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Poly Files}\label{sec:chp3poly}
+
+Triangle uses poly (polygon) files to represent a 2-dimensional PSLG (Planar Straight Line Graph).  The file format is straightforward for a graph representation.  There are minor variations that can be made to the format, but for the purpose of this project the output of the file is as follows.
+
+\begin{table}[ht]
+\caption{Poly File Format}
+\centering
+\begin{center}
+    \begin{tabular}{ | c | c | c | c | c |}
+    \hline
+    \multicolumn{5}{|c|}{POLY File}\\
+    \hline
+    First Line & \# Vertices & Dimension(2) & \# Attributes(0) & \# Bmarks(0 or 1)  \\ \hline
+    Following Lines & Vertex \# & X Location & Y Location & Boundary Marker \\ \hline
+    Next Line & \# Edges & & & \# Bmarks(0 or 1) \\ \hline
+    Following Lines & Edge \# & Endpoint 1 & Endpoint 2 & Boundary Marker \\ \hline
+    Next Line & \# Holes & & & \\ \hline
+    Following Lines & Hole \# & X Location & Y Location & \\ \hline
+    Last Line & 0 & & & \\ \hline
+    \end{tabular}
+\end{center}
+\end{table}
+
+\citep{Triangle:website}
+
+The endpoints for edges are the vertex numbers of the vertices listed in the file.  Each edge and vertex must have a unique number identifying them.  Holes are also allowed in the PSLG, but for the scope of this work, no examples with holes were used.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Mapping}\label{sec:chp3map}
+
+
+The transformation between the NetCDF format and the poly one is straightforward.  This is simply taking a grid and transforming it into a mesh datatype.  For the solver, only the ice-sheet is desired and therefore the entire grid is not used.  GLIMMER-CISM stores a mask at each timestep which specifies what each node in the graph represents.  This mask tells the user whether it is ice, grounded, ocean, land, a grounding line, or other important features of an ice sheet.  These are represented as bits in a byte that are turned on or off.  Thus, when generating the mesh each node is checked and if it has ice it can be added to the poly file.  
+
+An important aspect of the file is the bmark (boundary marker) which allows the mesh to associate a value with each node specifying if the node is on a boundary or as a general marker for a type of node.  Since every edge and node have this boundary marker the mapping sets it equal to the value of the mask so that the functionality built into the mask can be extended to be used on the boundary markers.  Thus, mask functions checking for ice, whether it is grounded or floating, etc can now be called passing it the boundary marker on a node to have that information during the PDE analysis.
+
+Each node must have a unique identifier (as outlined in the specifications above) and then edges use these vertex identifiers to specify the two nodes they connect.  Since this is a triangular mesh format it is important to add in extra edges so that only triangle sections exist in the PLSG.  The standard north/south and east/west edges were applied like a standard grid, and then southwest/northeast edges were added where possible.  This left some blocky sections on the sides so southeast/northwest edges are also added to all nodes where the other cross edges didn't exist. 
+
+Mapping the data back to NetCDF is also done directly due to the built in functionality in PHAML which allows you to specify a point and get the interpolated data from the mesh there.  Thus, all the resulting data can be accessed by some data manipulation and reshaping arrays to go in between the mesh and NetCDF.  These procedures are outlined more thoroughly in the following chapter which discusses the additions and files directly. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Examples}
+
+Creating an accurate representation is straightforward for a smooth ice sheet.  An ideal glacier, as shown in \ref{fig:inglacierf}, can yield a smooth mesh with no anomalies.  More intricate glaciers though may have adjacent nodes that are connected even though they shouldn't be.  Examples of these types of issues are demonstrated in Greenland (fig \ref{fig:greenmesh}) and Antarctica (fig \ref{fig:ant}). 
+
+\addfigure{nc2poly}{1.0}{Mesh Generation: Using ice thickness to create a mesh for PHAML}{A mesh created from the ice thickness of an ice sheet}{fig:inglacierf}
+
+Greenland has a few anomalies such as the creation of a hole from a large bay area that doesn't actually connect.  There are also a couple of islands that are connected to the mainland by an edge.  These sort of issues happen because of grid resolution.  The larger the distance between nodes of the grid, the more details can be lost in the mesh generation.  The mesh of Greenland shown,fig \ref{fig:greenmesh}, is based off of a 15 kilometer grid.
+
+\addfigure{greenmesh}{1.0}{Greenland Mesh: Using the ice thickness of Greenland to create a mesh for PHAML}{Greenland mesh created from the ice thickness}{fig:greenmesh}
+
+Many resolution based artifacts will also exist around the edges of Antarctica depending on the grid size.  Due to the size of Antarctica resolution will always be an issue.  The mesh \ref{fig:antmesh} was generated from the grid \ref{fig:ant} which has a 20 kilometer distance between each node.  The most noticeable issue is that many of the small islands tend to get lumped together since they're so close together.  
+
+\addfigure{ant}{0.8}{Antarctica: Ice thickness topology of Antarctica}{Antarctica topological map by ice thickness}{fig:ant}
+
+\addfigure{antmesh}{1.0}{Antarctica Mesh: Using the ice thickness of Antarctica to create a mesh for PHAML}{Antarctica mesh created from the ice thickness}{fig:antmesh}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Improved Generation Techniques}
+
+Clearly shown by the examples \ref{fig:greenmesh} and \ref{fig:antmesh}, the mesh generation technique can create unintended anomalies.  As mentioned, resolution becomes an issue when trying to correctly generate the mesh. Often there are adjacent nodes that are both grounding line nodes but should not be directly connected.  This causes the resulting mesh to be larger or irregular in certain areas as small islands become part of the main mesh or jagged grounding lines become smoother.  This effect can be lessened by taking a higher resolution grid to begin with so that there is less distance between the nodes.  Although this works, these anomalies are always possible and it requires having a higher resolution grid in the areas which are not as important.
+
+
+For the diagonal edges other approaches were tested as well which check to make sure adjacent edges existed first.  These more cumbersome approaches made very little overall difference in the mesh though.  A land mass based approach needs to be taken which snakes along the grounding line in order to separate the different islands.  This is a tricky and complicated algorithm when working with hundreds or thousands of possible smaller islands.  This approach would greatly benefit the overall mesh production though making the simulations and applications more accurate.
+
+Better triangulation checking within the mesh would be very beneficial as well.  When there is a misplaced edge or a cycle greater than three Triangle will sometimes fix it, but sometimes they aren't fixed and will cause issues within the simulation.
+
+%%%%%%%%%%
+% End of Chapter 3
+%%%%%%%%%%

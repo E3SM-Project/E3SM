@@ -1,0 +1,6 @@
+-spmd -smp
+-dyn eul
+-res 48x96
+-phys ideal
+-debug
+-s

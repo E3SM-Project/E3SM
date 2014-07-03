@@ -1,0 +1,123 @@
+#!/usr/bin/env perl 
+#-----------------------------------------------------------------------------------------------
+#
+# create_production_test
+#
+# This utility allows the users to specify configuration
+# cesm tests from an existing case directory
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+
+sub usage {
+    die <<EOF;
+NAME
+
+  create_production_test
+
+  Running this command will create a production restart test for the current case
+  The test case will be created in a parallel directory called "current_case_testname".
+
+  We use the following example to document running this script.
+  If the current case is in
+      /ptmp/user/current_case 
+  the production restart test will be created in
+      /ptmp/user/current_case_testname
+  where testname can be any of the tests currently supported.   The default is an ERT.
+
+possible testnames are 
+ ERS (exact restart from startup, default 6 days + 5 days) 
+ ERT (exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)) 
+ ERI (hybrid/branch/exact restart test, default 3+19/10+9/5+4 days) 
+ LAR (long term archive test) 
+ PFS (performance test setup) 
+ NCK (multi-instance validation vs single instance (default length)) 
+ CME (compare mct and esmf interfaces (10 days)) 
+
+  In order to run the test, you will need to
+    - cd to /ptmp/user/current_case_testname
+    - run the build script interactively (current_case_testname.build)
+    - submit the test script(current_case_testname.submit).
+    - The result of the test will be in documented in
+     /ptmp/user/current_case_testname/TestStatus
+
+SYNOPSIS
+
+   create_production_test -help
+
+   create_production_test -test testname
+ 
+   create_production_test 
+
+EOF
+}
+
+my $test = "ERT";   # default test
+my %opts;
+my @allowedtests = qw(ERS ERT ERI LAR PFS NCK CME);
+
+GetOptions(
+	   "test=s" => \$opts{'test'},
+	   "h|help" => \$opts{'help'},) or usage();
+
+usage() if $opts{'help'};
+
+$test = $opts{'test'} if $opts{'test'};
+
+if($test =~ /(\w\w\w)_/){
+  die usage() unless(grep(/^$1$/,@allowedtests)>0);
+}else{
+  die usage() unless(grep(/^$test$/,@allowedtests)>0);
+}
+
+#-----------------------------------------------------------------------------------------------
+# The XML::Lite module is required to parse the XML configuration files.
+#-----------------------------------------------------------------------------------------------
+my $caseroot = getcwd();
+
+(-f "$caseroot/Tools/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory 
+    \"$caseroot/ccsm_utils/Tools/perl5lib\" **
+EOF
+	
+my $dirs = "$caseroot/Tools";
+unshift @INC, $dirs;
+require XML::Lite;
+require SetupTools;
+
+#-----------------------------------------------------------------------------------------------
+# Read $caseroot xml files - put restuls in %xmlvars hash
+#-----------------------------------------------------------------------------------------------
+
+my %xmlvars = ();
+SetupTools::getxmlvars($caseroot, \%xmlvars);
+foreach my $attr (keys %xmlvars) {
+    $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
+}
+
+my $casename = $xmlvars{CASE};
+my $testroot = "$caseroot/..";
+my $testname = "${casename}_${test}";
+my $ccsmroot = $xmlvars{CCSMROOT};
+
+
+print "\nCreating test $testname\n";
+
+system("$ccsmroot/scripts/create_clone -case $testroot/$testname -clone $caseroot -testname $test");
+
+chdir("$testroot/$testname");
+
+$ENV{TESTCASE}=$test;
+$ENV{CASEROOT}="$testroot/$testname";
+$ENV{CCSMROOT}=$ccsmroot;
+
+
+system("$ccsmroot/scripts/ccsm_utils/Tools/testcase_setup.csh");
+
+

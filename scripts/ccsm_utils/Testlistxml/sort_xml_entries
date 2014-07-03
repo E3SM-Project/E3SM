@@ -1,0 +1,96 @@
+#!/usr/bin/env perl 
+
+#===================================================================
+# Test suite and test creation script. 
+#===================================================================
+use strict;
+use warnings;
+use Cwd qw( getcwd abs_path );
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+use File::Basename;
+use File::Copy;
+use Data::Dumper;
+use XML::LibXML;
+
+#-----------------------------------------------------------------------------------------------
+# Global data. 
+#-----------------------------------------------------------------------------------------------
+my $ProgName = basename($0);
+my $ProgDir = $1;
+my $cwd;
+my %opts = ( testlist => "testlist.xml",
+	     newlist  => undef,
+    );
+
+GetOptions(
+    "testlist=s" => \$opts{'testlist'},
+    "newlist=s"  => \$opts{'newlist'},
+    );
+
+my $parser = XML::LibXML->new;
+
+my $testlist = $parser->parse_file("$opts{'testlist'}");
+my $roottest = $testlist->getDocumentElement();
+my $cnt=0;
+my $comphash;
+foreach my $compset ($roottest->findnodes('/testlist/compset')) { 
+    my $name = $compset->getAttribute('name');
+    $comphash->{$name}={};
+    foreach my $grid ($compset->findnodes('./grid')){
+	my $gname = $grid->getAttribute('name');
+	$comphash->{$name}{$gname}={};
+	foreach my $test ($grid->findnodes('./test')){
+	    my $tname = $test->getAttribute('name');
+	    $comphash->{$name}{$gname}{$tname}={};
+	    foreach my $mach ($test->findnodes('./machine')){
+		my $compiler = $mach->getAttribute('compiler');
+		my $testtype = $mach->getAttribute('testtype');
+		my $nldir = $mach->getAttribute('nldir');
+		my $mname = $mach->textContent;
+		next if ($mname eq "lynx");
+#		next unless($testtype eq "aux_clm");
+		if(defined $nldir){
+		    $comphash->{$name}{$gname}{$tname}{$mname}{$compiler}{$testtype}{$nldir}=1;
+		}else{
+		    $comphash->{$name}{$gname}{$tname}{$mname}{$compiler}{$testtype}{"undef"}=1;
+		}
+	    }
+	}
+    }	           
+}	
+
+open(F,">testlistnew.xml");
+print F "<?xml version=\"1.0\"?>\n";
+print F "<testlist>\n";
+foreach my $cname (sort keys %$comphash){
+    print F "  <compset name=\"$cname\">\n";
+    foreach my $gname (sort keys %{$comphash->{$cname}}){
+	print F "    <grid name=\"$gname\">\n";
+	foreach my $tname (sort keys %{$comphash->{$cname}{$gname}}){
+	    print F "      <test name=\"$tname\">\n";
+	    foreach my $mname (sort keys %{$comphash->{$cname}{$gname}{$tname}}){
+		foreach my $cpname (keys %{$comphash->{$cname}{$gname}{$tname}{$mname}}){
+		    foreach my $ttype (keys %{$comphash->{$cname}{$gname}{$tname}{$mname}{$cpname}}){
+			foreach my $nldir (keys %{$comphash->{$cname}{$gname}{$tname}{$mname}{$cpname}{$ttype}}){
+			    if ($nldir eq "undef"){
+				print F "        <machine compiler=\"$cpname\" testtype=\"$ttype\">$mname</machine>\n";
+			    }else{
+				print F "        <machine compiler=\"$cpname\" testtype=\"$ttype\" nldir=\"$nldir\">$mname</machine>\n";
+			    }
+			}
+		    }
+		}
+	    }
+	    print F "      </test>\n";
+	}
+	print F "    </grid>\n";
+    }
+    print F "  </compset>\n";
+}
+print F "</testlist>\n";
+
+close(F);
+exit;

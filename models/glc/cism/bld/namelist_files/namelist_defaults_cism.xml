@@ -1,0 +1,246 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of CISM  model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.
+-->
+
+<!-- =============================================================  -->
+<!-- group: derived                                                 -->
+<!-- (does not appear in namelist file cism_in; handled uniquely)   -->
+<!-- =============================================================  -->
+
+<cisminputfile glc_grid="gland20" cism_phys="cism1">glc/cism/gland20.input.nc</cisminputfile>
+<cisminputfile glc_grid="gland10" cism_phys="cism1">glc/cism/gland10.input.nc</cisminputfile>
+<cisminputfile glc_grid="gland5" cism_phys="cism1">glc/cism/gland5.input.nc</cisminputfile>
+<cisminputfile glc_grid="gland5UM" cism_phys="cism1">glc/cism/IceSheetData_UMontana/PresentDayGreenland/Greenland_5km_v1.1_SacksRev_c110629.nc</cisminputfile>
+
+<!-- the following is just for initial testing, and may have to be changed later -->
+<cisminputfile glc_grid="gland20" cism_phys="cism2">glc/cism/gland20.input.nc</cisminputfile>
+<!-- the following is a temporary file, just for testing -->
+<!-- WJS (1-25-13): Commenting this out for now, because it gives funky acab & artm
+<cisminputfile glc_grid="gland10" cism_phys="cism2">glc/cism/Greenland/glide/init/gis_10km.ice2sea.boost_c121109.nc</cisminputfile>
+-->
+
+<!-- The following is the file Kate has been using for standalone testing. It probably
+shouldn't be used in the long-term, becasue it has boosted topography, and may not be
+ideal in other senses as well. Also, note that it probably disagrees with the default
+projection info in the config file, though by less than the "boost" file, above. For
+now, it gives reasonable enough results for testing purposes. -->
+<cisminputfile glc_grid="gland10" cism_phys="cism2">glc/cism/Greenland/glide/init/gis_10km.crop_c110510.nc</cisminputfile>
+
+
+<!-- =============================================================  -->
+<!-- group: cism_params                                             -->
+<!-- =============================================================  -->
+
+<cism_debug>.false.</cism_debug>
+
+<cesm_history_vars>'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'</cesm_history_vars>
+
+<!-- =============================================================  -->
+<!-- group: grid_nml                                                -->
+<!-- =============================================================  -->
+
+<horiz_grid_opt>file</horiz_grid_opt>
+
+<horiz_grid_file lnd_grid="48x96"   >glc/cism/fracdata/fracdata_48x96_gx3v7_c090915.glc.nc</horiz_grid_file>
+<horiz_grid_file lnd_grid="0.9x1.25">glc/cism/fracdata/fracdata_0.9x1.25_gx1v6_c090317.glc.nc</horiz_grid_file>
+<horiz_grid_file lnd_grid="1.9x2.5" >glc/cism/fracdata/fracdata_1.9x2.5_gx1v6_c090206.glc.nc</horiz_grid_file>
+
+<mask_varname>LANDMASK</mask_varname>
+
+<frac_varname>LANDFRAC</frac_varname>
+
+<!-- =============================================================  -->
+<!-- group: time_manager_nml                                        -->
+<!-- =============================================================  -->
+
+<date_separator>-</date_separator>
+
+<stop_option>never</stop_option>
+
+<allow_leapyear>.false.</allow_leapyear>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: grid                                       -->
+<!-- =============================================================  -->
+
+<ewn glc_grid="gland10" >151</ewn>
+<ewn glc_grid="gland20" >76</ewn>
+<ewn glc_grid="gland5"  >301</ewn>
+<ewn glc_grid="gland5UM">301</ewn>
+
+<nsn glc_grid="gland10" >281</nsn>
+<nsn glc_grid="gland20" >141</nsn>
+<nsn glc_grid="gland5"  >561</nsn>
+<nsn glc_grid="gland5UM">561</nsn>
+
+<!-- the temporary cism2 10km input file has a different number of points than the cism1 10km input file;
+     in the future, these might return to agreement -->
+<ewn glc_grid="gland10" cism_phys="cism2">150</ewn>
+<nsn glc_grid="gland10" cism_phys="cism2">280</nsn>
+
+<upn>11</upn>
+
+<dew glc_grid="gland10" >10000.</dew>
+<dew glc_grid="gland20" >20000.</dew>
+<dew glc_grid="gland5"  >5000.</dew>
+<dew glc_grid="gland5UM">5000.</dew>
+
+<dns glc_grid="gland10" >10000.</dns>
+<dns glc_grid="gland20" >20000.</dns>
+<dns glc_grid="gland5"  >5000.</dns>
+<dns glc_grid="gland5UM">5000.</dns>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: sigma                                      -->
+<!-- =============================================================  -->
+
+<!-- This group is only relevant if sigma=2 -->
+
+<!-- These levels focus resolution at the bottom -->
+<sigma_levels>0.00 0.15 0.30 0.45 0.60 0.75 0.83 0.90 0.95 0.98 1.00</sigma_levels>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: climate                                    -->
+<!-- =============================================================  -->
+
+<evolve_ice>1</evolve_ice>
+
+<precip_mode>1</precip_mode>
+
+<acab_mode>0</acab_mode>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: projection                                 -->
+<!-- =============================================================  -->
+
+<type>"STERE"</type>
+
+<centre_latitude>90.0</centre_latitude>
+
+<centre_longitude>321.0</centre_longitude>
+
+<false_easting>800000.0</false_easting>
+
+<false_northing>3400000.0</false_northing>
+
+<standard_parallel>71.0</standard_parallel>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: options                                    -->
+<!-- =============================================================  -->
+
+<dycore cism_phys="cism1">0</dycore>
+<dycore cism_phys="cism2">1</dycore>
+
+<temperature>1</temperature>
+
+<temp_init>2</temp_init>
+
+<flow_law>2</flow_law>
+
+<basal_water>0</basal_water>
+
+<basal_mass_balance>1</basal_mass_balance>
+
+<gthf>0</gthf>
+
+<isostasy>0</isostasy>
+
+<marine_margin>1</marine_margin>
+
+<slip_coeff>0</slip_coeff>
+
+<evolution cism_phys="cism1">0</evolution>
+<evolution cism_phys="cism2">3</evolution>
+
+<vertical_integration>0</vertical_integration>
+
+<sigma>0</sigma>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: time                                       -->
+<!-- =============================================================  -->
+
+<dt glc_grid="gland10"  cism_phys="cism1">0.1</dt>
+<dt glc_grid="gland20"  cism_phys="cism1">0.1</dt>
+<dt glc_grid="gland5"   cism_phys="cism1">0.05</dt>
+<dt glc_grid="gland5UM" cism_phys="cism1">0.05</dt>
+
+<!-- Use 1 for initial testing of cism2 gland20... may be reduced later
+     (If it's reduced later, we can still get dt=1 for testing by using a user_nl directory in the test list -->
+<dt glc_grid="gland20"  cism_phys="cism2">1.0</dt>
+
+<!-- Use 0.25 for initial testing of cism2 gland10... will probably be reduced later -->
+<dt glc_grid="gland10"  cism_phys="cism2">0.25</dt>
+
+<ntem>1</ntem>
+
+<nvel>1</nvel>
+
+<!-- To get diagnostic once per year, set this to 1/dt -->
+<dt_diag>1.</dt_diag>
+
+<!-- 5-km idiag & jdiag chosen by Jeremy Fyke, as a point prone to CFL
+     instability (in trunk of Jakobshavn); 10-km and 20-km points
+     chosen to be roughly the same point in space -->
+<idiag glc_grid="gland10" >38</idiag>
+<idiag glc_grid="gland20" >19</idiag>
+<idiag glc_grid="gland5"  >76</idiag>
+<idiag glc_grid="gland5UM">76</idiag>
+
+<jdiag glc_grid="gland10" >114</jdiag>
+<jdiag glc_grid="gland20" >57</jdiag>
+<jdiag glc_grid="gland5"  >228</jdiag>
+<jdiag glc_grid="gland5UM">228</jdiag>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: parameters                                 -->
+<!-- =============================================================  -->
+
+<log_level>6</log_level>
+
+<ice_limit>100.</ice_limit>
+
+<marine_limit>-200.</marine_limit>
+
+<geothermal>-5.e-2</geothermal>
+
+<flow_factor cism_phys="cism1">3.</flow_factor>
+<flow_factor cism_phys="cism2">1.</flow_factor>
+
+<hydro_time>1000.</hydro_time>
+
+<basal_tract_const>1.e-4</basal_tract_const>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: ho_options                                 -->
+<!-- =============================================================  -->
+
+<!-- This group is only relevant if dycore is not 0 -->
+
+<!-- This should be 5 when beta is provided in the cism input file,
+     but in general we'll want the default to be 4, according to Steve
+     Price-->
+<which_ho_babc>5</which_ho_babc>
+
+<which_ho_efvs>2</which_ho_efvs>
+
+<which_ho_resid>3</which_ho_resid>
+
+<which_disp>0</which_disp>
+
+<which_ho_sparse cism_use_trilinos="FALSE">1</which_ho_sparse>
+<which_ho_sparse cism_use_trilinos="TRUE" >4</which_ho_sparse>
+
+<which_ho_nonlinear>1</which_ho_nonlinear>
+
+</namelist_defaults>

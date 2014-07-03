@@ -1,0 +1,72 @@
+#! /bin/csh -f
+
+source ./Tools/ccsm_getenv || exit -1
+
+if !($?LID) then
+  setenv LID "`date +%y%m%d-%H%M%S`"
+endif
+
+unsetenv PREVIEW_NML
+if ($argv =~ *verbose*) then
+  setenv PREVIEW_NML 1
+endif
+
+# -------------------------------------------------------------------------
+# Make necessary directories
+# -------------------------------------------------------------------------
+
+foreach DIR ( $EXEROOT $LIBROOT $INCROOT $RUNDIR)
+  if !(-d $DIR) mkdir -p $DIR || "cannot make $DIR" && exit -1
+end
+
+foreach model ($MODELS)
+  set objdir = $EXEROOT/$model/obj ; if !(-d $objdir) mkdir -p $objdir
+  set libdir = $EXEROOT/$model     ; if !(-d $libdir) mkdir -p $libdir
+end
+
+# -------------------------------------------------------------------------
+# Build Namelist
+# -------------------------------------------------------------------------
+
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  set comp = $COMPONENTS[$n]
+  $CASEBUILD/$comp.buildnml.csh
+  if ($status != 0) then
+    echo  ERROR: $comp.buildnml.csh failed; exit  99
+  endif
+end
+
+# -------------------------------------------------------------------------
+# Save namelist to docdir
+# -------------------------------------------------------------------------
+
+set docdir = $CASEROOT/CaseDocs
+if !(-d $docdir) then
+  mkdir -p $docdir
+  echo "  CESM Resolved Namelist Files" >& $docdir/README
+  echo "    For documentation only" >>& $docdir/README
+  echo "    DO NOT MODIFY" >>& $docdir/README
+endif
+chmod +w $docdir/*
+
+cd $RUNDIR
+cp -p *_in_[0-9]*                     $docdir/ >& /dev/null
+cp -p *modelio*nml_[0-9]*      $docdir/ >& /dev/null
+cp -p *_in                               $docdir/ >& /dev/null
+cp -p *modelio*nml                $docdir/ >& /dev/null
+cp -p *streams*txt*                $docdir/ >& /dev/null
+cp -p *.stxt                            $docdir/ >& /dev/null
+cp -p *maps.rc                      $docdir/ >& /dev/null
+cp -p cism.config*                 $docdir/ >& /dev/null
+
+# copy over chemistry mechanism docs if they exist
+if ( -e $CASEBUILD/camconf ) then
+  cp -p $CASEBUILD/camconf/chem_mech.* $docdir/ >& /dev/null
+endif
+chmod 444 $docdir/*
+
+
+
+

@@ -1,0 +1,33 @@
+#  Notes on Hopper build 
+# (updated and confirmed on Feb. 21, 2012 by SFP)
+# 
+# Serial build version modified from parallel build version and added on 3-2-2012 by SFP
+#
+# (1) before executing this script, load these modules:            
+# module load netcdf/4.1.2 	(note that default netcdf lib won't work)
+# module load python
+#
+# (2) execute this configure script using:
+# sh  ./configure-scripts/hopper-config
+#
+# (3) build the code using ...
+# gmake
+
+./configure \
+ FC=ftn   F77=ftn   \
+ CC=cc  CXX=CC \
+ CXXFLAGS="-O2 --diag_suppress 554,111,611" \
+ CPPFLAGS="-DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK" \
+ FCFLAGS="-Mfree -O2" \
+ F77FLAGS="-Mfixed" \
+ CFLAGS="-O2" \
+ --disable-python \
+ --disable-shared \
+ --with-netcdf=$CRAY_NETCDF_DIR \
+ EXTRA_LDLIBS="/opt/pgi/12.5.0/linux86-64/12.5/lib/f90main.o" \
+ --with-blas=-lsci_pgi \
+
+# Old and/or not needed ...
+# --prefix="/global/u2/w/worleyph/SCISM/seacism_trunk_wc/"
+# --with-trilinos=/global/u2/w/worleyph/Trilinos/trilinos-10.6.4 \
+

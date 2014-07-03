@@ -1,0 +1,32 @@
+# Requires (command line or in  .bashrc):
+#   module load cmake
+#
+# cmake configuration script that works on jaguar with PGI
+# This script needs to be run from a subdirectory (e.g. build-pgi)
+# of the main seacism repository (reflected in the several 
+# instances of # ".." below).
+#
+# After this executes, do:
+#   make -j 8
+#   cp example-drivers/simple_glide/src/sgcmake .
+#  --If you get an error about missing mod files, try make multiple times.
+
+
+rm ./CMakeCache.txt
+
+echo
+echo "Doing CMake Configuration step"
+
+cmake \
+  -D GLIMMER_TRILINOS_DIR=/ccs/proj/cli054/trilinos-10.12/AUG_PGI_BUILD/install \
+  -D GLIMMER_NETCDF_DIR=$NETCDF_DIR \
+  -D GLIMMER_FMAIN="/opt/pgi/12.5.0/linux86-64/12.5/lib/f90main.o" \
+  -D GLIMMER_GPTL_DIR=/tmp/proj/cli054/libgptl \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+ ..
+
+# Note: last argument above  ".."  is path to top seacism directory 
+ 
+# If you dont depend on  netcdff AND netcdf, but just netcdf, use this line
+#   -D GLIMMER_NETCDF_LIBS="netcdf" \
+#

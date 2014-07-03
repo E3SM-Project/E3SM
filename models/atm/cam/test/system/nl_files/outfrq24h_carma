@@ -1,0 +1,11 @@
+&camexp
+ mfilt=1,1,1,1,1,1
+ ndens=1,1,1,1,1,1
+ nhtfrq=-24,-24,-24,-24,-24,-24
+/
+
+
+&carma_nl
+ carma_do_fixedinit=.false.
+ carma_reftfile="camrun.cam.r.carma_reft.nc"
+/

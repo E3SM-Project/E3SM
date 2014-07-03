@@ -1,0 +1,158 @@
+==========================================================================
+$Id: README 45821 2013-04-10 22:21:06Z mlevy@ucar.edu $
+$URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_130509/gen_mapping_files/README $
+==========================================================================
+
+
+===============
+ABOUT THIS TOOL
+===============
+
+This directory contains a shell script that uses ESMF's ESMF_RegridWeightGen
+utility to generate a suite of mapping files to map between specified grid
+files. It does not call the ESMF tool directly, rather the script
+
+gen_ESMF_mapping_file/create_ESMF_map.sh
+
+is used as a wrapper. If you only want to generate a single mapping file, you
+should use that script (see the README file in the gen_ESMF_mapping_file/
+directory for details).
+
+To use this tool, specify some (or all) of the following: atmosphere grid (atm),
+ocean grid (ocn), land grid (lnd), and runoff grid (rtm). Depending on what
+grids are used as input, the following maps will be generated:
+
+ * atm -> ocn: conservative, bilinear, patch
+ * ocn -> atm: conservative, bilinear
+ * atm -> lnd: conservative, bilinear
+ * lnd -> atm: conservative
+ * ocn -> lnd: conservative
+ * lnd -> rtm: conservative
+ * rtm -> lnd: conservative
+
+If you specify a runoff grid but not a land grid, the utility will use the
+atmosphere grid instead. If you want to make a rtm -> ocn mapping file, you
+should use the tool found in
+
+runoff_to_ocn/
+
+The conservative ocn to atm mapping file should be used as input to gen_domain,
+which is located in
+
+../gen_domain_files/ (and must be built in gen_domain_files/src/)
+
+If the ocean and atm grids are identical then the mapping file will simply be
+unity and the atm fraction will be one minus the ocean fraction.
+
+All maps generated will be checked for global consistency by the tool found in
+
+../check_maps/
+
+See the README file in that directory for more details, but basically the tool
+is based on ESMF's ESMF_RegridWeightGenCheck untility. It maps 5 different
+global patterns from source to destination and compares the errors; for any
+conservative maps, it also checks for conservation. Note that this tool must be
+built prior to running gen_cesm_maps.sh, unless you use the --nogridcheck or
+--recompile option. Skipping the grid check is not recommended.
+
+=======================
+USAGE: INTERACTIVE MODE
+=======================
+
+gen_cesm_maps.sh 
+  --fileatm|-fatm  input atm_grid_filename
+  --fileocn|-focn  input ocn_grid_filename
+  --filelnd|-flnd  input lnd_grid_filename
+  --filertm|-frtm  input rtm_grid_filename
+  --nameocn|-nocn  output ocn_name in mapping file
+  --nameatm|-natm  output atm_name in mapping file
+  --namelnd|-nlnd  output lnd_name in mapping file
+  --namertm|-nrtm  output rtm_name in mapping file
+  [ --typeocn|tocn ] [regional|global]
+  [ --typeatm|tatm ] [regional|global]
+  [ --nogridcheck ]
+  [ --batch|-b ]
+  [ --help|-h ]
+  [ -v ]
+ 
+where 
+ --fileatm (or -fatm) 
+   SCRIP grid format atmosphere filename (full pathname)
+ --fileocn (or -focn) 
+   SCRIP grid format ocean filename (full pathname)
+ --filelnd (or -flnd) 
+   SCRIP grid format land filename (full pathname), must be global
+ --filertm (or -frtm) 
+   SCRIP grid format runoff filename (full pathname)
+ --nameatm (or -natm) 
+   Shortname to use for atm in mapping filename
+ --nameocn (or -nocn) 
+   Shortname to use for ocn in mapping filename
+ --namelnd (or -nlnd) 
+   Shortname to use for lnd in mapping filename
+ --namertm (or -nrtm) 
+   Shortname to use for rtm in mapping filename
+ --typeocn (or -tocn) 
+   ocean grid type,  valid values are regional or global
+   default is global
+ --typeatm (or -tatm) 
+   atm grid type, valid values are regional or global
+   default is global
+   value must be global if -frtm and -nrtm are specified
+ --nogridcheck 
+   By default, script will run consistency check on new
+   maps; this flag disables these checks
+ --batch (or -b) 
+   Toggles batch mode usage. If you want to run in batch mode
+   you need to have a separate batch script for a supported machine
+   that calls this script interactively - you cannot submit this
+   script directly to the batch system
+ -rc 
+   Pass the "--recompile" flag to the ESMF tool
+   (Only necessary if nothing has been built in ../check_maps/)
+ -d 
+   toggle debug-only 
+ --help or -h  
+   displays this help message
+
+Note: if rtm is specified and lnd is not, then this tool will
+      assume lnd and atm are on the same grid.
+
+You can also set the following env variables:
+  ESMFBIN_PATH - Path to ESMF binaries 
+                 (Leave unset on yellowstone and caldera and the tool
+                 will be loaded from modules)
+  MPIEXEC ------ Name of mpirun executable
+                 (default is mpirun.lsf on yellowstone and caldera; if
+                 you run interactively on yellowstone, mpi is not used)
+  REGRID_PROC -- Number of MPI processors to use
+                 (default is 8)
+
+=================
+USAGE: BATCH MODE
+=================
+
+Currently, batch mode is only set up for yellowstone. This uses the file
+regridbatch.yellowstone.sh as a wrapper to gen_cesm_maps.sh.
+
+IMPORTANT NOTE: check_maps is NOT run when you run in batch mode. This must be
+run as a separate step after you have created the mapping files. See below for
+an example of how to do this.
+
+(1) Modify the #BSUB lines at the top of regridbatch.yellowstone.sh. You need to
+at least specify a project number; you may want to change some of the other
+settings, too.
+
+(2) Modify the variables in the section labeled "Set user-defined parameters
+here". See the documentation for gen_cesm_maps.sh above for more details on
+the parameters that can be set here.
+
+(3) Submit with:
+
+bsub < regridbatch.yellowstone.sh
+
+(4) Run the check_maps tool on the generated mapping files; e.g.:
+
+    files=*.nc
+    ../check_maps/check_map.sh $files
+

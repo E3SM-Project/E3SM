@@ -1,0 +1,116 @@
+This directory contains inputs for the time_management test driver for
+a number of test cases.
+
+To run with a given set of inputs, copy the files in one of the
+sub-directories to the parent time_management directory.
+
+For example, to run the oneyear test, do the following:
+
+  cp oneyear/*_in ..
+  cd ..
+  ./time_management_test > oneyear_output
+
+
+--- NOTE ABOUT DIRECTORIES WITH NAME FAIL_* ---
+
+Directories with the name *_FAIL (or *_FAIL_restart1 and
+*_FAIL_restart2) are expected to fail. For example, these are used to
+make sure that the restart_test script successfully catches failures
+to restart exactly.
+
+--- DOCUMENTATION OF INPUTS CONTAINED HERE ---
+
+Tests that should fail:
+
+- FAIL_oneday_1, FAIL_oneday_1.restart1, FAIL_oneday_1.restart2:
+  Restart test with one-day time step expected to fail
+
+- FAIL_oneday_2, FAIL_oneday_2.restart1, FAIL_oneday_2.restart2:
+  Restart test with one-day time step expected to fail
+
+
+Tests that should succeed:
+
+The following is generally ordered from short to long time steps:
+
+- sixhour: Test 6-hour time step
+
+- sixhour.restart1: Test six-hour time step with restart: first
+  portion of run. Note that this stops in the middle of a year.
+
+- sixhour.restart2: Test six-hour time step with restart: second
+  portion of run.
+
+- sixhour_leap: Test 6-hour time step, with leap years
+
+- sevenhour: Test 7-hour time step, for the sake of testing a time step
+  that doesn't divide a day
+
+- oneday: Test one-day time step
+
+- oneday.restart1: Test one-day time step with restart: first portion
+  of run
+
+- oneday.restart2: Test one-day time step with restart: second portion
+  of run
+
+- oneday_leap: Test one-day time step, with leap years
+
+- 20day_leap_start00031225: Short run starting near the end of a year,
+  where first time step brings us to the next year
+
+- 20day_leap_start00041225: Similar to 20day_leap_start00031225, but
+  now starting in a leap year
+
+- 20day_forRestart_stopEndOfYear,
+  20day_forRestart_stopEndOfYear.restart1,
+  20day_forRestart_stopEndOfYear.restart2: Restart test with a run
+  with a 20-day timestep, where the first run of the restart test
+  stops at the end of the year, so the first timestep of the continue
+  case crosses a year boundary. 
+
+- 20day_forRestart_stopEndOfYear_leap,
+  20day_forRestart_stopEndOfYear_leap.restart1,
+  20day_forRestart_stopEndOfYear_leap.restart2: Similar to
+  20day_forRestart_stopEndOfYear, but with leap years active.
+
+- 100day_leap_start00031225: Short run starting near the end of a
+  year, where first time step brings us to the next year and crosses
+  the Feb 29 border
+
+- 100day_leap_start00041225: Similar to 100day_leap_start00031225, but
+  now starting in a leap year
+
+- 219day: Test with 219-day time step, for the sake of testing a time
+  step that doesn't divide a year (but divides 5 years)
+
+- 219day_leap: Test with 219-day time step, with leap years
+
+- oneyear: Test one-year time step
+
+- oneyear.restart1: Test one-year time step with restart: first
+portion of run
+
+- oneyear.restart2: Test one-year time step with restart: second
+portion of run
+
+- oneyear_leap: Test 365-day time step, with leap years
+
+- 511day: Test with 511-day time step, for the sake of testing a time
+  step greater than a year, but not an exact number of years (but note
+  that 5 timesteps = 7 years)
+
+- 511day_leap: Test with 511-day time step, with leap years
+
+- twoyear: Test 2-year time step, specified as 0.5 steps_per_year
+  (purpose is to test fractional steps_per_year)
+
+- twoyear.restart1: Test 2-year time step with restart: first portion
+  of run
+
+- twoyear.restart2: Test 2-year time step with restart: second portion
+  of run
+
+- threeyear: Test 3-year time step
+
+- threeyear_leap: Test 1095-day time step, with leap years

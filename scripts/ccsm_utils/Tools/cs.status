@@ -1,0 +1,72 @@
+#! /usr/bin/env perl 
+# Basic script to give us the status of a test suite.  
+# Read the testspec.xml file for the test suite, and print 
+# out the TestStatus for each test. 
+use strict;
+use warnings;
+use Cwd;
+use File::Basename;
+use Data::Dumper;
+my $cwd;
+my $testroot;
+my $scriptsroot;
+my $testspec;
+
+# Open the testspec.xml,  get the scriptsroot, 
+# import XML::Lite. 
+sub init
+{
+  $cwd = getcwd;
+  $testroot =  getcwd;
+  $0 =~ /cs.status\.(.*)$/;
+  $testspec = "$testroot/testspec.$1.xml";
+
+  open my $SPEC, "<", $testspec or die $!;
+  my @speclines = grep (/scriptsroot/, <$SPEC>);
+  chomp @speclines;
+  close $SPEC;
+
+  $scriptsroot = $speclines[0];
+  $scriptsroot =~ s/\<scriptsroot\>//g;
+  $scriptsroot =~ s/\<\/scriptsroot\>//g;
+  $scriptsroot =~ s/\s+//g;
+
+  my @dirs = ( "$scriptsroot/ccsm_utils/Tools/perl5lib");
+  unshift @INC, @dirs;
+  require XML::Lite;
+  return $testspec;
+}
+
+# Parse the testspec.xml, get the full path to each test
+# directory, and print out TestStatus. 
+sub getTestStatus
+{
+  my $testspec = shift;
+  my $xml = XML::Lite->new($testspec);
+  my @tests = $xml->elements_by_name("test");
+  my @casedirs;
+
+  foreach my $test(@tests)
+  {
+    my %attrs = $test->attributes;
+    foreach my $attr(keys %attrs)
+    {
+      push(@casedirs, $attrs{$attr});
+    }
+  }
+
+  foreach my $testcase(@casedirs)
+  {
+     my $teststatusfile = "$testroot/$testcase/TestStatus";
+     open my $STATUS, "<", $teststatusfile or die $!;
+     my @status = <$STATUS>;
+     map { print "$_" } @status;
+     close $STATUS;
+  }
+  
+  chdir $cwd;
+}
+
+$testspec = init();
+getTestStatus($testspec);
+

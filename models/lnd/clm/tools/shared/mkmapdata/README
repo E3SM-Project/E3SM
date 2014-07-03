@@ -1,0 +1,75 @@
+models/lnd/clm/tools/shared/mkmapdata/README		Jun/04/2013
+
+The routines in this directory create a mapping dataset from
+SCRIP grid files to map from one grid to another. These mapping files
+are used by either CLM or mksurfdata_map to regrid from one resolution
+to another.
+
+The script uses ESMF and requires that ESMF be built and the path
+for ESMF binary files (using the program ESMF_RegridWeightGen) 
+be given as input to the script.
+
+Currently uses: ESMF6.1.1
+
+Do the following for help with the different options to the script...
+
+   ./mkmapdata.sh -help
+
+The following steps provide a method to create the executable
+and generate the grid map dataset:
+
+0) Background tasks you only have to do once
+
+ a.)  Export the input SCRIP grid files for the resolutions you'll need
+
+  Most of these files are on the Subversion inputdata server at...
+
+  https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/lnd/clm2/mappingdata/grids/
+
+  Supported machines also have a copy on the CESM DIN_LOC_ROOT location
+  for that machine.
+
+ b.) Obtain and build a version of ESMF compatible with this script
+
+The version needs to support ESMF_RegridWeightGen and support the
+options passed to it in the mkmapdata.sh script.
+
+   http://www.earthsystemmodeling.org/
+
+1) cd to this directory 
+
+2) Create map dataset(s)
+   Option A.)  Use mkmapdata.sh directly
+   run script(e.g.): (see header of mkmapdata.sh for other environment that can be set)
+
+   Example for standard resolutions
+        ./mkmapdata.sh -r 10x15
+   Example for non-standard resolutions where you provide an input SCRIP grid file.
+        ./mkmapdata.sh -f <SCRIP_gridfile>
+
+   Option B.) Alternatively, run regridbatch.sh to run mkmapdata.sh for a bunch of 
+        different resolutions.
+
+   Option C.) Alternatively, run mknoocnmap.pl to create a single-point/regional
+   map for an area without ocean.
+
+   ./mknoocnmap.pl -help      # for help on this script
+
+3) move (and rename if appropriate) generated map datasets
+   to $DIN_LOC_ROOT/lnd/clm/mappingdata/maps, etc.
+
+
+Important files:
+
+  regridbatch.sh ------- Script to run mkmapdata.sh for many resolutions
+  mvNimport.sh --------- Script to copy and import mapping files in for many resolutions
+  mkmapdata.sh --------- Script to create mapping datasets for a given resolution
+  rmdups.ncl ----------- Removes duplicate weights from the resulting mapping file
+
+  mknoocnmap.pl -------- Script to create unity mapping dataset for single-point
+                         or regional studies over land-only (no ocean).
+  mkunitymap.ncl ------- NCL script to create a unity map -- ran by above script
+
+  createXMLEntries.pl -- Script to create entries needed for new mapping files in the XML namelist_defaults file.
+                         Operates on the mapping files created in the current directory.
+

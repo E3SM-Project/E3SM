@@ -1,0 +1,874 @@
+================================================================================
+ SVN $Id: ChangeLog 44779 2013-03-13 22:19:53Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_130313/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+================================================================================
+Originator: tcraig
+Date: Mar 13 2012
+Model: dice7
+Version: dice8_130313
+One-line summary: Add support for copyall mode
+  copyall works like prescribed but sets dice_mode to COPYALL instead of SSTDATA
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_dice.xml
+
+================================================================================
+Originator: jshollen
+Date: Dec 11 2012
+Model: dice7
+Version: dice8_121211
+One-line summary: Fixed hardcoded path to ssmi data. 
+
+M       bld/namelist_files/namelist_defaults_dice.xml
+
+================================================================================
+Originator: mvertens
+Date: Sep 25 2012
+Model: dice7
+Version: dice8_120925
+One-line summary: Updated namelist documentation
+
+M       bld/namelist_files/namelist_definition_dice.xml
+================================================================================
+Originator: mvertens
+Date: Sept 24 2012
+Model: dice7
+Version: dice8_120924
+One-line summary: New IAF dataset from Susan Bates
+	
+================================================================================
+Originator: mvertens
+Date: June 26 2012
+Model: dice7
+Version: dice8_120626
+One-line summary: updated documentation in namelist_defintiion_dice.xml
+	
+M       bld/dice.buildnml.csh
+M       bld/namelist_files/namelist_defaults_dice.xml
+M       bld/namelist_files/namelist_definition_dice.xml
+	
+================================================================================
+Originator: mvertens
+Date: May 29 2012
+Model: dice7
+Version: dice8_120529
+One-line summary: Bug fix for null mode
+	
+M       bld/namelist_files/namelist_defaults_dice.xml
+	
+================================================================================
+Originator: mvertens
+Date: May 28 2012
+Model: dice7
+Version: dice8_120528
+One-line summary: Removed copy of dice.buildnml.csh and dice.buildexe.csh from
+	          dice.cpl7.template
+	
+M       bld/dice.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: May 21 2012
+Model: dice7
+Version: dice8_120521
+One-line summary: Fixed bug for user_nl_dice changes
+	
+M       bld/build-namelist
+	
+================================================================================
+Originator: mvertens
+Date: May 20 2012
+Model: dice7
+Version: dice8_120520
+One-line summary: Ability to not depend on env_conf.xml and more general 
+	          expand_env_xml subroutine 
+	
+M       bld/build-namelist
+	
+================================================================================
+Originator: mvertens
+Date: May 17 2012
+Model: dice7
+Version: dice8_120517
+One-line summary: New build-namelist functionlality
+	- no environment variables in build-namelist (replaced by %xmlvars)
+	- to introduce a new stream just change namelist_defaults_dice.xml and
+	  namelist_definition_dice.xml
+	- generic stream template no longer written from build-namelist
+	
+M       bld/dice.buildnml.csh
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_dice.xml
+	
+================================================================================
+Originator: tcraig
+Date: May 2 2012
+Model: dice7
+Version: dice8_120502
+One-line summary: update NULL mode
+
+M       bld/dice.buildnml.csh
+M       bld/build-namelist
+M       dice_comp_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: Apr 19 2012
+Model: dice7
+Version: dice8_120419
+One-line summary: added cice.buildnml.csh and cice.buildexe.csh and NULL mode 
+	
+A       bld/dice.buildexe.csh
+M       bld/dice.cpl7.template
+A       bld/dice.buildnml.csh
+M       bld/build-namelist
+M       ChangeLog
+M       dice_comp_mod.F90
+
+Note - to active NULL mode will also need scripts change to add this as a valid
+DICE_MODE	
+	
+================================================================================
+Originator: mvertens
+Date: Apr 15 2012
+Model: dice7
+Version: dice8_120415
+One-line summary: fixed error for branch run
+
+M       bld/build-namelist
+
+Note - this is a temporary fix - assuming that restart files are not needed
+for dice
+	
+================================================================================
+Originator: mvertens
+Date: Apr 10 2012
+Model: dice7
+Version: dice8_120410
+One-line summary: new build-namelist functionality (from bldnml branch)
+
+A       bld/build-namelist
+D       bld/dice.template.streams.xml
+A       bld/user_nl_dice
+A       bld/namelist_files
+A       bld/namelist_files/namelist_defaults_dice.xml
+A       bld/namelist_files/namelist_definition_dice.xml
+
+================================================================================
+	
+Originator: jedwards
+Date: Feb 21 2012
+Model: dice7
+Version: dice8_120221
+One-line summary: Correct path to iaf data
+	
+M dice.template.streams.xml
+
+================================================================================
+Originator: tcraig
+Date: Feb 19 2012
+Model: dice7
+Version: dice8_120219
+One-line summary: update cosArg calculation (not bit-for-bit)
+
+<      call shr_cal_ymd2eday(0,mm,dd,eDay ,calendar)    ! model date
+<      call shr_cal_ymd2eday(0,09,01,eDay0,calendar)    ! sept 1st
+<      cosArg = 2.0_R8*pi*(real(eDay,R8) + real(currentTOD,R8)/cDay - real(eDay0,R8))/365.0_R8
+
+>      call shr_cal_ymd2julian(0,mm,dd,currentTOD,jDay ,calendar)    ! julian day for model
+>      call shr_cal_ymd2julian(0, 9, 1,0         ,jDay0,calendar)    ! julian day for Sept 1
+>      cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
+	
+M       dice_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: dice7
+Version: dice8_120123
+One-line summary: update esmf interfaces to 520r, add support for multi-instance
+	with esmf coupling interfaces
+
+MM      cpl_mct/ice_comp_mct.F90
+M       cpl_esmf/ice_comp_esmf.F90
+M       cpl_esmf/ice_comp_mct.F90
+M       dice_comp_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: Dec 08 2011
+Model: dice7
+Version: dice8_111208
+One-line summary: bug fix for water(n) calc
+
+M       dice_comp_mod.F90
+	
+old: water(n) = water(n) + dt*i2x%rAttr(kq,n)/latice
+fix: water(n) = water(n) + dt*x2i%rAttr(kq,n)/latice
+
+From Brian Kauffman:
+Fioo_q is an x2i field, ie. is sent to the ice component,
+and then (accumulated) water is supposed to be based on 
+this Fioo_q field, but some other field (in i2x) is accessed.
+This bug was introduced in refactoring, hence
+has existed starting from ccsm4_0_beta34.  
+It's an understandable typo bug.
+The question then is, what's the impact of the bug.  
+This is less clear, but potentially small, and certainly 
+limited to C compsets.
+The dice model accumulates ice formed by the ocn,
+and then melts it back later.  The line with the bug
+is supposed to be accumulating water, which is dt*Q/latice, 
+but some field other used instead of Q.
+If my by-hand counting of fields is right, lwup is being 
+accessed instead of Q. 
+A few things would mitigate this bug, 
+(1) the subsequent melt rate is limited by a certain melt rate flux_Qmin, 
+(2) the accumulated water is zero'd out (and hence there can be no 
+subsequent melt) whenever the ice climatology is non-zero in the cell
+(3) it's possible the ocn isn't forming ice, and
+thus no accumulating is taking place anyway.
+So it may well be that there is little erroneous ice melting and 
+when there is, it's not large enough to be a real problem. 
+It might be that our (short) tests never encounter the 
+conditions necessary for this bug to cause a difference this the 
+test results.
+
+From Mariana Vertenstein:
+C and CIAF tests show that that the only difference introduced over 11 days is 
+i2x_Si_t 	
+	
+================================================================================
+
+Originator: mvertens
+Date: Nov 11 2011
+Model: dice7
+Version: dice8_111111
+One-line summary: removed reference to seq_flds_indices
+
+M       dice_comp_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Nov 9 2011
+Model: dice7
+Version: dice8_111109
+One-line summary: removed references to domains from dice.cpl7.template
+
+This is only compatible with scripts4_111109+	
+
+M       bld/dice.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: Oct 11 2011
+Model: dice7
+Version: dice8_111011
+One-line summary: compatibility with scripts4_111011b
+
+M       bld/dice.cpl7.template
+	
+================================================================================
+Originator: tcraig
+Date: Aug 30 2011
+Model: dice7
+Version: dice8_110830
+One-line summary: fix multi-instance restart
+
+M       dice_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Jul 17 2011
+Model: dice7
+Version: dice8_110717
+One-line summary: Add ensemble capability
+
+M       bld/dice.cpl7.template
+ M      cpl_mct/ice_comp_mct.F90
+M       cpl_esmf/ice_comp_esmf.F90
+M       cpl_esmf/ice_comp_mct.F90
+M       dice_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Apr 19 2011
+Model: dice7
+Version: dice8_110419
+One-line summary: ESMF interface update
+
+M       cpl_esmf/ice_comp_esmf.F90
+M       cpl_esmf/ice_comp_mct.F90
+================================================================================
+Originator: tcraig
+Date: Thu Jan 6 2011
+Model: dice7
+Version: dice8_110106
+One-line summary: add esmf metadata feature and update esmf register routine
+
+>svn merge $SVNREPO/dice7/trunk_tags/dice8_100921 $SVNREPO/dice7/branch_tags/cesm1_0_esmf01_tags/esmf01_02_dice8_100921
+
+U    cpl_esmf/ice_comp_esmf.F90
+U    cpl_esmf/ice_comp_mct.F90
+
+================================================================================
+Originator: jedwards
+Date: Mon Nov 5 2010
+Model: dice7
+Version: dice8_101105
+One-line summary: move pio init and namelist to driver
+
+M      dice_comp_mod.F90
+================================================================================	
+Originator: tcraig
+Date: Mon Nov 1 2010
+Model: dice7
+Version: dice8_101101
+One-line summary: update strdata initialization with calendar name
+
+M      dice_comp_mod.F90
+================================================================================
+Originator: mvertens
+Date: Tue May 21 2010
+Model: dice7
+Version: dice8_100921
+One-line summary: compatibility with share3_100921
+
+M      dice_comp_mod.F90
+
+================================================================================
+Originator: kauff
+Date: Sat May 17 2010
+Model: dice7
+Version: dice8_100517
+One-line summary: rm support for gx1v5
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Sat Apr 17 2010
+Model: dice7
+Version: dice8_100417
+One-line summary: Add support for RACM grids
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Tue Apr 6 2010
+Model: dice7
+Version: dice8_100406
+One-line summary: remove extra use seq_flds_mod, migrate Makefile use to CASETOOLS
+
+M      bld/dice.cpl7.template
+M      dice_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Feb 16 2010
+Model: dice7
+Version: dice8_100216
+One-line summary: fix ssmi_iaf mode
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Mon Feb 15 2010
+Model: dice7
+Version: dice8_100215
+One-line summary: update streams txt file generation
+
+M      bld/dice.cpl7.template
+M      bld/dice.template.streams.xml
+
+================================================================================
+Originator: tcraig
+Date: Mon Dec 14 2009
+Model: dice7
+Version: dice8_091214
+One-line summary: remove shr_strdata_setlogunit call
+
+M      dice_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Dec 8 2009
+Model: dice7
+Version: dice8_091208
+One-line summary: add restart namelist and single column
+
+M      dice_comp_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Wed Dec 2 2009
+Model: dice7
+Version: dice8_091202
+One-line summary: update template files
+
+M      bld/dice.cpl7.template
+M      bld/dice.template.streams.xml
+
+================================================================================
+Originator: tcraig
+Date: Tue Nov 17 2009
+Model: dice7
+Version: dice8_091117
+One-line summary: fix melth bug
+
+M      dice_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Nov 10 2009
+Model: dice7
+Version: dice8_091110
+One-line summary: add esmf support
+
+M      cpl_esmf/ice_comp_esmf.F90
+M      cpl_esmf/ice_comp_mct.F90
+M      dice_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Nov 6 2009
+Model: dice7
+Version: dice8_091106
+One-line summary: dice7 to dice usage
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Fri Oct 30 2009
+Model: dice7
+Version: dice8_091030
+One-line summary: update to new version
+
+Note: ESMF interfaces not working yet
+
+M      cpl_mct/ice_comp_mct.F90
+D      dice_init.F90
+D      dice_diag.F90
+D      dice_physSSTDATA.F90
+D      dice_data.F90
+D      dice_control.F90
+M      bld/dice.cpl7.template
+D      dice_physUSER.F90
+D      dice_physTEST.F90
+D      dice_phys.F90
+D      dice_nml.F90
+D      dice_final.F90
+A      dice_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Sat Sep 26 2009
+Model: dice7
+Version: dice7_090926
+One-line summary: esmf updates
+
+ - use new shared esmf interface in drv/seq_mct/cpl_esmf
+ - clean up redundant code
+ - fix a few bugs (mpicom, infodata/export_state/infodata copy)
+ - lots more testing and validation
+
+M      cpl_esmf/ice_comp_esmf.F90
+M      cpl_esmf/ice_comp_mct.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Sep 7 2009
+Model: dice7
+Version: dice7_090907
+One-line summary: update esmf support
+
+M      bld/dice.cpl7.template
+M      cpl_esmf/ice_comp_mct.F90
+
+================================================================================
+Originator: kauff
+Date: Fri Sep  4 10:35:33 MDT 2009
+Model: dice7
+Version: dice7_090904
+One-line summary: updated gx3v7 domain file
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Thu Sep  3 10:47:56 MDT 2009
+Model: dice7
+Version: dice7_090903
+One-line summary: add support for gx3v7
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: feiliu
+Date: Sep 02 2009
+Model: dice7
+Version: dice7_090902
+One-line summary: added ESMF data ice component
+
+A      cpl_esmf/ice_comp_esmf.F90
+A      cpl_esmf/ice_comp_mct.F90
+
+================================================================================
+Originator: kauff
+Date: Wed Aug 12 17:22:39 MDT 2009
+Model: dice7
+Version: dice7_090812
+One-line summary: fix bug wrt inexact restart (bugz #1005)
+
+Changes in the way cpl7 sends clock info (vs. cpl6 & before)
+resulted in restart files being created at the wrong point in time.
+The restart file creation routine was moved to a new location in the 
+time loop to adapt to this change.
+
+M      cpl_mct/ice_comp_mct.F90
+
+================================================================================
+Originator: kauff
+Date: Mon Jul 20 14:57:12 MDT 2009
+Model: dice7
+Version: dice7_090720
+One-line summary: use newer tx0.1v2 domain file: domain.ocn.tx0.1v2_090218.nc
+
+Newer file is compatable with pop (old has domain compare errors in cpl7)
+-if ($ICE_GRID == 'tx0.1v2') set DOMAINFILE = domain.ocn.tx0.1v2_070928.nc
++if ($ICE_GRID == 'tx0.1v2') set DOMAINFILE = domain.ocn.tx0.1v2_090218.nc
+
+M      bld/dice.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: June 24 2009
+Model: dice7
+Version: dice7_090624
+One-line summary: new directory structure to bring in ESMF interfaces
+	
+A      cpl_mct
+A  +   cpl_mct/ice_comp_mct.F90
+A      cpl_esmf
+M      bld/dice.cpl7.template
+D      ice_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: June 08 2009
+Model: dice7
+Version: dice7_090608
+One-line summary: removed SEQ_MCT #if-def
+	
+M      ice_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Apr 03 2009
+Model: dice7
+Version: dice7_090403
+One-line summary: changes for ssmi needed for new CORE2 forcing
+	
+merged ssmi_iaf branch onto trunk
+	
+Changes made:
+M      bld/dice.cpl7.template
+M      bld/dice.template.streams.xml
+	
+================================================================================
+Originator: mvertens
+Date: Mar 20 2009
+Model: dice7
+Version: dice7_090320
+One-line summary: added gx1v6 support 
+	
+Changes made:
+M      bld/dice.cpl7.template
+M      bld/dice.template.streams.xml
+	
+================================================================================
+Originator: jwolfe
+Date: Feb 9 2009
+Model: dice7
+Version: dice7_090209
+One-line summary: add support for tx1v1
+	
+Changes made:
+M      bld/dice.cpl7.template
+	
+================================================================================
+
+Originator: tcraig
+Date: Jan 7 2009
+Model: dice7
+Version: dice7_090107
+One-line summary: major update to template
+	
+Changes made:
+M      bld/dice.cpl7.template
+	
+================================================================================
+
+Originator: tcraig
+Date: Fri Dec 12 2008
+Model: dice7
+Version: dice7_081212
+One-line summary: update current date initialization in ice_comp_mct
+	
+Changes made:
+M      ice_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Thu Sep 25 16:24:25 MDT 2008
+Model: dice7
+Version: dice7_080925
+One-line summary: modifications for new unified build
+	
+Changes made:
+M      bld/dice.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: Sun Sep  7 21:07:05 MDT 2008
+Model: dice7
+Version: dice7_080907
+One-line summary: removed all cpl6 and hubinfo references 
+
+Changes made:
+M      dice_init.F90
+M      dice_physSSTDATA.F90
+M      dice_data.F90
+M      dice_control.F90
+M      dice_physUSER.F90
+M      dice_physTEST.F90
+D      dice_main.F90
+D      dice_msg.F90
+D      dice_run.F90
+D      bld/dice.cpl6.template
+
+================================================================================
+Originator: santos,mvr
+Date: Thur Jul 31 2008
+Model: dice7
+Version: dice7_080731
+One-line summary: added inputdata list generation to dice.cpl7.template
+
+Changes made:
+M  dice.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Tue Jul  8 15:09:05 MDT 2008
+Model: dice7
+Version: dice7_080708
+One-line summary: removed sourcing of env_xxx from dice.cpl7.template
+
+Changes made:
+M  dice.cpl7.template
+
+================================================================================
+	
+Originator: tcraig
+Date: Wed May 14 19:56:05 MDT 2008
+Model: dice7
+Version: dice7_080514
+One-line summary: merge drva08_dice7_071129 to trunk
+
+Changes made:
+- update for cpl7
+- update logging
+- code cleanup
+
+D      dice_esmf.F90.hide
+M      dice_init.F90
+M      dice_run.F90
+M      dice_diag.F90
+M      dice_physSSTDATA.F90
+M      dice_data.F90
+A  +   bld/dice.cpl7.template
+M      dice_control.F90
+M      dice_physUSER.F90
+M      dice_physTEST.F90
+M      dice_phys.F90
+M      dice_main.F90
+M      dice_nml.F90
+M      dice_msg.F90
+M      dice_final.F90
+A  +   ice_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Thu Nov 29 20:58:42 MST 2007
+Model: dice7
+Version: dice7_071129
+One-line summary: fix vector-map failure wrt (u,v) not in same file
+
+Changes made:
+
+A      bld
+A      bld/dice.cpl6.template
+A      bld/dice.template.streams.xml
+- added above files (Components/dice.template now simply sources dice.cpl6.template)
+
+================================================================================
+	
+Originator: kauff
+Date:  Thu Nov  8 15:12:21 MST 2007
+Model: dice7
+Version: dice7_071108
+One-line summary: fix vector-map failure wrt (u,v) not in same file
+
+Changes made:
+
+M      dice_phys.F90
+- fix bug: vector-map failure wrt (u,v) not in same file (would abort, not run)
+
+================================================================================
+
+Originator: kauff
+Date: Fri Aug 24 15:22:32 MDT 2007
+Model: dice7
+Version: dice7_070824
+One-line summary: minor code mods wrt last tag, bugz #569, share3_070824
+
+Changes made:
+
+- new shr_stream_getDomainInfo() API
+- no file names returned from any shr_stream routine have path prepended
+- makes use of new routine shr_stream_getFile
+
+================================================================================
+Originator: kauff
+Date: Fri Aug 10 16:38:59 MDT 2007
+Model: dice7
+Version: dice7_070810
+One-line summary: send grid_frac data to cpl, supports non-local stream.txt (bugz #493, #72)
+
+Changes made:
+
+- send bufDomain(n,cpl_fields_grid_frac) = frac(i,j) data to cpl  (bugz #493)
+- dice_init now calls a new routine: shr_stream_parseInput(str,fileName,...)
+  so fileName's can contain a dir path
+  (which helps support functionality requested in bugz #72)
+- dice_init: map-bilin = T would force map-fill = T even if src data was global
+- now constructs domain names and sends them to dshr_domain_readData()
+  which requires use of share3_070810 or later
+
+=============================================================================
+
+Originator: kauff
+Date: Thu May 31 14:06:15 MDT 2007
+Model: dice7
+Version: dice7_070531
+One-line summary: bug fix wrt non-end-of-run restart files
+Changes made:
+
+- bug fix wrt non-end-of-run restart files
+
+=============================================================================
+
+Originator: kauff
+Date: Mon Apr 23 15:40:57 MDT 2007
+Model: dice7
+Version: dice7_070423
+One-line summary: dice7 is now parallel
+Changes made:
+
+- 1st parallel version of dice7
+- is the identical to docn7_070418 & datm7_070418 wherever it can be
+
+=============================================================================
+
+Originator: tcraig
+Date: Wed Oct 25 02:11:41 EDT 2006
+Model: dice7
+Version: dice7_061025
+One-line summary: mods to save for pgi compiler bug
+Changes made:
+
+- mods to save for pgi compiler bug and general save cleanup
+
+=============================================================================
+
+Originator: kauff
+Date: Thu Sep 21 16:33:19 MDT 2006
+Model: dice7
+Version: dice7_060921
+One-line summary: remove SPMD if-def's wrt MPH/threading (model is not threaded)
+Changes made:
+
+- remove SPMD if-def's wrt MPH/threading (model is not threaded)
+
+=============================================================================
+
+Originator: kauff
+Date: Fri Sep 15 12:40:23 MDT 2006
+Model: dice7
+Version: dice7_060915
+One-line summary: add program/subroutine if-def's to support SPMD
+Changes made: 
+
+- add program/subroutine if-def's to support SPMD
+
+================================================================================
+
+Originator: kauff
+Date: Wed Jul 12 15:06:53 MDT 2006
+Model: dice7
+Version: dice7_060712
+One-line summary: add mods to physics as per NCAR/OCE section
+Changes made:
+
+dice_physSSTDATA.F90 ~ previous versions of dice7 (dice_physSSTDATA) duplicated 
+the functionality of the standard/out-of-the-box/ccsm3.0 dice6 model.  The
+NCAR/OCE section never used this standard version, they always applied mods to
+the code.  This version of dice7 now duplicates the science of the dice6 code 
+used by the NCAR/OCE section .  Difference maps (dice7 vs. dice6 w/ mods)
+were reviewed by S. Yeager, G. Danabasoglu, and B. Kauffman
+
+================================================================================
+
+Originator: kauff
+Date: Wed Jul  5 17:00:45 MDT 2006
+Model: dice7
+Version: dice7_060705
+One-line summary: fix bug wrt excessive data copying
+Changes made:
+
+Bug/typo resulted in unnecessary data copies & slow code...
+   do j=1,nj
+   do i=1,ni
+   [...]
+-         tauyo(:,:) = tauya(:,:) ! ice/ocn stress = atm/ice stress
++         tauyo(i,j) = tauya(i,j) ! ice/ocn stress = atm/ice stress
+   end do
+   end do
+
+================================================================================
+
+Originator: kauff
+Date: Tue Jun 13 15:40:56 MDT 2006
+Model: dice7
+Version: dice7_060613
+One-line summary: fully functional SSTDATA mode
+Changes made:
+
+- fully functional SSTDATA mode: replicates dice6
+
+================================================================================
+Originator: kauff
+Date: 
+Model: dice7
+Version: trunk
+One-line summary: initial import of code
+Changes made:
+
+- initial import of code, taken from docn7 trunk
+
+================================================================================

@@ -1,0 +1,13 @@
+This directory contains trimmed-down versions of various modules that
+remove a lot of dependencies. When unit tests are compiled, the
+versions here have precedence over the versions in the main source
+directories. However, the versions here can themselves be replaced by
+files with the same name in the source directory of a particular unit
+test.
+
+That is, the precedence is:
+
+(1) source directory of unit test
+(2) unit_test_shr
+(2) unit_test_replacements
+(4) main source directories

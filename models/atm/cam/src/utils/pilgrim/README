@@ -1,0 +1,71 @@
+			PILGRIM Library
+			---------------
+
+This directory contains a prototype for Parallel Library for Grid
+Manipulations.  Note that it is neither complete nor does it
+necessarily contain components which are a baseline for future
+development.  At any one time this directory will contain prototypes
+and unit tests, some of which can be used for benchmarking purposes.
+
+As of 15 March 2002, this directory contains:
+
+	README				This file
+	Makefile			The makefile
+	Makefile.conf.XXXX		Configurations for various platforms
+	configure			Script to set up for your platform
+	debug.h				Debugging macros used in PILGRIM
+	debugutilitiesmodule.F90	Debugging utilities
+	decompmodule.F90		Decomposition utilities
+	ghostmodule.F90			Ghosting utilities
+	parutilitiesmodule.F90		High level communication primitives
+	redistributemodule.F90		Redistribute module
+	memstuff.c			SGI specific utilities
+	mp_assign_to_cpu.c		SGI specific utilities
+	mod_comm.F90			Basic communication primitives
+	unit_testers			Directory containing unit testers
+	pilgrim.h			Include file
+	
+Installation:
+-------------
+
+	1) Run ./configure -- this will create Makefile.conf, a 
+	   link to the appropriate Makefile.conf.XXXXX file.
+	   If the appropriate Makefile.conf.XXXXX for your 
+	   architecture does not exist, create one from one
+	   of the other examples and please mail it to the
+	   author, sawyer@dao.gsfc.nasa.gov
+	
+	2) Some editting of Makefile.conf might be necessary.
+	   For example, you may have to change the values
+	   of _LMPI (location of the MPI library), _lMPI
+	   (name of the MPI library), and _IMPI (location
+	   of the MPI include files, e.g. mpif.h).
+
+	3) Type "make". This should build "libpilgrim.a".
+
+	4) Optional: 
+
+		cd unit_testers
+		make tests
+		
+		mpirun -np nnnn XXXXXest
+
+Documentation, usage:
+---------------------
+
+	Please consult DAO office not 1998-008 for more information:
+
+		http://dao.gsfc.nasa.gov/pages/officenotes_1998.html
+
+	Unfortunately this is rather outdated -- there have been many
+	developments since this was published.  For more recent information:
+
+		http://www.iac.ethz.ch/staff/sawyer/pilgrim.html
+
+
+	For a wide array of programming examples, please look at
+	the unit testers:
+
+		unit_testers/*test.F90
+	
+WS, sawyer@dao.gsfc.nasa.gov, 2002.03.15

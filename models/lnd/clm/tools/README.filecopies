@@ -1,0 +1,50 @@
+models/lnd/clm/tools/README.filecopies			      Jun/04/2013
+
+There are several files that are copies of the original files from
+either models/lnd/clm/src/main, models/csm_share/shr,
+models/csm_share/unit_testers, or copies from other tool
+directories. By having copies the tools can all be made stand-alone,
+but any changes to the originals will have to be put into the tool
+directories as well.
+
+I. Files that are IDENTICAL:
+
+   1. csm_share files copied that should be identical to models/csm_share/shr:
+
+       shr_const_mod.F90
+       shr_log_mod.F90
+       shr_timer_mod.F90
+       
+   2. csm_share files copied that should be identical to models/csm_share/unit_testers:
+
+       test_mod.F90
+
+   3. clm/src files copied that should be identical to models/lnd/clm/src/util_share:
+
+       nanMod.F90
+
+II. Files with differences
+
+   1. csm_share files copied with differences:
+
+       shr_kind_mod.F90 --- SHR_KIND_CXX is new
+       shr_sys_mod.F90 ---- Remove mpi abort and reference to shr_mpi_mod.F90.
+       shr_infnan_mod.F90 - Earlier version
+       shr_string_mod.F90 - Earlier version
+       shr_file_mod.F90 --- mkprocdata_map version is stripped down
+       clm_varctl.F90 ----- Earlier version
+
+   2. clm/src files with differences:
+
+       fileutils.F90 --- Remove use of masterproc and spmdMod and endrun in abortutils.
+
+   4. Files in mkmapgrids
+
+      domainMod.F90 ---- Highly customized based off an earlier version of clm code.
+                         Remove use of abortutils, spmdMod. clm version uses latlon
+                         this version uses domain in names. Distributed memory
+                         parallelism is removed.
+
+   5. Files in mksurfdata_map
+
+       mkvarpar.F90 --- clm4_0 and clm4_5 versions are different and different from main clm versions.

@@ -1,0 +1,6 @@
+cprnc.o: cprnc.F90 filestruct.o compare_vars_mod.o utils.o
+filestruct.o: filestruct.F90 prec.o
+prec.o : prec.F90
+compare_vars_mod.o: compare_vars_mod.F90 prec.o utils.o filestruct.o
+compare_vars_mod.F90 : compare_vars_mod.F90.in
+utils.o : utils.F90 filestruct.o prec.o

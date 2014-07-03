@@ -1,0 +1,16 @@
+<aer_wetdep_list_definition>
+
+<!-- list of aerosol species that under go dry deposition -->
+
+<list id="BAM">
+  CB2,DST01,DST02,DST03,DST04,NH4,NH4NO3,OC2,SO4,SOA,SSLT01,SSLT02,SSLT03,SSLT04
+</list>
+<list id="SOA">
+  SOAM,SOAI,SOAT,SOAB,SOAX  
+</list>
+
+<list id="XNOx">
+ XNH4NO3
+</list>
+
+</aer_wetdep_list_definition>

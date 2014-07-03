@@ -1,0 +1,40 @@
+#! /bin/csh -f
+
+set NX = $ATM_NX
+set NY = $ATM_NY
+set dtype = 1
+if ($NY == 1) set dtype = 2
+
+cd $RUNDIR
+set base_filename = "xatm_in"
+
+set inst_counter = 1
+
+while ($inst_counter <= $NINST_ATM)
+
+    set inst_string = " "
+    if ($NINST_ATM > 1) then
+        set inst_string = $inst_counter
+        if ($inst_counter <= 999) set inst_string = 0$inst_string
+        if ($inst_counter <=  99) set inst_string = 0$inst_string
+        if ($inst_counter <=   9) set inst_string = 0$inst_string
+        set inst_string = _$inst_string
+    endif
+
+    set in_filename = ${base_filename}${inst_string}
+
+    cat >! ${in_filename} << EOF
+$NX                  !  i-direction global dimension
+$NY                  !  j-direction global dimension
+$dtype                    !  decomp_type  1=1d-by-lat, 2=1d-by-lon, 3=2d, 4=2d evensquare, 11=segmented
+0                    !  num of pes for i (type 3 only)
+0                    !  length of segments (type 4 only)
+24                   !  ncpl  number of communications w/coupler per day
+0.0                  !  simul time proxy (secs): time between cpl comms
+EOF
+
+    @ inst_counter = $inst_counter + 1
+
+end
+
+

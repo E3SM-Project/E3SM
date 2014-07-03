@@ -1,0 +1,112 @@
+#!/usr/bin/env perl 
+
+# Run the build and/or submit for each test. 
+# If nobuild is off, run the build for each test. 
+# If autosubmit is on, run the submit script for each test. 
+use strict;
+use warnings;
+use Data::Dumper;
+use Cwd qw( getcwd chdir);
+use File::Basename;
+
+# find the testspec.xml. 
+my $testroot =  getcwd;
+$0 =~ /cs.submit\.(.*)$/;
+my $testspec = "$testroot/testspec.$1.xml";
+
+
+# Find the scriptsroot
+open my $SPEC, "<", $testspec or die $!;
+my @speclines = grep (/scriptsroot/, <$SPEC>);
+chomp @speclines;
+close $SPEC;
+
+my $scriptsroot = $speclines[0];
+$scriptsroot =~ s/\<scriptsroot\>//g;
+$scriptsroot =~ s/\<\/scriptsroot\>//g;
+$scriptsroot =~ s/\s+//g;
+
+# require/import XML::Lite
+my @dirs = ( "$scriptsroot/ccsm_utils/Tools/perl5lib");
+unshift @INC, @dirs;
+require XML::Lite;
+
+my $xml = XML::Lite->new($testspec);
+
+my @tests = $xml->elements_by_name("test");
+my @casedirs;
+
+foreach my $test(@tests)
+{
+   my %attrs = $test->attributes;
+   foreach my $attr(keys %attrs)
+   {
+      push(@casedirs, "$attrs{$attr}");
+   }
+}
+
+
+# Get nobatch,nobuild, and autosubmit.  
+# Do the build and/or submit for each test.  
+my @nbatch = $xml->elements_by_name("nobatch");
+my @nbuild = $xml->elements_by_name("nobuild");
+my @asubmit = $xml->elements_by_name("autosubmit");
+my $nobatch = $nbatch[0]->text;
+my $nobuild = $nbuild[0]->text;
+my $autosubmit = $asubmit[0]->text;
+
+foreach my $case(@casedirs)
+{
+  my $testdir = "$testroot/$case";
+  #build the test.  
+  my $buildstatus;
+  if($nobuild eq "off" || ! defined $nobuild)
+  {
+    chdir($testdir);
+    if( -e "$testdir/$case.test_build")
+    {
+        print "building $case\n";
+        system("./$case.test_build");
+        my $retcode = $?;
+        open my $TESTSTATUS, ">", "./TestStatus" or warn $!;
+        if($retcode !=  0)
+        {
+          print $TESTSTATUS "CFAIL $case\n";
+          $buildstatus = "CFAIL";
+          print "$case build status: CFAIL\n";
+        }
+        else
+        {
+          print $TESTSTATUS "BUILD $case\n";
+          $buildstatus = "BUILD";
+          print "$case build status: BUILD\n";
+        }
+        close $TESTSTATUS;
+
+        if( ( $autosubmit eq "on" || ! defined $autosubmit) && $buildstatus eq "BUILD") 
+        {
+          print "submitting $case\n";
+          system("./$case.submit");
+          my $submitret = $?;
+          open $TESTSTATUS, ">", "./TestStatus" or warn $!;
+          if($retcode != 0)
+          {
+            print $TESTSTATUS "FAIL $case\n";   
+          }
+          else
+          {
+            print $TESTSTATUS "PEND $case\n";
+          }
+          close $TESTSTATUS;
+          
+          
+        }
+    }
+    else
+    {
+        print "$case.test_build does not exist, skipping build for $case...\n";
+    }
+    
+    chdir $testroot;
+  }
+}

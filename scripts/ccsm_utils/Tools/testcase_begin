@@ -1,0 +1,102 @@
+
+#======================================================================
+# All things common to all tests that need to be done at the beginning 
+# of each test should be put here to avoid duplication.  
+#======================================================================
+
+#======================================================================
+# Test status files
+#======================================================================
+# test logs
+
+setenv TESTSTATUS_OUT   $CASEROOT/TestStatus
+setenv TESTSTATUS_LOG   $CASEROOT/TestStatus.out
+setenv TESTSTATUS_OUT_NLCOMP $CASEROOT/TestStatus.nlcomp
+if( $?COMPARE_BASELINE ) then
+  setenv BASECMP_CPLLOGFILE  $BASECMP_DIR/cpl.log
+  setenv COMPARE_NAMELISTS   TRUE
+endif
+if( $?GENERATE_BASELINE ) then
+  setenv BASEGEN_CPLLOGFILE  $BASEGEN_DIR/cpl.log
+endif
+
+
+
+# valid test output states are:  
+#   PASS      Test passed
+#   FAIL      Test failed
+#   BFAIL     Base Results do not exist
+#   GEN       Case generated
+#   ERROR     Error underfined, test may or may not have passed
+#   UNDEF     Undefined
+#   BUILT     Build completed                           NOT YET IMPLEMENTED
+#   PEND      Test submitted
+#   RUN       Test started running, it may or may not have completed
+
+#======================================================================
+# (Don't) Remove test status files! create_test puts the namelist comparision 
+# status and output into these files, respectively.  
+#======================================================================
+#
+set basestatus = "RUN  "
+echo "$basestatus ${CASE} " >&! $TESTSTATUS_OUT
+touch $TESTSTATUS_LOG
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "test started $sdate" >>& CaseStatus
+
+#======================================================================
+# IOP test, run baseline
+#======================================================================
+
+if ( ${CASE} =~ *_IOP*) then
+  set iopbase_argv = `echo ${TEST_ARGV} |  sed 's/_IOP[A-Z]*//'`
+  set iopbase_case = `echo ${CASE} |  sed 's/_IOP[A-Z]*//'`
+  set iopflags = `echo $CASE | sed 's/^.*_IOP\([A-Z]*\).*/\1/'`
+  echo "running create_test ${iopbase_argv}  -clean off -testid ${TEST_TESTID}" >>& $TESTSTATUS_LOG
+  echo "iopflags = ${iopflags}" >>& $TESTSTATUS_LOG
+
+  #--- run IOP base test ---
+  set caseroot0 = ${CASEROOT}
+  cd $SCRIPTSROOT
+  ./create_test ${iopbase_argv} -clean off -testid ${TEST_TESTID}
+  cd $CASEROOT  || exit -9
+  cd ../${iopbase_case}  || exit -9
+  cp $CASEROOT/env*.xml.* .
+  foreach file (env_build.xml*)
+    ./xmlchange -file $file -id EXEROOT        -val ${EXEROOT}
+    ./xmlchange -file $file -id BUILD_COMPLETE -val TRUE
+  end
+  ./*.test
+  cd $caseroot0
+
+  #--- modify this IOP case ---
+  if ( ${iopflags} == '' ) then
+    ./xmlchange -file env_run.xml -id PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *A* ) then
+    ./xmlchange -file env_run.xml -id ATM_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *L* ) then
+    ./xmlchange -file env_run.xml -id LND_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *R* ) then
+    ./xmlchange -file env_run.xml -id ROF_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *O* ) then
+    ./xmlchange -file env_run.xml -id OCN_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *I* ) then
+    ./xmlchange -file env_run.xml -id ICE_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *G* ) then
+    ./xmlchange -file env_run.xml -id GLC_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *W* ) then
+    ./xmlchange -file env_run.xml -id WAV_PIO_TYPENAME -val 'pnetcdf'
+  endif
+  if ( ${iopflags} =~ *C* ) then
+    ./xmlchange -file env_run.xml -id CPL_PIO_TYPENAME -val 'pnetcdf'
+  endif
+endif
+

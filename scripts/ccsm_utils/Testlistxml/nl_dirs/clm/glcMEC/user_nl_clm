@@ -1,0 +1,5 @@
+ hist_dov2xy    = .true.,.false.
+ hist_ndens     = 1,1
+ hist_fincl2    = 'QICE'
+ hist_nhtfrq    =-24,-8
+ hist_mfilt     = 1,3

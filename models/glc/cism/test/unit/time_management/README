@@ -1,0 +1,57 @@
+This directory contains code for testing the glc time manager.
+
+To build the test program, run the following from this directory:
+
+  gmake OPT=FALSE
+
+This will create the time_management_test program.
+
+To run the program:
+
+First copy a set of inputs to this directory; for example:
+
+  cp inputs/oneyear/*_in .
+
+Then modify cism_in and time_management_test_in, if desired
+
+Then run:
+
+  ./time_management_test > test_output
+
+You can then examine the output and/or compare it to output from a
+previous version of the code.
+
+
+--- NOTES ABOUT RESTART TESTS ---
+
+For some cases, there are three similar directories in the inputs
+directory: <testname>, <testname>.restart1, and <testname>.restart2.
+
+These sets of directories are for doing restart tests, to make sure
+that the sequence of times is the same for (a) a run that goes all the
+way through, and (b) the same run broken up into two pieces.
+
+To run the restart test, do:
+
+  restart_test testname
+
+If the test succeeds (i.e., the restart case gives the same time
+sequence as the run all the way through), then there will be no output
+from this script. If there are some differences, these differences
+will be output to stdout.
+
+For regression testing, you should test <testname> and
+<testname>.restart2, but it is not necessary to test
+<testname>.restart1, since that just gives a subset of the run done by
+<testname>. (Note that you can run <testname>.restart2 without running
+<testname>.restart1 -- for this time management test driver, a restart
+file is not necessary -- it just simulates what would happen if there
+were a restart file.)
+
+
+--- TEST LISTS ---
+
+testlist: list of tests in the 'inputs' directory that should be run
+for complete regression testing
+
+restart_testlist: list of tests that should be run with 'restart_test'

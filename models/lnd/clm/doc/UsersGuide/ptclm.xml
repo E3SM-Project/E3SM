@@ -1,0 +1,992 @@
+<!-- Beg of ptclm chapter-->
+<chapter id="PTCLMDOC">
+<title>How to run &ptclm;</title>
+<para>
+&ptclm; (pronounced point clime) is a Python script to help you set up PoinT CLM
+simulations. It runs the &clm; tools for you to get datasets set up, and copies them
+to a location you can use them according to the &CLMUSRDAT; naming convention. Then
+it runs <command>create_newcase</command> for you and modifies the env settings and
+namelist appropriately. &ptclm; has a simple ASCII text file for storing basic
+information for your sites. We also have complete lists for AmeriFlux and Fluxnet-Canada
+sites, although we only have the meteorology data for one site. For other sites you
+will need to obtain the meteorology data and translate it to a format that the &cesm;
+datm model can use. But, even without meteorology data &ptclm; is useful to setup 
+datasets to run with standard &CLMQIAN; data.
+</para>
+
+<para>
+The original authors of &ptclm; are: Daniel M. Ricciuto, Dali Wang, Peter E. Thornton,
+Wilfred M. Post all at Environmental Sciences Division, Oak Ridge National Laboratory 
+(<acronym>ORNL</acronym>) and R. Quinn Thomas at Cornell University. It was then modified
+fairly extensively by Erik Kluzek at &ncar;. We want to thank all of these individuals
+for this contribution to the &cesm; effort. We also want to thank the folks at
+University of Michigan Biological Stations (US-UMB) who allowed us to use their Fluxnet
+station data and import it into our inputdata repository, especially Gil Bohrer the
+PI on record for this site.
+</para>
+
+<sect1 id="PTCLMINTRO">
+<title>Introduction to PTCLM</title>
+<para>
+To get help on &ptclm; use the "--help" option as follows.
+<screen width="99">
+> cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+> ./PTCLM.py --help
+</screen>
+</para>
+<para>
+The output to the above command is as follows:
+</para>
+<para>
+<screen width="99">
+&ptclm_help;
+</screen>
+</para>
+
+<para>
+Here we give a simple example of using &ptclm; for a straightforward case of running
+at the US-UMB Fluxnet site on bluefire where we already have the meteorology data on
+the machine. Note, see <xref linkend="AmeriFluxdata"></xref> for permission information
+to use this data.
+<example>
+<title>Example of running &ptclm; for US-UMB on bluefire</title>
+<screen width="99">
+setenv CSMDATA   /fis/cgd/cseg/csm/inputdata
+setenv MYCSMDATA $HOME/inputdata
+setenv SITE      US-UMB
+setenv MYMACH    bluefire
+setenv MYCASE    testPTCLM
+
+# First link the standard input files to a location you have write access
+cd scripts
+./link_dirtree $CSMDATA $MYCSMDATA
+
+# Next build all of the clm tools you will need
+cd ../models/lnd/clm/tools/mksurfdata
+gmake
+gmake clean
+cd ../mkdatadomain
+gmake
+gmake clean
+cd ../mkgriddata
+gmake
+gmake clean
+# next run PTCLM (NOTE -- MAKE SURE python IS IN YOUR PATH)
+cd ../../../../../scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+./PTCLM.py -m $MYMACH  --case=$MYCASE --site=$SITE --csmdata=$MYCSMDATA \
+ --aerdepgrid --ndepgrid
+# NOTE: we use --aerdepgrid --ndepgrid so that you use the global
+# aerosol and Nitrogen deposition files rather than site-specific ones.
+cd ../../../../../$MYCASE
+# Finally configure, build, and run the case as normal
+</screen>
+</example>
+</para>
+</sect1>
+
+<sect1 id="PTCLMGUIDE">
+<title>Guide to the options of &ptclm;</title>
+<para>
+There are three types of options to &ptclm;: required, configure/run-time, and
+dataset generation options. The three required options are the three settings that
+MUST be specified for &ptclm; to work at all. The other settings have default
+values that will default to something useful. The configure/run-time options control
+how the simulation will be setup and run. The dataset generation options control
+the generation of datasets needed when &ptclm; is run. Most options use a double
+dash "--" "longname" such as "--list", but the most common options also have a short-name
+with a single dash (such as -m instead of --machine).
+</para>
+<para>
+The required options to &ptclm; are: inputdata directory (-d), machine (-m) and 
+site-name (-s).  Inputdata directory is the directory where you have the &cesm; 
+inputdata files, you need to have write access to this directory, so if you are
+running on a machine that you do NOT have write access to the standard inputdata
+location (such as &ncar; bluefire or <acronym>ORNL</acronym> jaguar) you need
+to link the standard files to a location you do have control over. We recommend
+using the <filename>scripts/link_dirtree</filename> tool to do that. "machine" is
+the scripts name for the machine/compiler you will be using for your case. And 
+finally site-name is the name of the site that you want to run for. Site-name
+can either be a valid &CLM1PT; supported dataset name or a Fluxnet site name
+from the list of sites you are running on (see the --sitegroupname for more information
+about the site lists).
+</para>
+<para>
+After &ptclm; is run a case directory where you can then configure, build and run
+your &cesm; case as normal. It also creates a <filename>README.PTCLM</filename> 
+in that directory that documents the commandline options to &ptclm; that were used 
+to create it.
+</para>
+<para>
+After "help" the "list" option is one of the most useful options for getting
+help on using &ptclm;. This option gives you information about some of the other
+options to &ptclm;.  To get a list of the machine, sites, and compsets that can be 
+used for &ptclm; use the "--list" option as follows.
+<screen width="99">
+> cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+> ./PTCLM.py --list
+</screen>
+</para>
+<para>
+The output to the above command is as follows:
+</para>
+<para>
+<screen width="99">
+&ptclm_list;
+</screen>
+</para>
+
+<sect2 id="PTCLMOVER">
+<title>Overview on using &ptclm;</title>
+<procedure>
+<title>Steps in running &ptclm;</title>
+<step>
+<title>Setup Inputdata directory with write access (use 
+<command>link_dirtree</command> script)</title>
+<para>
+You need to setup an inputdata directory where you have write access to it.
+Normally, for &ncar; machines the data is on an inputdata where the user
+does NOT have write access to it. A way that you can get around this is
+to use the <command>link_dirtree</command> script to create softlinks from
+the normal location to a location you have write access to. So for example
+on bluefire:
+<screen width="99">
+> setenv CSMDATA /fs/cgd/csm/inputdata
+> setenv MYCSMDATA $HOME/inputdata
+> mkdir $MYCSMDATA
+> cd scripts
+> ./link_dirtree $CSMDATA $MYCSMDATA
+</screen>
+See <xref linkend="managingyourdata"></xref> for more information on this.
+</para>
+</step>
+<step>
+<title>Build the &clm; tools</title>
+<para>
+Next you need to make sure all the &clm; &FORTRAN; tools are built.
+<screen width="99">
+> cd models/lnd/clm/tools/mkgriddata
+> gmake
+> gmake clean
+> cd ../mkdatadomain
+> gmake
+> gmake clean
+> cd ../mksurfdata
+> gmake
+> gmake clean
+</screen>
+</para>
+</step>
+<step>
+<title>Run &ptclm;</title>
+<para>
+Next you actually run &ptclm; which does the different things listed below:
+</para>
+<substeps>
+<step>
+<title>&ptclm; names your case based on your input</title>
+<para>
+&ptclm; names you case based on the input you give to it.
+<screen width="99">
+[Prefix_]SiteCode_Compset[_QIAN][_spinuptype]
+Where: 
+        Prefix is from the caseidprefix option (or blank if not used).
+        SiteCode is the site name you entered with the -s option.
+        Compset is the compset name you entered with the -c option.
+        _QIAN is part of the name only if the useQIAN is used.
+        _spinuptype is part of the name if one of: ad_spinup, exit_spinup, or
+         final_spinup is used, and the exact spinup name chosen is used.
+</screen>
+For example, the casename for the following will be:
+<screen width="99">
+> cd scripts
+> ./PTCLM.py -m bluefire -s US-UMB -d $MYCSMDATA -c I_2000_CN --ad_spinup --useQIAN
+</screen>
+"US-UMB_I_2000_CN_QIAN_ad_spinup".
+</para>
+</step>
+<step>
+<title>&ptclm; creates datasets for you</title>
+<para>
+It will populate <envar>$MYCSMDATA</envar> with new datasets it creates using the
+&clm; tools.
+</para>
+</step>
+<step performance="optional">
+<title>If a transient compset and &ptclm; finds a <filename>_dynpftdata.txt</filename>
+file</title>
+<para>
+If you are running a transient compset (such as the "I_1850-2000_CN" compset) 
+AND you there is a file in the <filename>PTCLM_sitedata</filename> directory under 
+the &ptclm; directory called <filename>$SITE_dynpftdata.txt</filename> it will use
+this file for the land-use changes. Otherwise it will leave land-use constant, unless
+you use the pftgrid option so it uses the global dataset for landuse changes.
+See <xref linkend="PTCLMDynPFTFiles"></xref> for more information on this. There
+is a sample transient dataset called <filename>US-Ha1_dynpftdata.txt</filename>.
+Transient compsets, are compsets that create transient land-use change and 
+forcing conditions such as:
+'I_1850-2000', 'I_1850-2000_CN', 'I_RCP8.5_CN', 'I_RCP6.0_CN', 'I_RCP4.5_CN', 
+or 'I_RCP2.6_CN'.
+</para>
+</step>
+<step id="pftphyscopy">
+<title>&ptclm; creates a <filename>pft-physiology</filename> for you</title>
+<para>
+&ptclm; will create a local copy of the <filename>pft-physiology</filename> 
+specific for your site that you could then customize with changes specific
+for that site.
+</para>
+</step>
+<step>
+<title>&ptclm; creates a <filename>README.PTCLM</filename> for you</title>
+<para>
+&ptclm; will create a simple text file with the command line for it in a file
+called <filename>README.PTCLM</filename> in the case directory it creates for you.
+</para>
+</step>
+</substeps>
+</step>
+
+<step>
+<title>Customize, configure, build and run case as normal</title>
+<para>
+You then customize your case as you would normally. See the <xref
+linkend="customize"></xref> chapter for more information on doing this.
+</para>
+</step>
+</procedure>
+
+</sect2>
+
+<sect2 id="PTCLMOPTS">
+<title>Details on the options of &ptclm;</title>
+<para>
+Next we discuss the configure and run-time options, dividing them up into
+configure, spinup, and run-time options.
+</para>
+<para>
+Configure options include:
+<simplelist>
+<member>-c MYCOMPSET, --compset=MYCOMPSET</member>
+<member>--caseidprefix=MYCASEID</member>
+<member>--cesm_root=BASE_CESM</member>
+<member>--namelist=NAMELIST</member>
+<member>--rmold</member>
+<member>--scratchroot=SCRATCHROOT</member>
+<member>--sitegroupname=SITEGROUP</member>
+<member>--QIAN_tower_yrs</member>
+<member>--useQIAN</member>
+</simplelist>
+</para>
+<variablelist>
+
+<varlistentry>
+<term>--compset</term><listitem>
+<para>
+The "-c" option is the most commonly used option after the required options, as it
+specifies the &cesm; scripts component set to use with &ptclm;. The default compset
+is the "ICN" compset with CN on for present day conditions.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--caseidprefix</term><listitem>
+<para>
+This option gives a prefix to include in the casename when the case is created, in
+case you want to customize your casenames a bit. By default, casenames are figured
+out based on the other options. The argument to this option can either be a name to
+prefix casenames with and/or a pathname to include. Hence, if you want cases to 
+appear in a specific directory you can give the pathname to that directory with this
+option.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--cesm_root</term><listitem>
+<para>
+This option is for running &ptclm; with a different root directory to &cesm; than the
+version &ptclm; exists in. Normally you do NOT need to use this option.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--namelist</term><listitem>
+<para>
+This option adds any items given into the &clm; &usernlclm; namelist. This allows you to 
+add customizations to the namelist before the <filename>clm.buildnml.csh</filename> file
+is created for the case.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--rmold</term><listitem>
+<para>
+This option will remove an old case directory of the same name if one exists. Otherwise,
+if an old case directory already exists and you try to run &ptclm; it will return with
+an error.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--scratchroot</term><listitem>
+<para>
+This option is ONLY valid when using one of the generic machines (the -m option). 
+This passed onto <command>create_newcase</command> and gives the location where cases 
+will be built and run.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--sitegroupname</term><listitem>
+<para>
+In the &ptclm; directory there is a subdirectory "PTCLM_sitedata" that contains
+files with the site, PFT and soil data information for groups of sites. These site groups
+are all separate ASCII files with the same prefix followed by a "_*data.txt" name.
+See <xref linkend="PTCLMGroupSiteLists"></xref> for more information on these files.
+By default we have provided three different valid group names:
+<simplelist>
+<member>EXAMPLE</member>
+<member>AmeriFlux</member>
+<member>Fluxnet-Canada</member>
+</simplelist>
+The EXAMPLE is the group used by default and ONLY includes the US-UMB site as that
+is the only site we have data provided for. The other two site groups include the
+site information for all of both the AmeriFlux and Fluxnet-Canada sites. You can use
+the "sitegroupname" option to use one of the other lists, or you can create your own
+lists using the EXAMPLE file as an example. Your list of sites could be real world
+locations or could be theoretical "virtual" sites given to exercise &clm; on 
+differing biomes for example. Note, see <xref linkend="AmeriFluxdata"></xref> with
+permission information to use the US-UMB data.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--useQIAN</term><listitem>
+<para>
+This option says to use the standard &clm; global Qian T62 atmospheric forcing rather 
+than any tower site forcing data available. Otherwise, &ptclm; will try to find tower
+forcing data for the specific site entered.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--QIAN_tower_yrs</term><listitem>
+<para>
+This option is used with the "useQIAN" option to set the years to cycle over for
+the Qian data. In this case Qian atmospheric forcing will be used, but the
+simulation will run over the same years that tower site is available for this site.
+</para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+<para>
+Spinup options include:
+<simplelist>
+<member>--coldstart</member>
+<member>--ad_spinup</member>
+<member>--exit_spinup</member>
+<member>--final_spinup</member>
+<member>--finidat=FINIDAT</member>
+</simplelist>
+</para>
+
+<para>
+The spinup options enable the different CN spinup modes, but also set the run
+length. The coldstart option says to startup with OUT an initial condition file, while
+the finidat option explicitly gives the initial condition file to use. Obviously,
+the different spinup options can NOT be used together, nor can the coldstart and
+finidat options be either.
+<variablelist>
+<varlistentry>
+<term>--coldstart</term><listitem>
+<para>
+This option ensures that a cold-start will be done with arbitrary initial conditions.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--ad_spinup</term><listitem>
+<para>
+This option enables the accelerated decomposition mode when a CN compset is used. It
+also sets the run-length as given in the example for running exit spinup in 
+<xref linkend="CLMSP_SPINUP"></xref>.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--exit_spinup</term><listitem>
+<para>
+This option enables the exit spinup mode when a CN compset is used. It also sets the
+run-length to a year just as given in the example for running exit spinup in 
+<xref linkend="CLMSP_SPINUP"></xref>.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--final_spinup</term><listitem>
+<para>
+This option sets the run length as given in the example for a final spinup in
+<xref linkend="final_CN_spinup"></xref>. This option can be used for any compset.
+<caution>
+<para>
+There is a bug in the final_spinup mode for setting the run length. Because of the
+bug, final_spinup mode only runs for a very short time, you'll need to edit
+the run length by hand to be 50 years. See bug 1367 in the &KnownBugs; file.
+</para>
+</caution>
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--finidat</term><listitem>
+<para>
+This option sets the initial condition file to startup the simulation from.
+</para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+
+</para>
+
+<para>
+Run-time options include:
+<simplelist>
+<member>--debug</member>
+<member>--run_n=MYRUN_N</member>
+<member>--run_units=MYRUN_UNITS</member>
+<member>--stdurbpt</member>
+</simplelist>
+</para>
+
+<para>
+<variablelist>
+
+<varlistentry>
+<term>--debug</term><listitem>
+<para>
+This option tells &ptclm; to echo what it would do if it were run, but NOT actually
+run anything. So it will show you the dataset creation commands it would use.
+It does however, run <command>create_newcase</command>, but then it only displays
+the <command>xmlchange</command> commands and changes that it would do. Also note
+that if you give the "--rmold" option it won't delete the case directory beforehand.
+Primarily this is intended for debugging the operation of &ptclm;.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--run_n</term><listitem>
+<para>
+This option along with run_units is used to set the length for the simulation. "run_n"
+is the number of units to use.
+The default run length depends on the site, compset,
+and configuration and for example if a "spinup" option is selected.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--run_units</term><listitem>
+<para>
+This option is the units of time to use for the length of the simulation. It is used
+along with "run_n" to set the length of the simulation.
+The default run length depends on the site, compset,
+and configuration and for example if a "spinup" option is selected.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--stdurbpt</term><listitem>
+<para>
+This option turns on the "stdurbpt_pd" use-case for &CLMUSECASE;. This option
+can NOT be used for compsets that set the use-case to something besides present-day.
+</para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+</para>
+
+<para>
+Lastly we discuss the dataset generation options. The dataset generation options are:
+<simplelist>
+<member>--aerdepgrid</member>
+<member>--ndepgrid</member>
+<member>--pftgrid</member>
+<member>--soilgrid</member>
+<member>--nopointdata</member>
+<member>--owritesrfaer</member>
+</simplelist>
+</para>
+
+<para>
+The options that with a "grid" suffix all mean to create datasets using the global
+gridded information rather than using the site specific point data. By default the
+site specific point data is used. The "nopointdata" and "owritesrfaer" options have to
+do with file creation.
+</para>
+<para>
+Because supported single-point datasets already have the data created for them, you
+MUST use the "nopointdata" and "ndepgrid" options when you are using a supported 
+single-point site. You must use "ndepgrid" even for a compset without CN. You also 
+can NOT use the options: "soilgrid", "pftgrid", "aerdepgrid", or "owritesrfaer".
+</para>
+<para>
+<variablelist>
+
+<varlistentry>
+<term>--aerdepgrid</term><listitem>
+<para>
+This option says to use the aerosol deposition files from the global dataset rather
+than creating an interpolated version.
+</para>
+<para>
+This option must NOT be used when you you are using a site that
+is a supported single point dataset.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--ndepgrid</term><listitem>
+<para>
+This option says to use the Nitrogen deposition files from the global dataset rather
+than creating an interpolated version. This is only needed for compsets with CN.
+</para>
+<note>
+<para>
+This option is <emphasis>required</emphasis> when you you are using a site that
+is a supported single point dataset. This is true even when you are NOT using a
+compset with CN.
+</para>
+</note>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--pftgrid</term><listitem>
+<para>
+This option says to use the PFT values provided on the global dataset rather than
+using the specific site based values from the 
+<filename>PTCLM_sitedata/*_pftdata.txt</filename> file when creating the surface dataset.
+</para>
+<para>
+This option must NOT be used when you you are using a site that
+is a supported single point dataset.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--soilgrid</term><listitem>
+<para>
+This option says to use the soil values provided on the global dataset rather than
+using the specific site based values from the 
+<filename>PTCLM_sitedata/*_soildata.txt</filename> file when creating the surface dataset.
+</para>
+<para>
+This option must NOT be used when you you are using a site that
+is a supported single point dataset.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--nopointdata</term><listitem>
+<para>
+This option says to NOT create any input datasets -- assume this step has already been
+done. If datasets weren't already created, your case will fail when you try to run it.
+In general the first time you run &ptclm; for a new site you want it to generate new
+datasets, but the next time and future times you want to use this option so that it
+doesn't waste a lot of time rebuilding datasets over again.
+</para>
+<note>
+<para>
+This option is <emphasis>required</emphasis> when you you are using a site that
+is a supported single point dataset.
+</para>
+</note>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>--owritesrfaer</term><listitem>
+<para>
+This option says to overwrite any surface and/or aerosol deposition datasets that
+were already created. Otherwise, the creation of these files will be skipped if a file
+is already found (but it WILL create files if they don't exist).
+</para>
+<para>
+This option must NOT be used when you you are using a site that
+is a supported single point dataset.
+</para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+</para>
+<note>
+<para>
+Note on the aerosol and Nitrogen deposition files. When the "aerdepgrid" and "ndepgrid"
+options are NOT used -- aerosol and Nitrogen deposition files will be created by
+interpolating from the global datasets. However, after these interpolated files
+are created you could customize them for your site with data that you provide. You
+could then write protect the files and use the "nopointdata" option so that &ptclm;
+doesn't try to overwrite them in the future.
+</para>
+</note>
+</sect2>
+</sect1>
+
+<sect1 id="PTCLMEXAMPLES">
+<title>Examples using &ptclm;</title>
+<para>
+Now let's give a few more complex examples using some of the options we have
+discussed above.
+</para>
+<para>
+In this first example, we'll demonstrate using a supported single point dataset,
+which then requires using the "nopointdata" and "ndepgrid" options. We'll also
+demonstrate the compset option, "stdurbpt" and "caseidprefix" options.
+<example>
+<title>Example of running &ptclm; for the Mexicocity supported single point
+dataset</title>
+<screen width="99">
+> cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+> ./PTCLM.py -m bluefire -s 1x1_mexicocityMEX -d $CSMDATA --nopointdata --ndepgrid \
+--stdurbpt -c I --caseidprefix `pwd`/myPTCLMcases/site
+> cd myPTCLMcases/site_1x1_mexicocityMEX_I
+> ./configure -case
+# Now build and run normally
+> ./site_1x1_mexicocityMEX_I.bluefire.build
+# Here we show running interactively
+> ./site_1x1_mexicocityMEX_I.bluefire.run
+</screen>
+</example>
+</para>
+
+<para>
+Now, let's demonstrate using a different group list, doing a spinup, running with Qian
+global forcing data, but using tower years to set the years to run over. This uses
+the options: sitegroupname, ad_spinup, useQIAN, and QIANtower_years. 
+<example>
+<title>Example of running &ptclm; for a spinup simulation with Qian data for tower years.
+</title>
+<screen width="99">
+> cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+> ./PTCLM.py -m bluefire -s US-Ha1 -d $CSMDATA --sitegroupname AmeriFlux \
+--ad_spinup --useQIAN --QIAN_tower_yrs
+> cd ../../../../../US-Ha1_ICN_QIAN_ad_spinup
+> ./configure -case
+# Now build and run normally
+> ./US-Ha1_ICN_QIAN_ad_spinup.bluefire.build
+# Here we show running interactively
+> ./US-Ha1_ICN_QIAN_ad_spinup.bluefire.run
+</screen>
+</example>
+</para>
+
+<para>
+Finally, let's demonstrate using a generic machine (which then requires the scratchroot
+option), using the global grid for PFT and soil types, and setting the run length
+to two months.
+<example>
+<title>Example of running &ptclm; on a generic machine with global PFT and soil types
+dataset</title>
+<screen width="99">
+> cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+# Note, see the <xref linkend="AmeriFluxdata"></xref> with permission information
+# to use the US-UMB data.
+> ./PTCLM.py -m generic_darwin_intel -s US-UMB -d $CSMDATA --pftgrid --soilgrid \
+--scratchroot $HOME --run_n 2 --run_units nmonths
+> cd ../../../../../US-UMB_ICN
+> ./configure -case
+# Now build
+> ./US-UMB_ICN.generic_darwin_intel.build
+# To get the files from the svn server...
+# First list the files from the streams text file
+> ../ccsm_utils/Tools/listfilesin_streams \
+-t $HOME/US-UMB_ICN/run/clm1PT.1x1pt_US-UMB.stream.txt -l \
+&gt; Buildconf/datm.input_data_list
+# And now run the script to export data to your machine
+> ../ccsm_utils/Tools/check_input_data -export
+# Here we show running interactively
+> ./US-UMB_ICN.generic_darwin_intel.run
+</screen>
+</example>
+<caution>
+<para>
+Because of Bug 1364, when running this case as above we get a floating point
+error after reaching time-step 124 for the example exactly as above. Other
+machines or compilers probably won't have this problem. See the &KnownBugs; file
+for more information on this problem.
+</para>
+</caution>
+<warning>
+<para>
+As documented in Bug 1368, spinning up the US-UMB site for a I2000CN compset gives
+zero Gross Primary Production (GPP). If the user wishes to use this site for &clmcn;, 
+they'll need to address this issue.
+See the &KnownBugs; file for more information on this problem.
+</para>
+</warning>
+</para>
+</sect1>
+
+<sect1 id="PTCLMDATA">
+<title>Adding data for use by &ptclm;</title>
+<sect2 id="PTCLMGroupSiteLists">
+<title>&ptclm; Group Site Lists</title>
+<para>
+The "sitegroupname" option to &ptclm; looks for groups of sites in the
+files in the <filename>PTCLM_sitedata</filename> directory under the &ptclm; directory. 
+You can add new names available for this option including your own lists of sites, by
+adding more files in this directory. There are three files for each "sitegroupname": 
+<filename>$SITEGROUP_sitedata.txt</filename>, 
+<filename>$SITEGROUP_soildata.txt</filename> 
+and <filename>$SITEGROUP_pftdata.txt</filename> (where $SITEGROUP is the name that would 
+be entered as "sitegroupname" to &ptclm;). Each file needs to have the same list of sites,
+but gives different information: site data, PFT data, and soil data respectively.
+Although the site codes need to be the same between the three files, the files do NOT
+have to be in the same order. Each file has a one-line header that lists the contents
+of each column which are separated by commas. The first column for each of the files
+is the "site_code" which must be consistent between the three files. The site code
+can be any unique character string, but in general we use the AmeriFlux site code.
+</para>
+<para>
+Site data file: <filename>$SITEGROUP_sitedata.txt</filename>): The header for
+this file is:
+<screen width="99">
+site_code,name,state,lon,lat,elev,startyear,endyear,alignyear
+</screen>
+The columns: name, state, and elevation are informational only. Name is a longer
+descriptive name of the site, and state is the state for U.S. sites or country
+for non U.S. sites. The columns: lon and lat are the longitude and latitude of
+the location in decimal degrees. The last three columns are the start and ending
+year for the data and the align year for an 1850 case for the data. The align year
+is currently unused.
+</para>
+<para>
+Soil data file: <filename>$SITEGROUP_soildata.txt</filename>): The header for this
+file is:
+<screen width="99">
+site_code,soil_depth,n_layers,layer_depth,layer_sand%,layer_clay%
+</screen>
+The first three fields after "site_code" are currently unused. The only two that
+are used are the percent sand and clay columns to set the soil texture.
+</para>
+<para>
+PFT data file: <filename>$SITEGROUP_pftdata.txt</filename>): The header for this
+file is:
+<screen width="99">
+site_code,pft_f1,pft_c1,pft_f2,pft_c2,pft_f3,pft_c3,pft_f4,pft_c4,pft_f5,pft_c5
+</screen>
+This file gives the vegetation coverage for the different vegetation types for the site.
+The file only supports up to five PFT's at the same time. The columns with "pft_f" are 
+the fractions for each PFT, and the columns with "pft_c" is the integer index of the
+given PFT. Look at the pft-physiology file to see what the PFT index for each PFT type
+is.
+</para>
+</sect2>
+
+<sect2 id="PTCLMDynPFTFiles">
+<title>Dynamic Land-Use Change Files for use by &ptclm;</title>
+<para>
+There is a mechanism for giving site-specific land-use change in &ptclm;. Adding
+site specific files to the <filename>PTCLM_sitedata</filename> directory under
+&ptclm; allows you to specify the change in vegetation and change in harvesting
+(for the CN model) for that site. Files are named:
+<filename>$SITE_dynpftdata.txt</filename>. There is a sample file for the US-Ha1
+site called: <filename>US-Ha1_dynpftdata.txt</filename>. The file has a one-line
+header with the information that the file has, and then one-line for each year
+with a transition. The header line is as follows:
+<screen width="99">
+trans_year,pft_f1,pft_c1,pft_f2,pft_c2,pft_f3,pft_c3,pft_f4,pft_c4,pft_f5,pft_c5,har_vh1,har_vh2,har_sh1,har_sh2,har_sh3,graze,hold_harv,hold_graze
+</screen>
+This file only requires a line for each year where a transition or harvest happens. As
+in the "pftdata" file above "pft_f" refers to the fraction and "pft_c" refers to the 
+PFT index, and only up to five vegetation types are allowed to co-exist. The last
+eight columns have to do with harvesting and grazing. The last two columns are whether
+to hold harvesting and/or grazing constant until the next transition year and will 
+just be either 1 or 0. This file will be converted by the
+<command>PTCLM_sitedata/cnvrt_trnsyrs2_pftdyntxtfile.pl</command> script in the &ptclm;
+directory to a format that <command>mksurfdata</command> can read that has an entry
+for each year for the range of years valid for the compset in question.
+</para>
+</sect2>
+
+<sect2 id="AmeriFluxdata">
+<title>Converting AmeriFlux Data for use by &ptclm;</title>
+<para>
+AmeriFlux data comes in comma separated format and is available from:
+<ulink url="http://public.ornl.gov/ameriflux/dataproducts.shtml">
+http://public.ornl.gov/ameriflux/dataproducts.shtml</ulink>. Before you
+download the data you need to agree to the usage terms.
+</para>
+<para>
+Here is a copy of the usage terms from the web-site on June/13/2011.
+</para>
+<para>
+"The AmeriFlux data provided on this site are freely available and were furnished by
+individual AmeriFlux scientists who encourage their use. Please kindly inform the
+appropriate AmeriFlux scientist(s) of how you are using the data and of any publication
+plans. Please acknowledge the data source as a citation or in the acknowledgments if the
+data are not yet published. If the AmeriFlux Principal Investigators (PIs) feel that they
+should be acknowledged or offered participation as authors, they will let you know and we
+assume that an agreement on such matters will be reached before publishing and/or use of
+the data for publication. If your work directly competes with the PI's analysis they may
+ask that they have the opportunity to submit a manuscript before you submit one that uses
+unpublished data. In addition, when publishing, please acknowledge the agency that
+supported the research. Lastly, we kindly request that those publishing papers using
+AmeriFlux data provide preprints to the PIs providing the data and to the data archive at
+the Carbon Dioxide Information Analysis Center (CDIAC)."
+</para>
+<para>
+The above agreement applies to the "US-UMB" dataset imported into our repository as
+well, and Gil Bohrer is the PI on record for that dataset.
+</para>
+<para>
+The &cesm; can NOT handle missing data, so we recommend using the "Level 4" Gap filled
+datasets.
+The fields will also need to be renamed. The "WS" column becomes "WIND", "PREC" becomes
+"PRECmms", "RH" stays as "RH", "TA" becomes "TBOT", "Rg" becomes "FSDS", "Rgl" becomes
+"FLDS", "PRESS" becomes "PSRF". "ZBOT" can just be set to the constant of "30" (m). 
+The units of Temperature need to be converted from "Celsius" to "Kelvin" (use the
+value in SHR_CONST_TKFRZ in the file
+<filename>models/csm_share/shr/shr_const.F90</filename> of <literal>273.15</literal>. 
+The units of Pressure also need to be converted from "kPa" to "Pa". LATIXY, and 
+LONGXY should also be set to the latitude and longitude of the site.
+</para>
+</sect2>
+<sect2 id="PTCLMUSHa1">
+<title>&ptclm; transient example over a shorter time period</title>
+<para>
+<example>
+<title>Example of running &ptclm; for transient land-use 1991-2006 for US-Ha1 on bluefire</title>
+<para>
+This is an example of using &ptclm; for Harvard Forest (AmeriFlux site code US-Ha1). In
+order to do this we would've needed to have converted the AmeriFlux data into &netcdf;
+format as show in the <xref linkend="AmeriFluxdata"></xref> section above. Also note
+that this site has a site-specific dynamic land-use change file for it
+<filename>PTCLM_sitedata/US-Ha1_dynpftdata.txt</filename> in the &ptclm; directory
+and this file will be used for land-use change and harvesting rather than the 
+global dataset.
+</para>
+<screen width="99">
+> cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
+# We are going to use forcing data over 1991 to 2006, but we need to start with
+# a transient compset to do so, so we use the 20th Century transient: 1850-2000
+# Note: When creating the fpftdyn dataset for this site it will use the 
+#     PTCLM_sitedata/US-Ha1_dynpftdata.txt
+# file for land-use change and harvesting
+> ./PTCLM.py -m bluefire -s US-Ha1 -d $MYCSMDATA --sitegroupname AmeriFlux \
+-c I_1850-2000_CN
+> mkdir $MYCSMDATA/atm/datm7/CLM1PT_data/1x1pt_US-Ha1
+> cd $MYCSMDATA/atm/datm7/CLM1PT_data/1x1pt_US-Ha1
+# Copy data in &netcdf; format to this directory, filenames should be YYYY-MM.nc
+# The fieldnames on the file should be: 
+#    FLDS,FSDS,LATIXY,   LONGXY,   PRECTmms,PSRF,RH,TBOT,WIND,ZBOT
+# With units
+#    W/m2,W/m2,degrees_N,degrees_E,mm/s,    Pa,  %, K,   m/s, m
+# The time coordinate units should be: days since YYYY-MM-DD 00:00:00
+> cd ../../../../../US-Ha1_I_1850-2000_CN
+# We need to turn cold-start on, so it doesn't expect an initial condition file
+# preferably, you would generate your own initial condition file and then use
+# the --finidat option to &ptclm; to enter it
+> ./xmlchange -file env_conf.xml -id CLM_FORCE_COLDSTART -val on
+# Now we need to set the start date to 1991, and have it cycle forcing data
+# over 1991 to 2006
+> ./xmlchange -file env_conf.xml -id RUN_STARTDATE -val 1991-01-01
+> ./xmlchange -file env_conf.xml -id DATM_CLMNCEP_YR_ALIGN -val 1991
+> ./xmlchange -file env_conf.xml -id DATM_CLMNCEP_YR_END -val 2006
+> ./xmlchange -file env_conf.xml -id CLM_NAMELIST_OPTS -val \
+# Similarly for Nitrogen deposition data we cycle over: 1991 to 2006
+"model_year_align_ndep=1991,stream_year_first_ndep=1991,stream_year_last_ndep=2006"
+# Now configure the case, and we'll edit the datm namelist for prescribed aerosols
+> ./configure -case
+# We also need to change the datm to run with aerosols over the 1991-2006 period
+cat &lt;&lt; EOF &gt; patch.diff
+*** datm.buildnml.csh.orig  2011-06-14 09:28:20.000000000 -0600
+--- datm.buildnml.csh 2011-06-14 09:28:57.000000000 -0600
+***************
+*** 32,38 ****
+     dataMode       = 'CLMNCEP'
+     domainFile     = '$DOMAINFILE'
+     streams        = 'clm1PT.1x1pt_US-Ha1.stream.txt 1991 1991 2006 ',
+!                     'presaero.stream.txt 1849 1849 2006'
+     vectors        = 'null','null'
+     mapmask        = 'nomask','nomask'
+     mapalgo        = 'nn','nn'
+--- 32,38 ----
+     dataMode       = 'CLMNCEP'
+     domainFile     = '$DOMAINFILE'
+     streams        = 'clm1PT.1x1pt_US-Ha1.stream.txt 1991 1991 2006 ',
+!                     'presaero.stream.txt 1991 1991 2006'
+     vectors        = 'null','null'
+     mapmask        = 'nomask','nomask'
+     mapalgo        = 'nn','nn'
+EOF
+# Apply the above patch to the datm build namelist file
+> patch Buildconf/datm.buildnml.csh patch.diff
+</screen>
+</example>
+</para>
+<para>
+<caution>
+<para>
+Because of bug 1361, this won't work out of the box. You'll need to add the change
+to PTCLM.py given in the KnownBugs file on this issue.
+</para>
+</caution>
+</para>
+</sect2>
+
+</sect1>
+
+<sect1 id="PTCLMSTRUCT">
+<title>A bit about the structure of &ptclm;, what it does, and how it works</title>
+<para>
+A large part of &ptclm; just sets up the different options and does error checking
+on the options given. &ptclm; then uses the options provided to use
+<command>create_newcase</command> to create a new case. It then queries both the
+case directory and/or the XML database (using
+<filename>queryDefaultNamelist.pl</filename> in <filename>models/lnd/clm/bld</filename>
+and does other settings for the case. It then runs the different &clm; tools in turn to 
+create the necessary datasets and points to them in the case with the &CLMUSRDAT; option.
+It runs <command>mkgriddata</command>, <command>mksurfdata.pl</command>, and 
+<command>mkdatadomain</command> as well as the <command>aerdepregrid.ncl</command> and 
+<command>ndepregrid.ncl</command> &ncl; scripts. <command>mkgriddata</command> and 
+<command>mkdatadomain</command> have template namelist files in the
+<filename>scripts/ccsm_utils/Tools/lnd/clm/PTCLM/usr_files</filename> directory. 
+When running <command>mksurfdata.pl</command> if it finds a
+<filename>$SITE_dynpftdata.txt</filename> in the
+<filename>scripts/ccsm_utils/Tools/lnd/clm/PTCLM/PTCLM_sitedata</filename> directory
+it will use that file for transient landuse changes (there's a sample file for
+"US-Ha1" called <filename>US-Ha1_dynpftdata.txt</filename>).
+It modifies the different <filename>env*.xml</filename> using
+<command>xmlchange</command> and creates an initial &usernlclm; filename. After
+&ptclm; is run you can then make changes to the case by hand, and configure, build
+and run as normal.
+</para>
+<para>
+There is a simple test script to test &ptclm;. See <xref linkend="ptclm_testing"></xref>
+for more information on using it.
+</para>
+</sect1>
+
+</chapter>
+<!-- End of ptclm chapter -->

@@ -1,0 +1,40 @@
+-------------------------------------------------------------------------------------- 1
+                                                                                       2
+  Notes for Overflow Info file: First line total number of overflows. Then follows     3
+  blocks of lines having the same logical structure, one for each overflow. Each       4
+  overflow block starts with the number of the overflow, then a character descriptor.  5
+  The next seven lines are parameters specific to each overflow; note that the order   6
+  is important. Next block is for kmt changes; note, first line should be set to 0     7
+  if there are no kmt changes; each kmt change is i,j, old and new kmt indices. Next   8
+  block gives the inflow, source and entrainment regional average index boundaries,    9
+  after a blank comment line; each line is imin,imax,jmin,jmax,kmin,kmax. Next block  10
+  is the source grid box ijk values and sidewall orientation, with the first line the 11
+  number of boxes, followed by each ijk and orientation value, ordered to increase in 12
+  i or j, whichever is appropriate. Then follows entrainment grid box ijk and orienta-13
+  tion, similar to source, and finally the product grid boxes. Product grid boxes     14
+  have one or more sets ordered by increasing k (i.e. depth), one for each group of   15
+  gridboxes; first the number of product sets, then each set as number, ijk and       16
+  orientation.                                                                        17
+                                  Conventions                                         18
+                                                                                      19
+  Source (src) and entrainment (ent) grid values refer to the grid box that the       20
+  overflows flow INTO; product (prd) grid values refer to the grid box from which     21
+  the overflow flows OUT OF. All indices refer to the POP T-grid. All of the overflow 22
+  grid boxes (i.e. ijk values) are below the bottom topography but have sidewalls     23
+  adjacent to active ocean points from which overflow waters flow from or into.       24
+                                                                                      25
+  Orientation of overflow sidewalls: 1=increasing x direction, 2=increasing y         26
+  direction, 3=decreasing x direction and 4=decreasing y direction. As src,ent always 27
+  flow INTO an overflow gridbox and prd flows OUT, there should be no ambiguity. (!)  28
+  Looking down onto an overflow grid box:                                             29
+                                             2                                        30
+                                          ________                                    31
+                      y ^                |        |                                   32
+                        |               3|   ijk  |1                                  33
+                        +--->            |        |                                   34
+                            x            |________|                                   35
+                                             4                                        36
+                                                                                      37
+  Bruce P. Briegleb   2 September 2008    gx1v5 test case DMS+FBC                     38
+                                                                                      39
+--------------------------------------------------------------------------------------40

@@ -1,0 +1,251 @@
+#!/bin/bash
+
+# This script is a wrapper around mkprocdata_map that runs that
+# program and then copies some additional variables from the template
+# file to the output file. It also does some additional pre and
+# post-processing in order to create some additional variables.
+
+# Created by Bill Sacks, 5-25-11
+
+# ----------------------------------------------------------------------
+# SET PARAMETERS HERE
+# ----------------------------------------------------------------------
+
+# comma-delimited list of extra variables to copy directly from
+# template file; note that these variables should not be written out
+# by mkprocdata_map (i.e., everything in this list should be listed in
+# the 'ignore_var' function in mkprocdata_map.F90); however, there may
+# be some variables in the 'ignore_var' function that are not listed
+# here - e.g., variables that we treat specially.
+copy_vars="lon,lat"
+
+# comma-delimited list of extra variables to copy from the template
+# file if the -l option is specified -- this option says to copy
+# landfrac and related variables. Note that some of these variables
+# may be written out by mkprocdata_map, in which case they will be
+# overwritten afterwards (slighly less efficient, but that keeps
+# things simpler).
+landfrac_copy_vars="landfrac,landmask,pftmask"
+
+# name of the executable;
+# expected to be in the same directory as this script unless -e option is given
+executable="mkprocdata_map"
+
+# minimum value for regridded pftmask variable for the output variable to be 1
+pftmask_min="1.e-6"
+
+# fill value for landmask
+landmask_fill=-9999
+
+# ----------------------------------------------------------------------
+# LOCAL FUNCTIONS DEFINED HERE
+# ----------------------------------------------------------------------
+
+function Usage {
+    script_name=`basename $0`
+    echo "Usage: $script_name -i input_file -o output_file -m map_file -t template_file [-e executable-path] [-h] [-l]"
+    echo ""
+    echo "This script runs mkprocdata_map with the given arguments (-i, -o, -m and -t),"
+    echo "then copies some additional variables from the template file"
+    echo "to the output file. It also does some additional pre and"
+    echo "post-processing in order to create some additional variables."
+    echo ""
+    echo "Additional optional arguments:"
+    echo ""
+    echo "[-e executable-path]: Gives the path of the mkprocdata_map executable."
+    echo "                      If not specified, the executable is assumed to be"
+    echo "                      in the same directory as this script."
+    echo ""
+    echo "[-h]: Print this help message and exit"
+    echo ""
+    echo "[-l]: Rather than computing landfrac and related variables"
+    echo "by regridding the input file, instead copy these variables"
+    echo "directly from the template file. The variables this pertains"
+    echo "to are:"
+    echo $landfrac_copy_vars
+}
+
+# This function operates on a single variable in a file, changing all
+# places where that variable is missing to some new (non-missing)
+# value. The _FillValue attribute remains unchanged.
+# Usage: change_missing_to_value varname newval infile outfile
+#   - varname: the name of the variable to change
+#   - newval: all instances of the missing value will be replaced with
+#     this new value
+#   - infile: input file name
+#   - outfile: output file name (can be the same as infile)
+function change_missing_to_value {
+    if [[ $# -ne 4 ]]; then
+	echo "ERROR in change_missing_to_value: wrong number of arguments: expected 2, received $#"
+	exit 1
+    fi
+
+    varname=$1
+    newval=$2
+    infile=$3
+    outfile=$4
+
+    varname_tmp=${varname}_tmp_$$
+
+    cat > cmds.nco.tmp.$$ <<EOF
+*missing = ${varname}.get_miss();
+
+/* we need to create a temporary variable because it seems that
+delete_miss can only operate on variables that have been previously
+defined in this script */
+*${varname_tmp} = ${varname};
+
+/* we need to delete the missing value in order to replace those
+   values with 0 (needed because ncap2 doesn't let you do operations
+   on points that have the missing value) */
+${varname_tmp}.delete_miss();
+
+where (${varname_tmp} == missing)
+   ${varname_tmp} = ${newval};
+
+/* WJS (6-28-11): I could imagine the following line having negative
+   performance implications. However, I think it's best to maintain
+   a _FillValue attribute in case some programs expect it.
+   One alternative may be to use ncatted to restore the _FillValue
+   attribute; I don't know if that would be more or less efficient. */
+${varname_tmp}.set_miss(missing);
+
+${varname} = ${varname_tmp};
+EOF
+       
+    do_cmd "ncap2 -O -S cmds.nco.tmp.$$ $infile $outfile" 0
+    rm cmds.nco.tmp.$$
+    
+}
+
+
+# ----------------------------------------------------------------------
+# BEGIN MAIN SCRIPT
+# ----------------------------------------------------------------------
+
+script_dir=`dirname $0`
+source $script_dir/mkprocdata_map_functions.bash
+
+# ----------------------------------------------------------------------
+# Handle command-line arguments, and check for errors
+# ----------------------------------------------------------------------
+
+# define default values:
+input_file=""
+output_file=""
+map_file=""
+template_file=""
+executable_path=$script_dir
+do_landfrac_copies=0
+
+while getopts e:hi:lm:o:t: opt; do
+    case $opt in
+	e) executable_path=$OPTARG;;
+	h) Usage; exit;;
+	i) input_file=$OPTARG;;
+	l) do_landfrac_copies=1;;
+	m) map_file=$OPTARG;;
+	o) output_file=$OPTARG;;
+	t) template_file=$OPTARG;;
+	\?) Usage; exit 1
+    esac
+done
+
+check_file_arg "$input_file" "input"
+check_file_arg "$map_file" "map"
+check_file_arg "$template_file" "template"
+
+if [ -z "$output_file" ]; then
+    echo "Must specify an output file"
+    Usage
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Do some preprocessing
+# ---------------------------------------------------------------------- 
+
+tempfile="$output_file.tmp.$$"
+
+if [ $do_landfrac_copies -eq 0 ]; then
+    # the following things are preprocessing that needs to be done on
+    # variables that are only used when do_landfrac_copies==0
+    echo ""
+
+    # for landfrac to be regridded appropriately, it needs to be set
+    # to 0 over ocean grid cells, rather than having the missing value
+    # there
+    change_missing_to_value landfrac 0 $input_file $tempfile
+
+    # we need a pftmask_float variable because we can't regrid integer
+    # variables properly
+    do_cmd "ncap2 -O -s 'pftmask_float=float(pftmask)' $tempfile $tempfile" 0
+    # pftmask_float should also be 0 over the ocean for the regridding
+    # to work as desired (analogously to what we do for landfrac,
+    # above). However, we don't have to do the following
+    # change_missing_to_value call because pftmask already doesn't
+    # have any missing values in the input file (as of 6-28-11).
+    ### change_missing_to_value pftmask_float 0 $tempfile $tempfile
+else
+    ln -s $input_file $tempfile
+fi
+
+# ----------------------------------------------------------------------
+# Run mkprocdata_map
+# ---------------------------------------------------------------------- 
+
+do_cmd "${executable_path}/${executable} -i $tempfile -o $output_file -m $map_file -t $template_file" 0
+
+rm $tempfile
+
+# ----------------------------------------------------------------------
+# Add extra variables to the output file
+# ---------------------------------------------------------------------- 
+
+if [ $do_landfrac_copies -eq 0 ]; then
+    all_copy_vars=$copy_vars
+else
+    all_copy_vars="${copy_vars},${landfrac_copy_vars}"
+fi
+
+echo ""
+do_cmd "ncks -A -v $all_copy_vars $template_file $output_file" 0
+
+# ----------------------------------------------------------------------
+# Do some post-processing
+# ----------------------------------------------------------------------
+
+# --- Rename area-related variables ---
+do_cmd "ncrename -v area,area_regridded -v gw,area $output_file" 0
+do_cmd "ncatted -a long_name,area_regridded,o,c,'grid cell areas, regridded from the original resolution' $output_file" 0
+
+if [ $do_landfrac_copies -eq 0 ]; then
+    # --- Convert pftmask back to integer ---
+    echo ""
+    do_cmd "ncap2 -O -s 'pftmask = int(pftmask_float >= $pftmask_min)' $output_file $output_file" 0
+    do_cmd "ncks -O -x -v pftmask_float $output_file $output_file" 0
+
+    # --- Calculate landmask from landfrac ---
+    echo ""
+
+    cat > cmds.nco.tmp.$$ <<EOF
+/* we need to make a landmask_float then later convert it to the
+   integer landmask, because we need to change the FillValue to be
+   within the range of an integer before converting landmask to an
+   integer */
+*landmask_float = (landfrac > 0);
+landmask_float.change_miss($landmask_fill);
+landmask = int(landmask_float);
+EOF
+
+    do_cmd "ncap2 -O -S cmds.nco.tmp.$$ $output_file $output_file" 0
+    rm cmds.nco.tmp.$$
+
+    change_missing_to_value landmask 0 $output_file $output_file
+
+    # in the following, note that we need to manually set missing_value, because it doesn't get changed through the .set_miss call in nco:
+    do_cmd "ncatted -a long_name,landmask,o,c,'land/ocean mask (0.=ocean and 1.=land)' -a missing_value,landmask,o,i,$landmask_fill $output_file" 0
+fi
+
+echo "Successfully regridded data"
+return 0

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Note: The hopper-pgi-cmake file in your CISM build dir needs to
+# be run once, before using this script.
+
+BISICLES_DIR=~/BISICLES
+CISM_DIR=~/seacism
+CISM_CMAKE_BUILD_DIR=${CISM_DIR}/builds/hopper-pgi
+
+cd ${BISICLES_DIR}/code/exec2D
+make driver MPI=TRUE OPT=FALSE DEBUG=TRUE
+
+cd  ${BISICLES_DIR}/code/interface
+make -f GNUmakefile.hopper libs MPI=TRUE OPT=FALSE DEBUG=TRUE
+
+cd ${CISM_CMAKE_BUILD_DIR}
+# Note: If this is the first build, uncomment the following line:
+# source hopper-pgi-cmake
+make -j 8
+cd ${BISICLES_DIR}/code/interface
+
+echo "NOTE: The simple_bisicles executable will be located in: "
+echo "${CISM_CMAKE_BUILD_DIR}/example_drivers/simple_bisicles/src"
+
+# used for autotools-based simple_bisicles build:
+#cd ~/BISICLES/code/exec2D
+#make driver MPI=TRUE OPT=FALSE DEBUG=FALSE
+#cd  ~/BISICLES/code/interface
+#make -f GNUmakefile.hopper libs MPI=TRUE OPT=FALSE DEBUG=FALSE
+#cd ~/glimmer-cism2/branches/seacism/libdycore
+#make -f Makefile.hopper libDyCoreToGlimmer.a
+#cd ~/glimmer-cism2/branches/seacism/example-drivers/simple_bisicles/src
+#make -f Makefile.hopper simple_bisicles

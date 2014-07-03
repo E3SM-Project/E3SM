@@ -1,0 +1,1961 @@
+================================================================================
+ SVN $Id: ChangeLog 46293 2013-04-24 15:44:52Z erik $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_130424/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+================================================================================
+Originator: erik
+Date: Apr 24 2013
+Model: datm7
+Version: datm8_130424
+One-line summary: For CRUNCEP forcing, do NOT use LW-down, use LW-down calculation
+
+LWFN on the CRUNCEP forcing has been shown to be unsatisfactory. We now want to
+use the calculation for LW-down rather than the CRUNCEP data, this was shown
+by simulations from Sam Levis to be improved over using the data.
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: tcraig
+Date: Mar 23 2013
+Model: datm7
+Version: datm8_130325
+One-line summary: Fix long standing issue with restfilm/s setting
+ bug 1479?
+
+M       bld/build-namelist
+================================================================================
+Originator: mvertens
+Date: Mar 20 2013
+Model: datm7
+Version: datm8_130320
+One-line summary: Changes for scripts refactoring starting in scripts4_130318
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_datm.xml
+	
+================================================================================
+Originator: tcraig
+Date: Mar 13 2013
+Model: datm7
+Version: datm8_130313
+One-line summary: Add WW3 datm_mode for wav testing
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+M       bld/namelist_files/namelist_definition_datm.xml
+================================================================================
+Originator: erik
+Date: Mar 12 2013
+Model: datm7
+Version: datm8_130312
+One-line summary: Update CRUNCEP forcing files to have Qian data filled in everywhere
+
+Take files from Keith Oleson that have Qian data for 1948 filled in where the CRUNCEP
+forcing has missing data. So forcing with CRUNCEP now uses the new filled dataset
+rather than the dataset with missing values.
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: erik
+Date: Jan 30 2013
+Model: datm7
+Version: datm8_130130
+One-line summary: Change path of CPLHIST3HrWx DATM_MODE to yellowstone
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+	
+================================================================================
+Originator: mvertens
+Date: Nov 23 2012
+Model: datm7
+Version: datm8_121123
+One-line summary: merged in changes from release branch (cesm1_1_n06_datm8_121008)
+	and also put in capability to run with CLM CRU NCEP forcing 
+	
+M       bld/unit_testers/build-namelist_test.pl
+M       bld/build-namelist
+M       bld/datm.template.streams.xml
+M       bld/namelist_files/namelist_defaults_datm.xml
+M       bld/namelist_files/namelist_definition_datm.xml
+	
+================================================================================
+Date: Oct 08 2012
+Model: datm7
+Version: datm8_121008
+One-line summary: Expand XML vars for ATM_DOMAIN_FILE/ATM_DOMAIN_PATH
+
+M       bld/build-namelist
+M       bld/unit_testers/build-namelist_test.pl - add test for it
+
+================================================================================
+Originator: erik
+Date: Sept 25 2012
+Model: datm7
+Version: datm8_120925b
+One-line summary: Fix CLM1PT and WRF options, fix build-namelist unit tester
+
+Fix unit-tester for build-namelist.
+
+Fix bugs: 1552, and 1550
+
+M       bld/unit_testers/build-namelist_test.pl - Get working again with
+            reading in env_*.xml files.
+M       bld/build-namelist --- Work on -debug mode, more error checking.
+            do expand_env on streams list, make sure GRID and DATM_PRESEARO is set
+
+M       bld/namelist_files/namelist_defaults_datm.xml --- Fix syntax error, add WRF streamslist
+M       bld/namelist_files/namelist_definition_datm.xml - Add DATM_MODE/DATM_PRESAERO
+M       bld/namelist_files/namelist_definition.xsl ------ Change for new categories
+
+A       bld/unit_testers/env_run.xml ------------ Add env file for -debug mode of 
+              build-namelist 
+
+================================================================================
+Originator: mvertens
+Date: Sep 25 2012
+Model: datm7
+Version: datm8_120925
+One-line summary: Updated namelist documentation
+
+M       bld/namelist_files/namelist_definition_datm.xml
+
+================================================================================
+Originator: mvertens
+	
+Date: Sep 24 2012
+Model: datm7
+Version: datm8_120924
+One-line summary: Put in new IAF datasets from Susan Bates
+
+M       bld/namelist_files/namelist_defaults_datm.xml
+	
+================================================================================
+Originator: mvertens
+>>>>>>> .r40518
+Date: June 26 2012
+Model: datm7
+Version: datm8_120626
+One-line summary: Updated documentation in namelist_definition_datm.xml
+                  and removed TN460
+	
+M       datm_comp_mod.F90
+	- removed TN460 mode
+M       bld/build-namelist
+	- added restfilm and restfils to build-namelist
+M       bld/namelist_files/namelist_definition_datm.xml
+	- udpated documentation
+M       bld/datm.buildnml.csh
+	- use $CASEROOT/Tools/user_nlcreate instead of $UTILROOT/Tools/user_nlcreate
+	
+================================================================================
+Originator: mvertens
+Date: May 28 2012
+Model: datm7
+Version: datm8_120528
+One-line summary: Removed copy of datm.buildnml.csh and datm.buildexe.csh from
+	          datm.cpl7.template
+	
+M       bld/datm.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: May 21 2012
+Model: datm7
+Version: datm8_120521
+One-line summary: Fixed bug for user_nl_datm changes
+	
+M       bld/build-namelist
+	
+================================================================================
+Originator: mvertens
+Date: May 20, 2012
+Model: datm7
+Version: datm8_120520
+One-line summary: Ability to not depend on env_conf.xml and more general 
+	          expand_env_xml subroutine 
+
+M       bld/build-namelist
+	
+================================================================================
+Originator: mvertens
+Date: May 17, 2012
+Model: datm7
+Version: datm8_120517
+One-line summary: New build-namelist functionlality
+	- no environment variables in build-namelist (replaced by %xmlvars)
+	- to introduce a new stream just change namelist_defaults_datm.xml and
+	  namelist_definition_datm.xml
+	- generic stream template no longer written from build-namelist
+	
+M       bld/datm.buildnml.csh
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_datm.xml
+	
+================================================================================
+Originator: erik
+Date: May 12 2012
+Model: datm7
+Version: datm8_120512
+One-line summary: Fix CLM_USRDAT mode, 5x5_amazon grid, update unit-tester
+	
+M       bld/build-namelist - Handle CLM_USRDAT, set datm_mode, checking 
+           expand more env variables, set grid, check if ENV variable is
+           blank to decide if not set, if CLM datm_mode and DATM_PRESAERO=none
+           die with a problem.
+
+M       bld/unit_testers/build-namelist_test.pl --- Get full unit-test working
+          passing all tests, add -compare and -generate options to it.
+
+M       bld/namelist_files/namelist_defaults_datm.xml --- Handle CLM_USRDAT, fix
+          5x5_amazon, add ispresaerostream="TRUE" to prescribed aerosol streams so
+          doesn't get confused with other streams, make datm_mode lowercase.
+M       bld/namelist_files/namelist_definition_datm.xml - Add datamode
+	
+================================================================================
+Originator: tcraig
+Date: May 2 2012
+Model: datm7
+Version: datm8_120502
+One-line summary: add WRF atm_mode and some other stream input options
+
+M       datm_comp_mod.F90
+M       bld/datm.template.streams.xml
+
+================================================================================
+Originator: mvertens
+Date: Apr 19 2012
+Model: datm7
+Version: datm8_120419
+One-line summary: added datm.buildnml.csh and datm.buildexe.csh and simplified 
+	          datm.cpl7.template
+	
+A       bld/datm.buildexe.csh
+M       bld/datm.cpl7.template
+A       bld/datm.buildnml.csh
+	
+================================================================================
+Originator: erik
+Date: Apr 17 2012
+Model: datm7
+Version: datm8_120417
+One-line summary: Fix syntax errors in XML files, add data for CLM, add -debug option
+	
+M       bld/build-namelist ---------------- Add -debug option for testing
+M       bld/datm.template.streams.xml ----- Add in CPLHIST3Hrly data
+           (this file is only used by CLM and is deprecated, it will 
+            be removed in the future)
+M       bld/namelist_files/namelist_defaults_datm.xml ---- Fix syntax errors
+M       bld/namelist_files/namelist_definition_datm.xml -- Add fillwrite
+>>>>>>> Add style-sheets so can view XML files in a browser
+A       bld/namelist_files/namelist_defaults.xsl
+A       bld/namelist_files/namelist_definition.xsl
+>>>>>>> Add beginning effort at a unit tester for the build-namelist
+A       bld/unit_testers
+A       bld/unit_testers/build-namelist_test.pl
+
+================================================================================
+Originator: mvertens
+Date: Apr 10 2012
+Model: datm7
+Version: datm8_120410
+One-line summary: new build-namelist functionality (from bldnml branch) (bfb)
+	
+A       bld/build-namelist
+M       bld/datm.template.streams.xml
+A       bld/user_nl_datm
+A       bld/namelist_files
+A       bld/namelist_files/namelist_defaults_datm.xml
+A       bld/namelist_files/namelist_definition_datm.xml
+	
+================================================================================
+Originator: tcraig
+Date: Feb 18 2012
+Model: datm7
+Version: datm8_120219
+One-line summary: update computation of cosfactor based on new shr_cal functions
+	(not bit-for-bit)
+
+<      call shr_cal_date2eday(currentYMD,eday,calendar)
+<      rday = mod(eday,365) + real(currentTOD)/SHR_CONST_CDAY
+
+>      call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+>      rday = mod((rday - 1.0_R8),365.0_R8)
+	
+M       datm_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Feb 02 2012
+Model: datm7
+Version: datm8_120202
+One-line summary: update field names based on changes in drvseq4_0_11
+
+M       datm_comp_mod.F90
+================================================================================
+Originator: mvertens
+Date: Jan 25 2012
+Model: datm7
+Version: datm8_120125
+One-line summary: changed /ccsm/ocn/iaf -> /glade/proj2/ccsm/ocn/iaf in 
+                  datm.template.streams.xml
+
+M       bld/datm.template.streams.xml
+
+================================================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: datm7
+Version: datm8_120123
+One-line summary: update esmf interfaces to 520r, add multi-instance support 
+	for esmf interfaces
+
+M       datm_comp_mod.F90
+MM      cpl_mct/atm_comp_mct.F90
+M       cpl_esmf/atm_comp_mct.F90
+M       cpl_esmf/atm_comp_esmf.F90
+	
+================================================================================
+Originator: mvertens
+Date: Dec 08 2011
+Model: datm7
+Version: datm8_111208
+One-line summary: name changes for consistency with drvseq4_0_11
+
+M       datm_comp_mod.F90
+         	
+(Sx_snowh->Sl_snowh and snowh->snowhl)
+	
+================================================================================
+	
+Originator: erik
+Date: Nov 15 2011
+Model: datm7
+Version: datm8_111115
+One-line summary:  Remove use of DIN_LOC_ROOT_CLMQIAN
+
+M       bld/datm.cpl7.template
+M       bld/datm.template.streams.xml
+
+	
+================================================================================
+	
+Originator: mvertens
+Date: Nov 09 2011
+Model: datm7
+Version: datm8_111109
+One-line summary:  removed definition of domains grids
+
+This is only compatible with scripts4_111109+	
+
+M       bld/datm.cpl7.template
+
+================================================================================
+
+Originator: erik
+Date: Sep 08 2011
+Model: datm7
+Version: datm8_110908
+One-line summary:  Fix HOMME grids, improve error messaging
+
+bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Sep 06 2011
+Model: datm7
+Version: datm8_110906
+One-line summary:  Add ne30np4 and ne120np4 domain files
+
+bld/datm.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Aug 30 2011
+Model: datm7
+Version: datm8_110830
+One-line summary: fix multi-instance restart
+
+M       datm_comp_mod.F90
+================================================================================
+Originator: kauff
+Date: Thu Aug 11 16:59:47 MDT 2011
+Model: datm7
+Version: datm8_110811
+One-line summary: bug fix wrt dtlimit = 1.e30 for CORE2.t_10.ArcFactor.T62.stream
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Wed Aug  3 16:50:12 MDT 2011
+Model: datm7
+Version: datm8_110803
+One-line summary: DATM_MODE = CORE2 becomes 'CORE2_NYF', new 'CORE2_IAF' mode
+
+Requires corresponding DATM_MODE changes in scripts
+
+CORE2_NYF equals old CORE2, CORE2_IAF introduces new input stream with time-dependant
+corrections factors.    Also, CORE2 IAF streams extended thru 2007
+
+M       datm_comp_mod.F90
+M       bld/datm.cpl7.template
+M       bld/datm.template.streams.xml
+
+================================================================================
+Originator: erik
+Date: Jul 26 2011
+Model: datm7
+Version: datm8_110726
+One-line summary: Fix CLM1PT mode so uses cycle for non supported datasets
+
+Change CLM1PT mode so only uses taxmode=extend for supported datasets which
+fixes bug 1377. Also update some domain files as masks were incorrect.
+Add comments about non-zero offsets in streams template file.
+
+M       bld/datm.cpl7.template
+M       bld/datm.template.streams.xml
+
+================================================================================
+Originator: tcraig
+Date: Jul 17 2011
+Model: datm7
+Version: datm8_110717
+One-line summary: Add ensemble capability
+
+M       datm_comp_mod.F90
+M       bld/datm.cpl7.template
+ M      cpl_mct/atm_comp_mct.F90
+M       cpl_esmf/atm_comp_mct.F90
+M       cpl_esmf/atm_comp_esmf.F90
+================================================================================
+Originator: erik
+Date: Jun 24 2011
+Model: datm7
+Version: datm8_110624
+One-line summary: Correct wet/dry deposition for black carbon bin #4
+
+M       bld/datm.template.streams.xml - Correct wet/dry deposition bins for
+            bin # 4 for black carbon (was reversed).
+
+================================================================================
+Originator: erik
+Date: May 17 2011
+Model: datm7
+Version: datm8_110517b
+One-line summary: Fix CPLHIST3HrWx in last tag
+
+M       bld/datm.cpl7.template -------- Send full path and don't use -lastmonth
+              for CPLHIST3HrWx mode
+M       bld/datm.template.streams.xml - Fix field names for CPLHIST3HrWx
+
+================================================================================
+Originator: erik
+Date: May 17 2011
+Model: datm7
+Version: datm8_110517
+One-line summary: Get CPLHIST3HrWx mode working with MOAR data
+
+Requires scripts4_110517 or later to work.
+
+Changes only affect CPLHIST3HrWx mode and remove CPLHIST3HrWxHfHrSol mode.
+
+Remove CPLHIST3HrWxHfHrSol DATM_MODE option. Change CPLHIST3HrWx mode so
+that it uses the DATM_CPL_* vars sent in for years to run over, align year,
+and casename to send to build-streams. Also pass in the top level directory
+path for the MOAR data on bluefire by default. Running on a different machine
+you would just change this path in your datm.cpl7.template file for your case.
+
+M       bld/datm.cpl7.template -------- Remove CPLHIST3HrWxHfHrSol mode, send
+           case and path to build-streams for CPLHIST3HrWx mode.
+M       bld/datm.template.streams.xml - Change CPLHIST mode so that case name
+           and top level path is sent in and uses current path on bluefire for
+           MOAR data. Use standard 1-degree domain file for domain info for this.
+
+================================================================================
+Originator: tcraig
+Date: Apr 19 2011
+Model: datm7
+Version: datm8_110419
+One-line summary: ESMF interface updates
+
+M       cpl_esmf/atm_comp_mct.F90
+M       cpl_esmf/atm_comp_esmf.F90
+================================================================================
+Originator: erik
+Date: Apr 11 2011
+Model: datm7
+Version: datm8_110411
+One-line summary: Fix vapor pressure calculation for air-density for CLMNCEP mode
+
+M       datm_comp_mod.F90
+================================================================================
+Originator: erik
+Date: Mar 04 2011
+Model: datm7
+Version: datm8_110304
+One-line summary: Update 2.5x3.33 domain dataset
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Feb 10 2011
+Model: datm7
+Version: datm8_110210
+One-line summary: Change settings for CLM1PT mode
+
+M       bld/datm.cpl7.template
+
+For CLM1PT mode set: mapalgo to nearest-neighbor, tintalgo to nearest,
+and taxmode to extend, for forcing data.
+
+================================================================================
+Originator: erik
+Date: Feb 04 2011
+Model: datm7
+Version: datm8_110204
+One-line summary: Update urbanc_alpha domain file
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Jan 24 2011
+Model: datm7
+Version: datm8_110124
+One-line summary: Add 1x1_numaIA and 1x1_smallvilleIA single-point sites for CLM
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Thu Jan 18 2011
+Model: datm7
+Version: datm8_110118
+One-line summary: remove use of seq_flds_indices (bfb)
+
+M       datm_comp_mod.F90 
+	
+================================================================================
+Originator: tcraig
+Date: Thu Jan 6 2011
+Model: datm7
+Version: datm8_110106
+One-line summary: add esmf metadata feature and update esmf register routine
+
+>svn merge $SVNREPO/datm7/trunk_tags/datm8_100921 $SVNREPO/datm7/branch_tags/cesm1_0_esmf01_tags/esmf01_02_datm8_100921
+
+U    cpl_esmf/atm_comp_mct.F90
+U    cpl_esmf/atm_comp_esmf.F90
+	
+================================================================================
+Originator: Jim
+Date: Fri Dec 31 2010
+Model: datm7
+Version: datm8_101231
+One-line summary: use new shr_dmodel capability to initialze translate list once
+
+M       datm_comp_mod.F90
+     	
+Numerous tests of A,C,D,I,G compsets showed bfb	results with datm8_101105
+	
+================================================================================
+Originator: Jim
+Date: Fri Nov 5 2010
+Model: datm7
+Version: datm8_101105
+One-line summary: mv pio init and namelist to driver
+
+M      datm_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Wed Nov 3 2010
+Model: datm7
+Version: datm8_101103
+One-line summary: fix bug in implementation
+
+M      datm_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Mon Nov 1 2010
+Model: datm7
+Version: datm8_101101
+One-line summary: update strdata initialization with calendar name
+
+M      datm_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Wed Oct 20 2010
+Model: datm7
+Version: datm8_101020
+One-line summary: fix bug with uninitialized calendar values
+
+M      datm_comp_mod.F90
+================================================================================
+Originator: fischer
+Date: Fri Oct 08 2010
+Model: datm7
+Version: datm8_101008
+One-line summary: fix bug #1217
+
+M      bld/datm.cpl7.template
+================================================================================
+Originator: mvertens
+Date: Tue Sep 21 2010
+Model: datm7
+Version: datm8_100921
+One-line summary: compatibility with share3_100921
+
+M      datm_comp_mod.F90
+M      datm_shr_mod.F90
+	
+================================================================================
+Originator: erik
+Date: Fri Sep 10 2010
+Model: datm7
+Version: datm8_100910
+One-line summary: Use -lastmonth option in build_streams for CPLHIST modes
+
+Use -lastmonth option in build_streams for the CPLHIST modes: CPLHIST3HrWxHfHrSol 
+   and CPLHIST3HrWx
+This fixes bug: 1206 where there is a problem starting up when running over 1-year
+of forcing (or at the end of the forcing year).
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Mon Aug 30 2010
+Model: datm7
+Version: datm8_100830
+One-line summary: Add in RCP6.0 aerosol dataset
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Thu Aug 26 2010
+Model: datm7
+Version: datm8_100826b
+One-line summary: Fix syntax errors from last tag
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Thu Aug 26 2010
+Model: datm7
+Version: datm8_100826
+One-line summary: Fix bug 1207, so will work on gust.
+
+Fix syntax error of four if statements that had the following:
+
+"if ( )then"
+
+instead of with a space between ")" and "then" which causes the nested if statements
+to be interpreted incorrectly on some machines (such as gust). This fixes bug 1207,
+which didn't allow configure to happen on gust, because the datm template failed.
+
+Also remove DATM_PRESAERO="none" option for the CLM DATM_MODE's, but leave it for
+the other modes. Turn on file listing for CLM modes. Fix pt1_pt1 resolution CLM_USRDAT_NAME
+filenames for rcp scenarios.
+
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Wed Aug 18 2010
+Model: datm7
+Version: datm8_100818
+One-line summary: Fix syntax error for pt1_pt1 resolution
+
+Small changes for pt1_pt1 resolution mode. Fix syntax error of missing quote,
+add CLM_USRDAT_NAME for rcp6.0. Add ability to use mask of gx3v7 for pt1_pt1
+resolution.
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Thu Aug 05 2010
+Model: datm7
+Version: datm8_100805
+One-line summary: added a space in an if..then statement that was failing on Crays
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Wed Aug 04 2010
+Model: datm7
+Version: datm8_100804
+One-line summary: Add datasets for rcp's for datm_presaero if CLM_USRDAT_NAME set
+Fix bugzilla bugs: 1195
+
+Add datm_presearo datasets for rcp=2.6,4.5,8.5 for pt1 mode if CLM_USRDAT_NAME set.
+Also if pt1 resolution, check for mask=gx1v6/navy
+And if DATM_PRESAERO!=none or pt1, and CLM_USRDAT_NAME set, only set aerosol
+file to pt file -- if that file exists.
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Wed Jul 28 2010
+Model: datm7
+Version: datm8_100728
+One-line summary: Some changes so that CLM_USRDAT_NAME will work for CLM1PT cases
+Fix bugzilla bugs: 1173, 1175, 1176, 1181
+
+Work with CLM_USRDAT_NAME for pt1_pt1 resolution, and CLM1PT mode. Get things
+to work for a generic case with some tower-site data made available from work
+that Quinn Thomas has been doing.
+
+M    datm_comp_mod.F90 ------- Add some flush statements at initialization so
+         if model fails you have more log output.
+M    bld/datm.cpl7.template -- For CLM_USRDAT_NAME keep MASK in domain file name.
+         add CLM_USRDAT_NAME option for PRESAERO=pt1_pt1 mode, add CLM_USRDAT
+         file for 1849-2006 and allow it to work for 1850, 2000, and transient case.
+         For CLM1PT data, set align,start,end year by DATM_CLMNCEP_YR vars.
+         Change data path, so under atm/datm7/CLM1PT directory with casename.
+         Also list CLM1PT files in datm.input_data_list file.
+M    bld/datm.template.streams.xml -- For CLM1PT change: var lists, default data path
+         different, and default filenames
+
+================================================================================
+Originator: erik
+Date: Sat Jun 12 2010
+Model: datm7
+Version: datm8_100612
+One-line summary: Fix so CLM_PT1_NAME only used for pt1 grid
+
+M       bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Fri Jun 11 2010
+Model: datm7
+Version: datm8_100611b
+One-line summary: Correct print of presaero
+
+M       datm_comp_mod.F90 - print presaero as logical
+
+================================================================================
+Originator: erik
+Date: Fri Jun 11 2010
+Model: datm7
+Version: datm8_100611
+One-line summary: Remove DEBUG print statement, add some CLM_PT1_NAME datasets
+
+M       bld/datm.cpl7.template - Add some datasets for CLM_PT1_NAME for 5x5_amazon
+                                 and 1x1_tropicAtl for a couple DATM_PRESAERO
+                                 settings (clim_1850/2000, trans_1850-2000)
+M       datm_comp_mod.F90 ------ Remove DEBUG print statement
+
+================================================================================
+Originator: kauff
+Date: Mon May 17 2010
+Model: datm7
+Version: datm8_100517
+One-line summary: add support for support 0.23x0.31_gx1v6 domain
+
+also rm gx1v4, gx1v5 related domain files
+
+M      bld/datm.cpl7.template
+
+================================================================================
+
+Originator: mvertens
+Date: Sun May 16 2010
+Model: datm7
+Version: datm8_100516
+One-line summary: cleanup of datm.cpl7.template and a few minor bug fixes 
+
+Made presention of stream specification consistent with prescribed aerosol settings
+	
+M      bld/datm.cpl7.template
+	
+================================================================================
+Originator: kauff
+Date: Fri Apr 23 2010
+Model: datm7
+Version: datm8_100423
+One-line summary: set model dt in shr_strdata_setOrbs for use by cosz t-interp
+
+Requires corresponding new API for shr_strdata_setOrbs(), share3_100423a or later
+
+M      datm_comp_mod.F90
+
+================================================================================
+Date: Tue Apr 20 2010
+Model: datm7
+Version: datm8_100420
+One-line summary: put in prescribed aerosol stream
+
+M      datm_comp_mod.F90
+M      bld/datm.cpl7.template
+M      bld/datm.template.streams.xml
+
+- introduced new namelist, presaero (logical) that by default is .false.
+  if presaero is .true. then send valid prescribe aero fields to coupler and
+  set infodata atm_aero to .true. (clm and cice will listen to this flag)
+- this requires a new scripts tag with the new env_conf.xml flag
+     DATM_PRESAERO 
+  with valid values of 
+    none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp8.5,pt1_pt1   
+  by default DATM_PRESAERO is set to none
+- the datm namelist presaero is determined by the following logic (in datm.cpl7.template)	
+  if ($DATM_PRESAERO == 'none') then
+     presaero = .false.
+  else
+     set presaero = .true.
+  endif	
+- the following tests were carried out to verify backwards compatibility
+  PASS  CME.f45_g37.A.bluefire
+  PASS  CME.f45_g37.A.bluefire.compare_hist.ccsm4_0_beta49
+  PASS  CME.f45_g37.A.bluefire.compare.ccsm4_0_beta49
+  PASS  ERI.T62_g37.C.bluefire
+  PASS  ERI.T62_g37.C.bluefire.compare.ccsm4_0_beta49
+  PASS  ERI.f45_g37.A.bluefire
+  PASS  ERI.f45_g37.A.bluefire.compare.ccsm4_0_beta49
+  PASS  ERT.T62_g16.CIAF.bluefire
+  PASS  ERT.T62_g16.CIAF.bluefire.compare_hist.ccsm4_0_beta49
+  PASS  ERT.T62_g16.CIAF.bluefire.compare.ccsm4_0_beta49
+  PASS  ERB.f45_g37.D.bluefire
+  PASS  ERB.f45_g37.D.bluefire.compare.ccsm4_0_beta49
+  PASS  ERB.f45_g37.G.bluefire
+  PASS  ERB.f45_g37.G.bluefire.compare.ccsm4_0_beta49
+  PASS  ERB.f45_g37.I.bluefire
+  PASS  ERB.f45_g37.I.bluefire.compare.ccsm4_0_beta49
+- the following tests were run to check new compabitility
+        compset I_1850, res f45_g37 with DATM_PRESAERO = clim_1850
+	compset I_1850, res f45_g37 with DATM_PRESAERO = trans_1850-2000
+	compset I_2000, res f45_g37 with DATM_PRESAERO = none
+	                                               = clim_2000
+	                                               = rcp2.6
+	                                               = rcp4.5
+	                                               = rcp8.5
+	compset I_2000, res pt1 with    DATM_PRESAERO  = pt1_pt1
+	
+	Each of these produced a timing file that looked reasonable.
+	Model output was not checked explitly. Diane Feddema ran the above
+	tests.
+	
+================================================================================
+Originator: tcraig
+Date: Sat Apr 17 2010
+Model: datm7
+Version: datm8_100417
+One-line summary: update grid support, add support for RACM grids
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Tue Apr 6 2010
+Model: datm7
+Version: datm8_100406
+One-line summary: remove extra use seq_flds_mod, migrate Makefile use to CASETOOLS
+
+M      datm_comp_mod.F90
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Thu Feb 25 2010
+Model: datm7
+Version: datm8_100225
+One-line summary: fix ggrid clean 
+	
+M      datm_shr_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Feb 15 2010
+Model: datm7
+Version: datm8_100215
+One-line summary: update streams txt file generation
+	
+M      bld/datm.cpl7.template
+M      bld/datm.template.streams.xml
+
+================================================================================
+Originator: tcraig
+Date: Fri Jan 22 2010
+Model: datm7
+Version: datm8_100122
+One-line summary: add support for QIAN input files and update buildnml
+
+ - update bld template to support QIAN prestaging and to build the input file
+   lists in buildnml script instead of at configure.
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Fri Dec 18 14:35:48 MST 2009
+Model: datm7
+Version: datm8_091218
+One-line summary: add support for fv4x5_gx3v7
+
+M      bld/datm.cpl7.template
+
++if ( $GRID =~ 4x5_gx3v7        ) set DOMAINFILE = domain.lnd.fv4x5_gx3v7.091218.nc
+
+================================================================================
+Originator: tcraig
+Date: Mon Dec 14 2009
+Model: datm7
+Version:  datm8_091214
+One-line summary: remove call to shr_strdata_setlogunit
+
+M      datm_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Dec 8 2009
+Model: datm7
+Version:  datm8_091208
+One-line summary: add namelist restart and single column
+
+M      datm_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Wed Nov 11 2009
+Model: datm7
+Version:  datm8_091111
+One-line summary: fix bugs found by lahey
+
+M      datm_shr_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Tue Nov 10 2009
+Model: datm7
+Version:  datm8_091110
+One-line summary: add esmf support, fix initial precip bug
+
+- add esmf support
+- remove secondcall logic, fix initial precip bug
+
+M      datm_comp_mod.F90
+M      cpl_esmf/atm_comp_mct.F90
+M      cpl_esmf/atm_comp_esmf.F90
+	
+================================================================================
+Originator: tcraig
+Date: Fri Nov 6 2009
+Model: datm7
+Version:  datm8_091106
+One-line summary: datm8 fixes, scm added, datm7 to datm usage
+
+- add domap logic to turn off mapping wehn it's not needed
+- single column now working
+- remove dead code in datm.cpl7.template
+- fix v computation bug
+
+M      datm_comp_mod.F90
+M      bld/datm.cpl7.template
+M      datm_shr_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Fri Oct 30 2009
+Model: datm7
+Version:  datm8_091030
+One-line summary: upgrade to datm8
+
+Note: ESMF interface not working yet
+      requires latest share code
+
+D      datm_physCORE2.F90
+M      cpl_mct/atm_comp_mct.F90
+D      datm_physTN460.F90
+D      datm_control.F90
+D      datm_physUSER.F90
+D      datm_physTEST.F90
+D      datm_phys.F90
+D      datm_physCLMNCEP.F90
+D      datm_nml.F90
+D      datm_final.F90
+A      datm_shr_mod.F90
+A      datm_comp_mod.F90
+M      bld/datm.cpl7.template
+D      datm_init.F90
+D      datm_diag.F90
+D      datm_data.F90
+D      datm_physCPLHIST.F90
+	
+================================================================================
+
+Originator: kauff
+Date: Mon Oct 26 16:04:07 MDT 2009
+Model: datm7
+Version:  datm7_091026
+One-line summary: fix bug in CORE2 wind direction correcton, bugz #1059
+
+M      datm_physCORE2.F90
+M      bld/datm.cpl7.template -- fix bug wrt $CLM_USRDAT_NAME is undefined when
+				 clm is not being used
+
+================================================================================
+Originator: erik
+Date: Oct 23 2009
+Model: datm7
+Version:  datm7_091023
+One-line summary: Add 2.5x3.33 domain file, use env vars for CLM_QIAN mode year range
+                  set mask for CLM_USRDAT_NAME mode
+
+M      bld/datm.cpl7.template -- For CLM_QIAN mode set year range with unresolved: 
+                                    $DATM_CLMNCEP_YR_ALIGN,
+                                    $DATM_CLMNCEP_YR_START
+                                    $DATM_CLMNCEP_YR_END
+          Add comments to NOT change these without reconfigure
+          Add 2.5x3.33 domain file, for CLM_USRDAT_NAME mode set OCN_GRID mask
+          for a couple cases.
+
+================================================================================
+Originator: erik
+Date: Sep 28 2009
+Model: datm7
+Version:  datm7_090928
+One-line summary: update datm7 T31_gx3v7 domain file
+
+M      bld/datm.cpl7.template -- put in new domain file for T31_gx3v7 that
+        has latitudes that agree with cam/clm latitudes.
+
+================================================================================
+
+Originator: tcraig
+Date: Sep 26 2009
+Model: datm7
+Version:  datm7_090926
+One-line summary: esmf updates
+
+ - use new shared esmf interface in drv/seq_mct/cpl_esmf
+ - clean up redundant code
+ - fix a few bugs (mpicom, infodata/export_state/infodata copy)
+ - lots more testing and validation
+	
+M      cpl_esmf/atm_comp_mct.F90
+M      cpl_esmf/atm_comp_esmf.F90
+	
+================================================================================
+
+Originator: erik
+Date: Sep 22 2009
+Model: datm7
+Version:  datm7_090922b
+One-line summary: Fix so require a scripts version with CLM_USRDAT_NAME
+
+M      bld/datm.cpl7.template -- split up if so CLM_USRDAT_NAME NOT required
+
+================================================================================
+Originator: erik
+Date: Sep 22 2009
+Model: datm7
+Version:  datm7_090922
+One-line summary: Fix so pt1_pt1 res works without duplicating domain.clm directory
+
+Fix bug 1042 so that pt1_pt1 resolution does NOT duplicate the domain directory 
+domain.clm twice. Also if CLM_USRDAT_NAME is set use it to get the domain filename
+if is NOT set before the final check.
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Tue Sep 15 15:00:00 MDT 2009
+Model: datm7
+Version:  datm7_090915
+One-line summary: now supports T62_gx3v7
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Mon Sep 7 2009
+Model: datm7
+Version:  datm7_090907
+One-line summary: update esmf support
+
+M      cpl_esmf/atm_comp_mct.F90
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Fri Sep  4 10:28:35 MDT 2009
+Model: datm7
+Version:  datm7_090904
+One-line summary: update T31_gx3v7 domain file
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Thu Sep  3 10:35:30 MDT 2009
+Model: datm7
+Version:  datm7_090903
+One-line summary: now supports T31_gx3v7
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: feiliu
+Date: Sep 02 2009
+Model: datm7
+Version:  datm7_090902
+One-line summary: added ESMF data atmosphere component
+
+A      cpl_esmf/atm_comp_mct.F90
+A      cpl_esmf/atm_comp_esmf.F90
+
+================================================================================
+Originator: erik
+Date: Aug 12 2009
+Model: datm7
+Version:  datm7_090812
+One-line summary: Fix ifort compiler problem on dublin (bug 1028)
+
+M      cpl_mct/atm_comp_mct.F90 -- Fix problem with continue lines for character strings
+                                   for format statements. Just put on one line
+                                   rather than continuing in the middle.
+
+================================================================================
+Originator: kauff
+Date: Mon Aug  3 15:01:54 MDT 2009
+Model: datm7
+Version:  datm7_090803
+One-line summary: now sends domain frac info (bugz #1021)
+
+M      cpl_mct/atm_comp_mct.F90
+
+================================================================================
+Originator: kauff
+Date: Wed Jul 29 16:10:21 MDT 2009
+Model: datm7
+Version:  datm7_090729
+One-line summary: add SCM domain init functionality
+
+add special, non-standard model domain init for use when when scmMode == TRUE
+
+M      cpl_mct/atm_comp_mct.F90
+M      datm_control.F90
+M      datm_init.F90
+
+================================================================================
+Originator: erik
+Date: Tue Jul 21  2009
+Model: datm7
+Version:  datm7_090721
+One-line summary: Fix CLM1PT domain filenames
+
+M      bld/datm.cpl7.template --------- Fix pt1_pt1 domain file names
+M      bld/datm.template.streams.xml -- Fix CLM1PT domain file names
+
+================================================================================
+Originator: erik
+Date: Mon Jul 20  2009
+Model: datm7
+Version:  datm7_090720
+One-line summary: Update pt1_pt1 domain files, add CLM1PT option, and CLM1PT generic_case option
+
+M      bld/datm.cpl7.template --------- Separate out DOMAINPATH, update pt1_pt1 domain files, 
+                                        add CLM1PT DATM_MODE option
+M      bld/datm.template.streams.xml -- Add CLM1PT data
+
+================================================================================
+Originator: kauff
+Date: Wed Jul 15 21:07:38 MDT 2009
+Model: datm7
+Version:  datm7_090715
+One-line summary: now supports:  $GRID =~ f19_tx1
+
+M      bld/datm.cpl7.template
+	
+================================================================================
+
+Originator: erik
+Date: Thu Jul  9 2009
+Model: datm7
+Version: datm7_090709
+One-line summary: Change iradsw to -1, run 4 years and add in dens/pslv for CPLHIST3HrWxHfHrSol mode
+
+M      bld/datm.cpl7.template -------- Change 1radsw to -1 for CPLHIST3HrWxHfHrSol mode, run over 4 years not 3
+M      bld/datm.template.streams.xml - Add dens/pslv to CPLHIST3HrWxHfHrSol so ocn can use it
+
+================================================================================
+
+Originator: erik/mvertens
+Date: Wed Jul  8 2009
+Model: datm7
+Version: datm7_090708
+One-line summary: Add CPLHIST3HrWxHfHrSol and CPLHIST3HrWx modes
+
+Add modes for CPLHIST forcing from 3Hrly BCN case as well as a case where solar
+is half-hourly from the same case. This is important for the BGC spinup of CN.
+Also remove the CAMHIST and CPLHIST modes, and remove the CAMHIST mode from the 
+source code. And fix an important performance bug for CPLHIST mode where a 
+comparision was done inside of a nested loop instead of outside. Without this
+change -- this mode was way too slow to be useful. Also replace the timers
+in atm_comp_mct with the GPTL (General Purpose Timing Library) from models/utils/timing
+rather than the share timers.
+
+M      cpl_mct/atm_comp_mct.F90 --- Replace timers with GPTL timing calls.
+M      bld/datm.cpl7.template ----- Add CPLHIST3HrWxHfHrSol and CPLHIST3HrWx modes 
+                                    remove CAMHIST and CPLHIST modes
+M      bld/datm.template.streams.xml -- Add streams templates for: CPLHIST3Hrly.Precip
+                                                                   CPLHIST3Hrly.nonSolarNonPrecip
+                                                                   CPLHIST3Hrly.Solar
+                                                                   CPLHISTHalfHrly.Solar
+
+M      datm_phys.F90 --------- Remove CAMHIST mode, move string if on CPLHIST to outside
+                               do loop (important performance optimization)
+D      datm_physCAMHIST.F90 -- Remove CAMHIST mode
+	
+================================================================================
+
+Originator: kauff
+Date: Thu Jun 25 17:14:05 MDT 2009
+Model: datm7
+Version: datm7_090625b
+One-line summary: now supports:  $GRID =~ T62_tx0.1v2 
+	
+M      bld/datm.cpl7.template
+	
+================================================================================
+
+Originator: mvertens
+Date: June 22 2009
+Model: datm7
+Version: datm7_090625
+One-line summary: new directory structure to bring in ESMF interfaces
+	
+A      cpl_mct
+A  +   cpl_mct/atm_comp_mct.F90
+A      cpl_esmf
+D      atm_comp_mct.F90
+M      bld/datm.cpl7.template
+	
+================================================================================
+Originator: erik
+Date: June 22 2009
+Model: datm7
+Version: datm7_090622
+One-line summary: add new domain files for when ATM_GRID=OCN_GRID
+
+Add domain files for: T42, T31, T5, T21, T85, f19, f09, f023, f047, f2.65, f1015
+cases where atmosphere and ocean grid are the same.
+
+M      bld/datm.cpl7.template
+
+================================================================================
+
+Originator: tcraig
+Date: June 9 2009
+Model: datm7
+Version: datm7_090609
+One-line summary: added tInterpAlgo and offset variables to streams templates
+
+M      bld/datm.template.streams.xml
+	
+================================================================================
+
+Originator: mvertens
+Date: June 8 2009
+Model: datm7
+Version: datm7_090608
+One-line summary: removed SEQ_MCT #if-def
+	
+M      atm_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: May 18 2009
+Model: datm7
+Version: datm7_090518
+One-line summary: fix of performance problem with new datm7 changes
+	
+M      atm_comp_mct.F90
+       - one line removal of write that caused problems	 
+	
+================================================================================
+Originator: mvertens
+Date: May 14 2009
+Model: datm7
+Version: datm7_090514
+One-line summary: removed -fexist options in calls to build_streams
+
+M      bld/datm.cpl7.template
+	
+================================================================================
+	
+Originator: mvertens
+Date: May 12 2009
+Model: datm7
+Version: datm7_090512
+One-line summary: add back latitudinal dependence of the SW radiation correction
+
+add back in the latitudinal dependence of the SW radiation correction in order
+to be compatible with the CORE2 protocol as it is now distributed at GFDL. Mods
+provided by Steve Yeager.
+	
+M      datm_physCORE2.F90
+
+================================================================================
+Originator: mvertens
+Date: May 5 2009
+Model: datm7
+Version: datm7_090505b
+One-line summary: bug fixes for CLPHIST mode
+
+M      datm_phys.F90
+M      datm_physCPLHIST.F90
+	
+================================================================================
+Originator: erik
+Date: May 5 2009
+Model: datm7
+Version: datm7_090505
+One-line summary: Use new domain files for T42 and T31 to match lat/lon from cam
+
+Add half-degree gx1v6 domain file.
+
+Replace T31 and T42 domain files with these
+
++if ( $GRID =~ T31_gx3v5    ) set DOMAINFILE = 'domain.lnd.T31_gx3v5.090206.nc'
++if ( $GRID =~ T42_gx1v5    ) set DOMAINFILE = 'domain.lnd.T42_gx1v5.090206.nc'
+
+Add in some more single-point domain files to be used by clm.
+
+M      bld/datm.cpl7.template
+
+================================================================================
+
+Originator: mvertens
+Date: May 2 2009
+Model: datm7
+Version: datm7_090502
+One-line summary: fixed time stepping "bug" and put in new nextsw_cday calculation
+
+- removed "feature" introduced when step2init was set as default that datm would
+  advance one step ahead of the sync clock. I, D, C and G compset runs were done
+  to validate new behavior
+- introduced new namelist iradsw and removed namelist step2init
+  iradsw is set to  1 by default for all modes except for CPLHIST mode and CAMHIST mode
+  iradsw is set to -1 by default for CPLHIST mode and CAMHIST mode
+- modified nextsw_cday to mimik cam values for CPLHIST mode - but otherwise to to just be
+  set to the next coupling interval	
+- put in new capability to send the deposition aerosols to the cpl - for now they are all set to 
+  datm_const_zerodep= 1.e29_r8
+	
+M      datm_physCORE2.F90
+M      datm_physTN460.F90
+M      datm_control.F90
+M      datm_physUSER.F90
+M      datm_physTEST.F90
+M      datm_physCLMNCEP.F90
+M      ChangeLog
+M      datm_nml.F90
+M      datm_physCAMHIST.F90
+M      atm_comp_mct.F90
+M      bld/datm.cpl7.template
+M      bld/datm.template.streams.xml
+M      datm_data.F90
+	
+================================================================================
+Originator: mvertens
+Date: Apr 6 2009
+Model: datm7
+Version: datm7_090406
+One-line summary: added CPLHIST mode
+
+added CPLHIST mode
+	
+M      bld/datm.cpl7.template
+M      bld/datm.template.streams.xml
+	
+================================================================================
+Originator: mvertens
+Date: Apr 2 2009
+Model: datm7
+Version: datm7_090403
+One-line summary: implemented CORE2 functionality and removed CLMNCEP mode
+
+migrated core2 branch onto trunk
+Remove the CLMNCEP mode.
+	
+A  +   datm_physCORE2.F90
+M      datm_phys.F90
+M      bld/datm.cpl7.template
+M      bld/datm.template.streams.xml
+
+================================================================================	
+Originator: mvertens
+Date: Mar 25 2009
+Model: datm7
+Version: datm7_090325
+One-line summary: addressed bug [Bug 916] (mistakes in ccsm4_0_beta12 C compset setup)
+
+M      bld/datm.cpl7.template
+
+================================================================================	
+Originator: mvertens
+Date: Mar 20 2009
+Model: datm7
+Version: datm7_090320
+One-line summary: added CORE2 hooks
+
+added basic hooks to brink in CORE2 mode and changed tn460ffn to ffn	
+	
+M      datm_physTN460.F90
+M      datm_control.F90
+M      datm_nml.F90
+M      bld/datm.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: Mar 18 2009
+Model: datm7
+Version: datm7_090318
+One-line summary: added more gx1v6 support
+
+M     bld/datm.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Feb  28 2009
+Model: datm7
+Version: datm7_090228
+One-line summary: added 1.9x2.5_gx1v6 support
+
+M     bld/datm.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Feb 16 2009
+Model: datm7
+Version: datm7_090216
+One-line summary: reset initial values of a2x_a to  shr_const_spval
+
+M      atm_comp_mct.F90
+
+- verified that a C compset and a I compset gave bfb results (other than
+  for the black carbon and dust fields which are not currently being used)
+
+================================================================================
+Originator: jwolfe
+Date: Feb 9 2009
+Model: datm7
+Version: datm7_090209
+One-line summary: Add support for tx1v1
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Jan 7 2008
+Model: datm7
+Version: datm7_090107
+One-line summary: Update template
+
+- Major template update across all ccsm4
+- change all modes to two-step initialization
+
+M      bld/datm.cpl7.template
+
+================================================================================
+Originator: erik
+Date: Mon Nov 24 13:32:55 MST 2008
+Model: datm7
+Version: datm7_081124
+One-line summary: Change direct/diffuse diurnal cycle for offline CLM
+
+These changes are from Dr. David Lawrence, they change the ratio between 
+diffuse and direct during the day with more direct at local noon and less
+at local sunrise/sunset.  The relationship between incoming NIR or VIS radiation 
+and ratio of direct to diffuse radiation calculated based on one year's 
+worth of hourly CAM output from CAM version cam3_5_55.
+
+M      datm_physCLMNCEP.F90 -- Change ratio of direct/diffuse depending on sun angle.
+
+================================================================================
+Originator: erik
+Date: Wed Nov 19 13:41:27 EST 2008
+Model: datm7
+Version: datm7_081119
+One-line summary: Add ability to handle 2-step initialzation and option to
+set time-interpolation method
+
+Always, handle 2-step initialization, but add namelist option for
+step2Init so that advance time on phase
+2 of init. If this option is invoked, time-stepping and values of
+nextsw_cday match those that are produced
+by CAM.
+
+Add ability to do cosz_scaling.
+
+Move zeronegsolzen_tags/vers10_datm7_080926/ to trunk.
+
+M   datm_control.F90 --------- Add datm_control_step2Init, orbital
+settings, datm_control_currCalDay, and datm_control_getNextRadCDay meth
+od
+M   datm_phys.F90 ------------ Add ability to set time-interpolation type,
+and cosz normalization.
+M   datm_nml.F90 ------------- Add step2Init to namelist
+M   atm_comp_mct.F90 --------- Add logic to handle 2-phase init and react
+to step2Init namelist item.
+M   bld/datm.cpl7.template --- Add step2init to namelist.
+M   datm_init.F90 ------------ Handle time interpolation options, and cosz
+option.
+M   datm_data.F90 ------------ Add datm_data_tInterpAlgo.
+
+================================================================================
+Originator: erik
+Date: Fri Sep 26 13:06:38 MDT 2008
+Model: datm7
+Version: datm7_080926
+One-line summary: add a few single-point datasets for CLM and add CLM_QIAN option
+	
+Changes made:
+
+M      bld/datm.cpl7.template -------- Add single-point datasets and new CLM_QIAN mode
+M      bld/datm.template.streams.xml - Add CLM_QIAN streams
+
+================================================================================
+
+Originator: mvertens
+Date: Thu Sep 25 16:24:25 MDT 2008
+Model: datm7
+Version: datm7_080925
+One-line summary: modifications for new unified build
+	
+Changes made:
+M      bld/datm.cpl7.template
+	
+================================================================================
+	
+Changes made:
+Originator: mvertens
+Date: Sun Sep  7 21:07:05 MDT 2008
+Model: datm7
+Version: datm7_080907
+One-line summary: removed all cpl6 and hubinfo references 
+
+Changes made:
+M      datm_control.F90
+M      atm_comp_mct.F90
+M      datm_init.F90
+M      datm_data.F90
+D      datm_main.F90
+D      datm_msg.F90
+D      datm_run.F90
+D      bld/datm.cpl6.template
+
+================================================================================
+
+Originator: erik
+Date: Fri Sep  5 09:52:32 MDT 2008
+Model: datm7
+Version: datm7_080905
+One-line summary: removed testing of files for CLMNCEP case
+
+Changes made:
+M  bld/datm.cpl7.template
+
+================================================================================
+
+Originator: santos,mvr
+Date: Thur Jul 31 2008
+Model: datm7
+Version: datm7_080731
+One-line summary: added inputdata list generation to datm.cpl7.template
+
+Changes made:
+M  datm.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Tue Jul  8 15:09:05 MDT 2008
+Model: datm7
+Version: datm7_080708
+One-line summary: removed sourcing of env_xxx from datm.cpl7.template
+
+Changes made:
+M  datm.cpl7.template
+
+================================================================================
+	
+Originator: erik
+Date: Mon May 19 10:46:09 MDT 2008
+Model: datm7
+Version: datm7_080519
+One-line summary: Add ability to set year ranges for CLMNCEP option
+
+For CLMNCEP option have the ability to set the following in the env_conf
+
++set year_align = $DATM_CLMNCEP_YR_ALIGN
++set year_start = $DATM_CLMNCEP_YR_START
++set year_end   = $DATM_CLMNCEP_YR_END
+
+and also set the DIN_LOC_ROOT_CLMNCEP in the machines file for the location of the
+clmncep data.
+
+M      bld/datm.cpl7.template
+
+NOTE:: REQUIRES THE scripts_080519 VERSION OF SCRIPTS!
+
+================================================================================
+
+Originator: tcraig
+Date: Wed May 14 19:28:30 MDT 2008
+Model: datm7
+Version: datm7_080514
+One-line summary: merge drva07_datm7_080213 to trunk
+
+- updates to logging
+- code clean up
+	
+M      datm_physTN460.F90
+M      datm_control.F90
+M      datm_physUSER.F90
+M      datm_physTEST.F90
+M      datm_phys.F90
+M      datm_main.F90
+M      datm_physCLMNCEP.F90
+M      datm_nml.F90
+M      datm_msg.F90
+M      datm_final.F90
+M      datm_physCAMHIST.F90
+M      atm_comp_mct.F90
+A  +   bld/datm.cpl7.template
+M      datm_init.F90
+M      datm_diag.F90
+M      datm_run.F90
+M      datm_data.F90
+M      datm_physCPLHIST.F90
+
+================================================================================
+	
+Originator: kauff
+Date: Wed Feb 13 15:56:05 MST 2008
+Model: datm7
+Version: datm7_080213
+One-line summary: bug fix wrt bugz #705
+
+Changes made:
+
+M datm_physTN460.F90 
+replace data   dTarc   /-0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
+with    data   dTarc   / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
+
+================================================================================
+
+Originator: mvertens
+Date: Thu Nov 29 20:58:42 MST 2007
+Model: datm7
+Version: datm7_071129
+One-line summary: fix vector-map failure wrt (u,v) not in same file
+
+Changes made:
+
+A      bld
+A      bld/datm.cpl6.template
+A      bld/datm.template.streams.xml
+- added above files (Components/datm.template now simply sources datm.cpl6.template)
+- also put in the fix to bugz #661
+
+================================================================================
+
+Originator: erik
+Date: Wed Nov 14 09:20:39 MST 2007
+Model: datm7
+Version: datm7_071114
+One-line summary: fix bug for restarting in middle of day
+
+Changes made:
+
+M      atm_comp_mct.F90
+- fix bug: (bugz 651) fix so can restart in the middle of the day for cpl7
+
+================================================================================
+
+Originator: kauff
+Date: Thu Nov  8 15:00:35 MST 2007
+Model: datm7
+Version: datm7_071108
+One-line summary: fix vector-map failure wrt (u,v) not in same file
+
+Changes made:
+
+M      datm_phys.F90
+- fix bug: vector-map failure wrt (u,v) not in same file (would abort, not run)
+
+================================================================================
+
+Originator: kauff
+Date: Fri Aug 24 15:22:32 MDT 2007
+Model: datm7
+Version: datm7_070824
+One-line summary: minor code mods wrt last tag, bugz #569, share3_070824
+
+Changes made:
+
+- new shr_stream_getDomainInfo() API
+- no file names returned from any shr_stream routine have path prepended
+- makes use of new routine shr_stream_getFile
+
+================================================================================
+
+Originator: kauff
+Date: Fri Aug 10 16:35:52 MDT 2007 
+Model: datm7
+Version: datm7_070810
+One-line summary: now supports reading non-local stream.txt files (wrt bugz #72)
+
+Changes made:
+
+- datm_init now call a new routine: shr_stream_parseInput(str,fileName,...)
+  so fileName's can contain a dir path 
+  (which helps support functionality requested in bugz #72)
+- datm_int write statement now accurately indicates whether map-fill flag is on/off
+- now constructs domain names and sends them to dshr_domain_readData()
+  which requires use of share3_070810 or later
+
+================================================================================
+
+Originator: erik
+Date: Tue Jul 10 11:41:57 MDT 2007
+Model: datm7
+Version: datm7_070710
+One-line summary: Fix bugs 540, 542
+
+Changes made:
+
+Remove initial time-step advancement.
+Initialize some more hubInfo fields.
+
+================================================================================
+
+Originator: kauff
+Date: Thu Jun 28 11:56:26 MDT 2007
+Model: datm7
+Version: datm7_070628
+One-line summary: rework UB/LB handling introduced in datm7_070610
+
+Changes made:
+- fixes bugs: #518, #521, #523, #528 (introduced in datm7_070610)
+- rework method of reducing bcasts wrt new UB/LB bundles
+  while retaining efficiencies introduced in tag datm7_070610
+- also see related mods in dshr_dataIn
+- reworked method sets up forthcoming changes wrt introducing pointers to UB/LB 
+  bundles which will allow further efficiencies wrt updating UB/LB bundles
+- send valid domain-frac data to cpl in cpl_interface_contractInit() (wrt bugz #493)
+
+================================================================================
+
+Originator: tcraig
+Date: Sun Jun 10 23:09:50 MDT 2007
+Model: datm7
+Version: datm7_070610
+One-line summary: seq clm mods and performance improvements
+Changes made:
+
+M      datm_phys.F90
+M      datm_main.F90
+M      atm_comp_mct.F90
+M      datm_init.F90
+- remove newdata bcast by pushing bcast into dshr_dataIn_readLBUB
+- open /dev/null on non root pes for stdout in datm_main.F90, doesn't
+  work in sequential system, need to modify stdout writes to focus
+  on root pe only unless there is an error
+- fixes for seq clm mode, move call of eshr_timemgr_clockDateInSync
+- add new logic for doFill, will set doFill to false if fill nwts = 0
+
+================================================================================
+
+Originator: kauff
+Date: Thu May 31 14:18:33 MDT 2007
+Model: datm7
+Version: datm7_070531
+One-line summary: bug fix wrt non-end-of-run restart files
+Changes made:
+
+- datm_run.F90 ~ bug fix wrt non-end-of-run restart files
+
+=============================================================================
+
+Originator: mvertens
+Date: Wed May  2 20:43:04 MDT 2007
+Model: datm7
+Version: datm7_070503
+One-line summary:  removed infobuf references from atm_comp_mct.F90
+Changes made:
+
+- no longer needed any references to infobufs in atm_comp_mct.F90 since these
+  are now no longer in the sequential system	
+
+================================================================================
+	
+Originator: kauff
+Date: Wed May  2 15:16:14 MDT 2007
+Model: datm7
+Version: datm7_070502
+One-line summary:  minor change to make T62 TN460 b4b w/ non-parallel version
+Changes made:
+
+- minor change to make T62 TN460 b4b w/ non-parallel version, namely
+  when possible (T62) simply copy (don't map) u,v,qsat correction factors
+  changes in datm7_physTN460.F90 only
+
+================================================================================
+
+Originator: mvertens
+Date: Mon Apr 30 21:35:50 MDT 2007
+Model: datm7
+Version: datm7_070430
+One-line summary:  Put in changes for sequential CCSM 
+Changes made: 
+
+- Put in changes for sequential CCSM triggered by the #ifdef SEQ_MCT flag   
+   M  datm_main.F90
+   M  datm_msg.F90
+   A  atm_comp_mct.F90
+   D  datm_esmf.F90.hide
+   M  datm_init.F90
+	
+================================================================================
+
+Originator: kauff
+Date: Wed Apr 18 16:47:21 MDT 2007
+Model: datm7
+Version: datm7_070418
+One-line summary:  datm7 is now parallel, add new CPLHIST mode
+Changes made:
+
+- migrate datm7p_070418 branch code (parallel datm7) to datm7 main trunk
+- add CPLHIST mode: a copy-all + default values for optional atm->cpl fields
+- fixes bugz #437 (restart files one timestep late)
+
+================================================================================
+
+Originator: kauff
+Date: Fri Feb  2 16:56:40 MST 2007
+Model: datm7
+Version: datm7_070202
+One-line summary: introduce 2 run phases 
+Changes made:
+
+- now has 2 run phases (which helps load-balance I-cases)
+- datm_phys.F90 ~ minimize save statements
+- datm_phys.F90 ~ new timers
+
+================================================================================
+
+Originator: tcraig
+Date: Tue Oct 25 02:11:41 EDT 2006
+Model: datm7
+Version: datm7_061025
+One-line summary: modify save statments for pgi compiler bug
+Changes made:
+
+Mods for Cray vectorizaion:
+- modify save statements for pgi compiler bug and general cleanup
+
+================================================================================
+
+Originator: kauff
+Date: Mon Oct 16 18:21:07 MDT 2006
+Model: datm7
+Version: datm7_061016
+One-line summary: add Cray compiler directives for vector optimization
+Changes made:
+
+Mods for Cray vectorizaion:
+- datm_physCLMNCEP/TN460: add Cray !dir$  & !cdir
+- datm_physCLMNCEP: replace F90 array syntax with explicit loops
+
+================================================================================
+
+Originator: kauff
+Date: Thu Sep 21 16:33:19 MDT 2006
+Model: datm7
+Version: datm7_060921
+One-line summary: remove SPMD if-def's wrt MPH/threading (model is not threaded)
+Changes made:
+
+- remove SPMD if-def's wrt MPH/threading (model is not threaded)
+
+================================================================================
+
+Originator: kauff
+Date: Fri Sep 15 12:40:23 MDT 2006
+Model: datm7
+Version: datm7_060915
+One-line summary:  add program/subroutine if-def's to support SPMD
+Changes made:
+
+- add program/subroutine if-def's to support SPMD
+
+================================================================================
+
+Originator: kauff
+Date: Wed Aug 16 15:58:06 MDT 2006
+Model: datm7
+Version: datm7_060816
+One-line summary: fix reshape "bug" on phoenix & lightning
+Changes made:
+
+- in datm_msg.F90 ~ remove whitespace in reshape((/"A","B","C"/),...
+
+================================================================================
+
+Originator: kauff
+Date: Fri Jul 28 17:28:47 MDT 2006
+Model: datm7
+Version: datm7_060728
+One-line summary: add *optional* msg-passing fields for bio/geo work: co2 & dms 
+Changes made:
+
+- add *optional* msg-passing fields for bio/geo work: co2 & dms 
+
+================================================================================
+
+Originator: kauff
+Date: Fri Jun  2 14:47:15 MDT 2006
+Model: datm7
+Version: datm7_060602
+One-line summary: changed CVS keyword comments to SVN keywords
+Changes made:
+
+- sets domain mask & land = 1.0 which is necessary when using new domain.lnd files
+- assure rain & precip >= 0 -- CLM crashes with any negative value no matter how small
+
+================================================================================
+
+Originator: kauff
+Date: Fri Apr 21 17:21:42 MDT 2006
+Model: datm7
+Version: datm7_060421
+One-line summary: strong-type *all* real literal constants
+Changes made:
+
+- strong-type *all* real literal constants
+- note: all variable declarations were already strong typed
+
+================================================================================
+
+Originator: kauff
+Date: Thu Mar  9 19:56:33 MST 2006
+Model: datm7
+Version: datm7_060309
+One-line summary: changed CVS keyword comments to SVN keywords
+Changes made:
+
+- selective strong-typing of literal constants in datm_init as per ORNL for
+  running on Cray
+
+================================================================================

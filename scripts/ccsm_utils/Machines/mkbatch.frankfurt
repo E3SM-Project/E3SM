@@ -1,0 +1,136 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set mppsize  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+@ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
+if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
+  @ mppnodes = $mppnodes + 1
+  @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+
+
+set jobname = `echo ${CASE} | cut -c1-15` # first fifteen characters of case name
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#===============================================================================
+#  This is a CCSM batch job script 
+#===============================================================================
+
+#PBS -N ${jobname}
+#PBS -q medium
+#PBS -l nodes=${mppnodes}:ppn=${taskpernode}
+#PBS -r n
+#PBS -j oe
+#PBS -S /bin/csh -V
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+source ./Tools/ccsm_getenv || exit -1
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+# -------------------------------------------------------------------------
+# Run the model
+# -------------------------------------------------------------------------
+
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+if (\$MPILIB != "mpi-serial") then
+    if (\$COMPILER == "pgi") then
+       mpirun --mca btl openib -machinefile \$PBS_NODEFILE -np ${maxtasks} \${EXEROOT}/cesm.exe >&! cesm.log.\$LID
+    endif
+    if (\$COMPILER == "intel") then
+       mpirun --mca btl openib -machinefile \$PBS_NODEFILE -np ${maxtasks} \${EXEROOT}/cesm.exe >&! cesm.log.\$LID
+    endif
+    if (\$COMPILER == "nag") then
+       mpiexec -n ${maxtasks} \${EXEROOT}/cesm.exe >&! cesm.log.\$LID
+    endif
+else
+     \${EXEROOT}/cesm.exe >&! cesm.log.\$LID
+endif
+wait
+
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+if (-e ${CASEROOT}/${CASE}.l_archive) then
+   echo ERROR: generate_batch.csh file ${CASE}.l_archive already exists in ${CASEROOT}
+   exit -1
+endif
+
+# Create the archive script
+touch ${CASEROOT}/${CASE}.l_archive
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+set jobname = `echo ${CASE} | cut -c1-12`
+set jobname = ${jobname}_la
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#===============================================================================
+#  This is a CCSM coupled model batch long term archiving script
+#===============================================================================
+
+#PBS -N ${jobname}
+#PBS -q medium
+#PBS -l nodes=1:ppn=1
+#PBS -j oe
+
+#-----------------------------------------------------------------------
+# Determine necessary environment variables
+#-----------------------------------------------------------------------
+
+cd $CASEROOT 
+
+source ./Tools/ccsm_getenv || exit -1
+
+#----------------------------------------------
+# run the long term archiver
+#----------------------------------------------
+
+cd \$DOUT_S_ROOT
+\$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

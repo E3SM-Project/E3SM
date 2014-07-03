@@ -1,0 +1,239 @@
+#!/usr/bin/env perl 
+
+#===================================================================
+# Test suite and test creation script. 
+#===================================================================
+use strict;
+use warnings;
+use Cwd qw( getcwd abs_path );
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+use File::Basename;
+use File::Copy;
+use Data::Dumper;
+use XML::LibXML;
+
+# Get input arguments
+if ($#ARGV == -1) {
+    usage();
+}
+
+my %opts = (
+    newlist  => undef,
+    );
+
+GetOptions(
+    "file=s" => \$opts{'file'},
+    "h|help" => \$opts{'help'},
+    );
+
+if (@ARGV) {
+    # Check for unparsed arguments
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Parse the newlist file and add those entries to testlist.xml
+my $parser = XML::LibXML->new;
+
+my $newlist = $parser->parse_file("$opts{'file'}");
+my $rootnew = $newlist->getDocumentElement();
+
+my $testlist = $parser->parse_file("testlist.xml");
+my $roottest = $testlist->getDocumentElement();
+
+foreach my $comp_new ($rootnew->findnodes('/newlist/compset')) { 
+    my($res_new)  = $comp_new->findnodes('./grid'); 
+    my($test_new) = $comp_new->findnodes('./grid/test');  
+    my($mach_new) = $comp_new->findnodes('./grid/test/machine');  
+
+    my($comp_val) = $comp_new->getAttribute('name'); 
+    my($res_val)  = $res_new->getAttribute('name'); 
+    my($test_val) = $test_new->getAttribute('name'); 
+    my($testtype) = $mach_new->getAttribute('testtype'); 
+    my($compiler) = $mach_new->getAttribute('compiler'); 
+    my($nldir)    = $mach_new->getAttribute('nldir'); 
+    my($machine)  = $mach_new->textContent;
+
+    my $found = 0;
+    foreach my $compset ($roottest->findnodes('/testlist/compset')) { 
+	my($comp_test) = $compset->getAttribute('name'); 
+	if ($comp_test eq $comp_val) {
+	    $found = 1;
+	}
+    }	
+    if ($found == 0) {
+	my $new1 = $testlist->createElement('compset'); 
+	my $new2 = $testlist->createElement('grid');  
+	my $new3 = $testlist->createElement('test');  
+	my $new4 = $testlist->createElement('machine');  
+	$new1->setAttribute ('name', $comp_val); 
+	$new2->setAttribute ('name', $res_val); 
+	$new3->setAttribute ('name', $test_val); 
+	$new4->setAttribute ('compiler', $compiler); 
+	$new4->setAttribute ('testtype', $testtype); 
+	if ($nldir) {
+	    $new4->setAttribute ('nldir', $nldir);
+	} 
+	$new4->appendText($machine); 
+	$roottest->appendChild($new1);
+	$new1->appendChild($new2);
+	$new2->appendChild($new3);
+	$new3->appendChild($new4);
+    } else {
+	foreach my $compset ($roottest->findnodes('/testlist/compset')) { 
+	    my($comp_test) = $compset->getAttribute('name'); 
+	    if ($comp_test eq $comp_val) {
+		$found = 0;
+		foreach my $res ($compset->findnodes('./grid')) { 
+		    my($res_test) = $res->getAttribute('name'); 
+		    if ($res_test eq $res_val) {
+			$found = 1;
+		    }
+		}
+		if ($found == 0) {
+		    my $new1 = $testlist->createElement('grid');  
+		    my $new2 = $testlist->createElement('test');  
+		    my $new3 = $testlist->createElement('machine');  
+		    $new1->setAttribute ('name', $res_val); 
+		    $new2->setAttribute ('name', $test_val); 
+		    $new3->setAttribute ('compiler', $compiler); 
+		    $new3->setAttribute ('testtype', $testtype); 
+		    if ($nldir) {
+			$new3->setAttribute ('nldir', $nldir);
+		    } 
+		    $new3->appendText($machine); 
+		    $compset->appendChild($new1);
+		    $new1->appendChild($new2);
+		    $new2->appendChild($new3);
+		} else {
+		    foreach my $compset ($roottest->findnodes('/testlist/compset')) { 
+			my($comp_test) = $compset->getAttribute('name'); 
+			if ($comp_test eq $comp_val) {
+			    foreach my $res ($compset->findnodes('./grid')) { 
+				my($res_test) = $res->getAttribute('name'); 
+				if ($res_test eq $res_val) {
+				    $found = 0;
+				    foreach my $test ($res->findnodes('./test')) { 
+					my($test_test) = $test->getAttribute('name'); 
+					if ($test_test eq $test_val) {
+					    $found = 1;
+					}
+				    }
+				    # if not found
+				    if ($found == 0) {
+				    	my $new1 = $testlist->createElement('test');  
+				    	my $new2 = $testlist->createElement('machine');  
+				    	$new1->setAttribute ('name', $test_val); 
+				    	$new2->setAttribute ('compiler', $compiler); 
+				    	$new2->setAttribute ('testtype', $testtype); 
+					if ($nldir) {
+					    $new2->setAttribute ('nldir', $nldir);
+					} 
+				    	$new2->appendText($machine); 
+				    	$res->appendChild($new1);
+				    	$new1->appendChild($new2);
+				    } else {
+					foreach my $compset ($roottest->findnodes('/testlist/compset')) { 
+					    my($comp_test) = $compset->getAttribute('name'); 
+					    if ($comp_test eq $comp_val) {
+						foreach my $res ($compset->findnodes('./grid')) { 
+						    my($res_test) = $res->getAttribute('name'); 
+						    if ($res_test eq $res_val) {
+							foreach my $test ($res->findnodes('./test')) { 
+							    my($test_test) = $test->getAttribute('name'); 
+							    if ($test_test eq $test_val) {
+								$found = 0;
+								foreach my $mach ($test->findnodes('./machine')) { 
+								    my($testtype_test) = $mach->getAttribute('testtype'); 
+								    my($compiler_test) = $mach->getAttribute('compiler'); 
+								    my($mach_test) = $mach->textContent; 
+								    my($nldir_test) = $mach->getAttribute('nldir'); 
+								    if (($testtype_test eq $testtype) && 
+									($compiler_test eq $compiler) && 
+									($mach_test eq $machine)) {
+									if ($nldir) {
+									    if ($nldir_test eq $nldir) {
+										$found = 1;
+									    }
+									} else {
+									    if (!$nldir_test) {
+										$found = 1;
+									    }
+									}
+								    }
+								}
+								if ($found == 0) {
+								    my $new1 = $testlist->createElement('machine');  
+								    $new1->setAttribute ('compiler', $compiler); 
+								    $new1->setAttribute ('testtype', $testtype); 
+								    if ($nldir) {
+									$new1->setAttribute ('nldir', $nldir);
+								    } 
+								    $new1->appendText($machine); 
+								    $test->appendChild($new1);
+								}
+							    }
+							}
+						    }
+						}
+					    }
+					}
+				    }
+				}				    
+			    }
+			}
+		    }
+		}
+	    }
+	}
+    }	
+}
+
+my $fh = IO::File->new('temp.xml', '>' ) or die "can't open file: temp.xml\n";
+print $fh $testlist->toString;
+$fh->close;
+
+#my $sysmod = 'xmllint --format temp.xml --output testlist_new.xml';
+#system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+my $sysmod = 'perl sort_xml_entries -testlist temp.xml';
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+unlink('temp.xml');
+
+print " Successfully created new file testlistnew.xml \n";
+print " Examine this file - and if it looks acceptable overwrite the testlist.xml file with this file \n";
+
+exit 0;
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+
+     add_xml_entries [options]
+
+DESCRIPTION
+
+     Merges the entries in the file <newlist.xml> that is specified on the argument line with
+     the entries in the file "testlist.xml" and creates a new testlist file "testlist_new.xml"
+
+OPTIONS
+
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -file  <name>    New list of xml tests that will be merged with "testlist.xml"
+     -help [or -h]    Print usage to STDOUT (optional).
+EOF
+}
+

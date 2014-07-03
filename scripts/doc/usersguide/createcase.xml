@@ -1,0 +1,927 @@
+<chapter id="creating_a_case ">
+<title>Creating and Setting Up A Case</title>
+
+<para>The first step in creating a &cesm; experiment is to use
+&create_newcase;. </para>
+
+<!-- ======================================================================= -->
+<sect1 id="how_to_create_case">
+<title>How to create a new case</title>
+
+<para>
+In what follows, $&CCSMROOT; is the full pathname of the root
+directory of the CESM distribution. You should first use the -h option
+in calling &create_newcase; to document its input options. Then use
+the -l option to determine which component sets, resolutions, and
+machines are supported.  </para>
+
+<screen>
+> cd $&CCSMROOT;/scripts
+> create_newcase -h 
+> create_newcase -l
+</screen>
+
+<para>
+CESM supports out of the box <ulink url="../modelnl/grid.html">model
+resolutions</ulink>, <ulink url="../modelnl/machines.html">hardware
+platforms</ulink> and <ulink url="../modelnl/compsets.html">component
+sets</ulink>.  Component sets (usually referred to as compsets) define
+both the specific model components that will be used in a given &cesm;
+configuration, <emphasis>and</emphasis> any component-specific
+namelist or configuration settings that are specific to this
+configuration.  If you want to create a custom compset, create an
+appropriate xml compset file and use the create_newcase option
+-compset_file on the create_newcase command line (see <link
+linkend="faq_createowncompset">How do I create my own
+compset?</link>). </para>
+
+<para> Component sets and resolutions have both short and long
+names. Either the short or long name can be entered as input to
+&create_newcase;. As an example, the component set B_1850_RAMPCO2_CN
+has the short name B1850RMCN. Similarly, the resolution, 0.9x2.5_gx1v6
+has the short name f09_g16. Both the long and short names appear in
+the output from &create_newcase; -l, where the short name always
+appears in parentheses.  As of CESM1.1, it is now simpler for you to
+introduce both new user defined grids and new machines. </para>
+<para> &create_newcase; can be invoked with the following arguments:</para>
+ 
+<screen>
+create_newcase \     
+     -case <emphasis>case-name</emphasis> \        
+     -compset <emphasis>component-set</emphasis> \      
+     -res <emphasis>resolution</emphasis> \         
+     -mach <emphasis>machine-name</emphasis> \
+     [-compiler <emphasis>compiler-name></emphasis> \
+     [-mpilib <emphasis>mpi-library-name</emphasis>] \
+     [-mach_dir <emphasis>alternative pathname for Machines directory</emphasis>] \
+     [-confopts [_AOA],[AOE],[_D],[_E],[_N],[_P],[_R]] \
+     [-pecount [S,M,L,X1,X2]] \
+     [-pes_file <emphasis>full-pathname</emphasis>] \
+     [-compset_file <emphasis>full-pathname</emphasis>] \
+     [-grid_file <emphasis>full-pathname</emphasis>] \
+     [-help [or -h]] |
+     [-list] \         
+     [-silent [or -s]] \
+     [-verbose [or -v]] \
+     [-xmlmode [normal, expert]] \
+     [-nowarning]      
+</screen>
+
+<para>Required arguments to &create_newcase; are -case, -mach, -compset and -res.
+If you want to use your own pes setup file, specify the full
+pathname of that file for the optional -pes_file argument. The
+required pes_file format is provided at
+<filename>$CCSMROOT/scripts/sample_pes_file.xml</filename>. 
+</para>
+
+<para> Following is a simple example of using &create_newcase;:
+<screen>
+> cd $&CCSMROOT;/scripts
+> create_newcase -case ~/cesm1/example1 \
+                 -compset B_1850_CN \
+                 -res 0.9x1.25_gx1v6 \
+                 -mach bluefire 
+</screen>
+</para>
+<para>
+This example creates a $&CASEROOT; directory
+<filename>~/cesm1/example1</filename> where $&CASE; is "example1" with
+a model resolution of 0.9x1.25_gx1v6 (a 1-degree atmosphere/land grid
+with a nominal 1-degree ocean/ice grid using the gx1v6 ocean
+mask). The component set B_1850_CN uses fully active components
+configured to produce a present-day simulation.  The complete example
+appears in the <link linkend="use_case_basic">basic
+example</link>. $&CASE; can include letters, numbers, ".", and "_".
+Note that &create_newcase; creates the $&CASEROOT; directory. If the
+directory already exists, it prints a warning and aborts. </para>
+
+<para>
+&create_newcase; creates the directory $&CASEROOT;, which is specified
+by the -case option. In $&CASEROOT;, &create_newcase; installs files
+to build and run the model and perform long term archiving of the case
+on the target platform.  &create_newcase; also creates the directory
+<filename>$CASEROOT/Buildconf/</filename>, that in turn contains
+scripts to generate component namelist and build component libraries.
+The table below outlines the files and directories created by
+&create_newcase;
+</para>
+
+<table>
+<title> Result of invoking &create_newcase; </title>
+<tgroup cols="2">
+
+<thead>
+<row>
+<entry>Directory or Filename</entry>
+<entry>Description </entry>
+</row>
+</thead>
+<tbody>
+
+<row>
+<entry>README.case</entry> <entry>File detailing your &create_newcase;
+usage.  This is a good place for you to keep track of runtime problems
+and changes.</entry>
+</row>
+
+<row>
+<entry>CaseStatus</entry>
+<entry>File containing a list of operations done in the current case.</entry> 
+</row>
+
+<row>
+<entry>Buildconf/</entry>
+<entry>Directory containing scripts to generate component namelists
+and component and utility libraries (e.g., PIO, MCT). You should never have
+to edit the contents of this directory (unlike in CESM1.0.n) </entry>
+</row>
+
+<row>
+<entry>SourceMods/</entry>
+<entry>Directory where you can place modified source code.</entry>
+</row>
+
+<row>
+<entry>LockedFiles/</entry>
+<entry>Directory that holds copies of files that should not be
+changed. The xml files are "locked" after its variables have been used
+by other parts of the system and cannot be changed.  The scripts do
+this by "locking" a file and not permitting you to modify that file
+unless a 'clean' operation is performend.  See <xref linkend="faq_lockedfiles"/>.
+You should never edit the contents of this directory.
+</entry>
+</row>
+
+<row>
+<entry>Tools/</entry> 
+<entry>Directory containing support utility scripts. You should never  
+need to edit the contents of this directory.</entry>
+</row>
+
+<row>
+<entry>env_mach_specific</entry> 
+<entry>File used to set a number of machine-specific environment
+variables for building and/or running. Although you can edit this at
+any time, build environment variables should not be edited after a
+build is invoked.
+</entry>
+</row>
+
+<row>
+<entry>env_case.xml</entry> 
+<entry> Sets case specific variables (e.g. model components, model and
+case root directories) and <emphasis>cannot</emphasis> be modified
+after a case has been created.  To make changes, your should re-run
+&create_newcase; with different options.</entry>
+</row>
+
+<row>
+<entry>env_build.xml</entry>
+<entry> Sets model build settings, including component resolutions and
+component configuration options (e.g. CAM_CONFIG_OTPS) where
+applicable (see <ulink url="../modelnl/env_build.html">env_build.xml
+variables</ulink>).</entry>
+</row>
+
+<row>
+<entry>env_mach_pes.xml</entry> 
+<entry> Sets component machine-specific processor layout (see <xref
+linkend="case_conf_setting_pes"/>). The settings in this are
+critical to a well-load-balanced simulation (see <link 
+linkend="running_ccsm_loadbalance">loadbalancing a run</link>).
+</entry>
+</row>
+
+<row>
+<entry>env_run.xml</entry>
+<entry>Sets run-time settings such as length of run, frequency of
+restarts, output of coupler diagnostics, and short-term and long-term
+archiving. See 
+<ulink url="../modelnl/env_run.html#run_start">run initialization variables</ulink>,
+<ulink url="../modelnl/env_run.html#run_stop">run stop variables</ulink>,
+<ulink url="../modelnl/env_run.html#run_restart">run restart control variables</ulink>,
+for a more complete discussion of general run control settings.
+</entry>
+</row>
+
+<row>
+<entry><emphasis>cesm_setup</emphasis></entry>
+<entry> Script used to set up the case (create the $CASE.run script and
+user_nl_xxx files)</entry>
+</row>
+
+<row>
+<entry><emphasis>$&CASE;.$&MACH;<filename>.build</filename></emphasis> </entry> 
+<entry>Script to build component and utility libraries and model executable.</entry>
+</row>
+
+<row>
+<entry><emphasis>$&CASE;.$&MACH;<filename>.clean_build</filename></emphasis></entry> 
+<entry> Script to remove all object files and libraries and unlocks
+<filename>Macros</filename> and
+<filename>env_build.xml</filename>. This step is required before a
+clean build of the system.</entry>
+</row>
+
+<row>
+<entry><emphasis>$&CASE;.$&MACH;<filename>.l_archive</filename></emphasis></entry>
+<entry>Script to performs long-term archiving of output data (see <link
+linkend="running_ccsm_env_output">long-term archiving</link>).  This
+script will only be created if long-term archiving is available on the
+target machine.</entry>
+</row>
+
+<row>
+<entry><emphasis>xmlchange</emphasis></entry>
+<entry>Utility for modifying values in the xml files.</entry>
+</row>
+
+<row>
+<entry><emphasis>preview_namelists</emphasis></entry>
+<entry>Utility to enable users to see their component namelists in
+$&CASEROOT;<filename>/CaseDocs</filename> before running the
+model. NOTE: the namelists generated in
+$&CASEROOT;/<filename>CaseDocs</filename> should not be edited by the
+user - they are only their to document model behavior.</entry>
+</row>
+
+<row>
+<entry><emphasis>check_input_data</emphasis></entry>
+<entry>Utility that checks for various input datasets and moves them
+into place.</entry>
+</row>
+
+<row>
+<entry><emphasis>create_production_test</emphasis></entry> 
+<entry>Utility used to create a test of your case.</entry>
+</row>
+
+</tbody>
+</tgroup>
+</table>
+
+<para>
+For more complete information about the files in the case directory, see
+<xref linkend="faq_casestuff"/>
+</para>
+
+<para>
+The xml variables in the <filename>env_*.xml</filename> files are
+translated into csh environment variables with the same name by the
+script <command>Tools/ccsm_getenv</command>. Conversion of xml
+variables to environment variables is used by numerous script
+utilities as part of building, and running a given
+case. It is important to note that you do not explicitly see this
+conversion.
+</para>
+<note><para>Users can only modify the xml variables. Users cannot
+modify the csh environment variables directly.</para></note>
+
+<para>Complete lists of &cesm; environment variables in the xml files
+that appear in $&CASEROOT; are provided in
+<ulink url="../modelnl/env_case.html">case variables </ulink>,
+<ulink url="../modelnl/env_mach_pes.html">pe layout variables </ulink>,
+<ulink url="../modelnl/env_build.html">build-time variables </ulink>, and 
+<ulink url="../modelnl/env_run.html">run-time variables</ulink>.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+
+<sect1 id="how_to_setup_case">
+<title> How to set up a case and customize the PE layout</title>
+
+<sect2>
+<title>Calling <command>cesm_setup</command></title>
+
+<para> The <command>cesm_setup</command> command does the following:
+
+<itemizedlist>
+<listitem><para>
+Creates the Macros file if it does not exist. Calling <command>cesm_setup -clean</command>
+does not remove this file. 
+</para></listitem>
+
+<listitem><para> 
+Creates the files, <filename>user_nl_xxx</filename>, (where xxx
+denotes the set of components targeted for the specific case).  As an
+example, for a B_ compset, xxx would denote
+[cam,clm,rtm,cice,pop2,cpl].  <emphasis>In CESM1.1, these files are
+where all user component namelist modifications are now
+made. </emphasis> <command>cesm_setup -clean</command> does not remove
+these files
+</para></listitem>
+
+<listitem><para> Creates the file
+<filename>$CASEROOT/$CASE.run</filename> which runs the &cesm;
+model and performs short-term archiving of output data (see <link
+linkend="running_ccsm">running &cesm;</link>).
+<command>cesm_setup</command> also contains the necessary batch directives
+to run the model on the required machine for the requested PE layout.
+Any user modifications to &env_mach_pes.xml; must be done
+<emphasis>before</emphasis> &cesm_setup; is invoked. In the simplest case,
+&cesm_setup; can be run without modifying this file and default settings
+will be then be used.  The &cesm_setup; command must be run in the
+$&CASEROOT; directory. 
+</para></listitem>
+</itemizedlist>
+
+<command>cesm_setup -clean</command> moves 
+<filename>$CASEROOT/$CASE.run</filename> and a copy of 
+<filename>env_mach_pes.xml</filename> to a time-stamped directory in
+<filename>MachinesHist</filename>. The $&CASEROOT; directory will now
+appear as if &create_newcase; had just been run with the exception
+that already created Macros and user_nl_xxx files will not be touched
+and local modifications to the <filename>env_*.xml</filename> files
+will be preserved. After further modifications are made to
+&env_mach_pes.xml;,
+<command>cesm_setup</command> must be rerun before you can build and run the
+model.
+</para>
+
+<para>
+If &env_mach_pes.xml; variables need to be changed after &cesm_setup; has been
+called, then <command>cesm_setup -clean</command> must be run first,
+followed by <command>cesm_setup</command>.
+</para>
+
+<para>
+The following summarizes the new directories and files that are
+created by <command>cesm_setup</command>. For more information
+about the files in the case directory, see
+<xref linkend="faq_casestuff"/>.
+</para>
+
+<table><title> Result of invoking &cesm_setup; </title>
+<tgroup cols="2">
+<thead>
+<row>
+<entry>File or Directory</entry>
+<entry>Description</entry>
+</row>
+</thead>
+<tbody>
+
+<row>
+<entry>Macros </entry>
+<entry>File containing machine-specific makefile directives for your
+target platform/compiler. This is only created the
+<emphasis>first</emphasis> time that <command>cesm_setup</command> is
+called. Calling <command>cesm_setup -clean</command> will not remove the
+Macros file once it has been created.
+</entry>
+</row>
+
+<row>
+<entry>user_nl_xxx[_NNNN] files </entry>
+<entry>Files where all user modifications to component namelists are
+made. xxx denotes the set of components targeted for the specific
+case. NNNN goes from 0001 to the number of instances of that
+component (see the <link linkend="use_case_intro">multiple
+instance</link> discussion below).  For example, for a B_ compset, xxx
+would denote [cam,clm,rtm,cice,pop2,cpl]. For a case where there is only 1
+instance of each component (default) NNNN will not appear in the
+user_nl file names.  A user_nl file of a given name will only be
+created once. Calling <command>cesm_setup -clean</command> will not remove
+any user_nl files. Changing the number of instances in the
+<filename>env_mach_pes.xml</filename> will only cause new user_nl files
+to be added to $&CASEROOT;.
+</entry>
+</row>
+
+<row>
+<entry>$CASE.run</entry> <entry>File containing the
+necessary batch directives to run the model on the required machine
+for the requested PE layout.  Runs the &cesm; model and performs
+short-term archiving of output data (see <link
+linkend="running_ccsm">running &cesm;</link>).
+</entry>
+</row>
+
+<row>
+<entry>CaseDocs/</entry> <entry>Directory that
+contains all the component namelists for the run. This is for reference
+only and files in this directory SHOULD NOT BE EDITED since they will
+be overwritten at build time and run time.
+</entry>
+</row>
+
+<row>
+<entry>env_derived</entry>
+<entry>File containing environmental variables derived from other settings.
+Should <emphasis>not</emphasis> be modified by the user.</entry>
+</row>
+
+</tbody>
+</tgroup>
+</table>
+
+</sect2>
+
+<!-- ======================================================================= -->
+<sect2 id="case_conf_setting_pes">
+<title>Changing the PE layout </title>
+
+<para> 
+<ulink url="../modelnl/env_mach_pes.html">&env_mach_pes.xml</ulink>
+variables determine the number of processors for each component, the
+number of instances of each component and the layout of the components
+across the hardware processors.  Optimizing the throughput and
+efficiency of a &cesm; experiment often involves customizing the
+processor (PE) layout for <link
+linkend="running_ccsm_loadbalance">load balancing</link>.  CESM1 has
+significant flexibility with respect to the layout of components
+across different hardware processors. In general, the &cesm;
+components -- atm, lnd, ocn, ice, glc, rof, and cpl -- can run on
+overlapping or mutually unique processors. Whereas Each component is
+associated with a unique MPI communicator, the driver runs on the
+union of all processors and controls the sequencing and hardware
+partitioning. The component processor layout is via three settings:
+the number of MPI tasks, the number of OpenMP threads per task, and
+the root MPI processor number from the global set.</para>
+
+<para>For example, the following &env_mach_pes.xml; settings</para>
+
+<screen>
+&lt;entry id="NTASKS_OCN" value="128" /&gt;
+&lt;entry id="NTHRDS_OCN" value="1" /&gt;
+&lt;entry id="ROOTPE_OCN" value="0" /&gt;
+</screen>
+<para>
+would cause the ocean component to run on
+128 hardware processors with 128 MPI tasks using one
+thread per task starting from global MPI task 0 (zero).
+</para>
+<para>In this next example: </para>
+<screen>
+&lt;entry id="NTASKS_ATM" value="16" /&gt;
+&lt;entry id="NTHRDS_ATM" value="4"  /&gt;
+&lt;entry id="ROOTPE_ATM" value="32" /&gt;
+</screen>
+<para>
+the atmosphere component will run on 64 hardware processors using 16
+MPI tasks and 4 threads per task starting at global MPI task 32.
+There are NTASKS, NTHRDS, and ROOTPE input variables for every
+component in &env_mach_pes.xml;.  There are some important things
+to note.</para>
+
+<itemizedlist>
+<listitem><para>
+NTASKS must be greater or equal to 1 (one) even for inactive (stub) components.
+</para></listitem>
+
+<listitem><para>
+NTHRDS must be greater or equal to 1 (one).  If NTHRDS is set to 1, this
+generally means threading parallelization will be off for that component.
+NTHRDS should never be set to zero.
+</para></listitem>
+
+<listitem><para>
+The total number of hardware processors allocated to a component is
+NTASKS * NTHRDS.
+</para></listitem>
+
+<listitem><para>
+The coupler processor inputs specify the pes used by coupler 
+computation such as mapping, merging, diagnostics, and flux
+calculation.  This is distinct from the driver which always 
+automatically runs on the union
+of all processors to manage model concurrency and sequencing.
+</para></listitem>
+
+<listitem><para>
+The root processor is set relative to the MPI global communicator, not the
+hardware processors counts.  An example of this is below.
+</para></listitem>
+
+<listitem><para>
+The layout of components on processors has no impact on the science.
+The scientific sequencing is hardwired into the driver.  Changing 
+processor layouts does not change intrinsic coupling lags or coupling
+sequencing.  ONE IMPORTANT POINT is that for a fully 
+active configuration, the atmosphere component is hardwired in the driver to 
+never run concurrently with the land or ice component.  Performance 
+improvements associated with processor layout concurrency is therefore
+constrained in this case such that there is never a performance reason
+not to overlap the atmosphere component with the land and ice components.
+Beyond that constraint, the land, ice, coupler and ocean models can
+run concurrently, and the ocean model can also run concurrently with the 
+atmosphere model.  
+</para></listitem>
+
+<listitem><para>
+If all components have identical NTASKS, NTHRDS, and ROOTPE
+set, all components will run sequentially on the same hardware
+processors.
+</para></listitem>
+
+</itemizedlist>
+
+<para>The root processor is set relative to the MPI global
+communicator, not the hardware processor counts.
+For instance, in the following example:</para>
+
+<screen>
+&lt;entry id="NTASKS_ATM" value="16" /&gt;
+&lt;entry id="NTHRDS_ATM" value="4"  /&gt;
+&lt;entry id="ROOTPE_ATM" value="0"  /&gt;
+&lt;entry id="NTASKS_OCN" value="64" /&gt;
+&lt;entry id="NTHRDS_OCN" value="1"  /&gt;
+&lt;entry id="ROOTPE_OCN" value="16" /&gt;
+</screen>
+
+<para>
+the atmosphere and ocean are running concurrently, each on 64
+processors with the atmosphere running on MPI tasks 0-15 and the ocean
+running on MPI tasks 16-79. The first 16 tasks are each threaded 4
+ways for the atmosphere. The batch submission script ($CASE.run)
+should automatically request 128 hardware processors, and the first 16
+MPI tasks will be laid out on the first 64 hardware processors with a
+stride of 4. The next 64 MPI tasks will be laid out on the second set
+of 64 hardware processors.
+</para>
+
+<para>
+If you set ROOTPE_OCN=64 in the preceding example, then a total of
+176 processors would have been requested and the atmosphere would
+have been laid out on the first 64 hardware processors in 16x4
+fashion, and the ocean model would have been laid out
+on hardware processors 113-176. Hardware processors 65-112 would
+have been allocated but completely idle.  
+</para>
+
+<note><para>&env_mach_pes.xml; <emphasis>cannot</emphasis> be modified
+after "./cesm_setup" has been invoked without first invoking
+"cesm_setup -clean". For an example of changing pes, see <xref
+linkend="use_case_pelayout"/>  </para></note>
+
+</sect2>
+
+</sect1>
+
+<!-- ======================================================================= -->
+
+<sect1 id="multiinst">
+<title>New multi-instance component functionality</title>
+
+<para> CESM1.1 has new capability to run multiple component instances
+under one model executable.  The only caveat to this usage is that if
+N multiple instances of any one active component is used, then N
+multiple instances of ALL active components are required. More details
+are discussed below. The primary motivation for this development was
+to be able to run an ensemble kalman filter for data assimilation and
+parameter estimation (e.g. UQ).  However, it also provides you with the
+ability to run a set of experiments within a single CESM executable
+where each instance can have a different namelist, and have all the
+output go to one directory.</para>
+
+<para> In the following an F compset will be used as an
+illustration. Utilizing the multiple instance code involves the
+following steps: </para>
+<orderedlist>
+
+<listitem><para>
+create the case
+<screen>
+> create_newcase -case Fmulti -compset F  -res ne30_g16 -mach hopper
+> cd Fmulti
+</screen>
+</para></listitem>
+<listitem><para>
+Lets assume the following out of the box pe-layout for hopper:
+<screen>
+&lt;entry id="NTASKS_ATM"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_ATM"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_ATM"   value="0"  /&gt;    
+&lt;entry id="NINST_ATM"   value="1"  /&gt;    
+&lt;entry id="NINST_ATM_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_LND"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_LND"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_LND"   value="0"  /&gt;    
+&lt;entry id="NINST_LND"   value="1"  /&gt;    
+&lt;entry id="NINST_LND_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_ICE"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_ICE"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_ICE"   value="0"  /&gt;    
+&lt;entry id="NINST_ICE"   value="1"  /&gt;    
+&lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_OCN"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_OCN"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_OCN"   value="0"  /&gt;    
+&lt;entry id="NINST_OCN"   value="1"  /&gt;    
+&lt;entry id="NINST_OCN_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_GLC"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_GLC"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_GLC"   value="0"  /&gt;    
+&lt;entry id="NINST_GLC"   value="1"  /&gt;    
+&lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_CPL"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_CPL"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_CPL"   value="0"  /&gt;    
+</screen>
+</para><para>
+For an F compset, only atm, lnd, rof and cice are prognostic components,
+whereas the ocn is a data components and glc is a stub component.
+Lets say we want to run 2 instances of CAM in this experiment. The
+current implementation of multi-instances will also require you to run
+2 instances of CLM. However, you have the flexibility to run either 1
+or 2 instances of DOCN (we can ignore glc since it does not do
+anything in this compset). To run 2 instances of CAM, CLM and CICE, all you
+need to do is to change NINST_ATM, NINST_LND and NINST_ICE above from 1 to 2.
+This will result in the following &env_mach_pes.xml; file:
+</para><para>
+<screen>
+&lt;entry id="NTASKS_ATM"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_ATM"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_ATM"   value="0"  /&gt;    
+&lt;entry id="NINST_ATM"   value="2"  /&gt;    
+&lt;entry id="NINST_ATM_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_LND"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_LND"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_LND"   value="0"  /&gt;    
+&lt;entry id="NINST_LND"   value="2"  /&gt;    
+&lt;entry id="NINST_LND_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_ICE"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_ICE"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_ICE"   value="0"  /&gt;    
+&lt;entry id="NINST_ICE"   value="2"  /&gt;    
+&lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_OCN"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_OCN"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_OCN"   value="0"  /&gt;    
+&lt;entry id="NINST_OCN"   value="2"  /&gt;    
+&lt;entry id="NINST_OCN_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_GLC"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_GLC"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_GLC"   value="0"  /&gt;    
+&lt;entry id="NINST_GLC"   value="1"  /&gt;    
+&lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;    
+
+&lt;entry id="NTASKS_CPL"   value="128"  /&gt;    
+&lt;entry id="NTHRDS_CPL"   value="1"  /&gt;    
+&lt;entry id="ROOTPE_CPL"   value="0"  /&gt;    
+</screen>
+</para><para>
+As a result of this, you will have 2 instances of CAM, CLM and CICE (prescribed) and DOCN, each running concurrently on
+64 MPI tasks. 
+</para></listitem>
+
+<listitem><para> A separate user_nl_xxx_NNNN file (where NNNN is the
+number of the component instances) will be generated
+when <command>cesm_setup</command> is called. In particular,
+calling <command>cesm_setup</command> with the above &env_mach_pes.xml; file
+will result in the following <filename>user_nl_*</filename> files in
+$&CASEROOT;
+<screen>
+user_nl_cam_0001
+user_nl_cam_0002
+user_nl_cice_0001
+user_nl_cice_0002
+user_nl_clm_0001
+user_nl_clm_0002
+user_nl_cpl
+user_nl_docn_0001
+user_nl_docn_0002
+</screen>
+</para><para> and the following <filename>*_in_*</filename> files
+and <filename>*txt*</filename> files in $CASEROOT/CaseDocs:
+</para><para>
+<screen>
+atm_in_0001
+atm_in_0002
+docn.streams.txt.prescribed_0001
+docn.streams.txt.prescribed_0002
+docn_in_0001
+docn_in_0002
+docn_ocn_in_0001
+docn_ocn_in_0002
+drv_flds_in
+drv_in
+ice_in_0001
+ice_in_0002
+lnd_in_0001
+lnd_in_0002
+</screen>
+</para><para> The namelist for each component instance can be modified
+by changing the corresponding user_nl_xxx_NNNN file for that component
+instance. Modifying the user_nl_cam_0002 will result in the namelist
+changes you put in to be active ONLY for instance 2 of CAM. To change the
+DOCN stream txt file instance 0002, you should place a copy of 
+<filename>docn.streams.txt.prescribed_0002</filename> in $&CASEROOT;
+with the name <filename>user_docn.streams.txt.prescribed_0002</filename>
+and modify it accordlingly.
+</para></listitem>
+
+</orderedlist>
+
+<para> 
+It is also important to stress the following points:
+</para>
+
+<orderedlist>
+
+<listitem><para> <command>Different component instances can ONLY
+differ by differences in namelist settings - they are ALL using the
+same model executable.</command> </para></listitem>
+
+<listitem><para> Only 1 coupler component is supported in the CESM1.1
+multiple instance implementation.  </para></listitem>
+
+<listitem><para> <filename>user_nl_*</filename> files once they are
+created by <command>cesm_setup</command> <emphasis>ARE NOT</emphasis> removed by
+calling <command>cesm_setup -clean</command>. The same is true for
+<filename>Macros</filename> files.  </para></listitem>
+
+<listitem><para> In general, you should run multiple instances
+concurrently (the default setting in &env_mach_pes.xml;).  The serial
+setting is only for EXPERT USERS in upcoming development code
+implementations.</para></listitem>
+
+</orderedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+
+<sect1 id="modifying_xml">
+<title>Modifying an xml file</title>
+
+<para>
+You can edit the xml files directly to change the variable
+values. However, modification of the xml variables is best
+done using <command>xmlchange</command> in the $&CASEROOT;
+directory since it performs variable error checking as part of
+changing values in the xml files. To invoke <command> xmlchange</command>:
+</para>
+
+<screen>
+xmlchange &lt;entry id&gt;=&lt;value&gt;
+-- OR --
+xmlchange -id &lt;entry id&gt; -val &lt;name&gt; -file &lt;filename&gt;
+          [-help] [-silent] [-verbose] [-warn] [-append] [-file]
+</screen>
+
+<variablelist>
+
+<varlistentry><term><option>-id</option></term>
+<listitem>
+<para>
+The xml variable name to be changed. (required)
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-val</option></term>
+<listitem>
+<para>
+The intended value of the variable associated with the -id argument. (required)
+</para>
+<note><para>If you want a single quotation mark ("'", also called an
+apostrophe) to appear in the string provided by the -val option,
+you must specify it as "&amp;apos;".
+</para></note>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-file</option></term>
+<listitem>
+<para>
+The xml file to be edited. (optional)
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-silent</option></term>
+<listitem>
+<para>
+Turns on silent mode. Only fatal messages will be issued. (optional)
+</para>
+</listitem>
+</varlistentry>
+<varlistentry><term><option>-verbose</option></term>
+
+<listitem>
+<para>
+Echoes all settings made by <command>create_newcase</command> and
+<command>cesm_setup</command>. (optional)
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-help</option></term>
+<listitem>
+<para>
+Print usage info to STDOUT. (optional)
+</para>
+</listitem>
+</varlistentry>
+</variablelist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="cloning_case">
+<title>Cloning a case (Experts only)</title>
+
+<para>
+This is an advanced feature provided for expert users. If you are
+a new user, skip this section.</para>
+
+<para> If you have access to the run you want to clone, the
+&create_clone; command will create a new case while also preserving
+local modifications to the case that you want to clone. You can run the
+utility &create_clone; either from $&CCSMROOT; or from the directory
+where you want the new case to be created. It has the following
+arguments:</para>
+
+<variablelist>
+<varlistentry><term><option>-case</option></term>
+<listitem>
+<para>
+The name or path of the new case.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-clone</option></term>
+<listitem>
+<para>
+The full pathname of the case to be cloned.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-silent</option></term>
+<listitem>
+<para>
+Enables silent mode. Only fatal messages will be issued.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-verbose</option></term>
+<listitem>
+<para>
+Echoes all settings.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>-help</option></term>
+<listitem>
+<para>
+Prints usage instructions.
+</para>
+</listitem>
+</varlistentry>
+</variablelist>
+
+<para>
+Here is the simplest example of using &create_clone;:
+</para>
+
+<screen>
+> cd $&CCSMROOT;/scripts
+> create_clone -case $&CASEROOT; -clone $&CLONEROOT; 
+</screen>
+
+<para>
+&create_clone; will preserve any local namelist modifications made in the user_nl_xxxx files as well as any source code modifications in the SourceMods tree.   Note that the new case directory will be
+identical to the cloned case directory 
+<emphasis>except</emphasis> for the original cloned scripts
+$&CASEROOT;.$&MACH;.build, $&CASEROOT;.$&MACH;.clean_build,
+$&CASEROOT;.$&MACH;.run, and $&CASEROOT;.$&MACH;.l_archive,
+which will have new names in the new case.
+</para>
+
+<note><title>Important:</title>
+<para>Do not change anything in the &env_case.xml;
+file.  The $&CASEROOT;/ directory will now
+appear as if &create_newcase; had just been run -- with the exception
+that local modifications to the env_* files are preserved. 
+</para></note>
+
+<para>
+Another approach to duplicating a case is to use the information in
+that case's README.case file to create a new case. Note that this
+approach will <emphasis>not</emphasis> preserve any local
+modifications that were made to the original case, such as source-code
+or build-script modifications; you will need to import those
+changes manually.</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+
+</chapter>
+

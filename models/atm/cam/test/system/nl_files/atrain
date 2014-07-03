@@ -1,0 +1,16 @@
+&camexp
+ restart_option='nsteps'
+ restart_n=3
+ ndens=1,1,1,1,1,1
+ nhtfrq=3,3,3,3,3,3
+ mfilt=1,1,1,1,1,1
+ start_ymd=20050101
+
+ cosp_histfile_num=1
+ cosp_nradsteps=3
+ cosp_ncolumns=50
+ cosp_llidar_sim=.true.
+ cosp_sample_atrain=.true.
+ cosp_atrainorbitdata = '$CSMDATA/atm/cam/sat/cloudsat_orbit_08921_14250.rev0572.nc'
+
+/

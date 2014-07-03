@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- "IOP: TWP-ICE 2006 (17 Jan 2006 - 12 Feb 2006)" -->
+
+<namelist_defaults>
+
+<ncdata             hgrid="64x128"    nlev="30"   scam="1"  >atm/cam/inic/gaus/cami_0000-01-01_64x128_L30_c090102.nc</ncdata>
+<iopfile dyn="eul"                                scam="1"  >atm/cam/scam/iop/TWP06_4scam.nc</iopfile>
+<scmlat                                           scam="1"  >   -12.43    </scmlat>
+<scmlon                                           scam="1"  >   130.89    </scmlon>
+<start_ymd                                        scam="1"  >   20060117  </start_ymd>
+<start_tod                                        scam="1"  >   10800     </start_tod>
+<stop_n                                           scam="1"  >   1926      </stop_n>
+<mfilt                                            scam="1"  >   1500      </mfilt>
+<nhtfrq                                           scam="1"  >   9         </nhtfrq>
+<stop_option                                      scam="1"  >   nsteps    </stop_option>
+
+<!-- sim_year used for CLM datasets -->
+<sim_year>2000</sim_year>
+
+</namelist_defaults>

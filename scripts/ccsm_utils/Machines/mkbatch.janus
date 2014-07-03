@@ -1,0 +1,130 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+source ./Tools/ccsm_getenv || exit -1
+
+set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+@ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
+if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
+  @ mppnodes = $mppnodes + 1
+  @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+
+if ( $mppnodes < 21 ) then
+  set queue=janus-small
+else
+  if ( $mppnodes < 81 ) then
+    set queue=janus-normal
+  else
+    if ( $mppnodes < 481 ) then
+      set queue=janus-wide
+    else
+      set queue=janus-jumbo
+    endif
+  endif
+endif
+
+set time_limit = "0:50:00"
+if ($CCSM_ESTCOST > 0) set time_limit = "1:50:00"
+if ($CCSM_ESTCOST > 1) set time_limit = "4:00:00"
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+# See https://www.rc.colorado.edu/crcdocs/queues for alternative queues
+#PBS -N ${jobname}
+#PBS -q ${queue}
+#PBS -l walltime=${time_limit} 
+#PBS -l nodes=${mppnodes}:ppn=${MAX_TASKS_PER_NODE}
+#PBS -r n
+#PBS -j oe
+#PBS -S /bin/csh -V
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+source ./Tools/ccsm_getenv || exit -1
+
+set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+@ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
+if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
+  @ mppnodes = $mppnodes + 1
+  @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+if ( "\$MPILIB" == "mpi-serial" ) then
+    \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+else
+    if( $taskpernode > $maxtasks ) then
+      mpirun -np ${maxtasks}  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+    else
+      mpirun -np ${maxtasks} -npernode ${taskpernode}  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+    endif
+endif
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+set jobname = `echo ${CASE} | cut -c1-12`
+set jobname = ${jobname}_la
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#PBS -N ${jobname}
+#PBS -q janus-short
+#PBS -l nodes=1:ppn=1
+#PBS -j oe
+
+cd $CASEROOT 
+source ./Tools/ccsm_getenv || exit -1
+cd \$DOUT_S_ROOT
+$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

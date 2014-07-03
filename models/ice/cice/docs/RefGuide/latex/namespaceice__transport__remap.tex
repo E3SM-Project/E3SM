@@ -1,0 +1,152 @@
+\hypertarget{namespaceice__transport__remap}{
+\section{ice\_\-transport\_\-remap Module Reference}
+\label{namespaceice__transport__remap}\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_ae1b446db8b6220961bfcacd0c9b57fd4}{init\_\-remap}
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_af549caf7a8f27fcbe1cc3d9f8df4bacd}{horizontal\_\-remap} (dt, uvel, vvel, mm, tm, l\_\-fixed\_\-area, edgearea\_\-e, edgearea\_\-n, tracer\_\-type\_\-in, depend\_\-in, has\_\-dependents\_\-in, integral\_\-order\_\-in, l\_\-dp\_\-midpt\_\-in)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a9a9fe0af7f01eed20d6df09ed2e8dc2a}{make\_\-masks} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, nghost, has\_\-dependents, icells, indxi, indxj, mm, mmask, tm, tmask)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a4c7f753ed3abe19124a7e719e3424dae}{construct\_\-fields} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, nghost, tracer\_\-type, depend, has\_\-dependents, icells, indxi, indxj, HTN, HTE, hm, xav, yav, xxav, xyav, yyav, xxxav, xxyav, xyyav, yyyav, dxt, dyt, mm, mc, mx, my, mmask, tm, tc, tx, ty, tmask)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_ad0f2932484bf98ec16810e79b50b9117}{limited\_\-gradient} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, nghost, phi, phimask, cnx, cny, HTN, HTE, dxt, dyt, gx, gy)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a6b993110f808c259c52b05216684684f}{departure\_\-points} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, nghost, dt, uvel, vvel, dxu, dyu, HTN, HTE, dpx, dpy, l\_\-dp\_\-midpt, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a5ed79661ddd56d26d4e863b7ec1b9a0a}{locate\_\-triangles} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, nghost, edge, icells, indxi, indxj, dpx, dpy, dxu, dyu, xp, yp, iflux, jflux, triarea, l\_\-fixed\_\-area, edgearea)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a0118e9be4eed6545abe6b6d08ebea458}{triangle\_\-coordinates} (nx\_\-block, ny\_\-block, integral\_\-order, icells, indxi, indxj, xp, yp)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a36c63f1390ec491939f47e64dab35e1e}{transport\_\-integrals} (nx\_\-block, ny\_\-block, icells, indxi, indxj, tracer\_\-type, depend, integral\_\-order, triarea, iflux, jflux, xp, yp, mc, mx, my, mflx, tc, tx, ty, mtflx)
+\item 
+subroutine \hyperlink{namespaceice__transport__remap_a2f57bc59a0a273bc0c6aff4104b094c0}{update\_\-fields} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, tracer\_\-type, depend, tarear, l\_\-stop, istop, jstop, mflxe, mflxn, mm, mtflxe, mtflxn, tm)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__transport__remap_a5012cc594b512eddae2a80fd91132217}{ntrace} = 2+ntrcr+nilyr+nslyr
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__transport__remap_a66c26988d6a99e211fdc9fd6cb9025c6}{ngroups} = 6
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__transport__remap_a4571153ae2d02f5b5251863d6bdabc37}{p5625m} = -\/9.\_\-dbl\_\-kind/16.\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__transport__remap_a61fb7fc0ff741aea883e70089a6f0ea8}{p52083} = 25.\_\-dbl\_\-kind/48.\_\-dbl\_\-kind
+\item 
+logical(kind=log\_\-kind), parameter \hyperlink{namespaceice__transport__remap_a2ea16fe2f40b061e8beaf561ebf7524c}{bugcheck} = .false.
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__transport__remap_a4c7f753ed3abe19124a7e719e3424dae}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!construct\_\-fields@{construct\_\-fields}}
+\index{construct\_\-fields@{construct\_\-fields}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{construct\_\-fields}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::construct\_\-fields (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),intent(in) {\em nghost}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in) {\em tracer\_\-type}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in) {\em depend}, \/  logical (kind=log\_\-kind),dimension (ntrace),intent(in) {\em has\_\-dependents}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em HTN}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em HTE}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em hm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em xav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em yav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em xxav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em xyav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em yyav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em xxxav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em xxyav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em xyyav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em yyyav}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em dxt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em dyt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em mm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em mc}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em mx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em my}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em mmask}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrace),intent(in),optional {\em tm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrace),intent(out),optional {\em tc}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrace),intent(out),optional {\em tx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrace),intent(out),optional {\em ty}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrace),intent(in),optional {\em tmask})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_a4c7f753ed3abe19124a7e719e3424dae}
+
+
+Definition at line 1132 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a6b993110f808c259c52b05216684684f}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!departure\_\-points@{departure\_\-points}}
+\index{departure\_\-points@{departure\_\-points}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{departure\_\-points}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::departure\_\-points (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),intent(in) {\em nghost}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em uvel}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em vvel}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em dxu}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em dyu}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em HTN}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em HTE}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em dpx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em dpy}, \/  logical (kind=log\_\-kind),intent(in) {\em l\_\-dp\_\-midpt}, \/  logical (kind=log\_\-kind),intent(inout) {\em l\_\-stop}, \/  integer (kind=int\_\-kind),intent(inout) {\em istop}, \/  integer (kind=int\_\-kind),intent(inout) {\em jstop})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_a6b993110f808c259c52b05216684684f}
+
+
+Definition at line 1633 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_af549caf7a8f27fcbe1cc3d9f8df4bacd}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!horizontal\_\-remap@{horizontal\_\-remap}}
+\index{horizontal\_\-remap@{horizontal\_\-remap}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{horizontal\_\-remap}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::horizontal\_\-remap (real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(in) {\em uvel}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(in) {\em vvel}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,0:ncat,max\_\-blocks),intent(inout) {\em mm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrace,ncat,max\_\-blocks),intent(inout) {\em tm}, \/  logical,intent(in) {\em l\_\-fixed\_\-area}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(inout) {\em edgearea\_\-e}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(inout) {\em edgearea\_\-n}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in),optional {\em tracer\_\-type\_\-in}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in),optional {\em depend\_\-in}, \/  logical (kind=log\_\-kind),dimension (ntrace),intent(in),optional {\em has\_\-dependents\_\-in}, \/  integer (kind=int\_\-kind),intent(in),optional {\em integral\_\-order\_\-in}, \/  logical (kind=log\_\-kind),intent(in),optional {\em l\_\-dp\_\-midpt\_\-in})}}
+\label{namespaceice__transport__remap_af549caf7a8f27fcbe1cc3d9f8df4bacd}
+
+
+Definition at line 339 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_ae1b446db8b6220961bfcacd0c9b57fd4}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!init\_\-remap@{init\_\-remap}}
+\index{init\_\-remap@{init\_\-remap}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{init\_\-remap}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::init\_\-remap ()}}
+\label{namespaceice__transport__remap_ae1b446db8b6220961bfcacd0c9b57fd4}
+
+
+Definition at line 275 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_ad0f2932484bf98ec16810e79b50b9117}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!limited\_\-gradient@{limited\_\-gradient}}
+\index{limited\_\-gradient@{limited\_\-gradient}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{limited\_\-gradient}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::limited\_\-gradient (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),intent(in) {\em nghost}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em phi}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em phimask}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em cnx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em cny}, \/  HTN, \/  HTE, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em dxt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em dyt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em gx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em gy})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_ad0f2932484bf98ec16810e79b50b9117}
+
+
+Definition at line 1454 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a5ed79661ddd56d26d4e863b7ec1b9a0a}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!locate\_\-triangles@{locate\_\-triangles}}
+\index{locate\_\-triangles@{locate\_\-triangles}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{locate\_\-triangles}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::locate\_\-triangles (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),intent(in) {\em nghost}, \/  character (len=char\_\-len),intent(in) {\em edge}, \/  integer (kind=int\_\-kind),dimension (ngroups),intent(out) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block,ngroups),intent(out) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block,ngroups),intent(out) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em dpx}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em dpy}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em dxu}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em dyu}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,0:nvert,ngroups),intent(out) {\em xp}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,0:nvert,ngroups),intent(out) {\em yp}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block,ny\_\-block,ngroups),intent(out) {\em iflux}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block,ny\_\-block,ngroups),intent(out) {\em jflux}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ngroups),intent(out) {\em triarea}, \/  logical,intent(in) {\em l\_\-fixed\_\-area}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em edgearea})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_a5ed79661ddd56d26d4e863b7ec1b9a0a}
+
+
+Definition at line 1828 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a9a9fe0af7f01eed20d6df09ed2e8dc2a}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!make\_\-masks@{make\_\-masks}}
+\index{make\_\-masks@{make\_\-masks}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{make\_\-masks}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::make\_\-masks (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),intent(in) {\em nghost}, \/  logical (kind=log\_\-kind),dimension (ntrace),intent(in) {\em has\_\-dependents}, \/  integer (kind=int\_\-kind),dimension(0:ncat),intent(out) {\em icells}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block,0:ncat),intent(out) {\em indxi}, \/  integer (kind=int\_\-kind),dimension(nx\_\-block$\ast$ny\_\-block,0:ncat),intent(out) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,0:ncat),intent(in) {\em mm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,0:ncat),intent(out) {\em mmask}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace, ncat),intent(in),optional {\em tm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace, ncat),intent(out),optional {\em tmask})}}
+\label{namespaceice__transport__remap_a9a9fe0af7f01eed20d6df09ed2e8dc2a}
+
+
+Definition at line 957 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a36c63f1390ec491939f47e64dab35e1e}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!transport\_\-integrals@{transport\_\-integrals}}
+\index{transport\_\-integrals@{transport\_\-integrals}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{transport\_\-integrals}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::transport\_\-integrals (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),dimension (ngroups),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block,ngroups),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block,ngroups),intent(in) {\em indxj}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in) {\em tracer\_\-type}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in) {\em depend}, \/  integer (kind=int\_\-kind),intent(in) {\em integral\_\-order}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ngroups),intent(in) {\em triarea}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block, ny\_\-block, ngroups),intent(in) {\em iflux}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block, ny\_\-block, ngroups),intent(in) {\em jflux}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, 0:nvert, ngroups),intent(in) {\em xp}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, 0:nvert, ngroups),intent(in) {\em yp}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(in) {\em mc}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(in) {\em mx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(in) {\em my}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(out) {\em mflx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(in),optional {\em tc}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(in),optional {\em tx}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(in),optional {\em ty}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(out),optional {\em mtflx})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_a36c63f1390ec491939f47e64dab35e1e}
+
+
+Definition at line 3372 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a0118e9be4eed6545abe6b6d08ebea458}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!triangle\_\-coordinates@{triangle\_\-coordinates}}
+\index{triangle\_\-coordinates@{triangle\_\-coordinates}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{triangle\_\-coordinates}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::triangle\_\-coordinates (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em integral\_\-order}, \/  integer (kind=int\_\-kind),dimension (ngroups),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block,ngroups),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block,ngroups),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, 0:nvert, ngroups),intent(inout) {\em xp}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, 0:nvert, ngroups),intent(inout) {\em yp})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_a0118e9be4eed6545abe6b6d08ebea458}
+
+
+Definition at line 3220 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a2f57bc59a0a273bc0c6aff4104b094c0}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!update\_\-fields@{update\_\-fields}}
+\index{update\_\-fields@{update\_\-fields}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{update\_\-fields}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-transport\_\-remap::update\_\-fields (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in) {\em tracer\_\-type}, \/  integer (kind=int\_\-kind),dimension (ntrace),intent(in) {\em depend}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(in) {\em tarear}, \/  logical (kind=log\_\-kind),intent(inout) {\em l\_\-stop}, \/  integer (kind=int\_\-kind),intent(inout) {\em istop}, \/  integer (kind=int\_\-kind),intent(inout) {\em jstop}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(in) {\em mflxe}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(in) {\em mflxn}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block),intent(inout) {\em mm}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(in),optional {\em mtflxe}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(in),optional {\em mtflxn}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block, ny\_\-block, ntrace),intent(inout),optional {\em tm})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__transport__remap_a2f57bc59a0a273bc0c6aff4104b094c0}
+
+
+Definition at line 3706 of file ice\_\-transport\_\-remap.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__transport__remap_a2ea16fe2f40b061e8beaf561ebf7524c}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!bugcheck@{bugcheck}}
+\index{bugcheck@{bugcheck}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{bugcheck}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),parameter {\bf ice\_\-transport\_\-remap::bugcheck} = .false.}}
+\label{namespaceice__transport__remap_a2ea16fe2f40b061e8beaf561ebf7524c}
+
+
+Definition at line 74 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a66c26988d6a99e211fdc9fd6cb9025c6}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!ngroups@{ngroups}}
+\index{ngroups@{ngroups}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{ngroups}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-transport\_\-remap::ngroups} = 6}}
+\label{namespaceice__transport__remap_a66c26988d6a99e211fdc9fd6cb9025c6}
+
+
+Definition at line 64 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a5012cc594b512eddae2a80fd91132217}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!ntrace@{ntrace}}
+\index{ntrace@{ntrace}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{ntrace}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-transport\_\-remap::ntrace} = 2+ntrcr+nilyr+nslyr}}
+\label{namespaceice__transport__remap_a5012cc594b512eddae2a80fd91132217}
+
+
+Definition at line 61 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a61fb7fc0ff741aea883e70089a6f0ea8}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!p52083@{p52083}}
+\index{p52083@{p52083}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{p52083}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-transport\_\-remap::p52083} = 25.\_\-dbl\_\-kind/48.\_\-dbl\_\-kind}}
+\label{namespaceice__transport__remap_a61fb7fc0ff741aea883e70089a6f0ea8}
+
+
+Definition at line 70 of file ice\_\-transport\_\-remap.F90.\hypertarget{namespaceice__transport__remap_a4571153ae2d02f5b5251863d6bdabc37}{
+\index{ice\_\-transport\_\-remap@{ice\_\-transport\_\-remap}!p5625m@{p5625m}}
+\index{p5625m@{p5625m}!ice_transport_remap@{ice\_\-transport\_\-remap}}
+\subsubsection[{p5625m}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-transport\_\-remap::p5625m} = -\/9.\_\-dbl\_\-kind/16.\_\-dbl\_\-kind}}
+\label{namespaceice__transport__remap_a4571153ae2d02f5b5251863d6bdabc37}
+
+
+Definition at line 70 of file ice\_\-transport\_\-remap.F90.

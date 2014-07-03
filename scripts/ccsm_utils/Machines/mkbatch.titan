@@ -1,0 +1,108 @@
+#! /bin/csh -f
+
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+@ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
+if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
+  @ mppnodes = $mppnodes + 1
+  @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
+endif
+
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+set account_name = `showproj | tail -1`
+if (-e ~/.ccsm_proj) then
+   set account_name = `head -1 ~/.ccsm_proj`
+endif
+
+set walltime = "00:45:00"
+if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
+if ($CCSM_ESTCOST > 3 || $DEBUG == "TRUE") set walltime = "02:00:00"
+set widow=`ls -l $SYSTEM_USERDIR | sed -e 's/.*\/lustre\///' | sed -e 's/\/.*$//'`
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#PBS -A ${account_name}
+#PBS -N ${jobname}
+#PBS -q batch
+#PBS -l nodes=${mppnodes}
+#PBS -l walltime=${walltime}
+#PBS -j oe
+#PBS -S /bin/csh -V
+#PBS -l gres=${widow}
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set myaprun = `${CASEROOT}/Tools/taskmaker.pl -aprun`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+setenv OMP_NUM_THREADS ${maxthrds}
+if (\$MPILIB != "mpi-serial") then
+   aprun ${myaprun} >&! cesm.log.\$LID
+else
+   \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+endif
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+set account_name = `showproj | tail -1`
+if (-e ~/.ccsm_proj) then
+   set account_name = `head -1 ~/.ccsm_proj`
+endif
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#PBS -A ${account_name}
+#PBS -N ${CASE}.l_archive
+#PBS -q batch
+#PBS -l nodes=1
+#PBS -l walltime=01:30:00
+#PBS -j oe
+#PBS -S /bin/csh -V
+
+cd $CASEROOT 
+source ./Tools/ccsm_getenv || exit -1
+cd \$DOUT_S_ROOT
+$CASEROOT/Tools/lt_archive.sh -m copy_dirs_hsi
+exit 0
+
+EOF1
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

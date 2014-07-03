@@ -1,0 +1,25 @@
+# This script needs to be run before the  cmake  command for CMake
+# builds. It should be called from all cmake scripts. 
+#
+# This script auto-generates files that were autogerenated as part 
+# of the autoconf system.
+
+echo
+echo "Auto-generating config.inc and glimmer_vers.F90. "
+echo
+
+
+
+# Just a copy of a file with minimal info
+pushd ..
+echo "  --creating config.inc"
+cp -p config.inc.cmake.in config.inc
+popd
+
+# Just a copy of a file without version info
+pushd ../libglimmer
+echo "  --creating glimmer_vers.F90"
+cp -p glimmer_vers.F90.cmake.in glimmer_vers.F90
+popd
+
+##########################

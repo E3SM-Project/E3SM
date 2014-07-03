@@ -1,0 +1,61 @@
+Information on how to run the Land Ice V&V (LIVV) post-processing software.
+KJE 1/2013
+
+The /livv directory contains all the scripts and code to run the LIVV kit.
+The $machine.bash script contains the inputs needed to run on a data processing style machine.
+An example scripts for Carver (NERSC) (and Lens (OLCF) will be updated when 
+Titan comes on line to submit jobs) are provided.
+
+If you want to run on another machine, these are the software packages and versions that worked 
+on both NERSC and OLCF machines as of 1/2013:
+hdf5/1.8.6
+python/2.7            
+ncl/6.0.0  (at NERSC this is called, inexplicably, ncar/6.0.0)  
+nco/4.0.7
+netcdf/4.1.3
+
+Filepaths for the python script are defined in the bash shell script, and most are required.
+
+The command to run the python script along with all of the necessary/optional files is the 
+last line of the script. 
+/bin: the python processing code 
+/plots: the ncl code 
+/data: the solver data from each processed run is placed here in a $case.asc format 
+
+To run the shell script:
+1. Create a mirror copy of everything in the /seacism/tests/higher-order directory in your scratch space
+2. Put the 4 currently evaluated executables of simple_glide into the mirror /higher-order directory
+(this is done automatically by the master build scripts in the /cmake-scripts directory)
+In the mirror directory:
+3. in the carver.bash file in the /livv directory it will automatically:
+	a. specifies the global scratch path for all the scripts it calls: $SCRIPT_PATH
+	b. sets the $HTML_PATH on where to post results
+	c. sets config path and output path (if you want to run the optional 5km GIS and have followed the same
+naming convention)
+4. in the carver.bash file in the /livv directory you set:
+	a. USERNAME: it doesn't have to be your machine user name. Its the name of the subdirectory where your 
+files will be placed to be on the web and also to ID folks who go to you website of who ran the kit
+	b. COMMENT: case details so those who view the website will know the goal of that run
+5. type "bash $machine.bash" at the command line in the main directory.
+(right now, use KJE GIS 5km output, or have run using the associated config scripts if you want the LIVV kit 
+to process a production 5km case)
+	c. whether to run production cases or not (RUN_$, right now it will only run reg_tests)
+
+If its successful, there will be some output from ncl telling you that plots have 0 values, indicating that the test cases you ran are exact with the benchmarks.
+
+When you are done, the script tells you the website location to go look at the output.
+
+TODOs (feel free to add to this as needed)
+
+Major:
+*have the picard runs also post processed for solver and convergence details, right now its just JFNK
+*plot the solver and convergence info more usefully for all relevant runs
+*parse data from trilinos_options.xml file as well as configure settings
+*create a more general user interface to process the GIS production output
+*enable the option to read from FELIX data (in exodus format) using visit
+
+Minor:
+*have the input and output information from the benchmark runs set in the software rather than the user 
+specify (or at least have a default)
+*parse more detailed data from the output files about the solver and preconditioner
+n VV_outprocess

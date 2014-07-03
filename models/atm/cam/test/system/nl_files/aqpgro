@@ -1,0 +1,10 @@
+&camexp
+ restart_option='none'
+ empty_htapes=.true.
+ fincl1='T','PS'
+ inithist='ENDOFRUN'
+ mfilt=1,1,1,1,1,1
+ ndens=1,1,1,1,1,1
+ nhtfrq=1,1,1,1,1,1
+ /
+

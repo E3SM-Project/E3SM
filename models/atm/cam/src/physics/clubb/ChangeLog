@@ -1,0 +1,96 @@
+===============================================================
+
+Tag name: clubb01_02
+Originator(s): Cheryl Craig
+Date: 3/22/13
+One-line Summary: Fixed bug with sqrt of negative number in mono_flux_limiter.F90
+
+Purpose of changes:
+  - Fixed bug with sqrt of negative number in mono_flux_limiter.F90
+      introduced max with zero_threshold when caluculating varnc_w1 and varnc_w2 in mean_vert_vel_up_down
+
+
+Files modified:
+M       mono_flux_limiter.F90
+
+===============================================================
+===============================================================
+
+Tag name: clubb01_00
+Originator(s): UWM, Pete Bogenschutz and Cheryl Craig
+Date: 1/8/13
+One-line Summary: snapshot of UWM revision number 5654
+
+Purpose of changes:
+  - Stable tag of CLUBB for CAM
+
+
+Files added:
+A       constants_clubb.F90
+A       variables_prognostic_module.F90
+A       interpolation.F90
+A       clip_explicit.F90
+A       saturation.F90
+A       mono_flux_limiter.F90
+A       mixing_length.F90
+A       stats_zm.F90
+A       file_functions.F90
+A       mean_adv.F90
+A       grid_class.F90
+A       pdf_closure_module.F90
+A       stats_zt.F90
+A       parameter_indices.F90
+A       hyper_diffusion_4th_ord.F90
+A       csr_matrix_class_3array.F90
+A       input_reader.F90
+A       parameters_model.F90
+A       error_code.F90
+A       lapack_wrap.F90
+A       stats_rad_zm.F90
+A       ChangeLog
+A       parameters_radiation.F90
+A       mt95.f90
+A       endian.F90
+A       recl.inc
+A       parameters_microphys.F90
+A       gmres_cache.F90
+A       stats_rad_zt.F90
+A       sigma_sqd_w_module.F90
+A       hydrostatic_module.F90
+A       array_index.F90
+A       anl_erf.F90
+A       T_in_K_module.F90
+A       calendar.F90
+A       model_flags.F90
+A       advance_windm_edsclrm_module.F90
+A       pos_definite_module.F90
+A       pdf_parameter_module.F90
+A       fill_holes.F90
+A       sponge_layer_damping.F90
+A       stats_variables.F90
+A       stats_subs.F90
+A       variables_radiation_module.F90
+A       numerical_check.F90
+A       stat_file_module.F90
+A       input_names.F90
+A       output_netcdf.F90
+A       diffusion.F90
+A       advance_wp2_wp3_module.F90
+A       advance_xm_wpxp_module.F90
+A       extrapolation.F90
+A       stats_sfc.F90
+A       surface_varnce_module.F90
+A       clip_semi_implicit.F90
+A       clubb_core.F90
+A       stats_type.F90
+A       clubb_precision.F90
+A       advance_helper_module.F90
+A       gmres_wrap.F90
+A       Skw_module.F90
+A       parameters_tunable.F90
+A       advance_xp2_xpyp_module.F90
+A       output_grads.F90
+A       variables_diagnostic_module.F90
+
+
+===============================================================

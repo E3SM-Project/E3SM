@@ -1,0 +1,5 @@
+The SE code is now provided in the external directory which is
+(should be) a mirror of svn-homme-model.cgd.ucar.edu/trunk/src/share
+changes to that directory should be applied to the stand alone model first.
+
+- Jim Edwards 9/21/2006

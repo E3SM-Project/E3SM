@@ -1,0 +1,59 @@
+<bookinfo>
+
+<title>CESM1.1 User's Guide</title>
+
+<authorgroup>
+<author>
+   <firstname>Mariana</firstname>
+   <surname>Vertenstein</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+<author>
+   <firstname>Tony</firstname>
+   <surname>Craig</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+<author>
+   <firstname>Jim</firstname>
+   <surname>Edwards</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+<author>
+   <firstname>Mike</firstname>
+   <surname>Levy</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+<author>
+   <firstname>Andrew</firstname>
+   <surname>Mai</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+<author>
+   <firstname>Jay</firstname>
+   <surname>Schollenberger</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+<author>
+   <firstname>Alice</firstname>
+   <surname>Bertini</surname>
+   <affiliation>
+   <orgname> NCAR </orgname>
+   </affiliation>
+</author>
+</authorgroup>
+
+<date>2012-11-15</date>
+
+</bookinfo>

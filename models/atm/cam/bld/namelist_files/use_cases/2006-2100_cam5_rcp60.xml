@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<start_ymd>20060101</start_ymd>
+
+<!-- Spectral dataset from Lean (via Cecile Hannay) -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1610-2140_ann_c100408.nc</solar_data_file>
+<solar_data_type>SERIAL</solar_data_type>
+
+<!-- GHG values from AR5 PRE2005_MIDYR_CONC.DAT (via Jean-Francois Lamarque) -->
+<scenario_ghg>RAMPED</scenario_ghg>
+<bndtvghg>atm/cam/ggas/ghg_rcp60_1765-2500_c100901.nc</bndtvghg>
+
+<!-- Surface emissions for MAM from Cheryl Craig, Andrew Gettleman, and Cecile Hannay (aerocom) -->
+<srf_emis_type>INTERP_MISSING_MONTHS</srf_emis_type>
+<dms_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_1849-2100_c111017.nc</dms_emis_file>
+<so2_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_so2_surf_2000-2100_c20111116.nc</so2_emis_file>
+<soag_emis_file	   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_soag_1.5_surf_2000-2100_c20111116.nc</soag_emis_file>
+<bc_a1_emis_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_bc_surf_2000-2100_c20111116.nc</bc_a1_emis_file>
+<pom_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_oc_surf_2000-2100_c20111116.nc</pom_a1_emis_file>
+<so4_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_so4_a1_surf_2000-2100_c20111116.nc</so4_a1_emis_file>
+<so4_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_so4_a2_surf_2000-2100_c20111116.nc</so4_a2_emis_file>
+<num_a1_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_num_a1_surf_2000-2100_c20111116.nc</num_a1_emis_file>
+<num_a2_emis_file  chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_num_a2_surf_2000-2100_c20111116.nc</num_a2_emis_file>
+
+<!-- External forcing for MAM from Cheryl Craig and Andrew Gettleman -->
+<ext_frc_type>INTERP_MISSING_MONTHS</ext_frc_type>
+<so2_ext_file      chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_so2_elev_2000-2100_c20111116.nc</so2_ext_file>
+<so4_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_so4_a1_elev_2000-2100_c20111116.nc</so4_a1_ext_file>
+<so4_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_so4_a2_elev_2000-2100_c20111116.nc</so4_a2_ext_file>
+<num_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_num_a1_elev_2000-2100_c20111116.nc</num_a1_ext_file>
+<num_a2_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_num_a2_elev_2000-2100_c20111116.nc</num_a2_ext_file>
+<pom_a1_ext_file   chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_oc_elev_2000-2100_c20111116.nc</pom_a1_ext_file>
+<bc_a1_ext_file    chem="trop_mam3">atm/cam/chem/trop_mozart_aero/emis/RCP60_mam3_bc_elev_2000-2100_c20111116.nc</bc_a1_ext_file>
+
+<!-- Volcanic aerosol from eruptions is from Caspar Ammann -->
+<prescribed_volcaero_type     >FIXED</prescribed_volcaero_type>
+<prescribed_volcaero_fixed_ymd>20060101</prescribed_volcaero_fixed_ymd>
+<prescribed_volcaero_datapath >atm/cam/volc</prescribed_volcaero_datapath>
+<prescribed_volcaero_file     >CCSM4_volcanic_1850-2008_prototype1.nc</prescribed_volcaero_file>
+
+<!-- Prescribed ozone data is from John Truesdale and Jean-Francois Lamarque -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file    >ozone_rcp60_1.9x2.5_L26_1995-2105_c100901.nc</prescribed_ozone_file>
+<prescribed_ozone_name    >O3</prescribed_ozone_name>
+<prescribed_ozone_type    >INTERP_MISSING_MONTHS</prescribed_ozone_type>
+
+<!-- Prescribed oxidants for aerosol chemistry from John Truesdale and Jean-Francois Lamarque -->
+<tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
+<tracer_cnst_file    >oxid_rcp60_v1_1.9x2.5_L26_1995-2105_c111118.nc</tracer_cnst_file> 
+<tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type> 
+
+<!-- TEM diagnostics output -->
+<do_circulation_diags         >.false.</do_circulation_diags>
+<do_circulation_diags dyn="fv">.true.</do_circulation_diags>
+
+<!-- Output some diagnostics for monitoring time varying forcing -->
+<fincl1>
+'FSNT_d1','FSNTC_d1','FSNS_d1','FSNSC_d1','cb_ozone_c','TMSO2','TMso4_a1','TMso4_a2','TMso4_a3','UTGWORO'
+</fincl1>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1850-2100</sim_year>
+
+<!-- Add sub-monthly output for AR5 runs -->
+<fincl2>
+'TREFHTMN','TREFHTMX','TREFHT','QREFHT','PRECC','PRECL','PSL','UBOT','VBOT'
+</fincl2>
+<mfilt>1,365,30,120,240</mfilt>
+<nhtfrq>0,-24,-24,-6,-3</nhtfrq>
+<rad_diag_1>
+'A:Q:H2O','N:O2:O2','N:CO2:CO2','N:ozone:O3','N:N2O:N2O','N:CH4:CH4','N:CFC11:CFC11','N:CFC12:CFC12'
+</rad_diag_1>
+
+</namelist_defaults>

@@ -1,0 +1,97 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+# Set up the model.  For the single executable, this means determining the
+# total number of tasks.  determine by largest max task of any component
+set ntasks_tot = 0
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  @ tot = ($ROOTPE[$n] + ($NTASKS[$n] * $PSTRID[$n]))
+  if ($tot > $ntasks_tot) then
+     set ntasks_tot = $tot
+  endif
+end
+@ tasks = $ntasks_tot
+@ nn = 1
+while ($nn < $tasks)
+   @ nn = $nn + $nn
+end
+
+@ nodes = $nn
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#! /bin/csh -f
+#MSUB -l walltime=2:00:00
+#MSUB -l nodes=$nodes
+#MSUB -A ic-4
+#MSUB -m b
+#MSUB -m e
+#MSUB -N ${CASE}
+#MSUB -e batch.${CASE}.err
+#MSUB -o batch.${CASE}.out
+#MSUB -c ubgl
+#MSUB -q pdebug
+# End of options
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+setenv BGL_APP_L1_SWOA 1
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+set ntasks_tot = 0
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  @ tot = ($ROOTPE[$n] + ($NTASKS[$n] * $PSTRID[$n]))
+  if ($tot > $ntasks_tot) then
+     set ntasks_tot = $tot
+  endif
+end
+@ tasks = $ntasks_tot
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+cd \$RUNDIR
+echo "`date` -- CSM EXECUTION BEGINS HERE"
+if (\$MPILIB != "mpi-serial") then
+   mpirun -verbose 1 -mode CO -np $tasks -env "HOME=\$RUNDIR LOGNAME=\$CCSMUSER BGL_APP_L1_WRITE_THROUGH=1" -exe \$EXEROOT/cesm.exe -cwd \$RUNDIR >&! cesm.log.\$LID
+else
+
+endif
+
+echo "`date` -- CSM EXECUTION HAS FINISHED" 
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+   #This is a place holder for a long-term archiving script
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

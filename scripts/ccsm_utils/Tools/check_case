@@ -1,0 +1,38 @@
+#! /bin/csh -f
+
+#-----------------------------------------
+if ($#argv < 1) then
+#-----------------------------------------
+./Tools/ccsm_check_lockedfiles || exit -1
+source ./Tools/ccsm_getenv || exit -2
+
+if ($BUILD_COMPLETE != "TRUE") then
+  echo "BUILD_COMPLETE is not TRUE"
+  echo "Please rebuild the model interactively via"
+  echo "   ./${CASE}.build"
+  exit -2
+endif
+
+echo "check_case OK"
+
+#-----------------------------------------
+else
+#-----------------------------------------
+cat << EOF
+
+NAME   
+      check_case - Checks that the case is ready to run.  This script
+         should be executed without any arguments in the case directory.
+
+SYNOPSIS 
+      check_case [-h]
+
+OPTIONS 
+     -h    Generates usage information
+
+EOF
+
+exit -1
+#-----------------------------------------
+endif
+#-----------------------------------------

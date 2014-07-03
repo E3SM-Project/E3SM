@@ -1,0 +1,1068 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! WARNING: this file was automatically generated on
+! Wed, 24 Apr 2013 18:24:59 +0000
+! from ncdf_template.F90.in
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! WJS (1-30-12): The following (turning optimization off) is needed as a workaround for an
+! xlf compiler bug, at least in IBM XL Fortran for AIX, V12.1 on bluefire
+#ifdef CPRIBM
+@PROCESS OPT(0)
+#endif
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!                                                             
+!   ncdf_template.F90.in - part of the Glimmer Community Ice Sheet Model (Glimmer-CISM)  
+!                                                              
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!
+!   Copyright (C) 2005-2013
+!   Glimmer-CISM contributors - see AUTHORS file for list of contributors
+!
+!   This file is part of Glimmer-CISM.
+!
+!   Glimmer-CISM is free software: you can redistribute it and/or modify it
+!   under the terms of the Lesser GNU General Public License as published
+!   by the Free Software Foundation, either version 3 of the License, or
+!   (at your option) any later version.
+!
+!   Glimmer-CISM is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!   Lesser GNU General Public License for more details.
+!
+!   You should have received a copy of the Lesser GNU General Public License
+!   along with Glimmer-CISM. If not, see <http://www.gnu.org/licenses/>.
+!
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#define NCO outfile%nc
+#define NCI infile%nc
+
+
+module glint_mbal_io
+  !*FD template for creating subsystem specific I/O routines
+  !*FD written by Magnus Hagdorn, 2004
+
+  implicit none
+
+  private :: get_xtype
+
+  character(310), save :: restart_variable_list=''    !*FD list of variables needed for a restart
+!TODO change 310 to a variable - see glimmer_ncdf.F90 in the definition for type glimmer_nc_stat for other instances of this value.
+
+contains
+
+  !*****************************************************************************
+  ! netCDF output
+  !*****************************************************************************
+  subroutine glint_mbal_io_createall(model,data,outfiles)
+    !*FD open all netCDF files for output
+    use glint_type
+    use glide_types
+    use glimmer_ncdf
+    use glimmer_ncio
+    implicit none
+    type(glide_global_type) :: model
+    type(glint_instance), optional :: data
+    type(glimmer_nc_output),optional,pointer :: outfiles
+    
+    ! local variables
+    type(glimmer_nc_output), pointer :: oc
+
+    if (present(outfiles)) then
+       oc => outfiles
+    else
+       oc=>model%funits%out_first
+    end if
+
+    do while(associated(oc))
+       if (present(data)) then
+          call glint_mbal_io_create(oc,model,data)
+       else
+          call glint_mbal_io_create(oc,model)
+       end if
+       oc=>oc%next
+    end do
+  end subroutine glint_mbal_io_createall
+
+  subroutine glint_mbal_io_writeall(data,model,atend,outfiles,time)
+    !*FD if necessary write to netCDF files
+    use glint_type
+    use glide_types
+    use glimmer_ncdf
+    use glimmer_ncio
+    implicit none
+    type(glint_instance) :: data
+    type(glide_global_type) :: model
+    logical, optional :: atend
+    type(glimmer_nc_output),optional,pointer :: outfiles
+    real(dp),optional :: time
+
+    ! local variables
+    type(glimmer_nc_output), pointer :: oc
+    logical :: forcewrite=.false.
+
+    if (present(outfiles)) then
+       oc => outfiles
+    else
+       oc=>model%funits%out_first
+    end if
+
+    if (present(atend)) then
+       forcewrite = atend
+    end if
+
+    do while(associated(oc))
+#ifdef HAVE_AVG
+       if (oc%do_averages) then
+          call glint_mbal_avg_accumulate(oc,data,model)
+       end if
+#endif
+       call glimmer_nc_checkwrite(oc,model,forcewrite,time)
+       if (oc%nc%just_processed) then
+          ! write standard variables
+          call glint_mbal_io_write(oc,data)
+#ifdef HAVE_AVG
+          if (oc%do_averages) then
+             call glint_mbal_avg_reset(oc,data)
+          end if
+#endif
+       end if
+       oc=>oc%next
+    end do
+  end subroutine glint_mbal_io_writeall
+  
+  subroutine glint_mbal_io_create(outfile,model,data)
+    use parallel
+    use glide_types
+    use glint_type
+    use glimmer_ncdf
+    use glimmer_ncio
+    use glimmer_map_types
+    use glimmer_log
+    use glimmer_paramets
+    use glimmer_scales
+    use glimmer_log
+    implicit none
+    type(glimmer_nc_output), pointer :: outfile
+    type(glide_global_type) :: model
+    type(glint_instance), optional :: data
+
+    integer status,varid,pos
+
+    integer :: time_dimid
+    integer :: x0_dimid
+    integer :: x1_dimid
+    integer :: y0_dimid
+    integer :: y1_dimid
+
+    ! defining dimensions
+    status = parallel_inq_dimid(NCO%id,'time',time_dimid)
+    call nc_errorhandle(__FILE__,__LINE__,status)
+    if (.not.outfile%append) then
+       status = parallel_def_dim(NCO%id,'x0',model%general%ewn-1,x0_dimid)
+    else
+       status = parallel_inq_dimid(NCO%id,'x0',x0_dimid)
+    endif
+    call nc_errorhandle(__FILE__,__LINE__,status)
+    if (.not.outfile%append) then
+       status = parallel_def_dim(NCO%id,'x1',data%model%general%ewn,x1_dimid)
+    else
+       status = parallel_inq_dimid(NCO%id,'x1',x1_dimid)
+    endif
+    call nc_errorhandle(__FILE__,__LINE__,status)
+    if (.not.outfile%append) then
+       status = parallel_def_dim(NCO%id,'y0',model%general%nsn-1,y0_dimid)
+    else
+       status = parallel_inq_dimid(NCO%id,'y0',y0_dimid)
+    endif
+    call nc_errorhandle(__FILE__,__LINE__,status)
+    if (.not.outfile%append) then
+       status = parallel_def_dim(NCO%id,'y1',data%model%general%nsn,y1_dimid)
+    else
+       status = parallel_inq_dimid(NCO%id,'y1',y1_dimid)
+    endif
+    call nc_errorhandle(__FILE__,__LINE__,status)
+
+    ! Expanding restart variables: if 'restart' or 'hot' is present, we remove that
+    ! word from the variable list, and flip the restartfile flag.  
+    ! In CISM 2.0, 'restart' is the preferred name to represent restart variables, 
+    ! but 'hot' is supported for backward compatibility.  Thus, we check for both.
+    NCO%vars = ' '//trim(adjustl(NCO%vars))//' '  ! Need to maintain a space at beginning and end of list
+    ! expanding restart variables
+    pos = index(NCO%vars,' restart ') 
+    if (pos.ne.0) then
+       NCO%vars = NCO%vars(:pos)//NCO%vars(pos+8:)
+       NCO%restartfile = .true.
+    end if
+    pos = index(NCO%vars,' hot ') 
+    if (pos.ne.0) then
+       NCO%vars = NCO%vars(:pos)//NCO%vars(pos+4:)
+       NCO%restartfile = .true.
+    end if
+    ! Now apply necessary changes if the file is a restart file.
+    if (NCO%restartfile) then
+       if ((len_trim(NCO%vars) + len_trim(restart_variable_list) + 2) >= len(NCO%vars) ) then
+          call write_log('Adding restart variables has made the list of output variables too long for file ' // NCO%filename, GM_FATAL)
+       else
+          ! Expand the restart variable list 
+          NCO%vars = trim(NCO%vars) // ' ' // trim(restart_variable_list) // ' ' ! (a module variable)  ! Need to maintain a space at beginning and end of list
+          ! Set the xtype to be double (required for an exact restart)
+          outfile%default_xtype = NF90_DOUBLE   
+       endif
+    end if
+
+    ! Convert temp and flwa to versions on stag grid, if needed
+    ! Note: this check must occur after restart variables are expanded which happens in glimmer_nc_readparams
+    call check_for_tempstag(model%options%whichdycore,NCO)
+
+    ! checking if we need to handle time averages
+    pos = index(NCO%vars,"_tavg")
+    if (pos.ne.0) then
+       outfile%do_averages = .True.
+    end if    
+
+    ! Now that the output variable list is finalized, make sure we aren't truncating what the user intends to be output.
+    ! Note: this only checks that the text in the variable list does not extend to within one character of the end of the variable.
+    ! It does not handle the case where the user exactly fills the allowable length with variables or has a too-long list with more than one space between variable names.
+    if ((len_trim(NCO%vars) + 1 ) >= len(NCO%vars)) then 
+       call write_log('The list of output variables is too long for file ' // NCO%filename, GM_FATAL)
+    endif
+
+
+    !     x0 -- Cartesian x-coordinate, velocity grid
+    if (.not.outfile%append) then
+       call write_log('Creating variable x0')
+       status = parallel_def_var(NCO%id,'x0',get_xtype(outfile,NF90_FLOAT),(/x0_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'Cartesian x-coordinate, velocity grid')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'projection_x_coordinate')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+     end if
+
+    !     x1 -- Cartesian x-coordinate
+    if (.not.outfile%append) then
+       call write_log('Creating variable x1')
+       status = parallel_def_var(NCO%id,'x1',get_xtype(outfile,NF90_FLOAT),(/x1_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'Cartesian x-coordinate')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'projection_x_coordinate')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+     end if
+
+    !     y0 -- Cartesian y-coordinate, velocity grid
+    if (.not.outfile%append) then
+       call write_log('Creating variable y0')
+       status = parallel_def_var(NCO%id,'y0',get_xtype(outfile,NF90_FLOAT),(/y0_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'Cartesian y-coordinate, velocity grid')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'projection_y_coordinate')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+     end if
+
+    !     y1 -- Cartesian y-coordinate
+    if (.not.outfile%append) then
+       call write_log('Creating variable y1')
+       status = parallel_def_var(NCO%id,'y1',get_xtype(outfile,NF90_FLOAT),(/y1_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'Cartesian y-coordinate')
+       status = parallel_put_att(NCO%id, varid, 'standard_name', 'projection_y_coordinate')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+     end if
+
+    !     instant_ablt -- instantaneous ablation
+    pos = index(NCO%vars,' instant_ablt ')
+    status = parallel_inq_varid(NCO%id,'instant_ablt',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+12) = '            '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_ablt')
+       status = parallel_def_var(NCO%id,'instant_ablt',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous ablation')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_acab -- instantaneous mass-balance
+    pos = index(NCO%vars,' instant_acab ')
+    status = parallel_inq_varid(NCO%id,'instant_acab',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+12) = '            '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_acab')
+       status = parallel_def_var(NCO%id,'instant_acab',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous mass-balance')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_artm -- instantaneous air temperature
+    pos = index(NCO%vars,' instant_artm ')
+    status = parallel_inq_varid(NCO%id,'instant_artm',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+12) = '            '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_artm')
+       status = parallel_def_var(NCO%id,'instant_artm',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous air temperature')
+       status = parallel_put_att(NCO%id, varid, 'units', 'degC')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_humidity -- instantaneous humidity
+    pos = index(NCO%vars,' instant_humidity ')
+    status = parallel_inq_varid(NCO%id,'instant_humidity',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+16) = '                '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_humidity')
+       status = parallel_def_var(NCO%id,'instant_humidity',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous humidity')
+       status = parallel_put_att(NCO%id, varid, 'units', '1')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_lwdown -- instantaneous lw down
+    pos = index(NCO%vars,' instant_lwdown ')
+    status = parallel_inq_varid(NCO%id,'instant_lwdown',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+14) = '              '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_lwdown')
+       status = parallel_def_var(NCO%id,'instant_lwdown',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous lw down')
+       status = parallel_put_att(NCO%id, varid, 'units', 'W/m2')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_prcp -- instantaneous precip
+    pos = index(NCO%vars,' instant_prcp ')
+    status = parallel_inq_varid(NCO%id,'instant_prcp',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+12) = '            '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_prcp')
+       status = parallel_def_var(NCO%id,'instant_prcp',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous precip')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_psurf -- instantaneous surface pressure
+    pos = index(NCO%vars,' instant_psurf ')
+    status = parallel_inq_varid(NCO%id,'instant_psurf',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+13) = '             '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_psurf')
+       status = parallel_def_var(NCO%id,'instant_psurf',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous surface pressure')
+       status = parallel_put_att(NCO%id, varid, 'units', 'Pa')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_siced -- superimposed ice depth
+    pos = index(NCO%vars,' instant_siced ')
+    status = parallel_inq_varid(NCO%id,'instant_siced',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+13) = '             '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_siced')
+       status = parallel_def_var(NCO%id,'instant_siced',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'superimposed ice depth')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_snowd -- snow depth
+    pos = index(NCO%vars,' instant_snowd ')
+    status = parallel_inq_varid(NCO%id,'instant_snowd',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+13) = '             '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_snowd')
+       status = parallel_def_var(NCO%id,'instant_snowd',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'snow depth')
+       status = parallel_put_att(NCO%id, varid, 'units', 'meter')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_swdown -- instantaneous sw down
+    pos = index(NCO%vars,' instant_swdown ')
+    status = parallel_inq_varid(NCO%id,'instant_swdown',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+14) = '              '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_swdown')
+       status = parallel_def_var(NCO%id,'instant_swdown',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous sw down')
+       status = parallel_put_att(NCO%id, varid, 'units', 'W/m2')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_xwind -- instantaneous x-wind
+    pos = index(NCO%vars,' instant_xwind ')
+    status = parallel_inq_varid(NCO%id,'instant_xwind',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+13) = '             '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_xwind')
+       status = parallel_def_var(NCO%id,'instant_xwind',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous x-wind')
+       status = parallel_put_att(NCO%id, varid, 'units', 'm/s')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+    !     instant_ywind -- instantaneous y-wind
+    pos = index(NCO%vars,' instant_ywind ')
+    status = parallel_inq_varid(NCO%id,'instant_ywind',varid)
+    if (pos.ne.0) then
+      NCO%vars(pos+1:pos+13) = '             '
+    end if
+    if (pos.ne.0 .and. status.eq.nf90_enotvar) then
+       call write_log('Creating variable instant_ywind')
+       status = parallel_def_var(NCO%id,'instant_ywind',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, time_dimid/),varid)
+       call nc_errorhandle(__FILE__,__LINE__,status)
+       status = parallel_put_att(NCO%id, varid, 'long_name', 'instantaneous y-wind')
+       status = parallel_put_att(NCO%id, varid, 'units', 'm/s')
+       if (glimmap_allocated(model%projection)) then
+          status = parallel_put_att(NCO%id, varid, 'grid_mapping',glimmer_nc_mapvarname)
+          status = parallel_put_att(NCO%id, varid, 'coordinates', 'lon lat')
+       end if
+     end if
+
+  end subroutine glint_mbal_io_create
+
+  subroutine glint_mbal_io_write(outfile,data)
+    use parallel
+    use glint_type
+    use glimmer_ncdf
+    use glimmer_paramets
+    use glimmer_scales
+    implicit none
+    type(glimmer_nc_output), pointer :: outfile
+    !*FD structure containg output netCDF descriptor
+    type(glint_instance) :: data
+    !*FD the model instance
+
+    ! local variables
+    real(dp) :: tavgf
+    integer status, varid
+    integer up
+     
+    tavgf = outfile%total_time
+    if (tavgf.ne.0.d0) then
+       tavgf = 1.d0/tavgf
+    end if
+
+    ! write variables
+    status = parallel_inq_varid(NCO%id,'instant_ablt',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%ablt, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_acab',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%acab, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_artm',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%artm, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_humidity',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%humidity, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_lwdown',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%lwdown, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_prcp',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%prcp, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_psurf',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%psurf, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_siced',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%siced, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_snowd',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%snowd, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_swdown',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%swdown, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_xwind',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%xwind, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+    status = parallel_inq_varid(NCO%id,'instant_ywind',varid)
+    if (status .eq. nf90_noerr) then
+       status = distributed_put_var(NCO%id, varid, &
+            data%mbal_accum%ywind, (/1,1,outfile%timecounter/))
+       call nc_errorhandle(__FILE__,__LINE__,status)
+    end if
+
+  end subroutine glint_mbal_io_write
+
+
+  subroutine glint_mbal_add_to_restart_variable_list(vars_to_add)
+    !*FD This subroutine adds variables to the list of variables needed for a restart.
+    !*FD It is a public subroutine that allows other parts of the model to modify the list, 
+    !*FD which is a module level variable.   MJH 1/17/2013
+
+    use glimmer_log
+    implicit none
+
+    !------------------------------------------------------------------------------------
+    ! Subroutine arguments
+    !------------------------------------------------------------------------------------
+    character(len=*), intent (in) :: vars_to_add  !*FD list of variable(s) to be added to the list of restart variables 
+    !character(*), intent (inout) :: restart_variable_list  ! list of variables needed to perform an exact restart - module variable
+
+    !------------------------------------------------------------------------------------
+    ! Internal variables
+    !------------------------------------------------------------------------------------
+
+    !------------------------------------------------------------------------------------
+
+    ! Add the variables to the list so long as they don't make the list too long.
+    if ( (len_trim(restart_variable_list) + 1 + len_trim(vars_to_add)) > len(restart_variable_list)) then
+       call write_log('Adding restart variables has made the restart variable list too long.',GM_FATAL)
+    else
+       restart_variable_list = trim(adjustl(restart_variable_list)) // ' ' // trim(vars_to_add)
+       !call write_log('Adding to glint_mbal restart variable list: ' // trim(vars_to_add) )
+    endif
+
+  end subroutine glint_mbal_add_to_restart_variable_list
+
+
+  !*****************************************************************************
+  ! netCDF input
+  !*****************************************************************************  
+  subroutine glint_mbal_io_readall(data,model)
+    !*FD read from netCDF file
+    use glint_type
+    use glide_types
+    use glimmer_ncdf
+    use glimmer_ncio
+    implicit none
+    type(glint_instance) :: data
+    type(glide_global_type) :: model
+
+    ! local variables
+    type(glimmer_nc_input), pointer :: ic    
+
+    ic=>model%funits%in_first
+    do while(associated(ic))
+       call glimmer_nc_checkread(ic,model)
+       if (ic%nc%just_processed) then
+          call glint_mbal_io_read(ic,data)
+       end if
+       ic=>ic%next
+    end do
+  end subroutine glint_mbal_io_readall
+
+  subroutine glint_mbal_io_read(infile,data)
+    !*FD read variables from a netCDF file
+    use parallel
+    use glimmer_log
+    use glimmer_ncdf
+    use glint_type
+    use glimmer_paramets
+    use glimmer_scales
+    implicit none
+    type(glimmer_nc_input), pointer :: infile
+    !*FD structure containg output netCDF descriptor
+    type(glint_instance) :: data
+    !*FD the model instance
+
+    ! local variables
+    integer status,varid
+    integer up
+    real(dp) :: scaling_factor
+
+    ! read variables
+  end subroutine glint_mbal_io_read
+
+  subroutine glint_mbal_io_checkdim(infile,model,data)
+    !*FD check if dimension sizes in file match dims of model
+    use parallel
+    use glimmer_log
+    use glimmer_ncdf
+    use glide_types
+    use glint_type
+    implicit none
+    type(glimmer_nc_input), pointer :: infile
+    !*FD structure containg output netCDF descriptor
+    type(glide_global_type) :: model
+    type(glint_instance), optional :: data
+
+    integer status,dimid,dimsize
+    character(len=150) message
+
+    ! check dimensions
+    status = parallel_inq_dimid(NCI%id,'x0',dimid)
+    if (dimid.gt.0) then
+       status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
+       if (dimsize.ne.model%general%ewn-1) then
+          write(message,*) 'Error, reading file ',trim(NCI%filename),' size x0 does not match: ', &
+               model%general%ewn-1
+          call write_log(message,GM_FATAL)
+       end if
+    end if
+    status = parallel_inq_dimid(NCI%id,'x1',dimid)
+    if (dimid.gt.0) then
+       status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
+       if (dimsize.ne.data%model%general%ewn) then
+          write(message,*) 'Error, reading file ',trim(NCI%filename),' size x1 does not match: ', &
+               data%model%general%ewn
+          call write_log(message,GM_FATAL)
+       end if
+    end if
+    status = parallel_inq_dimid(NCI%id,'y0',dimid)
+    if (dimid.gt.0) then
+       status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
+       if (dimsize.ne.model%general%nsn-1) then
+          write(message,*) 'Error, reading file ',trim(NCI%filename),' size y0 does not match: ', &
+               model%general%nsn-1
+          call write_log(message,GM_FATAL)
+       end if
+    end if
+    status = parallel_inq_dimid(NCI%id,'y1',dimid)
+    if (dimid.gt.0) then
+       status = parallel_inquire_dimension(NCI%id,dimid,len=dimsize)
+       if (dimsize.ne.data%model%general%nsn) then
+          write(message,*) 'Error, reading file ',trim(NCI%filename),' size y1 does not match: ', &
+               data%model%general%nsn
+          call write_log(message,GM_FATAL)
+       end if
+    end if
+  end subroutine glint_mbal_io_checkdim
+
+  !*****************************************************************************
+  ! calculating time averages
+  !*****************************************************************************  
+#ifdef HAVE_AVG
+  subroutine glint_mbal_avg_accumulate(outfile,data,model)
+    use parallel
+    use glide_types
+    use glint_type
+    use glimmer_ncdf
+    implicit none
+    type(glimmer_nc_output), pointer :: outfile
+    !*FD structure containg output netCDF descriptor
+    type(glide_global_type) :: model
+    type(glint_instance) :: data
+
+    ! local variables
+    real(dp) :: factor
+    integer status, varid
+
+    ! increase total time
+    outfile%total_time = outfile%total_time + model%numerics%tinc
+    factor = model%numerics%tinc
+
+  end subroutine glint_mbal_avg_accumulate
+
+  subroutine glint_mbal_avg_reset(outfile,data)
+    use parallel
+    use glint_type
+    use glimmer_ncdf
+    implicit none
+    type(glimmer_nc_output), pointer :: outfile
+    !*FD structure containg output netCDF descriptor
+    type(glint_instance) :: data
+
+    ! local variables
+    integer status, varid
+
+    ! reset total time
+    outfile%total_time = 0.d0
+
+  end subroutine glint_mbal_avg_reset
+#endif
+
+  !*********************************************************************
+  ! some private procedures
+  !*********************************************************************
+
+  !> apply default type to be used in netCDF file
+  integer function get_xtype(outfile,xtype)
+    use glimmer_ncdf
+    implicit none
+    type(glimmer_nc_output), pointer :: outfile !< derived type holding information about output file
+    integer, intent(in) :: xtype                !< the external netCDF type
+
+    get_xtype = xtype
+    
+    if (xtype.eq.NF90_REAL .and. outfile%default_xtype.eq.NF90_DOUBLE) then
+       get_xtype = NF90_DOUBLE
+    end if
+    if (xtype.eq.NF90_DOUBLE .and. outfile%default_xtype.eq.NF90_REAL) then
+       get_xtype = NF90_REAL
+    end if
+  end function get_xtype
+
+  !*********************************************************************
+  ! lots of accessor subroutines follow
+  !*********************************************************************
+  subroutine glint_mbal_get_instant_ablt(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%ablt
+  end subroutine glint_mbal_get_instant_ablt
+
+  subroutine glint_mbal_set_instant_ablt(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%ablt = inarray
+  end subroutine glint_mbal_set_instant_ablt
+
+  subroutine glint_mbal_get_instant_acab(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%acab
+  end subroutine glint_mbal_get_instant_acab
+
+  subroutine glint_mbal_set_instant_acab(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%acab = inarray
+  end subroutine glint_mbal_set_instant_acab
+
+  subroutine glint_mbal_get_instant_artm(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%artm
+  end subroutine glint_mbal_get_instant_artm
+
+  subroutine glint_mbal_set_instant_artm(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%artm = inarray
+  end subroutine glint_mbal_set_instant_artm
+
+  subroutine glint_mbal_get_instant_humidity(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%humidity
+  end subroutine glint_mbal_get_instant_humidity
+
+  subroutine glint_mbal_set_instant_humidity(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%humidity = inarray
+  end subroutine glint_mbal_set_instant_humidity
+
+  subroutine glint_mbal_get_instant_lwdown(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%lwdown
+  end subroutine glint_mbal_get_instant_lwdown
+
+  subroutine glint_mbal_set_instant_lwdown(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%lwdown = inarray
+  end subroutine glint_mbal_set_instant_lwdown
+
+  subroutine glint_mbal_get_instant_prcp(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%prcp
+  end subroutine glint_mbal_get_instant_prcp
+
+  subroutine glint_mbal_set_instant_prcp(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%prcp = inarray
+  end subroutine glint_mbal_set_instant_prcp
+
+  subroutine glint_mbal_get_instant_psurf(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%psurf
+  end subroutine glint_mbal_get_instant_psurf
+
+  subroutine glint_mbal_set_instant_psurf(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%psurf = inarray
+  end subroutine glint_mbal_set_instant_psurf
+
+  subroutine glint_mbal_get_instant_siced(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%siced
+  end subroutine glint_mbal_get_instant_siced
+
+  subroutine glint_mbal_set_instant_siced(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%siced = inarray
+  end subroutine glint_mbal_set_instant_siced
+
+  subroutine glint_mbal_get_instant_snowd(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%snowd
+  end subroutine glint_mbal_get_instant_snowd
+
+  subroutine glint_mbal_set_instant_snowd(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%snowd = inarray
+  end subroutine glint_mbal_set_instant_snowd
+
+  subroutine glint_mbal_get_instant_swdown(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%swdown
+  end subroutine glint_mbal_get_instant_swdown
+
+  subroutine glint_mbal_set_instant_swdown(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%swdown = inarray
+  end subroutine glint_mbal_set_instant_swdown
+
+  subroutine glint_mbal_get_instant_xwind(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%xwind
+  end subroutine glint_mbal_get_instant_xwind
+
+  subroutine glint_mbal_set_instant_xwind(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%xwind = inarray
+  end subroutine glint_mbal_set_instant_xwind
+
+  subroutine glint_mbal_get_instant_ywind(data,outarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(out) :: outarray
+
+    outarray = data%mbal_accum%ywind
+  end subroutine glint_mbal_get_instant_ywind
+
+  subroutine glint_mbal_set_instant_ywind(data,inarray)
+    use glimmer_scales
+    use glimmer_paramets
+    use glint_type
+    implicit none
+    type(glint_instance) :: data
+    real, dimension(:,:), intent(in) :: inarray
+
+    data%mbal_accum%ywind = inarray
+  end subroutine glint_mbal_set_instant_ywind
+
+
+end module glint_mbal_io

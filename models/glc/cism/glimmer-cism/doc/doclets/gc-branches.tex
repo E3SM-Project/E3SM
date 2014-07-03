@@ -1,0 +1,38 @@
+\documentclass[10pt,english,a4paper]{article}
+\newcommand{\dir}{.}
+\newcommand{\commondir}{../common}
+\input{\commondir/packages.tex}
+\usepackage{color}
+\usepackage[colorlinks=true,citecolor=blue,dvipdfm]{hyperref}
+\input{\commondir/definitions.tex}
+
+
+
+\pagestyle{myheadings}
+
+\markright{Glimmer-CISM Branches}
+
+\begin{document}
+\title{Glimmer-CISM Branches}
+\author{Magnus Hagdorn\thanks{Magnus.Hagdorn@ed.ac.uk}}
+
+\maketitle
+
+2010 will be an exciting year for Glimmer-CISM development. We plan to make a release of the model with the higher order physics included. There are also plans for a major refactoring effort to make the ice sheet model more modular.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{\dir/figs/gc-branches.eps}
+\caption{Glimmer-CISM branches and merge points for 2010}
+\end{figure}
+
+The diagram above illustrates the relationship among various existing branches and branches to be created. We have the following plans:
+\begin{enumerate}
+\item {\bf April 2010} merge Bill's changes on the GC2-gcm branch into GC2-trunk and make a GC-1.6 release. This series of stable releases will be integrated into CCSM.
+\item {\bf End of April 2010} merge GC-lanl-trunk into GC2-trunk and make a GC-1.8 release. This series of stable releases will contain the higher order physics but no parallelisation
+\item {\bf Summer 2010} finish refactoring of shallow ice glimmer and merge GC2-refactoring into GC2-trunk. 
+\item refactor higher order parts of Glimmer-CISM. Once ready make GC-2.0 release.
+\item create new GC2-parallel branch and merge in differences between GC-lanl-parallel and GC-lanl-trunk. The parallel branches will remain private for now.
+\end{enumerate}
+
+\end{document}

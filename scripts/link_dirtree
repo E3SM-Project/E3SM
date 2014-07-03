@@ -1,0 +1,65 @@
+#!/bin/csh -f
+
+if ($#argv != 2) then
+cat << EOF1
+
+NAME   
+
+      link_dirtree - creates a virtual copy of one dir tree to another.  the
+         directory structure is duplicated and the files are linked.
+
+SYNOPSIS 
+
+      link_dirtree orig_dir new_dir
+
+EXAMPLES
+
+      link_dirtree /fs/cgd/csm/inputdata /ptmp/$LOGNAME/my_inputdata
+
+EOF1
+exit -1;
+endif
+
+
+#set orig_dir = /fs/cgd/csm/inputdata
+#set new_dir = /ptmp/$LOGNAME/inputdata
+
+set orig_dir = $argv[1]
+set new_dir = $argv[2]
+
+set cdir = `pwd`
+
+if (! -e ${orig_dir}) then
+  echo "orig_dir does not exist : ${orig_dir}"
+  exit -1
+endif
+cd ${orig_dir}
+set odir = `pwd`
+
+cd ${cdir}
+if (! -e ${new_dir}) mkdir -p ${new_dir}
+if (! -e ${new_dir}) then
+   echo "exit from ${new_dir}"
+   exit -2
+endif
+cd ${new_dir}
+set ndir = `pwd`
+
+echo " "
+echo "running link_dirtree (this could take a minute)"
+echo "orig_dir = $odir"
+echo "new_dir  = $ndir"
+
+cd ${odir}
+
+# tcraig, this doesn't work on some platforms
+#find . -type d -exec mkdir -p "${new_dir}/{}" \;
+#find . -type f -exec ln -s -f "${orig_dir}/{}" "${new_dir}/{}" \;
+
+# tcraig, this doesn't work on bangkok
+find . -type d | xargs -L 1 -I {} mkdir -p ${ndir}/\{\}
+find . -type f | xargs -L 1 -I {} ln -s -f ${odir}/\{\} ${ndir}/\{\}
+
+cd ${cdir}
+
+exit 0

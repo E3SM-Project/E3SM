@@ -1,0 +1,3323 @@
+================================================================================
+SVN $Id: ChangeLog 47549 2013-05-28 22:22:13Z santos@ucar.edu $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_130528/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+===========================
+Originator: santos
+Date: May 28, 2013
+Model: share
+Version: share3_130528
+One-line summary: Fix bug with Intel compiler and shr_spfn_mod.
+
+M     shr/shr_spfn_mod.F90
+       - ifort experiences an internal error if you use an intrinsic (e.g.
+         "gamma") in a function, and then rename that function to "gamma".
+         However, this can be circumvented by adding one extra layer of
+         indirection, e.g. by renaming a function by putting it in a
+         generic interface block. I have done this, so it will be possible
+         for modules to use this statement:
+
+         use shr_spfn_mod, only: gamma => shr_spfn_gamma
+
+===========================
+Originator: santos
+Date: May 7, 2013
+Model: share
+Version: share3_130507
+One-line summary: Fix bug with optional argument to shr_sys_abort
+
+M     shr/shr_sys_mod.F90
+       - shr_sys_abort passed an optional error string to len_trim without
+         checking if it is present. On many (most) compilers this is harmless,
+         but can cause a run-time error that prevents the error message from
+         being printed properly.
+
+===========================
+Originator: santos
+Date: Apr 23, 2013
+Model: share
+Version: share3_130423
+One-line summary: Change to let SCAM set sno_present flag (also rof/flood).
+
+M     shr/shr_scam_mod.F90
+       - shr_scam_checkSurface sets sno, rof, and flood "_present" flags,
+         as well as lnd, ocn, and ice.
+       - shr_scam_checkSurface will only disable these flags; it will
+         never enable them.
+
+===========================
+Originator:jedwards 
+Date: Apr 16, 2013
+Model: share
+Version: share3_130416a
+One-line summary: fix issue with setting pio_buffer_size
+
+M     shr/shr_pio_mod.F90
+
+===========================
+Originator: santos
+Date: Apr 16, 2013
+Model: share
+Version: share3_130416
+One-line summary: Add shr_assert_mod
+
+A       shr/dtypes.h
+         - Defines CPP macros for genf90.pl code.
+
+A       shr/shr_assert_mod.F90.in
+A       shr/shr_assert_mod.F90
+         - Define two new "assert" subroutines.
+            - shr_assert takes a logical and optional error strings,
+              and aborts if that logical is .false.
+            - shr_assert_in_domain takes a number, optional error
+              strings, and arguments specifying a range of valid
+              values. If the numerical value does not lie in the
+              specified range, it aborts.
+         - There is a ".in" file that generates the other file as
+           genf90.pl code.
+         - The assert routines can operate on arrays.
+
+M       models/csm_share/shr/shr_infnan_mod.F90
+         - Add ability to generate quiet (non-signaling) NaN.
+
+M       models/csm_share/shr/shr_sys_mod.F90
+         - If shr_log_Unit is not 6, mirror abort messages to 6 so
+           that the reason for an abort can always be found in stdout
+           (this is also the CESM log).
+
+M       unit_testers/shr_assert_test/domain_tests.F90
+M       unit_testers/shr_assert_test/logical_tests.F90
+M       unit_testers/shr_assert_test/Makefile
+M       unit_testers/shr_assert_test/shr_sys_mod.F90
+M       unit_testers/shr_assert_test/test_shr_assert.F90
+M       unit_testers/shr_assert_test/test_utils.F90
+         - Unit test for shr_assert_mod.
+         - This has a separate Makefile because it was difficult to
+           integrate with the existing unit test builds.
+         - The test can be run by defining the COMPILER environment
+           variable (valid options are the same as for Machines,
+           uppercase) and running "make test".
+         - The test produces a file called test.log with the results.
+           The overall status (pass/fail) is at the bottom of this log.
+
+===========================
+Originator: santos
+Date: Feb 26, 2013
+Model: share
+Version: share3_130226
+One-line summary: Fix shr_spfn_mod with IBM compiler.
+
+  M   shr/shr_spfn_mod.F90
+      - Intrepid has an older XLF without the erfc_scaled
+        intrinsic, so do not assume that IBM has this
+        function.
+
+===========================
+Originator: erik
+Date: Feb 20, 2013
+Model: share
+Version: share3_130220
+One-line summary: Handle return code (rc) in shr_scam_mod.F90
+
+  M   shr/shr_scam_mod.F90
+
+===========================
+Originator: santos
+Date: Feb 15, 2013
+Model: share
+Version: share3_130215
+One-line summary: Add shr_spfn_mod, cleanup shr_infnan_mod.
+
+A       shr/shr_spfn_mod.F90
+        - New module that provides an interface for these
+          functions, whether or not the F2008 intrinsic
+          is available:
+          - erf
+          - erfc
+          - erfc_scaled
+          - gamma
+        - Provide upper incomplete gamma function (igamma),
+          which is not intrinsic.
+        - This is meant to provide a common interface for
+          CAM and CLM code which had previously either
+          assumed intrinsics were available, or else had
+          never used intrinsics whether or not they were
+          available.
+
+M       shr/shr_infnan_mod.F90
+        - Add comments explaining use.
+        - Cleanup a few things:
+          - Get rid of unnecessary capitals.
+          - Narrow effects of Lahey workarounds so that
+            "private" and "save" are specified.
+        - Accommodate shr_test_infnan_mod changes.
+
+M       shr/shr_test_infnan_mod.F90
+        - Change names in public interfaces to follow
+          existing naming conventions.
+
+M       unit_testers/Makefile
+M       unit_testers/config.h
+M       unit_testers/make.Macros
+M       unit_testers/test_shr_infnan.F90
+M       unit_testers/test_shr_spfn.F90
+        - Fix setting of "Filepath" by passing "-e" to echo.
+        - Add tests of shr_spfn_mod.
+        - Use ".PHONY" for arguments debug, clean, and all.
+        - Remove spurious warnings during clean by passing
+          "-f" to rm.
+        - Fix mpi-serial build by:
+          - Creating mpif.h as a temporary link.
+          - Fixing the Macro names in config.h
+        - Miscellaneous fixes in make.Macros:
+          - Define "CPR" flags for different compilers.
+          - Fix FLTTRAP for pgf90.
+          - Add nagfor.
+          - Cleanup outdated options.
+        - Fiddle with test_shr_infnan so that it works on
+          nagfor again, and *mostly* works on Lahey. (Lahey
+          doesn't completely allow non-stop arithmetic, at
+          least with these options. Possibly this aspect of
+          IEEE arithmetic is only required in Fortran 2003?)
+
+===========================
+Originator: tcraig
+Date: Feb 13, 2013
+Model: share
+Version: share3_130213
+One-line summary: add tag, fix prefix in shr_file_put
+
+M       models/csm_share/shr/mct_mod.F90
+M       models/csm_share/shr/shr_file_mod.F90
+
+===========================
+Originator: sacks
+Date: Jan 31, 2013
+Model: share
+Version: share3_130131
+One-line summary: Allow longer data model field lists
+
+To allow more than 10 glc elevation classes, longer data model field
+lists are needed; this requires changing the length of some strings.
+
+M       shr/shr_strdata_mod.F90
+M       shr/shr_dmodel_mod.F90
+M       shr/shr_stream_mod.F90
+
+===========================
+
+Originator: santos
+Date: Dec 12, 2012
+Model: share
+Version: share3_121212
+One-line summary: Fix shr_reprosum_mod with MPI.
+
+M  shr/shr_reprosum_mod.F90
+   - Remove SMPD ifdef statements.
+   - Fix real argument to "radix" intrinsic (0_r8 vs. 0._r8).
+
+===========================
+
+Originator: jedwards
+Date: Dec 04, 2012
+Model: share
+Version: share3_121204a
+One-line summary: gfortran support change
+
+M  shr/shr_infnan_mod.F90
+
+===========================
+Originator: santos, pworley
+Date: Dec 04, 2012
+Model: share
+Version: share3_121204
+	
+One-line summary: NAG support, cleanup, update IEEE NaN/Inf routines, update reprosum
+
+M       shr/shr_dmodel_mod.F90
+        - Add "target" attribute to pio_subsystems.
+
+M       shr/shr_file_mod.F90
+M       shr/shr_string_mod.F90
+        - Fixed typos.
+
+A       shr/shr_nl_mod.F90
+        - Move find_group_name function from CAM (searches for
+          a namelist within a file containing multiple namelists).
+
+M       shr/shr_strdata_mod.F90
+M       shr/shr_stream_mod.F90
+        - Default initialize pointer components to null.
+        - Split lines longer than 132 characters.
+
+A       shr/shr_test_infnan_mod.F90
+        - Moved old shr_infnan_mod here.
+
+M       shr/shr_infnan_mod.F90
+        - New module that can generate   as well as test for Inf/NaN.
+        - Use Fortran 2003's IEEE_ARITHMETIC intrinsic module when possible.
+         - Otherwise, use old methods from shr_test_infnan_mod.
+        - Add NaN/Inf types that can be used to set reals.
+
+M       shr/shr_reprosum_mod.F90
+        - Move mpif.h above "save" statement.
+        - Remove unused routine "shr_reprosum_getDefaultOpts".
+        - Change "imag" to "aimag" for standard conformance.
+        - Modification to reproducible sum algorithm to:
+           a) extend applicability to very large problem sizes
+           b) improve accuracy to (approximately) the theoretical maximum
+           c) improve performance of OpenMP parallelism for large numbers of OpenMP threads  
+	
+M       shr/shr_sys_mod.F90
+        - Add NAG macro definitions.
+        - Remove wrong HAVE_EXECUTE info for Pathscale.
+
+M       shr/shr_mpi_mod.F90
+        - Fix wrong error code return.
+
+M       unit_testers/test_shr_infnan.F90
+M       unit_testers/make.Macros
+M       unit_testers/Makefile
+        - Add tests for new shr_infnan_mod capabilities.
+        - Define "CPRIBM" for builds on AIX in the unit tests.
+
+===========================
+Originator: sacks
+Date: Oct 25, 2012
+Model: share
+Version: 
+One-line summary: Add CXX constant
+
+M       shr/shr_kind_mod.F90
+
+===========================
+Originator: erik
+Date: Oct 22, 2012
+Model: share
+Version: share3_121022
+One-line summary: Changes from Keith Oleson so that different streams can have different calendars
+
+M       shr/shr_strdata_mod.F90
+
+===========================
+Originator: jedwards
+Date: Oct 19, 2012
+Model: share
+Version: share3_121019
+One-line summary: remove debug print statement
+
+M shr/shr_sys_mod.F90
+
+===========================
+Originator: jedwards
+Date: Oct 03, 2012
+Model: share
+Version: share3_121003
+One-line summary: remove debug print statement
+
+M shr/shr_pio_mod.F90
+
+
+================================================================================
+Originator: tcraig
+Date: Sept 18 2012
+Model: share
+Version: share3_120918
+One-line summary: add a few mct interfaces
+
+- svn merge $SVNREPO/csm_share/trunk_tags/share3_120803 $SVNREPO/csm_share/branch_tags/rtmcomp_tags/rtmcomp02_share3_120803
+	
+M       shr/mct_mod.F90
+================================================================================
+Originator: jedwards
+Date: Aug 03 2012
+Model: share
+Version: share3_120803
+One-line summary: correct pio namelist read on bluegene
+
+M shr/shr_pio_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: July 31 2012
+Model: share
+Version: share3_120731
+One-line summary: bug fixes in shr_pio_mod for serial build, namelist read, finalize
+
+M shr/shr_pio_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: July 18 2012
+Model: share
+Version: share3_120718
+One-line summary: cray bug workaround remove use of f2003 get_environment_variable
+
+M shr/shr_sys_mod.F90 
+
+================================================================================
+Originator: jedwards
+Date: June 29 2012
+Model: share
+Version: share3_120629
+One-line summary: Allow support for pio optimzation on bluegene machines
+M   shr/shr_pio_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: May 9 2012
+Model: share
+Version: share3_120509
+One-line summary: support strdata with no streams, flush fix, mct alloc fix
+     - support for strdata initialization with no streams for dice null mode
+     - iostat fix for flush call in shr_sys_flush
+     - fix mct issue in shr_strdata by allocating xlon,ylon explicitly
+
+M       shr/shr_strdata_mod.F90
+M       shr/shr_sys_mod.F90
+================================================================================
+Originator: tcraig
+Date: Apr 18 2012
+Model: share
+Version: share3_120418
+One-line summary: add shr_reprosum, TG support, stream restart read handling
+     - add shr_reprosum_mod.F90 and shr_reprosumx86.c
+     - fix for TG
+     - update stream restart files "read handling" to allow users to change
+       the stream input file list mid-run without leading to aborts
+	
+M       shr/shr_dmodel_mod.F90
+A       shr/shr_reprosumx86.c
+A       shr/shr_reprosum_mod.F90
+M       shr/shr_stream_mod.F90
+================================================================================
+Originator: jedwards
+Date: Apr 17 2012
+Model: share
+Version: share3_120417
+One-line summary: modifications for standalone cam build
+
+M             shr/shr_pio_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: Apr 05 2012
+Model: share
+Version: share3_120405
+One-line summary: add useful AIX traceback capability to abort, allow compid to shr_pio routines
+
+M             shr/shr_sys_mod.F90
+M             shr/shr_pio_mod.F90	
+
+================================================================================
+Originator: jedwards
+Date: Apr 04 2012
+Model: share
+Version: share3_120404a
+One-line summary: port to lahey.
+
+M            36013   shr/shr_sys_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: Apr 04 2012
+Model: share
+Version: share3_120404
+One-line summary: port to lahey and cray, fix multiinstance issue.
+
+M            36013   shr/shr_sys_mod.F90
+M            36013   shr/shr_pio_mod.F90
+M            36013   shr/shr_cal_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: Apr 02 2012
+Model: share
+Version: share3_120402
+One-line summary: move pio shr code from driver, cleanup shr_sys_mod.F90
+
+M            35962   shr/shr_sys_mod.F90
+A  +             -   shr/shr_pio_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Mar 8 2012
+Model: share
+Version: share3_120308
+One-line summary: extend streams interpolation capability
+
+ by allowing both monotonically increasing and decreasing lon/lat
+ grids as input data for spatial interpolation.  before, we just
+ supported increasing grids.
+
+M       shr/shr_map_mod.F90
+M       shr/shr_stream_mod.F90
+	
+================================================================================
+Originator: mvertens/erik
+Date: Feb 27 2012
+Model: share
+Version: share3_120227
+One-line summary: Add shr_mct_sMatPInitnc_mapfile interface
+
+Make shr_mct_sMatPInitnc an interface with two options _configfile, or
+_mapfile. The new option is the _mapfile interface. This is from work by
+Mariana Vertenstein to remove global memory requirements in RTM for CLM.
+
+M       shr/shr_mct_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Feb 19 2012
+Model: share
+Version: share3_120219
+One-line summary: remove use of shr_cal eday methods, replace them (not bit-for-bit)
+  merge between calup02_share3_120123 and calup03_share3_120123
+
+M       shr/shr_tInterp_mod.F90
+M       shr/shr_stream_mod.F90
+M       shr/shr_cal_mod.F90
+M       shr/shr_strdata_mod.F90
+================================================================================
+Originator: tcraig
+Date: Feb 18 2012
+Model: share
+Version: share3_120218
+One-line summary: updates for consistency with esmf_wrf_timemgr_120218
+  merge between share3_120123 and calup02_share3_120123
+
+M       shr/shr_cal_mod.F90
+================================================================================
+Originator: sacks
+Date: Feb 13 2012
+Model: share
+Version: share3_120213
+One-line summary: fixes / additions for unit testers
+
+Fixes for unit test builds on bluefire, from Jim Edwards
+A       unit_testers/config.h
+M       unit_testers/make.Macros
+
+Add test_is_logical1D, fix some bugs
+M       unit_testers/test_mod.F90
+================================================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: share
+Version: share3_120123
+One-line summary: update for esmf 520r
+
+M       shr/shr_cal_mod.F90
+M       shr/shr_dmodel_mod.F90
+================================================================================
+Originator: jedwards
+Date: Jan 09 2012
+Model: share
+Version: share3_120109
+One-line summary: Previous change fixed segfault but still gave incorrect result
+	  this change fixes both
+
+M shr/shr_string_mod.F90 
+================================================================================
+Originator: jedwards
+Date: Jan 06 2012
+Model: share
+Version: share3_120106
+One-line summary: Avoid subsetting strings with negative indices
+
+M shr/shr_string_mod.F90 
+	
+================================================================================
+Originator: jedwards
+Date: Oct 27 2011
+Model: share
+Version: share3_111027
+One-line summary: Abort if expected map file is not found 
+
+M       shr/shr_mct_mod.F90
+
+================================================================================
+Originator: erik
+Date: Sep 06 2011
+Model: share
+Version: share3_110906
+One-line summary:  Make sure rc is initialized to something in shr_scam_mod
+
+M       shr/shr_scam_mod.F90
+
+================================================================================
+Originator: erik
+Date: Aug 03 2011
+Model: share
+Version: share3_110803
+One-line summary: Add ability to handle CLM restart files for SCAM
+
+M       shr/shr_scam_mod.F90 ----- Add ability to handle CLM restart (grid1d_lat/lon)
+               check target latitude is withing -90 to +90, do a better job
+               with error checking
+M       shr/shr_tInterp_mod.F90 -- Add note about time-stamps at beginning of
+              interval for coszen forcing
+M       shr/shr_ncread_mod.F90 --- Make shr_ncread_handleErr public
+
+>>>>>>>> Delete unit tests for share code no longer around
+D       unit_testers/test_shr_inputinfo.F90
+D       unit_testers/test_dshr_bundle.F90
+D       unit_testers/test_shr_date.F90
+D       unit_testers/test_dshr_tInterp.F90
+
+A       unit_testers/test_shr_scam.F90 --- Add unit test for scam
+A       unit_testers/Mksrcfiles ---------- Add srcfiles generation script
+A       unit_testers/Mkdepends ----------- Add dependency generation script
+
+
+>>>>>>>> Work on unit tests
+M       unit_testers/test_shr_streams.F90 - Remove algo setting
+M       unit_testers/test_shr_tInterp.F90 - Add calendar_name
+M       unit_testers/make.Macros ----- Some changes to handle compiling timing and pio
+M       unit_testers/Makefile -------- Add PIO, MCT, and timing to build, use 
+            dependency generator, remove dependencies hardcoded in, remove tests
+            for share code no longer around
+
+================================================================================
+Originator: tcraig
+Date: Sun Jul 17 2011
+Model: share
+Version: share3_110717
+One-line summary: Add mct_gsmap_Identical function, fix xc/yc in shr_scam_mod.F90
+
+- plus jedwards mods to shr_sys_mod
+
+M       shr/mct_mod.F90
+M       shr/shr_scam_mod.F90
+M       shr/shr_sys_mod.F90
+================================================================================
+Originator: tcraig
+Date: Thu Jun 9 2011
+Model: share
+Version: share3_110609
+One-line summary: Fix error messages for lat, area, mask (bug #1357)
+
+M       shr/shr_stream_mod.F90
+================================================================================
+Originator: fischer
+Date: Fri May 27 2011
+Model: share
+Version: share3_110527
+One-line summary: Decrease limit on streams number of files to 1000
+
+M       shr/shr_stream_mod.F90
+
+================================================================================
+Originator: erik
+Date: Mon May 16 2011
+Model: share
+Version: share3_110516
+One-line summary: Increase limit on streams number of files to 2000
+
+M       shr/shr_stream_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Apr 11 2011
+Model: share
+Version: share3_110411
+One-line summary: fix format statement in shr_tInterp_mod.F90
+
+M       shr/shr_tInterp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Sun Feb 13 2011
+Model: share
+Version: share3_110213
+One-line summary: bug #1263, check for restart/namelist consistency in stream restart
+
+M       shr/shr_stream_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Tue Feb 1 2011
+Model: share
+Version: share3_110201
+One-line summary: Add optional missval argument to shr_flux_atmocn
+
+M       shr/mct_mod.F90
+M       shr/shr_flux_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: Fri Dec 31 2010
+Model: share
+Version: share3_101231
+One-line summary: Add new capability to initialize AV translation list only once
+
+M       shr/shr_dmodel_mod.F90
+
+Add new subroutines shr_dmodel_translateAV_list and shr_dmodel_translate_list
+that effectively splits up shr_dmodel_translateAV into an initialization routine
+(shr_dmodel_translat_list) that is only called once to determine the translation
+list and shr_dmodel_translateAV_list (where the translation list is passed in)
+to significantly speed up applications where shr_dmodel_translatAV is called
+at very high frequency (such as tower site calculations). DATM has been modified 
+to use these two new routines.	
+These changes are completely backward compatible) - and tests show bfb results 
+with all data model compsets. 	
+	
+================================================================================
+Originator: erik
+Date: Mon Nov 22 2010
+Model: share
+Version: share3_101122
+One-line summary: Fix shr_scam_getCloseLatLonPIO
+
+This fixes a problem with shr_scam_getCloseLatLonPIO when found is being sent in as
+an optional parameter and an appropriate latitude/longitude coordinate variable is
+NOT found.
+
+- bug bug #1242
+
+M      shr/shr_scam_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Thu Nov 18 2010
+Model: share
+Version: share3_101118
+One-line summary: Update shr_tinterp_getfactors for i4/i8 consistency
+
+- fix bug #1235
+
+M       shr/shr_tInterp_mod.F90
+M       shr/shr_stream_mod.F90
+	
+================================================================================
+Originator: erik
+Date: Mon Nov 15 2010
+Model: share
+Version: share3_101115
+One-line summary: Remove double declaration of optional calendar
+
+  M shr/shr_strdata_mod.F90
+
+================================================================================
+Originator: erik
+Date: Fri Nov 12 2010
+Model: share
+Version: share3_101112
+One-line summary: Make sure math for elapsed seconds is in integer-8 NOT integer-4
+
+M       shr/shr_tInterp_mod.F90
+
+================================================================================
+Originator: erik
+Date: Thu Nov 06 2010
+Model: share
+Version: share3_101106b
+One-line summary: Fix so shr_strdata_type is used
+
+M       shr/shr_scam_mod.F90 - Add use of shr_strdata_type required in last tag.
+
+================================================================================
+Originator: Jim
+Date: Fri Nov 06 2010
+Model: share
+Version: share3_101106
+One-line summary: Move PIO initialization and namelist to driver
+
+  shr/shr_pcdf_mod.F90
+  shr/shr_mct_mod.F90
+  shr/shr_strdata_mod.F90
+  shr/shr_dmodel_mod.F90
+
+================================================================================
+Originator: erik
+Date: Thu Nov 05 2010
+Model: share
+Version: share3_101105
+One-line summary: Add PIO and file interface for shr_scam_getcloselatlon
+
+Also refactor shr_scam_mod a bit to have internal private routines so that
+NetCDF and PIO interfaces have minimul duplication.
+
+M       unit_testers/make.Macros -- Add intel to Darwin
+M       shr/shr_scam_mod.F90 ------ Add PIO and file interface for getcloselatLon
+
+================================================================================
+Originator: tcraig
+Date: Thu Nov 04 2010
+Model: share
+Version: share3_101104
+One-line summary: refactor strdata and stream initialization
+
+ - add mct_aVect_fldIndex to mct_mod.F90
+ - refactor strdata and stream initialization to remove initialization in datatype
+ - move SCAMSDAT back to subroutine data in shr_scam_mod
+ - add deallocate in shr_dmodel_mod for grid setup
+ - remove dead code
+
+M      shr/mct_mod.F90
+M      shr/shr_orb_mod.F90
+M      shr/shr_scam_mod.F90
+M      shr/shr_stream_mod.F90
+M      shr/shr_cal_mod.F90
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon Oct 18 2010
+Model: share
+Version: share3_101018
+One-line summary: Update calendar support for gregorian
+
+- update shr_tInterp time interpolation to use integers
+  for better reproducibility.  add code to support climatological
+  bfb reproducibility.  this changes answers by slightly more
+  than roundoff, but is not invoked yet.
+- fix coszen time interpolation for cases where dt doesn't
+  divide the input LB/UB dates evenly.
+- update calendar code in shr_cal_mod for more consistent
+  support for gregorian.  improve internal code reuse.
+  add shr_cal_numDaysInYear methods, get rid of dsm data.  
+  use more integer math for calendar calculation based on 
+  seconds instead of elapsed days.
+- add shr_cal_calendarName as a generic translater of various
+  potential calendar names to standard CCSM names.
+- add calendar variable to stream datatype, add shr_stream_getCalendar 
+  method
+
+M      shr/shr_tInterp_mod.F90
+M      shr/shr_stream_mod.F90
+M      shr/shr_cal_mod.F90
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+M      shr/shr_string_mod.F90
+	
+================================================================================
+Originator: jet
+Date: Wed Oct 01 2010
+Model: share
+Version: share3_101001
+One-line summary: Moved stream datatype to module variable. This is a workaround
+	for an apparent Intel compiler bug.  Module now compiles.
+	
+M      shr/shr_scam_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Wed Sep 29 2010
+Model: share
+Version: share3_100929
+One-line summary: bug fix in calendar string 
+	
+Bug fix needed for I compset to work
+Also removal of calendar and time coord functionality in shr_stream_mod.F90
+that is no longer needed
+	
+M      shr/shr_stream_mod.F90
+M      shr/shr_ncread_mod.F90
+M      shr/shr_cal_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Tue Sep 21 2010
+Model: share
+Version: share3_100921
+One-line summary: remove calendar_type as a module variable
+
+The removal of then calendar_type as a module variable has also required that 
+   - calendar be added as an argument to numerous shr_cal routines
+   - be added as an attribute to the shr_stream_streamType	
+	
+D      shr/shr_date_mod.F90
+M      shr/shr_log_mod.F90
+M      shr/shr_strdata_mod.F90
+M      shr/shr_tInterp_mod.F90
+M      shr/shr_stream_mod.F90
+D      shr/shr_alarm_mod.F90
+M      shr/shr_cal_mod.F90
+
+Note that inclusion of these changes will ALSO require new drv, datm and dice
+tags	
+
+================================================================================
+Originator: fischer
+Date: Mon Aug 2 2010
+Model: share
+Version: share3_100802
+One-line summary: pio_openfile call changed from pio_noclobber to pio_nowrite
+
+M      shr/shr_pcdf_mod.F90
+================================================================================
+Originator: tcraig
+Date: Fri Jul 23 2010
+Model: share
+Version: share3_100723
+One-line summary: Delete old code.  Add some error checking (bug #1177)
+	
+D      shr/shr_inputinfo_mod.F90
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+D      shr/shr_ncio_mod.F90
+M      shr/shr_stream_mod.F90
+================================================================================
+Originator: jet
+Date: Mon Jun 16 2010
+Model: share
+Version: share3_100616
+One-line summary: cleanup dmodel mod, allow scam frac to access streamdata when
+	running with docn.
+
+M      shr/shr_dmodel_mod.F90
+M      shr/shr_scam_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Jun 7 2010
+Model: share
+Version: share3_100607
+One-line summary: fix deallocates of global aVect on non root pes
+
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+
+================================================================================
+Originator: jet
+Date: Wed May 19 2010
+Model: share
+Version: share3_100515
+One-line summary: fix copy of uninitialized data caught by lahey
+
+M      shr/shr_dmodel_mod.F90
+
+- Needed for docn support in cam
+================================================================================
+Originator: tcraig
+Date: Fri May 14 2010
+Model: share
+Version: share3_100514
+One-line summary: add shr_strdata_create routine
+
+- modified shr_stream and shr_strdata interfaces
+- backwards compatable with input file initialization mode of strdata
+- NOT backward compatable with model initialization mode of strdata
+
+M      shr/shr_strdata_mod.F90
+M      shr/shr_stream_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue May 11 2010
+Model: share
+Version: share3_100511
+One-line summary: update shr_strdata to override mapalgo and fillalgo default options
+
+M      shr/shr_strdata_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon May 10 2010
+Model: share
+Version: share3_100510
+One-line summary: update shr_stream to fix bug in gvd computation with first file
+
+M      shr/shr_stream_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon May 3 2010
+Model: share
+Version: share3_100503
+One-line summary: update shr_map code to trap and correct errors better
+
+- trap lats > 90 and < -90.  correct to +-90 if within 0.001 otherwise abort
+- added masked grid comparision capability in shr_dmodel_gGridCompare
+- use shr_dmodel_gGridCompareXYabsMask in shr_dmodel_mod if the mapmask is dstmask
+
+M      shr/shr_map_mod.F90
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+================================================================================
+Originator: tcraig
+Date: Wed Apr 28 2010
+Model: share
+Version: share3_100428
+One-line summary: fix nstreams computation
+
+- fix nstreams computation, associated with the ability of models to set
+  streams directly and NOT just from input.  was only a problem with pgi.
+- comment out debug statement in shr_tInterp_mod
+
+M      shr/shr_strdata_mod.F90
+M      shr/shr_tInterp_mod.F90
+M      shr/shr_stream_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Fri Apr 23 2010
+Model: share
+Version: share3_100423a
+One-line summary: update to coszen t-interp method as per Dave Lawrence
+
+- code is NOT b4b, but is relatively close
+- similar, but new scheme for coszen t-interp
+- corrected misleading comments and added more
+
+M  shr/shr_strdata_mod.F90
+M  shr/shr_tInterp_mod.F90
+
+================================================================================
+Originator: tcraig
+Originator: tcraig
+Date: Fri Apr 23 2010
+Model: share
+Version: share3_100423
+One-line summary:  Extensions for strdata and stream support
+
+- add shr_stream_set to set/override stream inputs
+- add support for model gsmaps and domains to be handed to strdata
+  instead of read
+- add option to shr_strdata_readnml to NOT read any stream inputs
+
+M      shr/shr_strdata_mod.F90
+M      shr/shr_stream_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Sat Apr 17 2010
+Model: share
+Version: share3_100417
+One-line summary:  Add access to mct globalStorage, change getunit to max,min,-1
+
+ - change get unit behaviour from min,max,1 to max,min,-1 to be more
+   likely to avoid any hardwired unit numbers.  currently min=10, max=99
+
+M      shr/mct_mod.F90
+M      shr/shr_file_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Wed Apr 7 2010
+Model: share
+Version: share3_100407
+One-line summary:  allow delta < 0 in shr_cal_advDate()
+
+M      shr/shr_cal_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Sun Feb 28 2010
+Model: share
+Version: share3_100228
+One-line summary:  update shr_cal and shr_stream to support negative years
+
+M      shr/shr_stream_mod.F90
+M      shr/shr_cal_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Feb 15 2010
+Model: share
+Version: share3_100215
+One-line summary:  update stream find bounds, add taxMode and dtlimit features
+
+ - add stream time axis modes; cycle, extend, limit via taxMode namelist
+ - add stream time axis dt checking via dtlimit namelist, default = 1.5
+ - remove tInterpAlgo read in stream txt file, now set by strdata namelist
+	
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+M      shr/shr_tInterp_mod.F90
+M      shr/shr_stream_mod.F90
+
+================================================================================
+Originator: erik
+Date: Thu Feb 11 2010
+Model: share
+Version: share3_100211
+One-line summary:  Remove shr_drydepInput (moved to driver), add ability of shr_infnan
+                   to find nan's on all machines, and add unit testing for it
+
+D      shr/shr_drydepInput_mod.F90 -- Remove as moved to driver as seq_deydep_mod.F90
+
+M      shr/shr_infnan_mod.F90 - Rework shr_infnan_isnan to use FORTRAN intrinsic or
+                                "C" isnan function.
+M      shr/shr_sys_mod.F90 ---- Change g95 define to what's automatically defined
+A  +   shr/shr_isnan.c -------- FORTRAN callable "C" isnan function
+A  +   shr/shr_isnan.h -------- Defines which compilers have intrinsics and which 
+                                don't.
+
+>>>>>>>>>>>>> Unit testing for shr_infnan, get working on all platforms have access to:
+>>>>>>>>>>>>> tested on: bluefire, jaguar, gust, dublin, coral, intrepid
+>>>>>>>>>>>>> tested with compilers: IBM, pgi, lahey, pathscale, gfortran, g95
+>>>>>>>>>>>>> IRIX, Sun and HP should work as well but not tested
+M      unit_testers/test_shr_infnan.F90 - Make more robust add more tests
+M      unit_testers/make.Macros --------- Update so will work, add gfortran/g95, ifort,
+                                          and pathscale
+M      unit_testers/test_mod.F90 -------- Add test_is_real2D
+M      unit_testers/Makefile ------------ Depends for shr_isnan.c/h
+
+================================================================================
+Originator: tcraig
+Date: Thu Dec 17 2009
+Model: share
+Version: share3_091217
+One-line summary: read and write mapping files for/from streams
+
+- add ability to read and write mapping files in streams
+- extend shr_pcdf_readwrite
+- add shr_mct_writednc routine for writing mapping files 
+- split out some mct_mod routines into shr_mct_mod to address circular
+  dependencies between mct_mod and shr_pcdf related to new shr_mct_writednc
+  routine.
+
+M      shr/mct_mod.F90
+M      shr/shr_pcdf_mod.F90
+A      shr/shr_mct_mod.F90
+M      shr/shr_strdata_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon Dec 14 2009
+Model: share
+Version: share3_091214a
+One-line summary: update coszen time interpolation
+
+- update coszen time interpolation to improve performance, this is bfb
+- update write statements using shr_logunit
+- make shr_strdata_setlogunit do nothing
+- bug #918, output when opening stream files
+- bug #1085, use of nt in diagnostics could produce array bounds problems
+
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+M      shr/shr_stream_mod.F90
+
+================================================================================
+Originator: erik
+Date: Dec 14 2009
+Model: share
+Version: share3_091214
+One-line summary:  Fix possible subscript overflow due to not resetting the value of nt in streams
+
+M      shr/README -------------- Remove documentation on directories no longer used
+M      shr/shr_stream_mod.F90 -- fix so nt is set before used rather than value from loop used
+
+================================================================================
+Originator: tcraig
+Date: Sat Dec 8 2009
+Model: share
+Version: share3_091208
+One-line summary: add gregorian support to shr_cal_mod
+
+M      shr/shr_cal_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Sat Nov 14 2009
+Model: share
+Version: share3_091114
+One-line summary: remove dshr and dshr_esmf
+
+D      dshr
+D      dshr/dshr_iocdf.F90
+D      dshr/dshr_kind.F90
+D      dshr/dshr_tInterp.F90
+D      dshr/dshr_const.F90
+D      dshr/dshr_nml.F90
+D      dshr/dshr_domain.F90
+D      dshr/dshr_hist.F90
+D      dshr/dshr_bundle.F90
+D      dshr/dshr_hubInfo.F90
+D      dshr/dshr_map.F90
+D      dshr/dshr_rest.F90
+D      dshr/dshr_dataIn.F90
+D      dshr_esmf
+D      dshr_esmf/dshr_esmf_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Nov 13 2009
+Model: share
+Version: share3_091113
+One-line summary: updates for data models version 8
+
+- fix 1 sec stream error
+- check for length zero filename in shr_pcdf
+- fix localCopy bug in shr_dmodel_mod caught by intel debug
+- modify rdiff computation in grid compare for symmetry
+- fix shr_dmodel_readgrid to read 2d lon/lat grid sizes
+- fix shr_dmodel_gGridCompare to handle longitude offsets and ranges
+- add support for scm in shr_dmodel_readgrid and shr_strdata_init
+- add shr_pcdf_mod for quick pio input/output of data
+- add shr_flux_atmIce from dice
+- update shr_strdata_mod, add restart methods, add setOrbs method,
+  add support for coszen time interp method, bug fixes
+- add shr_dmodel_translateAV, shr_dmodel_rearrGgrid from data models
+- add coszen support in shr_tInterp_mod
+- mod to shr_stream_mod to no longer allocate as part of read, also
+  add optional nstreams argument
+- add shr_cal_date2julian, shr_cal_ymd2julian, shr_cal_advDateInt
+
+A      shr/shr_pcdf_mod.F90
+M      shr/shr_flux_mod.F90
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+M      shr/shr_tInterp_mod.F90
+M      shr/shr_stream_mod.F90
+M      shr/shr_cal_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: Tue Oct 26 2009
+Model: share
+Version: share3_091026
+One-line summary: changes needed for cice to work in prescribed mode
+
+M      shr/shr_strdata_mod.F90
+M      shr/shr_dmodel_mod.F90
+       
+================================================================================
+Originator: tcraig
+Date: Tue Oct 13 2009
+Model: share
+Version: share3_091013
+One-line summary: add new code, shr_cal_mod for gregorian
+
+ - disable shr_cal_mod code to support gregorian calendar ala bundy
+ - add shr_mem_mod
+ - add shr_strdata_mod, shr_dmodel_mod from dlnd
+ - fix shr_mpi_gathScatvInitr1 (#662)
+	
+A      shr/shr_mem_mod.F90
+M      shr/shr_mpi_mod.F90
+M      shr/shr_cal_mod.F90
+A      shr/shr_strdata_mod.F90
+A      shr/shr_dmodel_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Tue Oct 06 2009
+Model: share
+Version: share3_091006
+One-line summary: fix shr_map_getAR intent parameters, caught by lahey
+
+M      shr/shr_map_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Sep 26 2009
+Model: share
+Version: share3_090926
+One-line summary: esmf updates, extensions for new data models
+
+M      dshr_esmf/dshr_esmf_mod.F90
+       - refactor for data models, will be going away at some point
+M      shr/mct_mod.F90
+       - add support for a few more mct routines for new data models
+M      shr/shr_map_mod.F90
+       - extended to support new data model implementation using mct
+       - add "cfill" fill option which is copy plus fill
+       - add shr_map_getAR
+       - added parallel setmap routine but not yet validated, shr_map_mapSet_dest
+M      shr/shr_mpi_mod.F90
+       - add shr_mpi_bcastl1
+M      shr/shr_stream_mod.F90
+       - update shr_stream_findBounds
+       - extend shr_stream_readTCoord
+       - found nint bug but did not fix, see "tcraig, need nint" in module
+M      shr/shr_string_mod.F90
+       - fix bug in shr_string_listGetNum when string is empty
+
+================================================================================
+Originator: feiliu
+Date: Sep 02 2009
+Model: share
+Version: share3_090902
+One-line summary: added a method to support creation of esmf domain from data on root pe
+
+M      dshr_esmf/dshr_esmf_mod.F90
+
+================================================================================
+Originator: erik
+Date: Aug 25 2009
+Model: share
+Version: share3_090825
+One-line summary: Changes so that SCM mode will work with Lahey on dublin
+
+This fixes bug 1032
+
+M      dshr/dshr_domain.F90 -- scmLat/Lon should be intent(in) NOT intent(out)
+M      shr/shr_scam_mod.F90 -- set lnd_present to .true. if docn_in does NOT exist
+
+================================================================================
+Originator: feiliu (Fei Liu)
+Date: Aug 12 2009
+Model: share
+Version: share3_090812
+One-line summary: cleaned up code dependence on ESMF specific macros
+
+M      dshr_esmf/dshr_esmf_mod.F90
+
+================================================================================
+Originator: erik
+Date: Aug 11 2009
+Model: share
+Version: share3_090811
+One-line summary: Fix bug in inquire statement put in share3_090810
+
+M      shr/shr_scam_mod.F90 --- Remove the status='old' option to inquire.
+
+================================================================================
+Originator: erik
+Date: Aug 10 2009
+Model: share
+Version: share3_090810
+One-line summary: Allow scam mode to NOT require ocn_in namelist file
+
+Change so that if ocn_in does NOT exist -- ocn_present and ice_present is set to
+false, and returned. This resolves bug 1014.
+
+M      shr/shr_scam_mod.F90
+
+================================================================================
+Originator: kauff
+Date: Wed Jul 29 16:22:05 MDT 2009
+Model: share
+Version: share3_090729
+One-line summary:  add special, non-standard dshr_domain init to support scmMode == TRUE
+
+- dshr_domain: add special, non-standard dshr_domain init to support scmMode == TRUE
+- shr_stream: clean up code/logic/error messages wrt finding LVD (wrt bugz #765)
+- shr_stream: clean up write statements wrt parameter subName
+
+M      dshr/dshr_domain.F90
+M      shr/shr_scam_mod.F90
+M      shr/shr_stream_mod.F90
+
+================================================================================
+
+Originator: feiliu (Fei Liu)
+Date: July 28 2009
+Model: share
+Version: share3_090728
+One-line summary: added dshr_esmf/dshr_esmf_mod.F90
+
+A      dshr_esmf/dshr_esmf_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: July 22 2009
+Model: share
+Version: share3_090722c
+One-line summary: removed shr_esmf/ 
+	
+================================================================================
+Originator: mvertens
+Date: July 22 2009
+Model: share
+Version: share3_090722b
+One-line summary: added shr_esmf/ and dshr_esmf/ and removed esmf_shr/
+	
+================================================================================
+Originator: mvertens
+Date: July 22 2009
+Model: share
+Version: share3_090722
+One-line summary: added esmf_shr directory
+	
+================================================================================
+Originator: mvertens
+Date: July 06 2009
+Model: share
+Version: share3_090706b
+One-line summary: permit local bundle to have more fields than global bundle
+	
+The local bundles are now allowed to have more fields than the global bundles 
+AT THE END of the bundle. This capability is needed for BGC spin up experiments
+and CLM offline forcing runs.
+	
+M      dshr_bundle.F90
+
+================================================================================
+	
+Originator: mvertens
+Date: July 06 2009
+Model: share
+Version: share3_090706
+One-line summary: open files once for all fields in stream
+
+Put in mods from Keith Lindsay to open files once for all fields in stream, 
+if necessary 
+	
+M      dshr/dshr_dataIn.F90
+M      shr/shr_ncread_mod.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: June 28 2009
+Model: share
+Version: share3_090628
+One-line summary: add shr_map_setDopole
+
+M      shr/shr_map_mod.F90
+
+================================================================================
+
+Originator: tcraig
+Date: June 9 2009
+Model: share
+Version: share3_090609
+One-line summary: updates to support offset variable in streams
+
+ shr/shr_stream_mod.F90
+   - add offset variable to stream datatype and in input, restart, etc.
+   - add routine
+       subroutine shr_stream_readTCoord(fileName,TvarName,date,secs,offset)
+     that calls shr_ncread_tCoord and if offset is present, adds the offset to
+     the time axis.  uses shr_cal_advDate to do this.
+ shr/shr_stream_mod.F90
+   - extend shr_cal_advDate to support advancing "negative" time.  it
+     could only advance positive time.  needed for the offset in shr_stream.
+
+M      shr/shr_stream_mod.F90
+M      shr/shr_cal_mod.F90
+
+================================================================================
+
+Originator: tcraig
+Date: May 12 2009
+Model: share
+Version: share3_090512
+One-line summary: modify shr_map_mapset for improved performance
+
+- add an optional argument, units, to shr_map_getWts, to avoid the
+  call to shr_map_checkRad if the caller knows the units.  only
+  'degrees' and 'radians' are accepted.  all other options lead to
+  an abort.  should be backwards compatable and is bfb for a standard
+  T62_g16 C case on bluefire.  this cuts down the dice initialization 
+  cost by more than 10x for the case tested.
+
+M      shr/shr_map_mod.F90
+		
+================================================================================
+
+Originator: tcraig
+Date: Apr 29 2009
+Model: share
+Version: share3_090429
+One-line summary: add dshr_bundle_zero, add trims in dshr_domain
+
+- add dshr_bundle_zero method
+- minor update to dshr_bundle_print
+- add some trim to dshr_domain routines for robustness
+
+M      dshr/dshr_domain.F90
+M      dshr/dshr_bundle.F90
+		
+================================================================================
+
+Originator: erik
+Date: Apr 7 2009
+Model: share
+Version: share3_090407
+One-line summary: add shr_drydepInput_mod, delete timemgr/eshr unit tests
+
+Move vocemis-drydep11_share3_090403 to trunk
+
+A  +   shr/shr_drydepInput_mod.F90
+
+>>>>>>>>>>>>> Remove unit tests for timemgr/eshr
+D      unit_testers/timemgr.namelist
+D      unit_testers/test_eshr_timemgr.F90
+D      unit_testers/run_timemgr_test
+D      unit_testers/gridndecomp_mod.F90
+D      unit_testers/test_eshr_estate.F90
+D      unit_testers/nl/timemgr.noorb
+D      unit_testers/nl/timemgr.baddate
+D      unit_testers/nl/timemgr.badrestartoption
+D      unit_testers/nl/timemgr.badstopoption
+D      unit_testers/nl/timemgr.badoverride
+D      unit_testers/nl/timemgr.badorb
+D      unit_testers/nl/timemgr.nostart
+D      unit_testers/nl/timemgr.changeperpinaqua
+D      unit_testers/timemgr.minimumnamelist
+M      unit_testers/Makefile
+M      unit_testers/make.Macros ---- Change build for Darwin
+
+================================================================================
+
+Originator: tcraig
+Date: Apr 3 2009
+Model: share
+Version: share3_090403
+One-line summary: add shr_infnan_mod
+
+A      shr/shr_infnan_mod.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Apr 2 2009
+Model: share
+Version: share3_090402
+One-line summary: delete eshr and cpl directories
+
+D      eshr
+D      eshr/eshr_rc_mod.F90
+D      eshr/eshr_timemgr_mod.F90
+D      eshr/eshr_estate_mod.F90
+D      eshr/eshr_inputinfo_mod.F90
+D      cpl
+D      cpl/cpl_kind_mod.F90
+D      cpl/cpl_const_mod.F90
+D      cpl/cpl_fields_mod.F90
+D      cpl/cpl_domain_mod.F90
+D      cpl/cpl_infobuf_mod.F90
+D      cpl/cpl_bundle_mod.F90
+D      cpl/cpl_comm_mod.F90
+D      cpl/cpl_contract_mod.F90
+D      cpl/cpl_map_mod.F90
+D      cpl/cpl_control_mod.F90
+D      cpl/cpl_interface_mod.F90
+D      cpl/cpl_iobin_mod.F90
+D      cpl/cpl_iocdf_mod.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Jan 12 2009
+Model: share
+Version: share3_090112
+One-line summary: fix minor bugs, add integer8 sum routines in shr_mpi
+
+M      shr/shr_mpi_mod.F90
+     - add shr_mpi_sumb0, shr_mpi_sumb1 to support int*8
+     - fix bug #662 related to uninitialized values on non-root pes
+M      shr/shr_stream_mod.F90
+     - fix use of optional argument "OptionalTag" in readUpToTag
+	
+================================================================================
+
+Originator: tcraig
+Date: Dec 12 2008
+Model: share
+Version: share3_081212
+One-line summary: fix minor bug in dshr_bundle
+
+M      dshr/dshr_bundle.F90
+       lrc not initialized to zero in dshr_bundle_putField
+
+================================================================================
+
+Originator: tcraig
+Date: Oct 9 2008
+Model: share
+Version: share3_081009
+One-line summary: bug fix to share3_081009
+
+M      shr/shr_map_mod.F90
+
+================================================================================
+
+Originator: tcraig
+Date: Oct 8 2008
+Model: share
+Version: share3_081008
+One-line summary: reduce memory use in shr_map_mod for pole interpolation
+
+M      shr/shr_map_mod.F90
+
+================================================================================
+
+Originator: erik
+Date: Mon Sep 29 23:42:48 MDT 2008
+Model: share
+Version: share3_080929
+One-line summary: Add ability to do cosine of solar zenith angle scaling to time-interpolation
+
+Move vers10_share3_080925 to the trunk
+
+Add ability to do cosine of solar zenith angle scaling to the time-interpolation module.
+This also means adding data and methods in shr_stream module to optionally track the
+time-interpolation method from the input streams. And it required adding additional
+methods and options to shr_date module to get the previous time-step or day. As well
+as a method to broadcast character string arrays.
+
+Also bug 786 was fixed for dshr_map so that it works when the field list are different.
+
+G95 capability was added. And return codes were followed more carefully so that the
+unit tests function correctly for failed tests. And a read-only option was added to
+the open method in dshr_iocdf module.
+
+
+M      dshr/dshr_iocdf.F90 ---------------- Add readonly option to open method.
+M      dshr/dshr_tInterp.F90 -------------- Add dshr_tInterp_calcCosZenNorm method and
+                                            add cosz option to dshr_tInterp_data. Improve
+                                            ability to use return code in methods.
+M      dshr/dshr_map.F90 ------------------ Fix bug 786 when field lists are different.
+M      shr/shr_date_mod.F90 --------------- Add shr_date_rev1step and shr_date_revPrevDay
+                                            methods. Add previous option to shr_date_getCDATE.
+                                            Add a time-shift option to shr_date_getJulian.
+M      shr/shr_sys_mod.F90 ---------------- Add G95
+M      shr/shr_mpi_mod.F90 ---------------- Add shr_mpi_bcastc1 method
+M      shr/shr_stream_mod.F90 ------------- Add shr_stream_getTInterpAlgo and shr_stream_setAbort
+                                            methods. Add ability to optionally set the
+                                            time-interpolation alogrithm. Be more careful
+                                            with return codes. Add optionalTag option
+                                            to shr_stream_readUpToTag method.
+>>>>>>>>>>>>>>>>>>> Add unit tests for the above
+A  +   unit_testers/test_shr_date.F90 ------ Add unit tests for shr_date module
+M      unit_testers/test_shr_streams.F90 --- Add tests for setting talgo
+M      unit_testers/bundle_expected.F90 ---- Add bundle_fill_cosz method
+M      unit_testers/test_dshr_tInterp.F90 -- Add cosz tests
+M      unit_testers/test_mod.F90 ----------- Change write formats add test_is_realScalar,
+                                             and test_close_realScalar, add rel_diff option to test_close_real1D
+M      unit_testers/Makefile --------------- Add new tests
+
+================================================================================
+
+Originator: mvertens
+Date: Thu Sep 25 15:09:54 MDT 2008
+Model: share
+Version: share3_080925
+One-line summary: changed SHR_KIND_CX=512
+
+M      shr/shr_kind_mod.F90
+
+================================================================================
+Originator: kauff
+Date: Mon Aug 11 15:09:57 MDT 2008
+Model: share
+Version: share3_080811
+One-line summary: fix bugz#764 in shr_flux_atmOcn()
+
+M      shr/shr_flux_mod.F90  ~ bug wrt using thvbot vs. thbot(n)
+
+================================================================================
+
+Originator: tcraig
+Date: Fri Aug  1 03:12:54 MDT 2008
+Model: share
+Version: share3_080801
+One-line summary: Update a couple print statements
+
+M      shr/mct_mod.F90
+
+================================================================================
+
+Originator: erik
+Date: Wed May 28 13:23:54 MDT 2008
+Model: share
+Version: share3_080528
+One-line summary: Get rc return codes set in all methods
+
+M      dshr/dshr_domain.F90
+M      unit_testers/test_mod.F90 --- Put implicit none in right place
+M      shr/shr_stream_mod.F90
+
+================================================================================
+
+Originator: erik
+Date: Fri May 23 16:42:07 MDT 2008
+Model: share
+Version: share3_080523
+One-line summary: add unit tests for shr_streams, dshr_bundles, shr_tInterp and dshr_tInterp
+
+M      dshr/dshr_iocdf.F90 ------------- Make setAbort method public, set nf to shr_string_ListGetNum 
+                                         so don't call it more than once in append method.
+M      dshr/dshr_tInterp.F90 ----------- Straighten out rc so can use it for fail unit tests
+M      dshr/dshr_bundle.F90 ------------ Straighten out rc so can use it for fail unit tests
+>>>>>>>>>>>>>>>>> Add unit tests
+A      unit_testers/test_dshr_bundle.F90
+A      unit_testers/test_shr_streams.F90
+A      unit_testers/bundle_expected.F90
+A      unit_testers/test_shr_tInterp.F90
+M      unit_testers/make.Macros --------- Update PGI compiler
+A      unit_testers/test_dshr_tInterp.F90
+A      unit_testers/test_mod.F90
+A      unit_testers/run_dshr_bundle_test
+M      unit_testers/Makefile ------------ Add new unit tests
+
+
+================================================================================
+
+Originator: tcraig
+Date: Wed May 14 20:25:43 MDT 2008
+Model: share
+Version: share3_080514
+One-line summary: merge loga27_share3_071107 to trunk
+
+- cpl7 updates
+- update logging
+- add shr_mpi_bcast optional argument pebcast
+- add new machines support
+- add netcdf large file support
+
+M      ChangeLog
+M      shr/mct_mod.F90
+M      shr/shr_sys_mod.F90
+R  +   shr/shr_scam_mod.F90
+M      shr/shr_mpi_mod.F90
+M      shr/shr_ncio_mod.F90
+M      shr/shr_stream_mod.F90
+M      shr/shr_ncread_mod.F90
+M      shr/shr_cal_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Wed May 14 20:14:39 MDT 2008
+Model: share
+Version: share3_080430
+One-line summary: kauff's updates to cpl6 restart io
+
+- reduce memory footprint of cpl6 restart io (global gather of one field only)
+M      cpl/cpl_iobin_mod.F90
+- put correct units for velocity in netCDF files: m/s
+M      cpl/cpl_fields_mod.F90
+
+================================================================================
+
+Originator: erik
+Date: Wed Nov  7 13:52:34 MST 2007
+Model: share
+Version: share3_071107
+One-line summary:  Add version,hostname, etc to shr_inputinfo, remove get_env/archiving, 
+		   Move changes over from loga15, add G95 support, fix bugs
+
+  - Move changes over from loga15 (except eshr_timemgr_mod and mct_mod)
+     o Use shr_fileGetUnit rather than shr_sys_ioUnit
+     o add clobber option to shr_file_mod
+     o change names in shr_inputinfo_mod -- add infoDebug
+  - Add version,username,hostname (bugz #577)
+  - shr_sys_abort lack of error code (bugz #598)
+  - Fix eshr_timemgr_mod to allow changing restart frequency on restart (bugz #600)
+  - Fix shr_map_mod to allow new clm domain files (bugz #637)
+  - Fix shr_file_mod for files that contain ":" (bugz #642)
+     o Add shr_file_queryPrefix method to find type of prefix for file archiving
+  - Remove archiving (bugz #506, #645)
+
+M      dshr/dshr_nml.F90          ~ use shr_file_getUnit
+M      dshr/dshr_domain.F90       ~ use shr_file_queryPrefix
+M      dshr/dshr_bundle.F90       ~ deactivate debugging print statements (kauff)
+M      dshr/dshr_rest.F90         ~ use shr_file_queryPrefix, ruse shr_file_getUnit
+M      dshr/dshr_dataIn.F90       ~ use shr_file_queryPrefix
+M      eshr/eshr_timemgr_mod.F90  ~ fix bug in ability to change restart freq, 
+                                    add abort rcode, remove advance on restart, fix formats
+M      eshr/eshr_estate_mod.F90   ~ fix syntax error
+M      shr/shr_inputinfo_mod.F90  ~ remove archiving, add version, username, hostname, 
+                                    add name changes from loga15, remove getenv, 
+                                    add infodebug
+M      shr/shr_map_mod.F90        ~ fix problem with clm domain files
+M      shr/shr_sys_mod.F90        ~ add G95 support, make sure shr_sys_abort always has
+                                    an error code
+M      shr/shr_file_mod.F90       ~ add queryPrefix method, use it in get/put (remove rcp:)
+M      shr/shr_mpi_mod.F90        ~ ensure mpi_abort always has an error code
+M      shr/shr_ncio_mod.F90       ~ add clobber option from loga15
+M      shr/shr_stream_mod.F90     ~ use shr_file_queryPrefix, use shr_file_getUnit
+
+-- Get unit tests working again, add test for changing restart frequency
+
+M      unit_testers/timemgr.namelist
+M      unit_testers/test_eshr_timemgr.F90
+MM     unit_testers/test_shr_inputinfo.F90
+M      unit_testers/test_shr_sys.F90
+M      unit_testers/test_shr_file.F90
+M      unit_testers/run_timemgr_test
+M      unit_testers/test_shr_orb.F90
+M      unit_testers/make.Macros
+M      unit_testers/run_file_test
+M      unit_testers/nl/*
+M      unit_testers/timemgr.minimumnamelist
+M      unit_testers/namelist
+M      unit_testers/Makefile
+
+================================================================================
+
+Originator: mvr
+Date: Fri Oct 26
+Model: share
+Version: share3_071026
+One-line summary: short-term solution to ensure coupling strings haven't been 
+	truncated to fit their defined length
+
+M      cpl/cpl_kind_mod.F90
+M      cpl/cpl_fields_mod.F90
+
+================================================================================
+
+Originator: kauff
+Date: Fri Oct 19 17:34:40 MDT 2007
+Model: share
+Version: share3_071019
+One-line summary: shr_stream_mod.F90 now reads new stream.txt file format
+
+- shr_stream_init() now reads new stream.txt file format
+  this is incompatible with the previous file format
+
+M      shr/shr_stream_mod.F90
+
+================================================================================
+
+Originator: jwolfe
+Date: Fri Oct 12 10:49:36 MDT 2007
+Model: share
+Version: share3_071012
+One-line summary: add cppdef LLNL_PELOTON and related coding
+
+- add cppdef LLNL_PELOTON and related coding to shr_sys_mod, to support LLNL
+  machine atlas
+- shr_flux_mod.F90 ~ refactor shr_flux_MOstability() routine (as per Bill Large)
+
+M      shr/shr_sys_mod.F90
+M      shr/shr_flux_mod.F90
+
+================================================================================
+
+Originator: jwolfe
+Date: Thu Oct  4 14:59:21 MDT 2007
+Model: share
+Version: share3_071004
+One-line summary: create shr_log_mod & move corresponding variables from shr_const_mod
+
+- create shr_log_mod with the following variables:
+    shr_log_Level
+    shr_log_Unit
+- replace shr_const_mod use statements referencing the log variables with shr_log_mod
+  use statements
+- note: these changes have been motivated by problems on jaguar with the previous
+  implmentation of the log variables.  There were problems with multiple definitions
+  of R8, although this code worked fine under AIX and other Linux platforms.
+M      dshr/dshr_iocdf.F90
+M      dshr/dshr_tInterp.F90
+M      dshr/dshr_nml.F90
+M      dshr/dshr_domain.F90
+M      dshr/dshr_bundle.F90
+M      dshr/dshr_hubInfo.F90
+M      dshr/dshr_map.F90
+M      dshr/dshr_rest.F90
+M      dshr/dshr_dataIn.F90
+M      eshr/eshr_rc_mod.F90
+M      eshr/eshr_timemgr_mod.F90
+M      eshr/eshr_estate_mod.F90
+M      eshr/eshr_inputinfo_mod.F90
+A      shr/shr_log_mod.F90
+M      shr/mct_mod.F90
+M      shr/shr_inputinfo_mod.F90
+M      shr/shr_map_mod.F90
+M      shr/shr_date_mod.F90
+M      shr/shr_flux_mod.F90
+M      shr/shr_sys_mod.F90
+M      shr/shr_file_mod.F90
+M      shr/shr_vmath_mod.F90
+M      shr/shr_timer_mod.F90
+M      shr/shr_orb_mod.F90
+M      shr/shr_scam_mod.F90
+M      shr/shr_mpi_mod.F90
+M      shr/shr_tInterp_mod.F90
+M      shr/shr_msg_mod.F90
+M      shr/shr_const_mod.F90
+M      shr/shr_ncio_mod.F90
+M      shr/shr_stream_mod.F90
+M      shr/shr_ncread_mod.F90
+M      shr/shr_alarm_mod.F90
+M      shr/shr_cal_mod.F90
+M      shr/shr_string_mod.F90
+	
+================================================================================
+
+Originator: kauff
+Date: Thu Sep 27 10:42:29 MDT 2007
+Model: share
+Version: share3_070927
+One-line summary: revert to OLD stream.txt format, remove SVN URL expansions
+
+- shr_stream_init() revert to OLD stream.txt file format 
+  (associated new scripts tag is not ready for new format yet)
+- shr_scam_mod.F90 ~ bug fix wrt "use shr_inputInfo" statement & case sensitive 
+  dependancy generator
+- shr_flux_mod.F90 ~ new shr_flux_MOstability() routine (as per Bill Large)
+- remove SVN URL keyword expansion 
+  M      dshr/dshr_iocdf.F90
+  M      shr/shr_orb_mod.F90
+  M      cpl/cpl_iocdf_mod.F90
+	
+================================================================================
+
+Originator: kauff
+Date: Tue Sep 18 16:44:23 MDT 20
+Model: share
+Version: share3_070918
+One-line summary: new shr_stream txt file format, new shr_scam_mod.F90
+
+- shr_stream_init() now reads new stream.txt file format
+  this is incompatible with the previous file format
+- new: shr_scam_mod.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Tue Sep 11 16:43:10 MDT 2007
+Model: share
+Version: share3_070911
+One-line summary: update shr logging status
+- fix bug in mct_myindex when lsize is zero.  only detected for
+  certain resolutions at high pes counts.  does not impact answers.
+- change unit 6 to "logunit" in all write calls in shr, dshr, eshr
+- add loglevel logic to control writing in most write statements
+- add shr_const_logLevel, shr_const_logUnit to store new variables.
+  note these are not parameters and are in shr_const as it's the
+  lowest level module in share code.  that way, all modules in 
+  shr, dshr, and eshr can reference these variables directly
+  without having to execute a get (which would be painful to implement)
+- add new interfaces for use with new logging capabilities.
+  shr_file_setLogUnit
+  shr_file_getLogUnit
+  shr_file_setLogLevel
+  shr_file_getLogLevel
+  shr_file_setIO
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Sep  3 15:32:44 MDT 2007
+Model: share
+Version: share3_070903
+One-line summary: modified dshr/dshr_nml.F90
+- modified dshr_nml.F90 so that domainFile is now character(CL)
+  this will allow the scripts to point to a longer disk pathname as an alternative
+  pre-stanging 	
+	
+================================================================================
+	
+Originator: kauff
+Date: Fri Aug 24 15:07:25 MDT 2007
+Model: share
+Version: share3_070824
+One-line summary: shr_stream: NO returned file names have path prepended
+
+- shr_stream_getDomainInfo() & shr_stream_getFirstFileName()
+  no longer prepend data file path onto data file names
+  (which is consisent with all other returned file names)
+- shr_stream_getDomainInfo() ~ new arg: returns file path 
+- shr_stream_getFirstFileName ~ new arg: returns file path 
+- shr_stream_getFile ~  new routine
+
+================================================================================
+Originator: erik
+Date: Tue Aug 14 13:49:50 MDT 2007
+Model: share
+Version: share3_070814
+One-line summary: add clockGetYMD method to eshr_timemgr_Mod.F90
+
+- eshr_timemgr_mod.F90 -- Add method eshr_timemgr_clockGetYMD to get the current
+date in YMD (year, month, day: YYYYMMDD) and TOD (time-of-day) format. With
+the possibility of an optional offset. This is identical to the clockGetPerpYMD
+method -- except this method doesn't query the perpetual clock if perpetual time
+is being used.
+
+================================================================================
+
+Originator: kauff
+Date: Fri Aug 10 16:28:52 MDT 2007
+Model: share
+Version: share3_070810
+One-line summary: dshr_domain no longer constructs & saves domain names
+
+- dshr_domain.F90 no longer constructs & saves domain names
+
+================================================================================
+
+Originator: kauff
+Date: Thu Aug  9 12:54:17 MDT 2007
+Model: share
+Version: share3_070809
+One-line summary: local copy of dx7 input data is no longer required (bugz #72)
+
+In general, address bugz #72: allow dx7 models to read input data files 
+in any NFS mounted dir without making a local copy of the file.
+If a file path/name starts with "cp:" (or "mss:"), then call shr_file_get to 
+make a local copy, else read the file without making a local copy.
+
+- dshr_domain_mod, dshr_dataIn_mod, shr_stream_mod: 
+  if a data file is a normal unix file-path/name (eg. "/fis/inputdata/foo.nc")
+  then DON'T call shr_file_get() to acquire a local copy of it
+  if "cp:" is prepended to a file's path/name (eg. "cp:/fis/inputdata/foo.nc")
+  then DO call shr_file_get() to make a local copy of it ("./foo.nc")
+- shr_ncio_read() no longer calls shr_file_get, calling routine must do it,
+  if necessary
+	
+================================================================================
+
+Originator: mvr,erik
+Date: Wed, Jul 18 
+Model: share
+Version: share3_070718
+One-line summary: 
+Bugs resolved: 
+
+- changed default mass store retention period to 0
+- default name of driver pointer file now consistent with pointer files of 
+  other components
+- fixed compiler bug on bluevista for serial debug mode
+	
+================================================================================
+
+Originator: erik
+Date: Tue, Jul 10 10:25:08 MDT 2007
+Model: share
+Version: share3_070710
+One-line summary: Remove get_env for /home/blueice/erik for location of restart pointer file
+Bugs resolved: 371, 506 (partial)
+
+Remove get_env for /home/blueice/erik for location of restart pointer file, increase string length of outpathroot, 
+add implicit nones, put C stubs when C files are #ifdef'd out.
+
+================================================================================
+	
+Originator: jwolfe
+Date: Mon Jul  2 11:28:43 MDT 2007
+Model: share
+Version: share3_070702
+One-line summary: implementation of new way of intercomponent field transfer specification
+
+Changes made:
+D      cpl/cpl_fields_mod.F90.CO2A
+D      cpl/cpl_fields_mod.F90.CO2B
+D      cpl/cpl_fields_mod.F90.CO2C
+D      cpl/cpl_fields_mod.F90.CO2_DMSA
+       - removed cpl_fields_mod files for specific BGC scenarios, which are now
+         handled by a new system for intercomponent field transfer specification
+M      cpl/cpl_fields_mod.F90
+       - implementation of new system for intercomponent field transfer
+         specification
+M      cpl/cpl_interface_mod.F90
+       - implementation of new system for intercomponent field transfer
+         specification
+
+================================================================================
+	
+Originator: kauff
+Date: Thu Jun 28 11:46:41 MDT 2007
+Model: share
+Version: share3_070628
+One-line summary: rework dshr_dataIn (related changes in datm7_070628)
+
+Changes made:
+
+- dshr_dataIn: rework method (wrt tag share_070610), is again called by PID0 only
+  more efficiencies will be realized when d*7_phys.F90 code has UB/LB pointers (forthcoming)
+  also see with datm7_phys.F90 code mods on the same commit date (and related bugz #518,523,528,521)
+- dshr_nml: cleaner stdout/log output of nml values, and less of it (bugz #510)
+	
+================================================================================
+	        
+Originator: mvertens
+Date: Tue Jun 26 11:14:52 MDT 2007
+Model: share
+Version: share3_070626
+One-line summary: mct_mod.F90 to generalize rearranger functionality
+
+Changes made:
+M      shr/mct_mod.F90
+       - added routine mct_avect_mult - multiply an attribute vector by a field
+       - added routine mct_rearr_rearrange_fldlst - rearrange on an input list
+M      shr/shr_inputinfoMod.F90
+       -added samegrid as variable to shrinputinfo data type 
+	
+================================================================================
+	
+Originator: mvertens,tcraig
+Date: Sun Jun 10 22:49:50 MDT 2007
+Model: share
+Version: share3_070610
+One-line summary: cpl710 merge plus mods for datm7 performance
+
+Changes made:
+M      dshr/dshr_bundle.F90
+M      dshr/dshr_map.F90
+M      dshr/dshr_dataIn.F90
+M      eshr/eshr_timemgr_mod.F90
+D      flds
+D      flds/dust
+D      flds/dust/seq_flds_mod.F90
+D      flds/default
+D      flds/default/seq_flds_mod.F90
+D      flds/gensom
+D      flds/gensom/seq_flds_mod.F90
+D      flds/seq_flds_indices.F90
+M      shr/mct_mod.F90
+M      shr/shr_inputinfo_mod.F90
+M      shr/shr_date_mod.F90
+M      shr/shr_map_mod.F90
+M      shr/shr_stream_mod.F90
+
+- merge cpl710_share3_070410
+- remove flds directory/files
+- improve shr_map performance for fill and mapping
+- improve dshr_bundle_bcast performance, change 3 bcasts to 2
+- add nextsw_cday to eshr_timemgr
+- add ni,nj,areasrc,areadst to mct_sMatP_initnc interface, optional
+- add ni,nj to mct_sMat_readdnc to return sizes optionally
+- modify shr_inputinfo_mod, add new features
+- remove shr_inputinfo_initIsModelToRun method
+- add sec to shr_date_initYMD, shr_date_initCdate time manager methods
+- add shr_stream_bcast (not validated nor public yet)
+	        
+================================================================================
+	
+Originator: kauff
+Date: Mon Jun  4 10:51:48 MDT 2007
+Model: share
+Version: share3_070604
+One-line summary: rework SVN $URL usage to maximize available F90 line-length
+
+Changes made:
+
+- rework svnURL = "SVN $URL " to maximize available F90 line-length
+- impose uniform svn propset svn:keywords "URL Id Date Rev Author" on code
+	
+================================================================================
+
+Originator: kauff
+Date: Mon Apr 23 16:11:41 MDT 2007
+Model: share
+Version: share3_070423
+One-line summary: fix bug in cpl_map_mod.F90 to support id-mapping
+
+Changes made:
+
+- cpl_map_mod.F90 ~ fix bug wrt supporting id-mapping (domain compare)
+- dshr_bundle.F90 ~ fix minor bug wrt writing error message
+	
+================================================================================
+
+Originator: kauff
+Date: Tue Apr 10 16:08:45 MDT 2007
+Model: share
+Version: share3_070410
+One-line summary: shr_sys_system() catamount fix
+
+Changes made:
+ - shr_sys_system() ~ fix bug in catamount if-def
+ - cpl_map_mod.F90 ~ add details to support ID mapping
+	
+================================================================================
+
+Originator: mvertens
+Date: Sun Apr  8 13:55:08 MDT 2007
+Model: share
+Version: share3_070408
+One-line summary: changesl to csm_share/flds to support addition of cice4 to cpl7
+
+Changes made:
+  - Modified following files to add new fields for drv->ice communication
+    too support addition of cice4 to sequential system
+    M      flds/dust/seq_flds_mod.F90
+    M      flds/default/seq_flds_mod.F90
+    M      flds/gensom/seq_flds_mod.F90
+    M      flds/seq_flds_indices.F90
+	
+================================================================================
+	
+Originator: robj
+Date: Wed Mar 21 12:41:06 MDT 2007
+Model: share
+Version: share3_070321
+One-line summary: move cpl_map_readd
+
+Changes made:
+ - move cpl_map_readd to mct_mod and rename it mct_sMat_readdnc.
+   This can now be called by both sequential and concurrent CCSM.
+	
+================================================================================
+
+Originator: kauff
+Date: Thu Mar 15 11:50:16 MDT 2007
+Model: share
+Version: share3_070315
+One-line summary: bug fixes & optimizations in dshr & shr/mct_mod.F90
+
+Changes made:
+- dshr_domain_decomp2d() ~ fix bug in dshr_domain_decomp2d()
+- dshr_map_mapDataB ~ optimize wrt matching bundle lists
+- dshr_map.F90 ~ add global timing var, dshr_map_setTiming, timing calls in *_mapDataB
+- mct_mod.F90 ~ fix bugs that cause ccsm3 compilation failure...
+  * add missing/needed routines: mct_send, mct_recv, mct_router, mct_router_init
+  * remove public vars with namespace conflicts
+    replace...
+    -   use shr_kind_mod      ,only: R8 => SHR_KIND_R8 (also IN,CL)
+    with...
+    +   use shr_kind_mod
+    +   integer,parameter,private :: R8 = SHR_KIND_R8 (also IN,CL)
+	
+================================================================================
+
+Originator: robj
+Date: Tue Mar  6 08:44:49 MST 2007
+Model: share
+Version: share3_070306
+One-line summary: use mct_mod in cpl
+
+Changes made:
+ - use mct_mod in csm_share/cpl.  Remove cpl_mct_mod
+	
+================================================================================
+
+Originator: robj
+Date: Mon Mar  5 13:57:15 MST 2007
+Model: share
+Version: share3_070305
+One-line summary: add mct_mod
+
+Changes made:
+ - seq_mct_mod copied to share and renamed mct_mod
+	
+================================================================================
+
+Originator: kauff
+Date: Fri Mar  2 17:10:57 MST 2007
+Model: share
+Version: share3_070302
+One-line summary: shr_string & dshr_tInterp optimizations 
+
+Changes made:
+- optimizations in shr_string_mod.F90
+- optimizations in dshr_tInterp.F90
+- new routines in dshr to support parallel data models
+	
+================================================================================
+
+Originator: tcraig
+Date: Sun Feb 25 10:05:54 MST 2007	
+Model: share
+Version: share3_070225
+One-line summary:  added npfix4R and made default
+
+Changes made:
+cpl/cpl_map_mod.F90 - add npfix4R and set as default
+	
+================================================================================
+
+Originator: ? erik ?
+Date: ?
+Model: share
+Version: share3_070220
+One-line summary:  ? eshr ?
+
+Changes made:
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Feb 12 11:12:45 MST 2007
+Model: share
+Version: share3_070212
+One-line summary:  introduced new flds directory for sequential fields coupling
+
+Changes made:
+added 
+flds/seq_fields_indices.F90
+flds/default/seq_flds_mod.F90
+flds/dust/seq_flds_mod.F90
+flds/gensom/seq_flds_mod.F90
+	
+================================================================================
+
+Originator: jwolfe
+Date: Thu Feb  8 14:43:53 MST 2007
+Model: share
+Version: share3_070208
+One-line summary:  fix bug in shr_jlcp.c (Bugzilla #371)
+
+Changes made:
+- shr_jlcp.c - fix a bug by appending a NULL char to the destination filename
+               string
+
+================================================================================
+
+Originator: erik
+Date: Tue Feb  6 14:25:33 MST 2007
+Model: share
+Version: share3_070206
+One-line summary:  Add eshr_timeMgr_curTimeLEstopTime method
+
+Changes made:
+- eshr/eshr_timemgr_mod.F90 -- add new method tweak init slightly
+
+These changes were moved over for CAM from the ...
+
+  https://svn-ccsm-models.cgd.ucar.edu/csm_share/branch_tags/scmshr_tags/scmshr02/
+
+Branch.
+
+================================================================================
+
+Originator: tcraig
+Date: Thu Jan 25 16:37:05 EST 2007
+Model: share
+Version: share3_070126
+One-line summary:  implement low memory map weights read
+
+Changes made:
+- cpl_map_mod.F90 - add low memory map read (cpl_map_readd)
+- cpl_mct_mod.F90 - add a few new mct routines to our list
+
+================================================================================
+
+Originator: kauff
+Date: Wed Jan 17 15:38:10 MST 2007
+Model: share
+Version: share3_070117
+One-line summary:  SHR_CONST_TKFRZ = 273.15_R8
+
+Changes made:
+- shr_const_mod.F90 - SHR_CONST_TKFRZ = 273.15_R8 (bugz #224)
+- minor formatting cleanup in shr_inputinfo wrt tabs & protex comments only
+
+================================================================================
+
+Originator: mvertens
+Date: Mon Jan  1 15:12:49 MST 2007
+Model: share
+Version: share3_070101
+One-line summary:  update shr_infputinfo_mod
+
+Changes made:
+- update shr_inputinfo_mod to changes put in by John Truesday in cam3_3_43
+  in order to have new single column changes work correctly
+
+================================================================================
+
+Originator: tcraig
+Date: Tue Dec 19 16:41:01 MST 2006
+Model: share
+Version: share3_061220
+One-line summary:  update shr_jlcp 
+
+Changes made:
+- update shr_jlcp for bug fix
+
+================================================================================
+
+Originator: kauff
+Date: Tue Dec 19 10:58:34 MST 2006
+Model: share
+Version: share3_061219
+One-line summary:  remove cpp HIDE_MPI if-defs
+
+Changes made:
+- remove cpp HIDE_MPI if-defs
+- minor formatting cleanup in a few files, mostly wrt tabs & protex comments
+
+================================================================================
+
+Originator: kauff
+Date: Wed Nov 15 16:19:38 MST 2006
+Model: share
+Version: share3_061115
+One-line summary:  new shr/shr_flux_mod.F90
+
+Changes made:
+- shr_string_mod.F90 ~ make use of F90 back arg/option in index function
+- shr_file_mod.F90 ~ shr_file_get() no longer uses system cp if remote file = local file
+- shr_file_mod.F90 ~ formatting consistency cleanup
+- shr_mpi_mod.F90 ~ new shr_mpi_sendr3/recvr3 needed by parallel dx7 models
+- cpl_iobin_mod.F90 ~ fix bug wrt non-root processes closing a file unit when only
+  the root pid opened it, see cpl_iobin_open/close(unit)
+
+================================================================================
+
+Originator: kauff
+Date: Thu Nov  9 19:43:30 MST 2006
+Model: share
+Version: share3_061109
+One-line summary:  new shr/shr_flux_mod.F90
+
+Changes made:
+- new: shr_flux_mod.F90 ~ migrate cpl6 atm/ocn flux calc to here
+  related mods in shr_const_mod.F90 & cpl_const_mod.F90
+- shr_flux_mod.F90 ~ new, optional output fields: ustar_sv ,re_sv ,ssq_sv
+- dshr_rest.F90: set local rpointer file name is same as tail of nml rpointer name
+
+================================================================================
+
+Originator: tcraig
+Date: Tue Oct 24 20:11:41 EDT 2006
+Model: share
+Version: share3_061024
+One-line summary:  mods for jaguar
+
+Changes made:
+- add shr/shr_jlcp.c to support cp system call from executable on jaguar
+- mods to shr/shr_file_mod.F90 to support on jaguar
+- mods to shr/shr_sys_mod.F90 to support system and sleep on jaguar
+
+================================================================================
+
+Originator: kauff
+Date: Mon Oct 16 16:31:04 MDT 2006
+Model: share
+Version: share3_061016
+One-line summary:  revert to old value: SHR_CONST_TKFRZ = 273.16_R8
+
+Changes made:
+- undo tkfrz change in last tag, go back to SHR_CONST_TKFRZ = 273.16_R8 (bugz #224)
+
+================================================================================
+
+Originator: kauff
+Date: Thu Oct 12 14:21:24 MDT 2006
+Model: share
+Version: share3_061012
+One-line summary:  SHR_CONST_TKFRZ = 273.15_R8, add Cray cdir/nodep
+
+Changes made:
+- shr_const_mod.F90 - SHR_CONST_TKFRZ = 273.15_R8 (bugz #224)
+- shr_mpi_mod.F90 - new mpi bcast wrappers for 2d & 3d real arrays
+- dshr_dataIn.F90 - now will copy old UB into new LB, if possible
+- dshr_bundle.F90, dshr_tInterp.F90 - Cray cdir/nodep vector directives (bugz #109)
+
+================================================================================
+
+Originator: kauff
+Date: Thu Sep 21 16:33:19 MDT 2006
+Model: share
+Version: share3_060921
+One-line summary: cpl_comm_mod.F90 ~ new if-def for SPMD mode
+
+Changes made:
+- cpl_comm_mod.F90: new if-def'd call to mph_ for SPMD mode: comm = mph_*
+
+================================================================================
+
+Originator: kauff
+Date: Fri Sep 15 10:00:55 MDT 2006
+Model: share
+Version: share3_060915
+One-line summary: 
+
+Changes made:
+- reduce CX string length SHR_KIND_CX = 320, CX = 2560 caused simulation 
+   slowdown (due to inefficient algorithms in shr_string_mod.F90 ?)
+
+================================================================================
+
+Originator: tcraig, kauff
+Date: Mon Aug 31
+Model: share
+Version: share3_060831
+One-line summary: 
+
+Changes made:
+- Add new version of cpl_map_mod to cpl6, uses sparse matrix plus (bug #202)
+- Change domain_compare to differentiate al and oi compares.  Also uses
+  eps settings defined in cpl_control_mod (now namelist setable) instead 
+  of hardwired.  (bug #191)
+- Mods to cpl_fields_getLongName() plus a related change to cpl_iocdf_mod.F90.
+
+================================================================================
+
+Originator: erik
+Date: Mon Jul 14
+Model: share
+Version: share3_060814
+One-line summary: 
+
+Changes made:
+-Make write(6 before unit 6 open in shr_file_mod write(*
+-Remove shr_sys_flush(6) calls until after unit 6 open
+-Above needed to work on phoenix
+
+================================================================================
+
+Originator: erik
+Date: Wed Jul 9
+Model: share
+Version: share3_060809
+One-line summary: 
+
+Changes made:
+-Make eshr_timemgr_clockGetPerpYMD public method.
+-Add ability to add offset when getting perpetual date.
+-Add test of above to unit test.
+
+================================================================================
+
+Originator: erik
+Date: Mon Jul 10 13:22:32 MDT 2006
+Model: share
+Version: share3_060710
+One-line summary: updates to support sequential CCSM driver clocks
+
+Changes made:
+-Add shr_inputInfo_mod -- general CCSM input information
+-Move shr_msg_mod functionality to shr_file_mod -- make private subroutine to read namelist
+-shr_ncio_mod -- read and write of scalar NetCDF data
+-Add eshr directory for ESMF functions
+-Add eshr_timemgr_mod -- ESMF clock functionality
+
+================================================================================
+
+Originator: kauff
+Date: Fri Jun  2 16:17:32 MDT 2006
+Model: share
+Version: share3_060602
+One-line summary: updates to support dlnd7 & dx7 models in general
+
+Changes made:
+- new dshr_domain_assignPtr function
+- fix minor bug in shr_stream_getNextFileName
+
+================================================================================
+
+Originator: kauff
+Date: Thu May 25 16:36:06 MDT 2006
+Model: share
+Version: share3_060525
+One-line summary: updates to support dlnd7 & dx7 models in general
+
+Changes made:
+
+- dshr_domain now has a fraction field (for land fraction)
+- dshr_nml    now has new streamr for runoff (for lnd model only)
+- shr & dshr use character(CX) for field lists (not CL)
+- dshr_dataIn - new logic wrt prefetching data on startup
+
+===============================================================
+
+Originator: tcraig (Tony Craig)
+Date: Wed Apr 19 04:27:57 MDT 2006
+Model: share
+Version: share3_060419
+One-line summary: update a few cpl routine for performance on phoenix
+
+Changes made:
+
+- cpl_bundle_mod.F90 update fcopy and use fcopy on phoenix.  seems
+  to be faster than mct copy routine right now.  lost of cost in
+  string operations.
+- cpl_map_mod.F90 remove old npfix routines.  add some save operations
+  in npfix3 -> npfix3r (reuse) to reduce cost on phoenix related to
+  string operations.
+
+===============================================================
+
+Originator: kauff (Brian Kauffman)
+Date: Wed Mar 29 16:50:16 MST 2006
+Model: share
+Version: share3_060329
+One-line summary: fix bug in shr_string_mod.F90
+
+Changes made:
+
+- fix bug in shr_string_mod.F90
+- introduce: shr_kind_cx ~ and extra long string type (2560 chars)
+- introduce: d/shr_const_tkfrzsw ~ temperature of freezing salt water
+
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Thu Mar  9 20:10:33 MST 2006
+Model: share
+Version: share3_060309
+One-line summary: add if-def/Cray-only sort routine in cpl_contract
+
+Changes made:
+
+cpl
+- add if-def/Cray-only sort routine in cpl_contract_mod.F90
+- add shr_timers to cpl_contract_decomp()
+
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Feb 10 11:54:25 MST 2006
+Model: share
+Version: share3_060210
+One-line summary: switch to SVN keywords, various minor fixes
+
+Changes made:
+
+shr
+- CVS keywords changed to SVN keywords
+- align shr_timer code with ccsm3.0.1 release code
+- introduce local R8 kind in shr_const for readability
+dshr
+- CVS keywords changed to SVN keywords
+- added new dshr_const_pstd needed by datm7-CLMNCEP
+- dshr_bundle_assignPtr routines set pointers to NULL() on error
+- new dshr_nml branch files names for buns & streams to support
+  dx7 branching (dx7 branching not functional yet)
+cpl
+- CVS keywords changed to SVN keywords
+- bug fix to cpl6 netCDF history attribute names
+
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Mon Dec  5 18:23:29 MST 2005
+Model: SHARE
+Version: SHARE3.051205
+One-line summary: new support for docn7 and dx7 restart functionality in general
+
+Changes made:
+
+o new shr & dshr constants for docn7
+o shr_stream pre-fetches new and removes old files
+o dshr_domain_compare aborts if either domain is not filled
+o dshr_rest_readPointer _readBundle _readStream are 3 routines (not one)
+o shr_stream_getPrevFileName _getNextFileName support pre-fetching
+  and removing old files
+o shr_stream_restWrite _restRead fully functional
+o new: shr_sys_iounit  finds unused f90 unit number
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Wed Nov 23 16:27:09 MST 2005
+Model: SHARE
+Version: SHARE3.051123
+One-line summary: new dshr & shr_stream restart functionality
+
+Changes made:
+o shr_stream restart functionality
+o sshr_rest uses shr_stream restart functionality
+o dshr_dataIn pre-fetch and rm old file functionality
+o shr_sys_ioUnit  returns unused fortran unit number
+
+===============================================================
+===============================================================
+
+Originator: jeff ( Yen-Huei Lee)
+Date: Sat Nov 19 12:19:14 MST 2005
+Model: SHARE
+Version: SHARE3.051119
+One-line summary: share3_051119 
+						
+Changes made:
+
+add cpl_fields_mod.F90.CO2C
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Nov  4 17:06:29 MST 2005
+Model: SHARE
+Version: SHARE3.051104
+One-line summary: share3_051104 
+						
+Changes made:
+o remove stat=rc arg from deallocs in shr_map_set
+  because this recently began causing seg-faults on bluesky
+o added vector nml variable to dshr_nml.F90
+o added dshr_bundle_copyFields routine
+o formatting cleanup of dshr_bundle.F90
+o more robust shr_string_listIsValid
+
+===============================================================
+===============================================================
+
+Originator: mvertens ( Mariana Vertenstein)
+Date: Tue Oct 25 12:37:13 MDT 2005
+Model: SHARE
+Version: SHARE3.051025
+One-line summary: made changes to remove necessityty for autopromotion
+Changes made:
+	
+Tom Henderson's tool "addrealkind" was used to change "real"
+declarations to 
+  cpl/dshr : change "real" to "real(R8)" and to add "_R8" 
+	to all floating point constants that were not already typed. 
+  shr : change "real" to "real(SHR_KIND_R8)" and to add "SHR_KIND_R8" 
+	to all floating point constants that were not already typed. 
+
+  float(iii) and real(iii) were replaced by real(iii,r8).
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Sun Oct 16 13:56:26 MDT 2005
+Model: SHARE
+Version: SHARE3.051016
+One-line summary: Bug fixes, fixes datm7 on 
+						tempest
+Changes made:
+
+fix memory leak in dshr_map
+fix use of optional argument in dshr_dataIn
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Thu Oct  6 20:47:19 MDT 2005
+Model: SHARE
+Version: SHARE3.051006
+One-line summary: update csm_share to 
+						remove special land grid 
+						initialization
+Changes made:
+ - add frac to list of grid initialization fields (cpl-fields_grid_total
+   now 8 fields)
+ - clean up contract_init, add frac packing/unpacking, delete dead code.
+ - initialize mask and frac to zero rather than spval for all grid cells
+   of a domain.
+ - add Sx_lfrac to cpl_fields_c2a_states
+ - remove cpl_fields_ibuf_inimask variable
+ - remove all references to cpl_fields_c2lg_fields and associated
+   variables
+ - modified all cpl_fields_mod files as needed (not all are tested)
+ - add method, cpl_interface_contractField to return the field
+   name for a given index.  cpl_interface_contractIndex already
+   existed to return an index for a given field.
+ - merge bgc23 code into csm_share, UNICOSMP #if in shr_timer_mod
+   to handle broken irtc on X1.  added manually.
+ - merge bgc23 code, SHR_CONST_PDB, manually.
+ - modify code in shr_map_mod to handle SGI runtime error requesting
+   size of an array that hasn't yet been allocated.
+ - add optional arguments fracName and frac to shr_ncread_domain
+   (untested).
+ - fix some SGI compile problems with subroutine arguments that have
+   both pointer and intent defined, remove intent.
+ - remove dshr_hubInfo_iBuf_iniMask variable.
+	
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Sep 30 16:41:14 MDT 2005
+Model: SHARE
+Version: SHARE3.050930
+One-line summary: msic minor bug fixes as a result of datm7 development
+Changes made:
+  1) cpp #ifdef error corrected in shr_sys_mod wrt UNICOSMP
+  2) new routine: dshr_hubInfo_init()
+  3) fixed stdout type in dshr_domain.F90
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Sep  9 16:00:31 MDT 2005
+Model: SHARE
+Version: SHARE3.050909
+One-line summary: bug fixes in shr/ code wrt non-standard f90 code 
+   that worked on bluesky (iIBM) but not tempest (SGI)
+Changes made:
+
+1) shr_string_mod.F90 ~ backslash is not a valid f90 continuation line indicator
+2) shr_map_mod.F90 ~ allocatable attribute not allowed in derived type (but pointer is OK)
+3) shr_stream_mod.F90 ~ minor/cosmetic bug in stdout message wrt domain var names
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Sun Aug 14 06:14:57 MDT 2005
+Model: SHARE
+Version: SHARE3.050814a
+One-line summary: share3_050814a 
+						
+Changes made:
+
+tag cpl_control_mod.F90, lost in tagging
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Sat Aug 13 17:02:38 MDT 2005
+Model: SHARE
+Version: SHARE3.050813b
+One-line summary: share3_050813b 
+						
+Changes made:
+
+Merge of share3_050121_brnchT_datm7_050811 onto trunk, done manually
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Sat Aug 13 15:44:00 MDT 2005
+Model: SHARE
+Version: SHARE3.050813a
+One-line summary: Merge of trunk with 
+						share3_050121_brnchT_bgc01_050726 onto trunk
+Changes made:
+
+Merge of share3_050121_brnchT_bgc01_050726 onto trunk
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Sat Aug 13 15:07:41 MDT 2005
+Model: SHARE
+Version: SHARE3.050623
+One-line summary: Tag head with bug fix in 
+						cpl_map memory allocation
+Changes made:
+
+tag with bug fix in cpl_map memory allocation, committed in June 2005, never tagged.
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Jan 21 16:57:39 MST 2005
+Model: SHARE
+Version: SHARE3.050121
+One-line summary: new !DIR$ Cray X1 
+						directives as per port to 
+						Cray at ORNL
+Changes made:
+
+new !DIR$ Cray X1 directives as per port to Cray at ORNL
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Jan 21 16:52:12 MST 2005
+Model: SHARE
+Version: SHARE3.040524
+One-line summary: updates to share/cpl code 
+						wrt pro-tex comments 
+						only
+Changes made:
+
+updates to share/cpl wrt pro-tex comments only, done by robj in June 2004
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Sun May 23 19:31:59 MDT 2004
+Model: SHARE
+Version: SHARE3.040523
+One-line summary: share3_040523 
+						
+Changes made:
+
+Added new routine: cpl/cpl_domain_compare(dom1,dom2)
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri May 14 11:15:22 MDT 2004
+Model: SHARE
+Version: SHARE3.040514
+One-line summary: fixed memory leaks in 
+						share/cpl
+Changes made:
+
+fixed memory leaks in shr/cpl wrt cleaning up MCT strings
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Apr 16 17:14:45 MDT 2004
+Model: SHARE
+Version: SHARE3.0.7
+One-line summary: Add checking of valid 
+						decomp_* in cpl
+Changes made:
+
+cpl_control_mod, Allow only decomp_al, oi, r to be 1.
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Thu Apr 15 14:25:02 MDT 2004
+Model: SHARE
+Version: SHARE3.0.6
+One-line summary: Add bfb capability for 
+						coupler, bfbflag in 
+						coupler namelist
+Changes made:
+
+cpl_control_mod - add bfbflag namelist/control
+cpl_map_mod     - use "src" mapping if bfbflag is true
+cpl_bundle_mod  - bfb bundle_gsum option
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Apr  2 10:18:26 MST 2004
+Model: SHARE
+Version: SHARE3.0.5
+One-line summary: 64 bit cpl hist files, 
+						new shr_msg_mod 
+						routines
+Changes made:
+cpl: new 64 bit hist file functionality (wrt regression tests)
+shr: new routines in shr_msg_mod
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Jan  9 10:01:09 MST 2004
+Model: SHARE
+Version: SHARE3.0.4
+One-line summary: Minor mod for fcopy on 
+						vector machines, 
+						bfb
+Changes made:
+
+Added fcopy_loc in cpl_bundle_copy in cpl_bundle_mod
+
+#ifdef CPP_VECTOR
+   fcopy_loc = .false.
+   usevector = .true.
+#else
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Jan  2 19:12:02 MST 2004
+Model: SHARE
+Version: SHARE3.0.3
+One-line summary: Minor change for compiler 
+						problem on ES in 
+						cpl_mct_mod.F90
+Changes made:
+
+added lines
+!  This was added specifically for ES compiler bug:
+   public :: cpl_mct_list, cpl_mct_gsmap, cpl_mct_router
+
+Should have no impact on any other platform, tested on IBM.
+	
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Dec 12 09:40:04 MST 2003
+Model: SHARE
+Version: SHARE3.0.2
+One-line summary: share3_0_2 
+						
+Changes made:
+
+Add CDIR mod to cpl_bundle_mod.F90 for ES compiler problem
+!CDIR NOASSOC in cpl_bundle_gsum
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Nov 21 17:28:10 MST 2003
+Model: SHARE
+Version: SHARE3.0.1
+One-line summary: Step 2 of merge of 
+						share2_1_3_brnchT_cpl6_b031118 to main trunk, share2_1_4
+Changes made:
+
+Merge share2_1_3_brnchT_cpl6_b031118 to main trunk, share2_1_4.
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Nov 21 17:20:07 MST 2003
+Model: SHARE
+Version: SHARE3.0.0
+One-line summary: share3_0_0 
+						
+Changes made:
+
+Merge share2_1_3_brnchT_cpl6_b031118 to main trunk, share2_1_4.
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri Nov 21 09:22:34 MST 2003
+Model: SHARE
+Version: SHARE2.1.4
+One-line summary: Tag for merge of 
+						cam2_0_2_dev49 version 
+						onto main trunk, from 
+						share2_1_3
+Changes made:
+
+Merge cam2_0_2_dev49 branch changes onto main trunk.
+share2_1_3 was starting point.
+Added shr_vmath_rsqrt, shr_vmath_div to main trunk.
+No other changes.
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: Fri May 24 09:34:21 MDT 2002
+Model: SHARE
+Version: SHARE2.1.3
+One-line summary: Tag the latest version of 
+						csm_share, share2_1_3 == 
+						share2_1_2_brnchT_const9
+Changes made:
+All mods made on share2_1_2_brnch_const
+This version is a merge of share2_1_2_brnchT_const9 onto main trunk
+Updated shr_const_mod for new consistent constants
+Split shr_msg_stdio to shr_msg_chdir and shr_msg_dirio in shr_msg_mod
+Minor mod in shr_msg_orb to use share constant PI
+Minor mod in shr_sys_mod to correct format problem and save of 2 variables
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Mon Oct 15 16:45:03 MDT 2001
+Model: SHARE
+Version: SHARE2.1.2
+One-line summary: new shr_vmath_mod.F90
+Changes made:
+o new shr_vmath module, uniform API to vendor's vector math routines
+===============================================================
+===============================================================
+
+Originator: rosinski ( Jim Rosinski)
+Date: Sun Sep 16 16:17:31 MDT 2001
+Model: SHARE
+Version: SHARE2.1.1
+One-line summary: Changed Linux and SunOS to LINUX and SUNOS
+Changes made:
+
+o Changed Linux and SunOS to LINUX and SUNOS
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Fri Jun  1 12:28:29 MDT 2001
+Model: SHARE
+Version: SHARE2.1
+One-line summary: Add asynchronous messaging option, make 
+   modules public/private, add unit tests, add more platforms
+Changes made:
+
+shr_msg_mod has an asynchronous messaging option. 
+
+Make all modules more careful about declaring data and methods 
+public or private. In general try to make all modules private 
+with explicit declarations on public data and methods. shr_msg_mod 
+is still public as it includes "mpif.h" which is assumed to be 
+included by most other models.
+
+Add "unit_testers" directory with a few useful unit tests.
+
+Allow shr_sys_mod to work on more platforms: SunOS, and Linux.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date:   2000/12/21 17:53:15
+Model: SHARE
+Version: SHARE2.0.6
+One-line summary: Change case of kind parameters, add OSF capability.
+Changes made:
+
+ Tony upgraded the share library for the Compaq. 
+
+ "convert isend to send in shr_msg_mod.F90
+ add OSF (compaq) system calls to shr_sys_mod.F90 and shr_timer_mod.F90"
+
+ Change case of kind parameters to upper-case. This seemed to be an 
+ issue on the SGI. I don't think case-sensitivity is in the FORTRAN standard, 
+ but the parameters are addressed as upper-case, and it certainly shouldn't 
+ hurt anything.
+
+===============================================================
+===============================================================
+
+Originator: tcraig ( Anthony Craig)
+Date: 2000/12/15 19:12:57
+Model: SHARE
+Version: SHARE2.0.5
+One-line summary: Add dud component.
+Changes made:
+
+Add the dud component to the message interface.
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Tue Aug 15 08:26:25 MDT 2000
+Model: SHARE
+Version: SHARE2.0.4
+One-line summary: Add HIDE_SHR_MSG back in.
+Changes made:
+
+Add HIDE_SHR_MSG token back in shr_msg_mod.F90, so that the
+stand-alone CCM would work again. Ran simple CSM test case to
+make sure it still works in coupled mode.
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Aug  4 15:25:08 MDT 2000
+Model: SHARE
+Version: SHARE2.0.3
+One-line summary: mpi_isend's replace 
+						mpi_sends to insure 
+						asynchronous data 
+						transfer
+Changes made:
+mpi_isend's replace mpi_send's to insure asynchronous data transfer
+
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Jun 23 16:54:23 MDT 2000
+Model: SHARE
+Version: SHARE2.0.2
+One-line summary: Same as 2.0.1 except 
+						addition of shr_timer_mod.F90
+Changes made:
+No changes, except addition of a new file: shr_timer_mod.F90
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Thu Jun  1 15:54:23 MDT 2000
+Model: SHARE
+Version: SHARE2.0.1
+One-line summary: o incremental upgrade
+Changes made:
+
+... to shr_file_mod.F90 only, minor fixes to msrcp mss: options
+===============================================================
+===============================================================
+
+Originator: erik ( KLUZEK ERIK 1326 ML CGD)
+Date: Thu May 11 23:34:42 MDT 2000
+Model: SHARE
+Version: SHARE2.0
+One-line summary: Change names to comply with "shr_" convention / add new files
+Changes made:
+
+	Change API to agree with convention that all subroutines start with
+"shr_" (as well as constants with SHR_. Also move "msg_mod.F90" to 
+"shr_msg_mod.F90".
+
+	Add new files for file-archive and constants.
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Fri Oct 16 12:38:16 MDT 1998
+Model: SHARE
+Version: SHARE1.3.2
+One-line summary: more robust: error 
+						checking, CVS keywords, 
+						info msgs, pxf-routines, 
+						etc
+Changes made:
+
+===============================================================
+===============================================================
+
+Originator: mvertens ( VERTENSTEIN MARIANA 1349 ML CGD)
+Date: Thu Oct  1 12:23:29 MDT 1998
+Model: SHARE
+Version: SHARE1.3.1
+One-line summary: made code compatible with standard MPI library
+Changes made:
+	
+Added routine mpi_setup.F
+Changed all write(* to write(6 etc.
+	
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Wed Jul 29 14:32:20 MDT 1998
+Model: SHARE
+Version: SHARE1.3
+One-line summary: Version of csm_share used with CCM3.6, LSM1.1 and CSM1.2
+Changes made:
+
+This is the version of CSM_SHARE publically released with CSM1.2.
+It is compatable with CCM3.6, LSM1.1, and CPL4.0.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Mon Jul  6 14:31:38 MDT 1998
+Model: SHARE
+Version: SHARE1.2.2
+One-line summary: Delete repeated definition.
+Changes made:
+
+	Delete repeated definition that caused trouble with the 
+compiler on the SGI.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Tue Jun  9 13:58:13 MDT 1998
+Model: SHARE
+Version: SHARE1.2.1
+One-line summary: Add print flag as argument to orb_params / 
+	add a spare coupler compatiblity message #'s
+Changes made:
+
+	Added a argument to orb_params to determine if you want
+to print messages out or not.  Normally this should be set to
+true, but if you are running a program under SPMD you will want
+the master to set it to true and the slaves set it to false.
+Otherwise, all the processesors print out the same messages.
+
+	Added a list of coupler compatibility message numbers.
+that are set and can be used as the coupler changes.  These 
+values can not be changed at this point!
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Sat Apr 25 20:01:57 MDT 1998
+Model: SHARE
+Version: SHARE1.2
+One-line summary: Require orbital parameters to be set -- don't choose any 
+	defaults.
+Changes made:
+
+	Change orbit so that either IYEAR_AD or (ECCEN,OBLIQ,MVELP) has
+to be set rather than specifying defaults. This makes it much more clear
+what the orbital parameters are set to, since the user HAS to enter it
+as a required namelist item.  If the parameters aren't set, a long message
+comes up that displays what possible values might be.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Tue Apr  7 10:23:02 MDT 1998
+Model: SHARE
+Version: SHARE1.1
+One-line summary: Let 1950 orbit be the default (similar to CCM3.0)
+Changes made:
+
+	Set the default orbital parameters to the values that
+would be set if you set IYEAR_AD = 1950.  Also change the 
+printout so that the parameters are output to full precision.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Wed Apr  1 09:21:10 MST 1998
+Model: SHARE
+Version: SHARE1.0.3
+One-line summary: Changed directory structure to be reduced 
+	to 2 -- csm_share and "msg"
+Changes made:
+
+	Simply moved files around to accomidate a new directory 
+structure.  MPI/msg_wrapper.F was moved to msg/mpi_msg_wrapper.F.
+Other files were moved from "orbit" into the main directory.  So
+now there are only two directories -- the main "csm_share" directory
+and the one sub-directory "msg" for the files dealing with the 
+message passing interface.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Mon Jan 26 08:47:09 MST 1998
+Model: SHARE
+Version: SHARE1.0.2
+One-line summary: Moved files to subdirectories, added msgid for cpl, 
+		added receive for char.
+Changes made:
+
+o Moved files to subdirectories.  
+
+	By doing this we can easily pick which set
+of functions each model needs to share, and we can swap out different packages.
+For example, we can easily pick a different message passing library by 
+compiling the interface routine in the PVM sub-directory for example.  Also
+we can place functions dealing with non-NCAR machines here and only add them
+in the list to compile if we are at a non-NCAR site.
+
+Subdirectories:
+	msg ----- generic message passing files (non-library dependent)
+	orbit --- subroutines dealing with the earths orbit. Solar declination,
+			Solar zenith angle, and eath-sun distance factor.
+	MPI ----- subroutines interfacing to the MPI message passing library.
+
+Updated the README file to document the above changes.  Also suggest names
+for other sub-directories to add later (constants, MSS etc.).
+
+o Added a task identifier for the coupler in msgid.h: MSGID_TID_CPL
+
+o Added the character receive function to the MPI msg_wrapper.F (msg_recv_c).
+
+===============================================================
+===============================================================
+
+Originator: kauff ( Brian Kauffman)
+Date: Thu Jan  8 16:33:25 MST 1998
+Model: SHARE
+Version: SHARE1.0.1
+One-line summary: o shared code with uniform prefix coding style
+Changes made:
+
+o all shared code now conforms to the desired coding style,
+  namely that all related file, subroutine, variable, common-block
+  names, etc, have a uniform prefix.
+
+===============================================================
+===============================================================
+
+Originator: erik ( Erik Kluzek)
+Date: Tue Dec 16 11:47:11 MST 1997
+Model: SHARE
+Version: SHARE1.0
+One-line summary: Initial version, orbit and message compatability.
+Changes made:
+
+Initial version of the shared CSM library.
+
+The purpose of this library is to archive all the code used by CSM models
+THAT HAS TO BE THE SAME!  This way we have one location to look for code
+that is shared.  So the earth's orbital parameters, and message passing
+type codes are archived here.  Other codes regarding the calender and
+physical constants could also be put here as well.  This helps to ensure
+that models have the same expressions for functions shared across the board.
+It is also a more efficient programming paradigm.  And finally it makes it
+easier for other models to link into CSM, since all of the interface
+requirements are packaged up into one location.
+
+Currently the codes that are here are in three classes...
+
+Orbit:
+
+	Orbital codes to calculate earths' orbital parameters and get solar
+	declination angle, earth-sun distance factor, and cosine of the solar 
+	zenith angle.
+
+Message Compatability:
+
+	These codes check the messages from the coupler and ensure that the
+	version of the coupler messages is compatable with the version
+	that is expected.
+
+README/ChangeLog/ChangeSum:
+
+	The README file gives some background on why we created this module
+	and how we want/need to manage it.
+
+	ChangeLog gives a long description of changes made.
+
+	ChangeSum is a one-line description of changes made.
+
+At this point only the atmosphere and land components are accessing these
+codes, but later all models will use all or part of the codes shared here.
+===============================================================

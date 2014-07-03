@@ -1,0 +1,368 @@
+===============================================================
+Tag name: cesm1_2_0_n10_cam5_3_01
+Originator(s): fischer
+Date: 05 June 2013
+One-line Summary: cam release branch for cesm1_2_0
+
+
+New features in CAM-5.3:
+========================
+
+. CAM-SE
+  . Lagrangian vertical advection is now the default in the spectral
+    element (SE) dynamical core.
+  . Renamed HOMME dynamical core to SE dynamical core.  Moved dynamics/homme to 
+    dynamics/se.  "-dyn homme" has been deprecated for configure, please use 
+    "-dyn se" instead.  Note that HOMME (High Order Method Modeling
+    Environment) refers to another model from which the SE dycore may also
+    be run. 
+  . New initial condition file for ne30np4 CAM5.
+  . New tunings for ne16np4, ne30np4, and ne120np4.
+  . Turned on energy fixer.
+  . Rename references from "cslam" to "fvm".
+
+. CARMA
+  . New CARMA sulfate model flag "carma_do_hetchem" toggles the use of CARMA
+    sulfate surface area density in heterogeneous chemistry rate calculations.
+  . Source code updates for CARMA sulfate model to interact with chemistry.
+  . Fix for meteor_smoke and pmc CARMA models with specified dynamics cases.
+  . Use carma_do_thermo to prevent access of unallocated array in the "CRTT" 
+    outfld call.
+  . Change ptend names to differentiate between CARMA tendencies originating in 
+    different routines.
+  . Force internal calculations to use 365 day years, to deal with mismatches 
+    between year lengths in CARMA and specified dynamics files.
+  . Get CARMA working with debug flags turned on (Lahey, PGI, Intel).
+
+. CLUBB
+  . CLUBB was tuned for a scientifically validated release.
+     . Introduced sol_facti_cloud_borne to allow tuning, default value is 1.0.
+     . Changed tuning of dust_emis_fact_dyn for CLUBB.
+     . Introduced ability to use CLUBB variance in microphysics. 
+
+. CHEMISTRY
+  . Refactored chemistry preprocessor to be more robust.
+  . Reduce log file lengths by restrict message logging to masterproc in many of
+    the chemistry modules
+  . Call endrun when lower boundary conditions are specified in more than one 
+    manner via bndtvghg, flbc_file, or *vmr namelist variables.  This prevents 
+    multiple specification of lower boundary conditions
+  . Replace chemistry package trop_strat_bam_v1 with trop_strat_soa
+  . Update chemistry in packages:
+      trop_mozart_mam3
+      trop_mozart_mam7
+      trop_mozart_soa
+      trop_strat_mam3
+      trop_strat_mam7
+      super_fast_llnl_mam3
+      super_fast_llnl_mam3_linoz
+  . Changed default IC file for trop_strat_mam7 chemistry
+  . SO2 forcing is no longer automatically added for waccm_mozart_sulfur.
+  . Corrections to surface area calculations of modal aerosols.
+  . Correction to units of the SOA*_PROD diagnostics.
+  . Update to MEGAN factors, solar protons, SAD, and sulfate input file.
+  . Update to photolysis cross sections.
+  . Updates to master wet and dry dep species lists.
+  . Zero out tropospheric sulfate above tropopause and stratospheric sulfate 
+    below the tropopause.
+  . Deposition velocity of EOOH mapped to CH2O.
+  . Change history output of SOA* aerosols from VMR to MMR.
+  . Add build-namelist use case for MOZSOA compset so that 'NEU' wet deposition 
+    scheme is used.
+  . Avoid index out of range error when index is greater the number of 
+    registered constituents which can occur when we have chemical tracers that 
+    are not registered (e.g., H2O in WACCM).
+  . Map SOG species to H2O2.
+
+. Prescribed Modal Aerosols
+  . This new functionality (enabled with the "-chem none" argument to
+    configure) has limited support.  Datasets have been produced for 1850
+    and 2000 climatologies at 2 degree resolution.  There are currently no
+    20th century transient datasets.  The 2 degree datasets will be
+    automatically interpolated to other spatial resolutions, but we expect
+    that the model with cam5 physics will be much more sensitive to
+    interpolating the aerosols than the cam4 physics is to interpolating
+    the bulk aerosols.
+
+. Improvements to Diagnostic Radiation Calculations
+  . Removed restriction that radiation diagnostic calculations reuse the water
+    uptake and wet radius values calculated for the climate affecting modes.
+    These quantities are now recomputed for the diagnostic modes.
+
+. New MG1.5 microphysics
+  . Added new microphysics scheme 'mg1.5', the next development version of the 
+    Morrison & Gettelman stratiform cloud microphysics.  
+  . Added new mg1.5 option to -microphys configure option.  "mg" is preserved as
+    an alias for the old microphysics (which is now "mg1").
+  . Added micro_mg_version and micro_mg_sub_version to represent the version 
+    number of MG.
+  . Set 1.9x2.5 MG1.5 defaults for cldfrc_rhminl and uwshcu_rpen.
+
+. WACCM
+  . Added new support for WACCM-SE.
+  . Removed unused FV-specific dependencies from qbo.F90.  QBO forcing does not
+    currently work with SE, but removing these dependencies is necessary for the
+    module to be compiled in a SE case.
+  . Added IC file for WACCM5 at 4x5 resolution
+  . Removed some "#ifdef WACCM_PHYS" in cases where it can be replaced with a 
+    cheap runtime conditional, "if (do_waccm_phys)".
+  . Use state%uzm directly instead of requiring it as a separate argument to 
+    qbo_relax, and check that it is allocated first.
+  . Add "clim_modal_aero_top_press", default 1.e-4 Pa the new top level for 
+    modal aerosol microphysics. By default this is high enough that modal 
+    aerosol calculations are done throughout the WACCM levels, but below most 
+    WACCM-X levels.  Changed top level from trop_cloud_top_lev to 
+    clim_modal_aero_top_lev, force MAM top to be above the cloud top
+  . Make treatment of WACCM4 and WACCM5 more consistent. Both now set the same 
+    top_lev limiter, but some modules perform additional checks for CAM5 
+    features to decide if they want to use it.
+  . Prevent divide by 0 if wind happens to be exactly 0 at certain points in 
+    WACCM's gw_drag.F90.
+  . Prevent segfault in gw_drag.F90 from certain bad winds by avoiding use of 
+    "abs" to limit integer indices. This is just to avoid a "red herring" crash
+    in gw_drag, when the real problem is elsewhere.
+  . Changed sim_year for waccmx_1996_cam4 changed to 2000.  Set so2_emis_file 
+    for sd_waccm use_cases.
+  . Remove deprecated waccm_mozart_v1 chemistry package. The new default is
+    waccm_mozart.
+  . Set defaults for nspltvrm, nspltac and nsplit when waccm_phys is used
+  . Set default srf_emis_cycle_yr to 2000 for waccm_mozart_mam3 chemistry
+  . Updated solar_data_file and solar_parms_file input files for SD-WACCM
+  . Added default IC file for waccm5 at 4x5 resolution.
+  . Added workaround for OpenMP problem for SC-WACCM in tracer_data.F90 when 
+    compiled with intel compiler (yellowstone)
+
+. SCAM
+   . SCAM use_case arm95_scam has been deprecated by scam_arm95.
+   . Added new SCAM use_cases to support new IOP datasets. 
+      scam_arm95
+      scam_arm97
+      scam_gateIII
+      scam_twp06
+      scam_togaII
+      scam_sparticus
+      scam_mpace
+   . Fixed SCAM date bug.
+
+. USE_CASES
+  . Added new use_case 1850-PD_cam5. This is similar to
+    1850-2005_cam5 but has data from both observations and
+    projections, to allow cases to be run longer.
+  . Update fincl1 output variables for the following use_cases
+      2000_cam5_trop_moz_mam3
+      2000_cam4_trop_strat_soa
+      2000_cam5_trop_strat_mam3
+      2000_cam5_trop_strat_mam7
+      soa_chem_megan_emis
+  . Set so2_emis_file
+      sd_waccm_geos5
+      sd_waccm_tslt_geos5
+  . Changed sim_year from 1996 to 2000
+      waccmx_1996_cam4
+  . Added new use_cases for SD_WACCM sulfur and nuclear winter compsets.
+      sd_waccm_sulfur
+      waccm_cam4_nuclear_winter
+  . Added new use case for prescribed modal aerosol model
+      1850_cam5_pm
+  . Added new chemistry use_cases
+      2000_cam5_trop_moz_mam3
+      2000_cam4_trop_strat_soa
+      2000_cam5_trop_strat_mam3
+      2000_cam5_trop_strat_mam7
+  . Removed redundant specification bndtvghg and updated SPE file
+      waccm_1955-2005_cam4
+      waccm_2005-2100_cam4_rcp85
+      waccm_1850-2005_cam4
+      waccm_2005-2100_cam4_rcp26
+      waccm_2005-2100_cam4_rcp45
+      1850-2005_cam4_super_fast_llnl
+  . Updated megan_factors_file, corrected emission files, set 
+    megan_mapping_emisfctrs to .false., created fincl1 list, and added IC files.
+      mozart_megan_emis
+      soa_chem_megan_emis
+  . Updated IC files, specify defaults for when fv, new datasets for ne30np4,
+    fix default parameters for ne120np4
+      waccm_2000_cam4
+      waccm_sc_2000_cam4
+  . SO2 forcing is no longer automatically added for waccm_mozart_sulfur.
+
+CAM INFRASTRUCTURE CHANGES
+=============================
+
+. History Output
+
+  . The strategy for defining the fields that appear in the history output
+    by default has changed.  A new set of namelist setable variables have
+    been defined (see next bullet) and all calls to add_default in the code
+    are placed inside a conditional block using one (or more) of these
+    variables.  This allows much more control over defining the default
+    output.  Modification of the defaults by the fincl* and fexcl* namelist
+    variables is still supported.  The current default output is much
+    smaller than for previous model versions and contains just the fields
+    needed by the AMWG diagnostics package.
+
+  . Namelist variables added to control history file output:
+     history_amwg          Switch for diagnostic output of AMWG diag package 
+                           variables default:.true.
+     history_aerosol       Switch for diagnostic output of the aerosol 
+                           tendencies default:.false.
+     history_aero_optics   Switch for diagnostic output of the aerosol optics 
+                           default:.false.
+     history_budget        Switch for cam4 T/Q budget diagnostic output 
+                           default:.false.
+     history_eddy          Switch for diagnostic output of eddy variables 
+                           default:.false.
+
+  . New diagnostics variables for aerosol burdens and wind speeds were added.
+  . Removed SRFRAD, and LCLOUD.  
+  . Removed unneeded SFRAD from monthly average outputs. Bugzilla #1618
+
+. Introduced dynamically allocated physics state/tend/ptend objects.  The
+  driver for this change was to be able to reuse these objects in our
+  development of physics parameterization subcolumn capabilities (see
+  bullet below).
+
+. Improve debugging capabilities
+  . Added a routine to validate physics_state objects, and provide a namelist 
+    option(state_debug_checks) to run this routine every time physics_update is 
+    called.  state_debug_checks default is .true. for cases passing "-debug" to 
+    configure, .false. otherwise.
+
+. Refactor wv_saturation and modify the physics parameterizations to call
+  the new set of interfaces for water/ice saturation properties.
+   . Consolidate routines in wv_saturation.
+   . Pull in related logic from other modules to wv_saturation.
+   . Create wv_sat_methods to hold SVP estimation methods separately from 
+     interface logic.
+         - Completely refactored. A list of public routines:
+           - Control routines, replacing esinti and other CAM logic:
+             - wv_sat_readnl
+             - wv_sat_init
+             - wv_sat_final
+           - SVP calculations, replacing polysvp:
+             - svp_water
+             - svp_ice
+           - SVP table lookup, largely unchanged:
+             - estblf
+           - SVP to saturation specific humidity conversion:
+             - svp_to_qsat
+           - SVP to saturation mass mixing ratio conversion:
+             - svp_to_qmmr
+           - Saturation specific humidity functions, replacing all subroutines 
+             of the form [a,v]qsat[d[2]][_single]
+             - qsat
+             - qsat_water
+             - qsat_ice
+           - Wet bulb temperature solver, replacing findsp[_water]:
+             - findsp_vc
+           - Saturation MMR over dry air (deprecated):
+             - qmmr 
+   . Update calculation of dqsdt in cldwat.F90 to use new code (and remove check 
+     for low pressure that is now done in wv_sat_methods).
+
+. Subcolumn development (This is an ongoing project and is not complete in
+  this release) 
+  . Introduced new configure parameter "psubcols".  Default is 1 = no subcolumns
+  . Introduced use_subcol_microp - Switch which will be used to control
+    sub-columns within microphysics.  Namelist flag is accessed in phys_control,
+    but it is not used inside CAM yet.
+  . state now has additional fields:
+      . ngrdcol       -- Grid        -- number of active columns (on the grid).
+      . nsubcol(pcols)-- Subcolumns  -- number of active subcolumns in each
+                                        grid column
+      . psetcols      --             -- max number of columns set - if
+                                        subcols = pcols*psubcols, else = pcols
+      . ncol          --             -- sum of nsubcol for all ngrdcols - 
+                                        number of active columns
+      . indcol(pcols*psubcols)       -- indices for mapping from subcols to
+                                        grid cols
+  . ptend and tend now has additional field:
+      . psetcols      --             -- max number of columns set - if
+                                         subcols = pcols*psubcols, else = pcols
+  . Added new routine physics_ptend_copy_subcol - copies ptend on grid to ptend
+    on subcols
+
+Code cleanup and refactoring:
+=============================
+
+. Improved how CAM standalone build handles NetCDF.  Improved error handling
+  for configure's use of the nf-config and nc-config scripts to determine
+  the link arguments.  Also made mods to allow the user to *not* specify
+  NetCDF include file or library locations.  This is useful for working
+  with compiler wrapper scripts that already have this information from the
+  system module settings (e.g., when using the mpif90 wrapper script on
+  yellowstone).
+
+. In physpkg.F90, added QNEG3 call after clybry_fam_adj call before QNEG3, so
+  that QNEG3 enforces the qmin limit on the result, and the subsequent call to
+  physics_state_check can pass.
+
+. "endrun" is now a wrapper for "shr_sys_abort" from csm_share. This means that
+  ENDRUN will no longer be printed to log files; ERROR will be printed instead.
+
+. Simplify some constituent limiters in physics_update.
+
+. Changed how solar namelist defaults are set so that for cam5 physics the
+  defaults don't depend on which chemistry package is used.  The default
+  for the solar data namelist variables was being set differently for the
+  configurations "-phys cam5 -chem trop_mam3" and "-phys cam5 -chem none".
+  This was changed to make the value for prescribed aerosols be the same as
+  for prognostic aerosols.  Also added a check to build-namelist to
+  disallow setting both solar_const and solar_data_file.  It only makes
+  sense to set one of these variables.  The defaults for cam4 physics
+  continue to depend on whether chemistry is used or not.
+
+. cldwat2m_macro: Rename "qsat" to "qs" to avoid confusion with wv_saturation 
+  intrinsic (and "esat" to "es" to match).
+
+. Microphysics/macrophysics modules: Change indexes to ensure that output 
+  variables do not contain uninitialized data above top_lev.
+
+. Because cldwat_fice is shared code between CAM4 and CAM5, it has been moved to
+  cloud_fraction. The resulting code is only used by RK microphysics and thus no
+  longer checks microp_scheme.
+
+. Move "tend" argument to the end of every physics_update call, "tend" is now
+  an optional argument.  This eliminates the need to declare a dummy "tend"
+  variable when the update is to a local copy of the physics state.
+
+. Eliminated MODAL_AERO ifdef and replaced with rad_constituent interface inside
+  ndrop.F90.
+
+Bugs fixed:
+===========
+
+. Fix units in history output:
+  - For mixing ratios and fluxes of number concentrations incorrect units
+    of "kg/kg" and "kg/m2/s" have been changed to "1/kg" and "1/m2/s"
+  - Output SOA aerosol species in units of kg/kg
+
+. Fix memory leak for WACCM-SE.
+
+. OMP bug fix for WACCM-X in dp_coupling.F90.
+
+. Fixed long name for SNOWHICE.  Bugzilla #945
+
+. Fix memory leak in cam_pio_utils.F90.  Bugzilla #1629
+
+. Bug fix to pbuf_set_field in short_lived species.F90
+
+. Added an endrun call if the FV dycore's vertical levels cross.  This
+  prevents some unstable runs in various FV CAM and WACCM simulations.
+
+. Fix saturation vapor pressure calculation for low pressure and/or very high
+  temperatures.
+
+. Remove incorrect declaration of intrinsic erfc function in
+  modal_aero_rename.F90 and use version from shr_spfn_mod.
+
+. Fix addfld call for EMIS.  Change number of levels from 1 to plev, and changed
+  default averaging from 'I' to 'A'
+
+. Modified the Makefile rules used by configure's -test option so they work with
+  the recent changes to build MCT as a separate lib.  
+
+. Fix outstanding problems with WACCM5 that cause it to crash, by enforcing
+  trop_cloud_top_lev in more modules that require this limit.
+
+. Corrections to prescribed ozone input for SC-WACCM. 

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<config_definition>
+
+<entry id="dyn"   value="se"  />
+<entry id="hgrid" value="ne16np4" />
+<entry id="pcols" value="16" />
+
+</config_definition>

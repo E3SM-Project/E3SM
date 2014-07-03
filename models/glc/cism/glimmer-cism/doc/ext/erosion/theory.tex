@@ -1,0 +1,28 @@
+\section{Bedrock Erosion}\label{erosion.sec.hb}
+Sediments are produced at the ice base by eroding the hard bedrock. Here, sediment production depends on basal velocities (and thus basal thermal regime) and ice thickness:
+\begin{equation}
+  \dot{E} = -f|\vec{u}_{\text{bas}}|H
+\end{equation}
+As an alternative, sediment production could also be proportional to the product of basal velocities and basal shear stresses, $\vec{\tau}$, i.e.
+\begin{equation}
+  \dot{E} = f\vec{u}_{\text{bas}}\cdot\vec{\tau}.
+\end{equation}
+The total amount of eroded bedrock is then
+\begin{equation}
+  E=\int_{0}^t\dot{E}dt'
+\end{equation}
+
+\section{Basic Transport Parameterisation}\label{erosion.sec.basic_trans}
+The simple parameterisation assumes that sediment velocities are proportional to the basal ice velocities and that the maximum thickness of the deforming bed is a linear function of basal shear stress:
+\begin{equation}
+  z_{\text{max}} = a+b|\vec{\tau}_b|.
+\end{equation}
+
+\input{\dir/transport.tex}
+
+\section{Isostatic Adjustment}
+Sediment movement affects isostatic adjustment. This isostatic effect is taken into account by modifying the unloaded (no ice sheet) equilibrium bedrock topography. $h_0$:
+\begin{equation}
+  h_0=h_0^\ast+E-w_{\text{seds}}
+\end{equation}
+where $w_{\text{seds}}$ is the equilibrium bedrock depression due to erosion. $w_{\text{seds}}$ can be calculated using either the local or elastic lithosphere approximation (see my thesis).

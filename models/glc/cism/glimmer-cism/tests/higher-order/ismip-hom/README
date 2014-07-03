@@ -1,0 +1,170 @@
+ISMIP-HOM Experiments
+=====================
+Ice Sheet Model Intercomparison Project for Higher-Order Models (ISMIP-HOM) 
+prescribes a set of experiments meant to test the implementation of 
+higher-order physics.  For more information, see
+http://homepages.ulb.ac.be/~fpattyn/ismip/
+
+The python scripts provided here (runISMIPHOM.py and plotISMIPHOM, refered to
+in the following as the ISMIP-HOM scripts) were created to run the experiments 
+using Glimmer/CISM and compare the results with results from other models.
+
+PREREQUISITES:
+In order to use the ISMIP-HOM scripts, you will need to have Python and one of 
+the following Python modules installed:
+Scientific.IO.NetCDF, netCDF4, or pycdf
+
+To plot the results (which is the usual way to view the output), the Python 
+matplotlib library also must be installed.
+
+For comparison you need to download the ISMIP-HOM results from
+http://homepages.ulb.ac.be/~fpattyn/ismip/tc-2-95-2008-supplement.zip
+and unzip to a directory named ismip_all. (Make ismip_all a subdirectory of 
+the directory containing the ISMIP-HOM scripts.)
+
+RUNNING THE TESTS:
+Running the tests is a three step process.  The last two steps invoke python 
+scripts by entering commands on the command line.  The working directory 
+should be the directory which contains the ISMIP-HOM scripts and the 
+configuration files copied in step one.  This directory should also contain 
+two subdirectories, "output" and "scratch", in which the results from running 
+the scripts will be written.
+
+STEP 1. Copy configuration files:
+
+Unlike in previous releases, only one higher-order dynamical core is being supported
+in this and future releases. Therefor, there is only one configuration script for each
+test case:
+
+"ishom.a.config", for test A (3d flow down an inclined slab w/ doubly periodic
+basal topography, no slip basal boundary conditions, and doubly periodic lateral 
+boundary conditions)
+
+"ishom.c.config", for test C (3d flow down and inclined slab w/ a flat bed, a doubly
+periodic basal traction parameter, and doubly periodic lateral boundary conditions)
+
+STEP 2. Run Glimmer/CISM by invoking the runISMIPHOM.py script:
+
+python runISMIPHOM.py
+
+Invoking the script in this way runs a default set of experiments and domain
+sizes.  To specify experiments and/or domain sizes you include command line
+arguments when you invoke the script.  For example
+
+python runISMIPHOM.py --size=40,80,160
+
+runs the default experiments with domain sizes 40, 80, and 160 km.
+
+python runISMIPHOM.py --exp=a,c
+
+runs experiments a and c using the default domain sizes.  Combine these as
+
+python runISMIPHOM.py --exp=a,c --size=40,80,160
+
+to run experiments a and c with domain sizes 40, 80, and 160 km.  Short
+versions of the arguments are also accepted;
+
+python runISMIPHOM.py -e a,c -s 40,80,160
+
+also runs experiments a and c with domain sizes 40, 80, and 160 km.
+
+Glimmer may not converge for every experiment with the default values of the
+grid size and other parameters.  Some of the parameters (like grid size) can 
+be changed using command line arguments.  Run 
+
+python runISMIPHOM.py --help
+
+to see all of the possible command line arguments.  You can also change
+Glimmer parameters by changing the configuration files for each experiment, 
+"ishom.a.config", "ishom.b.config", ... 
+
+STEP 3. Plot the results by invoking the plotISMIPHOM script:
+
+python plotISMIPHOM
+
+If you used command line arguments to specify the experiment (or experiments)
+and domain size (or sizes) when running Glimmer you should include these same
+arguments plotting the results.  For example
+
+python plotISMIPHOM --exp=a,c --size==40,80,160
+
+would plot the results from running experiments a and c with domain sizes 40,
+80, and 160 km.  If you request more than one domain size for an experiment,
+they are all plotted as small plots in one file.  (The above command creates
+two files, one for experiment a, one for experiment b each containing three 
+plots.)  Plotting one domain size at a time results in larger plots; for 
+example
+
+python plotISMIPHOM --exp=a,c --size=40
+
+creates two files, each containing one (large) plot.
+
+The plots created are saved as ".png" files in the "output" subdirectory of
+the directory containing the plotISMIPHOM script.  You can change the type
+of file created by changing the value of the variable "plotType" in the
+plotISMIPHOM script.  If you prefer to have the plots displayed on the screen
+instead of saved to file, set the variable "savePlotInFile" in plotISMIPHOM
+to "False" instead of "True".  The variables "savePlotInFile" and "plotType"
+are set near the top of the plotISMIPHOM script under the comment line
+
+# Output flags
+
+As with runISMIPHOM.py, all of the possible command line arguments for
+plotISMIPHOM can be displayed using the command line argument "--help"
+(or "-h")
+
+python plotISMIPHOM --help
+
+OUTPUT FILES:
+When you run the ISMIP-HOM scripts, they create files in the "output"
+subdirectory.  These files are described below.
+
+Files whose names end ".config" are configuration files read by Glimmer.  They
+are created by copying the "example" configuration files ("ishom.a.config" for
+experiment a for example) and making changes based on the command line
+arguments passed to runISMIPHOM.py.  Configuration files are text files and can
+be viewed using a text editor.
+
+Files whose names end ".nc" are netCDF files.  The contents of these files can
+be examined using a tool such as ncview.
+There are two different netCDF files created each time Glimmer is run: 
+1. An input file created by runISMIPHOM.py which provides the ice thickness, 
+bed topography, and (sometimes) basal friction coefficient.
+2. An output file created by Glimmer.
+Each input file for Glimmer has a name ending "km.nc" while the output files
+from Glimmer have a names ending ".out.nc".  
+
+Files whose names end ".txt" are output files written in a format used by all
+models participating in the ISMIP-HOM experiment.  As their name implies these
+are text files that can be viewed using a text editor.  They are written by
+runISMIPHOM.py from information in the netCDF output files and subsequently
+read by plotISMIPHOM for plotting.
+
+Files whose names end ".png" are Portable Network Graphics files written by 
+plotISMIPHOM containing the plotted data.  This is standard file type that
+can be viewed using image viewer software or a web browser.
+
+SCRATCH FILES:
+Glimmer creates some additional files in addition to its netCDF output file.
+At the end of its execution, runISMIPHOM.py moves any files in the current
+working directory having names ending in either ".txt", ".log", or ".nc" to 
+the "scratch" subdirectory under the assumption that they were created by
+Glimmer and are not needed.  So... 
+WARNING: If you have files with names ending ".txt", ".log", or ".nc" in the
+directory from which you are running runISMIPHOM.py they will get moved
+to the "scratch" subdirectory when you run runISMIPHOM.py
+
+
+TO DO / KNOWN ISSUES
+
+For ISMIP-HOM tests A and C, at the 20, 10, and 5  km wavelengths, convergence
+may be very slow (e.g., for test C at 5 km, order 10^3 iterations are needed for
+a converged solution).
+
+In general, the code will converge faster for fewer horizontal grid
+points but the results may be less accurate (i.e. the match with the ISMIP-HOM 
+mean may be poor). The provided configuration files have reasonable default 
+values for the grid spacing in order to "pass" the ISMIP-HOM tests at *most* of
+the wavelengths. In some cases these may need to be adjusted.
+
+Last updated on 2-6-11 by SFP.

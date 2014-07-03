@@ -1,0 +1,215 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>ice_usrdoc</TITLE>
+<META NAME="description" CONTENT="ice_usrdoc">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node1.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html13"
+  HREF="node1.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up_g.png"> 
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev_g.png"> 
+<A NAME="tex2html11"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html14"
+  HREF="node1.html">Contents</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<P>
+
+<P>
+
+<P>
+<B>Community Earth System Model</B> 
+<BR>
+National Center for Atmospheric Research, Boulder, CO 
+<BR>
+http://www.cesm.ucar.edu/models 
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+
+<P>
+<DIV ALIGN="CENTER">
+<FONT SIZE="+2">  <B>Community Ice CodE (CICE) User's Guide</B> 
+<BR>  <B>Version 4.0</B> 
+<BR>  <BR>
+<BR>
+Released with CESM1.0 
+<BR>  <BR>
+<BR>
+<BR>
+<BR>
+David Bailey 
+<BR>
+Marika Holland 
+<BR>
+Elizabeth Hunke 
+<BR>
+Bill Lipscomb 
+<BR>
+Bruce Briegleb 
+<BR>
+Cecilia Bitz  
+<BR>
+Julie Schramm 
+<BR></FONT>
+
+</DIV>
+
+<P>
+
+<P>
+<BR> <HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"></A>
+
+<UL>
+<LI><A NAME="tex2html15"
+  HREF="node1.html">Contents</A>
+<LI><A NAME="tex2html16"
+  HREF="node2.html">Introduction</A>
+<UL>
+<LI><A NAME="tex2html17"
+  HREF="node3.html">What's new in CICE4?</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html18"
+  HREF="node4.html">The CICE Scripts</A>
+<UL>
+<LI><A NAME="tex2html19"
+  HREF="node5.html">Coupled Model Scripts</A>
+<LI><A NAME="tex2html20"
+  HREF="node6.html">The Build Environment</A>
+<UL>
+<LI><A NAME="tex2html21"
+  HREF="node7.html">CICE Preprocessor Flags</A>
+</UL>
+</UL>
+<BR>
+<LI><A NAME="tex2html22"
+  HREF="node8.html">Namelist Variables</A>
+<UL>
+<LI><A NAME="tex2html23"
+  HREF="node9.html">Changing the timestep</A>
+<LI><A NAME="tex2html24"
+  HREF="node10.html">Writing Output</A>
+<LI><A NAME="tex2html25"
+  HREF="node11.html">Model Physics</A>
+<LI><A NAME="tex2html26"
+  HREF="node12.html">Tracer Namelist</A>
+<LI><A NAME="tex2html27"
+  HREF="node13.html">Prescribed Ice Namelist</A>
+<LI><A NAME="tex2html28"
+  HREF="node14.html">Grid Namelist</A>
+<LI><A NAME="tex2html29"
+  HREF="node15.html">Domain Namelist</A>
+<LI><A NAME="tex2html30"
+  HREF="node16.html">PIO Namelist</A>
+<LI><A NAME="tex2html31"
+  HREF="node17.html">Example Namelists</A>
+<UL>
+<LI><A NAME="tex2html32"
+  HREF="node18.html">Example 1: CESM Fully Coupled</A>
+<LI><A NAME="tex2html33"
+  HREF="node19.html">Example 2: History File Namelist</A>
+</UL>
+</UL>
+<BR>
+<LI><A NAME="tex2html34"
+  HREF="node20.html">Model Input Datasets</A>
+<LI><A NAME="tex2html35"
+  HREF="node21.html">Run Types</A>
+<LI><A NAME="tex2html36"
+  HREF="node22.html">Prescribed Ice Mode</A>
+<LI><A NAME="tex2html37"
+  HREF="node23.html">Prescribed Aerosol Mode</A>
+<LI><A NAME="tex2html38"
+  HREF="node24.html">Changing the Number of Ice Thickness Categories</A>
+<LI><A NAME="tex2html39"
+  HREF="node25.html">Output Data</A>
+<UL>
+<LI><A NAME="tex2html40"
+  HREF="node26.html">Stdout Output</A>
+<LI><A NAME="tex2html41"
+  HREF="node27.html">Restart Files</A>
+<UL>
+<LI><A NAME="tex2html42"
+  HREF="node28.html">Restart Pointer Files</A>
+</UL>
+<LI><A NAME="tex2html43"
+  HREF="node29.html">History Files</A>
+<UL>
+<LI><A NAME="tex2html44"
+  HREF="node30.html">Caveats Regarding Averaged Fields</A>
+<LI><A NAME="tex2html45"
+  HREF="node31.html">Changing Frequency and Averaging</A>
+<LI><A NAME="tex2html46"
+  HREF="node32.html">Changing Content</A>
+</UL>
+</UL>
+<BR>
+<LI><A NAME="tex2html47"
+  HREF="node33.html">Troubleshooting</A>
+<UL>
+<LI><A NAME="tex2html48"
+  HREF="node34.html">Code does not Compile or Run </A>
+<LI><A NAME="tex2html49"
+  HREF="node35.html">Negative Ice Area in Horizontal Remapping</A>
+<LI><A NAME="tex2html50"
+  HREF="node36.html">Thermodynamic Iteration Error</A>
+<LI><A NAME="tex2html51"
+  HREF="node37.html">Conservation Error</A>
+<LI><A NAME="tex2html52"
+  HREF="node38.html">NX does not divide evenly into grid</A>
+<LI><A NAME="tex2html53"
+  HREF="node39.html">Enabling the Debugger</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html54"
+  HREF="node40.html">Bibliography</A>
+<LI><A NAME="tex2html55"
+  HREF="node41.html">About this document ...</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR> <HR>
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

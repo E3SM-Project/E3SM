@@ -1,0 +1,494 @@
+\hypertarget{namespaceice__calendar}{
+\section{ice\_\-calendar Module Reference}
+\label{namespaceice__calendar}\index{ice\_\-calendar@{ice\_\-calendar}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__calendar_a98202ec2aea2b959f54a058cd7d1387c}{init\_\-calendar}
+\item 
+subroutine \hyperlink{namespaceice__calendar_aa88caa12cfe780c61ddec5bfc825e93c}{calendar} (ttime)
+\item 
+subroutine \hyperlink{namespaceice__calendar_a69cff580919f3926456034ebbc574dac}{get\_\-daycal} (year, days\_\-per\_\-year\_\-in, daycal\_\-out, daymo\_\-out)
+\item 
+logical \hyperlink{namespaceice__calendar_a6cc159a7c73375fe57015ddc47dff35e}{is\_\-leap\_\-year} (year)
+\item 
+integer \hyperlink{namespaceice__calendar_aabc8501f17759aa61f9a704f13571258}{leap\_\-year\_\-count} (Y)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a1fa9382761e78de77e0109c55630554b}{days\_\-per\_\-year}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_a1d4afbbddfef91146892cd47f6734b77}{daymo}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_ab55e85b8212a213de225f16289d5bb75}{daycal}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_aa23a9d5a11d0cd15e84d3b9771338ad5}{daymo360}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_ad91c534442e93775fa9630bdaa9da806}{daycal360}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_abd42cdcd4849fa25afe07f9e672c677e}{daymo365}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_a080909b268176fb29d513a184cc30386}{daycal365}
+\item 
+integer(kind=int\_\-kind), dimension(12) \hyperlink{namespaceice__calendar_a5db58762f256066e2e55974bc51b0b1e}{daymo366}
+\item 
+integer(kind=int\_\-kind), dimension(13) \hyperlink{namespaceice__calendar_a19cae1dafbfb758fdfe8ee3378a033ef}{daycal366}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a6899d76938ada3889a62308eb41331bf}{istep}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a225919cc1367b6648a33740b98427512}{istep0}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a56f19d1b69c0acd3d8fd3a6f06855e48}{istep1}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_af65b8e64abed62d107827ade781bb968}{mday}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a0d6f497f4cdeb0413e2c5eadca76d8a1}{hour}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a97f8410cf5a5f94b8c2a271c080c4bd7}{month}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a2e88fbbaa94dea7baf4d46c950c5be7a}{monthp}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_afc3c91ad4e19b987b1e28293ec6ec2b7}{year\_\-init}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_ab1bfcde8457aafd600e9ff69b7ec6a3f}{nyr}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_aefc3f061e0c4d064b85e0fa84f0c92af}{idate}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a60baa4e8bed2d175eaf6170ab792aa03}{idate0}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a80ddbc12ee9fd336c3148dd0e31f420c}{sec}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_aac483d802138fd2e80f1945fb3385f35}{npt}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a7d6b1e515218c3fa92e328b9cf745b59}{stop\_\-now}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_ab014cadf8e461a9743825f528cbd9e7a}{write\_\-restart}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_aec83d850502df509fde73dbd084c2dc5}{diagfreq}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_a0762fc870e55d2cfdfa80031188f4851}{dumpfreq\_\-n}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__calendar_ae00ad28547110901c77d6d4f2d87a7ea}{nstreams}
+\item 
+integer(kind=int\_\-kind), dimension(max\_\-nstrm) \hyperlink{namespaceice__calendar_ab7cea996ca05518dbde0dc027ee81c13}{histfreq\_\-n}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a8b89d489532c51cefe59876296c1f568}{dt}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a7c18b75ed60a7c1d0cbee86f4bca61de}{dt\_\-thm}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a3bb2bcfc8ce6074351961d80011c706a}{dt\_\-dyn}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a41fbc8dd30edf8e90070b7f5569fdd9b}{time}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_abc4a1fb6d6f8356506f078c4265a6ce6}{time\_\-forc}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a4b4393c99a1d82bc45fcee5d7f6c1eab}{yday}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a04f5a8dadd1f3a10e3909afc246aebe4}{nextsw\_\-cday}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a7a56bc05233c72a7b5176c7c2d6abe7c}{tday}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_aaf7ba66b2706feaef77263c10d65e28a}{xndt\_\-dyn}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__calendar_a729d7e640fbfecac3733865efcfcb042}{dayyr}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a2d0b7e0b5144d49dd2e39690c5cde21f}{new\_\-year}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_adf4af22505e09a7ed33b5c480cce75af}{new\_\-month}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a766cb3e9a2b5b634a04a558bade2457c}{new\_\-day}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a0c8bfc71143cc3c7aef340ad41a9068d}{new\_\-hour}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__calendar_a0ab845607bc7966960d11bffb6f9f069}{write\_\-ic}
+\item 
+logical(kind=log\_\-kind), dimension(max\_\-nstrm) \hyperlink{namespaceice__calendar_a610c4039b3869befd73705569c033bef}{write\_\-history}
+\item 
+character(len=1), dimension(max\_\-nstrm) \hyperlink{namespaceice__calendar_a0502fca3c549cbfb5113eddd7de76b20}{histfreq}
+\item 
+character(len=1) \hyperlink{namespaceice__calendar_aa26268d5abce218fad113a08bedcf8d9}{dumpfreq}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__calendar_ad01a9ecbaab3997c0252754dee9aa0c7}{calendar\_\-type}
+\item 
+integer \hyperlink{namespaceice__calendar_a671fa04415abb84aa5564c9269f47f81}{nleaps} = 0
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__calendar_aa88caa12cfe780c61ddec5bfc825e93c}{
+\index{ice\_\-calendar@{ice\_\-calendar}!calendar@{calendar}}
+\index{calendar@{calendar}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{calendar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-calendar::calendar (real (kind=dbl\_\-kind),intent(in) {\em ttime})}}
+\label{namespaceice__calendar_aa88caa12cfe780c61ddec5bfc825e93c}
+
+
+Definition at line 197 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a69cff580919f3926456034ebbc574dac}{
+\index{ice\_\-calendar@{ice\_\-calendar}!get\_\-daycal@{get\_\-daycal}}
+\index{get\_\-daycal@{get\_\-daycal}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{get\_\-daycal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-calendar::get\_\-daycal (integer,intent(in),optional {\em year}, \/  integer,intent(in),optional {\em days\_\-per\_\-year\_\-in}, \/  integer,dimension(13),intent(out),optional {\em daycal\_\-out}, \/  integer,dimension(12),intent(out),optional {\em daymo\_\-out})}}
+\label{namespaceice__calendar_a69cff580919f3926456034ebbc574dac}
+
+
+Definition at line 348 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a98202ec2aea2b959f54a058cd7d1387c}{
+\index{ice\_\-calendar@{ice\_\-calendar}!init\_\-calendar@{init\_\-calendar}}
+\index{init\_\-calendar@{init\_\-calendar}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{init\_\-calendar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-calendar::init\_\-calendar ()}}
+\label{namespaceice__calendar_a98202ec2aea2b959f54a058cd7d1387c}
+
+
+Definition at line 121 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a6cc159a7c73375fe57015ddc47dff35e}{
+\index{ice\_\-calendar@{ice\_\-calendar}!is\_\-leap\_\-year@{is\_\-leap\_\-year}}
+\index{is\_\-leap\_\-year@{is\_\-leap\_\-year}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{is\_\-leap\_\-year}]{\setlength{\rightskip}{0pt plus 5cm}logical ice\_\-calendar::is\_\-leap\_\-year (integer,intent(in) {\em year})}}
+\label{namespaceice__calendar_a6cc159a7c73375fe57015ddc47dff35e}
+
+
+Definition at line 424 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aabc8501f17759aa61f9a704f13571258}{
+\index{ice\_\-calendar@{ice\_\-calendar}!leap\_\-year\_\-count@{leap\_\-year\_\-count}}
+\index{leap\_\-year\_\-count@{leap\_\-year\_\-count}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{leap\_\-year\_\-count}]{\setlength{\rightskip}{0pt plus 5cm}integer ice\_\-calendar::leap\_\-year\_\-count (integer,intent(in) {\em Y})}}
+\label{namespaceice__calendar_aabc8501f17759aa61f9a704f13571258}
+
+
+Definition at line 438 of file ice\_\-calendar.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__calendar_ad01a9ecbaab3997c0252754dee9aa0c7}{
+\index{ice\_\-calendar@{ice\_\-calendar}!calendar\_\-type@{calendar\_\-type}}
+\index{calendar\_\-type@{calendar\_\-type}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{calendar\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len) {\bf ice\_\-calendar::calendar\_\-type}}}
+\label{namespaceice__calendar_ad01a9ecbaab3997c0252754dee9aa0c7}
+
+
+Definition at line 105 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_ab55e85b8212a213de225f16289d5bb75}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daycal@{daycal}}
+\index{daycal@{daycal}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daycal}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(13) {\bf ice\_\-calendar::daycal}}}
+\label{namespaceice__calendar_ab55e85b8212a213de225f16289d5bb75}
+
+
+Definition at line 34 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_ad91c534442e93775fa9630bdaa9da806}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daycal360@{daycal360}}
+\index{daycal360@{daycal360}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daycal360}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(13) {\bf ice\_\-calendar::daycal360}}}
+\label{namespaceice__calendar_ad91c534442e93775fa9630bdaa9da806}
+
+
+Definition at line 40 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a080909b268176fb29d513a184cc30386}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daycal365@{daycal365}}
+\index{daycal365@{daycal365}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daycal365}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(13) {\bf ice\_\-calendar::daycal365}}}
+\label{namespaceice__calendar_a080909b268176fb29d513a184cc30386}
+
+
+Definition at line 47 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a19cae1dafbfb758fdfe8ee3378a033ef}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daycal366@{daycal366}}
+\index{daycal366@{daycal366}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daycal366}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(13) {\bf ice\_\-calendar::daycal366}}}
+\label{namespaceice__calendar_a19cae1dafbfb758fdfe8ee3378a033ef}
+
+
+Definition at line 54 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a1d4afbbddfef91146892cd47f6734b77}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daymo@{daymo}}
+\index{daymo@{daymo}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daymo}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(12) {\bf ice\_\-calendar::daymo}}}
+\label{namespaceice__calendar_a1d4afbbddfef91146892cd47f6734b77}
+
+
+Definition at line 34 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aa23a9d5a11d0cd15e84d3b9771338ad5}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daymo360@{daymo360}}
+\index{daymo360@{daymo360}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daymo360}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(12) {\bf ice\_\-calendar::daymo360}}}
+\label{namespaceice__calendar_aa23a9d5a11d0cd15e84d3b9771338ad5}
+
+
+Definition at line 40 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_abd42cdcd4849fa25afe07f9e672c677e}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daymo365@{daymo365}}
+\index{daymo365@{daymo365}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daymo365}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(12) {\bf ice\_\-calendar::daymo365}}}
+\label{namespaceice__calendar_abd42cdcd4849fa25afe07f9e672c677e}
+
+
+Definition at line 47 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a5db58762f256066e2e55974bc51b0b1e}{
+\index{ice\_\-calendar@{ice\_\-calendar}!daymo366@{daymo366}}
+\index{daymo366@{daymo366}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{daymo366}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(12) {\bf ice\_\-calendar::daymo366}}}
+\label{namespaceice__calendar_a5db58762f256066e2e55974bc51b0b1e}
+
+
+Definition at line 54 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a1fa9382761e78de77e0109c55630554b}{
+\index{ice\_\-calendar@{ice\_\-calendar}!days\_\-per\_\-year@{days\_\-per\_\-year}}
+\index{days\_\-per\_\-year@{days\_\-per\_\-year}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{days\_\-per\_\-year}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::days\_\-per\_\-year}}}
+\label{namespaceice__calendar_a1fa9382761e78de77e0109c55630554b}
+
+
+Definition at line 34 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a729d7e640fbfecac3733865efcfcb042}{
+\index{ice\_\-calendar@{ice\_\-calendar}!dayyr@{dayyr}}
+\index{dayyr@{dayyr}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{dayyr}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::dayyr}}}
+\label{namespaceice__calendar_a729d7e640fbfecac3733865efcfcb042}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aec83d850502df509fde73dbd084c2dc5}{
+\index{ice\_\-calendar@{ice\_\-calendar}!diagfreq@{diagfreq}}
+\index{diagfreq@{diagfreq}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{diagfreq}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::diagfreq}}}
+\label{namespaceice__calendar_aec83d850502df509fde73dbd084c2dc5}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a8b89d489532c51cefe59876296c1f568}{
+\index{ice\_\-calendar@{ice\_\-calendar}!dt@{dt}}
+\index{dt@{dt}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{dt}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::dt}}}
+\label{namespaceice__calendar_a8b89d489532c51cefe59876296c1f568}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a3bb2bcfc8ce6074351961d80011c706a}{
+\index{ice\_\-calendar@{ice\_\-calendar}!dt\_\-dyn@{dt\_\-dyn}}
+\index{dt\_\-dyn@{dt\_\-dyn}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{dt\_\-dyn}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::dt\_\-dyn}}}
+\label{namespaceice__calendar_a3bb2bcfc8ce6074351961d80011c706a}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a7c18b75ed60a7c1d0cbee86f4bca61de}{
+\index{ice\_\-calendar@{ice\_\-calendar}!dt\_\-thm@{dt\_\-thm}}
+\index{dt\_\-thm@{dt\_\-thm}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{dt\_\-thm}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::dt\_\-thm}}}
+\label{namespaceice__calendar_a7c18b75ed60a7c1d0cbee86f4bca61de}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aa26268d5abce218fad113a08bedcf8d9}{
+\index{ice\_\-calendar@{ice\_\-calendar}!dumpfreq@{dumpfreq}}
+\index{dumpfreq@{dumpfreq}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{dumpfreq}]{\setlength{\rightskip}{0pt plus 5cm}character (len=1) {\bf ice\_\-calendar::dumpfreq}}}
+\label{namespaceice__calendar_aa26268d5abce218fad113a08bedcf8d9}
+
+
+Definition at line 101 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a0762fc870e55d2cfdfa80031188f4851}{
+\index{ice\_\-calendar@{ice\_\-calendar}!dumpfreq\_\-n@{dumpfreq\_\-n}}
+\index{dumpfreq\_\-n@{dumpfreq\_\-n}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{dumpfreq\_\-n}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::dumpfreq\_\-n}}}
+\label{namespaceice__calendar_a0762fc870e55d2cfdfa80031188f4851}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a0502fca3c549cbfb5113eddd7de76b20}{
+\index{ice\_\-calendar@{ice\_\-calendar}!histfreq@{histfreq}}
+\index{histfreq@{histfreq}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{histfreq}]{\setlength{\rightskip}{0pt plus 5cm}character (len=1),dimension(max\_\-nstrm) {\bf ice\_\-calendar::histfreq}}}
+\label{namespaceice__calendar_a0502fca3c549cbfb5113eddd7de76b20}
+
+
+Definition at line 101 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_ab7cea996ca05518dbde0dc027ee81c13}{
+\index{ice\_\-calendar@{ice\_\-calendar}!histfreq\_\-n@{histfreq\_\-n}}
+\index{histfreq\_\-n@{histfreq\_\-n}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{histfreq\_\-n}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),dimension(max\_\-nstrm) {\bf ice\_\-calendar::histfreq\_\-n}}}
+\label{namespaceice__calendar_ab7cea996ca05518dbde0dc027ee81c13}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a0d6f497f4cdeb0413e2c5eadca76d8a1}{
+\index{ice\_\-calendar@{ice\_\-calendar}!hour@{hour}}
+\index{hour@{hour}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{hour}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::hour}}}
+\label{namespaceice__calendar_a0d6f497f4cdeb0413e2c5eadca76d8a1}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aefc3f061e0c4d064b85e0fa84f0c92af}{
+\index{ice\_\-calendar@{ice\_\-calendar}!idate@{idate}}
+\index{idate@{idate}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{idate}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::idate}}}
+\label{namespaceice__calendar_aefc3f061e0c4d064b85e0fa84f0c92af}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a60baa4e8bed2d175eaf6170ab792aa03}{
+\index{ice\_\-calendar@{ice\_\-calendar}!idate0@{idate0}}
+\index{idate0@{idate0}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{idate0}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::idate0}}}
+\label{namespaceice__calendar_a60baa4e8bed2d175eaf6170ab792aa03}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a6899d76938ada3889a62308eb41331bf}{
+\index{ice\_\-calendar@{ice\_\-calendar}!istep@{istep}}
+\index{istep@{istep}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{istep}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::istep}}}
+\label{namespaceice__calendar_a6899d76938ada3889a62308eb41331bf}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a225919cc1367b6648a33740b98427512}{
+\index{ice\_\-calendar@{ice\_\-calendar}!istep0@{istep0}}
+\index{istep0@{istep0}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{istep0}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::istep0}}}
+\label{namespaceice__calendar_a225919cc1367b6648a33740b98427512}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a56f19d1b69c0acd3d8fd3a6f06855e48}{
+\index{ice\_\-calendar@{ice\_\-calendar}!istep1@{istep1}}
+\index{istep1@{istep1}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{istep1}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::istep1}}}
+\label{namespaceice__calendar_a56f19d1b69c0acd3d8fd3a6f06855e48}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_af65b8e64abed62d107827ade781bb968}{
+\index{ice\_\-calendar@{ice\_\-calendar}!mday@{mday}}
+\index{mday@{mday}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{mday}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::mday}}}
+\label{namespaceice__calendar_af65b8e64abed62d107827ade781bb968}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a97f8410cf5a5f94b8c2a271c080c4bd7}{
+\index{ice\_\-calendar@{ice\_\-calendar}!month@{month}}
+\index{month@{month}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{month}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::month}}}
+\label{namespaceice__calendar_a97f8410cf5a5f94b8c2a271c080c4bd7}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a2e88fbbaa94dea7baf4d46c950c5be7a}{
+\index{ice\_\-calendar@{ice\_\-calendar}!monthp@{monthp}}
+\index{monthp@{monthp}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{monthp}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::monthp}}}
+\label{namespaceice__calendar_a2e88fbbaa94dea7baf4d46c950c5be7a}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a766cb3e9a2b5b634a04a558bade2457c}{
+\index{ice\_\-calendar@{ice\_\-calendar}!new\_\-day@{new\_\-day}}
+\index{new\_\-day@{new\_\-day}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{new\_\-day}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-calendar::new\_\-day}}}
+\label{namespaceice__calendar_a766cb3e9a2b5b634a04a558bade2457c}
+
+
+Definition at line 93 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a0c8bfc71143cc3c7aef340ad41a9068d}{
+\index{ice\_\-calendar@{ice\_\-calendar}!new\_\-hour@{new\_\-hour}}
+\index{new\_\-hour@{new\_\-hour}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{new\_\-hour}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-calendar::new\_\-hour}}}
+\label{namespaceice__calendar_a0c8bfc71143cc3c7aef340ad41a9068d}
+
+
+Definition at line 93 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_adf4af22505e09a7ed33b5c480cce75af}{
+\index{ice\_\-calendar@{ice\_\-calendar}!new\_\-month@{new\_\-month}}
+\index{new\_\-month@{new\_\-month}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{new\_\-month}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-calendar::new\_\-month}}}
+\label{namespaceice__calendar_adf4af22505e09a7ed33b5c480cce75af}
+
+
+Definition at line 93 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a2d0b7e0b5144d49dd2e39690c5cde21f}{
+\index{ice\_\-calendar@{ice\_\-calendar}!new\_\-year@{new\_\-year}}
+\index{new\_\-year@{new\_\-year}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{new\_\-year}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-calendar::new\_\-year}}}
+\label{namespaceice__calendar_a2d0b7e0b5144d49dd2e39690c5cde21f}
+
+
+Definition at line 93 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a04f5a8dadd1f3a10e3909afc246aebe4}{
+\index{ice\_\-calendar@{ice\_\-calendar}!nextsw\_\-cday@{nextsw\_\-cday}}
+\index{nextsw\_\-cday@{nextsw\_\-cday}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{nextsw\_\-cday}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::nextsw\_\-cday}}}
+\label{namespaceice__calendar_a04f5a8dadd1f3a10e3909afc246aebe4}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a671fa04415abb84aa5564c9269f47f81}{
+\index{ice\_\-calendar@{ice\_\-calendar}!nleaps@{nleaps}}
+\index{nleaps@{nleaps}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{nleaps}]{\setlength{\rightskip}{0pt plus 5cm}integer {\bf ice\_\-calendar::nleaps} = 0}}
+\label{namespaceice__calendar_a671fa04415abb84aa5564c9269f47f81}
+
+
+Definition at line 107 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aac483d802138fd2e80f1945fb3385f35}{
+\index{ice\_\-calendar@{ice\_\-calendar}!npt@{npt}}
+\index{npt@{npt}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{npt}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::npt}}}
+\label{namespaceice__calendar_aac483d802138fd2e80f1945fb3385f35}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_ae00ad28547110901c77d6d4f2d87a7ea}{
+\index{ice\_\-calendar@{ice\_\-calendar}!nstreams@{nstreams}}
+\index{nstreams@{nstreams}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{nstreams}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::nstreams}}}
+\label{namespaceice__calendar_ae00ad28547110901c77d6d4f2d87a7ea}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_ab1bfcde8457aafd600e9ff69b7ec6a3f}{
+\index{ice\_\-calendar@{ice\_\-calendar}!nyr@{nyr}}
+\index{nyr@{nyr}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{nyr}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::nyr}}}
+\label{namespaceice__calendar_ab1bfcde8457aafd600e9ff69b7ec6a3f}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a80ddbc12ee9fd336c3148dd0e31f420c}{
+\index{ice\_\-calendar@{ice\_\-calendar}!sec@{sec}}
+\index{sec@{sec}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{sec}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::sec}}}
+\label{namespaceice__calendar_a80ddbc12ee9fd336c3148dd0e31f420c}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a7d6b1e515218c3fa92e328b9cf745b59}{
+\index{ice\_\-calendar@{ice\_\-calendar}!stop\_\-now@{stop\_\-now}}
+\index{stop\_\-now@{stop\_\-now}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{stop\_\-now}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::stop\_\-now}}}
+\label{namespaceice__calendar_a7d6b1e515218c3fa92e328b9cf745b59}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a7a56bc05233c72a7b5176c7c2d6abe7c}{
+\index{ice\_\-calendar@{ice\_\-calendar}!tday@{tday}}
+\index{tday@{tday}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{tday}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::tday}}}
+\label{namespaceice__calendar_a7a56bc05233c72a7b5176c7c2d6abe7c}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a41fbc8dd30edf8e90070b7f5569fdd9b}{
+\index{ice\_\-calendar@{ice\_\-calendar}!time@{time}}
+\index{time@{time}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{time}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::time}}}
+\label{namespaceice__calendar_a41fbc8dd30edf8e90070b7f5569fdd9b}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_abc4a1fb6d6f8356506f078c4265a6ce6}{
+\index{ice\_\-calendar@{ice\_\-calendar}!time\_\-forc@{time\_\-forc}}
+\index{time\_\-forc@{time\_\-forc}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{time\_\-forc}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::time\_\-forc}}}
+\label{namespaceice__calendar_abc4a1fb6d6f8356506f078c4265a6ce6}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a610c4039b3869befd73705569c033bef}{
+\index{ice\_\-calendar@{ice\_\-calendar}!write\_\-history@{write\_\-history}}
+\index{write\_\-history@{write\_\-history}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{write\_\-history}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),dimension(max\_\-nstrm) {\bf ice\_\-calendar::write\_\-history}}}
+\label{namespaceice__calendar_a610c4039b3869befd73705569c033bef}
+
+
+Definition at line 93 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a0ab845607bc7966960d11bffb6f9f069}{
+\index{ice\_\-calendar@{ice\_\-calendar}!write\_\-ic@{write\_\-ic}}
+\index{write\_\-ic@{write\_\-ic}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{write\_\-ic}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-calendar::write\_\-ic}}}
+\label{namespaceice__calendar_a0ab845607bc7966960d11bffb6f9f069}
+
+
+Definition at line 93 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_ab014cadf8e461a9743825f528cbd9e7a}{
+\index{ice\_\-calendar@{ice\_\-calendar}!write\_\-restart@{write\_\-restart}}
+\index{write\_\-restart@{write\_\-restart}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{write\_\-restart}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::write\_\-restart}}}
+\label{namespaceice__calendar_ab014cadf8e461a9743825f528cbd9e7a}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_aaf7ba66b2706feaef77263c10d65e28a}{
+\index{ice\_\-calendar@{ice\_\-calendar}!xndt\_\-dyn@{xndt\_\-dyn}}
+\index{xndt\_\-dyn@{xndt\_\-dyn}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{xndt\_\-dyn}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::xndt\_\-dyn}}}
+\label{namespaceice__calendar_aaf7ba66b2706feaef77263c10d65e28a}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_a4b4393c99a1d82bc45fcee5d7f6c1eab}{
+\index{ice\_\-calendar@{ice\_\-calendar}!yday@{yday}}
+\index{yday@{yday}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{yday}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-calendar::yday}}}
+\label{namespaceice__calendar_a4b4393c99a1d82bc45fcee5d7f6c1eab}
+
+
+Definition at line 81 of file ice\_\-calendar.F90.\hypertarget{namespaceice__calendar_afc3c91ad4e19b987b1e28293ec6ec2b7}{
+\index{ice\_\-calendar@{ice\_\-calendar}!year\_\-init@{year\_\-init}}
+\index{year\_\-init@{year\_\-init}!ice_calendar@{ice\_\-calendar}}
+\subsubsection[{year\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-calendar::year\_\-init}}}
+\label{namespaceice__calendar_afc3c91ad4e19b987b1e28293ec6ec2b7}
+
+
+Definition at line 60 of file ice\_\-calendar.F90.

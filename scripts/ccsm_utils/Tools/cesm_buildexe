@@ -1,0 +1,265 @@
+echo "-------------------------------------------------------------------------"
+echo " CESM BUILDEXE SCRIPT STARTING"
+
+set atmstr = 0
+if ($NTHRDS_ATM > 1 || $BUILD_THREADED == "TRUE") set atmstr = 1
+set lndstr = 0
+if ($NTHRDS_LND > 1 || $BUILD_THREADED == "TRUE") set lndstr = 1
+set icestr = 0
+if ($NTHRDS_ICE > 1 || $BUILD_THREADED == "TRUE") set icestr = 1
+set ocnstr = 0
+if ($NTHRDS_OCN > 1 || $BUILD_THREADED == "TRUE") set ocnstr = 1
+set rofstr = 0
+if ($NTHRDS_ROF > 1 || $BUILD_THREADED == "TRUE") set rofstr = 1
+set glcstr = 0
+if ($NTHRDS_GLC > 1 || $BUILD_THREADED == "TRUE") set glcstr = 1
+set wavstr = 0
+if ($NTHRDS_WAV > 1 || $BUILD_THREADED == "TRUE") set wavstr = 1
+set cplstr = 0
+if ($NTHRDS_CPL > 1 || $BUILD_THREADED == "TRUE") set cplstr = 1
+
+cd $CASEROOT
+
+set smpstr = a${atmstr}l${lndstr}r${rofstr}i${icestr}o${ocnstr}g${glcstr}w${wavstr}c${cplstr}
+./xmlchange -file env_build.xml -id SMP_VALUE -val ${smpstr}
+setenv SMP_VALUE ${smpstr}
+
+set inststr = a${NINST_ATM}l${NINST_LND}r${NINST_ROF}i${NINST_ICE}o${NINST_OCN}g${NINST_GLC}w${NINST_WAV}
+./xmlchange -file env_build.xml -id NINST_VALUE -val ${inststr}
+setenv NINST_VALUE ${inststr}
+
+# Set the overall USE_TRILINOS variable to TRUE if any of the
+# XXX_USE_TRILINOS variables are TRUE. 
+# For now, there is just the one CISM_USE_TRILINOS variable, but in
+# the future there may be others -- so USE_TRILINOS will be true if
+# ANY of those are true.
+set use_trilinos=FALSE
+if ($?CISM_USE_TRILINOS) then
+  if ($CISM_USE_TRILINOS == "TRUE") then
+    set use_trilinos=TRUE
+  endif
+endif
+./xmlchange -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}
+setenv USE_TRILINOS ${use_trilinos}
+
+if ($NINST_BUILD != $NINST_VALUE && $NINST_BUILD != "0") then
+  echo " "
+  echo "  ERROR NINST VALUES HAVE CHANGED"
+  echo "    NINST_BUILD = $NINST_BUILD"
+  echo "    NINST_VALUE = $NINST_VALUE"
+  echo "    A manual clean of your obj directories is strongly recommendend"
+  echo "    You should execute the following:"
+  echo "      ./$CASE.clean_build"
+  echo "    Then rerun the build script interactively"
+  echo "    ---- OR ----"
+  echo "    You can override this error message at your own risk by executing"
+  echo "      ./xmlchange -file env_build.xml -id NINST_BUILD -val 0 "
+  echo "    Then rerun the build script interactively"
+  echo " "
+  exit -20
+endif
+if ($SMP_BUILD != $SMP_VALUE && $SMP_BUILD != "0") then
+  echo " "
+  echo "  ERROR SMP STATUS HAS CHANGED"
+  echo "    SMP_BUILD = $SMP_BUILD"
+  echo "    SMP_VALUE = $SMP_VALUE"
+  echo "    A manual clean of your obj directories is strongly recommendend"
+  echo "    You should execute the following:"
+  echo "      ./$CASE.clean_build"
+  echo "    Then rerun the build script interactively"
+  echo "    ---- OR ----"
+  echo "    You can override this error message at your own risk by executing"
+  echo "      ./xmlchange -file env_build.xml -id SMP_BUILD -val 0 "
+  echo "    Then rerun the build script interactively"
+  echo " "
+  exit -20
+endif
+if ($BUILD_STATUS != "0") then
+  echo " "
+  echo "  ERROR env_build HAS CHANGED"
+  echo "    A manual clean of your obj directories is strongly recommendend"
+  echo "    You should execute the following:"
+  echo "      ./$CASE.clean_build"
+  echo "    Then rerun the build script interactively"
+  echo "    ---- OR ----"
+  echo "    You can override this error message at your own risk by executing"
+  echo "      rm LockedFiles/env_build*"
+  echo "    Then rerun the build script interactively"
+  echo " "
+  exit -20
+endif
+if ($COMP_INTERFACE == "ESMF" && $USE_ESMF_LIB != "TRUE") then
+  echo " "
+  echo "  ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE"
+  echo "    Set USE_ESMF_LIB to TRUE with"
+  echo "      ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val TRUE "
+  echo " "
+  exit -20
+endif
+if ($MPILIB == "mpi-serial" && $USE_ESMF_LIB == "TRUE") then
+  echo " "
+  echo "  ERROR MPILIB is mpi-serial AND USE_ESMF_LIB IS TRUE"
+  echo "       MPILIB can only be used with an ESMF library built with mpiuni on"
+  echo "    Set USE_ESMF_LIB to FALSE with"
+  echo "      ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE "
+  echo "    ---- OR ----"
+  echo "    Make sure the ESMF_LIBDIR used was built with mpiuni (or change it to one that was)"
+  echo "    And comment out this abort in Tools/ccsm_buildexe.csh"
+  echo " "
+  exit -20
+endif
+
+# -------------------------------------------------------------------------
+# Build Utility Libraries
+# -------------------------------------------------------------------------
+
+  cd $EXEROOT
+  echo " COMPILER is $COMPILER"
+  if ("$MPILIB" == "mpi-serial") then
+    cp -p -f $CODEROOT/utils/mct/mpi-serial/*.h   $LIBROOT/include/.
+  endif
+
+  set blibs = "mct gptl pio csm_share"
+  echo " - Build Libraries: $blibs "
+  setenv SMP "FALSE"
+  if ($NTHRDS_ATM > 1 || $NTHRDS_CPL > 1 || $NTHRDS_ICE > 1 || $NTHRDS_ROF > 1 || \
+      $NTHRDS_LND > 1 || $NTHRDS_OCN > 1 || $NTHRDS_GLC > 1 || $NTHRDS_WAV > 1 )  \
+      setenv SMP "TRUE"
+  foreach lib ($blibs)
+     set libdir = $EXEROOT/$lib; if !(-d $libdir) mkdir -p $libdir
+     set file_build = ${libdir}/$lib.bldlog.$LID
+     cd $libdir
+     touch ${file_build}
+     echo `date` $file_build | tee -a ${file_build}
+     $CASEBUILD/buildlib.${lib} >>& ${file_build}
+     if ($status != 0) then
+        echo  ERROR: buildlib.${lib} failed, see ${file_build}
+        echo  ERROR: cat ${file_build}
+        exit  99
+     endif
+  end
+
+# -------------------------------------------------------------------------
+# Build Model Component Libraries
+# -------------------------------------------------------------------------
+
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+
+  #--- Set component specific variables
+  if ( $model != cpl ) then
+    set comp =  $COMPONENTS[$n]
+    setenv SMP FALSE
+    if ($NTHRDS[$n] > 1) setenv SMP TRUE
+    if ($NTASKS[$n] < 1) then
+      echo "$model $comp has <1 NTASKS, must be greater than 0"; exit 99
+    endif
+    if ($NTHRDS[$n] < 1) then
+      echo "$model $comp has <1 NTHRDS, must be greater than 0"; exit 99
+    endif
+
+    #--- Make necessary directories
+    set objdir = $EXEROOT/$model/obj ; if !(-d $objdir) mkdir -p $objdir
+    set libdir = $EXEROOT/$model     ; if !(-d $libdir) mkdir -p $libdir
+    cd $libdir
+    set file_build = ${EXEROOT}/$model.bldlog.$LID
+    touch ${file_build}
+    echo `date` ${file_build} | tee -a ${file_build}
+
+    #--- Build component libraries
+    setenv MODEL $model    
+    $CASEBUILD/$comp.buildexe.csh  >>& ${file_build}
+    if ($status != 0) then
+      echo  ERROR: $comp.buildexe.csh failed, see ${file_build}
+      echo  ERROR: cat ${file_build}
+      exit  99
+    endif
+
+    #--- Copy .mod files (need both cases in comp for generality)
+    cp -p $objdir/*_comp_*.mod $INCROOT/ >& /dev/null
+    cp -p $objdir/*_COMP_*.mod $INCROOT/ >& /dev/null
+  endif
+end
+
+#--- Build cesm executable
+setenv SMP "FALSE"
+if ($NTHRDS_ATM > 1 || $NTHRDS_CPL > 1 || $NTHRDS_ICE > 1 || $NTHRDS_ROF > 1 || \
+    $NTHRDS_LND > 1 || $NTHRDS_OCN > 1 || $NTHRDS_GLC > 1 || $NTHRDS_WAV > 1 )  \
+    setenv SMP "TRUE"
+
+set objdir = $EXEROOT/cesm/obj ; if !(-d $objdir) mkdir -p $objdir
+set libdir = $EXEROOT/cesm     ; if !(-d $libdir) mkdir -p $libdir
+cd  $libdir
+set file_build = ${EXEROOT}/cesm.bldlog.$LID
+touch ${file_build}
+echo `date` ${file_build} | tee -a ${file_build}
+
+$CASEBUILD/cesm.buildexe.csh  >>& ${file_build}
+if ($status != 0) then
+  echo  ERROR: cesm.buildexe.csh failed, see ${file_build}
+  echo  ERROR: cat ${file_build}
+  exit  99
+endif
+
+#--- rename and save the latest executable
+if (-f $EXEROOT/cesm.exe.$LID) then
+  cmp -s $EXEROOT/cesm.exe $EXEROOT/cesm.exe.$LID
+  if ($status != 0) cp $EXEROOT/cesm.exe $EXEROOT/cesm.exe.$LID
+else 
+  cp $EXEROOT/cesm.exe $EXEROOT/cesm.exe.$LID
+endif
+
+# -------------------------------------------------------------------------
+# Save model output stdout and stderr 
+# -------------------------------------------------------------------------
+
+if ($LOGDIR != "") then
+  if (! -d $LOGDIR) mkdir -p $LOGDIR
+  if (! -d $LOGDIR/bld) mkdir -p $LOGDIR/bld
+  cd $EXEROOT
+  gzip *.bldlog.$LID
+  cp -p ./*bldlog.$LID.* $LOGDIR/bld/ || echo "Error in copy of build logs "
+endif
+
+# -------------------------------------------------------------------------
+# Go into case directory and set BUILD_COMPLETE flag to TRUE
+# -------------------------------------------------------------------------
+
+cd $CASEROOT
+./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+
+./xmlchange -file env_build.xml -id BUILD_STATUS -val 0
+if ($status != 0) then
+  echo  ERROR: $case.build call to xmlchange failed; exit  100
+endif
+
+./xmlchange -file env_build.xml -id SMP_BUILD -val $SMP_VALUE
+if ($status != 0) then
+  echo  ERROR: $case.build call to xmlchange failed; exit  101
+endif
+
+./xmlchange -file env_build.xml -id NINST_BUILD -val $NINST_VALUE
+if ($status != 0) then
+  echo  ERROR: $case.build call to xmlchange failed; exit  102
+endif
+
+rm LockedFiles/env_build*  >& /dev/null
+foreach file (env_build.xml)    
+   if (! -e LockedFiles/$file.locked) then
+      cp $file LockedFiles/$file.locked
+      if ($status != 0) then
+         echo  ERROR: $case.build problem in locking $file; exit 103
+      endif
+      echo " - Locking file $file"
+   endif
+end
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "build complete $sdate" >>& $CASEROOT/CaseStatus
+
+echo " CESM BUILDEXE SCRIPT HAS FINISHED SUCCESSFULLY"
+echo "-------------------------------------------------------------------------"
+
+
+

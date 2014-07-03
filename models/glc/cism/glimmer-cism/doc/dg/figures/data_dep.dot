@@ -1,0 +1,155 @@
+digraph G
+{
+ //glide_initialise
+// glide_initialise [shape = box,style = filled,color=greenyellow];
+// thck0->glide_initialise;
+// topg0->glide_initialise;
+// relx->glide_initialise;
+// artm0->glide_initialise;
+// glide_initialise->temp0;
+// glide_initialise->flwa0;
+// glide_initialise->lsrf0;
+// glide_initialise->usrf0;
+
+ //slipvelo
+ slipvelo [shape = box];
+ bwat0->slipvelo;
+ relx->slipvelo;
+ slipvelo->btrc0;
+ slipvelo->ubas;
+ slipvelo->vbas;
+
+ //zerovelo0
+ zerovelo0 [shape = box];
+ flwa0->zerovelo0;
+ ubas->zerovelo0;
+ vbas->zerovelo0;
+ zerovelo0->uvel0;
+ zerovelo0->vvel0;
+ zerovelo0->diffu0;
+ zerovelo0->uflx0;
+ zerovelo0->vflx0;
+
+ //glide_maskthck
+ glide_maskthck [shape = box];
+ thck0->glide_maskthck;
+ acab0->glide_maskthck;
+ glide_maskthck->mask;
+
+ //timeevoltemp1
+ timeevoltemp1 [shape = box];
+ temp0->timeevoltemp1;
+ artm0->timeevoltemp1;
+ acab0->timeevoltemp1;
+ thck0->timeevoltemp1;
+ usrf0->timeevoltemp1;
+ uvel0->timeevoltemp1;
+ vvel0->timeevoltemp1;
+ bmlt0->timeevoltemp1;
+ mask->timeevoltemp1;
+ timeevoltemp1->temp1;
+ timeevoltemp1->flwa1;
+ timeevoltemp1->wgrd;
+ timeevoltemp1->wvel;
+ timeevoltemp1->bmlt1;
+ timeevoltemp1->bwat1;
+ 
+// //timeevolthck
+// timeevolthck [shape = box];
+// uflx0->timeevolthck;
+// vflx0->timeevolthck;
+// dusrfdew->timeevolthck;
+// dusrfdns->timeevolthck;
+// acab0->timeevolthck;
+// mask->timeevolthck;
+// thck0->timeevolthck;
+// usrf0->timeevolthck;
+// lsrf0->timeevolthck;
+// timeevolthck->thck1;
+// timeevolthck->usrf1;
+
+// //stagleapthck
+// stagleapthck [shape = box];
+// uflx0->stagleapthck;
+// vflx0->stagleapthck;
+// lsrf0->stagleapthck;
+// thck0->stagleapthck;
+// stagleapthck->thck1;
+// stagleapthck->usrf1;
+
+ //nonlevolthck
+ nonlevolthck [shape = box];
+ lsrf0->nonlevolthck;
+ acab0->nonlevolthck;
+ thck0->nonlevolthck;
+ bwat1->nonlevolthck;
+ relx->nonlevolthck;
+ flwa1->nonlevolthck;
+ mask->nonlevolthck;
+ nonlevolthck->thck1;
+ nonlevolthck->ubas1;
+ nonlevolthck->vbas1;
+ nonlevolthck->btrc1;
+ nonlevolthck->vvel1;
+ nonlevolthck->uvel1;
+ nonlevolthck->diffu1;
+ nonlevolthck->uflx1;
+ nonlevolthck->vflx1;
+
+ //glide_marinlim
+ glide_marinlim [shape = box];
+ lati->glide_marinlim;
+ relx->glide_marinlim;
+ topg0->glide_marinlim;
+ thck1->glide_marinlim;
+ glide_marinlim->thck2;
+
+ //isosevol
+ isosevol [shape = box];
+ thck2->isosevol;
+ topg0->isosevol;
+ relx->isosevol;
+ isosevol->topg1;
+
+ thck2->lsrf1;
+ topg1->lsrf1;
+ topg1->usrf1;
+ lsrf1->usrf1 [constraint=false];
+
+ // inputs
+ thck0 [style = filled,color=greenyellow];
+ topg0 [style = filled,color=greenyellow];
+ bwat0 [style = filled,color=greenyellow];
+ bmlt0 [style = filled,color=greenyellow];
+ flwa0 [style = filled,color=greenyellow];
+ temp0 [style = filled,color=greenyellow];
+ lsrf0 [style = filled,color=cadetblue1];
+ usrf0 [style = filled,color=cadetblue1];
+
+ // forcing
+ artm0 [color=salmon2];
+ acab0 [color=salmon2];
+ lati [style = filled,color=salmon2];
+ relx [style = filled,color=salmon2];
+
+ // outputs
+ thck2 [color=greenyellow];
+ topg1 [color=greenyellow];
+ lsrf1 [color=greenyellow];
+ usrf1 [color=greenyellow];
+ uflx1 [color=cadetblue1];
+ diffu1 [color=cadetblue1];
+ uvel1 [color=cadetblue1];
+ vvel1 [color=cadetblue1];
+ btrc1 [color=cadetblue1];
+ vbas1 [color=cadetblue1];
+ ubas1 [color=cadetblue1];
+ vflx1 [color=cadetblue1];
+ bwat1 [color=greenyellow];
+ wgrd [color=cadetblue1];
+ flwa1 [color=greenyellow];
+ temp1 [color=greenyellow];
+ bmlt1 [color=greenyellow];
+ wvel [color=cadetblue1];
+ 
+}

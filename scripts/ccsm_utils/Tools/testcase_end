@@ -1,0 +1,325 @@
+#======================================================================
+# All things common to all tests that need to be done at the end of 
+# each test should be put here to avoid duplication.  
+#======================================================================
+
+#======================================================================
+# IOP test extras, check bfb cpl.log file with base iop and update
+#   TESTSTATUS_OUT.
+#======================================================================
+if ( ${CASE} =~ *_IOP* && $basestatus == "PASS") then
+  gunzip $CASEROOT/logs/cpl.log*.gz
+  set cpllogi = `ls -1t $CASEROOT/logs/cpl.log* | head -1`
+  gunzip $CASEROOT/../${iopbase_case}/logs/cpl.log*.gz
+  set cpllogn = `ls -1t $CASEROOT/../${iopbase_case}/logs/cpl.log* | head -1`
+  $CASETOOLS/check_exactrestart.pl $cpllogn $cpllogi >>& $TESTSTATUS_LOG
+  set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+  if ( $pass != 0 ) then
+    set iopstatus = "PASS "
+  else
+    set iopstatus = "FAIL "
+  endif
+  echo "$iopstatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+endif
+
+#======================================================================
+# Generate new baseline for regression testing
+#======================================================================
+set genstatus = "UNDEF"
+
+set CplHistDir = $RUNDIR
+set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
+if (${CplHistFileName} == '') then
+  set CplHistDir = $DOUT_S_ROOT/cpl/hist
+  set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
+endif
+set CplHistFile = $CplHistDir/$CplHistFileName
+
+echo " xyz " >! grep_a_test_file
+set grepa = "-a"
+grep -a xyz grep_a_test_file >& /dev/null
+if ($status != 0) then
+  set grepa = ""
+endif
+rm grep_a_test_file
+
+set memleak = ""
+if ( $?DETECT_MEMORY_LEAK) then 
+ if ($basestatus == "PASS") then
+   if ( $?CPLLOG_INIT ) then
+    echo "Comparing memory highwater marks for consecutive days in $CPLLOG_INIT" >>& $TESTSTATUS_LOG
+    $CASETOOLS/check_memory.pl -file1 $CPLLOG_INIT -m 1.5 >>& $TESTSTATUS_LOG
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    echo "pass = $pass" >>& $TESTSTATUS_LOG
+    if ( $pass != 0 ) then
+      set compstatus = "PASS "
+      echo "$compstatus ${CASEBASEID}.memleak" >>& $TESTSTATUS_OUT
+    else
+      set compstatus = "FAIL "
+      echo "$compstatus ${CASEBASEID}.memleak" >>& $TESTSTATUS_OUT
+    endif
+   endif
+ endif
+endif  
+
+if ( $?GENERATE_BASELINE ) then
+  if ($basestatus == "PASS") then
+    set genstatus = "PASS "
+    if ! ( -d $BASELINE_ROOT ) then
+      echo "ERROR in ${0}:  $BASELINE_ROOT does not exist " >>& $TESTSTATUS_LOG
+      set genstatus = "FAIL "
+    else
+      mkdir -p $BASEGEN_DIR || echo "ERROR in ${0}:  could not create directory $BASEGEN_DIR " >>& $TESTSTATUS_LOG && set genstatus = "FAIL "
+      chmod ug+w,a+rx $BASEGEN_DIR
+      chmod ug+w,a+rx $BASEGEN_DIR/..
+      echo "${0}:  Storing new baseline in $BASEGEN_DIR" >>& $TESTSTATUS_LOG
+    endif
+
+    # coupler log file
+    if ( -e $BASEGEN_CPLLOGFILE ) then
+      echo "ERROR in ${0}:  baseline log file $BASEGEN_CPLLOGFILE already exists."
+      set genstatus = "FAIL "
+    else
+      cp $CPLLOG_GENCMP $BASEGEN_CPLLOGFILE || echo "ERROR in ${0}:  could not copy $CPLLOG_GENCMP to $BASEGEN_CPLLOGFILE " >>& $TESTSTATUS_LOG
+      chmod ug+w,a+r $BASEGEN_CPLLOGFILE
+
+      # save extra files
+      if ( $?BASEGEN_FILE01 ) then
+        cp $BASEGEN_FILE01 $BASEGEN_DIR/${BASEGEN_FILE01:t}
+      endif
+      if ( $?BASEGEN_FILE02 ) then
+        cp $BASEGEN_FILE02 $BASEGEN_DIR/${BASEGEN_FILE02:t}
+      endif
+      if ( $?BASEGEN_FILE03 ) then
+        cp $BASEGEN_FILE03 $BASEGEN_DIR/${BASEGEN_FILE03:t}
+      endif
+      if ( $?BASEGEN_FILE04 ) then
+        cp $BASEGEN_FILE04 $BASEGEN_DIR/${BASEGEN_FILE04:t}
+      endif
+      if ( $?BASEGEN_FILE05 ) then
+        cp $BASEGEN_FILE05 $BASEGEN_DIR/${BASEGEN_FILE05:t}
+      endif
+      if ( $?BASEGEN_FILE06 ) then
+        cp $BASEGEN_FILE06 $BASEGEN_DIR/${BASEGEN_FILE06:t}
+      endif
+      if ( $?BASEGEN_FILE07 ) then
+        cp $BASEGEN_FILE07 $BASEGEN_DIR/${BASEGEN_FILE07:t}
+      endif
+      if ( $?BASEGEN_FILE08 ) then
+        cp $BASEGEN_FILE08 $BASEGEN_DIR/${BASEGEN_FILE08:t}
+      endif
+      if ( $?BASEGEN_FILE09 ) then
+        cp $BASEGEN_FILE09 $BASEGEN_DIR/${BASEGEN_FILE09:t}
+      endif
+      if ( $?BASEGEN_FILE10 ) then
+        cp $BASEGEN_FILE10 $BASEGEN_DIR/${BASEGEN_FILE10:t}
+      endif
+      if ( $?BASEGEN_FILE11 ) then
+        cp $BASEGEN_FILE11 $BASEGEN_DIR/${BASEGEN_FILE11:t}
+      endif
+      if ( $?BASEGEN_FILE12 ) then
+        cp $BASEGEN_FILE12 $BASEGEN_DIR/${BASEGEN_FILE12:t}
+      endif
+      chmod ug+w,a+r $BASEGEN_DIR/*
+    endif
+
+    # coupler history file
+    if ( -e $BASEGEN_CPLHISTFILE ) then
+      echo "ERROR in ${0}:  baseline history file $BASEGEN_CPLHISTFILE already exists."
+    else
+      cp $CplHistFile $BASEGEN_CPLHISTFILE || echo "ERROR in ${0}:  could not copy $CplHistFile to $BASEGEN_CPLHISTFILE " >>& $TESTSTATUS_LOG
+      chmod ug+w,a+r $BASEGEN_CPLHISTFILE
+    endif
+
+    # coupler timing file
+    if ( -e $BASEGEN_CPLPROFFILE ) then
+      echo "ERROR in ${0}:  baseline timing file $BASEGEN_CPLPROFFILE already exists."
+    else
+      if ($?CPLPROF_GENCMP) then
+        cp $CPLPROF_GENCMP $BASEGEN_CPLPROFFILE || echo "ERROR in ${0}:  could not copy $CPLPROF_GENCMP to $BASEGEN_CPLPROFFILE " >>& $TESTSTATUS_LOG
+        chmod ug+w,a+r $BASEGEN_CPLPROFFILE
+      endif
+    endif
+  else
+    set genstatus = "BFAIL"
+  endif
+
+  echo "$genstatus ${CASEBASEID}.generate.${BASEGEN_NAME} " >>& $TESTSTATUS_OUT
+endif
+
+#======================================================================
+# Compare with baseline if this is a regression test
+# NOTE:  "PASS" means both this test AND the regression test passed.  
+# NOTE:  "FAIL" can now be caused by memory leak/creep 
+#======================================================================
+set compstatus = "UNDEF"
+set bbb2 = ""
+
+set pesmaxmem_incr = ""
+set tput_decr = ""
+set tput_percent_decr = ""
+
+if ( $?COMPARE_BASELINE ) then
+  if ! ( -d $BASELINE_ROOT ) then
+    echo "ERROR in ${0}:  directory $BASELINE_ROOT does not exist " >>& $TESTSTATUS_LOG
+    set genstatus = "BFAIL "
+  endif
+  if ! ( -d $BASECMP_DIR ) then
+    echo "ERROR in ${0}:  directory $BASECMP_DIR does not exist" >>& $TESTSTATUS_LOG
+    set compstatus = "BFAIL"
+    echo "$compstatus ${CASEBASEID}.compare_hist.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+  else
+    if (-e $BASECMP_DIR/${TESTSTATUS_LOG:t}) then
+      set bbb1 = `grep perf $BASECMP_DIR/${TESTSTATUS_LOG:t} | grep CHECK | grep -v baseline`
+      set bbb2 = `echo $bbb1 baseline`
+    endif
+    if !( -e $BASECMP_CPLHISTFILE ) then
+      echo "ERROR in ${0}: file $BASECMP_CPLHISTFILE does not exist" >>& $TESTSTATUS_LOG
+      set compstatus = "BFAIL"
+      echo "$compstatus ${CASEBASEID}.compare_hist.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+    else 
+      echo "Comparing hist file with baseline hist file, $CplHistFile $BASECMP_CPLHISTFILE " >>& $TESTSTATUS_LOG
+      $CASETOOLS/hist_compare.csh $CplHistFile $BASECMP_CPLHISTFILE >>& $TESTSTATUS_LOG
+      set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+      if ( $pass != 0 ) then
+        set compstatus = "PASS "
+      else
+        set compstatus = "FAIL "
+      endif
+      echo "hist file comparison is $compstatus" >>& $TESTSTATUS_LOG
+      echo "$compstatus ${CASEBASEID}.compare_hist.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+      if ($basestatus == "PASS") then
+        if( $?COMPARE_MEMORY ) then 
+          echo "Comparing pes max memory value with baseline pes max memory value" >>& $TESTSTATUS_LOG 
+          set baseline_CplLogFile = ` grep $grepa startup $BASECMP_DIR/cpl.log* | awk -F ":" '{ print $1 }'`
+          echo "Comparing log files $CPLLOG_INIT and $baseline_CplLogFile" >>& $TESTSTATUS_LOG 
+          $CASETOOLS/check_memory.pl -file1 $CPLLOG_INIT -file2 $baseline_CplLogFile -m 1 -mbase 20 >>& $TESTSTATUS_LOG 
+          set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+          echo "pass = $pass" >>& $TESTSTATUS_LOG
+          if ( $pass != 0 ) then
+            set compstatus = "PASS "
+            echo "$compstatus ${CASEBASEID}.memcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+          else
+            set compstatus = "FAIL "
+            echo "$compstatus ${CASEBASEID}.memcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+          endif
+        endif  
+        if ( $?COMPARE_THROUGHPUT ) then
+          echo "Comparing throughput value with baseline throughput value" >>& $TESTSTATUS_LOG
+          set baseline_CplLogFile = ` grep $grepa startup $BASECMP_DIR/cpl.log* | awk -F ":" '{ print $1 }'`
+          echo "Comparing log files $CplLogFile and $baseline_CplLogFile" >>& $TESTSTATUS_LOG
+          $CASETOOLS/compare_throughput.pl -file1 $CplLogFile -file2 $baseline_CplLogFile >>& $TESTSTATUS_LOG 
+          set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+          echo "pass = $pass" >>& $TESTSTATUS_LOG
+          if ( $pass != 0 ) then
+            set compstatus = "PASS "
+            echo "$compstatus ${CASEBASEID}.tputcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+          else
+            set compstatus = "FAIL "
+            echo "$compstatus ${CASEBASEID}.tputcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+          endif
+        endif
+      endif         
+    endif
+  endif
+endif
+
+if ( $?CPLLOG_INIT) then
+   if (-e $CPLLOG_INIT) then
+      echo " " >>& $TESTSTATUS_LOG
+      echo "=======================" >>& $TESTSTATUS_LOG
+      tail -20 $CPLLOG_INIT >>& $TESTSTATUS_LOG
+      echo "=======================" >>& $TESTSTATUS_LOG
+      echo " " >>& $TESTSTATUS_LOG
+
+      set npes = ""
+      if ( $?TOTALPES) then
+        set npes = `echo $TOTALPES`
+      endif
+      set tag = "unknown"
+      if ( $?CCSM_REPOTAG) then
+        set tag = `echo $CCSM_REPOTAG`
+      endif
+      if ( $?BASEGEN_NAME) then
+        set tag = `echo $BASEGEN_NAME`
+      endif
+      set tput = `grep "# simulated years " $CPLLOG_INIT | cut -c 63-72`
+      set memh = `grep "max memory highwater" $CPLLOG_INIT | cut -c 63-72`
+      set memr = `grep "max memory last usage" $CPLLOG_INIT | cut -c 63-72`
+      echo "$bbb2" >>& $TESTSTATUS_LOG
+      echo "CHECK ${CASEBASEID}.perf npes=$npes tput=$tput memh=$memh memr=$memr tag=$tag" >>& $TESTSTATUS_LOG
+      if ( "${CASEBASEID}" =~ ERT* || "${CASEBASEID}" =~ PFS* ) then
+         if ( "$bbb2" !~ "") then
+            echo "$bbb2" >>& $TESTSTATUS_OUT
+         endif
+         echo "CHECK ${CASEBASEID}.perf npes=$npes tput=$tput memh=$memh memr=$memr tag=$tag" >>& $TESTSTATUS_OUT 
+      endif
+      echo " " >>& $TESTSTATUS_LOG
+   endif
+endif
+
+set memleak = `grep "memleak =" $TESTSTATUS_LOG | cut -c 1-15`
+set pesmaxmem_incr = `grep "pesmaxmem_incr =" $TESTSTATUS_LOG | cut -c 1-21`
+set tput_decr = `grep "tput_decr =" $TESTSTATUS_LOG | cut -c 1-21`
+set tput_percent_decr = `grep "tput_percent_decr =" $TESTSTATUS_LOG | cut -c 1-24`
+if ( "$memleak" !~ "" || "$pesmaxmem_incr" != "" || "$tput_decr" !~ "" || "$tput_percent_decr" !~ "" ) then
+   echo "COMMENT $memleak $pesmaxmem_incr $tput_decr $tput_percent_decr"  >>& $TESTSTATUS_OUT
+endif
+
+if ( ${CASE} =~ *_IOP* ) then
+  cat ../${iopbase_case}/TestStatus >> $TESTSTATUS_OUT
+endif
+
+#======================================================================
+# Clean up
+#======================================================================
+
+if ( $?CLEANUP ) then
+  if ($basestatus == "PASS") then
+    if ($compstatus != "FAIL") then
+       rm -r -f $EXEROOT*/atm          >& /dev/null
+       rm -r -f $EXEROOT*/lnd          >& /dev/null
+       rm -r -f $EXEROOT*/ocn          >& /dev/null
+       rm -r -f $EXEROOT*/ice          >& /dev/null
+       rm -r -f $EXEROOT*/glc          >& /dev/null
+       rm -r -f $EXEROOT*/wav          >& /dev/null
+       rm -r -f $EXEROOT*/rof          >& /dev/null
+       rm -r -f $EXEROOT*/cpl          >& /dev/null
+       rm -r -f $EXEROOT*/cesm         >& /dev/null
+       rm -r -f $EXEROOT*/csm_share    >& /dev/null
+       rm -r -f $EXEROOT*/mct          >& /dev/null
+       rm -r -f $EXEROOT*/pio          >& /dev/null
+       rm -r -f $EXEROOT*/gptl         >& /dev/null
+       rm -r -f $LIBROOT               >& /dev/null
+       rm    -f $EXEROOT*/*/*.nc       >& /dev/null
+       rm    -f $EXEROOT*/*/*/*.nc     >& /dev/null
+       rm -r -f $DOUT_S_ROOT*          >& /dev/null
+       echo "NOTE: Test passed, clean up done."  >>& $TESTSTATUS_LOG
+    else
+       echo "NOTE: Compare test failed, clean up NOT done."  >>& $TESTSTATUS_LOG
+    endif
+  else
+     echo "NOTE: Test failed, clean up NOT done."  >>& $TESTSTATUS_LOG
+  endif
+else
+  echo "NOTE:  At user request, clean up not done.  Use the following" >>& $TESTSTATUS_LOG
+  echo "       commands to clean up by hand:" >>& $TESTSTATUS_LOG
+  echo "         rm -rf $EXEROOT" >>& $TESTSTATUS_LOG
+endif
+
+
+if ( $?GENERATE_BASELINE ) then
+  if (-e $BASEGEN_DIR) then
+    cp $TESTSTATUS_LOG ${BASEGEN_DIR}/${TESTSTATUS_LOG:t}
+    chmod ug+w,a+r ${BASEGEN_DIR}/${TESTSTATUS_LOG:t}
+  endif
+endif
+
+if ( -e $TESTSTATUS_OUT_NLCOMP ) then
+  cat $TESTSTATUS_OUT_NLCOMP >>& $TESTSTATUS_OUT
+  rm $TESTSTATUS_OUT_NLCOMP
+endif
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "test completed $sdate" >>& CaseStatus
+

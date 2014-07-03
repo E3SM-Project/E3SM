@@ -1,0 +1,150 @@
+
+#======================================================================
+# Clear coupler log files for comparison tests
+#======================================================================
+unsetenv CPLLOG_INIT
+unsetenv CPLLOG_REST
+
+#======================================================================
+# do an initial run test with length taken from compset default
+#======================================================================
+cd $CASEROOT
+echo "doing an initial threaded test, with length taken from compset default" >>& $TESTSTATUS_LOG 
+
+set cnthrds = 2
+
+if ( $NTHRDS_ATM <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_ATM is $NTHRDS_ATM" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_LND <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_LND is $NTHRDS_LND" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_ROF <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_ROF is $NTHRDS_ROF" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_WAV <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_WAV is $NTHRDS_WAV" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_ICE <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_ICE is $NTHRDS_ICE" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_OCN <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_OCN is $NTHRDS_OCN" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_GLC <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_GLC is $NTHRDS_GLC" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+if ( $NTHRDS_CPL <= 1) then
+   echo "WARNING: component not threaded, NTHRDS_CPL is $NTHRDS_CPL" >>& $TESTSTATUS_LOG
+   set cnthrds = 1
+endif
+
+if ( $cnthrds <= 1) then
+  set basestatus = "TFAIL"
+  echo "at least one component is not threaded, stopping" >>& $TESTSTATUS_LOG
+  echo "$basestatus ${CASEBASEID} " >>& $TESTSTATUS_LOG
+  echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  exit -5
+endif
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id REST_OPTION  -val never
+
+cp -f env_mach_pes.xml env_mach_pes.xml.1
+
+./$CASE.run
+
+gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+setenv CPLLOG_INIT $CplLogFile
+setenv BASEGEN_FILE01 $CplLogFile
+
+echo "Initial Test log is $CPLLOG_INIT" >>& $TESTSTATUS_LOG 
+
+if ( $?CPLLOG_INIT ) then
+  echo "Checking successful completion of init cpl log file" >>& $TESTSTATUS_LOG
+  set pass = `grep "SUCCESSFUL TERM" $CPLLOG_INIT | wc -l`
+  if ( $pass != 0 ) then
+    set basestatus = "PASS "
+  else
+    set basestatus = "FAIL "
+    echo "initial run did not complete successfully, stopping" >>& $TESTSTATUS_LOG
+    echo "$basestatus ${CASEBASEID} " >>& $TESTSTATUS_LOG
+    echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+    exit -5
+  endif
+  set tput = `grep "# simulated years " $CPLLOG_INIT`
+  echo "initial tput = $tput" >>& $TESTSTATUS_LOG
+endif
+
+#======================================================================
+# do another initial with nthrds 1
+#======================================================================
+cd $CASEROOT
+echo " "
+echo "doing a single threaded test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_mach_pes.xml -id NTHRDS_ATM -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 1
+
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml env_mach_pes.xml.2
+
+./$CASE.run
+
+cp -f env_mach_pes.xml.1 env_mach_pes.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+
+gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+setenv CPLLOG_REST $CplLogFile
+setenv BASEGEN_FILE02 $CplLogFile
+
+echo "second test log is $CPLLOG_REST" >>& $TESTSTATUS_LOG 
+
+set basestatus = "UNDEF"
+
+if ( $?CPLLOG_INIT ) then
+  if ( $?CPLLOG_REST ) then
+    echo "Comparing initial log file with second log file" >>& $TESTSTATUS_LOG
+    $CASETOOLS/check_exactrestart.pl $CPLLOG_INIT $CPLLOG_REST >>& $TESTSTATUS_LOG
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    if ( $pass != 0 ) then
+      set basestatus = "PASS "
+    else
+      set basestatus = "FAIL "
+    endif
+    set tput = `grep "# simulated years " $CPLLOG_REST`
+    echo "second tput = $tput" >>& $TESTSTATUS_LOG
+  else
+    echo "ERROR in ${0}:  restart coupler log file NOT set" >>& $TESTSTATUS_LOG
+    set basestatus = "ERROR"
+  endif
+else
+  echo "ERROR in ${0}:  initial coupler log file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+endif
+
+echo "$basestatus ${CASEBASEID} " >>& $TESTSTATUS_LOG
+echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+
+#======================================================================
+# runs complete
+#======================================================================
+
+setenv CPLLOG_GENCMP $CPLLOG_INIT
+
+

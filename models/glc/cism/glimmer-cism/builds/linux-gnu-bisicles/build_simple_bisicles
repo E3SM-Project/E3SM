@@ -1,0 +1,18 @@
+#!/bin/sh
+
+CHOMBO_DIR=${PWD}/../../../Chombo
+BISICLES_DIR=${PWD}/../../../BISICLES/code/interface
+CISM_DIR=${PWD}/../..
+CISM_CMAKE_BUILD_DIR=${PWD}
+
+#first run cmake script
+# ./linux-gnu-bisicles-cmake
+
+#now run script in BISICLES directory
+cd ${BISICLES_DIR}
+./build_simple_bisicles
+
+#finally, return here and move executable to a more convenient place
+#(in lieu of a formal "install" target
+cd ${CISM_CMAKE_BUILD_DIR}
+mv ${CISM_CMAKE_BUILD_DIR}/example-drivers/simple_bisicles/src/simple_bisicles ${CISM_DIR}/bin

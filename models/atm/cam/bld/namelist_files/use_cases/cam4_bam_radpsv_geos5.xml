@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<start_ymd>20080101</start_ymd>
+
+<!-- IC file -->
+<ncdata hgrid="1.9x2.5" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L56_c100929.nc</ncdata>
+
+<!-- bnd_topo --->
+<bnd_topo>atm/cam/met/USGS-gtopo30_1.9x2.5_phys_geos5_c100929.nc</bnd_topo>
+
+<!-- meteorology inputs --->
+<met_data_file>2008/GEOS5.1_19x2_2008-JAN_c110728.nc</met_data_file>
+<met_data_path>atm/cam/met/GEOS5</met_data_path>
+<met_filenames_list>atm/cam/met/GEOS5_filenames_list_c120516.txt</met_filenames_list>
+
+<!-- Solar constant from Lean (via Caspar Ammann) -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1610-2009_ann_c100405.nc</solar_data_file>
+<solar_data_type>SERIAL</solar_data_type>
+
+<!-- aerosol nl -->
+<soil_erod>atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod>
+<dust_emis_fact>2.76D0</dust_emis_fact>
+
+<!-- Prescribed BAM data is from Jean-Francois Lamarque -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mozart_aero/aero</prescribed_aero_datapath>
+<prescribed_aero_file>aero_rcp26_v1_1.9x2.5_L26_1995-2105_c100316.nc</prescribed_aero_file>
+<prescribed_aero_type>INTERP_MISSING_MONTHS</prescribed_aero_type>
+
+<!-- Prescribed ozone data is from Jean-Francois Lamarque -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file>ozone_rcp26_v1_1.9x2.5_L26_1995-2105_c100316.nc</prescribed_ozone_file>
+<prescribed_ozone_name>O3</prescribed_ozone_name>
+<prescribed_ozone_type>INTERP_MISSING_MONTHS</prescribed_ozone_type>
+
+<!-- aerosol deposition -->
+<aerodep_flx_datapath>atm/cam/chem/trop_mozart_aero/aero</aerodep_flx_datapath>
+<aerodep_flx_file>aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</aerodep_flx_file>
+<aerodep_flx_type>INTERP_MISSING_MONTHS</aerodep_flx_type>
+
+<chem_rad_passive>.true.</chem_rad_passive>
+<drydep_method>'xactive_lnd'</drydep_method>
+
+<!-- fixed lower boundary data  -->
+<flbc_file>atm/waccm/lb/LBC_1850-2100_1.9x2.5_REF2_za_c080114.nc</flbc_file>
+<flbc_type>SERIAL</flbc_type>
+
+
+<!-- History Files -->
+
+<mfilt>            1,  4,  30 </mfilt>
+<nhtfrq>           0, -168, -24 </nhtfrq>
+<avgflag_pertape> 'A', 'A', 'A' </avgflag_pertape>
+
+<!-- Monthly -->
+<fincl1>
+ 'U','V','OMEGA','T','PS','DST01','DST02','DST03','DST04','SSLT01','SSLT02','SSLT03','SSLT04','OC1','OC2','ODV_dust1','ODV_dust2','ODV_dust3','ODV_dust4'
+</fincl1>
+<fincl2>
+ 'U','V','OMEGA','T','PS','DST01','DST02','DST03','DST04','SSLT01','SSLT02','SSLT03','SSLT04','OC1','OC2','ODV_dust1','ODV_dust2','ODV_dust3','ODV_dust4'
+</fincl2>
+<fincl3>
+ 'U','V','OMEGA','T','PS','DST01','DST02','DST03','DST04','SSLT01','SSLT02','SSLT03','SSLT04','OC1','OC2','ODV_dust1','ODV_dust2','ODV_dust3','ODV_dust4'
+</fincl3>
+
+<!-- sim_year attribute used for boundary datasets -->
+<sim_year>1850-2000</sim_year>
+
+<!-- Use AMIP SST datasets -->
+<sstcyc>.false.</sstcyc>
+<stream_year_first>1850</stream_year_first>
+<stream_year_last>2008</stream_year_last>
+
+<bndtvs hgrid="0.47x0.63"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="0.9x1.25"   sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="1.9x2.5"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="4x5"        sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_4x5_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="10x15"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_10x15_1850_2008_c100127.nc</bndtvs>
+
+<bndtvs hgrid="128x256"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_128x256_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="64x128"     sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_64x128_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="48x96"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="32x64"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_32x64_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="8x16"       sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_8x16_1850_2008_c100128.nc</bndtvs>
+
+</namelist_defaults>

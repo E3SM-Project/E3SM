@@ -1,0 +1,69 @@
+models/lnd/clm/tools/clm4_0/interpinic/README				Jun/04/2013
+
+Tool to interpolate initial datasets to a different resolution or
+mask.
+
+=====================================================================================
+IMPORTANT NOTE!!!:: BE SURE TO USE NetCDF4.3 WHEN BUILDING!
+   If your template file was written using pnetcdf -- interpinic will corrupt
+   the resulting file and make it unusable!
+
+   On yellowstone with csh this means doing the following...
+
+          > module load netcdf/4.3.0-rc4
+
+          > setenv INC_NETCDF $NETCDF/include
+          > setenv LIB_NETCDF $NETCDF/lib
+
+=====================================================================================
+
+
+Running gnumake in this directory will create an executable named
+
+   "interpinic"  
+
+Its function is to map an input clm initial file to an output clm initial file,
+where the output clm initial file is overwritten with the interpolated values.
+
+USAGE:
+
+interpinic [-a] -i <input initial data file>  -o <output initial data file>
+
+OPTIONS:
+
+-a                            To abort if find missing types that aren't matched
+                              from the input file. By default will overwrite missing
+                              types with the nearest bare soil.
+-i <input initial data file>  File to interpolate from.
+-o <output initial data file> Input/Output file to interpolate to.
+
+Options to gmake:
+
+gmake OPT=FALSE    # will compile with debug compiler options on
+gmake SMP=TRUE     # will compile with Open-MP parallelism on
+
+If SMP is TRUE, then should invoke interpic as follows:
+
+env OMP_NUM_THREADS <numthreads> interpinic -i <input initial data file>  -o <output initial data file>
+
+See Also: See the models/lnd/clm/tools/README file for more notes about setting
+          the path for NetCDF and running with shared-memory parallelism.
+
+Files:
+
+src/Makefile --------------------------------------- GNU makefile with customization for this tool.
+src/Makefile.common -------------------------------- Tools GNU makefile common to all CLM tools.
+
+src/Mkdepends -------------------------------------- Tool for Makefile to figure out
+                                                     code dependencies.
+
+src/Srcfiles --------------------------------------- List of source files needed 
+
+
+src/Filepath --------------------------------------- Filepath location to source files needed
+
+clmi.BCN.1949-01-01_10x15_USGS_simyr1850_c100322.nc- Sample 10x15 resolution dataset that
+                                                     you can interpolate to
+
+interpinic.runoptions ------------------------------ Example runoptions using the above file.
+

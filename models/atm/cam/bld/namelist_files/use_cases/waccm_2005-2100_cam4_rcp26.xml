@@ -1,0 +1,185 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<aerodep_flx_file>'aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc'</aerodep_flx_file>
+<aerodep_flx_type>'SERIAL'</aerodep_flx_type>
+
+<!-- Solar data from Lean (via Caspar Ammann) -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1950-2140_daily_c100804.nc</solar_data_file>
+
+<!-- Solar Proton Events -->
+<spe_data_file>atm/waccm/solar/spe_data_1963-2140_c100823.nc</spe_data_file>
+
+<!-- Prescribed BAM data is from Jean-Francois Lamarque -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mozart_aero/aero</prescribed_aero_datapath>
+<prescribed_aero_file>aero_rcp26_v1_1.9x2.5_L26_1995-2105_c100316.nc</prescribed_aero_file>
+<prescribed_aero_type>INTERP_MISSING_MONTHS</prescribed_aero_type>
+
+<!-- aerosol deposition -->
+<aerodep_flx_datapath>atm/cam/chem/trop_mozart_aero/aero</aerodep_flx_datapath>
+<aerodep_flx_file>aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</aerodep_flx_file>
+<aerodep_flx_type>INTERP_MISSING_MONTHS</aerodep_flx_type>
+
+<start_ymd>20050101</start_ymd>
+<restart_option> yearly </restart_option>
+
+<!-- cam_inparm -->
+
+<nsplit>8</nsplit>
+<phys_loadbalance>2</phys_loadbalance>
+<dtime>1800</dtime>
+
+<!-- cloud tuning factor -->
+<cldfrc_rhminl>0.90D0</cldfrc_rhminl>
+
+<!-- Flags -->
+
+<print_energy_errors>.false.</print_energy_errors>
+<iradsw>-1</iradsw>
+
+<!-- Yaga's GW Drag file -->
+<gw_drag_file>atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
+
+<!--Species IC -->
+<ncdata dyn="fv"  hgrid="1.9x2.5" >atm/waccm/ic/b40.1850.track1.2deg.wcm.007.cam2.i.0129-01-01-00000.nc</ncdata>
+<ncdata dyn="fv"  hgrid="4x5"     >atm/waccm/ic/b40.1850.track1.4deg.wcm.007.cam2.i.0129-01-01-00000.nc</ncdata>
+
+<!-- Deposition Velocities : DEFAULTS okay -->
+
+<!-- Emissions DEFAULTS OKAY for: airpl_emis_file,ch2o_emis_file,co_emis_file,nox_emis_file-->
+
+<!-- LBC, UBC Files -->
+<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP3PD_za_091214.nc</flbc_file>
+<flbc_type>'SERIAL'</flbc_type>
+
+<tgcm_ubc_file>atm/waccm/ub/tgcm_ubc_1850-2100_c100204.nc</tgcm_ubc_file>
+<tgcm_ubc_data_type>INTERP_MISSING_MONTHS</tgcm_ubc_data_type>
+
+<!-- Sulfate Aerosols: DEFAULTS okay for sulf_file -->
+<sad_file>atm/waccm/sulf/SAD_SULF_1849-2100_1.9x2.5_c090817.nc</sad_file>
+<sad_type>'SERIAL'</sad_type>
+
+<!-- QBO settings --> 
+<qbo_cyclic>.false.</qbo_cyclic>
+<qbo_forcing_file>atm/waccm/qbo/qbocoefficients_c091230.nc'</qbo_forcing_file>
+<qbo_use_forcing>.true.</qbo_use_forcing>
+
+<!-- volcanic aerosol heating -->
+<strat_aero_feedback>.true.</strat_aero_feedback> 
+
+<!-- emis files -->
+
+<!-- use time-dependent aircraft emissions  -->
+<ipcc_aircraft_emis>.true.</ipcc_aircraft_emis>
+<ext_frc_type>'SERIAL'</ext_frc_type>
+<no2_aircraft_emis_file>atm/cam/chem/2000-2100_RCP26/IPCC_emissions_RCP26_aircraft_NO2_2000-2100_1.9x2.5.nc</no2_aircraft_emis_file>
+<airpl_emis_file>atm/waccm/emis/emis.air.1870.nc</airpl_emis_file>
+
+<ch2o_emis_file>atm/cam/chem/2000-2100_RCP26/IPCC_emissions_houw_CH2O_2000-2100_1.9x2.5.nc</ch2o_emis_file>
+<co_emis_file>atm/cam/chem/2000-2100_RCP26/IPCC_emissions_houw_CO_2000-2100_1.9x2.5.nc</co_emis_file>
+<nox_emis_file>atm/cam/chem/2000-2100_RCP26/IPCC_emissions_houw_NOx_2000-2100_1.9x2.5.nc</nox_emis_file>
+<srf_emis_type>'SERIAL'</srf_emis_type>
+
+<!-- Photolysis Inputs DEFAULTS okay for: rsf_file,xs_long_file,xs_short_file -->
+
+<!-- Extraterestrial Flux and MLT inputs DEFAULTS okay for:  -->
+<!-- efield_hflux_file, efield_lflux_file, efield_wei96_file -->
+<!-- electron_file,euvac_file,euvacdat_file,photon_file,neckel_file,woods_etf_file,xs_coef_file -->
+
+<!-- Kp Ap indices -->
+<solar_parms_file>atm/waccm/solar/wasolar_1948-2140_daily_c120306.nc</solar_parms_file>
+
+<!-- History Files -->
+
+<mfilt>            1,   10,   20,  73, 365 </mfilt>
+<nhtfrq>           0, -240, -240, -24, -24 </nhtfrq>
+<avgflag_pertape> 'A', 'I',  'I', 'A', 'A' </avgflag_pertape>
+
+<!-- Monthly --> 
+<fincl1>
+  'AOA1', 'AOA2', 'BR', 'BRCL', 'BRO', 'BRONO2', 'CCL4', 'CF2CLBR', 'CF3BR', 
+  'CFC11', 'CFC113', 'CFC12', 'CH2O', 'CH3BR', 'CH3CCL3', 'CH3CL', 'CH3O2', 'CH3OOH', 
+  'CH4', 'CL', 'CL2', 'CL2O2', 'CLDHGH', 'CLDLOW', 'CLDMED', 'CLDTOT', 'CLO', 'CLONO2', 
+  'CLOUD', 'CO', 'CO2', 'DTCOND', 'DTV', 'DUV', 'DVV', 'EKGWSPEC', 'FLNS', 'FLNSC', 'FLNT', 
+  'FLNTC', 'FSDS', 'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'H', 'H2', 'H2O', 'H2O2', 'HBR',
+  'HCFC22', 'HCL', 'HNO3', 'HO2', 'HO2NO2', 'HOBR', 'HOCL', 'HORZ', 'LANDFRAC', 'LHFLX',
+  'N', 'N2O', 'N2O5', 'NO', 'NO2', 'NO3', 'O', 'O1D', 'O2', 'O3',
+  'OCLO', 'OCNFRAC', 'OH', 'OMEGA', 'PHIS', 'PRECC', 'PRECL', 'PS', 'Q', 'QFLX',
+  'QPERT', 'QRL', 'QRLNLTE', 'QRS', 'RELHUM', 'SHFLX', 'SOLIN', 'SWCF', 'QCP',
+  'QTHERMAL', 'QRL_TOT', 'QRS_TOT', 'QJOULE', 'PSL', 'HNO3_STS', 'HNO3_NAT', 
+  'HNO3_GAS', 'NO_Aircraft', 'NO_Lightning', 'QNO', 'QRS_AUR', 'QRS_CO2NIR', 'QRS_EUV', 
+  'SAD_ICE', 'SAD_LNAT', 'SAD_SULFC', 'T', 'TREFHT', 
+  'TTGW', 'U', 'UTGWORO', 'UTGWSPEC', 'V', 'VERT', 'VTGWORO', 'VTGWSPEC', 'Z3', 'O2_1S', 
+  'O2_1D', 'NOX', 'NOY', 'CLOX', 'CLOY', 'BROX', 'BROY', 'TCLY', 'TOTH', 'QJOULE', 'UE', 
+  'VE', 'UIONTEND', 'VIONTEND', 'DTCORE', 'T_24_COS',  'T_24_SIN', 'T_12_COS', 'T_12_SIN',
+  'OMEGA_24_COS', 'OMEGA_24_SIN', 'OMEGA_12_COS', 'OMEGA_12_SIN',
+  'U_24_COS', 'U_24_SIN', 'U_12_COS', 'U_12_SIN', 'V_24_COS', 'V_24_SIN', 'V_12_COS', 
+  'V_12_SIN', 'PS_24_COS', 'PS_24_SIN', 'PS_12_COS', 'PS_12_SIN', 'CLDLIQ','CLDICE','CONCLD',
+  'FRONTGF:I', 'BUTGWSPEC', 'BTAUE', 'BTAUW', 'BTAUN', 'BTAUS','TAUE','TAUW','TAUN','TAUS',
+  'TAUGWX', 'TAUGWY', 'TAUX','TAUY','SNOWHLND','SNOWHICE','ICEFRAC','FSDSC','SFNO', 'SFCO',
+  'SFCH2O','CFC11STAR','TROPP_FD'
+</fincl1>
+
+<!-- Instantaneous every 10 days --> 
+<fincl2>
+  'PS', 'Z3', 'T', 'U', 'V',  'FLNT','PSL', 
+  'OMEGA','FSDS','FSDSC','CLOUD','CONCLD','SNOWHLND','SNOWHICE',
+  'CH3CL', 'CFC11', 'CFC12', 'CFC113', 'HCFC22', 'CCL4', 'CH3CCL3', 
+  'CH3BR', 'CF3BR', 'CF2CLBR',
+  'CO', 'CO2', 'CH2O', 'CH3OOH', 'CH4',
+  'O3', 'O', 'O1D',
+  'N', 'NO', 'NO2', 'NO3', 'N2O5', 'HNO3', 'HO2NO2', 'NOX', 'NOY', 'N2O',
+  'H', 'H2', 'OH', 'HO2', 'H2O2',  'H2O',
+  'CL','CL2', 'CLO', 'OCLO', 'CL2O2', 'CLONO2', 'HOCL', 'HCL', 'CLOX', 'CLOY', 
+  'BR', 'BRO', 'HOBR', 'HBR', 'BRCL', 'BRONO2', 'BROX', 'BROY', 'TCLY',
+  'jo2_a', 'jo2_b', 'jo3_a',  'jo3_b', 'jhocl', 'jno3_b', 'jcl2o2',
+  'SAD_SULFC', 'SAD_LNAT', 'SAD_ICE','AOA1','AOA2',
+  'O2', 'CLDLIQ', 'CLDICE', 'ASDIR',
+  'VTH2d', 'WTH2d', 'UV2d', 'UW2d', 'TH', 'MSKtem'
+</fincl2>
+
+<!-- Instantaneous every 10 days --> 
+<fincl3>
+  'PS:B', 'T:B', 'Z3:B', 'U:B', 'V:B', 'CO:B', 'CO2:B',
+  'H2:B', 'O:B', 'O2:B', 'O3:B', 'H:B', 'OH:B', 'HO2:B', 'H2O:B',
+  'N:B', 'NO:B', 'NO2:B', 'O1D:B', 'O2_1S:B', 'O2_1D:B', 'N2D:B',
+  'Np:B', 'N2p:B', 'Op:B', 'O2p:B', 'NOp:B', 'e:B', 'QRL_TOT:B',
+  'QRS_TOT:B', 'QJOULE:B', 'jno3_a:B', 'jno3_b:B', 'jcl2o2:B', 'CL2O2:B', 'CLO:B',
+  'BRO:B', 'NO3:B', 'DTCORE:B', 'DTV:B', 'TTGW:B','OMEGA:B' </fincl3>
+<!-- Daily Average --> 
+<fincl4>
+  'PS', 'PSL', 'U', 'V', 'T', 'Z3', 'PHIS','FRONTGF:I', 'OMEGA' 
+</fincl4>
+<!-- Daily Average --> 
+<fincl5>
+  'MSKtem', 'PS', 'PSL', 'VTH2d', 'UV2d', 'UW2d', 'U2d', 'V2d', 'TH2d','W2d', 'PHIS'
+</fincl5>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1850-2000</sim_year>
+
+<!-- Use AMIP SST datasets -->
+<sstcyc>.false.</sstcyc>
+<stream_year_first>1850</stream_year_first>
+<stream_year_last>2008</stream_year_last>
+
+<bndtvs hgrid="0.47x0.63"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="0.9x1.25"   sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="1.9x2.5"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="4x5"        sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_4x5_1850_2008_c100127.nc</bndtvs>
+<bndtvs hgrid="10x15"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_10x15_1850_2008_c100127.nc</bndtvs>
+
+<bndtvs hgrid="128x256"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_128x256_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="64x128"     sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_64x128_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="48x96"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="32x64"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_32x64_1850_2008_c100128.nc</bndtvs>
+<bndtvs hgrid="8x16"       sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_8x16_1850_2008_c100128.nc</bndtvs>
+
+<!-- Use the clim_pi SST datasets if AMIP datasets not available -->
+<sstcyc            hgrid="0.23x0.31">.true.</sstcyc>
+<stream_year_first hgrid="0.23x0.31">0</stream_year_first>
+<stream_year_last  hgrid="0.23x0.31">0</stream_year_last>
+<bndtvs            hgrid="0.23x0.31"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c091020.nc</bndtvs>
+
+</namelist_defaults>

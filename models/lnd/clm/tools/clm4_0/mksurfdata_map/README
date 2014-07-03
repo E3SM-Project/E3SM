@@ -1,0 +1,65 @@
+models/lnd/clm/tools/clm4_0/mksurfdata_map/README    Jun/04/2013
+
+The routines in this directory create a surface dataset.
+The output grid is read in from the input namelist and
+can correspond to either a global or regional grid. 
+
+Supported model resolutions are those found in the repository input data directory
+   $DIN_LOC_ROOT/lnd/clm2/mappingdata/maps
+
+Surface datasets can either be created for two separate cases
+  a) for supported model resolutions
+  b) for unsupported (user-specified) model resolutions
+
+The following steps provide a method to create the executable
+and generate the surface dataset:
+
+1) > cd src
+   > gmake
+   By default code compiles optimized so it's reasonably fast. If you want
+   to use the debugger, with bounds-checking, and float trapping on do the 
+   following:
+      gmake OPT=FALSE
+   See Also: See the models/lnd/clm/tools/README file for notes about setting
+   the path for NetCDF and running with shared-memory parallelism.
+
+2) For supported model resolutions - skip this step
+
+   For unsupported model resolutions - do the following...
+   determine the pathname of the model resolution SCRIP grid file 
+   
+   > cd ../../shared/mkmapdata
+   invoke one of the following commands
+   (for global resolution)
+   > ./mkmapdata.sh -p clm4_0 --gridfile <scrip grid file full pathname> --res <res> --gridtype global    
+   (for regional resolution)        
+   > ./mkmapdata.sh -p clm4_0 --gridfile <scrip grid file full pathname> --res <res> --gridtype regional  
+   > cd ../../clm4_0/mksurfdata_map
+
+   note: the mapping files generated in ../../shared/mkmapdata will be used to
+   generate the surface dataset 
+   note: the res argument above (<res>) MUST be identical to the one provided to
+   mksurfdata.pl (see below)	
+
+3) make surface dataset(s)
+   > ./mksurfdata.pl --help  (for full usage instructions)
+   For supported model resolution (<res>)
+   > ./mksurfdata.pl -res <res> [options]	
+
+   For unsupported, user specified model resolutions	
+   > ./mksurfdata.pl -res usrspec -usr_gname <res> -usr_gdate <user grid date>
+
+   Note that the argument to usr_gname MUST be the same as the -res argument value
+   when invoking mkmapdata
+
+   Example, for gridname=1x1_boulderCO with maps created on Jan/13/2012
+
+   > ./mksurfdata.pl -res usrspec -usr_gname 1x_boulderCO -usr_gdate 20120113
+
+Lists of input files for range of dates historical or future scenarios:
+
+  pftdyn_hist_simyr1850-2005.txt --- List of historical input PFT files from 1850 to 2005
+
+(Historical period from 1850-2005 datafiles all point to the historical files, while
+ the future scenarios 2006-2100 are the scenario datasets)
+

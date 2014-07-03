@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!-- Timestep size (this is the dynamics/physics coupling interval) -->
+<dtime                             >300</dtime>
+<dtime dyn="eul"                   >150</dtime>
+
+<!-- make planet orbit circular              -->
+<orb_eccen                >0.</orb_eccen>
+<orb_obliq                >0.</orb_obliq>
+<orb_mvelp                >0.</orb_mvelp>
+<orb_mode>fixed_parameters</orb_mode>
+
+<!-- APE ghg -->
+<co2vmr                   >348.0e-6</co2vmr>
+<ch4vmr                   >1650.0e-9</ch4vmr>
+<n2ovmr                   >306.0e-9</n2ovmr>
+<f11vmr                   >280.e-12</f11vmr>
+<f12vmr                   >503.e-12</f12vmr>
+
+<!-- Cloud fraction -->
+<cldfrc_freeze_dry        > .false. </cldfrc_freeze_dry>
+
+<!-- Physics tuning parameters -->
+<cldwat_icritw            >  4.0e-4 </cldwat_icritw>
+<cldwat_icritc            > 16.0e-6 </cldwat_icritc>
+<cldwat_conke             >  5.0e-6 </cldwat_conke>
+<cldfrc_rhminl            > 0.910D0 </cldfrc_rhminl>
+<cldfrc_rhminh            > 0.700D0 </cldfrc_rhminh>
+<cldfrc_sh1               > 0.070D0 </cldfrc_sh1>
+<cldfrc_sh2               > 500.0D0 </cldfrc_sh2>
+<cldfrc_dp1               > 0.140D0 </cldfrc_dp1>
+<cldfrc_dp2               > 500.0D0 </cldfrc_dp2>
+<cldfrc_premit            > 25000.0D0 </cldfrc_premit>
+<hkconv_cmftau            > 1800.0D0  </hkconv_cmftau>
+<hkconv_c0                >  1.0e-4   </hkconv_c0>
+<zmconv_c0_lnd            > 0.0040D0  </zmconv_c0_lnd>
+<zmconv_c0_ocn            > 0.0040D0  </zmconv_c0_ocn>
+<zmconv_ke                > 1.0E-6    </zmconv_ke>
+
+
+<!-- Solar insolation of 1365 -->
+<solar_const              >1365.0     </solar_const>
+/
+
+<!-- zonally symmetric ozone file -->
+<prescribed_ozone_file    >apeozone_cam3_5_54.nc</prescribed_ozone_file>
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_name    >OZONE</prescribed_ozone_name>
+<prescribed_ozone_type    >CYCLICAL</prescribed_ozone_type>
+<prescribed_ozone_cycle_yr>1990</prescribed_ozone_cycle_yr>
+
+<!-- shut off prescribed aerosols -->
+<prescribed_aero_file    ></prescribed_aero_file>
+
+<!-- Analytic sst forcing type 1 -->
+<aqua_planet              >.true. </aqua_planet>
+
+<!-- Revised physics constants for ape experiments -->
+<sday                     >86164.10063718943</sday>
+<rearth                   >6.37100e6</rearth>
+<gravit                   >9.79764</gravit>
+<mwdry                    >28.96623324623746</mwdry>
+<mwh2o                    >18.01618112892741</mwh2o>
+<cpwv                     >1.846e3</cpwv>
+<tmelt                    >273.16</tmelt>
+
+<rad_climate>'A:Q:H2O', 'N:O2:O2', 'N:CO2:CO2', 'N:ozone:O3', 'N:N2O:N2O', 'N:CH4:CH4', 'N:CFC11:CFC11','N:CFC12:CFC12' </rad_climate>
+
+<!-- Gravity wave drag parameters -->
+<fcrit2                                    > 0.5       </fcrit2>
+
+<!-- FV dycore -->
+<fft_flt                                   > 0         </fft_flt>
+
+</namelist_defaults>
+

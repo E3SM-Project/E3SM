@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Negative Ice Area in Horizontal Remapping</TITLE>
+<META NAME="description" CONTENT="Negative Ice Area in Horizontal Remapping">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node36.html">
+<LINK REL="previous" HREF="node34.html">
+<LINK REL="up" HREF="node33.html">
+<LINK REL="next" HREF="node36.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html523"
+  HREF="node36.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html519"
+  HREF="node33.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html513"
+  HREF="node34.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html521"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html524"
+  HREF="node36.html">Thermodynamic Iteration Error</A>
+<B>Up:</B> <A NAME="tex2html520"
+  HREF="node33.html">Troubleshooting</A>
+<B> Previous:</B> <A NAME="tex2html514"
+  HREF="node34.html">Code does not Compile</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION000112000000000000000">
+Negative Ice Area in Horizontal Remapping</A>
+</H2>
+
+<P>
+This error is written from <B>ice_transport_remap.F90</B> when the ice model
+is checking for negative ice areas. If it happens well into a model integration,
+it can be indicative of a CFL violation.  The output looks like:
+
+<P>
+<PRE>
+  60: New area &lt; 0, istep = 119588
+  60: (my_task,i,j,n) = 4 21 380 1
+  60: Old area = 0.960675000975677174E-05
+  60: New area = -0.161808948357841311E-06
+  60: Net flux = -0.976855895811461324E-05
+  60:(shr_sys_abort) ERROR: remap transport: negative area
+  60:(shr_sys_abort) WARNING: calling shr_mpi_abort() and stopping
+  60:(shr_mpi_abort):remap transport: negative area 0
+</PRE>
+
+<P>
+The dynamics timestep should be reduced to integrate past this problem.  Set
+
+<P>
+<PRE>
+ , xndt_dyn = 2
+</PRE>
+
+<P>
+in the namelist and restart the model.  When the job completes set the value
+back to 1.
+
+<P>
+<BR> <HR>
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

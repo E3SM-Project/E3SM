@@ -1,0 +1,50 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# Yellowstone build specific settings
+# -------------------------------------------------------------------------
+
+
+source /glade/apps/opt/lmod/lmod/init/csh
+
+module purge
+module load ncarenv/0.0
+module load ncarbinlibs/0.0
+
+if ( $COMPILER == "intel" ) then
+  module load intel/12.1.4
+endif
+if ( $COMPILER == "pgi" ) then
+  module load pgi/12.5
+endif
+if ( $COMPILER == "gnu" ) then
+  module load gnu/4.7.0
+endif
+if ( $COMPILER == "pathscale" ) then
+  module load pathscale/4.0.12.1
+endif
+module load ncarcompilers/1.0
+module load netcdf-mpi/4.2 
+module load pnetcdf/1.3.0
+
+
+
+# -------------------------------------------------------------------------
+# Build and runtime environment variables - edit before the initial build 
+# -------------------------------------------------------------------------
+
+limit datasize  unlimited
+setenv XLSMPOPTS "stack=256000000"
+setenv MP_LABELIO yes
+
+# MPI Environment
+setenv MP_INFOLEVEL                   2
+setenv MP_SHARED_MEMORY             yes
+setenv MP_EUILIB                    us
+
+# Set a host file so that mpi can run on login node
+if ( $HOSTNAME =~ {*login*} ) then
+  echo $HOSTNAME > $CASEROOT/hostfile
+  setenv MP_HOSTFILE $CASEROOT/hostfile
+  setenv MP_PROCS 1
+endif

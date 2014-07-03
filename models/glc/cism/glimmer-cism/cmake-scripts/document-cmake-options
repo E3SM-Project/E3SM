@@ -1,0 +1,55 @@
+# Documentation of options for cmake configuration of glimmer-cism.
+# Ordered roughly by importance/frequency of use. 
+#
+#Cmake variables starting with GLIMMER are ones I invented for use
+# in CMakeLists.txt, and can be freely added and used. The intention
+# is for this documentation to be a complete list.
+#
+#Cmake variables starting with CMAKE_ are known by CMake
+# buils system, and have their own meaning and defaults.
+# Here I document ones that we commonly will set, but there
+# are many more.
+#
+# Andy Salinger (6/21/12)
+
+% Path to Trilinos installation (currenlty REQUIRED)
+-D GLIMMER_TRILINOS_DIR=/ccs/proj/cli054/trilinos-10.10.1/GCC_BUILD/include \
+
+%Path to netcdf install: expects "include" and "lib" subdirs (currently REQUIRED)
+-D GLIMMER_NETCDF_DIR=$NETCDF_DIR \
+
+%List of name(s) of netcdf libraries. Defaults to "netcdff;netcdf"
+% where "netcdf" is the other common option.
+-D GLIMMER_NETCDF_LIBS="netcdf" \
+
+% Option to add additional library to beginning of link line. This
+% is needed for PGI builds where we link with C++ but have a 
+% main() in Fortran.
+-D GLIMMER_FMAIN="/opt/pgi/11.10.0/linux86-64/11.10/lib/f90main.o" \
+
+% CMake variables to specify compiler flags. The default is to get
+% these from the Trilinos build. Setting these will overwrite the 
+% values from Trilinos. (See following set of options.)
+-D CMAKE_Fortran_FLAGS="-g -O2" \
+-D CMAKE_C_FLAGS="-g -O2" \
+-D CMAKE_CXX_FLAGS="-g -O2" \
+
+% Variables to addend to compiler flags. These are appended to the
+% CMAKE_* versions above, and allow us to take the flags used in
+% Trilinos and add to them.
+-D GLIMMER_Fortran_FLAGS="-ffree-line-length-none" \
+-D GLIMMER_C_FLAGS="" \
+-D GLIMMER_CXX_FLAGS="-DMY_SPECIAL_DEFINE" \
+
+% CMake variable to toggle (ON,OFF) verbosity of output when running make.
+-D CMAKE_VERBOSE_MAKEFILE=OFF \ 
+
+% Option to just build glimmercism libraries and not simple_glided executable.
+% Defaults of OFF.
+-D GLIMMER_NO_EXECUTABLE=ON \ 
+
+% CMake variables to specify compilers. Currently these are obtained
+% from the Trilinos build and not set here. These may be set by CESM later.
+-D CMAKE_Fortran_COMPILER="mpif90" \
+-D CMAKE_C_COMPILER="mpicc" \
+-D CMAKE_CXX_COMPILER="mpicxx" \

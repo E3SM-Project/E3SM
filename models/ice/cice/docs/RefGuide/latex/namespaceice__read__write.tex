@@ -1,0 +1,106 @@
+\hypertarget{namespaceice__read__write}{
+\section{ice\_\-read\_\-write Module Reference}
+\label{namespaceice__read__write}\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+interface \hyperlink{interfaceice__read__write_1_1ice__read__global__nc}{ice\_\-read\_\-global\_\-nc}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__read__write_ad696392c65cb5608c5d752fd21772c6c}{ice\_\-open} (nu, filename, nbits)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a0a5831674445b8a414a0b73b554ad166}{ice\_\-read} (nu, nrec, work, atype, diag, field\_\-loc, field\_\-type, ignore\_\-eof, hit\_\-eof)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a25d913eb64dad37cf58e9c095ad4627a}{ice\_\-read\_\-global} (nu, nrec, work\_\-g, atype, diag, ignore\_\-eof, hit\_\-eof)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a6fd5225cadcb9e4b36318dc93d4d8201}{ice\_\-write} (nu, nrec, work, atype, diag)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a371e7c35fea2456c221e0451f87bb2eb}{ice\_\-write\_\-nc} (fid, nrec, varname, work, atype, diag)
+\item 
+subroutine \hyperlink{namespaceice__read__write_ab2f5aad237f6bdcee1e5e90537050822}{ice\_\-open\_\-nc} (filename, fid)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a412c3f66b66a3ff61e7b5c3fb3205889}{ice\_\-read\_\-nc} (fid, nrec, varname, work, diag, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a7e7f4faac57a154facfd07a272b2cb76}{ice\_\-read\_\-global\_\-nc\_\-dbl} (fid, nrec, varname, work\_\-g, diag)
+\item 
+subroutine \hyperlink{namespaceice__read__write_a3fda8cf973518b47282724d7464eddc5}{ice\_\-read\_\-global\_\-nc\_\-r4} (fid, nrec, varname, work\_\-g, diag)
+\item 
+subroutine \hyperlink{namespaceice__read__write_ae296957254d38ce1229d08bd1ded45a6}{ice\_\-close\_\-nc} (fid)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__read__write_ae296957254d38ce1229d08bd1ded45a6}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-close\_\-nc@{ice\_\-close\_\-nc}}
+\index{ice\_\-close\_\-nc@{ice\_\-close\_\-nc}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-close\_\-nc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-close\_\-nc (integer (kind=int\_\-kind),intent(in) {\em fid})}}
+\label{namespaceice__read__write_ae296957254d38ce1229d08bd1ded45a6}
+
+
+Definition at line 1095 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_ad696392c65cb5608c5d752fd21772c6c}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-open@{ice\_\-open}}
+\index{ice\_\-open@{ice\_\-open}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-open}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-open (integer (kind=int\_\-kind),intent(in) {\em nu}, \/  character ($\ast$) {\em filename}, \/  integer (kind=int\_\-kind),intent(in) {\em nbits})}}
+\label{namespaceice__read__write_ad696392c65cb5608c5d752fd21772c6c}
+
+
+Definition at line 59 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_ab2f5aad237f6bdcee1e5e90537050822}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-open\_\-nc@{ice\_\-open\_\-nc}}
+\index{ice\_\-open\_\-nc@{ice\_\-open\_\-nc}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-open\_\-nc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-open\_\-nc (character (char\_\-len\_\-long),intent(in) {\em filename}, \/  integer (kind=int\_\-kind),intent(out) {\em fid})}}
+\label{namespaceice__read__write_ab2f5aad237f6bdcee1e5e90537050822}
+
+
+Definition at line 620 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a0a5831674445b8a414a0b73b554ad166}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-read@{ice\_\-read}}
+\index{ice\_\-read@{ice\_\-read}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-read}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-read (integer (kind=int\_\-kind),intent(in) {\em nu}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(out) {\em work}, \/  character (len=4),intent(in) {\em atype}, \/  logical (kind=log\_\-kind),intent(in) {\em diag}, \/  integer (kind=int\_\-kind),intent(in),optional {\em field\_\-loc}, \/  integer (kind=int\_\-kind),intent(in),optional {\em field\_\-type}, \/  logical (kind=log\_\-kind),intent(in),optional {\em ignore\_\-eof}, \/  logical (kind=log\_\-kind),intent(out),optional {\em hit\_\-eof})}}
+\label{namespaceice__read__write_a0a5831674445b8a414a0b73b554ad166}
+
+
+Definition at line 104 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a25d913eb64dad37cf58e9c095ad4627a}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-read\_\-global@{ice\_\-read\_\-global}}
+\index{ice\_\-read\_\-global@{ice\_\-read\_\-global}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-read\_\-global}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-read\_\-global (integer (kind=int\_\-kind),intent(in) {\em nu}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  real (kind=dbl\_\-kind),dimension(:,:),intent(out) {\em work\_\-g}, \/  character (len=4) {\em atype}, \/  logical (kind=log\_\-kind) {\em diag}, \/  logical (kind=log\_\-kind),intent(in),optional {\em ignore\_\-eof}, \/  logical (kind=log\_\-kind),intent(out),optional {\em hit\_\-eof})}}
+\label{namespaceice__read__write_a25d913eb64dad37cf58e9c095ad4627a}
+
+
+Definition at line 251 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a7e7f4faac57a154facfd07a272b2cb76}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-read\_\-global\_\-nc\_\-dbl@{ice\_\-read\_\-global\_\-nc\_\-dbl}}
+\index{ice\_\-read\_\-global\_\-nc\_\-dbl@{ice\_\-read\_\-global\_\-nc\_\-dbl}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-read\_\-global\_\-nc\_\-dbl}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-read\_\-global\_\-nc\_\-dbl (integer (kind=int\_\-kind),intent(in) {\em fid}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  character (len=$\ast$),intent(in) {\em varname}, \/  real (kind=dbl\_\-kind),dimension(:,:),intent(out) {\em work\_\-g}, \/  logical (kind=log\_\-kind) {\em diag})}}
+\label{namespaceice__read__write_a7e7f4faac57a154facfd07a272b2cb76}
+
+
+Definition at line 830 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a3fda8cf973518b47282724d7464eddc5}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-read\_\-global\_\-nc\_\-r4@{ice\_\-read\_\-global\_\-nc\_\-r4}}
+\index{ice\_\-read\_\-global\_\-nc\_\-r4@{ice\_\-read\_\-global\_\-nc\_\-r4}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-read\_\-global\_\-nc\_\-r4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-read\_\-global\_\-nc\_\-r4 (integer (kind=int\_\-kind),intent(in) {\em fid}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  character (len=$\ast$),intent(in) {\em varname}, \/  real (kind=real\_\-kind),dimension(:,:),intent(out) {\em work\_\-g}, \/  logical (kind=log\_\-kind) {\em diag})}}
+\label{namespaceice__read__write_a3fda8cf973518b47282724d7464eddc5}
+
+
+Definition at line 962 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a412c3f66b66a3ff61e7b5c3fb3205889}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-read\_\-nc@{ice\_\-read\_\-nc}}
+\index{ice\_\-read\_\-nc@{ice\_\-read\_\-nc}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-read\_\-nc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-read\_\-nc (integer (kind=int\_\-kind),intent(in) {\em fid}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  character (len=$\ast$),intent(in) {\em varname}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(out) {\em work}, \/  logical (kind=log\_\-kind),intent(in) {\em diag}, \/  integer (kind=int\_\-kind),intent(in),optional {\em field\_\-loc}, \/  integer (kind=int\_\-kind),intent(in),optional {\em field\_\-type})}}
+\label{namespaceice__read__write_a412c3f66b66a3ff61e7b5c3fb3205889}
+
+
+Definition at line 672 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a6fd5225cadcb9e4b36318dc93d4d8201}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-write@{ice\_\-write}}
+\index{ice\_\-write@{ice\_\-write}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-write}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-write (integer (kind=int\_\-kind),intent(in) {\em nu}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(in) {\em work}, \/  character (len=4) {\em atype}, \/  logical (kind=log\_\-kind) {\em diag})}}
+\label{namespaceice__read__write_a6fd5225cadcb9e4b36318dc93d4d8201}
+
+
+Definition at line 364 of file ice\_\-read\_\-write.F90.\hypertarget{namespaceice__read__write_a371e7c35fea2456c221e0451f87bb2eb}{
+\index{ice\_\-read\_\-write@{ice\_\-read\_\-write}!ice\_\-write\_\-nc@{ice\_\-write\_\-nc}}
+\index{ice\_\-write\_\-nc@{ice\_\-write\_\-nc}!ice_read_write@{ice\_\-read\_\-write}}
+\subsubsection[{ice\_\-write\_\-nc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-read\_\-write::ice\_\-write\_\-nc (integer (kind=int\_\-kind),intent(in) {\em fid}, \/  integer (kind=int\_\-kind),intent(in) {\em nrec}, \/  character (len=$\ast$),intent(in) {\em varname}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(in) {\em work}, \/  character (len=4),intent(in) {\em atype}, \/  logical (kind=log\_\-kind),intent(in) {\em diag})}}
+\label{namespaceice__read__write_a371e7c35fea2456c221e0451f87bb2eb}
+
+
+Definition at line 467 of file ice\_\-read\_\-write.F90.

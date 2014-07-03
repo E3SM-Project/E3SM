@@ -1,0 +1,7 @@
+-nospmd -nosmp
+-phys cam4
+-dyn eul
+-res 64x128 
+-scam
+-debug
+-s

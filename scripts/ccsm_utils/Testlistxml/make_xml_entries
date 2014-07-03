@@ -1,0 +1,153 @@
+#!/usr/bin/env perl 
+#
+use strict;
+use Cwd;
+use File::Basename;
+use IO::File;
+use IO::Handle;
+use Getopt::Long;
+
+# Get input arguments
+if ($#ARGV == -1) {
+    usage();
+}
+
+my %opts = (
+  file => undef,
+  testtype => undef,
+);
+
+GetOptions(
+    "file=s"     => \$opts{'file'},
+    "testtype=s" => \$opts{'testtype'},
+    "h|help"     => \$opts{'help'},
+    )  or usage();
+
+if (@ARGV) {
+    # Check for unparsed arguments
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+# Give usage message.
+usage() if $opts{'help'};
+
+my $file; my $testtype;
+if ($opts{'file'}) {
+    $file = $opts{'file'};
+} else {
+    die "ERROR: must specify -file argument \n";
+}
+if ($opts{'testtype'}) {
+    $testtype = $opts{'testtype'};
+} else {
+    die "ERROR: must specify -testtype argument \n";
+}
+    
+open my $INPUT, "<", $file or die "can't open file";
+my @lines = <$INPUT>;
+close $INPUT;
+
+my $text = <<"EOF";
+<?xml version="1.0"?>
+<newlist>
+EOF
+foreach my $line(@lines)
+{
+  chomp $line;
+  next unless $line;
+  my @tokens   = split('\.', $line);
+  my $testname = $tokens[0];
+  my $res      = $tokens[1];
+  my $compset  = $tokens[2];
+  my $machcomp = $tokens[3];
+  my $nldir    = $tokens[4];
+
+  my @tokens   = split('_', $machcomp);
+  my $machine  = $tokens[0];
+  my $compiler = $tokens[1];
+     
+  if ($nldir) {
+      $nldir =~ s/ //g;
+      if (! -e "./nl_dirs/$nldir") {
+	  die "./nl_dirs/$nldir does not exist \n";
+      }
+      $text .=  <<"EOF";
+<compset name="$compset">
+  <grid name="$res">
+    <test name="$testname">
+      <machine compiler="$compiler" testtype="$testtype" nldir="$nldir">$machine</machine>
+    </test>
+  </grid>
+</compset>
+EOF
+
+  } else {
+
+      $text .=  <<"EOF";
+<compset name="$compset">
+  <grid name="$res">
+    <test name="$testname">
+      <machine compiler="$compiler" testtype="$testtype">$machine</machine>
+    </test>
+  </grid>
+</compset>
+EOF
+  }
+
+}
+
+$text .= <<"EOF";
+</newlist>
+EOF
+
+my $file = "new_entry.xml";
+my $fh = IO::File->new('new_entry.xml', '>' ) or die "can't open file: new_entry.xml\n";
+print $fh $text;
+print " Successfully created new file new_entry.xml \n";
+print " To add the contents of new_entry.xml to testlist.xml, do the following \n"; 
+print "    ./add_xml_entries -file new_entry.xml \n";
+exit 0;
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     make_xml_entries [options]
+DESCRIPTION
+     translates a old-style list of testnames (testname.grid.compset[.nldir])
+     into an xml format that can be input into add_xml_entries and thereby expand the current
+     testing xml table
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -file <name>         Standard test filename where each line nas the form
+                               testname.grid.compset[.nldir]
+                          where nldir is the directory relative to ./nldirs/
+     -testtype <name>     one of current supported test type categories
+     -help [or -h]        Print usage to STDOUT (optional).
+
+EXAMPLE
+
+     An entry in the file of 
+
+        ERS_Ly5.f19_g16.I20TRCRUCLM45CN4Me.yellowstone_intel.clm/monthly_noinitial 
+
+     would result in the following xml entry
+	
+     <compset name="I20TRCRUCLM45CN4Me">
+       <grid name="f19_g16">
+         <test name="ERS_Ly5">
+           <machine compiler="aux" testtype="clm_aux" nldir="clm/monthly_noinitial">yellowstone</machine>
+         </test>
+       </grid>
+     </compset>
+
+EOF
+
+}
+

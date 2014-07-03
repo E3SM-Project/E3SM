@@ -1,0 +1,146 @@
+\hypertarget{typeice__boundary_1_1ice__halo}{
+\section{ice\_\-boundary::ice\_\-halo Type Reference}
+\label{typeice__boundary_1_1ice__halo}\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}}
+}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind) \hyperlink{typeice__boundary_1_1ice__halo_a2c3bc7e1a28bb3eda818533eb6bb0ffa}{communicator}
+\item 
+integer(int\_\-kind) \hyperlink{typeice__boundary_1_1ice__halo_a361ae70131f21b9bf2a73846897687c7}{numMsgSend}
+\item 
+integer(int\_\-kind) \hyperlink{typeice__boundary_1_1ice__halo_aba8e9b8f14be29157688614ca6fd5fe4}{numMsgRecv}
+\item 
+integer(int\_\-kind) \hyperlink{typeice__boundary_1_1ice__halo_a66c29ae275de42ddc392d9b612db889b}{numLocalCopies}
+\item 
+integer(int\_\-kind) \hyperlink{typeice__boundary_1_1ice__halo_aa99a48d3d59fc70b1260a1f267b752f2}{tripoleRows}
+\item 
+logical(log\_\-kind) \hyperlink{typeice__boundary_1_1ice__halo_adc7cf6a34ad3e931ddbded6ef57b5d1d}{tripoleTFlag}
+\item 
+integer(int\_\-kind), dimension(:), pointer \hyperlink{typeice__boundary_1_1ice__halo_aaad7d6023e014b677e11253c0ee55f77}{recvTask}
+\item 
+integer(int\_\-kind), dimension(:), pointer \hyperlink{typeice__boundary_1_1ice__halo_a77af58ceddef96f27a1d39b92e459db1}{sendTask}
+\item 
+integer(int\_\-kind), dimension(:), pointer \hyperlink{typeice__boundary_1_1ice__halo_afcdc902a1c162578d137996a3f172684}{sizeSend}
+\item 
+integer(int\_\-kind), dimension(:), pointer \hyperlink{typeice__boundary_1_1ice__halo_ac70cbe1ad58dfe39d1b7083d9dcaf5b1}{sizeRecv}
+\item 
+integer(int\_\-kind), dimension(:,:), pointer \hyperlink{typeice__boundary_1_1ice__halo_a396d5672cdeedfc9fb66749bce9654b9}{srcLocalAddr}
+\item 
+integer(int\_\-kind), dimension(:,:), pointer \hyperlink{typeice__boundary_1_1ice__halo_ae2c9a8697a47b692ca8c945b4dd2d251}{dstLocalAddr}
+\item 
+integer(int\_\-kind), dimension(:,:,:), pointer \hyperlink{typeice__boundary_1_1ice__halo_a9c316677935c87c4c7a738c7a4a5e69c}{sendAddr}
+\item 
+integer(int\_\-kind), dimension(:,:,:), pointer \hyperlink{typeice__boundary_1_1ice__halo_a68312a01cf31b733be7e0fb3ef9ab42c}{recvAddr}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 51 of file ice\_\-boundary.F90.
+
+\subsection{Member Data Documentation}
+\hypertarget{typeice__boundary_1_1ice__halo_a2c3bc7e1a28bb3eda818533eb6bb0ffa}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!communicator@{communicator}}
+\index{communicator@{communicator}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{communicator}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::ice\_\-halo::communicator}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a2c3bc7e1a28bb3eda818533eb6bb0ffa}
+
+
+Definition at line 52 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_ae2c9a8697a47b692ca8c945b4dd2d251}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!dstLocalAddr@{dstLocalAddr}}
+\index{dstLocalAddr@{dstLocalAddr}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{dstLocalAddr}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:),pointer {\bf ice\_\-boundary::ice\_\-halo::dstLocalAddr}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_ae2c9a8697a47b692ca8c945b4dd2d251}
+
+
+Definition at line 68 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_a66c29ae275de42ddc392d9b612db889b}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!numLocalCopies@{numLocalCopies}}
+\index{numLocalCopies@{numLocalCopies}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{numLocalCopies}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::ice\_\-halo::numLocalCopies}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a66c29ae275de42ddc392d9b612db889b}
+
+
+Definition at line 52 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_aba8e9b8f14be29157688614ca6fd5fe4}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!numMsgRecv@{numMsgRecv}}
+\index{numMsgRecv@{numMsgRecv}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{numMsgRecv}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::ice\_\-halo::numMsgRecv}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_aba8e9b8f14be29157688614ca6fd5fe4}
+
+
+Definition at line 52 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_a361ae70131f21b9bf2a73846897687c7}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!numMsgSend@{numMsgSend}}
+\index{numMsgSend@{numMsgSend}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{numMsgSend}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::ice\_\-halo::numMsgSend}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a361ae70131f21b9bf2a73846897687c7}
+
+
+Definition at line 52 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_a68312a01cf31b733be7e0fb3ef9ab42c}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!recvAddr@{recvAddr}}
+\index{recvAddr@{recvAddr}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{recvAddr}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:,:),pointer {\bf ice\_\-boundary::ice\_\-halo::recvAddr}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a68312a01cf31b733be7e0fb3ef9ab42c}
+
+
+Definition at line 72 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_aaad7d6023e014b677e11253c0ee55f77}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!recvTask@{recvTask}}
+\index{recvTask@{recvTask}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{recvTask}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:),pointer {\bf ice\_\-boundary::ice\_\-halo::recvTask}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_aaad7d6023e014b677e11253c0ee55f77}
+
+
+Definition at line 62 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_a9c316677935c87c4c7a738c7a4a5e69c}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!sendAddr@{sendAddr}}
+\index{sendAddr@{sendAddr}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{sendAddr}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:,:),pointer {\bf ice\_\-boundary::ice\_\-halo::sendAddr}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a9c316677935c87c4c7a738c7a4a5e69c}
+
+
+Definition at line 72 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_a77af58ceddef96f27a1d39b92e459db1}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!sendTask@{sendTask}}
+\index{sendTask@{sendTask}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{sendTask}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:),pointer {\bf ice\_\-boundary::ice\_\-halo::sendTask}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a77af58ceddef96f27a1d39b92e459db1}
+
+
+Definition at line 62 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_ac70cbe1ad58dfe39d1b7083d9dcaf5b1}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!sizeRecv@{sizeRecv}}
+\index{sizeRecv@{sizeRecv}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{sizeRecv}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:),pointer {\bf ice\_\-boundary::ice\_\-halo::sizeRecv}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_ac70cbe1ad58dfe39d1b7083d9dcaf5b1}
+
+
+Definition at line 62 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_afcdc902a1c162578d137996a3f172684}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!sizeSend@{sizeSend}}
+\index{sizeSend@{sizeSend}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{sizeSend}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:),pointer {\bf ice\_\-boundary::ice\_\-halo::sizeSend}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_afcdc902a1c162578d137996a3f172684}
+
+
+Definition at line 62 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_a396d5672cdeedfc9fb66749bce9654b9}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!srcLocalAddr@{srcLocalAddr}}
+\index{srcLocalAddr@{srcLocalAddr}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{srcLocalAddr}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:),pointer {\bf ice\_\-boundary::ice\_\-halo::srcLocalAddr}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_a396d5672cdeedfc9fb66749bce9654b9}
+
+
+Definition at line 68 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_aa99a48d3d59fc70b1260a1f267b752f2}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!tripoleRows@{tripoleRows}}
+\index{tripoleRows@{tripoleRows}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{tripoleRows}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::ice\_\-halo::tripoleRows}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_aa99a48d3d59fc70b1260a1f267b752f2}
+
+
+Definition at line 52 of file ice\_\-boundary.F90.\hypertarget{typeice__boundary_1_1ice__halo_adc7cf6a34ad3e931ddbded6ef57b5d1d}{
+\index{ice\_\-boundary::ice\_\-halo@{ice\_\-boundary::ice\_\-halo}!tripoleTFlag@{tripoleTFlag}}
+\index{tripoleTFlag@{tripoleTFlag}!ice_boundary::ice_halo@{ice\_\-boundary::ice\_\-halo}}
+\subsubsection[{tripoleTFlag}]{\setlength{\rightskip}{0pt plus 5cm}logical (log\_\-kind) {\bf ice\_\-boundary::ice\_\-halo::tripoleTFlag}\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{typeice__boundary_1_1ice__halo_adc7cf6a34ad3e931ddbded6ef57b5d1d}
+
+
+Definition at line 59 of file ice\_\-boundary.F90.
+
+The documentation for this type was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{ice__boundary_8F90}{ice\_\-boundary.F90}\end{DoxyCompactItemize}

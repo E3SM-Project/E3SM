@@ -1,0 +1,40 @@
+This is an exerpt from a PISM README file downloaded from
+http://svn.gna.org/viewcvs/pism/trunk/examples/eisross/
+describing the riggs_clean.dat file
+
+riggs_data_edit_fromDM.txt (=FILE1):  This text file was sent to 
+Ed Bueler (=ELB) by Doug MacAyeal on 19 Dec 2006.  It seems to 
+contain the (global) latitude and longitude of the 149 locations 
+of RIGGS data which were actually used to compute the \chi^2 measure.
+
+riggs_clean.dat:  This text file is a modified version
+of the previous file.  ELB removed some clutter to make it 
+machine-readable, and included the latitude and longitude from the 
+above file.  The RIGGS grid system is clearly described in Table A1, 
+Part 1 of R. Thomas and three others, "Glaciological Studies on the 
+Ross Ice Shelf, Antarctica, 1973-1978", Antarctica Research Series 
+Volume 42, American Geophysical Union 1984.  (Unfortunately the
+grid system has been destroyed in the file "RIGGS.dat".)  The 
+obviously spurious point "N16" in the RIGGS data has been thrown out;
+note that Figure 11 in (Thomas et al 1984) does not contain it either. 
+There are 14 columns in this file:
+COLUMN    MEANING
+1         index of point used in FILE1
+2         north latitude (i.e. actual latitude) from FILE1
+3         west longitude from FILE1
+4         degrees grid south latitude
+                     (table A1, part 1 in Thomas et al 1984)
+5         minutes grid south latitude  (")
+6         seconds grid south latitude  (")
+7         degrees grid east*OR*west longitude  (")
+8         minutes grid east*OR*west longitude  (")
+9         seconds grid east*OR*west longitude  (")
+10        +1 if west, -1 if east (regards columns 7,8,9)  (")
+11        speed (m/a) at point
+12        *geographic* bearing at point
+13        grid bearing at point
+                     (table A1, part 2 in Thomas et al 1984)
+14        estimated speed error (m/a; note replaced with 30
+          for Chi^2 stat in MacAyeal et al 1996)
+
+

@@ -1,0 +1,4153 @@
+================================================================================
+ SVN $Id: ChangeLog 46542 2013-04-30 18:34:21Z mvertens $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq4_2_33/ChangeLog $
+================================================================================
+
+Information on changes to cpl7
+Originator: mvertens
+Date: 30 Apr 2013
+Model: cpl7
+Version: drvseq4_2_33
+One-line summary:  Fixed bug in cpl.buildnml.csh introduced in drvseq4_2_32
+	           changes to driver
+
+M       bld/cpl.buildnml.csh
+
+================================================================================
+Information on changes to cpl7
+Originator: mvertens
+Date: 30 Apr 2013
+Model: cpl7
+Version: drvseq4_2_32
+One-line summary:  Changes to add adiabatic, aquaplanet and ideal physics namelist
+	           changes to driver
+
+M       bld/cpl.buildnml.csh
+M       bld/namelist_files/namelist_definition_drv.xml
+
+================================================================================
+Originator: santos
+Date: 23 Apr 2013
+Model: cpl7
+Version: drvseq4_2_31
+One-line summary:  Fix SCAM issue by having shr_scam_mod set sno_present.
+
+M       driver/ccsm_comp_mod.F90
+         - Allow shr_scam_checkSurface to set sno_present, rof_present,
+           and flood_present in addition to lnd, ocn, and ice flags.
+
+M       shr/seq_infodata_mod.F90
+         - Get rid of single_column conditional for rof/flood that is
+           now redundant.
+
+================================================================================
+Originator: santos
+Date: 16 Apr 2013
+Model: cpl7
+Version: drvseq4_2_30
+One-line summary:  Fix wrong intent causing error in NAG DEBUG RTM runs.
+
+M       driver/mrg_mod.F90
+         - Change intent(out) to intent(inout) for x2r_r.
+================================================================================
+Originator: tcraig
+Date: 10 Apr 2013
+Model: cpl7
+Version: drvseq4_2_29
+One-line summary:  Fix aborts with vect_map = none option
+
+M       driver/seq_map_mod.F90
+================================================================================
+Originator: mlevy
+Date: 9 Apr 2013
+Model: cpl7
+Version: drvseq4_2_28
+One-line summary:  Bug-fix: mapping files in with "gridmaps" in path name were
+                   not being prestaged.
+
+M       bld/build-namelist
+================================================================================
+Originator: mlevy
+Date: 3 Apr 2013
+Model: cpl7
+Version: drvseq4_2_27
+One-line summary:  Remove epbal scale factor that had been used by POP
+
+M       shr/seq_infodata_mod.F90
+================================================================================
+Originator: tcraig
+Date: 1 Apr 2013
+Model: cpl7
+Version: drvseq4_2_26
+One-line summary:  fix single point bug associated with rtm/flood
+
+M       shr/seq_infodata_mod.F90
+================================================================================
+Originator: mvertens
+Date: 30 Mar 2013
+Model: cpl7
+Version: drvseq4_2_25
+One-line summary:  changes to drv build-namelist to make changes in user_nl_cpl
+	more flexible
+
+M       bld/user_nl_cpl
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+
+Note - ran the namelists.frankfurt test suite and the results were all bit-for-bit
+	with cesm1_0_beta05
+
+================================================================================
+Originator: tcraig
+Date: 25 Mar 2013
+Model: cpl7
+Version: drvseq4_2_24
+One-line summary:  add wave model, update drydep
+
+add wave model
+add new timer barriers in driver run loop to improve cpl timing capability
+M       bld/cpl.buildnml.csh
+M       bld/cesm.buildexe.csh
+M       bld/user_nl_cpl
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/mrg_mod.F90
+M       driver/seq_rest_mod.F90
+M       driver/seq_frac_mct.F90
+M       driver/seq_avdata_mod.F90
+M       driver/seq_hist_mod.F90
+M       shr/seq_comm_mct.F90
+M       shr/seq_timemgr_mod.F90
+M       shr/seq_infodata_mod.F90
+M       shr/seq_flds_mod.F90
+
+NAG fix
+M      seq_flds_mod.F90
+
+svn merge $SVNREPO/drv/seq_mct/trunk_tags/drvseq4_2_22 $SVNREPO/drv/seq_mct/branches/chem_drvseq4_2_22
+ - increase megan_specifier string
+ - corrections for XPAN, and EOOH
+M    shr/shr_megan_mod.F90
+M    shr/seq_drydep_mod.F90
+================================================================================
+Originator: mvertens
+Date: 20 Mar 2013
+Model: cpl7
+Version: drvseq4_2_23
+One-line summary:  changes necessary for scripts refactoring - need
+	scripts4_130318 or later
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+
+================================================================================
+Originator: muszala
+Date: 19 Feb 2013
+Model: cpl7
+Version: drvseq4_2_22
+One-line summary:  mods to bring VOLR from RTM to CLM
+
+M       models/drv/bld/build-namelist
+M       models/drv/bld/namelist_files/namelist_defaults_drv.xml
+M       models/drv/bld/namelist_files/namelist_definition_drv.xml
+M       models/drv/driver/ccsm_comp_mod.F90
+M       models/drv/shr/seq_flds_mod.F90
+
+================================================================================
+Originator: tcraig, santos
+Date: Feb 13, 2013
+Model: cpl7
+Version: drvseq4_2_21
+One-line summary: Changes for NAG port, usealltoall and usevector namelist, msgtag
+
+- add msgtag to rearrange calls
+- add mct_usealltoall and mct_usevector to drv namelist, get rid of cpps in code
+- add some flushes and barriers
+- merge NAG fixes from nag_port_n01_drvseq4_2_17
+  - svn merge $SVNREPO/drv/seq_mct/trunk_tags/drvseq4_2_17 $SVNREPO/drv/seq_mct/branch_tags/nag_port_tags/nag_port_n01_drvseq4_2_17
+- correct field attributes for density and pressure in seq_flds_mod
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_domain_mct.F90
+M       driver/mrg_mod.F90
+M       driver/seq_map_mod.F90
+M       driver/seq_frac_mct.F90
+M       driver/seq_avdata_mod.F90
+M       driver/seq_flux_mct.F90
+M       driver/seq_mctext_mod.F90
+M       shr/shr_megan_mod.F90
+M       shr/seq_cdata_mod.F90
+M       shr/seq_comm_mct.F90
+M       shr/seq_timemgr_mod.F90
+M       shr/seq_infodata_mod.F90
+M       shr/seq_drydep_mod.F90
+M       shr/seq_io_mod.F90
+M       shr/shr_carma_mod.F90
+M       shr/seq_flds_mod.F90
+
+================================================================================
+Originator: erik
+Date: 08 Feb 2013
+Model: cpl7
+Version: drvseq4_2_20
+One-line summary:  make case_name consistently shr_kind_cl size rather than cs
+
+M       shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: sacks
+Date: 06 Feb 2013
+Model: cpl7
+Version: drvseq4_2_19
+One-line summary:  rework attribute matching for mapping files
+
+In namelist_defaults_drv.xml, match individual atm_grid, ocn_grid,
+etc., rather than matching full "grid". This is needed when there are
+other components in the grid (e.g., T31_g37_gl10, including the GLC
+grid), and removes redundancies some cases.
+
+This changes answers for some trigrid cases, for which I have fixed
+some inconsistencies:
+ne120_f02_t12
+ne120_f09_g16
+ne240_f02_t12
+ne30_f09_g16
+ne30_f19_g16
+T85_f09_t12
+
+See svn log message for details on what has been changed and what
+testing was done.
+
+M       bld/namelist_files/namelist_defaults_drv.xml
+	
+================================================================================
+Originator: sacks
+Date: 31 Jan 2013
+Model: cpl7
+Version: drvseq4_2_18
+One-line summary:  make glc_nec a module variable
+
+Make glc_nec a module variable rather than a local subroutine
+variable. This is needed so that dlnd can build its field list based
+on glc_nec.
+
+M       shr/seq_flds_mod.F90
+	
+================================================================================
+Originator: muszala
+Date: 07 Jan 2013
+Model: cpl7
+Version: drvseq4_2_17
+One-line summary:  add mapping files for 360x720 for R01
+
+Add mapping files for 360x720 rof->lnd and lnd->rof for R01.  4_2_16 mods were
+for R05 mapping files.  S. Swenson will need these in near future.
+
+M       bld/namelist_files/namelist_defaults_drv.xml
+	
+================================================================================
+Originator: muszala
+Date: 04 Jan 2013
+Model: cpl7
+Version: drvseq4_2_16
+One-line summary:  add mapping files for 360x720
+
+Add mapping files for 360x720 rof->lnd and lnd->rof
+
+M       bld/namelist_files/namelist_defaults_drv.xml
+	
+================================================================================
+Originator: sacks
+Date: 20 Dec 2012
+Model: cpl7
+Version: drvseq4_2_15
+One-line summary:  only accumulate x2racc fields if lnd_present is true
+
+These fields are invalid if lnd_valid is false, causing an error on
+some compilers (e.g., with TG compset, using gnu on hopper); this
+fixes that problem.
+
+M       driver/ccsm_comp_mod.F90
+	
+================================================================================
+Originator: jedwards
+Date: 03 Dec 2012
+Model: cpl7
+Version: drvseq4_2_14
+One-line summary:  update maps for ne16 grids
+
+M 	bld/namelist_files/namelist_defaults_drv.xml
+	
+================================================================================
+Originator: tcraig
+Date: 25 Nov 2012
+Model: cpl7
+Version: drvseq4_2_13
+One-line summary: change map names, add domain_check-fracmask
+ - changemap names to all lower case
+ - add seq_domain_check_fracmask to seq_domain checking
+ - removesome dead code in seq_domain
+	
+M       bld/user_nl_cpl
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_domain_mct.F90
+M       driver/seq_flux_mct.F90
+================================================================================
+Originator: sacks
+Date: 19 Nov 2012
+Model: cpl7
+Version: drvseq4_2_12
+One-line summary: Fix metadata in cpl hist files with many fields
+	
+M      shr/seq_flds_mod.F90
+       - seq_flds_esmf_metadata_get no longer uses hard-coded nmax
+       - also clean up some initialization of metadata variables
+
+================================================================================
+Originator: muszala
+Date: 13 Nov 2012
+Model: cpl7
+Version: drvseq4_2_11
+One-line summary: add flooding capability (98% done by T. Craig)
+ 
+M  bld/user_nl_cpl
+M  bld/build-namelist
+M  bld/namelist_files/namelist_defaults_drv.xml
+M  bld/namelist_files/namelist_definition_drv.xml
+M  driver/ccsm_comp_mod.F90
+M  driver/seq_rest_mod.F90
+M  driver/seq_avdata_mod.F90
+M  driver/seq_hist_mod.F90
+M  shr/seq_flds_mod.F90
+M  bld/namelist_files/namelist_defaults_drv.xml
+M  drv/driver/seq_diag_mct.F90
+
+================================================================================
+Originator: tcraig
+Date: 02 Nov 2012
+Model: cpl7
+Version: drvseq4_2_10
+One-line summary: Fix scm namelist variables 
+	
+M       bld/namelist_files/namelist_definition_drv.xml
+================================================================================
+Originator: sacks
+Date: 25 Oct 2012
+Model: cpl7
+Version: drvseq4_2_09
+One-line summary: Change field list string lengths to use shared CXX constant
+
+M       shr/seq_flds_mod.F90
+        - Use shared constant, now defined to be 4096 rather than 2048
+        - Also, fix off-by-one error in an error check
+M       driver/seq_mctext_mod.F90
+        - Use shared constant (4096) rather than hard-coded 1024
+
+================================================================================
+Originator: tcraig
+Date: 18 Oct 2012
+Model: cpl7
+Version: drvseq4_2_08
+One-line summary: Fix missing timer stop, DRIVER_ROFPOST
+
+M       driver/ccsm_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: 4 Oct 2012
+Model: cpl7
+Version: drvseq4_2_07
+One-line summary: Fix to lnd_present logic for TG
+ - produced npts error1 errors, does not impact solution
+
+M       driver/ccsm_comp_mod.F90
+================================================================================
+Originator: erik
+Date: 2 Oct 2012
+Model: cpl7
+Version: drvseq4_2_06
+One-line summary: Fix issue with carma_fields
+
+M       bld/namelist_files/namelist_definition_drv.xml - add monthly as a valid
+          option, add logfilepostfix, restart_file and outpathroot 
+M       bld/namelist_files/namelist_definition_modio.xml - fix syntax of comments
+M       bld/namelist_files/namelist_defaults_drv.xml ----- fix syntax error "=="
+          and syntax of comments.
+
+M       shr/shr_carma_mod.F90 - Set len of carma_fields to shr_kind_CX
+M       shr/seq_flds_mod.F90 -- Set len of carma_fields to shr_kind_CX
+
+================================================================================
+Originator: sacks
+Date: 1 Oct 2012
+Model: cpl7
+Version: drvseq4_2_05
+One-line summary: change histaux_s2x24hr to s2x1yr, add to namelist
+
+*** Change histaux_s2x24hr to histaux_s2x1yr
+M       driver/ccsm_comp_mod.F90
+M       shr/seq_infodata_mod.F90
+
+*** Add optional yr_offset to seq_hist_writeaux
+M       driver/seq_hist_mod.F90
+	
+*** Add histaux_s2x1yr to namelist (histaux_s2x24hr had accidentally
+*** been left out)
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+
+================================================================================
+Originator: mvertens
+Date: 25 Sept 2012
+Model: cpl7
+Version: drvseq4_2_04
+One-line summary: new shr_carm_mod and optional carma_inparm in drv_flds_in
+
+M       bld/user_nl_cpl
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+A       shr/shr_carma_mod.F90
+M       shr/seq_flds_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: 23 Sept 2012
+Model: cpl7
+Version: drvseq4_2_03
+One-line summary: put in scaling by landfrac for Fall_flxdst (previously a bug)
+
+This will change answers for CAM5 compsets
+	
+M       driver/mrg_mod.F90
+	
+================================================================================
+Originator: muszala
+Date: 21 Sept 2012
+Model: cpl7
+Version: drvseq4_2_02
+One-line summary: change name of ne240np4 to 0.5x0.5 file
+
+M       bld/namelist_files/namelist_defaults_drv.xml
+
+================================================================================
+Originator: tcraig
+Date: 18 Sept 2012
+Model: cpl7
+Version: drvseq4_2_01
+One-line summary: Runoff become separate component
+
+  svn merge $SVNREPO/drv/seq_mct/trunk_tags/drvseq4_1_26 $SVNREPO/drv/seq_mct/branch_tags/rtmcomp_tags/rtmcomp15_drvseq4_1_26
+	
+- new rof component
+- update budgets
+- partial implementation of rof2lnd flood
+- update frac check output
+- initialize esmf mappers only if doing esmf mapping
+- reduce extra log info where reasonable
+- remove ascale terms, no longer needed
+- add flood_present flag, aborts if flood_present is true 
+- remove seq_io_get subroutines, no longer needed
+- fix seq_flds_mod implementation issues, unneeded vars, catFields usage
+
+M       bld/user_nl_cpl
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       driver/ccsm_comp_mod.F90
+MM      driver/seq_domain_mct.F90
+M       driver/mrg_mod.F90
+M       driver/seq_map_mod.F90
+M       driver/seq_rest_mod.F90
+MM      driver/seq_frac_mct.F90
+M       driver/seq_avdata_mod.F90
+ M      driver/seq_flux_mct.F90
+MM      driver/seq_mctext_mod.F90
+M       driver/seq_hist_mod.F90
+MM      driver/seq_diag_mct.F90
+ M      driver/ccsm_driver.F90
+ M      shr/seq_cdata_mod.F90
+MM      shr/seq_comm_mct.F90
+MM      shr/seq_timemgr_mod.F90
+MM      shr/seq_infodata_mod.F90
+MM      shr/seq_io_mod.F90
+MM      shr/seq_flds_mod.F90
+================================================================================
+Originator: mvertens
+Date: 24 August 2012
+Model: cpl7
+Version: drvseq4_1_26
+One-line summary: Update to be consistent with scripts4_120824
+	
+M       bld/cpl.buildnml.csh
+D       bld/ccsm.buildexe.csh
+A       bld/cesm.buildexe.csh
+	ccsm.exe is now cesm.exe in $EXEROOT
+	
+================================================================================
+Originator: sacks
+Date: 24 August 2012
+Model: cpl7
+Version: drvseq4_1_25
+One-line summary: send glc -> cpl fields even if sno_prognostic is false
+
+Previously, the glc -> cpl section of ccsm_comp_mod is only executed
+if sno_prognostic=.true. But this meant that testing a TG compset by
+comparing cpl hist / log files was ineffective.
+
+I have modified the driver so part of the glc -> cpl section (the part
+needed for cpl diagnostics) happens even when sno_prognostic is
+.false.
+
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: fischer
+Date: 16 August 2012
+Model: cpl7
+Version: drvseq4_1_24
+One-line summary: fixed bug that was causing lahey to fail during compilation
+
+M       driver/mrg_mod.F90
+        moved getfld for field_atm above if statement that was using it.
+
+================================================================================
+Originator: muszala
+Date: 8 August 2012
+Model: cpl7
+Version: drvseq4_1_23
+One-line summary: add r01 to gx1v6 mapping entry
+
+M      bld/namelist_files/namelist_defaults_drv.xml
+
+================================================================================
+Originator: jedwards
+Date: 19 July 2012
+Model: cpl7
+Version: drvseq4_1_22
+One-line summary: remove restriction on OCN_PIO_ROOT no longer required
+
+M      bld/build-namelist
+
+================================================================================
+Originator: mvertens
+Date: 18 July 2012
+Model: cpl7
+Version: drvseq4_1_21
+One-line summary: changes to support the PF implementation (fluxes passed 
+	          straight through)
+
+M       bld/namelist_files/namelist_definition_drv.xml
+M       driver/mrg_mod.F90
+M       shr/seq_flds_mod.F90
+	
+================================================================================
+Originator: jedwards
+Date: 18 July 2012
+Model: cpl7
+Version: drvseq4_1_20
+One-line summary: Correct some mapping file names
+
+M     	 bld/namelist_files/namelist_defaults_drv.xml
+
+================================================================================
+Originator: tcraig
+Date: 17 July 2012
+Model: cpl7
+Version: drvseq4_1_19
+One-line summary: add COMP_RUN_BARRIERS, if iamin logic, ne240_t12 mapping files
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       driver/ccsm_comp_mod.F90
+	
+================================================================================
+Originator: mlevy
+Date: 12 July 2012
+Model: cpl7
+Version: drvseq4_1_18
+One-line summary: Point to correct mapping files from default file.
+M            38645   bld/namelist_files/namelist_defaults_drv.xml
+  - Created new maps for ne30np4 <-> fv0.9x1.25 and ne120np4 <-> fv0.9x1.25
+  - Changed ocn2atmSmapname from bilin to aave for gx1v6->T85 and tx0.1v2->T85
+  - Fixed directory or date stamp for several other maps
+ 
+================================================================================
+Originator: jedwards
+Date: 12 July 2012
+Model: cpl7
+Version: drvseq4_1_17
+One-line summary: Correct typo in build-namelist, some mapping filenames
+M            38642   bld/build-namelist
+M            38642   bld/namelist_files/namelist_defaults_drv.xml
+ 
+================================================================================
+Originator: mvertens
+Date: 26 June 2012
+Model: cpl7
+Version: drvseq4_1_16
+One-line summary: ccsm.exe now in $EXEROOT/bin/ccsm.exe rather than $RUNDIR/ccsm.exe
+	and if field prefix is PF - then fluxes are passed straight through without
+        land fraction weighting  
+                 
+D       bld/ccsm.template
+	- removed 
+M       bld/ccsm.buildexe.csh
+	- ccsm.exe now poaced in $EXEROOT/bin/ccsm.exe rather than $RUNDIR/ccsm.exe
+M       bld/user_nl_cpl
+	- update on documention
+M       bld/namelist_files/namelist_defaults_drv.xml
+	- bug fix for mapping files for f05_t12 
+M       bld/namelist_files/namelist_definition_drv.xml
+	- update of documentation for many varifables
+M       driver/mrg_mod.F90
+	- If field prefix is PF - then fluxes are passed straight through without
+  	  land fraction weighting  
+M       shr/seq_flds_mod.F90
+        - fix comment for user_nl_cpl	
+	
+================================================================================
+Originator: mvertens
+Date: 4 June 2012
+Model: cpl7
+Version: drvseq4_1_15
+One-line summary: Explicitly add $ENV{'USER'} to build-namelist since it is 
+                  not in the config_definition.xml file
+
+M       bld/build-namelist
+	
+================================================================================
+Originator: mvertens
+Date: 31 May 2012
+Model: cpl7
+Version: drvseq4_1_14
+One-line summary: Bug fix for T85_f02_g16 mapping files and documentation added
+	          to all variables in namelist_definition_drv.xml
+
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+	
+================================================================================
+Originator: mvertens
+Date: 30 May 2012
+Model: cpl7
+Version: drvseq4_1_13
+One-line summary: Bug fix for ability for user to change namelists using user_nl_cpl
+	
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+	
+================================================================================
+Originator: mvertens
+Date: 28 May 2012
+Model: cpl7
+Version: drvseq4_1_12
+One-line summary: Removed reference to almost all environment variables in 
+	          build-namelist and added a lot of new functionality to 
+	          namelist_defaults_drv.xml
+	
+M       bld/cpl.buildnml.csh
+A       bld/ccsm.buildexe.csh
+M       bld/user_nl_cpl
+M       bld/cpl.template
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       shr/seq_flds_mod.F90
+	- comment typo 
+	
+================================================================================
+Originator: mvertens
+Date: 20 May 2012
+Model: cpl7
+Version: drvseq4_1_11
+One-line summary: more new build-namelist functionality
+	
+updated capability to not have env_conf.xml present and better expand_env_xml
+routine	
+	
+M       bld/build-namelist
+	
+================================================================================
+Originator: mvertens
+Date: 17 May 2012
+Model: cpl7
+Version: drvseq4_1_10
+One-line summary: new build-namelist functionality
+
+A       bld/cpl.buildnml.csh
+A       bld/user_nl_cpl
+M       bld/cpl.template
+A       bld/build-namelist
+A       bld/cpl.buildexe.csh
+A       bld/namelist_files
+A       bld/namelist_files/namelist_definition_modio.xml
+A       bld/namelist_files/namelist_defaults_drv.xml
+A       bld/namelist_files/namelist_definition_drv.xml
+	
+   - only environment variable that is referenced in build-namelist is $LID	
+	
+================================================================================
+Originator: tcraig
+Date: 18 Apr 2012
+Model: cpl7
+Version: drvseq4_1_09
+One-line summary: 
+      - change seq_io_ calls to shr_pio_ calls
+      - add reprosum set opts and reprosum variables in infodata namelist
+      - add support for Va2o mapping file
+      - modify ocean run sequencing for new load balance option
+      - add ability to write run time for all components at each call
+        to address temporal load imbalance
+      - mods for TG
+
+M       bld/cpl.template
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_map_mod.F90
+M       shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 11 Apr 2012
+Model: cpl7
+Version: drvseq4_1_08
+One-line summary: Fixed problems for create_clone (no longer resolve $CASEBUILD)
+
+M         bld/cpl.template	
+	
+================================================================================
+Originator: jedwards
+Date: 09 Apr 2012
+Model: cpl7
+Version: drvseq4_1_07
+One-line summary: Added code to set profile_timer if in mpi-serial mode
+
+M         bld/cpl.template	
+
+================================================================================
+Originator: jedwards
+Date: 05 Apr 2012
+Model: cpl7
+Version: drvseq4_1_06
+One-line summary: Deprecated not degenerated, Fixes Megan with esmf interface.
+
+M            shr/seq_io_mod.F90
+M            shr/shr_megan_mod.F90	
+
+
+================================================================================
+Originator: jedwards
+Date: 02 Apr 2012
+Model: cpl7
+Version: drvseq4_1_05
+One-line summary: Moved some pio functions to csm_share
+
+M            35962   bld/ccsm.template
+M            35962   bld/cpl.template
+M            35962   driver/ccsm_comp_mod.F90
+M            35962   shr/seq_comm_mct.F90
+M            35962   shr/seq_io_mod.F90
+
+
+	
+================================================================================
+Originator: fvitt
+Date: 09 Mar 2012
+Model: cpl7
+Version: drvseq4_1_04
+One-line summary: Added new run time options to specify VOC emissions (MEGAN in CLM)
+  drv_flds_in namelist file for CAM chemistry.
+
+M       bld/cpl.template
+A  +    shr/shr_megan_mod.F90
+M       shr/seq_flds_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 05 Mar 2012
+Model: cpl7
+Version: drvseq4_1_03
+One-line summary: added new namelist seq_cplflds_userspec for custom fields
+	specified at run time
+
+M       bld/cpl.template
+M       shr/seq_flds_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: 19 Feb 2012
+Model: cpl7
+Version: drvseq4_1_02
+One-line summary: put cpl.input_data_list functionality back
+
+M       bld/cpl.template
+
+Fixed the bug in cpl.template that inadvertently took this out
+	
+================================================================================
+Originator: tcraig
+Date: 23 Jan 2012
+Model: cpl7
+Version: drvseq4_1_01
+One-line summary: esmf 520r updates, multi-instance updates, esmf SMM update
+
+  - updates for esmf 520r
+  - add multi-instance support for esmf coupling interfaces
+  - add ability to map with ESMF lib, add esmf_map_flag namelist
+  - fix drydep fields concat bug
+  - svn merge $SVNREPO/drv/seq_mct/trunk_tags/drvseq4_0_14 $SVNREPO/drv/seq_mct/branch_tags/e52r_tags/e52r03_drvseq4_0_14
+
+M       shr_esmf/esmfshr_util_mod.F90
+M       shr_esmf/esmfshr_mod.F90
+M       shr_esmf/esmfshr_attribute_mod.F90
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       shr_esmf/esmf2mct_mod.F90
+M       shr_esmf/mct2esmf_mod.F90
+M       driver/ccsm_comp_mod.F90
+ M      driver/seq_domain_mct.F90
+M       driver/seq_map_mod.F90
+M       driver/seq_rest_mod.F90
+ M      driver/seq_frac_mct.F90
+ M      driver/seq_flux_mct.F90
+ M      driver/seq_mctext_mod.F90
+M       driver/seq_hist_mod.F90
+MM      driver/seq_diag_mct.F90
+A  +    driver/seq_map_esmf.F90
+MM      driver/ccsm_driver.F90
+ M      shr/seq_cdata_mod.F90
+MM      shr/seq_comm_mct.F90
+MM      shr/seq_timemgr_mod.F90
+MM      shr/seq_infodata_mod.F90
+M       shr/seq_drydep_mod.F90
+ M      shr/seq_io_mod.F90
+ M      shr/seq_flds_mod.F90
+================================================================================
+Originator: mvertens
+Date: 26 Dec 2011
+Model: cpl7
+Version: drvseq4_0_14
+One-line summary: leveraged new PATH variables in config_grid.xml to specify
+	paths for mapping files
+	
+M       bld/cpl.template
+
+================================================================================
+Originator: mvertens
+Date: 18 Dec 2011
+Model: cpl7
+Version: drvseq4_0_13
+One-line summary: simplified way that s2x,x2g,g2x,x2s fields names are created
+
+M       bld/cpl.template
+	- introduced GLC_NEC xml variable 
+M       driver/ccsm_comp_mod.F90
+	- speed up to multi-instance atm initialization  
+M       shr/seq_flds_mod.F90
+	- removed glc_nec_n(n=1,3,5,10) and added just glc_nec
+        - simplified way that names are created for elevation classes - 
+ 	  no longer are hard-wired but are determined from loop over
+	  number of elevation classes 
+	
+================================================================================
+Originator: mvertens
+Date: 9 Dec 2011
+Model: cpl7
+Version: drvseq4_0_12
+One-line summary: all component merge routines now in mrg_mod.F90
+
+M       driver/ccsm_comp_mod.F90
+A       driver/mrg_mod.F90
+D       driver/mrg_x2s_mct.F90
+D       driver/mrg_x2a_mct.F90
+D       driver/mrg_x2g_mct.F90
+D       driver/mrg_x2i_mct.F90
+D       driver/mrg_x2l_mct.F90
+D       driver/mrg_x2o_mct.F90
+	
+M       shr/seq_flds_mod.F90
+        changed condition of length of character abort to be >= rather than >
+	
+================================================================================
+Originator: mvertens
+Date: 8 Dec 2011
+Model: cpl7
+Version: drvseq4_0_11
+One-line summary: major change to field specification through coupler
+
+Introduction of naming convention that permits removal of all module
+hard-wired indices. Major rewrite of seq_flds_mod that also permits namelist
+input of new fields through coupler ('fldname -> av') band removal of CPP-ifdefs.
+Prebeta testing carried out on bluefire and lynx to ensure that results are bfb.
+Coupler log files are completely different - but coupler history files are bfb.
+
+Files changed.	
+M       bld/cpl.template
+M       driver/ccsm_comp_mod.F90
+M       driver/mrg_x2s_mct.F90
+M       driver/mrg_x2a_mct.F90
+M       driver/mrg_x2g_mct.F90
+M       driver/mrg_x2i_mct.F90
+M       driver/mrg_x2l_mct.F90
+M       driver/mrg_x2o_mct.F90
+M       driver/seq_diag_mct.F90
+M       driver/seq_mctext_mod.F90
+M       shr/seq_drydep_mod.F90
+M       shr/seq_flds_mod.F90
+	
+Files removed:	
+D       shr/seq_flds_indices.F90
+
+================================================================================
+Originator: tcraig
+Date: 2 Dec 2011
+Model: cpl7
+Version: drvseq4_0_10
+One-line summary: add write_avs and read_avs to seq_io
+
+ - write multi instance avs as extra dimension in history files
+ - add time axis to cpl history variables, taking into account time bounds
+ - fix timing call
+
+M       driver/seq_rest_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_hist_mod.F90
+M       shr/seq_io_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 13 Nov 2011
+Model: cpl7
+Version: drvseq4_0_09
+One-line summary: add NCPL_BASE_PERIOD for computing coupling period, fix cpl input list
+  - requires scripts_111113 or newer
+
+M       bld/cpl.template
+================================================================================
+Originator: tcraig
+Date: 8 Nov 2011
+Model: cpl7
+Version: drvseq4_0_08
+One-line summary: add support for NINST LAYOUT options
+  - requires scripts_111108 or newer
+
+M       bld/cpl.template
+M       shr/seq_comm_mct.F90
+================================================================================
+Originator: tcraig
+Date: 20 Oct 2011
+Model: cpl7
+Version: drvseq4_0_07
+One-line summary: back out time axis in coupler hist files
+  - problems with some tools
+
+M       driver/seq_hist_mod.F90
+================================================================================
+Originator: tcraig
+Date: 30 Aug 2011
+Model: cpl7
+Version: drvseq4_0_06
+One-line summary: add cpl_decomp option, add time axis to coupler hist files
+
+M       bld/cpl.template
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_mctext_mod.F90
+M       driver/seq_hist_mod.F90
+M       shr/seq_infodata_mod.F90
+M       shr/seq_io_mod.F90
+	
+================================================================================
+Originator: sacks 
+Date: 11 Aug 2011
+Model: cpl7
+Version: drvseq4_0_05
+One-line summary: Fixed minor bug with use_float in seq_io_mod
+
+MM      shr/seq_io_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Wed Aug  3 17:10:16 MDT 2011
+Model: cpl7
+Version: drvseq4_0_04
+One-line summary: timer call bug fix 
+
+M       driver/ccsm_comp_mod.F90
+	
+================================================================================
+Originator: kauff 
+Date: Wed Aug  3 16:24:41 MDT 2011
+Model: cpl7
+Version: drvseq4_0_03
+One-line summary: reworked DLND_RUNOFF_MODE options
+
+Requires corresponding changes in scripts and dlnd
+
+  M       bld/cpl.template
+
+-  if (\$DLND_RUNOFF_MODE  == "RX1"    ) set map_r2o_file = \$MAP_R2O_FILE_RX1
++  if (\$DLND_RUNOFF_MODE  == "19BASIN"        ) set map_r2o_file = \$MAP_R2O_FILE_R19
++  if (\$DLND_RUNOFF_MODE  == "DIATREN_ANN_RX1") set map_r2o_file = \$MAP_R2O_FILE_RX1
++  if (\$DLND_RUNOFF_MODE  == "DIATREN_IAF_RX1") set map_r2o_file = \$MAP_R2O_FILE_RX1
+ endif
+
+================================================================================
+Originator: jedwards 
+Date: 24 July 2011
+Model: cpl7
+Version: drvseq4_0_02
+One-line summary: Minor bug fixes
+	M            29329   driver/seq_rest_mod.F90
+        M            29329   shr/seq_comm_mct.F90	
+
+================================================================================
+Originator: tcraig
+Date: 29 Apr 2011
+Model: cpl7
+Version: drvseq4_0_01
+One-line summary: Add ensemble capabilty, map refactor
+   - rename seq_rearr_mod to seq_mctext_mod
+
+M       bld/ccsm.template
+M       bld/cpl.template
+M       shr_esmf/esmfshr_infodata_mod.F90
+D       driver/seq_rearr_mod.F90
+MM      driver/seq_domain_mct.F90
+MM      driver/mrg_x2s_mct.F90
+MM      driver/seq_frac_mct.F90
+D       driver/map_rofocn_mct.F90
+D       driver/map_glcglc_mct.F90
+D       driver/map_rofrof_mct.F90
+ M      driver/ccsm_driver.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_avdata_mod.F90
+D       driver/map_lndlnd_mct.F90
+M       driver/seq_hist_mod.F90
+D       driver/map_atmlnd_mct.F90
+D       driver/map_ocnocn_mct.F90
+D       driver/map_iceice_mct.F90
+D       driver/map_atmatm_mct.F90
+M       driver/seq_rest_mod.F90
+A  +    driver/seq_map_mod.F90
+D       driver/map_snoglc_mct.F90
+MM      driver/seq_flux_mct.F90
+D       driver/map_iceocn_mct.F90
+D       driver/map_atmice_mct.F90
+MM      driver/mrg_x2a_mct.F90
+MM      driver/mrg_x2g_mct.F90
+MM      driver/mrg_x2i_mct.F90
+A  +    driver/seq_mctext_mod.F90
+MM      driver/mrg_x2l_mct.F90
+D       driver/map_snosno_mct.F90
+MM      driver/seq_diag_mct.F90
+MM      driver/mrg_x2o_mct.F90
+D       driver/map_atmocn_mct.F90
+MM      shr/seq_cdata_mod.F90
+D       shr/seq_map_mod.F90
+MM      shr/seq_comm_mct.F90
+ M      shr/seq_timemgr_mod.F90
+ M      shr/seq_infodata_mod.F90
+ M      shr/seq_flds_indices.F90
+MM      shr/seq_io_mod.F90
+ M      shr/seq_flds_mod.F90
+================================================================================
+Originator: tcraig
+Date: 29 Apr 2011
+Model: cpl7
+Version: drvseq3_1_54
+One-line summary: Fix rof2ocn, co2_lnd, and memory leak in seq_map
+
+M       driver/ccsm_comp_mod.F90
+M       driver/mrg_x2a_mct.F90
+M       shr/seq_map_mod.F90
+M       shr/seq_flds_indices.F90
+M       shr/seq_flds_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 19 Apr 2011
+Model: cpl7
+Version: drvseq3_1_53
+One-line summary: Update ESMF interfaces for esmf5.2
+
+M       shr_esmf/esmfshr_attribute_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       shr/seq_timemgr_mod.F90
+	
+================================================================================
+Originator: jedwards
+Date: 18 Apr 2011
+Model: cpl7
+Version: drvseq3_1_52
+One-line summary: Update cpl.template to handle new paths to map files
+
+M      bld/cpl.template
+
+================================================================================
+Originator: erik/fvitt
+Date: 9 Mar 2011
+Model: cpl7
+Version: drvseq3_1_51
+One-line summary:  Add two more species for Dry-deposition: HCN and CH3CN
+
+From branch_tag by fvitt: drydep_drvseq3_1_45_tags/drydep04_drvseq3_1_45
+
+M       shr/seq_drydep_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 8 Mar 2011
+Model: cpl7
+Version: drvseq3_1_50
+One-line summary: Update atmocn flux computation on atm grid
+
+- Merge aoflux01_drvseq3_1_48 to trunk and update to drvseq3_1_49
+- mask atmocn flux computation dynamically as needed to avoid
+  computation on invalid gridcells
+- modify calling sequence of aoflux compuation on atm grid to
+  force the mapping and computation to be done on the same ocean
+  fraction as the mrgx2a.  This is needed for internal area
+  consistency with dynamically changing ice fraction.
+	
+MM      driver/seq_flux_mct.F90
+M       driver/ccsm_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 13 Feb 2011
+Model: cpl7
+Version: drvseq3_1_49
+One-line summary: Implement new mapping normalization and o2aF map/merge
+
+NOTE: this change introduces roundoff differences in most mapping computations
+
+M       driver/seq_domain_mct.F90
+M       driver/map_snoglc_mct.F90
+M       driver/map_rofocn_mct.F90
+M       driver/seq_frac_mct.F90
+M       driver/map_iceocn_mct.F90
+M       driver/map_atmice_mct.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/mrg_x2a_mct.F90
+M       driver/map_atmlnd_mct.F90
+M       driver/map_atmocn_mct.F90
+M       shr/seq_map_mod.F90
+================================================================================
+Originator: tcraig
+Date: 01 Feb 2011
+Model: cpl7
+Version: drvseq3_1_48
+One-line summary: Add general mapping method, aoflux_grid options, npfix options
+
+- add seq_map_mod and seq_map_AVNorm method.
+- rename npfix option to char string called vect_map with "none,npfix,cart3d,
+  cart3d_diag,cart3d_uvw,cart3d_uvw_diag" as supported options
+- extend aoflux_grid to support "ocn:, "atm", or "exch" options.
+- modify esmfshr_infodata for char vect_map attribute.
+- separate ocean albedo computation in seq_flux_mct as seq_flux_ocnalb_mct
+- add atm and exch capabilies in seq_flux_mct
+- modify the driver, ccsm_comp_mod to support ocn, atm, exch aoflux_grid options
+- modify mapping routines to call seq_map_avNorm.  for now, these calls all
+  mimic what was there before for bfb testing.  but we should remove the
+  donorm=.false. option, the norm_o option, and check the norm_i arguments.
+- add (back) seq_hist_spewav for quickly writing avs to a history file
+- add cart3d vector mapping capability to map_atmocn_mct.F90
+- add checks for vect_map and aoflux_grid in seq_infodata_check.
+	
+M       bld/cpl.template
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       driver/seq_flux_mct.F90
+M       driver/map_atmice_mct.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_hist_mod.F90
+M       driver/map_atmlnd_mct.F90
+M       driver/map_atmocn_mct.F90
+A       shr/seq_map_mod.F90
+M       shr/seq_infodata_mod.F90
+M       shr/seq_flds_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: 08 Jan 2011
+Model: cpl7
+Version: drvseq3_1_47
+One-line summary: ESMF metadata update, make ccsm driver an ESMF component
+
+- split the ccsm_driver into an init, run, and finalize routine in ccsm_comp_mod.F90
+- add ccsm_comp_mod.F90 with init, run, and finalize esmf method
+- add esmfshr_attribute_mod.F90 to support esmf metadata
+- modify esmf register interface
+- requires updated esmf component interfaces
+
+M       shr_esmf/esmfshr_mod.F90
+A  +    shr_esmf/esmfshr_attribute_mod.F90
+MM      driver/ccsm_driver.F90
+A  +    driver/ccsm_comp_mod.F90
+	
+================================================================================
+Originator: Jim Edwards
+Date: 06 Jan 2011
+Model: cpl7
+Version: drvseq3_1_46
+One-line summary: Improve default pio settings, reduce log output.
+   shr/seq_io_mod.F90
+
+
+================================================================================
+Originator: Jim Edwards
+Date: 17 Nov 2010
+Model: cpl7
+Version: drvseq3_1_45
+One-line summary: Fix case statement bug, namelist defaults
+   shr/seq_io_mod.F90
+
+
+================================================================================
+Originator: Jim Edwards
+Date: 17 Nov 2010
+Model: cpl7
+Version: drvseq3_1_44
+One-line summary: Improved pio namelsit handling
+   shr/seq_io_mod.F90
+   bld/cpl.template
+
+===============================================================================
+Originator: Jim Edwards
+Date: 11 Nov 2010
+Model: cpl7
+Version: drvseq3_1_43
+One-line summary: Moved io_finalize prior to final barrier
+	          ifdefd MPI2 code in seq_io_mod
+
+  driver/ccsm_driver.F90
+  shr/seq_io_mod.F90 
+
+
+===============================================================================
+
+Originator: Jim Edwards
+Date: 11 Nov 2010
+Model: cpl7
+Version: drvseq3_1_42
+One-line summary: bug fix in io_finalize routine
+
+M shr/seq_io_mod.F90
+
+================================================================================Originator: tcraig
+Date: 04 Nov 2010
+Model: cpl7
+Version: drvseq3_1_41
+One-line summary: move pio namelist read and initialization for all components to driver code
+
+
+M bld/cpl.template
+M driver/seq_rest_mod.F90
+M driver/ccsm_driver.F90
+M shr/seq_comm_mct.F90
+M shr/seq_io_mod.F90
+
+================================================================================
+	
+	
+Originator: tcraig
+Date: 04 Nov 2010
+Model: cpl7
+Version: drvseq3_1_40
+One-line summary: add variable orbital year capability
+
+ - and some remove dead code
+
+M      bld/cpl.template
+M      shr_esmf/esmfshr_infodata_mod.F90
+M      driver/ccsm_driver.F90
+M      shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 20 Oct 2010
+Model: cpl7
+Version: drvseq3_1_39
+One-line summary: add run_barriers option
+
+- add run_barriers option to cpl.template, infodata, and driver
+- remove dead restart code in seq_timemgr
+- use calendar names from shr_cal_mod
+- fix bug in calendar names in output from seq_io
+- make a couple seq_timemgr routines public (bug #1226)
+
+M      bld/cpl.template
+M      shr_esmf/esmfshr_infodata_mod.F90
+M      driver/ccsm_driver.F90
+M      shr/seq_timemgr_mod.F90
+M      shr/seq_infodata_mod.F90
+M      shr/seq_io_mod.F90
+		
+================================================================================
+Originator: mvertens
+Date: 18 Oct 2010
+Model: cpl7
+Version: drvseq3_1_38
+One-line summary: u10 sent to cam
+
+Changes to receive u10 from clm and cice and pass merged field to cam (atm)
+	
+M      driver/seq_flux_mct.F90
+M      driver/mrg_x2a_mct.F90
+M      shr/seq_flds_indices.F90
+M      shr/seq_flds_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: 21 Sep 2010
+Model: cpl7
+Version: drvseq3_1_37
+One-line summary: compatibility with share3_100921
+
+M      shr/seq_timemgr_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: 17 Sep 2010
+Model: cpl7
+Version: drvseq3_1_36
+One-line summary: fix runoff epbal factor plus other bfb mods
+
+- fix but #1203 runoff epbal factor correction.
+- add new epbal_fact variable in infodata get data to
+  support reuse of rescaling code for precip_fact.
+  modified use of precip_fact/epbal to use new infodata code.
+- clarified sl_snowh units to be surface snow water equivalent.
+- fix min/max defaults in frac_check.
+- fix uninitialized bug in ice aream with inconsistent land 
+  block elimination with the ocean model.
+
+M      driver/seq_frac_mct.F90
+M      driver/map_iceocn_mct.F90
+M      driver/ccsm_driver.F90
+M      driver/mrg_x2i_mct.F90
+M      driver/mrg_x2o_mct.F90
+M      shr/seq_infodata_mod.F90
+M      shr/seq_flds_mod.F90
+	
+================================================================================
+Originator: mvr,tcraig
+Date: 25 Aug 2010
+Model: cpl7
+Version: drvseq3_1_35
+One-line summary: change clobber flag to true for drv restart files
+
+M      driver/seq_rest_mod.F90
+
+================================================================================
+Originator: erik
+Date: 12 Aug 2010
+Model: cpl7
+Version: drvseq3_1_34
+One-line summary: Add start_tod
+
+Requires scripts4_100812 to work.
+
+M       bld/cpl.template -- Add start_tod set by $START_TOD
+
+================================================================================
+Originator: tcraig
+Date: 23 Jul 2010
+Model: cpl7
+Version: drvseq3_1_33
+One-line summary: update driver restart, merge fei's shr_esmf changes
+
+- in drv/shr_esmf:
+  svn merge $SVNREPO/drv/seq_mct/trunk_tags/drvseq3_1_20/shr_esmf $SVNREPO/drv/seq_mct/branch_tags/cpl7esmf_tags/cpl7esmf_rel08_10/shr_esmf
+  + reused csm_share mct version RList2c instead of direct use of the mct version
+  + got rid of esmfshr_util_RattrGetNFields which was not used and is redundant with
+    code in shr_string
+- moved seq_io_mod from driver to share
+- refactored driver restart to use only pio for read and write
+- modify seq_timemgr and seq_infodata for use of pio
+- modify seq_io interface to use gsmap instead of cdata as argument
+- add ability to read/write char strings in seq_io
+- add gloroot variable to seq_comm
+	
+M      shr_esmf/esmfshr_util_mod.F90
+M      shr_esmf/esmf2mct_mod.F90
+M      shr_esmf/mct2esmf_mod.F90
+M      driver/seq_domain_mct.F90
+M      driver/seq_rest_mod.F90
+M      driver/ccsm_driver.F90
+M      driver/seq_hist_mod.F90
+D      driver/seq_io_mod.F90
+M      shr/seq_comm_mct.F90
+M      shr/seq_timemgr_mod.F90
+M      shr/seq_infodata_mod.F90
+A  +   shr/seq_io_mod.F90
+
+- tested bluefire and jaguar pretag test list vs cesm1_0_beta05 and
+  also demonstrated bfb backwards compatability with beta05 restarts.
+	
+================================================================================
+Originator: jet
+Date: 16 Jun 2010
+Model: cpl7
+Version: drvseq3_1_32
+One-line summary: change calling parameters for scamchecksurf to allow
+	scam to check streamfiles 
+
+M      driver/ccsm_driver.F90
+	
+================================================================================
+Originator: tcraig
+Date: 09 Jun 2010
+Model: cpl7
+Version: drvseq3_1_31
+One-line summary: Fix aream calculation for cism
+
+M      driver/map_snoglc_mct.F90
+M      driver/ccsm_driver.F90
+	
+================================================================================
+Originator: tcraig
+Date: 07 Jun 2010
+Model: cpl7
+Version: drvseq3_1_30
+One-line summary: Modify PIO error handling from jedwards
+
+-             call pio_seterrorhandling(cpl_io_file,PIO_RETURN_ERROR)
++             call pio_seterrorhandling(cpl_io_file,PIO_BCAST_ERROR)
+
+M      driver/seq_io_mod.F90
+
+================================================================================
+Originator: jwolfe
+Date: 03 Jun 2010
+Model: cpl7
+Version: drvseq3_1_29
+One-line summary: Fix time offset for glcrun alarm
+
+M      bld/cpl.template
+M      shr/seq_timemgr_mod.F90
+
+================================================================================
+	
+Originator: mvertens
+Date: 27 May 2010
+Model: cpl7
+Version: drvseq3_1_28
+One-line summary: Removed aqua_planet_sst from infodata restart
+
+M      driver/seq_infodata_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: 26 May 2010
+Model: cpl7
+Version: drvseq3_1_27
+One-line summary: Modify the BGC fields sent from coupler to atm
+
+M      shr/seq_flds_indices.F90
+M      shr/seq_flds_mod.F90
+================================================================================
+Originator: jwolfe
+Date: 25 May 2010
+Model: cpl7
+Version: drvseq3_1_26
+One-line summary: Modify the fields passed between GLC component and the coupler
+
+M      shr/seq_flds_indices.F90
+M      shr/seq_flds_mod.F90
+================================================================================
+Originator: jet
+Date: 19 May 2010
+Model: cpl7
+Version: drvseq3_1_25
+One-line summary: Add variable to determine analytic sst type for aquaplanet mode
+
+M      driver/seq_infodata_mod.F90
+================================================================================
+Originator: tcraig
+Date: 19 May 2010
+Model: cpl7
+Version: drvseq3_1_24
+One-line summary: Fix bug in io_type broadcast
+
+M      driver/seq_io_mod.F90
+================================================================================
+Originator: tcraig
+Date: 6 Apr 2010
+Model: cpl7
+Version: drvseq3_1_23
+One-line summary: Change Makefile location to CASETOOLS from BLDROOT
+
+M      bld/cpl.template
+================================================================================
+Originator: tcraig
+Date: 6 Apr 2010
+Model: cpl7
+Version: drvseq3_1_22
+One-line summary: Erroneous copy of drvseq3_1_21
+
+================================================================================
+Originator: mvertens
+Date: 5 Apr 2010
+Model: cpl7
+Version: drvseq3_1_21
+One-line summary: Add capability to clmconf have drv_flds_in (as well as camconf)
+
+M      bld/cpl.template
+
+================================================================================
+Originator: fvitt
+Date: 10 Mar 2010
+Model: cpl7
+Version: drvseq3_1_20
+One-line summary: fixed dry deposition namelist file problem
+
+- fix to generate "drv_flds_in" in the run directory
+M       bld/cpl.template
+
+================================================================================
+Originator: jwolfe
+Date: Mon Mar 01 2010
+Model: cpl7
+Version: drvseq3_1_19
+One-line summary: fixes to support GLC runs
+
+- fix GLC domain check to only check where snodom = 1 (active lnd cells)
+- temporary fix to make sure glc and sno domains are consistent
+
+M      driver/seq_domain_mct.F90
+M      driver/ccsm_driver.F90
+================================================================================
+Originator: tcraig
+Date: Thu Feb 25 2010
+Model: cpl7
+Version: drvseq3_1_18
+One-line summary: clean up extra write statements
+
+M      driver/mrg_x2o_mct.F90
+================================================================================
+Originator: tcraig
+Date: Thu Feb 18 2010
+Model: cpl7
+Version: drvseq3_1_17
+One-line summary: add samegrid_ro support
+
+M      bld/cpl.template
+M      shr_esmf/esmfshr_infodata_mod.F90
+M      driver/seq_domain_mct.F90
+M      driver/map_rofocn_mct.F90
+M      driver/ccsm_driver.F90
+M      shr/seq_infodata_mod.F90
+================================================================================
+Originator: tcraig
+Date: Thu Feb 11 2010
+Model: cpl7
+Version: drvseq3_1_16
+One-line summary: fix mrg_x2o frac normalization, add atm_aero
+
+- fix mrg_x2o frac normalization and add debug output
+- add atm_aero logical to infodata for atm setting of aerosols
+	
+M      shr_esmf/esmfshr_infodata_mod.F90
+M      driver/ccsm_driver.F90
+M      driver/mrg_x2o_mct.F90
+M      shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Feb  1 2010
+Model: cpl7
+Version: drvseq3_1_15
+One-line summary: updates for brnch_retain_casename
+
+- set brnch_retain_casename in namelist based on env variable
+- check status of CASE, RUN_REFCASE and BRNCH_RETAIN_CASENAME
+  for consistency
+	
+M      bld/cpl.template
+
+================================================================================
+Originator: kauff
+Date: Mon Feb  1 09:02:55 MST 2010
+Model: cpl7
+Version: drvseq3_1_14
+One-line summary: cdf64 = .true. by default, $CPL_CDF64 is not used anywhere
+
+nml var cpl_cdf64 still exists, but is true by default
+and template file doesn't use or respond to CPL_CDF64 var from run scripts
+
+M      bld/cpl.template
+M      shr/seq_infodata_mod.F9
+
+================================================================================
+Originator: tcraig
+Date: Fri Jan 22 2010
+Model: drv/seq_mct
+Version: drvseq3_1_13
+
+ - remove atm_cdf64, lnd_cdf64, ocn_cdf64, ice_cdf64, glc_64 from cpl namelist and 
+   infodata type
+ - fix esmfshr_util array copy performance problem
+ - add glc_g2supdate to infodata/state esmf copy routine
+ - add print statements in driver for USE_ESMF_LIB and INTERFACE settings
+ - swap memory reporting (bug #)
+ - fix npfix bug associated with unusual decomps
+	
+M      bld/cpl.template
+M      shr_esmf/esmfshr_util_mod.F90
+M      shr_esmf/esmfshr_infodata_mod.F90
+M      driver/ccsm_driver.F90
+M      driver/map_atmocn_mct.F90
+M      shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: mvertens 
+Date: Fri Jan 22 2010
+Model: drv/seq_mct
+Version: drvseq3_1_12
+
+- add seq_drydep_mod.F90 (same functionality as csm_share/shr_drydepInputMod)  
+  - for now still keeping initial file in csm_share)
+  - changes have been made to keep make the namelist read accessible from seq_flds_mod
+- modified seq_flds_mod as follows
+  - first read namelist and figure out the drydep field list to pass
+  - then check if file exists and if not, n_drydep will be zero
+  - then add dry deposition fields to land export and atmosphere import states
+  - then initialize dry deposition fields
+  - note: CAM and CLM will then call seq_drydep_setHCoeff
+- add #ifdef for VOC to turn on passing VOC's in driver
+- change template create use drv_flds_in if cam or clm have created it.
+
+M      bld/cpl.template
+M      driver/mrg_x2a_mct.F90
+M      shr/seq_flds_indices.F90
+A      shr/seq_drydep_mod.F90
+M      shr/seq_flds_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Jan 1 2010
+Model: drv/seq_mct
+Version: drvseq3_1_11
+
+- add esmfshr_util_ArrayGetName
+- fix esmfshr_util_ArrayCopy
+- add esmf2mct_init_Gindex_Distgrid
+- add esmf2mct_init_Gindex_Array
+- move initial mpi_wtime call in ccsm_driver to after initial barrier.
+- modify seq_hist_mod to write r2x_rx when rof_present is true regardless
+  of value of ocnrof_prognostic
+
+M      shr_esmf/esmfshr_util_mod.F90
+M      shr_esmf/esmfshr_mod.F90
+M      shr_esmf/esmf2mct_mod.F90
+M      shr_esmf/mct2esmf_mod.F90
+M      driver/ccsm_driver.F90
+M      driver/seq_hist_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Fri Dec 18 14:23:59 MST 2009
+Model: drv/seq_mct
+Version: drvseq3_1_10
+One-line summary:  correct o2a co2 flux mapping (bugz 1089)
+
+co2 in o2x_ox needs to be o2a mapped without factoring in ifrac
+
+M      driver/ccsm_driver.F90
+
+================================================================================
+Originator: tcraig
+Date: Thu Dec 17 2009
+Model: drv/seq_mct
+Version: drvseq3_1_09
+One-line summary:  fix ascale domain diagnostic, migrate to shr_mct_sMatPInitnc
+
+- fix bug in domain checker for ascale diagnostic.  was triggered in cases
+  where it did not exist causing a core dump.
+- change mct_sMatP_Initnc calls to shr_mct_sMatPInitnc calls due to mct_mod
+  refactor (requires share3_091217).
+- fix histaux_a2x3hrp comment.
+
+M      driver/seq_domain_mct.F90
+M      driver/map_rofocn_mct.F90
+M      driver/map_atmice_mct.F90
+M      driver/map_atmlnd_mct.F90
+M      driver/map_atmocn_mct.F90
+M      shr/seq_infodata_mod.F90
+	
+================================================================================
+Originator: eaton
+Date: Tue Dec 15 16:04:53 MST 2009
+Model: drv/seq_mct
+Version: drvseq3_1_08
+One-line summary:  move driver/driver.F90 to driver/ccsm_driver.F90
+
+The filename driver.F90 is also used by a CLM file.  This causes the CAM
+standalone build to fail since all files are compiled at one time.
+
+D       driver/driver.F90
+A  +    driver/ccsm_driver.F90
+
+ccsm_driver.F90 was created using "svn move driver.F90 ccsm_driver.F90" so
+the history should be preserved.
+
+================================================================================
+Originator: tcraig
+Date: Mon Dec 14 2009
+Model: drv/seq_mct
+Version: drvseq3_1_07
+One-line summary:  modify domain check for trigrid cases and update write statements
+
+M      driver/seq_domain_mct.F90
+M      driver/seq_frac_mct.F90
+M      driver/driver.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Dec 8 2009
+Model: drv/seq_mct
+Version: drvseq3_1_06
+One-line summary:  add support for gregorian calendar and single column
+
+M      bld/cpl.template
+M      driver/driver.F90
+M      shr/seq_timemgr_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Wed Dec 2 2009
+Model: drv/seq_mct
+Version: drvseq3_1_05
+One-line summary:  update ChangeLog, no code changes
+	
+================================================================================
+Originator: tcraig
+Date: Wed Dec 2 2009
+Model: drv/seq_mct
+Version: drvseq3_1_04
+One-line summary:  add initial history file option, change samegrid_ao aream setting
+
+- initial history file works with new env variable named HISTINIT
+- with samegrid_ao, the ocn and atm aream are now set to the atm area values,
+  was set to ocn area values.  this is bfb but will be needed for migration
+  from camdom to docn in F cases.
+
+M      bld/cpl.template
+M      driver/driver.F90
+M      driver/map_iceocn_mct.F90
+M      driver/map_atmocn_mct.F90
+M      shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: kauff
+Date: Mon Nov 23 15:39:12 MST 2009
+Model: drv/seq_mct
+Version: drvseq3_1_03
+One-line summary:  fix bugz #1078, add infodata%glc_g2supdate flag
+
+- fix bugz #1078, wrong sign in ocn/ice wfrz budgets
+- add infodata%glc_g2supdate flag for future use with glimmer/clm
+
+M      driver/seq_diag_mct.F90
+M      shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Nov 13 2009
+Mode: drv/seq_mct
+Version: drvseq3_1_02
+One-line summary:  fix ChangeLog
+
+================================================================================
+Originator: tcraig
+Date: Fri Nov 13 2009
+Mode: drv/seq_mct
+Version: drvseq3_1_01
+One-line summary:  rename seq_ccsm_drv.F90 to driver.F90
+
+ - note new tag name 3_1_01 in honor of the renaming of the driver and
+   reorganization in the last tag.
+
+A  +   driver/driver.F90
+D      driver/seq_ccsm_drv.F90
+
+================================================================================
+Originator: tcraig
+Date: Fri Nov 13 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_42
+One-line summary:  reorganize directory structure
+
+- reorganize directory structure
+- extend seq_infodata_PutData routine to accomodate more of a full copy
+- remove abort in seq_rearr_ExtendAV when AV is empty
+
+[most files were moved]
+	
+================================================================================
+
+Originator: tcraig
+Date: Fri Nov 6 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_41
+One-line summary:  add nextsw_cday diag, fix debug error in bfb global sums
+
+- add tracking of nextsw_cday when info_dbug > 1
+- fix bfb mapping mode for s2a to X type
+- fix bug in bfb diagnostics, caught by debug mode
+
+M      driver/seq_ccsm_drv.F90
+M      ChangeLog
+M      bld/cpl.template
+M      seq_diag_mct.F90
+
+================================================================================
+
+Originator: mvertens
+Date: Mon Nov 3 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_40
+One-line summary:  set nmax to 244 as results of addition if snowhice
+	
+M      seq_flds_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: Mon Nov 3 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_39
+One-line summary:  bug fix for #1064
+	
+This was reported by Keith Lindsay.
+The lookup calls for index_o2x_Faoo_fco2 & index_o2x_Faoo_fdms in
+drv/seq_mct/seq_flds_indices.F90 are searching for the field names
+in the incorrect field list. This leads to incorrect field indices.
+
+Indices for both of these variables are incorrectly looked up in
+seq_flds_xao_fields instead of seq_flds_o2x_fields.
+
+M      seq_flds_indices.F90	
+	
+================================================================================
+Originator: mvertens
+Date: Mon Nov 2 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_38
+One-line summary:  added fields for snowhice from ice->atm
+	
+M      seq_flds_indices.F90
+M      seq_flds_mod.F90
+M      seq_io_mod.F90
+	- added backwards compatibilyt for restart files for branch runs such 
+	that if required fields are missing, it will fail exact restart.  if
+	optional fields are missing, it will continue fine.
+	
+================================================================================
+Originator: tcraig
+Date: Tue Oct 13 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_37
+One-line summary:  updates for memory usage
+
+ - requires consistent csm_share code
+
+M      driver/seq_ccsm_drv.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Oct 6 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_36
+One-line summary:  add brnch_retain_casename = false to default driver namelist
+	
+M      bld/cpl.template
+	
+================================================================================
+Originator: eaton
+Date: Mon Oct  5 13:02:51 MDT 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_35
+One-line summary:  fix formats in write statements
+
+drv/seq_mct/seq_infodata_mod.F90
+. change F0S to F0L for histaux_* write statements.  This bug was caught by
+  the lahey compiler.
+
+================================================================================
+Originator: tcraig
+Date: Thu Oct 1 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_34
+One-line summary:  fix implicit none bug
+
+- fix implicit none bug, trapped by pgi compiler, wrong "order"
+  (probably introduced in 30)
+
+M      driver/seq_ccsm_drv.F90
+
+================================================================================
+Originator: tcraig
+Date: Thu Oct 1 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_33
+One-line summary:  update esmf share code in cpl_esmf
+
+- add esmfshr_util_DistgridCreate
+- add error statement to mct2esmf_mod.F90
+
+M      cpl_esmf/esmfshr_util_mod.F90
+M      cpl_esmf/esmfshr_mod.F90
+M      cpl_esmf/mct2esmf_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Wed Sep 30 16:15:51 MDT 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_32
+One-line summary:  fix pio/diag restart bug (bugz #1041)
+
+- fix pio/diag restart bug (bugz #1041)
+- cleanup/refactor seq_io_init() routine
+
+M      driver/seq_rest_mod.F90
+M      bld/cpl.template
+M      seq_io_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Sat Sep 26 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_31
+One-line summary:  update esmf share code in cpl_esmf, update seq_flds
+
+ - refactor esmf share code
+ - add nflds_dom and seq_flds_dom_fields to seq_flds modules
+ - add private routine seq_flds_catFields to seq_fields_mod.F90 for greater 
+   reuse and additional internal checking
+
+M      cpl_esmf/esmfshr_util_mod.F90
+D      cpl_esmf/esmf2mct_infodata_mod.F90
+M      cpl_esmf/esmfshr_mod.F90
+A      cpl_esmf/esmfshr_infodata_mod.F90
+M      cpl_esmf/esmf2mct_mod.F90
+M      cpl_esmf/mct2esmf_mod.F90
+M      seq_flds_indices.F90
+M      seq_flds_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Fri Sep 25 16:55:38 MDT 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_30
+One-line summary:  split hist & rest routines off into new/separate module files
+
+- split hist & rest routines from main program into new/separate module files
+- new avdata_mod.F90 contains public avect, domain, & fraction info because it
+  would be unreasonable to get it all into hist/rest routines via arg list
+- auxiliary hist files (formerly "spewAv") activated by nml (formerly by cpp defs)
+- rearrange cpl7 main program (driver) var declarations into more logical groups
+- remove various unused vars 
+- convert global read/write vars to routine args where possible
+
+M      bld/cpl.template             - new histaux nml vars
+M      driver/seq_infodata_mod.F90  - new histaux nml vars
+
+M      driver/seq_ccsm_drv.F90      - split-out hist & rest routines
+M      driver/seq_avdata_mod.F90
+M      driver/seq_rest_mod.F90
+M      driver/seq_hist_mod.F90
+
+================================================================================
+Originator: feiliu (Fei Liu)
+Date: Wed Aug 28 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_29
+One-line summary:  use ESMF recommended error handling with non-successful error code
+
+M      cpl_esmf/esmfshr_util_mod.F90
+M      cpl_esmf/esmf2mct_infodata_mod.F90
+M      cpl_esmf/esmf2mct_mod.F90
+M      cpl_esmf/mct2esmf_mod.F90
+
+================================================================================
+Originator: feiliu (Fei Liu)
+Date: Wed Aug 12 2009
+Mode: drv/seq_mct
+Version: drvseq3_0_28
+One-line summary:  cleaned up code dependence on ESMF specific macros
+
+M      cpl_esmf/esmfshr_util_mod.F90
+M      cpl_esmf/esmf2mct_infodata_mod.F90
+M      cpl_esmf/esmfshr_mod.F90
+M      cpl_esmf/esmf2mct_mod.F90
+M      cpl_esmf/mct2esmf_mod.F90
+
+================================================================================
+Originator: erik
+Date: July 31 2009
+Model: drv/seq_mct
+Version: drvseq3_0_27
+One-line summary:  Fix PGI bug, and fix PTS_MODE bug in template
+
+M      seq_timemgr_mod.F90 -- Change definition of restart file to len=* so works with PGI compiler
+                              (bug 1011)
+M      bld/cpl.template ----- Change single quotes for pts_settings to double so vars expanded
+
+================================================================================
+Originator: feiliu (Fei Liu)
+Date: July 28 2009
+Model: drv/seq_mct
+Version: drvseq3_0_26
+One-line summary:  modified driver and utility mods to support building with ESMF lib
+
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+A      cpl_esmf/esmfshr_util_mod.F90
+A      cpl_esmf/esmf2mct_infodata_mod.F90
+A      cpl_esmf/esmfshr_mod.F90
+A      cpl_esmf/esmf2mct_mod.F90
+A      cpl_esmf/mct2esmf_mod.F90
+M      seq_comm_mct.F90
+
+================================================================================
+Originator: erik
+Date: July 28 2009
+Model: drv/seq_mct
+Version: drvseq3_0_25
+One-line summary:  Respond to PTS_MODE, PTS_LAT, PTS_LON
+
+M      bld/cpl.template -- set single_column, scm_lat, scm_lon by PTS_MODE, PTS_LAT, PTS_LON
+       Requires scripts4_090728 to work.
+
+================================================================================
+Originator: eaton
+Date: July 20 2009
+Model: drv/seq_mct
+Version: drvseq3_0_24
+One-line summary: bugfix for default setting of cpl_num_iotasks
+
+M      seq_io_mod.F90
+       - in seq_io_set_pio_parameters add a limiter in the conditional
+         (cpl_num_iotasks<0 .and. cpl_io_stride<0) so that cpl_num_iotasks
+	 is not allowed to be smaller than 1.
+	
+================================================================================
+Originator: mvertens
+Date: July 06 2009
+Model: drv/seq_mct
+Version: drvseq3_0_23
+One-line summary: add new options for writing history fields
+
+M      driver/seq_ccsm_drv.F90
+       - put in capability (currently only via #if-defs) to write out only a 
+	 subset of attribute vector fields to history output
+M      seq_io_mod.F90
+       - put in capability to write single precision history output if desired
+	
+================================================================================
+Originator: tcraig
+Date: Jul 1 2009
+Model: drv/seq_mct
+Version: drvseq3_0_22
+One-line summary: add new cpl dirs, fix pio init call, update for aoflux_grid
+ - add new cpl dirs for esmf/mct
+ - fix pio init call for root pe
+ - update aoflux_grid logic (still not working)
+
+A      cpl_shr
+M      driver/seq_ccsm_drv.F90
+A      cpl_esmf
+A      cpl_mct
+M      seq_io_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Jun 28 2009
+Model: drv/seq_mct
+Version: drvseq3_0_21
+One-line summary: update aoflux, npfix, lnd2atm map, shr_map dopole
+
+ - add namelist variables shr_map_dopole, npfix, aoflux_grid
+ - add option to turn of npfix in map_atmocn_mct.F90
+ - fix trigrid lnd2atm mapping, need fractions correction
+ - add capability to support atmocn flux on atm grid in driver, not yet working
+ - add capability to turn off csm_share dopole in driver
+	
+M      driver/seq_ccsm_drv.F90
+M      map_atmlnd_mct.F90
+M      seq_flux_mct.F90
+M      seq_infodata_mod.F90
+M      bld/cpl.template
+M      map_atmocn_mct.F90
+
+================================================================================
+Originator: mvr
+Date: Jun 24 2009
+Model: drv/seq_mct
+Version: drvseq3_0_20
+One-line summary: shorten one line that exceeded 132 chars in length - needed 
+	for intel compilers
+
+M      seq_io_mod.F90
+	
+================================================================================
+Originator: kauff
+Date: Jun 19 2009
+Model: drv/seq_mct
+Version: drvseq3_0_19
+One-line summary: add ocn/wrunoff and hiroff to diag table
+
+- make ocn column for wrunoff non-zero (get data from r2x_ox)
+- add hiroff (latent heat implied by frozen runoff) to table
+
+M      driver/seq_ccsm_drv.F90
+M      seq_diag_mct.F90
+	
+================================================================================
+Originator: tcraig
+Date: Jun 4 2009
+Model: drv/seq_mct
+Version: drvseq3_0_18
+One-line summary: enable 64bit cdf files
+
+- enable 64bit cdf files through seq_io interface.
+- remove extra debug print statement
+
+M      seq_io_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: May 26 2009
+Model: drv/seq_mct
+Version: drvseq3_0_17
+One-line summary: update cpl history
+
+- update initial time bounds in history files
+- add a2x24hr history option
+
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Apr 30 2009
+Model: drv/seq_mct
+Version: drvseq3_0_16
+One-line summary: update seq_rearr_mod, gsmapCreate
+	
+- fix bug in decomp_type 3 gsmap generation when only a subset of the global
+  points exist in the gsmap.
+- change the default decomp in the coupler for pe counts that match
+  the component to decomp_type 2.  this decomp_type seems to perform better than
+  decomp_type 1 in testing on bluefire at f19_g16 with ccsm4_0_beta14.
+
+M      seq_rearr_mod.F90
+
+Note: change will be roundoff different in most cases unless bfbflag is used.
+	
+================================================================================
+Originator: tcraig
+Date: Apr 29 2009
+Model: drv/seq_mct
+Version: drvseq3_0_15
+One-line summary: add more HISTORY options
+
+- check for zero valued areas in domain_areafactinit
+- add time average history files, add seq_timemgr_histavg_type
+- add 3 hr a2x history files option (off by default)
+- refactor "quick history" routine, add _spewAV routine
+- add cdf64 support to seq_io
+- add time_bounds to history files
+- update seq_io_lookup from ESMF version
+
+M      seq_domain_mct.F90
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+M      seq_flds_mod.F90
+M      bld/cpl.template
+M      seq_io_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Apr 19 2009
+Model: drv/seq_mct
+Version: drvseq3_0_14
+One-line summary: add HISTORY option, add initial CF support
+
+- add ability to write a2x, l2x, and r2x fields for bgc spinup, uses HISTORYA2X,
+  HISTORYR2X, and HISTORYL2X cpp set in the driver manually, off by default.
+- add seq_flds_lookup method
+- change io field names on output files, add attributes for CF
+- add io file version name, supports backwards compatability
+- add flush to domain_check
+- modify driver logic to support rof_present without lnd_present
+
+M      driver/seq_ccsm_drv.F90
+M      seq_domain_mct.F90
+M      seq_io_mod.F90
+M      seq_flds_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Apr 3 2009
+Model: drv/seq_mct
+Version: drvseq3_0_13
+One-line summary: update memory output and seq_timemgr fixes
+
+ - remove seq_esmf code in seq_timemgr (no longer needed)
+ - update alarm count implementation in seq_timemgr (requires updated esmf_wrf_timemgr)
+ - update memory tracking output
+
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Apr 2 2009
+Model: drv/seq_mct
+Version: drvseq3_0_12
+One-line summary: merge pio04_drvseq3_0_11
+	
+M      bld/cpl.template
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+M      seq_flds_mod.F90
+M      bld/cpl.template
+M      seq_io_mod.F90
+	
+================================================================================
+Originator: mvertens
+Date: Mar 20 2009
+Model: drv/seq_mct
+Version: drvseq3_0_11
+One-line summary: added new RX1 DND_RUNOFF
+	
+M      bld/cpl.template
+
+================================================================================
+Originator: tcraig
+Date: Mar 16 2009
+Model: drv/seq_mct
+Version: drvseq3_0_10
+One-line summary: fix a couple bugs
+
+- remove memory_write print statements
+- fix eps bug detected by fei in seq_infodata_mod.F90
+- modify cpl.template to use more general getenv call
+
+M      driver/seq_ccsm_drv.F90
+M      seq_infodata_mod.F90
+M      bld/cpl.template
+	
+================================================================================
+Originator: tcraig
+Date: Feb 23 2009
+Model: drv/seq_mct
+Version: drvseq3_0_09
+One-line summary: fix "fillvalue" restart problem when changing pes or decomps
+
+- fix fillvalue problem in driver restart.  if fill values are
+  read from a restart file, the value is reset to 0.0.
+
+M      seq_io_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Jan 26 2009
+Model: drv/seq_mct
+Version: drvseq3_0_08
+One-line summary: add timing dir namelist feature
+
+ - add new timing_dir and tchkpt_dir namelist input for timing files
+ - fix sno restart bug
+
+M      driver/seq_ccsm_drv.F90
+M      seq_infodata_mod.F90
+M      bld/cpl.template
+	
+================================================================================
+Originator: tcraig
+Date: Jan 21 2009
+Model: drv/seq_mct
+Version: drvseq3_0_07
+One-line summary: fix two bugs
+
+ - fix domain_check bug for aqua planet 
+ - fix avect clean in seq_io_mod
+	
+M      seq_domain_mct.F90
+M      seq_io_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Jan 20 2009
+Model: drv/seq_mct
+Version: drvseq3_0_06
+One-line summary: add namelist domain checker tolerances
+
+- add namelist domain checker tolerances, namelist are
+  eps_frac, eps_amask, eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea
+- remove constraint on sno_prognostic and glc_prognostic in
+  driver temporarily for development
+
+M      seq_domain_mct.F90
+M      driver/seq_ccsm_drv.F90
+M      seq_infodata_mod.F90
+M      bld/cpl.template
+	
+================================================================================
+Originator: tcraig
+Date: Jan 13 2009
+Model: drv/seq_mct
+Version: drvseq3_0_05
+One-line summary: fix seq_flux performance in flx_albav mode
+
+M      seq_flux_mod.f90
+   - fix performance bug introduced in drvseq2_0_38.  only if flx_albav
+     is true.  bfb change.
+
+================================================================================
+Originator: tcraig
+Date: Jan 12 2009
+Model: drv/seq_mct
+Version: drvseq3_0_04
+One-line summary: refactor runoff sequencing
+
+M      driver/seq_ccsm_drv.F90
+     - update runoff sequencing (not bfb)
+     - fix water budget table title bug
+M      seq_diag_mct.F90
+     - reduce memory use in bfb global sum diagnostics
+M      mrg_x2o_mct.F90
+     - mods for updated runoff sequencing
+	
+================================================================================
+	
+Originator: erik
+Date: Jan 8 2009
+Model: drv/seq_mct
+Version: drvseq3_0_03
+One-line summary: Increase area epsilon for atm/lnd grid domain checking
+
+Now that domain checking is on for clm I cases, most USGS cases fail without
+upping the area domain checking threshold. As far as I can tell the only reason
+for this is the conversion between units that area is in for datm7 versus clm.
+This change allows clm I cases for USGS masks to work.
+
+M      seq_domain_mct.F90 -- Increase atm/lnd area epsilon to 9.e-7 (from 2.e-8).
+
+================================================================================
+
+Originator: tcraig
+Date: Jan 7 2009
+Model: drv/seq_mct
+Version: drvseq3_0_02
+One-line summary: Major template update
+
+M      bld/ccsm.template
+M      bld/cpl.template
+	
+================================================================================
+
+Originator: tcraig
+Date: Fri Dec 26 2008
+Model: drv/seq_mct
+Version: drvseq3_0_01
+One-line summary: Add glc/sno code
+
+- add glc component
+- add sno component via land model
+- add glc/sno coupling
+- fix domain_check logic so it's on for most compsets
+- improve driver logic slightly (if conditions)
+	
+M      seq_domain_mct.F90
+A      mrg_x2s_mct.F90
+M      seq_frac_mct.F90
+A      map_glcglc_mct.F90
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+A      map_snoglc_mct.F90
+M      seq_infodata_mod.F90
+M      seq_flds_indices.F90
+M      seq_flds_mod.F90
+M      bld/cpl.template
+M      seq_comm_mct.F90
+A      mrg_x2g_mct.F90
+A      map_snosno_mct.F90
+
+================================================================================
+
+Originator: tcraig
+Date: Fri Dec 12 2008
+Model: drv/seq_mct
+Version: drvseq2_0_39
+One-line summary: fix memory copy in npfix
+
+M      map_atmocn_mct.F90
+       - fix memory copy in npfix that potentially resulted in
+	 an out of bounds copy
+
+================================================================================
+
+Originator: tcraig
+Date: Wed Nov 19 2008
+Model: drv/seq_mct
+Version: drvseq2_0_38
+One-line summary: Update ocean swnet calculation for fraction
+
+- requires tracking ofrac and ifrac at the radiation timestep.
+  added ifrad and ofrad to fractions_o bundle.
+
+M      seq_frac_mct.F90
+M      seq_flux_mct.F90
+M      driver/seq_ccsm_drv.F90
+M      mrg_x2o_mct.F90
+
+================================================================================
+
+Originator: erik
+Date: Wed Nov 19 2008
+Model: drv/seq_mct
+Version: drvseq2_0_37
+One-line summary: Require the atmosphere components to have a two phase initialization
+
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90 ------- Fix bug 844, for curr_cday and next_cday 
+	
+================================================================================
+Originator: mvertens
+Date: Mon Nov  3 13:45:21 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_36
+One-line summary: added dust flux from land to atmosphere as default
+
+The following fields were added from land->atm	
+	
+      //':Sl_fv'       &    !
+      //':Sl_ram1'          !
+      //':Sl_fv'       &    ! friction velocity  
+      //':Sl_ram1'          ! aerodynamical resistance
+
+      //':Fall_flxdst1' &   ! dust flux bin 1
+      //':Fall_flxdst2' &   ! dust flux bin 2
+      //':Fall_flxdst3' &   ! dust flux bin 3
+      //':Fall_flxdst4'     ! dust flux bin 4
+	
+M      seq_flds_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Oct 24 2008
+Model: drv/seq_mct
+Version: drvseq2_0_35
+One-line summary: add intermediate timing file support
+
+- add tprof alarm in seq_timemgr
+- add support for writing intermediate timing files in driver
+- move DRIVER_RUN_LOOP timer and add DRIVER_TPROF_WRITE timer
+- add support in seq_timemgr for more alarm keywords (nmonths + nmonth, etc)
+
+M      driver/seq_ccsm_drv.F90
+M      bld/cpl.template
+M      seq_timemgr_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Oct 22 2008
+Model: drv/seq_mct
+Version: drvseq2_0_34
+One-line summary: update timing lib, other features
+
+- change prof_inparm namelist to profile_single_file=.false., we want
+  multiple timing files now.
+- add subroutine drvget_memusage which calls gptl_get_memusage
+- add "daily" call drvget_memusage and print out memory usage
+- add memory usage info to end of run
+	
+M      driver/seq_ccsm_drv.F90
+M      bld/cpl.template
+	
+================================================================================
+Originator: tcraig
+Date: Oct 8 2008
+Model: drv/seq_mct
+Version: drvseq2_0_33
+One-line summary: runoff check update for compset H
+
+M      driver/seq_ccsm_drv.F90
+	
+================================================================================
+Originator: mvertens
+Date: Fri Sep 26 14:06:42 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_32
+One-line summary: modifications to work with new build
+
+M      bld/ccsm.template
+	
+================================================================================
+	
+Originator: mvertens
+Date: Thu Sep 25 15:07:01 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_31
+One-line summary: added new dust/black carbon fluxes from atmosphere
+	
+M      seq_flds_indices.F90
+M      seq_flds_mod.F90
+M      mrg_x2o_mct.F90
+
+The following fields were added from the atm->driver
+      //':Faxa_bcphidry' &  ! flux: Black Carbon hydrophilic dry deposition   DEF
+      //':Faxa_bcphodry' &  ! flux: Black Carbon hydrophobic dry deposition   DEF
+      //':Faxa_bcphiwet' &  ! flux: Black Carbon hydrophilic wet deposition   DEF
+      //':Faxa_ocphidry' &  ! flux: Organic Carbon hydrophilic dry deposition DEF
+      //':Faxa_ocphodry' &  ! flux: Organic Carbon hydrophobic dry deposition DEF
+      //':Faxa_ocphiwet' &  ! flux: Organic Carbon hydrophilic dry deposition DEF
+      //':Faxa_dstwet1'  &  ! flux: Size 1 dust -- wet deposition DEF
+      //':Faxa_dstwet2'  &  ! flux: Size 2 dust -- wet deposition DEF
+      //':Faxa_dstwet3'  &  ! flux: Size 3 dust -- wet deposition DEF
+      //':Faxa_dstwet4'  &  ! flux: Size 4 dust -- wet deposition DEF
+      //':Faxa_dstdry1'  &  ! flux: Size 1 dust -- dry deposition DEF
+      //':Faxa_dstdry2'  &  ! flux: Size 2 dust -- dry deposition DEF
+      //':Faxa_dstdry3'  &  ! flux: Size 3 dust -- dry deposition DEF
+      //':Faxa_dstdry4'     ! flux: Size 4 dust -- dry deposition DEF
+These were also added to the attribute vectors for drv->ice, drv->lnd and drv->ocn
+In shr_kind_mod.F90, CX needed to be changed to 512 to accomodate these changes
+
+Using these changes in a ccsm4_0_alpha36 sandbox, the following tests	
+tests were shown to be bfb with ccsm4_0_alpha36 (other than the above fields)
+ERB.f45_g35.B.bluefire	
+ERS.f19_g15.B.bluefire
+	
+================================================================================
+Originator: tcraig
+Date: Sep 23 2008
+Model: drv/seq_mct
+Version: drvseq2_0_30
+One-line summary: add task based threading
+
+- add pethreads to seq_comm_type. this is the max number
+  of threads of all comms on that pe.  it's the same on all comms.
+- add call to seq_comm_setnthreads early in initialization using
+  the newly added pethreads variable.  this will largely take the
+  place of driver threading control which remain false by default.
+	
+M      driver/seq_ccsm_drv.F90
+M      seq_comm_mct.F90
+	
+================================================================================
+Originator: mvertens
+Fri Sep 12 13:53:58 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_29
+One-line summary: fix of memory leak
+
+M  seq_diag_mct.F90	
+	
+================================================================================
+
+Originator: tcraig
+Date: Wed Sep 10 2008
+Model: drv/seq_mct
+Version: drvseq2_0_28
+One-line summary: bug fixes, add bld dir and templates
+
+- add rest_case_name to seq_infodata_GetData interface
+- fix perpetual_ymd bug reported by fei in seq_infodata_mod
+- add bld/cpl.template and bld/ccsm.template from scripts
+- bug #799, changed string to mstring in modules identified, untested with g95
+
+================================================================================
+
+Originator: tcraig
+Date: Sun Sep  7 17:52:53 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_27
+One-line summary: merge frac1br branch to trunk
+
+- merge frac1br driver branch, updates fraction calculation and
+  add support for trigrid configurations.
+- update fraction implementation and calculation.  validate by b40.030f1.
+  documentation included in seq_frac_mct.F90 regarding implementation.
+- update seq_frac_mct.F90 internal documentation describing fraction implementation
+- add atm_frac_correct flag to optionally normalize atm ocn/ice frac so 
+  lnd+ocn+ice=1.0
+- add budget_inst/daily/month/ann/ltann/ltend flags to seq_infodata
+- add drv_threading flag to seq_infodata
+- rearrange order of driver to better suit budget calculation.  
+- refactor budget calculation, reformat budget tables, and modify budget 
+  calls in driver.  modify budget restart implementation.
+- clean up domain_check and make work with inactive components
+- add acorr field to domains, used primarily in land model to adjust
+  land areas to make areas conserve.
+- remove zero call in mapping subroutines, to deal with subsets of fields
+- migrate area correction from cpl pes to component pes, drv2mdl and mdl2drv are
+  also renames from *x to **.
+- rearrange driver initialization as needed for new acorr field in domain
+  and updated area correction arrays.
+- add fillvalue attribute to cpl history file
+- update map_lnd2atm to use "lfrin"
+- update map_atmlnd_mod.F90 for true mapping
+- change "samegrid" to samegrid_ao and samegrid_al
+- inline fraction update in mrg_x2a inside fields update
+- add frac "normalization" to mrg_x2o
+- refactor seq_domain_check to "merge" samegrid and .not.samegrid,
+  also make extensible to support land on different grid
+- fix integer overflow bug in seq_rearr_mod
+- fix driver restart bug in driver/seq_ccsm_drv.F90, wrong mpicom
+- modify map_atmocn and map_atmice to default to flux mapping of all
+  fields if neither flux or state mapping is set.
+- change fraction_o("afrac") to fractions_o("ofrac") consistent with 
+  new frac definition.  update seq_diag_mct (change kFraca to kFraco),
+  map_atmocn_mct (change afrac to ofrac) 
+- make Re_ocn2atm, Re_ice2atm, Re_lnd2atm private data types
+  to module and change calls of mct_rearr_rearrange using those
+  types to calls to map_*2atm_mct directly.
+- make sMatp_Fo2a private and convert call of mct_sMat_avMult to
+  a call of map_ocn2atm_mct in seq_domain_mct.F90
+- remove fldlist optional argument in map methods and convert to
+  statelist and fluxlist arguments.
+- remove call to map_atm2ice_init_mct in seq_ccsm_drv.F90 since
+  it's never actually used.  atm2ice implemented as atm2ocn-ocn2ice
+- merge mrg_x2a_frac and mrg_x2a_merge into mrg_x2a_run directly.
+  fix intent status in mrg_x2a method.
+- make atm2ice and ice2atm methods private until validated
+
+M      models/drv/seq_mct/seq_rearr_mod.F90
+M      models/drv/seq_mct/seq_domain_mct.F90
+M      models/drv/seq_mct/seq_frac_mct.F90
+M      models/drv/seq_mct/map_rofocn_mct.F90
+M      models/drv/seq_mct/seq_infodata_mod.F90
+M      models/drv/seq_mct/driver/seq_ccsm_drv.F90
+M      models/drv/seq_mct/map_iceocn_mct.F90
+M      models/drv/seq_mct/mrg_x2a_mct.F90
+M      models/drv/seq_mct/map_atmice_mct.F90
+M      models/drv/seq_mct/seq_timemgr_mod.F90
+M      models/drv/seq_mct/seq_io_mod.F90
+M      models/drv/seq_mct/map_atmlnd_mct.F90
+M      models/drv/seq_mct/seq_diag_mct.F90
+M      models/drv/seq_mct/mrg_x2o_mct.F90
+M      models/drv/seq_mct/map_atmocn_mct.F90
+	
+================================================================================
+
+Originator: jet
+Date: Tue Aug 22 2008
+Model: drv/seq_mct
+Version: drvseq2_0_26
+One-line summary: set runoff false if single_column mode
+	
+M      seq_infodata_mod.F90
+================================================================================
+
+Originator: tcraig
+Date: Tue Jul 22 12:00:51 EDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_25
+One-line summary: add frozen runoff, ascale to domain, driver threading
+	
+- add Forr_ioff field to rtm and ocn flux fields
+- update mrg_x2o for Forr_ioff
+- separate frozen and liquid runoff in budgets
+- add ascale field to domain, initialize to one in driver
+  required for future trigrid configurations
+- add nthreads variables to seq_comm datatype
+- get glo, cpl, atm, lnd, ocn, and ice nthreads in driver
+  and use them to reset the num threads.
+- add interfaces seq_comm_getnthreads and seq_com_setnthreads
+  to seq_comm_mct.F90
+- fix bug #776, calendar use for next_cday
+	
+M      seq_flds_indices.F90
+M      driver/seq_ccsm_drv.F90
+M      seq_flds_mod.F90
+M      seq_comm_mct.F90
+M      seq_timemgr_mod.F90
+M      seq_diag_mct.F90
+M      mrg_x2o_mct.F90
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Jul 21 08:00:25 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_24
+One-line summary: removed HIRES cpp-def in driver
+	
+Domain checking is now always done (and should always be done)
+	
+M      driver/seq_ccsm_drv.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Wed Jun 11 15:31:34 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_23
+One-line summary: fix two bugs
+
+  - bug fix for writing of restart pointer file
+  - bug fix for integer overflow which happens at higher resolution
+    and higher pe counts
+	
+M      seq_rearr_mod.F90
+M      driver/seq_ccsm_drv.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Sun May 4 20:03:02 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_22
+One-line summary: fix bug in comment
+
+M      seq_comm_mct.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Sun May 4 19:03:02 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_21
+One-line summary: #if around new seq_comm_mct feature
+
+  due to lack of mpi_group_size in mpi_serial
+
+M      seq_comm_mct.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Wed Apr 30 00:03:02 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_20
+One-line summary: add clock stop feature, seq_comm debug feature
+
+  - set clock stop times
+  - add debugging feature in seq_comm_mct for cpl/cmp root pes
+
+M      seq_comm_mct.F90
+M      seq_timemgr_mod.F90
+	
+================================================================================
+
+Originator: tcraig, mvr
+Date: Wed Apr 23 2008
+Model: drv/seq_mct
+Version: drvseq2_0_19
+One-line summary: one-line fix for an uninitialized attribute vector that
+	was passed into the unpermute in the mct_rearrange_init
+
+M      seq_rearr_mod.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Tue Apr 15 20:48:15 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_18
+One-line summary: fix to error introduced in 2_0_17 wrt driver rpointer read/write
+
+    - fix to driver rpointer read with no mpicom
+
+M    seq_infodata_mod.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Mon Apr 14 17:34:39 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_17
+One-line summary: general updates, new mct, cleanup
+
+   - remove check for increasing gsmap (requires mct update)
+   - change flux loop for dead models to mimic non-dead loop
+   - add mods to support dead prognostic in coupler
+   - fix driver rpointer read/write to root pe
+   - change acc_cnt to an integer
+   - update timers
+   - clean-up run loop including calling comm_diags
+   - "fix" end_restart and restart_option interaction
+
+M    seq_rearr_mod.F90
+M    seq_flux_mct.F90
+M    seq_infodata_mod.F90
+M    driver/seq_ccsm_drv.F90
+M    seq_timemgr_mod.F90
+	
+================================================================================
+Originator: erik
+Date: Thu Apr 10 11:34:39 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_16
+One-line summary: added indices needed for SNICAR in clm3.6
+
+M        seq_flds_indices.F90
+	
+================================================================================
+Originator: mvertens
+Date: Wed Apr  9 16:34:43 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_15
+One-line summary: added code for CO2A, CO2B, CO2C and CO2_DMSA scenarios 
+
+M        mrg_x2a_mct.F90
+M        seq_flds_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Tue Mar 25 18:26:54 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_14
+One-line summary: fix gsmap checking on uninitialized gsmaps
+
+ - specifically related to D case DEBUG mode.
+
+M      driver/seq_ccsm_drv.F90
+
+================================================================================
+Originator: tcraig
+Date: Mon Mar 24 19:20:07 MDT 2008
+Model: drv/seq_mct
+Version: drvseq2_0_13
+One-line summary: fix npfix, other minor features
+
+ - add barriers to run loop start and stop timers
+ - add x2i to driver history file
+ - update npfix routine
+
+M      seq_rearr_mod.F90
+M      driver/seq_ccsm_drv.F90
+M      map_atmocn_mct.F90
+
+================================================================================
+Originator: tcraig
+Date: Thu Mar  6 19:27:48 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_12
+One-line summary: minor fix to budget logic in driver
+
+M      driver/seq_ccsm_drv.F90
+
+================================================================================
+Originator: tcraig
+Date: Thu Mar  6 19:27:48 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_11
+One-line summary: update budgets, add timemgr/infodata features
+
+M      seq_infodata_mod.F90
+M      driver/seq_ccsm_drv.F90
+M      mrg_x2i_mct.F90
+M      seq_timemgr_mod.F90
+M      seq_io_mod.F90
+M      seq_diag_mct.F90
+
+- update and review heat and water budgets
+- add budget and budavg alarms for instaneous and average budgets
+- add budget info to driver restart
+- add ability to read/write 1d int/r8 arrays in seq_io_mod
+- clean up scalar writing in seq_io_mod, remove dimensions
+- add namelist model_version, username, hostname to infodata
+- add datestop alarm to time manager to separately control a
+  "never run past" date
+- add nminutes and nhours options to calendar alarms
+- bug fix to dtime/ldtime in seq_timemgr EClockGetData
+	
+================================================================================
+Originator: mvertens
+Date: Mon Feb 25 16:01:53 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_10
+One-line summary: remove duplicate use
+
+U  driver/seq_ccsm_drv.F90
+	
+================================================================================
+	
+Originator: jdennis
+Date: Mon Feb 25 16:01:53 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_09
+One-line summary: Cleanup up some excessive memory tracing calls.  	
+
+U  driver/seq_ccsm_drv.F90
+U  seq_io_mod.F90
+U  map_atmocn_mct.F90
+	
+================================================================================
+	
+Originator: mvertens
+Date: Mon Feb 25 16:01:53 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_08
+One-line summary: fixed memory leak
+
+   M /drv/seq_mct/trunk/seq_io_mod.F90
+  - fixed memory leak associated with writing history and restart files from CPL7 (John Dennis)
+	
+================================================================================
+Originator: mvertens
+Date: Fri Feb 15 13:44:01 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_07
+One-line summary: fixed scam problem
+
+M seq_io_mod.F90
+  - adds memory tracing into suspect IO subroutine (John Dennis)
+M seq_domain_mct.F90
+  - fixed scam problem by making weights be unity if all models are on same grid
+    (i.e. "stand-alone" cam)	 
+M driver/seq_ccsm_drv.F90
+  - put in check to reset ocn_present and ice_present flaggs if I case is run
+    (current code fixes problem in lahey with I case)	
+	
+================================================================================
+	
+Originator: tcraig
+Date: Jan 29 2008
+Model: drv/seq_mct
+Version: drvseq2_0_06
+One-line summary: timemgr consistency between restart/stop alarms.
+
+M      seq_timemgr_mod.F90
+
+  - modify restart alarm to reference current time for
+    consistency with the stop alarm.
+	
+================================================================================
+	
+Originator: tcraig
+Date: Fri Jan 25 15:38:35 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_05
+One-line summary:  update init ocean skip logic and add timer
+
+M      driver/seq_ccsm_drv.F90
+
+  - cleanup startup ocean mode
+  - add timer for initial ocean wait time
+  - change "startup" variable name to skip_ocean_run and add 
+    cpl2ocn_first and ocnrun_count variables to handle logic.
+	
+	
+================================================================================
+Originator: tcraig
+Date: Tue Jan 22 03:18:04 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_04
+One-line summary:  update timers and bug/feature update
+
+M      seq_rearr_mod.F90
+M      seq_infodata_mod.F90
+M      driver/seq_ccsm_drv.F90
+M      seq_comm_mct.F90
+
+  - update implementation of avExtend and avCreate in seq_rearr
+    to handle determination of valid AVs better
+  - add *_cdf64 to seq_infodata_mod
+  - update timers in seq_ccsm_drv.F90
+  - change from drv to cpl for driver output filenames
+  - modify thread checking in seq_comm_mct
+	
+================================================================================
+	
+Originator: tcraig
+Date: Sun Jan 20 23:44:37 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_03
+One-line summary:  fix clobber behavior in nf_create for
+	non-large file support
+
+M    seq_io_mod.F90
+  - fix driver hist/rest cdf clobber implementation
+	
+================================================================================
+	
+Originator: jdennis
+Date: 
+Model: drv/seq_mct
+Version: drvseq2_0_02
+One-line summary:  modify driver restart/history large
+	file support
+
+M    seq_io_mod.F90
+  - set driver hist/rest cdf large file support for HIRES
+	
+================================================================================
+
+Originator: tcraig
+Date: Wed Jan  9 18:28:29 MST 2008
+Model: drv/seq_mct
+Version: drvseq2_0_01
+One-line summary:  resequence driver for concurrency and code cleanup
+
+M    seq_domain_mct.F90
+M    seq_rearr_mod.F90
+M    map_atmatm_mct.F90
+M    seq_flux_mct.F90
+M    seq_infodata_mod.F90
+M    map_rofrof_mct.F90
+M    driver/seq_ccsm_drv.F90
+M    seq_flds_indices.F90
+M    seq_flds_mod.F90
+M    map_atmice_mct.F90
+M    map_lndlnd_mct.F90
+M    seq_timemgr_mod.F90
+M    seq_io_mod.F90
+M    map_ocnocn_mct.F90
+M    mrg_x2o_mct.F90
+M    map_iceice_mct.F90
+M    map_atmocn_mct.F90
+	
+  - new driver sequencing for temporal concurrency
+  - minor refactor to map_atmatm/ocnocn/lndlnd/iceice/rofrof modules
+  - remove flux_albi
+  - merge flux_solar into mrg_x2o
+  - merge flux_albo and flux_atmocn, add albedo_only option
+  - no writing of hist/rest for HIRES (jd)
+  - add NF90_64BIT_OFFSET to nf90_create calls
+  - refactor time manager to handle new alarms
+  - make samegrid a namelist input to infodata
+  - add ocean_tight_coupling logic in driver and namelist in infodata
+  - minor refactor of seq_rearr
+  - remove xao_Faox_swnet from seq_flds
+	
+================================================================================
+Originator: jdennis
+Date: 
+Model: drv/seq_mct
+Version: drvseq1_0_72
+One-line summary:  minor mods for atlas
+
+================================================================================
+Originator: tcraig
+Date: Sat Dec 29 15:32:37 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_71
+One-line summary:  mods to support concurrency technically
+
+  - update map_ocnocn_mct
+  - add map_atmatm_mct, map_lndlnd_mct, map_iceice_mct, map_rofrof_mct
+  - add corresponding AVs in driver for new concurrency capability
+  - modify driver to use new concurrency AVs as needed
+  - modify driver to map atm/ice/lnd/rof from component to cpl pes
+  - modify driver to add infodata exchange calls as needed
+  - clean up seq_rearr_init subroutine
+  - modify driver writing as needed to write from cpl root pe instead
+    of global root pe.  required moving some write calls from the
+    subroutine to the driver, in particular, for seq_infodata, seq_timemgr.
+  - update map_ocnocn_mct
+        - modify interfaces of seq_infodata_init and exchange to pass in an
+    ID instead of an mpi comm to have access to more info.  in particular
+    for the exchange, the subroutine now sets cplpe or cmppe as the
+    broadcast pe instead of the caller (which was error prone).
+  - remove some dead code from the driver
+  - clean up some driver if logic and initialization to properly
+    handle full model concurrency
+  - deal with bug in initial copy of area to aream in driver.
+    was seg faulting on bluevista.  found a work-around, but this
+    is still a problem to be debugged and fixed properly.
+  - remove checks in seq_comm that atm/ice/lnd/cpl pes had to be
+    the same.
+  - updating writing of pes in seq_comm using "iamstring".  still
+    having trouble getting the order consistent.
+	
+================================================================================
+Originator: tcraig
+Date: Wed Dec 26 21:54:23 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_70
+One-line summary:  bug fixes, concurrency features
+
+  - rename map_ocnaocn_mct.F90 to map_ocnocn_mct.F90
+  - zero out r2x_o before mapping
+  - change masking in seq_flux from (mask(n) > 0) to (mask(n) /= 0) (bk)
+  - add seq_infodata_exchange to support sending infodata between pes.
+  - add infodata exchange calls to driver
+  - add seq_diag_avect calls for initial component data
+  - add bfbflag in seq_infodata
+  - create seq_rearr_mod.F90 and move most of map_ocnocn_mct to it.
+  - add area correction multiply to extra atm_init_mct calls, was overlooked
+    and was a bug.  in driver
+  - move tstamp write to end of run loop (clock advance still at start) in driver
+  - remove t_barrierf calls temporarily in driver
+  - fix some timers in driver
+  - move diag/area correction.  this now happens on cpl pes only, not on
+    component pes.  in driver
+  - update history/restart usage in driver
+  - add cplpe, cmppe information to seq_comm datatype and associated functions
+    and source code.  needed for infodata exchanges.
+  - change seq_diag_avect interface and add support for bfb option in
+    global sum calculation.
+  - improve robustness and flexibility of seq_rearr_gsmapcreate
+  - add seq_rearr_gsmapIdentical function
+	
+================================================================================
+Originator: jdennis
+Date: 
+Model: drv/seq_mct
+Version: drvseq1_0_69
+One-line summary:  minor mods for hires, turn off history, restart, domain_check
+
+================================================================================
+Originator: tcraig
+Date: Mon Dec 17 05:40:39 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_68
+One-line summary:  clean up dead code 
+
+M    driver/seq_ccsm_drv.F90
+	
+ - comment out calls to t_barrierf, cleanup in drvseq1_0_67 causes
+   a couple to hang due to incorrect mpicoms when NOT running all
+   components on the same pes.
+	
+================================================================================
+
+Originator: tcraig
+Date: Thu Dec 13 19:29:42 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_67
+One-line summary:  clean up dead code 
+
+M    driver/seq_ccsm_drv.F90
+M    mrg_x2a_mct.F90
+M    seq_comm_mct.F90
+M    map_ocnaocn_mct.F90
+M    map_atmocn_mct.F90
+	
+ - change driver naming convention from _o _oo to _oo _ox
+ - change IDs, add CPLID, CPLOCNID, etc
+ - add gloiam to seq_comm IDs datatype
+ - add seq_comm_iam, seq_comm_gloiam functions in seq_comm
+ - clean up driver
+ - update order of comm_diag and area corrections in driver
+ - add new timestamp output
+	
+================================================================================
+Originator: tcraig
+Date: Sat Dec  8 20:19:39 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_66
+One-line summary:  clean up dead code 
+
+M      seq_domain_mct.F90
+M      seq_infodata_mod.F90
+M      driver/seq_ccsm_drv.F90
+M      seq_timemgr_mod.F90
+
+  - remove dead code, mostly eshr_timemgr, shr_inputinfo commented out code
+  - clean up driver comments
+  - mods to a few write statements
+
+bit-for-bit with drvseq1_0_65
+	
+================================================================================
+Originator: tcraig
+Date: Sat Dec  8 16:23:34 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_65
+One-line summary:  general extension, area corrections, etc
+
+M    seq_domain_mct.F90
+D    seq_rest_mct.F90
+M    seq_infodata_mod.F90
+M    driver/seq_ccsm_drv.F90
+M    seq_timemgr_mod.F90
+A    seq_io_mod.F90
+M    seq_diag_mct.F90
+
+  - implement area corrections (from rj) 
+  - update comm_diag
+  - add history file capability including support for 1d or 2d fields
+  - add ifdays0 option to seq_timemgr alarm options
+  - rename seq_rest_mod to seq_io_mod since it now handles history files too
+  - add nx, ny global scalars for atm, lnd, rof, ice, ocn to seq_infodata
+  - add history alarm in seq_timemgr "SyncClock"
+	
+================================================================================
+
+Originator: tcraig
+Date: Thu Nov 29 12:32:43 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_64
+One-line summary: bug fixes for cam test suite
+
+- seq_infodata_mod.F90
+- driver/seq_ccsm_drv.F90
+- seq_comm_mct.F90
+- seq_timemgr_mod.F90
+- seq_diag_mct.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Sat Nov 24 20:29:17 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_63
+One-line summary:  general update, add seq_infodata, seq_timemgr
+
+- seq_cdata_mod.F90
+- seq_frac_mct.F90
+- seq_flux_mct.F90
+- seq_infodata_mod.F90
+- driver/seq_ccsm_drv.F90
+- mrg_x2a_mct.F90
+- map_atmice_mct.F90
+- seq_comm_mct.F90
+- mrg_x2i_mct.F90
+- seq_timemgr_mod.F90
+- mrg_x2l_mct.F90
+- seq_diag_mct.F90
+- mrg_x2o_mct.F90
+- map_ocnaocn_mct.F90
+- map_atmocn_mct.F90
+	
+================================================================================
+
+Originator: tcraig
+Date: Wed Nov 21 21:59:44 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_62
+One-line summary:  add domain fields list and more driver restart fields
+
+M      driver/seq_ccsm_drv.F90
+       - add new fields to driver restart. required for changes in driver
+         sequencing associated with tag 1_0_59 and 1_0_60.  only fixes
+	 a subset of ccsm4 restart tests.  more work needed.
+M      seq_flds_mod.F90
+       - add domain fields lists for reuse.
+
+================================================================================
+
+Originator: jdennis
+Date: Wed Nov 21 11:21:14 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_61
+One-line summary:  fix mpicom use (NULL) and memory leak
+
+       map_ocnaocn_mct.F90
+       seq_comm_mct.F90
+       - switch mpicom>0 to mpicom/=MPI_COMM_NULL
+       map_atmocn_mct.F90
+       - fix memory leak
+	
+================================================================================
+
+Originator: mvertens
+Date: Fri Nov 16 11:21:38 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_60
+One-line summary:  change to atm/ocnflux calculation location in driver
+	
+M      seq_flux_mct.F90
+       - bug fix to not zero out uocn and vocn and add qref	
+	
+================================================================================
+	
+Originator: mvertens
+Date: Tue Nov 13 14:59:34 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_59
+One-line summary:  change to atm/ocnflux calculation location in driver
+	
+M      seq_flux_mct.F90
+       - put in new time independent ocean albedo computation that is latitudinally
+	 as option if flux_albav is true  (also returned to constant calculation as in
+	 cpl6 until the new latitude dependent form is also put into cpl6)
+M      driver/seq_ccsm_drv.F90
+       - put in call to seq_flux_atmocn_mct to be after the ocean merge and ocean
+	 accumulator. This will change answers in cam som (and needs to be validated)
+	 but should not change answers for cam dom. 
+       - turned on time averaging for all fields into the ocean model
+       - test for comparing to cpl6 showed that these changees in an A configuration 
+	 at T62_gx1v5 resulted in almost bfb answers for the ocean input (after the 
+	 area correction factors were removed in the driver and consistent ocean albedo
+	 calculations were done in both cpl6 and cpl7).
+	
+================================================================================
+Originator: mvertens
+Date: Thu Nov  8 14:56:12 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_58
+One-line summary:  new ocean albedo computation 
+	
+M      seq_flux_mct.F90
+       - put in new time independent ocean albedo computation that is latitudinally
+	 dependent. This is triggered currently by the module variable flux_albav
+	 that is set to .true. 
+       - removed zenith angle dependence of ice albedo computation if flux_albav is
+	 .true.
+M      driver/seq_ccsm_drv.F90
+       - put in call to second phase of atm_init for first cam radiation computation
+	
+================================================================================
+	
+Originator: mvertens
+Date: Wed Nov 07 20:10:51 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_57
+One-line summary:  bug fixes to map_ocnaocn_mct.F90
+	
+M      map_ocnaocn_mct.F90
+       - bug fix for pgi bounds problem and for cam decomp problem
+	 (i.e. 1.9x2.5, at 4x7 decomposition)
+	
+================================================================================
+	
+Originator: 
+Date:
+Model: drv/seq_mct
+Version: drvseq1_0_56
+One-line summary:  modify ocnocna routines to get around bug
+	
+M      map_ocnaocn_mct.F90
+       - mod to get around iList issue in mct
+	
+================================================================================
+	
+Originator: mvertens
+Date: Tue Oct 30 13:53:51 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_55
+One-line summary:  bug fixes 
+	
+M      seq_rest_mct.F90
+       - implicit none before input arguments
+M      driver/seq_ccsm_drv.F90
+       - bug fixes necessary for cam test suite to work 	
+M      map_ocnaocn_mct.F90
+       - temporary bug fix (must be changed) to get around problem on tempest
+	 (this must be a fix in mct) - the following will not work if ilist empty 
+         !BUG    iList = mct_aVect_ExportIList2c(AVin)
+
+================================================================================
+	
+Originator: tcraig
+Date: ???
+Model: drv/seq_mct
+Version: drvseq1_0_54
+One-line summary: TO BE FILLED IN
+	
+================================================================================
+	
+Originator: mvertens
+Date: Mon Oct 22 20:36:23 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_53
+One-line summary: fix for lf95 bug
+
+M      driver/seq_ccsm_drv.F90
+	- flux averaging is being done incorrectly - all fields are averaged - and 
+	  so it is turned off for now. this needs to be fixed
+	- added logic so that logunit is 6 if cpl_modelio.nml does not exist
+	- added logic so that merge to ocean does not occur if ocn_prognostic is false
+M      seq_flds_mod.F90
+       - new version from Mat Rothstein that resolves character string limitation
+M      seq_comm_mct.F90
+       - if ccsm_pes nameilst does not exists, preset values are used rather than
+	 system aborting
+       - fixes for running in stand-alone cam mode
+	 (note an output diagnostic line (prefixed by BUG still has to be fixed)  
+M      mrg_x2o_mct.F90
+       - bug fixes - the following lines were missing
+          call mct_aVect_copy(aVin=a2x_o, aVout=x2o_o, vector=usevector)
+          call mct_aVect_copy(aVin=i2x_o, aVout=x2o_o, vector=usevector)
+          call mct_aVect_copy(aVin=xao_o, aVout=x2o_o, vector=usevector)
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Oct 22 20:36:23 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_52
+One-line summary: fix for lf95 bug
+	
+M      seq_comm_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Mon Oct 22 13:54:31 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_51
+One-line summary: add new shr_input_info prognostic flags
+	
+- add xxx_prognostic and ocnrof_prognostic flags in shr_inputinfo
+- add flux_epbalfact correction to rain/snow in mrg_x2o_mct.F90 and 
+  mrt_x2i_mct.F90
+	
+M      driver/seq_ccsm_drv.F90
+M      mrg_x2a_mct.F90
+M      mrg_x2i_mct.F90
+M      mrg_x2l_mct.F90
+M      mrg_x2o_mct.F90
+	
+================================================================================
+Originator: tcraig
+Date: Wed Oct  3 22:55:41 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_50
+One-line summary: add av diagnostic 
+
+- add attrvect diagnostic, seq_diag_avect_mct.
+- implement avect diagnostic calls in driver
+
+M      driver/seq_ccsm_drv.F90
+M      seq_diag_mct.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon Oct  1 05:57:49 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_49
+One-line summary: add ocean averaging and support for reading pe_layout from namelist
+
+M      driver/seq_ccsm_drv.F90
+M      seq_comm_mct.F90
+	
+================================================================================
+Originator: tcraig
+Date: Sat Sep 29 04:05:21 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_48
+One-line summary: add ability for ocn to run sequentially or concurrently
+
+add ability to run ocean sequentially or concurrently,
+ - add module, map_ocnaocn_mct for rearranging ocean data
+ - add gsmap, dom, cdata, and av datatypes to support ocean
+   data on atm pes
+ - add initialization and use of multiple IDs
+ - merge and extend seq_communicator and seq_init_mct into seq_comm_mct
+ - update code everywhere old global comms and global masterproc
+   were used, focus on using seq_comm methods based on IDs
+add calls to eshr_timemgr phase setup
+	
+M      seq_domain_mct.F90
+M      seq_cdata_mod.F90
+M      seq_flux_mct.F90
+M      driver/seq_ccsm_drv.F90
+M      map_iceocn_mct.F90
+M      mrg_x2a_mct.F90
+A      seq_comm_mct.F90
+D      seq_communicator.F90
+M      mrg_x2i_mct.F90
+M      mrg_x2l_mct.F90
+D      seq_init_mct.F90
+M      seq_diag_mct.F90
+M      map_atmlnd_mct.F90
+M      mrg_x2o_mct.F90
+A      map_ocnaocn_mct.F90
+M      map_atmocn_mct.F90
+		
+This tag requires updated mct and share code, 
+  seqmct10_MCT2_3_0_070524
+  loga08_share3_070903
+
+This runs B and F_AICE_SOM out of the box, but produces non bfb
+results when running on varied component sets when it should be
+bfb.  Further exploration is required.  This version will run
+all sequential on all pes "out of the box".  Further mods are
+needed to the driver and scripts to control the seq/con options
+at run-time.  Finally, the driver sequencing when running
+the ocean concurrently actually barriers the atm pes.  The
+driver call sequence needs to be modified to introduce proper
+lagging and concurrency.  This commit permits extension in all
+these areas.
+
+================================================================================
+Originator: mvertens
+Date: Mon Sep 17 15:45:56 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_47
+One-line summary: changes necessary to get pop2 working in sequential system
+	
+M      seq_domain_mct.F90
+M      seq_flds_indices.F90
+M      seq_flds_mod.F90
+       - modified to get pop2 working	 
+	
+M      driver/seq_ccsm_drv.F90
+       - started adding output for each command called (this will be necessary
+	 to trace where the system is when separate log files are used)
+	
+================================================================================
+Originator: tcraig
+Date: Fri Sep 14 05:42:05 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_46
+One-line summary: add primitive ability to vary coupling frequency of models
+	
+Add some logic to allow varied coupling frequency
+Change logging slightly, not only root pe opens cpl.log file
+	
+This tag requires updated share code, loga06_share3_070903 or after.
+This was tested only in ccsm40.alpha01 testcase.
+	
+================================================================================
+Originator: tcraig
+Date: Mon Sep 10 01:20:20 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_45
+One-line summary: update logging
+	
+This updates the logging capability and options.  Also added mpi_reduce
+in domain check routines to reduce I/O.  Now writing to the cpl.log file.
+
+This tag requires updated share code, loga05_share3_070903 or after.
+This was tested only in ccsm40.alpha01 testcase.
+	
+M      seq_domain_mct.F90
+M      seq_cdata_mod.F90
+M      driver/seq_ccsm_drv.F90
+M      map_iceocn_mct.F90
+M      seq_communicator.F90
+M      seq_diag_mct.F90
+M      map_atmlnd_mct.F90
+M      map_atmocn_mct.F90
+	
+================================================================================
+
+Originator: mvertens
+Date: Tue Sep  4 10:53:07 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_44
+One-line summary: moved seq_ccsm_drv.F90 to separate driver directory.
+	
+This move was needed to get the sequential ccsm code into the current ccsm scripts.
+When separate libraries are built for each component (as is the case for the current
+cpl6 scripts and new cpl7 scripts, but is not the case for stand-alone cam) then
+seq_ccsm_drv.F90 needs to get build AFTER all of the other libraries are made
+and all the necessary module files (i.e. atm_comp_mct.mod) are available in the
+$EXEDIR/lib/include directory). 
+
+***NOTE*** 
+his change needs to migrate into the stand-alone
+verisons of the sequential "cam" and "clm" scripts as well.
+**********	
+	
+A      driver
+A  +   driver/seq_ccsm_drv.F90
+D      seq_ccsm_drv.F90
+	
+================================================================================
+	
+Originator: erik
+Date: Thu Aug 16 12:49:30 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_43
+One-line summary: put in new requirement that surface models read domain file
+	that contains correct active fractions for that model
+
+M      seq_domain_mct.F90
+M      seq_frac_mct.F90
+	
+================================================================================
+	
+Originator: erik
+Date: Sun Aug  5 18:04:58 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_42
+One-line summary: put in capability to couple all components at cam timestep
+
+M      seq_flux_mct.F90
+       - only do albedo calculation for ocn or ice if nextsw_cday is not -1
+M      map_atmocn_mct.F90
+       - bug fix for normalizing kSo_t by fraction of atmosphere on ocean grid 
+	
+================================================================================
+	
+Originator: erik
+Date: Fri Aug  3 12:15:32 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_41
+One-line summary: Fix bug 560 -- error in SYPD for restart and protect against divide by zero
+
+M      seq_ccsm_drv.F90
+        - Fix SYPD calculation for restart of 1-step.
+        - Protect against divide by zero in SYPD calculation.
+
+================================================================================
+
+Originator: erik
+Date: Wed Jul 18 15:19:06 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_40
+One-line summary: Fix outPathRoot length, and add compute time, and add one decimal place to real output
+
+M      seq_ccsm_drv.F90
+        - Increase outPathRoot to SHR_KIND_CL so will be long enough
+        - Add compute time
+        - Add one decimal place to real output to log file
+
+================================================================================
+
+Originator: erik
+Date: Tue Jul 10 11:36:07 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_39
+One-line summary: Make sure drvLogFile is set for all tasks, add Sim-Years/day calc
+
+Bugs fixed: 541, 545
+
+M      seq_ccsm_drv.F90
+        - Set drvLogFile for all tasks, so that won't abort with error as on Linux/Lahey
+        - Add simulated years / compute-day calculation
+
+================================================================================
+
+Originator: erik
+Date: Tue Jul  3 23:42:58 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_38
+One-line summary: Redirect log output if absolute path given in outPathRoot, and remove CAM refs
+
+M      seq_ccsm_drv.F90
+       - Remove references to CAM -- replace with sequential CCSM.
+       - Explicitly open unit 6 to an explicit driver log file name if an 
+         absolute path is given in the shr_inputinfo_init outPathRoot variable.
+       - Add some more log write statements to show what is going on.
+M      seq_init_mct.F90
+       - Remove reference to CAM
+
+================================================================================
+
+Originator: mvertens
+Date: Tue Jun 26 11:26:00 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_37
+One-line summary: generalized mapping utilities
+
+M      seq_domain_mct.F90
+       - fixed bug to map mask with sMatp_Fo2a rather than sMatp_So2a 
+	 (now mapping is done as in cpl6)
+M      seq_frac_mct.F90
+       - replaced specific use of rearrangers and mappers with call to 
+	 mapping routine interfaces
+       - made all fractions symmetric (like in cpl6)	
+D      seq_infobuf_mod.F90
+       - this file should have been removed in a previous tag
+M      seq_ccsm_drv.F90
+       - replaced calls to mapping routines to make optional aguments use
+	 keyword=value syntax
+M      seq_diag_mct.F90
+       - removed reference to seq_infobuf_mod
+M      mrg_x2a_mct.F90
+       - removed sync clock from input argument
+M      mrg_x2o_mct.F90
+       - now using fractions data type to do ocean merging
+M      map_atmlnd_mct.F90
+M      map_iceocn_mct.F90
+M      map_atmice_mct.F90
+M      map_atmocn_mct.F90
+       - generalized mappers to have optional argument fldlist for doing
+	 rearranging off of a list of fields and also made fluxlist and statelist
+	 optional arguments - this enabled seq_frac_mod.F90 to call the mapping
+	 routines directly.
+	
+================================================================================
+
+Originator: mvertens
+Date: Wed Jun 13 21:47:27 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_36
+One-line summary: fixed various bugs
+	
+M      map_rofocn_mct.F90
+       - put in aream for runoff	
+M      seq_ccsm_drv.F90
+       - fixed bug related to running the model only 1 driver timestep	
+M      map_atmlnd_mct.F90
+       - filled in aream correctly for lnd
+	
+================================================================================
+
+Originator: mvertens
+Date: Sun Jun 10 21:20:57 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_35
+One-line summary: fixed problem in seq_ccsm_drv.F90 that arose in drvseq1_0_34
+	
+Changes made:
+   M  seq_ccsm_drv.F90
+      - the ocn/ice mapping initialization has to occur before the atm/ice and
+        atm/lnd mapping initialization to resolve problems that arose in the fv
+	runs  
+	
+================================================================================
+
+Originator: mvertens
+Date: Sun Jun 10 21:20:57 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_34
+One-line summary: added aream values to component domains
+	
+Changes made:
+   M  map_iceocn_mct.F90
+   M  map_atmice_mct.F90
+   M  map_atmlnd_mct.F90
+   M  map_atmocn_mct.F90
+      - set aream for the domain compononents
+	atm and ocn aream obtained from reading the ocn->atm mapping weights
+	ice aream obtained via a rearrange call to ocn aream in ocn->ice mapping init 
+	lnd aream obtained via a rearrange call to atm aream in atm->lnd mapping init 
+	note that atm aream must be initialized to atm area in atm_comp_mct.F90 for the
+	case where ocn_present is not .true. 
+   M  seq_ccsm_drv.F90
+	call atm<->ocn mapping initialization as first maping init call due to 
+	above logic
+   M  seq_diag_mct.F90
+	trigger off of aream rather than area
+	
+================================================================================
+
+Originator: mvertens
+Date: Tue Jun  5 09:59:48 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_33
+One-line summary: added new energy/water diagnostics (not activated yet)
+	
+Changes made:
+   M  seq_frac_mct.F90
+      - bug fix in seq_frac_init made for case where ocean and atm are on same grid
+	then set (or overwrite) frac in ocn and ice domains to 1-landfrac 
+   M  seq_ccsm_drv.F90
+      - new calls to seq_diag_xxx if do_diag is on (by this is currently hard-wired
+	to false until a more flexible process is put in place)
+   A  seq_diag_mct.F90
+      - addition of new water/energy conservation checks	 
+   M  map_atmocn_mct.F90
+      - bug fix when atm/ocn grids are different
+        ko = mct_aVect_indexRA(fractions_o,"afrac") should be
+        ko = mct_aVect_indexRA(fractions_a,"ofrac")	
+	
+   Note: there is currently a problem in this tag with mapping between ocn/atm
+   in mct (i.e. 
+
+	call mct_sMat_avMult(temp, sMatp_Fo2a, av_a, VECTOR=usevector, rList=fluxlist)
+	call mct_sMat_avMult(temp, sMatp_So2a, av_a, VECTOR=usevector, rList=statelist)
+	
+	av_a is zeroed upon entry into the mct_sMat_avMult call.
+	
+	This statement can be found at the beginning of the sMatAvMult_DataLocal routine:
+	! zero the output AttributeVector call AttrVect_zero(yAV, zeroInts=.FALSE.) 
+	
+   This will be fixed in the next tag.
+	
+================================================================================
+
+Originator: mvertens
+Date: Thu May 17 12:58:29 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_32
+One-line summary: fixes to have ocn/ice and atm/lnd run on different grids
+	
+Changes made:
+   M  seq_domain_mct.F90
+      - put in fixes for running ocn/ice on different grid from atm/lnd
+	tested these fixes with a T31_gx3v5 run using cam/clm/cice/docn7 
+   M  seq_frac_mct.F90
+      - put in fixes for running ocn/ice on different grid from atm/lnd
+	tested these fixes with a T31_gx3v5 run using cam/clm/cice/docn7 
+      - also incorporated change that if ocean and atm are on same grid, 
+	set frac in ocn and ice domains to 1-landfrac (note that frac was now
+	added as an attribute to both the ocn and ice domains, in addition to
+	the land domain)
+   M  seq_flux_mct.F90
+      - put in change so that mct memory leak does not occur (this will be fixed
+	separately in an mct tag, but this changes enables this to work with the
+	curent tag) fix is that following two lines are only called once:
+          call mct_gGrid_exportRAttr(dom_o, "lat", lats, nloc) 
+          call mct_gGrid_exportRAttr(dom_o, "lon", lons, nloc) 
+   M  seq_flds_indices.F90
+      - added  index_x2l_Faxa_swnet      
+   M  map_atmice_mct.F90
+      - removed routine map_ice2atm_frac_mct (this routine was not working correctly
+	anyway and an independent approach is being used in seq_frac_mct.F90 now
+   M  seq_ccsm_drv.F90
+      - moved update of clock to beginning of time loop rather than end of time loop
+	this removes the need for cam to write restart files for abs/ems and history
+	(except for SLD now) and makes component time check now occur at the end of
+	the run phase rather than at the beginning
+   M  map_atmocn_mct.F90
+      - fixed bug in mct initialization of sst_afrac (global size was being used
+	instead of local size)
+	
+================================================================================
+
+Originator: mvertens
+Date: Sat May  5 13:36:10 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_31
+One-line summary: removed infobufs and put info in CCSMInit
+	
+Changes made:
+   M  map_atmocn_mct.F90
+      - fixed bugs for np fix (discovered in testing dead components)
+   M  seq_ccsm_drv.F90
+      - fixed timer bug for mapping ice to atm
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Apr 30 23:07:44 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_30
+One-line summary: removed infobufs and put info in CCSMInit
+	
+Changes made:
+   M  mrg_x2o_mct.F90
+      - added copy of r2x_o to x2o_o (runoff is copied directly)
+   M  seq_domain_mct.F90
+      - removed all references to seq_infobuf_mod and uses of infobuf
+   M  seq_cdata_mod.F90
+      - removed all references to seq_infobuf_mod and uses of infobuf
+   M  seq_flux_mct.F90
+      - removed all references to seq_infobuf_mod and uses of infobuf
+   M  seq_ccsm_drv.F90
+      - removed all references to seq_infobuf_mod and uses of infobuf
+	logic for setting lnd_present, ice_present, ocn_present, prog_ocn and
+	prog_atm is now set in CCSMInit by component models and the driver
+        Initial values for lnd_present, ice_present and ocn_present (default is
+	true) are determined from the ccsm_inparm namelist. Each component is then
+	initialized and can overwrite these values (e.g. stub components set
+	the corresponding x_present flag to false, dead components set the 
+	dead_comps flag to true, cam sets the prog_atm flag to true and pop will
+	set the prog_ocn flag to true. The default values for prog_atm and prog_ocn
+	are false. Mapping of runoff to ocn will only occur if the prog_ocn flag
+	is true (i.e. currently assume that only a prognostic ocean will need valid 
+	values for runoff)
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Apr 30 23:07:44 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_29
+One-line summary: fixed logic problem for I case
+	
+Changes made:
+    M  seq_ccsm_drv.F90
+       - Can now turn on RTM in clm and if ocn_present is false, rtm_present
+	 will be set to false for the purposes of coupling to the ocean
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Apr 30 16:25:26 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_28
+One-line summary: put in NP fix into atm2ocn mapping and simplified atm->ice mappping
+
+Changes made:
+   M  seq_flux_mct.F90
+      - use SyncClock to get nextsw_cday in seq_flux_albi_mct and seq_flux_albo_mct
+	rather than infobuf%rbuf(rbuf_nextsw_cday)
+   M  seq_infobuf_mod.F90
+      - removed following from infobuf (since these will be specified now via the 
+	SyncClock 
+         - integer(SHR_KIND_IN),parameter,public :: ibuf_histeod    =  20
+         - integer(SHR_KIND_IN),parameter,public :: ibuf_histnow    =  21
+         - integer(SHR_KIND_IN),parameter,public :: ibuf_histavg    =  22
+         - integer(SHR_KIND_IN),parameter,public :: ibuf_diageod    =  23
+         - integer(SHR_KIND_IN),parameter,public :: ibuf_diagnow    =  24
+         - integer(SHR_KIND_IN),parameter,public :: ibuf_infobug    =  26
+         - integer(SHR_KIND_IN),parameter,public :: rbuf_nextsw_cday =  1
+         - integer(SHR_KIND_IN),parameter,public :: rbuf_spval       =  10 
+   M  map_iceocn_mct.F90
+     - for generality now have following arguments:
+        - subroutine map_ocn2ice_mct( cdata_o, av_o, cdata_i, av_i )
+        - subroutine map_ice2ocn_mct( cdata_i, av_i, cdata_o, av_o)
+   M  map_atmice_mct.F90
+     - for generality now have following arguments:
+        - subroutine map_atm2ice_mct( cdata_a, av_a, cdata_i, av_i, &
+                                      fluxlist, statelist )
+        - subroutine map_ice2atm_mct( cdata_i, av_i, fractions_i, cdata_a, av_a, fractions_a, &
+                                      fluxlist, statelist)
+   M  map_atmlnd_mct.F90
+     - for generality now have following arguments:
+       -  subroutine map_atm2lnd_mct( cdata_a, av_a, cdata_l, av_l )
+       -  subroutine map_lnd2atm_mct( cdata_l, av_l, cdata_a, av_a )
+   M  map_atmocn_mct.F90
+     - added functionality to map atm u,v fields correctly at NP
+       - call map_npfixNew4R(av_a,av_o,'Sa_u','Sa_v',dom_a,dom_o,ni_a,nj_a,mpicom)
+       - NOTE: this has not been tested yet - but it compiles successfully and is based on the
+	 cpl6 version
+     - for generality now have following arguments:
+       -  subroutine map_atm2ocn_mct( cdata_a, av_a, cdata_o, av_o, &
+	                              fluxlist, statelist )
+       -  subroutine map_ocn2atm_mct( cdata_o, av_o, fractions_o, cdata_a, av_a, fractions_a, &
+	                              fluxlist, statelist )
+    M  seq_ccsm_drv.F90
+       - For atm->ice mapping below will leverage the assumption that the 
+	 ice and ocn are on the same grid and that mapping of atm to ocean
+         has already just been done before the mapping of atm to ice
+	 so that remapping does not have to be done twice by passing a2x_o into
+	 the atm to ice mapping instead of a2x_a
+	
+================================================================================
+
+Originator: mvertens
+Date: Wed Apr 25 13:09:34 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_27
+One-line summary: upgrade of seq_flds_mod.F90 specification
+
+Changes made:
+  A  seq_flds_indices.F90
+  A  seq_flds_mod.F90
+     - moved these from csm_share/flds to here with the idea that if a change
+       is made to the framework coupling fields then all changes can be made
+       in one directory for that framework. This will make developers have to
+       make the same changes in the ESMF directory, but it will then ensure that
+       the given framework does support those coupling fields.	  
+  M  seq_infobuf_mod.F90
+     - simplified the structure if info buf to contain few fields.
+  M  seq_ccsm_drv.F90
+     - implemented cleaner check for presence of ocn, ice, lnd, rtm
+	
+================================================================================
+
+Originator: mvertens
+Date: Wed Apr 25 13:09:34 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_26
+One-line summary: upgrade of seq_flds_mod.F90 specification
+
+Changes made:
+   M seq_ccsm_drv.F90
+     - seq_flds_mod.F90 now specifies all optional fields in a subroutine call
+       seq_ccsm_drv.F90 now modified to call seq_flds_set 	
+	
+================================================================================
+
+Originator: mvertens
+Date: Tue Apr 24 12:47:39 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_25
+One-line summary: upgrade to mrg_x2o_mct.F90
+
+Changes made:
+   M mrg_x2o_mct.F90
+     - removed COUP_SOM definition (modified ice_comp_mct.F90 for cam-csim accordingly
+       to scale by 1./ifrac for melth)
+	
+================================================================================
+
+Originator: mvertens
+Date: Sun Apr 22 22:02:53 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_24
+One-line summary: upgrade to mrg_x2a_mct.F90
+
+Changes made:
+   M mrg_x2a_mct.F90
+     - removed explicit indexing scheme for fields that pass straight through
+       from one component directly to the atmosphere and replaced it by
+         call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=usevector)
+         call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=usevector)
+         call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=usevector) 
+         call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=usevector)
+       the only restriction for this use is that fields on the source component
+       must have the same name as fields on the destination component. 
+       as an example: seq_flds_mod.F90 was changed so that now have 	
+         Sl_snowh'    &    ! surface snow depth              DEF
+       has the same name in drv->atm as in lnd->drv  	
+	
+================================================================================
+
+Originator: mvertens
+Date: Sat Apr 21 15:32:17 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_23
+One-line summary: driver now calls seq_flux_albi_mct
+	
+Changes made:
+   M seq_domain_mct.F90
+     - print statement fix	 
+   M seq_ccsm_drv.F90
+     - modified driver to call seq_flux_albi_mct - zenith angle dependence of ice albedos 
+       (sets albedos to 1 on dark size of earth)
+   M mrg_x2o_mct.F90
+     - always pass i2x_o$rattr(index_i2x_Si_sicthk) for now 
+      (removed #ifdef COUP_SOM around this call)
+   M map_atmice_mct.F90
+     - set up pointers to infobuf in cdata and set rrub_nextsw_day for ice to that of atm 
+   M map_atmocn_mct.F90
+   M map_atmlnd_mct.F90
+     - formatting, no mods	 
+	
+================================================================================
+
+Originator: mvertens
+Date: Wed Apr 11 13:12:33 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_22
+One-line summary: bug fix for seq_ccsm_drv.F90 for aqua_planet
+	
+Changes made:
+  - Put in bug fixes for seq_ccsm_drv.F90 for aqua_planet mode and domain
+    checking that were introduced in drvseq1_0_21	 
+  - Following files were changed	
+	M seq_ccsm_drv.F90
+
+================================================================================
+
+Originator: mvertens
+Date: Sun Apr  8 14:01:23 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_21
+One-line summary: put in river runoff functinality into sequential ccsm (cpl7)
+	
+Changes made:
+  - Put in river runoff functinality into cpl7 (only tested with dead components)	
+  - Following files were changed
+	M map_rofocn_mct.F90
+	  - removed shr_sys_abort call
+	M seq_infobuf_mod.F90
+	  - added flag for ibuf_rtm_present (this must be set if rtm is to be run)
+	M seq_ccsm_drv.F90
+          - added changes to turn on rtm if cdata_r%infobuf%ibuf(ibuf_rtm_present) 
+	    is set to 1
+
+================================================================================
+
+Originator: mvertens
+Date: Sat Apr  7 15:12:10 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_20
+One-line summary: remove domain checking for dead components
+	
+Changes made:
+  - Updated seq_ccsm_drv.F90 to skip domain checking if dead components are used
+	
+================================================================================
+
+Originator: mvertens
+Date: Sat Apr  7 14:01:56 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_19
+One-line summary: updated domain checking code
+	
+Changes made:
+ - Modified seq_flux_mct.F90 (nloc<1 => nloc<0)  to support idle processors (Pat Worley bug)
+ - Modified seq_domain_mct.F90 and seq_ccsm_drv.F90 to remove requirement that grid consistency
+   is only done on 1 processor
+ - Modified seq_domain_mct.F90 to now change consistency of ocn/ice/land mask when
+   all components are on the same grid 
+
+================================================================================
+
+Originator: mvertens
+Date: Fri Mar 30 12:58:02 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_17
+One-line summary: updated mrg_x2o_mct.F90 to support cice4 addition
+	
+Changes made:
+ - Modified seq_flux_mct.F90 in order to support coupling on atm short-wave radation
+   times (by default hourly coupling) of atm/lnd/ice/ocn. 
+ - ***************NOTE****************************
+   this tag and later should only be utilized with clm, cam-csim and 
+   cam-som that supports the hourly coupling strategy.
+ - Modified seq_ccsm_drv.F90 since the modifications to seq_flux_mct.F90 also 
+   changed the arguments to seq_flux_solar_mct, seq_flux_albo_mct and seq_flux_albi_mct.	
+
+================================================================================
+
+Originator: mvertens
+Date: Fri Mar 30 12:41:08 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_16
+One-line summary: updated mrg_x2o_mct.F90 to support cice4 addition
+	
+	
+Changes made:
+ - Put in COUP_SOM  #ifdefs into mrg_x2o_mct.F90 to put in support for
+   the cam-csim4 (needed for cam-som) and add new support for cice4. 
+ - When cam-csim4 is not longer utilized (as well as cam-som) these if-defs
+   can be removed.  	  
+
+================================================================================
+
+Originator: robj
+Date: Wed Mar 28 16:42:34 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_15
+One-line summary: check allocate; close memory leak 
+	
+	
+Changes made:
+ - check error in all allocate and deallocate calls and exit
+    if error is found.
+ - deallocate the recip arrays in the ocn2atm and ice2atm map routines
+   to close a memory leak.
+
+================================================================================
+
+Originator: mvertens
+Date: Sun Mar 18 17:47:49 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_14
+One-line summary: fix unsatisfied references to R8
+	
+	
+Changes made:
+ - fixed compilation bugs for unsatisfied R8 references in seq_cdata_mod.F90
+   and map_atmice_mct.F90	  
+	
+================================================================================
+
+Originator: robj
+Date: Wed Mar 14 15:08:00 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_13
+One-line summary: fix bug in seq_frac_mod
+	
+	
+Changes made:
+ - Fix small bug in seq_frac_mod involving using correct lsize in a do-loop
+   bound.  Bug was only seen when using driver for mixed-resolution.
+	
+================================================================================
+
+Originator: mvertens
+Date: Mon Mar 12 10:07:16 MDT 2007
+Model: drv/seq_mct
+Version: drvseq1_0_12
+One-line summary: put in changes to incorporate datm7 flexibly
+	
+	
+Changes made:
+ - added new info buf flags to permit the performance optimization of the case
+   active lnd/ data atm. In this case, ocn and ice should not be called
+ - added interface to Pat Worley's performance library 
+   migrated seqflxave_drvseq1_0_10_tags onto trunk	
+ - cleaned up seq_ccsm_drv.F90 and seq_frac_mct.F90 in order to put in new logic
+   for not calling ocn/ice components 
+	
+================================================================================
+
+Originator: robj
+Date: Mon Mar  5 13:57:15 MST 2007
+Model: drv/seq_mct
+Version: drvseq1_0_11
+One-line summary: remove seq_mct_mod
+
+Changes made:
+ - remove seq_mct_mod and change all other modules
+   to use mct_mod from csm_share/shr
+        
+================================================================================
+

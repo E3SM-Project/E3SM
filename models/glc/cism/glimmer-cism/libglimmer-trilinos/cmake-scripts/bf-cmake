@@ -1,0 +1,61 @@
+#
+# Execute this script to configure Trilinos
+# Everything above   CMAKE_CXX_FLAGS should not need to be modified
+#  You might need to change compiler names, blas/lapack names and path,
+# other compiler flags, and eventually the installation directory
+#
+# Note, the "../Trilinos" at the end is the relative path from the
+# PWD (build directory) to the to Trilinos directory.
+#    
+#
+rm CMakeCache.txt
+export OBJECT_MODE=64
+
+# need cmake > version 2.8
+module load cmake
+
+cmake -D TPL_ENABLE_MPI:BOOL=ON \
+      -D CMAKE_BUILD_TYPE:STRING=RELEASE \
+      -D Trilinos_WARNINGS_AS_ERRORS_FLAGS:STRING="" \
+      -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
+      -D Trilinos_ENABLE_ALL_OPTIONAL_PACKAGES:BOOL=OFF \
+\
+      -D Trilinos_ENABLE_Teuchos:BOOL=ON \
+      -D Trilinos_ENABLE_Epetra:BOOL=ON \
+      -D Trilinos_ENABLE_EpetraExt:BOOL=ON \
+      -D Trilinos_ENABLE_Ifpack:BOOL=ON \
+      -D Trilinos_ENABLE_AztecOO:BOOL=ON \
+      -D Trilinos_ENABLE_Amesos:BOOL=ON \
+      -D Trilinos_ENABLE_Anasazi:BOOL=ON \
+      -D Trilinos_ENABLE_Belos:BOOL=ON \
+      -D Trilinos_ENABLE_ML:BOOL=ON \
+      -D Trilinos_ENABLE_NOX:BOOL=ON \
+      -D Trilinos_ENABLE_Stratimikos:BOOL=ON \
+      -D Trilinos_ENABLE_Thyra:BOOL=ON \
+      -D Trilinos_ENABLE_Piro:BOOL=ON \
+      -D Trilinos_ENABLE_Zoltan:BOOL=ON \
+\
+      -D Trilinos_ENABLE_TESTS:BOOL=OFF \
+      -D Trilinos_ENABLE_EXAMPLES:BOOL=OFF \
+      -D Piro_ENABLE_TESTS:BOOL=ON \
+      -D Trilinos_VERBOSE_CONFIGURE:BOOL=OFF \
+      -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+      -D Trilinos_ENABLE_Export_Makefiles:BOOL=ON \
+\
+     -D CMAKE_CXX_FLAGS:STRING="-O2 -qmaxmem=-1 -g -qrtti=all" \
+     -D CMAKE_Fortran_FLAGS:STRING="-O2 -qmaxmem=-1 -g" \
+     -D CMAKE_INSTALL_PREFIX:PATH="$PWD/install" \
+     -D CMAKE_EXE_LINKER_FLAGS:STRING="-bbigtoc" \
+\
+     -D TPL_BLAS_LIBRARIES:STRING="blas" \
+     -D LAPACK_LIBRARY_NAMES:STRING="lapack" \
+     -D LAPACK_LIBRARY_DIRS:PATH="/usr/local/lib" \
+\
+     -D CMAKE_C_COMPILER:FILEPATH="mpcc_r" \
+     -D CMAKE_CXX_COMPILER:FILEPATH="mpCC_r" \
+     -D CMAKE_Fortran_COMPILER:FILEPATH="mpxlf_r" \
+\
+     -D MPI_EXEC:FILEPATH="/usr/bin/poe" \
+     -D MPI_EXEC_NUMPROCS_FLAG:STRING="-procs" \
+../Trilinos
+

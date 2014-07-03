@@ -1,0 +1,62 @@
+\hypertarget{namespaceice__age}{
+\section{ice\_\-age Module Reference}
+\label{namespaceice__age}\index{ice\_\-age@{ice\_\-age}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__age_ab41cc265d5ceb720ed00b72b52f9d0e1}{init\_\-age}
+\item 
+subroutine \hyperlink{namespaceice__age_a13de3091a45531a0efb67a54687c35d2}{increment\_\-age} (nx\_\-block, ny\_\-block, dt, icells, indxi, indxj, iage)
+\item 
+subroutine \hyperlink{namespaceice__age_a6eb51bd21cc52fcd8d1985badbfca036}{write\_\-restart\_\-age} (filename\_\-spec)
+\item 
+subroutine \hyperlink{namespaceice__age_ab078eb2b576a145e5de96f2c9daa06c5}{read\_\-restart\_\-age} (filename\_\-spec)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__age_ad634a6462e5a115ebaa8822c16324ee9}{restart\_\-age}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__age_a13de3091a45531a0efb67a54687c35d2}{
+\index{ice\_\-age@{ice\_\-age}!increment\_\-age@{increment\_\-age}}
+\index{increment\_\-age@{increment\_\-age}!ice_age@{ice\_\-age}}
+\subsubsection[{increment\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-age::increment\_\-age (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em iage})}}
+\label{namespaceice__age_a13de3091a45531a0efb67a54687c35d2}
+
+
+Definition at line 92 of file ice\_\-age.F90.\hypertarget{namespaceice__age_ab41cc265d5ceb720ed00b72b52f9d0e1}{
+\index{ice\_\-age@{ice\_\-age}!init\_\-age@{init\_\-age}}
+\index{init\_\-age@{init\_\-age}!ice_age@{ice\_\-age}}
+\subsubsection[{init\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-age::init\_\-age ()}}
+\label{namespaceice__age_ab41cc265d5ceb720ed00b72b52f9d0e1}
+
+
+Definition at line 54 of file ice\_\-age.F90.\hypertarget{namespaceice__age_ab078eb2b576a145e5de96f2c9daa06c5}{
+\index{ice\_\-age@{ice\_\-age}!read\_\-restart\_\-age@{read\_\-restart\_\-age}}
+\index{read\_\-restart\_\-age@{read\_\-restart\_\-age}!ice_age@{ice\_\-age}}
+\subsubsection[{read\_\-restart\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-age::read\_\-restart\_\-age (character(len=char\_\-len\_\-long),intent(in),optional {\em filename\_\-spec})}}
+\label{namespaceice__age_ab078eb2b576a145e5de96f2c9daa06c5}
+
+
+Definition at line 212 of file ice\_\-age.F90.\hypertarget{namespaceice__age_a6eb51bd21cc52fcd8d1985badbfca036}{
+\index{ice\_\-age@{ice\_\-age}!write\_\-restart\_\-age@{write\_\-restart\_\-age}}
+\index{write\_\-restart\_\-age@{write\_\-restart\_\-age}!ice_age@{ice\_\-age}}
+\subsubsection[{write\_\-restart\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-age::write\_\-restart\_\-age (character(len=char\_\-len\_\-long),intent(in),optional {\em filename\_\-spec})}}
+\label{namespaceice__age_a6eb51bd21cc52fcd8d1985badbfca036}
+
+
+Definition at line 140 of file ice\_\-age.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__age_ad634a6462e5a115ebaa8822c16324ee9}{
+\index{ice\_\-age@{ice\_\-age}!restart\_\-age@{restart\_\-age}}
+\index{restart\_\-age@{restart\_\-age}!ice_age@{ice\_\-age}}
+\subsubsection[{restart\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-age::restart\_\-age}}}
+\label{namespaceice__age_ad634a6462e5a115ebaa8822c16324ee9}
+
+
+Definition at line 34 of file ice\_\-age.F90.

@@ -1,0 +1,53 @@
+clm/test/tools/README					05/15/2013
+
+Scripts for testing the CLM support tools with many different 
+configurations and run-time options.
+
+I.   MAIN SCRIPTS:
+
+test_driver.sh - Test the CLM offline tools
+
+To use...
+
+./test_driver.sh -i
+
+Intended for use on NCAR machines: yellowstone, frankfurt.cgd, lynx, mirage, 
+and ORNL machine titan. And works on the MacBook laptop yongi.cgd. For most machines 
+more than one compiler is supported.
+
+II. RUNNING test_driver.sh TOOLS TESTING:
+
+Basic use:
+
+./test_driver.sh -i
+./test_driver.sh -h   # to get help on options
+ 
+Important environment variables (just used by test_driver.sh)
+
+BL_ROOT ---------------- Root directory of CLM baseline code to compare to 
+                         (if not set BL test will not be performed)
+BL_TESTDIR ------------- Root directory of where to put baseline tests
+CLM_INPUT_TESTS -------- Filename of file with list of tests to perform
+CLM_TESTDIR ------------ Root directory of where to put most tests
+CLM_RETAIN_FILES ------- If set to TRUE -- don't cleanup files after testing
+CLM_FC ----------------- Use given compiler
+CLM_JOBID -------------- Job identification number to use (rather than process ID)
+CLM_THREADS ------------ Number of open-MP threads to use 
+                         (by default this is set differently by machine)
+CLM_SOFF --------------- If set to TRUE -- stop on first failed test
+
+Important files for test_driver tools testing:
+
+test_driver.sh ------- Main test script for tools
+nl_files ------------- Directory with various namelists to test
+config_files --------- Directory with various configurations to test
+input_tests_master --- Master list of tests
+tests_pretag_* ------- Tests for specific machines to do by default before a tag is done
+tests_posttag_* ------ Tests for specific machines to do for more extensive testing 
+                       after a tag is done
+CLM_compare.sh ------- Compares output history files between two cases
+T*.sh ---------------- Basic test script to do a specific type of test
+gen_test_table.sh ---- Creates HTML table of tests
+Makefile ------------- Will build the HTML table of tests
+
+../../tools/README.testing - Information on how the testing works for the CLM tools

@@ -1,0 +1,8 @@
+ wrtdia         = .true.
+ hist_dov2xy    = .true.,.false.
+ hist_ndens     = 1,1
+ hist_fincl1    = 'GDD0', 'GDD8', 'GDD10', 
+                  'GDD020', 'GDD820', 'GDD1020',
+                  'GDDPLANT', 'GDDTSOI', 'A5TMIN', 'A10TMIN'
+ hist_nhtfrq    =-24,-8
+ hist_mfilt     = 1,3

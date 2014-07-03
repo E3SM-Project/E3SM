@@ -1,0 +1,111 @@
+
+#======================================================================
+# Clear coupler log files for comparison tests
+#======================================================================
+unsetenv CPLLOG_BASE
+unsetenv CPLLOG_ATOP
+
+cd $CASEROOT
+
+#--- This only works on AIX systems
+if ($OS != AIX) then
+  echo "${0}:  running APT test on AIX system - Error" >>& $TESTSTATUS_LOG
+  echo "ERROR: APT test must be run on AIX system" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+  echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  exit -1
+else
+  echo "${0}:  running APT test on AIX system - OK" >>& $TESTSTATUS_LOG
+endif
+
+#======================================================================
+# do a base run, with length taken from compset default
+#======================================================================
+echo "doing a base run with length taken from compset default" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id REST_OPTION  -val none
+
+./$CASE.run
+
+gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+setenv CPLLOG_BASE $CplLogFile
+setenv BASEGEN_FILE01 $CplLogFile
+
+#--- set apt case name, remember main case name and exeroot
+set CASER0 = ${CASEROOT}
+set CASERR = ${CASEROOT}.apt
+set EXEROOT0 = $EXEROOT
+
+#======================================================================
+# do an autopromotion case
+#   by cloning the case and running there
+#======================================================================
+echo "doing an autopromotion case" >>& $TESTSTATUS_LOG 
+
+#--- clone the main case to create apt case
+cd $CCSMROOT/scripts
+./create_clone -case ${CASERR} -clone ${CASER0} 
+cd ${CASERR}
+./cesm_setup -clean
+./cesm_setup
+
+./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+
+#--- setup Macros file
+foreach file (Macros.*)
+cat >> $file << EOF1
+
+FFLAGS := \$(FFLAGS) -qrealsize=8 -qdpc=e
+
+EOF1
+end
+
+#--- go into apt case "space", have to build separately
+#--- run apt case
+source ./Tools/ccsm_getenv
+./$CASE.run
+
+gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+setenv CPLLOG_ATOP $CplLogFile
+setenv BASEGEN_FILE02 $CplLogFile
+
+#--- go back to main case "space"
+cd $CASER0
+
+#======================================================================
+# runs complete, compare base run and autopromotion run
+#======================================================================
+setenv CPLLOG_GENCMP $CPLLOG_ATOP 
+echo "Base Test log is $CPLLOG_BASE" >>& $TESTSTATUS_LOG 
+echo "Auto promotion Test log is $CPLLOG_ATOP" >>& $TESTSTATUS_LOG 
+
+#======================================================================
+# Check case validation first
+#======================================================================
+
+set basestatus = "UNDEF"
+
+if ( $?CPLLOG_BASE ) then
+  if ( $?CPLLOG_ATOP ) then
+    echo "Comparing base log file with auto promotion log file" >>& $TESTSTATUS_LOG
+    $CASETOOLS/check_exactrestart.pl $CPLLOG_BASE $CPLLOG_ATOP >>& $TESTSTATUS_LOG
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    if ( $pass != 0 ) then
+      set basestatus = "PASS "
+    else
+      set basestatus = "FAIL "
+    endif
+  else
+    echo "ERROR in ${0}:  auto promotion coupler log file NOT set" >>& $TESTSTATUS_LOG
+    set basestatus = "ERROR"
+  endif
+else
+  echo "ERROR in ${0}:  base coupler log file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+endif
+
+echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+

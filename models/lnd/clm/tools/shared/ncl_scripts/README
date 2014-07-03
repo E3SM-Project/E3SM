@@ -1,0 +1,22 @@
+models/lnd/clm/tools/shared/ncl_scripts					Jun/05/2013
+
+CLM NCL script tools for analysis of CLM history files -- or for creation or
+modification of CLM input files.
+
+In order to make these scripts work in the testing framework the following must
+be done.
+
+1.) Respond to CSMDATA and CLM_ROOT as needed.
+2.) Print a line with "success" after the work is completed.
+	
+Scripts available:
+
+Master perl scripts that call the other ncl scripts:
+
+cprnc.pl -------------------- Compare two NetCDF files to see if they are same or different.
+
+NCL Scripts available:
+
+getco2_historical.ncl ------- Get historical CO2 to use for input in datm8 streams
+cprnc.ncl ------------------- Compare two NetCDF files to see if they are same or different.
+

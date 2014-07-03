@@ -1,0 +1,1982 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>CESM Component Models Namelist Definitions </title>
+  <link rel="stylesheet" type="text/css" href="/models/cesm1.0/cam/docs/namelist/nl_style_sheet.css" />
+  <script src=./showinfo.js> </script>
+</head>
+
+<body>
+
+<h2>Search or Browse CISM Component Model Namelist Variables</h2>
+<p>
+This page contains the complete list of CISM namelist variables available.  They are grouped
+by categories designed to aid browsing.  Clicking on the name of a variable will display descriptive
+information.  If search terms are entered in the text box below, the list will be condensed to contain
+only matched variables.
+</p>
+
+<form id="filter_form" name="filter_form" style="margin: 0px; padding: 0px;" action="javascript:void(0);">
+  <table border="0" cellpadding="2" cellspacing="1">
+    <tbody>
+      <tr>
+        <td valign="top">
+          <input id="filter_text" name="filter_text" size="40"
+                 onkeydown="if (event.keyCode==13) applyFilter(document.getElementById('filter_text').value);"
+                 type="text">
+          <input id="btn_search" value="Search Variable Names"
+                 onclick="applyFilter(document.getElementById('filter_text').value);"
+		 type="button">
+          <input id="btn_show_all" value="Show All Variable Names"
+		 onclick="clearFilter();return false;"
+                 type="button">
+          <br>
+          <label>
+            <input id="logical_operator_and" name="logical_operator" value="AND" 
+                   type="radio" checked> AND
+          </label>
+          <label>
+            <input id="logical_operator_or" name="logical_operator" value="OR"
+                   type="radio"> OR
+          </label>
+          (separate search terms with spaces)
+          <br>
+          <label>
+            <input id="search_help_text" name="search_help_text" type="checkbox"> Also search help text
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
+<div id="filter_matches" style="visibility: hidden; margin-bottom: 10px;">
+  Found <span id="filter_matches_num"></span> standard names matching query: <span id="filter_matches_query"></span>
+</div>
+
+<p>
+
+<center>
+<input id="btn_expand_help" value="Show All Help Text" 
+       onclick="expandAllHelp();return false;"
+       type="button">
+<input id="btn_collapse_help" value="Collapse All Help Text" 
+       onclick="collapseAllHelp();return false;"
+       type="button">
+</center>
+
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  General Settings</h3></span>
+<table id="cism_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="cesm_history_vars_tr">
+    <td><a name="cesm_history_vars"></a>
+        <img id="cesm_history_vars_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('cesm_history_vars')">cesm_history_vars</a>
+        </code>
+        <div id="cesm_history_vars_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Space-delimited list of variables output to history file
+<br/>Default: 'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'
+</pre>
+        </div>
+    </td>
+    <td>char*1024</td>
+    <td>cism_params</td>
+  </tr>
+  <tr id="cism_debug_tr">
+    <td><a name="cism_debug"></a>
+        <img id="cism_debug_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('cism_debug')">cism_debug</a>
+        </code>
+        <div id="cism_debug_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Determines whether extra diagnostics are printed in the cism log file
+<br/>Default: false
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>cism_params</td>
+  </tr>
+  <tr id="cisminputfile_tr">
+    <td><a name="cisminputfile"></a>
+        <img id="cisminputfile_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('cisminputfile')">cisminputfile</a>
+        </code>
+        <div id="cisminputfile_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Input file
+<br/>Default: For startup runs or hybrid runs with CISM_OBSERVED_IC=TRUE, a resolution-dependent
+         initial conditions file (e.g., gland10.input.nc).
+         For branch/hybrid runs with CISM_OBSERVED_IC=FALSE, a restart file name
+         built based on RUN_REFCASE and RUN_REFDATE.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>derived</td>
+  </tr>
+  <tr id="paramfile_tr">
+    <td><a name="paramfile"></a>
+        <img id="paramfile_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('paramfile')">paramfile</a>
+        </code>
+        <div id="paramfile_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Name of top-level configuration file for Glimmer Glacier model
+(Determined by scripts -- cannot be set by user)
+</pre>
+        </div>
+    </td>
+    <td>char*100</td>
+    <td>cism_params</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  Grid Settings</h3></span>
+<table id="grid_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="frac_varname_tr">
+    <td><a name="frac_varname"></a>
+        <img id="frac_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('frac_varname')">frac_varname</a>
+        </code>
+        <div id="frac_varname_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Variable name for fraction
+<br/>Default: LANDFRAC
+</pre>
+        </div>
+    </td>
+    <td>char*128</td>
+    <td>grid_nml</td>
+  </tr>
+  <tr id="horiz_grid_file_tr">
+    <td><a name="horiz_grid_file"></a>
+        <img id="horiz_grid_file_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('horiz_grid_file')">horiz_grid_file</a>
+        </code>
+        <div id="horiz_grid_file_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Filename of file to specify horizontal grid resolution
+<br/>Default: resolution-dependent (e.g., grid file for 0.9x1.25 deg)
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>grid_nml</td>
+  </tr>
+  <tr id="horiz_grid_opt_tr">
+    <td><a name="horiz_grid_opt"></a>
+        <img id="horiz_grid_opt_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('horiz_grid_opt')">horiz_grid_opt</a>
+        </code>
+        <div id="horiz_grid_opt_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+How grid is being specified: from file or internally
+Currently, only 'file' is supported
+<br/>Default: file
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>grid_nml</td>
+  </tr>
+  <tr id="mask_varname_tr">
+    <td><a name="mask_varname"></a>
+        <img id="mask_varname_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('mask_varname')">mask_varname</a>
+        </code>
+        <div id="mask_varname_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Variable name for mask
+<br/>Default: LANDMASK
+</pre>
+        </div>
+    </td>
+    <td>char*128</td>
+    <td>grid_nml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  Time Manager Settings</h3></span>
+<table id="time_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="allow_leapyear_tr">
+    <td><a name="allow_leapyear"></a>
+        <img id="allow_leapyear_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('allow_leapyear')">allow_leapyear</a>
+        </code>
+        <div id="allow_leapyear_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Whether leap years are enabled in the GLC time manager.
+CAUTION: Leap years don't work correctly with GLC time steps longer than a few months.
+<br/>Default: .false.
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="date_separator_tr">
+    <td><a name="date_separator"></a>
+        <img id="date_separator_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('date_separator')">date_separator</a>
+        </code>
+        <div id="date_separator_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Character to separate date values
+<br/>Default: '-'
+</pre>
+        </div>
+    </td>
+    <td>char*1</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="dt_count_tr">
+    <td><a name="dt_count"></a>
+        <img id="dt_count_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dt_count')">dt_count</a>
+        </code>
+        <div id="dt_count_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Time step, in units given by dt_option
+This generally should not be changed
+<br/>Default: set based on NCPL_BASE_PERIOD and GLC_NCPL in env_run.xml,
+so that there is one GLC time step per coupling period
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="dt_option_tr">
+    <td><a name="dt_option"></a>
+        <img id="dt_option_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dt_option')">dt_option</a>
+        </code>
+        <div id="dt_option_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+GLC time-step units
+This generally should not be changed
+Valid values: steps_per_year, steps_per_day, seconds, hours
+<br/>Default: set based on NCPL_BASE_PERIOD and GLC_NCPL in env_run.xml,
+so that there is one GLC time step per coupling period
+</pre>
+        </div>
+    </td>
+    <td>char*80</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="iday0_tr">
+    <td><a name="iday0"></a>
+        <img id="iday0_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('iday0')">iday0</a>
+        </code>
+        <div id="iday0_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Starting day number in month
+<br/>Default: comes from RUN_STARTDATE or RUN_REFDATE
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="ihour0_tr">
+    <td><a name="ihour0"></a>
+        <img id="ihour0_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ihour0')">ihour0</a>
+        </code>
+        <div id="ihour0_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Starting hour of the day
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="iminute0_tr">
+    <td><a name="iminute0"></a>
+        <img id="iminute0_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('iminute0')">iminute0</a>
+        </code>
+        <div id="iminute0_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Starting minute of the day
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="imonth0_tr">
+    <td><a name="imonth0"></a>
+        <img id="imonth0_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('imonth0')">imonth0</a>
+        </code>
+        <div id="imonth0_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Starting month number
+<br/>Default: comes from RUN_STARTDATE or RUN_REFDATE
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="isecond0_tr">
+    <td><a name="isecond0"></a>
+        <img id="isecond0_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('isecond0')">isecond0</a>
+        </code>
+        <div id="isecond0_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Starting second of the minute
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="iyear0_tr">
+    <td><a name="iyear0"></a>
+        <img id="iyear0_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('iyear0')">iyear0</a>
+        </code>
+        <div id="iyear0_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Starting year number
+<br/>Default: comes from RUN_STARTDATE or RUN_REFDATE
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="runid_tr">
+    <td><a name="runid"></a>
+        <img id="runid_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('runid')">runid</a>
+        </code>
+        <div id="runid_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Simulation identifier (ie case name)
+<br/>Default: case name set by create_newcase
+</pre>
+        </div>
+    </td>
+    <td>char*128</td>
+    <td>time_manager_nml</td>
+  </tr>
+  <tr id="stop_option_tr">
+    <td><a name="stop_option"></a>
+        <img id="stop_option_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('stop_option')">stop_option</a>
+        </code>
+        <div id="stop_option_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Stop option -- always let the coupler stop the model so use 'never'.
+<br/>Default: 'never'
+</pre>
+        </div>
+    </td>
+    <td>char*80</td>
+    <td>time_manager_nml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Grid Settings</h3></span>
+<table id="cism_config_grid_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="dew_tr">
+    <td><a name="dew"></a>
+        <img id="dew_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dew')">dew</a>
+        </code>
+        <div id="dew_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Node spacing in x-direction (m)
+<br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_grid</td>
+  </tr>
+  <tr id="dns_tr">
+    <td><a name="dns"></a>
+        <img id="dns_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dns')">dns</a>
+        </code>
+        <div id="dns_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Node spacing in y-direction (m)
+<br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_grid</td>
+  </tr>
+  <tr id="ewn_tr">
+    <td><a name="ewn"></a>
+        <img id="ewn_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ewn')">ewn</a>
+        </code>
+        <div id="ewn_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of nodes in x-direction
+<br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_grid</td>
+  </tr>
+  <tr id="nsn_tr">
+    <td><a name="nsn"></a>
+        <img id="nsn_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nsn')">nsn</a>
+        </code>
+        <div id="nsn_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of nodes in y-direction
+<br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_grid</td>
+  </tr>
+  <tr id="upn_tr">
+    <td><a name="upn"></a>
+        <img id="upn_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('upn')">upn</a>
+        </code>
+        <div id="upn_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of nodes in z-direction
+<br/>Default: 11
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_grid</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Sigma Settings</h3></span>
+<table id="cism_config_sigma_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="sigma_levels_tr">
+    <td><a name="sigma_levels"></a>
+        <img id="sigma_levels_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('sigma_levels')">sigma_levels</a>
+        </code>
+        <div id="sigma_levels_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+List of sigma levels, in ascending order, separated by spaces
+These run between 0.0 (at top surface) and 1.0 (at lower surface)
+Only relevant if sigma = 2
+<br/>Default: 0.00 0.15 0.30 0.45 0.60 0.75 0.83 0.90 0.95 0.98 1.00
+</pre>
+        </div>
+    </td>
+    <td>real(20)</td>
+    <td>cism_config_sigma</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Climate Settings</h3></span>
+<table id="cism_config_climate_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="acab_mode_tr">
+    <td><a name="acab_mode"></a>
+        <img id="acab_mode_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('acab_mode')">acab_mode</a>
+        </code>
+        <div id="acab_mode_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Mass-balance model to use.
+In the CESM context, this should be set to 0 (receive surface mass balance from climate model)
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_climate</td>
+  </tr>
+  <tr id="evolve_ice_tr">
+    <td><a name="evolve_ice"></a>
+        <img id="evolve_ice_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('evolve_ice')">evolve_ice</a>
+        </code>
+        <div id="evolve_ice_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: Do not let the ice sheet evolve (hold ice state fixed at initial condition)
+1: Let the ice sheet evolve
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_climate</td>
+  </tr>
+  <tr id="ice_tstep_multiply_tr">
+    <td><a name="ice_tstep_multiply"></a>
+        <img id="ice_tstep_multiply_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ice_tstep_multiply')">ice_tstep_multiply</a>
+        </code>
+        <div id="ice_tstep_multiply_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Ice time-step multiplier: allows asynchronous climate-ice coupling
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_climate</td>
+  </tr>
+  <tr id="mean_preserving_tr">
+    <td><a name="mean_preserving"></a>
+        <img id="mean_preserving_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('mean_preserving')">mean_preserving</a>
+        </code>
+        <div id="mean_preserving_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Flag to control if mean-preserving interpolation is used
+0: Do not use mean-preserving interpolation
+1: Use mean-preserving interpolation
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_climate</td>
+  </tr>
+  <tr id="precip_mode_tr">
+    <td><a name="precip_mode"></a>
+        <img id="precip_mode_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('precip_mode')">precip_mode</a>
+        </code>
+        <div id="precip_mode_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Method of precipitation downscaling:
+1: Use large-scale precipitation rate
+2: Use parameterization of Roe and Lindzen
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_climate</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Projection Settings</h3></span>
+<table id="cism_config_projection_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="centre_latitude_tr">
+    <td><a name="centre_latitude"></a>
+        <img id="centre_latitude_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('centre_latitude')">centre_latitude</a>
+        </code>
+        <div id="centre_latitude_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Central latitude (degrees north)
+<br/>Default: 90.0
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_projection</td>
+  </tr>
+  <tr id="centre_longitude_tr">
+    <td><a name="centre_longitude"></a>
+        <img id="centre_longitude_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('centre_longitude')">centre_longitude</a>
+        </code>
+        <div id="centre_longitude_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Central longitude (degrees east)
+<br/>Default: 321.0
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_projection</td>
+  </tr>
+  <tr id="false_easting_tr">
+    <td><a name="false_easting"></a>
+        <img id="false_easting_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('false_easting')">false_easting</a>
+        </code>
+        <div id="false_easting_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+False easting (m)
+<br/>Default: 800000.0
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_projection</td>
+  </tr>
+  <tr id="false_northing_tr">
+    <td><a name="false_northing"></a>
+        <img id="false_northing_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('false_northing')">false_northing</a>
+        </code>
+        <div id="false_northing_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+False northing (m)
+<br/>Default: 3400000.0
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_projection</td>
+  </tr>
+  <tr id="scale_factor_tr">
+    <td><a name="scale_factor"></a>
+        <img id="scale_factor_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('scale_factor')">scale_factor</a>
+        </code>
+        <div id="scale_factor_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Scale factor; only relevant for the Stereographic projection
+<br/>Default: 0.0
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_projection</td>
+  </tr>
+  <tr id="standard_parallel_tr">
+    <td><a name="standard_parallel"></a>
+        <img id="standard_parallel_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('standard_parallel')">standard_parallel</a>
+        </code>
+        <div id="standard_parallel_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Location of standard parallel(s) (degrees north)
+Up to two standard parallels may be specified (depending on the projection)
+<br/>Default: 71.0
+</pre>
+        </div>
+    </td>
+    <td>real(2)</td>
+    <td>cism_config_projection</td>
+  </tr>
+  <tr id="type_tr">
+    <td><a name="type"></a>
+        <img id="type_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('type')">type</a>
+        </code>
+        <div id="type_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+String specifying the map projection type
+Valid values: LAEA, AEA, LCC, STERE
+<br/>Default: STERE
+</pre>
+        </div>
+    </td>
+    <td>char*16</td>
+    <td>cism_config_projection</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Options</h3></span>
+<table id="cism_config_options_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="basal_mass_balance_tr">
+    <td><a name="basal_mass_balance"></a>
+        <img id="basal_mass_balance_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_mass_balance')">basal_mass_balance</a>
+        </code>
+        <div id="basal_mass_balance_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: not in continuity equation
+1: in continuity equation
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="basal_water_tr">
+    <td><a name="basal_water"></a>
+        <img id="basal_water_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_water')">basal_water</a>
+        </code>
+        <div id="basal_water_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Determines the treatment of basal water
+0: Set to zero everywhere
+1: Calculated from local water balance
+2: Compute the basal water flux, then find depth via calculation
+3: Set to constant everywhere (10m)
+4: Calculated from till water content, in the basal processes module
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="dycore_tr">
+    <td><a name="dycore"></a>
+        <img id="dycore_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dycore')">dycore</a>
+        </code>
+        <div id="dycore_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Which dycore to use
+0: glide dycore (SIA, serial only)
+1: glam dycore (HO, FDM, serial or parallel)
+2: glissade dycore (HO, FEM, serial or parallel)
+<br/>Default: 0 for cism1, 1 for cism2
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="evolution_tr">
+    <td><a name="evolution"></a>
+        <img id="evolution_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('evolution')">evolution</a>
+        </code>
+        <div id="evolution_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: pseudo-diffusion
+1: ADI scheme [CANNOT BE USED: RESTARTS ARE NOT EXACT]
+2: diffusion
+3: remap thickness
+4: 1st order upwind
+5: no thickness evolution
+<br/>Default: 0 for cism1, 3 for cism2
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="flow_law_tr">
+    <td><a name="flow_law"></a>
+        <img id="flow_law_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('flow_law')">flow_law</a>
+        </code>
+        <div id="flow_law_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: constant value, taken from default_flwa
+1: uniform value equal to the Paterson-Budd value at -10 deg C
+2: Paterson-Budd temperature-dependent relationship
+<br/>Default: 2
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="gthf_tr">
+    <td><a name="gthf"></a>
+        <img id="gthf_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('gthf')">gthf</a>
+        </code>
+        <div id="gthf_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: prescribed uniform geothermal heat flux
+1: read 2D geothermal flux field from input file (if present)
+2: calculate geothermal flux using 3d diffusion
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="hotstart_tr">
+    <td><a name="hotstart"></a>
+        <img id="hotstart_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hotstart')">hotstart</a>
+        </code>
+        <div id="hotstart_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Hotstart the model if set to 1. 
+This option only affects the way the initial temperature and flow factor distribution is calculated.
+<br/>Default: 0 for startup or hybrid with CISM_OBSERVED_IC=TRUE, 1 for hybrid/branch with CISM_OBSERVED_IC=FALSE
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="isostasy_tr">
+    <td><a name="isostasy"></a>
+        <img id="isostasy_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('isostasy')">isostasy</a>
+        </code>
+        <div id="isostasy_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: no isostasy
+1: compute isostasy
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="marine_margin_tr">
+    <td><a name="marine_margin"></a>
+        <img id="marine_margin_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('marine_margin')">marine_margin</a>
+        </code>
+        <div id="marine_margin_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: ignore marine margin
+1: set thickness to zero if floating
+2: lose a specified fraction of floating ice
+3: set thickness to zero if relaxed bedrock is below a given depth (marine_limit)
+4: set thickness to zero if current bedrock is below a given depth (marine_limit)
+5: Huybrechts grounding line scheme for Greenland initialization
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="sigma_tr">
+    <td><a name="sigma"></a>
+        <img id="sigma_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('sigma')">sigma</a>
+        </code>
+        <div id="sigma_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+How to determine sigma values
+0: compute
+2: read from config file
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="slip_coeff_tr">
+    <td><a name="slip_coeff"></a>
+        <img id="slip_coeff_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('slip_coeff')">slip_coeff</a>
+        </code>
+        <div id="slip_coeff_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Basal traction parameter
+0: no basal sliding
+1: constant basal traction coefficient
+2: constant coefficient where basal water is present, else no sliding
+3: constant coefficient where the basal temperature is at the pressure melting point, else no sliding
+4: coefficient is proportional to basal melt rate
+5: coefficient is a linear function of basal water depth
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="temp_init_tr">
+    <td><a name="temp_init"></a>
+        <img id="temp_init_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('temp_init')">temp_init</a>
+        </code>
+        <div id="temp_init_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Temperature initialization method
+0: Initialize temperature to 0 C
+1: Initialize temperature to surface air temperature
+2: Initialize temperature with a linear profile in each column
+<br/>Default: 2
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="temperature_tr">
+    <td><a name="temperature"></a>
+        <img id="temperature_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('temperature')">temperature</a>
+        </code>
+        <div id="temperature_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Determines the temperature solution method
+0: isothermal: set column to surface air temperature
+1: full prognostic temperature solution
+2: do NOTHING: hold temperatures steady at initial value
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="topo_is_relaxed_tr">
+    <td><a name="topo_is_relaxed"></a>
+        <img id="topo_is_relaxed_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('topo_is_relaxed')">topo_is_relaxed</a>
+        </code>
+        <div id="topo_is_relaxed_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: relaxed topography is read from a separate variable
+1: first time slice of input topography is assumed to be relaxed
+2: first time slice of input topography is assumed to be in isostatic equilibrium with ice thickness
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+  <tr id="vertical_integration_tr">
+    <td><a name="vertical_integration"></a>
+        <img id="vertical_integration_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('vertical_integration')">vertical_integration</a>
+        </code>
+        <div id="vertical_integration_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Method of integration used to obtain vertical velocity
+0: standard vertical integration
+1: vertical integration constrained to obey an upper kinematic boundary condition
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_options</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Time Settings</h3></span>
+<table id="cism_config_time_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="dt_tr">
+    <td><a name="dt"></a>
+        <img id="dt_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dt')">dt</a>
+        </code>
+        <div id="dt_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Ice sheet timestep (years)
+Must translate into an integer number of hours
+<br/>Default: Depends on resolution and physics option
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_time</td>
+  </tr>
+  <tr id="dt_diag_tr">
+    <td><a name="dt_diag"></a>
+        <img id="dt_diag_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dt_diag')">dt_diag</a>
+        </code>
+        <div id="dt_diag_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Diagnostic frequency (years)
+Set to 0 for no diagnostic output; set to dt for diagnostic output every time step
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_time</td>
+  </tr>
+  <tr id="idiag_tr">
+    <td><a name="idiag"></a>
+        <img id="idiag_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('idiag')">idiag</a>
+        </code>
+        <div id="idiag_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+x coordinate of point for diagnostic output
+<br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_time</td>
+  </tr>
+  <tr id="jdiag_tr">
+    <td><a name="jdiag"></a>
+        <img id="jdiag_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('jdiag')">jdiag</a>
+        </code>
+        <div id="jdiag_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+y coordinate of point for diagnostic output
+<br/>Default: resolution-dependent
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_time</td>
+  </tr>
+  <tr id="ntem_tr">
+    <td><a name="ntem"></a>
+        <img id="ntem_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ntem')">ntem</a>
+        </code>
+        <div id="ntem_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Multiplier of ice sheet timestep, dt
+(in theory, can be real-valued, but values less than 1 are not handled properly, so restricted to being an integer)
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_time</td>
+  </tr>
+  <tr id="nvel_tr">
+    <td><a name="nvel"></a>
+        <img id="nvel_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nvel')">nvel</a>
+        </code>
+        <div id="nvel_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Multiplier of ice sheet timestep, dt
+(in theory, can be real-valued, but values less than 1 are not handled properly, so restricted to being an integer)
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_time</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Parameters</h3></span>
+<table id="cism_config_parameters_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="basal_tract_const_tr">
+    <td><a name="basal_tract_const"></a>
+        <img id="basal_tract_const_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_tract_const')">basal_tract_const</a>
+        </code>
+        <div id="basal_tract_const_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+(m yr-1 Pa-1)
+<br/>Default: 1.e-4
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="basal_tract_max_tr">
+    <td><a name="basal_tract_max"></a>
+        <img id="basal_tract_max_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_tract_max')">basal_tract_max</a>
+        </code>
+        <div id="basal_tract_max_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+(m yr-1 Pa-1)
+(Only used for slip_coeff = BTRC_LINEAR_BMLT)
+<br/>Default: (use hard-coded default)
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="basal_tract_slope_tr">
+    <td><a name="basal_tract_slope"></a>
+        <img id="basal_tract_slope_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_tract_slope')">basal_tract_slope</a>
+        </code>
+        <div id="basal_tract_slope_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+(Pa-1)
+(Only used for slip_coeff = BTRC_LINEAR_BMLT)
+<br/>Default: (use hard-coded default)
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="basal_tract_tanh_tr">
+    <td><a name="basal_tract_tanh"></a>
+        <img id="basal_tract_tanh_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('basal_tract_tanh')">basal_tract_tanh</a>
+        </code>
+        <div id="basal_tract_tanh_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+5-element list of values
+(Only used for slip_coeff = BTRC_TANH_BWAT)
+<br/>Default: (use hard-coded default)
+</pre>
+        </div>
+    </td>
+    <td>real(5)</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="calving_fraction_tr">
+    <td><a name="calving_fraction"></a>
+        <img id="calving_fraction_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('calving_fraction')">calving_fraction</a>
+        </code>
+        <div id="calving_fraction_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fraction of ice lost to calving
+<br/>Default: (use hard-coded default)
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="default_flwa_tr">
+    <td><a name="default_flwa"></a>
+        <img id="default_flwa_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('default_flwa')">default_flwa</a>
+        </code>
+        <div id="default_flwa_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Glen's A to use in isothermal case
+<br/>Default: (use hard-coded default)
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="flow_factor_tr">
+    <td><a name="flow_factor"></a>
+        <img id="flow_factor_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('flow_factor')">flow_factor</a>
+        </code>
+        <div id="flow_factor_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+The flow law is enhanced with this factor.
+The greater the value, the lower the viscosity and the faster the ice will flow.
+<br/>Default: 3.0 for cism1, 1.0 for cism2
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="geothermal_tr">
+    <td><a name="geothermal"></a>
+        <img id="geothermal_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('geothermal')">geothermal</a>
+        </code>
+        <div id="geothermal_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Constant geothermal heat flux (W m-2)
+(May be overwritten by a spatially-varying field in input file [bheatflx])
+<br/>Default: -0.05
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="hydro_time_tr">
+    <td><a name="hydro_time"></a>
+        <img id="hydro_time_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hydro_time')">hydro_time</a>
+        </code>
+        <div id="hydro_time_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Time scale for basal water to drain (yr-1)
+(Not relevant for basal_water=2)
+<br/>Default: 1000.
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="ice_limit_tr">
+    <td><a name="ice_limit"></a>
+        <img id="ice_limit_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ice_limit')">ice_limit</a>
+        </code>
+        <div id="ice_limit_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Thickness below which ice dynamics is ignored (m)
+Below this limit, ice is only accumulated
+<br/>Default: 100.
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="log_level_tr">
+    <td><a name="log_level"></a>
+        <img id="log_level_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('log_level')">log_level</a>
+        </code>
+        <div id="log_level_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Set to a value between 0 (no messages) and 6 (all messages)
+<br/>Default: 6
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_parameters</td>
+  </tr>
+  <tr id="marine_limit_tr">
+    <td><a name="marine_limit"></a>
+        <img id="marine_limit_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('marine_limit')">marine_limit</a>
+        </code>
+        <div id="marine_limit_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+All ice is assumed lost once water depths reach this value (for marine_margin=2 or 4) (m)
+Note that water depth is negative
+<br/>Default: -200.
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_parameters</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Higher-Order Options</h3></span>
+<table id="cism_config_ho_options_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="which_disp_tr">
+    <td><a name="which_disp"></a>
+        <img id="which_disp_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('which_disp')">which_disp</a>
+        </code>
+        <div id="which_disp_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Method for computing the dissipation during the temperature calculation
+0: 0-order SIA approx.
+1: 1st order solution (e.g., Blatter-Pattyn)
+2: 1st order depth-integrated solution (SSA)
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_ho_options</td>
+  </tr>
+  <tr id="which_ho_babc_tr">
+    <td><a name="which_ho_babc"></a>
+        <img id="which_ho_babc_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('which_ho_babc')">which_ho_babc</a>
+        </code>
+        <div id="which_ho_babc_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Basal boundary condition for Payne/Price dynamical core
+0: constant value (hardcoded in, useful for debugging)
+1: simple pattern (hardcoded in, useful for debugging)
+2: use till yield stress (Picard-type iteration)
+3: circular ice shelf
+4: no slip everywhere (using stress basal bc and large value for B^2)
+5: beta^2 field passed in from CISM
+6: no slip everywhere (using Dirichlet, no slip basal bc)
+7: use till yield stress (Newton-type iteration)
+<br/>Default: 5
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_ho_options</td>
+  </tr>
+  <tr id="which_ho_efvs_tr">
+    <td><a name="which_ho_efvs"></a>
+        <img id="which_ho_efvs_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('which_ho_efvs')">which_ho_efvs</a>
+        </code>
+        <div id="which_ho_efvs_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+How effective viscosity is computed for Payne/Price dynamical core
+0: constant value
+1: multiple of flow factor
+2: compute from effective strain rate
+<br/>Default: 2
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_ho_options</td>
+  </tr>
+  <tr id="which_ho_nonlinear_tr">
+    <td><a name="which_ho_nonlinear"></a>
+        <img id="which_ho_nonlinear_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('which_ho_nonlinear')">which_ho_nonlinear</a>
+        </code>
+        <div id="which_ho_nonlinear_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Method for solving the nonlinear iteration when solving the first-order momentum balance
+0: use the standard Picard iteration
+1: use Jacobian Free Newton Krylov (JFNK) method
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_ho_options</td>
+  </tr>
+  <tr id="which_ho_resid_tr">
+    <td><a name="which_ho_resid"></a>
+        <img id="which_ho_resid_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('which_ho_resid')">which_ho_resid</a>
+        </code>
+        <div id="which_ho_resid_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Method for computing residual in Payne/Price dynamical core
+0: maxval
+1: maxval ignoring basal velocity
+2: mean value
+3: L2 norm of system residual, Ax-b=resid
+<br/>Default: 3
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_ho_options</td>
+  </tr>
+  <tr id="which_ho_sparse_tr">
+    <td><a name="which_ho_sparse"></a>
+        <img id="which_ho_sparse_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('which_ho_sparse')">which_ho_sparse</a>
+        </code>
+        <div id="which_ho_sparse_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Method for solving the sparse linear system that arises from the higher-order solver
+0: Biconjugate gradient, incomplete LU preconditioner
+1: GMRES, incomplete LU preconditioner
+2: Conjugate gradient, incomplete LU preconditioner
+3: Conjugate gradient, structured grid, parallel-enabled
+4: standalone interface to Trilinos
+<br/>Default: 4 when building with trilinos, 1 otherwise
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_ho_options</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Geothermal Heat Flux Settings</h3></span>
+<table id="cism_config_gthf_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="con_tr">
+    <td><a name="con"></a>
+        <img id="con_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('con')">con</a>
+        </code>
+        <div id="con_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+thermal conductivity of lithosphere (W m-1 K-1)
+Only relevant if gthf = 2
+<br/>Default: 3.3
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="nlayer_tr">
+    <td><a name="nlayer"></a>
+        <img id="nlayer_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nlayer')">nlayer</a>
+        </code>
+        <div id="nlayer_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of vertical layers
+Only relevant if gthf = 2
+<br/>Default: 20
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="num_dim_tr">
+    <td><a name="num_dim"></a>
+        <img id="num_dim_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('num_dim')">num_dim</a>
+        </code>
+        <div id="num_dim_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+1: 1D calculations
+3: 3D calculations
+Only relevant if gthf = 2
+<br/>Default: 1
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="numt_tr">
+    <td><a name="numt"></a>
+        <img id="numt_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('numt')">numt</a>
+        </code>
+        <div id="numt_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of time steps for spinning up GTHF calculations
+Only relevant if gthf = 2
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="rho_tr">
+    <td><a name="rho"></a>
+        <img id="rho_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rho')">rho</a>
+        </code>
+        <div id="rho_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Density of lithosphere (kg m-3)
+Only relevant if gthf = 2
+<br/>Default: 3300
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="rock_base_tr">
+    <td><a name="rock_base"></a>
+        <img id="rock_base_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rock_base')">rock_base</a>
+        </code>
+        <div id="rock_base_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Depth below sea-level at which geothermal heat gradient is applied (m)
+Only relevant if gthf = 2
+<br/>Default: -5000
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="shc_tr">
+    <td><a name="shc"></a>
+        <img id="shc_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('shc')">shc</a>
+        </code>
+        <div id="shc_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Specific heat capacity of lithosphere (J kg-1 K-1)
+Only relevant if gthf = 2
+<br/>Default: 1000
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_gthf</td>
+  </tr>
+  <tr id="surft_tr">
+    <td><a name="surft"></a>
+        <img id="surft_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('surft')">surft</a>
+        </code>
+        <div id="surft_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Initial surface temperature (degrees C)
+Only relevant if gthf = 2
+<br/>Default: 2
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_gthf</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Isostasy Settings</h3></span>
+<table id="cism_config_isostasy_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="asthenosphere_tr">
+    <td><a name="asthenosphere"></a>
+        <img id="asthenosphere_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('asthenosphere')">asthenosphere</a>
+        </code>
+        <div id="asthenosphere_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: fluid mantle, isostatic adjustment happens instantaneously
+1: relaxing mantle, mantle is approximated by a half-space
+Only relevant if isostasy = 1
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_isostasy</td>
+  </tr>
+  <tr id="flexural_rigidity_tr">
+    <td><a name="flexural_rigidity"></a>
+        <img id="flexural_rigidity_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('flexural_rigidity')">flexural_rigidity</a>
+        </code>
+        <div id="flexural_rigidity_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Flexural rigidity of the lithosphere
+Only relevant if 'lithosphere' is set to 1
+<br/>Default: 0.24e25
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_isostasy</td>
+  </tr>
+  <tr id="lithosphere_tr">
+    <td><a name="lithosphere"></a>
+        <img id="lithosphere_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('lithosphere')">lithosphere</a>
+        </code>
+        <div id="lithosphere_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+0: local lithosphere, equilibrium bedrock depression is found using Archimedes' principle
+1: elastic lithosphere, flexural rigidity is taken into account
+Only relevant if isostasy = 1
+<br/>Default: 0
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>cism_config_isostasy</td>
+  </tr>
+  <tr id="relaxed_tau_tr">
+    <td><a name="relaxed_tau"></a>
+        <img id="relaxed_tau_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('relaxed_tau')">relaxed_tau</a>
+        </code>
+        <div id="relaxed_tau_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Characteristic time constant of relaxing mantle (years)
+Only relevant if isostasy = 1
+<br/>Default: 4000.
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_isostasy</td>
+  </tr>
+  <tr id="update_tr">
+    <td><a name="update"></a>
+        <img id="update_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('update')">update</a>
+        </code>
+        <div id="update_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Lithosphere update period (years)
+Only relevant if isostasy = 1
+<br/>Default: 500.
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>cism_config_isostasy</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple">CISM:  cism.config Elastic Lithosphere Settings</h3></span>
+<table id="cism_config_elastic_lithosphere_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+</table>
+</body>
+</html>

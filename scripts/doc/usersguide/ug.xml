@@ -1,0 +1,98 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+
+
+  <!ENTITY bookinfo          SYSTEM "bookinfo.xml">
+  <!ENTITY chap1             SYSTEM "introduction.xml">
+  <!ENTITY chap2             SYSTEM "createcase.xml">
+  <!ENTITY chap3             SYSTEM "buildcase.xml">
+  <!ENTITY chap4             SYSTEM "runcase.xml">
+  <!ENTITY chap5             SYSTEM "porting.xml">
+  <!ENTITY chap6             SYSTEM "usecases.xml">
+  <!ENTITY chap7             SYSTEM "testing.xml">
+  <!ENTITY chap8             SYSTEM "troubleshoot.xml">
+  <!ENTITY glossary          SYSTEM "glossary.xml">
+
+  <!ENTITY bldnm             "<command>build-namelist</command>">
+  <!ENTITY check_input_data  "<command>check_input_data</command>">
+  <!ENTITY cesm_setup        "<command>cesm_setup</command>">
+  <!ENTITY create_clone      "<command>create_clone</command>">
+  <!ENTITY create_newcase    "<command>create_newcase</command>">
+  <!ENTITY gmake             "<command>gmake</command>">
+  <!ENTITY link_dirtree      "<command>link_dirtree</command>">
+  <!ENTITY make              "<command>make</command>">
+  <!ENTITY perl              "<command>perl</command>">
+  <!ENTITY xmlchange         "<command>xmlchange</command>">
+
+  <!ENTITY cam               "<acronym>CAM</acronym>">
+  <!ENTITY cam_root          "<envar>CAM_ROOT</envar>">
+  <!ENTITY ccsm              "<acronym>CCSM</acronym>">
+  <!ENTITY cesm              "<acronym>CESM</acronym>">
+  <!ENTITY cice              "<acronym>CICE</acronym>">
+  <!ENTITY esmf              "<acronym>ESMF</acronym>">
+  <!ENTITY fortran           "<acronym>Fortran</acronym>">
+  <!ENTITY gnu               "<acronym>GNU</acronym>">
+  <!ENTITY lapack            "<acronym>LAPACK</acronym>">
+  <!ENTITY mpi               "<acronym>MPI</acronym>">
+  <!ENTITY netcdf            "<acronym>NetCDF</acronym>">
+  <!ENTITY omp               "<acronym>OpenMP</acronym>">
+  <!ENTITY Perl              "<acronym>Perl</acronym>">
+  <!ENTITY pnetcdf           "<acronym>PnetCDF</acronym>">
+  <!ENTITY xml               "<acronym>XML</acronym>">
+
+  <!ENTITY env_case.xml      "<filename>env_case.xml</filename>">
+  <!ENTITY env_build.xml     "<filename>env_build.xml</filename>">
+  <!ENTITY env_mach_pes.xml  "<filename>env_mach_pes.xml</filename>">
+  <!ENTITY env_run.xml       "<filename>env_run.xml</filename>">
+  <!ENTITY env_mach_specific "<filename>env_mach_specific</filename>">
+
+  <!ENTITY filepath          "<filename>Filepath</filename>">
+  <!ENTITY makefile          "<filename>Makefile</filename>">
+
+  <!ENTITY DIN_LOC_ROOT      "<envar>DIN_LOC_ROOT</envar>">
+  <!ENTITY DOUT_S            "<envar>DOUT_S</envar>">
+  <!ENTITY DOUT_S_ROOT       "<envar>DOUT_S_ROOT</envar>">
+  <!ENTITY CCSM              "<envar>CESM</envar>">
+  <!ENTITY CESM              "<envar>CESM</envar>">
+  <!ENTITY COMPSET           "<envar>COMPSET</envar>">
+  <!ENTITY RES               "<envar>RES</envar>">
+  <!ENTITY MACH              "<envar>MACH</envar>">
+  <!ENTITY CASEROOT          "<envar>CASEROOT</envar>">
+  <!ENTITY CASE              "<envar>CASE</envar>">
+  <!ENTITY CCSMROOT          "<envar>CCSMROOT</envar>">
+  <!ENTITY CLONEROOT         "<envar>CLONEROOT</envar>">
+  <!ENTITY SCRATCHROOT       "<envar>SCRATCHROOT</envar>">
+  <!ENTITY EXEROOT           "<envar>EXEROOT</envar>">
+  <!ENTITY RUNDIR            "<envar>RUNDIR</envar>">
+  <!ENTITY DEBUG             "<envar>DEBUG</envar>">
+  <!ENTITY GMAKE_J           "<envar>GMAKE_J</envar>">
+
+  <!ENTITY dir               "<userinput>&lt;dir&gt;</userinput>">
+  <!ENTITY dirs              "<userinput>&lt;dir1&gt;[,&lt;dir2&gt;[,&lt;dir3&gt;[...]]]</userinput>">
+  <!ENTITY list              "<userinput>&lt;list&gt;</userinput>">
+  <!ENTITY name              "<userinput>&lt;name&gt;</userinput>">
+  <!ENTITY num               "<userinput>&lt;n&gt;</userinput>">
+  <!ENTITY string            "<userinput>&lt;string&gt;</userinput>">
+
+  <!ENTITY % ISOamsa.module "INCLUDE">
+  <![ %ISOamsa.module; [
+  <!ENTITY % ISOamsa PUBLIC "ISO 8879:1986//ENTITIES Added Math Symbols: Arrow Relations//EN"> 
+   %ISOamsa;
+  <!--end of ISOamsa.module-->]]>
+
+]>
+
+<book>
+
+  &bookinfo;
+  &chap1;
+  &chap2;
+  &chap3;
+  &chap4;
+  &chap5;
+  &chap6;
+  &chap7;
+  &chap8;
+  &glossary;
+
+</book>

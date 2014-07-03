@@ -1,0 +1,81 @@
+
+echo "-------------------------------------------------------------------------"
+echo " CESM PRESTAGE SCRIPT STARTING"
+echo " - Case input data directory, DIN_LOC_ROOT, is $DIN_LOC_ROOT"
+echo " - Checking the existence of input datasets in DIN_LOC_ROOT"
+
+# This script prestages as follows
+# - DIN_LOC_ROOT is the local inputdata area, check it exists
+# - check whether all the data is in DIN_LOC_ROOT
+# - prestage the REFCASE data if needed
+
+cd $CASEROOT
+
+if !(-d $DIN_LOC_ROOT) then
+  echo " "
+  echo "  ERROR DIN_LOC_ROOT $DIN_LOC_ROOT does not exist"
+  echo " "
+  exit -20
+endif
+
+if (`./check_input_data -inputdata $DIN_LOC_ROOT -check | grep "unknown" | wc -l` > 0) then
+   echo " "
+   echo "The following files were not found, this is informational only"
+   ./check_input_data -inputdata $DIN_LOC_ROOT -check
+   echo " "
+endif
+
+if (`./check_input_data -inputdata $DIN_LOC_ROOT -check | grep "missing" | wc -l` > 0) then
+   echo "Attempting to download missing data:"
+   ./check_input_data -inputdata $DIN_LOC_ROOT -export
+endif 
+
+if (`./check_input_data -inputdata $DIN_LOC_ROOT -check | grep "missing" | wc -l` > 0) then
+   echo " "
+   echo "The following files were not found, they are required"
+   ./check_input_data -inputdata $DIN_LOC_ROOT -check
+   echo "Invoke the following command to obtain them"
+   echo "   ./check_input_data -inputdata $DIN_LOC_ROOT -export"
+   echo " "
+   exit -30
+endif
+
+if (($GET_REFCASE == 'TRUE') && ($RUN_TYPE != 'startup') && ($CONTINUE_RUN == 'FALSE')) then
+  set refdir = "ccsm4_init/$RUN_REFCASE/$RUN_REFDATE"
+
+  if !(-d $DIN_LOC_ROOT/$refdir) then
+    echo "*****************************************************************"
+    echo "ccsm_prestage ERROR: $DIN_LOC_ROOT/$refdir is not on local disk"
+    echo "obtain this data from the svn input data repository:"
+    echo "  > mkdir -p $DIN_LOC_ROOT/$refdir"
+    echo "  > cd $DIN_LOC_ROOT/$refdir"
+    echo "  > cd .."
+    echo "  > svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/$refdir"
+    echo "or set GET_REFCASE to FALSE in env_run.xml, "
+    echo "   and prestage the restart data to $RUNDIR manually"
+    echo "*****************************************************************"
+    exit -1
+  endif 
+
+  echo " - Prestaging REFCASE ($refdir) to $RUNDIR"
+  if !(-d $RUNDIR) mkdir -p $RUNDIR || "cannot make $RUNDIR" && exit -1
+  foreach file ($DIN_LOC_ROOT/$refdir/*${RUN_REFCASE}*) 
+     if !(-f $RUNDIR/$file:t) then
+        ln -s $file $RUNDIR || "cannot prestage $DIN_LOC_ROOT/$refdir data to $RUNDIR" && exit -1
+     endif
+  end
+  cp $DIN_LOC_ROOT/$refdir/*rpointer* $RUNDIR || "cannot prestage $DIN_LOC_ROOT/$refdir rpointers to $RUNDIR" && exit -1
+
+  cd $RUNDIR
+  set cam2_list = `sh -c 'ls *.cam2.* 2>/dev/null'`
+  foreach cam2_file ($cam2_list)
+    set cam_file = `echo $cam2_file | sed -e 's/cam2/cam/'`
+    ln -fs $cam2_file $cam_file
+  end
+
+  chmod u+w $RUNDIR/* >& /dev/null
+endif
+
+echo " CESM PRESTAGE SCRIPT HAS FINISHED SUCCESSFULLY"
+echo "-------------------------------------------------------------------------"
+

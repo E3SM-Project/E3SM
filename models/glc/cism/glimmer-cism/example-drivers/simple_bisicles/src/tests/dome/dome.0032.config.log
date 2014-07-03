@@ -1,0 +1,60 @@
+ *******************************************************************************
+ Started logging at 2012-04-19 15:37:06.214
+ *******************************************************************************
+ *******************************************************************************
+   Grid specification
+   ------------------
+    ewn             :          1024
+    nsn             :          1024
+    upn             :             2
+    EW grid spacing :     40.00000000000000
+    NS grid spacing :     40.00000000000000
+    sigma file      :
+ 
+   Time steps
+   ----------
+    start time        :     0.000000
+    end time          :     0.000000
+    main time step    :     1.000000
+    thermal dt factor :     1.000000
+    velo dt factor    :     1.000000
+    profile frequency :           100
+    diag frequency    :       9999999
+ 
+   GLIDE options
+   -------------
+    I/O parameter file      :
+    temperature calculation :             1 full
+    flow law                :             2 const 1e-16a^-1Pa^-n
+    basal_proc              :             0 Basal proc mod disabled
+    basal_water             :             2 none
+    marine_margin           :             1 no ice shelf
+    slip_coeff              :             0 zero
+    evolution               :             3 remap thickness
+    vertical_integration    :             0 standard
+    basal_mass_balance      :             0 not in continutity eqn
+   Periodic EW lateral boundary condition
+  * WARNING:   Slightly cheated with how temperature is implemented.
+   ***Higher-order options:
+    ho_diagnostic           :            1 Payne/Price (on B-grid)
+    ho_prognostic :            0 Evolve ice with SIA only
+    ice_shelf_source_term   :            0 vertically averaged
+    ho_whichbabc            :            4 no slip (using large B^2)
+    ho_whichefvs            :            0 from eff strain rate
+    ho_whichresid           :            3 L2 norm of Ax-b=resid
+    dispwhich               :            0 0-order SIA
+    bmeltwhich              :            0 0-order SIA
+    which_ho_nonlinear       :            0 use standard Picard iteration
+    ho_whichsparse          :            1 GMRES with LU precondition
+ 
+   Parameters
+   ----------
+    ice limit             :     100.0000000000000
+    marine depth limit    :    -200.0000000000000
+    geothermal heat flux  :   -5.0000000000000003E-002
+    flow enhancement      :     1.000000000000000
+    basal hydro time const:     1000.000000000000
+ 
+ *******************************************************************************
+ 
+   GLIMMER v. 1.7.1

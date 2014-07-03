@@ -1,0 +1,936 @@
+================================================================================
+ SVN $Id: ChangeLog 44786 2013-03-13 23:04:57Z tcraig $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_130313/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+================================================================================
+================================================================================
+Date: Mar 13 2013
+Who: tcraig
+Model: docn7
+Version: docn8_130313
+One-line summary: add copyall mode
+ works like prescribed but sets docn_mode to COPYALL instead of SSTDATA
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_docn.xml
+================================================================================
+Date: Sept 21 2012
+Who: tcraig
+Model: docn7
+Version: docn8_120921
+One-line summary: use of DOCN_SOM_FILENAME
+
+M       bld/namelist_files/namelist_defaults_docn.xml
+================================================================================
+Date: June 26 2012
+Model: docn7
+Version: docn8_120626
+One-line summary: updated documentation in namelist_definition_docn.xml and 
+                  made null mode consistent
+	
+M       bld/docn.buildnml.csh
+M       bld/namelist_files/namelist_defaults_docn.xml
+M       bld/namelist_files/namelist_definition_docn.xml
+	
+================================================================================
+Date: May 28 2012
+Model: docn7
+Version: docn8_120528
+One-line summary: Removed copy of docn.buildnml.csh and docn.buildexe.csh from 
+	          docn.cpl7.template
+	
+M       bld/docn.cpl7.template
+	
+================================================================================
+Date: May 21 2012
+Model: docn7
+Version: docn8_120521
+One-line summary: Fixed bug for user_nl_docn changes
+	
+M       bld/build-namelist
+	
+================================================================================
+Date: May 20 2012
+Model: docn7
+Version: docn8_120520
+One-line summary: Ability to not depend on env_conf.xml and more general 
+	          expand_env_xml subroutine 
+	
+M       bld/build-namelist
+	
+================================================================================
+Date: May 17 2012
+Model: docn7
+Version: docn8_120517
+One-line summary: New build-namelist functionlality
+	- no environment variables in build-namelist (replaced by %xmlvars)
+	- to introduce a new stream just change namelist_defaults_docn.xml and
+	  namelist_definition_docn.xml
+	- generic stream template no longer written from build-namelist
+	
+M       bld/docn.buildnml.csh
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_docn.xml
+	
+================================================================================
+Originator: tcraig
+Date: May 2 2012
+Version: docn8_120502
+One-line summary: add wus12 stream option
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_docn.xml
+================================================================================
+Originator: mvertens
+Date: Apr 19 2012
+Version: docn8_120419
+One-line summary: added docn.buildnml.csh and docn.buildexe.csh and simplified 
+	          docn.cpl7.template
+
+A       bld/docn.buildexe.csh
+M       bld/docn.cpl7.template
+A       bld/docn.buildnml.csh
+M       docn_comp_mod.F90
+   	  seq_io_mod => shr_pio_mod
+	
+================================================================================
+Originator: mvertens
+Date: Apr 15 2012
+Model: docn7
+Version: docn8_120415
+One-line summary: fixed error for branch run
+
+M       bld/build-namelist
+
+Note - this is a temporary fix - assuming that restart files are not needed
+for docn
+	
+================================================================================
+Originator: mvertens
+Date: Apr 10 2012
+Model: docn7
+Version: docn8_120410
+One-line summary: new build-namelist functionality (from bldnml branch)
+
+M       bld/docn.cpl7.template
+D       bld/docn.template.streams.xml
+A       bld/build-namelist
+A       bld/user_nl_docn
+A       bld/namelist_files
+A       bld/namelist_files/namelist_defaults_docn.xml
+A       bld/namelist_files/namelist_definition_docn.xml
+
+================================================================================
+Originator: tcraig
+Date: Jan 23 2012
+Model: docn7
+Version: docn8_120123
+One-line summary: update esmf to 520r, add support for multi-instances with
+	esmf coupling interfaces
+
+MM      cpl_mct/ocn_comp_mct.F90
+M       cpl_esmf/ocn_comp_esmf.F90
+M       cpl_esmf/ocn_comp_mct.F90
+M       docn_comp_mod.F90
+
+================================================================================
+Originator: mvertens
+Date: Dec 20 2011
+Model: docn7
+Version: docn8_111220
+One-line summary: removal of hard-wired grids in docn.cpl7.template
+
+M       bld/docn.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: Dec 08 2011
+Model: docn7
+Version: docn8_111208
+One-line summary: name changes for consistency with drvseq4_0_11
+
+M       docn_comp_mod.F90
+         	
+Sx_duu10n  -> So_duu10n
+Foxx_lwdn  -> Faxa_lwdn
+Foxx_melth -> Fioi_melth	
+Foxx_meltw -> Fioi_meltw	
+Foxx_salt  -> Fioi_salt
+Foxx_prec  -> Faxa_prec
+Foxx_snow  -> Faxa_snow
+Foxx_rain  -> Faxa_rain	
+	
+================================================================================
+
+Originator: mvertens
+Date: Oct 11 2011
+Model: docn7
+Version: docn8_111011
+One-line summary: compatibility with scripts4_111011b
+
+M       bld/docn.cpl7.template
+M       bld/docn.template.streams.xml
+================================================================================
+	
+Originator: tcraig
+Date: Aug 30 2011
+Model: docn7
+Version: docn8_110830
+One-line summary: fix multi-instance restart
+
+M       docn_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Jul 17 2011
+Model: docn7
+Version: docn8_110717
+One-line summary: Add ensemble capability
+
+- plus one line mod to pop_frc_mlt.ncl postproc tool
+
+M       bld/docn.cpl7.template
+ M      cpl_mct/ocn_comp_mct.F90
+M       cpl_esmf/ocn_comp_esmf.F90
+M       cpl_esmf/ocn_comp_mct.F90
+M       docn_comp_mod.F90
+M       docn/tools/pop_som_frc/pop_frc_mlt.ncl
+================================================================================
+Originator: tcraig
+Date: Apr 19 2011
+Model: docn7
+Version: docn8_110419
+One-line summary: ESMF interface update
+
+M       cpl_esmf/ocn_comp_esmf.F90
+M       cpl_esmf/ocn_comp_mct.F90
+================================================================================
+Originator: mvr,bundy
+Date: Mon Mar 14 2011
+Model: docn7
+Version: docn8_110314
+One-line summary: changed mod_domfile setting for 2.5x3.33
+
+M       bld/docn.cpl7.template
+	
+================================================================================Originator: Jim
+Originator: mvertens
+Date: Thu Jan 18 2011
+Model: docn7
+Version: docn8_110118
+One-line summary: remove use of seq_flds_indices (bfb)
+
+M       docn_comp_mod.F90 
+	
+================================================================================Originator: Jim
+Originator: tcraig
+Date: Thu Jan 6 2011
+Model: docn7
+Version: docn8_110106
+One-line summary: add esmf metadata feature and update esmf register routine
+
+- and reimplement stream calendar initialization from docn8_101101
+	
+>svn merge $SVNREPO/docn7/trunk_tags/docn8_100517 $SVNREPO/docn7/branch_tags/cesm1_0_esmf01_tags/esmf01_02_docn8_100517
+
+U    cpl_esmf/ocn_comp_esmf.F90
+U    cpl_esmf/ocn_comp_mct.F90
+M    docn_comp_mod.F90
+	
+================================================================================
+Originator: erik
+Date: Fri Nov 8 2010
+Model: docn7
+Version: docn8_101108
+One-line summary: Use qtr degree domain with gx1v6 ocean mask
+
+M       bld/docn.cpl7.template -- Change qtr degree dataset to point to gx1v6 ocean
+                                  mask rather than gx1v5 mask.
+
+================================================================================
+Originator: jedwards
+Date: Fri Nov 5 2010
+Model: docn7
+Version: docn8_101105
+One-line summary: move pio init and namelist to driver
+
+M      docn_comp_mod.F90
+================================================================================
+Originator: jet
+Date: Mon Nov 2 2010
+Model: docn7
+Version: docn8_101102
+One-line summary: add support for Eulerian high res (t341)
+
+M      models/ocn/docn/bld/docn.cpl7.template
+M      models/ocn/docn/bld/docn.template.streams.xml
+================================================================================
+Originator: tcraig
+Date: Mon Nov 1 2010
+Model: docn7
+Version: docn8_101101
+One-line summary: update strdata initialization with calendar name
+
+M      docn_comp_mod.F90
+================================================================================
+Originator: tcraig
+Date: Sep 23 2010
+Model: docn7
+Version: docn8_100923
+One-line summary: Add support for RACM grids
+
+M      bld/docn.cpl7.template
+================================================================================
+Originator: jet
+Date: Sat May 19 2010
+Model: docn7
+Version: docn8_100518
+One-line summary: bug fix for running docn in CAM
+
+M      docn_comp_mod.F90
+
+Check for existance of ocn_modelio.nml before writing to it.
+
+================================================================================
+Originator: kauff
+Date: Sat May 17 2010
+Model: docn7
+Version: docn8_100517
+One-line summary: rm support for gx1v5
+
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Sat Apr 17 2010
+Model: docn7
+Version: docn8_100417
+One-line summary: Add support for RACM grids
+
+M      bld/docn.cpl7.template
+================================================================================
+Originator: tcraig
+Date: Thu Apr 8 2010
+Model: docn7
+Version: docn8_100408
+One-line summary: update filename/filepath resolution in stream.txt file
+
+M      bld/docn.cpl7.template
+	
+================================================================================
+Originator: tcraig
+Date: Tue Apr 6 2010
+Model: docn7
+Version: docn8_100406
+One-line summary: remove extra use seq_flds_mod, migrate Makefile use to CASETOOLS
+
+M      bld/docn.cpl7.template
+M      docn_comp_mod.F90
+	
+================================================================================
+Originator: dbailey
+Date: Thu Jan 28 2010
+Model: docn7
+Version: docn8_100128
+One-line summary: Added tools directory and SOM forcing tool.
+	
+A      tools
+A      tools/pop_som_frc
+A      tools/pop_som_frc/pop_frc_mlt.ncl
+A      tools/pop_som_frc/SOM.doc
+A      tools/pop_som_frc/pop_frc.csh
+A      tools/pop_som_frc/SOM.pdf
+A      tools/pop_som_frc/pop_frc_mlann.ncl
+A      tools/pop_som_frc/pop_interp.ncl
+A      tools/pop_som_frc/read_from_mss.csh
+A      tools/pop_som_frc/README
+
+================================================================================
+Originator: mvertens
+Date: Sun Jan 24 2010
+Model: docn7
+Version: docn8_100124
+One-line summary: made 4x5 have gx3v7 ocn mask
+
+M      bld/docn.cpl7.template
+      - also  added support for new 2.5x3.3 ocn mask	
+	
+================================================================================
+Originator: mvertens
+Date: Mon Jan 18 2010
+Model: docn7
+Version: docn8_100118
+One-line summary: Fixed ocnfrac for T31_T31
+
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Sun Jan 3 2010
+Model: docn7
+Version: docn8_100103
+One-line summary: changed variables CCSM_SSTDATA_ to DOCN_SSTDATA_
+
+M      bld/docn.cpl7.template
+	
+================================================================================
+Originator: tcraig
+Date: Mon Dec 14 2009
+Model: docn7
+Version: docn8_091214
+One-line summary: remove shr_strdata_setlogunit call, fix template
+
+M      bld/docn.cpl7.template
+M      docn_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Dec 8 2009
+Model: docn7
+Version: docn8_091208
+One-line summary: add restart namelist and single column
+
+M      docn_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Wed Dec 2 2009
+Model: docn7
+Version: docn8_091202
+One-line summary: Update template files, turn of prognostic mode for SSTDATA
+
+M      bld/docn.cpl7.template
+M      bld/docn.template.streams.xml
+M      docn_comp_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: Tue Nov 10 2009
+Model: docn7
+Version: docn8_091110
+One-line summary: add esmf support
+	
+M      cpl_esmf/ocn_comp_esmf.F90
+M      cpl_esmf/ocn_comp_mct.F90
+M      docn_comp_mod.F90
+	
+================================================================================
+Originator: tcraig
+Date: Fri Nov 6 2009
+Model: docn7
+Version: docn8_091106
+One-line summary: docn7 to docn usage
+	
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Fri Oct 30 2009
+Model: docn7
+Version: docn8_091030
+One-line summary: upgrade to new implementation
+
+Note: ESMF interface not working yet
+
+D      docn_control.F90
+M      cpl_mct/ocn_comp_mct.F90
+D      docn_physUSER.F90
+D      docn_phys.F90
+D      docn_physTEST.F90
+D      docn_nml.F90
+D      docn_final.F90
+A      docn_comp_mod.F90
+M      bld/docn.cpl7.template
+D      docn_physSOM.F90
+D      docn_init.F90
+D      docn_diag.F90
+D      docn_physSSTDATA.F90
+D      docn_data.F90
+	
+================================================================================
+Originator: tcraig
+Date: Sat Sep 26 2009
+Model: docn7
+Version: docn7_090926
+One-line summary: esmf updates
+
+ - use new shared esmf interface in drv/seq_mct/cpl_esmf
+ - clean up redundant code
+ - fix a few bugs (mpicom, infodata/export_state/infodata copy)
+ - lots more testing and validation
+	
+M      cpl_esmf/ocn_comp_esmf.F90
+M      cpl_esmf/ocn_comp_mct.F90
+	
+================================================================================
+Originator: tcraig
+Date: Mon Sep 7 2009
+Model: docn7
+Version: docn7_090907
+One-line summary: updated esmf support
+
+ - fix petlist bug in debug mode
+ - update filepath setting to point to mct or esmf code at build time
+
+M      cpl_esmf/ocn_comp_mct.F90
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Fri Sep  4 10:37:06 MDT 2009
+Model: docn7
+Version: docn7_090904
+One-line summary: updated gx3v7 domain file
+
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: feiliu
+Date: Sep 02 2009
+Model: docn7
+Version: docn7_090902
+One-line summary: added ESMF data ocean component
+
+A      cpl_esmf/ocn_comp_esmf.F90
+A      cpl_esmf/ocn_comp_mct.F90
+
+================================================================================
+Originator: kauff
+Date: Mon Jul 20 14:57:12 MDT 2009
+Model: docn7
+Version: docn7_090720
+One-line summary: use newer tx0.1v2 domain file: domain.ocn.tx0.1v2_090218.nc
+
+Newer file is compatable with cice (old has domain compare errors in cpl7)
+-if ($OCN_GRID == 'tx0.1v2') set DOMAINFILE = domain.ocn.tx0.1v2_070928.nc
++if ($OCN_GRID == 'tx0.1v2') set DOMAINFILE = domain.ocn.tx0.1v2_090218.nc
+
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: kauff
+Date: Thu Jun 25 17:06:11 MDT 2009
+Model: docn7
+Version: docn7_090625
+One-line summary: SOM mode: add latent heat of snow, ioff 
+	
+Changes made:
+M      docn_physSOM.F90
+M      docn_data.F90
+
+SOM mode is not bfb, others are.
+	
+================================================================================
+Originator: mvertens
+Date: June 24 2009
+Model: docn7
+Version: docn7_090624
+One-line summary: new directory structure to bring in ESMF interfaces
+
+A      cpl_mct
+A  +   cpl_mct/ocn_comp_mct.F90
+A      cpl_esmf
+D      ocn_comp_mct.F90
+M      bld/docn.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: June 11 2009
+Model: docn7
+Version: docn7_090611
+One-line summary: removed SEQ_MCT #if-def
+	
+Changes made:
+M      ocn_comp_mct.F90
+	
+================================================================================
+Originator: mvertens
+Date: Mar 20 2009
+Model: docn7
+Version: docn7_090320
+One-line summary: add gx1v6 support
+	
+Changes made:
+M      bld/docn.cpl7.template
+M      bld/docn.template.streams.xml
+
+================================================================================
+Originator: jwolfe
+Date: Feb 9 2009
+Model: docn7
+Version: docn7_090209
+One-line summary: add tx1v1 to template and change stream defaults
+	
+Changes made:
+M      bld/docn.cpl7.template
+M      bld/docn.template.streams.xml
+
+================================================================================
+
+Originator: tcraig
+Date: Jan 7 2009
+Model: docn7
+Version: docn7_090107
+One-line summary: major template update
+	
+Changes made:
+M      bld/docn.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: Fri Dec 12 2008
+Model: docn7
+Version: docn7_081212
+One-line summary: fix bunname writing and current date initialization
+	
+Changes made:
+M      docn_init.F90
+       - fix bunname writing, remove loglevel logic which should never have been there
+M      ocn_comp_mct.F90
+       - fix current date initialization
+	
+================================================================================
+Originator: mvertens
+Date: Thu Sep 25 16:24:25 MDT 2008
+Model: docn7
+Version: docn7_080925
+One-line summary: modifications for new unified build
+	
+Changes made:
+M      bld/docn.cpl7.template
+	
+================================================================================
+Originator: mvertens
+Date: Sun Sep  7 21:07:05 MDT 2008
+Model: docn7
+Version: docn7_080907
+One-line summary: removed all cpl6 and hubinfo references 
+
+Changes made:
+M      docn_control.F90
+M      docn_init.F90
+M      docn_data.F90
+D      docn_main.F90
+D      docn_msg.F90
+D      docn_run.F90
+D      bld/docn.cpl6.template
+
+================================================================================
+Originator: santos,mvr
+Date: Thur Jul 31 2008
+Model: docn7
+Version: docn7_080731
+One-line summary: added inputdata list generation to docn.cpl7.template
+
+Changes made:
+M  docn.cpl7.template
+
+================================================================================
+Originator: mvertens
+Date: Tue Jul  8 15:09:05 MDT 2008
+Model: docn7
+Version: docn7_080708
+One-line summary: removed sourcing of env_xxx from docn.cpl7.template
+
+Changes made:
+M  docn.cpl7.template
+
+================================================================================
+	
+Originator: tcraig
+Date: Wed May 14 20:01:46 MDT 2008
+Model: docn7
+Version: docn7_080514
+One-line summary: merge drva13_docn7_071129 to trunk
+
+Changes made:
+- add cpl7
+- update logging
+- code cleanup
+
+M      docn_control.F90
+M      docn_physUSER.F90
+M      docn_physTEST.F90
+M      docn_phys.F90
+M      docn_main.F90
+M      docn_nml.F90
+M      docn_msg.F90
+M      docn_final.F90
+M      ocn_comp_mct.F90
+A  +   bld/docn.cpl7.template
+M      docn_physSOM.F90
+M      docn_init.F90
+M      docn_run.F90
+M      docn_diag.F90
+M      docn_physSSTDATA.F90
+M      docn_data.F90
+	
+================================================================================
+
+Originator: mvertens
+Date: Thu Nov 29 20:58:42 MST 2007
+Model: docn7
+Version: docn7_071129
+One-line summary: fix vector-map failure wrt (u,v) not in same file
+
+Changes made:
+
+A      bld
+A      bld/docn.cpl6.template
+A      bld/docn.template.streams.xml
+- added above files (Components/docn.template now simply sources docn.cpl6.template)
+
+================================================================================
+	
+Originator: kauff
+Date: Thu Nov  8 15:17:43 MST 2007
+Model: docn7
+Version: docn7_071108
+One-line summary: fix vector-map failure wrt (u,v) not in same file
+
+Changes made:
+
+M      docn_phys.F90
+- fix bug: vector-map failure wrt (u,v) not in same file (would abort, not run)
+
+================================================================================
+
+Originator: kauff
+Date: Fri Aug 24 16:47:30 MDT 2007
+Model: docn7
+Version: docn7_070824
+One-line summary: minor code mods wrt 070810 tag, bugz #569, share3_070824
+
+Changes made:
+
+- new shr_stream_getDomainInfo() API
+- no file names returned from any shr_stream routine have path prepended
+- makes use of new routine shr_stream_getFile
++ bug fix wrt last tag, docn7_070816
+  only read domain cell fractions when using sequential ccsm, via #if-def
+  current versions of ccsm3.x domain files don't have cell fraction in them
+  and thus this code will abort if asked to do so
+
+================================================================================
+
+Originator: mvertens
+Date: Fri Aug 10 16:44:50 MDT 2007
+Model: docn7
+Version: docn7_070816
+One-line summary: upgrades to sequential ccsm
+
+Changes made:
+M      ocn_comp_mct.F90
+       - new ocean domain file is now read that contains a valid ocean frac
+	 when all components are on the same grid (i.e. "stand-alone" cam)
+       - use previous sync clock date on restart	
+M      docn_init.F90
+       - read frac from ocean domain file	
+M      docn_run.F90
+      - update date before restart files are written 	
+	(only tested in data mode, where restart files really do not do anything)
+	
+================================================================================
+	
+Originator: kauff
+Date: Fri Aug 10 16:44:50 MDT 2007
+Model: docn7
+Version: docn7_070810
+One-line summary: send grid_frac to cpl, supports non-local stream.txt data (bugz #493, #72)
+
+Changes made:
+
+- send bufDomain(n,cpl_fields_grid_frac) = frac(i,j) data to cpl  (bugz #493)
+- docn_init now calls a new routine: shr_stream_parseInput(str,fileName,...)
+  so fileName's can contain a dir path
+  (which helps support functionality requested in bugz #72)
+- docn_int bug fix: map-bilin = T would force map-fill = T even if src data was global
+- now constructs domain names and sends them to dshr_domain_readData()
+  which requires use of share3_070810 or later
+    
+================================================================================
+
+Originator: kauff
+Date: Fri Jun  8 14:19:58 MDT 2007
+Model: docn7
+Version: docn7_070608
+One-line summary:  replace save statements to attributes wrt jaguar compiler bug
+Changes made:
+
+- replace save statements to attributes wrt jaguar compiler bug (bugz #455)
+- rework svnURL = "SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_130313/ChangeLog $" to maximize available F90 line-length
+
+=============================================================================
+
+Originator: mvertens
+Date: Tue Jun  5 10:36:45 MDT 2007
+Model: docn7
+Version: docn7_070605
+One-line summary:  fixed bugs in ocn_comp_mct.F90 and docn_init.F90
+Changes made:
+   M  ocn_comp_mct.F90
+     - put in fix so that area read in from domain file is now assumed
+       to be in radians^2 and not km^2 and set frac to mask rather than 1.	
+	
+=============================================================================
+	
+Originator: kauff
+Date: Thu May 31 14:14:08 MDT 2007
+Model: docn7
+Version: docn7_070531
+One-line summary: bug fix wrt non-end-of-run restart files
+Changes made:
+
+- docn_run.F90 ~ bug fix wrt non-end-of-run restart files
+
+=============================================================================
+Originator: mvertens
+Date: Sat May  5 18:50:49 MDT 2007
+Model: docn7
+Version: docn7_070505
+One-line summary:  fixed bugs in ocn_comp_mct.F90 and docn_init.F90
+Changes made:
+  M  ocn_comp_mct.F90
+     - added frac to ocn domain attribute
+     - moved check with SyncClock to occur at end of run phase rather than
+       at beginning since SyncClock update is now at beginning of driver 
+       time loop
+     - put in bug fix to call two phase docn_run_run
+  M  docn_init.F90
+     - bug fix for overwriting namelist input 
+       ( dshrnml%caseName ->  docn_data_dshrNml%caseName)	
+	
+============================================================================
+Originator: mvertens
+Date: Sat May  5 18:50:49 MDT 2007
+Model: docn7
+Version: docn7_070505
+One-line summary:  fixed bugs in ocn_comp_mct.F90 and docn_init.F90
+Changes made:
+  M  ocn_comp_mct.F90
+     - fixed compilation bugs to put in two run phases
+  M docn_init.F90
+     - added pointer dshrNml (needed by SEQ_MCT #ifdef)
+	
+=============================================================================
+Originator: mvertens
+Date: Wed May  2 21:32:47 MDT 2007
+Model: docn7
+Version: docn7_070502
+One-line summary:  removed references from seq_infobuf_mod
+Changes made:
+  M  ocn_comp_mct.F90
+     - removed reference to seq_infobuf_mod 
+
+=============================================================================
+Originator: mvertens
+Date: Sat Apr 21 17:14:09 MDT 2007
+Model: docn7
+Version: docn7_070421
+One-line summary:  incoporation of seq_mct mods into docn7 
+Changes made:
+
+- incorporation of changes to run docn7 through either sequential MCT 
+  system. Following files were modified, added or deleted
+	
+  M  docn_main.F90
+  M  docn_msg.F90
+  A  ocn_comp_mct.F90
+  D  docn_esmf.F90.hide
+  M  docn_init.F90
+  M  docn_data.F90
+
+=============================================================================
+	
+Originator: kauff
+Date: Wed Apr 18 16:58:07 MDT 2007
+Model: docn7
+Version: docn7_070418
+One-line summary:  docn7 is now parallel
+Changes made:
+
+- migrate docn7p_070418 branch code (parallel docn7) to docn7 main trunk
+- is the identical to docn7_070418 wherever it can be
+
+=============================================================================
+
+Originator: tcraig
+Date: Tue Oct 24 20:11:41 EDT 2006
+Model: docn7
+Version: docn7_061024
+One-line summary:
+Changes made: update save statements for pgi bug
+
+=============================================================================
+
+Originator: tcraig
+Date: Tue Oct 24 20:11:41 EDT 2006
+Model: docn7
+Version: docn7_061024
+One-line summary:
+Changes made: update save statements for pgi bug
+
+- update save statements for pgi save bug and general cleanup
+
+=============================================================================
+
+Originator: kauff
+Date: Thu Sep 21 16:33:19 MDT 2006
+Model: docn7
+Version: docn7_060921
+One-line summary:
+Changes made: remove SPMD if-def's wrt MPH/threading (model is not threaded)
+
+- remove SPMD if-def's wrt MPH/threading (model is not threaded)
+
+=============================================================================
+
+Originator: kauff
+Date: Fri Sep 15 12:40:23 MDT 2006
+Model: docn7
+Version: docn7_060915
+One-line summary:  add program/subroutine if-def's to support SPMD
+Changes made:
+
+- add program/subroutine if-def's to support SPMD
+- add unused nml var to avoid errors wrt empty nml
+
+================================================================================
+
+Originator: kauff
+Date: Fri Apr 21 17:21:42 MDT 2006
+Model: docn7
+Version: docn7_060421
+One-line summary: strong-type *all* real literal constants
+Changes made:
+
+- strong-type *all* real literal constants
+- note: all variable declarations were already strong typed
+
+================================================================================
+
+Originator: kauff
+Date: Wed Apr 12 14:02:40 MDT 2006
+Model: docn7
+Version: docn7_060412
+One-line summary: fix bug wrt use of TkFrzSw in docn_physSOM.F90
+Changes made:
+
+- fixed bug: formation of ice should be based on water T relative to
+  the freezing point of sea water (not fresh water).
+
+================================================================================
+
+Originator: kauff
+Date: Thu Mar  9 20:05:19 MST 2006
+Model: docn7
+Version: docn7_060309
+One-line summary: selective strong-typing of literal constants as per ORNL
+Changes made:
+
+- selective strong-typing of literal constants in docn_init as per ORNL for
+  running on Cray
+- make char arg kind(CL) in docn_nml.F90, for ORNL Cray, even though this
+  is totally valid F90
+
+================================================================================

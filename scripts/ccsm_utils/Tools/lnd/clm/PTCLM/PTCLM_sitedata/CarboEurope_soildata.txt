@@ -1,0 +1,8 @@
+site_code,soil_depth,n_layers,layer_depth,layer_sand%,layer_clay%
+BE-Vie,-999,1,-999,42.0,18.0
+DE-Tha,-999,1,-999,42.0,18.0
+IT-Cpz,-999,1,-999,82.0,5.0
+IT-Col,-999,1,-999,22.0,13.0
+FL-Kaa,-999,1,-999,42.0,18.0
+FL-Hyy,-999,1,-999,82.0,5.0
+ES-ES1,-999,1,-999,82.0,5.0

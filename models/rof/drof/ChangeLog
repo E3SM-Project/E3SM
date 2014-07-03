@@ -1,0 +1,101 @@
+================================================================================
+ SVN $Id: ChangeLog 38155 2012-06-26 20:06:59Z mvertens $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_120626/ChangeLog $
+================================================================================
+This file describes what main-trunk tags were created and why
+================================================================================
+Originator: mvertens
+Date: May 8 2012
+Model: drof
+Version: drof8_130508
+One-line summary: permit null drof grid in addition to rx1
+
+M       bld/drof.buildnml.csh
+	
+================================================================================
+Originator: tcraig
+Date: May 3 2012
+Model: drof
+Version: drof8_130503
+One-line summary: add some grid checks
+
+M       bld/drof.buildnml.csh
+================================================================================
+Originator: tcraig
+Date: Mar 13 2012
+Model: drof
+Version: drof8_130313
+One-line summary: add validity check in build-namelist when DROF_GRID is null
+
+M       bld/build-namelist
+
+================================================================================
+Originator: jshollen
+Date: Dec 10 2012
+Model: drof
+Version: drof8_121210
+One-line summary: IAF dataset changes from Susan Bates. 
+
+M       bld/namelist_files/namelist_defaults_drof.xml
+	
+================================================================================
+Originator: mvertens
+Date: Sept 24 2012
+Model: drof
+Version: drof8_120921
+One-line summary: new IAF dataset from Susan Bates
+	
+M       bld/namelist_files/namelist_defaults_drof.xml
+
+================================================================================
+Originator: tcraig
+Date: Sept 21 2012
+Model: drof
+Version: drof8_120921
+One-line summary: switch from DLND to DROF env variables
+
+M       bld/namelist_files/namelist_defaults_drof.xml
+================================================================================
+Originator: tcraig
+Date: Sept 18 2012
+Model: drof
+Version: drof8_120918
+One-line summary: fix lnd/rof typo in cpl7 template
+
+M       bld/drof.cpl7.template
+================================================================================
+Originator: tcraig
+Date: August 27 2012
+Model: drof
+Version: drof8_120827
+One-line summary: cleanup, flood_present=false, and get esmf working
+
+M       cpl_mct/rof_comp_mct.F90
+M       drof_comp_mod.F90
+M       cpl_esmf/rof_comp_mct.F90
+M       cpl_esmf/rof_comp_esmf.F90
+================================================================================
+Originator: mvertens
+Date: August 04 2012
+Model: drof
+Version: drof8_120804
+One-line summary: First trunk tag for drof component 
+
+A       bld
+A       bld/user_nl_drof
+A       bld/drof.buildexe.csh
+A       bld/drof.cpl7.template
+A       bld/build-namelist
+A       bld/drof.buildnml.csh
+A       bld/namelist_files
+A       bld/namelist_files/namelist_defaults_drof.xml
+A       bld/namelist_files/namelist_definition_drof.xml
+A       cpl_mct
+A       cpl_mct/rof_comp_mct.F90
+A       drof_comp_mod.F90
+A       ChangeLog
+A       cpl_esmf
+A       cpl_esmf/rof_comp_mct.F90
+A       cpl_esmf/rof_comp_esmf.F90
+	
+================================================================================

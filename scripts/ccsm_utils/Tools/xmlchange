@@ -1,0 +1,371 @@
+#!/usr/bin/env perl
+#-----------------------------------------------------------------------------------------------
+#
+# xmlchange
+#
+# This utility allows the user to change a env_*xml file via a commandline interface.
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+#use warnings;
+#use diagnostics;
+
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     xmlchange [options] <listofsettings>
+DESCRIPTION
+     allows user to modify an xml file and perform consistency checks where appropriate
+
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+REQUIRED OPTIONS
+
+   Either provide ALL of the following options to modify a single variable...
+
+     -file <name>         xml file to modify
+     -id <name>           xml entry id
+     -val <name> 	  xml new value for entry id
+
+   Or provide the settings in a comma-delimited list form as: <listofsettings>
+
+      var=value,var2=value2
+
+   To set one or more variables without having to know the filename a variable is in.
+
+   NOTE: NO-Whitespace. No spaces between commas, or in values unless you quote the
+         entire string so the shell recognizes it as one thing. Also values can NOT
+         contain the symbols "=" or ",".
+
+OPTIONAL
+     -append [or -a]      append value to the end of existing value
+     -help [or -h]        Print usage to STDOUT.
+     -silent [or -s]      Turns on silent mode - only fatal messages issued.
+     -verbose [or -v]     Turn on verbose echoing of settings.
+     -warn [or -w]        Warn and abort if you are overwriting data that isn't blank
+
+NOTE:
+     You can NOT use both the warn and append modes at the same time.
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+
+if ($#ARGV == -1) {
+    print "ERROR: no arguments sent in\n";
+    usage();
+}
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CCSM configuration scripts.  If the create_newcase command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = absolute_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+                 file=>undef,
+                 id=>undef,
+                 val=>undef,
+	    );
+GetOptions(
+    "a|append"                  => \$opts{'append'},
+    "file=s"                    => \$opts{'file'},
+    "id=s"                      => \$opts{'id'},
+    "val=s"                     => \$opts{'val'},
+    "h|help"                    => \$opts{'help'},
+    "s|silent"                  => \$opts{'silent'},
+    "v|verbose"                 => \$opts{'verbose'},
+    "w|warn"                    => \$opts{'warn'},
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Get the list form if anything else is set
+my $settinglist = shift(@ARGV);
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
+    usage();
+}
+
+# Check for manditory case input if not just listing valid values
+
+my %idlist;
+if ( ! defined($settinglist) ) {
+   foreach my $item ( "file", "id", "val" ) {
+      if ( ! defined($opts{$item}) ) {
+         print "ERROR: Must provide $item as input argument \n";
+         usage();
+      }
+   }
+   $idlist{$opts{'id'}} = $opts{'val'};
+} else {
+   foreach my $varval ( split( /,/, $settinglist ) ) {
+      if ( $varval =~ /^([a-zA-Z0-9_]+)=([^,=]+)$/ ) {
+         if ( defined($idlist{$1}) ) {
+            print "ERROR: variable $1 was already set once in the settings list: $settinglist\n";
+         }
+         $idlist{$1} = $2;
+      } else {
+         print "ERROR: variable = value setting is NOT recognized: $varval\n";
+         die "Should be of the form: variable = value\n";
+      }
+   }
+}
+
+# Define 3 print levels:
+# 0 - only issue fatal error messages
+# 1 - only informs what files are created (default)
+# 2 - verbose
+my $print = 1;
+if ($opts{'silent'})  { $print = 0; }
+if ($opts{'verbose'}) { $print = 2; }
+if ($opts{'append'} && $opts{'warn'} ) {
+    die "warn and append modes can NOT both be set\n";
+}
+my $eol = "\n";
+
+my %cfg = ();           # build configuration
+
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the configuration script.
+
+# Check for the configuration definition file.
+my $config_def_file = "config_definition.xml";
+my $dir  = "$cfgdir/Tools";
+my $cdir = absolute_path( "$cfgdir/../Case.template" );
+my $pdir;
+if      ( -f "$dir/$config_def_file" )  {
+   $config_def_file = "$dir/$config_def_file";
+   $pdir = "$cfgdir/Tools";
+} elsif ( -f "$cfgdir/../Case.template/$config_def_file" ) {
+   $dir  = $cdir;
+   $pdir = "$cfgdir/perl5lib";
+   $config_def_file = "$cdir/$config_def_file";
+} else {
+   die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory ./Tools **
+EOF
+}
+
+# The XML::Lite module is required to parse the XML configuration files.
+(-f "$pdir/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory $pdir **
+EOF
+
+# The ConfigCase module provides utilities to store and manipulate the configuration.
+(-f "$dir/ConfigCase.pm")  or  die <<"EOF";
+** Cannot find perl module \"ConfigCase.pm\" in directory $dir **
+EOF
+
+if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
+my @dirs = (  $cfgdir, "$cfgdir/Tools", "$cfgdir/perl5lib", "$cfgdir/../Case.template" );
+unshift @INC, @dirs;
+require XML::Lite;
+require ConfigCase;
+
+#-----------------------------------------------------------------------------------------------
+# Modify the relevant xml file
+
+# Check that file is supported 
+my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml);
+
+# If NOT settings list option, check that file is valid
+# tcraig, add the input file set by the user for things like env_build.xml.001 in tests
+if ( ! defined($settinglist) ) {
+   push(@filenames, $opts{'file'});
+   my $status = 0;
+   foreach my $filename (@filenames) {
+       if ($opts{'file'} eq $filename) {$status = 1; }
+   }
+   if ($status != 1) {
+       die <<"EOF";
+** $opts{'file'} is not an acceptable file to modify ***
+*** acceptable files are @filenames***
+EOF
+   }
+}
+
+# Create new config object if not just listing valid values
+my $cfg_ref = ConfigCase->new("$config_def_file"); 
+if ($print>=2) { print "A new config object was created$eol";}
+
+# exit early if id is NOT a valid name (loop over all input id's)
+foreach my $id ( keys(%idlist) ) {
+   if ( ! $cfg_ref->is_valid_name($id) ) {
+      die "ERROR: id $id NOT a valid name in the config_definition file\n";
+   }
+}
+
+# Loop over all files and read them in
+my %myfiles;
+FILELOOP:
+foreach my $file ( @filenames ) {
+   # Verify that file is NOT empty
+   if ( ! -r $file ) {
+      die "ERROR: file $file does NOT exist\n";
+   }
+   my $xml = XML::Lite->new( $file );
+   my @e = $xml->elements_by_name( "entry");
+    ENTRY:
+       while ( my $e = shift @e ) {
+	   my %a = $e->get_attributes();
+           # Check if this id matches one of the input list ids
+           foreach my $id ( keys(%idlist) ) {
+              if ($id eq $a{'id'}) {
+                 $myfiles{$file} = 1;
+                 $cfg_ref->set($id, $a{'value'});
+              }
+           }
+       }
+}
+# Reset the config definition file with all of the values from the xml file in the directory
+foreach my $filename (@filenames) {
+   $cfg_ref->reset_setup($filename);
+}
+
+# Loop over all ids setting the values to input
+foreach my $id ( keys(%idlist) ) {
+   my $val = $idlist{$id};
+    
+   # Reset the value for the input id
+   my $cval = $cfg_ref->get($id);
+   if ($opts{'append'}) {
+      # Append new value on the end -- only if character type
+      if ( ! $cfg_ref->is_char($id) ){
+        die "ERROR: Append mode can ONLY work on character type values.\n";
+      }
+      my $newval;
+      # Append new value on the end of old only if old NOT unset
+      if ( ($cval !~ m/^\s*$/) && ($cval !~ m/UNSET/i) ) { 
+        $newval = "$cval $val" 
+      } else {
+        $newval = $val 
+      }
+      $cfg_ref->set($id, $newval);
+   } else {
+      # If warn mode is on, abort if data is set to something other than missing values
+      if ($opts{'warn'}) {
+         if ( $cfg_ref->is_char($id) ) {
+            if ( ($cval !~ m/^\s*$/) && ($cval !~ m/UNSET/i) ) { 
+               die "ERROR: Variable $id is already set to $cval.\n";
+            }
+         } elsif ( $cval != -99 && $cval != -999 && $cval != -999.99 ) { 
+            die "ERROR: Variable $id is already set to $cval.\n";
+         }
+      }
+      $cfg_ref->set($id, $val);
+   }
+
+}
+# End loop over id's
+
+# Overwrite the file(s)
+foreach my $filename ( keys(%myfiles) ) {
+    $cfg_ref->write_file($filename);
+}
+if ($print>=2) { print "xmlchange done.\n"; }
+exit;
+
+#-----------------------------------------------------------------------------------------------
+# FINNISHED ####################################################################################
+#-----------------------------------------------------------------------------------------------
+
+sub absolute_path {
+#
+# Convert a pathname into an absolute pathname, expanding any . or .. characters.
+# Assumes pathnames refer to a local filesystem.
+# Assumes the directory separator is "/".
+#
+  my $path = shift;
+  my $cwd = getcwd();  # current working directory
+  my $abspath;         # resulting absolute pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+  $path =~ s!^\s*(\S*)\s*$!$1!;
+
+# Convert relative to absolute path.
+
+  if ($path =~ m!^\.$!) {          # path is "."
+      return $cwd;
+  } elsif ($path =~ m!^\./!) {     # path starts with "./"
+      $path =~ s!^\.!$cwd!;
+  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+      $path = "$cwd/..";
+  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+      $path = "$cwd/$path";
+  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+      $path = "$cwd/$path";
+  }
+
+  my ($dir, @dirs2);
+  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+                                     # This enables correct processing of the input "/".
+
+  # Remove any "" that are not leading.
+  for (my $i=0; $i<=$#dirs; ++$i) {
+      if ($i == 0 or $dirs[$i] ne "") {
+	  push @dirs2, $dirs[$i];
+      }
+  }
+  @dirs = ();
+
+  # Remove any "."
+  foreach $dir (@dirs2) {
+      unless ($dir eq ".") {
+	  push @dirs, $dir;
+      }
+  }
+  @dirs2 = ();
+
+  # Remove the "subdir/.." parts.
+  foreach $dir (@dirs) {
+    if ( $dir !~ /^\.\.$/ ) {
+        push @dirs2, $dir;
+    } else {
+        pop @dirs2;   # remove previous dir when current dir is ..
+    }
+  }
+  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+  $abspath = join '/', @dirs2;
+  return( $abspath );
+}
+

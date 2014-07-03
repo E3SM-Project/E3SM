@@ -1,0 +1,80 @@
+%=======================================================================
+% CVS: $Id: ice_dt_loop.tex 5 2005-12-12 17:41:05Z mvr $
+% CVS: $Source$
+% CVS: $Name$
+%=======================================================================
+
+\subsection {Time-stepping Loop}
+\label{sec:small_tree}
+
+The main program, {\bf ice.F}, contains the time-stepping loop.
+The model flow at the highest level is shown below.
+
+\begin{verbatim}
+
+ICEMODEL-+-initialize variables
+         |
+         do time-stepping loop:                          +-------<-------+
+         |  |                                            |   +---<----+  |
+         |  +-receive info from coupler                  |   v        |  |
+         |  |                                            |fsalt_hist=0|  |
+         |  +-vertical thermodynamics calculations       |   |        |  |
+         |  |                                            |   v        |  |
+         |  +-send ice state and fluxes to coupler       |   |        |  |
+         |  |                                            |   |        |  |
+         |  +-thickness redistribution thermodynamics    |   |        |  |
+         |  |                                        fsalt=0 |        ^  ^
+         |  +-dynamics calculations                      |   |        |  |
+         |  |                                            v   |        |  |
+         |  +-write std out to log file                  |   |        |  |
+         |  |                                            |   |        |  |
+         |  +-write avg quantities to history file       |   +--->----+  |
+         |  |                                            +------->-------+
+         end time-stepping loop   
+         |
+         +-exit_coupler
+
+\end{verbatim}
+
+A complete calling tree is shown in Appendix \ref{calling_tree}.
+The ice model receives information from the coupler at the beginning of the time
+loop.  The vertical ice thermodynamics are calculated, and the ice state and 
+fluxes are returned to the coupler at mid-timestep immediately after they are computed.
+The information is sent to the coupler at this point in the time-stepping loop
+for {\bf \textsl{load balancing}}.  This allows the atmosphere
+to begin calculations instead of waiting until the end of the ice model timestep.
+The thermodynamics calculated after returning data to the coupler are mostly
+related to the ice thickness distribution and include transport in thickness 
+space, lateral growth and melting, and freeboard adjustment.
+
+\subsubsection*{{\tt \_hist} Variables}
+
+As shown in the model flow in Section \ref{sec:small_tree}, fluxes are sent to the
+coupler in the middle of the timestep, and the diagnostics are written out at
+the end of the timestep.  Most fluxes, like the atmospheric latent heat, are
+initialized at the beginning of the timestep and calculated only in the thermodynamics.
+This is the value that is sent to the coupler and then added to the average being
+calculated for the history file.
+
+A problem arises for fluxes that are modified before and after the fluxes are sent
+to the coupler, that is, in both the thermodynamics and dynamics calculations. 
+These fluxes are {\tt fsalt}, {\tt fresh}, {\tt fhnet}, and {\tt fswthru}.
+If these values are initialized at the start of the time step, the values computed
+in the dynamics during the previous time step would be written over. The
+fluxes sent to the coupler would not represent quantities summed over an entire
+timestep.  This is why these fluxes are initialized immediately after the call
+to the coupler.
+
+If these fluxes ({\tt fsalt}, {\tt fresh}, {\tt fhnet}, {\tt fswthru}) were
+written to the history file, the fluxes computed at the beginning of the step
+(before the call to the coupler) would be neglected.  The variables with
+{\tt \_hist} appended to the name are initialized before the thermodynamics
+calculation and measure the same thing as their coupler counterparts but over
+different time intervals.  The {\tt \_hist} variables contain information
+calculated from the start to the end of a timestep and are written to the
+history file.
+
+To calculate the global sums for the diagnostics, there is a value of
+the ice concentration {\tt aice\_init} that is saved from the beginning
+of the timestep.
+

@@ -1,0 +1,128 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set pbsrs = `${CASEROOT}/Tools/taskmaker.pl -pbsrs san`
+
+set tlimit = "08:00:00"
+
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+
+if ($?ACCOUNT) then
+  set account_name = $ACCOUNT
+else
+  # could set this from the linux id command..
+  set account_name = group_id 
+  if (-e ~/.ccsm_proj) then
+     set account_name = `head -1 ~/.ccsm_proj`
+  endif
+endif
+
+if ($?QUEUE) then
+  set queue_name = $QUEUE
+else
+  set queue_name = normal
+endif
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+
+#PBS -S /bin/csh
+#PBS -W group_list=${account_name}
+#PBS -N ${jobname}
+#PBS -q ${queue_name}
+#PBS -j oe
+#PBS -l select=${pbsrs}
+#PBS -l walltime=${tlimit}
+#PBS -l place=scatter:excl
+
+#limit coredumpsize 1000000
+#
+
+limit stacksize unlimited
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+setenv OMP_NUM_THREADS ${maxthrds}
+setenv OMP_STACKSIZE 128M
+
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+if (\$MPILIB != "mpi-serial") then
+   mpiexec_mpt -n ${maxtasks} \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+   wait
+else
+   \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+endif
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+if ($?ACCOUNT) then
+  set account_name = $ACCOUNT
+else
+  # could set this from the linux id command..
+  set account_name = group_id 
+  if (-e ~/.ccsm_proj) then
+     set account_name = `head -1 ~/.ccsm_proj`
+  endif
+endif
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#PBS -S /bin/csh
+#PBS -N l_archive
+#PBS -W group_list=${account_name}
+#PBS -q normal
+#PBS -j oe
+#PBS -l select=1
+#PBS -l walltime=04:00:00
+
+cd $CASEROOT 
+source ./Tools/ccsm_getenv || exit -1
+setenv LID "\`date +%y%m%d-%H%M%S\`"
+# copy output files to lou -- the NAS long-term archiving system
+cd \$DOUT_S_ROOT
+$CASEROOT/Tools/lt_archive.sh --mode copy_dirs_sshscp --ssh_loc bridge2 --scp_loc lfe2
+wait
+exit 0
+
+EOF1
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

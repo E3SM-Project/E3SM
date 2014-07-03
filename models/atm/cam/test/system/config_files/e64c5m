@@ -1,0 +1,5 @@
+-spmd -nosmp
+-dyn eul
+-res 64x128
+-phys cam5
+-s

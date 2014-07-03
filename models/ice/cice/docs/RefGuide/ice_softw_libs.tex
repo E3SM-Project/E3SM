@@ -1,0 +1,66 @@
+%=======================================================================
+% CVS: $Id: ice_softw_libs.tex 5 2005-12-12 17:41:05Z mvr $
+% CVS: $Source$
+% CVS: $Name$
+%=======================================================================
+
+\subsection {External Software and Libraries}
+
+The CSIM code includes references to subroutines and libraries not contained in 
+{\bf models/ice/csim4}.  This code is described in the following sections.
+
+\subsubsection {CCSM Share Code}
+
+CSIM uses some of the CCSM shared-code modules that are included in the
+{\bf models/csm\_share} directory.  The share-code modules presently used in
+CSIM are:
+
+  \begin{itemize}
+    \item {\bf shr\_const\_mod.F90} - This module contains the "shared constants"
+          that are used by all components for CCSM.  Note that these constants
+          are not used for the uncoupled ice model, which uses those set in
+          {\bf ice\_constants.F}.
+
+    \item {\bf shr\_kind\_mod.F90} - This module defines variable precision
+          used by other shared-code modules.
+
+    \item {\bf shr\_msg\_mod.F90} - This contains subroutines that provide an
+          architecture-independent means of interacting with the operating system. CSIM
+          uses the following subroutines from this module:
+
+      \begin{itemize}
+        \item {\it shr\_msg\_chdir} - changes current working directory
+        \item {\it shr\_msg\_dirio} - redirects standard input and output to
+                                    named files
+      \end{itemize}
+
+    \item {\bf shr\_mpi\_mod.F90} -  used by {\bf shr\_sys\_mod.F90}
+
+    \item {\bf shr\_sys\_mod.F90} - This contains subroutines that provide an
+          architecture-independent means of interacting with the operating system. CSIM
+          uses the following routines from this module:
+      \begin{itemize}
+          \item {\it shr\_sys\_flush} - clears the print buffer
+          \item {\it shr\_sys\_abort} - provides a consistent stopping mechanism for
+                                      multiple processors
+      \end{itemize}
+  \end{itemize}
+
+\subsubsection {netCDF Library}
+
+The netCDF library is necessary to run CSIM.  The slab ocean mixed layer model and
+the prescribed ice model (not supported in this release) read in forcing data from
+netCDF files. The output history files are also written in this format. The history
+files conform to the NetCDF Climate and Forecast (CF) Metadata Conventions 
+(http://www.cgd.ucar.edu/cms/eaton/cf-metadata/index.html).
+All of the netCDF-specific code used to write the history files is in subroutine
+{\it icecdf} in module {\bf ice\_history.F}.   Machine dependent information that
+sets the location of the netCDF library is set in the {\bf models/bld/Macros.*}
+for the coupled model, and in {\bf models/ice/csim4/src/bld/Macros.*} for the
+uncoupled ice model.
+
+
+\subsubsection {Message Passing Interface (MPI)}
+
+CSIM intra- and inter-model communications are conducted via MPI. The MPI
+library is automatically loaded during the CCSM build procedures.

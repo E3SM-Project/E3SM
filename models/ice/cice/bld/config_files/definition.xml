@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
+
+<config_definition>
+
+<entry id="comp_intf" valid_values="MCT,ESMF" value="MCT">
+CICE build directory; contains .o and .mod files.
+</entry>
+
+<entry id="cice_bld" value=".">
+CICE build directory; contains .o and .mod files.
+</entry>
+
+<entry id="cice_root" value="">
+Root directory of CICE source distribution.
+</entry>
+
+<entry id="cice_mode" valid_values="thermo_only,prescribed,prognostic" value="prognostic">
+Mode of cice 
+</entry>
+
+<entry id="cice_decomptype" valid_values="cartesian,rake,spacecurve,roundrobin,blkrobin,blkcart,DECOMPTYPE" value="">
+Type of cice decomposition.
+</entry>
+
+<entry id="hgrid" value="gx1v5">
+Horizontal grid specifier.  
+</entry>
+
+<entry id="nlon" value="1">
+Number of unique longitude points in rectangular lat/lon grid.
+</entry>
+
+<entry id="nlat" value="1">
+Number of unique latitude points in rectangular lat/lon grid.
+</entry>
+
+<entry id="ntr_aero" valid_values="0,1,2,3,4,5,6" value="3">
+Number of aerosol tracers
+</entry>
+
+<entry id="ntasks" value="">
+Number of MPI tasks.  This is used to determine default grid
+decompositions.  Currently only used by CICE.
+</entry>
+
+<entry id="nthreads" value="">
+Number of OMP threads.  This is used to determine default grid
+decompositions.  Currently only used by CICE.
+</entry>
+
+<entry id="scam" valid_values="0,1" value="0">
+Configure CICE for single column mode: 0=off, 1=on.  This option is
+dictated by running in prescribed mode with CICE.
+</entry>
+
+</config_definition>

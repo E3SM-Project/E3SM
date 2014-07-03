@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- "IOP: TOGA COARE IOP2 1992 ( 18 Dec. 1992 - 08 Jan. 1993)" -->
+
+<namelist_defaults>
+
+<ncdata             hgrid="64x128"    nlev="30"   scam="1"  >atm/cam/inic/gaus/cami_0000-01-01_64x128_L30_c090102.nc</ncdata>
+<iopfile dyn="eul"                                scam="1"  >atm/cam/scam/iop/TOGAII_4scam.nc</iopfile>
+<scmlat                                           scam="1"  >   -2.10    </scmlat>
+<scmlon                                           scam="1"  >   154.69   </scmlon>
+<start_ymd                                        scam="1"  >   19921218 </start_ymd>
+<start_tod                                        scam="1"  >   64800    </start_tod>
+<stop_n                                           scam="1"  >   1512     </stop_n>
+<mfilt                                            scam="1"  >   1500     </mfilt>
+<nhtfrq                                           scam="1"  >   9        </nhtfrq>
+<stop_option                                      scam="1"  >   nsteps    </stop_option>
+
+<!-- sim_year used for CLM datasets -->
+<sim_year>2000</sim_year>
+
+</namelist_defaults>

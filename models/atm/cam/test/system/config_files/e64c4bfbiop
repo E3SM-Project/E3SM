@@ -1,0 +1,7 @@
+-spmd -nosmp
+-phys cam4
+-dyn eul
+-res 64x128
+-camiop
+-debug
+-s

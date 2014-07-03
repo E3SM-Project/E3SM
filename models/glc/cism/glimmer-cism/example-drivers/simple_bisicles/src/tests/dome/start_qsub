@@ -1,0 +1,1 @@
+qsub -I -V -q interactive -l mppwidth=1

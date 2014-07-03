@@ -1,0 +1,58 @@
+#! /bin/csh -f
+
+#-------------------------------------------------------------------------------
+# Modules and library paths
+#-------------------------------------------------------------------------------
+
+if (-e /opt/modules/default/init/csh) then
+  source /opt/modules/default/init/csh
+  module rm PrgEnv-intel
+  module rm PrgEnv-cray 
+  module rm PrgEnv-gnu
+  module rm intel
+  module rm cray
+  module rm netcdf
+  module rm cray-libsci
+  module rm cray-mpich2
+  module rm cray-netcdf
+  module rm cray-netcdf-hdf5parallel
+    
+endif
+
+if ( $COMPILER == "intel" ) then
+    module load PrgEnv-intel 
+    module switch intel      intel/13.0.1.117
+    module load mkl/13.0.1
+endif    
+if ( $COMPILER == "cray" ) then
+    module load PrgEnv-cray
+    module switch cce      cce/8.1.4
+    module load cray-libsci/12.0.00
+endif    
+if ( $COMPILER == "gnu" ) then
+    module load PrgEnv-gnu
+    module switch gcc       gcc/4.7.2
+    module load cray-libsci/12.0.00
+endif    
+
+module load cray-mpich2/5.6.1
+
+module load cray-netcdf-hdf5parallel/4.2.1.1
+module load cmake/2.8.10.2
+module load parallel-netcdf/1.3.1
+
+
+
+#-------------------------------------------------------------------------------
+# Runtime environment variables
+#-------------------------------------------------------------------------------
+
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+
+limit coredumpsize unlimited
+limit stacksize unlimited
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine.  
+setenv OMP_STACKSIZE 64M

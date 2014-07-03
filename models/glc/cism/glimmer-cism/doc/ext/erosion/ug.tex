@@ -1,0 +1,85 @@
+This package provides an addon library to \href{http://developer.berlios.de/projects/glimmer-cism/}{Glimmer-CISM} which provides a bedrock erosion and sediment transport component. Drivers are provided for EISMINT type forcing and the EIS driver. You can use \texttt{erosion} with your own climate drivers (see Section \ref{erosion.sec.using_it}).
+
+\section{Model Configuration}
+Add a selection of the follwing configuration options to your GLIDE configuration file to enable and control erosion and sediment transport.
+\begin{center}
+  \tablefirsthead{%
+    \hline
+  }
+  \tablehead{%
+    \hline
+    \multicolumn{2}{|l|}{\emph{\small continued from previous page}}\\
+    \hline
+  }
+  \tabletail{%
+    \hline
+    \multicolumn{2}{|r|}{\emph{\small continued on next page}}\\
+    \hline}
+  \tablelasttail{\hline}
+  \begin{supertabular*}{\textwidth}{@{\extracolsep{\fill}}|l|p{9cm}|}
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[Erosion]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{Switch on hard bedrock erosion.}\\
+    \hline
+    \texttt{hb\_erosion} & set parameterisation of hard bedrock erosion\\
+    \texttt{ntime} & update erosion calculation every \texttt{ntime} time steps\\
+    \texttt{updeate\_topo} & whether erosion/sediment transport changes ice bed topography (default :1)\\
+    \hline
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[Basic\_Transport]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{Sediment transport is paramterised by assuming transport velocities are proportional to basal ice velocities (see Section \ref{erosion.sec.basic_trans})}\\
+    \hline
+    \texttt{deformable\_velo} & basal ice velocities are multiplied with this factor to get sediment transport velocities.\\
+    \texttt{dirty\_ice\_thick} & thickness of dirty basal ice layer\\
+    \texttt{soft\_a},  \texttt{soft\_b}& parameterisation of maximum deformable sediment layer thickness, $$z_{\text{max}}=a+b|\vec{\tau}_b|$$\\
+    \hline
+    \hline
+    \multicolumn{2}{|l|}{\texttt{[Transport]}}\\
+    \hline
+    \multicolumn{2}{|p{0.95\textwidth}|}{Deforming sediment layer is based on some rheology (see Section \ref{erosion.sec.full_trans}).}\\
+    \hline
+    \texttt{dirty\_ice\_thick} & thickness of dirty basal ice layer\\
+    \texttt{calc\_btrc} & sediment velocities set ice sliding velocities.\\
+    \texttt{effective\_pressure} & set the effective pressure at the ice base.\\
+    \texttt{pressure\_gradient} & set pressure gradient in sediment bed.\\
+    \texttt{phi} & angle of internal friction, $\phi$.\\
+    \texttt{cohesion} & cohesion of sediments.\\
+    \texttt{a} & factor for sediment flow law.\\
+    \texttt{m} & exponent of effective pressure.\\
+    \texttt{n} & exponent of shear stress.\\
+  \end{supertabular*}
+\end{center}
+
+\section{Using the Library}\label{erosion.sec.using_it}
+The \texttt{erosion} module provides a number of subroutines which can be used to add erosion/sediment transport to an ice sheet model based on GLIMMER. Have a look at the EISMINT driver \texttt{simple\_erosion.f90}.
+
+All variables associated with the module are stored in a derived type. Similarly to GLIDE you will need to declare a variable of that derived type:
+\begin{verbatim}
+type(erosion_type) :: er
+\end{verbatim}
+The erosion component is initialised after GLIDE was initialised using the call
+\begin{verbatim}
+call er_initialise(er,config,model)
+\end{verbatim}
+The erosion time step is done after the first GLIDE timestep:
+\begin{verbatim}
+call glide_tstep_p1(model,time)
+call er_tstep(er,model)
+\end{verbatim}
+Finally, the model is shut down before GLIDE is shut down with
+\begin{verbatim}
+call er_finalise(er)
+\end{verbatim}
+
+%\section{Visualisation}\label{erosion.sec.vis_it}
+%\texttt{erosion} comes with a number of python scripts for visualising sediments.
+%
+%\begin{pycf}{plot\_seds.py -T-1 -pprof --not\_p  fenscan.nc sediments.ps}{\dir/figs/sediments.eps}
+%plots a map of sediment erosion/deposition of the last time slice. The \texttt{-p} option together with the \texttt{--not\_p} option plots the profile. This program plots sediment erosion/deposition relative to the initial sediment distribution. Blue areas indicate areas where sediments have been removed. Red areas indicate areas where sediments have been deposited.
+%\end{pycf}
+%
+%\begin{pycf}{plot\_seds\_profile.py -t0. -e stages -pprof --not\_p fenscan.nc prof.ps}{\dir/figs/sed_profile.eps}
+%plots a profile showing sediment erosion/deposition. A file containing timings of glacial stages is required. The time when sediments are deposited are indicated with colours found in this file. The \texttt{stages} file contains 4 comma--eparated columns. The first column contains the name, second and thrid column start and end time in years, and the last column a R/G/B triplet for the background colour.
+%\end{pycf}

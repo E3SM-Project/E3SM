@@ -1,0 +1,73 @@
+#  Notes on Hopper build 
+# (confirmed on Oct. 15, 2012 by PHW, based on prior development and verification work by KJE)
+#
+# Requires (command line or in  .bashrc):
+#   module load cmake
+#
+# cmake configuration script that works on hopper with GNU
+# This script needs to be run from a subdirectory (e.g. build-gnu)
+# of the main seacism repository (reflected in the several 
+# instances of # ".." below).
+#
+# (1) before executing this script, load these modules:            
+# module unload modules
+# 
+# module unload cmake
+# module unload PrgEnv-cray PrgEnv-gnu PrgEnv-intel PrgEnv-pathscale PrgEnv-pgi
+# module unload hdf5-parallel
+# module unload netcdf
+# module unload python
+# module unload cray-shmem
+# module unload cray-mpich2
+# 
+# module load modules/3.2.6.6
+# module load cmake/2.8.7
+# module load PrgEnv-gnu/4.0.46
+# module load hdf5-parallel/1.8.8
+# module load python/2.7.1
+# module load cray-shmem/5.5.2
+# module load cray-mpich2/5.5.2
+# module load netcdf-hdf5parallel/4.2.0
+# module load usg-default-modules/1.0
+# 
+# Currently Loaded Modulefiles:
+#   1) xtpe-network-gemini                  14) dmapp/3.2.1-1.0400.4255.2.159.gem
+#   2) eswrap/1.0.10                        15) gni-headers/2.1-1.0400.4351.3.1.gem
+#   3) xtpe-mc12                            16) xpmem/0.1-2.0400.31280.3.1.gem
+#   4) torque/2.5.9                         17) xe-sysroot/4.0.46
+#   5) moab/6.1.8                           18) xt-asyncpe/5.12
+#   6) altd/1.0                             19) atp/1.5.0
+#   7) modules/3.2.6.6                      20) PrgEnv-gnu/4.0.46
+#   8) cmake/2.8.7                          21) hdf5-parallel/1.8.8
+#   9) gcc/4.7.1                            22) python/2.7.1
+#  10) cray-libsci/11.1.00                  23) cray-shmem/5.5.2
+#  11) udreg/2.3.1-1.0400.4264.3.1.gem      24) cray-mpich2/5.5.2
+#  12) ugni/2.3-1.0400.4374.4.88.gem        25) netcdf-hdf5parallel/4.2.0
+#  13) pmi/3.0.1-1.0000.9101.2.26.gem
+#
+# All but netcdf-hdf5parallel was specified so as to be compatible with Trilinos build. 
+# Probably only cmake and netcdf and PrgEnv-gnu are required.
+#
+# (2) After this executes, do:
+#   make -j 4
+#   cp example-drivers/simple_glide/src/simple_glide .
+
+rm ./CMakeCache.txt
+
+echo
+echo "Doing CMake Configuration step"
+
+cmake \
+  -D GLIMMER_TRILINOS_DIR=/project/projectdirs/ccsm1/Trilinos/trilinos-10.12.2/hopper-gnu/install \
+  -D GLIMMER_NETCDF_DIR=$CRAY_NETCDF_DIR \
+  -D GLIMMER_GPTL_DIR=/project/projectdirs/ccsm1/libgptl/libgptl-gnu \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+  -D GLIMMER_Fortran_FLAGS="-ffree-line-length-none" \
+  -D CISM_GNU:BOOL=ON \
+ ..
+
+# Note: last argument above  ".."  is path to top seacism directory 
+ 
+# If you dont depend on  netcdff AND netcdf, but just netcdf, use this line
+#   -D GLIMMER_NETCDF_LIBS="netcdf" \
+#

@@ -1,0 +1,37 @@
+#
+# Makefile Macros generated from /glade/u/home/mlevy/codes/CESM/cesm1_1_beta18+/scripts/ccsm_utils/Machines/config_compilers.xml using
+# COMPILER=intel
+# OS=LINUX
+# MACH=yellowstone
+#
+CC := mpicc
+#CPP := /usr/bin/cpp
+CPP := fpp
+CPPFLAGS := -P
+CPPDEFS :=  -DLINUX
+CFLAGS:= -c -O2
+FIXEDFLAGS:= -132 
+FREEFLAGS:= -FR 
+FC := ifort
+FFLAGS := -c -O2 -assume byterecl -ftz -traceback
+MOD_SUFFIX := mod
+LD := $(FC)
+AR := ar
+INCLDIR := -I. -I$(NETCDF)/include
+SLIBS := -L$(NETCDF)/lib -lnetcdf -L/glade/apps/opt/lib
+ULIBS :=
+
+ifeq ($(THREAD), TRUE) 
+   LDFLAGS += -openmp 
+   CFLAGS += -openmp 
+   FFLAGS += -openmp 
+endif
+
+ifeq ($(DEBUG), TRUE) 
+   CPPDEFS  += -DNO_SHR_VMATH
+   FFLAGS += -g -CU -check pointers -fpe0 -ftz 
+else
+   # SLIBS    += -lmass -lmassv -llapack -lblas
+   SLIBS    += -llapack -lblas
+endif
+

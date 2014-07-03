@@ -1,0 +1,53 @@
+INPUT DATA:
+
+To run this glint-example test case, you will need to download the following climate files:
+
+* ncep-doe_6h_climate.64x32.nc (precip and 2-m temp on a global grid)
+
+* orog.igcmgrid.64x32.nc (surface elevation on a global grid)
+
+You will also need a 20-km Greenland input file:
+
+* gland20.input.nc
+
+These three netCDF files are part of a tar file, glint-example.1.0.0.tar.gz,
+that can be downloaded from the BerliOS repository:
+
+     http://developer.berlios.de/projects/glimmer-cism/
+
+These files are also available in the CESM inputdata repository, here:
+https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/glc/cism/gland20.input.nc
+and:
+https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/glc/cism/glint_example/
+
+To run a 5-km Greenland test case, you will need to download one of the files here:
+
+     http://websrv.cs.umt.edu/isis/index.php/Present_Day_Greenland
+
+The default is Greenland_5km_v1.1.nc. This file is also available in the CESM inputdata repo.
+
+The 5-km test case and 20-km test case use the same climate files.
+
+
+BUILDING AND RUNNING THE TEST CASE:
+
+When building the code, make sure to create the executable glint_example.
+As of April 2013, this executable lives in main_cism_directory/example_drivers/glint/src.
+
+Copy or link the executable to this test directory.
+(E.g., ln -s ../../example-drivers/glint/src/glint_example glint_example)
+
+Then type 'glint_example greenland_20km.config glint_example.config'
+(or similarly for other config filenames).
+
+Diagnostic output will be written to a file called greenland_20km.config.log
+or something similar.
+
+To change ice sheet model settings including output frequency, edit greenland_*.config.
+The files in the repo have settings that are physically reasonable but not scientifically
+validated.
+
+To change the length of the run or use different climate forcing files, 
+edit glint_example.config.
+
+

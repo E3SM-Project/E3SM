@@ -1,0 +1,46 @@
+scripts/ccsm_utils/Tools/lnd/clm/PTCLM/KnownBugs                   May/23/2013
+
+====================================================================================
+Bug number: 1364 
+Problem running US-UMB case on Macintosh
+
+I run into a floating point exception running the US-UMB site on Macintosh...
+
+./PTCLM.py -m generic_darwin_intel -s US-UMB -d /fs/cgd/csm/inputdata --pftgrid
+--soilgrid --scratchroot /Users/erik --run_n 2 --run_units nmonths --rmold
+--nopointdata 
+
+After having configured, built, and run for time-step 124...
+
+
+forrtl: severe (174): SIGSEGV, segmentation fault occurred
+
+====================================================================================
+Bug number: 1278 
+Add ability to run testcases.csh in same directory on different machines 
+
+testcases.csh can NOT run in the same directory on different machines at the same
+time, because some files are placed in the PTCLM directory and should go into the
+case directory. They also need to be named by casename.
+====================================================================================
+Bug number: 1251 
+Test case aborts on Macintosh with seq-fault in US-Ha1 I_QIAN case
+
+On yong with intel, the testcases.csh aborts on this case...
+
+./PTCLM.py -d /Users/erik/inputdata -m generic_darwin_intel -s US-Ha1 -c I
+--rmold --caseidprefix=myPTCLMtests --owritesrfaer --run_units=ndays --run_n=5
+--aerdepgrid --ndepgrid --useQIAN --QIAN_tower_yrs
+
+It aborts with a seg-fault...
+
+-----------------------------------
+
+NODE#  NAME
+(    0)  yong.local
+forrtl: severe (174): SIGSEGV, segmentation fault occurred
+
+
+This is after completing 24 timesteps in the land model (half-hour time-step).
+
+====================================================================================

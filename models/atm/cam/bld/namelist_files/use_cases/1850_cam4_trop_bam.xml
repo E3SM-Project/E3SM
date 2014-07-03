@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!-- Solar constant from Lean -->
+<solar_const>1360.89</solar_const>
+
+<!-- 1850 GHG values from ipcc-ar4-cfcs-1850-2000.xls (Doug Kinnison) -->
+<co2vmr>284.7e-6</co2vmr>
+<ch4vmr>791.6e-9</ch4vmr>
+<n2ovmr>275.68e-9</n2ovmr>
+<f11vmr>12.48e-12</f11vmr>
+<f12vmr>0.0</f12vmr>
+
+<!-- 1850 ozone data is from Jean-Francois Lamarque -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file>ozone_1.9x2.5_L26_1850clim_c091112.nc</prescribed_ozone_file>
+<prescribed_ozone_name>O3</prescribed_ozone_name>
+<prescribed_ozone_type>CYCLICAL</prescribed_ozone_type>
+<prescribed_ozone_cycle_yr>1850</prescribed_ozone_cycle_yr>
+
+<!-- Surface emissions for BAM or MAM -->
+<srf_emis_type>CYCLICAL</srf_emis_type>
+<dms_emis_file  >atm/cam/chem/trop_mozart_aero/emis/aerocom_DMS_2000.c080417.nc</dms_emis_file>
+<cb1_emis_file  >atm/cam/chem/trop_mozart_aero/emis/aerocom_CB1_1750.c080807.nc</cb1_emis_file>
+<oc1_emis_file  >atm/cam/chem/trop_mozart_aero/emis/aerocom_OC1_1750.nosoa.c080807.nc</oc1_emis_file>
+<SOAG_emis_file >atm/cam/chem/trop_mozart_aero/emis/aerocom_SOAG_1750.c080926.nc</SOAG_emis_file>
+<so2_emis_file  >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO2_surface_1750.c080807.nc</so2_emis_file>
+<so4_emis_file  >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_surface_1750.c080807.nc</so4_emis_file>
+
+<!-- External forcing for BAM or MAM -->
+<ext_frc_type>CYCLICAL</ext_frc_type>
+<so2_vrt_emis_file >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO2_vertical_1750.c080807.nc</so2_vrt_emis_file>
+<so4_vrt_emis_file >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_vertical_1750.c080807.nc</so4_vrt_emis_file>
+
+<!-- Prescribed oxidants for aerosol chemistry -->
+<tracer_cnst_type>CYCLICAL</tracer_cnst_type>
+<tracer_cnst_cycle_yr>1850</tracer_cnst_cycle_yr>
+<tracer_cnst_file>oxid_1.9x2.5_L26_1850clim_c091123.nc</tracer_cnst_file>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1850</sim_year>
+
+</namelist_defaults>

@@ -1,0 +1,214 @@
+\section{GLIMMER in practice -- an example}
+
+\subsection{Initialising and calling}
+
+The easiest way to learn how GLIMMER is used is by way of an
+example. We assume that the GLIMMER code has been installed alongside the
+climate model code, and can be compiled and linked successfully. Details of
+how to achieve this may be found in the \texttt{COMPILE} file in the top-level
+GLIMMER directory. 
+
+Typically, GLIMMER will be called from the main program body of a
+climate model. To make this possible, the compiler needs to be told to use the
+GLIMMER code. Use statements appear at the very beginning of f90 program
+units, before even \texttt{implicit none}:
+%
+\begin{verbatim}
+  use glimmer_main
+\end{verbatim}
+%
+The next task is to declare a variable of type \texttt{glimmer\_params}, which
+holds everything relating to the model, including any number of ice-sheet
+instances:
+%
+\begin{verbatim}
+  type(glimmer_params) :: ice_sheet
+\end{verbatim}
+%
+Before the ice-sheet model may be called from the climate model, it must be
+initialised. This is done with the following subroutine call:
+%
+\begin{verbatim}
+  call initialise_glimmer(ice_sheet,lats,lons,paramfile)
+\end{verbatim}
+%
+In this call, the arguments are as follows:
+%
+\begin{itemize}
+\item \texttt{ice\_sheet} is the variable of type \texttt{glimmer\_params}
+ defined above;
+\item \texttt{lats} and \texttt{lons} are one-dimensional arrays giving the
+  locations of the global grid-points in latitude and longitude, respectively; 
+\item \texttt{paramfile} is the file name of the top-level GLIMMER
+  configuration file.
+\end{itemize}
+%
+The contents of the configuration files will be dealt with later. Having
+initialised the model, it may now be called as part of the main climate
+model time-step loop:
+%
+\begin{verbatim}
+    call glimmer(ice_sheet,time,temp,precip,zonwind,merwind,orog)
+\end{verbatim} 
+%
+The arguments given in this example are the compulsory ones only; a number of
+optional arguments may be specified -- these are detailed in the reference
+section below. The compulsory arguments are:
+%
+\begin{itemize}
+\item \texttt{ice\_sheet} is the variable of type \texttt{glimmer\_params}
+ defined above;
+\item \texttt{time} is the current model time, in hours;
+\item \texttt{temp} is the daily mean $2\,\mathrm{m}$ global air temperature field, in
+  $^{\circ}\mathrm{C}$;
+\item \texttt{precip} is the global daily precipitation fields,
+  in $\mathrm{mm}\,\mathrm{s}^{-1}$ (water equivalent, making no distinction
+  between rain, snow, etc.);
+\item \texttt{zonwind} and \texttt{merwind} are the daily mean global zonal and
+  meridional components of the $10\,\mathrm{m}$ wind field, in
+  $\mathrm{ms}^{-1}$;
+\item \texttt{orog} is the global orography field, in $\mathrm{m}$.
+\end{itemize}
+%
+For the positive degree-day mass-balance routine, which is currently the only
+mass-balance model included with GLIMMER, the daily quantities given above are
+necessary, and, as such, GLIMMER should be called once per day. With the
+energy and mass-balance model currently being developed, hourly calls will be
+necessary. 
+%
+\subsection{Finishing off}
+%
+After the desired number of time-steps have been run, GLIMMER may have some
+tidying up to do. To accomplish this, the subroutine \texttt{end\_glimmer}
+must be called:
+%
+\begin{verbatim}
+  call end_glimmer(ice_sheet)
+\end{verbatim}
+%
+
+\subsection{Parameter Files}
+\subsubsection{Format}
+%
+All parameter configuration files in GLIMMER use a custom, easily
+understood file format, similar to Windows \texttt{.ini} files. The format is
+described in full in section \ref{dg.sec.config_file}. 
+
+Global parameters, applicable to all instances of the ice model are contained
+in the file specified by \texttt{paramfile} in the call to
+\texttt{initialise\_glimmer}. An example configuration file is given below (it is
+the file \texttt{example.glp}):
+%
+\begin{verbatim}
+[parameters]
+time-step = 1.0
+instance filenames:  g_land.gli
+\end{verbatim}
+%
+The file contains only one section, \texttt{parameters}, which has two
+name-value pairs: \texttt{time-step} and \texttt{instance filenames}. The
+first of these is the main ice model time-step, in years. The second is a list
+of configuration files for each ice model instance. GLIMMER will 
+create ice model instances for each of the filenames listed here, without the
+need to explicitly specify how many instances there are to be.
+
+For each instance of the model, a configuration file with instance-specific
+parameters must be supplied. The names of these files are given in the main
+GLIMMER configuration file, as described above. The configuration file for an individual
+instance is fairly long, so only a summary of the different sections
+contained in it is given below. For an example this kind of file, see
+\texttt{g\_land.gli} in the \texttt{data} directory.
+
+Sections in an instance-specific file:
+%
+\begin{itemize}
+\item \texttt{[output]} Configuration of model output -- contains the name of
+  the configuration file controlling netCDF I/O. In the case of the example file
+  \texttt{g\_land.gli}, the netCDF control file is \texttt{g\_land.glw}; see
+  Section \ref{ug.sec.ncconf}. In addition, the file specified here also
+  contains the name of the input file used (this will be changed in future).
+\item \texttt{[domain size]} Model grid parameters -- number of grid points in $x$ and
+  $y$ dimensions, and number of levels in the vertical.
+\item \texttt{[projection]} Details of the projection used in the instance -- type of
+  projection, and necessary parameters.
+\item \texttt{[sigma coordinates]} -- contains the name of a
+  sigma-coordinates file (see below)
+\item \texttt{[options]} Flags specifying various model integration options, such
+  as which of various schemes to use, etc.
+\item \texttt{[time-steps]} The lengths of the various model time-steps
+  relative to the main time-step.
+\item \texttt{[grid-lengths]} The grid-lengths of the ice model domain.
+\item \texttt{[parameters]} Physical parameters for the model, such as isostatic
+  relaxation timescale.
+\item \texttt{[forcing]} Parameters used by the forcing which may be used to run
+  the model in stand-alone mode.
+\item \texttt{[constants]} Constants used in the interface with the global
+  model.
+\item \texttt{[PDD scheme]} Parameters for the positive degree-day mass
+  balance scheme.
+\end{itemize}
+%
+\subsubsection{The Sigma coordinate file}
+%
+The name of the file containg the sigma variable is specified in
+the instance-specific configuration file. This file consists of a
+list of numbers in ascending order, between 0.0 and 1.0, specifying the
+heights of the model levels in sigma space. The number of entries must be the
+same as the number of model levels specified. An example file is
+\texttt{g\_land.gls}.
+
+\subsubsection{Grid I/O control files}
+The model requires at least one field as input -- the height of the bedrock
+topography (including bathymetry, if appropriate). If the bedrock is not in a relaxed state, then
+the height of the relaxed topography must also be supplied. The bedrock is assumed to be relaxed 
+if no relaxed topography field is supplied. Furthermore, the uppser surface of the ice sheet at the 
+start of the run can be specified. These must be supplied as fields in a
+netCDF file, whose name is given in the configuration file specified in the
+\texttt{[output]} section of the main instance configuration file (see
+above). A sample input file is supplied (\texttt{g\_land.input.nc}) - use
+\texttt{ncdump} to determine the names of variables, dimensions and attributes.
+
+Model output is controlled by the file listed in the \texttt{[output]} section
+of the main instance-specific configuration file. Each model instance can save
+specific variables to different netCDF files with different time intervals.
+%
+\subsection{Restarts}
+%
+{\bf N.B. GLIMMER does not currently have a functioning restart
+  mechanism. This documentation is provided for information only at this stage.}
+
+GLIMMER will provide two routines to handle restarts,
+\texttt{glimmer\_write\_restart}, and \texttt{glimmer\_read\_restart}. The
+former writes the entire model state to a single file, while the latter will
+restore the model state from a previously created
+file. For example, \texttt{glimmer\_write\_restart} may be called as follows:
+%
+\begin{verbatim}
+  call glimmer_write_restart(ice_sheet,25,'ice_sheet.restart')
+\end{verbatim}
+%
+Here, \texttt{ice\_sheet} is the GLIMMER parameter variable refered to
+previously, \texttt{25} is the logical file-unit to use, and
+\texttt{'ice\_sheet.restart'} is the filename of the restart file. This
+subroutine call may be made at any point, regardless of whether it is intended
+to halt the integration imminently, or not. In order to recover the model
+state, the following call to \texttt{glimmer\_read\_restart} would be made:
+%
+\begin{verbatim}
+  call glimmer_read_restart(ice_sheet,25,'ice_sheet.restart')
+\end{verbatim}
+%
+The arguments are the same as for the previous call. When restarting from a
+file like this, it is not necessary to make a call to
+\texttt{initialise\_glimmer}. Note also that there is no alternative restart mechanism
+provided within the normal \texttt{glimmer} subroutine call -- all restarts
+must be called explicitly.
+
+Note also that \texttt{glimmer\_read\_restart} may not be called if
+\texttt{initialise\_glimmer} has been called already. This is because there is
+currently no mechanism for \texttt{glimmer\_read\_restart} to know whether the
+relevant model arrays have already been allocated. If they have, and
+\texttt{glimmer\_read\_restart} tries to reallocate them, a fatal
+run-time error will probably be generated. It is hoped to address this problem
+in a future release.
+%

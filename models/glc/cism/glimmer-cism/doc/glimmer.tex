@@ -1,0 +1,58 @@
+\begin{document}
+\frontmatter
+\title{Glimmer-CISM {\glimmerver} Documentation}
+\author{Magnus Hagdorn\thanks{Magnus.Hagdorn@ed.ac.uk}, Ian
+  Rutt\thanks{I.C.Rutt@bristol.ac.uk}, Tony Payne\thanks{A.J.Payne@bristol.ac.uk} 
+  Felix Hebeler\thanks{fhebeler@geo.unizh.ch} and Timothy R. Wylie}
+\maketitle
+\tableofcontents
+
+\ifthenelse{\boolean{html}}
+{
+\Configure{graphics*} 
+         {eps} 
+         {\Needs{"convert \csname Gin@base\endcsname.eps 
+                               \csname Gin@base\endcsname.png"}% 
+          \Picture[pict]{\csname Gin@base\endcsname.png}% 
+         } 
+
+}
+{}
+
+\mainmatter
+\part{User Documentation}
+\chapter{User Guide}
+\newcommand{\dir}{ug}
+\input{\dir/ug.tex}
+
+\chapter{Tutorial}
+\renewcommand{\dir}{tut}
+\input{\dir/tut.tex}
+
+\part{Developer Documentation}
+
+\chapter{Numerics}
+\renewcommand{\dir}{num}
+\input{\dir/num.tex}
+
+\chapter{Developer Guide}
+\renewcommand{\dir}{dg}
+\input{\dir/dg.tex}
+
+\renewcommand{\dir}{ext}
+\input{\dir/ext.tex}
+
+\part{Appendix}
+\appendix
+\renewcommand{\dir}{ug}
+\chapter{netCDF Variables}
+\input{\dir/varlist.tex}
+\chapter{The GLIMMER API}
+\input{\dir/glum_api.tex}
+\input{\dir/glide_api.tex}
+\input{\dir/glint_api.tex}
+\renewcommand{\dir}{ext}
+\input{\dir/ext-app.tex}
+
+\bibliography{glimmer}
+\end{document}

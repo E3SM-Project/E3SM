@@ -1,0 +1,367 @@
+module shr_assert_mod
+
+! Assert subroutines for common debugging operations.
+
+use shr_kind_mod, only: &
+     r4 => shr_kind_r4, &
+     r8 => shr_kind_r8, &
+     i4 => shr_kind_i4, &
+     i8 => shr_kind_i8
+
+use shr_sys_mod, only: &
+     shr_sys_abort
+
+use shr_log_mod, only: &
+     shr_log_Unit
+
+implicit none
+private
+save
+
+! Assert that a logical is true.
+public :: shr_assert
+
+! Assert that a numerical value satisfies certain constraints.
+public :: shr_assert_in_domain
+
+interface shr_assert
+   ! DIMS 0,1,2,3,4,5,6,7
+   module procedure shr_assert_{DIMS}d
+end interface
+
+interface shr_assert_in_domain
+   ! TYPE double,real,int,long
+   ! DIMS 0,1,2,3,4,5,6,7
+   module procedure shr_assert_in_domain_{DIMS}d_{TYPE}
+end interface
+
+! Private utilities.
+
+interface print_bad_loc
+   ! TYPE double,real,int,long
+   ! DIMS 0,1,2,3,4,5,6,7
+   module procedure print_bad_loc_{DIMS}d_{TYPE}
+end interface
+
+interface find_first_loc
+   ! DIMS 0,1,2,3,4,5,6,7
+   module procedure find_first_loc_{DIMS}d
+end interface
+
+contains
+
+! DIMS 0,1,2,3,4,5,6,7
+subroutine shr_assert_{DIMS}d(var, msg)
+
+!-----------------------------
+! BEGIN defining local macros
+!-----------------------------
+
+! Generalize the "all" intrinsic to handle scalars.
+#if ({DIMS} != 0)
+#define GEN_ALL(x) all(x)
+#else
+#define GEN_ALL(x) x
+#endif
+
+!-----------------------------
+! END macro section
+!-----------------------------
+
+  ! Logical being asserted.
+  logical, intent(in) :: var{DIMSTR}
+  ! Optional error message if assert fails.
+  character(len=*), intent(in), optional :: msg
+
+  ! Just return immediately if assert will succeed.
+  if (.not. GEN_ALL(var)) then
+     if (present(msg)) then
+        call shr_sys_abort(msg)
+     else
+        call shr_sys_abort("ERROR: shr_assert: Assert failed!")
+     end if
+  end if
+
+! Undefine local macros.
+#undef GEN_ALL
+
+end subroutine shr_assert_{DIMS}d
+
+!--------------------------------------------------------------------------
+!--------------------------------------------------------------------------
+
+! TYPE double,real,int,long
+! DIMS 0,1,2,3,4,5,6,7
+subroutine shr_assert_in_domain_{DIMS}d_{TYPE}(var, varname, msg, &
+     is_nan, lt, gt, le, ge, eq, ne)
+
+!-----------------------------
+! BEGIN defining local macros
+!-----------------------------
+
+! Flag for floating point types.
+
+#if ({ITYPE} == TYPEREAL) || ({ITYPE} == TYPEDOUBLE)
+#define TYPEFP
+#else
+#undef TYPEFP
+#endif
+
+! "Generalized" macro functions allow transformational intrinsic functions
+! to handle both scalars and arrays.
+
+#if ({DIMS} != 0)
+! When given an array, use the intrinsics.
+#define GEN_ALL(x) all(x)
+#define GEN_MAXLOC(x) maxloc(x)
+#define GEN_MINLOC(x) minloc(x)
+#else
+
+! Scalar extensions:
+!   GEN_ALL (logical reduction) is a no-op for a scalar.
+!   GEN_[MAX,MIN]LOC should return a 1D, size 0 (empty), integer array.
+#define GEN_ALL(x) x
+
+! Compiler workaround to construct size 0 array.
+! Newer PGI will probably not need this.
+#if (defined CPRPGI || defined CPRLAHEY)
+#define GEN_MAXLOC(x) find_first_loc(.false.)
+#define GEN_MINLOC(x) find_first_loc(.false.)
+#else
+#define GEN_MAXLOC(x) (/ integer:: /)
+#define GEN_MINLOC(x) (/ integer:: /)
+#endif
+
+#endif
+
+!-----------------------------
+! END macro section
+!-----------------------------
+
+#ifdef TYPEFP
+  use shr_infnan_mod, only: shr_infnan_isnan
+#endif
+
+  ! Variable being checked.
+  {VTYPE}, intent(in) :: var{DIMSTR}
+  ! Variable name to be used in error messages.
+  character(len=*), intent(in), optional :: varname
+  ! Optional error message if assert fails.
+  character(len=*), intent(in), optional :: msg
+  ! Assert that the variable is not (or is) NaN.
+  logical, intent(in), optional :: is_nan
+  ! Limits for (in)equalities.
+  {VTYPE}, intent(in), optional :: lt
+  {VTYPE}, intent(in), optional :: gt
+  {VTYPE}, intent(in), optional :: le
+  {VTYPE}, intent(in), optional :: ge
+  {VTYPE}, intent(in), optional :: eq
+  {VTYPE}, intent(in), optional :: ne
+
+  ! Note that the following array is size 0 for scalars.
+  integer :: loc_vec({DIMS})
+
+  logical :: is_nan_passed
+  logical :: lt_passed
+  logical :: gt_passed
+  logical :: le_passed
+  logical :: ge_passed
+  logical :: eq_passed
+  logical :: ne_passed
+
+  is_nan_passed = .true.
+  lt_passed = .true.
+  gt_passed = .true.
+  le_passed = .true.
+  ge_passed = .true.
+  eq_passed = .true.
+  ne_passed = .true.
+
+  ! Do one pass just to find out if we can return with no problem.
+
+#ifdef TYPEFP
+  ! Only floating-point values can actually be Inf/NaN.
+  if (present(is_nan)) &
+     is_nan_passed = GEN_ALL(shr_infnan_isnan(var) .eqv. is_nan)
+#else
+  if (present(is_nan)) &
+     is_nan_passed = .not. is_nan
+#endif
+
+  if (present(lt)) &
+     lt_passed = GEN_ALL(var < lt)
+
+  if (present(gt)) &
+     gt_passed = GEN_ALL(var > gt)
+
+  if (present(le)) &
+     le_passed = GEN_ALL(var <= le)
+
+  if (present(ge)) &
+     ge_passed = GEN_ALL(var >= ge)
+
+  if (present(eq)) &
+     eq_passed = GEN_ALL(var == eq)
+
+  if (present(ne)) &
+     ne_passed = GEN_ALL(var /= ne)
+
+  if ( is_nan_passed .and. &
+       lt_passed .and. &
+       gt_passed .and. &
+       le_passed .and. &
+       ge_passed .and. &
+       eq_passed .and. &
+       ne_passed) &
+       return
+
+  ! If we got here, assert will fail, so find out where so that we
+  ! can try to print something useful.
+
+  if (.not. is_nan_passed) then
+#ifdef TYPEFP
+     loc_vec = find_first_loc(shr_infnan_isnan(var) .neqv. is_nan)
+     call print_bad_loc(var, loc_vec, varname)
+     if (is_nan) then
+        write(shr_log_Unit,*) "Expected value to be NaN."
+     else
+        write(shr_log_Unit,*) "Expected value to be a number."
+     end if
+#else
+     loc_vec = spread(1,1,{DIMS})
+     call print_bad_loc(var, loc_vec, varname)
+     if (is_nan) then
+        write(shr_log_Unit,*) &
+             "Asserted NaN, but the variable is not floating-point!"
+     end if
+#endif
+  end if
+
+  if (.not. lt_passed) then
+     loc_vec = GEN_MAXLOC(var)
+     call print_bad_loc(var, loc_vec, varname)
+     write(shr_log_Unit,*) "Expected value to be less than ",lt
+  end if
+
+  if (.not. gt_passed) then
+     loc_vec = GEN_MINLOC(var)
+     call print_bad_loc(var, loc_vec, varname)
+     write(shr_log_Unit,*) "Expected value to be greater than ",gt
+  end if
+
+  if (.not. le_passed) then
+     loc_vec = GEN_MAXLOC(var)
+     call print_bad_loc(var, loc_vec, varname)
+     write(shr_log_Unit,*) "Expected value to be less than or &
+          &equal to ",le
+  end if
+
+  if (.not. ge_passed) then
+     loc_vec = GEN_MINLOC(var)
+     call print_bad_loc(var, loc_vec, varname)
+     write(shr_log_Unit,*) "Expected value to be greater than or &
+          &equal to ",ge
+  end if
+
+  if (.not. eq_passed) then
+     ! Could use maxloc to try to find greatest difference, but due to
+     ! possible overflow, simpler to just find the first location.
+     ! Use ".not." and "==" instead of "/=" to be sure of NaN behavior.
+     loc_vec = find_first_loc(.not. (var == eq))
+     call print_bad_loc(var, loc_vec, varname)
+     write(shr_log_Unit,*) "Expected value to be equal to ",eq
+  end if
+
+  if (.not. ne_passed) then
+     ! Use ".not." and "/=" instead of "==" to be sure of NaN behavior.
+     loc_vec = find_first_loc(.not. (var /= ne))
+     call print_bad_loc(var, loc_vec, varname)
+     write(shr_log_Unit,*) "Expected value to never be equal to ",ne
+  end if
+
+  call shr_sys_abort(msg)
+
+! Undefine local macros.
+#undef TYPEFP
+#undef GEN_ALL
+#undef GEN_MAXLOC
+#undef GEN_MINLOC
+
+end subroutine shr_assert_in_domain_{DIMS}d_{TYPE}
+
+!--------------------------------------------------------------------------
+!--------------------------------------------------------------------------
+
+! TYPE double,real,int,long
+! DIMS 0,1,2,3,4,5,6,7
+subroutine print_bad_loc_{DIMS}d_{TYPE}(var, loc_vec, varname)
+  ! Print information about a bad location in an variable.
+  ! For scalars, just print value.
+
+  {VTYPE}, intent(in) :: var{DIMSTR}
+  integer, intent(in) :: loc_vec({DIMS})
+
+  character(len=*), intent(in), optional :: varname
+
+  if (present(varname)) then
+     write(shr_log_Unit,*) &
+          "ERROR: shr_assert_in_domain: ",trim(varname), &
+          " has invalid value ", &
+#if ({DIMS} != 0)
+          var({REPEAT:loc_vec(#)}), &
+          " at location: ",loc_vec
+#else
+          var
+#endif
+  else
+     write(shr_log_Unit,*) &
+          "ERROR: shr_assert_in_domain: input variable", &
+          " has invalid value ", &
+#if ({DIMS} != 0)
+          var({REPEAT:loc_vec(#)}), &
+          " at location: ",loc_vec
+#else
+          var
+
+          ! Kill compiler spam for unused loc_vec.
+          if (.false.) write(*,*) loc_vec
+#endif
+  end if
+
+end subroutine print_bad_loc_{DIMS}d_{TYPE}
+
+!--------------------------------------------------------------------------
+!--------------------------------------------------------------------------
+
+! DIMS 0,1,2,3,4,5,6,7
+pure function find_first_loc_{DIMS}d(mask) result (loc_vec)
+  ! Inefficient but simple subroutine for finding the location of
+  ! the first .true. value in an array.
+  ! If no true values, returns first value.
+
+  logical, intent(in) :: mask{DIMSTR}
+  integer :: loc_vec({DIMS})
+
+#if ({DIMS} != 0)
+  integer :: flags({REPEAT:size(mask,#)})
+
+  where (mask)
+     flags = 1
+  elsewhere
+     flags = 0
+  end where
+
+  loc_vec = maxloc(flags)
+#else
+
+! Remove compiler warnings (statement will be optimized out).
+
+#if (! defined CPRPGI && ! defined CPRLAHEY)
+  if (.false. .and. mask) loc_vec = (/ integer:: /)
+#endif
+
+#endif
+
+end function find_first_loc_{DIMS}d
+
+end module shr_assert_mod

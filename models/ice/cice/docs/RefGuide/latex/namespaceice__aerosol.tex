@@ -1,0 +1,62 @@
+\hypertarget{namespaceice__aerosol}{
+\section{ice\_\-aerosol Module Reference}
+\label{namespaceice__aerosol}\index{ice\_\-aerosol@{ice\_\-aerosol}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__aerosol_aa513eb52e19fad1dae05441487607b63}{init\_\-aerosol}
+\item 
+subroutine \hyperlink{namespaceice__aerosol_a11451c6ed657ce27ffdd01d6c3db0ed4}{update\_\-aerosol} (nx\_\-block, ny\_\-block, dt, icells, indxi, indxj, meltt, melts, meltb, congel, snoice, fsnow, trcrn, aice\_\-old, vice\_\-old, vsno\_\-old, vicen, vsnon, aicen, faero, fsoot)
+\item 
+subroutine \hyperlink{namespaceice__aerosol_a1e014a016b35aba5d5f31a829ffa909f}{write\_\-restart\_\-aero} (filename\_\-spec)
+\item 
+subroutine \hyperlink{namespaceice__aerosol_a423573cf8f7630b777b38860c81adfb0}{read\_\-restart\_\-aero} (filename\_\-spec)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__aerosol_a3ceb80d852249f318373d31d28ce9007}{restart\_\-aero}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__aerosol_aa513eb52e19fad1dae05441487607b63}{
+\index{ice\_\-aerosol@{ice\_\-aerosol}!init\_\-aerosol@{init\_\-aerosol}}
+\index{init\_\-aerosol@{init\_\-aerosol}!ice_aerosol@{ice\_\-aerosol}}
+\subsubsection[{init\_\-aerosol}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-aerosol::init\_\-aerosol ()}}
+\label{namespaceice__aerosol_aa513eb52e19fad1dae05441487607b63}
+
+
+Definition at line 53 of file ice\_\-aerosol.F90.\hypertarget{namespaceice__aerosol_a423573cf8f7630b777b38860c81adfb0}{
+\index{ice\_\-aerosol@{ice\_\-aerosol}!read\_\-restart\_\-aero@{read\_\-restart\_\-aero}}
+\index{read\_\-restart\_\-aero@{read\_\-restart\_\-aero}!ice_aerosol@{ice\_\-aerosol}}
+\subsubsection[{read\_\-restart\_\-aero}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-aerosol::read\_\-restart\_\-aero (character(len=char\_\-len\_\-long),intent(in),optional {\em filename\_\-spec})}}
+\label{namespaceice__aerosol_a423573cf8f7630b777b38860c81adfb0}
+
+
+Definition at line 687 of file ice\_\-aerosol.F90.\hypertarget{namespaceice__aerosol_a11451c6ed657ce27ffdd01d6c3db0ed4}{
+\index{ice\_\-aerosol@{ice\_\-aerosol}!update\_\-aerosol@{update\_\-aerosol}}
+\index{update\_\-aerosol@{update\_\-aerosol}!ice_aerosol@{ice\_\-aerosol}}
+\subsubsection[{update\_\-aerosol}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-aerosol::update\_\-aerosol (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em meltt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em melts}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em meltb}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em congel}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em snoice}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em fsnow}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,ntrcr),intent(inout) {\em trcrn}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em aice\_\-old}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em vice\_\-old}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em vsno\_\-old}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em vsnon}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,n\_\-aeromx),intent(in) {\em faero}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,n\_\-aeromx),intent(inout) {\em fsoot})}}
+\label{namespaceice__aerosol_a11451c6ed657ce27ffdd01d6c3db0ed4}
+
+
+Definition at line 92 of file ice\_\-aerosol.F90.\hypertarget{namespaceice__aerosol_a1e014a016b35aba5d5f31a829ffa909f}{
+\index{ice\_\-aerosol@{ice\_\-aerosol}!write\_\-restart\_\-aero@{write\_\-restart\_\-aero}}
+\index{write\_\-restart\_\-aero@{write\_\-restart\_\-aero}!ice_aerosol@{ice\_\-aerosol}}
+\subsubsection[{write\_\-restart\_\-aero}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-aerosol::write\_\-restart\_\-aero (character(len=char\_\-len\_\-long),intent(in),optional {\em filename\_\-spec})}}
+\label{namespaceice__aerosol_a1e014a016b35aba5d5f31a829ffa909f}
+
+
+Definition at line 606 of file ice\_\-aerosol.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__aerosol_a3ceb80d852249f318373d31d28ce9007}{
+\index{ice\_\-aerosol@{ice\_\-aerosol}!restart\_\-aero@{restart\_\-aero}}
+\index{restart\_\-aero@{restart\_\-aero}!ice_aerosol@{ice\_\-aerosol}}
+\subsubsection[{restart\_\-aero}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-aerosol::restart\_\-aero}}}
+\label{namespaceice__aerosol_a3ceb80d852249f318373d31d28ce9007}
+
+
+Definition at line 33 of file ice\_\-aerosol.F90.

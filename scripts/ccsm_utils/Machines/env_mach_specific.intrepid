@@ -1,0 +1,33 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# Intrepid build specific settings
+# -------------------------------------------------------------------------
+
+setenv PATH /soft/apps/fen/cmake-2.8.10.2/bin/:${PATH}
+
+# -------------------------------------------------------------------------
+# Run time environment variables 
+# -------------------------------------------------------------------------
+
+#ulimit -d unlimited;  #ulimit -s unlimited
+limit datasize  unlimited    
+setenv OMP_DYNAMIC FALSE     
+setenv AIXTHREAD_SCOPE S
+setenv MALLOCMULTIHEAP TRUE  
+#setenv SPINLOOPTIME 100000
+#setenv YIELDLOOPTIME 40000
+setenv OBJECT_MODE 32
+if (${OBJECT_MODE} == 64) then
+  setenv XLSMPOPTS "stack=256000000"
+else
+  setenv XLSMPOPTS "stack=86000000"
+endif
+setenv MPI_TYPE_MAX 100000 
+
+#
+# This is the equivalent of dotfiles or modules 
+#
+source /software/common/adm/softenv-1.6.2/etc/softenv-load.csh
+eval "`/software/common/adm/softenv-1.6.2/bin/soft-dec csh delete @ibm-compilers-default`"  
+eval "`/software/common/adm/softenv-1.6.2/bin/soft-dec csh add @ibm-compilers-jan2013`"

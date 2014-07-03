@@ -1,0 +1,571 @@
+<?xml version="1.0"?>
+
+<!--
+
+       ConfigInfo.xml					    Nov./15/2007
+
+       File with optimized decomposition information for POP.
+
+-->
+<configInfo>
+
+<!-- -------------------------------------------------------------------------------- -->
+  
+  <!-- sizes for different resolutions (number latitude and number of longitudes)  -->
+  <size res="gx3v5">
+     <nlons>100</nlons>
+     <nlats>116</nlats>
+  </size>
+  <size res="gx3v6">
+     <nlons>100</nlons>
+     <nlats>116</nlats>
+  </size>
+  <size res="gx3v7">
+     <nlons>100</nlons>
+     <nlats>116</nlats>
+  </size>
+  <size res="gx1v3">
+     <nlons>320</nlons>
+     <nlats>384</nlats>
+  </size>
+  <size res="gx1v4">
+     <nlons>320</nlons>
+     <nlats>384</nlats>
+  </size>
+  <size res="gx1v5">
+     <nlons>320</nlons>
+     <nlats>384</nlats>
+  </size>
+  <size res="gx1v6">
+     <nlons>320</nlons>
+     <nlats>384</nlats>
+  </size>
+  <size res="tx0.1v2">
+     <nlons>3600</nlons>
+     <nlats>2400</nlats>
+  </size>
+  <size res="tx1v1">
+     <nlons>360</nlons>
+     <nlats>240</nlats>
+  </size>
+
+<!-- -------------------------------------------------------------------------------- -->
+  <!-- tx0.1v2 resolution -->
+  <decomp nproc="480" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >180</bsize_x>
+    <bsize_y   >100</bsize_y>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="512" res="tx0.1v2" >
+    <maxblocks >4</maxblocks>
+    <bsize_x   >72</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="625" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >144</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="960" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >90</bsize_x>
+    <bsize_y   >100</bsize_y>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="1024" res="tx0.1v2" >
+    <maxblocks >3</maxblocks>
+    <bsize_x   >72</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="1224" res="tx0.1v2" >
+    <maxblocks >4</maxblocks>
+    <bsize_x   >45</bsize_x>
+    <bsize_y   >30</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="1232" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >90</bsize_x>
+    <bsize_y   >60</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="1376" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >60</bsize_x>
+    <bsize_y   >80</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp> 
+
+  <decomp nproc="1440" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >75</bsize_x>
+    <bsize_y   >80</bsize_y>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="1612" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >80</bsize_x>
+    <bsize_y   >50</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp> 
+
+  <decomp nproc="1664" res="tx0.1v2" >
+    <maxblocks >3</maxblocks>
+    <bsize_x   >45</bsize_x>
+    <bsize_y   >30</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="1920" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >60</bsize_x>
+    <bsize_y   >75</bsize_y>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="2000" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >72</bsize_x>
+    <bsize_y   >60</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="2048" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >72</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="2356" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >45</bsize_x>
+    <bsize_y   >60</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="2634" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >60</bsize_x>
+    <bsize_y   >40</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="3136" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >40</bsize_x>
+    <bsize_y   >50</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="3476" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >30</bsize_x>
+    <bsize_y   >60</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="3600" res="tx0.1v2" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >40</bsize_x>
+    <bsize_y   >60</bsize_y>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="3614" res="tx0.1v2" >
+     <maxblocks >1</maxblocks>
+     <bsize_x   >36</bsize_x>
+     <bsize_y   >48</bsize_y>
+     <decomptype>spacecurve</decomptype>
+  </decomp>
+          
+  <decomp nproc="3846" res="tx0.1v2" >
+     <maxblocks >1</maxblocks>
+     <bsize_x   >40</bsize_x>
+     <bsize_y   >40</bsize_y>
+     <decomptype>spacecurve</decomptype>
+  </decomp>
+          
+  <decomp nproc="4028" res="tx0.1v2" >
+     <maxblocks >1</maxblocks>
+     <bsize_x   >48</bsize_x>
+     <bsize_y   >32</bsize_y>
+     <decomptype>spacecurve</decomptype>
+  </decomp>
+                                                
+  <decomp nproc="4564" res="tx0.1v2" >
+     <maxblocks >1</maxblocks>
+     <bsize_x   >45</bsize_x>
+     <bsize_y   >30</bsize_y>
+     <decomptype>spacecurve</decomptype>
+  </decomp>
+          
+  <decomp nproc="6124" res="tx0.1v2" >
+     <maxblocks >1</maxblocks>
+     <bsize_x   >20</bsize_x>
+     <bsize_y   >50</bsize_y>
+     <decomptype>spacecurve</decomptype>
+  </decomp>
+
+  <decomp nproc="19460" res="tx0.1v2"  nthrd="1">
+    <maxblocks >1</maxblocks> 
+    <bsize_x>15</bsize_x> 
+    <bsize_y>20</bsize_y>    
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+<!-- -------------------------------------------------------------------------------- -->
+  <!-- gx1v[3456] resolution -->
+  <decomp nproc="1" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >320</bsize_x>
+    <bsize_y   >384</bsize_y>
+    <nx_blocks >1</nx_blocks>
+    <ny_blocks >1</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="2" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >320</bsize_x>
+    <bsize_y   >192</bsize_y>
+    <nx_blocks >1</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="4" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >160</bsize_x>
+    <bsize_y   >192</bsize_y>
+    <nx_blocks >2</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="8" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >80</bsize_x>
+    <bsize_y   >192</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="10" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >64</bsize_x>
+    <bsize_y   >192</bsize_y>
+    <nx_blocks >5</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="12" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >80</bsize_x>
+    <bsize_y   >128</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >3</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="16" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >80</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >4</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="20" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >64</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <nx_blocks >5</nx_blocks>
+    <ny_blocks >4</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="24" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >80</bsize_x>
+    <bsize_y   >64</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >6</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="32" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >80</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >8</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="40" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >64</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <nx_blocks >5</nx_blocks>
+    <ny_blocks >8</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="48" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >40</bsize_x>
+    <bsize_y   >64</bsize_y>
+    <nx_blocks >8</nx_blocks>
+    <ny_blocks >6</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="64" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >40</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <nx_blocks >8</nx_blocks>
+    <ny_blocks >8</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="80" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >32</bsize_x>
+    <bsize_y   >48</bsize_y>
+    <nx_blocks >10</nx_blocks>
+    <ny_blocks >8</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="96" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >40</bsize_x>
+    <bsize_y   >32</bsize_y>
+    <nx_blocks >8</nx_blocks>
+    <ny_blocks >12</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="120" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >32</bsize_x>
+    <bsize_y   >32</bsize_y>
+    <nx_blocks >10</nx_blocks>
+    <ny_blocks >12</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="128" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >40</bsize_x>
+    <bsize_y   >24</bsize_y>
+    <nx_blocks >8</nx_blocks>
+    <ny_blocks >16</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="160" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >32</bsize_x>
+    <bsize_y   >24</bsize_y>
+    <nx_blocks >10</nx_blocks>
+    <ny_blocks >16</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="180" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >32</bsize_x>
+    <bsize_y   >22</bsize_y>
+    <nx_blocks >10</nx_blocks>
+    <ny_blocks >18</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="192" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >32</bsize_y>
+    <nx_blocks >16</nx_blocks>
+    <ny_blocks >12</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="240" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >32</bsize_x>
+    <bsize_y   >16</bsize_y>
+    <nx_blocks >10</nx_blocks>
+    <ny_blocks >24</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="256" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >24</bsize_y>
+    <nx_blocks >16</nx_blocks>
+    <ny_blocks >16</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="384" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >16</bsize_y>
+    <nx_blocks >16</nx_blocks>
+    <ny_blocks >24</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="480" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >16</bsize_x>
+    <bsize_y   >16</bsize_y>
+    <nx_blocks >20</nx_blocks>
+    <ny_blocks >24</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="768" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >10</bsize_x>
+    <bsize_y   >16</bsize_y>
+    <nx_blocks >32</nx_blocks>
+    <ny_blocks >24</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+<!-- -------------------------------------------------------------------------------- -->
+  <!-- gx3v[567] resolution -->
+  <decomp nproc="1" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >100</bsize_x>
+    <bsize_y   >116</bsize_y>
+    <nx_blocks >1</nx_blocks>
+    <ny_blocks >1</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="2" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >100</bsize_x>
+    <bsize_y   >58</bsize_y>
+    <nx_blocks >1</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="4" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >50</bsize_x>
+    <bsize_y   >58</bsize_y>
+    <nx_blocks >2</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="8" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >25</bsize_x>
+    <bsize_y   >58</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="10" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >58</bsize_y>
+    <nx_blocks >5</nx_blocks>
+    <ny_blocks >2</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="16" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >25</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >4</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="20" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <nx_blocks >5</nx_blocks>
+    <ny_blocks >4</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="30" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >20</bsize_y>
+    <nx_blocks >5</nx_blocks>
+    <ny_blocks >6</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="32" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >25</bsize_x>
+    <bsize_y   >15</bsize_y>
+    <nx_blocks >4</nx_blocks>
+    <ny_blocks >8</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+
+  <decomp nproc="40" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >10</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <nx_blocks >10</nx_blocks>
+    <ny_blocks >4</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="48" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >17</bsize_x>
+    <bsize_y   >15</bsize_y>
+    <nx_blocks >6</nx_blocks>
+    <ny_blocks >8</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="60" res="gx3v[567]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >17</bsize_x>
+    <bsize_y   >12</bsize_y>
+    <nx_blocks >6</nx_blocks>
+    <ny_blocks >10</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+
+<!-- -------------------------------------------------------------------------------- -->
+<!-- -------------------------------------------------------------------------------- -->
+
+</configInfo>

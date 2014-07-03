@@ -1,0 +1,499 @@
+#!/usr/bin/env perl 
+
+#===================================================================
+# Test suite and test creation script. 
+#===================================================================
+use strict;
+use warnings;
+use Cwd qw( getcwd abs_path );
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+use File::Basename;
+use File::Copy;
+use Data::Dumper;
+use XML::LibXML;
+
+# Get input arguments
+if ($#ARGV == -1) {
+    usage();
+}
+
+my %opts = (
+    category => 'all',
+    compiler => 'all',
+    compset  => 'all',
+    grid     => 'all',
+    machine  => 'all',
+    test     => 'all',
+    list     => 0, 
+    verbose  => 0,
+    outputlist => 0,
+    outputtext => 0,
+    outputxml =>  0,
+    );
+
+GetOptions(
+    "list=s"     => \$opts{'list'},
+    "category=s" => \$opts{'category'},
+    "compset=s"  => \$opts{'compset'},
+    "compiler=s" => \$opts{'compiler'},
+    "grid=s"     => \$opts{'grid'},
+    "machine=s"  => \$opts{'machine'},
+    "test=s"     => \$opts{'test'},
+    "h|help"     => \$opts{'help'},
+    "v|verbose"  => \$opts{'verbose'},
+    "outputlist" => \$opts{'outputlist'},
+    "outputxml" => \$opts{'outputxml'},
+    );
+
+if (@ARGV) {
+    # Check for unparsed arguments
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Parse the newlist file and add those entries to testlist.xml
+my $parser = XML::LibXML->new;
+my $list = $parser->parse_file('ccsm_utils/Testlistxml/testlist.xml');
+my $root = $list->getDocumentElement();
+
+my ($list_opt,$compset_opt,$grid_opt,$machine_opt,
+    $category_opt,$compiler_opt, $test_opt);
+
+$category_opt = $opts{'category'};
+$compset_opt  = $opts{'compset'};
+$compiler_opt = $opts{'compiler'};
+$grid_opt     = $opts{'grid'};
+$list_opt     = $opts{'list'};
+$machine_opt  = $opts{'machine'};
+$test_opt     = $opts{'test'};
+
+#----------------------------------------------------------------------------
+# List compsets, machines, categories, compilers, grids
+#----------------------------------------------------------------------------
+
+if ($list_opt =~ /compsets/ ) {
+    print "\n===================================\n";
+    print " available compsets \n";
+    print "===================================\n";
+    my @list;
+    foreach my $compset_elem ($root->findnodes('/testlist/compset')) { 
+	my($val) = $compset_elem->getAttribute('name'); 
+	push (@list, $val);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $val (sort @list) {
+	print     "   $val \n";
+    }
+    print     " \n";
+}
+
+if ($list_opt =~ /grids/ ) {
+    print "\n===================================\n";
+    print " available grids \n";
+    print "===================================\n";
+    my @list;
+    foreach my $grid_elem ($root->findnodes('/testlist/compset/grid')) { 
+	my($val) = $grid_elem->getAttribute('name'); 
+	push (@list, $val);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $val (sort @list) {
+	print     "   $val \n";
+    }
+    print     " \n";
+}
+
+if ($list_opt =~ /machines/ ) {
+    print "\n===================================\n";
+    print " available machines \n";
+    print "===================================\n";
+    my @list;
+    foreach my $elem ($root->findnodes('/testlist/compset/grid/test/machine')) { 
+	my($val) = $elem->textContent; 
+	push (@list, $val);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $val (sort @list) {
+	print     "   $val \n";
+    }
+    print     " \n";
+}
+
+if ($list_opt =~ /categories/ ) {
+    print "\n===================================\n";
+    print " available test categories \n";
+    print "===================================\n";
+    my @list;
+    foreach my $mach_elem ($root->findnodes('/testlist/compset/grid/test/machine')) { 
+	my($category) = $mach_elem->getAttribute('testtype'); 
+	push (@list, $category);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $litem (sort @list) {
+	print     "  $litem \n";
+    }
+    print     " \n";
+    foreach my $comment_elem ($root->findnodes('/testlist/comment')) { 
+	my($comment_cat) = $comment_elem->getAttribute('testtype'); 
+	my $comment = $comment_elem->textContent;
+	print " $comment \n";
+    }		
+}
+
+if ($list_opt =~ /compilers/ ) {
+    print "\n===================================\n";
+    print " available compilers \n";
+    print "===================================\n";
+    my @list;
+    foreach my $mach_elem ($root->findnodes('/testlist/compset/grid/test/machine')) { 
+	my($category) = $mach_elem->getAttribute('compiler'); 
+	push (@list, $category);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $val (sort @list) {
+	print     "   $val \n";
+    }
+    print     " \n";
+}
+
+if ($list_opt =~ /tests/ ) {
+    print "\n===================================\n";
+    print " available tests \n";
+    print "===================================\n";
+    my $testlist = $parser->parse_file('ccsm_utils/Testcases/config_tests.xml');
+    my $testroot = $testlist->getDocumentElement();
+    my @list;
+    foreach my $tests_elem ($testroot->findnodes('/config_ccsmtest/ccsmtest')) { 
+	my($name) = $tests_elem->getAttribute('NAME'); 
+	my($desc) = $tests_elem->getAttribute('DESC');  
+	my($val) = "$name" . " ($desc)"; 
+	push (@list, $val);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $val (sort @list) {
+	print     "   $val \n";
+    }
+    print << 'EOF';
+
+   The following modifiers can be used in the test name
+    _CG  = gregorian calendar
+    _D   = debug
+    _E   = esmf interfaces
+    _IOP*= PnetCDF IO test where * is 
+           A(atm), C(cpl), G(glc) , I(ice), 
+           L(clm), O(ocn), W(wav) or blank (all components)
+    _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
+    _M*  = set the mpilib to *, where * is default, mpi-serial, mpich, etc
+    _N*  = set NINST_ env value to *, where * is an integer
+    _P*  = set pecount to *, where * are specific values which include 
+           T,S,M,L,X,1,1x1,16,16x1,4x4, etc
+    _R*  = PTS_MODE test case, valid values are LA, LB, OA, OB
+EOF
+    print     " \n";
+}
+
+
+if ($list_opt) {
+    exit 0;
+}
+
+#----------------------------------------------------------------------------
+# Query test lists
+#----------------------------------------------------------------------------
+
+my $comphash;
+foreach my $compset ($root->findnodes('/testlist/compset')) { 
+    my $name = $compset->getAttribute('name');
+    $comphash->{$name}={};
+    foreach my $grid ($compset->findnodes('./grid')){
+	my $gname = $grid->getAttribute('name');
+	$comphash->{$name}{$gname}={};
+	foreach my $test ($grid->findnodes('./test')){
+	    my $tname = $test->getAttribute('name');
+	    $comphash->{$name}{$gname}{$tname}={};
+	    foreach my $mach ($test->findnodes('./machine')){
+		my $compiler = $mach->getAttribute('compiler');
+		my $testtype = $mach->getAttribute('testtype');
+		my $nldir    = $mach->getAttribute('nldir');
+		if ($nldir) {
+		    # do nothing
+		} else {
+		    $nldir = 'all';
+		} 
+		my $mname = $mach->textContent;
+		$comphash->{$name}{$gname}{$tname}{$mname}{$compiler}{$testtype}{$nldir}=1;
+	    }
+	}
+    }	           
+}	
+
+
+# get shortname and longname
+my $namehash;
+my $compset_list = $parser->parse_file('ccsm_utils/Case.template/config_compsets.xml');
+my $compset_root = $compset_list->getDocumentElement();
+foreach my $cname (sort keys %$comphash){
+    foreach my $compset ($compset_root->findnodes('/config_compset/COMPSET')) {  
+	my $alias = $compset->getAttribute('alias');
+	if (! defined $alias) {
+	    $alias = 'NOT_DEFINED';
+	}
+	my $sname = $compset->getAttribute('sname');
+	my $lname = $compset->textContent; 
+	$namehash->{$alias}{$sname}{$lname} = 1;
+    }
+}
+
+if (! $opts{'verbose'} && ! $opts{'outputlist'} && ! $opts{'outputxml'}) {
+    print "\n"; 
+    printf("   %-50s %-20s %-20s %-20s  %-10s  %-20s\n", 
+	   "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "Namelist Dir (optional)");
+    print "\n";
+}
+
+my %xmlhash;
+my $csname = ' ';  my $clname = ' '; 
+foreach my $cname (sort keys %$comphash){
+    if ($compset_opt ne 'all') {
+	next unless ($cname =~ /^$compset_opt/);
+    }
+    foreach my $alias (sort keys %{$namehash}){
+	foreach my $sname (sort keys %{$namehash->{$alias}}) {
+	    if (($cname eq $alias) || ($cname eq $sname)) {
+		foreach my $lname (sort keys %{$namehash->{$alias}{$sname}}) {
+		    $csname = $sname;
+		    $clname = $lname;
+		}
+	    }
+	}
+    }
+	
+    foreach my $gname (sort keys %{$comphash->{$cname}}){
+	if ($grid_opt ne 'all') {
+	    next unless ($gname =~ /$grid_opt/);
+	}
+	foreach my $tname (sort keys %{$comphash->{$cname}{$gname}}){
+	    if ($test_opt ne 'all') {
+		next unless ($tname =~ /$test_opt/);
+	    }
+	    foreach my $mname (sort keys %{$comphash->{$cname}{$gname}{$tname}}){
+		if ($machine_opt ne 'all') {
+		    next unless ($mname eq $machine_opt);
+		}
+		foreach my $cpname (keys %{$comphash->{$cname}{$gname}{$tname}{$mname}}){
+		    if ($compiler_opt ne 'all') {
+			next unless ($cpname eq $compiler_opt);
+		    }
+		    foreach my $ttype (keys %{$comphash->{$cname}{$gname}{$tname}{$mname}{$cpname}}){
+			if ($category_opt ne 'all') {
+			    next unless ($ttype eq $category_opt);
+			}
+			my $nldir;
+			my $nlxmldir;
+			foreach my $dir (keys %{$comphash->{$cname}{$gname}{$tname}{$mname}{$cpname}{$ttype}}){
+			    $nldir = $dir;
+			}
+			my $compname = "$cname" . " ($csname)";
+			my $machname = "$mname" . "_$cpname";
+			if ($nldir ne 'all') {
+				$nlxmldir = $nldir;
+			    $nldir = "nldir=" . $nldir;  
+			} else {
+			    $nldir = "";
+			}
+			if ($opts{'verbose'}) {
+			    print "compset : $compname $clname $nldir \n";;
+			    print "testname: $tname  test category: $ttype \n";
+			    print "grid    : $gname  machine: $machname \n\n";
+			} else {
+			    if($opts{'outputlist'}) {
+				#print "$tname.$gname.$csname.$machname\n";
+				print "$tname.$gname.$cname.$machname\n";
+				}elsif($opts{'outputxml'}) {
+					if(defined $nlxmldir ){
+						$xmlhash{$cname}{$gname}{$tname}{$mname}{$cpname}{$ttype}{$nlxmldir} = 1;
+					}else{
+						$xmlhash{$cname}{$gname}{$tname}{$mname}{$cpname}{$ttype}= 1;
+					}
+			    }else{
+				if ($nldir ne 'all') {
+				    printf   ("   %-50s %-20s %-20s %-20s  %-10s  %-20s\n", 
+					      $compname, $tname, $gname, $machname, $ttype, $nldir);
+				} else {
+				    printf   ("   %-50s %-20s %-20s %-20s  %-10s \n", 
+					      $compname, $tname, $gname, $machname, $ttype);
+				}		
+			    }		
+			}				
+		    }
+		}
+	    }
+	}
+    }
+}
+#print Dumper \%xmlhash;
+if($opts{'outputxml'})
+{
+    #$xmlhash{$cname}{$gname}{$tname}{$mname}{$cpname}{$ttype}{$nlxmldir} = 1;
+	my $xmldoc = XML::LibXML::Document->new('1.0', 'UTF-8');
+	my $root = $xmldoc->createElement('testlist');
+	my ($cnode, $gnode, $tnode, $mnode) ;
+	
+	foreach my $cname (sort keys %xmlhash) {
+		$cnode = XML::LibXML::Element->new('compset');
+		$cnode->setAttribute('name', $cname);
+		foreach my $gname (sort keys %{$xmlhash{$cname}}) {
+			$gnode = XML::LibXML::Element->new('grid');
+			$gnode->setAttribute('name', $gname);
+			foreach my $tname (sort keys %{$xmlhash{$cname}{$gname}}) {
+				$tnode = XML::LibXML::Element->new('test');
+				$tnode->setAttribute('name', $tname);
+				foreach my $mname (sort keys %{$xmlhash{$cname}{$gname}{$tname}}) {
+					$mnode = XML::LibXML::Element->new('machine');
+					$mnode->appendText($mname);
+					foreach my $cpname (sort keys %{$xmlhash{$cname}{$gname}{$tname}{$mname}}) {
+						$mnode->setAttribute('compiler', $cpname);
+						foreach my $ttype(sort keys %{$xmlhash{$cname}{$gname}{$tname}{$mname}{$cpname}}) {
+							$mnode->setAttribute('testtype', $ttype);
+							my $nlval = $xmlhash{$cname}{$gname}{$tname}{$mname}{$cpname}{$ttype};
+							if(ref($nlval) eq 'HASH') {
+								my $nldir = (keys %{$nlval})[0];
+								$mnode->setAttribute('nldir', $nldir);
+							}
+						}
+					}
+					$tnode->appendChild($mnode);
+				}
+				$gnode->appendChild($tnode);
+			}
+			$cnode->appendChild($gnode);
+		}
+		$root->appendChild($cnode);
+	}
+	$xmldoc->setDocumentElement($root);
+	print $xmldoc->toString(1) ;
+}
+
+
+
+exit 0;
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    print <<EOF;
+SYNOPSIS
+
+     query_tests [options]
+
+DESCRIPTION
+
+     Queries the file "ccsm_utils/Testlistxml/testlist.xml" for 
+     compsets, grids, machines, compilers and test categories
+
+OPTIONS
+
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     The following are independent selectors - these are optional arguments and can
+     all be specified
+
+     -list <name>             name can be [compsets,grids,compilers,machines,categories,tests]
+     -compset <name>          limit selection to target compset name
+     -category <name>         limit selection to target category name
+     -machine <name>          limit selection to target machine name
+     -compiler <name>         limit selection to target compiler name
+     -grid <name>             limit selection to target grid name match
+     -outputlist              outputs the found tests to the old-style text test lists.  
+     -outputxml               outputs the found tests to an xml test list. 
+
+    A note on the PE count specifiers:
+    T, S, M, L, X are not constant.  first, they are only defined for a few
+    compsets/resolution combinations.  second, they depend on compset
+    and resolution.   you can imagine a T31_g37 range being 100 cores
+    to 1000 cores from T to X.  but ne240_t12 would probably be 500 at T
+    and 100,000 at X, for instance.  the 1, 1x1, 16x4, etc specify the tasks
+    and threads for each component directly.
+ 
+    A note aobut the "points mode" specifier for tests, ie SMS_RL*:
+	"L" is a land point "O" is an ocean point A and B are two points on the land 
+    and ocean that CLM provided. so LA, LB, OA, and OB are 4 distinct single test 
+    points, 2 over land, 2 over ocean. 
+
+
+     Usage command
+
+     -help [or -h]       Print usage to STDOUT (optional).
+
+   The following are the available tests:
+EOF
+
+    my $parser = XML::LibXML->new;
+    my $testlist = $parser->parse_file('ccsm_utils/Testcases/config_tests.xml');
+    my $testroot = $testlist->getDocumentElement();
+    my @list;
+    foreach my $tests_elem ($testroot->findnodes('/config_ccsmtest/ccsmtest')) { 
+	my($name) = $tests_elem->getAttribute('NAME'); 
+	my($desc) = $tests_elem->getAttribute('DESC');  
+	my($val) = "$name" . " ($desc)"; 
+	push (@list, $val);
+    }
+    my %help;
+    map { $help{$_}=1} @list;
+    @list = keys %help;
+    foreach my $val (sort @list) {
+	print     "   $val \n";
+    }
+
+    print << 'EOF';
+
+   The following modifiers can be used in the test name
+    _CG  = gregorian calendar
+    _D   = debug
+    _E   = esmf interfaces
+    _IOP*= PnetCDF IO test where * is 
+           A(atm), C(cpl), G(glc) , I(ice), 
+           L(clm), O(ocn), W(wav) or blank (all components)
+    _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
+    _M*  = set the mpilib to *, where * is default, mpi-serial, mpich, etc
+    _N*  = set NINST_ env value to *, where * is an integer
+    _P*  = set pecount to *, where * are specific values which include 
+           T,S,M,L,X,1,1x1,16,16x1,4x4, etc
+    _R*  = PTS_MODE test case, valid values are LA, LB, OA, OB
+  
+    T, S, M, L, X are not constant.  first, they are only defined for a few
+    compsets/resolution combinations.  second, they depend on compset
+    and resolution.   you can imagine a T31_g37 range being 100 cores
+    to 1000 cores from T to X.  but ne240_t12 would probably be 500 at T
+    and 100,000 at X, for instance.  the 1, 1x1, 16x4, etc specify the tasks
+    and threads for each component directly.
+
+    "L" is a land point "O" is an ocean point A and B are two points on the land
+    and ocean that CLM provided. so LA, LB, OA, and OB are 4 distinct single test
+    points, 2 over land, 2 over ocean.
+EOF
+exit 0;
+
+}
+

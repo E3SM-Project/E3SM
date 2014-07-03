@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+
+use strict;
+use Cwd;
+use File::Basename;
+use Getopt::Long;
+use FindBin qw($Bin);
+use English;
+use IO::File;
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+
+my $caseroot = "$ENV{'CASEROOT'}";
+if ( defined($ENV{'CASEROOT'})) {
+    # do nothing
+} else {
+    die "$ProgName - ERROR: env variable CASEROOT is not defined \n";
+}	
+
+
+my %opts = ( user_nl_file => undef,
+	     namelist_name => undef);
+GetOptions( "user_nl_file=s" => \$opts{'user_nl_file'},
+	    "namelist_name=s" =>\$opts{'namelist_name'}) 
+    or die "need to specify user_nl_file as input";
+
+my $user_nl_file  = $opts{'user_nl_file'};
+my $namelist_name = $opts{'namelist_name'};
+
+print "&${namelist_name} \n";
+my  $fh = new IO::File;
+$fh->open("<$user_nl_file") or die "** can't open file: $user_nl_file\n";
+
+while (my $line = <$fh>) {
+    if ($line =~ /^[\&\/\!]/ ) {
+	# do nothing
+    } else {
+	print "$line";
+    }
+}
+$fh->close();
+
+print "\/ \n";

@@ -1,0 +1,18 @@
+The seacism/builds directory is intended to contain cmake builds of CISM for the
+most common platform/compiler-suite combinations.  Each subdirectory of this
+directory should contain a README file and a configure script file whose name
+is <directory name>-cmake, for example, hopper-pgi-cmake.  The README
+file should contain instructions to do the build, provide information on what
+compiler suite will be used, and list what executables will be built, e.g.
+simple_glide and simple_bisicles.  It should also list any dependencies on 
+other packages.  These dependencies should be handled in the configure script.
+
+The difference between this and using the cmake-scripts directory is that these
+builds should be even more out-of-the box, so that a user can cd to the
+appropriate directory, read the brief README file, and be able to quickly
+generate the CISM build.  The cmake scripts in the build directories should
+handle loading the appropriate modules as part of simplifying the build
+process, and should be kept current as much as possible.  A significant part
+of that is making sure the installed packages that the build relies on are
+current.  As an example, the packages that need to be maintained for the
+hopper-pgi build are Trilinos and BISICLES (which also includes Chombo). 
