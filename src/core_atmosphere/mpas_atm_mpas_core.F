@@ -643,6 +643,11 @@ module mpas_core
       type (field1DReal), pointer :: cd
       type (field1DReal), pointer :: ck
       type (field1DReal), pointer :: skintemp
+      type (field1DReal), pointer :: t_iso_levels
+      type (field1DReal), pointer :: z_iso_levels
+      type (field2DReal), pointer :: t_isobaric
+      type (field2DReal), pointer :: z_isobaric
+      type (field1DReal), pointer :: meanT_500_300
       type (field1DReal), pointer :: temperature_200hPa
       type (field1DReal), pointer :: temperature_500hPa
       type (field1DReal), pointer :: temperature_700hPa

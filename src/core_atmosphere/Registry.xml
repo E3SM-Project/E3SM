@@ -19,6 +19,8 @@
                 <dim name="R3"                 definition="3"/>
                 <dim name="nVertLevels"/>
                 <dim name="nVertLevelsP1"      definition="nVertLevels+1"/>
+                <dim name="nIsoLevelsT"         definition="5"/>
+                <dim name="nIsoLevelsZ"         definition="13"/>
                 <dim name="nMonths"            definition="namelist:months"/>
                 <dim name="nSoilLevels"        definition="namelist:num_soil_layers"/>
                 <dim name="nLags"              definition="namelist:input_soil_temperature_lag"/>
@@ -879,6 +881,11 @@
 			<var name="h_oml"/>
 			<var name="hu_oml"/>
 			<var name="hv_oml"/>
+			<var name="t_isobaric"/>
+			<var name="t_iso_levels"/>
+			<var name="z_isobaric"/>
+			<var name="z_iso_levels"/>
+			<var name="meanT_500_300"/>
 		</stream>
 
 		<stream name="surface" type="input;output">
@@ -989,6 +996,9 @@
 
                 <!-- Arrays needed only in the CAM LW and SW radiation codes: Aerosols -->
                 <var name="m_hybi"                    type="real"     dimensions="nAerLevels nCells"/>
+
+                <var name="t_iso_levels"              type="real"     dimensions="nIsoLevelsT"/>
+                <var name="z_iso_levels"              type="real"     dimensions="nIsoLevelsZ"/>
         </var_struct>
 
         <var_struct name="state" time_levs="2">
@@ -1134,6 +1144,10 @@
                 <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"/>
+
+                <var name="t_isobaric"             type="real"     dimensions="nIsoLevelsT nCells Time"/>
+                <var name="z_isobaric"             type="real"     dimensions="nIsoLevelsZ nCells Time"/>
+                <var name="meanT_500_300"          type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="tend" time_levs="1">
