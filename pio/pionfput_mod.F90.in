@@ -35,6 +35,63 @@ module pionfput_mod
      module procedure put_vara_vdesc_{DIMS}d_{TYPE}
      module procedure put_var1_{TYPE}, put_var1_vdesc_{TYPE}
   end interface
+  interface
+     integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+          bind(C,name="PIOc_put_var_text")
+       use iso_c_binding
+       integer(C_INT), intent(in), value :: ncid
+       integer(C_INT), intent(in), value :: varid
+       character(C_CHAR) :: op(*)
+     end function PIOc_put_var_text
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_vara_text(ncid, varid, start, count, op) &
+          bind(C,name="PIOc_put_vara_text")
+       use iso_c_binding
+       integer(C_INT), intent(in), value :: ncid
+       integer(C_INT), intent(in), value :: varid
+       integer(C_SIZE_T), intent(in) :: start(*)
+       integer(C_SIZE_T), intent(in) :: count(*)
+       character(C_CHAR), intent(in) :: op(*)
+     end function PIOc_put_vara_text
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_vara_int(ncid, varid, start, count, op) &
+          bind(C,name="PIOc_put_vara_int")
+       use iso_c_binding
+       integer(C_INT), intent(in), value :: ncid
+       integer(C_INT), intent(in), value :: varid
+       integer(C_SIZE_T), intent(in) :: start(*)
+       integer(C_SIZE_T), intent(in) :: count(*)
+       integer(C_INT)   , intent(in) :: op(*)
+     end function PIOc_put_vara_int
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_vara_float(ncid, varid, start, count, op) &
+          bind(C,name="PIOc_put_vara_float")
+       use iso_c_binding
+       integer(C_INT), intent(in), value :: ncid
+       integer(C_INT), intent(in), value :: varid
+       integer(C_SIZE_T), intent(in) :: start(*)
+       integer(C_SIZE_T), intent(in) :: count(*)
+       real(C_FLOAT)   , intent(in) :: op(*)
+     end function PIOc_put_vara_float
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_vara_double(ncid, varid, start, count, op) &
+          bind(C,name="PIOc_put_vara_double")
+       use iso_c_binding
+       integer(C_INT), intent(in), value :: ncid
+       integer(C_INT), intent(in), value :: varid
+       integer(C_SIZE_T), intent(in) :: start(*)
+       integer(C_SIZE_T), intent(in) :: count(*)
+       real(C_DOUBLE)   , intent(in) :: op(*)
+     end function PIOc_put_vara_double
+  end interface
+
+
+
+
 contains
 
 !>
@@ -183,15 +240,7 @@ contains
 
     character, allocatable :: cval(:)
     integer :: clen, i
-    interface
-       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
-            bind(C,name="PIOc_put_var_text")
-         use iso_c_binding
-         integer(C_INT), intent(in), value :: ncid
-         integer(C_INT), intent(in), value :: varid
-         character(C_CHAR) :: op(*)
-       end function PIOc_put_var_text
-    end interface
+
 
 !   This manipulation is required to convert the fortran string to
 !   a c character array with all trailing space set to null
@@ -226,15 +275,6 @@ contains
     character(len=*), intent(in) :: ival{DIMSTR}
     character, allocatable :: cval(:)
     integer :: clen,  sd
-    interface
-       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
-            bind(C,name="PIOc_put_var_text")
-         use iso_c_binding
-         integer(C_INT), intent(in), value :: ncid
-         integer(C_INT), intent(in), value :: varid
-         character(C_CHAR) :: op(*)
-       end function PIOc_put_var_text
-    end interface
 
 !   This manipulation is required to convert the fortran string to
 !   a c character array with all trailing space set to null
@@ -344,21 +384,9 @@ contains
     integer, intent(in) :: varid
     integer, intent(in) :: start(:)
     integer, intent(in) :: count(:)
-    {VTYPE}, intent(in) :: ival(*)
+    {VTYPE}, target, intent(in) :: ival(*)
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i, ndims
-    interface
-       integer(C_INT) function PIOc_put_vara_{NCTYPE}(ncid, varid, start, count, op) &
-            bind(C,name="PIOc_put_vara_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), intent(in), value :: ncid
-         integer(C_INT), intent(in), value :: varid
-         integer(C_SIZE_T), intent(in) :: start(*)
-         integer(C_SIZE_T), intent(in) :: count(*)
-         {CTYPE}, intent(in) :: op(*)
-       end function PIOc_put_vara_{NCTYPE}
-    end interface
-
 
     do i=1,size(count)
        if(count(i)<=0) then
@@ -422,19 +450,6 @@ contains
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i
     integer :: ndims
-    interface
-       integer(C_INT) function PIOc_put_vara_text(ncid, varid, start, count, op) &
-            bind(C,name="PIOc_put_vara_text")
-         use iso_c_binding
-         integer(C_INT), intent(in), value :: ncid
-         integer(C_INT), intent(in), value :: varid
-         integer(C_SIZE_T), intent(in) :: start(*)
-         integer(C_SIZE_T), intent(in) :: count(*)
-         character(C_CHAR), intent(in) :: op(*)
-       end function PIOc_put_vara_text
-    end interface
-
-
    
     do i=1,size(count)
        if(count(i)<=0) then

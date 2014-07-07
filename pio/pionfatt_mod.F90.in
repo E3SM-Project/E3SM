@@ -51,6 +51,100 @@ module pionfatt_mod
 
   private :: modName
   character(len=*), parameter :: modName='pionfatt_mod'
+  interface
+     integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
+          bind(C,name="PIOc_put_att_text")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_SIZE_T), value :: len
+       character(C_char)        :: op
+     end function PIOc_put_att_text
+  end interface
+  interface
+     integer(C_INT) function PIOc_get_att_text (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_text")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       character(C_char)        :: op(*)
+     end function PIOc_get_att_text
+  end interface
+
+
+  interface
+     integer(C_INT) function PIOc_put_att_int (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_int")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_INT), value    :: xtype
+       integer(C_SIZE_T), value :: len
+       integer(C_INT)           :: op
+     end function PIOc_put_att_int
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_att_float (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_float")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_INT), value    :: xtype
+       integer(C_SIZE_T), value :: len
+       real(C_FLOAT)            :: op
+     end function PIOc_put_att_float
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_att_double (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_double")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_INT), value    :: xtype
+       integer(C_SIZE_T), value :: len
+       real(C_DOUBLE)           :: op
+     end function PIOc_put_att_double
+  end interface
+
+
+  interface
+     integer(C_INT) function PIOc_get_att_int (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_int")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       integer(C_INT), intent(out)   :: op
+     end function PIOc_get_att_int
+  end interface
+    
+  interface
+     integer(C_INT) function PIOc_get_att_float (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_float")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       real(C_FLOAT), intent(out) :: op
+     end function PIOc_get_att_float
+  end interface
+    
+  interface
+     integer(C_INT) function PIOc_get_att_double (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_double")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       real(C_DOUBLE), intent(out)   :: op
+     end function PIOc_get_att_double
+  end interface
+    
 
 contains
 
@@ -91,18 +185,6 @@ contains
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: values
 
-    interface
-       integer(C_INT) function PIOc_put_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &
-            bind(C,name="PIOc_put_att_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         integer(C_INT), value:: xtype
-         integer(c_size_t), value :: len
-         {CTYPE} :: op
-       end function PIOc_put_att_{NCTYPE}
-    end interface
 
     ierr = PIOc_put_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, PIO_{TYPE}, 1_C_SIZE_T, values)
 
@@ -116,18 +198,7 @@ contains
     character(c_char), allocatable :: cvar(:)
     integer(C_SIZE_T) :: clen
     integer :: i
-    interface
-       integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
-            bind(C,name="PIOc_put_att_text")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         integer(C_SIZE_T), value :: len
-         character(C_char) :: op
-       end function PIOc_put_att_text
-    end interface
-    
+
     clen = len_trim(values)
     allocate(cvar(clen+1))
     cvar = C_NULL_CHAR
@@ -172,18 +243,6 @@ contains
     character(len=*), intent(in) :: name
     integer, intent(in) :: arrlen
     character(len=*), intent(in) :: values(arrlen)
-    interface
-       integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
-            bind(C,name="PIOc_put_att_text")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         integer(C_SIZE_T), value :: len
-	 character(C_char) :: op
-       end function PIOc_put_att_text
-    end interface
-
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))
         
 
@@ -197,16 +256,7 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     character(len=*), intent(out) :: values
-    interface
-       integer(C_INT) function PIOc_get_att_text (ncid, varid, name, op) &
-            bind(C,name="PIOc_get_att_text")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         character(C_char) :: op(*)
-       end function PIOc_get_att_text
-    end interface
+
     values = ' '
     ierr = PIOc_get_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
     call replace_c_null(values)
@@ -246,18 +296,6 @@ contains
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in), target :: values(*)
 
-    interface
-       integer(C_INT) function PIOc_put_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &
-            bind(C,name="PIOc_put_att_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         integer(C_INT), value :: xtype
-         integer(C_SIZE_T), value :: len
-         {CTYPE} :: op
-       end function PIOc_put_att_{NCTYPE}
-    end interface
 
     ierr = PIOc_put_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, PIO_{TYPE} , len, values(1))
 
@@ -365,16 +403,7 @@ contains
     character(len=*), intent(in) :: name
     {VTYPE}, intent(out), target :: values
 
-    interface
-       integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, op) &
-            bind(C,name="PIOc_get_att_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         {CTYPE}, intent(out) :: op
-       end function PIOc_get_att_{NCTYPE}
-    end interface
+
     ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
 
   end function get_att_id_{TYPE}
@@ -424,17 +453,6 @@ contains
     character(len=*), intent(in)   :: name
     {VTYPE}, intent(out) , target         :: values(*)
 
-    interface
-       integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, op) &
-            bind(C,name="PIOc_get_att_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: name(*)
-         {CTYPE}, intent(out) :: op
-       end function PIOc_get_att_{NCTYPE}
-    end interface
-    
     ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, values(1))
 
 

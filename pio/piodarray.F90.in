@@ -47,6 +47,31 @@ module piodarray
 integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 #endif
 
+interface
+   integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
+        bind(C,name="PIOc_write_darray")
+     use iso_c_binding
+     integer(C_INT), value :: ncid
+     integer(C_INT), value :: vid
+     integer(C_INT), value :: ioid
+     integer(C_SIZE_T), value :: arraylen
+     type(c_ptr), value :: array
+     type(C_PTR), value :: fillvalue
+   end function PIOc_write_darray
+end interface
+interface
+   integer(C_INT) function PIOc_read_darray(ncid, vid, ioid, arraylen, array) &
+        bind(C,name="PIOc_read_darray")
+     use iso_c_binding
+     integer(C_INT), value :: ncid
+     integer(C_INT), value :: vid
+     integer(C_INT), value :: ioid
+     integer(C_SIZE_T), value :: arraylen
+     type(C_PTR), value :: array
+   end function PIOc_read_darray
+end interface
+
+
 contains
 
   subroutine pio_set_buffer_size_limit(limit)
@@ -95,18 +120,6 @@ contains
     integer(i4), intent(out) :: iostat
     integer(C_SIZE_T) :: carraylen
     type(C_PTR) :: cptr
-    interface
-       integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
-            bind(C,name="PIOc_write_darray")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: vid
-         integer(C_INT), value :: ioid
-         integer(C_SIZE_T), value :: arraylen
-         type(c_ptr), value :: array
-         type(C_PTR), value :: fillvalue
-       end function PIOc_write_darray
-    end interface
     carraylen = int(arraylen,C_SIZE_T)
     cptr = C_LOC(array)
 
@@ -278,18 +291,6 @@ contains
     integer(i4), intent(out) :: iostat
     type(C_PTR) :: cptr
     character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
-
-    interface
-       integer(C_INT) function PIOc_read_darray(ncid, vid, ioid, arraylen, array) &
-            bind(C,name="PIOc_read_darray")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: vid
-         integer(C_INT), value :: ioid
-         integer(C_SIZE_T), value :: arraylen
-         type(C_PTR), value :: array
-       end function PIOc_read_darray
-    end interface
 
     cptr = C_LOC(array)
     iostat = PIOc_read_darray(ncid, varid-1, ioid, alen, cptr)

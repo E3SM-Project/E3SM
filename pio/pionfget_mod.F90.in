@@ -32,6 +32,46 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
+ interface
+    integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
+         bind(C,name="PIOc_get_var_text")
+      use iso_c_binding
+      integer(C_INT), value :: ncid
+      integer(C_INT), value :: varid
+      character(C_CHAR) :: ival(*)
+    end function PIOc_get_var_text
+ end interface
+ interface
+    integer(C_INT) function PIOc_get_var (ncid, varid, ival) &
+         bind(C,name="PIOc_get_var")
+      use iso_c_binding
+      integer(C_INT), value :: ncid
+      integer(C_INT), value :: varid
+      type(C_PTR), value  :: ival
+    end function PIOc_get_var
+ end interface
+ interface
+    integer(C_INT) function PIOc_get_vara (ncid, varid, start, count, ival) &
+         bind(C,name="PIOc_get_vara")
+      use iso_c_binding
+      integer(C_INT), value :: ncid
+      integer(C_INT), value :: varid
+      integer(C_SIZE_T)  :: start(*)
+      integer(C_SIZE_T)  :: count(*)
+      type(C_PTR)  :: ival
+    end function PIOc_get_vara
+ end interface
+ interface
+    integer(C_INT) function PIOc_get_vara_text (ncid, varid, start, count, ival) &
+         bind(C,name="PIOc_get_vara_text")
+      use iso_c_binding
+      integer(C_INT), value :: ncid
+      integer(C_INT), value :: varid
+      integer(C_SIZE_T)  :: start(*)
+      integer(C_SIZE_T)  :: count(*)
+      character(C_CHAR)  :: ival(*)
+    end function PIOc_get_vara_text
+ end interface
 CONTAINS
 
 !>
@@ -217,15 +257,7 @@ CONTAINS
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival
 
-    interface
-       integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
-            bind(C,name="PIOc_get_var_text")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: ival(*)
-       end function PIOc_get_var_text
-    end interface
+
     ival = ' '
     ierr = PIOc_get_var_text(File%fh, varid-1, ival)
     call replace_c_null(ival)
@@ -240,16 +272,8 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(out), target :: ival
-    interface
-       integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
-            bind(C,name="PIOc_get_var_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         type(C_PTR), value :: ival
-       end function PIOc_get_var_{NCTYPE}
-    end interface
-    ierr = PIOc_get_var_{NCTYPE} (File%fh, varid-1, C_LOC(ival))
+
+    ierr = PIOc_get_var (File%fh, varid-1, C_LOC(ival))
        
   end function Get_var_0d_{TYPE}
 
@@ -269,15 +293,7 @@ CONTAINS
     integer, intent(in) :: nstrs
     character(len=*), intent(out) :: ival(*)
     integer :: j
-    interface
-       integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
-            bind(C,name="PIOc_get_var_text")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         character(C_CHAR) :: ival(*)
-       end function PIOc_get_var_text
-    end interface
+
     ierr = PIOc_get_var_text(ncid, varid-1, ival)
     do j=1,nstrs
        call replace_c_null(ival(j))
@@ -290,16 +306,8 @@ CONTAINS
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     {VTYPE}, intent(out), target :: ival(*)
-    interface
-       integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
-            bind(C,name="PIOc_get_var_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         type(C_PTR), value  :: ival
-       end function PIOc_get_var_{NCTYPE}
-    end interface
-    ierr = PIOc_get_var_{NCTYPE} (ncid, varid-1, C_LOC(ival))
+
+    ierr = PIOc_get_var (ncid, varid-1, C_LOC(ival))
 
   end function get_var_{TYPE}_internal
 
@@ -309,20 +317,10 @@ CONTAINS
     integer, intent(in) :: varid
     integer, intent(in) :: start(:)
     integer, intent(in) :: count(:)
-    {VTYPE}, intent(out) :: ival(*)
+    {VTYPE}, target, intent(out) :: ival(*)
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i, ndims
-    interface
-       integer(C_INT) function PIOc_get_vara_{NCTYPE} (ncid, varid, start, count, ival) &
-            bind(C,name="PIOc_get_vara_{NCTYPE}")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         integer(C_SIZE_T)  :: start(*)
-         integer(C_SIZE_T)  :: count(*)
-         {CTYPE}  :: ival(*)
-       end function PIOc_get_vara_{NCTYPE}
-    end interface
+
     ndims = size(start)
     allocate(cstart(ndims),ccount(ndims))
     do i=1,ndims
@@ -330,7 +328,7 @@ CONTAINS
        ccount(i) = count(ndims-i+1)
     enddo
 
-    ierr = PIOc_get_vara_{NCTYPE} (ncid, varid-1, cstart, ccount, ival)
+    ierr = PIOc_get_vara (ncid, varid-1, cstart, ccount, C_LOC(ival))
     deallocate(cstart, ccount)
 
   end function get_vara_{TYPE}_internal
@@ -345,17 +343,7 @@ CONTAINS
     integer :: j
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i, ndims
-    interface
-       integer(C_INT) function PIOc_get_vara_text (ncid, varid, start, count, ival) &
-            bind(C,name="PIOc_get_vara_text")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         integer(C_SIZE_T)  :: start(*)
-         integer(C_SIZE_T)  :: count(*)
-         character(C_CHAR)  :: ival(*)
-       end function PIOc_get_vara_text
-    end interface
+
     ndims = size(start)
     allocate(cstart(ndims),ccount(ndims))
     do i=1,ndims

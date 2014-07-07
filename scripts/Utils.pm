@@ -115,7 +115,7 @@ sub runString{
   }elsif($host eq "frost" ) {
     $runString = "$run $log -np $pecount $exename";
     #$runString = "$run -np $pecount $exename";
-  }elsif($host eq "intrepid") {
+  }elsif($host eq "mira") {
     $runString = "$run $log -np $pecount $exename ";
   }elsif($host =~ "columbia" or $host =~ "pleiades"){
     $runString = "$run -np $pecount $exename 1> $log 2>&1";
