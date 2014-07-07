@@ -372,7 +372,8 @@ contains
 
            ! dx_long
            elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
-           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
+           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) &
+                                 * (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
 
             ! Check to see if this is stable
             if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
