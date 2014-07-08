@@ -154,7 +154,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 		}
 	      }else{
 		mpierr = MPI_Send( &ierr, 1, MPI_INT, i, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
-		mpierr = MPI_Recv( buflen, 1, MPI_INT, i, 1, ios->io_comm, &status);
+		mpierr = MPI_Recv( &buflen, 1, MPI_INT, i, 1, ios->io_comm, &status);
 		if(buflen>0){
 		  mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, i, ios->num_iotasks+i, ios->io_comm, &status);
 		  mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, i,2*ios->num_iotasks+i, ios->io_comm, &status);
@@ -189,7 +189,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	      buflen*=tcount[i];
 	    }
 	    mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
-	    mpierr = MPI_Rsend( buflen, 1, MPI_INT, 0, 1, ios->io_comm);
+	    mpierr = MPI_Rsend( &buflen, 1, MPI_INT, 0, 1, ios->io_comm);
 	    if(buflen>0) {
 	      mpierr = MPI_Rsend( tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
 	      mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
