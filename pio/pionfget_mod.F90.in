@@ -313,8 +313,11 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival
+    {VTYPE}  :: aival(1)
+    
 
-    ierr = PIOc_get_var_{NCTYPE} (File%fh, varid-1, (/ival/))
+    ierr = PIOc_get_var_{NCTYPE} (File%fh, varid-1, aival)
+    ival = aival(1)
        
   end function Get_var_0d_{TYPE}
 

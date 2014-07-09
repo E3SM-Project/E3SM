@@ -5,17 +5,15 @@ int PIO_function()
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Datatype ibuftype;
-  int ndims;
-  int ibufcnt;
-  bool bcast = false;
+  MPI_Request request;
+
+  ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
   if(file == NULL)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = 0;
-  ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -29,12 +27,12 @@ int PIO_function()
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
       ierr = nc_function();
       break;
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      bcast = true;
       if(ios->io_rank==0){
 	ierr = nc_function();
       }
@@ -43,21 +41,15 @@ int PIO_function()
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_function();
+      pio_push_request(file, request);
       break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
-    // send to all io tasks
-    if(bcast)
-      MPI_Bcast(buf, ibufcnt, ibuftype, 0, ios->io_comm);
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  if(ios->async_interface ||  (ios->num_iotasks < ios->num_comptasks)){
-    MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
-  }
 
   return ierr;
 }

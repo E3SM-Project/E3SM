@@ -10,7 +10,7 @@ int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed c
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -81,7 +81,7 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -151,7 +151,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -221,7 +221,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -291,7 +291,7 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -361,7 +361,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -407,6 +407,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_get_var_double_all(file->fh, varid,  buf);;
+      //      printf("%s %d %f\n",__FILE__,__LINE__,buf[0]);
       break;
 #endif
     default:
@@ -421,6 +422,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
 
   if(ios->async_interface ||  (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
+    //printf("%s %d %d %d %f\n",__FILE__,__LINE__,ibufcnt,ibuftype,buf[0]);
   }
 
   return ierr;
@@ -435,7 +437,7 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -505,7 +507,7 @@ int PIOc_get_var_int (int ncid, int varid, int *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -579,7 +581,7 @@ int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -653,7 +655,7 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -723,7 +725,7 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -793,7 +795,7 @@ int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *b
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -864,7 +866,7 @@ int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *b
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -935,7 +937,7 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1005,7 +1007,7 @@ int PIOc_get_var_text (int ncid, int varid, char *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1079,7 +1081,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1149,7 +1151,7 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1219,7 +1221,7 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1289,7 +1291,7 @@ int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigne
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1360,7 +1362,7 @@ int PIOc_get_var_float (int ncid, int varid, float *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1434,7 +1436,7 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1504,7 +1506,7 @@ int PIOc_get_var (int ncid, int varid, void *buf, PIO_Offset bufcount, MPI_Datat
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1570,7 +1572,7 @@ int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long 
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1641,7 +1643,7 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1711,7 +1713,7 @@ int PIOc_get_var_long (int ncid, int varid, long *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1785,7 +1787,7 @@ int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double 
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1856,7 +1858,7 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1926,7 +1928,7 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -1996,7 +1998,7 @@ int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2070,7 +2072,7 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2140,7 +2142,7 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2210,7 +2212,7 @@ int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2281,7 +2283,7 @@ int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsi
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2352,7 +2354,7 @@ int PIOc_get_var_uchar (int ncid, int varid, unsigned char *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2426,7 +2428,7 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2496,7 +2498,7 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2566,7 +2568,7 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2636,7 +2638,7 @@ int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2707,7 +2709,7 @@ int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2781,7 +2783,7 @@ int PIOc_get_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2847,7 +2849,7 @@ int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2917,7 +2919,7 @@ int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned 
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -2988,7 +2990,7 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3058,7 +3060,7 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3128,7 +3130,7 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3198,7 +3200,7 @@ int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3269,7 +3271,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3339,7 +3341,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3409,7 +3411,7 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3475,7 +3477,7 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3545,7 +3547,7 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3615,7 +3617,7 @@ int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3689,7 +3691,7 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3759,7 +3761,7 @@ int PIOc_get_var_short (int ncid, int varid, short *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3833,7 +3835,7 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3903,7 +3905,7 @@ int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -3974,7 +3976,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4044,7 +4046,7 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4114,7 +4116,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4184,7 +4186,7 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4254,7 +4256,7 @@ int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4325,7 +4327,7 @@ int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4391,7 +4393,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4461,7 +4463,7 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
@@ -4531,7 +4533,7 @@ int PIOc_get_var_schar (int ncid, int varid, signed char *buf)
   file_desc_t *file;
   MPI_Datatype ibuftype;
   int ndims;
-  size_t ibufcnt;
+  int ibufcnt;
   bool bcast = false;
 
   file = pio_get_file_from_id(ncid);
