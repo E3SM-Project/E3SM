@@ -1219,16 +1219,20 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
   end do
 end subroutine get_reconstruction
 
+
 subroutine fill_fcube_matrix(fvm,fpanel,fotherpanel,fcube_matrix)
   implicit none
-  type (fvm_struct), intent(in)                                                    :: fvm
+  type (fvm_struct), intent(in) :: fvm
 !  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht        ), intent(in)  :: fpanel
 !  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2      ), intent(in)  :: fotherpanel
 !  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5), intent(out) :: fcube_matrix
+
   real (kind=real_kind), dimension(1-nht:,1-nht:    ), intent(in)  :: fpanel
-  real (kind=real_kind), dimension(1-nht:,1-nht:,:  ), intent(in)  :: fotherpanel
+  real (kind=real_kind), dimension(1-nht:,1-nht:,2  ), intent(in)  :: fotherpanel
   real (kind=real_kind), dimension(1-nht:,1-nht:,:,:), intent(out) :: fcube_matrix
-  integer  :: i,j, k
+
+
+  integer  :: i,j, k, kmax
 
   integer, dimension(2)  :: imin,imax,jmin,jmax,invx,invy
   logical, dimension(2)  :: swap
@@ -1238,15 +1242,21 @@ subroutine fill_fcube_matrix(fvm,fpanel,fotherpanel,fcube_matrix)
         call get_fcube_matrix(fcube_matrix(i,j,:,:),fpanel(i-2:i+2,j-2:j+2))
      end do
   end do
-  
+
   if (fvm%cubeboundary>0) then
-     imin(1) = fvm%jx_min1; imax(1) = fvm%jx_max1-1; imin(2) = fvm%jx_min2; imax(2) = fvm%jx_max2-1     
-     jmin(1) = fvm%jy_min1; jmax(1) = fvm%jy_max1-1; jmin(2) = fvm%jy_min2; jmax(2) = fvm%jy_max2-1
-     swap(1) = fvm%swap1  ; swap(2) = fvm%swap2
-     invx(1) = fvm%invx1   ; invx(2) = fvm%invx2
-     invy(1) = fvm%invy1   ; invy(2) = fvm%invy2
-     
-     do k=1,2
+     imin(1) = fvm%jx_min1; imax(1) = fvm%jx_max1-1; jmin(1) = fvm%jy_min1; jmax(1) = fvm%jy_max1-1
+     swap(1) = fvm%swap1  ; invx(1) = fvm%invx1    ; invy(1) = fvm%invy1
+     if (fvm%cubeboundary>4) then
+        kmax = 2
+        imin(2) = fvm%jx_min2; imax(2) = fvm%jx_max2-1
+        jmin(2) = fvm%jy_min2; jmax(2) = fvm%jy_max2-1
+        swap(2) = fvm%swap2
+        invx(2) = fvm%invx2  ; invy(2) = fvm%invy2
+     else
+        kmax = 1
+     end if
+
+     do k=1,kmax
         if (swap(k)) then
            do j=jmin(k),jmax(k)
               do i=imin(k),imax(k)
