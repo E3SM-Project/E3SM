@@ -64,14 +64,19 @@ MODULE pio_tutil
   PUBLIC  :: PIO_TF_Get_data_types
   PUBLIC  :: PIO_TF_Check_val_
   ! Private functions
-  PRIVATE :: PIO_TF_Check_arr_int_val, PIO_TF_Check_arr_real_val
-  PRIVATE :: PIO_TF_Check_arr_double_val, PIO_TF_Check_char_str_str
+  PRIVATE :: PIO_TF_Check_int_arr_val, PIO_TF_Check_int_arr_arr
+  PRIVATE :: PIO_TF_Check_real_arr_val, PIO_TF_Check_real_arr_arr
+  PRIVATE :: PIO_TF_Check_double_arr_val, PIO_TF_Check_double_arr_arr
+  PRIVATE :: PIO_TF_Check_char_str_str
 
   INTERFACE PIO_TF_Check_val_
     MODULE PROCEDURE                  &
-        PIO_TF_Check_arr_int_val,     &
-        PIO_TF_Check_arr_real_val,    &
-        PIO_TF_Check_arr_double_val,  &
+        PIO_TF_Check_int_arr_val,     &
+        PIO_TF_Check_int_arr_arr,     &
+        PIO_TF_Check_real_arr_val,    &
+        PIO_TF_Check_real_arr_arr,    &
+        PIO_TF_Check_double_arr_val,  &
+        PIO_TF_Check_double_arr_arr,  &
         PIO_TF_Check_char_str_str
   END INTERFACE
 
@@ -494,14 +499,14 @@ CONTAINS
 
   END SUBROUTINE PIO_TF_Get_data_types
 
-  LOGICAL FUNCTION PIO_TF_Check_arr_int_val(arr, val)
+  LOGICAL FUNCTION PIO_TF_Check_int_arr_arr(arr, exp_arr)
 #ifndef NO_MPIMOD
     USE mpi
 #else
     include 'mpif.h'
 #endif
     INTEGER, DIMENSION(:), INTENT(IN) :: arr
-    INTEGER, INTENT(IN) :: val
+    INTEGER, DIMENSION(:), INTENT(IN) :: exp_arr
     INTEGER :: arr_sz, i, ierr
     ! Not equal at id = nequal_idx
     INTEGER :: nequal_idx
@@ -521,8 +526,11 @@ CONTAINS
     lequal = .TRUE.;
     gequal = .TRUE.;
     nequal_idx = -1;
+    IF (arr_sz /= SIZE(exp_arr)) THEN
+      PRINT *, "PIO_TF: Unable to compare arrays of different sizes", arr_sz, " and", SIZE(exp_arr)
+    END IF
     DO i=1, arr_sz
-      IF (arr(i) /= val) THEN
+      IF (arr(i) /= exp_arr(i)) THEN
         lequal = .FALSE.
         nequal_idx = i
       END IF
@@ -532,7 +540,7 @@ CONTAINS
       lfail_info % idx = nequal_idx
       IF (nequal_idx /= -1) THEN
         lfail_info % val     = arr(nequal_idx)
-        lfail_info % exp_val = val
+        lfail_info % exp_val = exp_arr(nequal_idx)
       END IF
       IF (pio_tf_world_rank_ == 0) THEN
         ALLOCATE(gfail_info(pio_tf_world_sz_))
@@ -546,17 +554,28 @@ CONTAINS
       END DO
     END IF
 
-    PIO_TF_Check_arr_int_val = gequal
+    PIO_TF_Check_int_arr_arr = gequal
   END FUNCTION
 
-  LOGICAL FUNCTION PIO_TF_Check_arr_real_val(arr, val)
+  LOGICAL FUNCTION PIO_TF_Check_int_arr_val(arr, val)
+    INTEGER, DIMENSION(:), INTENT(IN) :: arr
+    INTEGER, INTENT(IN) :: val
+    INTEGER, DIMENSION(:), ALLOCATABLE :: arr_val
+
+    ALLOCATE(arr_val(SIZE(arr)))
+    arr_val = val
+    PIO_TF_Check_int_arr_val = PIO_TF_Check_int_arr_arr(arr, arr_val)
+    DEALLOCATE(arr_val)
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_real_arr_arr(arr, exp_arr)
 #ifndef NO_MPIMOD
     USE mpi
 #else
     include 'mpif.h'
 #endif
     REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: arr
-    REAL(KIND=fc_real), INTENT(IN) :: val
+    REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: exp_arr
     INTEGER :: arr_sz, i, ierr
     ! Not equal at id = nequal_idx
     REAL(KIND=fc_real) :: nequal_idx
@@ -576,8 +595,11 @@ CONTAINS
     lequal = .TRUE.;
     gequal = .TRUE.;
     nequal_idx = -1;
+    IF( arr_sz /= SIZE(exp_arr)) THEN
+      PRINT *, "PIO_TF: Unable to compare arrays of different sizes", arr_sz, " and", SIZE(exp_arr)
+    END IF
     DO i=1, arr_sz
-      IF (arr(i) /= val) THEN
+      IF (arr(i) /= exp_arr(i)) THEN
         lequal = .FALSE.
         nequal_idx = i
       END IF
@@ -587,7 +609,7 @@ CONTAINS
       lfail_info % idx = nequal_idx
       IF (INT(nequal_idx) /= -1) THEN
         lfail_info % val     = arr(INT(nequal_idx))
-        lfail_info % exp_val = val
+        lfail_info % exp_val = exp_arr(INT(nequal_idx))
       END IF
       IF (pio_tf_world_rank_ == 0) THEN
         ALLOCATE(gfail_info(pio_tf_world_sz_))
@@ -601,17 +623,28 @@ CONTAINS
       END DO
     END IF
 
-    PIO_TF_Check_arr_real_val = gequal
+    PIO_TF_Check_real_arr_arr = gequal
   END FUNCTION
 
-  LOGICAL FUNCTION PIO_TF_Check_arr_double_val(arr, val)
+  LOGICAL FUNCTION PIO_TF_Check_real_arr_val(arr, val)
+    REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: arr
+    REAL(KIND=fc_real), INTENT(IN) :: val
+    REAL(KIND=fc_real), DIMENSION(:), ALLOCATABLE :: arr_val
+
+    ALLOCATE(arr_val(SIZE(arr)))
+    arr_val = val
+    PIO_TF_Check_real_arr_val = PIO_TF_Check_real_arr_arr(arr, arr_val)
+    DEALLOCATE(arr_val)
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_double_arr_arr(arr, exp_arr)
 #ifndef NO_MPIMOD
     USE mpi
 #else
     include 'mpif.h'
 #endif
     REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: arr
-    REAL(KIND=fc_double), INTENT(IN) :: val
+    REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: exp_arr
     INTEGER :: arr_sz, i, ierr
     ! Not equal at id = nequal_idx
     REAL(KIND=fc_double) :: nequal_idx
@@ -631,8 +664,11 @@ CONTAINS
     lequal = .TRUE.;
     gequal = .TRUE.;
     nequal_idx = -1;
+    IF( arr_sz /= SIZE(exp_arr)) THEN
+      PRINT *, "PIO_TF: Unable to compare arrays of different sizes", arr_sz, " and ", SIZE(exp_arr)
+    END IF
     DO i=1, arr_sz
-      IF (arr(i) /= val) THEN
+      IF (arr(i) /= exp_arr(i)) THEN
         lequal = .FALSE.
         nequal_idx = i
       END IF
@@ -642,7 +678,7 @@ CONTAINS
       lfail_info % idx = nequal_idx
       IF (INT(nequal_idx) /= -1) THEN
         lfail_info % val     = arr(INT(nequal_idx))
-        lfail_info % exp_val = val
+        lfail_info % exp_val = exp_arr(INT(nequal_idx))
       END IF
       IF (pio_tf_world_rank_ == 0) THEN
         ALLOCATE(gfail_info(pio_tf_world_sz_))
@@ -656,7 +692,18 @@ CONTAINS
       END DO
     END IF
 
-    PIO_TF_Check_arr_double_val = gequal
+    PIO_TF_Check_double_arr_arr = gequal
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_double_arr_val(arr, val)
+    REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: arr
+    REAL(KIND=fc_double), INTENT(IN) :: val
+    REAL(KIND=fc_double), DIMENSION(:), ALLOCATABLE :: arr_val
+
+    ALLOCATE(arr_val(SIZE(arr)))
+    arr_val = val
+    PIO_TF_Check_double_arr_val = PIO_TF_Check_double_arr_arr(arr, arr_val)
+    DEALLOCATE(arr_val)
   END FUNCTION
 
   LOGICAL FUNCTION PIO_TF_Check_char_str_str(str1, str2)
