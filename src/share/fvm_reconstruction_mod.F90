@@ -1228,7 +1228,7 @@ subroutine fill_fcube_matrix(fvm,fpanel,fotherpanel,fcube_matrix)
 !  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5), intent(out) :: fcube_matrix
 
   real (kind=real_kind), dimension(1-nht:,1-nht:    ), intent(in)  :: fpanel
-  real (kind=real_kind), dimension(1-nht:,1-nht:,2  ), intent(in)  :: fotherpanel
+  real (kind=real_kind), dimension(1-nht:,1-nht:,:  ), intent(in)  :: fotherpanel
   real (kind=real_kind), dimension(1-nht:,1-nht:,:,:), intent(out) :: fcube_matrix
 
 
