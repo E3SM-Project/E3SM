@@ -170,7 +170,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_read_1d_bc
   type(io_desc_t) :: wr_iodesc, rd_iodesc
   integer, dimension(:), allocatable :: compdof
   integer, dimension(1) :: start, count
-  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
   integer, dimension(1) :: dims
   integer :: pio_dim
   integer :: i, ierr, lsz
@@ -195,8 +195,11 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_read_1d_bc
   call get_1d_bc_info(pio_tf_world_rank_, pio_tf_world_sz_, dims, start, count, .false.)
   allocate(rbuf(count(1)))
   allocate(compdof(count(1)))
+  allocate(exp_val(count(1)))
   do i=1,count(1)
     compdof(i) = start(1) + i -1
+    ! Expected value, after reading, is the same as the compdof
+    exp_val(i) = compdof(i)
   end do
 
   call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, compdof, rd_iodesc)
@@ -228,9 +231,12 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_read_1d_bc
     call PIO_read_darray(pio_file, pio_var, rd_iodesc, rbuf, ierr)
     PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
 
+    PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
     call PIO_closefile(pio_file)
     call PIO_deletefile(pio_tf_iosystem_, filename);
   end do
+
   if(allocated(iotypes)) then
     deallocate(iotypes)
     deallocate(iotype_descs)
@@ -238,6 +244,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_read_1d_bc
 
   call PIO_freedecomp(pio_tf_iosystem_, rd_iodesc)
   call PIO_freedecomp(pio_tf_iosystem_, wr_iodesc)
+  deallocate(exp_val)
   deallocate(rbuf)
   deallocate(wbuf)
 PIO_TF_AUTO_TEST_SUB_END nc_write_read_1d_bc
