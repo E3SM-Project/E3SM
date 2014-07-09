@@ -1280,7 +1280,7 @@ subroutine get_fcube_matrix(fcube_matrix,f)
   implicit none
 !  real (kind=real_kind), dimension(1:5,1:5),intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(:,:),intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(-2:2,-2:2), intent(in)   :: f
+  real (kind=real_kind), dimension(-2:,-2:), intent(in)   :: f
   ! for x-derivative
   fcube_matrix(1,:) = f(:,0); fcube_matrix(3,:) = fcube_matrix(1,:)
   ! for y-derivative
@@ -1295,7 +1295,7 @@ subroutine get_fcube_matrix_otherpanel(fcube_matrix,f,invx,invy)
   implicit none
 !  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(:,:)  , intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(-2:2,-2:2), intent(in)  :: f
+  real (kind=real_kind), dimension(-2:,-2:), intent(in)  :: f
   integer                                    , intent(in)  :: invx, invy
 
   integer                                                  :: inv
@@ -1316,7 +1316,7 @@ subroutine get_fcube_matrix_otherpanel_swap(fcube_matrix,f,invx,invy)
   implicit none
 !  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(:,:)  , intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(-2:2,-2:2), intent(in)  :: f
+  real (kind=real_kind), dimension(-2:,-2:), intent(in)  :: f
   integer                                    , intent(in)  :: invx, invy
 
   integer                                                  :: inv
