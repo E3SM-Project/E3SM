@@ -42,7 +42,7 @@ module mpas_framework
 !-----------------------------------------------------------------------
    subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit, stderrUnit)!{{{
 
-      use iso_c_binding, only : c_char, c_loc, c_ptr
+      use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string
       use mpas_stream_manager, only : MPAS_streamManager_type
 
@@ -60,6 +60,7 @@ module mpas_framework
 
       character(len=StrKIND), pointer :: config_calendar_type
       character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
+      integer(kind=c_int) :: c_comm
       type (MPAS_streamManager_type), target :: stream_manager
       type (c_ptr) :: mgr_p
       integer, pointer :: config_pio_num_iotasks, config_pio_stride
@@ -67,10 +68,11 @@ module mpas_framework
       integer :: pio_stride
 
       interface
-         subroutine xml_stream_parser(fname, mgr_p) bind(c)
-            use iso_c_binding, only : c_char, c_ptr
+         subroutine xml_stream_parser(fname, mgr_p, comm) bind(c)
+            use iso_c_binding, only : c_char, c_ptr, c_int
             character(kind=c_char), dimension(*), intent(in) :: fname
             type (c_ptr), intent(inout) :: mgr_p
+            integer(kind=c_int), intent(inout) :: comm
          end subroutine xml_stream_parser
       end interface
 
@@ -119,7 +121,8 @@ module mpas_framework
          call mpas_f_to_c_string(nml_filename, c_filename)
       end if
       mgr_p = c_loc(stream_manager)
-      call xml_stream_parser(c_filename, mgr_p)
+      c_comm = dminfo % comm
+      call xml_stream_parser(c_filename, mgr_p, c_comm)
 
    end subroutine mpas_framework_init!}}}
 
