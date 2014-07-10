@@ -492,7 +492,7 @@ int write_set_field_pointer(FILE *fd, const char *spacing, const char *iterator_
 
 
 void write_default_namelist(ezxml_t registry){/*{{{*/
-	ezxml_t rec_xml, opt_xml;
+	ezxml_t streams_xml, rec_xml, opt_xml;
 
 	const char *recname, *optname, *opttype, *optdefault;
 	const char *recindef, *optindef;
@@ -534,23 +534,41 @@ void write_default_namelist(ezxml_t registry){/*{{{*/
 
 				if(print_option){
 					if (strcmp(opttype, "real") == 0){
-						fprintf(fd, "\t%s = %s\n", optname, optdefault); 
+						fprintf(fd, "    %s = %s\n", optname, optdefault); 
 					} else if (strcmp(opttype, "integer") == 0){
-						fprintf(fd, "\t%s = %s\n", optname, optdefault); 
+						fprintf(fd, "    %s = %s\n", optname, optdefault); 
 					} else if (strcmp(opttype, "logical") == 0){
 						if (strcmp(optdefault, "true") == 0 || strcmp(optdefault, ".true.") == 0){
-							fprintf(fd, "\t%s = .true.\n", optname); 
+							fprintf(fd, "    %s = .true.\n", optname); 
 						} else {
-							fprintf(fd, "\t%s = .false.\n", optname); 
+							fprintf(fd, "    %s = .false.\n", optname); 
 						}
 					} else if (strcmp(opttype, "character") == 0){
-						fprintf(fd, "\t%s = '%s'\n", optname, optdefault); 
+						fprintf(fd, "    %s = '%s'\n", optname, optdefault); 
 					}
 				}
 			}
-			fprintf(fd, "/\n");
+			fprintf(fd, "/\n\n");
 		}
 	}
+
+	fprintf(fd, "\n<!-- ============== I/O streams ============== -->\n\n");
+
+	fprintf(fd, "<streams>\n\n");
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
+		for (opt_xml = ezxml_child(streams_xml, "stream"); opt_xml; opt_xml = opt_xml->next){
+			optname = ezxml_attr(opt_xml, "name");
+			opttype = ezxml_attr(opt_xml, "type");
+
+			fprintf(fd, "<stream name=\"%s\"\n", optname);
+			fprintf(fd, "        type=\"%s\"\n", opttype);
+			fprintf(fd, "        filename_template=\"file.$Y-$M-$D.nc\"\n");
+			fprintf(fd, "        records_per_file=\"4\"\n");
+			fprintf(fd, "        interval=\"6:00:00\">\n");
+			fprintf(fd, "</stream>\n\n");
+		}
+	}
+	fprintf(fd, "</streams>\n");
 
 	fclose(fd);
 }/*}}}*/
