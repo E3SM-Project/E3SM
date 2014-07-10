@@ -41,13 +41,25 @@ module fvm_mod
   integer, public, parameter            :: IDEAL_TEST_SOLIDBODY = 2
   integer, public                       :: fvm_test_type = IDEAL_TEST_BOOMERANG
 
+  integer, private, parameter :: num_weights      = 10*(nc+2*nhe)*(nc+2*nhe)
+  integer, private, parameter :: num_weights_flux = 4*(nc+2*nhe)*(nc+nhe)
+
   public :: cslam_runairdensity, cslam_runflux
   
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
   public :: fvm_init3, fvm_rkdss
 contains
-  
-  
+
+
+  !
+  !**************************************************************************************
+  !
+  !
+  ! ff-cslam subroutines
+  !
+  !
+  !**************************************************************************************
+  !  
   subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_mod, only: compute_weights , ldbg!dbg
@@ -78,9 +90,9 @@ contains
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
-    real (kind=real_kind)   , dimension(4*(nc+2*nhe)*(nc+nhe),6,2)  :: weights_all
-    integer (kind=int_kind),  dimension(4*(nc+2*nhe)*(nc+nhe),2,2)  :: weights_eul_index_all
-    integer (kind=int_kind),  dimension(4*(nc+2*nhe)*(nc+nhe),2,2)  :: weights_lgr_index_all
+    real (kind=real_kind)   , dimension(num_weights_flux,6,2)  :: weights_all_flux
+    integer (kind=int_kind),  dimension(num_weights_flux,2,2)  :: weights_eul_index_all_flux
+    integer (kind=int_kind),  dimension(num_weights_flux,2,2)  :: weights_lgr_index_all_flux
     integer (kind=int_kind), dimension(2)                            :: jall
 
     integer (kind=int_kind)                            :: jall_max !dbg
@@ -113,9 +125,6 @@ contains
        end do
     end do
 
-
-    
-    
     do ie=nets,nete
        !
        ! if changing to nhe>1 the 3rd argument has to be changed to nhe+1
@@ -133,11 +142,6 @@ contains
        
     end do
 
-!    write(*,*) "xxx",tl%nstep
-!    if (tl%nstep==179) ldbg = .true.
-
-
-
     jall_max=0
     do ie=nets, nete
        do k=1,nlev
@@ -154,30 +158,27 @@ contains
 !             end do
 !          end if
 
-          call compute_weights_fluxform(fvm(ie),6,weights_all,weights_eul_index_all, &
-             weights_lgr_index_all,k,jall)
-          if (jall(1)>4*(nc+2*nhe)*(nc+nhe)) then
-             write(*,*) "jall(1)>4*(nc+2*nhe)*(nc+nhe)"
+          call compute_weights_fluxform(fvm(ie),6,weights_all_flux,weights_eul_index_all_flux, &
+             weights_lgr_index_all_flux,k,jall)
+          if (jall(1)>num_weights_flux) then
+             write(*,*) "jall(1)>num_weights_flux"
              stop
           endif
-          if (jall(2)>4*(nc+2*nhe)*(nc+nhe)) then
-             write(*,*) "jall(2)>4*(nc+2*nhe)*(nc+nhe)"
+          if (jall(2)>num_weights_flux) then
+             write(*,*) "jall(2)>num_weights_flux"
              stop
           endif
 
           tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons)
 !          recons = 0.0!dbg
-          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
+!          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
           !
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
-          do j=1,2
-             call cslam_remap(tracer_air0,flux_air(:,:,j),weights_all(1:jall(j),:,j), &
-                  recons, &
-                  fvm(ie)%spherecentroid, weights_eul_index_all(1:jall(j),:,j),&
-                  weights_lgr_index_all(1:jall(j),:,j), jall(j),1)  
-          end do
+          call ff_cslam_remap(tracer_air0,flux_air,weights_all_flux,recons, &
+               fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
+               weights_lgr_index_all_flux, jall)  
           !
           ! forecast equation for air density
           !
@@ -186,7 +187,6 @@ contains
                 fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
-                
              end do
           end do
           !
@@ -198,14 +198,12 @@ contains
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
 !             recons=0.0
              !
-             ! do remapping for x (j=1) and y (j=2) fluxes
+             ! do remapping for x-y fluxes
              !
-             do j=1,2
-                call cslam_remap_q(tracer0,flux_tracer(:,:,j),weights_all(:,:,j), &
-                     recons, &
-                     fvm(ie)%spherecentroid, weights_eul_index_all(:,:,j),&
-                     weights_lgr_index_all(:,:,j), jall(j))  
-             end do
+             call ff_cslam_remap_q(tracer0,flux_tracer,weights_all_flux, &
+                  recons, &
+                  fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
+                  weights_lgr_index_all_flux, jall)  
              !
              ! forecast equation for tracer (kg/kg)
              !
@@ -247,6 +245,122 @@ contains
     
   end subroutine cslam_runflux
 
+  subroutine ff_cslam_remap(tracer0,flux_air,weights_all_flux,recons,centroid, &
+       weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
+    
+    real (kind=real_kind)                                  ,   intent(in):: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind)  , dimension(1:nc+1,1:nc+1,2)    , intent(inout):: flux_air
+    integer (kind=int_kind), dimension(2)                  , intent(in)  :: jall  
+    real (kind=real_kind)                                  , intent(in)  :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  ,                                 intent(in)  :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)  :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_lgr_index_all_flux
+    !
+    ! should make  dimension(num_weights_flux,2,2) to dimension(2,num_weights_flux,2)
+    !
+    integer :: h, jx, jy, jdx, jdy, k
+    
+    flux_air = 0.0D0
+    do k=1,2
+       do h=1,jall(k)
+          jx  = weights_lgr_index_all_flux(h,1,k)
+          jy  = weights_lgr_index_all_flux(h,2,k)
+          jdx = weights_eul_index_all_flux(h,1,k)
+          jdy = weights_eul_index_all_flux(h,2,k)
+          
+          flux_air(jx,jy,k) = flux_air(jx,jy,k)+weights_all_flux(h,1,k)*(&
+               ! all constant terms 
+               tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
+               - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
+               + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+               + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+               + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+               ! linear terms
+               weights_all_flux(h,2,k)*&
+               (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+               weights_all_flux(h,3,k)*&
+               (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+               ! quadratic terms
+               weights_all_flux(h,4,k)*recons(3,jdx,jdy)+&
+               weights_all_flux(h,5,k)*recons(4,jdx,jdy)+&
+               weights_all_flux(h,6,k)*recons(5,jdx,jdy)
+       end do
+    end do
+  end subroutine ff_cslam_remap
+
+  ! do the remapping
+  subroutine ff_cslam_remap_q(tracer0,flux,weights_all_flux,recons,centroid, &
+       weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
+    
+    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1,2)
+    integer (kind=int_kind), dimension(2), intent(in)         :: jall  
+    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)  :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_lgr_index_all_flux
+
+    
+    real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1,2)
+    
+    integer                                     :: h, jx, jy, jdx, jdy, k
+    
+    flux   = 0.0D0
+    flux_area = 0.0D0
+    do k=1,2
+       do h=1,jall(k)
+          jx  = weights_lgr_index_all_flux(h,1,k)
+          jy  = weights_lgr_index_all_flux(h,2,k)
+          jdx = weights_eul_index_all_flux(h,1,k)
+          jdy = weights_eul_index_all_flux(h,2,k)
+          
+          flux_area(jx,jy,k) =  flux_area(jx,jy,k)+weights_all_flux(h,1,k)
+
+          flux(jx,jy,k) = flux(jx,jy,k)+weights_all_flux(h,1,k)*(&
+               ! all constant terms 
+               tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
+               - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
+               + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+               + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+               + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+               ! linear terms
+               weights_all_flux(h,2,k)*&
+               (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+               weights_all_flux(h,3,k)*&
+               (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+               ! quadratic terms
+               weights_all_flux(h,4,k)*recons(3,jdx,jdy)+&
+               weights_all_flux(h,5,k)*recons(4,jdx,jdy)+&
+               weights_all_flux(h,6,k)*recons(5,jdx,jdy)
+       end do
+       do jy=1,nc+1
+          do jx=1,nc+1
+             if (abs(flux_area(jx,jy,k))<1.0E-12) then
+                flux(jx,jy,k) = 0.0D0
+             else
+                flux(jx,jy,k) = flux(jx,jy,k)/flux_area(jx,jy,k)
+             end if
+          end do
+       end do
+    end do
+  end subroutine ff_cslam_remap_q
+
+  !
+  !**************************************************************************************
+  !
+  !
+  ! cslam subroutines
+  !
+  !
+  !**************************************************************************************
+  !
+
 
   ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
   subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -276,9 +390,9 @@ contains
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
-    real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
+    real (kind=real_kind)   , dimension(num_weights,6)  :: weights_all
+    integer (kind=int_kind),  dimension(num_weights,2)  :: weights_eul_index_all
+    integer (kind=int_kind),  dimension(num_weights,2)  :: weights_lgr_index_all
     integer (kind=int_kind)                                          :: jall
     
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
@@ -325,8 +439,8 @@ contains
           
           tracer_air1=0.0D0   
           
-          call cslam_remap(tracer_air0,tracer_air1,weights_all(1:jall,:), recons_air, &
-               fvm(ie)%spherecentroid, weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall,0)
+          call cslam_remap(tracer_air0,tracer_air1,weights_all, recons_air, &
+               fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall,0)
           ! finish scheme
           do j=1,nc
              do i=1,nc
@@ -344,8 +458,8 @@ contains
              
              !         call cslam_remap(tracer0,tracer1,weights_all, recons, &
              !                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)                   
-             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all(1:jall,:), recons,recons_air,&
-                  fvm(ie)%spherecentroid,weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall)  
+             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
+                  fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)  
              ! finish scheme
              do j=1,nc
                 do i=1,nc
@@ -376,22 +490,21 @@ contains
 
     
   end subroutine cslam_runairdensity
-  
-  
-  
-  ! do the remapping
-  subroutine cslam_remap(tracer0,tracer1,weights,recons,centroid, &
+
+
+  subroutine cslam_remap(tracer0,tracer1,weights_all,recons,centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall, iflux)
     
     real (kind=real_kind),   intent(in)        :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
     integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call
     real (kind=real_kind),   intent(inout)     :: tracer1(1:nc+iflux,1:nc+iflux)
     integer (kind=int_kind), intent(in)        :: jall  
-    real (kind=real_kind),   intent(in)        :: weights(:,:)
     real (kind=real_kind),   intent(in)        :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind),   intent(in)        :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(:,:)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(:,:)
+    real (kind=real_kind)   , dimension(num_weights,6), intent(in)  :: weights_all
+    integer (kind=int_kind),  dimension(num_weights,2), intent(in)  :: weights_eul_index_all
+    integer (kind=int_kind),  dimension(num_weights,2), intent(in)  :: weights_lgr_index_all
+
  
     integer                                     :: h, jx, jy, jdx, jdy
     
@@ -402,7 +515,7 @@ contains
        jdx = weights_eul_index_all(h,1)
        jdy = weights_eul_index_all(h,2)
        
-       tracer1(jx,jy) = tracer1(jx,jy)+weights(h,1)*(&
+       tracer1(jx,jy) = tracer1(jx,jy)+weights_all(h,1)*(&
             ! all constant terms 
             tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
             - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
@@ -410,75 +523,21 @@ contains
             + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
             + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
             ! linear terms
-            weights(h,2)*&
+            weights_all(h,2)*&
             (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)*&
+            weights_all(h,3)*&
             (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
             ! quadratic terms
-            weights(h,4)*recons(3,jdx,jdy)+&
-            weights(h,5)*recons(4,jdx,jdy)+&
-            weights(h,6)*recons(5,jdx,jdy)
+            weights_all(h,4)*recons(3,jdx,jdy)+&
+            weights_all(h,5)*recons(4,jdx,jdy)+&
+            weights_all(h,6)*recons(5,jdx,jdy)
     end do
   end subroutine cslam_remap
 
-  ! do the remapping
-  subroutine cslam_remap_q(tracer0,flux,weights,recons,centroid, &
-       weights_eul_index_all, weights_lgr_index_all, jall)
-    
-    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
-    real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1)
-    integer (kind=int_kind), intent(in)         :: jall  
-    real (kind=real_kind), intent(in)           :: weights(:,:)
-    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(:,:)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(:,:)
-    
-    real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1)
-    
-    integer                                     :: h, jx, jy, jdx, jdy
-    
-    flux   = 0.0D0
-    flux_area = 0.0D0
-    do h=1,jall
-       jx  = weights_lgr_index_all(h,1)
-       jy  = weights_lgr_index_all(h,2)
-       jdx = weights_eul_index_all(h,1)
-       jdy = weights_eul_index_all(h,2)
-       
-       flux_area(jx,jy) =  flux_area(jx,jy)+weights(h,1)
 
-       flux(jx,jy) = flux(jx,jy)+weights(h,1)*(&
-            ! all constant terms 
-            tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
-            - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
-            + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
-            + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
-            + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
-            ! linear terms
-            weights(h,2)*&
-            (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
-            - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)*&
-            (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
-            - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
-            ! quadratic terms
-            weights(h,4)*recons(3,jdx,jdy)+&
-            weights(h,5)*recons(4,jdx,jdy)+&
-            weights(h,6)*recons(5,jdx,jdy)
-    end do
-    do jy=1,nc+1
-       do jx=1,nc+1
-          if (abs(flux_area(jx,jy))<1.0E-12) then
-             flux(jx,jy) = 0.0D0
-          else
-             flux(jx,jy) = flux(jx,jy)/flux_area(jx,jy)
-          end if
-       end do
-    end do
-  end subroutine cslam_remap_q
+
   
   subroutine cslam_get_area(fvm,area,k)
     use fvm_line_integrals_mod, only: compute_weights !dbg
@@ -546,7 +605,7 @@ contains
   ! do remapping with air (i.e. conserve mass of air density * concentration),
   ! see Nair et.al 2010 in JCP: A class of deformational flow test cases for linear transport
   ! schemes on the sphere, Appendix B
-  subroutine cslam_remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, centroid, &
+  subroutine cslam_remap_air(tracer0,tracer1,tracer_air, weights_all,recons, recons_air, centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall)
     
     real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
@@ -556,10 +615,10 @@ contains
     real (kind=real_kind), intent(in)           :: recons_air(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
  
     integer (kind=int_kind), intent(in)         :: jall  
-    real (kind=real_kind), intent(in)           :: weights(jall,6)
+    real (kind=real_kind), intent(in)           :: weights_all(num_weights,6)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)         :: weights_eul_index_all(jall,2)
-    integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(jall,2)
+    integer (kind=int_kind), intent(in)         :: weights_eul_index_all(num_weights,2)
+    integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(num_weights,2)
  
     integer                                     :: h, jx, jy, jdx, jdy    
  
@@ -570,7 +629,7 @@ contains
        jdy = weights_eul_index_all(h,2)                     
        tracer1(jx,jy) = tracer1(jx,jy)+&
             ! air density times tracer reconstruction
-            tracer_air(jdx,jdy)*(weights(h,1)*(&      ! 1 is for air
+            tracer_air(jdx,jdy)*(weights_all(h,1)*(&      ! 1 is for air
             ! all constant terms 
             tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
             - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
@@ -578,19 +637,19 @@ contains
             + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
             + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
             ! linear terms
-            weights(h,2)* &
+            weights_all(h,2)* &
             (recons(1,jdx,jdy)- recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)* &
+            weights_all(h,3)* &
             (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
             ! quadratic terms
-            weights(h,4)*recons(3,jdx,jdy) + &
-            weights(h,5)*recons(4,jdx,jdy) + &
-            weights(h,6)*recons(5,jdx,jdy)) + &
+            weights_all(h,4)*recons(3,jdx,jdy) + &
+            weights_all(h,5)*recons(4,jdx,jdy) + &
+            weights_all(h,6)*recons(5,jdx,jdy)) + &
             
             !tracer times air reconstruction
-            tracer0(jdx,jdy)*(weights(h,1)*(&      
+            tracer0(jdx,jdy)*(weights_all(h,1)*(&      
             ! all constant terms 
             !       tracer_air &  this term cancels it out
             - recons_air(1,jdx,jdy)*centroid(1,jdx,jdy) - recons_air(2,jdx,jdy)*centroid(2,jdx,jdy) &
@@ -598,16 +657,16 @@ contains
             + recons_air(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
             + recons_air(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
             ! linear terms
-            weights(h,2)* &
+            weights_all(h,2)* &
             (recons_air(1,jdx,jdy) - recons_air(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
             - recons_air(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)* &
+            weights_all(h,3)* &
             (recons_air(2,jdx,jdy) - recons_air(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
             - recons_air(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
             ! quadratic terms
-            weights(h,4)*recons_air(3,jdx,jdy)+&
-            weights(h,5)*recons_air(4,jdx,jdy)+&
-            weights(h,6)*recons_air(5,jdx,jdy))
+            weights_all(h,4)*recons_air(3,jdx,jdy)+&
+            weights_all(h,5)*recons_air(4,jdx,jdy)+&
+            weights_all(h,6)*recons_air(5,jdx,jdy))
     end do
   end subroutine cslam_remap_air
   
