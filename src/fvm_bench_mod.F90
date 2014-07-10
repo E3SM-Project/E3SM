@@ -57,7 +57,9 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   ! -----------------------------------------------
-  
+  use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
+  use control_mod, only : tracer_transport_type
+  use parallel_mod, only: abortmp
 #ifdef PIO_INTERP
      use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
 #else
@@ -157,8 +159,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     global_shared_buf(ie,1)=0.0D0
     global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
-    tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
-    tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))   
+    tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(1:nc,1:nc,chooselev,tl%n0))
+    tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(1:nc,1:nc,chooselev,tl%n0))   
 
 !    tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
 !    tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
@@ -196,6 +198,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   call t_startf('fvm')
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
+  nmax=10
   DO WHILE(tl%nstep< nmax)
      
      ! start old mcgregor----------------------
@@ -248,16 +251,18 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
      
      
      ! ! end mcgregordss   
-!     if(hybrid%masterthread) then 
-!        write(*,*) "running FF-CSLAM"
-!     end if
-!     call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run flux-form CSLAM
-     
-     
-     if(hybrid%masterthread) then 
-        write(*,*) "running CSLAM"
-     end if
-     call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
+        
+!    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
+      call cslam_runflux      (elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+      if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running ff-cslam"
+!    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+!      call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
+!      if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running cslam"
+!    else
+!      call abortmp('Bad tracer_transport_type in fvm_bench')
+!    end if
+
+
       
      call TimeLevel_update(tl,"forward")
      
@@ -284,8 +289,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
            ! for the max/min value on the sphere
            !      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
            !      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-           tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
-           tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
+           tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(1:nc,1:nc,chooselev,tl%n0))
+           tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(1:nc,1:nc,chooselev,tl%n0))
         end do
         !-----------------------------------------------------------------------------------!
         ! for mass calculation
