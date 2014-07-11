@@ -83,16 +83,16 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
   type (fvm_struct), intent(in)                                   :: fvm
         
 
-!  real (kind=real_kind)  , dimension(1-nht:nc+nht, 1-nht:nc+nht ), intent(out) :: fpanel
-!  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2), intent(out) :: fotherpanel
-  real (kind=real_kind)  , dimension(1-nht:, 1-nht:),  intent(out) :: fpanel
-  real   (kind=real_kind), dimension(1-nht:,1-nht:,:), intent(out) :: fotherpanel
+  real (kind=real_kind)  , dimension(1-nht:nc+nht, 1-nht:nc+nht ), intent(out) :: fpanel
+  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2), intent(out) :: fotherpanel
+!  real (kind=real_kind)  , dimension(1-nht:, 1-nht:),  intent(out) :: fpanel
+!  real   (kind=real_kind), dimension(1-nht:,1-nht:,:), intent(out) :: fotherpanel
 
 
   integer (kind=int_kind)                                         :: i, j, halo,ibaseref
   real (kind=real_kind), dimension(1:ns,1-nh:nc+nh,1:nhr) :: w
   !
-  fpanel = 1.0E19 !dbg
+!  fpanel = 1.0E19 !dbg
   !
   ! 
   ! Stencil for reconstruction is:
@@ -1179,16 +1179,14 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
   implicit none
 
   type (fvm_struct), intent(in)                                     :: fvm
-!  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht  ), intent(in)   :: fpanel
-!  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
-!  real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
-!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5)   :: fcube_matrix
+  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht  ), intent(in)   :: fpanel
+  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
+  real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
+  real (kind=real_kind), dimension(1:5,1:5,1-nht:nc+nht,1-nht:nc+nht)             :: fcube_matrix
+!  real (kind=real_kind), dimension(  1-nht:,1-nht:  ), intent(in)   :: fpanel
+!  real (kind=real_kind), dimension(  1-nht:,1-nht:,:), intent(in)   :: fotherpanel
+!  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:  ), intent(inout):: recons
 
-  real (kind=real_kind), dimension(  1-nht:,1-nht:  ), intent(in)   :: fpanel
-  real (kind=real_kind), dimension(  1-nht:,1-nht:,:), intent(in)   :: fotherpanel
-  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:  ), intent(inout):: recons
-
-  real (kind=real_kind), dimension(1:5,1:5,1-nht:nc+nht,1-nht:nc+nht)   :: fcube_matrix
   integer  :: i, j, k, h
   !
   ! on panel reconstruction
