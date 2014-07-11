@@ -986,12 +986,21 @@ module namelist_mod
     if (trim(tracer_transport_method) == 'se_gll') then
       tracer_transport_type = TRACERTRANSPORT_SE_GLL
       tracer_grid_type = TRACER_GRIDTYPE_GLL
+      if (ntrac>0) then
+         call abortmp('user specified ntrac should only be > 0 when tracer_transport_type is fvm')
+      end if
     else if (trim(tracer_transport_method) == 'cslam_fvm') then
       tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
       tracer_grid_type = TRACER_GRIDTYPE_FVM
+      if (qsize>0) then
+         call abortmp('user specified qsize should only be > 0 when tracer_transport_type is se_gll')
+      end if
     else if (trim(tracer_transport_method) == 'flux_form_cslam_fvm') then
       tracer_transport_type = TRACERTRANSPORT_FLUXFORM_FVM
       tracer_grid_type = TRACER_GRIDTYPE_FVM
+      if (qsize>0) then
+         call abortmp('user specified qsize should only be > 0 when tracer_transport_type is se_gll')
+      end if
     else
       call abortmp('Unknown tracer transport method: '//trim(tracer_transport_method))
     end if
