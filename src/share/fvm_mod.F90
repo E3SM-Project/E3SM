@@ -119,7 +119,6 @@ contains
     
     call t_startf('ff-cslam scheme') 
 
-    call t_startf('ff-cslam: fvm_mesh_dep+ghost')!phlpt    
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -142,7 +141,6 @@ contains
        fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
        
     end do
-    call t_stopf('ff-cslam: fvm_mesh_dep+ghost')!phlpt
 
     jall_max=0
     do ie=nets, nete
@@ -160,10 +158,9 @@ contains
 !             end do
 !          end if
 
-          call t_startf('ff-cslam: compute_weights')!phlpt
           call compute_weights_fluxform(fvm(ie),6,weights_all_flux,weights_eul_index_all_flux, &
              weights_lgr_index_all_flux,k,jall)
-         call t_stopf('ff-cslam: compute_weights')!phlpt
+
           if (jall(1)>num_weights_flux) then
              write(*,*) "jall(1)>num_weights_flux"
              stop
@@ -174,23 +171,16 @@ contains
           endif
 
           tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
-          call t_startf('ff-cslam: reconstruction')!phlpt
           call reconstruction(tracer_air0, fvm(ie),recons)
-          call t_stopf('ff-cslam: reconstruction')!phlpt
-          call t_startf('ff-cslam: monotone')!phlpt
 
 !          recons = 0.0!dbg
-          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
-          call t_stopf('ff-cslam: monotone')!phlpt
-
+!          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
           !
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
-         call t_startf('ff-cslam: cslam_remap')!phlpt
           call ff_cslam_remap(tracer_air0,flux_air,weights_all_flux,recons, &
                fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
                weights_lgr_index_all_flux, jall)  
-        call t_stopf('ff-cslam: cslam_remap')!phlpt 
           !
           ! forecast equation for air density
           !
@@ -204,7 +194,6 @@ contains
           !
           !loop through all tracers
           !
-        call t_startf('ff-cslam: all tracers')!phlpt
           do itr=1,ntrac
              tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
              call reconstruction(tracer0, fvm(ie),recons)
@@ -238,7 +227,6 @@ contains
                 end do
              end do
           enddo  !End Tracer
-        call t_stopf('ff-cslam: all tracers')!phlpt        
        end do  !End Level
        !note write tl%np1 in buffer
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
@@ -420,9 +408,8 @@ contains
     type (ghostBuffertr_t)                      :: buflatlon
 
     call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
-    call t_startf('CSLAM scheme') 
+    call t_startf('cslam scheme') 
 
-   call t_startf('cslam: fvm_mesh_dep+ghost')!phlpt    
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -442,28 +429,19 @@ contains
        fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
        
     end do
-    call t_stopf('cslam: fvm_mesh_dep+ghost')!phlpt
 
 
     do ie=nets, nete
        do k=1,nlev
           !-Departure fvm Meshes, initialization done                                                               
-          call t_startf('cslam: compute_weights')!phlpt
           call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
                weights_lgr_index_all,k,jall)     
-         call t_stopf('cslam: compute_weights')!phlpt           
           tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)     
-         call t_startf('cslam: reconstruction')!phlpt  
           call reconstruction(tracer_air0, fvm(ie),recons_air)
-         call t_stopf('cslam: reconstruction')!phlpt
-          call t_startf('cslam: monotone')!phlpt
-          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
-         call t_stopf('cslam: monotone')!phlpt          
+!          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
           tracer_air1=0.0D0   
-         call t_startf('cslam: cslam_remap')!phlpt          
           call cslam_remap(tracer_air0,tracer_air1,weights_all, recons_air, &
                fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall,0)
-         call t_stopf('cslam: cslam_remap')!phlpt 
           ! finish scheme
           do j=1,nc
              do i=1,nc
@@ -472,25 +450,14 @@ contains
              end do
           end do
           !loop through all tracers
-         call t_startf('cslam: all tracers')!phlpt
           do itr=1,ntrac
              tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
-             call t_startf('cslam: reconstruction-tracer')!phlpt
              call reconstruction(tracer0, fvm(ie),recons)
-             call t_stopf('cslam: reconstruction-tracer')!phlpt
-             call t_startf('cslam: monotone-tracer')!phlpt
-
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-             call t_stopf('cslam: monotone-tracer')!phlpt          
              tracer1=0.0D0   
              
-             !         call cslam_remap(tracer0,tracer1,weights_all, recons, &
-             !                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)                   
-           call t_startf('cslam: remap_air')!phlpt
-
              call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
                   fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)  
-        call t_stopf('cslam: remap_air')!phlpt
 
              ! finish scheme
              do j=1,nc
@@ -501,14 +468,13 @@ contains
                 end do
              end do
           enddo  !End Tracer
-         call t_stopf('cslam: all tracers')!phlpt
        end do  !End Level
        !note write tl%np1 in buffer                                                                 
 
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
        call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
-    call t_stopf('CSLAM scheme')
+    call t_stopf('cslam scheme')
     call t_startf('FVM Communication')
     call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
     call t_stopf('FVM Communication')
