@@ -91,7 +91,7 @@ module fvm_control_volume_mod
     ! provide fixed interpolation points with respect to the arrival grid for 
     ! reconstruction   
     integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
-    real (kind=real_kind)    :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
+    real (kind=real_kind)    :: halo_interp_weight(1:ns,1-nh:nc+nh,1:nhr,2)
 !------------------------------------------------------------------------------------
     !
     ! for finite-difference reconstruction - computed in computexytosphere_moments
@@ -1176,7 +1176,7 @@ subroutine compute_halo_weights(fvm)
               ibaseref=ibase_tmp(i,halo,iinterp)
               fvm%ibase(i,halo,1) = ibaseref
               call get_equispace_weights(fvm%dbeta, interp(i,halo,iinterp),&
-                   fvm%halo_interp_weight(i,halo,:,1))
+                   fvm%halo_interp_weight(:,i,halo,1))
            end do
         end do
      else
@@ -1195,12 +1195,12 @@ subroutine compute_halo_weights(fvm)
            do i=imin,imax
               ibaseref=ibase_tmp(i,halo,1)
               fvm%ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
+              call get_equispace_weights(fvm%dbeta, interp(i,halo,1),fvm%halo_interp_weight(:,i,halo,1))
            end do
            !
            ! reverse weights/indices for fotherpanel (see details on reconstruct_matrix)
            !
-           fvm%halo_interp_weight(jmin:jmax,halo,1:ns,2) = fvm%halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
+           fvm%halo_interp_weight(1:ns,jmin:jmax,halo,2) = fvm%halo_interp_weight(ns:1:-1,imax:imin:-1,halo,1)
            fvm%ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
         end do
      end if
@@ -1216,7 +1216,7 @@ end subroutine compute_halo_weights
 !                                                                      !
 !----------------------------------------------------------------------!
 
-subroutine get_equispace_weights(dx, x,w)
+subroutine get_equispace_weights(dx, x, w)
   !
   ! Coordinate system for Lagrange interpolation:
   !
