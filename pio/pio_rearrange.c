@@ -623,6 +623,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   int *recvlths;
   int *rdispls;
   MPI_Datatype *dtypes;
+  PIO_Offset *iomaplen;
 
   dest_ioproc = (int *) malloc(maplen*sizeof(int));
   dest_ioindex = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
@@ -666,8 +667,8 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     recvlths[ io_comprank ] = 1;
     rdispls[ io_comprank ] = i*tsize;
   }      
-  PIO_Offset iomaplen[nioprocs];
   //  The length of each iomap
+  iomaplen = calloc(nioprocs, sizeof(PIO_Offset));
   pio_swapm(&(iodesc->llen), sndlths, sdispls, dtypes,
 	    iomaplen, recvlths, rdispls, dtypes, 	
 	    ios.union_comm, false, false, MAX_GATHER_BLOCK_SIZE);
@@ -735,6 +736,8 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     if(ios.iomaster)
       printf("%d iosize %d %d\n",__LINE__,iodesc->maxiobuflen, iodesc->llen);
   }
+
+  free(iomaplen);
 
   return PIO_NOERR;
 }
