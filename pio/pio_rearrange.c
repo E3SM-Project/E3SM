@@ -144,7 +144,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   int pos;
   int ii;
   PIO_Offset i8blocksize;
-  MPI_Datatype newtype;
+  MPI_Datatype newtype = MPI_DATATYPE_NULL;
   int blocksize;
   PIO_Offset *lindex = NULL;
   
@@ -222,10 +222,16 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 
 int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 {
+  int i;
   if(ios.ioproc){
     //    printf("%d IO:\n",ios.io_rank);
     if(iodesc->rtype==NULL){
-      iodesc->rtype = (MPI_Datatype *) malloc(max(1,iodesc->nrecvs)*sizeof(MPI_Datatype));
+      int ntypes = max(1, iodesc->nrecvs);
+      iodesc->rtype = (MPI_Datatype *) malloc(ntypes * sizeof(MPI_Datatype));
+      for(i=0; i<ntypes; i++){
+        iodesc->rtype[i] = MPI_DATATYPE_NULL;
+      }
+      iodesc->num_rtypes = ntypes;
       /*       
       printf("rindex: \n");
       for(int i=0;i<iodesc->llen;i++)
@@ -243,7 +249,12 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
   //printf("COMP:\n");
 
   if(iodesc->stype==NULL){
-    iodesc->stype = (MPI_Datatype *) malloc(ios.num_iotasks*sizeof(MPI_Datatype));
+    int ntypes = ios.num_iotasks;
+    iodesc->stype = (MPI_Datatype *) malloc(ntypes * sizeof(MPI_Datatype));
+    for(i=0; i<ntypes; i++){
+      iodesc->stype[i] = MPI_DATATYPE_NULL;
+    }
+    iodesc->num_stypes = ntypes;
     create_mpi_datatypes(iodesc->basetype, ios.num_iotasks, iodesc->ndof, iodesc->sindex, iodesc->scount, iodesc->stype);
   }
 
@@ -346,6 +357,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
       }
 
     }
+    free(recv_buf);
   }else{
     rcount = (int *) malloc(sizeof(int));
     rcount[0]=0;
@@ -444,8 +456,6 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Abort(MPI_COMM_WORLD,0);
 */  
-  iodesc->rtype = NULL;
-  iodesc->stype = NULL;
 
   return ierr;
 
@@ -662,6 +672,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       sndlths[ i ] = 1;
     }
   }
+
   for( i=0;i<nioprocs; i++){
     int io_comprank = ios.ioranks[i];
     recvlths[ io_comprank ] = 1;
@@ -737,6 +748,13 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       printf("%d iosize %d %d\n",__LINE__,iodesc->maxiobuflen, iodesc->llen);
   }
 
+  free(dest_ioproc);
+  free(dest_ioindex);
+  free(sndlths);
+  free(sdispls);
+  free(recvlths);
+  free(rdispls);
+  free(dtypes);
   free(iomaplen);
 
   return PIO_NOERR;

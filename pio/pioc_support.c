@@ -101,7 +101,7 @@ io_region *alloc_region(const int ndims)
 io_desc_t *malloc_iodesc(const int piotype, const int ndims)
 {
   io_desc_t *iodesc;
-  iodesc = (io_desc_t *) malloc(sizeof(io_desc_t));
+  iodesc = (io_desc_t *) calloc(1, sizeof(io_desc_t));
 
   if(iodesc == NULL)
     fprintf(stderr,"ERROR: allocation error \n");
@@ -126,7 +126,9 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->rfrom = NULL;
   iodesc->scount = NULL;
   iodesc->rtype = NULL;
+  iodesc->num_rtypes = 0;
   iodesc->stype = NULL;
+  iodesc->num_stypes = 0;
   iodesc->sindex = NULL;
   iodesc->rindex = NULL;
   iodesc->rcount = NULL;
@@ -160,6 +162,8 @@ int PIOc_freedecomp(int iosysid, int ioid)
 {
   iosystem_desc_t *ios;
   io_desc_t *iodesc;
+  int i;
+
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
     return PIO_EBADID;
@@ -170,6 +174,24 @@ int PIOc_freedecomp(int iosysid, int ioid)
 
   if(iodesc->rfrom != NULL)
     free(iodesc->rfrom);
+  if(iodesc->rtype != NULL){
+    for(i=0; i<iodesc->num_rtypes; i++){
+      if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
+        MPI_Type_free(&(iodesc->rtype[i]));
+      }
+    }
+    iodesc->num_rtypes = 0;
+    free(iodesc->rtype);
+  }
+  if(iodesc->stype != NULL){
+    for(i=0; i<iodesc->num_stypes; i++){
+      if(iodesc->stype[i] != MPI_DATATYPE_NULL){
+        MPI_Type_free(&(iodesc->stype[i]));
+      }
+    }
+    iodesc->num_stypes = 0;
+    free(iodesc->stype);
+  }
   if(iodesc->scount != NULL)
     free(iodesc->scount);
   if(iodesc->rcount != NULL)
@@ -179,10 +201,6 @@ int PIOc_freedecomp(int iosysid, int ioid)
   if(iodesc->rindex != NULL)
     free(iodesc->rindex);
 
-  if(iodesc->rtype != NULL)
-    free(iodesc->rtype);
-  if(iodesc->stype != NULL)
-    free(iodesc->stype);
   if(iodesc->firstregion != NULL)
     free_region_list(iodesc->firstregion);
 

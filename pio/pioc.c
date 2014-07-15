@@ -296,6 +296,18 @@ int PIOc_finalize(const int iosysid)
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
     return PIO_EBADID; 
+  /* FIXME: The memory for ioranks is allocated in C only for intracomms
+   * Remove this check once mem allocs for ioranks completely moves to the
+   * C code
+   */ 
+  if(ios->intercomm == MPI_COMM_NULL){
+    if(ios->ioranks != NULL){
+      free(ios->ioranks);
+    }
+  }
+  if(ios->io_comm != MPI_COMM_NULL){
+    MPI_Comm_free(&(ios->io_comm));
+  }
   return pio_delete_iosystem_from_list(iosysid);
 
   
