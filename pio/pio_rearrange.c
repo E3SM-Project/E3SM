@@ -146,7 +146,9 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   PIO_Offset i8blocksize;
   MPI_Datatype newtype;
   int blocksize;
-  PIO_Offset lindex[dlen];
+  PIO_Offset *lindex = NULL;
+  
+  lindex = (PIO_Offset *) malloc(dlen * sizeof(PIO_Offset));
   
   memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
 
@@ -212,6 +214,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 #endif
   }
   
+  free(lindex);
   return PIO_NOERR;
 
 }
