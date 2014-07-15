@@ -54,6 +54,7 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   totiosize=0;
   region = iodesc->firstregion;
   while(region != NULL){
+    iosize = 0;
     if(region->count[0]>0)
       iosize=1;
       for(i=0;i<iodesc->ndims;i++)
