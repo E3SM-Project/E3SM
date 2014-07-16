@@ -2,17 +2,30 @@ module mpas_stream_manager
 
 #define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) (M)
 
-    use mpas_kind_types, only : RKIND
-    use mpas_grid_types, only : MPAS_Pool_type
-    use mpas_timekeeping, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Alarm_type
-    use mpas_io_units, only : stderrUnit
+    use mpas_kind_types
+    use mpas_grid_types
+    use mpas_timekeeping
+    use mpas_io_units
+
+    integer, public, parameter :: MPAS_STREAM_ERR_FATAL  = 1000, &
+                                  MPAS_STREAM_ERR_WARN   = 1001, &
+                                  MPAS_STREAM_ERR_SILENT = 1002
+
+    integer, public, parameter :: MPAS_STREAM_NOERR = 0
 
     integer, public, parameter :: MPAS_STREAM_INPUT = 1, &
                                   MPAS_STREAM_OUTPUT = 2, &
                                   MPAS_STREAM_INPUT_OUTPUT = 3, &
                                   MPAS_STREAM_NONE = 4
 
-    integer, public, parameter :: MPAS_STREAM_NOERR = 0
+    integer, public, parameter :: MPAS_STREAM_IMMUTABLE = 5, &
+                                  MPAS_STREAM_MUTABLE   = 6
+
+    character(len=*), public, parameter :: MPAS_STREAM_PROPERTY_DIRECTION = 'direction', &
+                                           MPAS_STREAM_PROPERTY_IMMUTABLE = 'immutable', &
+                                           MPAS_STREAM_PROPERTY_FILENAME = 'filename', &
+                                           MPAS_STREAM_PROPERTY_MAX_RECORDS = 'maxRecords', &
+                                           MPAS_STREAM_PROPERTY_REF_TIME = 'referenceTime'
 
     public :: MPAS_streamManager_type, &
               MPAS_stream_mgr_init, &
@@ -33,8 +46,20 @@ module mpas_stream_manager
     private
 
     type MPAS_streamManager_type
-        integer :: num_streams = 0
+        integer :: numStreams = 0
+        integer :: errorLevel
+        type (MPAS_Pool_type), pointer :: streams
+        type (MPAS_Clock_type), pointer :: streamClock
+        type (MPAS_Pool_type), pointer :: allFields
+        type (MPAS_Pool_type), pointer :: allPackages
     end type MPAS_streamManager_type
+
+    interface MPAS_stream_mgr_add_att
+        module procedure MPAS_stream_mgr_add_att_int
+        module procedure MPAS_stream_mgr_add_att_real
+        module procedure MPAS_stream_mgr_add_att_char
+        module procedure MPAS_stream_mgr_add_att_logical
+    end interface
 
 
     contains
@@ -51,21 +76,30 @@ module mpas_stream_manager
     !>  clock and a pool from which fields may be drawn and added to streams.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_init(manager, clock, allFields, ierr)
+    subroutine MPAS_stream_mgr_init(manager, clock, allFields, ierr)!{{{
 
         implicit none
 
-        type (MPAS_streamManager_type), intent(inout) :: manager
-        type (MPAS_Clock_type), intent(inout) :: clock
-        type (MPAS_Pool_type), intent(in) :: allFields
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_init'
+
+        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_Clock_type), pointer :: clock
+        type (MPAS_Pool_type), pointer :: allFields
         integer, intent(out), optional :: ierr
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_init()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        allocate(manager)
+        manager % allFields => allFields
+        manager % streamClock => clock
+        manager % numStreams = 0
+        manager % errorLevel = MPAS_STREAM_ERR_SILENT
+        call mpas_pool_create_pool(manager % streams)
 
-    end subroutine MPAS_stream_mgr_init
+
+    end subroutine MPAS_stream_mgr_init!}}}
 
 
     !-----------------------------------------------------------------------
@@ -80,19 +114,24 @@ module mpas_stream_manager
     !>  the streamManager are unaffected.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_finalize(manager, ierr)
+    subroutine MPAS_stream_mgr_finalize(manager, ierr)!{{{
 
         implicit none
 
-        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_finalize'
+
+        type (MPAS_streamManager_type), pointer:: manager
         integer, intent(out), optional :: ierr
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_finalize()') 
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_destroy_pool(manager % streams)
+        deallocate(manager)
 
-    end subroutine MPAS_stream_mgr_finalize
+
+    end subroutine MPAS_stream_mgr_finalize!}}}
 
 
     !-----------------------------------------------------------------------
@@ -116,11 +155,13 @@ module mpas_stream_manager
     !>  time.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, referenceTime, ierr)
+    subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, referenceTime, ierr)!{{{
 
         implicit none
 
-        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_create_stream'
+
+        type (MPAS_streamManager_type), pointer :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: direction
         character (len=*), intent(in) :: filename
@@ -128,14 +169,37 @@ module mpas_stream_manager
         type (MPAS_Time_type), intent(in), optional :: referenceTime
         integer, intent(out), optional :: ierr
 
+        type (MPAS_Pool_type), pointer :: attributesStream
+        type (MPAS_Pool_type), pointer :: newStream
+        type (MPAS_Pool_type), pointer :: attachedPackages
+
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_create_stream()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
-manager % num_streams = manager % num_streams + 1
-write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
+        call mpas_pool_create_pool(attributesStream)
+        call mpas_pool_create_pool(newStream)
+        call mpas_pool_create_pool(attachedPackages)
 
-    end subroutine MPAS_stream_mgr_create_stream
+        ! Add properties
+        call mpas_pool_add_config(newStream, MPAS_STREAM_PROPERTY_DIRECTION, MPAS_STREAM_NONE)
+        call mpas_pool_add_config(newStream, MPAS_STREAM_PROPERTY_IMMUTABLE, MPAS_STREAM_MUTABLE)
+
+        call mpas_pool_add_config(newStream, MPAS_STREAM_PROPERTY_FILENAME, filename)
+        call mpas_pool_add_config(newStream, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords)
+
+        !DWJ 07/16/2014: Need to deal with adding a time type into the pool
+!       if (present(referenceTime)) then
+!           call mpas_pool_add_config(newStream, MPAS_STERAM_PROPERTY_REF_TIME, referenceTime)
+!       end if
+        call mpas_pool_add_subpool(newStream, 'globalAttributes', attributesStream)
+        call mpas_pool_add_subpool(newStream, 'attachedPackages', attachedPackages)
+        call mpas_pool_add_subpool(manager % streams, streamID, newStream)
+
+        manager % numStreams = manager % numStreams + 1
+        write(0,*) 'DEBUG TEST we have this many streams ', manager % numStreams
+
+    end subroutine MPAS_stream_mgr_create_stream!}}}
 
 
     !-----------------------------------------------------------------------
@@ -145,23 +209,41 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Destroy the stream, including freeing all memory explicitly associated with the stream.
+    !>  This will not deallocate the memory associated with the fields in the stream.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_destroy_stream(manager, streamID, ierr)
+    subroutine MPAS_stream_mgr_destroy_stream(manager, streamID, ierr)!{{{
 
         implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_destroy_stream'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(out), optional :: ierr
 
+        type (MPAS_Pool_type), pointer :: stream
+        character (len=StrKIND) :: error
+
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_destroy_stream()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_destroy_stream
+        if (.not. associated(stream)) then
+            write(error,*) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist in manager.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_remove_subpool(manager % streams, streamID)
+
+        call mpas_pool_empty_pool(stream)
+        call mpas_pool_destroy_pool(stream)
+
+    end subroutine MPAS_stream_mgr_destroy_stream!}}}
 
 
     !-----------------------------------------------------------------------
@@ -171,24 +253,49 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_set_property(manager, streamID, property, ierr)
+    subroutine MPAS_stream_mgr_set_property(manager, streamID, propertyName, propertyValue, ierr)!{{{
 
         implicit none
 
-        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property'
+
+        type (MPAS_streamManager_type), pointer :: manager
         character (len=*), intent(in) :: streamID
-        integer, intent(in) :: property
+        character (len=*), intent(in) :: propertyName
+        integer, intent(in) :: propertyValue
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream
+        integer, pointer :: curProperty
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_set_property()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_set_property
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_config(stream, propertyName, curProperty)
+
+        if (.not.associated(curProperty)) then
+            write(error, *) 'ERROR: ', trim(sub), ' property ', trim(propertyName), ' does not exist in stream ', trim(streamID) 
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        curProperty = propertyValue
+
+    end subroutine MPAS_stream_mgr_set_property!}}}
 
 
     !-----------------------------------------------------------------------
@@ -198,26 +305,39 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Returns the value of a property defined on a particular stream within
+    !>  an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_get_property(manager, streamID, property, isSet, ierr)
+    subroutine MPAS_stream_mgr_get_property(manager, streamID, propertyName, propertyValue, ierr)!{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
-        integer, intent(in) :: property
-        logical, intent(out) :: isSet
+        character (len=*), intent(in) :: propertyName
+        integer, intent(out) :: propertyValue
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream
+        integer, pointer :: curProperty
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_property()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
-        isSet = .false.
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_get_property
+        call mpas_pool_get_config(stream, propertyName, curProperty)
+
+        if (.not. associated(curProperty) ) then
+            write(stderrUnit, *) 'ERROR: MPAS_stream_mgr_get_property property ', trim(propertyName), ' does not exist in stream ', trim(streamID)
+            return
+        end if
+
+        propertyValue = curProperty
+
+    end subroutine MPAS_stream_mgr_get_property!}}}
 
 
     !-----------------------------------------------------------------------
@@ -227,24 +347,49 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Attaches a package logical to a specific stream within an MPAS stream
+    !>  manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_pkg(manager, streamID, package, ierr)
+    subroutine MPAS_stream_mgr_add_pkg(manager, streamID, packageName, ierr)!{{{
 
         implicit none
 
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_pkg'
+
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
-        logical, intent(in), target :: package
+        character (len=*), intent(in) :: packageName
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream
+        type (MPAS_Pool_type), pointer :: streamPackages
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_pkg()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_add_pkg
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'attachedPackages', streamPackages)
+
+        if (.not. associated(streamPackages)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does have an attachedPackages pool'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_add_config(streamPackages, packageName, packageName)
+
+    end subroutine MPAS_stream_mgr_add_pkg!}}}
 
 
     !-----------------------------------------------------------------------
@@ -254,24 +399,49 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Removes a package from a stream, so the package no longer controls
+    !>  whether or not the stream is active.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_remove_pkg(manager, streamID, package, ierr)
+    subroutine MPAS_stream_mgr_remove_pkg(manager, streamID, packageName, ierr)!{{{
 
         implicit none
 
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_remove_pkg'
+
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
-        logical, intent(in), target :: package
+        character (len=*), intent(in), target :: packageName
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream
+        type (MPAS_Pool_type), pointer :: streamPackages
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_pkg()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_remove_pkg
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist in manager'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'attachedPackages', streamPackages)
+
+        if (.not. associated(streamPackages)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not contain an attachedPackages pool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_remove_config(streamPackages, packageName)
+
+    end subroutine MPAS_stream_mgr_remove_pkg!}}}
 
 
     !-----------------------------------------------------------------------
@@ -281,24 +451,51 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Adds a field from the allFields pool to a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)
+    subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)!{{{
 
         implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_field'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: fieldName
         integer, intent(out), optional :: ierr
 
+        type (MPAS_Pool_type), pointer :: stream
+        type (MPAS_Pool_Member_type), pointer :: newMem
+
+        character (len=StrKIND) :: error
+
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_field()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_add_field
+        if (.not. associated(stream)) then
+           write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+           call mpas_stream_mesg(manager % errorLevel, error)
+           return
+        end if
+
+        allocate(newMem)
+        newMem % key = trim(fieldName)
+        newMem % keyLen = len_trim(fieldName)
+        newMem % contentsType = MPAS_POOL_FIELD
+
+        newMem % data => pool_get_member(manager % allFields, fieldName, MPAS_POOL_FIELD)
+
+        if (.not. pool_add_member(stream, fieldName, newMem)) then
+            write(error, *) 'ERROR: ', trim(sub), ' unable to add field ', trim(fieldName), ' to stream ', trim(streamID)
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+    end subroutine MPAS_stream_mgr_add_field!}}}
 
 
     !-----------------------------------------------------------------------
@@ -308,52 +505,255 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Removes a field from a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_remove_field(manager, streamID, fieldName, ierr)
+    subroutine MPAS_stream_mgr_remove_field(manager, streamID, fieldName, ierr)!{{{
     
         implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_remove_field'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: fieldName
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_field()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, trim(streamID), stream)
 
-    end subroutine MPAS_stream_mgr_remove_field
+        if (.not. associated(stream)) then
+            write(error,*) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_remove_field(stream, fieldName)
+
+    end subroutine MPAS_stream_mgr_remove_field!}}}
 
 
     !-----------------------------------------------------------------------
-    !  routine MPAS_stream_mgr_add_att
+    !  routine MPAS_stream_mgr_add_att_int
     !
-    !> \brief Add an attribute to the specified stream in an MPAS stream manager.
+    !> \brief Add an integer attribute to the specified stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  Add a global integer attribute to the stream within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_att(manager, streamID, att, fieldName, ierr)
+    subroutine MPAS_stream_mgr_add_att_int(manager, streamID, attName, attVal, ierr)!{{{
 
         implicit none
 
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_int'
+
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
-        real (kind=RKIND), intent(in) :: att
-        character (len=*), intent(in) :: fieldName
+        character (len=*), intent(in) :: attName
+        integer, intent(in) :: attVal
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream, streamAttributes
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_add_att
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'globalAttributes', streamAttributes)
+
+        if (.not. associated(streamAttributes)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not contain a globalAttributes pool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_add_config(streamAttributes, attName, attVal)
+
+
+    end subroutine MPAS_stream_mgr_add_att_int!}}}
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_add_att_real
+    !
+    !> \brief Add a real attribute to the specified stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Add a global real attribute to the stream within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_add_att_real(manager, streamID, attName, attVal, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_real'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        real (kind=RKIND), intent(in) :: attVal
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream, streamAttributes
+
+        character (len=StrKIND) :: error
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
+
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'globalAttributes', streamAttributes)
+
+        if (.not. associated(streamAttributes)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not contain a globalAttributes pool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_add_config(streamAttributes, attName, attVal)
+
+
+    end subroutine MPAS_stream_mgr_add_att_real!}}}
+
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_add_att_char
+    !
+    !> \brief Add a character attribute to the specified stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Add a global character attribute to the stream within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_add_att_char(manager, streamID, attName, attVal, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_char'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        character (len=*), intent(in) :: attVal
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream, streamAttributes
+
+        character (len=StrKIND) :: error
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
+
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'globalAttributes', streamAttributes)
+
+        if (.not. associated(streamAttributes)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not contain a globalAttributes pool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_add_config(streamAttributes, attName, attVal)
+
+
+    end subroutine MPAS_stream_mgr_add_att_char!}}}
+
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_add_att_logical
+    !
+    !> \brief Add a logical attribute to the specified stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Add a global logical attribute to the stream within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_add_att_logical(manager, streamID, attName, attVal, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_logical'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        logical, intent(in) :: attVal
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: stream, streamAttributes
+        character (len=StrKIND) :: attChar
+
+        character (len=StrKIND) :: error
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
+
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'globalAttributes', streamAttributes)
+
+        if (.not. associated(streamAttributes)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not contain a globalAttributes pool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        if (attVal) then
+            write(attChar, *) 'T'
+        else
+            write(attChar, *) 'F'
+        end if
+
+        call mpas_pool_add_config(streamAttributes, attName, trim(attChar))
+
+
+    end subroutine MPAS_stream_mgr_add_att_logical!}}}
 
 
     !-----------------------------------------------------------------------
@@ -503,6 +903,31 @@ write(0,*) 'DEBUG TEST we have this many streams ', manager % num_streams
 
 
     end subroutine MPAS_stream_mgr_read
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mesg
+    !
+    !> \brief Write an error message (if the level requires it) to 
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   07/16/2014
+    !> \details Using the input error level, 
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mesg(level, mesg)!{{{
+        
+        use mpas_dmpar
+
+        integer, intent(in) :: level
+        character(len=*), intent(in) :: mesg
+
+        if (level /= MPAS_STREAM_ERR_SILENT) then
+            write(stderrUnit, *) trim(mesg)
+            if  (level == MPAS_STREAM_ERR_FATAL) then
+                call mpas_dmpar_global_abort(mesg)
+            end if
+        end if
+
+    end subroutine MPAS_stream_mesg!}}}
     
 end module mpas_stream_manager
 
@@ -514,7 +939,7 @@ end module mpas_stream_manager
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine stream_mgr_create_stream_c(mgr, str, i) bind(c)
+subroutine stream_mgr_create_stream_c(mgr, str, i) bind(c)!{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -538,4 +963,4 @@ subroutine stream_mgr_create_stream_c(mgr, str, i) bind(c)
     
     call MPAS_stream_mgr_create_stream(manager, fieldname, MPAS_STREAM_OUTPUT, fieldname, 1, ierr=ierr)
 
-end subroutine stream_mgr_create_stream_c
+end subroutine stream_mgr_create_stream_c!}}}
