@@ -1,34 +1,67 @@
-module cice_dyn_hex_weak
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_velocity_solver_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+module cice_velocity_solver_weak
 
   use mpas_grid_types
 
   implicit none
 
   private
+  save
+
   public :: &
-       init_dynamics_hex_weak, &
-       internal_stress_weak, &
-       strain_tensor_hex_weak, &
-       stress_tensor_hex_weak, &
-       stress_divergence_hex_weak
+       cice_init_velocity_solver_weak, &
+       cice_internal_stress_weak, &
+       cice_strain_tensor_weak, &
+       cice_stress_tensor_weak, &
+       cice_stress_divergence_weak
 
 contains
 
-  !-------------------------------------------------------------
-  ! Initialization
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Initialization
+!-----------------------------------------------------------------------
 
-  subroutine init_dynamics_hex_weak(mesh, boundary, hexweak, rotateCartesianGrid)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_velocity_solver_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    use cice_mesh, only: normal_vectors
+  subroutine cice_init_velocity_solver_weak(&
+       mesh, &
+       boundary, &
+       velocity_weak, &
+       rotateCartesianGrid)!{{{
 
-    type(MPAS_pool_type), pointer, intent(inout) :: mesh
+    use cice_mesh, only: &
+         cice_normal_vectors
 
-    type(MPAS_pool_type), pointer :: hexweak
-    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer, intent(inout) :: &
+         mesh !< Input/Output: 
+
+    type(MPAS_pool_type), pointer :: &
+         velocity_weak, & !< Input/Output: 
+         boundary   !< Input/Output: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
@@ -41,61 +74,79 @@ contains
     integer, dimension(:), pointer :: &
          interiorVertex
 
-    call MPAS_pool_get_array(hexweak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(hexweak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_array(hexweak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_array(hexweak, "latVertexRotated", latVertexRotated)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call normal_vectors(&
-         mesh,                 &
-         normalVectorPolygon,  &
+    call cice_normal_vectors(&
+         mesh, &
+         normalVectorPolygon, &
          normalVectorTriangle, &
-         interiorVertex,       &
-         rotateCartesianGrid,  &
-         .true.,               &
-         latCellRotated,       &
+         interiorVertex, &
+         rotateCartesianGrid, &
+         .true., &
+         latCellRotated, &
          latVertexRotated)
 
-  end subroutine init_dynamics_hex_weak
+  end subroutine cice_init_velocity_solver_weak!}}}
 
-  !-------------------------------------------------------------
-  ! Time step
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Time step
+!-----------------------------------------------------------------------
 
-  subroutine internal_stress_weak(&
-       mesh,                hexweak, &
-       uVelocity,           vVelocity, &
-       icePressure,         replacementPressure, &
-       dtElastic,           evpDamping, &
-       stressDivergenceU,   stressDivergenceV, &
-       solveStress,         solveVelocity)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_internal_stress_weak(&
+       mesh, &
+       velocity_weak, &
+       uVelocity, &
+       vVelocity, &
+       icePressure, &
+       replacementPressure, &
+       dtElastic, &
+       evpDamping, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       solveStress, &
+       solveVelocity)!{{{
 
     type (MPAS_pool_type), pointer :: &
-         mesh, &
-         hexweak
+         mesh, & !< Input/Output: 
+         velocity_weak !< Input/Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity  
+         uVelocity, & !< Input: 
+         vVelocity    !< Input: 
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         icePressure, &
-         replacementPressure
+         icePressure, &      !< Input/Output: 
+         replacementPressure !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic
+         dtElastic !< Input: 
 
     logical, intent(in) :: &
-         evpDamping
+         evpDamping !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         solveStress, &
-         solveVelocity
+         solveStress, & !< Input: 
+         solveVelocity  !< Input: 
 
     real(kind=RKIND), dimension(:), pointer :: &
          strain11, &
@@ -111,80 +162,96 @@ contains
          normalVectorPolygon, &
          normalVectorTriangle
 
-    call MPAS_pool_get_array(hexweak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(hexweak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_array(hexweak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_array(hexweak, "latVertexRotated", latVertexRotated)
-    call MPAS_pool_get_array(hexweak, "strain11", strain11)
-    call MPAS_pool_get_array(hexweak, "strain22", strain22)
-    call MPAS_pool_get_array(hexweak, "strain12", strain12)
-    call MPAS_pool_get_array(hexweak, "stress11", stress11)
-    call MPAS_pool_get_array(hexweak, "stress22", stress22)
-    call MPAS_pool_get_array(hexweak, "stress12", stress12)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
+    call MPAS_pool_get_array(velocity_weak, "strain11", strain11)
+    call MPAS_pool_get_array(velocity_weak, "strain22", strain22)
+    call MPAS_pool_get_array(velocity_weak, "strain12", strain12)
+    call MPAS_pool_get_array(velocity_weak, "stress11", stress11)
+    call MPAS_pool_get_array(velocity_weak, "stress22", stress22)
+    call MPAS_pool_get_array(velocity_weak, "stress12", stress12)
 
-    call strain_tensor_hex_weak(mesh, &
-         strain11,            &
-         strain22,            &
-         strain12,            &
-         uVelocity,           &
-         vVelocity,           &
-         normalVectorPolygon, &
-         latCellRotated,      &
-         solveStress)
-    
-    call stress_tensor_hex_weak(mesh, &
-         stress11,             &
-         stress22,             &
-         stress12,             &
-         strain11,             &
-         strain22,             &
-         strain12,             &
-         icePressure,          &
-         replacementPressure,  &
-         solveStress,          &       
-         dtElastic, evpDamping)
-
-    call stress_divergence_hex_weak(mesh, &
-         stressDivergenceU,    &
-         stressDivergenceV,    &
-         stress11,             &
-         stress22,             &
-         stress12,             &
-         normalVectorTriangle, &
-         latVertexRotated,     &
-         solveVelocity)
-
-  end subroutine internal_stress_weak
-
-  !-------------------------------------------------------------
-
-  subroutine strain_tensor_hex_weak(mesh, &
-                                    strain11, strain22,   &
-                                    strain12,             &
-                                    uVelocity, vVelocity, &
-                                    normalVectorPolygon,  &
-                                    latCellRotated,       &
-                                    solveStress)
-
-    use cice_constants, only: deg_to_rad
-
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
+    call cice_strain_tensor_weak(&
+         mesh, &
          strain11, &
          strain22, &
-         strain12
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
+         strain12, &
          uVelocity, &
          vVelocity, &
-         latCellRotated
+         normalVectorPolygon, &
+         latCellRotated, &
+         solveStress)
+    
+    call cice_stress_tensor_weak(&
+         mesh, &
+         stress11, &
+         stress22, &
+         stress12, &
+         strain11, &
+         strain22, &
+         strain12, &
+         icePressure, &
+         replacementPressure, &
+         solveStress, &       
+         dtElastic, &
+         evpDamping)
+
+    call cice_stress_divergence_weak(&
+         mesh, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         stress11, &
+         stress22, &
+         stress12, &
+         normalVectorTriangle, &
+         latVertexRotated, &
+         solveVelocity)
+
+  end subroutine cice_internal_stress_weak!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_strain_tensor_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_strain_tensor_weak(&
+       mesh, &
+       strain11, &
+       strain22, &
+       strain12, &
+       uVelocity, &
+       vVelocity, &
+       normalVectorPolygon, &
+       latCellRotated, &
+       solveStress)!{{{
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         strain11, & !< Output: 
+         strain22, & !< Output: 
+         strain12    !< Output: 
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         uVelocity, &   !< Input: 
+         vVelocity, &   !< Input: 
+         latCellRotated !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorPolygon
+         normalVectorPolygon !< Input: 
 
     integer, dimension(:), intent(in) :: &
-         solveStress
+         solveStress !< Input: 
 
     integer :: &
          iCell, &
@@ -295,44 +362,64 @@ contains
 
     enddo ! iCell
 
-  end subroutine strain_tensor_hex_weak
+  end subroutine cice_strain_tensor_weak!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_stress_tensor_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine stress_tensor_hex_weak(mesh, &
-                                    stress11, stress22, stress12,     &
-                                    strain11, strain22, strain12,     &
-                                    icePressure, replacementPressure, &
-                                    solveStress,                      &
-                                    dtElastic,   evpDamping)
+  subroutine cice_stress_tensor_weak(&
+       mesh, &
+       stress11, &
+       stress22, &
+       stress12, &
+       strain11, &
+       strain22, &
+       strain12, &
+       icePressure, &
+       replacementPressure, &
+       solveStress, &
+       dtElastic, &
+       evpDamping)!{{{
 
-    use cice_dynamics_shared, only: evp_constitutive_relation, &
-                                    linear_constitutive_relation
+    use cice_velocity_solver_shared, only: &
+         cice_evp_constitutive_relation, &
+         cice_linear_constitutive_relation
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         stress11, &
-         stress22, &
-         stress12, &
-         replacementPressure
+         stress11, &         !< Input/Output: 
+         stress22, &         !< Input/Output: 
+         stress12, &         !< Input/Output: 
+         replacementPressure !< Input/Output: 
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         strain11, &
-         strain22, &
-         strain12, &
-         icePressure
+         strain11, & !< Input/Output: 
+         strain22, & !< Input/Output: 
+         strain12, & !< Input/Output: 
+         icePressure !< Input/Output: 
 
     integer, dimension(:), intent(in) :: &
-         solveStress
+         solveStress !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic
+         dtElastic !< Input: 
 
     logical, intent(in) :: &
-         evpDamping
+         evpDamping !< Input: 
 
-    integer :: iCell
+    integer :: &
+         iCell
 
     integer, pointer :: &
          nCells
@@ -349,14 +436,26 @@ contains
 
        if (solveStress(iCell) == 1) then
 
-          call evp_constitutive_relation(stress11(iCell),    stress22(iCell),    stress12(iCell), &
-                                         strain11(iCell),    strain22(iCell),    strain12(iCell), &
-                                         icePressure(iCell), replacementPressure(iCell),          &
-                                         areaCell(iCell),                                         &
-                                         dtElastic,          evpDamping)
+          call cice_evp_constitutive_relation(&
+               stress11(iCell), &
+               stress22(iCell), &
+               stress12(iCell), &
+               strain11(iCell), &
+               strain22(iCell), &
+               strain12(iCell), &
+               icePressure(iCell), &
+               replacementPressure(iCell), &
+               areaCell(iCell), &
+               dtElastic, &
+               evpDamping)
 
-          !call linear_constitutive_relation(stress11(iCell), stress22(iCell), stress12(iCell), &
-          !                                  strain11(iCell), strain22(iCell), strain12(iCell))
+          !call cice_linear_constitutive_relation(&
+          !     stress11(iCell), &
+          !     stress22(iCell), &
+          !     stress12(iCell), &
+          !     strain11(iCell), &
+          !     strain22(iCell), &
+          !     strain12(iCell))
 
        else
 
@@ -368,34 +467,49 @@ contains
 
     end do ! iCell
 
-  end subroutine stress_tensor_hex_weak
-  
-  !-------------------------------------------------------------
+  end subroutine cice_stress_tensor_weak!}}}
 
-  subroutine stress_divergence_hex_weak(mesh, &
-                                        stressDivergenceU,    stressDivergenceV, &
-                                        stress11,             stress22,          &
-                                        stress12,                                &
-                                        normalVectorTriangle, latVertexRotated,  &
-                                        solveVelocity)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_stress_divergence_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+  subroutine cice_stress_divergence_weak(&
+       mesh, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       stress11, &
+       stress22, &
+       stress12, &
+       normalVectorTriangle, &
+       latVertexRotated,  &
+       solveVelocity)!{{{
+    
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         stress11, &
-         stress22, &
-         stress12, &
-         latVertexRotated
+         stress11, &      !< Input: 
+         stress22, &      !< Input: 
+         stress12, &      !< Input: 
+         latVertexRotated !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorTriangle
+         normalVectorTriangle !< Input: 
 
     integer, dimension(:), intent(in) :: &
-         solveVelocity
+         solveVelocity !< Input: 
 
     real(kind=RKIND) :: &
          stress11Edge, &
@@ -515,10 +629,10 @@ contains
 
     enddo ! iVertex
 
-  end subroutine stress_divergence_hex_weak
+  end subroutine cice_stress_divergence_weak!}}}
 
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-end module cice_dyn_hex_weak
+end module cice_velocity_solver_weak
 
 

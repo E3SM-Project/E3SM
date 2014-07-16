@@ -1,3 +1,15 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_testing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_testing
 
   use mpas_grid_types
@@ -5,25 +17,36 @@ module cice_testing
   implicit none
 
   private
-  public :: &
-       divergence_stress_test_velocity_set, &
-       divergence_stress_test_stress_set_hex, &
-       divergence_stress_test_stress_set_tri, &
-       divergence_stress_test_stress_set_weak, &
-       init_square_test_case_hex, &
-       init_square_point_test_case_hex, &
-       init_spherical_test_case
+  save
 
-  ! parameter in constant stress strain relation
-  real(kind=RKIND), parameter, public :: lambda = 1.0_RKIND
+  public :: &
+       cice_divergence_stress_test_velocity_set, &
+       cice_divergence_stress_test_stress_set_hex, &
+       cice_divergence_stress_test_stress_set_tri, &
+       cice_divergence_stress_test_stress_set_weak, &
+       cice_init_square_test_case_hex, &
+       cice_init_square_point_test_case_hex, &
+       cice_init_spherical_test_case
 
 contains
 
-  !-------------------------------------------------------------
-  ! Spherical test case
-  !-------------------------------------------------------------
-  
-  subroutine init_spherical_test_case(&
+!-----------------------------------------------------------------------
+! Spherical test case
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_spherical_test_case
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_spherical_test_case(&
        mesh, &
        iceAreaCell, &
        iceVolumeCell, &
@@ -35,7 +58,8 @@ contains
        interiorVertex)
     
     use mpas_constants, only: omega
-    use cice_diagnostics, only: init_ijpop_from_ivertex
+    use cice_constants, only: ciceDegreesToRadians
+    use cice_diagnostics, only: cice_init_ijpop_from_ivertex
 
     type(MPAS_pool_type), intent(inout) :: mesh
 
@@ -61,10 +85,8 @@ contains
          iVertex
 
     real(kind=RKIND), parameter :: &  
-         pi = 3.14159265359_RKIND, &
-         degreesToRadians = pi / 180.0_RKIND, &
-         initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * degreesToRadians, &
-         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * degreesToRadians, &
+         initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * ciceDegreesToRadians, &
+         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * ciceDegreesToRadians, &
          circle_radius = 1.0e6_RKIND
 
     real(kind=RKIND) :: &
@@ -97,7 +119,7 @@ contains
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
 
-    call init_ijpop_from_ivertex(mesh)
+    call cice_init_ijpop_from_ivertex(mesh)
 
     fVertex = 2.0_RKIND * omega * sin(latVertex)
 
@@ -186,17 +208,30 @@ contains
 
     endif ! test_type
 
-  end subroutine init_spherical_test_case
+  end subroutine cice_init_spherical_test_case
 
-  !-------------------------------------------------------------
-  ! Square test case
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Square test case
+!-----------------------------------------------------------------------
 
-  subroutine init_square_test_case_hex(&
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_square_test_case_hex
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_square_test_case_hex(&
        block, &
        configs)
 
-    type(block_type), intent(inout) :: block
+    type(block_type), intent(inout) :: &
+         block
 
     type (MPAS_pool_type), pointer, intent(in) :: &
          configs
@@ -204,7 +239,7 @@ contains
     type (MPAS_pool_type), pointer :: &
          mesh, &
          tracers, &
-         hexdyn, &
+         velocity_solver, &
          boundary, &
          atmos_forcing, &
          ocean_forcing
@@ -220,7 +255,7 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
-    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
     call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
@@ -254,22 +289,37 @@ contains
     call init_square_test_case_state(&
          mesh,          &
          tracers,       &
-         hexdyn,        &
+         velocity_solver,        &
          ocean_forcing, &
          boundary)
 
-  end subroutine init_square_test_case_hex
+  end subroutine cice_init_square_test_case_hex
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_square_test_case_ocean
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_square_test_case_ocean(uOceanVelocity, vOceanVelocity, x, y)
+  subroutine init_square_test_case_ocean(&
+       uOceanVelocity, &
+       vOceanVelocity, &
+       x, &
+       y)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uOceanVelocity, &
          vOceanVelocity
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, y
+         x, &
+         y
 
     real(kind=RKIND), parameter :: a = 0.1_RKIND  
    
@@ -291,9 +341,27 @@ contains
 
   end subroutine init_square_test_case_ocean
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_square_test_case_atmos
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_square_test_case_atmos(uAirVelocity, vAirVelocity, airDensity, xin, yin, time)
+  subroutine init_square_test_case_atmos(&
+       uAirVelocity, &
+       vAirVelocity, &
+       airDensity, &
+       xin, &
+       yin, &
+       time)
+
+    use mpas_constants, only: pii
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uAirVelocity, &
@@ -301,14 +369,11 @@ contains
          airDensity
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         xin, yin
+         xin, &
+         yin
 
     real(kind=RKIND), intent(in) :: &
          time
-
-    real(kind=RKIND), parameter :: pi = &
-         3.14159265358979323846_RKIND
-         !3.14159265359_RKIND
 
     real(kind=RKIND), parameter :: a = 5.0_RKIND
     real(kind=RKIND), parameter :: b = 3.0_RKIND
@@ -339,9 +404,9 @@ contains
 
        ! velocities
        uAirVelocity(iPoint) = &!a * (y / Ly)
-            a + (sin((2.0_RKIND * pi * time) / theta) - b) * sin(2.0_RKIND * pi * (x / Lx)) * sin(pi * (y / Ly))
+            a + (sin((2.0_RKIND * pii * time) / theta) - b) * sin(2.0_RKIND * pii * (x / Lx)) * sin(pii * (y / Ly))
        vAirVelocity(iPoint) = &!0.0_RKIND!&
-            a + (sin((2.0_RKIND * pi * time) / theta) - b) * sin(2.0_RKIND * pi * (y / Ly)) * sin(pi * (x / Lx))
+            a + (sin((2.0_RKIND * pii * time) / theta) - b) * sin(2.0_RKIND * pii * (y / Ly)) * sin(pii * (x / Lx))
 
        !uAirVelocity(iPoint) = a
        !vAirVelocity(iPoint) = a
@@ -355,22 +420,39 @@ contains
 
   end subroutine init_square_test_case_atmos
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_square_test_case_state
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_square_test_case_state(mesh, tracers, hexdyn, ocean_forcing, boundary)
+  subroutine init_square_test_case_state(&
+       mesh, &
+       tracers, &
+       velocity_solver, &
+       ocean_forcing, &
+       boundary)
 
-    use cice_mesh, only: &
-         interpolate_cell_to_vertex
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
-    type(MPAS_pool_type), pointer :: tracers
-    type(MPAS_pool_type), pointer :: hexdyn
-    type(MPAS_pool_type), pointer :: ocean_forcing
-    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: &
+         tracers, &
+         velocity_solver, &
+         ocean_forcing, &
+         boundary
 
-    real(kind=RKIND) :: iceThickness
+    real(kind=RKIND) :: &
+         iceThickness
 
-    real(kind=RKIND) :: x    
+    real(kind=RKIND) :: &
+         x    
 
     real(kind=RKIND), parameter :: &
          Lx = 1.28e6_RKIND
@@ -412,11 +494,11 @@ contains
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
-    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
 
-    call MPAS_pool_get_array(hexdyn, "uOceanVelocityVertex", uOceanVelocityVertex)
-    call MPAS_pool_get_array(hexdyn, "vOceanVelocityVertex", vOceanVelocityVertex)
+    call MPAS_pool_get_array(velocity_solver, "uOceanVelocityVertex", uOceanVelocityVertex)
+    call MPAS_pool_get_array(velocity_solver, "vOceanVelocityVertex", vOceanVelocityVertex)
 
     call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
     call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
@@ -441,11 +523,25 @@ contains
 
   end subroutine init_square_test_case_state
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  square_test_correct_positions
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine square_test_correct_positions(mesh)
 
-    type(MPAS_pool_type), intent(inout) :: mesh
+    use cice_constants, only: &
+         ciceRadiansToDegrees
+
+    type(MPAS_pool_type), intent(inout) :: &
+         mesh
 
     ! periodic quad - use with ocean
     real(kind=RKIND), parameter :: &
@@ -462,9 +558,7 @@ contains
          longitudeSquare = -156.5_RKIND, &
          latitudeSquare  = 71.35_RKIND, &
          radius          = 6.37e6_RKIND, &
-         pi              = 3.14159265358979323846_RKIND, &
-         rad_to_deg      = 180.0_RKIND / pi, &
-         distanceToAngle = rad_to_deg / radius, &
+         distanceToAngle = ciceRadiansToDegrees / radius, &
          omega           = 7.292e-5_RKIND
     
     real(kind=RKIND), dimension(:), pointer :: &
@@ -508,8 +602,8 @@ contains
     lonCell = xCell * distanceToAngle + longitudeSquare
     latCell = yCell * distanceToAngle + latitudeSquare
 
-    lonCell = lonCell / rad_to_deg
-    latCell = latCell / rad_to_deg
+    lonCell = lonCell / ciceRadiansToDegrees
+    latCell = latCell / ciceRadiansToDegrees
 
     ! Vertex
     xVertex = xVertex + dx
@@ -518,8 +612,8 @@ contains
     lonVertex = xVertex * distanceToAngle + longitudeSquare
     latVertex = yVertex * distanceToAngle + latitudeSquare
 
-    lonVertex = lonVertex / rad_to_deg
-    latVertex = latVertex / rad_to_deg
+    lonVertex = lonVertex / ciceRadiansToDegrees
+    latVertex = latVertex / ciceRadiansToDegrees
 
     ! Edge
     xEdge = xEdge + dx
@@ -528,8 +622,8 @@ contains
     lonEdge = xEdge * distanceToAngle + longitudeSquare
     latEdge = yEdge * distanceToAngle + latitudeSquare
 
-    lonEdge = lonEdge / rad_to_deg
-    latEdge = latEdge / rad_to_deg
+    lonEdge = lonEdge / ciceRadiansToDegrees
+    latEdge = latEdge / ciceRadiansToDegrees
 
     ! fvalues
     fCell   = 2.0_RKIND * omega * sin(latCell)
@@ -538,15 +632,28 @@ contains
 
   end subroutine square_test_correct_positions
 
-  !-------------------------------------------------------------
-  ! point square test case
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! point square test case
+!-----------------------------------------------------------------------
 
-  subroutine init_square_point_test_case_hex(&
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_square_point_test_case_hex
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_square_point_test_case_hex(&
        block, &
        configs)
 
-    type(block_type), intent(inout) :: block
+    type(block_type), intent(inout) :: &
+         block
 
     type (MPAS_pool_type), pointer, intent(in) :: &
          configs
@@ -575,25 +682,45 @@ contains
     iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
     snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
 
-  end subroutine init_square_point_test_case_hex
+  end subroutine cice_init_square_point_test_case_hex
 
-  !-------------------------------------------------------------
-  ! stress divergence operator test velocities
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! stress divergence operator test velocities
+!-----------------------------------------------------------------------
 
-  subroutine divergence_stress_test_velocity_set(uVelocity, vVelocity, x, y, type)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_divergence_stress_test_velocity_set
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_divergence_stress_test_velocity_set(&
+       uVelocity, &
+       vVelocity, &
+       x, &
+       y, &
+       type)
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, &
          vVelocity
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         x, y
+         x, &
+         y
     
     character(len=*), intent(in) :: &
          type
 
-    integer :: iPoint, nPoints
+    integer :: &
+         iPoint, &
+         nPoints
 
     real(kind=RKIND), parameter :: &
          velocityConstantU = 112.87654_RKIND, &
@@ -653,8 +780,8 @@ contains
 
        ! velocity field that gives constant divergence
        do iPoint = 1, nPoints
-          uVelocity(iPoint) = x(iPoint)**2 / (4.0_RKIND * lambda) + (x(iPoint) * y(iPoint)) / lambda
-          vVelocity(iPoint) = y(iPoint)**2 / (4.0_RKIND * lambda) + (x(iPoint) * y(iPoint)) / lambda
+          uVelocity(iPoint) = x(iPoint)**2 / 4.0_RKIND + x(iPoint) * y(iPoint)
+          vVelocity(iPoint) = y(iPoint)**2 / 4.0_RKIND + x(iPoint) * y(iPoint)
        enddo ! iPoint
 
     case ("divx1")
@@ -686,13 +813,28 @@ contains
 
     end select
 
-  end subroutine divergence_stress_test_velocity_set
+  end subroutine cice_divergence_stress_test_velocity_set
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_divergence_stress_test_stress_set_hex
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine divergence_stress_test_stress_set_hex(mesh, stress1, stress2, stress12)
+  subroutine cice_divergence_stress_test_stress_set_hex(&
+       mesh, &
+       stress1, &
+       stress2, &
+       stress12)
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          stress1, &
@@ -781,13 +923,28 @@ contains
 
     enddo ! iCell
 
-  end subroutine divergence_stress_test_stress_set_hex
+  end subroutine cice_divergence_stress_test_stress_set_hex
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_divergence_stress_test_stress_set_tri
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine divergence_stress_test_stress_set_tri(mesh, stress1, stress2, stress12)
+  subroutine cice_divergence_stress_test_stress_set_tri(&
+       mesh, &
+       stress1, &
+       stress2, &
+       stress12)
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          stress1, &
@@ -874,13 +1031,28 @@ contains
 
     enddo ! iCell
 
-  end subroutine divergence_stress_test_stress_set_tri
+  end subroutine cice_divergence_stress_test_stress_set_tri
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_divergence_stress_test_stress_set_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine divergence_stress_test_stress_set_weak(mesh, stress11, stress22, stress12)
+  subroutine cice_divergence_stress_test_stress_set_weak(&
+       mesh, &
+       stress11, &
+       stress22, &
+       stress12)
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
          stress11, &
@@ -941,7 +1113,9 @@ contains
 
     enddo ! iCell
 
-  end subroutine divergence_stress_test_stress_set_weak
+  end subroutine cice_divergence_stress_test_stress_set_weak
+
+!-----------------------------------------------------------------------
 
 end module cice_testing
 

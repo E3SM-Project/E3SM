@@ -74,7 +74,6 @@
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
-		<nml_option name="config_dynamics_grid_type"          type="character"     default_value="hex"        possible_values="'hex'"/>
 		<nml_option name="config_rotate_cartesian_grid"       type="logical"       default_value="true"       possible_values="true or false"/>	
 		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"        possible_values="any positive integer"/> 
 		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="weak"       possible_values="'weak' or 'variational'"/>
@@ -209,8 +208,10 @@
 	    <var name="oceanStressU"/>
 	    <var name="oceanStressV"/>
 	    <var name="oceanStressCoeff"/>
-	    <var name="iceAreaCategory"/>
-	    <var name="iceVolumeCategory"/>
+	    <var name="iceAreaCategoryPlot"/>
+	    <var name="iceVolumeCategoryPlot"/>
+	    <var name="snowVolumeCategoryPlot"/>
+	    <var name="surfaceTemperaturePlot"/>
 	    <var name="iceAreaCell"/>
 	    <var name="iceVolumeCell"/>
 	    <var name="totalMassCell"/>
@@ -239,10 +240,6 @@
 	    <var name="latentTransferCoefficient"/>
 	    <var name="uPOPAlongGridVector"/>
 	    <var name="vPOPAlongGridVector"/>
-	    <var name="iceAreaCategoryPlot"/>
-	    <var name="iceVolumeCategoryPlot"/>
-	    <var name="snowVolumeCategoryPlot"/>
-	    <var name="surfaceTemperaturePlot"/>
 	  </stream>
 	</streams>
 	
@@ -327,13 +324,13 @@
 
 	<!-- ice state -->
 	<var_struct name="tracers" time_levs="2">
-		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells Time"   name_in_code="iceEnthalpy"/>
-		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells Time"   name_in_code="iceSalinity"/>
-		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells Time"  name_in_code="snowEnthalpy"/>
+		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategory"/>
+		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategory"/>
+		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategory"/>
+		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperature"/>
+		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpy"/>
+		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinity"/>
+		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="tracer_tendencies" time_levs="1">
 		<var name="iceAreaCategoryTend"               type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategory"/>
@@ -395,14 +392,14 @@
 		<var name="vOceanVelocity"                    type="real"     dimensions="nCells Time"         name_in_code="vOceanVelocity"/>
 	</var_struct>
 
-	<!-- define boundary variables -->
+	<!-- boundary variables -->
 	<var_struct name="boundary" time_levs="1">
 		<var name="interiorVertex"                    type="integer"  dimensions="nVertices"                name_in_code="interiorVertex"/>
 		<var name="interiorCell"                      type="integer"  dimensions="nCells"                   name_in_code="interiorCell"/>
 	</var_struct>
 
-	<!-- dynamics with velocity points at vertices -->
-	<var_struct name="hexdyn" time_levs="1">
+	<!-- velocity solver -->
+	<var_struct name="velocity_solver" time_levs="1">
 		<var name="uVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="uVelocity"/>
 		<var name="vVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="vVelocity"/>
 		<var name="edgeVelocity"                      type="real"     dimensions="nEdges"                   name_in_code="edgeVelocity"/>
@@ -429,8 +426,8 @@
 		<var name="replacementPressure"               type="real"     dimensions="nCells"                   name_in_code="replacementPressure"/>
 	</var_struct>
 
-	<!-- weak formulation on hexagons -->
-	<var_struct name="hexweak" time_levs="1" packages="pkgWeak">
+	<!-- weak formulation -->
+	<var_struct name="velocity_weak" time_levs="1" packages="pkgWeak">
 		<var name="normalVectorPolygon"               type="real"     dimensions="TWO maxEdges nCells"            name_in_code="normalVectorPolygon"/>
 		<var name="normalVectorTriangle"              type="real"     dimensions="TWO vertexDegree nVertices"     name_in_code="normalVectorTriangle"/>
 		<var name="latCellRotated"                    type="real"     dimensions="nCells"                         name_in_code="latCellRotated"/>
@@ -442,8 +439,9 @@
 		<var name="stress22weak"                      type="real"     dimensions="nCells"                         name_in_code="stress22"/>
 		<var name="stress12weak"                      type="real"     dimensions="nCells"                         name_in_code="stress12"/>
 	</var_struct>
-	<!-- variational formulation on hexagons -->
-	<var_struct name="hexvar" time_levs="1" packages="pkgVariational">
+
+	<!-- variational formulation -->
+	<var_struct name="velocity_variational" time_levs="1" packages="pkgVariational">
 		<var name="strain11var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="strain11"/>
 		<var name="strain22var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="strain22"/>
 		<var name="strain12var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="strain12"/>
@@ -454,7 +452,7 @@
 		<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"/>
 		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
 	</var_struct>
-	<var_struct name="hexwach" time_levs="1" packages="pkgWachspress">
+	<var_struct name="velocity_wachspress" time_levs="1" packages="pkgWachspress">
 		<var name="wachspressA"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressA"/>
 		<var name="wachspressB"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressB"/>
 		<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"/>
@@ -463,17 +461,18 @@
 		<var name="basisGradientUWach"                type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
 		<var name="basisGradientVWach"                type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
 	</var_struct>
-	<var_struct name="hexpwl" time_levs="1" packages="pkgPieceWiseLinear">
+	<var_struct name="velocity_pwl" time_levs="1" packages="pkgPieceWiseLinear">
 		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"/>
 		<var name="basisGradientUPWL"                 type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"/>
 		<var name="basisGradientVPWL"                 type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"/>
 	</var_struct>
 
+	<!-- Plotting -->
 	<var_struct name="plotting" time_levs="1">
-		<var name="iceAreaCategoryPlot"                   type="real"     dimensions="nCells Time"          name_in_code="iceAreaCategoryPlot"/>
-		<var name="iceVolumeCategoryPlot"                 type="real"     dimensions="nCells Time"          name_in_code="iceVolumeCategoryPlot"/>
-		<var name="snowVolumeCategoryPlot"                type="real"     dimensions="nCells Time"          name_in_code="snowVolumeCategoryPlot"/>
-		<var name="surfaceTemperaturePlot"                type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperaturePlot"/>
+		<var name="iceAreaCategoryPlot"               type="real"     dimensions="nCells Time"          name_in_code="iceAreaCategoryPlot"/>
+		<var name="iceVolumeCategoryPlot"             type="real"     dimensions="nCells Time"          name_in_code="iceVolumeCategoryPlot"/>
+		<var name="snowVolumeCategoryPlot"            type="real"     dimensions="nCells Time"          name_in_code="snowVolumeCategoryPlot"/>
+		<var name="surfaceTemperaturePlot"            type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperaturePlot"/>
 	</var_struct>
 
 </registry>

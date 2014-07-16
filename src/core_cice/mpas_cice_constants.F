@@ -1,17 +1,32 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_constants
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_constants
 
   use mpas_grid_types
 
+  use mpas_constants, only: &
+       pii
+
   private
+  save
   
   real(kind=RKIND), parameter, public :: &
-       pi = 3.14159265359_RKIND, &
-       deg_to_rad = pi / 180.0_RKIND, &
-       rad_to_deg = 180.0_RKIND / pi
+       ciceDegreesToRadians = pii / 180.0_RKIND, &
+       ciceRadiansToDegrees = 180.0_RKIND / pii
 
   real(kind=RKIND), parameter, public :: &
-       rhoi = 917.0_RKIND, &
-       rhos = 330.0_RKIND
+       ciceDensityIce  = 917.0_RKIND, &
+       ciceDensitySnow = 330.0_RKIND
 
 
 end module cice_constants

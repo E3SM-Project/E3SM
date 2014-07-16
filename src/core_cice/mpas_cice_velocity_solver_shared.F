@@ -1,88 +1,127 @@
-module cice_dynamics_shared
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_velocity_solver_shared
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+module cice_velocity_solver_shared
 
   use mpas_grid_types
 
   implicit none
 
   private
+  save
+
   public :: &
-       init_evp, &
-       ice_strength, &
-       evp_constitutive_relation, &
-       linear_constitutive_relation, &
-       air_stress, &
-       ocean_stress, &
-       ocean_stress_coefficient, &
-       ocean_stress_final, &
-       solve_velocity, &
-       surface_tilt, &
-       coriolis_force_coefficient, &
-       principal_stresses
+       cice_init_evp, &
+       cice_ice_strength, &
+       cice_evp_constitutive_relation, &
+       cice_linear_constitutive_relation, &
+       cice_air_stress, &
+       cice_ocean_stress, &
+       cice_ocean_stress_coefficient, &
+       cice_ocean_stress_final, &
+       cice_solve_velocity, &
+       cice_surface_tilt, &
+       cice_coriolis_force_coefficient, &
+       cice_principal_stresses
 
   real(kind=RKIND), parameter, public :: &
+       ciceAreaMinimum = 0.001_RKIND, &
+       ciceMassMinimum = 0.01_RKIND
+
+  real(kind=RKIND), public :: &
+       ciceDynamicsTimeStep, &
+       ciceElasticTimeStep
+  
+  ! local 
+  real(kind=RKIND), parameter, private :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
        cosOceanTurningAngle = 1.0_RKIND, & ! northern hemisphere
-       areaMinimum = 0.001_RKIND, &
-       massMinimum = 0.01_RKIND
-  
-  real(kind=RKIND), parameter :: &
        eccentricity = 2.0_RKIND, &
        eccentricitySquared = eccentricity**2, &
        dampingTimescaleParameter = 0.36_RKIND, &
        puny = 1.0e-11_RKIND
 
-  real(kind=RKIND), public :: &
-       dtDynamics, &
-       dtElastic, &
+  real(kind=RKIND), private :: &
        dampingTimescale, &
-       elapsedTime, &
        evpDampingCriterion
 
 contains
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_evp
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_evp(dt, configs)
+  subroutine cice_init_evp(dt, configs)
 
-    real(kind=RKIND), intent(in) :: dt
+    real(kind=RKIND), intent(in) :: &
+         dt !< Input:
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         configs
+         configs !< Input:
 
     integer, pointer :: &
          config_elastic_subcycle_number
 
     call MPAS_pool_get_config(configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
 
-    dtDynamics = dt
+    ciceDynamicsTimeStep = dt
 
-    dtElastic = dtDynamics / real(config_elastic_subcycle_number,RKIND)
+    ciceElasticTimeStep = ciceDynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
 
-    dampingTimescale = dampingTimescaleParameter * dtDynamics
+    dampingTimescale = dampingTimescaleParameter * ciceDynamicsTimeStep
 
-    evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / dtElastic**2 
+    evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / ciceElasticTimeStep**2 
 
-    elapsedTime = 0.0_RKIND
+  end subroutine cice_init_evp
 
-  end subroutine init_evp
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_ice_strength
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  !-------------------------------------------------------------
+  subroutine cice_ice_strength(&
+       mesh, &
+       icePressure, &
+       iceAreaCell, &
+       iceVolumeCell, &
+       solveStress)
 
-  subroutine ice_strength(mesh,        icePressure,   &
-                          iceAreaCell, iceVolumeCell, &
-                          solveStress)
-
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         icePressure
+         icePressure !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         iceAreaCell, &
-         iceVolumeCell
+         iceAreaCell, & !< Input:
+         iceVolumeCell  !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solveStress
+         solveStress !< Input:
 
     integer :: &
          iCell
@@ -111,35 +150,53 @@ contains
 
     enddo ! iCell
 
-  end subroutine ice_strength
+  end subroutine cice_ice_strength
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_evp_constitutive_relation
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine evp_constitutive_relation(stress11,    stress22,    stress12, &
-                                       strain11,    strain22,    strain12, &
-                                       icePressure, replacementPressure,   &
-                                       areaCell,    dtElastic,   evpDamping)
+  subroutine cice_evp_constitutive_relation(&
+       stress11, &
+       stress22, &
+       stress12, &
+       strain11, &
+       strain22, &
+       strain12, &
+       icePressure, &
+       replacementPressure, &
+       areaCell, &
+       dtElastic, &
+       evpDamping)
 
     real(kind=RKIND), intent(inout) :: &
-         stress11, &
-         stress22, &
-         stress12
+         stress11, & !< Input/Output: 
+         stress22, & !< Input/Output: 
+         stress12    !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         strain11, &
-         strain22, &
-         strain12
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
 
     real(kind=RKIND), intent(in) :: &
-         icePressure, & 
-         dtElastic,   &
-         areaCell
+         icePressure, & !< Input:
+         dtElastic, &   !< Input:
+         areaCell       !< Input:
 
     real(kind=RKIND), intent(out) :: &
-         replacementPressure
+         replacementPressure !< Output: 
 
     logical, intent(in) :: &
-         evpDamping
+         evpDamping !< Input:
 
     real(kind=RKIND) :: &
          strainDivergence,    &
@@ -170,11 +227,11 @@ contains
        pressureCoefficient = icePressure / max(Delta,puny)
        replacementPressure = pressureCoefficient * Delta
     endif
-write(*,*) 1, pressureCoefficient
+
     pressureCoefficient = (pressureCoefficient * dtElastic) / (2.0_RKIND * dampingTimescale)
-write(*,*) 2, pressureCoefficient, dtElastic / (2.0_RKIND * dampingTimescale)
+
     denominator = 1.0_RKIND + (0.5_RKIND * dtElastic) / dampingTimescale
-write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND / denominator
+
     stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
 
     stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
@@ -185,48 +242,106 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
 
-  end subroutine evp_constitutive_relation
+  end subroutine cice_evp_constitutive_relation
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_linear_constitutive_relation
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine solve_velocity(nPoints,           solvePoints,           &
-                            uVelocity,         vVelocity,             &
-                            mass,              massCoriolisParameter, &
-                            stressDivergenceU, stressDivergenceV,     &
-                            airStressU,        airStressV,            &
-                            surfaceTiltForceU, surfaceTiltForceV,     &
-                            oceanStressU,      oceanStressV,          &
-                            oceanStressCoeff,  dtElastic,             &
-                            mesh)
+  subroutine cice_linear_constitutive_relation(&
+       stress11, &
+       stress22, &
+       stress12, &
+       strain11, &
+       strain22, &
+       strain12)
 
-    integer, intent(in) :: &
-         nPoints
-
-    integer, dimension(:), intent(in) :: &
-         solvePoints
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         uVelocity, &
-         vVelocity
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         mass,                  &
-         massCoriolisParameter, &
-         stressDivergenceU,     &
-         stressDivergenceV,     &
-         airStressU,            &
-         airStressV,            &
-         surfaceTiltForceU,     &
-         surfaceTiltForceV,     &
-         oceanStressU,          &
-         oceanStressV,          &
-         oceanStressCoeff
+    real(kind=RKIND), intent(out) :: &
+         stress11, & !< Output: 
+         stress22, & !< Output: 
+         stress12    !< Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
+
+    real(kind=RKIND), parameter :: &
+         lambda = 1.0_RKIND
+
+    stress11 = lambda * strain11
+    stress22 = lambda * strain22
+    stress12 = lambda * strain12
+
+  end subroutine cice_linear_constitutive_relation
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_solve_velocity
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_solve_velocity(&
+       nPoints, &
+       solvePoints, &
+       uVelocity, &
+       vVelocity, &
+       mass, &
+       massCoriolisParameter, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       airStressU, &
+       airStressV, &
+       surfaceTiltForceU, &
+       surfaceTiltForceV, &
+       oceanStressU, &
+       oceanStressV, &
+       oceanStressCoeff, &
+       dtElastic, &
+       mesh)
+
+    integer, intent(in) :: &
+         nPoints !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         solvePoints !< Input:
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         uVelocity, & !< Output: 
+         vVelocity    !< Output: 
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         mass, &                  !< Input:
+         massCoriolisParameter, & !< Input:
+         stressDivergenceU, &     !< Input:
+         stressDivergenceV, &     !< Input:
+         airStressU, &            !< Input:
+         airStressV, &            !< Input:
+         surfaceTiltForceU, &     !< Input:
+         surfaceTiltForceV, &     !< Input:
+         oceanStressU, &          !< Input:
+         oceanStressV, &          !< Input: 
+         oceanStressCoeff         !< Input:
+
+    real(kind=RKIND), intent(in) :: &
+         dtElastic !< Input:
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input:
 
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
@@ -274,84 +389,31 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine solve_velocity
+  end subroutine cice_solve_velocity
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_air_stress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function find_nearest_vertex(mesh, lat, lon) result(iVertexNearest)
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
-
-    real(kind=RKIND), intent(in) :: &
-         lat, lon
-
-    integer :: iVertexNearest
-
-    integer :: &
-         iVertex
-
-    real(kind=RKIND) :: &
-         min_dist, &
-         x, y, z, &
-         dist
-
-    integer, pointer :: &
-         nVertices
-
-    real(kind=RKIND), pointer :: &
-         sphere_radius
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, &
-         yVertex, &
-         zVertex
-
-    iVertexNearest = -1
-    min_dist = 1.0e30_RKIND
-
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
-
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
-
-    z = sphere_radius * sin(lat)
-    x = sphere_radius * cos(lon) * cos(lat)
-    y = sphere_radius * sin(lon) * cos(lat)
-    
-    do iVertex = 1, nVertices
-
-       dist = sqrt((x - xVertex(iVertex))**2 + &
-                   (y - yVertex(iVertex))**2 + &
-                   (z - zVertex(iVertex))**2)
-
-       if (dist < min_dist) then
-
-          min_dist = dist
-          iVertexNearest = iVertex
-
-       endif
-
-    enddo ! iVertex
-
-  end function find_nearest_vertex
-
-  !-------------------------------------------------------------
-
-  subroutine air_stress(airStressU, airStressV, uAirVelocity, vAirVelocity, airDensity, iceArea)
+  subroutine cice_air_stress(airStressU, airStressV, uAirVelocity, vAirVelocity, airDensity, iceArea)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         airStressU, &
-         airStressV
+         airStressU, & !< Output: 
+         airStressV    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uAirVelocity, &
-         vAirVelocity, &
-         airDensity, &
-         iceArea
+         uAirVelocity, & !< Input:
+         vAirVelocity, & !< Input:
+         airDensity, &   !< Input:
+         iceArea         !< Input:
 
     real(kind=RKIND) :: &
          windSpeed
@@ -374,25 +436,39 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine air_stress
+  end subroutine cice_air_stress
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_ocean_stress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine ocean_stress(oceanStressU,      oceanStressV,   &
-                          uOceanVelocity,    vOceanVelocity, &
-                          coriolisParameter, solvePoints)
+  subroutine cice_ocean_stress(&
+       oceanStressU, &
+       oceanStressV, &
+       uOceanVelocity, &
+       vOceanVelocity, &
+       coriolisParameter, &
+       solvePoints)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressU, &
-         oceanStressV
+         oceanStressU, & !< Output: 
+         oceanStressV    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uOceanVelocity, &
-         vOceanVelocity, &
-         coriolisParameter
+         uOceanVelocity, & !< Input:
+         vOceanVelocity, & !< Input:
+         coriolisParameter !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solvePoints
+         solvePoints !< Input:
 
     integer :: &
          nPoints, &
@@ -418,27 +494,41 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine ocean_stress
+  end subroutine cice_ocean_stress
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_ocean_stress_coefficient
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine ocean_stress_coefficient(oceanStressCoeff, &
-                                      uOceanVelocity, vOceanVelocity, &
-                                      uVelocity, vVelocity, &
-                                      iceArea, solvePoints) 
+  subroutine cice_ocean_stress_coefficient(&
+       oceanStressCoeff, &
+       uOceanVelocity, &
+       vOceanVelocity, &
+       uVelocity, &
+       vVelocity, &
+       iceArea, &
+       solvePoints) 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressCoeff
+         oceanStressCoeff !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uOceanVelocity, &
-         vOceanVelocity, &
-         uVelocity, &
-         vVelocity, &
-         iceArea
+         uOceanVelocity, & !< Input:
+         vOceanVelocity, & !< Input:
+         uVelocity, &      !< Input:
+         vVelocity, &      !< Input:
+         iceArea           !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solvePoints
+         solvePoints !< Input:
 
     real(kind=RKIND), parameter :: &
          densityWater      = 1026.0_RKIND, &
@@ -465,11 +555,21 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine ocean_stress_coefficient
+  end subroutine cice_ocean_stress_coefficient
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_ocean_stress_final
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine ocean_stress_final(&
+  subroutine cice_ocean_stress_final(&
        iceArea, &
        coriolisParameter, &
        uVelocity, &
@@ -482,20 +582,20 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
        solvePoints)
 
     real(kind=RKIND), dimension(:), intent(in) :: &    
-         iceArea, &
-         coriolisParameter, &
-         uVelocity, &
-         vVelocity, &
-         uOceanVelocity, &
-         vOceanVelocity
+         iceArea, &           !< Input:
+         coriolisParameter, & !< Input:
+         uVelocity, &         !< Input:
+         vVelocity, &         !< Input:
+         uOceanVelocity, &    !< Input:
+         vOceanVelocity       !< Input:
     
     real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressU, &
-         oceanStressV, &
-         oceanStressCoeff
+         oceanStressU, &  !< Output: 
+         oceanStressV, &  !< Output: 
+         oceanStressCoeff !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         solvePoints
+         solvePoints !< Input:
 
     real(kind=RKIND) :: &
          oceanIceRelativeVelocity
@@ -504,7 +604,7 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
          nPoints, &
          iPoint
 
-    call ocean_stress_coefficient(&
+    call cice_ocean_stress_coefficient(&
          oceanStressCoeff, &
          uOceanVelocity, &
          vOceanVelocity, &
@@ -533,27 +633,41 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine ocean_stress_final
+  end subroutine cice_ocean_stress_final
   
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_surface_tilt
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine surface_tilt(surfaceTiltForceU, surfaceTiltForceV, &
-                          uOceanVelocity,    vOceanVelocity,    &
-                          totalMass,         coriolisParameter, &
-                          solvePoints)
+  subroutine cice_surface_tilt(&
+       surfaceTiltForceU, &
+       surfaceTiltForceV, &
+       uOceanVelocity, &
+       vOceanVelocity, &
+       totalMass, &
+       coriolisParameter, &
+       solvePoints)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         surfaceTiltForceU, &
-         surfaceTiltForceV
+         surfaceTiltForceU, & !< Output: 
+         surfaceTiltForceV    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uOceanVelocity,  &
-         vOceanVelocity,  &
-         totalMass,       &
-         coriolisParameter
+         uOceanVelocity, & !< Input:
+         vOceanVelocity, & !< Input:
+         totalMass, &      !< Input:
+         coriolisParameter !< Input:
 
     integer, dimension(:), intent(in) :: &
-         solvePoints
+         solvePoints !< Input:
 
     integer :: &
          nPoints, &
@@ -577,21 +691,31 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine surface_tilt
+  end subroutine cice_surface_tilt
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_coriolis_force_coefficient
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine coriolis_force_coefficient(&
+  subroutine cice_coriolis_force_coefficient(&
          totalMassCoriolisParameter, &
          totalMass, &
          coriolisParameter)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         totalMassCoriolisParameter
+         totalMassCoriolisParameter !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         totalMass, &
-         coriolisParameter
+         totalMass, &      !< Input:
+         coriolisParameter !< Input:
 
     integer :: &
          iPoint
@@ -602,23 +726,37 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     enddo ! iPoint
 
-  end subroutine coriolis_force_coefficient
+  end subroutine cice_coriolis_force_coefficient
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_principal_stresses
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine principal_stresses(principalStress1, principalStress2, &
-                                stress11, stress22, stress12, &
-                                replacementPressure)
+  subroutine cice_principal_stresses(&
+       principalStress1, &
+       principalStress2, &
+       stress11, &
+       stress22, &
+       stress12, &
+       replacementPressure)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         principalStress1, &
-         principalStress2
+         principalStress1, & !< Output: 
+         principalStress2    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         stress11, &
-         stress22, &
-         stress12, &
-         replacementPressure
+         stress11, &         !< Input:
+         stress22, &         !< Input:
+         stress12, &         !< Input:
+         replacementPressure !< Input:
 
     real(kind=RKIND) :: &
          sqrtContents
@@ -658,33 +796,8 @@ write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND 
 
     close(48)
 
-  end subroutine principal_stresses
+  end subroutine cice_principal_stresses
 
-  !-------------------------------------------------------------
-  ! Testing
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-  subroutine linear_constitutive_relation(stress11, stress22, stress12, &
-                                          strain11, strain22, strain12)
-
-    use cice_testing, only: lambda
-
-    real(kind=RKIND), intent(out) :: &
-         stress11, &
-         stress22, &
-         stress12
-
-    real(kind=RKIND), intent(in) :: &
-         strain11, &
-         strain22, &
-         strain12
-
-    stress11 = lambda * strain11
-    stress22 = lambda * strain22
-    stress12 = lambda * strain12
-
-  end subroutine linear_constitutive_relation
-
-  !-------------------------------------------------------------
-
-end module cice_dynamics_shared
+end module cice_velocity_solver_shared

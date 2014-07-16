@@ -1,3 +1,15 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_numerics
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_numerics
 
   use mpas_grid_types
@@ -5,16 +17,30 @@ module cice_numerics
   implicit none
 
   private
+  save
+
   public :: &
-       solve_linear_basis_system
+       cice_solve_linear_basis_system
 
 contains
 
-  !-------------------------------------------------------------
-  ! LU decomposition
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! LU decomposition
+!-----------------------------------------------------------------------
 
-  subroutine solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_solve_linear_basis_system
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          leftMatrix
@@ -49,7 +75,7 @@ contains
     deallocate(b)
     deallocate(indx)
 
-  end subroutine solve_linear_basis_system
+  end subroutine cice_solve_linear_basis_system
 
   !-------------------------------------------------------------
 

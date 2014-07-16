@@ -1,3 +1,15 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_forcing
 
   use mpas_grid_types
@@ -6,28 +18,30 @@ module cice_forcing
   implicit none
 
   private
+  save
+
   public :: &
-       init_forcing, &
-       get_forcing, &
-       forcing_file_comparison
+       cice_init_forcing, &
+       cice_get_forcing
          
-  integer, parameter :: &
+  integer, parameter, private :: &
        epoch = 1900
 
-  type (MPAS_Time_type) :: &
+  type (MPAS_Time_type), private :: &
        epochTime
 
-  type (MPAS_Time_type) :: &
+  type (MPAS_Time_type), private :: &
        startYearTime, &
        endYearTime
 
-  integer :: currentYear
-  real(kind=RKIND) :: &
+  integer, private :: currentYear
+
+  real(kind=RKIND), private :: &
        currentYearDuration, &
        currentYearEpoch
 
   ! individual forcing field derived type
-  type forcing_field
+  type, private :: forcing_field
 
      character(len=10) :: forcingType            ! 'interval', 'monthly'
      character(len=200) :: filenameDirectory
@@ -49,7 +63,7 @@ module cice_forcing
   end type forcing_field
 
   ! all forcing fields
-  type forcing_fields
+  type, private :: forcing_fields
 
      integer :: nForcingFields
      character(len=200) :: forcingDirectory
@@ -57,19 +71,34 @@ module cice_forcing
 
   end type forcing_fields
 
-  type(forcing_fields) :: atmosForcingFields
+  type(forcing_fields), private :: &
+       atmosForcingFields
 
-  real(kind=RKIND) :: elapsed_time_forcing
+  real(kind=RKIND), private :: &
+       elapsed_time_forcing
 
 contains
 
-  !-------------------------------------------------------------
-  ! Specific forcing
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Specific forcings
+!-----------------------------------------------------------------------
 
-  subroutine init_forcing(block)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    type(block_type), intent(inout) :: block
+  subroutine cice_init_forcing(block)!{{{
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
@@ -91,17 +120,29 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
     call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
 
-    call POP_grid_basis(mesh, &
-                        uPOPAlongGridVector, &
-                        vPOPAlongGridVector)
+    call POP_grid_basis(&
+         mesh, &
+         uPOPAlongGridVector, &
+         vPOPAlongGridVector)
 
-  end subroutine init_forcing
+  end subroutine cice_init_forcing!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_atmos_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_atmos_forcing(mesh)
+  subroutine init_atmos_forcing(mesh)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     atmosForcingFields % nForcingFields = 8
     allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
@@ -143,15 +184,29 @@ contains
     call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(8), "monthly", &
          "/MXA/MONTHLY/PRECIP/", "prec.", ".dat", "binaryPOP", 12, 0.5_RKIND)
 
-  end subroutine init_atmos_forcing
+  end subroutine init_atmos_forcing!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_get_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine get_forcing(block, clock)
+  subroutine cice_get_forcing(&
+       block, &
+       clock)!{{{
 
-    type(block_type), intent(inout) :: block
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
-    type (MPAS_Clock_type), intent(in) :: clock
+    type (MPAS_Clock_type), intent(in) :: &
+         clock !< Input: 
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -174,34 +229,69 @@ contains
 
     elapsed_time_forcing = elapsed_time_forcing + 3600.0_RKIND
 
-    call get_forcing_times(forcingTime, forcingTimeEpoch, year, month, dayOfMonth, clock)
-
-    call get_atmos_forcing(mesh, configs, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
-
-  end subroutine get_forcing
-
-  !-------------------------------------------------------------
-
-  subroutine get_atmos_forcing(mesh, configs, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
-
-    use cice_mesh, only: &
-         latlon_vector_rotation_forward
-
-    use cice_diagnostics, only: plot_pop_grid_cells, plot_cells_spherical
-    
-    type (MPAS_pool_type), pointer, intent(in) :: mesh, configs
-    type (MPAS_pool_type), pointer :: atmos_forcing
-
-    integer, intent(in) :: &
+    call get_forcing_times(&
+         forcingTime, &
+         forcingTimeEpoch, &
          year, &
          month, &
-         dayOfMonth
+         dayOfMonth, &
+         clock)
+
+    call get_atmos_forcing(&
+         mesh, &
+         configs, &
+         atmos_forcing, &
+         forcingTime, &
+         forcingTimeEpoch, &
+         year, &
+         month, &
+         dayOfMonth)
+
+  end subroutine cice_get_forcing!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_atmos_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_atmos_forcing(&
+       mesh, &
+       configs, &
+       atmos_forcing, &
+       forcingTime, &
+       forcingTimeEpoch, &
+       year, &
+       month, &
+       dayOfMonth)!{{{
+
+    use cice_mesh, only: &
+         cice_latlon_vector_rotation_forward
+    
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh, & !< Input: 
+         configs !< Input: 
+
+    type (MPAS_pool_type), pointer :: &
+         atmos_forcing !< Input/Output: 
+
+    integer, intent(in) :: &
+         year, &    !< Input: 
+         month, &   !< Input: 
+         dayOfMonth !< Input: 
     
     real(kind=RKIND), intent(in) :: &
-         forcingTime, &
-         forcingTimeEpoch
+         forcingTime, &   !< Input: 
+         forcingTimeEpoch !< Input: 
 
-    integer :: iCell
+    integer :: &
+         iCell
 
     integer, pointer :: &
          nCells
@@ -326,7 +416,7 @@ contains
     do iCell = 1, nCells
 
        ! rotate the geographical inputs to the rotated grid
-       call latlon_vector_rotation_forward(&
+       call cice_latlon_vector_rotation_forward(&
             uAirVelocity(iCell), &
             vAirVelocity(iCell), &
             uAirVelocityPOP(iCell), &
@@ -341,7 +431,7 @@ contains
        !uAirVelocity(iCell) = uAirVelocityPOP(iCell)
        !vAirVelocity(iCell) = vAirVelocityPOP(iCell)
 
-       call calculate_derived_forcing_variables( &
+       call calculate_derived_forcing_variables(&
             longWavedown(iCell), &
             snowfallRate(iCell), &
             airPotentialTemperature(iCell), &
@@ -359,13 +449,25 @@ contains
 
     enddo ! iCell
 
-  end subroutine get_atmos_forcing
+  end subroutine get_atmos_forcing!}}}
 
-  !-------------------------------------------------------------
-  ! Physical conversions
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Physical conversions
+!-----------------------------------------------------------------------
 
-  subroutine calculate_derived_forcing_variables( &
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calculate_derived_forcing_variables
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine calculate_derived_forcing_variables(&
        longWavedown, &
        snowfallRate, &
        airPotentialTemperature, &
@@ -379,27 +481,27 @@ contains
        precipitationRate, &
        uAirVelocity, &
        vAirVelocity, &
-       airDensity)
+       airDensity)!{{{
     
     real(kind=RKIND), intent(out) :: &
-         longWavedown, &
-         snowfallRate, &
-         airPotentialTemperature, &
-         windSpeed, &
-         sensibleTransferCoefficient, &
-         latentTransferCoefficient, &
-         uAirStress, &
-         vAirStress
+         longWavedown, &                !< Output: 
+         snowfallRate, &                !< Output: 
+         airPotentialTemperature, &     !< Output: 
+         windSpeed, &                   !< Output: 
+         sensibleTransferCoefficient, & !< Output: 
+         latentTransferCoefficient, &   !< Output: 
+         uAirStress, &                  !< Output: 
+         vAirStress                     !< Output: 
 
     real(kind=RKIND), intent(inout) :: &
-         precipitationRate
+         precipitationRate !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         airTemperature, &
-         cloudFraction, &
-         uAirVelocity, &
-         vAirVelocity, &
-         airDensity
+         airTemperature, & !< Input: 
+         cloudFraction, &  !< Input: 
+         uAirVelocity, &   !< Input: 
+         vAirVelocity, &   !< Input: 
+         airDensity        !< Input: 
 
     real(kind=RKIND), parameter :: &
          stefanBoltzmann         = 5.79484e-8_RKIND , & ! J m-2 K-4 s-1
@@ -450,13 +552,25 @@ contains
     uAirStress = uAirVelocity * airStressCoefficient
     vAirStress = vAirVelocity * airStressCoefficient
 
-  end subroutine calculate_derived_forcing_variables
+  end subroutine calculate_derived_forcing_variables!}}}
 
-  !-------------------------------------------------------------
-  ! Generic forcing routines
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Generic forcing routines
+!-----------------------------------------------------------------------
 
-  subroutine init_forcing_generic()
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_forcing_generic
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_forcing_generic()!{{{
 
     ! set currentYear
     currentYear = -1e6
@@ -465,20 +579,49 @@ contains
     ! set epoch time
     call mpas_set_time(epochTime, YYYY=epoch, MM=1, DD=1)
 
-  end subroutine init_forcing_generic
+  end subroutine init_forcing_generic!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_forcing_field
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_forcing_field(mesh, forcingField, forcingType, &
-                                filenameDirectory, filenamePrefix, filenameSuffix, filetype, &
-                                pointsPerYear, positionInInterval)
+  subroutine init_forcing_field(&
+       mesh, &
+       forcingField, &
+       forcingType, &
+       filenameDirectory, &
+       filenamePrefix, &
+       filenameSuffix, &
+       filetype, &
+       pointsPerYear, &
+       positionInInterval)!{{{
 
-    type (MPAS_pool_type), pointer, intent(in) :: mesh
-    type (forcing_field), intent(inout) :: forcingField
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
-    character(len=*), intent(in) :: forcingType, filenameDirectory, filenamePrefix, filenameSuffix, filetype
-    integer, intent(in) :: pointsPerYear
-    real(kind=RKIND) :: positionInInterval
+    type (forcing_field), intent(inout) :: &
+         forcingField !< Input/Output: 
+
+    character(len=*), intent(in) :: &
+         forcingType, &       !< Input: 
+         filenameDirectory, & !< Input: 
+         filenamePrefix, &    !< Input: 
+         filenameSuffix, &    !< Input: 
+         filetype             !< Input: 
+
+    integer, intent(in) :: &
+         pointsPerYear !< Input: 
+
+    real(kind=RKIND) :: &
+         positionInInterval
 
     integer, pointer :: &
          nCells
@@ -508,25 +651,45 @@ contains
 
     allocate(forcingField % data(1:forcingField % ndata,1:2))
 
-  end subroutine init_forcing_field
+  end subroutine init_forcing_field!}}}
 
-  !-------------------------------------------------------------
-  
-  subroutine get_forcing_times(forcingTime, forcingTimeEpoch, year, month, dayOfMonth, clock)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_forcing_times
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_forcing_times(&
+       forcingTime, &
+       forcingTimeEpoch, &
+       year, &
+       month, &
+       dayOfMonth, &
+       clock)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         forcingTime, &
-         forcingTimeEpoch
+         forcingTime, &   !< Output: 
+         forcingTimeEpoch !< Output: 
 
     integer, intent(out) :: &
-         year, &
-         month, &
-         dayOfMonth
+         year, &    !< Output: 
+         month, &   !< Output: 
+         dayOfMonth !< Output: 
 
-    type (MPAS_Clock_type), intent(in) :: clock
+    type (MPAS_Clock_type), intent(in) :: &
+         clock !< Input: 
 
-    type (MPAS_Time_Type) :: currTime
-    integer :: ierr
+    type (MPAS_Time_Type) :: &
+         currTime
+
+    integer :: &
+         ierr
 
     type (MPAS_TimeInterval_type) :: &
          epochTimeDifference, &
@@ -536,11 +699,12 @@ contains
 
     ! get the current time
     currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-    call mpas_get_time(curr_time=currTime,     &
-                       YYYY=year,              &
-                       MM  =month,             &
-                       DD  =dayOfMonth,        &
-                       ierr=ierr)
+    call mpas_get_time(&
+         curr_time = currTime, &
+         YYYY      = year, &
+         MM        = month, &
+         DD        = dayOfMonth, &
+         ierr=ierr)
 
     ! current year duration
     if (currentYear /= year) then
@@ -571,42 +735,86 @@ contains
     startYearTimeDifference = currTime - startYearTime
     call mpas_get_timeInterval(startYearTimeDifference, dt=forcingTime)
 
-  end subroutine get_forcing_times
+  end subroutine get_forcing_times!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calc_interval
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function calc_interval(forcingField) result(interval)
+  function calc_interval(&
+       forcingField) &
+       result(interval)!{{{
 
-    type (forcing_field), intent(in) :: forcingField
-    real(kind=RKIND) :: interval
+    type (forcing_field), intent(in) :: &
+         forcingField !< Input: 
+
+    real(kind=RKIND) :: &
+         interval
     
     interval = currentYearDuration / real(forcingField % pointsPerYear,RKIND)
 
-  end function calc_interval
+  end function calc_interval!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_individual_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, forcingDirectory, forcingField, forcingArray)
+  subroutine get_individual_forcing(&
+       mesh, &
+       forcingTime, &
+       forcingTimeEpoch, &
+       year, &
+       month, &
+       dayOfMonth, &
+       forcingDirectory, &
+       forcingField, &
+       forcingArray)!{{{
 
     use mpas_timekeeping
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         forcingTime, &
-         forcingTimeEpoch
+         forcingTime, &   !< Input: 
+         forcingTimeEpoch !< Input: 
 
-    integer, intent(in) :: year, month, dayOfMonth
+    integer, intent(in) :: &
+         year, &    !< Input: 
+         month, &   !< Input: 
+         dayOfMonth !< Input: 
 
-    character(len=*), intent(in) :: forcingDirectory
+    character(len=*), intent(in) :: &
+         forcingDirectory !< Input: 
 
-    type (forcing_field), intent(inout) :: forcingField
+    type (forcing_field), intent(inout) :: &
+         forcingField !< Input/Output: 
 
-    real(kind=RKIND), dimension(:), intent(out) :: forcingArray
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         forcingArray !< Output: 
 
-    integer, dimension(2) :: desiredYears
-    integer, dimension(2) :: desiredRecordNumbers
-    real(kind=RKIND), dimension(2) :: desiredTimes
+    integer, dimension(2) :: &
+         desiredYears, &
+         desiredRecordNumbers
+
+    real(kind=RKIND), dimension(2) :: &
+         desiredTimes
     
     integer, dimension(2) :: &
          existingDataLocation
@@ -624,9 +832,15 @@ contains
 
     iCell = POPiCell(mesh,69,59)
 
-    call get_desired_record_positions(forcingTime, year, month, dayOfMonth, forcingField, &
-                                      desiredYears, desiredRecordNumbers, desiredTimes)
-    !write(59,*) desiredYears, desiredRecordNumbers, desiredTimes
+    call get_desired_record_positions(&
+         forcingTime, &
+         year, &
+         month, &
+         dayOfMonth, &
+         forcingField, &
+         desiredYears, &
+         desiredRecordNumbers, &
+         desiredTimes)
 
     ! get desired data
     existingDataLocation = 0
@@ -660,7 +874,14 @@ contains
           if (.not. existingHasData(1)) then
 
              ! read into 1
-             call read_data(mesh, forcingDirectory, forcingField, 1, desiredYears(nDesired), desiredRecordNumbers(nDesired), nDesired)
+             call read_data(&
+                  mesh, &
+                  forcingDirectory, &
+                  forcingField, &
+                  1, &
+                  desiredYears(nDesired), &
+                  desiredRecordNumbers(nDesired), &
+                  nDesired)
 
              forcingField % dataTimes(1)         = desiredTimes(nDesired)
              forcingField % dataRecordNumbers(1) = desiredRecordNumbers(nDesired)
@@ -668,12 +889,18 @@ contains
              forcingField % dataOrder(nDesired) = 1
 
              existingHasData(1) = .true.
-             !write(60,*) "r:1", nDesired, POPiCell(mesh,70,60), forcingField % data(POPiCell(mesh,70,60),forcingField % dataOrder(nDesired))
 
           else if (.not. existingHasData(2)) then
 
              ! read into 2
-             call read_data(mesh, forcingDirectory, forcingField, 2, desiredYears(nDesired), desiredRecordNumbers(nDesired), nDesired)
+             call read_data(&
+                  mesh, &
+                  forcingDirectory, &
+                  forcingField, &
+                  2, &
+                  desiredYears(nDesired), &
+                  desiredRecordNumbers(nDesired), &
+                  nDesired)
 
              forcingField % dataTimes(2)         = desiredTimes(nDesired)
              forcingField % dataRecordNumbers(2) = desiredRecordNumbers(nDesired)
@@ -681,7 +908,6 @@ contains
              forcingField % dataOrder(nDesired) = 2
 
              existingHasData(2) = .true.
-             !write(60,*) "r:2", nDesired, POPiCell(mesh,70,60), forcingField % data(POPiCell(mesh,70,60),forcingField % dataOrder(nDesired))
 
           else
 
@@ -698,36 +924,50 @@ contains
     interpolationCoeff(1) = (desiredTimes(2) - forcingTimeEpoch) / (desiredTimes(2) - desiredTimes(1))
     interpolationCoeff(2) = (forcingTimeEpoch - desiredTimes(1)) / (desiredTimes(2) - desiredTimes(1))
 
-    !write(61,*) interpolationCoeff(1), desiredTimes(1), desiredTimes(2), forcingTimeEpoch
-
     forcingArray = forcingField % data(:,forcingField % dataOrder(1)) * interpolationCoeff(1) + &
                    forcingField % data(:,forcingField % dataOrder(2)) * interpolationCoeff(2)
 
-    !write(57,*) forcingArray(iCell), &
-    !     forcingField % data(iCell,forcingField % dataOrder(1)), interpolationCoeff(1), &
-    !     forcingField % data(iCell,forcingField % dataOrder(2)), interpolationCoeff(2)
+  end subroutine get_individual_forcing!}}}
 
-  end subroutine get_individual_forcing
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_desired_record_positions
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  !-------------------------------------------------------------
+  subroutine get_desired_record_positions(&
+       secOfYear, &
+       year, &
+       month, &
+       dayOfMonth, &
+       forcingField, &
+       desiredYears, &
+       desiredRecordNumbers, &
+       desiredTimes)!{{{
 
-  subroutine get_desired_record_positions(secOfYear, year, month, dayOfMonth, forcingField, desiredYears, desiredRecordNumbers, desiredTimes)
-
-    real(kind=RKIND), intent(in) :: secOfYear
+    real(kind=RKIND), intent(in) :: &
+         secOfYear !< Input: 
 
     integer, intent(in) :: &
-         year, &
-         month, &
-         dayOfMonth
+         year, &    !< Input: 
+         month, &   !< Input: 
+         dayOfMonth !< Input: 
    
-    type (forcing_field), intent(in) :: forcingField
+    type (forcing_field), intent(in) :: &
+         forcingField !< Input: 
 
     integer, dimension(2), intent(out) :: &
-         desiredYears, &
-         desiredRecordNumbers
+         desiredYears, &      !< Output: 
+         desiredRecordNumbers !< Output: 
 
     real(kind=RKIND), dimension(2), intent(out) :: &
-         desiredTimes
+         desiredTimes !< Output: 
 
     real(kind=RKIND) :: &
          dataPosition
@@ -735,7 +975,8 @@ contains
     integer :: &
          intervalNumber
 
-    integer :: nDesire
+    integer :: &
+         nDesire
          
     if (trim(forcingField % forcingType) == "interval") then
 
@@ -788,37 +1029,69 @@ contains
 
     enddo ! nDesire
 
-  end subroutine get_desired_record_positions
+  end subroutine get_desired_record_positions!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  forcingTimeInYear
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function forcingTimeInYear(intervalNumber, positionInInterval, interval) result(forcingTime)
+  function forcingTimeInYear(&
+       intervalNumber, &
+       positionInInterval, &
+       interval) &
+       result(forcingTime)!{{{
 
-    integer, intent(in) :: intervalNumber
+    integer, intent(in) :: &
+         intervalNumber !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         positionInInterval, &
-         interval
+         positionInInterval, & !< Input: 
+         interval              !< Input: 
 
-    real(kind=RKIND) :: forcingTime
+    real(kind=RKIND) :: &
+         forcingTime
 
     forcingTime = (real(intervalNumber-1,RKIND) + positionInInterval) * interval
 
-  end function forcingTimeInYear
+  end function forcingTimeInYear!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  forcingTimeSinceEpoch
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function forcingTimeSinceEpoch(intervalNumber, positionInInterval, interval, year) result(forcingTime)
+  function forcingTimeSinceEpoch(&
+       intervalNumber, &
+       positionInInterval, &
+       interval, &
+       year) &
+       result(forcingTime)!{{{
 
     integer, intent(in) :: &
-         intervalNumber, &
-         year
+         intervalNumber, & !< Input: 
+         year              !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         positionInInterval, &
-         interval
+         positionInInterval, & !< Input: 
+         interval              !< Input: 
 
-    real(kind=RKIND) :: forcingTime
+    real(kind=RKIND) :: &
+         forcingTime
 
     type (MPAS_Time_type) :: &
          startOfThisYear
@@ -833,20 +1106,35 @@ contains
 
     forcingTime = forcingTime + forcingTimeInYear(intervalNumber, positionInInterval, interval)
 
-  end function forcingTimeSinceEpoch
+  end function forcingTimeSinceEpoch!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  forcingTimeInYearMonthly
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function forcingTimeInYearMonthly(year, month, positionInInterval) result(forcingTime)
+  function forcingTimeInYearMonthly(&
+       year, &
+       month, &
+       positionInInterval) &
+       result(forcingTime)!{{{
     
     integer, intent(in) :: &
-         year, &
-         month
+         year, & !< Input: 
+         month   !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         positionInInterval
+         positionInInterval !< Input: 
 
-    real(kind=RKIND) :: forcingTime
+    real(kind=RKIND) :: &
+         forcingTime
 
     type (MPAS_Time_type) :: &
          startOfThisYear, &
@@ -862,20 +1150,35 @@ contains
 
     call mpas_get_timeInterval(forcingTimeInterval, dt=forcingTime)
 
-  end function forcingTimeInYearMonthly
+  end function forcingTimeInYearMonthly!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  forcingTimeSinceEpochMonthly
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function forcingTimeSinceEpochMonthly(year, month, positionInInterval) result(forcingTime)
+  function forcingTimeSinceEpochMonthly(&
+       year, &
+       month, &
+       positionInInterval) &
+       result(forcingTime)!{{{
 
     integer, intent(in) :: &
-         year, &
-         month
+         year, & !< Input: 
+         month   !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         positionInInterval
+         positionInInterval !< Input: 
 
-    real(kind=RKIND) :: forcingTime
+    real(kind=RKIND) :: &
+         forcingTime
 
     type (MPAS_Time_type) :: &
          thisForcingTime
@@ -889,59 +1192,119 @@ contains
 
     call mpas_get_timeInterval(forcingTimeInterval, dt=forcingTime)
 
-  end function forcingTimeSinceEpochMonthly
+  end function forcingTimeSinceEpochMonthly!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  read_data
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine read_data(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+  subroutine read_data(&
+       mesh, &
+       forcingDirectory, &
+       forcingField, &
+       slot, &
+       desiredYear, &
+       desiredRecordNumber, &
+       position)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
-    character(len=*), intent(in) :: forcingDirectory
+    character(len=*), intent(in) :: &
+         forcingDirectory !< Input: 
 
-    type (forcing_field), intent(inout) :: forcingField
+    type (forcing_field), intent(inout) :: &
+         forcingField !< Input/Output: 
 
     integer, intent(in) :: &
-         slot, &
-         desiredYear, &
-         desiredRecordNumber, &
-         position
+         slot, &                !< Input: 
+         desiredYear, &         !< Input: 
+         desiredRecordNumber, & !< Input: 
+         position               !< Input: 
 
     if (forcingField % filetype == trim("binaryPOP")) then
     
-       call read_data_binaryPOP(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+       call read_data_binaryPOP(&
+            mesh, &
+            forcingDirectory, &
+            forcingField, &
+            slot, &
+            desiredYear, &
+            desiredRecordNumber, &
+            position)
 
     else if (forcingField % filetype == trim("binaryMPAS")) then
 
-       call read_data_binaryMPAS(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+       call read_data_binaryMPAS(&
+            mesh, &
+            forcingDirectory, &
+            forcingField, &
+            slot, &
+            desiredYear, &
+            desiredRecordNumber, &
+            position)
 
     endif
 
-  end subroutine read_data
+  end subroutine read_data!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  read_data_binaryPOP
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine read_data_binaryPOP(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+  subroutine read_data_binaryPOP(&
+       mesh, &
+       forcingDirectory, &
+       forcingField, &
+       slot, &
+       desiredYear, &
+       desiredRecordNumber, &
+       position)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
-    character(len=*), intent(in) :: forcingDirectory
+    character(len=*), intent(in) :: &
+         forcingDirectory !< Input: 
 
-    type (forcing_field), intent(inout) :: forcingField
+    type (forcing_field), intent(inout) :: &
+         forcingField !< Input/Output: 
 
     integer, intent(in) :: &
-         slot, &
-         desiredYear, &
-         desiredRecordNumber, &
-         position
+         slot, &                !< Input: 
+         desiredYear, &         !< Input: 
+         desiredRecordNumber, & !< Input: 
+         position               !< Input: 
 
-    character(len=404) :: filename
+    character(len=404) :: &
+         filename
 
-    real(kind=RKIND), dimension(:,:), allocatable :: arrayPOP
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         arrayPOP
 
-    integer :: iCell, recordLength, usedRecordNumber
+    integer :: &
+         iCell, &
+         recordLength, &
+         usedRecordNumber
 
-    logical :: lexist
+    logical :: &
+         lexist
 
     integer, pointer :: &
          POP_nx, &
@@ -965,7 +1328,13 @@ contains
 
     usedRecordNumber = desiredRecordNumber
 
-    call get_filename(filename, usedRecordNumber, forcingDirectory, forcingField, desiredYear, position)
+    call get_filename(&
+         filename, &
+         usedRecordNumber, &
+         forcingDirectory, &
+         forcingField, &
+         desiredYear, &
+         position)
 
     open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
 
@@ -985,31 +1354,57 @@ contains
 
     deallocate(arrayPOP)
 
-  end subroutine read_data_binaryPOP
+  end subroutine read_data_binaryPOP!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  read_data_binaryMPAS
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine read_data_binaryMPAS(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+  subroutine read_data_binaryMPAS(&
+       mesh, &
+       forcingDirectory, &
+       forcingField, &
+       slot, &
+       desiredYear, &
+       desiredRecordNumber, &
+       position)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
-    character(len=*), intent(in) :: forcingDirectory
+    character(len=*), intent(in) :: &
+         forcingDirectory !< Input: 
 
-    type (forcing_field), intent(inout) :: forcingField
+    type (forcing_field), intent(inout) :: &
+         forcingField !< Input/Output: 
 
     integer, intent(in) :: &
-         slot, &
-         desiredYear, &
-         desiredRecordNumber, &
-         position
+         slot, &                !< Input: 
+         desiredYear, &         !< Input: 
+         desiredRecordNumber, & !< Input: 
+         position               !< Input: 
 
-    character(len=404) :: filename
+    character(len=404) :: &
+         filename
 
-    real(kind=RKIND), dimension(:), allocatable :: arrayMPAS
+    real(kind=RKIND), dimension(:), allocatable :: &
+         arrayMPAS
 
-    integer :: iCell, recordLength, usedRecordNumber
+    integer :: &
+         iCell, &
+         recordLength, &
+         usedRecordNumber
 
-    logical :: lexist
+    logical :: &
+         lexist
 
     integer, pointer :: &
          nCells
@@ -1029,7 +1424,13 @@ contains
 
     usedRecordNumber = desiredRecordNumber
 
-    call get_filename(filename, usedRecordNumber, forcingDirectory, forcingField, desiredYear, position)
+    call get_filename(&
+         filename, &
+         usedRecordNumber, &
+         forcingDirectory, &
+         forcingField, &
+         desiredYear, &
+         position)
 
     open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
 
@@ -1049,25 +1450,48 @@ contains
 
     deallocate(arrayMPAS)
 
-  end subroutine read_data_binaryMPAS
+  end subroutine read_data_binaryMPAS!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_filename
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine get_filename(filename, usedRecordNumber, forcingDirectory, forcingField, desiredYear, position)
+  subroutine get_filename(&
+       filename, &
+       usedRecordNumber, &
+       forcingDirectory, &
+       forcingField, &
+       desiredYear, &
+       position)!{{{
 
-    character(len=*), intent(out) :: filename
+    character(len=*), intent(out) :: &
+         filename !< Output: 
 
-    integer, intent(out) :: usedRecordNumber
+    integer, intent(out) :: &
+         usedRecordNumber !< Output: 
 
-    character(len=*), intent(in) :: forcingDirectory
+    character(len=*), intent(in) :: &
+         forcingDirectory !< Input: 
 
-    type (forcing_field), intent(in) :: forcingField
+    type (forcing_field), intent(in) :: &
+         forcingField !< Input: 
 
-    integer, intent(in) :: desiredYear
+    integer, intent(in) :: &
+         desiredYear !< Input: 
 
-    integer, intent(in) :: position
+    integer, intent(in) :: &
+         position !< Input: 
 
-    logical :: lexist
+    logical :: &
+         lexist
 
     write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear, trim(forcingField % filenameSuffix)
 
@@ -1111,18 +1535,38 @@ contains
 
     endif
 
-  end subroutine get_filename
+  end subroutine get_filename!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  POPiCell
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function POPiCell(mesh, i, j) result(iCellOut)
+  function POPiCell(&
+       mesh, &
+       i, &
+       j) &
+       result(iCellOut)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
     
-    integer, intent(in) :: i, j
-    integer :: iCellOut
+    integer, intent(in) :: &
+         i, & !< Input: 
+         j    !< Input: 
 
-    integer :: iCell
+    integer :: &
+         iCellOut
+
+    integer :: &
+         iCell
 
     integer, pointer :: &
          nCells
@@ -1149,25 +1593,39 @@ contains
 
     enddo ! iCell
 
-  end function POPiCell
+  end function POPiCell!}}}
 
-  !-------------------------------------------------------------
-  
-  subroutine rotate_vector_POP_to_cartesian(uArrayCartesian,     vArrayCartesian, &
-                                            uArrayPOP,           vArrayPOP,       &
-                                            uPOPAlongGridVector, vPOPAlongGridVector)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  rotate_vector_POP_to_cartesian
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine rotate_vector_POP_to_cartesian(&
+       uArrayCartesian, &
+       vArrayCartesian, &
+       uArrayPOP, &
+       vArrayPOP, &
+       uPOPAlongGridVector, &
+       vPOPAlongGridVector)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         uArrayCartesian, &
-         vArrayCartesian
+         uArrayCartesian, & !< Output: 
+         vArrayCartesian    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uArrayPOP, &
-         vArrayPOP
+         uArrayPOP, & !< Input: 
+         vArrayPOP    !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         uPOPAlongGridVector, &
-         vPOPAlongGridVector
+         uPOPAlongGridVector, & !< Input: 
+         vPOPAlongGridVector    !< Input: 
 
     integer :: &
          nPoints, &
@@ -1184,21 +1642,35 @@ contains
 
     enddo ! iPoint
 
-  end subroutine rotate_vector_POP_to_cartesian
+  end subroutine rotate_vector_POP_to_cartesian!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  POP_grid_basis 
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine POP_grid_basis(mesh, uPOPAlongGridVector, vPOPAlongGridVector)
+  subroutine POP_grid_basis(&
+       mesh, &
+       uPOPAlongGridVector, &
+       vPOPAlongGridVector)!{{{
 
     use cice_mesh, only: &
-         grid_rotation_forward, &
-         dot_product_3space
+         cice_grid_rotation_forward, &
+         cice_dot_product_3space
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         uPOPAlongGridVector, &
-         vPOPAlongGridVector
+         uPOPAlongGridVector, & !< Output: 
+         vPOPAlongGridVector    !< Output: 
 
     real(kind=RKIND) :: &
          xCell0, &
@@ -1271,9 +1743,10 @@ contains
     do iCell = 1, nCells
 
        ! eastwards vector
-       call grid_rotation_forward(xCell0,       yCell0,       zCell0, &
-                                  xCell(iCell), yCell(iCell), zCell(iCell), &
-                                  .true.)
+       call cice_grid_rotation_forward(&
+            xCell0,       yCell0,       zCell0, &
+            xCell(iCell), yCell(iCell), zCell(iCell), &
+            .true.)
 
        eastwardsVector(1) = -yCell0
        eastwardsVector(2) =  xCell0
@@ -1359,22 +1832,25 @@ contains
        !           iEdgeU2, iEdgeU1, iEdgeV2, iEdgeV1
        
        ! U vector
-       call grid_rotation_forward(xEdge2,         yEdge2,         zEdge2, &
-                                  xEdge(iEdgeU2), yEdge(iEdgeU2), zEdge(iEdgeU2), &
-                                  .true.)
+       call cice_grid_rotation_forward(&
+            xEdge2,         yEdge2,         zEdge2, &
+            xEdge(iEdgeU2), yEdge(iEdgeU2), zEdge(iEdgeU2), &
+            .true.)
        
-       call grid_rotation_forward(xEdge1,         yEdge1,         zEdge1, &
-                                  xEdge(iEdgeU1), yEdge(iEdgeU1), zEdge(iEdgeU1), &
-                                  .true.)
+       call cice_grid_rotation_forward(&
+            xEdge1,         yEdge1,         zEdge1, &
+            xEdge(iEdgeU1), yEdge(iEdgeU1), zEdge(iEdgeU1), &
+            .true.)
        
        uVector(1) = xEdge2 - xEdge1
        uVector(2) = yEdge2 - yEdge1
        uVector(3) = zEdge2 - zEdge1
        uVector = uVector / sqrt(uVector(1)**2 + uVector(2)**2 + uVector(3)**2)
 
-       call dot_product_3space(uPOPAlongGridVector(1,iCell), &
-                               uVector(1),         uVector(2),         uVector(3), &
-                               eastwardsVector(1), eastwardsVector(2), eastwardsVector(3)) 
+       call cice_dot_product_3space(&
+            uPOPAlongGridVector(1,iCell), &
+            uVector(1),         uVector(2),         uVector(3), &
+            eastwardsVector(1), eastwardsVector(2), eastwardsVector(3)) 
 
        uPOPAlongGridVector(2,iCell) = sign(1.0_RKIND,uVector(3))&
                                     * sqrt(1.0_RKIND - min(uPOPAlongGridVector(1,iCell),1.0_RKIND)**2)
@@ -1382,22 +1858,25 @@ contains
        !write(*,*) iCell, uPOPAlongGridVector(1,iCell), uPOPAlongGridVector(2,iCell)
        
        ! V vector
-       call grid_rotation_forward(xEdge2,         yEdge2,         zEdge2, &
-                                  xEdge(iEdgeV2), yEdge(iEdgeV2), zEdge(iEdgeV2), &
-                                  .true.)
+       call cice_grid_rotation_forward(&
+            xEdge2,         yEdge2,         zEdge2, &
+            xEdge(iEdgeV2), yEdge(iEdgeV2), zEdge(iEdgeV2), &
+            .true.)
        
-       call grid_rotation_forward(xEdge1,         yEdge1,         zEdge1, &
-                                  xEdge(iEdgeV1), yEdge(iEdgeV1), zEdge(iEdgeV1), &
-                                  .true.)
+       call cice_grid_rotation_forward(&
+            xEdge1,         yEdge1,         zEdge1, &
+            xEdge(iEdgeV1), yEdge(iEdgeV1), zEdge(iEdgeV1), &
+            .true.)
        
        vVector(1) = xEdge2 - xEdge1
        vVector(2) = yEdge2 - yEdge1
        vVector(3) = zEdge2 - zEdge1
        vVector = vVector / sqrt(vVector(1)**2 + vVector(2)**2 + vVector(3)**2)
 
-       call dot_product_3space(vPOPAlongGridVector(1,iCell), &
-                               vVector(1),         vVector(2),         vVector(3), &
-                               eastwardsVector(1), eastwardsVector(2), eastwardsVector(3)) 
+       call cice_dot_product_3space(&
+            vPOPAlongGridVector(1,iCell), &
+            vVector(1),         vVector(2),         vVector(3), &
+            eastwardsVector(1), eastwardsVector(2), eastwardsVector(3)) 
 
        vPOPAlongGridVector(2,iCell) = sign(1.0_RKIND,vVector(3))&
                                     * sqrt(1.0_RKIND - min(vPOPAlongGridVector(1,iCell),1.0_RKIND)**2)
@@ -1406,13 +1885,24 @@ contains
 
     !stop
 
-  end subroutine POP_grid_basis
+  end subroutine POP_grid_basis!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  forcing_file_comparison
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine forcing_file_comparison(mesh)
+  subroutine forcing_file_comparison(mesh)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     ! POP input
     character(len=200), parameter :: filein_POP = &
@@ -1535,8 +2025,8 @@ contains
     deallocate(array_MPAS_out)
     deallocate(array_comp)
 
-  end subroutine forcing_file_comparison
+  end subroutine forcing_file_comparison!}}}
 
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 end module cice_forcing

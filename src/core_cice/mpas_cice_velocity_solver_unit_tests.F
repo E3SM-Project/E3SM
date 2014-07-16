@@ -1,50 +1,80 @@
-module cice_dynamics_unit_tests
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_velocity_solver_unit_tests
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+module cice_velocity_solver_unit_tests
 
   use mpas_grid_types
 
   implicit none
 
   private
+  save
+
   public :: &
-       strain_rate_operator_unit_test, &
-       stress_divergence_operator_unit_test, &
-       constitutive_relationship_unit_test
+       cice_strain_rate_operator_unit_test, &
+       cice_stress_divergence_operator_unit_test, &
+       cice_constitutive_relationship_unit_test
 
 contains
 
-  !--------------------------------------------------------------------------
-  ! Spherical strain rate unit test 
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Spherical strain rate unit test 
+!-----------------------------------------------------------------------
 
-  subroutine strain_rate_operator_unit_test(block, unit_test_subtype)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_strain_rate_operator_unit_test
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    use cice_dyn_hex_weak, only: &
-         strain_tensor_hex_weak
+  subroutine cice_strain_rate_operator_unit_test(&
+       block, &
+       unit_test_subtype)!{{{
+
+    use cice_velocity_solver_weak, only: &
+         cice_strain_tensor_weak
 
     use cice_diagnostics, only: &
-         rms_difference, &
-         plot_spherical_latlon
+         cice_rms_difference, &
+         cice_plot_spherical_latlon
 
     use cice_mesh, only: &
-         latlon_from_xyz, &
-         grid_rotation_forward
+         cice_latlon_from_xyz, &
+         cice_grid_rotation_forward
 
     use cice_constants, only: &
-         rad_to_deg
+         ciceRadiansToDegrees
 
     use mpas_constants, only: &
          pii
     
-    type(block_type), intent(inout) :: block
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     character(len=*), intent(in) :: &
-         unit_test_subtype
+         unit_test_subtype !< Input: 
 
-    type (MPAS_pool_type), pointer :: mesh
-    type (MPAS_pool_type), pointer :: boundary
-    type (MPAS_pool_type), pointer :: hexdyn
-    type (MPAS_pool_type), pointer :: hexweak
-    type (MPAS_pool_type), pointer :: configs
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         boundary, &
+         velocity_solver, &
+         velocity_weak, &
+         configs
     
     real(kind=RKIND), dimension(:), allocatable :: &
          strain11_test, &
@@ -111,8 +141,8 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
-    call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
@@ -128,17 +158,17 @@ contains
     call MPAS_pool_get_array(mesh, "latCell", latCell)
     call MPAS_pool_get_array(mesh, "lonCell", lonCell)
 
-    call MPAS_pool_get_array(hexdyn, "solveStress", solveStress)
-    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
-    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(velocity_solver, "solveStress", solveStress)
+    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
 
     call MPAS_pool_get_array(boundary, "interiorCell", interiorCell)
 
-    call MPAS_pool_get_array(hexweak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_array(hexweak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(hexweak, "strain11", strain11)
-    call MPAS_pool_get_array(hexweak, "strain22", strain22)
-    call MPAS_pool_get_array(hexweak, "strain12", strain12)
+    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(velocity_weak, "strain11", strain11)
+    call MPAS_pool_get_array(velocity_weak, "strain22", strain22)
+    call MPAS_pool_get_array(velocity_weak, "strain12", strain12)
 
     open(54,file="strain_rate_test.txt",position="append")
 
@@ -161,24 +191,26 @@ contains
 
     do iVertex = 1, nVertices
     
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xp,               yp,               zp, &
             xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
             config_rotate_cartesian_grid)
 
-       call latlon_from_xyz(latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
+       call cice_latlon_from_xyz(&
+            latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
             xp, yp, zp, sphere_radius)
 
     enddo ! iVertex
 
     do iCell = 1, nCells
 
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xp,           yp,           zp, &
             xCell(iCell), yCell(iCell), zCell(iCell), &
             config_rotate_cartesian_grid)
 
-       call latlon_from_xyz(latCellRotated0(iCell), lonCellRotated0(iCell), &
+       call cice_latlon_from_xyz(&
+            latCellRotated0(iCell), lonCellRotated0(iCell), &
             xp, yp, zp, sphere_radius)
 
     enddo ! iCell
@@ -195,7 +227,8 @@ contains
     enddo ! iCell
 
     ! set test velocities and expected outputs
-    call spherical_test_strain(mesh, &
+    call spherical_test_strain(&
+         mesh, &
          uVelocity,              &
          vVelocity,              &
          lonVertexRotated0,      &
@@ -219,7 +252,8 @@ contains
                                        maxval(strain12_test,mask=(solveStress(1:nCells)==1))
 
     ! calculate strain
-    call strain_tensor_hex_weak(mesh, &
+    call cice_strain_tensor_weak(&
+         mesh, &
          strain11,            &
          strain22,            &
          strain12,            &
@@ -268,13 +302,13 @@ contains
     open(56,file='strain22.txt')
     open(57,file='strain12.txt')
     do iCell = 1, nCells
-       write(55,*) iCell, lonCell(iCell) * rad_to_deg, latCell(iCell) * rad_to_deg, &
+       write(55,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
             strain11(iCell), strain11_test(iCell), strain11_diff(iCell), &
             strain11_diff(iCell) * real(solveStress(iCell),RKIND)
-       write(56,*) iCell, lonCell(iCell) * rad_to_deg, latCell(iCell) * rad_to_deg, &
+       write(56,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
             strain22(iCell), strain22_test(iCell), strain22_diff(iCell), &
             strain22_diff(iCell) * real(solveStress(iCell),RKIND)
-       write(57,*) iCell, lonCell(iCell) * rad_to_deg, latCell(iCell) * rad_to_deg, &
+       write(57,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
             strain12(iCell), strain12_test(iCell), strain12_diff(iCell), &
             strain12_diff(iCell) * real(solveStress(iCell),RKIND)
     enddo ! iCell
@@ -283,21 +317,21 @@ contains
     close(57)
 
     ! rms difference
-    call rms_difference( &
+    call cice_rms_difference( &
          strain11(1:nCells),    &
          strain11_test,         &
          solveStress(1:nCells), &
          nCells,                &
          rms_strain11)
 
-    call rms_difference( &
+    call cice_rms_difference( &
          strain22(1:nCells),    &
          strain22_test,         &
          solveStress(1:nCells), &
          nCells,                &
          rms_strain22)
 
-    call rms_difference( &
+    call cice_rms_difference( &
          strain12(1:nCells),    &
          strain12_test,         &
          solveStress(1:nCells), &
@@ -324,21 +358,21 @@ contains
     enddo ! iCell
 
     ! plot spatial distribution
-    call plot_spherical_latlon(mesh, real(interiorCell,RKIND), "interiorCell.txt")
-    call plot_spherical_latlon(mesh, real(solveStress,RKIND), "solveStress.txt")
-    call plot_spherical_latlon(mesh, latCellRotated0, "latCellRotated0.txt")
+    call cice_plot_spherical_latlon(mesh, real(interiorCell,RKIND), "interiorCell.txt")
+    call cice_plot_spherical_latlon(mesh, real(solveStress,RKIND), "solveStress.txt")
+    call cice_plot_spherical_latlon(mesh, latCellRotated0, "latCellRotated0.txt")
 
-    call plot_spherical_latlon(mesh, strain11,      "strain11_plot.txt")
-    call plot_spherical_latlon(mesh, strain11_test, "strain11_plot_test.txt")
-    call plot_spherical_latlon(mesh, strain11_diff, "strain11_plot_diff.txt")
+    call cice_plot_spherical_latlon(mesh, strain11,      "strain11_plot.txt")
+    call cice_plot_spherical_latlon(mesh, strain11_test, "strain11_plot_test.txt")
+    call cice_plot_spherical_latlon(mesh, strain11_diff, "strain11_plot_diff.txt")
 
-    call plot_spherical_latlon(mesh, strain22,      "strain22_plot.txt")
-    call plot_spherical_latlon(mesh, strain22_test, "strain22_plot_test.txt")
-    call plot_spherical_latlon(mesh, strain22_diff, "strain22_plot_diff.txt")
+    call cice_plot_spherical_latlon(mesh, strain22,      "strain22_plot.txt")
+    call cice_plot_spherical_latlon(mesh, strain22_test, "strain22_plot_test.txt")
+    call cice_plot_spherical_latlon(mesh, strain22_diff, "strain22_plot_diff.txt")
 
-    call plot_spherical_latlon(mesh, strain12,      "strain12_plot.txt")
-    call plot_spherical_latlon(mesh, strain12_test, "strain12_plot_test.txt")
-    call plot_spherical_latlon(mesh, strain12_diff, "strain12_plot_diff.txt")
+    call cice_plot_spherical_latlon(mesh, strain12,      "strain12_plot.txt")
+    call cice_plot_spherical_latlon(mesh, strain12_test, "strain12_plot_test.txt")
+    call cice_plot_spherical_latlon(mesh, strain12_diff, "strain12_plot_diff.txt")
 
     deallocate(strain11_test)
     deallocate(strain22_test)
@@ -356,9 +390,19 @@ contains
 
     close(54)
 
-  end subroutine strain_rate_operator_unit_test
+  end subroutine cice_strain_rate_operator_unit_test!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_test_strain
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine spherical_test_strain(mesh, &
        uVelocity,         &
@@ -372,29 +416,30 @@ contains
        latitudeStrain,    &
        nPointsVelocity,   &
        nPointsStrain,     &
-       test_type)
+       test_type)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         uVelocity, &
-         vVelocity, &
-         strain11,  &
-         strain22,  &
-         strain12
+         uVelocity, & !< Output: 
+         vVelocity, & !< Output: 
+         strain11,  & !< Output: 
+         strain22,  & !< Output: 
+         strain12     !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeVelocity, &
-         latitudeVelocity,  &
-         longitudeStrain,   &
-         latitudeStrain
+         longitudeVelocity, & !< Input: 
+         latitudeVelocity,  & !< Input: 
+         longitudeStrain,   & !< Input: 
+         latitudeStrain       !< Input: 
 
     integer, intent(in) :: &
-         nPointsVelocity, &
-         nPointsStrain
+         nPointsVelocity, & !< Input: 
+         nPointsStrain      !< Input: 
 
     character(len=*), intent(in) :: &
-         test_type
+         test_type !< Input: 
 
     real(kind=RKIND) :: &
          uVelocity_test, &
@@ -454,10 +499,20 @@ contains
 
     enddo ! iPoint
 
-  end subroutine spherical_test_strain
+  end subroutine spherical_test_strain!}}}
 
-  !-------------------------------------------------------------
-  
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_test_strain_velocities
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
   subroutine spherical_test_strain_velocities( &
        u,       &
        v,       &
@@ -467,22 +522,22 @@ contains
        dv_dlat, &
        lon,     &
        lat,     &
-       test_type)
+       test_type)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat
+         u,       & !< Output: 
+         v,       & !< Output: 
+         du_dlon, & !< Output: 
+         du_dlat, & !< Output: 
+         dv_dlon, & !< Output: 
+         dv_dlat    !< Output: 
     
     real(kind=RKIND), intent(in) :: &
-         lon, &
-         lat
+         lon, & !< Input: 
+         lat    !< Input: 
     
     character(len=*), intent(in) :: &
-         test_type
+         test_type !< Input: 
 
     if (trim(test_type) == "zero") then
 
@@ -546,104 +601,180 @@ contains
 
     endif
 
-  end subroutine spherical_test_strain_velocities
+  end subroutine spherical_test_strain_velocities!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain11_component
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function strain11_component(u, v, du_dlon, du_dlat, dv_dlon, dv_dlat, r, lon, lat) result(e11)
+  function strain11_component(&
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       r, &
+       lon, &
+       lat) &
+       result(e11)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &                                  
-         r,       &
-         lon,     &
-         lat
+         u,       & !< Input: 
+         v,       & !< Input: 
+         du_dlon, & !< Input: 
+         du_dlat, & !< Input: 
+         dv_dlon, & !< Input: 
+         dv_dlat, & !< Input:                                
+         r,       & !< Input: 
+         lon,     & !< Input: 
+         lat        !< Input: 
 
     real(kind=RKIND) :: e11
 
     e11 = (1.0_RKIND / (r * cos(lat))) * (du_dlon - v * sin(lat)) 
 
-  end function strain11_component
+  end function strain11_component!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain22_component
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function strain22_component(u, v, du_dlon, du_dlat, dv_dlon, dv_dlat, r, lon, lat) result(e22)
+  function strain22_component(&
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       r, &
+       lon, &
+       lat) &
+       result(e22)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &                                  
-         r,       &
-         lon,     &
-         lat
+         u,       & !< Input: 
+         v,       & !< Input: 
+         du_dlon, & !< Input: 
+         du_dlat, & !< Input: 
+         dv_dlon, & !< Input: 
+         dv_dlat, & !< Input:                               
+         r,       & !< Input: 
+         lon,     & !< Input: 
+         lat        !< Input: 
 
     real(kind=RKIND) :: e22
 
     e22 = dv_dlat / r
 
-  end function strain22_component
+  end function strain22_component!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain12_component
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function strain12_component(u, v, du_dlon, du_dlat, dv_dlon, dv_dlat, r, lon, lat) result(e12)
+  function strain12_component(&
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       r, &
+       lon, &
+       lat) &
+       result(e12)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &                                  
-         r,       &
-         lon,     &
-         lat
+         u,       & !< Input: 
+         v,       & !< Input: 
+         du_dlon, & !< Input: 
+         du_dlat, & !< Input: 
+         dv_dlon, & !< Input: 
+         dv_dlat, & !< Input:                               
+         r,       & !< Input: 
+         lon,     & !< Input: 
+         lat        !< Input: 
 
     real(kind=RKIND) :: e12
 
     e12 = (0.5_RKIND / r) * (du_dlat + u * tan(lat) + dv_dlon / cos(lat))
 
-  end function strain12_component
+  end function strain12_component!}}}
 
-  !--------------------------------------------------------------------------
-  ! Spherical stress divergence unit test
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Spherical stress divergence unit test
+!-----------------------------------------------------------------------
 
-  subroutine stress_divergence_operator_unit_test(block, unit_test_subtype)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_stress_divergence_operator_unit_test
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    use cice_dyn_hex_weak, only: &
-         stress_divergence_hex_weak
+  subroutine cice_stress_divergence_operator_unit_test(&
+       block, &
+       unit_test_subtype)!{{{
+
+    use cice_velocity_solver_weak, only: &
+         cice_stress_divergence_weak
 
     use cice_diagnostics, only: &
-         rms_difference, &
-         plot_spherical_latlon
+         cice_rms_difference, &
+         cice_plot_spherical_latlon
 
     use cice_mesh, only: &
-         grid_rotation_forward, &
-         latlon_from_xyz
+         cice_grid_rotation_forward, &
+         cice_latlon_from_xyz
 
     use cice_constants, only: &
-         rad_to_deg
+         ciceRadiansToDegrees
 
     use mpas_constants, only: &
          pii
 
-    type(block_type), intent(inout) :: block
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     character(len=*), intent(in) :: &
-         unit_test_subtype
+         unit_test_subtype !< Input: 
 
-    type (MPAS_pool_type), pointer :: mesh
-    type (MPAS_pool_type), pointer :: boundary
-    type (MPAS_pool_type), pointer :: hexdyn
-    type (MPAS_pool_type), pointer :: hexweak
-    type (MPAS_pool_type), pointer :: configs
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         boundary, &
+         velocity_solver, &
+         velocity_weak, &
+         configs
 
     real(kind=RKIND), dimension(:), allocatable :: &
          stressDivergenceU_test, &
@@ -703,8 +834,8 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
-    call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
@@ -721,15 +852,15 @@ contains
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call MPAS_pool_get_array(hexdyn, "solveVelocity", solveVelocity)
-    call MPAS_pool_get_array(hexdyn, "stressDivergenceU", stressDivergenceU)
-    call MPAS_pool_get_array(hexdyn, "stressDivergenceV", stressDivergenceV)
+    call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
+    call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
+    call MPAS_pool_get_array(velocity_solver, "stressDivergenceV", stressDivergenceV)
 
-    call MPAS_pool_get_array(hexweak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_array(hexweak, "latVertexRotated", latVertexRotated)
-    call MPAS_pool_get_array(hexweak, "stress11", stress11)
-    call MPAS_pool_get_array(hexweak, "stress22", stress22)
-    call MPAS_pool_get_array(hexweak, "stress12", stress12)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
+    call MPAS_pool_get_array(velocity_weak, "stress11", stress11)
+    call MPAS_pool_get_array(velocity_weak, "stress22", stress22)
+    call MPAS_pool_get_array(velocity_weak, "stress12", stress12)
 
     open(54,file="stress_divergence_test.txt")
 
@@ -750,24 +881,26 @@ contains
 
     do iVertex = 1, nVertices
     
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xp,               yp,               zp, &
             xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
             config_rotate_cartesian_grid)
 
-       call latlon_from_xyz(latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
+       call cice_latlon_from_xyz(&
+            latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
             xp, yp, zp, sphere_radius)
 
     enddo ! iVertex
 
     do iCell = 1, nCells
 
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xp,           yp,           zp, &
             xCell(iCell), yCell(iCell), zCell(iCell), &
             config_rotate_cartesian_grid)
 
-       call latlon_from_xyz(latCellRotated0(iCell), lonCellRotated0(iCell), &
+       call cice_latlon_from_xyz(&
+            latCellRotated0(iCell), lonCellRotated0(iCell), &
             xp, yp, zp, sphere_radius)
 
     enddo ! iCell
@@ -804,7 +937,8 @@ contains
                                       maxval(stressDivergenceV_test,mask=(solveVelocity(1:nVertices)==1))
 
     ! calculate divergence of stress
-    call stress_divergence_hex_weak(mesh, &
+    call cice_stress_divergence_weak(&
+         mesh, &
          stressDivergenceU,    &
          stressDivergenceV,    &
          stress11,             &
@@ -849,10 +983,10 @@ contains
     open(55,file='divergenceu.txt')
     open(56,file='divergencev.txt')
     do iVertex = 1, nVertices
-       write(55,*) iVertex, lonVertex(iVertex) * rad_to_deg, latVertex(iVertex) * rad_to_deg, &
+       write(55,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
             stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), stressDivergenceU_diff(iVertex), &
             stressDivergenceU_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
-       write(56,*) iVertex, lonVertex(iVertex) * rad_to_deg, latVertex(iVertex) * rad_to_deg, &
+       write(56,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
             stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), stressDivergenceV_diff(iVertex), &
             stressDivergenceV_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
     enddo ! iVertex
@@ -860,14 +994,14 @@ contains
     close(56)
 
     ! rms difference
-    call rms_difference( &
+    call cice_rms_difference( &
          stressDivergenceU(1:nVertices), &
          stressDivergenceU_test,         &
          solveVelocity(1:nVertices),     &
          nVertices,                      &
          rms_divergenceU)
 
-    call rms_difference( &
+    call cice_rms_difference( &
          stressDivergenceV(1:nVertices), &
          stressDivergenceV_test,         &
          solveVelocity(1:nVertices),     &
@@ -891,17 +1025,17 @@ contains
     enddo ! iCell
 
     ! plot spatial distribution
-    call plot_spherical_latlon(mesh, real(interiorVertex,RKIND), "interiorVertex.txt")
-    call plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity.txt")
-    call plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0.txt")
+    call cice_plot_spherical_latlon(mesh, real(interiorVertex,RKIND), "interiorVertex.txt")
+    call cice_plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity.txt")
+    call cice_plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0.txt")
 
-    call plot_spherical_latlon(mesh, stressDivergenceU,      "stressDivergenceU_plot.txt")
-    call plot_spherical_latlon(mesh, stressDivergenceU_test, "stressDivergenceU_plot_test.txt")
-    call plot_spherical_latlon(mesh, stressDivergenceU_diff, "stressDivergenceU_plot_diff.txt")
+    call cice_plot_spherical_latlon(mesh, stressDivergenceU,      "stressDivergenceU_plot.txt")
+    call cice_plot_spherical_latlon(mesh, stressDivergenceU_test, "stressDivergenceU_plot_test.txt")
+    call cice_plot_spherical_latlon(mesh, stressDivergenceU_diff, "stressDivergenceU_plot_diff.txt")
 
-    call plot_spherical_latlon(mesh, stressDivergenceV,      "stressDivergenceV_plot.txt")
-    call plot_spherical_latlon(mesh, stressDivergenceV_test, "stressDivergenceV_plot_test.txt")
-    call plot_spherical_latlon(mesh, stressDivergenceV_diff, "stressDivergenceV_plot_diff.txt")
+    call cice_plot_spherical_latlon(mesh, stressDivergenceV,      "stressDivergenceV_plot.txt")
+    call cice_plot_spherical_latlon(mesh, stressDivergenceV_test, "stressDivergenceV_plot_test.txt")
+    call cice_plot_spherical_latlon(mesh, stressDivergenceV_diff, "stressDivergenceV_plot_diff.txt")
 
     ! cleanup
     deallocate(stressDivergenceU_test)
@@ -916,9 +1050,19 @@ contains
 
     close(54)
 
-  end subroutine stress_divergence_operator_unit_test
+  end subroutine cice_stress_divergence_operator_unit_test!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_test_divergence_stress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine spherical_test_divergence_stress(mesh, &
        stress11,            &
@@ -930,25 +1074,26 @@ contains
        stressDivergenceV,   &
        longitudeDivergence, &
        latitudeDivergence,  &
-       test_type)
+       test_type)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV, &
-         stress11,          &
-         stress22,          &
-         stress12
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV, & !< Output: 
+         stress11,          & !< Output: 
+         stress22,          & !< Output: 
+         stress12             !< Output: 
     
     real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeStress,     &
-         latitudeStress,      &
-         longitudeDivergence, &
-         latitudeDivergence
+         longitudeStress,     & !< Input: 
+         latitudeStress,      & !< Input: 
+         longitudeDivergence, & !< Input: 
+         latitudeDivergence     !< Input: 
 
     character(len=*), intent(in) :: &
-         test_type
+         test_type !< Input: 
 
     real(kind=RKIND) :: &
          stress11_test,  &
@@ -1019,9 +1164,19 @@ contains
 
     enddo ! iPoint
 
-  end subroutine spherical_test_divergence_stress
+  end subroutine spherical_test_divergence_stress!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_test_divergence_stress_stresses
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine spherical_test_divergence_stress_stresses( &
        stress11,       &
@@ -1035,7 +1190,7 @@ contains
        dstress12_dlat, &
        lon,            &
        lat,            &
-       test_type)
+       test_type)!{{{
     
     real(kind=RKIND), intent(out) :: &
          stress11,       &
@@ -1049,11 +1204,11 @@ contains
          dstress12_dlat
 
     real(kind=RKIND), intent(in) :: &
-         lon, &
-         lat
+         lon, & !< Input: 
+         lat    !< Input: 
 
     character(len=*), intent(in) :: &
-         test_type
+         test_type !< Input: 
 
     if (trim(test_type) == "zero") then
        
@@ -1166,27 +1321,48 @@ contains
 
     endif
 
-  end subroutine spherical_test_divergence_stress_stresses
+  end subroutine spherical_test_divergence_stress_stresses!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  divergenceStressU
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function divergenceStressU(stress11, stress22, stress12, &
-                             dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                             r, lon, lat) result(divu)
+  function divergenceStressU(&
+       stress11, &
+       stress22, &
+       stress12, &
+       dstress11_dlon, &
+       dstress11_dlat, &
+       dstress22_dlon, &
+       dstress22_dlat, &
+       dstress12_dlon, &
+       dstress12_dlat, &
+       r, &
+       lon, &
+       lat) &
+       result(divu)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         stress11,       &
-         stress22,       &
-         stress12,       &
-         dstress11_dlon, &
-         dstress11_dlat, &
-         dstress22_dlon, &
-         dstress22_dlat, &
-         dstress12_dlon, &
-         dstress12_dlat, &
-         r,              &
-         lon,            &
-         lat
+         stress11,       & !< Input: 
+         stress22,       & !< Input: 
+         stress12,       & !< Input: 
+         dstress11_dlon, & !< Input: 
+         dstress11_dlat, & !< Input: 
+         dstress22_dlon, & !< Input: 
+         dstress22_dlat, & !< Input: 
+         dstress12_dlon, & !< Input: 
+         dstress12_dlat, & !< Input: 
+         r,              & !< Input: 
+         lon,            & !< Input: 
+         lat               !< Input: 
 
     real(kind=RKIND) :: divu
 
@@ -1194,27 +1370,48 @@ contains
            (1.0_RKIND / r)              * dstress12_dlat - &
            (2.0_RKIND / r) * tan(lat)   * stress12
 
-  end function divergenceStressU
+  end function divergenceStressU!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  divergenceStressV
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function divergenceStressV(stress11, stress22, stress12, &
-                             dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                             r, lon, lat) result(divv)
+  function divergenceStressV(&
+       stress11, &
+       stress22, &
+       stress12, &
+       dstress11_dlon, &
+       dstress11_dlat, &
+       dstress22_dlon, &
+       dstress22_dlat, &
+       dstress12_dlon, &
+       dstress12_dlat, &
+       r, &
+       lon, &
+       lat) &
+       result(divv)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         stress11,       &
-         stress22,       &
-         stress12,       &
-         dstress11_dlon, &
-         dstress11_dlat, &
-         dstress22_dlon, &
-         dstress22_dlat, &
-         dstress12_dlon, &
-         dstress12_dlat, &
-         r,              &
-         lon,            &
-         lat
+         stress11,       & !< Input: 
+         stress22,       & !< Input: 
+         stress12,       & !< Input: 
+         dstress11_dlon, & !< Input: 
+         dstress11_dlat, & !< Input: 
+         dstress22_dlon, & !< Input: 
+         dstress22_dlat, & !< Input: 
+         dstress12_dlon, & !< Input: 
+         dstress12_dlat, & !< Input: 
+         r,              & !< Input: 
+         lon,            & !< Input: 
+         lat               !< Input: 
 
     real(kind=RKIND) :: divv
 
@@ -1223,22 +1420,36 @@ contains
            (1.0_RKIND / r) * tan(lat)   * stress11       - &
            (1.0_RKIND / r) * tan(lat)   * stress22
 
-  end function divergenceStressV
+  end function divergenceStressV!}}}
 
-  !--------------------------------------------------------------------------
-  ! EVP Constitutive relationship unit test
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! EVP Constitutive relationship unit test
+!-----------------------------------------------------------------------
 
-  subroutine constitutive_relationship_unit_test(block)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_constitutive_relationship_unit_test
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    use cice_dynamics_shared, only: &
-         evp_constitutive_relation, &
-         init_evp
+  subroutine cice_constitutive_relationship_unit_test(&
+       block)!{{{
 
-    use cice_dynamics_shared, only: &
-         dtElastic
+    use cice_velocity_solver_shared, only: &
+         cice_evp_constitutive_relation, &
+         cice_init_evp
 
-    type(block_type), intent(inout) :: block
+    use cice_velocity_solver_shared, only: &
+         ciceElasticTimeStep
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     type (MPAS_pool_type), pointer :: &
          configs
@@ -1273,7 +1484,7 @@ contains
     call MPAS_pool_get_config(configs, "config_evp_damping", config_evp_damping)
     call MPAS_pool_get_config(configs, "config_dt", config_dt)
 
-    call init_evp(config_dt, configs)
+    call cice_init_evp(config_dt, configs)
 
     call constitutive_relationship_set_strains(&
          stress11, &
@@ -1288,11 +1499,18 @@ contains
 
     do iTest = 1, nTests
 
-       call evp_constitutive_relation(&
-            stress11(iTest), stress22(iTest), stress12(iTest), &
-            strain11(iTest), strain22(iTest), strain12(iTest), &
-            icePressure(iTest), replacementPressure,   &
-            areaCell,    dtElastic,   config_evp_damping)
+       call cice_evp_constitutive_relation(&
+            stress11(iTest), &
+            stress22(iTest), &
+            stress12(iTest), &
+            strain11(iTest), &
+            strain22(iTest), &
+            strain12(iTest), &
+            icePressure(iTest), &
+            replacementPressure,   &
+            areaCell, &
+            ciceElasticTimeStep, &
+            config_evp_damping)
 
     enddo ! iTest
 
@@ -1305,9 +1523,19 @@ contains
          stress22, &
          stress12)
 
-  end subroutine constitutive_relationship_unit_test
+  end subroutine cice_constitutive_relationship_unit_test!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  constitutive_relationship_set_strains
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine constitutive_relationship_set_strains(&
        stress11, &
@@ -1316,16 +1544,16 @@ contains
        icePressure, &
        strain11, &
        strain22, &
-       strain12)
+       strain12)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stress11, &
-         stress22, &
-         stress12, &
-         icePressure, &
-         strain11, &
-         strain22, &
-         strain12 
+         stress11, &    !< Output: 
+         stress22, &    !< Output: 
+         stress12, &    !< Output: 
+         icePressure, & !< Output: 
+         strain11, &    !< Output: 
+         strain22, &    !< Output: 
+         strain12       !< Output: 
 
     integer :: &
          iTest
@@ -1350,9 +1578,19 @@ contains
     strain22(iTest) = 1.0_RKIND
     strain12(iTest) = 1.0_RKIND
 
-  end subroutine constitutive_relationship_set_strains
+  end subroutine constitutive_relationship_set_strains!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  constitutive_relationship_writeout
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine constitutive_relationship_writeout(&
        icePressure, &
@@ -1361,16 +1599,16 @@ contains
        strain12, &
        stress11, &
        stress22, &
-       stress12)
+       stress12)!{{{
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         icePressure, &
-         strain11, &
-         strain22, &
-         strain12, &
-         stress11, &
-         stress22, &
-         stress12
+         icePressure, & !< Input: 
+         strain11, &    !< Input: 
+         strain22, &    !< Input: 
+         strain12, &    !< Input: 
+         stress11, &    !< Input: 
+         stress22, &    !< Input: 
+         stress12       !< Input: 
 
     integer :: &
          iTest
@@ -1392,11 +1630,11 @@ contains
 
     enddo ! iTest
 
-  end subroutine constitutive_relationship_writeout
+  end subroutine constitutive_relationship_writeout!}}}
 
   !--------------------------------------------------------------------------
 
-end module cice_dynamics_unit_tests
+end module cice_velocity_solver_unit_tests
 
 
 

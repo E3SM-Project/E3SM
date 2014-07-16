@@ -1,3 +1,15 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_mesh
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_mesh
 
   use mpas_grid_types
@@ -5,25 +17,39 @@ module cice_mesh
   implicit none
 
   private
+  save
+
   public :: &
-       init_boundary, &
-       calc_cell_vertices_at_vertex, &
-       normal_vectors, &
-       normal_vectors_polygon, &
-       dot_product_3space, &
-       grid_rotation_forward, &
-       latlon_vector_rotation_forward, &
-       latlon_vector_rotation_backward, &
-       latlon_from_xyz, &
-       interpolate_cell_to_vertex
+       cice_init_boundary, &
+       cice_cell_vertices_at_vertex, &
+       cice_normal_vectors, &
+       cice_normal_vectors_polygon, &
+       cice_dot_product_3space, &
+       cice_grid_rotation_forward, &
+       cice_latlon_vector_rotation_forward, &
+       cice_latlon_vector_rotation_backward, &
+       cice_latlon_from_xyz, &
+       cice_interpolate_cell_to_vertex
 
 contains
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_boundary
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
   
-  subroutine init_boundary(block)
+  subroutine cice_init_boundary(&
+       block)!{{{
 
-    type (block_type), intent(inout) :: block
+    type (block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -42,16 +68,29 @@ contains
     call interior_vertices(mesh, interiorVertex)
     call interior_cells(mesh, interiorCell)
 
-  end subroutine init_boundary
+  end subroutine cice_init_boundary!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  interior_vertices
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine interior_vertices(mesh, interiorVertex)
+  subroutine interior_vertices(&
+       mesh, &
+       interiorVertex)!{{{
 
-    type (MPAS_pool_type), pointer, intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     integer, dimension(:), intent(out) :: &
-         interiorVertex
+         interiorVertex !< Output: 
 
     integer :: &
          nInteriorAdjacentCells
@@ -104,16 +143,29 @@ contains
 
     enddo ! iVertex
 
-  end subroutine interior_vertices
+  end subroutine interior_vertices!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  interior_cells
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine interior_cells(mesh, interiorCell)
+  subroutine interior_cells(&
+       mesh, &
+       interiorCell)!{{{
 
-    type (MPAS_pool_type), pointer, intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     integer, dimension(:), intent(out) :: &
-         interiorCell
+         interiorCell !< Output: 
 
     integer :: &
          iCell, &
@@ -149,248 +201,33 @@ contains
 
     enddo ! iCell
 
-  end subroutine interior_cells
-
-  !-------------------------------------------------------------
-
-  subroutine boundary_cells(mesh, boundaryCell, boundaryCell2, interiorCell) 
-
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
-
-    integer, dimension(:), intent(out) :: &
-         boundaryCell, &
-         boundaryCell2, &
-         interiorCell
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         cellsOnCell
-         
-    integer :: &
-         iCell, &
-         iCellOnCell, &
-         iAdjacentCell, &
-         nAdjacentCells
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
-
-    do iCell = 1, nCells
-
-       boundaryCell(iCell) = 0
-       interiorCell(iCell) = 0
-
-       nAdjacentCells = 0
-
-       do iCellOnCell = 1, nEdgesOnCell(iCell)
-
-          iAdjacentCell = cellsOnCell(iCellOnCell,iCell)
-
-          if (iAdjacentCell <= nCells) then
-
-             nAdjacentCells = nAdjacentCells + 1
-
-          endif
-
-          if (nAdjacentCells == nEdgesOnCell(iCell)) interiorCell(iCell) = 1
-          if (nAdjacentCells <  nEdgesOnCell(iCell)) boundaryCell(iCell) = 1
-
-       enddo ! iCellOnCell
-
-    enddo ! iCell
-
-    do iCell = 1, nCells
-
-       boundaryCell2(iCell) = 0
-
-       if (boundaryCell(iCell) == 0) then
-
-          do iCellOnCell = 1, nEdgesOnCell(iCell)
-
-             iAdjacentCell = cellsOnCell(iCellOnCell,iCell)
-
-             if (boundaryCell(iAdjacentCell) == 1) then
-
-                boundaryCell2(iCell) = 1
-
-             endif
-
-          enddo ! iCellOnCell
-
-       endif
-
-    enddo ! iCell
-
-  end subroutine boundary_cells
-
-  !-------------------------------------------------------------
-
-  subroutine boundary_vertices(mesh, boundaryVertex, interiorVertex, interiorVertex2, boundaryCell)
-
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
-
-    integer, dimension(:), intent(out) :: &
-         boundaryVertex, & ! boundary vertices of boundary vertex triangles
-         interiorVertex, & ! all normal shaped interior vertices
-         interiorVertex2
-
-    integer, dimension(:), intent(in) :: &
-         boundaryCell
-
-    integer :: &
-         nInteriorAdjacentCells
-
-    integer, pointer :: &
-         nVertices, &
-         nCells, &
-         vertexDegree
-
-    integer, dimension(:,:), pointer :: &
-         cellsOnVertex
-
-    integer :: &
-         iVertex, &
-         iVertexDegree, &
-         iCell
-
-    logical :: &
-         linterior
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
-
-    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-
-    ! boundary vertices
-    do iVertex = 1, nVertices
-
-       boundaryVertex(iVertex) = 0
-       interiorVertex(iVertex) = 0
-       
-       nInteriorAdjacentCells = 0
-
-       do iVertexDegree = 1, vertexDegree
-
-          iCell = cellsOnVertex(iVertexDegree, iVertex)
-          
-          if (iCell >= 1 .and. iCell <= nCells) then
-             
-             nInteriorAdjacentCells = nInteriorAdjacentCells + 1
-             
-          endif
-          
-       enddo ! iVertexDegree
-
-       ! boundary vertices that have triangles
-       if (nInteriorAdjacentCells == 2) then
-
-          boundaryVertex(iVertex) = 1
-          
-       endif
-
-       ! vertex points we directly calculate on
-       if (nInteriorAdjacentCells == 3) then
-
-          interiorVertex(iVertex) = 1
-          
-       endif
-       
-    enddo ! iVertex
-
-
-    ! second interior vertices
-    do iVertex = 1, nVertices
-
-       interiorVertex2(iVertex) = 0
-
-       linterior = .true.
-
-       do iVertexDegree = 1, vertexDegree
-
-          iCell = cellsOnVertex(iVertexDegree, iVertex)
-          
-          if (boundaryCell(iCell) == 1) then
-             
-             linterior = .false.
-             
-          endif
-          
-       enddo ! iVertexDegree
-
-       if (linterior) interiorVertex2(iVertex) = 1
-
-    enddo ! iVertex
-
-  end subroutine boundary_vertices
-
-  !-------------------------------------------------------------
-
-  subroutine boundary_edges(mesh, boundaryEdge)
-
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
-
-    integer, dimension(:), intent(out) :: &
-         boundaryEdge
-
-    integer :: &
-         nInteriorAdjacentCells
-
-    integer, pointer :: &
-         nEdges, &
-         nCells
-
-    integer, dimension(:,:), pointer :: &
-         cellsOnEdge
-
-    integer :: &
-         iCell, &
-         iEdge, &
-         iCellsOnEdge
+  end subroutine interior_cells!}}}
+
+!-----------------------------------------------------------------------
+! mesh searches
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_cell_vertices_at_vertex
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_cell_vertices_at_vertex(&
+       mesh, &
+       cellVerticesAtVertex)!{{{
     
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
-
-    ! boundary edges
-    do iEdge = 1, nEdges
-       
-       do iCellsOnEdge = 1, 2
-          
-          iCell = cellsOnEdge(iCellsOnEdge,iEdge)
-          
-          if (iCell > nCells) then
-             boundaryEdge(iEdge) = 1
-          else
-             boundaryEdge(iEdge) = 0
-          endif
-          
-       enddo ! iCellsOnEdge
-
-    enddo ! iEdge
-    
-  end subroutine boundary_edges
-
-  !-------------------------------------------------------------
-  ! mesh searches
-  !-------------------------------------------------------------
-
-   subroutine calc_cell_vertices_at_vertex(mesh, cellVerticesAtVertex)
-
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     integer, dimension(:,:), intent(out) :: &
-         cellVerticesAtVertex
+         cellVerticesAtVertex !< Output: 
 
     integer, pointer :: &
          nVertices, &
@@ -409,7 +246,7 @@ contains
          iCell, &
          iVertexOnCell, &
          jVertex
-    
+
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
@@ -442,13 +279,25 @@ contains
 
     enddo ! iVertex
 
-   end subroutine calc_cell_vertices_at_vertex
+  end subroutine cice_cell_vertices_at_vertex!}}}
 
-  !-------------------------------------------------------------
-  ! normal vectors
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! normal vectors
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors(&
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_normal_vectors
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_normal_vectors(&
        mesh, &
        normalVectorPolygon, &
        normalVectorTriangle, &
@@ -456,33 +305,34 @@ contains
        rotateCartesianGrid, &
        removeMetricTerms, &
        latCellRotated, &
-       latVertexRotated)
+       latVertexRotated)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon, &
-         normalVectorTriangle
+         normalVectorPolygon, & !< Output: 
+         normalVectorTriangle   !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex
+         interiorVertex !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid, &
-         removeMetricTerms
+         rotateCartesianGrid, & !< Input: 
+         removeMetricTerms !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out), optional :: &
-         latCellRotated, &
-         latVertexRotated
+         latCellRotated, & !< Output: 
+         latVertexRotated  !< Output: 
 
-    call normal_vectors_polygon(&
+    call cice_normal_vectors_polygon(&
          mesh, &
          normalVectorPolygon, &
          rotateCartesianGrid, &
          removeMetricTerms, &
          latCellRotated)
     
-    call normal_vectors_triangle(&
+    call cice_normal_vectors_triangle(&
          mesh, &
          normalVectorTriangle, &
          interiorVertex, &
@@ -490,28 +340,39 @@ contains
          removeMetricTerms, &
          latVertexRotated)
 
-  end subroutine normal_vectors
+  end subroutine cice_normal_vectors!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_normal_vectors_polygon
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_polygon(&
+  subroutine cice_normal_vectors_polygon(&
        mesh, &
        normalVectorPolygon, &
        rotateCartesianGrid, &
        removeMetricTerms, &
-       latCellRotated)
+       latCellRotated)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon
+         normalVectorPolygon !< Output: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid, &
-         removeMetricTerms
+         rotateCartesianGrid, & !< Input: 
+         removeMetricTerms !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out), optional :: &
-         latCellRotated
+         latCellRotated !< Output: 
 
     logical, pointer :: &
          on_a_sphere
@@ -525,32 +386,43 @@ contains
        if (present(latCellRotated)) latCellRotated = 0.0_RKIND
     endif
 
-  end subroutine normal_vectors_polygon
+  end subroutine cice_normal_vectors_polygon!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_normal_vectors_triangle
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_triangle(&
+  subroutine cice_normal_vectors_triangle(&
        mesh, &
        normalVectorTriangle, &
        interiorVertex, &
        rotateCartesianGrid, &
        removeMetricTerms, &
-       latVertexRotated)
+       latVertexRotated)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle
+         normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex
+         interiorVertex !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid, &
-         removeMetricTerms
+         rotateCartesianGrid, & !< Input: 
+         removeMetricTerms !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out), optional :: &
-         latVertexRotated
+         latVertexRotated !< Output: 
 
     logical, pointer :: &
          on_a_sphere
@@ -564,16 +436,29 @@ contains
        if (present(latVertexRotated)) latVertexRotated = 0.0_RKIND
     endif
 
-  end subroutine normal_vectors_triangle
+  end subroutine cice_normal_vectors_triangle!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_planar_polygon
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_planar_polygon(mesh, normalVectorPolygon)
+  subroutine normal_vectors_planar_polygon(&
+       mesh, &
+       normalVectorPolygon)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon
+         normalVectorPolygon !< Output: 
 
     integer, pointer :: &
          nCells
@@ -624,19 +509,33 @@ contains
 
     enddo ! iCell
 
-  end subroutine normal_vectors_planar_polygon
+  end subroutine normal_vectors_planar_polygon!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_planar_triangle
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
+  subroutine normal_vectors_planar_triangle(&
+       mesh, &
+       normalVectorTriangle, &
+       interiorVertex)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle
+         normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex
+         interiorVertex !< Input: 
 
     integer, pointer :: &
          nVertices, &
@@ -691,28 +590,39 @@ contains
 
     enddo ! iVertex
 
-  end subroutine normal_vectors_planar_triangle
+  end subroutine normal_vectors_planar_triangle!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_spherical_polygon_metric
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine normal_vectors_spherical_polygon_metric(&
        mesh, &
        rotateCartesianGrid, &
        removeMetricTerms, &
        normalVectorPolygon, &
-       latCellRotatedOut)
+       latCellRotatedOut)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid, &
-         removeMetricTerms
+         rotateCartesianGrid, & !< Input: 
+         removeMetricTerms !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon
+         normalVectorPolygon !< Output: 
 
     real(kind=RKIND), dimension(:), intent(out), optional :: &
-         latCellRotatedOut
+         latCellRotatedOut !< Output: 
     
     real(kind=RKIND), dimension(3) :: &
          cellCentreRotated, &
@@ -768,9 +678,6 @@ contains
          iVertex1, &
          iVertex2
 
-    real(kind=RKIND), parameter :: &
-         rad_to_deg = 180.0_RKIND / 3.14159265359_RKIND
-
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
@@ -798,9 +705,10 @@ contains
     do iCell = 1, nCells
 
        ! rotate the cell centre to rotated geographical grid
-       call grid_rotation_forward(cellCentreRotated(1), cellCentreRotated(2), cellCentreRotated(3), &
-                                  xCell(iCell),         yCell(iCell),         zCell(iCell), &
-                                  rotateCartesianGrid)
+       call cice_grid_rotation_forward(&
+            cellCentreRotated(1), cellCentreRotated(2), cellCentreRotated(3), &
+            xCell(iCell),         yCell(iCell),         zCell(iCell), &
+            rotateCartesianGrid)
 
        ! calculate lon and lat of the cell centre in the rotated coordinate system
        lonCellRotated = atan2(cellCentreRotated(2), cellCentreRotated(1))
@@ -841,17 +749,20 @@ contains
           iVertex2 = verticesOnEdge(2,iEdge)
 
           ! perform grid rotations
-          call grid_rotation_forward(edgeRotated(1), edgeRotated(2), edgeRotated(3), &
-                                     xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               edgeRotated(1), edgeRotated(2), edgeRotated(3), &
+               xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
+               rotateCartesianGrid)
           
-          call grid_rotation_forward(vertexRotated1(1), vertexRotated1(2), vertexRotated1(3), &
-                                     xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               vertexRotated1(1), vertexRotated1(2), vertexRotated1(3), &
+               xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
+               rotateCartesianGrid)
 
-          call grid_rotation_forward(vertexRotated2(1), vertexRotated2(2), vertexRotated2(3), &
-                                     xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               vertexRotated2(1), vertexRotated2(2), vertexRotated2(3), &
+               xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
+               rotateCartesianGrid)
 
           ! rotate to equator in new coords
           edgeEquator    = matmul(yRotationMatrix, matmul(zRotationMatrix, edgeRotated))
@@ -883,9 +794,9 @@ contains
           eastwardsVector = eastwardsVector / &
                             sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-          call dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
-                                  normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
-                                  eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+          call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
+                                       normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                       eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
           normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
                                                    * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
@@ -896,19 +807,33 @@ contains
        
     enddo ! iCell
 
-  end subroutine normal_vectors_spherical_polygon_metric
+  end subroutine normal_vectors_spherical_polygon_metric!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_spherical_polygon
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_polygon(mesh, rotateCartesianGrid, normalVectorPolygon)
+  subroutine normal_vectors_spherical_polygon(&
+       mesh, &
+       rotateCartesianGrid, &
+       normalVectorPolygon)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon
+         normalVectorPolygon !< Output: 
 
     real(kind=RKIND), dimension(3) :: &
          normalGreatCircle, &
@@ -948,9 +873,6 @@ contains
          iVertex1, &
          iVertex2
 
-    real(kind=RKIND), parameter :: &
-         rad_to_deg = 180.0_RKIND / 3.14159265359_RKIND
-
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
@@ -975,17 +897,20 @@ contains
           iVertex2 = verticesOnEdge(2,iEdge)
 
           ! perform grid rotations
-          call grid_rotation_forward(xEdge0,       yEdge0,       zEdge0, &
-                                     xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               xEdge0,       yEdge0,       zEdge0, &
+               xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
+               rotateCartesianGrid)
           
-          call grid_rotation_forward(xVertex1,          yVertex1,          zVertex1, &
-                                     xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               xVertex1,          yVertex1,          zVertex1, &
+               xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
+               rotateCartesianGrid)
 
-          call grid_rotation_forward(xVertex2,          yVertex2,          zVertex2, &
-                                     xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               xVertex2,          yVertex2,          zVertex2, &
+               xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
+               rotateCartesianGrid)
 
           ! form great circle plane normal vector
           call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
@@ -1009,9 +934,9 @@ contains
           eastwardsVector = eastwardsVector / &
                             sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-          call dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
-                                  normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
-                                  eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+          call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
+                                       normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                       eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
           normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
                                                    * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
@@ -1020,9 +945,19 @@ contains
        
     enddo ! iCell
 
-  end subroutine normal_vectors_spherical_polygon
+  end subroutine normal_vectors_spherical_polygon!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_spherical_triangle_metric
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine normal_vectors_spherical_triangle_metric(&
        mesh, &
@@ -1030,22 +965,23 @@ contains
        removeMetricTerms, &
        normalVectorTriangle, &
        interiorVertex, &
-       latVertexRotatedOut)
+       latVertexRotatedOut)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid, &
-         removeMetricTerms
+         rotateCartesianGrid, & !< Input: 
+         removeMetricTerms !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle
+         normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex
+         interiorVertex !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out), optional :: &
-         latVertexRotatedOut
+         latVertexRotatedOut !< Output: 
 
     real(kind=RKIND), dimension(3) :: &
          vertexRotated, &
@@ -1099,11 +1035,6 @@ contains
          iCell1, &
          iCell2
 
-    real(kind=RKIND), parameter :: &
-         pi = 3.14159265359_RKIND, &
-         deg_to_rad = pi / 180.0_RKIND, &
-         rad_to_deg = 180.0_RKIND / pi
-
     yRotationMatrix = 0.0_RKIND
     zRotationMatrix = 0.0_RKIND
 
@@ -1137,9 +1068,10 @@ contains
        if (interiorVertex(iVertex) == 1) then
 
           ! rotate the cell centre to rotated geographical grid
-          call grid_rotation_forward(vertexRotated(1), vertexRotated(2), vertexRotated(3), &
-                                     xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
-                                     rotateCartesianGrid)
+          call cice_grid_rotation_forward(&
+               vertexRotated(1), vertexRotated(2), vertexRotated(3), &
+               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+               rotateCartesianGrid)
  
           ! calculate lon and lat of the cell centre in the rotated coordinate system
           lonVertexRotated = atan2(vertexRotated(2), vertexRotated(1))
@@ -1180,17 +1112,20 @@ contains
              iCell2 = cellsOnEdge(2,iEdge)
 
              ! perform grid rotations
-             call grid_rotation_forward(edgeRotated(1), edgeRotated(2), edgeRotated(3), &
-                                        xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
-                                        rotateCartesianGrid)
+             call cice_grid_rotation_forward(&
+                  edgeRotated(1), edgeRotated(2), edgeRotated(3), &
+                  xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
+                  rotateCartesianGrid)
 
-             call grid_rotation_forward(cellRotated1(1), cellRotated1(2), cellRotated1(3), &
-                                        xCell(iCell1),   yCell(iCell1),   zCell(iCell1), &
-                                        rotateCartesianGrid)
+             call cice_grid_rotation_forward(&
+                  cellRotated1(1), cellRotated1(2), cellRotated1(3), &
+                  xCell(iCell1),   yCell(iCell1),   zCell(iCell1), &
+                  rotateCartesianGrid)
 
-             call grid_rotation_forward(cellRotated2(1), cellRotated2(2), cellRotated2(3), &
-                                        xCell(iCell2),   yCell(iCell2),   zCell(iCell2), &
-                                        rotateCartesianGrid)
+             call cice_grid_rotation_forward(&
+                  cellRotated2(1), cellRotated2(2), cellRotated2(3), &
+                  xCell(iCell2),   yCell(iCell2),   zCell(iCell2), &
+                  rotateCartesianGrid)
 
              ! rotate to equator in new coords
              edgeEquator  = matmul(yRotationMatrix, matmul(zRotationMatrix, edgeRotated))
@@ -1222,9 +1157,9 @@ contains
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
              
-             call dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
-                                     normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
-                                     eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+             call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
+                                          normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                          eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
              normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
                                                            * sqrt(1.0_RKIND - max(min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
@@ -1237,22 +1172,37 @@ contains
 
     enddo ! iVertex
 
-  end subroutine normal_vectors_spherical_triangle_metric
+  end subroutine normal_vectors_spherical_triangle_metric!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_spherical_triangle
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_triangle(mesh, rotateCartesianGrid, normalVectorTriangle, interiorVertex)
+  subroutine normal_vectors_spherical_triangle(&
+       mesh, &
+       rotateCartesianGrid, &
+       normalVectorTriangle, &
+       interiorVertex)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle
+         normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex
+         interiorVertex !< Input: 
 
     real(kind=RKIND), dimension(3) :: &
          normalGreatCircle, &
@@ -1316,17 +1266,20 @@ contains
              iCell2 = cellsOnEdge(2,iEdge)
 
              ! perform grid rotations
-             call grid_rotation_forward(xEdge0,       yEdge0,       zEdge0, &
-                                        xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
-                                        rotateCartesianGrid)
+             call cice_grid_rotation_forward(&
+                  xEdge0,       yEdge0,       zEdge0, &
+                  xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
+                  rotateCartesianGrid)
 
-             call grid_rotation_forward(xCell1,        yCell1,        zCell1, &
-                                        xCell(iCell1), yCell(iCell1), zCell(iCell1), &
-                                        rotateCartesianGrid)
+             call cice_grid_rotation_forward(&
+                  xCell1,        yCell1,        zCell1, &
+                  xCell(iCell1), yCell(iCell1), zCell(iCell1), &
+                  rotateCartesianGrid)
 
-             call grid_rotation_forward(xCell2,        yCell2,        zCell2, &
-                                        xCell(iCell2), yCell(iCell2), zCell(iCell2), &
-                                        rotateCartesianGrid)
+             call cice_grid_rotation_forward(&
+                  xCell2,        yCell2,        zCell2, &
+                  xCell(iCell2), yCell(iCell2), zCell(iCell2), &
+                  rotateCartesianGrid)
 
              ! form great circle plane normal vector
              call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
@@ -1344,9 +1297,9 @@ contains
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
              
-             call dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
-                                     normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
-                                     eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+             call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
+                                          normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                          eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
              normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3))&
                                                            * sqrt(1.0_RKIND - min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND)**2)
@@ -1357,54 +1310,89 @@ contains
 
     enddo ! iVertex
 
-  end subroutine normal_vectors_spherical_triangle
+  end subroutine normal_vectors_spherical_triangle!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_dot_product_3space
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine dot_product_3space(dot, x1, y1, z1, x2, y2, z2)
+  subroutine cice_dot_product_3space(dot, x1, y1, z1, x2, y2, z2)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         dot
+         dot !< Output: 
 
     real(kind=RKIND), intent(in) :: &
-         x1, y1, z1, &
-         x2, y2, z2
+         x1, y1, z1, & !< Input: 
+         x2, y2, z2    !< Input: 
 
     dot = x1 * x2 + y1 * y2 + z1 * z2
 
-  end subroutine dot_product_3space
+  end subroutine cice_dot_product_3space!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cross_product_3space
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine cross_product_3space(cp1, cp2, cp3, x1, y1, z1, x2, y2, z2)
+  subroutine cross_product_3space(cp1, cp2, cp3, x1, y1, z1, x2, y2, z2)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         cp1, cp2, cp3
+         cp1, cp2, cp3 !< Output: 
 
     real(kind=RKIND), intent(in) :: &
-         x1, y1, z1, &
-         x2, y2, z2
+         x1, y1, z1, & !< Input: 
+         x2, y2, z2    !< Input: 
 
     cp1 = y1 * z2 - z1 * y2
     cp2 = z1 * x2 - x1 * z2
     cp3 = x1 * y2 - y1 * x2
 
-  end subroutine cross_product_3space
+  end subroutine cross_product_3space!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_spherical_polygon_2
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_polygon_2(mesh, rotateCartesianGrid, normalVectorPolygon, latCellRotated)
+  subroutine normal_vectors_spherical_polygon_2(&
+       mesh, &
+       rotateCartesianGrid, &
+       normalVectorPolygon, &
+       latCellRotated)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorPolygon ! TWO maxEdges nCells
+         normalVectorPolygon !< Output: TWO maxEdges nCells
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         latCellRotated
+         latCellRotated !< Output: 
     
     integer :: &
          iCell, &
@@ -1450,7 +1438,7 @@ contains
     do iCell = 1, nCells
 
        ! get rotated three space positions
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xCell0,       yCell0,       zCell0, &
             xCell(iCell), yCell(iCell), zCell(iCell), &
             rotateCartesianGrid)
@@ -1471,25 +1459,41 @@ contains
 
     enddo ! iCell
 
-  end subroutine normal_vectors_spherical_polygon_2
+  end subroutine normal_vectors_spherical_polygon_2!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  normal_vectors_spherical_triangle_2
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
   
-  subroutine normal_vectors_spherical_triangle_2(mesh, rotateCartesianGrid, normalVectorTriangle, latVertexRotated, interiorVertex)
+  subroutine normal_vectors_spherical_triangle_2(&
+       mesh, &
+       rotateCartesianGrid, &
+       normalVectorTriangle, &
+       latVertexRotated, &
+       interiorVertex)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         normalVectorTriangle ! TWO vertexDegree nVertices
+         normalVectorTriangle !< Output: TWO vertexDegree nVertices
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         latVertexRotated
+         latVertexRotated !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         interiorVertex
+         interiorVertex !< Input: 
 
     integer :: &
          iVertex, &
@@ -1530,7 +1534,7 @@ contains
        if (interiorVertex(iVertex) == 1) then
 
           ! get rotated three space positions
-          call grid_rotation_forward(&
+          call cice_grid_rotation_forward(&
                xVertex0,         yVertex0,         zVertex0, &
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)
@@ -1553,20 +1557,37 @@ contains
 
     enddo ! iVertex
 
-  end subroutine normal_vectors_spherical_triangle_2
+  end subroutine normal_vectors_spherical_triangle_2!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  project_3D_vector_onto_local_2D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine project_3D_vector_onto_local_2D(normalVector2D, normalVector3D, xPoint, yPoint, zPoint)
+  subroutine project_3D_vector_onto_local_2D(&
+       normalVector2D, &
+       normalVector3D, &
+       xPoint, &
+       yPoint, &
+       zPoint)!{{{
 
     real(kind=RKIND), dimension(2), intent(out) :: &
-         normalVector2D
+         normalVector2D !< Output: 
 
     real(kind=RKIND), dimension(3), intent(in) :: &
-         normalVector3D
+         normalVector3D !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         xPoint, yPoint, zPoint
+         xPoint, & !< Input: 
+         yPoint, & !< Input: 
+         zPoint    !< Input: 
 
     real(kind=RKIND), dimension(3) :: &
          unitVectorEast, &
@@ -1582,13 +1603,13 @@ contains
          unitVectorNorth)
 
     ! project normal 3D vector onto U 2D direction - eastwards
-    call dot_product_3space(&
+    call cice_dot_product_3space(&
          normalVector2D(1), &
          normalVector3D(1), normalVector3D(2), normalVector3D(3), &
          unitVectorEast(1), unitVectorEast(2), unitVectorEast(3))
 
     ! project normal 3D vector onto V 2D direction - northwards
-    call dot_product_3space(&
+    call cice_dot_product_3space(&
          normalVector2D(2), &
          normalVector3D(1),  normalVector3D(2),  normalVector3D(3), &
          unitVectorNorth(1), unitVectorNorth(2), unitVectorNorth(3))
@@ -1600,26 +1621,47 @@ contains
     normalVector2D(1) = normalVector2D(1) / vectorMagnitude
     normalVector2D(2) = normalVector2D(2) / vectorMagnitude
 
-  end subroutine project_3D_vector_onto_local_2D
+  end subroutine project_3D_vector_onto_local_2D!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_polygon_side_normal_3D_vector
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
+  subroutine get_polygon_side_normal_3D_vector(&
+       mesh, &
+       iCell, &
+       iEdgeOnCell, &
+       xCell0, &
+       yCell0, &
+       zCell0, &
+       rotateCartesianGrid, &
+       normalVector3D)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     integer, intent(in) :: &
-         iCell, &
-         iEdgeOnCell
+         iCell, &    !< Input: 
+         iEdgeOnCell !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         xCell0, yCell0, zCell0
+         xCell0, & !< Input: 
+         yCell0, & !< Input: 
+         zCell0    !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(3), intent(out) :: &
-         normalVector3D
+         normalVector3D !< Output: 
 
     integer :: &
          iCell2, &
@@ -1665,7 +1707,7 @@ contains
        ! interior
 
        ! get rotated three space positions
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xCell2,        yCell2,        zCell2, &
             xCell(iCell2), yCell(iCell2), zCell(iCell2), &
             rotateCartesianGrid)
@@ -1681,7 +1723,7 @@ contains
        iEdge = edgesOnCell(iEdgeOnCell, iCell)
 
        ! get rotated three space positions
-       call grid_rotation_forward(&
+       call cice_grid_rotation_forward(&
             xEdge0,       yEdge0,       zEdge0, &
             xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
             rotateCartesianGrid)
@@ -1692,26 +1734,47 @@ contains
 
     endif
 
-  end subroutine get_polygon_side_normal_3D_vector
+  end subroutine get_polygon_side_normal_3D_vector!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_triangle_side_normal_3D_vector
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
+  subroutine get_triangle_side_normal_3D_vector(&
+       mesh, &
+       iVertex, &
+       iVertexDegree, &
+       xVertex0, &
+       yVertex0, &
+       zVertex0, &
+       rotateCartesianGrid, &
+       normalVector3D)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     integer, intent(in) :: &
-         iVertex, &
-         iVertexDegree
+         iVertex, &    !< Input: 
+         iVertexDegree !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         xVertex0, yVertex0, zVertex0
+         xVertex0, & !< Input: 
+         yVertex0, & !< Input: 
+         zVertex0    !< Input: 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND), dimension(3), intent(out) :: &
-         normalVector3D
+         normalVector3D !< Output: 
 
     integer :: &
          iEdge, &
@@ -1746,7 +1809,7 @@ contains
     enddo ! iVertexOnEdge
     
     ! get rotated three space positions
-    call grid_rotation_forward(&
+    call cice_grid_rotation_forward(&
          xVertex2,          yVertex2,          zVertex2, &
          xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
          rotateCartesianGrid)
@@ -1755,21 +1818,35 @@ contains
     normalVector3D(2) = yVertex2 - yVertex0
     normalVector3D(3) = zVertex2 - zVertex0
 
-  end subroutine get_triangle_side_normal_3D_vector
-  
-  !-------------------------------------------------------------
+  end subroutine get_triangle_side_normal_3D_vector!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  local_eastern_and_northern_unit_vectors
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine local_eastern_and_northern_unit_vectors(&
-       xPoint, yPoint, zPoint, &
+       xPoint, &
+       yPoint, &
+       zPoint, &
        unitVectorEast, &
-       unitVectorNorth)
+       unitVectorNorth)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         xPoint, yPoint, zPoint
+         xPoint, & !< Input: 
+         yPoint, & !< Input: 
+         zPoint    !< Input: 
 
     real(kind=RKIND), dimension(3), intent(out) :: &
-         unitVectorEast, &
-         unitVectorNorth
+         unitVectorEast, & !< Output: 
+         unitVectorNorth   !< Output: 
 
     real(kind=RKIND) :: &
          vectorMagnitude
@@ -1806,25 +1883,37 @@ contains
 
     endif
 
-  end subroutine local_eastern_and_northern_unit_vectors
+  end subroutine local_eastern_and_northern_unit_vectors!}}}
 
-  !-------------------------------------------------------------
-  ! rotated lat-lon grid
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! rotated lat-lon grid
+!-----------------------------------------------------------------------
 
-  subroutine grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_grid_rotation_forward
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)!{{{
 
     ! rotate xyz coordinates from geographical grid to rotated grid with poles on real equator
 
     real(kind=RKIND), intent(out) :: &
-         xp, & ! x position of point on rotated grid
-         yp, & ! y position of point on rotated grid
-         zp    ! z position of point on rotated grid
+         xp, & !< Output: x position of point on rotated grid
+         yp, & !< Output: y position of point on rotated grid
+         zp    !< Output: z position of point on rotated grid
 
     real(kind=RKIND), intent(in) :: &
-         x,  & ! x position of point on geographical grid
-         y,  & ! y position of point on geographical grid
-         z     ! z position of point on geographical grid
+         x,  & !< Input: x position of point on geographical grid
+         y,  & !< Input: y position of point on geographical grid
+         z     !< Input: z position of point on geographical grid
 
     logical, intent(in) :: &
          rotateCartesianGrid
@@ -1843,23 +1932,33 @@ contains
 
     endif
 
-  end subroutine grid_rotation_forward
+  end subroutine cice_grid_rotation_forward!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  grid_rotation_backward
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine grid_rotation_backward(x, y, z, xp, yp, zp, rotateCartesianGrid)
+  subroutine grid_rotation_backward(x, y, z, xp, yp, zp, rotateCartesianGrid)!{{{
 
     ! rotate xyz coordinates from rotated grid with poles on real equator to geographical grid
 
     real(kind=RKIND), intent(out) :: &
-         x,  & ! x position of point on geographical grid
-         y,  & ! y position of point on geographical grid
-         z     ! z position of point on geographical grid
+         x,  & !< Output: x position of point on geographical grid
+         y,  & !< Output: y position of point on geographical grid
+         z     !< Output: z position of point on geographical grid
 
     real(kind=RKIND), intent(in) :: &
-         xp, & ! x position of point on rotated grid
-         yp, & ! y position of point on rotated grid
-         zp    ! z position of point on rotated grid
+         xp, & !< Input: x position of point on rotated grid
+         yp, & !< Input: y position of point on rotated grid
+         zp    !< Input: z position of point on rotated grid
 
     logical, intent(in) :: &
          rotateCartesianGrid
@@ -1878,23 +1977,33 @@ contains
 
     endif
 
-  end subroutine grid_rotation_backward
+  end subroutine grid_rotation_backward!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  xyz_vector_rotation_forward
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz, rotateCartesianGrid)
+  subroutine xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz, rotateCartesianGrid)!{{{
 
     ! rotate a xyz vector from geographical grid to rotated grid with poles on real equator
 
     real(kind=RKIND), intent(out) :: &
-         vxp, & ! x component of velocity vector on rotated grid
-         vyp, & ! y component of velocity vector on rotated grid
-         vzp    ! z component of velocity vector on rotated grid
+         vxp, & !< Output: x component of velocity vector on rotated grid
+         vyp, & !< Output: y component of velocity vector on rotated grid
+         vzp    !< Output: z component of velocity vector on rotated grid
 
     real(kind=RKIND), intent(in) :: &
-         vx,  & ! x component of velocity vector on geographical grid
-         vy,  & ! y component of velocity vector on geographical grid
-         vz     ! z component of velocity vector on geographical grid
+         vx,  & !< Input: x component of velocity vector on geographical grid
+         vy,  & !< Input: y component of velocity vector on geographical grid
+         vz     !< Input: z component of velocity vector on geographical grid
     
     logical, intent(in) :: &
          rotateCartesianGrid
@@ -1913,23 +2022,33 @@ contains
 
     endif
 
-  end subroutine xyz_vector_rotation_forward
+  end subroutine xyz_vector_rotation_forward!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  xyz_vector_rotation_backward
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp, rotateCartesianGrid)
+  subroutine xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp, rotateCartesianGrid)!{{{
 
     ! rotate xyz vector from rotated grid with poles on real equator to geographical grid
 
     real(kind=RKIND), intent(out) :: &
-         vx,  & ! x component of velocity vector on geographical grid
-         vy,  & ! y component of velocity vector on geographical grid
-         vz     ! z component of velocity vector on geographical grid
+         vx,  & !< Output: x component of velocity vector on geographical grid
+         vy,  & !< Output: y component of velocity vector on geographical grid
+         vz     !< Output: z component of velocity vector on geographical grid
 
     real(kind=RKIND), intent(in) :: &
-         vxp, & ! x component of velocity vector on rotated grid
-         vyp, & ! y component of velocity vector on rotated grid
-         vzp    ! z component of velocity vector on rotated grid
+         vxp, & !< Input: x component of velocity vector on rotated grid
+         vyp, & !< Input: y component of velocity vector on rotated grid
+         vzp    !< Input: z component of velocity vector on rotated grid
 
     logical, intent(in) :: &
          rotateCartesianGrid
@@ -1948,30 +2067,40 @@ contains
 
     endif
 
-  end subroutine xyz_vector_rotation_backward
+  end subroutine xyz_vector_rotation_backward!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_latlon_vector_rotation_forward
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r, rotateCartesianGrid)
+  subroutine cice_latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r, rotateCartesianGrid)!{{{
 
     ! rotate a latlon vector from geographical grid to rotated grid with poles on real equator
 
     real(kind=RKIND), intent(out) :: &
-         up,   & ! u component of velocity in rotated grid
-         vp      ! v component of velocity in rotated grid
+         up,   & !< Output: u component of velocity in rotated grid
+         vp      !< Output: v component of velocity in rotated grid
 
     real(kind=RKIND), intent(in) :: &
-         u,    & ! u component of velocity on geographical grid
-         v,    & ! v component of velocity on geographical grid
-         lat,  & ! latitude of point on geographical grid
-         lon,  & ! longitude of point on geographical grid
-         x,    & ! x position of point on geographical grid
-         y,    & ! y position of point on geographical grid
-         z,    & ! z position of point on geographical grid
-         r       ! radius of the earth 
+         u,    & !< Input: u component of velocity on geographical grid
+         v,    & !< Input: v component of velocity on geographical grid
+         lat,  & !< Input: latitude of point on geographical grid
+         lon,  & !< Input: longitude of point on geographical grid
+         x,    & !< Input: x position of point on geographical grid
+         y,    & !< Input: y position of point on geographical grid
+         z,    & !< Input: z position of point on geographical grid
+         r       !< Input: radius of the earth 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND) :: &
          xp,   & ! x position of point on rotated grid
@@ -1987,10 +2116,10 @@ contains
          vzp     ! z component of velocity vector on rotated grid
 
     ! perform rotation of the point from geographical grid to rotated grid
-    call grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
+    call cice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! calculate latitude and longitude of the point in the rotated grid
-    call latlon_from_xyz(latp, lonp, xp, yp, zp, r)
+    call cice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
 
     ! convert lat lon vector to xyz vector on geographical grid
     call latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
@@ -2001,30 +2130,40 @@ contains
     ! convert xyz vector to lat lon vector on rotated grid
     call xyz_vector_to_latlon_vector(up, vp, vxp, vyp, vzp, latp, lonp)
 
-  end subroutine latlon_vector_rotation_forward
+  end subroutine cice_latlon_vector_rotation_forward!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_latlon_vector_rotation_backward
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r, rotateCartesianGrid)
+  subroutine cice_latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r, rotateCartesianGrid)!{{{
 
     ! rotate latlon vector from rotated grid with poles on real equator to geographical grid
 
     real(kind=RKIND), intent(out) :: &
-         u,    & ! u component of velocity on geographical grid
-         v       ! v component of velocity on geographical grid
+         u,    & !< Output: u component of velocity on geographical grid
+         v       !< Output: v component of velocity on geographical grid
 
     real(kind=RKIND), intent(in) :: &
-         up,   & ! u component of velocity in rotated grid
-         vp,   & ! v component of velocity in rotated grid
-         lat,  & ! latitude of point on geographical grid
-         lon,  & ! longitude of point on geographical grid
-         x,    & ! x position of point on geographical grid
-         y,    & ! y position of point on geographical grid
-         z,    & ! z position of point on geographical grid
-         r       ! radius of the earth 
+         up,   & !< Input: u component of velocity in rotated grid
+         vp,   & !< Input: v component of velocity in rotated grid
+         lat,  & !< Input: latitude of point on geographical grid
+         lon,  & !< Input: longitude of point on geographical grid
+         x,    & !< Input: x position of point on geographical grid
+         y,    & !< Input: y position of point on geographical grid
+         z,    & !< Input: z position of point on geographical grid
+         r       !< Input: radius of the earth 
 
     logical, intent(in) :: &
-         rotateCartesianGrid
+         rotateCartesianGrid !< Input: 
 
     real(kind=RKIND) :: &
          xp,   & ! x position of point on rotated grid
@@ -2040,10 +2179,10 @@ contains
          vzp     ! z component of velocity vector on rotated grid
 
     ! perform rotation of the point from geographical grid to rotated grid
-    call grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
+    call cice_grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! calculate latitude and longitude of the point in the rotated grid
-    call latlon_from_xyz(latp, lonp, xp, yp, zp, r)
+    call cice_latlon_from_xyz(latp, lonp, xp, yp, zp, r)
 
     ! convert lat lon vector to xyz vector on rotated grid
     call latlon_vector_to_xyz_vector(vxp, vyp, vzp, up, vp, latp, lonp)
@@ -2054,93 +2193,137 @@ contains
     ! convert xyz vector to lat lon vector on geographical grid
     call xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
      
-  end subroutine latlon_vector_rotation_backward
+  end subroutine cice_latlon_vector_rotation_backward!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  latlon_vector_to_xyz_vector
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
+  subroutine latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)!{{{
 
     ! convert a latlon vector to a xyz vector
 
     real(kind=RKIND), intent(out) :: &
-         vx,  & ! x component of velocity vector
-         vy,  & ! y component of velocity vector
-         vz     ! z component of velocity vector
+         vx,  & !< Output: x component of velocity vector
+         vy,  & !< Output: y component of velocity vector
+         vz     !< Output: z component of velocity vector
 
     real(kind=RKIND), intent(in) :: &
-         u,   & ! u component of velocity
-         v,   & ! v component of velocity
-         lat, & ! latitude of point 
-         lon    ! longitude of point 
+         u,   & !< Input: u component of velocity
+         v,   & !< Input: v component of velocity
+         lat, & !< Input: latitude of point 
+         lon    !< Input: longitude of point 
 
     vx = (-u) * sin(lon) - v * sin(lat) * cos(lon)
     vy =   u  * cos(lon) - v * sin(lat) * sin(lon)
     vz =                   v * cos(lat)
 
-  end subroutine latlon_vector_to_xyz_vector
+  end subroutine latlon_vector_to_xyz_vector!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  xyz_vector_to_latlon_vector
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
+  subroutine xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)!{{{
 
     ! convert a xyz vector vector to a latlon vector
 
     real(kind=RKIND), intent(out) :: &
-         u,   & ! u component of velocity
-         v      ! v component of velocity
+         u,   & !< Output: u component of velocity
+         v      !< Output: v component of velocity
 
     real(kind=RKIND), intent(in) :: &
-         vx,  & ! x component of velocity vector
-         vy,  & ! y component of velocity vector
-         vz,  & ! z component of velocity vector
-         lat, & ! latitude of point 
-         lon    ! longitude of point 
+         vx,  & !< Input: x component of velocity vector
+         vy,  & !< Input: y component of velocity vector
+         vz,  & !< Input: z component of velocity vector
+         lat, & !< Input: latitude of point 
+         lon    !< Input: longitude of point 
 
     u = (-sin(lon)) * vx + &
           cos(lon)  * vy
-    
-    !write(*,*) 1, (-sin(lat)) * cos(lon), vx, (-sin(lat)) * cos(lon) * vx, (-sin(lat)) * cos(lon),  vy, (-sin(lat)) * cos(lon) * vy, cos(lat),  vz, cos(lat)  * vz
 
     v = (-sin(lat)) * cos(lon) * vx + &
         (-sin(lat)) * sin(lon) * vy + &
           cos(lat)  * vz
 
-  end subroutine xyz_vector_to_latlon_vector
+  end subroutine xyz_vector_to_latlon_vector!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_latlon_from_xyz
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine latlon_from_xyz(lat, lon, x, y, z, r)
+  subroutine cice_latlon_from_xyz(lat, lon, x, y, z, r)!{{{
 
     ! given xyz coordinates determine the latitude and longitude
 
     real(kind=RKIND), intent(out) :: &
-         lat, & ! latitude of point 
-         lon    ! longitude of point 
+         lat, & !< Output: latitude of point 
+         lon    !< Output: longitude of point 
 
     real(kind=RKIND), intent(in) :: &
-         x,   & ! x position of point
-         y,   & ! y position of point
-         z,   & ! z position of point
-         r      ! radius of earth
+         x,   & !< Input: x position of point
+         y,   & !< Input: y position of point
+         z,   & !< Input: z position of point
+         r      !< Input: radius of earth
 
     lon = atan2(y, x)
     lat = asin(z/r)
 
-  end subroutine latlon_from_xyz
+  end subroutine cice_latlon_from_xyz!}}}
 
-  !-------------------------------------------------------------
-  ! interpolaton
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! interpolaton
+!-----------------------------------------------------------------------
 
-  subroutine interpolate_cell_to_vertex(mesh, variableVertex, variableCell)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_interpolate_cell_to_vertex
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+  subroutine cice_interpolate_cell_to_vertex(&
+       mesh, &
+       variableVertex, &
+       variableCell)!{{{
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         variableVertex
+         variableVertex !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         variableCell
+         variableCell !< Input: 
 
     real(kind=RKIND) :: &
          totalArea
@@ -2187,8 +2370,6 @@ contains
           variableVertex(iVertex) = variableVertex(iVertex) + areaCell(iCell) * variableCell(iCell)
           totalArea = totalArea + areaCell(iCell)
 
-          !write(*,*) iVertex, iVertexDegree, iCell, areaCell(iCell), variableCell(iCell)
-
        enddo ! iVertexDegree
 
        variableVertex(iVertex) = variableVertex(iVertex) / totalArea
@@ -2197,69 +2378,8 @@ contains
 
     enddo ! iVertex
 
-  end subroutine interpolate_cell_to_vertex
+  end subroutine cice_interpolate_cell_to_vertex!}}}
 
-  !-------------------------------------------------------------
-  ! scale unit sphere to physical sphere
-  !-------------------------------------------------------------
-
-  subroutine scale_unit_sphere(mesh)
-
-    type(MPAS_pool_type), pointer :: mesh
-
-    real(kind=RKIND), pointer :: &
-         sphere_radius
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         xCell, &
-         yCell, &
-         zCell, &
-         xEdge, &
-         yEdge, &
-         zEdge, &
-         xVertex, &
-         yVertex, &
-         zVertex, &
-         dvEdge, &
-         dcEdge, &
-         areaCell, &
-         areaTriangle, &
-         kiteAreasOnVertex
-
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
-
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "zCell", zCell)
-    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
-    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
-    call MPAS_pool_get_array(mesh, "zEdge", zEdge)
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
-    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
-    call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
-    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
-    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
-    call MPAS_pool_get_array(mesh, "kiteAreasOnVertex", kiteAreasOnVertex)
-    
-    xCell = xCell * sphere_radius
-    yCell = yCell * sphere_radius
-    zCell = zCell * sphere_radius
-    xEdge = xEdge * sphere_radius
-    yEdge = yEdge * sphere_radius
-    zEdge = zEdge * sphere_radius
-    xVertex = xVertex * sphere_radius
-    yVertex = yVertex * sphere_radius
-    zVertex = zVertex * sphere_radius
-    dvEdge = dvEdge * sphere_radius
-    dcEdge = dcEdge * sphere_radius
-    areaCell = areaCell * sphere_radius**2
-    areaTriangle = areaTriangle * sphere_radius**2
-    kiteAreasOnVertex = kiteAreasOnVertex * sphere_radius**2
-
-  end subroutine scale_unit_sphere
-
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 end module cice_mesh

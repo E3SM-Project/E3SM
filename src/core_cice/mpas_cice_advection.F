@@ -1,3 +1,15 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_advection
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_advection
 
   use mpas_grid_types
@@ -5,20 +17,22 @@ module cice_advection
   implicit none
 
   private
+  save 
+
   public :: &
-       init_advection, &
-       run_advection
+       cice_init_advection, &
+       cice_run_advection
 
   ! minimum sea ice area
-  real(kind=RKIND), parameter :: &
+  real(kind=RKIND), parameter, private :: &
        iceAreaMinimum = 1.0e-11_RKIND
   
   ! maximum number of tracers
-  integer, parameter :: &
+  integer, parameter, private :: &
        nTracerVariables = 7
 
   ! single tracer connectivity. Defines the relationship between the child and its parent
-  type tracerConnectivity
+  type, private :: tracerConnectivity
     
      character(len=200) :: &
           childTracerName  = "", & ! name of the child tracer
@@ -30,16 +44,28 @@ module cice_advection
   end type tracerConnectivity
 
   ! array of all the tracer connectivities
-  type(tracerConnectivity), dimension(nTracerVariables) :: &
+  type(tracerConnectivity), dimension(nTracerVariables), private :: &
        tracerConnectivities
 
 contains
 
-  !--------------------------------------------------------------------------
-  ! Initialization
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Initialization
+!-----------------------------------------------------------------------
   
-  subroutine init_advection(block)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_advection
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_advection(block)!{{{
 
     use mpas_tracer_advection_helpers, only: &
          mpas_tracer_advection_coefficients
@@ -48,15 +74,15 @@ contains
          mpas_tracer_advection_mono_init
 
     use cice_mesh, only: &
-         normal_vectors_polygon
+         cice_normal_vectors_polygon
 
     type(block_type), intent(inout) :: &
-         block
+         block !< Input/Output: 
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
          configs, &
-         hexdyn
+         velocity_solver
 
     integer, pointer :: &
          config_horiz_tracer_adv_order, &
@@ -89,7 +115,7 @@ contains
          err
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
 
     configs => block % configs
     call MPAS_pool_get_config(configs, "config_horiz_tracer_adv_order", config_horiz_tracer_adv_order)
@@ -106,7 +132,7 @@ contains
     call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
     call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
 
-    call MPAS_pool_get_array(hexdyn, "normalVectorEdge", normalVectorEdge)
+    call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
     err = 0
 
@@ -132,17 +158,27 @@ contains
 
     call define_tracer_connectivities()
     
-    call normal_vectors_polygon(&
+    call cice_normal_vectors_polygon(&
          mesh, &
          normalVectorEdge, &
          config_rotate_cartesian_grid, &
          .false.)
 
-  end subroutine init_advection
+  end subroutine cice_init_advection!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
   
-  subroutine define_tracer_connectivities()
+  subroutine define_tracer_connectivities()!{{{
 
     call init_tracer_connectivity(tracerConnectivities)
 
@@ -163,21 +199,31 @@ contains
     !call add_tracer_connectivity(tracerConnectivities, "iceSalinity",        "iceVolumeCategory")
     !call add_tracer_connectivity(tracerConnectivities, "snowEnthalpy",       "iceVolumeCategory")
 
-  end subroutine define_tracer_connectivities
+  end subroutine define_tracer_connectivities!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine add_tracer_connectivity(&
        tracerConnectivities, &
        childTracerName, &
-       parentTracerName)
+       parentTracerName)!{{{
 
     type(tracerConnectivity), dimension(:), intent(inout) :: &
-         tracerConnectivities
+         tracerConnectivities !< Input/Output: 
 
     character(len=*), intent(in) :: &
-         childTracerName, &
-         parentTracerName
+         childTracerName, & !< Input: 
+         parentTracerName   !< Input: 
 
     integer :: &
          iTracerVariable
@@ -196,15 +242,25 @@ contains
 
     enddo ! iTracerVariable
 
-  end subroutine add_tracer_connectivity
+  end subroutine add_tracer_connectivity!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine init_tracer_connectivity(&
-       tracerConnectivities)
+       tracerConnectivities)!{{{
 
     type(tracerConnectivity), dimension(:), intent(inout) :: &
-         tracerConnectivities
+         tracerConnectivities !< Input/Output: 
 
     integer :: iTracerVariable
 
@@ -216,15 +272,27 @@ contains
 
     enddo ! iTracerVariable
 
-  end subroutine init_tracer_connectivity
+  end subroutine init_tracer_connectivity!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine write_tracer_connectivities(unit)
+  subroutine write_tracer_connectivities(unit)!{{{
 
-    integer, intent(in) :: unit
+    integer, intent(in) :: &
+          unit !< Input: 
 
-    integer :: iTracerVariable
+    integer :: &
+         iTracerVariable
 
     write(unit,*) "-------------------------------------"
 
@@ -239,18 +307,31 @@ contains
 
     write(unit,*) "-------------------------------------"    
 
-  end subroutine write_tracer_connectivities
+  end subroutine write_tracer_connectivities!}}}
 
-  !--------------------------------------------------------------------------
-  ! time stepping
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! time stepping
+!-----------------------------------------------------------------------
 
-  subroutine run_advection(block, dt)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_run_advection
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    type (block_type), intent(inout) :: block
+  subroutine cice_run_advection(block, dt)!{{{
+
+    type (block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dt
+         dt !< Input: 
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -258,7 +339,7 @@ contains
          tracer_tendencies, &
          tracer_edge_fluxes, &
          icestate, &
-         hexdyn
+         velocity_solver
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
@@ -283,11 +364,11 @@ contains
     call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
     call MPAS_pool_get_subpool(block % structs, "tracer_edge_fluxes", tracer_edge_fluxes)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
-    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
 
-    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
-    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
-    call MPAS_pool_get_array(hexdyn, "normalVectorEdge", normalVectorEdge)
+    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
     call prepare_advection(&
          mesh, &
@@ -334,9 +415,19 @@ contains
          verticalVelocity, &
          verticalCellSize)
 
-  end subroutine run_advection
+  end subroutine cice_run_advection!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  run_advection_variable
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
   
   subroutine run_advection_variable(&
        mesh, &
@@ -350,33 +441,33 @@ contains
        edgeFlux, &
        verticalVelocity, &
        verticalCellSize, &
-       dt)
+       dt)!{{{
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
   
     type (MPAS_pool_type), pointer :: &
-         tracers, &
-         tracer_tendencies, &
-         tracer_edge_fluxes, &
-         icestate
+         tracers, &            !< Input/Output: 
+         tracer_tendencies, &  !< Input/Output: 
+         tracer_edge_fluxes, & !< Input/Output: 
+         icestate              !< Input/Output: 
     
     character(len=*), intent(in) :: &
-         childTracerName, &
-         parentTracerName
+         childTracerName, & !< Input: 
+         parentTracerName   !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity
+         edgeVelocity !< Input: 
          
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux
+         edgeFlux !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity, &
-         verticalCellSize
+         verticalVelocity, & !< Input: 
+         verticalCellSize    !< Input: 
     
     real(kind=RKIND), intent(in) :: &
-         dt
+         dt !< Input: 
 
     type (mpas_pool_field_info_type) :: childFieldInfo
 
@@ -416,9 +507,19 @@ contains
 
     endif
 
-  end subroutine run_advection_variable
+  end subroutine run_advection_variable!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  run_advection_variable_3D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine run_advection_variable_3D(&
        mesh, &
@@ -432,33 +533,33 @@ contains
        edgeFlux, &
        verticalVelocity, &
        verticalCellSize, &
-       dt)
+       dt)!{{{
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
     
     type (MPAS_pool_type), pointer :: &
-         tracers, &
-         tracer_tendencies, &
-         tracer_edge_fluxes, &
-         icestate
+         tracers, &            !< Input/Output: 
+         tracer_tendencies, &  !< Input/Output: 
+         tracer_edge_fluxes, & !< Input/Output: 
+         icestate              !< Input/Output: 
     
     character(len=*), intent(in) :: &
-         childTracerName, &
-         parentTracerName
+         childTracerName, & !< Input: 
+         parentTracerName   !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity
+         edgeVelocity !< Input: 
          
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux
+         edgeFlux !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity, &
-         verticalCellSize
+         verticalVelocity, & !< Input: 
+         verticalCellSize    !< Input: 
     
     real(kind=RKIND), intent(in) :: &
-         dt
+         dt !< Input: 
 
     real (kind=RKIND), dimension(:,:,:), pointer :: &
          childTracerOld, &
@@ -576,9 +677,19 @@ contains
 
     endif
 
-  end subroutine run_advection_variable_3D
+  end subroutine run_advection_variable_3D!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_none_parent_tracer
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine prepare_none_parent_tracer(&
        mesh, &
@@ -588,23 +699,23 @@ contains
        parentTracerOldNone, &
        parentTracerNewNone, &
        parentTendencyNone, &
-       parentEdgeFluxNone)
+       parentEdgeFluxNone)!{{{
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh, &
-         icestate
+         mesh, &  !< Input: 
+         icestate !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         childTracerOld
+         childTracerOld !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &    
-         edgeVelocity
+         edgeVelocity !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         parentTracerOldNone, &
-         parentTracerNewNone, &
-         parentTendencyNone, &
-         parentEdgeFluxNone
+         parentTracerOldNone, & !< Input/Output: 
+         parentTracerNewNone, & !< Input/Output: 
+         parentTendencyNone, &  !< Input/Output: 
+         parentEdgeFluxNone     !< Input/Output: 
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
@@ -673,9 +784,19 @@ contains
        enddo ! iCategory
     enddo ! iEdge
 
-  end subroutine prepare_none_parent_tracer
+  end subroutine prepare_none_parent_tracer!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  run_advection_variable_4D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine run_advection_variable_4D(&
        mesh, &
@@ -689,33 +810,33 @@ contains
        edgeFlux, &
        verticalVelocity, &
        verticalCellSize, &
-       dt)
+       dt)!{{{
     
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type (MPAS_pool_type), pointer :: &
-         tracers, &
-         tracer_tendencies, &
-         tracer_edge_fluxes, &
-         icestate
+         tracers, &            !< Input/Output: 
+         tracer_tendencies, &  !< Input/Output: 
+         tracer_edge_fluxes, & !< Input/Output: 
+         icestate              !< Input/Output: 
     
     character(len=*), intent(in) :: &
-         childTracerName, &
-         parentTracerName
+         childTracerName, & !< Input: 
+         parentTracerName   !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity
+         edgeVelocity !< Input: 
          
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux
+         edgeFlux !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity, &
-         verticalCellSize
+         verticalVelocity, & !< Input: 
+         verticalCellSize    !< Input: 
     
     real(kind=RKIND), intent(in) :: &
-         dt
+         dt !< Input: 
 
     real (kind=RKIND), dimension(:,:,:,:), pointer :: &
          childTracerOld, &
@@ -766,9 +887,19 @@ contains
        
     enddo ! iTracerDimension
     
-  end subroutine run_advection_variable_4D
+  end subroutine run_advection_variable_4D!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  run_advection_subvariable
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine run_advection_subvariable(&
        mesh, &
@@ -786,44 +917,44 @@ contains
        verticalVelocity, &
        verticalCellSize, &
        isIceArea, &
-       dt)
+       dt)!{{{
 
     use mpas_tracer_advection_mono, only: &
          mpas_tracer_advection_mono_tend_seaice
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type (MPAS_pool_type), pointer :: &
-         icestate
+         icestate !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         childTracerOld, &
-         childTracerNew, &
-         childTendency, &
-         childEdgeFlux
+         childTracerOld, & !< Input/Output: 
+         childTracerNew, & !< Input/Output: 
+         childTendency, &  !< Input/Output: 
+         childEdgeFlux     !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         parentTracerOld, &
-         parentTracerNew, &
-         parentTendency, &
-         parentEdgeFlux
+         parentTracerOld, & !< Input/Output: 
+         parentTracerNew, & !< Input/Output: 
+         parentTendency, &  !< Input/Output: 
+         parentEdgeFlux     !< Input/Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity
+         edgeVelocity !< Input: 
          
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
-         edgeFlux
+         edgeFlux !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity, &
-         verticalCellSize
+         verticalVelocity, & !< Input: 
+         verticalCellSize    !< Input: 
 
     logical, intent(in) :: &
-         isIceArea
+         isIceArea !< Input: 
     
     real(kind=RKIND), intent(in) :: &
-         dt
+         dt !< Input: 
 
     integer, pointer :: &
          nEdges, &
@@ -926,9 +1057,19 @@ contains
        enddo ! iCell
     endif
 
-  end subroutine run_advection_subvariable
+  end subroutine run_advection_subvariable!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_advection
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine prepare_advection(&
        mesh, &
@@ -940,29 +1081,29 @@ contains
        edgeVelocity, &
        edgeFlux, &
        verticalVelocity, &
-       verticalCellSize)
+       verticalCellSize)!{{{
     
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity
+         uVelocity, & !< Input: 
+         vVelocity    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorEdge
+         normalVectorEdge !< Input: 
 
-    real(kind=RKIND), dimension(:), allocatable :: &
-         edgeVelocity
+    real(kind=RKIND), dimension(:), allocatable, intent(inout) :: &
+         edgeVelocity !< Input/Output: 
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &    
-         edgeFlux, &
-         verticalVelocity, &
-         verticalCellSize
+    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &    
+         edgeFlux, &         !< Input/Output: 
+         verticalVelocity, & !< Input/Output: 
+         verticalCellSize    !< Input/Output: 
 
     integer, pointer :: &
          nEdges, &
@@ -992,9 +1133,19 @@ contains
          tracers, &
          icestate)
 
-  end subroutine prepare_advection
+  end subroutine prepare_advection!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  finalize_advection
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine finalize_advection(&
        mesh, &
@@ -1003,22 +1154,22 @@ contains
        edgeVelocity, &
        edgeFlux, &
        verticalVelocity, &
-       verticalCellSize)
+       verticalCellSize)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
-    real(kind=RKIND), dimension(:), allocatable :: &
-         edgeVelocity
+    real(kind=RKIND), dimension(:), allocatable, intent(inout) :: &
+         edgeVelocity !< Input/Output: 
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &    
-         edgeFlux, &
-         verticalVelocity, &
-         verticalCellSize
+    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &    
+         edgeFlux, &         !< Input/Output: 
+         verticalVelocity, & !< Input/Output: 
+         verticalCellSize    !< Input/Output: 
 
     call finalize_tracers(&
          mesh, &
@@ -1030,25 +1181,35 @@ contains
     deallocate(verticalVelocity)
     deallocate(verticalCellSize)
 
-  end subroutine finalize_advection
+  end subroutine finalize_advection!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  edge_from_vertex_velocity
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine edge_from_vertex_velocity(&
        mesh, &
        uVelocity, &
        vVelocity, &
        normalVectorEdge, &
-       edgeVelocity)
+       edgeVelocity)!{{{
 
     type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity
+         uVelocity, & !< Input: 
+         vVelocity    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorEdge
+         normalVectorEdge !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          edgeVelocity
@@ -1120,21 +1281,31 @@ contains
 
     enddo ! iCell
 
-  end subroutine edge_from_vertex_velocity
+  end subroutine edge_from_vertex_velocity!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_tracers
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine prepare_tracers(&
        mesh, &
        tracers, &
-       icestate)
+       icestate)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -1167,32 +1338,42 @@ contains
 
           if (iceAreaCategoryMask(iCategory,iCell) == 1) then
 
-             !iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) / &
-             !                                       iceAreaCategory(1,iCategory,iCell)
+             iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) / &
+                                                    iceAreaCategory(1,iCategory,iCell)
 
-             !snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) / &
-             !                                        iceAreaCategory(1,iCategory,iCell)
+             snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) / &
+                                                     iceAreaCategory(1,iCategory,iCell)
 
           endif ! area > 0
 
        enddo ! iCategory
     enddo ! iCell
 
-  end subroutine prepare_tracers
+  end subroutine prepare_tracers!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  finalize_tracers
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine finalize_tracers(&
        mesh, &
        tracers, &
-       icestate)
+       icestate)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -1229,29 +1410,42 @@ contains
 
           if (iceAreaCategoryMask(iCategory,iCell) == 1) then
 
-             !iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) * &
-             !                                       iceAreaCategory(1,iCategory,iCell)
+             iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) * &
+                                                    iceAreaCategory(1,iCategory,iCell)
 
-             !snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) * &
-             !                                        iceAreaCategory(1,iCategory,iCell)
+             snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) * &
+                                                     iceAreaCategory(1,iCategory,iCell)
 
           endif ! area > 0
 
        enddo ! iCategory
     enddo ! iCell
 
-  end subroutine finalize_tracers
+  end subroutine finalize_tracers!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  scale_tracers_back
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine scale_tracers_back(mesh, tracers, icestate)
+  subroutine scale_tracers_back(&
+       mesh, &
+       tracers, &
+       icestate)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
     integer :: &
          iTracerVariable
@@ -1289,27 +1483,37 @@ contains
 
     enddo ! iTracer
 
-  end subroutine scale_tracers_back
+  end subroutine scale_tracers_back!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  scale_tracers_back_3D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine scale_tracers_back_3D(&
        mesh, &
        tracers, &
        icestate, &
        childTracerName, &
-       parentTracerName)
+       parentTracerName)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
     character(len=*), intent(in) :: &
-         childTracerName, &
-         parentTracerName
+         childTracerName, & !< Input: 
+         parentTracerName   !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          childTracerNew, &
@@ -1353,27 +1557,37 @@ contains
        enddo ! iCategory
     enddo ! iCell
 
-  end subroutine scale_tracers_back_3D
+  end subroutine scale_tracers_back_3D!}}}
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  scale_tracers_back_4D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine scale_tracers_back_4D(&
        mesh, &
        tracers, &
        icestate, &
        childTracerName, &
-       parentTracerName)
+       parentTracerName)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+         mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         tracers, &
-         icestate
+         tracers, & !< Input/Output: 
+         icestate   !< Input/Output: 
 
     character(len=*), intent(in) :: &
-         childTracerName, &
-         parentTracerName
+         childTracerName, & !< Input: 
+         parentTracerName   !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          parentTracerNew
@@ -1423,8 +1637,8 @@ contains
        enddo ! iCategory
     enddo ! iCell
 
-  end subroutine scale_tracers_back_4D
+  end subroutine scale_tracers_back_4D!}}}
 
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 end module cice_advection

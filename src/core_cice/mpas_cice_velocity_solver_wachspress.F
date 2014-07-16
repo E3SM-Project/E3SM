@@ -1,31 +1,64 @@
-module cice_dyn_hex_wachspress
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_velocity_solver_wachspress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+module cice_velocity_solver_wachspress
 
   use mpas_grid_types
 
   implicit none
 
   private
+  save
+
   public :: &
-       init_dynamics_hex_wachspress, &
-       internal_stress_wachspress, &       
-       strain_tensor_hex_wachspress, &
-       stress_divergence_hex_wachspress
+       cice_init_velocity_solver_wachspress, &
+       cice_internal_stress_wachspress, &       
+       cice_strain_tensor_wachspress, &
+       cice_stress_divergence_wachspress
 
 contains
 
-  !-------------------------------------------------------------
-  ! Initialization
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Initialization
+!-----------------------------------------------------------------------
 
-  subroutine init_dynamics_hex_wachspress(mesh, hexvar, hexwach, boundary)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_velocity_solver_wachspress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    use cice_mesh, only: calc_cell_vertices_at_vertex
+  subroutine cice_init_velocity_solver_wachspress(&
+       mesh, &
+       velocity_variational, &
+       velocity_wachspress, &
+       boundary)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    use cice_mesh, only: &
+         cice_cell_vertices_at_vertex
 
-    type(MPAS_pool_type), pointer :: hexvar
-    type(MPAS_pool_type), pointer :: hexwach
-    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    type(MPAS_pool_type), pointer :: &
+         velocity_variational, &  !< Input/Output: 
+         velocity_wachspress, & !< Input/Output: 
+         boundary   !< Input/Output: 
 
     integer :: &
          iCell, &
@@ -53,17 +86,17 @@ contains
     ! init variables
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
 
-    call MPAS_pool_get_array(hexvar, "xLocal", xLocal)
-    call MPAS_pool_get_array(hexvar, "yLocal", yLocal)
-    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "xLocal", xLocal)
+    call MPAS_pool_get_array(velocity_variational, "yLocal", yLocal)
+    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
 
-    call MPAS_pool_get_array(hexwach, "wachspressKappa", wachspressKappa)
-    call MPAS_pool_get_array(hexwach, "wachspressA", wachspressA)
-    call MPAS_pool_get_array(hexwach, "wachspressB", wachspressB)
-    call MPAS_pool_get_array(hexwach, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(hexwach, "basisGradientV", basisGradientV)
-    call MPAS_pool_get_array(hexwach, "basisIntegralsU", basisIntegralsU)
-    call MPAS_pool_get_array(hexwach, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(velocity_wachspress, "wachspressKappa", wachspressKappa)
+    call MPAS_pool_get_array(velocity_wachspress, "wachspressA", wachspressA)
+    call MPAS_pool_get_array(velocity_wachspress, "wachspressB", wachspressB)
+    call MPAS_pool_get_array(velocity_wachspress, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(velocity_wachspress, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsU", basisIntegralsU)
+    call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsV", basisIntegralsV)
 
     call calc_local_coords(mesh, &
          xLocal, &
@@ -94,7 +127,7 @@ contains
          wachspressB,     &
          wachspressKappa)
 
-    call calc_cell_vertices_at_vertex(mesh, &
+    call cice_cell_vertices_at_vertex(mesh, &
          cellVerticesAtVertex)
 
     iCell = 1
@@ -110,17 +143,31 @@ contains
          xLocal(:,iCell), &
          yLocal(:,iCell))
 
-  end subroutine init_dynamics_hex_wachspress
+  end subroutine cice_init_velocity_solver_wachspress!}}}
   
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calc_local_coords
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine calc_local_coords(mesh, xLocal, yLocal)
+  subroutine calc_local_coords(&
+       mesh, &
+       xLocal, &
+       yLocal)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, &
-         yLocal
+         xLocal, & !< Output: 
+         yLocal    !< Output: 
 
     integer :: &
          iCell, &
@@ -165,24 +212,41 @@ contains
 
     enddo ! iCell
 
-  end subroutine calc_local_coords
+  end subroutine calc_local_coords!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calc_wachspress_coefficients
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine calc_wachspress_coefficients(mesh, wachspressKappa, wachspressA, wachspressB, xLocal, yLocal)
+  subroutine calc_wachspress_coefficients(&
+       mesh, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       xLocal, &
+       yLocal)!{{{
     
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         wachspressKappa
+         wachspressKappa !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Output: 
+         wachspressB    !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         xLocal, &
-         yLocal
+         xLocal, & !< Input: 
+         yLocal    !< Input: 
 
     integer :: &
          iCell, &
@@ -244,29 +308,47 @@ contains
        
     enddo ! iCell
 
-  end subroutine calc_wachspress_coefficients
+  end subroutine calc_wachspress_coefficients!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wachspress_basis_function
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB) result(wachpress)
+  function wachspress_basis_function(&
+       nEdgesOnCell, &
+       iVertex, &
+       x, &
+       y, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB) &
+       result(wachpress)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         iVertex
+         nEdgesOnCell, & !< Input: 
+         iVertex         !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         x, &
-         y
+         x, & !< Input: 
+         y    !< Input: 
     
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
     real(kind=RKIND) :: &
-         wachpress
+         wachpress !< Output: 
 
     real(kind=RKIND) :: &
          numerator, &
@@ -293,30 +375,49 @@ contains
 
     wachpress = numerator_ivertex / denominator
 
-  end function wachspress_basis_function
+  end function wachspress_basis_function!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wachspress_basis_derivative
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wachspress_basis_derivative(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB, iDerivativeType) result(wachspress)
+  function wachspress_basis_derivative(&
+       nEdgesOnCell, &
+       iVertex, &
+       x, &
+       y, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       iDerivativeType) &
+       result(wachspress)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         iVertex, &
-         iDerivativeType
+         nEdgesOnCell, & !< Input: 
+         iVertex, &      !< Input: 
+         iDerivativeType !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         x, &
-         y
+         x, & !< Input: 
+         y    !< Input: 
     
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
     real(kind=RKIND) :: &
-         wachspress
+         wachspress !< Output: 
 
     real(kind=RKIND) :: &
          numerator, &
@@ -350,29 +451,49 @@ contains
 
     wachspress = derivative_ivertex / denominator - (numerator_ivertex / denominator**2) * sum_of_derivatives
 
-  end function wachspress_basis_derivative
+  end function wachspress_basis_derivative!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wachspress_numerator
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wachspress_numerator(nEdgesOnCell, jVertex, iVertex, x, y, wachspressKappa, wachspressA, wachspressB) result(numerator)
+  function wachspress_numerator(&
+       nEdgesOnCell, &
+       jVertex, &
+       iVertex, &
+       x, &
+       y, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB) &
+       result(numerator)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         jVertex, &
-         iVertex
+         nEdgesOnCell, & !< Input: 
+         jVertex, &      !< Input: 
+         iVertex         !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         x, &
-         y
+         x, & !< Input: 
+         y    !< Input: 
     
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
-    real(kind=RKIND) :: numerator
+    real(kind=RKIND) :: &
+         numerator !< Output: 
 
     integer :: &
          kVertex, &
@@ -395,31 +516,51 @@ contains
 
     numerator = numerator * wachspressKappa(jVertex,iVertex)
 
-  end function wachspress_numerator
+  end function wachspress_numerator!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wachspress_numerator_derivative
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wachspress_numerator_derivative(nEdgesOnCell, jVertex, iVertex, x, y, wachspressKappa, wachspressA, wachspressB, iDerivativeType) result(derivative)
+  function wachspress_numerator_derivative(&
+       nEdgesOnCell, &
+       jVertex, &
+       iVertex, &
+       x, &
+       y, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       iDerivativeType) &
+       result(derivative)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         jVertex, &
-         iVertex, &
-         iDerivativeType
+         nEdgesOnCell, & !< Input: 
+         jVertex, &      !< Input: 
+         iVertex, &      !< Input: 
+         iDerivativeType !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         x, &
-         y
+         x, & !< Input: 
+         y    !< Input: 
     
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
     real(kind=RKIND) :: &
-         derivative
+         derivative !< Output: 
 
     real(kind=RKIND) :: &
          sum_of_products, &
@@ -469,42 +610,75 @@ contains
 
     derivative = sum_of_products * wachspressKappa(jVertex,iVertex)
 
-  end function wachspress_numerator_derivative
+  end function wachspress_numerator_derivative!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wachspress_edge_equation
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wachspress_edge_equation(iVertex, x, y, wachspressA, wachspressB) result(edge_equation)
+  function wachspress_edge_equation(&
+       iVertex, &
+       x, &
+       y, &
+       wachspressA, &
+       wachspressB) &
+       result(edge_equation)!{{{
 
     integer, intent(in) :: &
-         iVertex
+         iVertex !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         x, &
-         y
+         x, & !< Input: 
+         y    !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
-    real(kind=RKIND) :: edge_equation
+    real(kind=RKIND) :: &
+         edge_equation !< Output: 
 
     edge_equation = 1.0_RKIND - wachspressA(iVertex) * x - wachspressB(iVertex) * y
 
-  end function wachspress_edge_equation
+  end function wachspress_edge_equation!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wachspress_edge_equation_derivative
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wachspress_edge_equation_derivative(iVertex, wachspressA, wachspressB, iDerivativeType) result(derivative)
+  function wachspress_edge_equation_derivative(&
+       iVertex, &
+       wachspressA, &
+       wachspressB, &
+       iDerivativeType) &
+       result(derivative)!{{{
 
     integer, intent(in) :: &
-         iVertex, &
-         iDerivativeType
+         iVertex, &      !< Input: 
+         iDerivativeType !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
-    real(kind=RKIND) :: derivative
+    real(kind=RKIND) :: &
+         derivative !< Output: 
 
     if (iDerivativeType == 1) then
 
@@ -516,35 +690,50 @@ contains
 
     endif
 
-  end function wachspress_edge_equation_derivative
+  end function wachspress_edge_equation_derivative!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calculate_wachspress_derivatives
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine calculate_wachspress_derivatives(mesh, &
-                                              basisGradientU, basisGradientV, &
-                                              xLocal,         yLocal,         &
-                                              wachspressA,    wachspressB,    &
-                                              wachspressKappa)
-
+  subroutine calculate_wachspress_derivatives(&
+       mesh, &
+       basisGradientU, &
+       basisGradientV, &
+       xLocal, &
+       yLocal, &
+       wachspressA, &
+       wachspressB, &
+       wachspressKappa)!{{{
+    
     ! basisGradientUV(jVertexOnCell,iVertexOnCell,iCell)
     ! iCell         : The cell the gradients are based in
     ! iVertexOnCell : The vertex basis function the gradient is calculated from
     ! jVertexOnCell : The vertex location the gradients are calculated at
     
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         basisGradientU, &
-         basisGradientV
+         basisGradientU, & !< Output: 
+         basisGradientV    !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &    
-         wachspressA, &
-         wachspressB, &
-         xLocal,      &
-         yLocal
+         wachspressA, & !< Input: 
+         wachspressB, & !< Input: 
+         xLocal,      & !< Input: 
+         yLocal         !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &  
-         wachspressKappa
+         wachspressKappa !< Input: 
 
     integer :: &
          iCell, &
@@ -604,24 +793,39 @@ contains
 
     enddo ! iCell
 
-  end subroutine calculate_wachspress_derivatives
+  end subroutine calculate_wachspress_derivatives!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_triangle_mapping
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine get_triangle_mapping(mapping, x1, y1, x2, y2, u1, v1, u2, v2)
+  subroutine get_triangle_mapping(&
+       mapping, &
+       x1, y1, &
+       x2, y2, &
+       u1, v1, &
+       u2, v2)!{{{
 
     real(kind=RKIND), dimension(2,2), intent(out) :: &
-         mapping
+         mapping !< Output: 
 
     real(kind=RKIND), intent(in) :: &
-         x1, & ! input
-         y1, &
-         x2, & 
-         y2, &
-         u1, & ! output
-         v1, &
-         u2, &
-         v2
+         x1, & !< Input: 
+         y1, & !< Input:
+         x2, & !< Input:
+         y2, & !< Input:
+         u1, & !< Input:
+         v1, & !< Input:
+         u2, & !< Input:
+         v2    !< Input:
 
     mapping(1,1) = (u2*y1 - u1*y2) / (x2*y1 - x1*y2)
     mapping(1,2) = (u1*x2 - u2*x1) / (y1*x2 - y2*x1)
@@ -629,33 +833,60 @@ contains
     mapping(2,1) = (v2*y1 - v1*y2) / (x2*y1 - x1*y2)
     mapping(2,2) = (v1*x2 - v2*x1) / (y1*x2 - y2*x1)
 
-  end subroutine get_triangle_mapping
+  end subroutine get_triangle_mapping!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  use_triangle_mapping
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine use_triangle_mapping(u, v, x, y, mapping)
+  subroutine use_triangle_mapping(&
+       u, v, &
+       x, y, &
+       mapping)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         u, v
+         u, v !< Output: 
 
     real(kind=RKIND), intent(in) :: &
-         x, y
+         x, y !< Input:
 
     real(kind=RKIND), dimension(2,2), intent(in) :: &
-         mapping
+         mapping !< Input:
 
     u = mapping(1,1) * x + mapping(1,2) * y
     v = mapping(2,1) * x + mapping(2,2) * y
 
-  end subroutine use_triangle_mapping
+  end subroutine use_triangle_mapping!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  integrate_wachspress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine integrate_wachspress(mesh, &
-                                  basisIntegralsU, basisIntegralsV, &
-                                  xLocal,          yLocal,          &
-                                  wachspressA,     wachspressB,     &
-                                  wachspressKappa)
+  subroutine integrate_wachspress(&
+       mesh, &
+       basisIntegralsU, &
+       basisIntegralsV, &
+       xLocal, &
+       yLocal, &
+       wachspressA, &
+       wachspressB, &
+       wachspressKappa)!{{{
 
     ! basisIntegralsUV (iVertexOnCell,jVertexOnCell,iCell)
     ! iCell         : cell integrals are performed on
@@ -663,20 +894,21 @@ contains
     ! jVertexOnCell : vertex number of Wachspress derivative function 
     ! Sij
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         basisIntegralsU, &
-         basisIntegralsV
+         basisIntegralsU, & !< Output: 
+         basisIntegralsV    !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         xLocal, &
-         yLocal, &
-         wachspressA, &
-         wachspressB
+         xLocal, &      !< Input:
+         yLocal, &      !< Input:
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &    
-         wachspressKappa
+         wachspressKappa !< Input:
 
     real(kind=RKIND) :: &
          integration
@@ -709,11 +941,16 @@ contains
              do iDerivativeType = 1, 2
 
                 call integrate_wachspress_polygon(&
-                     integration,                nEdgesOnCell(iCell),  &
-                     iVertexOnCell,              jvertexOnCell,        &
-                     xLocal(:,iCell),            yLocal(:,iCell),      &
-                     wachspressA(:,iCell),       wachspressB(:,iCell), &
-                     wachspressKappa(:,:,iCell), iDerivativeType)
+                     integration, &
+                     nEdgesOnCell(iCell), &
+                     iVertexOnCell, &
+                     jvertexOnCell, &
+                     xLocal(:,iCell), &
+                     yLocal(:,iCell), &
+                     wachspressA(:,iCell), &
+                     wachspressB(:,iCell), &
+                     wachspressKappa(:,:,iCell), &
+                     iDerivativeType)
 
                 if (iDerivativeType == 1) then
 
@@ -740,35 +977,53 @@ contains
 
     enddo ! iCell
 
-  end subroutine integrate_wachspress
+  end subroutine integrate_wachspress!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  integrate_wachspress_polygon
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine integrate_wachspress_polygon(integration,     nEdgesOnCell,   &
-                                          iVertexOnCell,   jvertexOnCell,  &
-                                          xLocal,          yLocal,         &
-                                          wachspressA,     wachspressB,    &
-                                          wachspressKappa, iDerivativeType)
+  subroutine integrate_wachspress_polygon(&
+       integration, &
+       nEdgesOnCell, &
+       iVertexOnCell, &
+       jvertexOnCell, &
+       xLocal, &
+       yLocal, &
+       wachspressA, &
+       wachspressB, &
+       wachspressKappa, &
+       iDerivativeType)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         iVertexOnCell, &
-         jvertexOnCell, &
-         iDerivativeType
+         nEdgesOnCell, &  !< Input:
+         iVertexOnCell, & !< Input:
+         jvertexOnCell, & !< Input:
+         iDerivativeType  !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         xLocal, &
-         yLocal
+         xLocal, & !< Input:
+         yLocal    !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
+
+    real(kind=RKIND), intent(out) :: &
+         integration !< Output: 
 
     real(kind=RKIND) :: &
-         integration, &
          integration_subtriangle
 
     real(kind=RKIND), dimension(2,2) :: &
@@ -787,44 +1042,71 @@ contains
        i2 = iSubTriangle + 1
        if (i2 > nEdgesOnCell) i2 = i2 - nEdgesOnCell
 
-       call get_triangle_mapping(mapping, &
-                                 1.0_RKIND, 0.0_RKIND, &
-                                 0.0_RKIND, 1.0_RKIND, &
-                                 xLocal(i1), yLocal(i1), &
-                                 xLocal(i2), yLocal(i2))
+       call get_triangle_mapping(&
+            mapping, &
+            1.0_RKIND, 0.0_RKIND, &
+            0.0_RKIND, 1.0_RKIND, &
+            xLocal(i1), yLocal(i1), &
+            xLocal(i2), yLocal(i2))
 
-       call integrate_wachspress_subtriangle(integration_subtriangle, nEdgesOnCell, iVertexOnCell, jvertexOnCell, &
-                                             wachspressKappa(:,:), wachspressA(:), wachspressB(:), iDerivativeType, mapping)
+       call integrate_wachspress_subtriangle(&
+            integration_subtriangle, &
+            nEdgesOnCell, &
+            iVertexOnCell, &
+            jvertexOnCell, &
+            wachspressKappa(:,:), &
+            wachspressA(:), &
+            wachspressB(:), &
+            iDerivativeType, &
+            mapping)
 
        integration = integration + integration_subtriangle
 
     enddo ! iSubTriangle
 
-  end subroutine integrate_wachspress_polygon
+  end subroutine integrate_wachspress_polygon!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  integrate_wachspress_subtriangle
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine integrate_wachspress_subtriangle(integration,nEdgesOnCell, iVertexOnCell, jvertexOnCell, &
-       wachspressKappa, wachspressA, wachspressB, iDerivativeType, mapping)
+  subroutine integrate_wachspress_subtriangle(&
+       integration, &
+       nEdgesOnCell, &
+       iVertexOnCell, &
+       jvertexOnCell, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       iDerivativeType, &
+       mapping)!{{{
 
     real(kind=RKIND), intent(out) :: &
-         integration
+         integration !< Output: 
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         iVertexOnCell, &
-         jvertexOnCell, &
-         iDerivativeType
+         nEdgesOnCell, &  !< Input:
+         iVertexOnCell, & !< Input:
+         jvertexOnCell, & !< Input:
+         iDerivativeType  !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input:
+         wachspressB    !< Input:
 
     real(kind=RKIND), dimension(2,2), intent(in) :: &
-         mapping
+         mapping !< Input:
 
     real(kind=RKIND) :: &
          jacobian
@@ -865,7 +1147,10 @@ contains
              u = real(i,RKIND) / real(n,RKIND)
              v = real(j,RKIND) / real(n,RKIND)
              
-             call use_triangle_mapping(x, y, u, v, mapping)
+             call use_triangle_mapping(&
+                  x, y, &
+                  u, v, &
+                  mapping)
              
              jacobian = mapping(1,1) * mapping(2,2) - mapping(1,2) * mapping(2,1)
              
@@ -884,50 +1169,68 @@ contains
 
     integration = integration / (6.0_RKIND * real(n,RKIND)**2)
 
-  end subroutine integrate_wachspress_subtriangle
+  end subroutine integrate_wachspress_subtriangle!}}}
 
-  !-------------------------------------------------------------
-  ! time step
-  !-------------------------------------------------------------
-  
-  subroutine internal_stress_wachspress(&
+!-----------------------------------------------------------------------
+! time step
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_internal_stress_wachspress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_internal_stress_wachspress(&
        mesh, &
-       hexvar,              hexwach, &
-       uVelocity,           vVelocity, &
-       icePressure,         replacementPressure, &
-       dtElastic,           evpDamping, &
-       stressDivergenceU,   stressDivergenceV, &
-       solveStress,         solveVelocity)
+       velocity_variational, &
+       velocity_wachspress, &
+       uVelocity, &
+       vVelocity, &
+       icePressure, &
+       replacementPressure, &
+       dtElastic, &
+       evpDamping, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       solveStress, &
+       solveVelocity)!{{{
 
-    use cice_dyn_hex_variational, only: &
-         stress_tensor_hex_variational
+    use cice_velocity_solver_variational, only: &
+         cice_stress_tensor_variational
 
     type (MPAS_pool_type), pointer :: &
-         mesh, &
-         hexvar, &
-         hexwach
+         mesh, &   !< Input/Output: 
+         velocity_variational, & !< Input/Output: 
+         velocity_wachspress   !< Input/Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity       
+         uVelocity, & !< Input:
+         vVelocity    !< Input: 
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         icePressure, &
-         replacementPressure
+         icePressure, &      !< Input/Output: 
+         replacementPressure !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic
+         dtElastic  !< Input: 
 
     logical, intent(in) :: &
-         evpDamping
+         evpDamping !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         solveStress, &
-         solveVelocity
+         solveStress, & !< Input: 
+         solveVelocity  !< Input: 
 
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
@@ -946,20 +1249,20 @@ contains
          basisIntegralsU, &
          basisIntegralsV
 
-    call MPAS_pool_get_array(hexvar, "strain11", strain11)
-    call MPAS_pool_get_array(hexvar, "strain22", strain22)
-    call MPAS_pool_get_array(hexvar, "strain12", strain12)
-    call MPAS_pool_get_array(hexvar, "stress11", stress11)
-    call MPAS_pool_get_array(hexvar, "stress22", stress22)
-    call MPAS_pool_get_array(hexvar, "stress12", stress12)
-    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "strain11", strain11)
+    call MPAS_pool_get_array(velocity_variational, "strain22", strain22)
+    call MPAS_pool_get_array(velocity_variational, "strain12", strain12)
+    call MPAS_pool_get_array(velocity_variational, "stress11", stress11)
+    call MPAS_pool_get_array(velocity_variational, "stress22", stress22)
+    call MPAS_pool_get_array(velocity_variational, "stress12", stress12)
+    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
 
-    call MPAS_pool_get_array(hexwach, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(hexwach, "basisGradientV", basisGradientV)
-    call MPAS_pool_get_array(hexwach, "basisIntegralsU", basisIntegralsU)
-    call MPAS_pool_get_array(hexwach, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(velocity_wachspress, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(velocity_wachspress, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsU", basisIntegralsU)
+    call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsV", basisIntegralsV)
 
-    call strain_tensor_hex_wachspress(mesh, &
+    call cice_strain_tensor_wachspress(mesh, &
          strain11,       &
          strain22,       &
          strain12,       &
@@ -969,7 +1272,7 @@ contains
          basisGradientV, &
          solveStress)
     
-    call stress_tensor_hex_variational(mesh, &
+    call cice_stress_tensor_variational(mesh, &
          stress11,             &
          stress22,             &
          stress12,             &
@@ -981,7 +1284,7 @@ contains
          solveStress,          &
          dtElastic, evpDamping)
     
-    call stress_divergence_hex_wachspress(mesh, &
+    call cice_stress_divergence_wachspress(mesh, &
          stressDivergenceU,    &
          stressDivergenceV,    &
          stress11,             &
@@ -992,35 +1295,49 @@ contains
          cellVerticesAtVertex, &
          solveVelocity)
     
-  end subroutine internal_stress_wachspress
+  end subroutine cice_internal_stress_wachspress!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_strain_tensor_wachspress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine strain_tensor_hex_wachspress(&
+  subroutine cice_strain_tensor_wachspress(&
        mesh, &
-       strain11,       strain22,       &
-       strain12,                       &
-       uVelocity,      vVelocity,      &
-       basisGradientU, basisGradientV, &
-       solveStress)
+       strain11, &
+       strain22, &
+       strain12, &
+       uVelocity, &
+       vVelocity, &
+       basisGradientU, &
+       basisGradientV, &
+       solveStress)!{{{
     
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         strain11, &
-         strain22, &
-         strain12
+         strain11, & !< Output: 
+         strain22, & !< Output: 
+         strain12    !< Output: 
     
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity
+         uVelocity, & !< Input: 
+         vVelocity    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         basisGradientU, &
-         basisGradientV
+         basisGradientU, & !< Input: 
+         basisGradientV    !< Input: 
     
     integer, dimension(:), intent(in) :: &
-         solveStress
+         solveStress !< Input: 
 
     integer :: &
          iCell, &
@@ -1081,38 +1398,53 @@ contains
 
     enddo ! iCell
 
-  end subroutine strain_tensor_hex_wachspress
+  end subroutine cice_strain_tensor_wachspress!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_stress_divergence_wachspress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine stress_divergence_hex_wachspress(&
+  subroutine cice_stress_divergence_wachspress(&
        mesh, &
-       stressDivergenceU,    stressDivergenceV, &
-       stress11,             stress22,         &
-       stress12,                                &
-       basisIntegralsU,      basisIntegralsV,   &
-       cellVerticesAtVertex, solveVelocity)
+       stressDivergenceU, &
+       stressDivergenceV, &
+       stress11, &
+       stress22, &
+       stress12, &
+       basisIntegralsU, &
+       basisIntegralsV, &
+       cellVerticesAtVertex, &
+       solveVelocity)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &    
-         stress11, &
-         stress22, &
-         stress12
+         stress11, & !< Input: 
+         stress22, & !< Input: 
+         stress12    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &   
-         basisIntegralsU, &
-         basisIntegralsV
+         basisIntegralsU, & !< Input: 
+         basisIntegralsV    !< Input: 
 
     integer, dimension(:,:), intent(in) :: &
-         cellVerticesAtVertex
+         cellVerticesAtVertex !< Input: 
 
     integer, dimension(:), intent(in) :: &
-         solveVelocity
+         solveVelocity !< Input: 
 
     real(kind=RKIND) :: &
          stressDivergenceUCell, &
@@ -1191,31 +1523,53 @@ contains
 
     enddo ! iVertex
 
-  end subroutine stress_divergence_hex_wachspress
+  end subroutine cice_stress_divergence_wachspress!}}}
 
-  !-------------------------------------------------------------
-  ! Hex specific plotting stuff
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Hex specific plotting stuff
+!-----------------------------------------------------------------------
 
-  subroutine plot_wachpress(mesh, iCell, nEdgesOnCell, iVertex, wachspressKappa, wachspressA, wachspressB, xLocal, yLocal)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_wachpress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine plot_wachpress(&
+       mesh, &
+       iCell, &
+       nEdgesOnCell, &
+       iVertex, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       xLocal, &
+       yLocal)!{{{
     
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     integer, intent(in) :: &
-         iCell, &
-         nEdgesOnCell, &
-         iVertex
+         iCell, &        !< Input: 
+         nEdgesOnCell, & !< Input: 
+         iVertex         !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         wachspressKappa
+         wachspressKappa !< Output: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Output: 
+         wachspressB    !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         xLocal, &
-         yLocal
+         xLocal, & !< Input: 
+         yLocal    !< Input: 
 
     real(kind=RKIND) :: &
          xmin, xmax, ymin, ymax
@@ -1295,33 +1649,51 @@ contains
     enddo ! iSubTriangle
 
     close(55)
-stop
-  end subroutine plot_wachpress
 
-  !-------------------------------------------------------------
-  
-  subroutine plot_subtriangle(nEdgesOnCell, iSubTriangle, iVertex, wachspressKappa, wachspressA, wachspressB, mapping, x0, y0)
+  end subroutine plot_wachpress!}}}
 
-    use cice_diagnostics, only: matlab_jet
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_subtriangle
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine plot_subtriangle(&
+       nEdgesOnCell, &
+       iSubTriangle, &
+       iVertex, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       mapping, &
+       x0, &
+       y0)!{{{
 
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         iSubTriangle, &
-         iVertex
+         nEdgesOnCell, & !< Input: 
+         iSubTriangle, & !< Input: 
+         iVertex         !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         wachspressKappa
+         wachspressKappa !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         wachspressA, &
-         wachspressB
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
     real(kind=RKIND), dimension(2,2), intent(in) :: &
-         mapping
+         mapping !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         x0, y0
-
+         x0, & !< Input: 
+         y0    !< Input: 
 
     real(kind=RKIND) :: &
          u, v, &
@@ -1335,20 +1707,10 @@ stop
     real(kind=RKIND) :: &
          x1, x2, x3, x4, x5, &
          y1, y2, y3, y4, y5, &
-         d, minf, maxf, fValue, &
+         d, &
          dx, dy
-    
-    !real(kind=RKIND), parameter :: &
-    !     fMin = -1.7759450831950581E-004_RKIND, &
-    !     fMax = 5.5313696223098112E-005_RKIND
-    real(kind=RKIND), parameter :: &
-         fMin = 0.0_RKIND, &
-         fMax = 1.0_RKIND
 
     integer, parameter :: n = 50
-
-    character(len=7) :: &
-         color
 
     logical, parameter :: &
          lfinitedifference = .false.
@@ -1356,9 +1718,6 @@ stop
     iObject = ((iSubTriangle - 1) * (n+1) * (n+2)) / 2
 
     d = 1.0_RKIND / real(n, RKIND)
- 
-    minf = 1e30
-    maxf = -1e30
 
     do i = 0, n
        do j = 0, n
@@ -1395,11 +1754,6 @@ stop
 
              endif
 
-             fValue = (wachspress - fMin) / (fMax - fMin)
-                
-             minf = min(minf,wachspress)
-             maxf = max(maxf,wachspress)
-
              if (i<n-j-1) then
                 
                 call use_triangle_mapping(x1, y1, u,   v,   mapping)
@@ -1418,8 +1772,7 @@ stop
                 write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
                      x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5     
 
-                color = matlab_jet(max(min(fValue,1.0_RKIND),0.0_RKIND))
-                write(55,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'  
+                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'
 
              else
 
@@ -1437,8 +1790,7 @@ stop
                 write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
                      x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5    
 
-                color = matlab_jet(max(min(fValue,1.0_RKIND),0.0_RKIND))
-                write(55,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'   
+                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'  
 
              endif
 
@@ -1447,17 +1799,35 @@ stop
        enddo ! j
     enddo ! i
 
-    write(*,*) minf, maxf
+  end subroutine plot_subtriangle!}}}
 
-  end subroutine plot_subtriangle
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_wachspress_square
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  !-------------------------------------------------------------
+  subroutine plot_wachspress_square(&
+       mesh, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB)!{{{
 
-  subroutine plot_wachspress_square(mesh,wachspressKappa, wachspressA, wachspressB)
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
-    real(kind=RKIND), dimension(:,:,:) :: wachspressKappa
-    real(kind=RKIND), dimension(:,:) :: wachspressA, wachspressB
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         wachspressKappa !< Input: 
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
 
     integer :: &
          iCell, &
@@ -1515,16 +1885,22 @@ stop
           y = x0 + (real(j,RKIND) - 0.5_RKIND) * dy - 24000.0_RKIND
 
           wachspress =  &
-               wachspress_basis_derivative(nEdgesOnCell(iCell), iVertexOnCell, x, y, wachspressKappa(:,:,iCell), wachspressA(:,iCell), wachspressB(:,iCell),1)
+               wachspress_basis_derivative(&
+               nEdgesOnCell(iCell), &
+               iVertexOnCell, &
+               x, &
+               y, &
+               wachspressKappa(:,:,iCell), &
+               wachspressA(:,iCell), &
+               wachspressB(:,iCell),1)
 
           write(55,*) x+0.5_RKIND*dx,x-0.5_RKIND*dx,y+0.5_RKIND*dy,y-0.5_RKIND*dy, wachspress          
 
        enddo ! j
     enddo ! i
 
-  end subroutine plot_wachspress_square
+  end subroutine plot_wachspress_square!}}}
 
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-
-end module cice_dyn_hex_wachspress
+end module cice_velocity_solver_wachspress

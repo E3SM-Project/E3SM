@@ -1,28 +1,56 @@
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_unit_test
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
 module cice_unit_test
 
   use mpas_grid_types
 
   private
+  save
+
   public :: &
-       perform_unit_test
+       cice_perform_unit_test
 
 contains
 
-  !--------------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_perform_unit_test
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine perform_unit_test(block, configs)
+  subroutine cice_perform_unit_test(&
+       block, &
+       configs)!{{{
 
-    use cice_dynamics_unit_tests, only: &
-         strain_rate_operator_unit_test, &
-         stress_divergence_operator_unit_test, &
-         constitutive_relationship_unit_test
+    use cice_velocity_solver_unit_tests, only: &
+         cice_strain_rate_operator_unit_test, &
+         cice_stress_divergence_operator_unit_test, &
+         cice_constitutive_relationship_unit_test
+
     use cice_therm_zerolayer, only: &
-         zero_layer_thermo_semtner_unit_test
+         cice_zero_layer_thermo_semtner_unit_test
 
-    type(block_type), intent(inout) :: block
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         configs
+         configs !< Input: 
 
     character(len=strKIND), pointer :: &
          config_unit_test_type, &
@@ -33,13 +61,13 @@ contains
 
     select case (trim(config_unit_test_type))
     case ("strain rate operator")
-       call strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
+       call cice_strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
     case ("stress divergence operator")
-       call stress_divergence_operator_unit_test(block, trim(config_unit_test_subtype))
+       call cice_stress_divergence_operator_unit_test(block, trim(config_unit_test_subtype))
     case ("constitutive relationship")
-       call constitutive_relationship_unit_test(block)
+       call cice_constitutive_relationship_unit_test(block)
     case ("semtner 1d thermo test")
-       call zero_layer_thermo_semtner_unit_test()
+       call cice_zero_layer_thermo_semtner_unit_test()
     case default
        write(*,*) "Unit test unknown!"
        write(*,*) "config_unit_test_type:", trim(config_unit_test_type)
@@ -47,9 +75,9 @@ contains
 
     stop
 
-  end subroutine perform_unit_test
+  end subroutine cice_perform_unit_test!}}}
 
-  !--------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 end module cice_unit_test
 

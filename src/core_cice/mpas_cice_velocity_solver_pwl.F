@@ -1,31 +1,64 @@
-module cice_dyn_hex_pwl
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_velocity_solver_pwl
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+module cice_velocity_solver_pwl
 
   use mpas_grid_types
 
   implicit none
 
   private
+  save
+
   public :: &
-       init_dynamics_hex_pwl, &
-       internal_stress_pwl, &
-       strain_tensor_hex_pwl, &
-       stress_divergence_hex_pwl
+       cice_init_velocity_solver_pwl, &
+       cice_internal_stress_pwl, &
+       cice_strain_tensor_pwl, &
+       cice_stress_divergence_pwl
 
 contains
 
-  !-------------------------------------------------------------
-  ! Initialization
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! Initialization
+!-----------------------------------------------------------------------
 
-  subroutine init_dynamics_hex_pwl(mesh, hexvar, hexpwl, boundary)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_velocity_solver_pwl
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    use cice_mesh, only: calc_cell_vertices_at_vertex
+  subroutine cice_init_velocity_solver_pwl(&
+       mesh, &
+       velocity_variational, &
+       velocity_pwl, &
+       boundary)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    use cice_mesh, only: &
+         cice_cell_vertices_at_vertex
 
-    type(MPAS_pool_type), pointer :: hexvar
-    type(MPAS_pool_type), pointer :: boundary
-    type(MPAS_pool_type), pointer :: hexpwl
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    type(MPAS_pool_type), pointer :: &
+         velocity_variational, &   !< Input/Output: 
+         boundary, & !< Input/Output: 
+         velocity_pwl      !< Input/Output: 
 
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
@@ -37,36 +70,52 @@ contains
          basisGradientU, &
          basisGradientV
 
-    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
-    call MPAS_pool_get_array(hexpwl, "basisSubArea", basisSubArea)
-    call MPAS_pool_get_array(hexpwl, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(hexpwl, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_pwl, "basisSubArea", basisSubArea)
+    call MPAS_pool_get_array(velocity_pwl, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(velocity_pwl, "basisGradientV", basisGradientV)
 
-    call calc_cell_vertices_at_vertex(mesh, &
+    call cice_cell_vertices_at_vertex(&
+         mesh, &
          cellVerticesAtVertex)
 
-    call init_dynamics_hex_pwl_basis(mesh, &
+    call init_velocity_solver_pwl_basis(mesh, &
          basisSubArea, &
          basisGradientU, &
          basisGradientV)
 
-  end subroutine init_dynamics_hex_pwl
+  end subroutine cice_init_velocity_solver_pwl!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_velocity_solver_pwl_basis
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine init_dynamics_hex_pwl_basis(mesh,           basisSubArea, &
-                                         basisGradientU, basisGradientV)
+  subroutine init_velocity_solver_pwl_basis(&
+       mesh, &
+       basisSubArea, &
+       basisGradientU, &
+       basisGradientV)!{{{
 
-    use cice_numerics, only: solve_linear_basis_system
+    use cice_numerics, only: &
+         cice_solve_linear_basis_system
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         basisSubArea
+         basisSubArea !< Output: 
          
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &    
-         basisGradientU, &
-         basisGradientV
+         basisGradientU, & !< Output: 
+         basisGradientV    !< Output: 
 
     real(kind=RKIND) :: &
          xPWLCentre, &
@@ -175,7 +224,7 @@ contains
           rightHandSide(2) = 0.0_RKIND
           rightHandSide(3) = 0.0_RKIND
 
-          call solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
+          call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
           basisGradientU(1,iEdgeOnCell,iCell) = solutionVector(1)
           basisGradientV(1,iEdgeOnCell,iCell) = solutionVector(2)
@@ -185,7 +234,7 @@ contains
           rightHandSide(2) = 1.0_RKIND
           rightHandSide(3) = 0.0_RKIND
 
-          call solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
+          call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
           basisGradientU(2,iEdgeOnCell,iCell) = solutionVector(1)
           basisGradientV(2,iEdgeOnCell,iCell) = solutionVector(2)
@@ -194,50 +243,68 @@ contains
 
     enddo ! iCell
 
-  end subroutine init_dynamics_hex_pwl_basis
+  end subroutine init_velocity_solver_pwl_basis!}}}
 
-  !-------------------------------------------------------------
-  ! time step
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
+! time step
+!-----------------------------------------------------------------------
 
-  subroutine internal_stress_pwl(&
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_internal_stress_pwl
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_internal_stress_pwl(&
        mesh, &
-       hexvar,              hexpwl, &
-       uVelocity,           vVelocity, &
-       icePressure,         replacementPressure, &
-       dtElastic,           evpDamping, &
-       stressDivergenceU,   stressDivergenceV, &
-       solveStress,         solveVelocity)
+       velocity_variational, &
+       velocity_pwl, &
+       uVelocity, &
+       vVelocity, &
+       icePressure, &
+       replacementPressure, &
+       dtElastic, &
+       evpDamping, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       solveStress, &
+       solveVelocity)!{{{
 
-    use cice_dyn_hex_variational, only: &
-         stress_tensor_hex_variational
+    use cice_velocity_solver_variational, only: &
+         cice_stress_tensor_variational
 
     type (MPAS_pool_type), pointer :: &
-         mesh, &
-         hexvar, &
-         hexpwl
+         mesh, &   !< Input/Output: 
+         velocity_variational, & !< Input/Output: 
+         velocity_pwl    !< Input/Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity       
+         uVelocity, & !< Input: 
+         vVelocity    !< Input:   
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
-         icePressure, &
-         replacementPressure
+         icePressure, &      !< Input/Output: 
+         replacementPressure !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic
+         dtElastic !< Input: 
 
     logical, intent(in) :: &
-         evpDamping
+         evpDamping !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         solveStress, &
-         solveVelocity
+         solveStress, & !< Input: 
+         solveVelocity  !< Input: 
 
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
@@ -255,19 +322,19 @@ contains
          basisGradientUPWL, &
          basisGradientVPWL
 
-    call MPAS_pool_get_array(hexvar, "strain11", strain11)
-    call MPAS_pool_get_array(hexvar, "strain22", strain22)
-    call MPAS_pool_get_array(hexvar, "strain12", strain12)
-    call MPAS_pool_get_array(hexvar, "stress11", stress11)
-    call MPAS_pool_get_array(hexvar, "stress22", stress22)
-    call MPAS_pool_get_array(hexvar, "stress12", stress12)
-    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "strain11", strain11)
+    call MPAS_pool_get_array(velocity_variational, "strain22", strain22)
+    call MPAS_pool_get_array(velocity_variational, "strain12", strain12)
+    call MPAS_pool_get_array(velocity_variational, "stress11", stress11)
+    call MPAS_pool_get_array(velocity_variational, "stress22", stress22)
+    call MPAS_pool_get_array(velocity_variational, "stress12", stress12)
+    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
 
-    call MPAS_pool_get_array(hexpwl, "basisGradientU", basisGradientUPWL)
-    call MPAS_pool_get_array(hexpwl, "basisGradientV", basisGradientVPWL)
-    call MPAS_pool_get_array(hexpwl, "basisSubArea", basisSubArea)
+    call MPAS_pool_get_array(velocity_pwl, "basisGradientU", basisGradientUPWL)
+    call MPAS_pool_get_array(velocity_pwl, "basisGradientV", basisGradientVPWL)
+    call MPAS_pool_get_array(velocity_pwl, "basisSubArea", basisSubArea)
 
-    call strain_tensor_hex_pwl(mesh, &
+    call cice_strain_tensor_pwl(mesh, &
          strain11,          &
          strain22,          &
          strain12,          &
@@ -277,7 +344,7 @@ contains
          basisGradientVPWL, &
          solveStress)
     
-    call stress_tensor_hex_variational(mesh, &
+    call cice_stress_tensor_variational(mesh, &
          stress11,             &
          stress22,             &
          stress12,             &
@@ -289,7 +356,7 @@ contains
          solveStress,          &
          dtElastic, evpDamping)
     
-    call stress_divergence_hex_pwl(mesh, &
+    call cice_stress_divergence_pwl(mesh, &
          stressDivergenceU,    &
          stressDivergenceV,    &
          stress11,             &
@@ -301,34 +368,49 @@ contains
          cellVerticesAtVertex, &
          solveVelocity)
 
-  end subroutine internal_stress_pwl
+  end subroutine cice_internal_stress_pwl!}}}
 
-  !-------------------------------------------------------------
-  
-  subroutine strain_tensor_hex_pwl(mesh, &
-                                   strain11,       strain22,       &
-                                   strain12,                       &
-                                   uVelocity,      vVelocity,      &
-                                   basisGradientU, basisGradientV, &
-                                   solveStress)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_strain_tensor_pwl
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------  
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+  subroutine cice_strain_tensor_pwl(&
+       mesh, &
+       strain11, &
+       strain22, &
+       strain12, &
+       uVelocity, &
+       vVelocity, &
+       basisGradientU, &
+       basisGradientV, &
+       solveStress)!{{{
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
-         strain11, &
-         strain22, &
-         strain12
+         strain11, & !< Output: 
+         strain22, & !< Output: 
+         strain12    !< Output: 
     
     real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &
-         vVelocity
+         uVelocity, & !< Input: 
+         vVelocity    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         basisGradientU, &
-         basisGradientV
+         basisGradientU, & !< Input: 
+         basisGradientV    !< Input: 
     
     integer, dimension(:), intent(in) :: &
-         solveStress
+         solveStress !< Input: 
 
     real(kind=RKIND) :: &
          alphaPWL
@@ -403,41 +485,57 @@ contains
 
     enddo ! iCell
 
-  end subroutine strain_tensor_hex_pwl
+  end subroutine cice_strain_tensor_pwl!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_stress_divergence_pwl
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  subroutine stress_divergence_hex_pwl(mesh, &
-                                       stressDivergenceU,    stressDivergenceV, &
-                                       stress11,             stress22,          &
-                                       stress12,                                &
-                                       basisGradientU,       basisGradientV,    &
-                                       basisSubArea, &
-                                       cellVerticesAtVertex, solveVelocity)
+  subroutine cice_stress_divergence_pwl(&
+       mesh, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       stress11, &
+       stress22, &
+       stress12, &
+       basisGradientU, &
+       basisGradientV, &
+       basisSubArea, &
+       cellVerticesAtVertex, &
+       solveVelocity)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &    
-         stress11, &
-         stress22, &
-         stress12
+         stress11, & !< Input: 
+         stress22, & !< Input: 
+         stress12    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &   
-         basisGradientU, &
-         basisGradientV
+         basisGradientU, & !< Input: 
+         basisGradientV    !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         basisSubArea
+         basisSubArea !< Input: 
 
     integer, dimension(:,:), intent(in) :: &
-         cellVerticesAtVertex
+         cellVerticesAtVertex !< Input: 
 
     integer, dimension(:), intent(in) :: &
-         solveVelocity
+         solveVelocity !< Input: 
 
     real(kind=RKIND) :: &
          stressDivergenceUCell, &
@@ -529,22 +627,38 @@ contains
 
     enddo ! iVertex
  
-  end subroutine stress_divergence_hex_pwl
+  end subroutine cice_stress_divergence_pwl!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  pwl_basis_gradient
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function pwl_basis_gradient(nEdgesOnCell, basisGradient, alphaPWL, basisVertexOnCell, iSubCell) result(grad)
+  function pwl_basis_gradient(&
+       nEdgesOnCell, &
+       basisGradient, &
+       alphaPWL, &
+       basisVertexOnCell, &
+       iSubCell) &
+       result(grad)!{{{
     
     integer, intent(in) :: &
-         nEdgesOnCell, &
-         basisVertexOnCell, & ! basis function vertex
-         iSubCell             ! subcell to calculate
+         nEdgesOnCell, &      !< Input: 
+         basisVertexOnCell, & !< Input: basis function vertex
+         iSubCell             !< Input: subcell to calculate
 
     real(kind=RKIND), intent(in) :: &
-         alphaPWL
+         alphaPWL !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         basisGradient
+         basisGradient !< Input: 
 
     real(kind=RKIND) :: grad
     
@@ -553,22 +667,35 @@ contains
            basisGradient(2,iSubCell) * &
            (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == wrapped_index(basisVertexOnCell - 1, nEdgesOnCell)))
 
-  end function pwl_basis_gradient
+  end function pwl_basis_gradient!}}}
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  wrapped_index
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-  function wrapped_index(input,nelements) result(output)
+  function wrapped_index(&
+       input, &
+       nelements) &
+       result(output)!{{{
 
     integer, intent(in) :: &
-         input, &
-         nelements
+         input, &  !< Input: 
+         nelements !< Input: 
 
     integer :: output
 
     output = mod(input - 1, nelements) + 1
 
-  end function wrapped_index
+  end function wrapped_index!}}}
 
-  !-------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-end module cice_dyn_hex_pwl
+end module cice_velocity_solver_pwl
