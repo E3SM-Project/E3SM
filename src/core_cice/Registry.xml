@@ -82,6 +82,7 @@
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
+	  	<nml_option name="config_convert_volume_to_thickness"           type="logical"       default_value="true"/>
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"

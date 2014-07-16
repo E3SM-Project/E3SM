@@ -334,6 +334,7 @@ contains
          dt !< Input: 
 
     type (MPAS_pool_type), pointer :: &
+         configs, &
          mesh, &
          tracers, &
          tracer_tendencies, &
@@ -359,6 +360,8 @@ contains
          verticalVelocity, &
          verticalCellSize
 
+    configs => block % configs
+
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
@@ -371,6 +374,7 @@ contains
     call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
     call prepare_advection(&
+         configs, &
          mesh, &
          tracers, &
          icestate, &
@@ -407,6 +411,7 @@ contains
     enddo ! iTracerVariable
 
     call finalize_advection(&
+         configs, &
          mesh, &
          tracers, &
          icestate, &
@@ -1072,6 +1077,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine prepare_advection(&
+       configs, &
        mesh, &
        tracers, &
        icestate, &
@@ -1084,7 +1090,8 @@ contains
        verticalCellSize)!{{{
     
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         configs, &  !< Input: 
+         mesh        !< Input: 
 
     type(MPAS_pool_type), pointer :: &
          tracers, & !< Input/Output: 
@@ -1129,6 +1136,7 @@ contains
          edgeVelocity)
 
     call prepare_tracers(&
+         configs, &
          mesh, &
          tracers, &
          icestate)
@@ -1148,6 +1156,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine finalize_advection(&
+       configs, &
        mesh, &
        tracers, &
        icestate, &
@@ -1157,6 +1166,7 @@ contains
        verticalCellSize)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
+         configs, &
          mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
@@ -1172,6 +1182,7 @@ contains
          verticalCellSize    !< Input/Output: 
 
     call finalize_tracers(&
+         configs, &
          mesh, &
          tracers, &
          icestate)
@@ -1296,12 +1307,14 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine prepare_tracers(&
+       configs, &
        mesh, &
        tracers, &
        icestate)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         configs, & !< Input: 
+         mesh       !< Input: 
 
     type(MPAS_pool_type), pointer :: &
          tracers, & !< Input/Output: 
@@ -1324,6 +1337,9 @@ contains
          iCell, &
          iCategory
 
+    logical, pointer :: &
+         config_convert_volume_to_thickness
+
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
@@ -1333,21 +1349,27 @@ contains
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
     call MPAS_pool_get_array(icestate, "iceAreaCategoryMask", iceAreaCategoryMask)
 
-    do iCell = 1, nCells
-       do iCategory = 1, nCategories
+    call MPAS_pool_get_config(configs, "config_convert_volume_to_thickness", config_convert_volume_to_thickness)
+    
+    if (config_convert_volume_to_thickness) then
 
-          if (iceAreaCategoryMask(iCategory,iCell) == 1) then
+       do iCell = 1, nCells
+          do iCategory = 1, nCategories
 
-             iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) / &
-                                                    iceAreaCategory(1,iCategory,iCell)
+             if (iceAreaCategoryMask(iCategory,iCell) == 1) then
 
-             snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) / &
-                                                     iceAreaCategory(1,iCategory,iCell)
+                iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) / &
+                     iceAreaCategory(1,iCategory,iCell)
 
-          endif ! area > 0
+                snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) / &
+                     iceAreaCategory(1,iCategory,iCell)
 
-       enddo ! iCategory
-    enddo ! iCell
+             endif ! area > 0
+
+          enddo ! iCategory
+       enddo ! iCell
+
+    endif ! config_convert_volume_to_thickness
 
   end subroutine prepare_tracers!}}}
 
@@ -1364,12 +1386,14 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine finalize_tracers(&
+       configs, &
        mesh, &
        tracers, &
        icestate)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+         configs, & !< Input: 
+         mesh       !< Input: 
 
     type(MPAS_pool_type), pointer :: &
          tracers, & !< Input/Output: 
@@ -1392,6 +1416,9 @@ contains
          iCell, &
          iCategory
 
+    logical, pointer :: &
+         config_convert_volume_to_thickness
+
     call MPAS_pool_shift_time_levels(tracers)
 
     call scale_tracers_back(mesh, tracers, icestate)
@@ -1405,21 +1432,27 @@ contains
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
     call MPAS_pool_get_array(icestate, "iceAreaCategoryMask", iceAreaCategoryMask)
 
-    do iCell = 1, nCells
-       do iCategory = 1, nCategories
+    call MPAS_pool_get_config(configs, "config_convert_volume_to_thickness", config_convert_volume_to_thickness)
 
-          if (iceAreaCategoryMask(iCategory,iCell) == 1) then
+    if (config_convert_volume_to_thickness) then
 
-             iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) * &
-                                                    iceAreaCategory(1,iCategory,iCell)
+       do iCell = 1, nCells
+          do iCategory = 1, nCategories
 
-             snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) * &
-                                                     iceAreaCategory(1,iCategory,iCell)
+             if (iceAreaCategoryMask(iCategory,iCell) == 1) then
 
-          endif ! area > 0
+                iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) * &
+                     iceAreaCategory(1,iCategory,iCell)
 
-       enddo ! iCategory
-    enddo ! iCell
+                snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) * &
+                     iceAreaCategory(1,iCategory,iCell)
+
+             endif ! area > 0
+
+          enddo ! iCategory
+       enddo ! iCell
+
+    endif ! config_convert_volume_to_thickness
 
   end subroutine finalize_tracers!}}}
 
