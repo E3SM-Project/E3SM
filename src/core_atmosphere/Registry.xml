@@ -110,7 +110,13 @@
 <!-- **************************************************************************************** -->
 
 	<streams>
-		<stream name="input" type="input">
+		<stream name="input" 
+                        type="input" 
+                        filename_template="x1.40962.init.nc" 
+                        records_per_file="1" 
+                        input_interval="initial_only"
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -228,7 +234,14 @@
 			<var name="ol4"/>
 		</stream>
 
-		<stream name="restart" type="restart">
+		<stream name="restart" 
+                        type="input;output" 
+                        filename_template="restart.$Y-$M-$D_$h.$m.$s.nc" 
+                        records_per_file="1" 
+                        input_interval="initial_only" 
+                        output_interval="1_00:00:00" 
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -515,7 +528,12 @@
 			<var name="ol4"/>
 		</stream>
 
-		<stream name="output" type="output">
+		<stream name="output" 
+                        type="output" 
+                        filename_template="history.$Y-$M-$D_$h.$m.$s.nc" 
+                        records_per_file="1" 
+                        output_interval="6:00:00">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -865,7 +883,12 @@
 			<var name="ol4"/>
 		</stream>
 
-		<stream name="surface" type="input;output">
+		<stream name="surface" 
+                        type="input" 
+                        filename_template="x1.40962.sfc_update.nc" 
+                        records_per_file="0" 
+                        input_interval="none">
+
 			<var name="sst"/>
 			<var name="xice"/>
 		</stream>

@@ -99,7 +99,13 @@
 <!-- **************************************************************************************** -->
 
 	<streams>
-		<stream name="input" type="input">
+		<stream name="input" 
+                        type="input" 
+                        filename_template="x1.40962.grid.nc"
+                        records_per_file="1"
+                        input_interval="initial_only" 
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -217,11 +223,21 @@
 			<var name="surface_pressure"/>
 		</stream>
 
-		<stream name="restart" type="restart">
-			<var name="meshDensity"/>
-		</stream>
+		<stream name="restart" 
+                        type="input;output" 
+                        filename_template="restart.nc"
+                        records_per_file="1"
+                        input_interval="initial_only" 
+                        output_interval="none" 
+                        immutable="true"
+                />
 
-		<stream name="output" type="output">
+		<stream name="output" 
+                        type="output" 
+                        filename_template="x1.40962.init.nc"
+                        records_per_file="1"
+                        output_interval="initial_only">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -360,11 +376,19 @@
 			<var name="surface_pressure"/>
 			<var name="precipw"/>
 		</stream>
-		<stream name="surface" type="input;output">
+
+		<stream name="surface" 
+                        type="output" 
+                        filename_template="x1.40962.sfc_update.nc"
+                        records_per_file="0"
+                        output_interval="none" 
+                        immutable="true">
+
 			<var name="xtime"/>
 			<var name="sst"/>
 			<var name="xice"/>
 		</stream>
+
 	</streams>
 
 

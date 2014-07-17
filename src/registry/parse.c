@@ -67,6 +67,8 @@ int main(int argc, char ** argv)/*{{{*/
 	//write_default_namelist(nls, corename);
 	write_default_namelist(registry);
 
+	write_default_streams(registry);
+
 	return 0;
 }/*}}}*/
 

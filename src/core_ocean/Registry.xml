@@ -732,7 +732,13 @@
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 	</packages>
 	<streams>
-		<stream name="input" type="input">
+		<stream name="input" 
+                        type="input"
+                        filename_template="grid.nc"
+                        records_per_file="1"
+                        input_interval="initial_only"
+                        immutable="true">
+
 			<var name="temperature"/>
 			<var name="salinity"/>
 			<var name="tracer1"/>
@@ -787,7 +793,14 @@
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
 		</stream>
-		<stream name="restart" type="restart">
+                <stream name="restart" 
+                        type="input;output"
+                        filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+                        records_per_file="1"
+                        input_interval="initial_only"
+                        output_interval="0001_00:00:00"
+                        immutable="true">
+
 			<var name="temperature"/>
 			<var name="salinity"/>
 			<var name="tracer1"/>
@@ -849,7 +862,12 @@
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
-		<stream name="output" type="output">
+		<stream name="output" 
+                        type="output"
+                        filename_template="output.$Y-$M-$D_$h.$m.$s.nc"
+                        records_per_file="1000"
+                        output_interval="0001_00:00:00">
+
 			<var name="temperature"/>
 			<var name="salinity"/>
 			<var name="tracer1"/>

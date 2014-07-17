@@ -115,11 +115,7 @@ module mpas_framework
       !
       ! Set up run-time streams
       !
-      if (.not. present(nml_filename)) then
-         call mpas_f_to_c_string(domain % namelist_filename, c_filename)
-      else
-         call mpas_f_to_c_string(nml_filename, c_filename)
-      end if
+      call mpas_f_to_c_string(domain % streams_filename, c_filename)
       mgr_p = c_loc(stream_manager)
       c_comm = dminfo % comm
       call xml_stream_parser(c_filename, mgr_p, c_comm)

@@ -36,6 +36,7 @@ void write_model_variables(ezxml_t registry){/*{{{*/
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
 	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", suffix);
+	fortprintf(fd, "       character (len=StrKIND) :: streams_filename = 'streams.%s' !< Constant: Name of stream configuration file\n", suffix);
 	fortprintf(fd, "       character (len=StrKIND) :: executableName = '%s' !< Constant: Name of executable generated at build time.\n", exe_name);
 	fortprintf(fd, "       character (len=StrKIND) :: git_version = '%s' !< Constant: Version string from git-describe.\n", git_ver);
 
@@ -491,8 +492,9 @@ int write_set_field_pointer(FILE *fd, const char *spacing, const char *iterator_
 }/*}}}*/
 
 
-void write_default_namelist(ezxml_t registry){/*{{{*/
-	ezxml_t streams_xml, rec_xml, opt_xml;
+void write_default_namelist(ezxml_t registry) /*{{{*/
+{
+	ezxml_t rec_xml, opt_xml;
 
 	const char *recname, *optname, *opttype, *optdefault;
 	const char *recindef, *optindef;
@@ -500,6 +502,7 @@ void write_default_namelist(ezxml_t registry){/*{{{*/
 	char filename[1024];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
 	int print_record, print_option;
+
 
 	sprintf(filename, "namelist.%s.defaults", suffix);
 	fd = fopen(filename, "w+");
@@ -552,26 +555,90 @@ void write_default_namelist(ezxml_t registry){/*{{{*/
 		}
 	}
 
-	fprintf(fd, "\n<!-- ============== I/O streams ============== -->\n\n");
+	fclose(fd);
+}/*}}}*/
+
+
+void write_default_streams(ezxml_t registry)
+{
+	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml;
+
+	const char *optstream, *optname, *optvarname, *opttype;
+	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out;
+	FILE *fd;
+	char filename[1024];
+	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
+
+
+	sprintf(filename, "streams.%s.defaults", suffix);
+	fd = fopen(filename, "w");
+
+	fprintf(stderr, "Generating run-time stream definitions\n");
 
 	fprintf(fd, "<streams>\n\n");
-	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
-		for (opt_xml = ezxml_child(streams_xml, "stream"); opt_xml; opt_xml = opt_xml->next){
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (opt_xml = ezxml_child(streams_xml, "stream"); opt_xml; opt_xml = opt_xml->next) {
 			optname = ezxml_attr(opt_xml, "name");
 			opttype = ezxml_attr(opt_xml, "type");
+			optfilename = ezxml_attr(opt_xml, "filename_template");
+			optrecords = ezxml_attr(opt_xml, "records_per_file");
+			optinterval_in = ezxml_attr(opt_xml, "input_interval");
+			optinterval_out = ezxml_attr(opt_xml, "output_interval");
+			optimmutable = ezxml_attr(opt_xml, "immutable");
 
-			fprintf(fd, "<stream name=\"%s\"\n", optname);
-			fprintf(fd, "        type=\"%s\"\n", opttype);
-			fprintf(fd, "        filename_template=\"file.$Y-$M-$D.nc\"\n");
-			fprintf(fd, "        records_per_file=\"4\"\n");
-			fprintf(fd, "        interval=\"6:00:00\">\n");
-			fprintf(fd, "</stream>\n\n");
+			/* Generate immutable default stream */
+			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
+				fprintf(fd, "<immutable_stream name=\"%s\"\n", optname);
+				fprintf(fd, "                  type=\"%s\"\n", opttype);
+				fprintf(fd, "                  filename_template=\"%s\"\n", optfilename);
+				fprintf(fd, "                  records_per_file=\"%s\"\n", optrecords);
+				if (strstr(opttype, "input") != NULL) {
+					fprintf(fd, "                  input_interval=\"%s\"/>\n", optinterval_in);
+				}
+				if (strstr(opttype, "output") != NULL) {
+					fprintf(fd, "                  output_interval=\"%s\"/>\n", optinterval_out);
+				}
+				fprintf(fd, "\n");
+			}
+			else {
+				fprintf(fd, "<stream name=\"%s\"\n", optname);
+				fprintf(fd, "        type=\"%s\"\n", opttype);
+				fprintf(fd, "        filename_template=\"%s\"\n", optfilename);
+				fprintf(fd, "        records_per_file=\"%s\"\n", optrecords);
+				if (strstr(opttype, "input") != NULL) {
+					fprintf(fd, "        input_interval=\"%s\">\n", optinterval_in);
+				}
+				if (strstr(opttype, "output") != NULL) {
+					fprintf(fd, "        output_interval=\"%s\">\n", optinterval_out);
+				}
+				fprintf(fd, "\n");
+	
+				/* Loop over fields listed within the stream */
+				for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+					optname = ezxml_attr(var_xml, "name");
+					fprintf(fd, "    <var name=\"%s\">\n", optname);
+				}
+
+				/* Loop over fields looking for any that belong to the stream */
+				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+					for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optstream = ezxml_attr(var_xml, "streams");
+						if (optstream != NULL && strstr(optstream, optname) != NULL) {
+							optvarname = ezxml_attr(var_xml, "name");
+							fprintf(fd, "    <var name=\"%s\">\n", optvarname);
+						}	
+					}
+				}
+
+				fprintf(fd, "\n");
+				fprintf(fd, "</stream>\n\n");
+			}
 		}
 	}
 	fprintf(fd, "</streams>\n");
 
 	fclose(fd);
-}/*}}}*/
+}
 
 
 int parse_packages_from_registry(ezxml_t registry)/*{{{*/
