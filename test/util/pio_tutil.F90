@@ -65,18 +65,26 @@ MODULE pio_tutil
   PUBLIC  :: PIO_TF_Check_val_
   ! Private functions
   PRIVATE :: PIO_TF_Check_int_arr_val, PIO_TF_Check_int_arr_arr
+  PRIVATE :: PIO_TF_Check_int_arr_arr_tol
   PRIVATE :: PIO_TF_Check_real_arr_val, PIO_TF_Check_real_arr_arr
+  PRIVATE :: PIO_TF_Check_real_arr_arr_tol
   PRIVATE :: PIO_TF_Check_double_arr_val, PIO_TF_Check_double_arr_arr
+  PRIVATE :: PIO_TF_Check_double_arr_arr_tol
   PRIVATE :: PIO_TF_Check_char_str_str
 
+  ! Note that the tolerance value provided is ignored when comparing two
+  ! integer arrays
   INTERFACE PIO_TF_Check_val_
     MODULE PROCEDURE                  &
         PIO_TF_Check_int_arr_val,     &
         PIO_TF_Check_int_arr_arr,     &
+        PIO_TF_Check_int_arr_arr_tol, &
         PIO_TF_Check_real_arr_val,    &
         PIO_TF_Check_real_arr_arr,    &
+        PIO_TF_Check_real_arr_arr_tol,&
         PIO_TF_Check_double_arr_val,  &
         PIO_TF_Check_double_arr_arr,  &
+        PIO_TF_Check_double_arr_arr_tol,&
         PIO_TF_Check_char_str_str
   END INTERFACE
 
@@ -557,6 +565,17 @@ CONTAINS
     PIO_TF_Check_int_arr_arr = gequal
   END FUNCTION
 
+  ! Note that the tolerance value is ignored when comparing two integer arrays
+  ! We have this interface to make it easier to generate common code for
+  ! comparing ints, reals and doubles
+  LOGICAL FUNCTION PIO_TF_Check_int_arr_arr_tol(arr, exp_arr, tol)
+    INTEGER, DIMENSION(:), INTENT(IN) :: arr
+    INTEGER, DIMENSION(:), INTENT(IN) :: exp_arr
+    REAL, INTENT(IN) :: tol
+
+    PIO_TF_Check_int_arr_arr_tol = PIO_TF_Check_int_arr_arr(arr, exp_arr)
+  END FUNCTION
+
   LOGICAL FUNCTION PIO_TF_Check_int_arr_val(arr, val)
     INTEGER, DIMENSION(:), INTENT(IN) :: arr
     INTEGER, INTENT(IN) :: val
@@ -568,7 +587,7 @@ CONTAINS
     DEALLOCATE(arr_val)
   END FUNCTION
 
-  LOGICAL FUNCTION PIO_TF_Check_real_arr_arr(arr, exp_arr)
+  LOGICAL FUNCTION PIO_TF_Check_real_arr_arr_tol(arr, exp_arr, tol)
 #ifndef NO_MPIMOD
     USE mpi
 #else
@@ -576,6 +595,8 @@ CONTAINS
 #endif
     REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: arr
     REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: exp_arr
+    REAL, INTENT(IN) :: tol
+
     INTEGER :: arr_sz, i, ierr
     ! Not equal at id = nequal_idx
     REAL(KIND=fc_real) :: nequal_idx
@@ -623,7 +644,14 @@ CONTAINS
       END DO
     END IF
 
-    PIO_TF_Check_real_arr_arr = gequal
+    PIO_TF_Check_real_arr_arr_tol = gequal
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_real_arr_arr(arr, exp_arr)
+    REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: arr
+    REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: exp_arr
+
+    PIO_TF_Check_real_arr_arr = PIO_TF_Check_real_arr_arr_tol(arr, exp_arr, 0.0)
   END FUNCTION
 
   LOGICAL FUNCTION PIO_TF_Check_real_arr_val(arr, val)
@@ -637,7 +665,7 @@ CONTAINS
     DEALLOCATE(arr_val)
   END FUNCTION
 
-  LOGICAL FUNCTION PIO_TF_Check_double_arr_arr(arr, exp_arr)
+  LOGICAL FUNCTION PIO_TF_Check_double_arr_arr_tol(arr, exp_arr, tol)
 #ifndef NO_MPIMOD
     USE mpi
 #else
@@ -645,6 +673,7 @@ CONTAINS
 #endif
     REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: arr
     REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: exp_arr
+    REAL, INTENT(IN) :: tol
     INTEGER :: arr_sz, i, ierr
     ! Not equal at id = nequal_idx
     REAL(KIND=fc_double) :: nequal_idx
@@ -692,7 +721,14 @@ CONTAINS
       END DO
     END IF
 
-    PIO_TF_Check_double_arr_arr = gequal
+    PIO_TF_Check_double_arr_arr_tol = gequal
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_double_arr_arr(arr, exp_arr)
+    REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: arr
+    REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: exp_arr
+
+    PIO_TF_Check_double_arr_arr = PIO_TF_Check_double_arr_arr_tol(arr, exp_arr, 0.0)
   END FUNCTION
 
   LOGICAL FUNCTION PIO_TF_Check_double_arr_val(arr, val)
