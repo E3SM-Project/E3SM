@@ -1,3 +1,11 @@
+// Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+// and the University Corporation for Atmospheric Research (UCAR).
+//
+// Unless noted otherwise source code is licensed under the BSD license.
+// Additional copyright and license information can be found in the LICENSE file
+// distributed with this code, or at http://mpas-dev.github.com/license.html
+//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "ezxml/ezxml.h"
@@ -12,6 +20,21 @@
 void stream_mgr_create_stream_c(void *, const char *, int *);
 
 
+/*********************************************************************************
+ *
+ *  Function: par_read
+ *
+ *  Reads the contents of a file into a buffer in distributed-memory parallel code.
+ * 
+ *  The buffer xml_buf is allocated with size bufsize, which will be exactly the 
+ *  number of bytes in the file fname. Only the master task will actually read the
+ *  file, and the contents are broadcast to all other tasks. The mpi_comm argument
+ *  is a Fortran MPI communicator used to determine which task is the master task.
+ * 
+ *  A return code of 0 indicates the file was successfully read and broadcast to
+ *  all MPI tasks that belong to the communicator.
+ *
+ *********************************************************************************/
 int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 {
 	int iofd;
@@ -65,6 +88,18 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 }
 
 
+/*********************************************************************************
+ *
+ *  Function: xml_stream_parser
+ *
+ *  Parses an XML file and builds streams using the MPAS_stream_manager module
+ *  based on the contents of the file.
+ *
+ *  The fname argument provides the name of the XML file that contains the stream
+ *  definitions, manager is a Fortran derived type used by the stream mananger,
+ *  and mpi_comm is the Fortran MPI communicator used by MPAS.
+ *
+ *********************************************************************************/
 void xml_stream_parser(char *fname, void *manager, int *mpi_comm)
 {
         char *xml_buf;
