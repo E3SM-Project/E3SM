@@ -79,17 +79,18 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t structs_xml, var_arr_xml, var_xml, stream_var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
 	ezxml_t streams_xml, stream_xml;
+	ezxml_t streams_xml2, stream_xml2;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmlrecindef;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
-	const char *structname, *structpackages;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages;
+	const char *structname, *structpackages, *structstreams;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages, *vararrstreams;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
-	const char *streamname;
-	const char *streamtype;
+	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
+	const char *streamname2, *streamfilename2;
 	const char *time_levs;
 
 	char *string, *err_string;
@@ -213,6 +214,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 		structname = ezxml_attr(structs_xml, "name");
 		time_levs = ezxml_attr(structs_xml, "time_levs");
 		structpackages = ezxml_attr(structs_xml, "packages");
+		structstreams = ezxml_attr(structs_xml, "streams");
 
 		if (structname == NULL){
 			fprintf(stderr,"ERROR: Name missing for var_struct.\n");
@@ -242,6 +244,17 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			}
 		}
 
+		if (structstreams != NULL) {
+			string = strdup(structstreams);
+			err_string = check_streams(registry, string);
+			free(string);
+
+			if (err_string != NULL) {
+				fprintf(stderr, "ERROR: Stream %s attached to var_struct %s is not defined.\n", err_string, structname);
+				return 1;
+			}
+		}
+
 		// Validate variable arrays
 		for(var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
 			vararrname = ezxml_attr(var_arr_xml, "name");
@@ -249,6 +262,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
 			vararrpackages = ezxml_attr(var_arr_xml, "packages");
+			vararrstreams = ezxml_attr(var_arr_xml, "streams");
 			time_levs = ezxml_attr(var_arr_xml, "time_levs");
 
 			if (vararrname == NULL){
@@ -315,6 +329,25 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				}
 			}
 
+			if (persistence == SCRATCH && vararrstreams != NULL){
+				fprintf(stderr, "ERROR: Streams attribute not allowed on scratch var_array %s in var_struct %s.\n", vararrname, structname);
+				return -1;
+			} 
+			else if (persistence == SCRATCH && vararrstreams == NULL && structstreams != NULL) {
+				fprintf(stderr, "ERROR: Streams attribute inherited from var_struct %s not allowed on scratch var_array %s in var_struct %s.\n", structname, vararrname, structname);
+				return -1;
+			} 
+			else if (persistence == PERSISTENT && vararrstreams != NULL) {
+				string = strdup(vararrstreams);
+				err_string = check_streams(registry, string);
+				free(string);
+
+				if (err_string != NULL) {
+					fprintf(stderr, "ERROR: Stream %s attached to var_array %s in var_struct %s is not defined.\n", err_string, vararrname, structname);
+					return 1;
+				}
+			}
+
 
 			// Validate variables in variable arrays
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
@@ -324,6 +357,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
 				varpackages = ezxml_attr(var_xml, "packages");
+				varstreams = ezxml_attr(var_xml, "streams");
 
 				if (varname == NULL) {
 					fprintf(stderr,"ERROR: Name missing for constituent variable in var_array %s in var_struct %s.\n", vararrname, structname);
@@ -340,6 +374,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					return 1;
 				}
 
+				if (persistence == SCRATCH && vararrstreams != NULL) {
+					fprintf(stderr, "ERROR: Streams attribute not allowed on constituent variable %s within scratch var_srray %s in var_struct %s.\n", varname, vararrname, structname);
+					return 1;
+				}
+
 				if(varpackages != NULL){
 					string = strdup(varpackages);
 					err_string = check_packages(registry, string);
@@ -347,6 +386,17 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 
 					if (err_string != NULL){
 						fprintf(stderr, "ERROR: Package %s used on constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
+						return 1;
+					}
+				}
+
+				if(varstreams != NULL){
+					string = strdup(varstreams);
+					err_string = check_streams(registry, string);
+					free(string);
+
+					if (err_string != NULL){
+						fprintf(stderr, "ERROR: Stream %s attached to constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
 						return 1;
 					}
 				}
@@ -363,6 +413,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vardesc = ezxml_attr(var_xml, "description");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			varpackages = ezxml_attr(var_xml, "packages");
+			varstreams = ezxml_attr(var_xml, "streams");
 			time_levs = ezxml_attr(var_xml, "time_levs");
 
 			if (varname == NULL) {
@@ -431,6 +482,25 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				return -1;
 			}
 
+			if (varstreams != NULL && persistence == PERSISTENT) {
+				string = strdup(varstreams);
+				err_string = check_streams(registry, string);
+				free(string);
+
+				if (err_string != NULL) {
+					fprintf(stderr, "ERROR: Stream %s attached to variable %s in var_struct %s is not defined.\n", err_string, varname, structname);
+					return 1;
+				}
+			} 
+			else if ( persistence == SCRATCH && varstreams != NULL ) {
+				fprintf(stderr, "ERROR: Streams attribute not allowed on scratch variable %s in var_struct %s.\n", varname, structname);
+				return -1;
+			} 
+			else if ( persistence == SCRATCH && varstreams == NULL && structstreams != NULL) {
+				fprintf(stderr, "ERROR: Streams attribute inherited from var_struct %s not allowed on scratch var %s in var_struct %s.\n", structname, varname, structname);
+				return -1;
+			}
+
 		}
 	}
 
@@ -439,12 +509,34 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
 			streamname = ezxml_attr(stream_xml, "name");
 			streamtype = ezxml_attr(stream_xml, "type");
+			streamfilename = ezxml_attr(stream_xml, "filename_template");
+			streamrecords = ezxml_attr(stream_xml, "records_per_file");
+			streaminterval_in = ezxml_attr(stream_xml, "input_interval");
+			streaminterval_out = ezxml_attr(stream_xml, "output_interval");
+			streampackages = ezxml_attr(stream_xml, "packages");
+
 			if (streamname == NULL) {
 				fprintf(stderr, "ERROR: Stream specification missing \"name\" attribute.\n");
 				return 1;
 			}
 			else if (streamtype == NULL) {
-				fprintf(stderr, "ERROR: Stream specification missing \"type\" attribute.\n");
+				fprintf(stderr, "ERROR: Stream specification for %s missing \"type\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (streamfilename == NULL) {
+				fprintf(stderr, "ERROR: Stream specification for %s missing \"filename_template\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (streamrecords == NULL) {
+				fprintf(stderr, "ERROR: Stream specification for %s missing \"records_per_file\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (strstr(streamtype, "input") != NULL && streaminterval_in == NULL) {
+				fprintf(stderr, "ERROR: Stream %s is marked as input but is missing \"input_interval\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (strstr(streamtype, "output") != NULL && streaminterval_out == NULL) {
+				fprintf(stderr, "ERROR: Stream %s is marked as output but is missing \"output_interval\" attribute.\n", streamname);
 				return 1;
 			}
 			else {
@@ -483,6 +575,39 @@ done_searching:
 					}	
 
 
+				}
+			}
+
+			if (streampackages != NULL) {
+				string = strdup(streampackages);
+				err_string = check_packages(registry, string);
+				free(string);
+
+				if (err_string != NULL){
+					fprintf(stderr, "ERROR: Package %s used on stream %s is not defined.\n", err_string, streamname);
+					return 1;
+				}
+			}
+
+		}
+	}
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+			streamname = ezxml_attr(stream_xml, "name");
+			streamfilename = ezxml_attr(stream_xml, "filename_template");
+			
+			/* Check that this stream's filename template is unique among all streams */
+			for (streams_xml2 = ezxml_child(registry, "streams"); streams_xml2; streams_xml2 = streams_xml2->next) {
+				for (stream_xml2 = ezxml_child(streams_xml2, "stream"); stream_xml2; stream_xml2 = stream_xml2->next) {
+					streamname2 = ezxml_attr(stream_xml2, "name");
+					streamfilename2 = ezxml_attr(stream_xml2, "filename_template");
+
+					if (stream_xml != stream_xml2) {
+						if (strcmp(streamfilename, streamfilename2) == 0) {
+							fprintf(stderr, "ERROR: Streams %s and %s have a conflicting filename template of %s.\n", streamname, streamname2, streamfilename);
+							return 1;
+						}
+					}
 				}
 			}
 		}
