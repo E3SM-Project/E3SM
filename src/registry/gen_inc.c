@@ -593,12 +593,13 @@ void write_default_streams(ezxml_t registry)
 				fprintf(fd, "                  filename_template=\"%s\"\n", optfilename);
 				fprintf(fd, "                  records_per_file=\"%s\"\n", optrecords);
 				if (strstr(opttype, "input") != NULL) {
-					fprintf(fd, "                  input_interval=\"%s\"/>\n", optinterval_in);
+					fprintf(fd, "                  input_interval=\"%s\"", optinterval_in);
 				}
 				if (strstr(opttype, "output") != NULL) {
-					fprintf(fd, "                  output_interval=\"%s\"/>\n", optinterval_out);
+					if (strstr(opttype, "input") != NULL) fprintf(fd, "\n");
+					fprintf(fd, "                  output_interval=\"%s\"", optinterval_out);
 				}
-				fprintf(fd, "\n");
+				fprintf(fd, "/>\n\n");
 			}
 			else {
 				fprintf(fd, "<stream name=\"%s\"\n", optname);
@@ -606,17 +607,18 @@ void write_default_streams(ezxml_t registry)
 				fprintf(fd, "        filename_template=\"%s\"\n", optfilename);
 				fprintf(fd, "        records_per_file=\"%s\"\n", optrecords);
 				if (strstr(opttype, "input") != NULL) {
-					fprintf(fd, "        input_interval=\"%s\">\n", optinterval_in);
+					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
 				}
 				if (strstr(opttype, "output") != NULL) {
-					fprintf(fd, "        output_interval=\"%s\">\n", optinterval_out);
+					if (strstr(opttype, "input") != NULL) fprintf(fd, "\n");
+					fprintf(fd, "        output_interval=\"%s\"", optinterval_out);
 				}
-				fprintf(fd, "\n");
+				fprintf(fd, ">\n\n");
 	
 				/* Loop over fields listed within the stream */
 				for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
 					optname = ezxml_attr(var_xml, "name");
-					fprintf(fd, "    <var name=\"%s\">\n", optname);
+					fprintf(fd, "    <var name=\"%s\"/>\n", optname);
 				}
 
 				/* Loop over fields looking for any that belong to the stream */
@@ -625,7 +627,7 @@ void write_default_streams(ezxml_t registry)
 						optstream = ezxml_attr(var_xml, "streams");
 						if (optstream != NULL && strstr(optstream, optname) != NULL) {
 							optvarname = ezxml_attr(var_xml, "name");
-							fprintf(fd, "    <var name=\"%s\">\n", optvarname);
+							fprintf(fd, "    <var name=\"%s\"/>\n", optvarname);
 						}	
 					}
 				}
