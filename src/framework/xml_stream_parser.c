@@ -100,7 +100,7 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
  *  and mpi_comm is the Fortran MPI communicator used by MPAS.
  *
  *********************************************************************************/
-void xml_stream_parser(char *fname, void *manager, int *mpi_comm)
+void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 {
         char *xml_buf;
 	size_t bufsize;
@@ -110,14 +110,17 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm)
 	int err;
 
 	fprintf(stderr, "MGD DEV begin parsing run-time I/O from %s\n", fname);
+	*status = 0;
 
         if (par_read(fname, mpi_comm, &xml_buf, &bufsize) != 0) {
+		*status = 1;
 		return;
 	}
 
 	streams = ezxml_parse_str(xml_buf, bufsize);
 	if (!streams) {
 		fprintf(stderr, "Error: Problems encountered while parsing run-time I/O config file %s\n", fname);
+		*status = 1;
 		return;
 	}	
 
