@@ -49,6 +49,7 @@ module mpas_stream_manager
         integer :: numStreams = 0
         integer :: errorLevel
         type (MPAS_Pool_type), pointer :: streams
+        type (MPAS_Pool_type), pointer :: alarms
         type (MPAS_Clock_type), pointer :: streamClock
         type (MPAS_Pool_type), pointer :: allFields
         type (MPAS_Pool_type), pointer :: allPackages
@@ -97,6 +98,7 @@ module mpas_stream_manager
         manager % numStreams = 0
         manager % errorLevel = MPAS_STREAM_ERR_SILENT
         call mpas_pool_create_pool(manager % streams)
+        call mpas_pool_create_pool(manager % alarms)
 
 
     end subroutine MPAS_stream_mgr_init!}}}
@@ -127,7 +129,10 @@ module mpas_stream_manager
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
-        call mpas_pool_destroy_pool(manager % streams)
+        call mpas_pool_empty_pool(manager % streams)
+        deallocate(manager % streams)
+        call mpas_pool_empty_pool(manager % alarms)
+        deallocate(manager % alarms)
         deallocate(manager)
 
 
@@ -172,6 +177,7 @@ module mpas_stream_manager
         type (MPAS_Pool_type), pointer :: attributesStream
         type (MPAS_Pool_type), pointer :: newStream
         type (MPAS_Pool_type), pointer :: attachedPackages
+        type (MPAS_Pool_type), pointer :: alarms
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_create_stream()')
 
@@ -180,6 +186,7 @@ module mpas_stream_manager
         call mpas_pool_create_pool(attributesStream)
         call mpas_pool_create_pool(newStream)
         call mpas_pool_create_pool(attachedPackages)
+        call mpas_pool_create_pool(alarms)
 
         ! Add properties
         call mpas_pool_add_config(newStream, MPAS_STREAM_PROPERTY_DIRECTION, MPAS_STREAM_NONE)
@@ -194,6 +201,7 @@ module mpas_stream_manager
 !       end if
         call mpas_pool_add_subpool(newStream, 'globalAttributes', attributesStream)
         call mpas_pool_add_subpool(newStream, 'attachedPackages', attachedPackages)
+        call mpas_pool_add_subpool(newStream, 'alarms', alarms)
         call mpas_pool_add_subpool(manager % streams, streamID, newStream)
 
         manager % numStreams = manager % numStreams + 1
@@ -242,6 +250,8 @@ module mpas_stream_manager
 
         call mpas_pool_empty_pool(stream)
         call mpas_pool_destroy_pool(stream)
+
+        ! DWJ 07/22/2014: Might be leaking memory associated with subpools (alarms, globalAttributes, etc)
 
     end subroutine MPAS_stream_mgr_destroy_stream!}}}
 
@@ -763,26 +773,70 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  This routine will add a stream direction to be associated with an
+    !>  alarm. It will not add the alarm to the manager's clock, but it is assumed
+    !>  that the alarmID is used in the clock's alarm list.
+    !>
+    !>  It will create a subpool within the alarms pool that represents the
+    !>  alarm (if it doesn't exist already). The pool representing this stream
+    !>  will be added to the alarm pool, along with an integer that has the same
+    !>  name as the stream whose value will represent the direction the stream
+    !>  will be handled when this alarm rings.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_alarm(manager, streamID, alarm, alarmID, direction, ierr)
+    subroutine MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, direction, ierr)!{{{
 
         implicit none
 
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_alarm'
+
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
-        type (MPAS_Alarm_type), target, intent(in) :: alarm
-        integer, intent(in) :: alarmID
+        character (len=*), intent(in) :: alarmID
         integer, intent(in) :: direction
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: alarm, alarms
+        type (MPAS_Pool_type), pointer :: stream
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_alarm()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
-    end subroutine MPAS_stream_mgr_add_alarm
+        if (.not. associated(stream)) then
+           write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist.'
+           call mpas_stream_mesg(manager % errorLevel, error)
+           return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'alarms', alarms)
+
+        if (.not. associated(alarms)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not have an alarms subpool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(manager % alarms, alarmID, alarm)
+
+        if (.not. associated(alarm)) then
+            call mpas_pool_create_pool(alarm)
+            call mpas_pool_add_subpool(manager % alarms, alarmID, alarm)
+        end if
+
+        ! Attach stream to alarm
+        call mpas_pool_add_subpool(alarm, streamID, stream)
+        call mpas_pool_add_config(alarm, streamID, direction)
+
+        ! Attach alarm to stream
+        call mpas_pool_add_subpool(alarms, alarmID, alarm)
+        call mpas_pool_add_config(alarms, alarmID, direction)
+
+    end subroutine MPAS_stream_mgr_add_alarm!}}}
 
 
     !-----------------------------------------------------------------------
@@ -792,25 +846,64 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Blah.
+    !>  This routine will remove the association of a stream to an alarm from
+    !>  the stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_remove_alarm(manager, streamID, alarmID, direction, ierr)
+    subroutine MPAS_stream_mgr_remove_alarm(manager, streamID, alarmID, direction, ierr)!{{{
 
         implicit none
 
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_remove_alarm'
+
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
-        integer, intent(in) :: alarmID
+        character (len=*), intent(in) :: alarmID
         integer, intent(in) :: direction
         integer, intent(out), optional :: ierr
+
+        type (MPAS_Pool_type), pointer :: alarm, alarms
+        type (MPAS_Pool_type), pointer :: stream
+
+        character (len=StrKIND) :: error
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_alarm()')
 
         if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
+        call mpas_pool_get_subpool(manager % alarms, alarmID, alarm)
 
-    end subroutine MPAS_stream_mgr_remove_alarm
+        if (.not. associated(alarm)) then
+            write(error, *) 'ERROR: ', trim(sub), ' alarm ', trim(alarmID), ' does not exist in manager.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(manager % streams, streamID, stream)
+
+        if (.not. associated(stream)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not exist in manager.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        call mpas_pool_get_subpool(stream, 'alarms', alarms)
+
+        if (.not. associated(alarms)) then
+            write(error, *) 'ERROR: ', trim(sub), ' stream ', trim(streamID), ' does not have an alarms subpool.'
+            call mpas_stream_mesg(manager % errorLevel, error)
+            return
+        end if
+
+        ! Remove stream from alarm
+        call mpas_pool_remove_subpool(alarm, streamID)
+        call mpas_pool_remove_config(alarm, streamID)
+
+        ! Remove alarm from stream
+        call mpas_pool_remove_subpool(alarms, alarmID)
+        call mpas_pool_remove_config(alarms, alarmID)
+
+    end subroutine MPAS_stream_mgr_remove_alarm!}}}
 
 
     !-----------------------------------------------------------------------
