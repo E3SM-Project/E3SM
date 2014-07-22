@@ -512,14 +512,18 @@ module mpas_timekeeping
       if (present(ierr)) ierr = 0
 
       alarmPtr => clock % alarmListHead
-      alarmParentPtr = alarmPtr
+      alarmParentPtr => alarmPtr
       do while (associated(alarmPtr))
          if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-            alarmParentPtr % next => alarmPtr % next
+            if (trim(alarmPtr % alarmID) == trim(clock % alarmListHead % alarmID)) then
+               clock % alarmListHead => alarmPtr % next
+            else
+               alarmParentPtr % next => alarmPtr % next
+            end if
             deallocate(alarmPtr)
             exit
          end if
-         alarmParentPtr = alarmPtr
+         alarmParentPtr => alarmPtr
          alarmPtr => alarmPtr % next
       end do
 
