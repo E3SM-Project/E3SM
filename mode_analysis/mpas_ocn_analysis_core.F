@@ -40,10 +40,10 @@ module mpas_core
 
    type (MPAS_Clock_type) :: clock
 
-   integer, parameter :: outputAlarmID = 1
-   integer, parameter :: restartAlarmID = 2
-   integer, parameter :: statsAlarmID = 3
-   integer, parameter :: coupleAlarmID = 4
+   character(len=*), parameter :: outputAlarmID = 'output'
+   character(len=*), parameter :: restartAlarmID = 'restart'
+   character(len=*), parameter :: statsAlarmID = 'stats'
+   character(len=*), parameter :: coupleAlarmID = 'couple'
 
    type (timer_node), pointer :: globalDiagTimer, timeIntTimer, testSuiteTimer
    type (timer_node), pointer :: initDiagSolveTimer

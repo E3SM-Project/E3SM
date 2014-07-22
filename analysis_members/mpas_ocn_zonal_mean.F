@@ -279,7 +279,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer, intent(in) :: computeAlarmID
+      character (len=*), intent(in) :: computeAlarmID
       type (MPAS_Time_Type), intent(in) :: startTime
 
       !-----------------------------------------------------------------
