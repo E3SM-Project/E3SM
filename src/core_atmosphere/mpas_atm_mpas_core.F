@@ -15,10 +15,11 @@ module mpas_core
    
    type (MPAS_Clock_type) :: clock
 
-   integer, parameter :: outputAlarmID = 1 
-   integer, parameter :: restartAlarmID = 2 
-   integer, parameter :: sfcAlarmID = 3 
-   integer, parameter :: hifreqAlarmID = 4
+   character(len=*), parameter :: outputAlarmID = 'output' 
+   character(len=*), parameter :: restartAlarmID = 'restart' 
+   character(len=*), parameter :: sfcAlarmID = 'sfc' 
+   character(len=*), parameter :: hifreqAlarmID = 'hifreq'
+
 
    contains
 

@@ -60,9 +60,9 @@ module ocn_analysis_driver
    !--------------------------------------------------------------------
 
    ! start alarm IDs at 11 because lower values are assigned in mpas_ocn_mpas_core.F
-   integer, parameter :: compute_global_stats_AlarmID = 11
-   integer, parameter :: compute_zonal_mean_AlarmID = 12
-!   integer, parameter :: compute_TEMPLATE_AlarmID = (increment previous)
+   character (len=*), parameter :: compute_global_stats_AlarmID = 'globalStats'
+   character (len=*), parameter :: compute_zonal_mean_AlarmID = 'zonalMean'
+!  character (len=*), parameter :: compute_TEMPLATE_AlarmID = 'templateName'
 
 !***********************************************************************
 

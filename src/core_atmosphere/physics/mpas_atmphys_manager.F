@@ -30,40 +30,40 @@
 
 !defines alarms for calling the long- and short-wave radiation codes, for calling the convec-
 !tion scheme:
- integer, parameter:: radtlwAlarmID = 11
- integer, parameter:: radtswAlarmID = 12
- integer, parameter:: convAlarmID   = 13
- integer, parameter:: pblAlarmID    = 14
+ character(len=*), parameter:: radtlwAlarmID = 'radtlw'
+ character(len=*), parameter:: radtswAlarmID = 'radtsw'
+ character(len=*), parameter:: convAlarmID   = 'conv'
+ character(len=*), parameter:: pblAlarmID    = 'pbl'
 
 !defines alarm to update the surface boundary conditions:
- integer, parameter:: sfcbdyAlarmID = 15
+ character(len=*), parameter:: sfcbdyAlarmID = 'sfcbdy'
 
 !defines alarm to update the background surface albedo and the greeness fraction:
- integer, parameter:: greenAlarmID  = 16
+ character(len=*), parameter:: greenAlarmID  = 'green'
 
 !defines alarm to update the ozone path length,the trace gas path length,the total emissivity,
 !and the total absorptivity in the "CAM" long-wave radiation codes. The default time interval
 !between updates is 6 hours and is set with config_camrad_abs_update (00:30:00).
- integer, parameter:: camAlarmID    = 17
+ character(len=*), parameter:: camAlarmID    = 'cam'
 
 !defines alarm to save the CAM arrays absnst, absnxt, and emstot to restart files. When the
 !alarm rings, the local arrays absnt_p, absnxt_p, and emstot_p are copied to the MPAS arrays
 !for writing to restart files at the bottom of the time-step:
- integer, parameter:: camlwAlarmID  = 18
+ character(len=*), parameter:: camlwAlarmID  = 'camlw'
  type(MPAS_TimeInterval_Type):: camlwTimeStep
 
 !defines alarm to check if the accumulated rain due to cloud microphysics and convection is
 !greater than its maximum allowed value:
- integer, parameter:: acrainAlarmID   = 19
+ character(len=*), parameter:: acrainAlarmID   = 'acrain'
  type(MPAS_TimeInterval_Type):: acrainTimeStep
 
 !defines alarm to check if the accumulated radiation diagnostics due to long- and short-wave
 !radiation is greater than its maximum allowed value:
- integer, parameter:: acradtAlarmID   = 20
+ character(len=*), parameter:: acradtAlarmID   = 'acradt'
  type(MPAS_TimeInterval_Type):: acradtTimeStep
 
 !defines alarm to compute some physics diagnostics, such as radar reflectivity:
- integer, parameter:: diagAlarmID     = 21
+ character(len=*), parameter:: diagAlarmID     = 'diag'
 
  integer :: h, m, s, s_n, s_d, DoY, yr
  real(kind=RKIND) :: utc_h

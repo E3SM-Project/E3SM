@@ -44,7 +44,7 @@ module mpas_timekeeping
    end type
 
    type MPAS_Alarm_type
-      integer :: alarmID
+      character (len=ShortStrKIND) :: alarmID
       logical :: isRecurring
       logical :: isSet
       type (MPAS_Time_type) :: ringTime
@@ -439,7 +439,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(inout) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       type (MPAS_Time_type), intent(in) :: alarmTime
       type (MPAS_TimeInterval_type), intent(in), optional :: alarmTimeInterval
       integer, intent(out), optional :: ierr
@@ -454,15 +454,15 @@ module mpas_timekeeping
       else
          alarmPtr => clock % alarmListHead
          do while (associated(alarmPtr % next))
-            if (alarmPtr % alarmID == alarmID) then
-               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', alarmID
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
                if (present(ierr)) ierr = 1
                return
             end if
             alarmPtr => alarmPtr % next
          end do
-            if (alarmPtr % alarmID == alarmID) then
-               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', alarmID
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
                if (present(ierr)) ierr = 1
                return
             end if
@@ -471,7 +471,7 @@ module mpas_timekeeping
          nullify(alarmPtr % next)
       end if
 
-      alarmPtr % alarmID = alarmID
+      alarmPtr % alarmID = trim(alarmID)
 
       clock % nAlarms = clock % nAlarms + 1
 
@@ -503,7 +503,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(inout) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       integer, intent(out), optional :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
@@ -514,7 +514,7 @@ module mpas_timekeeping
       alarmPtr => clock % alarmListHead
       alarmParentPtr = alarmPtr
       do while (associated(alarmPtr))
-         if (alarmPtr % alarmID == alarmID) then
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
             alarmParentPtr % next => alarmPtr % next
             deallocate(alarmPtr)
             exit
@@ -532,19 +532,19 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(in) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       integer, intent(out) :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
-      character (len=StrKIND) :: printString
+      character (len=ShortStrKIND) :: printString
 
       ierr = 0
 
       alarmPtr => clock % alarmListHead
       do while (associated(alarmPtr))
-         if (alarmPtr % alarmID == alarmID) then
-            write(stderrUnit,*) 'ALARM ', alarmID
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            write(stderrUnit,*) 'ALARM ', trim(alarmID)
 
             write(stderrUnit,*) 'isRecurring', alarmPtr % isRecurring
             
@@ -573,7 +573,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(in) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       type (MPAS_TimeInterval_type), intent(in), optional :: interval
       integer, intent(out), optional :: ierr
 
@@ -585,7 +585,7 @@ module mpas_timekeeping
       
       alarmPtr => clock % alarmListHead
       do while (associated(alarmPtr))
-         if (alarmPtr % alarmID == alarmID) then
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
             if (alarmPtr % isSet) then
                if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
                   mpas_is_alarm_ringing = .true.
@@ -606,7 +606,7 @@ module mpas_timekeeping
 
       type (MPAS_Clock_type), intent(in) :: clock
       integer, intent(out) :: nAlarms
-      integer, dimension(MPAS_MAX_ALARMS), intent(out) :: alarmList
+      character (len=ShortStrKIND), dimension(MPAS_MAX_ALARMS), intent(out) :: alarmList
       type (MPAS_TimeInterval_type), intent(in), optional :: interval
       integer, intent(out), optional :: ierr
 
@@ -621,7 +621,7 @@ module mpas_timekeeping
          if (alarmPtr % isSet) then
             if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
                nAlarms = nAlarms + 1
-               alarmList(nAlarms) = alarmPtr % alarmID
+               alarmList(nAlarms) = trim(alarmPtr % alarmID)
             end if
          end if
          alarmPtr => alarmPtr % next
@@ -684,7 +684,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(inout) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       type (MPAS_TimeInterval_type), intent(in), optional :: interval
       integer, intent(out), optional :: ierr
 
@@ -696,7 +696,7 @@ module mpas_timekeeping
       alarmPtr => clock % alarmListHead
       do while (associated(alarmPtr))
       
-         if (alarmPtr % alarmID == alarmID) then
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
 
             if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
 

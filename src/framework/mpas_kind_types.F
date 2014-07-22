@@ -26,6 +26,7 @@ module mpas_kind_types
 #endif
 
    integer, parameter :: StrKIND = 512
+   integer, parameter :: ShortStrKIND = 32
 
    contains
 

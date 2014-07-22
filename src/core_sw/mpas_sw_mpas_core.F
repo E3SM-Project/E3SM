@@ -15,11 +15,13 @@ module mpas_core
 
    type (MPAS_Clock_type) :: clock
 
-   integer, parameter :: outputAlarmID = 1
-   integer, parameter :: restartAlarmID = 2
-   !integer, parameter :: statsAlarmID = 3
+   character(len=*), parameter :: outputAlarmID = 'output'
+   character(len=*), parameter :: restartAlarmID = 'reset'
+   !character(len=*), parameter :: statsAlarmID = 'stats'
+
 
    contains
+
 
    subroutine mpas_core_init(domain, startTimeStamp)
    
