@@ -35,9 +35,9 @@ module mpas_core
    !
    !--------------------------------------------------------------------
 
-   integer, parameter :: outputAlarmID = 1
-   integer, parameter :: restartAlarmID = 2
-   !integer, parameter :: statsAlarmID = 3
+   character(len=*), parameter :: outputAlarmID = 'output'
+   character(len=*), parameter :: restartAlarmID = 'restart'
+   !character(len=*), parameter :: statsAlarmID = 'stats'
 
 !***********************************************************************
 
