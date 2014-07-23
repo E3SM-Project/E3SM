@@ -564,9 +564,9 @@ void write_default_streams(ezxml_t registry)
 	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml;
 
 	const char *optstream, *optname, *optvarname, *opttype;
-	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out;
-	FILE *fd;
-	char filename[1024];
+	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optruntime;
+	FILE *fd, *fd2;
+	char filename[64], filename2[64];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
 
 
@@ -585,6 +585,7 @@ void write_default_streams(ezxml_t registry)
 			optinterval_in = ezxml_attr(opt_xml, "input_interval");
 			optinterval_out = ezxml_attr(opt_xml, "output_interval");
 			optimmutable = ezxml_attr(opt_xml, "immutable");
+			optruntime = ezxml_attr(opt_xml, "runtime_format");
 
 			/* Generate immutable default stream */
 			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
@@ -615,21 +616,64 @@ void write_default_streams(ezxml_t registry)
 				}
 				fprintf(fd, ">\n\n");
 	
-				/* Loop over fields listed within the stream */
-				for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
-					optname = ezxml_attr(var_xml, "name");
-					fprintf(fd, "    <var name=\"%s\"/>\n", optname);
-				}
+				/* 
+				 * Depending on the runtime format, we either generate a separate list of fields for
+				 *   each stream, or we list the fields directly in the main stream control file
+				 */
+				
+				if (strcmp(optruntime,"single_file") == 0) {
 
-				/* Loop over fields looking for any that belong to the stream */
-				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
-					for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
-						optstream = ezxml_attr(var_xml, "streams");
-						if (optstream != NULL && strstr(optstream, optname) != NULL) {
-							optvarname = ezxml_attr(var_xml, "name");
-							fprintf(fd, "    <var name=\"%s\"/>\n", optvarname);
-						}	
+					/* Loop over fields listed within the stream */
+					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optname = ezxml_attr(var_xml, "name");
+						fprintf(fd, "    <var name=\"%s\"/>\n", optname);
 					}
+	
+					/* Loop over fields looking for any that belong to the stream */
+					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+						for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+							optstream = ezxml_attr(var_xml, "streams");
+							if (optstream != NULL && strstr(optstream, optname) != NULL) {
+								optvarname = ezxml_attr(var_xml, "name");
+								fprintf(fd, "    <var name=\"%s\"/>\n", optvarname);
+							}	
+						}
+					}
+
+				}
+				else if (strcmp(optruntime,"separate_file") == 0) {
+
+					sprintf(filename2, "stream_list.%s.%s", suffix, optname);
+
+					fprintf(fd, "    <file name=\"%s\"/>\n", filename2);
+
+					fd2 = fopen(filename2, "w+");
+
+					/* Loop over fields listed within the stream */
+					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optname = ezxml_attr(var_xml, "name");
+						fprintf(fd2, "%s\n", optname);
+					}
+	
+					/* Loop over fields looking for any that belong to the stream */
+					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+						for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+							optstream = ezxml_attr(var_xml, "streams");
+							if (optstream != NULL && strstr(optstream, optname) != NULL) {
+								optvarname = ezxml_attr(var_xml, "name");
+								fprintf(fd2, "%s\n", optvarname);
+							}	
+						}
+					}
+	
+					fclose(fd2);
+
+				}
+				else {
+					fprintf(stderr, "******************************************************\n");
+					fprintf(stderr, "Error in specification of stream_format; this probably \n");
+					fprintf(stderr, "should have been caught during validation...\n");
+					fprintf(stderr, "******************************************************\n");
 				}
 
 				fprintf(fd, "\n");

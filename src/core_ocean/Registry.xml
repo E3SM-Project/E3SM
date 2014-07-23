@@ -866,7 +866,8 @@
                         type="output"
                         filename_template="output.$Y-$M-$D_$h.$m.$s.nc"
                         records_per_file="1000"
-                        output_interval="0001_00:00:00">
+                        output_interval="0001_00:00:00"
+                        runtime_format="single_file">
 
 			<var name="temperature"/>
 			<var name="salinity"/>

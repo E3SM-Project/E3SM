@@ -90,6 +90,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
 	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
+	const char *streamimmutable, *streamformat;
 	const char *streamname2, *streamfilename2;
 	const char *time_levs;
 
@@ -514,6 +515,8 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			streaminterval_in = ezxml_attr(stream_xml, "input_interval");
 			streaminterval_out = ezxml_attr(stream_xml, "output_interval");
 			streampackages = ezxml_attr(stream_xml, "packages");
+			streamimmutable = ezxml_attr(stream_xml, "immutable");
+			streamformat = ezxml_attr(stream_xml, "runtime_format");
 
 			if (streamname == NULL) {
 				fprintf(stderr, "ERROR: Stream specification missing \"name\" attribute.\n");
@@ -539,6 +542,10 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				fprintf(stderr, "ERROR: Stream %s is marked as output but is missing \"output_interval\" attribute.\n", streamname);
 				return 1;
 			}
+			else if (streamformat == NULL && (streamimmutable == NULL || (streamimmutable != NULL && strcmp(streamimmutable,"true") != 0))) {
+				fprintf(stderr, "ERROR: Mutable stream %s must have the \"runtime_format\" attribute.\n", streamname);
+				return 1;
+			}
 			else {
 				for (stream_var_xml = ezxml_child(stream_xml, "var"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
 					varname_in_stream = ezxml_attr(stream_var_xml, "name");
@@ -547,8 +554,16 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 						return 1;
 					}
 
+					/* Check that runtime_format is a valid option for mutable streams */
+					if (streamimmutable == NULL || (streamimmutable != NULL && strcmp(streamimmutable,"true") != 0)) {
+						if (strcmp(streamformat, "single_file") != 0 && strcmp(streamformat, "separate_file") != 0) {
+							fprintf(stderr, "ERROR: Runtime_format specification for stream \"%s\" must be either \"single_file\" or \"separate_file\".\n", streamname);
+							return 1;
+						}
+					}
 
-					// Check that the variable being added to the stream has been defined
+
+					/* Check that the variable being added to the stream has been defined */
 					for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next) {
 						for (var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next) {
 							for (var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next) {
@@ -568,7 +583,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 
 done_searching:
 
-					// did we find what we were looking for?
+					/* did we find what we were looking for? */
 					if (var_xml == NULL) {
 						fprintf(stderr, "ERROR: Trying to add undefined variable %s to stream %s.\n", varname_in_stream, streamname);
 						return 1;
@@ -576,6 +591,10 @@ done_searching:
 
 
 				}
+			}
+
+			if (streamformat != NULL && streamimmutable != NULL && strcmp(streamimmutable,"true") == 0) {
+				fprintf(stderr, "Warning: runtime_format attribute has no effect for immutable stream \"%s\".\n", streamname);
 			}
 
 			if (streampackages != NULL) {

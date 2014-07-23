@@ -236,7 +236,8 @@
                         type="output" 
                         filename_template="x1.40962.init.nc"
                         records_per_file="1"
-                        output_interval="initial_only">
+                        output_interval="initial_only"
+                        runtime_format="separate_file">
 
 			<var name="latCell"/>
 			<var name="lonCell"/>

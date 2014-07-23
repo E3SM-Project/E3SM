@@ -242,7 +242,9 @@ int check_streams(ezxml_t streams)
 	ezxml_t stream_xml;
 	ezxml_t stream2_xml;
 	ezxml_t test_xml;
+	ezxml_t test2_xml;
 	const char *name;
+	const char *filename;
 	char msgbuf[MSGSIZE];
 
 
@@ -254,7 +256,8 @@ int check_streams(ezxml_t streams)
 
 		/* Check that users are not attempting to add fields to an immutable stream */
 		test_xml = ezxml_child(stream_xml, "var");
-		if (test_xml != NULL) {
+		test2_xml = ezxml_child(stream_xml, "file");
+		if (test_xml != NULL || test2_xml != NULL) {
 			name = ezxml_attr(stream_xml, "name");
 			snprintf(msgbuf, MSGSIZE, "the set of variables in stream \"%s\" cannot be modified.", name);
 			fmt_err(msgbuf);
@@ -264,9 +267,21 @@ int check_streams(ezxml_t streams)
 
 	/* Check mutable streams */
 	for (stream_xml = ezxml_child(streams, "stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
+		name = ezxml_attr(stream_xml, "name");
+
 		if (attribute_check(stream_xml) != 0) {
 			return 1;
 		}	
+
+		/* If fields are specified in a separate file, that file should exist */
+		for (test_xml = ezxml_child(stream_xml, "file"); test_xml; test_xml = ezxml_next(test_xml)) {
+			filename = ezxml_attr(test_xml, "name");
+			if (access(filename, F_OK|R_OK) == -1) {
+				snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references file %s that cannot be opened for reading.", name, filename);
+				fmt_err(msgbuf);
+				return 1;
+			}
+		}
 	}
 
 

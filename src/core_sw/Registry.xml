@@ -176,7 +176,8 @@
                         type="output"
                         filename_template="output.nc"
                         records_per_file="1"
-                        output_interval="6:00:00">
+                        output_interval="6:00:00"
+                        runtime_format="single_file">
 
 			<var name="xtime"/>
 			<var name="u"/>

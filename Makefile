@@ -429,6 +429,7 @@ endif
 	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
 	if [ -e src/inc/streams.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/streams.$(NAMELIST_SUFFIX).defaults .; fi
 	if [ ! -e streams.$(NAMELIST_SUFFIX) ]; then cp streams.$(NAMELIST_SUFFIX).defaults streams.$(NAMELIST_SUFFIX); fi
+	for f in `find src/inc -name "stream_list.*"`; do mv $$f .; done
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)

@@ -532,7 +532,8 @@
                         type="output" 
                         filename_template="history.$Y-$M-$D_$h.$m.$s.nc" 
                         records_per_file="1" 
-                        output_interval="6:00:00">
+                        output_interval="6:00:00"
+                        runtime_format="separate_file">
 
 			<var name="latCell"/>
 			<var name="lonCell"/>
@@ -887,7 +888,8 @@
                         type="input" 
                         filename_template="x1.40962.sfc_update.nc" 
                         records_per_file="0" 
-                        input_interval="none">
+                        input_interval="none"
+                        runtime_format="separate_file">
 
 			<var name="sst"/>
 			<var name="xice"/>
