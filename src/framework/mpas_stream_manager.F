@@ -6,12 +6,13 @@ module mpas_stream_manager
     use mpas_grid_types
     use mpas_timekeeping
     use mpas_io_units
+    use mpas_io_streams
 
     integer, public, parameter :: MPAS_STREAM_ERR_FATAL  = 1000, &
                                   MPAS_STREAM_ERR_WARN   = 1001, &
                                   MPAS_STREAM_ERR_SILENT = 1002
 
-    integer, public, parameter :: MPAS_STREAM_NOERR = 0
+    integer, public, parameter :: MPAS_STREAM_MGR_NOERR = 0
 
     integer, public, parameter :: MPAS_STREAM_INPUT = 1, &
                                   MPAS_STREAM_OUTPUT = 2, &
@@ -41,7 +42,8 @@ module mpas_stream_manager
               MPAS_stream_mgr_add_alarm, &
               MPAS_stream_mgr_remove_alarm, &
               MPAS_stream_mgr_write, &
-              MPAS_stream_mgr_read
+              MPAS_stream_mgr_read, &
+              MPAS_stream_mgr_expand_filename
 
     private
 
@@ -90,7 +92,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_init()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         allocate(manager)
         manager % allFields => allFields
@@ -127,7 +129,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_finalize()') 
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_empty_pool(manager % streams)
         deallocate(manager % streams)
@@ -181,7 +183,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_create_stream()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_create_pool(attributesStream)
         call mpas_pool_create_pool(newStream)
@@ -236,7 +238,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_destroy_stream()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -285,7 +287,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_set_property()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -334,7 +336,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_property()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -379,7 +381,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_pkg()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -431,7 +433,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_pkg()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -482,7 +484,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_field()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -535,7 +537,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_field()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, trim(streamID), stream)
 
@@ -578,7 +580,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -629,7 +631,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -682,7 +684,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -736,7 +738,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -803,7 +805,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_alarm()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % streams, streamID, stream)
 
@@ -869,7 +871,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_alarm()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         call mpas_pool_get_subpool(manager % alarms, alarmID, alarm)
 
@@ -938,10 +940,31 @@ module mpas_stream_manager
         logical, intent(in), optional :: forceWriteNow
         integer, intent(out), optional :: ierr
 
+        integer :: iAlarm, nRinging
+        character (len=ShortStrKIND), dimension(MPAS_MAX_ALARMS) :: ringingAlarms
+
+        type (MPAS_Pool_type), pointer :: alarm, alarms
+        type (MPAS_Pool_type), pointer :: stream
+        type (MPAS_Pool_iterator_type) :: itr
+
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_write()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
+        ! Handle all streams that are rining
+        if (.not. present(streamID)) then
+            call mpas_get_clock_ringing_alarms(manager % streamClock, nRinging, ringingAlarms)
+
+            do iAlarm = 1, nRinging
+                call mpas_pool_get_subpool(manager % alarms, ringingAlarms(iAlarm), alarm)
+
+                if (associated(alarm)) then
+                    
+                end if
+            end do
+        end if
+
+        
 
     end subroutine MPAS_stream_mgr_write
 
@@ -991,7 +1014,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_read()')
 
-        if (present(ierr)) ierr = MPAS_STREAM_NOERR
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
         if (present(actualWhen)) write(actualWhen,'(a)') '0000-01-01_00:00:00'
 
 
@@ -1021,6 +1044,134 @@ module mpas_stream_manager
         end if
 
     end subroutine MPAS_stream_mesg!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine mpas_stream_mgr_build_stream
+    !
+    !> \brief This is a utility routine to build a stream type from a pool representing a stream.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   07/23/2014
+    !> \details This routine will take as input a pool representing a stream.
+    !>  It will then generate a stream type based on this pool, and return that.
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_build_stream(timeStamp, inPool, stream)!{{{
+        character (len=*), intent(in) :: timeStamp
+        type (MPAS_Pool_type), intent(inout) :: inPool
+        type (MPAS_Stream_type), pointer :: stream
+
+        type (MPAS_Pool_iterator_type) :: itr
+
+        character (len=StrKIND), pointer :: filenameTemplate
+        integer, pointer :: direction
+        integer, pointer :: maxRecords
+
+        call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_FILENAME, filenameTemplate)
+        call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_DIRECTION, direction)
+        call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords)
+
+        do while ( mpas_pool_get_next_member(inPool, itr) )
+            
+        end do
+
+    end subroutine MPAS_stream_mgr_build_stream!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine mpas_stream_mgr_expand_filename
+    !
+    !> \brief This is a utility routine that expands a filename template.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   07/23/2014
+    !> \details This routine will take a time stamp, and a filename template as
+    !>   input, and expand the template according to the time stamp provided.
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_expand_filename(timeStamp, filenameTemplate, filename)!{{{
+        
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_expand_filename'
+
+        character (len=*), intent(in) :: timeStamp
+        character (len=*), intent(in) :: filenameTemplate
+        character (len=StrKIND), intent(out) :: filename
+
+        type (MPAS_Time_type) :: curTime
+
+        integer :: i, curLen
+        integer :: year, month, day, hour, minute, second, DoY
+
+        character (len=StrKIND) :: error
+        character (len=ShortStrKIND) :: timePart
+        character (len=ShortStrKIND) :: yearFormat
+        logical :: charExpand
+
+        call mpas_set_time(curTime, dateTimeString=timeStamp)
+
+        call mpas_get_time(curTime, YYYY=year)
+        if (year < 1000) then
+            write(yearFormat, *) '(i0.4)'
+        else if (year < 1000000) then
+            write(yearFormat, *) '(i0.8)'
+        else if (year < 1000000000) then
+            write(yearFormat, *) '(i0.12)'
+        end if
+
+        write(filename,*) ''
+        write(timePart,*) ''
+
+        curLen = 0
+        charExpand = .false.
+        do i = 1, len_trim(filenameTemplate)
+           if (filenameTemplate(i:i) == '$' ) then
+               charExpand = .true.
+           else if (filenameTemplate(i:i) /= '$') then
+               if (charExpand) then
+                  select case (filenameTemplate(i:i))
+                     case ('Y')
+                         call mpas_get_time(curTime, YYYY=year)
+                         write(timePart, yearFormat) year
+                         filename = trim(filename) // trim(timePart)
+                     case ('M')
+                         call mpas_get_time(curTime, MM=month)
+                         write(timePart, '(i0.2)') month
+                         filename = trim(filename) // trim(timePart)
+                     case ('D')
+                         call mpas_get_time(curTime, DD=day)
+                         write(timePart, '(i0.2)') day
+                         filename = trim(filename) // trim(timePart)
+                     case ('d')
+                         call mpas_get_time(curTime, DoY=DoY)
+                         write(timePart, '(i0.3)') DoY
+                         filename = trim(filename) // trim(timePart)
+                     case ('h')
+                         call mpas_get_time(curTime, H=hour)
+                         write(timePart, '(i0.2)') hour
+                         filename = trim(filename) // trim(timePart)
+                     case ('m')
+                         call mpas_get_time(curTime, M=minute)
+                         write(timePart, '(i0.2)') minute
+                         filename = trim(filename) // trim(timePart)
+                     case ('s')
+                         call mpas_get_time(curTime, S=second)
+                         write(timePart, '(i0.2)') second
+                         filename = trim(filename) // trim(timePart)
+!                    case ('G')
+                        ! Expands to multi-grid level
+                     case default
+                        write(error, *) 'ERROR: ', trim(sub), ' option $', filenameTemplate(i:i), ' is not a valid expansion character.'
+                        call mpas_stream_mesg(MPAS_STREAM_ERR_FATAL, error)
+                  end select
+
+                  curLen = len_trim(filename)
+                  charExpand = .false.
+               else
+                  filename(curLen+1:curLen+1) = filenameTemplate(i:i)
+                  curLen = curLen+1
+               end if
+           else
+           end if
+        end do
+
+    end subroutine MPAS_stream_mgr_expand_filename!}}}
     
 end module mpas_stream_manager
 
