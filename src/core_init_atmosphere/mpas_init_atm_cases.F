@@ -55,6 +55,8 @@ module init_atm_cases
       logical, pointer :: config_static_interp
       logical, pointer :: config_met_interp
 
+      character(len=StrKIND), pointer :: mminlu
+
       integer, pointer :: nCells
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
@@ -197,6 +199,21 @@ module init_atm_cases
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
                call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
             end if
+
+            !
+            ! If at this point the mminlu variable is blank, we assume that the static interp step was
+            !   not run, and that we are working with a static file created before there was a choice
+            !   of land use datasets; in this case, the dataset was almost necessarily USGS
+            !
+            call mpas_pool_get_array(mesh, 'mminlu', mminlu)
+            if (len_trim(mminlu) == 0) then
+                  write(0,*) '****************************************************************'
+                  write(0,*) 'No information on land use dataset is available.'
+                  write(0,*) 'Assume that we are using ''USGS''.'
+                  write(0,*) '****************************************************************'
+                  write(mminlu,'(a)') 'USGS'
+            end if
+
             call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
                                    diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
             if (config_met_interp) call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)

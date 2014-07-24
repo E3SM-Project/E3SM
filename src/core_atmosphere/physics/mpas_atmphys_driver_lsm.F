@@ -30,9 +30,7 @@
  logical,parameter:: frpcpn   = .false.
  logical,parameter:: rdlai2d  = .false.
 
-!urban physics: since MPAS does not plan to run the urban physics option, the two options
-!below are defined locally:
- integer,parameter,public:: isurban=1
+!urban physics: MPAS does not plan to run the urban physics option.
  integer,parameter:: sf_urban_physics = 0 !activate urban canopy model (=0: no urban canopy) 
 
  integer,private:: i,j,k,n
@@ -63,6 +61,9 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * Moved the definition of isurban to subroutine landuse_init_forMPAS in mpas_atmphys_landuse.F.
+!>      isurban is now defined as a function of the input landuse data file.
+!>      Dominikus Heinzeller (IMK) / 2014-07-24.
 
 !>
 !> DOCUMENTATION:
@@ -560,7 +561,7 @@
 
 !local pointers:
  logical,pointer:: config_sfc_albedo
- character(len=StrKIND),pointer:: input_landuse_data
+ character(len=StrKIND),pointer:: mminlu
 
 !---------------------------------------------------------------------------------------------
  write(0,*)
@@ -570,7 +571,7 @@
  write(0,*) '--- isurban = ', isurban
 
  call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
- call mpas_pool_get_config(configs,'input_landuse_data',input_landuse_data)
+ call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
 
 !formats:
  101 format(2i6,8(1x,e15.8))
@@ -609,7 +610,7 @@
                 itimestep = itimestep , frpcpn    = frpcpn       , rdlai2d   = rdlai2d      , &
                 xice_threshold   = xice_threshold     ,                                       &
                 usemonalb        = config_sfc_albedo  ,                                       &
-                mminlu           = input_landuse_data ,                                       &
+                mminlu           = mminlu ,                                                   &
                 num_soil_layers  = num_soils          ,                                       &         
                 num_roof_layers  = num_soils    ,                                             &
                 num_wall_layers  = num_soils    ,                                             &

@@ -194,6 +194,7 @@
 			<var name="surface_pressure"/>
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -481,6 +482,7 @@
 			<var name="ozmixm"/>
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -830,6 +832,7 @@
 			<var name="ozmixm"/>
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -1156,7 +1159,6 @@
 
         <nml_record name="physics" in_defaults="true">
                 <!-- NAMELIST VARIABLES ADDED FOR INITIALIZATION OF SURFACE CHARACTERISTICS: -->
-                <nml_option name="input_landuse_data"                type="character"     default_value="USGS"       in_defaults="false"/>
                 <nml_option name="input_soil_data"                   type="character"     default_value="STAS"       in_defaults="false"/>
                 <nml_option name="input_soil_temperature_lag"        type="integer"       default_value="140"        in_defaults="false"/>
                 <nml_option name="num_soil_layers"                   type="integer"       default_value="4"          in_defaults="false"/>
@@ -1706,6 +1708,7 @@
                 <!--  greenfrac      :monthly climatological greeness fraction                                      [-] -->
                 <!--  isltyp         :dominant soil category                                                        [-] -->
                 <!--  ivgtyp         :dominant vegetation category                                                  [-] -->
+                <!--  mminlu         :land use classification scheme                                                [-] -->
                 <!--  landmask       :=0 for ocean;=1 for land                                                      [-] -->
                 <!--  sfc_albbck     :background albedo                                                             [-] -->
                 <!--  shdmin         :minimum areal fractional coverage of annual green vegetation                  [-] -->
@@ -1731,6 +1734,7 @@
 
                 <var name="isltyp"      type="integer"  dimensions="nCells"/>
                 <var name="ivgtyp"      type="integer"  dimensions="nCells"/>
+                <var name="mminlu"      type="text"     dimensions=""/>
                 <var name="landmask"    type="integer"  dimensions="nCells"/>
                 <var name="shdmin"      type="real"     dimensions="nCells"/>
                 <var name="shdmax"      type="real"     dimensions="nCells"/>

@@ -102,7 +102,7 @@
 
 !--------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'input_landuse_data'   ,mminlu          )
+ call mpas_pool_get_array(sfc_input,'mminlu'              ,mminlu          )
  call mpas_pool_get_config(configs,'input_soil_data'      ,mminsl          )
  call mpas_pool_get_config(configs,'config_sfc_snowalbedo',input_sfc_albedo)
  call mpas_pool_get_config(configs,'config_do_restart'    ,restart         )
@@ -258,7 +258,7 @@
           call physics_message(mess)
           lumatch=1
        else
-          call physics_message("skipping over lutype = " // trim ( lutype ))
+          call physics_message('    skipping over lutype = ' // trim ( lutype ))
           do lc = 1, lucats+12
              read(16,*)
           enddo
@@ -307,7 +307,7 @@
     2002 continue
     close (16)
     if(lumatch == 0) &
-       call physics_error_fatal ("land use dataset '"//mminlu//"' not found in vegparm.tbl.")
+       call physics_error_fatal ('land use dataset '''//mminlu//''' not found in VEGPARM.TBL.')
       
  endif ! end dminfo
 

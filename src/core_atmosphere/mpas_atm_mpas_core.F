@@ -248,6 +248,7 @@ module mpas_core
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      character(len=StrKIND), pointer :: mminlu
 
       integer, pointer :: nEdgesSolve
    
@@ -288,9 +289,21 @@ module mpas_core
       call physics_namelist_check(mesh, block % configs)
 
       !proceed with initialization of physics parameterization if moist_physics is set to true:
+      call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
+
+      ! Before calling physics_init, ensure that mminlu contains the name of the land use dataset
+      call mpas_pool_get_array(sfc_input, 'mminlu', mminlu)
+      if (len_trim(mminlu) == 0) then
+            write(0,*) '****************************************************************'
+            write(0,*) 'No information on land use dataset is available.'
+            write(0,*) 'Assume that we are using ''USGS''.'
+            write(0,*) '****************************************************************'
+            write(mminlu,'(a)') 'USGS'
+      end if
+
+
       if (moist_physics) then
-         !initialization of seom input variables in registry:
-         call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
+         !initialization of some input variables in registry:
          call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
          call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
          call physics_registry_init(mesh, block % configs, sfc_input)

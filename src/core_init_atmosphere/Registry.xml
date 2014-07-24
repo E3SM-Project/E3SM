@@ -53,6 +53,7 @@
                 <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"/>
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
                 <nml_option name="config_fg_interval"           type="integer"       default_value="21600"/>
+                <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
         </nml_record>
 
         <nml_record name="vertical_grid" in_defaults="true">
@@ -147,6 +148,7 @@
 			<var name="ter"/>
 			<var name="landmask"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="isltyp"/>
 			<var name="soilcat_bot"/>
 			<var name="snoalb"/>
@@ -269,6 +271,7 @@
 			<var name="ter"/>
 			<var name="landmask"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="isltyp"/>
 			<var name="soilcat_bot"/>
 			<var name="snoalb"/>
@@ -416,14 +419,15 @@
                 <var name="meshDensity"                  type="real"     dimensions="nCells"/>
 
                 <!-- coefficients for vertical extrapolation to the surface -->
-                <var name="cf1"                          type="real"     dimensions=/>
-                <var name="cf2"                          type="real"     dimensions=/>
-                <var name="cf3"                          type="real"     dimensions=/>
+                <var name="cf1"                          type="real"     dimensions=""/>
+                <var name="cf2"                          type="real"     dimensions=""/>
+                <var name="cf3"                          type="real"     dimensions=""/>
 
                 <!-- static terrestrial fields -->
                 <var name="ter"                                  type="real"     dimensions="nCells"/>
                 <var name="landmask"                             type="integer"  dimensions="nCells"/>
                 <var name="ivgtyp"   name_in_code="lu_index"     type="integer"  dimensions="nCells"/>
+                <var name="mminlu"                               type="text"     dimensions=""/>
                 <var name="isltyp"   name_in_code="soilcat_top"  type="integer"  dimensions="nCells"/>
                 <var name="soilcat_bot"                          type="integer"  dimensions="nCells"/>
                 <var name="snoalb"                               type="real"     dimensions="nCells"/>

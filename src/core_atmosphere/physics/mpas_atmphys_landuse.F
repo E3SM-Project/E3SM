@@ -23,7 +23,7 @@
  public:: landuse_init_forMPAS
 
 !global variables:
- integer,public:: isice,iswater
+ integer,public:: isice,iswater,isurban
 
  integer,parameter:: frac_seaice      = 0       ! = 1: treats seaice as fractional field.
                                                 ! = 0: ice/no-ice flag. 
@@ -70,7 +70,9 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-10-19.
 !>    * Modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
-
+!>    * In subroutine landuse_init_forMPAS, added the definition of isurban as a function of the
+!>      input landuse data file.
+!>      Dominikus Heinzeller (IMK) / 2014-07-24.
 
  contains
 
@@ -93,7 +95,7 @@
                    config_frac_seaice, &
                    config_sfc_albedo
 
- character(len=StrKIND),pointer:: input_landuse_data
+ character(len=StrKIND),pointer:: mminlu
 
  integer,pointer:: nCells
  integer,dimension(:),pointer:: ivgtyp
@@ -126,7 +128,7 @@
  call mpas_pool_get_config(configs,'config_do_restart' ,config_do_restart )
  call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
  call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
- call mpas_pool_get_config(configs,'input_landuse_data',input_landuse_data)
+ call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
 
@@ -166,7 +168,7 @@
        read(unit=land_unit,fmt='(a35)') lutype
        read(unit=land_unit,fmt=*) lucats,luseas
 
-       if(lutype .eq. input_landuse_data)then
+       if(lutype .eq. mminlu)then
           write(mess,*) '   landuse type = ' // trim (lutype) // ' found', lucats, &
                         ' categories', luseas, ' seasons'
           call physics_message(mess)
@@ -196,23 +198,28 @@
 !      if(is .lt. luseas) write(0,*)
     enddo
 
-!defines the index iswater and isice as a function of sfc_input_data:
+!defines the index isurban, iswater and, isice as a function of sfc_input_data:
     sfc_input_select: select case(trim(lutype))
        case('OLD')
           iswater = 7
           isice   = 11
+          isurban = 1
        case('USGS')
           iswater = 16
           isice   = 24
+          isurban = 1
        case('MODIFIED_IGBP_MODIS_NOAH')
           iswater = 17
           isice   = 15
+          isurban = 13
        case('SiB')
           iswater = 15
           isice   = 16
+          isurban = 11
        case('LW12')
           iswater = 2
           isice   = 3
+          isurban = 1
        case default
     end select sfc_input_select
  endif
@@ -222,6 +229,7 @@
  DM_BCAST_INTEGER(lucats)
  DM_BCAST_INTEGER(iswater)
  DM_BCAST_INTEGER(isice)
+ DM_BCAST_INTEGER(isurban)
  DM_BCAST_MACRO(albd)
  DM_BCAST_MACRO(slmo)
  DM_BCAST_MACRO(sfem)
@@ -231,6 +239,7 @@
  DM_BCAST_MACRO(scfx)
  write(0,*) '--- isice   =',isice
  write(0,*) '--- iswater =',iswater
+ write(0,*) '--- isurban =',isurban
  if(config_do_restart) then
     write(0,*) '--- config_do_restart =', config_do_restart
     write(0,*) '--- skip the end of landuse_init_forMPAS'
