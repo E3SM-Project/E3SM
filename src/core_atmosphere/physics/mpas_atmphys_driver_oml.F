@@ -29,6 +29,11 @@
 !>\author Bill Skamarock (send comments to skamaroc@ucar.edu).
 !>\date 2014-06-11.
 !>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!> * added update of te sea-surface temperature below call to subroutine oml1d.
+!>   Laura D. Fowler (2014-07-24.).
+
 
  contains
 
@@ -58,6 +63,7 @@
   real(kind=RKIND), dimension(:), pointer:: hu_oml
   real(kind=RKIND), dimension(:), pointer:: hv_oml
 
+  real(kind=RKIND), dimension(:), pointer:: sst
   real(kind=RKIND), dimension(:), pointer:: skintemp
   real(kind=RKIND), dimension(:), pointer:: hfx
   real(kind=RKIND), dimension(:), pointer:: lh
@@ -102,6 +108,7 @@
  call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
  call mpas_pool_get_array(diag_physics,'ust'       ,ust )
 
+ call mpas_pool_get_array(sfc_input,'sst'       ,sst )
  call mpas_pool_get_array(sfc_input,'skintemp'  ,skintemp )
  call mpas_pool_get_array(sfc_input,'xland'     ,xland )
 
@@ -126,7 +133,11 @@
                    uReconstructZonal(1,iCell), uReconstructMeridional(1,iCell),             &
                    ust(iCell), f_coriolis, sfc_emiss(iCell), stbolt, gravity, dt_pbl,       &
                    oml_gamma, oml_relaxation_time                                          )
+
+       sst(iCell) = skintemp(iCell)
+
      end if
+
    end do
 
  end if
