@@ -2225,6 +2225,8 @@ module atm_time_integration
       real (kind=RKIND), pointer :: config_visc4_2dsmag
       real (kind=RKIND), pointer :: config_len_disp
 
+      real (kind=RKIND) :: kdiffu
+
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
 
@@ -2601,7 +2603,13 @@ module atm_time_integration
                   !
                   u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
                                  -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge),0.25*dcEdge(iEdge))
-                  u_diffusion = rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion
+
+                  kdiffu = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))
+                  kdiffu = max(kdiffu, 0.005*config_len_disp**2/dt)
+
+                  u_diffusion = rho_edge(k,iEdge)* kdiffu * u_diffusion
+
+                  !! u_diffusion = rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion
                   u_diffusion = u_diffusion * meshScalingDel2(iEdge)
  
                   tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + u_diffusion
