@@ -878,7 +878,10 @@
 			<var name="ol3"/>
 			<var name="ol4"/>
 			<var name="t_oml"/>
+			<var name="t_oml_initial"/>
+			<var name="t_oml_200m_initial"/>
 			<var name="h_oml"/>
+			<var name="h_oml_initial"/>
 			<var name="hu_oml"/>
 			<var name="hv_oml"/>
 			<var name="t_isobaric"/>
