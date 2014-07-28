@@ -1319,17 +1319,21 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       !
       deallocate(numToSend)
       deallocate(numToRecv)
-      deallocate(ownedList)
-      deallocate(ownedListIndex)
-      deallocate(ownedBlock)
       deallocate(neededList)
       deallocate(neededListIndex)
       deallocate(neededBlock)
+
+      deallocate(ownedList)
+      deallocate(ownedListIndex)
+      deallocate(ownedBlock)
       deallocate(ownedListSorted)
       deallocate(ownedBlockSorted)
+
       deallocate(recipientList)
+
       deallocate(ownerListIn)
       deallocate(ownerListOut)
+
       deallocate(uniqueSortedNeededList)
       deallocate(packingOrder)
 #endif
@@ -1415,6 +1419,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       end do
       deallocate(numToSend)
       deallocate(offSetList)
+      deallocate(ownedLimitList)
 
    end subroutine mpas_dmpar_get_exch_list!}}}
 
