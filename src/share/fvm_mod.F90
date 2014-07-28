@@ -109,9 +109,8 @@ contains
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_air
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_tracer
     real (kind=real_kind) :: q0,q1,rho0,rho1,area,diff_dbg 
-    !dbg start
-    
-    !dbg end
+
+    real (kind=real_kind)                                              :: flux_area(1:nc+1,1:nc+1,2)
     
     type (ghostBuffertr_t)                      :: buflatlon
     
@@ -172,15 +171,21 @@ contains
 
           tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons)
-
-!          recons = 0.0!dbg
-!          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
+          !
+          ! limiter is usually not needed for air mass
+          !
+          !call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
           !
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
           call ff_cslam_remap(tracer_air0,flux_air,weights_all_flux,recons, &
                fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
                weights_lgr_index_all_flux, jall)  
+          !
+          ! compute flux-areas (to be used for tracer advection)
+          !
+          call ff_cslam_flux_area(flux_area,weights_all_flux, &
+               weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
           !
           ! forecast equation for air density
           !
@@ -205,7 +210,7 @@ contains
              call ff_cslam_remap_q(tracer0,flux_tracer,weights_all_flux, &
                   recons, &
                   fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
-                  weights_lgr_index_all_flux, jall)  
+                  weights_lgr_index_all_flux, jall, flux_area)  
              !
              ! forecast equation for tracer (kg/kg)
              !
@@ -292,26 +297,20 @@ contains
        end do
     end do
   end subroutine ff_cslam_remap
-
-  ! do the remapping
-  subroutine ff_cslam_remap_q(tracer0,flux,weights_all_flux,recons,centroid, &
+  !
+  ! compute flux areas
+  !
+  subroutine ff_cslam_flux_area(flux_area,weights_all_flux, &
        weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
     
-    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
-    real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1,2)
-    integer (kind=int_kind), dimension(2), intent(in)         :: jall  
-    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)  :: weights_all_flux
-    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_eul_index_all_flux
-    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_lgr_index_all_flux
-
-    
-    real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1,2)
-    
+    real (kind=real_kind)                                   , intent(inout) :: flux_area(1:nc+1,1:nc+1,2)
+    integer (kind=int_kind), dimension(2)                   , intent(in)    :: jall  
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)    :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)    :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)    :: weights_lgr_index_all_flux
+ 
     integer                                     :: h, jx, jy, jdx, jdy, k
     
-    flux   = 0.0D0
     flux_area = 0.0D0
     do k=1,2
        do h=1,jall(k)
@@ -321,7 +320,33 @@ contains
           jdy = weights_eul_index_all_flux(h,2,k)
           
           flux_area(jx,jy,k) =  flux_area(jx,jy,k)+weights_all_flux(h,1,k)
+       end do
+    end do
+  end subroutine ff_cslam_flux_area
 
+  subroutine ff_cslam_remap_q(tracer0,flux,weights_all_flux,recons,centroid, &
+       weights_eul_index_all_flux, weights_lgr_index_all_flux, jall,flux_area)
+    
+    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1,2)
+    integer (kind=int_kind), dimension(2), intent(in)         :: jall  
+    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)  :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_lgr_index_all_flux
+    real (kind=real_kind)                                   , intent(in)  :: flux_area(1:nc+1,1:nc+1,2)
+
+    integer                                     :: h, jx, jy, jdx, jdy, k
+    
+    flux   = 0.0D0
+    do k=1,2
+       do h=1,jall(k)
+          jx  = weights_lgr_index_all_flux(h,1,k)
+          jy  = weights_lgr_index_all_flux(h,2,k)
+          jdx = weights_eul_index_all_flux(h,1,k)
+          jdy = weights_eul_index_all_flux(h,2,k)
+          
           flux(jx,jy,k) = flux(jx,jy,k)+weights_all_flux(h,1,k)*(&
                ! all constant terms 
                tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
