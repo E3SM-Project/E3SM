@@ -1055,27 +1055,107 @@ module mpas_stream_manager
     !> \details This routine will take as input a pool representing a stream.
     !>  It will then generate a stream type based on this pool, and return that.
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_build_stream(timeStamp, inPool, stream)!{{{
+    subroutine MPAS_stream_mgr_build_stream(timeStamp, inPool, direction, timeLevelIn, stream)!{{{
         character (len=*), intent(in) :: timeStamp
         type (MPAS_Pool_type), intent(inout) :: inPool
         type (MPAS_Stream_type), pointer :: stream
+        integer, intent(in), optional :: timeLevelIn
 
         type (MPAS_Pool_iterator_type) :: itr
 
+        integer :: timeLevel
+
         character (len=StrKIND), pointer :: filenameTemplate
+        character (len=StrKIND) :: filename
         integer, pointer :: direction
         integer, pointer :: maxRecords
 
+        type (field5DReal), pointer :: real5d
+        type (field4DReal), pointer :: real4d
+        type (field3DReal), pointer :: real3d
+        type (field2DReal), pointer :: real2d
+        type (field1DReal), pointer :: real1d
+        type (field0DReal), pointer :: real0d
+
+        type (field3DInteger), pointer :: int3d
+        type (field2DInteger), pointer :: int2d
+        type (field1DInteger), pointer :: int1d
+        type (field0DInteger), pointer :: int0d
+
+        type (field1DInteger), pointer :: char1d
+        type (field0DInteger), pointer :: char0d
+
         call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_FILENAME, filenameTemplate)
-        call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_DIRECTION, direction)
         call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords)
 
+        call mpas_expand_string(timeStamp, filenameTemplate, filename)
+
+        call mpas_createStream(stream, filename, MPAS_IO_PNETCDF, direction, maxRecords)
+
         do while ( mpas_pool_get_next_member(inPool, itr) )
-            
+            if (itr % memberType == MPAS_POOL_FIELD) then
+                ! Set time level to read.
+                if (present(timeLevelIn)) then
+                    if (itr % nTimeLevels >= timeLevelIn) then
+                        timeLevel = timeLevelIn
+                    else
+                        timeLevel = 1
+                    end if
+                else
+                    timeLevel = 1
+                end if
+
+                select case (itr % dataType)
+                    case (MPAS_POOL_REAL)
+                        select case (itr % nDims)
+                            case (0)
+                                call mpas_pool_get_field(inPool, itr % memberName, real0d, timeLevel)
+                                call mpas_streamAddField(stream, real0d)
+                            case (1)
+                                call mpas_pool_get_field(inPool, itr % memberName, real1d, timeLevel)
+                                call mpas_streamAddField(stream, real1d)
+                            case (2)
+                                call mpas_pool_get_field(inPool, itr % memberName, real2d, timeLevel)
+                                call mpas_streamAddField(stream, real2d)
+                            case (3)
+                                call mpas_pool_get_field(inPool, itr % memberName, real3d, timeLevel)
+                                call mpas_streamAddField(stream, real3d)
+                            case (4)
+                                call mpas_pool_get_field(inPool, itr % memberName, real4d, timeLevel)
+                                call mpas_streamAddField(stream, real4d)
+                            case (5)
+                                call mpas_pool_get_field(inPool, itr % memberName, real5d, timeLevel)
+                                call mpas_streamAddField(stream, real5d)
+                        end select
+                    case (MPAS_POOL_INTEGER)
+                        select case (itr % nDims)
+                            case (0)
+                                call mpas_pool_get_field(inPool, itr % memberName, int0d, timeLevel)
+                                call mpas_streamAddField(stream, int0d)
+                            case (1)
+                                call mpas_pool_get_field(inPool, itr % memberName, int1d, timeLevel)
+                                call mpas_streamAddField(stream, int1d)
+                            case (2)
+                                call mpas_pool_get_field(inPool, itr % memberName, int2d, timeLevel)
+                                call mpas_streamAddField(stream, int2d)
+                            case (3)
+                                call mpas_pool_get_field(inPool, itr % memberName, int3d, timeLevel)
+                                call mpas_streamAddField(stream, int3d)
+                        end select
+                    case (MPAS_POOL_CHARACTER)
+                        select case (itr % nDims)
+                            case (0)
+                                call mpas_pool_get_field(inPool, itr % memberName, char0d, timeLevel)
+                                call mpas_streamAddField(stream, char0d)
+                            case (1)
+                                call mpas_pool_get_field(inPool, itr % memberName, char1d, timeLevel)
+                                call mpas_streamAddField(stream, char1d)
+                        end select
+                end select
+            end if
         end do
 
     end subroutine MPAS_stream_mgr_build_stream!}}}
-
 
    
 end module mpas_stream_manager
