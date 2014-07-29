@@ -37,7 +37,6 @@ contains
     use schedule_mod, only : checkschedule
 
     implicit none
-!#include <stats.h>
     type (element_t), intent(in) :: elem(:)
     !================Arguments===============================
     type (parallel_t),   intent(in)           :: par
