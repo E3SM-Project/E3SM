@@ -29,6 +29,8 @@ module mpas_timekeeping
                          MPAS_GREGORIAN_NOLEAP = 1, &
                          MPAS_360DAY = 2
 
+   integer :: yearWidth
+
    integer :: TheCalendar 
 
    integer, dimension(12), parameter :: daysInMonth     = (/31,28,31,30,31,30,31,31,30,31,30,31/)
@@ -147,6 +149,8 @@ module mpas_timekeeping
       end if
 #endif
 
+      yearWidth = 4
+
    end subroutine mpas_timekeeping_init
 
 
@@ -159,6 +163,24 @@ module mpas_timekeeping
 #endif
 
    end subroutine mpas_timekeeping_finalize
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_timekeeping_set_year_width
+   !
+   !> \brief This routine sets the width of the year portion of timestamps.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   07/23/2014
+   !> \details This routine sets the width of the year portion of timestamps.
+   !>   It can be used to make the year portion of a time stamp or an expanded
+   !>   string more than 4 digits, to support years larger than 9999.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_timekeeping_set_year_width(yearWidthIn)!{{{
+      integer, intent(in) :: yearWidthIn
+
+      yearWidth = yearWidthIn
+
+   end subroutine mpas_timekeeping_set_year_width!}}}
 
 
    subroutine mpas_create_clock(clock, startTime, timeStep, stopTime, runDuration, ierr)
@@ -1626,7 +1648,101 @@ module mpas_timekeeping
 
     end function isLeapYear
 
+    !-----------------------------------------------------------------------
+    !  routine mpas_expand_string
+    !
+    !> \brief This is a utility routine that expands a string with a timestamp.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   07/23/2014
+    !> \details This routine will take a time stamp, and a string as
+    !>   input, and expand the string according to the time stamp provided.
+    !>   $Y -> year
+    !>   $M -> month
+    !>   $D -> day
+    !>   $d -> day of year
+    !>   $h -> hour
+    !>   $m -> minute
+    !>   $s -> second
+    !>   $g -> multi-grid level
+    !-----------------------------------------------------------------------
+    subroutine mpas_expand_string(timeStamp, inString, outString)!{{{
+        character (len=*), intent(in) :: timeStamp
+        character (len=*), intent(in) :: inString
+        character (len=StrKIND), intent(out) :: outString
 
+        type (MPAS_Time_type) :: curTime
+
+        integer :: i, curLen
+        integer :: year, month, day, hour, minute, second, DoY
+
+        character (len=ShortStrKIND) :: timePart
+        character (len=ShortStrKIND) :: yearFormat
+        logical :: charExpand
+
+        call mpas_set_time(curTime, dateTimeString=timeStamp)
+
+        call mpas_get_time(curTime, YYYY=year)
+
+        write(yearFormat, '(a,i10,a)') '(i0.',yearWidth,')'
+
+        write(outString,*) ''
+        write(timePart,*) ''
+
+        curLen = 0
+        charExpand = .false.
+        do i = 1, len_trim(inString)
+           if (inString(i:i) == '$' ) then
+               charExpand = .true.
+           else if (inString(i:i) /= '$') then
+               if (charExpand) then
+                  select case (inString(i:i))
+                     case ('Y')
+                         call mpas_get_time(curTime, YYYY=year)
+                         write(timePart, yearFormat) year
+                         outString = trim(outString) // trim(timePart)
+                     case ('M')
+                         call mpas_get_time(curTime, MM=month)
+                         write(timePart, '(i0.2)') month
+                         outString = trim(outString) // trim(timePart)
+                     case ('D')
+                         call mpas_get_time(curTime, DD=day)
+                         write(timePart, '(i0.2)') day
+                         outString = trim(outString) // trim(timePart)
+                     case ('d')
+                         call mpas_get_time(curTime, DoY=DoY)
+                         write(timePart, '(i0.3)') DoY
+                         outString = trim(outString) // trim(timePart)
+                     case ('h')
+                         call mpas_get_time(curTime, H=hour)
+                         write(timePart, '(i0.2)') hour
+                         outString = trim(outString) // trim(timePart)
+                     case ('m')
+                         call mpas_get_time(curTime, M=minute)
+                         write(timePart, '(i0.2)') minute
+                         outString = trim(outString) // trim(timePart)
+                     case ('s')
+                         call mpas_get_time(curTime, S=second)
+                         write(timePart, '(i0.2)') second
+                         outString = trim(outString) // trim(timePart)
+!                    case ('G')
+                        ! Expands to multi-grid level
+                     case default
+                        write(stderrUnit, *) 'ERROR: mpas_expand_string option $', inString(i:i), ' is not a valid expansion character.'
+                        call mpas_dmpar_global_abort('ERROR: mpas_timekeeping')
+                  end select
+
+                  curLen = len_trim(outString)
+                  charExpand = .false.
+               else
+                  outString(curLen+1:curLen+1) = inString(i:i)
+                  curLen = curLen+1
+               end if
+           else
+           end if
+        end do
+
+    end subroutine mpas_expand_string!}}}
+ 
 
 
 
