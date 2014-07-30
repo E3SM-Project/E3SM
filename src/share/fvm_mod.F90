@@ -62,8 +62,7 @@ contains
   !  
   subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     ! ---------------------------------------------------------------------------------
-    use fvm_line_integrals_mod, only: compute_weights , ldbg!dbg
-    use fvm_line_integrals_flux_mod, only: compute_weights_fluxform !dbg
+    use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
     ! ---------------------------------------------------------------------------------  
     use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
@@ -73,10 +72,9 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
-    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
+         initghostbufferTR,freeghostbuffertr
     
-!    use fvm_control_volume_mod, only:  fvm_struct !dbg
-!    use control_mod, only : north, south, east, west, neast, nwest, seast, swest !dbg   
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -102,9 +100,6 @@ contains
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
     
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nc:nc+nhc)        :: tracer_air0   
-!    real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 !dbg
-    real (kind=real_kind), dimension(1:nc,1:nc):: cslam_area, fluxform_effective_area, &
-         area_flux !dbg
     integer (kind=int_kind) :: itmp, jtmp
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_air
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_tracer
@@ -194,6 +189,20 @@ contains
                 fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
+                !
+                ! Lagrangian divergence: D = (1/(dA*dt))*(dA-da), where da departure area
+                !
+                ! For ff-cslam: 
+                !
+                !    da = dA-(flux_area(i+1,j,1)-flux_area(i,j,1)+flux_area(i  ,j+1,2)-flux_area(i,j,2))
+                !                     
+                !
+                !
+                ! note: div_fvm is mostly for debugging - uncomment this for production runs
+                !
+                fvm(ie)%div_fvm(i,j,k) = (1.0D0/(fvm(ie)%area_sphere(i,j)*tstep))*&
+                     (flux_area(i+1,j  ,1)-flux_area(i,j,1)+&
+                      flux_area(i  ,j+1,2)-flux_area(i,j,2))
              end do
           end do
           !
@@ -233,9 +242,16 @@ contains
              end do
           enddo  !End Tracer
        end do  !End Level
+       !fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)=fvm(ie)%div_fvm !dbg
        !note write tl%np1 in buffer
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
        call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       !
+       ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
+       ! the reconstruction and following evaluation of reconstruction function on lat-lon points
+       ! 
+       ! Note done for performance reasons - a hack is to put div_fvm into fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)
+       !
     end do
     call t_stopf('ff-cslam scheme')
     call t_startf('FVM Communication')
@@ -698,11 +714,49 @@ contains
   ! initialize global buffers shared by all threads
   subroutine fvm_init1(par)
     use parallel_mod, only : parallel_t, haltmp
+    use control_mod, only : tracer_transport_type, tracer_grid_type
+    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACER_GRIDTYPE_FVM
     type (parallel_t) :: par
 
+    if (par%masterproc) then 
+       print *, "                                       "
+       print *, "|-------------------------------------|"
+       print *, "| Tracer transport scheme information |"
+       print *, "|-------------------------------------|"
+       print *, "                                       "
+    end if
+    if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+       if (par%masterproc) then 
+          print *, "Running Lagrangian CSLAM, Lauritzen et al., (2010), J. Comput. Phys."
+          print *, "Possibly with `Enforcement Of Consistency (EOC)', Erath et al., (2013), Mon. Wea. Rev."
+          print *, "(EOC is hardcoded in fvm_lineintegrals_mod with logical EOC"
+          print *, "CSLAM = Conservative Semi-LAgrangian Multi-tracer scheme"
+          print *, "  "
+       end if
+    else if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
+       if (par%masterproc) then 
+          print *, "Running Flux-form CSLAM, Harris et al. (2011), J. Comput. Phys."
+          print *, "CSLAM = Conservative Semi-LAgrangian Multi-tracer scheme"
+          print *, "Lauritzen et al., (2010), J. Comput. Phys."
+          print *, "  "
+       end if
+    else
+       call haltmp("going into fvm_init1 with inconsistent tracer_transport_type")
+    end if
+
+    if (par%masterproc) print *, "fvm resolution is nc*nc in each element: nc = ",nc
+
+    if (tracer_grid_type.ne.TRACER_GRIDTYPE_FVM) then
+       if (par%masterproc) then 
+         print *, "ERROR: tracer_grid_type is not TRACER_GRIDTYPE_FVM"
+         print *, "tracer_grid_type = ",tracer_grid_type
+       end if
+       call haltmp("going into fvm_init1 with inconsistent tracer_grid_type")
+    end if
+
     if (nc<3) then
-       if (par%masterproc) then
-          print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parmeter"
+       if (par%masterproc) then 
+          print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parameter"
           print *, "parameter nc at least 3 (nc>=3), nc*nc cells per element. This is"
           print *, "needed for the cubic reconstruction, which is only implemented yet! STOP"
        endif
@@ -710,6 +764,7 @@ contains
     end if
 
     if (par%masterproc) then
+       print *, "  "
        if (ns==1) then
           print *, "ns==1: using no interpolation for mapping cell averages values across edges"
           print *, "Note: this is not a recommended setting - large errors at panel edges!"
@@ -724,7 +779,7 @@ contains
           print *, "so this option is slightly less accurate (but the stencil is smaller near panel edges!)"
        else if (ns==4) then
           print *, "ns==4: using cubic interpolation for mapping cell averages values across edges"
-          print *, "default CSLAM setting used in Lauritzen et al. (2010)"
+          print *, "This is default CSLAM setting used in Lauritzen et al. (2010)"
        else 
           print *, "Not a tested value for ns but it should work! You choose ns = ",ns
        end if
@@ -772,6 +827,12 @@ contains
        if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
        call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
     endif
+
+    if (par%masterproc) then 
+       print *, "                                            "
+       print *, "Done Tracer transport scheme information    "
+       print *, "                                            "
+    end if
     
     call initghostbufferTR(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
 
