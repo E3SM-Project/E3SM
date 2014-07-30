@@ -50,7 +50,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM) || defined(_PRIMDG)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 44
+  integer, parameter :: varcnt = 45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -69,6 +69,7 @@ module interp_movie_mod
                                                  'Q5       ', &
                                                  'psC      ', &
                                                  'dp_fvm   ', &
+                                                 'div_fvm  ', &
                                                  'C1       ', &
                                                  'C2       ', &
                                                  'C3       ', &
@@ -101,10 +102,10 @@ module interp_movie_mod
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,&
                                           PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double,&
@@ -116,10 +117,10 @@ module interp_movie_mod
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
                                               .false.,&   
                                               .false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,&
+                                              .false.,.false.,.false.,&
                                               .false.,&
                                               .false.,&
                                               .false.,&
@@ -146,6 +147,7 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Q5
        1,2,5,0,0,  &   ! psC
        1,2,3,5,0,  &   ! dp_fvm
+       1,2,3,5,0,  &   ! div_fvm
        1,2,3,5,0,  &   ! C1
        1,2,3,5,0,  &   ! C2
        1,2,3,5,0,  &   ! C3
@@ -360,6 +362,7 @@ contains
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'psC', 'surface pressure implied my fvm','Pa')
     call nf_variable_attributes(ncdf, 'dp_fvm', 'dp implied by fvm','Pa')
+    call nf_variable_attributes(ncdf, 'div_fvm', 'divergence implied by fvm','1/s')
     call nf_variable_attributes(ncdf, 'C1', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C2', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C3', 'concentration','kg/kg')
@@ -723,12 +726,28 @@ contains
                do ie=nets,nete
                   en=st+interpdata(ie)%n_interp-1
                   do k=1,nlev                       
-                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%dp_fvm(:,:,k,cindex,n0), &
+                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%dp_fvm(:,:,k,n0), &
                           fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
                   end do
                   st=st+interpdata(ie)%n_interp
                enddo
                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='dp_fvm')
+               deallocate(datall)
+            end if
+
+            if(nf_selectedvar('div_fvm', output_varnames)) then
+               if (hybrid%par%masterproc) print *,'writing div_fvm ...'
+               allocate(datall(ncnt,nlev))
+               st=1
+               do ie=nets,nete
+                  en=st+interpdata(ie)%n_interp-1
+                  do k=1,nlev                       
+                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%div_fvm(:,:,k), &
+                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
+                  end do
+                  st=st+interpdata(ie)%n_interp
+               enddo
+               call nf_put_var(ncdf(ios),datall,start3d, count3d, name='div_fvm')
                deallocate(datall)
             end if
             
