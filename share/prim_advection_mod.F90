@@ -1150,7 +1150,7 @@ contains
        end do
     else
        ! do nothing
-       ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need 
+       ! for rsplit>0:  dynamics is also vertically Lagrangian, so we do not need 
        ! to interpolate v(np1). 
     endif
 
@@ -2859,7 +2859,8 @@ end subroutine ALE_parametric_coords
   use kinds, only : real_kind
   use hybvcoord_mod, only : hvcoord_t
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-  use control_mod, only :  rsplit, tracer_transport_type, TRACER_GRIDTYPE_FVM
+  use control_mod, only : rsplit, tracer_transport_type 
+  use control_mod, only : TRACERTRANSPORT_FLUXFORM_FVM,TRACERTRANSPORT_LAGRANGIAN_FVM
   use parallel_mod, only : abortmp
   use hybrid_mod     , only : hybrid_t
   use derivative_mod, only : interpolate_gll2fvm_points
@@ -2973,7 +2974,7 @@ end subroutine ALE_parametric_coords
 #endif
      endif
 
-     ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
+     ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
      if (qsize>0) then
         call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
      endif
@@ -3015,39 +3016,45 @@ end subroutine ALE_parametric_coords
         ! convert back to mass:
         ! fvm%dp_fvm(:,:,:,np1) = dp(:,:,:) ??XXgoldyXX??
         ! fvm%c(:,:,:,n,np1) = fvm%c(:,:,:,n,np1)/dp(:,:,:)
-        if (tracer_transport_type == TRACER_GRIDTYPE_FVM) then
-          do i=1,nc
-            do j=1,nc
-              ! 1. compute surface pressure, 'ps_c', from FVMair density
 
-! phl dp_cslam
-              psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
-              ! 2. compute dp_np1 using FVM air density and eta coordinate formula
-              ! get the dp now on the eta coordinates (reference level)
-              do k=1,nlev
-                dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-                cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1)*fvm(ie)%dp_fvm(i,j,k,np1)
+        if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
+            tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+           !
+           ! Recompute dp_fvm (this will not be necessary when SE fluxes are coded
+           !
+           do k = 1, nlev
+              fvm(ie)%dp_fvm(1:nc,1:nc,k,np1)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
+           end do
+           !
+           !
+           !
+           do i=1,nc
+              do j=1,nc
+                 !
+                 ! compute surface pressure implied by fvm scheme: psC
+                 psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+                 !
+                 ! compute source (cdp) and target (dpc) pressure grids for vertical remapping
+                 !
+                 do k=1,nlev
+                    dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                         (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
+                    cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1)*fvm(ie)%dp_fvm(i,j,k,np1)
+                 end do
               end do
-            end do
-          end do
-          dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1)
-          call remap1(cdp,nc,ntrac,dpc_star,dpc)
-! phl ntrac-1 -> ntrac       call remap1(cdp,nc,ntrac-1,dpc_star,dpc)
-          do k=1,nlev
-            do j=1,nc
-              do i=1,nc
-                fvm(ie)%dp_fvm(i,j,k,np1)=dpc(i,j,k) !!XXgoldyXX??
-                fvm(ie)%c(i,j,k,:,np1)=cdp(i,j,k,:)/dpc(i,j,k)
+           end do
+           dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1)
+           call remap1(cdp,nc,ntrac,dpc_star,dpc)
+           do k=1,nlev
+              do j=1,nc
+                 do i=1,nc
+                    fvm(ie)%dp_fvm(i,j,k,np1)=dpc(i,j,k) !!XXgoldyXX??
+                    fvm(ie)%c(i,j,k,1:ntrac,np1)=cdp(i,j,k,1:ntrac)/dpc(i,j,k)
+                 end do
               end do
-            end do
-          end do
-          ! Recompute dp_fvm
-          do k = 1, nlev
-            fvm(ie)%dp_fvm(1:nc,1:nc,k,np1)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
-          end do
+           end do
         end if
-!         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
+        !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
 #endif
      endif
 
