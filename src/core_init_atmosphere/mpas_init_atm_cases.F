@@ -4065,6 +4065,105 @@ write(0,*) 'PROCESSING SEAICE'
 
       call read_met_close()
 
+
+      !
+      ! Get OMLD climatology from a separate file
+      !
+      call read_met_init('OMLD', .true., config_start_time(1:13), istatus)
+
+      if (istatus /= 0) then
+         write(0,*) 'OMLD file not found...'
+      end if
+
+      if (istatus == 0) then
+         call read_next_met_field(field, istatus)
+         do while (istatus == 0)
+            if (index(field % field, 'OMLD') /= 0) then
+
+write(0,*) 'PROCESSING OMLD'
+
+               !
+               ! Set up projection
+               !
+               call map_init(proj)
+          
+               if (field % iproj == PROJ_LATLON) then
+                  call map_set(PROJ_LATLON, proj, &
+                               latinc = real(field % deltalat,RKIND), &
+                               loninc = real(field % deltalon,RKIND), &
+                               knowni = 1.0_RKIND, &
+                               knownj = 1.0_RKIND, &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
+               else
+                  write(stderrUnit,*) 'ERROR: We were expecting OMLD field to be on a lat-lon projection...'
+               end if
+
+               if (index(field % field, 'OMLD') /= 0) then
+                  nInterpPoints = nCells
+                  latPoints => latCell
+                  lonPoints => lonCell
+                  call mpas_pool_get_array(state, 'h_oml_initial', destField1d)
+                  ndims = 1
+               end if
+   
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+   
+               masked = 1
+               fillval = 0.0
+               msgval = 0.0
+               mask_array => landmask
+
+
+               allocate(rslab(field % nx, field % ny))
+               rslab(:,:) = field % slab(:,:)
+               do i=1,nInterpPoints
+                  if (mask_array(i) /= masked) then
+                     lat = latPoints(i)*DEG_PER_RAD
+                     lon = lonPoints(i)*DEG_PER_RAD
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                     if (x < 0.5) then
+                        lon = lon + 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
+                     end if
+                     if (ndims == 1) then
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                        if (destField1d(i) == msgval) destField1d(i) = fillval
+                     else if (ndims == 2) then
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                        if (destField2d(k,i) == msgval) destField2d(k,i) = fillval
+                     end if
+                  else
+                     if (ndims == 1) then
+                        destField1d(i) = fillval
+                     else if (ndims == 2) then
+                        destField2d(k,i) = fillval
+                     end if
+                  end if
+               end do
+               deallocate(rslab)
+
+            end if
+      
+            deallocate(field % slab)
+            call read_next_met_field(field, istatus)
+         end do
+      end if
+
+      call read_met_close()
+
+
       if (allocated(maskslab)) deallocate(maskslab)
 
       ! Freeze really cold ocean

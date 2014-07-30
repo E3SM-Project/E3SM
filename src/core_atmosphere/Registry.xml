@@ -233,6 +233,7 @@
 			<var name="ol2"/>
 			<var name="ol3"/>
 			<var name="ol4"/>
+			<var name="h_oml_initial"/>
 		</stream>
 
 		<stream name="restart" type="restart">

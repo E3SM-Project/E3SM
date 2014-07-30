@@ -366,6 +366,7 @@
 			<var name="theta_base"/>
 			<var name="surface_pressure"/>
 			<var name="precipw"/>
+			<var name="h_oml_initial"/>
 		</stream>
 		<stream name="surface" type="input;output">
 			<var name="xtime"/>
@@ -497,6 +498,9 @@
                         <var name="qc"      array_group="moist"/>
                         <var name="qr"      array_group="moist"/>
                 </var_array>
+
+                <!-- Climatology for ocean mixed-layer depth -->
+                <var name="h_oml_initial"              type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="fg" time_levs="1">
