@@ -62,9 +62,9 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-    if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-
+  if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
+  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  printf("%s %d %d %ld\n",__FILE__,__LINE__,xtypep,lenp);
   return ierr;
 }
 

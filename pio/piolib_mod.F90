@@ -1166,7 +1166,7 @@ contains
 !! @param maxiotasks \em optional The maximum number of IO tasks the caller desires
 !! @param iotask if true pio recommends that this task be used as an iotask
 !<
-
+#ifdef DOTHIS
   subroutine pio_recommend_iotasks(comm, ioproc, numiotasks, miniotasks, maxiotasks )
     integer, intent(in) :: comm
     logical, intent(out) :: ioproc
@@ -1181,8 +1181,9 @@ contains
     call mpi_comm_rank(comm,iam,ierr)
 
 #ifdef BGx    
-    call alloc_check(iotmp,num_tasks,'init:num_tasks')
-    call alloc_check(iotmp2,num_tasks,'init:num_tasks')
+!    call alloc_check(iotmp,num_tasks,'init:num_tasks')
+!    call alloc_check(iotmp2,num_tasks,'init:num_tasks')
+     allocate(iotmp(num_tasks), iotmp2(num_tasks))
     !---------------------------------------------------
     ! Note for Blue Gene n_iotasks get overwritten in 
     ! determineiotasks   
@@ -1205,15 +1206,16 @@ contains
 
     numiotasks=SUM(iotmp2)
 
-    call dealloc_check(iotmp)
-    call dealloc_check(iotmp2)
+!    call dealloc_check(iotmp)
+!    call dealloc_check(iotmp2)
+     deallocate(iotmp, iotmp2)
 
     call identity(comm,iotask)
 #endif
 
 
   end subroutine pio_recommend_iotasks
-
+#endif
 
 !> 
 !! @public

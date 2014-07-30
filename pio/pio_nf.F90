@@ -885,7 +885,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     type (Var_desc_t), intent(in)            :: vardesc
     character(len=*), intent(in)      :: name
-    integer, intent(out)        :: len !Attribute length
+    integer(kind=PIO_OFFSET_KIND), intent(out)        :: len !Attribute length
 
     ierr = pio_inq_attlen(file%fh, vardesc%varid, name, len)
 
@@ -895,7 +895,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in)            :: varid
     character(len=*), intent(in)      :: name
-    integer, intent(out)     :: len !Attribute length
+    integer(kind=PIO_OFFSET_KIND), intent(out)     :: len !Attribute length
 
     ierr = pio_inq_attlen(file%fh, varid, name, len)
 
@@ -904,7 +904,7 @@ contains
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     character(len=*), intent(in)      :: name
-    integer, intent(out)     :: len !Attribute length
+    integer(kind=PIO_OFFSET_KIND), intent(out)     :: len !Attribute length
     interface
        integer(C_INT) function PIOc_inq_attlen(ncid,varid,name,len) &
             bind(C,name="PIOc_inq_attlen")
@@ -912,7 +912,7 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          character(C_CHAR) :: name
-         integer(C_INT) :: len
+         integer(C_LONG) :: len
        end function PIOc_inq_attlen
     end interface
 
@@ -939,7 +939,7 @@ contains
     type(var_desc_t), intent(in)           :: vardesc
     character(len=*), intent(in)      :: name
     integer, intent(out)              :: xtype
-    integer, intent(out)              :: len !Attribute length
+    integer(pio_offset_kind), intent(out)              :: len !Attribute length
 
     ierr = pio_inq_att(file%fh, vardesc%varid, name, xtype, len)
 
@@ -949,19 +949,23 @@ contains
     type (File_desc_t), intent(in) :: File
     integer, intent(in)           :: varid
     character(len=*), intent(in)      :: name
-    integer, intent(out)              :: xtype
-    integer, intent(out)              :: len !Attribute length
+    integer, optional, intent(out)              :: xtype
+    integer(pio_offset_kind), optional, intent(out)              :: len !Attribute length
 
     ierr = pio_inq_att(file%fh, varid, name, xtype, len)
 
   end function inq_att_vid
+
   integer function inq_att_id(ncid,varid,name,xtype,len) result(ierr)
 
     integer, intent(in) :: ncid
     integer, intent(in)           :: varid
     character(len=*), intent(in)      :: name
-    integer, intent(out)              :: xtype
-    integer, intent(out)              :: len !Attribute length
+    integer, optional, intent(out)              :: xtype
+    integer(kind=PIO_OFFSET_KIND), optional, intent(out)              :: len !Attribute length
+
+    integer :: ixtype
+    integer(PIO_OFFSET_KIND) :: xlen
 
     interface
        integer(C_INT) function PIOc_inq_att(ncid,varid,name,xtype,len) &
@@ -971,12 +975,14 @@ contains
          integer(C_INT),value :: varid
          character(C_CHAR) :: name
          integer(C_INT) :: xtype
-         integer(C_INT) :: len
+         integer(C_LONG) :: len
        end function PIOc_inq_att
     end interface
     
-    ierr = PIOc_inq_att(ncid,varid-1,trim(name)//C_NULL_CHAR,xtype,len)
-
+    ierr = PIOc_inq_att(ncid,varid-1,trim(name)//C_NULL_CHAR,ixtype,xlen)
+    if(present(len)) len=xlen
+    if(present(xtype)) xtype = ixtype
+    print *,__FILE__,__LINE__,ixtype,xlen
   end function inq_att_id
 
 
