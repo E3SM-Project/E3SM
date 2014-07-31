@@ -563,7 +563,7 @@ module mpas_timekeeping
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
-      character (len=ShortStrKIND) :: printString
+      character (len=StrKIND) :: printString
 
       ierr = 0
 
