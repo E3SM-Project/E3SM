@@ -46,6 +46,21 @@ void fmt_err(const char *mesg)
 
 /*********************************************************************************
  *
+ *  Function: fmt_warn
+ *
+ *  Prints a warning message in a standard format.
+ *
+ *********************************************************************************/
+void fmt_warn(const char *mesg)
+{
+	fprintf(stderr,"********************************************************************************\n");
+	fprintf(stderr,"Warning: In file %s, %s\n", global_file, mesg);
+	fprintf(stderr,"********************************************************************************\n");
+}
+
+
+/*********************************************************************************
+ *
  *  Function: par_read
  *
  *  Reads the contents of a file into a buffer in distributed-memory parallel code.
@@ -145,17 +160,17 @@ int attribute_check(ezxml_t stream)
 		return 1;
 	}
 	else if (s_type == NULL) {
-		snprintf(msgbuf, MSGSIZE, "stream %s must have the \"type\" attribute.", s_name);
+		snprintf(msgbuf, MSGSIZE, "stream \"%s\" must have the \"type\" attribute.", s_name);
 		fmt_err(msgbuf);
 		return 1;
 	}
 	else if (s_filename == NULL) {
-		snprintf(msgbuf, MSGSIZE, "stream %s must have the \"filename_template\" attribute.", s_name);
+		snprintf(msgbuf, MSGSIZE, "stream \"%s\" must have the \"filename_template\" attribute.", s_name);
 		fmt_err(msgbuf);
 		return 1;
 	}
 	else if (s_records == NULL) {
-		snprintf(msgbuf, MSGSIZE, "stream %s must have the \"records_per_file\" attribute.", s_name);
+		snprintf(msgbuf, MSGSIZE, "stream \"%s\" must have the \"records_per_file\" attribute.", s_name);
 		fmt_err(msgbuf);
 		return 1;
 	}
@@ -165,14 +180,22 @@ int attribute_check(ezxml_t stream)
 	 *  Check that input streams have an input interval, output streams have an output interval
 	 */
 	if (strstr(s_type, "input") != NULL && s_input == NULL) {
-		snprintf(msgbuf, MSGSIZE, "stream %s is an input stream and must have the \"input_interval\" attribute.", s_name);
+		snprintf(msgbuf, MSGSIZE, "stream \"%s\" is an input stream and must have the \"input_interval\" attribute.", s_name);
 		fmt_err(msgbuf);
 		return 1;
 	}
-	else if (strstr(s_type, "output") != NULL && s_output == NULL) {
-		snprintf(msgbuf, MSGSIZE, "stream %s is an output stream and must have the \"output_interval\" attribute.", s_name);
+	if (strstr(s_type, "output") != NULL && s_output == NULL) {
+		snprintf(msgbuf, MSGSIZE, "stream \"%s\" is an output stream and must have the \"output_interval\" attribute.", s_name);
 		fmt_err(msgbuf);
 		return 1;
+	}
+	if (strstr(s_type, "input") != NULL && strstr(s_type, "output") == NULL && s_output != NULL) {
+		snprintf(msgbuf, MSGSIZE, "input-only stream \"%s\" has the \"output_interval\" attribute.", s_name);
+		fmt_warn(msgbuf);
+	}
+	if (strstr(s_type, "output") != NULL && strstr(s_type, "input") == NULL && s_input != NULL) {
+		snprintf(msgbuf, MSGSIZE, "output-only stream \"%s\" has the \"input_interval\" attribute.", s_name);
+		fmt_warn(msgbuf);
 	}
 
 
@@ -184,7 +207,7 @@ int attribute_check(ezxml_t stream)
 	for (i=(len-1); i>=0; nextchar=s_filename[i--]) {
 		if (s_filename[i] == '$') {
 			if (strchr("YMDdhmsG",nextchar) == NULL) {
-				snprintf(msgbuf, MSGSIZE, "filename_template for stream %s contains unrecognized variable \"$%c\".", s_name, nextchar);
+				snprintf(msgbuf, MSGSIZE, "filename_template for stream \"%s\" contains unrecognized variable \"$%c\".", s_name, nextchar);
 				fmt_err(msgbuf);
 				return 1;
 			}
@@ -324,7 +347,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
         char *xml_buf;
 	size_t bufsize;
 	ezxml_t streams;
-	ezxml_t foo_xml;
+	ezxml_t stream_xml;
 	const char *attr;
 	int err;
 
@@ -352,8 +375,18 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	}
 
 	err = 0;
-	for (foo_xml = ezxml_child(streams, "stream"); foo_xml; foo_xml = ezxml_next(foo_xml)) {
-		attr = ezxml_attr(foo_xml, "name");
+
+	/* First, handle changes to immutable stream filename templates, intervals, etc. */
+	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
+		attr = ezxml_attr(stream_xml, "name");
+		fprintf(stderr, "MGD DEV Found stream named %s\n", attr);
+		stream_mgr_create_stream_c(manager, attr, &err);
+		err++;
+	}
+
+	/* Next, handle modifications to mutable streams as well as new stream definitions */
+	for (stream_xml = ezxml_child(streams, "stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
+		attr = ezxml_attr(stream_xml, "name");
 		fprintf(stderr, "MGD DEV Found stream named %s\n", attr);
 		stream_mgr_create_stream_c(manager, attr, &err);
 		err++;
