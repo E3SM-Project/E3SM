@@ -72,6 +72,14 @@
  sdesc="case user name"
 ></entry> 
 
+<entry id="PROJECT" 
+ type="char"
+ valid_values=""  
+ value="UNSET" 
+ group="case_desc"
+ sdesc="project for project-sensitive build and run paths"
+></entry> 
+
 <entry id="COMP_ATM" 
  type="char"
  valid_values="cam,wrf,datm,xatm,satm" 
@@ -2620,7 +2628,6 @@ for each supported machine.  Must explicitly set it in env_build.xml for a
 userdefined machine."
 ></entry> 
 
-
 <entry id="OS" 
  type="char"
  valid_values="" 
@@ -2954,6 +2961,14 @@ RUNDIR allows you to keep the run directory separate from the build directory."
  sdesc="level of debug output, 0=minimum, 1=normal, 2=more, 3=too much"
 ></entry> 
 
+<entry id="TIMER_DETAIL" 
+ type="integer"
+ valid_values="0,1,2"  
+ value="1" 
+ group="run_flags"
+ sdesc="timer output detail"
+></entry>
+
 <entry id="TIMER_LEVEL" 
  type="integer"
  valid_values=""
@@ -2962,6 +2977,23 @@ RUNDIR allows you to keep the run directory separate from the build directory."
  sdesc="timer output depth"
 ></entry>
 
+<entry id="TPROF_TOTAL" 
+ type="integer"
+ valid_values=""  
+ value="12" 
+ group="run_flags"
+ sdesc="number of timing output checkpoints"
+></entry>
+
+<entry id="SYSLOG_N" 
+ type="integer"
+ valid_values=""  
+ value="900" 
+ group="run_flags"
+ sdesc="system workload snapshot frequency"
+ ldesc="system workload snapshot frequency (in seconds, if greater than 0; disabled otherwise)"
+></entry>
+ 
 <entry id="NCPL_BASE_PERIOD" 
  type="char"
  valid_values="hour,day,year,decade" 
@@ -3378,10 +3410,18 @@ restarting where the previous finished."
 <entry id="SAVE_TIMING" 
  type="logical"
  valid_values="TRUE,FALSE"  
- value="FALSE" 
+ value="TRUE" 
  group="run_flags"
  sdesc="logical to save timing files in rundir"
 ></entry>
+
+<entry id="SAVE_TIMING_DIR" 
+ type="char"
+ valid_values=""  
+ value="/UNSET" 
+ group="run_flags"
+ sdesc="directory for archiving performance data"
+></entry> 
 
 <!-- ======================================================================= -->
 <!-- env_run.xml - pio                                                       -->

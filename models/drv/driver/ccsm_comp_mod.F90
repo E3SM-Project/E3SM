@@ -399,6 +399,8 @@ module ccsm_comp_mod
    real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
+   logical  :: output_perf = .false.  ! require timing data output for this pe
+
    !--- history & budgets ---
    logical :: do_budgets              ! heat/water budgets on
    logical :: do_histinit             ! initial hist file
@@ -568,9 +570,12 @@ subroutine ccsm_pre_init1()
    it=1
    call seq_comm_getinfo(GLOID,mpicom=mpicom_GLOID,&
         iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)
+   if (iamroot_GLOID) output_perf = .true.
+
    call seq_comm_getinfo(CPLID,mpicom=mpicom_CPLID,&
         iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,&
         iam=comp_comm_iam(it))
+   if (iamroot_CPLID) output_perf = .true.
 
    if (iamin_CPLID) complist = trim(complist)//' cpl'
 
@@ -590,6 +595,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin(ATMID(eai))) then
          complist = trim(complist)//' '//trim(seq_comm_name(ATMID(eai)))
       end if
+      if (seq_comm_iamroot(ATMID(eai))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLATMID, mpicom=mpicom_CPLALLATMID)
    iamin_CPLALLATMID = seq_comm_iamin(CPLALLATMID)
@@ -604,6 +610,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin(LNDID(eli))) then
          complist = trim(complist)//' '//trim(seq_comm_name(LNDID(eli)))
       end if
+      if (seq_comm_iamroot(LNDID(eli))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLLNDID, mpicom=mpicom_CPLALLLNDID)
    iamin_CPLALLLNDID = seq_comm_iamin(CPLALLLNDID)
@@ -618,6 +625,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin (OCNID(eoi))) then
          complist = trim(complist)//' '//trim(seq_comm_name(OCNID(eoi)))
       end if
+      if (seq_comm_iamroot(OCNID(eoi))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLOCNID, mpicom=mpicom_CPLALLOCNID)
    iamin_CPLALLOCNID = seq_comm_iamin(CPLALLOCNID)
@@ -632,6 +640,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin (ICEID(eii))) then
          complist = trim(complist)//' '//trim(seq_comm_name(ICEID(eii)))
       end if
+      if (seq_comm_iamroot(ICEID(eii))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLICEID, mpicom=mpicom_CPLALLICEID)
    iamin_CPLALLICEID = seq_comm_iamin(CPLALLICEID)
@@ -645,6 +654,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin (GLCID(egi))) then
          complist = trim(complist)//' '//trim(seq_comm_name(GLCID(egi)))
       end if
+      if (seq_comm_iamroot(GLCID(egi))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLGLCID, mpicom=mpicom_CPLALLGLCID)
    iamin_CPLALLGLCID = seq_comm_iamin(CPLALLGLCID)
@@ -659,6 +669,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin(ROFID(eri))) then
          complist = trim(complist)//' '//trim( seq_comm_name(ROFID(eri)))
       end if
+      if (seq_comm_iamroot(ROFID(eri))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLROFID, mpicom=mpicom_CPLALLROFID)
    iamin_CPLALLROFID = seq_comm_iamin(CPLALLROFID)
@@ -673,6 +684,7 @@ subroutine ccsm_pre_init1()
       if (seq_comm_iamin(WAVID(ewi))) then
          complist = trim(complist)//' '//trim(seq_comm_name(WAVID(ewi)))
       end if
+      if (seq_comm_iamroot(WAVID(ewi))) output_perf = .true.
    enddo
    call seq_comm_getinfo(CPLALLWAVID, mpicom=mpicom_CPLALLWAVID)
    iamin_CPLALLWAVID = seq_comm_iamin(CPLALLWAVID)
@@ -751,7 +763,8 @@ subroutine ccsm_pre_init2()
    ! Memory test
    !-----------------------------------------------------------------------------
 
-   call shr_mem_init(prt=.true.)
+!mt call shr_mem_init(prt=.true.)
+   call shr_mem_init(prt=iamroot_CPLID)
 
    !-----------------------------------------------------------------------------
    ! Initialize coupled fields
@@ -991,8 +1004,7 @@ subroutine ccsm_init()
       call shr_sys_flush(logunit)
    endif
 
-   call t_adj_detailf(+2)
-
+   call t_startf('comp_init_pre_all')
    call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
    call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
    call component_init_pre(rof, ROFID, CPLROFID, CPLALLROFID, infodata, ntype='rof')
@@ -1000,25 +1012,95 @@ subroutine ccsm_init()
    call component_init_pre(ice, ICEID, CPLICEID, CPLALLICEID, infodata, ntype='ice')
    call component_init_pre(glc, GLCID, CPLGLCID, CPLALLGLCID, infodata, ntype='glc')
    call component_init_pre(wav, WAVID, CPLWAVID, CPLALLWAVID, infodata, ntype='wav')
+   call t_stopf('comp_init_pre_all')
 
 #ifdef ESMF_INTERFACE
+   call t_startf('comp_init_cc_atm')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_a, drvcomp, atm, atm_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_atm')
+
+   call t_startf('comp_init_cc_lnd')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_l, drvcomp, lnd, lnd_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_lnd')
+
+   call t_startf('comp_init_cc_rof')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_r, drvcomp, rof, rof_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_rof')
+
+   call t_startf('comp_init_cc_ocn')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_o, drvcomp, ocn, ocn_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_ocn')
+
+   call t_startf('comp_init_cc_ice')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_i, drvcomp, ice, ice_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_ice')
+
+   call t_startf('comp_init_cc_glc')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_g, drvcomp, glc, glc_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_glc')
+
+   call t_startf('comp_init_cc_wav')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, drvcomp, wav, wav_register_esmf, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_wav')
 #else
+   call t_startf('comp_init_cc_atm')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_atm')
+
+   call t_startf('comp_init_cc_lnd')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_l, lnd, lnd_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_lnd')
+
+   call t_startf('comp_init_cc_rof')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_r, rof, rof_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_rof')
+
+   call t_startf('comp_init_cc_ocn')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_o, ocn, ocn_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_ocn')
+
+   call t_startf('comp_init_cc_ice')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_i, ice, ice_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_ice')
+
+   call t_startf('comp_init_cc_glc')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_g, glc, glc_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_glc')
+
+   call t_startf('comp_init_cc_wav')
+   call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_wav')
 #endif
 
+   call t_startf('comp_init_cx_all')
    call component_init_cx(atm, infodata)
    call component_init_cx(lnd, infodata)
    call component_init_cx(rof, infodata)
@@ -1026,6 +1108,7 @@ subroutine ccsm_init()
    call component_init_cx(ice, infodata)
    call component_init_cx(glc, infodata)
    call component_init_cx(wav, infodata)
+   call t_stopf('comp_init_cx_all')
 
 #ifdef ESMF_INTERFACE
    if (iamin_CPLID) then
@@ -1037,6 +1120,7 @@ subroutine ccsm_init()
 
    ! Determine complist (list of comps for each id)
 
+   call t_startf('comp_list_all')
    complist = " "
    if (iamin_CPLID) complist = trim(complist)//' cpl'
 
@@ -1082,8 +1166,7 @@ subroutine ccsm_init()
          complist = trim(complist)//' '//trim(compname)
       end if
    end do
-
-   call t_adj_detailf(-2)
+   call t_stopf('comp_list_all')
 
    call t_stopf  ('driver_init_comps')
 
@@ -1430,11 +1513,15 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
 
    if (iamin_CPLID) then
+      call t_startf ('driver_init_aream')
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
       call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, samegrid_ro)
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_stopf ('driver_init_aream')
    end if ! iamin_CPLID
 
    !-----------------------------------------------------------------------------
@@ -1445,6 +1532,8 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
 
    if (iamin_CPLID) then
+      call t_startf ('driver_init_domain_check')
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (domain_check) then
          if (iamroot_CPLID) then
@@ -1459,6 +1548,8 @@ subroutine ccsm_init()
 
       endif
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_stopf ('driver_init_domain_check')
    endif ! iamin_CPLID
 
    !-----------------------------------------------------------------------------
@@ -1477,6 +1568,8 @@ subroutine ccsm_init()
    end if
 #endif
    if (single_column) areafact_samegrid = .true.
+
+   call t_startf ('driver_init_areacor')
 
    call mpi_barrier(mpicom_GLOID,ierr)
    if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
@@ -1499,12 +1592,16 @@ subroutine ccsm_init()
    call mpi_barrier(mpicom_GLOID,ierr)
    if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
 
+   call t_stopf ('driver_init_areacor')
+
    !-----------------------------------------------------------------------------
    ! CPL PES 
    ! global sum diagnostics for IC data
    !-----------------------------------------------------------------------------
 
    if (iamin_CPLID .and. info_debug > 1) then
+      call t_startf ('driver_init_diag')
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (atm_present) then
          call component_diag(infodata, atm, flow='c2x', comment='recv IC atm', &
@@ -1535,6 +1632,8 @@ subroutine ccsm_init()
               info_debug=info_debug)
       endif
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_stopf ('driver_init_diag')
    end if
 
    !-----------------------------------------------------------------------------
@@ -1543,6 +1642,8 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
 
    if (iamin_CPLID) then
+      call t_startf ('driver_init_fracs')
+
       allocate(fractions_ax(num_inst_frc))
       allocate(fractions_lx(num_inst_frc))
       allocate(fractions_ox(num_inst_frc))
@@ -1578,6 +1679,8 @@ subroutine ccsm_init()
 
       enddo
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+      call t_stopf ('driver_init_fracs')
    end if
 
    !-----------------------------------------------------------------------------
@@ -1596,6 +1699,8 @@ subroutine ccsm_init()
 
    if (iamin_CPLID) then
       if (ocn_present) then
+         call t_startf ('driver_init_aoflux')
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
             write(logunit,*) ' '
@@ -1625,6 +1730,8 @@ subroutine ccsm_init()
          enddo
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+         call t_stopf ('driver_init_aoflux')
       endif
    end if
 
@@ -1696,6 +1803,9 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
 
    if (atm_present) then
+      call t_startf('comp_init_cc_atm2')
+      call t_adj_detailf(+2)
+
       if (iamroot_CPLID) then
          write(logunit,F00) 'Calling atm_init_mct phase 2'
       end if
@@ -1734,6 +1844,8 @@ subroutine ccsm_init()
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
       endif
 
+      call t_adj_detailf(-2)
+      call t_stopf('comp_init_cc_atm2')
    endif   ! atm present
 
    !-----------------------------------------------------------------------------
@@ -1783,6 +1895,8 @@ subroutine ccsm_init()
 
    if (do_histinit) then
       if (iamin_CPLID) then
+         call t_startf('driver_init_histinit')
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
             call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
@@ -1794,6 +1908,8 @@ subroutine ccsm_init()
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
               fractions_rx, fractions_gx, fractions_wx)
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+         call t_stopf('driver_init_histinit')
       endif
    endif
 
@@ -3147,8 +3263,13 @@ end subroutine ccsm_init
          call t_stopf("sync1_tprof")
 
          write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/ccsm_timing_",ymd,"_",tod
-         call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
-              num_outpe=1)
+         if (output_perf) then
+            call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
+                       num_outpe=0, output_thispe=output_perf)
+         else
+            call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
+                       num_outpe=0)
+         endif
 
          call t_startf("sync2_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
@@ -3239,7 +3360,12 @@ end subroutine ccsm_init
    endif
 
    call t_stopf  ('DRIVER_FINAL')
-   call t_prf(trim(timing_dir)//'/ccsm_timing', mpicom_GLOID)
+   if (output_perf) then
+      call t_prf(trim(timing_dir)//'/ccsm_timing', mpicom=mpicom_GLOID, &
+                 output_thispe=output_perf)
+   else
+      call t_prf(trim(timing_dir)//'/ccsm_timing', mpicom=mpicom_GLOID)
+   endif
    call t_finalizef()
 
 end subroutine ccsm_final

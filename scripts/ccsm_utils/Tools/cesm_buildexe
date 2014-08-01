@@ -1,7 +1,8 @@
 echo "-------------------------------------------------------------------------"
 echo " CESM BUILDEXE SCRIPT STARTING"
 
-cd $CASEROOT
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "build started $sdate" >>& $CASEROOT/CaseStatus
 
 set atmstr = 0
 if ($NTHRDS_ATM > 1 || $BUILD_THREADED == "TRUE") set atmstr = 1

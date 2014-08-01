@@ -130,6 +130,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -283,6 +284,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -340,15 +342,16 @@
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <RUNDIR>/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
-         <EXEROOT>/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/projects/ClimEndStation/$CCSMUSER/scratch/exe</CESMSCRATCHROOT>
+         <RUNDIR>/projects/$PROJECT/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
+         <EXEROOT>/projects/$PROJECT/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/$CCSMUSER/scratch/exe</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/projects/ClimEndStation/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/projects/$PROJECT/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
-	     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
          <OS>BGQ</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
@@ -485,15 +488,16 @@
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,pgicuda</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
-         <EXEROOT>$CASEROOT/bld</EXEROOT>
-         <CESMSCRATCHROOT>$MEMBERWORK/$PROJECT</CESMSCRATCHROOT>
+         <RUNDIR>/lustre/atlas/scratch/$CCSMUSER/$PROJECT/$CASE/run</RUNDIR>
+         <EXEROOT>/lustre/atlas/scratch/$CCSMUSER/$PROJECT/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/lustre/atlas/scratch/$CCSMUSER/$PROJECT</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$MEMBERWORK/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/lustre/atlas/scratch/$CCSMUSER/$PROJECT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
