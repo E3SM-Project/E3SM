@@ -73,7 +73,7 @@ contains
     ithr=omp_get_thread_num()
     hybrid = hybrid_create(par,ithr,1)
        
-    if(any(interpolate_analysis(1:mtapes))) then
+    if(any(interpolate_analysis)) then
        allocate(cam_interpolate(nelemd))
        call setup_latlon_interp(elem, cam_interpolate, par)
        allocate(w(get_interp_parameter('nlat')))
@@ -88,7 +88,12 @@ contains
 
     logical :: latlon_interpolation
 
-    latlon_interpolation = interpolate_analysis(t)
+    if (t<=size(interpolate_analysis)) then
+       latlon_interpolation = interpolate_analysis(t)
+    else
+       latlon_interpolation = .false.
+    endif
+
   end function latlon_interpolation
 
 
