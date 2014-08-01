@@ -223,12 +223,16 @@ for mct, etc.
   <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
 
   <FIXEDFLAGS> -Mfixed </FIXEDFLAGS>
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -gopt -Mlist -time -Mextend -byteswapio -Mflushz -Kieee  -ta=nvidia -Mcuda=5.0,cc35,ptxinfo  </FFLAGS>
+  <FFLAGS>  -i4 -Mlist -time -Mextend -byteswapio -Mflushz -Kieee </FFLAGS>
+  <ADD_FFLAGS MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35 </ADD_FFLAGS>
 
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="datm"> -Mnovect </ADD_FFLAGS>
@@ -237,7 +241,7 @@ for mct, etc.
   <ADD_FFLAGS MODEL="dwav"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="dice"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="docn"> -Mnovect </ADD_FFLAGS>
-  <LDFLAGS> -time -Wl,--allow-multiple-definition -ta=nvidia -Mcuda=5.0,cc35 </LDFLAGS>
+  <LDFLAGS> -time -Wl,--allow-multiple-definition -ta=nvidia -Mcuda=5.5,cc35 </LDFLAGS>
   <SCC> pgcc </SCC>
   <SFC> pgf95 </SFC>
   <SCXX> pgc++ </SCXX>
