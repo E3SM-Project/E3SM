@@ -2887,9 +2887,21 @@ write(0,*) 'USING ECMWF TERRAIN...'
          zt = config_ztop
          dz = zt/float(nz1)
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 2014 TC experiments
+! When switching between 41 and 55 levels in the namelist, also
+!    comment/uncomment the appropriate section of code below...
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! ww: for 41 level fit
+!         als   =  .075
+!         alt   = 1.23
+!         zetal =  .31
+! ww: for 55 level fit
          als   =  .075
-         alt   = 1.23
-         zetal =  .31
+         alt   = 1.7
+         zetal =  .75
+
          do k=1,nz
             zl = 1.-alt*(1.-zetal)
             if ((real(k-1)/real(nz1)).LT.zetal) then
