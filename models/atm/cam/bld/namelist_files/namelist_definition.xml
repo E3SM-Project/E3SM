@@ -1775,6 +1775,11 @@ Tunable evaporation efficiency in ZM deep convection scheme.
 Default: set by build-namelist
 </entry>
 
+<entry id="zmconv_tau" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Relaxation time in ZM deep convection scheme.
+Default: set by build-namelist
+</entry>
 
 <!-- Cloud sedimentation -->
 
