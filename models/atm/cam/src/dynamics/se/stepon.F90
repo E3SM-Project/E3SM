@@ -233,7 +233,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    if(iam >= par%nprocs) return
 
-   call t_startf('bndry_exchange')
+   call t_startf('stepon_bndry_exch')
    ! do boundary exchange
    do ie=1,nelemd
       kptr=0
@@ -245,7 +245,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
    end do
 
+   call t_startf('stepon_bexchV')
    call bndry_exchangeV(par, edgebuf)
+   call t_stopf('stepon_bexchV')
 
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 !  rec2dt = 1./real(dtime,r8)
@@ -421,7 +423,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          end do
       endif
    end do
-   call t_stopf('bndry_exchange')
+   call t_stopf('stepon_bndry_exch')
 
 
 
