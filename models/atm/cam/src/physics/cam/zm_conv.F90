@@ -40,6 +40,7 @@ module zm_conv
 ! Private data
 !
    real(r8), parameter :: unset_r8 = huge(1.0_r8)
+   real(r8) :: zmconv_tau = unset_r8    
    real(r8) :: zmconv_c0_lnd = unset_r8    
    real(r8) :: zmconv_c0_ocn = unset_r8    
    real(r8) :: zmconv_ke     = unset_r8    
@@ -86,8 +87,10 @@ subroutine zmconv_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'zmconv_readnl'
 
-   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke
+   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau
    !-----------------------------------------------------------------------------
+   ! defaut:
+   zmconv_tau = 3600
 
    if (masterproc) then
       unitn = getunit()
@@ -103,6 +106,7 @@ subroutine zmconv_readnl(nlfile)
       call freeunit(unitn)
 
       ! set local variables
+      tau = zmconv_tau
       c0_lnd = zmconv_c0_lnd
       c0_ocn = zmconv_c0_ocn
       ke = zmconv_ke
@@ -111,6 +115,7 @@ subroutine zmconv_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
+   call mpibcast(tau,            1, mpir8,  0, mpicom)
    call mpibcast(c0_lnd,            1, mpir8,  0, mpicom)
    call mpibcast(c0_ocn,            1, mpir8,  0, mpicom)
    call mpibcast(ke,                1, mpir8,  0, mpicom)
@@ -150,7 +155,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    ! convection is too weak, thus adjusted to 2400.
 
    hgrid = get_resolution()
-   tau = 3600._r8
+   !tau = 3600._r8
 
    if ( masterproc ) then
       write(iulog,*) 'tuning parameters zm_convi: tau',tau

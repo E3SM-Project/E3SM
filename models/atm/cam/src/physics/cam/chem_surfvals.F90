@@ -30,7 +30,7 @@ module chem_surfvals
    public ::&
       chem_surfvals_readnl,  &! read namelist input
       chem_surfvals_init,    &! initialize options that depend on namelist input
-      chem_surfvals_set,     &! set ghg surface values when ramp option is on
+      chem_surfvals_set,     &! set ghg surface values when scenario_ghg is 'RAMPED' or 'CHEM_LBC_FILE'
       chem_surfvals_get,     &! return surface values for: CO2VMR, CO2MMR, CH4VMR
                               ! N2OVMR, F11VMR, and F12VMR
       chem_surfvals_co2_rad   ! return co2 for radiation
@@ -253,12 +253,14 @@ subroutine chem_surfvals_init()
       end if
 
       call chem_surfvals_set()
+   else if (scenario_ghg == 'CHEM_LBC_FILE') then
+      ! set by lower boundary conditions file
+      call flbc_inti( flbc_file, flbc_list, flbc_timing, co2vmr, ch4vmr, n2ovmr, f11vmr, f12vmr )
+      call chem_surfvals_set()
    else
-      call endrun ('chem_surfvals_init: input namelist SCENARIO_GHG must be set to either FIXED, RAMPED or RAMP_CO2_ONLY')
+      call endrun ('chem_surfvals_init: input namelist SCENARIO_GHG must be set to either FIXED, RAMPED, RAMP_CO2_ONLY, &
+                    or CHEM_LBC_FILE')
    endif
-
-   ! waccm/cam-chem fixed lower boundary conditions
-   call flbc_inti( flbc_file, flbc_list, flbc_timing, co2vmr, ch4vmr, n2ovmr, f11vmr, f12vmr )
 
    if (masterproc) then
       write(iulog,*) '  co2 volume mixing ratio = ',co2vmr
@@ -434,14 +436,11 @@ end function chem_surfvals_co2_rad
 
 !=========================================================================================
 
-subroutine chem_surfvals_set( phys_state )
+subroutine chem_surfvals_set()
 
-   ! phys_state argument is unused in this version
    use ppgrid,         only: begchunk, endchunk
-   use physics_types,  only: physics_state
    use mo_flbc,        only: flbc_gmean_vmr, flbc_chk
 
-   type(physics_state), intent(inout), dimension(begchunk:endchunk), optional :: phys_state    
 !---------------------------Local variables-----------------------------
 
    integer  :: yr, mon, day, ncsec ! components of a date
@@ -453,10 +452,10 @@ subroutine chem_surfvals_set( phys_state )
       else
          call chem_surfvals_set_all()
       end if
-   else
-      ! overwrite from cam-chem/waccm lbc file 
+   elseif (scenario_ghg == 'CHEM_LBC_FILE') then
+      ! set mixing ratios from cam-chem/waccm lbc file 
       call flbc_chk()
-      call flbc_gmean_vmr(co2vmr,ch4vmr,n2ovmr,f11vmr,f12vmr, phys_state)
+      call flbc_gmean_vmr(co2vmr,ch4vmr,n2ovmr,f11vmr,f12vmr)
    endif
 
    if (masterproc .and. is_end_curr_day()) then

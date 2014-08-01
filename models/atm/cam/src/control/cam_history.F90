@@ -17,6 +17,7 @@ module cam_history
 !   write_restart_history
 !   read_restart_history
 !   outfld
+!   get_field_properties
 !   wshist
 !   initialize_iop_history
 !-----------------------------------------------------------------------
@@ -27,26 +28,23 @@ module cam_history
    use cam_instance, only: inst_suffix
    use filenames,    only: interpret_filename_spec, ncdata, bnd_topo
    use abortutils,   only: endrun
-   use pmgrid,       only : dyndecomp_set
+   use pmgrid,       only: dyndecomp_set
 
    use units,        only: getunit
 
-   use hycoef,       only: hyai, hybi, hyam, hybm, ps0
-
    use dyn_grid,     only: get_horiz_grid_dim_d, get_horiz_grid_d, get_dyn_grid_parm
 
-   use pio,          only: file_desc_t, var_desc_t, io_desc_t, &
-                           iotype_pnetcdf, iotype_netcdf, &
-                           pio_noerr, pio_bcast_error, pio_internal_error, &
-                           pio_seterrorhandling, pio_setdebuglevel, pio_setframe, &
-                           pio_rearr_box, pio_rearr_none,  &
-                           pio_nofill, pio_clobber,pio_offset, &
-                           pio_int, pio_real, pio_double, pio_char, pio_offset, pio_unlimited, pio_global, &
-                           pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_varname, pio_inq_varndims, &
-                           pio_def_dim, pio_def_var, pio_enddef, &
-                           pio_put_att, pio_put_var, pio_get_att, pio_get_var, &
-                           pio_write, pio_write_darray, &
-                           pio_read_darray, pio_closefile, pio_freedecomp, pio_syncfile
+   use pio,          only: file_desc_t, var_desc_t, io_desc_t,                &
+                           pio_noerr, pio_bcast_error, pio_internal_error,    &
+                           pio_seterrorhandling, pio_setdebuglevel,           &
+                           pio_setframe, pio_clobber,                         &
+                           pio_int, pio_real, pio_double, pio_char,           &
+                           pio_offset, pio_unlimited, pio_global,             &
+                           pio_inq_dimid, pio_inq_dimlen, pio_inq_varid,      &
+                           pio_inq_varndims, pio_def_dim, pio_def_var,        &
+                           pio_enddef, pio_put_att, pio_put_var, pio_get_att, &
+                           pio_get_var, pio_write, pio_write_darray,          &
+                           pio_read_darray, pio_closefile, pio_freedecomp
 
    use scamMod,       only: scmlon,single_column
    use perf_mod,      only: t_startf, t_stopf
@@ -54,9 +52,12 @@ module cam_history
    use cam_pio_utils, only: phys_decomp, dyn_decomp, dyn_stagger_decomp
    use cam_history_buffers, only : dim_index_3d,hbuf_accum_inst, hbuf_accum_add, hbuf_accum_min, hbuf_accum_max, &
         hbuf_accum_add00z, hbuf_accum_addlcltime
-   use cam_history_support, only : max_fieldname_len, fieldname_suffix_len, max_chars, ptapes, fieldname_len, max_string_len, &
-        date2yyyymmdd, registeredmdims, fieldname_lenp2, sec2hms, pflds, column_info, field_info, active_entry, hentry, &
-        hist_mdims, register_hist_mdim, lookup_hist_mdim_indicies
+   use cam_history_support, only : max_fieldname_len, fieldname_suffix_len,   &
+        max_chars, ptapes, fieldname_len, max_string_len, date2yyyymmdd,      &
+        registeredmdims, mdim_var_name, fieldname_lenp2, sec2hms, pflds,      &
+        column_info, field_info, active_entry, hentry, add_hist_coord,        &
+        write_hist_coord_attrs, write_hist_coord_vars,                        &
+        lookup_hist_coord_indices, get_hist_coord_index
    use sat_hist,    only: is_satfile
    use phys_control,only: cam_chempkg_is
 
@@ -326,26 +327,20 @@ module cam_history
    public :: hist_fld_active           ! Determine if a field is active on any history file
    public :: hist_fld_col_active       ! Determine if a field is active on any history file at
                                        ! each column in a chunk
+   public :: get_field_properties      ! Retrieve properties from a history field
 
 
 CONTAINS
 
   subroutine init_masterlinkedlist()
-    use dyn_grid, only : get_dyn_grid_parm
-    integer :: plev, plevp
 
     nullify(masterlinkedlist)
     nullify(tape)
-    plev = get_dyn_grid_parm('plev')
-    plevp = get_dyn_grid_parm('plevp')
-
-    call register_hist_mdim('lev',plev)
-    call register_hist_mdim('ilev',plevp)
 
   end subroutine init_masterlinkedlist
 
 
-   subroutine intht ()
+  subroutine intht ()
 !
 !----------------------------------------------------------------------- 
 ! 
@@ -362,33 +357,33 @@ CONTAINS
 ! Author: CCM Core Group
 ! 
 !-----------------------------------------------------------------------
-      use ioFileMod
-      use shr_sys_mod, only: shr_sys_getenv
-      use time_manager, only: get_prev_time, get_curr_time
-      use cam_control_mod, only : nsrest
-      use dycore,           only: dycore_is
-      use sat_hist,        only: sat_hist_init
+    use ioFileMod
+    use shr_sys_mod,     only: shr_sys_getenv
+    use time_manager,    only: get_prev_time, get_curr_time
+    use cam_control_mod, only: nsrest
+    use dycore,          only: dycore_is
+    use sat_hist,        only: sat_hist_init
 #if (defined SPMD)
-      use spmd_utils, only : mpichar, mpicom
+    use spmd_utils, only : mpichar, mpicom
 #endif
 !
 !-----------------------------------------------------------------------
 !
 ! Local workspace
 !
-      integer :: t, f              ! tape, field indices
-      integer :: begdim1           ! on-node dim1 start index
-      integer :: enddim1           ! on-node dim1 end index
-      integer :: begdim2           ! on-node dim2 start index
-      integer :: enddim2           ! on-node dim2 end index
-      integer :: begdim3           ! on-node chunk or lat start index
-      integer :: enddim3           ! on-node chunk or lat end index
-      type (dim_index_3d) :: dimind  ! 3-D dimension index
-      integer :: day, sec          ! day and seconds from base date
-      integer :: i, ii, ff         ! index
-      integer :: rcode             ! shr_sys_getenv return code
-      type(master_entry), pointer :: listentry
-      character(len=32) :: fldname ! temp variable used to produce a left justified field name
+    integer :: t, f              ! tape, field indices
+    integer :: begdim1           ! on-node dim1 start index
+    integer :: enddim1           ! on-node dim1 end index
+    integer :: begdim2           ! on-node dim2 start index
+    integer :: enddim2           ! on-node dim2 end index
+    integer :: begdim3           ! on-node chunk or lat start index
+    integer :: enddim3           ! on-node chunk or lat end index
+    type (dim_index_3d) :: dimind  ! 3-D dimension index
+    integer :: day, sec          ! day and seconds from base date
+    integer :: i, ii, ff         ! index
+    integer :: rcode             ! shr_sys_getenv return code
+    type(master_entry), pointer :: listentry
+    character(len=32) :: fldname ! temp variable used to produce a left justified field name
                                    ! in the formatted logfile output
 
 !
@@ -976,8 +971,8 @@ CONTAINS
 !#######################################################################
 
    subroutine read_restart_history (File)
-     use pio, only : pio_inquire_variable, pio_inq_dimid, pio_inquire, pio_inq_varid, &
-          pio_inquire_dimension
+     use pio, only : pio_inquire_variable, pio_inq_dimid, pio_inquire,        &
+          pio_inq_varid, pio_inquire_dimension, pio_inq_dimname
      
       use ppgrid,        only: begchunk, endchunk
       use phys_grid,     only: get_ncols_p
@@ -1024,6 +1019,7 @@ CONTAINS
       integer, allocatable :: decomp(:,:), tmpnumlev(:,:)
       integer, pointer :: nacs(:,:)    ! accumulation counter
       character(len=max_fieldname_len) :: fname_tmp ! local copy of field name
+      character(len=max_fieldname_len) :: dname_tmp ! local copy of dim name
       character(len=max_chars), pointer :: tmpstr
 
       real(r8) :: sum_r8
@@ -1044,12 +1040,9 @@ CONTAINS
       integer :: maxnflds, dimid
       type(master_entry), pointer :: listentry
 
-
-      integer levdim             ! level dimension id
-      character(len=16) :: name
+      character(len=16), allocatable :: mdimnames(:) ! Names of all hist coords (inc. vertical)
       integer :: ndims, dimids(8)
       integer :: tmpdims(8), dimcnt
-      integer :: value
       integer :: mtapes, mdimcnt
 !
 ! Get users logname and machine hostname
@@ -1316,14 +1309,21 @@ CONTAINS
 !
 ! Read history restart file
 !
-            !     Read the mdims on file - they are the last dims defined and 'lev' is always the first.
-            ierr=pio_inq_dimid (tape(t)%File, 'lev', levdim)
-            ierr = pio_inquire(tape(t)%File, ndims)
-            
-            do i=levdim,ndims
-               ierr = pio_inquire_dimension(tape(t)%File, i, name, value)
-               call register_hist_mdim(name,value)
-            enddo
+! Read the hist coord names to pre-register
+            ! We will take our chances if the variable is not present
+            call pio_seterrorhandling(tape(t)%File, PIO_BCAST_ERROR)
+            ierr = pio_inq_varid(tape(t)%File, mdim_var_name, vdesc)
+            call pio_seterrorhandling(tape(t)%File, PIO_INTERNAL_ERROR)
+            if (ierr /= PIO_NOERR) then
+               ierr = pio_inquire_variable(tape(t)%File, vdesc, dimids=dimids)
+               ierr = pio_inq_dimlen(tape(t)%File, dimids(1), mdimcnt)
+               allocate(mdimnames(mdimcnt))
+               ierr = pio_get_var(tape(t)%File, vdesc, mdimnames)
+               do f = 1, mdimcnt
+                  call add_hist_coord(mdimnames(f))
+               end do
+               deallocate(mdimnames)
+            end if
 
             do f=1,nflds(t)  
                begdim1    =  tape(t)%hlist(f)%field%begdim1
@@ -1341,14 +1341,16 @@ CONTAINS
 
                if(.not. associated(tape(t)%hlist(f)%field%mdims)) then
                   ierr = pio_inquire_variable(tape(t)%File, vdesc, ndims=ndims,dimids=dimids)
-                  dimcnt=0
+                  dimcnt = 0
                   do i=1,ndims
-                     if(dimids(i)>=levdim) then
-                        dimcnt=dimcnt+1
-                        tmpdims(dimcnt)=dimids(i)-levdim+1
+                     ierr = pio_inq_dimname(tape(t)%File, dimids(i), dname_tmp)
+                     dimid = get_hist_coord_index(dname_tmp)
+                     if(dimid >= 1) then
+                        dimcnt = dimcnt + 1
+                        tmpdims(dimcnt) = dimid
                      end if
                   end do
-                  if(dimcnt>0) then
+                  if(dimcnt > 0) then
                      allocate(tape(t)%hlist(f)%field%mdims(dimcnt))
                      tape(t)%hlist(f)%field%mdims(:) = tmpdims(1:dimcnt)
                      if(dimcnt > maxvarmdims) maxvarmdims=dimcnt
@@ -2622,32 +2624,153 @@ CONTAINS
 !
 ! Local variables
 !
-      integer :: t, f                ! tape, field indices
-      integer :: fl, fu              ! upper, lower indices used in binary search thru sorted list
-      integer :: begdim1             ! on-node dim1 start index
-      integer :: enddim1             ! on-node dim1 end index
-      integer :: begdim2             ! on-node dim2 start index
-      integer :: enddim2             ! on-node dim2 end index
-      integer :: begdim3
-      integer :: enddim3
-      integer :: endi                ! ending longitude index (reduced grid)
+      integer  :: t, f                ! tape, field indices
+      integer  :: fl, fu              ! upper, lower indices used in binary search thru sorted list
+      integer  :: begdim1            ! on-node dim1 start index
+      integer  :: enddim1            ! on-node dim1 end index
+      integer  :: begdim2            ! on-node dim2 start index
+      integer  :: enddim2            ! on-node dim2 end index
+      integer  :: endi               ! ending longitude index (reduced grid)
 
-      character*(max_fieldname_len) :: fname_loc  ! max-char equivalent of fname
       character*1 :: avgflag         ! averaging flag
       
       real(r8),pointer :: hbuf(:,:)      ! history buffer
       integer, pointer :: nacs(:)    ! accumulation counter
       type (dim_index_2d) :: dimind  ! 2-D dimension index
-      logical :: flag_xyfill         ! non-applicable xy points flagged with fillvalue
-      integer :: ff                  ! masterlist index pointer
-      integer :: ierr, ncol
+      logical  :: flag_xyfill        ! non-applicable xy points flagged with fillvalue
+      real(r8) :: fillvalue
+      integer  :: ff                  ! masterlist index pointer
+      integer  :: ierr, ncol
+      logical  :: found
+!-----------------------------------------------------------------------
+
+      call get_field_properties (fname, found, tape_out=tape, ff_out=ff,      &
+           flag_xyfill_out=flag_xyfill, fillvalue_out=fillvalue,              &
+           begdim1_out=begdim1, enddim1_out=enddim1,                          &
+           begdim2_out=begdim2, enddim2_out=enddim2)
+
+      ! If this field is not active, return now
+      if (.not. found) then
+        return
+      end if
+
+!
+! Note, the field may be on any or all of the history files (primary
+! and auxiliary).
+!
+!      write(iulog,*)'fname_loc=',fname_loc
+      do 40 t=1,ptapes
+         if ( .not. masterlist(ff)%thisentry%actflag(t)) cycle
+         f = masterlist(ff)%thisentry%htapeindx(t)
+!
+! Update history buffer
+!
+         avgflag = tape(t)%hlist(f)%avgflag
+
+         nacs   => tape(t)%hlist(f)%nacs(:,c)
+
+         
+         hbuf => tape(t)%hlist(f)%hbuf(:,:,c)
+
+         if(associated(tape(t)%hlist(f)%field%colperdim3)) then         
+            endi    = tape(t)%hlist(f)%field%colperdim3(c)
+         else
+            endi = enddim1 - begdim1 + 1
+         end if
+         dimind = dim_index_2d (1,endi,begdim2,enddim2)
+
+         select case (avgflag)
+
+         case ('I') ! Instantaneous
+            call hbuf_accum_inst (hbuf, field, nacs, dimind, idim, flag_xyfill, fillvalue)
+
+         case ('A') ! Time average
+
+            call hbuf_accum_add (hbuf, field, nacs, dimind, idim, flag_xyfill, fillvalue)
+
+         case ('B') ! Time average only 00z values
+
+            call hbuf_accum_add00z (hbuf, field, nacs, dimind, idim, flag_xyfill, fillvalue)
+
+         case ('X') ! Maximum over time
+
+            call hbuf_accum_max (hbuf, field, nacs, dimind, idim, flag_xyfill, fillvalue)
+
+         case ('M') ! Minimum over time
+
+            call hbuf_accum_min (hbuf, field, nacs, dimind, idim, flag_xyfill, fillvalue)
+
+         case ('L')
+
+            call hbuf_accum_addlcltime(hbuf, field, nacs, dimind, idim, flag_xyfill, &
+                                       fillvalue, &
+                                       c, tape(t)%hlist(f)%field%decomp_type, &
+                                       lcltod_start(t),lcltod_stop(t))
+
+        case default
+
+            call endrun ('OUTFLD: invalid avgflag='//avgflag)
+
+         end select
+40    continue
+
+      return
+   end subroutine outfld
+
+!#######################################################################
+
+   subroutine get_field_properties (fname, found, tape_out, ff_out, nlev_out, &
+        flag_xyfill_out, fillvalue_out, mdims_out, begdim1_out, enddim1_out,  &
+        begdim2_out, enddim2_out, begdim3_out, enddim3_out)
+     
+      implicit none
+!
+!----------------------------------------------------------------------- 
+! 
+! Purpose: If fname is active, lookup and return field information
+! 
+! Method: Check 'masterlist' whether the requested field 'fname' is active
+!         on one or more history tapes, and if so, return the requested
+!         field information
+! 
+! Author: goldy
+! 
+!-----------------------------------------------------------------------
+!
+! Arguments
+!
+      character(len=*),   intent(in)  :: fname ! Field name--should be 8 chars long
+      logical,            intent(out) :: found ! Set to true if fname is active
+      type(active_entry), optional, pointer :: tape_out(:)
+      integer,  optional, intent(out) :: ff_out
+      integer,  optional, intent(out) :: nlev_out
+      logical,  optional, intent(out) :: flag_xyfill_out
+      real(r8), optional, intent(out) :: fillvalue_out
+      integer,  optional, pointer     :: mdims_out(:)
+      integer,  optional, intent(out) :: begdim1_out
+      integer,  optional, intent(out) :: enddim1_out
+      integer,  optional, intent(out) :: begdim2_out
+      integer,  optional, intent(out) :: enddim2_out
+      integer,  optional, intent(out) :: begdim3_out
+      integer,  optional, intent(out) :: enddim3_out
+
+!
+! Local variables
+!
+      type (active_entry), pointer :: tape(:)
+      character*(max_fieldname_len) :: fname_loc  ! max-char equivalent of fname
+      integer :: t, f, ff          ! tape, field, masterindex indices
+      integer :: ierr
 !-----------------------------------------------------------------------
 
       tape => history_tape
 
+      ! Need to re-cast the field name so that the hashing works #hackalert
       fname_loc = fname
-
       ff = get_masterlist_indx(fname_loc)
+
+! Set found to .false. so we can return early if fname is not active
+      found = .false.
 
 !
 !  If ( ff < 0 ), the field is not defined on the masterlist. This check
@@ -2668,72 +2791,58 @@ CONTAINS
 ! Note, the field may be on any or all of the history files (primary
 ! and auxiliary).
 !
-!      write(iulog,*)'fname_loc=',fname_loc
-      do 40 t=1,ptapes
-         if ( .not. masterlist(ff)%thisentry%actflag(t)) cycle
-         f = masterlist(ff)%thisentry%htapeindx(t)
-!
-! Update history buffer
-!
-         begdim1 = tape(t)%hlist(f)%field%begdim1
-         enddim1 = tape(t)%hlist(f)%field%enddim1
-         begdim2 = tape(t)%hlist(f)%field%begdim2
-         enddim2 = tape(t)%hlist(f)%field%enddim2
-         begdim3 = tape(t)%hlist(f)%field%begdim3
-         enddim3 = tape(t)%hlist(f)%field%enddim3
 
-         avgflag = tape(t)%hlist(f)%avgflag
-         flag_xyfill = tape(t)%hlist(f)%field%flag_xyfill
+      do t=1, ptapes
+         if (masterlist(ff)%thisentry%actflag(t)) then
+            f = masterlist(ff)%thisentry%htapeindx(t)
+            found = .true.
 
-         nacs   => tape(t)%hlist(f)%nacs(:,c)
-
-         
-         hbuf => tape(t)%hlist(f)%hbuf(:,:,c)
-
-         if(associated(tape(t)%hlist(f)%field%colperdim3)) then         
-            endi    = tape(t)%hlist(f)%field%colperdim3(c)
-         else
-            endi = tape(t)%hlist(f)%field%enddim1 - tape(t)%hlist(f)%field%begdim1 + 1
+            if (present(tape_out)) then
+              tape_out => tape
+            end if
+            if (present(ff_out)) then
+              ff_out = ff
+            end if
+            if (present(nlev_out)) then
+               nlev_out = tape(t)%hlist(f)%field%numlev
+            end if
+            if (present(flag_xyfill_out)) then
+               flag_xyfill_out = tape(t)%hlist(f)%field%flag_xyfill
+            end if
+            if (present(fillvalue_out)) then
+               fillvalue_out = tape(t)%hlist(f)%field%fillvalue
+            end if
+            if (present(mdims_out)) then
+               if (associated(tape(t)%hlist(f)%field%mdims)) then
+                  mdims_out => tape(t)%hlist(f)%field%mdims
+               else
+                  nullify(mdims_out)
+               end if
+            end if
+            if (present(begdim1_out)) then
+               begdim1_out = tape(t)%hlist(f)%field%begdim1
+            end if
+            if (present(enddim1_out)) then
+               enddim1_out = tape(t)%hlist(f)%field%enddim1
+            end if
+            if (present(begdim2_out)) then
+               begdim2_out = tape(t)%hlist(f)%field%begdim2
+            end if
+            if (present(enddim2_out)) then
+               enddim2_out = tape(t)%hlist(f)%field%enddim2
+            end if
+            if (present(begdim3_out)) then
+               begdim3_out = tape(t)%hlist(f)%field%begdim3
+            end if
+            if (present(enddim3_out)) then
+               enddim3_out = tape(t)%hlist(f)%field%enddim3
+            end if
+           ! We found the info so we are done with the loop
+            exit
          end if
-         dimind = dim_index_2d (1,endi,begdim2,enddim2)
+      end do
 
-         select case (avgflag)
-
-         case ('I') ! Instantaneous
-            call hbuf_accum_inst (hbuf, field, nacs, dimind, idim, flag_xyfill,tape(t)%hlist(f)%field%fillvalue)
-
-         case ('A') ! Time average
-
-            call hbuf_accum_add (hbuf, field, nacs, dimind, idim, flag_xyfill,tape(t)%hlist(f)%field%fillvalue)
-
-         case ('B') ! Time average only 00z values
-
-            call hbuf_accum_add00z (hbuf, field, nacs, dimind, idim, flag_xyfill,tape(t)%hlist(f)%field%fillvalue)
-
-         case ('X') ! Maximum over time
-
-            call hbuf_accum_max (hbuf, field, nacs, dimind, idim, flag_xyfill,tape(t)%hlist(f)%field%fillvalue)
-
-         case ('M') ! Minimum over time
-
-            call hbuf_accum_min (hbuf, field, nacs, dimind, idim, flag_xyfill,tape(t)%hlist(f)%field%fillvalue)
-
-         case ('L')
-
-            call hbuf_accum_addlcltime(hbuf, field, nacs, dimind, idim, flag_xyfill, &
-                                       tape(t)%hlist(f)%field%fillvalue, &
-                                       c, tape(t)%hlist(f)%field%decomp_type, &
-                                       lcltod_start(t),lcltod_stop(t))
-
-        case default
-
-            call endrun ('OUTFLD: invalid avgflag='//avgflag)
-
-         end select
-40    continue
-
-      return
-   end subroutine outfld
+   end subroutine get_field_properties
 
 !#######################################################################
 
@@ -3046,27 +3155,24 @@ CONTAINS
      ! Method: Issue the required netcdf wrapper calls to define the history file contents
      ! 
      !-----------------------------------------------------------------------
-     use pspect, only : ptrn, ptrk, ptrm
-     use rgrid, only : nlon, wnummax
+     use pspect,        only: ptrn, ptrk, ptrm
+     use rgrid,         only: nlon, wnummax
 
-     use dyn_grid, only : get_dyn_grid_parm_real2d, get_dyn_grid_parm_real1d
-     use dycore, only : dycore_is
-     use time_manager, only: get_step_size, get_ref_date, timemgr_get_calendar_cf
-     use filenames,    only: caseid
-     use string_utils, only: to_upper
-     use abortutils,   only: endrun
-     use dycore,       only: dycore_is
+     use dyn_grid,      only: get_dyn_grid_parm_real2d, get_dyn_grid_parm_real1d
+     use dycore,        only: dycore_is
+     use time_manager,  only: get_step_size, get_ref_date, timemgr_get_calendar_cf
+     use filenames,     only: caseid
+     use string_utils,  only: to_upper
+     use abortutils,    only: endrun
+     use dycore,        only: dycore_is
      use physconst,     only: pi
      use spmd_utils,    only: iam, nsmps, npes, mpicom
      use cam_pio_utils, only: cam_pio_createfile, get_phys_decomp
      use interp_mod,    only: get_interp_lat, get_interp_lon, latlon_interpolation, add_interp_attributes
-     use cosp_share,   only: srmid_cosp, dbzemid_cosp, scol_cosp, sza_cosp, htmisrmid_cosp, prsmid_cosp, &
-          taumid_cosp, htmid_cosp, taumid_cosp_modis, prslim_cosp, taulim_cosp, taulim_cosp_modis, &
-          dbzelim_cosp, srlim_cosp, htmisrlim_cosp, htlim_cosp
-     use sat_hist,     only: sat_hist_define
+     use sat_hist,      only: sat_hist_define
      
-     use ppgrid, only : begchunk,endchunk, pver, pverp
-     use phys_grid, only : get_rlat_all_p, get_rlon_all_p     
+     use ppgrid,        only : begchunk,endchunk, pver, pverp
+     use phys_grid,     only : get_rlat_all_p, get_rlon_all_p     
 
      !-----------------------------------------------------------------------
 
@@ -3102,7 +3208,6 @@ CONTAINS
      real(r8), pointer:: latdeg_st(: )   ! Staggered grid point array (lat)
      real(r8), pointer:: w_staggered(:)  ! Staggered location weights
 
-     real(r8) :: ailev(pverp)      ! interface level values
      real(r8), pointer :: latdeg(:)    ! degrees gaussian latitudes 
      real(r8), pointer :: latdeg2d(:,:)    ! degrees latitudes for ncols
      real(r8), pointer :: londeg(:,:)    ! degrees longitude
@@ -3123,10 +3228,8 @@ CONTAINS
      type(var_desc_t) :: areavar             ! cell area variable id
      type(var_desc_t), pointer :: glatvar(:)     ! column latitude variable id
      type(var_desc_t), pointer :: glonvar(:)     ! column longitude variable id
-     type(var_desc_t) :: ps0var             ! variable id for PS0
      integer :: chardim            ! character dimension id
 
-     real(r8) :: alev(pver)        ! level values (pascals)
      real(r8), allocatable :: alon(:)        ! longitude values (degrees)
      integer  :: dimenchar(2)       ! character dimension ids
 
@@ -3137,22 +3240,11 @@ CONTAINS
      integer latdim             ! latitude dimension id
      integer, allocatable:: grouplondim(:) ! longitude dimension id
      integer, allocatable:: grouplatdim(:) ! latitude dimension id
-     integer levdim             ! level dimension id
-     integer ilevdim            ! interface dimension id
 
      integer bnddim            ! bounds dimension id
-     type(var_desc_t):: levvar             ! level variable id
-     type(var_desc_t):: ilevvar            ! intfc variable id
-
-     type(var_desc_t) :: hyaiid             ! hybrid A coef. intfc var id
-     type(var_desc_t) :: hybiid             ! hybrid B coef. intfc var id
-     type(var_desc_t) :: hyamid             ! hybrid A coef. level var id
-     type(var_desc_t) :: hybmid             ! hybrid B coef. level var id
      type(var_desc_t) :: ntrmid             ! M truncation parameter var id
      type(var_desc_t) :: ntrnid             ! N truncation parameter var id
      type(var_desc_t) :: ntrkid             ! K truncation parameter var id
-
-
 
      integer :: dimindex(8)         ! dimension ids for variable declaration
 
@@ -3177,23 +3269,6 @@ CONTAINS
      !
      integer :: amode
 
-     type(var_desc_t) :: cosp_prs_var      	! COSP ISCCP mean pressure variable id
-     type(var_desc_t) :: cosp_prs_bnds      	! COSP ISCCP mean pressure variable bounds
-     type(var_desc_t) :: cosp_tau_var      	! COSP ISCCP mean optical depth variable id
-     type(var_desc_t) :: cosp_tau_bnds      	! COSP ISCCP mean optical depth varible bounds
-     type(var_desc_t) :: cosp_tau_modis_var    ! COSP MODIS mean optical depth variable id
-     type(var_desc_t) :: cosp_tau_modis_bnds    ! COSP MODIS mean optical depth variable bounds
-     type(var_desc_t) :: cosp_ht_var      	! COSP mean ht variable id
-     type(var_desc_t) :: cosp_ht_bnds      	! COSP mean ht variable bounds
-     type(var_desc_t) :: cosp_dbze_var         ! COSP mean dbze variable id
-     type(var_desc_t) :: cosp_dbze_bnds         ! COSP mean dbze variable bounds
-     type(var_desc_t) :: cosp_sr_var   	! COSP mean sr variable id
-     type(var_desc_t) :: cosp_sr_bnds   	! COSP mean sr variable bounds
-     type(var_desc_t) :: cosp_scol_var         ! COSP mean scol variable id
-     type(var_desc_t) :: cosp_htmisr_var   	! COSP mean htmisr variable id
-     type(var_desc_t) :: cosp_htmisr_bnds   	! COSP mean htmisr variable bounds
-     type(var_desc_t) :: cosp_sza_var   	! COSP mean sza variable id
-
      type(io_desc_t), pointer :: iodesc
 
      integer :: lchnk, plat
@@ -3217,6 +3292,7 @@ CONTAINS
      end if
      if(is_satfile(t)) then
         ierr = pio_def_dim (tape(t)%File, 'ncol', pio_unlimited, timdim)  
+        ierr = pio_def_dim (tape(t)%File, 'nbnd', 2, bnddim)
 
         ierr=pio_def_var (tape(t)%File,'lat',pio_double,(/timdim/),latvar)
         ierr=pio_put_att (tape(t)%File, latvar, 'long_name', 'latitude')
@@ -3359,151 +3435,10 @@ CONTAINS
            endif
         end if
      endif   ! is satfile
-     ! Restart requires that the def_dim call for registeredmdims be the last in the history file.
 
-
-
-     ! Now define the registered mdims
-     allocate(mdimids(registeredmdims))
-     do i=1,registeredmdims
-        ret = pio_def_dim (tape(t)%File, trim(hist_mdims(i)%name), hist_mdims(i)%value, mdimids(i))        
-        ! define variables to label the dimensions, use the same names as the
-        ! dimensions
-
-        select case(trim(hist_mdims(i)%name))
-        case ('lev')
-           levdim = mdimids(i)
-           ierr=pio_def_var (tape(t)%File,'lev',pio_double,(/levdim/),levvar)
-           str = 'hybrid level at midpoints (1000*(A+B))'
-           ierr=pio_put_att (tape(t)%File, levvar, 'long_name', trim(str))
-           str = 'level'
-           ierr=pio_put_att (tape(t)%File, levvar, 'units', trim(str))
-           ierr=pio_put_att (tape(t)%File, levvar, 'positive', 'down')
-           ierr=pio_put_att (tape(t)%File, levvar, 'standard_name', 'atmosphere_hybrid_sigma_pressure_coordinate')
-           ierr=pio_put_att (tape(t)%File, levvar, 'formula_terms', 'a: hyam b: hybm p0: P0 ps: PS')
-
-           ierr=pio_def_var (tape(t)%File,'hyam',PIO_DOUBLE,(/levdim/),hyamid)
-           str = 'hybrid A coefficient at layer midpoints'
-           ierr=pio_put_att (tape(t)%File, hyamid, 'long_name', trim(str))
-
-           ierr=pio_def_var (tape(t)%File,'hybm',PIO_DOUBLE,(/levdim/),hybmid)
-           str = 'hybrid B coefficient at layer midpoints'
-           ierr=pio_put_att (tape(t)%File, hybmid, 'long_name', trim(str))
-
-        case ('ilev')
-           ilevdim = mdimids(i)
-           ierr=pio_def_var (tape(t)%File,'ilev',pio_double,(/ilevdim/),ilevvar)
-           str = 'hybrid level at interfaces (1000*(A+B))'
-           ierr=pio_put_att (tape(t)%File, ilevvar, 'long_name', trim(str))
-           str = 'level'
-           ierr=pio_put_att (tape(t)%File, ilevvar, 'units', trim(str))
-           ierr=pio_put_att (tape(t)%File, ilevvar, 'positive', 'down')
-           ierr=pio_put_att (tape(t)%File, ilevvar, 'standard_name', 'atmosphere_hybrid_sigma_pressure_coordinate')
-           ierr=pio_put_att (tape(t)%File, ilevvar, 'formula_terms', 'a: hyai b: hybi p0: P0 ps: PS')
-
-           ierr=pio_def_var (tape(t)%File,'hyai',PIO_DOUBLE,(/ilevdim/),hyaiid)
-           str = 'hybrid A coefficient at layer interfaces'
-           ierr=pio_put_att (tape(t)%File, hyaiid, 'long_name', trim(str))
-
-           ierr=pio_def_var (tape(t)%File,'hybi',PIO_DOUBLE,(/ilevdim/),hybiid)
-           str = 'hybrid B coefficient at layer interfaces'
-           ierr=pio_put_att (tape(t)%File, hybiid, 'long_name', trim(str))
-
-	end select
-        if(.not. is_satfile(t) .or. is_initfile(t)) then
-           select case(trim(hist_mdims(i)%name))
-           case('cosp_prs')
-              ierr=pio_def_var (tape(t)%File, 'cosp_prs', PIO_DOUBLE,  mdimids(i:i), cosp_prs_var)
-              str = 'COSP Mean ISCCP pressure'
-              ierr=pio_put_att (tape(t)%File, cosp_prs_var, 'long_name', trim(str))
-              str = 'mb'
-              ierr=pio_put_att (tape(t)%File, cosp_prs_var, 'units', trim(str))
-              str = 'cosp_prs_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_prs_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_prs_bnds)
-
-           case('cosp_tau')
-              ierr=pio_def_var (tape(t)%File, 'cosp_tau', PIO_DOUBLE,  mdimids(i:i), cosp_tau_var)
-              str = 'COSP Mean ISCCP optical depth'
-              ierr=pio_put_att (tape(t)%File, cosp_tau_var, 'long_name', trim(str))
-              str = 'unitless'
-              ierr=pio_put_att (tape(t)%File, cosp_tau_var, 'units', trim(str))
-              str = 'cosp_tau_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_tau_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_tau_bnds)
-           case('cosp_tau_modis')
-              ierr=pio_def_var (tape(t)%File, 'cosp_tau_modis', PIO_DOUBLE,  mdimids(i:i), cosp_tau_modis_var)
-              str = 'COSP Mean MODIS optical depth'
-              ierr=pio_put_att (tape(t)%File, cosp_tau_modis_var, 'long_name', trim(str))
-              str = 'unitless'
-              ierr=pio_put_att (tape(t)%File, cosp_tau_modis_var, 'units', trim(str))
-              str = 'cosp_tau_modis_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_tau_modis_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_tau_modis_bnds)
-           case('cosp_ht')
-              ierr=pio_def_var (tape(t)%File, 'cosp_ht', PIO_DOUBLE, mdimids(i:i), cosp_ht_var)
-              str = 'COSP Mean Height for lidar and radar simulator outputs'
-              ierr=pio_put_att (tape(t)%File, cosp_ht_var, 'long_name', trim(str))
-              str = 'm'
-              ierr=pio_put_att (tape(t)%File, cosp_ht_var, 'units', trim(str))
-              str = 'cosp_ht_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_ht_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_ht_bnds)
-           case('cosp_dbze')
-              ierr=pio_def_var (tape(t)%File, 'cosp_dbze', PIO_DOUBLE,  mdimids(i:i),cosp_dbze_var)
-              str = 'COSP Mean dBZe for radar simulator CFAD output'
-              ierr=pio_put_att (tape(t)%File, cosp_dbze_var, 'long_name', trim(str))
-              str = 'dbze'
-              ierr=pio_put_att (tape(t)%File, cosp_dbze_var, 'units', trim(str))
-              str = 'cosp_dbze_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_dbze_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_dbze_bnds)
-           case('cosp_sr')
-              ierr=pio_def_var (tape(t)%File, 'cosp_sr', PIO_DOUBLE,  mdimids(i:i),cosp_sr_var)
-              str = 'COSP Mean Scattering Ratio for lidar simulator CFAD output'
-              ierr=pio_put_att (tape(t)%File, cosp_sr_var, 'long_name', trim(str))
-              str = '1'
-              ierr=pio_put_att (tape(t)%File, cosp_sr_var, 'units', trim(str))
-              str = 'cosp_sr_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_sr_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_sr_bnds)           
-           case('cosp_scol')
-              ierr=pio_def_var (tape(t)%File, 'cosp_scol', PIO_DOUBLE,  mdimids(i:i),cosp_scol_var)
-              str = 'COSP subcolumn'
-              ierr=pio_put_att (tape(t)%File, cosp_scol_var, 'long_name', trim(str))
-              str = 'number'
-              ierr=pio_put_att (tape(t)%File, cosp_scol_var, 'units', trim(str))
-
-           case('cosp_htmisr')
-              ierr=pio_def_var (tape(t)%File, 'cosp_htmisr', PIO_DOUBLE,  mdimids(i:i),cosp_htmisr_var)
-              str = 'COSP MISR height'
-              ierr=pio_put_att (tape(t)%File, cosp_htmisr_var, 'long_name', trim(str))
-              str = 'km'
-              ierr=pio_put_att (tape(t)%File, cosp_htmisr_var, 'units', trim(str))
-              str = 'cosp_htmisr_bnds'
-              ierr=pio_put_att (tape(t)%File, cosp_htmisr_var, 'bounds', trim(str))
-              ierr=pio_def_var (tape(t)%File, str, PIO_DOUBLE, (/bnddim,mdimids(i:i)/), cosp_htmisr_bnds)
-           case('cosp_sza')
-              ierr=pio_def_var (tape(t)%File, 'cosp_sza', PIO_DOUBLE,  mdimids(i:i),cosp_sza_var)
-              str = 'COSP Parasol SZA'
-              ierr=pio_put_att (tape(t)%File, cosp_sza_var, 'long_name', trim(str))
-              str = 'degrees'
-              ierr=pio_put_att (tape(t)%File, cosp_sza_var, 'units', trim(str))
-              !           case('cosp_nbnds')
-              !          case('cosp_nhtml')
-           case('lev','ilev')   ! just prevent the message for these cases.
-           case default
-              if(masterproc) write(iulog,*) 'Warning: no dimvar found for registered mdim named: ',hist_mdims(i)%name
-           end select
-        end if
-     end do
-
-     ! There should be no further calls to pio_def_dim after the registeredmdims loop
-
-     ierr=pio_def_var (tape(t)%File,'P0',pio_double,ps0var)
-     str = 'reference pressure'
-     ierr=pio_put_att (tape(t)%File, ps0var, 'long_name', trim(str))
-     ierr=pio_put_att (tape(t)%File, ps0var, 'units', 'Pa')
+     ! Populate the history coordinate (well, mdims anyway) attributes
+     ! This routine also allocates the mdimids array
+     call write_hist_coord_attrs(tape(t)%File, bnddim, mdimids, restart)
 
      call get_ref_date(yr, mon, day, nbsec)
      nbdate = yr*10000 + mon*100 + day
@@ -3728,8 +3663,6 @@ CONTAINS
         ierr=pio_put_att (tape(t)%File, tape(t)%nstephid, 'long_name', trim(str))
      end if
 
-
-
      !
      ! Create variables and attributes for field list
      !
@@ -3903,7 +3836,6 @@ CONTAINS
      !
      ! Write time-invariant portion of history header
      !
-     ierr = pio_put_var (tape(t)%File, ps0var, (/ps0/))
      if(.not. is_satfile(t)) then
         londeg => get_dyn_grid_parm_real2d('londeg')
         latdeg => get_dyn_grid_parm_real1d('latdeg')
@@ -4038,60 +3970,9 @@ CONTAINS
      if(allocated(grouplatdim_st)) then
         deallocate(glatvar_st, grouplatdim_st)
      end if
-     !
-     ! 0.01 converts Pascals to millibars
-     !
-     alev(:pver) = 0.01_r8*ps0*(hyam(:pver) + hybm(:pver))
-     ailev(:pverp) = 0.01_r8*ps0*(hyai(:pverp) + hybi(:pverp))
 
-
-     do i=1,registeredmdims
-        select case(hist_mdims(i)%name)
-        case ('lev')
-           ierr = pio_put_var (tape(t)%File, levvar, alev)
-           ierr = pio_put_var (tape(t)%File, hyamid, hyam)
-           ierr = pio_put_var (tape(t)%File, hybmid, hybm)
-        case ('ilev')
-           ierr = pio_put_var (tape(t)%File, ilevvar, ailev)
-           ierr = pio_put_var (tape(t)%File, hyaiid, hyai)
-           ierr = pio_put_var (tape(t)%File, hybiid, hybi)
-        end select
-        if(.not. (is_satfile(t) .or. is_initfile(t))) then
-           select case(hist_mdims(i)%name)
-           case('cosp_prs')
-              ierr = pio_put_var (tape(t)%file, cosp_prs_var, prsmid_cosp)
-              ierr = pio_put_var (tape(t)%file, cosp_prs_bnds, prslim_cosp)
-           case('cosp_tau')
-              ierr = pio_put_var (tape(t)%file, cosp_tau_var, taumid_cosp)
-              ierr = pio_put_var (tape(t)%file, cosp_tau_bnds, taulim_cosp)
-           case('cosp_tau_modis')
-              ierr = pio_put_var (tape(t)%file, cosp_tau_modis_var, taumid_cosp_modis)
-              ierr = pio_put_var (tape(t)%file, cosp_tau_modis_bnds, taulim_cosp_modis)
-           case('cosp_ht')
-              ierr = pio_put_var (tape(t)%file, cosp_ht_var, htmid_cosp)
-              ierr = pio_put_var (tape(t)%file, cosp_ht_bnds, htlim_cosp)
-           case('cosp_dbze')
-              ierr = pio_put_var (tape(t)%file, cosp_dbze_var, dbzemid_cosp)
-              ierr = pio_put_var (tape(t)%file, cosp_dbze_bnds, dbzelim_cosp)
-           case('cosp_sr')
-              ierr = pio_put_var (tape(t)%file, cosp_sr_var, srmid_cosp)
-              ierr = pio_put_var (tape(t)%file, cosp_sr_bnds, srlim_cosp)
-           case('cosp_scol')
-              ierr = pio_put_var (tape(t)%file, cosp_scol_var, scol_cosp)
-           case('cosp_htmisr')              
-              ierr = pio_put_var (tape(t)%file, cosp_htmisr_var, htmisrmid_cosp)
-              ierr = pio_put_var (tape(t)%file, cosp_htmisr_bnds, htmisrlim_cosp)
-           case('cosp_sza')
-              ierr = pio_put_var (tape(t)%file, cosp_sza_var, sza_cosp)
-           case('lev','ilev')  ! avoids the warning message
-           case default
-              if(masterproc) write(iulog,*) 'Warning: no dimvar found for registered mdim named: ',hist_mdims(i)%name
-           end select
-        end if
-     end do
-
-
-
+     ! Write the mdim variable data
+     call write_hist_coord_vars(tape(t)%File, restart)
 
    end subroutine h_define
 
@@ -4901,16 +4782,16 @@ CONTAINS
       if(present(mdimnames)) then
          dimcnt = size(mdimnames)
          allocate(listentry%field%mdims(dimcnt))
-         call lookup_hist_mdim_indicies(mdimnames, listentry%field%mdims)
+         call lookup_hist_coord_indices(mdimnames, listentry%field%mdims)
          if(dimcnt > maxvarmdims) maxvarmdims = dimcnt
       else if(numlev>1) then
          
          allocate(listentry%field%mdims(1))
          select case(numlev)
          case(pver)
-            call lookup_hist_mdim_indicies((/'lev'/),listentry%field%mdims)
+            call lookup_hist_coord_indices((/'lev'/),listentry%field%mdims)
          case(pverp)
-            call lookup_hist_mdim_indicies((/'ilev'/),listentry%field%mdims)
+            call lookup_hist_coord_indices((/'ilev'/),listentry%field%mdims)
          case default
             write(iulog,*) 'No Vertical dimension = ',numlev,' defined for var ',trim(fname)
             call endrun()
@@ -5510,7 +5391,7 @@ CONTAINS
 
 !#######################################################################
 
-function hist_fld_col_active(fname, lchnk)
+   function hist_fld_col_active(fname, lchnk)
 
 ! Determine whether each column in a field is active on any history file.
 ! The purpose of this routine is to provide information which would allow
@@ -5519,108 +5400,106 @@ function hist_fld_col_active(fname, lchnk)
 !
 ! **N.B.** The field is assumed to be using the physics decomposition.
 
-   use phys_grid, only: get_ncols_p, get_lat_all_p, get_lon_all_p
+      use phys_grid, only: get_ncols_p, get_lat_all_p, get_lon_all_p
 
-! Arguments
-   character(len=*), intent(in) :: fname ! Field name
-   integer,          intent(in) :: lchnk ! chunk ID
+      ! Arguments
+      character(len=*), intent(in) :: fname ! Field name
+      integer,          intent(in) :: lchnk ! chunk ID
 
-! Return value
-   logical :: hist_fld_col_active(pcols)
+      ! Return value
+      logical :: hist_fld_col_active(pcols)
 
-! Local variables
-   character*(max_fieldname_len) :: fname_loc  ! max-char equivalent of fname
+      ! Local variables
+      character*(max_fieldname_len) :: fname_loc  ! max-char equivalent of fname
 
-   integer :: ff         ! masterlist index pointer
-   integer :: i
-   integer :: t          ! history file (tape) index
-   integer :: igp, iub    ! column group indices
-   integer :: ilats(pcols)
-   integer :: ilons(pcols)
-   integer :: ncol, lon1, lon2, lat1, lat2
+      integer :: ff         ! masterlist index pointer
+      integer :: i
+      integer :: t          ! history file (tape) index
+      integer :: igp, iub    ! column group indices
+      integer :: ilats(pcols)
+      integer :: ilons(pcols)
+      integer :: ncol, lon1, lon2, lat1, lat2
 
-   type (active_entry), pointer :: tape(:)
+      type (active_entry), pointer :: tape(:)
 
 !-----------------------------------------------------------------------
 
-! Initialize to false.  Then look to see if and where active.
-   hist_fld_col_active = .false.
+      ! Initialize to false.  Then look to see if and where active.
+      hist_fld_col_active = .false.
 
-! Check for name in the master list.
-   fname_loc = fname
-   ff = get_masterlist_indx(fname_loc)
+      ! Check for name in the master list.
+      fname_loc = fname
+      ff = get_masterlist_indx(fname_loc)
 
-! If not in master list then return.
-   if ( ff < 0 ) return
+      ! If not in master list then return.
+      if ( ff < 0 ) return
 
-! If in master list, but not active on any file then return
-   if (.not. masterlist(ff)%thisentry%act_sometape) return
+      ! If in master list, but not active on any file then return
+      if (.not. masterlist(ff)%thisentry%act_sometape) return
 
-! Loop over history files and check for the field/column in each one
+      ! Loop over history files and check for the field/column in each one
 
-   tape => history_tape
-   do t = 1, ptapes
+      tape => history_tape
+      do t = 1, ptapes
 
-! Is the field active in this file?  If not the cycle to next file.
-      if (.not. masterlist(ff)%thisentry%actflag(t)) cycle
+         ! Is the field active in this file?  If not the cycle to next file.
+         if (.not. masterlist(ff)%thisentry%actflag(t)) cycle
 
-! Check whether this file has column output.
-      if (tape(t)%column(1)%lat_name == ' ') then
+         ! Check whether this file has column output.
+         if (tape(t)%column(1)%lat_name == ' ') then
 
-! No column output has been requested.  In that case the field has
-! global output which implies all columns are active.  No need to 
-! check any other history files.
-         hist_fld_col_active = .true.
-         exit
+            ! No column output has been requested.  In that case the field has
+            ! global output which implies all columns are active.  No need to 
+            ! check any other history files.
+            hist_fld_col_active = .true.
+            exit
 
-      else if (associated(tape(t)%column(1)%hmask)) then
+         else if (associated(tape(t)%column(1)%hmask)) then
 
-! All column output is collected into a single group for output.
-         ncol = get_ncols_p(lchnk)
-         do i = 1, ncol
-            if (tape(t)%column(1)%hmask(i,lchnk) > 0) then
-               hist_fld_col_active(i) = .true.
-            end if
-         end do
-
-      else
-
-! Column output has been requested, and multiple columns/regions 
-! are possible.  Need to loop over the groups
-
-! The column group info is stored as indices into the global array.
-! Retrieve the global indices for the columns in the chunk.
-
-         ncol = get_ncols_p(lchnk)
-         call get_lat_all_p(lchnk, pcols, ilats)
-         call get_lon_all_p(lchnk, pcols, ilons)
-
-         do igp = 1, ngroup(t)
-            lon1 = tape(t)%column(igp)%columnlon(1)
-            lon2 = tape(t)%column(igp)%columnlon(2)
-            lat1 = tape(t)%column(igp)%columnlat(1)
-            lat2 = tape(t)%column(igp)%columnlat(2)
-
-! Is the column in the group
+            ! All column output is collected into a single group for output.
+            ncol = get_ncols_p(lchnk)
             do i = 1, ncol
-! only need to check if the column has not already been
-! identified as active
-               if (.not. hist_fld_col_active(i)) then
-                  if ( ilons(i) >= lon1 .and. ilons(i) <= lon2 .and. &
-                       ilats(i) >= lat1 .and. ilats(i) <= lat2 ) then
-                     hist_fld_col_active(i) = .true.
-                  end if
+               if (tape(t)%column(1)%hmask(i,lchnk) > 0) then
+                  hist_fld_col_active(i) = .true.
                end if
-            end do ! columns in chunk
+            end do
 
-         end do ! groups in history file
+         else
 
-      end if
+            ! Column output has been requested, and multiple columns/regions 
+            ! are possible.  Need to loop over the groups
+            
+            ! The column group info is stored as indices into the global array.
+            ! Retrieve the global indices for the columns in the chunk.
 
-   end do ! history files
+            ncol = get_ncols_p(lchnk)
+            call get_lat_all_p(lchnk, pcols, ilats)
+            call get_lon_all_p(lchnk, pcols, ilons)
 
-end function hist_fld_col_active
+            do igp = 1, ngroup(t)
+               lon1 = tape(t)%column(igp)%columnlon(1)
+               lon2 = tape(t)%column(igp)%columnlon(2)
+               lat1 = tape(t)%column(igp)%columnlat(1)
+               lat2 = tape(t)%column(igp)%columnlat(2)
 
+               ! Is the column in the group
+               do i = 1, ncol
+                  ! only need to check if the column has not already been
+                  ! identified as active
+                  if (.not. hist_fld_col_active(i)) then
+                     if ( ilons(i) >= lon1 .and. ilons(i) <= lon2 .and. &
+                          ilats(i) >= lat1 .and. ilats(i) <= lat2 ) then
+                        hist_fld_col_active(i) = .true.
+                     end if
+                  end if
+               end do ! columns in chunk
 
+            end do ! groups in history file
+
+         end if
+
+      end do ! history files
+
+   end function hist_fld_col_active
 
 end module cam_history

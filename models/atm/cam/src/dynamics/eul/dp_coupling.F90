@@ -268,7 +268,7 @@ CONTAINS
 ! Compute initial geopotential heights
        call geopotential_t (phys_state(lchnk)%lnpint, phys_state(lchnk)%lnpmid  , phys_state(lchnk)%pint  , &
                             phys_state(lchnk)%pmid  , phys_state(lchnk)%pdel    , phys_state(lchnk)%rpdel , &
-                            phys_state(lchnk)%t     , phys_state(lchnk)%q(1,1,1), rairv(:,:,lchnk),  gravit,  zvirv, &
+                            phys_state(lchnk)%t     , phys_state(lchnk)%q(:,:,1), rairv(:,:,lchnk),  gravit,  zvirv, &
                             phys_state(lchnk)%zi    , phys_state(lchnk)%zm      , ncol                )
 
 ! Compute initial dry static energy, include surface geopotential

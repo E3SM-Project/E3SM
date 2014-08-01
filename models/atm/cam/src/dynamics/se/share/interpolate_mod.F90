@@ -12,7 +12,10 @@ module interpolate_mod
        cubedsphere2cart, distance, change_coordinates, projectpoint
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
-  use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPI_MAX, MPIinteger_t, MPI_SUM, MPI_MIN
+  use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPIinteger_t
+#ifdef _MPI
+  use parallel_mod,           only : MPI_MAX, MPI_SUM, MPI_MIN
+#endif
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map

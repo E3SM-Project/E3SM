@@ -299,7 +299,6 @@ sub build_chem_preproc
     if ($fc_type) {
 
 	if    ($fc_type eq 'pgi')       { $cmplr = 'pgf90'; }
-	elsif ($fc_type eq 'lahey')     { $cmplr = 'lf95'; }
 	elsif ($fc_type eq 'intel')     { $cmplr = 'ifort'; }
 	elsif ($fc_type eq 'gnu')       { $cmplr = 'gfortran'; }
 	elsif ($fc_type eq 'xlf')       { $cmplr = 'xlf95'; }
@@ -393,7 +392,7 @@ EOF
 # searches $PATH for available compiler for the preprocessor
 sub find_preproc_compiler {
     # these are the compilers the preprocessor Makefile is setup for :
-    my @compilers = qw(xlf95 pgf90 pgf95 ifort lf95 gfortran g95 f90 f95);
+    my @compilers = qw(xlf95 pgf90 pgf95 ifort gfortran g95 f90 f95);
     my $path = $ENV{'PATH'};
     my @dirs = split(':',$path);
     foreach my $fc (@compilers) {

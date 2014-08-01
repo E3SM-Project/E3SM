@@ -49,11 +49,10 @@ module qbo
 !---------------------------------------------------------------------
 ! Public methods
 !---------------------------------------------------------------------
+  public               :: qbo_readnl             ! read namelist
   public               :: qbo_init               ! initialize qbo package
   public               :: qbo_timestep_init      ! interpolate to current time
   public               :: qbo_relax              ! relax zonal mean wind
-  public               :: qbo_defaultopts        ! set default values of namelist variables
-  public               :: qbo_setopts            ! get namelist input
 
 !---------------------------------------------------------------------
 ! Private module data
@@ -85,10 +84,13 @@ module qbo
   real(r8),allocatable :: fsin_qbo(:,:)          ! qbo sine coefficients(pver,coefsiz)
   real(r8),allocatable :: ffreq_qbo(:)           ! frequencies for expanding qbo coefficients (coefsiz)
 
+  ! Index into physics buffer for zonal mean zonal wind
+  integer              :: uzm_idx = -1
+
 !
-! logistic for controling QBO relaxation 
+! Options for controlling QBO relaxation 
 !
-  character(len=256)   :: qbo_forcing_file = 'NO_QBO_FILE'
+  character(len=256)   :: qbo_forcing_file = ""
   logical,public       :: qbo_use_forcing  = .FALSE.        ! .TRUE. => this package is active
   logical              :: qbo_cyclic       = .FALSE.        ! .TRUE. => assume cyclic qbo data
 
@@ -100,50 +102,47 @@ contains
 
 !================================================================================================
 
-    subroutine qbo_defaultopts( &
-         qbo_forcing_file_out,  &
-         qbo_use_forcing_out,   &
-         qbo_cyclic_out        )
+  subroutine qbo_readnl(nlfile)
 
-      character(len=*), intent(out), optional :: qbo_forcing_file_out
-      logical,          intent(out), optional :: qbo_use_forcing_out
-      logical,          intent(out), optional :: qbo_cyclic_out
+    use namelist_utils,  only: find_group_name
+    use units,           only: getunit, freeunit
+    use mpishorthand
 
+    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
-      if ( present(qbo_forcing_file_out) ) then
-         qbo_forcing_file_out = qbo_forcing_file
-      endif
-      if ( present(qbo_use_forcing_out) ) then
-         qbo_use_forcing_out = qbo_use_forcing
-      endif
-      if ( present(qbo_cyclic_out) ) then
-         qbo_cyclic_out = qbo_cyclic
-      endif
+    ! Local variables
+    integer :: unitn, ierr
+    character(len=*), parameter :: subname = 'qbo_readnl'
 
-    end subroutine qbo_defaultopts
+    namelist /qbo_nl/ qbo_use_forcing, qbo_forcing_file, qbo_cyclic
 
-!================================================================================================
+    if (masterproc) then
+       unitn = getunit()
+       open( unitn, file=trim(nlfile), status='old' )
+       call find_group_name(unitn, 'qbo_nl', status=ierr)
+       if (ierr == 0) then
+          read(unitn, qbo_nl, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun(subname // ':: ERROR reading namelist')
+          end if
+       end if
+       close(unitn)
+       call freeunit(unitn)
 
-    subroutine qbo_setopts(    &
-         qbo_forcing_file_in,  &
-         qbo_use_forcing_in,   &
-         qbo_cyclic_in        )
+       ! Check to make sure forcing file was set if qbo forcing is on.
+       if (qbo_use_forcing .and. trim(qbo_forcing_file) == "") then
+          call endrun(subname // ':: qbo forcing is on but no forcing &
+               &file was set.')
+       end if
+    end if
 
-      character(len=*), intent(in), optional :: qbo_forcing_file_in
-      logical,          intent(in), optional :: qbo_use_forcing_in
-      logical,          intent(in), optional :: qbo_cyclic_in
+#ifdef SPMD
+    call mpibcast (qbo_forcing_file,  len(qbo_forcing_file ), mpichar, 0, mpicom)
+    call mpibcast (qbo_use_forcing,   1,                      mpilog,  0, mpicom)
+    call mpibcast (qbo_cyclic,        1,                      mpilog,  0, mpicom)
+#endif
 
-      if ( present(qbo_forcing_file_in) ) then
-         qbo_forcing_file = qbo_forcing_file_in
-      endif
-      if ( present(qbo_use_forcing_in) ) then
-         qbo_use_forcing = qbo_use_forcing_in
-      endif
-      if ( present(qbo_cyclic_in) ) then
-         qbo_cyclic = qbo_cyclic_in
-      endif
-
-    end subroutine qbo_setopts
+  end subroutine qbo_readnl
 
 !================================================================================================
 
@@ -152,6 +151,7 @@ contains
 !---------------------------------------------------------------------
 ! initialize qbo module
 !---------------------------------------------------------------------
+   use physics_buffer, only: pbuf_get_index
    use time_manager, only : get_step_size
    use ref_pres,     only : pref_mid
    use wrap_nf
@@ -613,6 +613,10 @@ master_proc : &
     call addfld ('QBO_U0 ','M/S   ',plev, 'A','Specified wind used for QBO',phys_decomp)
     call add_default ('QBO_U0', 1, ' ')
 
+!----------------------------------------------------------------------
+! Get zonal mean zonal wind index in pbuf.
+!----------------------------------------------------------------------
+    uzm_idx = pbuf_get_index("UZM")
 
     write(iulog,*) 'end of qbo_init'
 
@@ -819,8 +823,8 @@ next_interval : &
 
 !================================================================================================
 
-    subroutine qbo_relax( state, ptend )
-      use shr_assert_mod, only: shr_assert
+    subroutine qbo_relax( state, pbuf, ptend )
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_field
 !------------------------------------------------------------------------
 ! relax zonal mean wind towards qbo sequence 
 !------------------------------------------------------------------------
@@ -829,6 +833,7 @@ next_interval : &
 !       ... dummy arguments
 !--------------------------------------------------------------------------------
     type(physics_state), intent(in)    :: state                ! Physics state variables
+    type(physics_buffer_desc), pointer :: pbuf(:)              ! Physics buffer
     type(physics_ptend), intent(out)   :: ptend                ! individual parameterization tendencies
 
 !--------------------------------------------------------------------------------
@@ -836,18 +841,21 @@ next_interval : &
 !--------------------------------------------------------------------------------
     integer                            :: lchnk                ! chunk identifier
     integer                            :: ncol                 ! number of atmospheric columns
-    integer                            :: i, k                 ! loop indicies
-    integer                            :: kl, ku               ! loop indicies
+    integer                            :: i, k                 ! loop indices
+    integer                            :: kl, ku               ! loop indices
 
-    real(r8)                           :: tauxi(pcols)         ! latitudes in radians for present chunck
+    real(r8)                           :: tauxi(pcols)         ! latitudes in radians for present chunk
     real(r8)                           :: tauzz
     real(r8)                           :: u
-    real(r8)                           :: rlat                 ! latitudes in radians for present chunck
+    real(r8)                           :: rlat                 ! latitudes in radians for present chunk
     real(r8)                           :: crelax               ! relaxation constant
 
     real(r8), parameter                :: tconst = 10._r8      ! relaxation time constant in days     
     real(r8), parameter                :: tconst1 = tconst * 86400._r8
     real(r8)                           :: qbo_u0(pcols,pver)   ! QBO wind used for driving parameterization
+
+    ! Zonal mean zonal wind from pbuf.
+    real(r8), pointer                  :: uzm(:,:)
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -857,9 +865,7 @@ next_interval : &
 has_qbo_forcing : &
    if( qbo_use_forcing ) then
 
-   ! Make sure uzm is initialized if qbo is on.
-   call shr_assert(allocated(state%uzm), &
-        msg="Dycore has not allocated state%uzm before qbo_relax is called!")
+    call pbuf_get_field(pbuf, uzm_idx, uzm)
 
     kl          = max( 1,ktop-1 )
     ku          = min( plev,kbot+1 )
@@ -888,7 +894,7 @@ has_qbo_forcing : &
 !--------------------------------------------------------------------------------
 
          if(u < 50.0_r8) then
-            ptend%u(i,k) = crelax * (u - state%uzm(i,k))
+            ptend%u(i,k) = crelax * (u - uzm(i,k))
          end if
          end if
 !--------------------------------------------------------------------------------

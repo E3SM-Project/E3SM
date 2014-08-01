@@ -7,9 +7,5 @@
  nhtfrq=3,3,3,3,3,3
  inithist='ENDOFRUN'
  pbuf_global_allocate=.false.
- fincl2='thlm','wp2','rtm','rtp2',
- clubb_history=.true.,
  clubb_rad_history=.false.,
- clubb_vars_zt='thlm','rtm',
- clubb_vars_zm='wp2','rtp2'
 /

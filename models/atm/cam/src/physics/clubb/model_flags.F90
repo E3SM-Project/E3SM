@@ -136,6 +136,7 @@ module model_flags
 #ifdef GFDL
   logical, public :: &
      I_sat_sphum       ! h1g, 2010-06-15
+!$omp threadprivate(I_sat_sphum)
 #endif
 
   namelist /configurable_model_flags/ &

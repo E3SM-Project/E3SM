@@ -11,7 +11,7 @@
 #include <sys/times.h>     /* times */
 #include <unistd.h>        /* gettimeofday, syscall */
 #include <stdio.h>
-#include <string.h>        /* memset, strcmp (via STRMATCH) */
+#include <string.h>        /* memset, strcmp (via STRMATCH), strncmp (via STRNMATCH) */
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
 #include <assert.h>
@@ -160,6 +160,7 @@ static int newchild (Timer *, Timer *);
 static int get_max_depth (const Timer *, const int);
 static int num_descendants (Timer *);
 static int is_descendant (const Timer *, const Timer *);
+static int show_descendant (const int, const Timer *, const Timer *);
 static char *methodstr (Method);
 
 /* Prototypes from previously separate file threadutil.c */
@@ -188,6 +189,7 @@ static int init_gettimeofday (void);
 static double utr_getoverhead (void);
 static inline Timer *getentry_instr (const Hashentry *, void *, unsigned int *);
 static inline Timer *getentry (const Hashentry *, const char *, unsigned int *);
+static inline Timer *getentryf (const Hashentry *, const char *, const int, unsigned int *);
 static void printself_andchildren (const Timer *, FILE *, const int, const int, const double);
 static inline int update_parent_info (Timer *, Timer **, int);
 static inline int update_stats (Timer *, const double, const long, const long, const int);
@@ -844,8 +846,201 @@ int GPTLstart_handle (const char *name,  /* timer name */
 }
 
 /*
+** GPTLstartf: start a timer when the timer name may not be null terminated
+**
+** Input arguments:
+**   name: timer name
+**   namelen: number of characters in timer name
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+int GPTLstartf (const char *name, const int namelen)    /* timer name and length */
+{
+  Timer *ptr;        /* linked list pointer */
+  int t;             /* thread index (of this thread) */
+  int numchars;      /* number of characters to copy */
+  unsigned int indx; /* hash table index */
+  char strname[MAX_CHARS+1]; /* null terminated version of name */
+  static const char *thisfunc = "GPTLstartf";
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized){
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (strname, name, numchars);
+    strname[numchars] = '\0';
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
+  }
+
+  if ((t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** increment and return
+  */
+
+  if (stackidx[t].val >= depthlimit) {
+    ++stackidx[t].val;
+    return 0;
+  }
+
+  /* 
+  ** ptr will point to the requested timer in the current list,
+  ** or NULL if this is a new entry 
+  */
+
+  ptr = getentryf (hashtable[t], name, namelen, &indx);
+
+  /* 
+  ** Recursion => increment depth in recursion and return.  We need to return 
+  ** because we don't want to restart the timer.  We want the reported time for
+  ** the timer to reflect the outermost layer of recursion.
+  */
+
+  if (ptr && ptr->onflg) {
+    ++ptr->recurselvl;
+    return 0;
+  }
+
+  /*
+  ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
+  ** behavior when GPTLstop decrements stackidx[t] unconditionally.
+  */
+
+  if (++stackidx[t].val > MAX_STACK-1)
+    return GPTLerror ("%s: stack too big\n", thisfunc);
+
+  if ( ! ptr) { /* Add a new entry and initialize */
+    ptr = (Timer *) GPTLallocate (sizeof (Timer));
+    memset (ptr, 0, sizeof (Timer));
+
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (ptr->name, name, numchars);
+    ptr->name[numchars] = '\0';
+
+    if (update_ll_hash (ptr, t, indx) != 0)
+      return GPTLerror ("%s: update_ll_hash error\n", thisfunc);
+  }
+
+  if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
+    return GPTLerror ("%s: update_parent_info error\n", thisfunc);
+
+  if (update_ptr (ptr, t) != 0)
+    return GPTLerror ("%s: update_ptr error\n", thisfunc);
+
+  return (0);
+}
+
+/*
+** GPTLstartf_handle: start a timer based on a handle
+**  when the timer name may not be null terminated
+**
+** Input arguments:
+**   name: timer name (required when on input, handle=0)
+**   namelen: number of characters in timer name
+**   handle: pointer to timer matching "name"
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+int GPTLstartf_handle (const char *name,  /* timer name */
+                       const int namelen, /* timer name length */
+		       void **handle)     /* handle (output if input value is 0) */
+{
+  Timer *ptr;                            /* linked list pointer */
+  int t;                                 /* thread index (of this thread) */
+  int numchars;                          /* number of characters to copy */
+  unsigned int indx = (unsigned int) -1; /* hash table index: init to bad value */
+  char strname[MAX_CHARS+1]; /* null terminated version of name */
+  static const char *thisfunc = "GPTLstartf_handle";
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized){
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (strname, name, numchars);
+    strname[numchars] = '\0';
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
+  }
+
+  if ((t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** increment and return
+  */
+
+  if (stackidx[t].val >= depthlimit) {
+    ++stackidx[t].val;
+    return 0;
+  }
+
+  /*
+  ** If on input, handle references a non-zero value, assume it's a previously returned Timer* 
+  ** passed in by the user. If zero, generate the hash entry and return it to the user.
+  */
+
+  if (*handle) {
+    ptr = (Timer *) *handle;
+  } else {
+    ptr = getentryf (hashtable[t], name, namelen, &indx);
+  }
+    
+  /* 
+  ** Recursion => increment depth in recursion and return.  We need to return 
+  ** because we don't want to restart the timer.  We want the reported time for
+  ** the timer to reflect the outermost layer of recursion.
+  */
+
+  if (ptr && ptr->onflg) {
+    ++ptr->recurselvl;
+    return 0;
+  }
+
+  /*
+  ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
+  ** behavior when GPTLstop decrements stackidx[t] unconditionally.
+  */
+
+  if (++stackidx[t].val > MAX_STACK-1)
+    return GPTLerror ("%s: stack too big\n", thisfunc);
+
+  if ( ! ptr) { /* Add a new entry and initialize */
+    ptr = (Timer *) GPTLallocate (sizeof (Timer));
+    memset (ptr, 0, sizeof (Timer));
+
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (ptr->name, name, numchars);
+    ptr->name[numchars] = '\0';
+
+    if (update_ll_hash (ptr, t, indx) != 0)
+      return GPTLerror ("%s: update_ll_hash error\n", thisfunc);
+  }
+
+  if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
+    return GPTLerror ("%s: update_parent_info error\n", thisfunc);
+
+  if (update_ptr (ptr, t) != 0)
+    return GPTLerror ("%s: update_ptr error\n", thisfunc);
+
+  /*
+  ** If on input, *handle was 0, return the pointer to the timer for future input
+  */
+
+  if ( ! *handle)
+    *handle = (void *) ptr;
+
+  return (0);
+}
+
+/*
 ** update_ll_hash: Update linked list and hash table.
-**                 Called by GPTLstart, GPTLstart_instr and GPTLstart_handle
+**                 Called by GPTLstart(f), GPTLstart_instr and GPTLstart(f)_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -881,7 +1076,8 @@ static int update_ll_hash (Timer *ptr, const int t, const unsigned int indx)
 }
 
 /*
-** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_instr and GPTLstart_handle
+** update_ptr: Update timer contents. 
+**  Called by GPTLstart(f) and GPTLstart_instr and GPTLstart(f)_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -1224,8 +1420,188 @@ int GPTLstop_handle (const char *name,     /* timer name */
 }
 
 /*
-** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_instr, 
-**               GPTLstop_handle
+** GPTLstopf: stop a timer when the timer name may not be null terminated
+**
+** Input arguments:
+**   name: timer name
+**   namelen: number of characters in timer name
+**
+** Return value: 0 (success) or -1 (failure)
+*/
+
+int GPTLstopf (const char *name, const int namelen) /* timer name and length */
+{
+  double tp1 = 0.0;          /* time stamp */
+  Timer *ptr;                /* linked list pointer */
+  int t;                     /* thread number for this process */
+  unsigned int indx;         /* index into hash table */
+  long usr = 0;              /* user time (returned from get_cpustamp) */
+  long sys = 0;              /* system time (returned from get_cpustamp) */
+  int numchars;              /* number of characters to copy */
+  char strname[MAX_CHARS+1]; /* null terminated version of name */
+  static const char *thisfunc = "GPTLstopf";
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  /* Get the timestamp */
+    
+  if (wallstats.enabled) {
+    tp1 = (*ptr2wtimefunc) ();
+  }
+
+  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
+    return GPTLerror ("%s: get_cpustamp error", thisfunc);
+
+  if ((t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** decrement and return
+  */
+
+  if (stackidx[t].val > depthlimit) {
+    --stackidx[t].val;
+    return 0;
+  }
+
+  if ( ! (ptr = getentryf (hashtable[t], name, namelen, &indx))){
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (strname, name, numchars);
+    strname[numchars] = '\0';
+    return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, strname);
+  }
+
+  if ( ! ptr->onflg )
+    return GPTLerror ("%s: timer %s was already off.\n", thisfunc, ptr->name);
+
+  ++ptr->count;
+
+  /* 
+  ** Recursion => decrement depth in recursion and return.  We need to return
+  ** because we don't want to stop the timer.  We want the reported time for
+  ** the timer to reflect the outermost layer of recursion.
+  */
+
+  if (ptr->recurselvl > 0) {
+    ++ptr->nrecurse;
+    --ptr->recurselvl;
+    return 0;
+  }
+
+  if (update_stats (ptr, tp1, usr, sys, t) != 0)
+    return GPTLerror ("%s: error from update_stats\n", thisfunc);
+
+  return 0;
+}
+
+/*
+** GPTLstopf_handle: stop a timer based on a handle
+**  when the timer name may not be null terminated
+**
+** Input arguments:
+**   name: timer name (used only for diagnostics)
+**   namelen: number of characters in timer name
+**   handle: pointer to timer
+**
+** Return value: 0 (success) or -1 (failure)
+*/
+
+int GPTLstopf_handle (const char *name,     /* timer name */
+                      const int namelen,    /* timer name length */
+                      void **handle)        /* handle (output if input value is 0) */
+{
+  double tp1 = 0.0;          /* time stamp */
+  Timer *ptr;                /* linked list pointer */
+  int t;                     /* thread number for this process */
+  unsigned int indx;         /* index into hash table */
+  long usr = 0;              /* user time (returned from get_cpustamp) */
+  long sys = 0;              /* system time (returned from get_cpustamp) */
+  int numchars;              /* number of characters to copy */
+  char strname[MAX_CHARS+1]; /* null terminated version of name */
+  static const char *thisfunc = "GPTLstopf_handle";
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  /* Get the timestamp */
+    
+  if (wallstats.enabled) {
+    tp1 = (*ptr2wtimefunc) ();
+  }
+
+  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
+    return GPTLerror (0);
+
+  if ((t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** decrement and return
+  */
+
+  if (stackidx[t].val > depthlimit) {
+    --stackidx[t].val;
+    return 0;
+  }
+
+  /*
+  ** If on input, handle references a non-zero value, assume it's a previously returned Timer* 
+  ** passed in by the user. If zero, generate the hash entry and return it to the user.
+  */
+
+  if (*handle) {
+    ptr = (Timer *) *handle;
+  } else {
+    if ( ! (ptr = getentryf (hashtable[t], name, namelen, &indx))){
+      numchars = MIN (namelen, MAX_CHARS);
+      strncpy (strname, name, numchars);
+      strname[numchars] = '\0';
+      return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, strname);
+    }
+  }
+
+  if ( ! ptr->onflg )
+    return GPTLerror ("%s: timer %s was already off.\n", thisfunc, ptr->name);
+
+  ++ptr->count;
+
+  /* 
+  ** Recursion => decrement depth in recursion and return.  We need to return
+  ** because we don't want to stop the timer.  We want the reported time for
+  ** the timer to reflect the outermost layer of recursion.
+  */
+
+  if (ptr->recurselvl > 0) {
+    ++ptr->nrecurse;
+    --ptr->recurselvl;
+    return 0;
+  }
+
+  if (update_stats (ptr, tp1, usr, sys, t) != 0)
+    return GPTLerror ("%s: error from update_stats\n", thisfunc);
+
+  /*
+  ** If on input, *handle was 0, return the pointer to the timer for future input
+  */
+
+  if ( ! *handle)
+    *handle = (void *) ptr;
+
+  return 0;
+}
+
+/*
+** update_stats: update stats inside ptr. Called by GPTLstop(f), GPTLstop_instr, 
+**               GPTLstop(f)_handle
 **
 ** Input arguments:
 **   ptr: pointer to timer
@@ -2022,6 +2398,7 @@ static int newchild (Timer *parent, Timer *child)
   */
 
   if (is_descendant (child, parent)) {
+    show_descendant (0, child, parent);
     return GPTLerror ("%s: loop detected: NOT adding %s to descendant list of %s. "
 		      "Proposed parent is in child's descendant path.\n",
 		      thisfunc, child->name, parent->name);
@@ -2109,6 +2486,37 @@ static int is_descendant (const Timer *node1, const Timer *node2)
 
   for (n = 0; n < node1->nchildren; ++n)
     if (is_descendant (node1->children[n], node2))
+      return 1;
+
+  return 0;
+}
+
+/* 
+** show_descendant: list descendants, breadth first, stopping early
+**  if a particular node is discovered (e.g. the parent)
+**
+** Input arguments:
+**   level: current level in recursion, should be 0 when first called
+**   node1: starting node for recursive listing
+**   node2: node defining the early stopping criterion
+**
+** Return value: true (listed all descendants) or false (stopped early)
+*/
+
+static int show_descendant (const int level, const Timer *node1, const Timer *node2)
+{
+  int n;
+
+  /* Breadth before depth for efficiency */
+
+  for (n = 0; n < node1->nchildren; ++n){
+    printf ("node1: %-32s level: %d child: %d label: %-32s\n", node1->name, level, n, node1->children[n]->name);
+    if (node1->children[n] == node2) 
+      return 1;
+  }
+
+  for (n = 0; n < node1->nchildren; ++n)
+    if (show_descendant (level+1, node1->children[n], node2)) 
       return 1;
 
   return 0;
@@ -2933,7 +3341,6 @@ int get_index( const char * list,
 ** cmp: returns value from strcmp. for use with qsort
 */
 
-/*static int cmp(const char **x, const char **y)*/
 static int cmp(const void *pa, const void *pb)
 {
   const char** x = (const char**)pa;
@@ -2946,7 +3353,6 @@ static int cmp(const void *pa, const void *pb)
 ** ncmp: compares values of memory adresses pointed to by a pointer. for use with qsort
 */
 
-/*static int ncmp( const char **x, const char **y )*/
 static int ncmp( const void *pa, const void *pb )
 {
   static const char *thisfunc = "GPTLsetoption";
@@ -3548,6 +3954,59 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 
   for (i = 0; i < hashtable[*indx].nument; i++) {
     if (STRMATCH (name, hashtable[*indx].entries[i]->name)) {
+      ptr = hashtable[*indx].entries[i];
+      break;
+    }
+  }
+  return ptr;
+}
+
+/*
+** getentryf: find the entry in the hash table and return a pointer to it.
+** (variant of getentry where string length is included because string
+**  may not be null terminated)
+**
+** Input args:
+**   hashtable: the hashtable (array)
+**   name:      string to be hashed on (specifically, summed)
+**   namelen:   number of characters in string
+** Output args:
+**   indx:      hashtable index
+**
+** Return value: pointer to the entry, or NULL if not found
+*/
+
+static inline Timer *getentryf (const Hashentry *hashtable, /* hash table */
+			        const char *name,           /* name to hash */
+			        const int  namelen,         /* length of name */
+			        unsigned int *indx)         /* hash index */
+{
+  int i;                      /* multiplier for hashing; loop index */
+  int numchars;               /* maximum number of characters to examine */
+  const unsigned char *c;     /* pointer to elements of "name" */
+  Timer *ptr = 0;             /* return value when entry not found */
+
+  numchars = MIN (namelen, MAX_CHARS);
+
+  /* 
+  ** Hash value is sum of: chars times their 1-based position index, modulo tablesize
+  */
+
+  *indx = 0;
+  c = (unsigned char *) name;
+  for (i = 1; i < numchars+1; ++c, ++i) {
+    *indx += (*c) * i;
+  }
+
+  *indx %= tablesize;
+
+  /* 
+  ** If nument exceeds 1 there was a hash collision and we must search
+  ** linearly through an array for a match
+  */
+
+  for (i = 0; i < hashtable[*indx].nument; i++) {
+    if (STRNMATCH (name, hashtable[*indx].entries[i]->name,numchars)) {
       ptr = hashtable[*indx].entries[i];
       break;
     }

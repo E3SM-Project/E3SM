@@ -675,9 +675,77 @@ Default: 5
 
 <!-- Gravity Wave Drag -->
 
+<entry id="use_gw_oro" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable gravity waves produced by orography.
+Default: .true.
+</entry>
+
+<entry id="use_gw_front" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable gravity waves produced by frontogenesis.
+Default: .false.
+</entry>
+
+<entry id="use_gw_convect" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable gravity waves produced by convection.
+Default: .false.
+</entry>
+
+<entry id="pgwv" type="integer" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Gravity wave spectrum dimension (wave numbers are from -pgwv to pgwv).
+Default: set by build-namelist.
+</entry>
+
+<entry id="gw_dc" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Width of speed bins (delta c) for gravity wave spectrum (reference wave
+speeds are from -pgwv*dc to pgwv*dc).
+Default: set by build-namelist.
+</entry>
+
+<entry id="effgw_beres" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Efficiency associated with convective gravity waves from the Beres
+scheme.
+Default: set by build-namelist.
+</entry>
+
+<entry id="effgw_cm" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Efficiency associated with gravity waves from frontogenesis.
+Default: set by build-namelist.
+</entry>
+
+<entry id="effgw_oro" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Efficiency associated with orographic gravity waves.
+Default: set by build-namelist.
+</entry>
+
 <entry id="fcrit2" type="real"  category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Critical Froude number squared.
+Default: set by build-namelist.
+</entry>
+
+<entry id="frontgfc" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Frontogenesis function critical threshold.
+Default: set by build-namelist.
+</entry>
+
+<entry id="gw_drag_file" type="char*256" input_pathname="abs" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Full pathname of Beres lookup table data file for gravity waves.
+Default: set by build-namelist.
+</entry>
+
+<entry id="taubgnd" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Background source strength (used for waves from frontogenesis).
 Default: set by build-namelist.
 </entry>
 
@@ -785,16 +853,18 @@ Default: 0
 </entry>
 
 <entry id="scenario_ghg" type="char*16"  category="ghg_cam"
-       group="chem_surfvals_nl" valid_values="FIXED,RAMPED,RAMP_CO2_ONLY" >
+       group="chem_surfvals_nl" valid_values="FIXED,RAMPED,RAMP_CO2_ONLY,CHEM_LBC_FILE" >
 Controls treatment of prescribed co2, ch4, n2o, cfc11, cfc12 volume mixing
-ratios.  May be set to 'FIXED' or 'RAMPED' or 'RAMP_CO2_ONLY'.
+ratios.  May be set to 'FIXED', 'RAMPED', 'RAMP_CO2_ONLY', or 'CHEM_LBC_FILE'.
 FIXED =&gt; volume mixing ratios are fixed and have either default or namelist
          input values.
 RAMPED =&gt; volume mixing ratios are time interpolated from the dataset
           specified by <varname>bndtvghg</varname>.
 RAMP_CO2_ONLY =&gt; only co2 mixing ratios are ramped at a rate determined by
-                 the variables <varname>ramp_co2_annual_rate</varname>, <varname>ramp_co2_cap</varname>,
-                 and <varname>ramp_co2_start_ymd</varname>.
+                    the variables <varname>ramp_co2_annual_rate</varname>, <varname>ramp_co2_cap</varname>,
+                    and <varname>ramp_co2_start_ymd</varname>.
+CHEM_LBC_FILE =&gt; volume mixing ratios are set from the chemistry lower boundary
+                    conditions dataset specified by <varname>flbc_file</varname>.
 Default: FIXED
 </entry>
 
@@ -1692,6 +1762,12 @@ Tunable evaporation efficiency in ZM deep convection scheme.
 Default: set by build-namelist
 </entry>
 
+<entry id="zmconv_tau" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Relaxation time in ZM deep convection scheme.
+Default: set by build-namelist
+</entry>
+
 
 <!-- Cloud sedimentation -->
 
@@ -2362,6 +2438,20 @@ MAM affects climate only below the top defined by this pressure (Pa).
 Default: 0 for non-MAM cases, otherwise set by build-namelist
 </entry>
 
+<entry id="do_molec_press" type="real" category="press_lim"
+       group="ref_pres_nl" valid_values="" >
+Molecular diffusion will be done only if the lowest pressure is
+below this limit (Pa).
+Default: 0.1
+</entry>
+
+<entry id="molec_diff_bot_press" type="real" category="press_lim"
+       group="ref_pres_nl" valid_values="" >
+The level closest to this pressure (Pa) is the bottom of the region
+where molecular diffusion is done.
+Default: 50.
+</entry>
+
 <!-- Physics Debugging -->
 
 <entry id="phys_debug_lat" type="real"  category="phys_debug"
@@ -2434,6 +2524,12 @@ Default: .false.
        group="phys_ctl_nl" valid_values="1,2,3,4,5,6" >
 History tape number T/Q budget output is written to.
 Default: 1
+</entry>
+
+<entry id="history_waccm" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output used primarily for WACCM runs.
+Default: .true. if WACCM physics is on, .false. otherwise.
 </entry>
 
 <!-- Radiation -->
@@ -2899,21 +2995,21 @@ Default: set by build-namelist.
 </entry>
 
 <entry id="efield_hflux_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="iondrag_nl" valid_values="" >
 Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
 for high solar fluxes from the Scherliess low latitude electric potential model.
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_lflux_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="iondrag_nl" valid_values="" >
 Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
 for low solar fluxes from the Scherliess low latitude electric potential model.
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_wei96_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="iondrag_nl" valid_values="" >
 Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
 from the Weimer96 high latitude electric potential model.
 Default: set by build-namelist.
@@ -3531,12 +3627,6 @@ solar and geomagnetic activity( F10.7, F10.7a, Kp, Ap ).
 Default: set by build-namelist.
 </entry>
 
-<entry id="gw_drag_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="gw_drag_nl" valid_values="" >
-Full pathname of Bers lookup table data file for gravity waves.
-Default: set by build-namelist.
-</entry>
-
 <entry id="srf_emis_specifier" type="char*256(1000)" category="cam_chem"
        group="chem_inparm" valid_values="" >
 List of full pathnames of surface emission datasets.
@@ -3982,7 +4072,7 @@ Default: false
 </entry>
 
 <entry id="nlte_use_mo" type="logical" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="radheat_nl" valid_values="" >
 Determines which constituents are used from NLTE calculations.
 TRUE implies use prognostic constituents.
 FALSE implies use constituents from dataset specified by <varname>waccm_forcing_file</varname>.
@@ -3990,19 +4080,19 @@ Default: TRUE for full WACCM code; FALSE for WACCM_GHG.
 </entry>
 
 <entry id="qbo_cyclic" type="logical" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="qbo_nl" valid_values="" >
 TRUE implies assume cyclic qbo data.
 Default: FALSE
 </entry>
 
 <entry id="qbo_forcing_file" type="char*256" input_pathname="abs" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="qbo_nl" valid_values="" >
 Filepath for qbo forcing dataset.
 Default: Set by build-namelist.
 </entry>
 
 <entry id="qbo_use_forcing" type="logical" category="waccm_phys"
-       group="cam_inparm" valid_values="" >
+       group="qbo_nl" valid_values="" >
 TRUE implies qbo package is active.
 Default: FALSE
 </entry>
@@ -4135,6 +4225,12 @@ Default: Set by build-namelist.
 <entry id="qsplit" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Tracer advection is done every qsplit dynamics timesteps.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="tstep_type" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+timstep option
 Default: Set by build-namelist.
 </entry>
 
@@ -5429,27 +5525,6 @@ Default: 1.0 for CAM, set by build-namelist for WACCM, T31
 Factor determining z_0 from orographic standard deviation [ no unit ] 
 Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varname>.
 set by build-namelist for WACCM, T31
-</entry>
-
-<!-- for offine unit drivers -->
-
-<entry id="offline_driver_infile" type="char*256" input_pathname="abs" category="offline_unit_driver"
-       group="offline_driver_nl" valid_values="" >
-Filepath for dataset for offline unit driver.
-Default: none
-</entry>
-
-<entry id="offline_driver_fileslist" type="char*256" input_pathname="abs" category="offline_unit_driver"
-       group="offline_driver_nl" valid_values="" >
-List of filepaths for dataset for offline unit driver.
-Default: none
-</entry>
-
-<entry id="offline_driver_do_fdh" type="logical"  category="offline_unit_driver"
-       group="offline_driver_nl" valid_values="" >
-Switch to turn on Fixed Dynamical Heating in the offline radiation tool (PORT).
-This is implemented for CAMRT only.
-Default: false
 </entry>
 
 </namelist_definition>

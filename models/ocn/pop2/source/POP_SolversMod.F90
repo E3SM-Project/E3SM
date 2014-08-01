@@ -30,6 +30,9 @@
    use POP_DomainSizeMod
    use domain
    use grid
+!pw++
+   use perf_mod
+!pw--
 
    implicit none
    private
@@ -1315,6 +1318,9 @@
 !
 !-----------------------------------------------------------------------
 
+!pw++
+   call t_startf("CG_loop1")
+!pw--
    !$OMP PARALLEL DO PRIVATE(iblock,i,j)
 
    do iblock=1,numBlocks
@@ -1359,7 +1365,13 @@
    end do ! block loop
 
    !$OMP END PARALLEL DO
+!pw++
+   call t_stopf("CG_loop1")
+!pw--
 
+!pw++
+   call t_startf("CG_Halo_Upd1")
+!pw--
    call POP_HaloUpdate(R, POP_haloTropic, POP_gridHorzLocCenter, &
                           POP_fieldKindScalar, errorCode)
 
@@ -1368,6 +1380,9 @@
          'POP_SolversChronGear: error updating initial residual halo')
       return
    endif
+!pw++
+   call t_stopf("CG_Halo_Upd1")
+!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -1375,6 +1390,9 @@
 !
 !-----------------------------------------------------------------------
 
+!pw++
+   call t_startf("CG_loop2")
+!pw--
    !$OMP PARALLEL DO PRIVATE(iblock,i,j)
 
    do iblock=1,numBlocks
@@ -1412,7 +1430,13 @@
 
    end do
    !$OMP END PARALLEL DO
+!pw++
+   call t_stopf("CG_loop2")
+!pw--
 
+!pw++
+   call t_startf("CG_Halo_Upd2")
+!pw--
    call POP_HaloUpdate(Q, POP_haloTropic, POP_gridHorzLocCenter, &
                           POP_fieldKindScalar, errorCode)
 
@@ -1422,20 +1446,31 @@
          'POP_SolversChronGear: error updating Q halo')
       return
    endif
+!pw++
+   call t_stopf("CG_Halo_Upd2")
+!pw--
 
 
    !---- Form dot products
+!pw++
+   call t_startf("CG_globalsum1")
+!pw--
    sumN = POP_GlobalSum(WORKN, POP_distrbTropic,        &
                                POP_gridHorzLocCenter,   &
                                errorCode, mMask = mMaskTropic)
-
 
    if (errorCode /= POP_Success) then
       call POP_ErrorSet(errorCode, &
          'POP_SolversChronGear: error in initial dot products')
       return
    endif
+!pw++
+   call t_stopf("CG_globalsum1")
+!pw--
 
+!pw++
+   call t_startf("CG_loop3")
+!pw--
    cgRhoOld = sumN(1) !(r,PCr)
    cgSigma  = sumN(2) !(s,As)
    cgAlpha  = cgRhoOld/cgSigma
@@ -1453,6 +1488,9 @@
 
    end do
    !$OMP END PARALLEL DO
+!pw++
+   call t_stopf("CG_loop3")
+!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -1468,6 +1506,9 @@
 !
 !-----------------------------------------------------------------------
 
+!pw++
+      call t_startf("CG_loop4")
+!pw--
       !$OMP PARALLEL DO PRIVATE(iblock,i,j)
       do iblock=1,numBlocks
 
@@ -1494,17 +1535,28 @@
 
       end do
       !$OMP END PARALLEL DO
+!pw++
+      call t_stopf("CG_loop4")
+!pw--
 
+!pw++
+      call t_startf("CG_Halo_Upd3")
+!pw--
       call POP_HaloUpdate(AZ, POP_haloTropic, POP_gridHorzLocCenter, &
                               POP_fieldKindScalar, errorCode)
-
 
       if (errorCode /= POP_Success) then
          call POP_ErrorSet(errorCode, &
             'POP_SolversChronGear: error updating AZ halo')
          return
       endif
+!pw++
+      call t_stopf("CG_Halo_Upd3")
+!pw--
 
+!pw++
+      call t_startf("CG_globalsum2")
+!pw--
       sumN = POP_GlobalSum(WORKN, POP_distrbTropic,        &
                                   POP_gridHorzLocCenter,   &
                                   errorCode, mMask = mMaskTropic)
@@ -1515,7 +1567,13 @@
             'POP_SolversChronGear: error in dot products')
          return
       endif
+!pw++
+      call t_stopf("CG_globalsum2")
+!pw--
 
+!pw++
+      call t_startf("CG_loop5")
+!pw--
       cgRho    = sumN(1)     ! (r,(PC)r)
       cgDelta  = sumN(2)     ! (A (PC)r,(PC)r)
       cgBeta   = cgRho/cgRhoOld
@@ -1558,6 +1616,9 @@
          endif
       end do
       !$OMP END PARALLEL DO
+!pw++
+      call t_stopf("CG_loop5")
+!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -1567,6 +1628,9 @@
 
       if (mod(m,convergenceCheckFreq) == 0) then
 
+!pw++
+         call t_startf("CG_Halo_Upd4")
+!pw--
          !--- update ghost cells for next iteration
          call POP_HaloUpdate(R, POP_haloTropic, POP_gridHorzLocCenter, &
                                 POP_fieldKindScalar, errorCode)
@@ -1576,8 +1640,14 @@
                'POP_SolversChronGear: error updating residual halo in convrg')
             return
          endif
+!pw++
+         call t_stopf("CG_Halo_Upd4")
+!pw--
 
          !--- residual norm for convergence 
+!pw++
+         call t_startf("CG_globalsum3")
+!pw--
          rr = POP_GlobalSum(work0, POP_distrbTropic,        &! (r,r)
                                    POP_gridHorzLocCenter,   &
                                    errorCode, mMask = mMaskTropic)
@@ -1588,6 +1658,9 @@
                'POP_SolversChronGear: error computing convergence dot prod')
             return
          endif
+!pw++
+         call t_stopf("CG_globalsum3")
+!pw--
 
          if (rr < convergenceCriterion) then
             numIterations = m
@@ -1607,6 +1680,7 @@
             'POP_SolversChronGear: solver not converged')
          return
       endif
+
    endif
 
 !-----------------------------------------------------------------------

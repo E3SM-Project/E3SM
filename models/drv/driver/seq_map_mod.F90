@@ -153,7 +153,7 @@ contains
     !-----------------------------------------------------
 
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
+!       write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
     mapper%copy_only = .false.
@@ -236,7 +236,7 @@ contains
     !-----------------------------------------------------
 
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
+!       write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
     mapper%copy_only = .false.
@@ -388,7 +388,7 @@ contains
     !-----------------------------------------------------
 
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
+!       write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
     mapper%copy_only = .false.
@@ -436,7 +436,7 @@ contains
     !-----------------------------------------------------
 
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
+!       write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
     lnorm = .true.
@@ -530,7 +530,7 @@ contains
 
     lstring = ' '
     if (present(string)) then
-       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
+!       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
        lstring = trim(string)
     endif
 
@@ -612,7 +612,7 @@ contains
 
     lstring = ' '
     if (present(string)) then
-       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
+!       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
        lstring = trim(string)
     endif
 
@@ -858,8 +858,8 @@ contains
     !-----------------------------------------------------
 
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
-       call shr_sys_flush(logunit)
+!       write(logunit,'(A)') subname//' called for '//trim(string)
+!       call shr_sys_flush(logunit)
     endif
 
     call MPI_COMM_RANK(mpicom,mytask,rcode)

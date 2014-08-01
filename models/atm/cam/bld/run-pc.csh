@@ -8,9 +8,7 @@
 ##
 ##-----------------------------------------------------------------------
 ## Batch options for machine with PBS batch system.
-## Usage for Lahey compiler (default): 
-##   qsub run-pc.csh
-## Usage for pgf90 compilers:
+## Usage for pgf90 compilers (default):
 ##   env BLD_PGI=true qsub run-pc.csh
 ## Usage for Intel compilers:
 ##   env BLD_INTEL=true qsub run-pc.csh
@@ -50,11 +48,10 @@ switch ( $OS )
      endif
 
      setenv PGI /usr/local/pgi
-     setenv LAHEY /usr/local/lf95
 
      setenv INTEL /usr/local/intel-cluster
      setenv LD_LIBRARY_PATH \
-       ${PGI}/linux86/lib:${LAHEY}/lib64:/cluster/torque/lib:${INTEL}/cc/11.0.074/lib/intel64:${INTEL}/fc/11.0.074/lib/intel64:${LD_LIBRARY_PATH}
+       ${PGI}/linux86/lib:/cluster/torque/lib:${INTEL}/cc/11.0.074/lib/intel64:${INTEL}/fc/11.0.074/lib/intel64:${LD_LIBRARY_PATH}
      setenv P4_GLOBMEMSIZE 500000000
 
      if ( $?BLD_INTEL ) then
@@ -63,16 +60,11 @@ switch ( $OS )
        setenv PATH ${INTEL}/fc/11.0.074/bin/intel64:${INTEL}/cc/11.0.074/bin/intel64:${mpich}/bin:${PATH}
        ${INTEL}/intel-login-script.csh
        set cfg_string = "-fc ifort "
-     else if ( $?BLD_PGI ) then
+     else
        set netcdf = /usr/local/netcdf-pgi
        set mpich = /usr/local/mpich-pgi
        setenv PATH ${PGI}/linux86/bin:${mpich}/bin:${PATH}
        set cfg_string = ""
-     else
-       set netcdf = /usr/local/netcdf-gcc-lf95
-       set mpich = /usr/local/mpich-lf95
-       setenv PATH ${LAHEY}/bin:${mpich}/bin:${PATH}
-       set cfg_string = "-fc lf95 "
      endif
      setenv INC_NETCDF ${netcdf}/include
      setenv LIB_NETCDF ${netcdf}/lib

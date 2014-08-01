@@ -38,7 +38,7 @@ module waccm_forcing
 
   integer :: number_flds
 
-  character(len=256) :: filename = 'WACCM_FORCING_FILE'
+  character(len=256) :: filename = ''
   character(len=256) :: filelist = ''
   character(len=256) :: datapath = ''
   character(len=32)  :: datatype = 'CYCLICAL'

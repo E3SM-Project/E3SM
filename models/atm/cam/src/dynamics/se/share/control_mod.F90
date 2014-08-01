@@ -10,7 +10,7 @@ module control_mod
 
   integer, public, parameter :: MAX_STRING_LEN=80
   integer, public, parameter :: MAX_FILE_LEN=240
-  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit or semi_implicit)
+  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
 
 ! none of this is used anymore:
   integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
@@ -40,7 +40,7 @@ module control_mod
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
-  integer, public :: physics = 0          ! Defines if the program is to use its own phsyics (HOMME standalone), valid values 1,2,3
+  integer, public :: physics = 0          ! Defines if the program is to use its own physics (HOMME standalone), valid values 1,2,3
                                           ! physics = 0, no physics
                                           ! physics = 1, Use physics
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
@@ -137,35 +137,24 @@ module control_mod
                                           ! 1 = use (approx.) laplace on p surfaces
 
   real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
-
   real (kind=real_kind), public :: hypervis_scaling=0      ! use tensor hyperviscosity
-                                                           ! if turned on, requires which_vlaplace=2
 
-!three types of viscosity are supported right now:
-! (1) const hv, i.e., the operator nu * (\div \grad)^hypervis_order
-! (2) variable-within-element (or just variable) hv, the operator nu * (viscosity \div \grad )^hypervis_order
-! (3) tensor hv,  nu * ( \div * tensor * \grad )^hypervis_order
+!three types of hyper viscosity are supported right now:
+! (1) const hv:    nu * del^2 del^2
+! (2) scalar hv:   nu(lat,lon) * del^2 del^2
+! (3) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
 !
-! (1) default:  which_vlaplace=0,1 or 2
-!               hypervis_power=0, hypervis_scaling=0
-! (2) Mike's original version for var-res grids.  
+! (1) default:  hypervis_power=0, hypervis_scaling=0
+! (2) Original version for var-res grids. (M. Levy)
 !            scalar coefficient within each element
-!            which_vlaplace=0,1 or 2
 !            hypervisc_scaling=0
 !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
 ! (3) tensor HV var-res grids 
 !            tensor within each element:
-!            which_vlaplace=2    
 !            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
 !            hypervis_power=0
+!            (\div * tensor * \grad) operator uses cartesian laplace
 !
-!
-
-  integer, public :: which_vlaplace=0    ! 0= new spherical laplace
-                                         ! 1= orig (buggy) spherical laplace
-					 ! 2= vector laplace based on transform to cartesian
-
-
 
 
 

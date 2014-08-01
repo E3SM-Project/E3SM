@@ -1018,7 +1018,7 @@ if (defined $prescribed_aero_model) {
 }
 else {
     $prescribed_aero_model = 'none';
-    if ($chem eq 'none' or $chem eq 'waccm_ghg') {
+    if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'waccm_mozart' or $chem eq 'super_fast_llnl') {
 	# If no chemistry then there must be prescribed aerosols unless physics
 	# package is adiabatic or ideal.
 	if ($phys eq 'cam5') {
@@ -1646,7 +1646,7 @@ if ($chem =~ /trop_mozart/ or $chem =~ /trop_strat/ ) {
     if ($chem =~ /trop_strat/) {
       $val = "'CCL4','CF2CLBR','CF3BR','CFC11','CFC113','CFC12','CH3BR','CH3CCL3','CH3CL','CH4','CO2','H2','HCFC22','N2O'";
     } else {
-      $val = "'CH4','H2','N2O'";
+      $val = "'CH4','H2','N2O','CO2','CFC11','CFC12'";
     }
     add_default($nl, 'flbc_list', 'val'=>$val);
     unless (defined $nl->get_value('flbc_type')) {
@@ -1870,7 +1870,6 @@ if ($chem eq 'super_fast_llnl_mam3') {
       %species = ( %species,
 		'ISOP   -> ' => 'isop_emis_file',  );
     }
-    add_default($nl, 'srf_emis_type',  'val'=>'CYCLICAL');
     my $first = 1; my $pre = "";
     foreach my $id (sort keys %species) {
         my $rel_filepath = get_default_value($species{$id}, \%verhash );
@@ -1882,8 +1881,10 @@ if ($chem eq 'super_fast_llnl_mam3') {
 	}
     }
     add_default($nl, 'srf_emis_specifier', 'val'=>$val);
-    add_default($nl, 'srf_emis_type',      'val'=>'CYCLICAL');
-    add_default($nl, 'srf_emis_cycle_yr',  'val'=>2000);
+    unless (defined $nl->get_value('srf_emis_type')) {
+	add_default($nl, 'srf_emis_type',    'val'=>'CYCLICAL');
+	add_default($nl, 'srf_emis_cycle_yr','val'=>'2000');
+    }
 
     # vertical emissions... 
     %species = ();
@@ -2080,8 +2081,10 @@ if ($chem eq 'waccm_mozart_mam3') {
         }
     }
     add_default($nl, 'srf_emis_specifier', 'val'=>$val);
-    add_default($nl, 'srf_emis_type',      'val'=>'CYCLICAL');
-    add_default($nl, 'srf_emis_cycle_yr',  'val'=>'2000');
+    unless (defined $nl->get_value('srf_emis_type')) {
+	add_default($nl, 'srf_emis_type',    'val'=>'CYCLICAL');
+	add_default($nl, 'srf_emis_cycle_yr','val'=>'2000');
+    }
 
     # Vertical emission datasets:
     %species = ();
@@ -2135,7 +2138,6 @@ if ($chem eq 'trop_mam7') {
     my %species;
 
     # Surface emission datasets:
-    add_default($nl, 'srf_emis_type', 'val'=>'CYCLICAL');
     %species = ();
     %species = ('DMS       -> ' => 'dms_emis_file',
                 'NH3       -> ' => 'nh3_emis_file',
@@ -2163,8 +2165,10 @@ if ($chem eq 'trop_mam7') {
         }
     }
     add_default($nl, 'srf_emis_specifier', 'val'=>$val);
-    add_default($nl, 'srf_emis_type',      'val'=>"'CYCLICAL'");
-    add_default($nl, 'srf_emis_cycle_yr',  'val'=>2000);
+    unless (defined $nl->get_value('srf_emis_type')) {
+	add_default($nl, 'srf_emis_type',    'val'=>'CYCLICAL');
+	add_default($nl, 'srf_emis_cycle_yr','val'=>'2000');
+    }
 
     # Vertical emission datasets:
     %species = ();
@@ -2302,31 +2306,72 @@ if ($chem =~ /waccm_mozart/) {
     add_default($nl, 'do_circulation_diags', 'val'=>'.true.');   
 }
 
+# Determine the source of the prescribed GHG values.
+
 my $lbc_file = $nl->get_value('flbc_file');
+my $scenario_ghg = $nl->get_value('scenario_ghg');
 
-if ( ! defined  $lbc_file ) {
+if (defined  $lbc_file) {
 
-    # It's assumed that the LBC file used in WACCM/CAM-Chem contains the 
-    # necessary GHGs
+    # If a WACCM/CAM-Chem LBC file is specified then use it for the prescribed 
+    # GHGs.  Set scenario_ghg='CHEM_LBC_FILE'.
 
-    # Greenhouse gas surface values (default to 2000 values)
+    # If scenario_ghg has been set inconsistently then exit
+    if (defined $scenario_ghg and $scenario_ghg !~ /CHEM_LBC_FILE/) {
+	die "$ProgName - ERROR: When flbc_file is used cannot set scenario_ghg = $scenario_ghg \n";
+    }
+    # Otherwise make sure its set.
+    add_default($nl, 'scenario_ghg',  'val'=>'CHEM_LBC_FILE');
 
-    my $scenario_ghg = $nl->get_value('scenario_ghg');
+    # If any individual GHG values are set then remove them and issue info message
+    # that they will be ignored.
+    foreach my $ghg_vmr ('co2vmr','ch4vmr','n2ovmr','f11vmr','f12vmr') {
+	my $val = $nl->get_value($ghg_vmr);
+	if (defined $val) {
+	    print "$ProgName - INFO: Chem flbc_file in use. $ghg_vmr = $val removed from namelist.\n";
+
+	    if ($nl->delete_variable('chem_surfvals_nl', $ghg_vmr) != 0) {
+		die "$ProgName - ERROR: not able to delete $ghg_vmr from group chem_surfvals_nl.\n";
+	    }
+	}
+    }
+
+    # Make sure the flbc_list specifies all the GHGs needed for radiation.
+    my $flbc_list = $nl->get_value('flbc_list');
+    if (defined $flbc_list) {
+	# If flbc_list has already been defined, check that it contains all
+	# the GHGs needed by the radiation code.
+	foreach my $ghg ('CO2','CH4','N2O','CFC11','CFC12') {
+	    if ($flbc_list !~ /$ghg/) {
+		die "$ProgName - ERROR: $ghg is missing from flbc_list \n";
+	    }
+	}
+    }
+    else {
+	my $val = "'CO2','CH4','N2O','CFC11','CFC12'";
+	add_default($nl, 'flbc_list', 'val'=>$val);
+    }
+
+}
+else {
+
+    # If no chemistry then set prescribed GHG surface values using
+    # one of the remaining scenario_ghg values.
 
     if ((defined $scenario_ghg) and $scenario_ghg =~ /RAMPED/) {
         # read values from dataset
         add_default($nl, 'bndtvghg');
     }
     else {
-        # Fixed values for all GHGs.  The co2vmr value may just be the
-        # starting value if scenario_ghg == RAMP_CO2_ONLY
+        # If scenario_ghg is 'FIXED' or 'RAMP_CO2_ONLY' then the prescribed
+	# values are set using the xxxvmr variables.  For 'RAMP_CO2_ONLY'
+        # the co2vmr value is just the starting value.
 	add_default($nl, 'co2vmr');
 	add_default($nl, 'ch4vmr');
 	add_default($nl, 'n2ovmr');
 	add_default($nl, 'f11vmr');
 	add_default($nl, 'f12vmr');
     }
-
 }
 
 # Dry Deposition -- The responsibility for dry deposition is shared between CAM and CLM.
@@ -2409,6 +2454,10 @@ add_default($nl, 'do_clubb_sgs');
 add_default($nl, 'clubb_history');
 add_default($nl, 'clubb_rad_history');
 
+if ($nl->get_value('clubb_history') =~ "true" &&  $nl->get_value('atm_nthreads') != 1) {
+  die "$ProgName - ERROR: clubb_history = .true. with multiple threads is not supported. \n";
+}
+
 #in-cloud scav tuning for cloud-borne aerosol
 add_default($nl, 'sol_facti_cloud_borne');
 
@@ -2479,6 +2528,10 @@ add_default($nl, 'eddy_lbulk_max');
 add_default($nl, 'eddy_leng_max');
 add_default($nl, 'eddy_max_bot_pressure');
 add_default($nl, 'diff_cnsrv_mass_check');
+
+# Pressure limits for molecular diffusion.
+add_default($nl, 'do_molec_press');
+add_default($nl, 'molec_diff_bot_press');
 
 # CARMA microphysics
 #
@@ -2655,10 +2708,33 @@ if ($chem =~ /_mam/ or $chem =~ /_bam/ or $chem =~ /trop_/) {
 
 # Gravity wave drag settings
 if ($waccm_phys) {
-    add_default($nl, 'gw_drag_file');
+    add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
+    add_default($nl, 'use_gw_front'  , 'val'=>'.true.');
+    add_default($nl, 'use_gw_convect', 'val'=>'.true.');
 } else {
-    add_default($nl, 'fcrit2');
+    add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
+    add_default($nl, 'use_gw_front'  , 'val'=>'.false.');
+    add_default($nl, 'use_gw_convect', 'val'=>'.false.');
 }
+add_default($nl, 'pgwv', 'val'=>'32');
+add_default($nl, 'gw_dc','val'=>'2.5D0');
+
+if ($nl->get_value('use_gw_oro') =~ /$TRUE/io) {
+    add_default($nl, 'effgw_oro');
+}
+
+if ($nl->get_value('use_gw_front') =~ /$TRUE/io) {
+    add_default($nl, 'effgw_cm');
+    add_default($nl, 'frontgfc');
+    add_default($nl, 'taubgnd');
+}
+
+if ($nl->get_value('use_gw_convect') =~ /$TRUE/io) {
+    add_default($nl, 'effgw_beres');
+    add_default($nl, 'gw_drag_file');
+}
+
+add_default($nl, 'fcrit2');
 
 # Default variables for history files
 add_default($nl, 'history_amwg');
@@ -2666,6 +2742,7 @@ add_default($nl, 'history_aerosol');
 add_default($nl, 'history_aero_optics');
 add_default($nl, 'history_budget');
 add_default($nl, 'history_eddy');
+add_default($nl, 'history_waccm');
 
 
 # FV dycore

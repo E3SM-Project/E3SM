@@ -122,6 +122,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/project/projectdirs/ccsm1</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -246,6 +247,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/project/projectdirs/ccsm1</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -329,6 +331,7 @@
          <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/gpfs/mira-fs0/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
 	 <CCSM_CPRNC>/gpfs/mira-fs0/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/gpfs/mira-fs0/projects/ClimEndStation</SAVE_TIMING_DIR>
          <OS>BGQ</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
@@ -446,6 +449,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/tmp/proj/ccsm/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/tmp/proj/ccsm/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/tmp/proj/ccsm</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>

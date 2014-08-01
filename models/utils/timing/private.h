@@ -23,6 +23,8 @@
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
+#define STRNMATCH(X,Y,N) (strncmp((X),(Y),(N)) == 0)
+
 /* Output counts less than PRTHRESH will be printed as integers */
 #define PRTHRESH 1000000L
 

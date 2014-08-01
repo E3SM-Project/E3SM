@@ -38,6 +38,7 @@ module prim_driver_mod
   type (quadrature_t)   :: gp                     ! element GLL points
   real(kind=longdouble_kind)  :: fvm_corners(nc+1)     ! fvm cell corners on reference element
   real(kind=longdouble_kind)  :: fvm_points(nc)     ! fvm cell centers on reference element
+  real (kind=longdouble_kind) :: spelt_refnep(1:nep)
 
 
 #ifndef CAM
@@ -338,7 +339,7 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    n_domains = Nthreads
+    n_domains = min(Nthreads,nelemd)
 #if (defined ELEMENT_OPENMP)
     n_domains = 1
 #endif
@@ -370,7 +371,12 @@ contains
     do i=1,nc
        fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
     end do
-
+     
+    xtmp=nep-1
+    do i=1,nep
+      spelt_refnep(i)= 2*(i-1)/xtmp - 1
+    end do
+     
     if (topology=="cube") then
        if(par%masterproc) write(iulog,*) "initializing cube elements..."
        if (MeshUseMeshFile) then
@@ -459,7 +465,9 @@ contains
        elem(ie)%accum%Qvar=0
        elem(ie)%accum%Qmass=0
        elem(ie)%accum%Q1mass=0
-       elem(ie)%accum%mass_added=0
+
+       elem(ie)%derived%Omega_p=0
+       elem(ie)%state%dp3d=0
     enddo
 
 
@@ -488,6 +496,12 @@ contains
     deallocate(HeadPartition)
 
 
+    n_domains = min(Nthreads,nelemd)
+#if defined(ELEMENT_OPENMP) || defined(NESTED_OPENMP)
+    call omp_set_num_threads(NThreads)
+#else
+    call omp_set_num_threads(n_domains)
+#endif
     ! =====================================
     ! Set number of threads...
     ! =====================================
@@ -495,7 +509,6 @@ contains
        write(iulog,*) "Main:NThreads=",NThreads
        write(iulog,*) "Main:n_domains = ",n_domains
     endif
-    call omp_set_num_threads(NThreads)
 
     allocate(dom_mt(0:n_domains-1))
     do ith=0,n_domains-1
@@ -539,6 +552,10 @@ contains
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
+#ifdef TRILINOS
+    use prim_derived_type_mod ,only : derived_type, initialize
+    use, intrinsic :: iso_c_binding
+#endif
     use thread_mod, only : nthreads
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
@@ -551,7 +568,7 @@ contains
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave 
     use aquaplanet, only : aquaplanet_init_state
 #endif
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     use cuda_mod, only: cuda_mod_init
 #endif
 
@@ -594,9 +611,7 @@ contains
     integer :: i,j,k,ie,iptr,t,q
     integer :: ierr
     integer :: nfrc
-    integer :: n0_qdp
-    real (kind=longdouble_kind)                 :: refnep(1:nep), tmp
-    
+    integer :: n0_qdp    
 
     ! ==========================
     ! begin executable code
@@ -634,18 +649,12 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
-
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
     ! ================================================
     ! fvm initialization
     ! ================================================
     if (ntrac>0) then
 #if defined(_SPELT)
-      tmp=nep-1
-      do i=1,nep
-        refnep(i)= 2*(i-1)/tmp - 1
-      end do
-      call v2pinit(deriv(hybrid%ithr)%Sfvm,gp%points,refnep,np,nep)
       call spelt_init2(elem,fvm,hybrid,nets,nete,tl)
 #else
       call fvm_init2(elem,fvm,hybrid,nets,nete,tl)    
@@ -712,14 +721,12 @@ contains
        call abortmp('Error: only cube topology supported for primaitve equations') 
     endif
 
-
 #ifndef CAM
     ! =================================
     ! HOMME stand alone initialization
     ! =================================
-    tl%nstep0=2   ! This will be the first full leapfrog step
-    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
 
+    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
     if(runtype >= 1) then 
        ! ===========================================================
        ! runtype==1   Exact Restart 
@@ -738,20 +745,14 @@ contains
           end if
           call aquaplanet_init_state(elem, hybrid,hvcoord,nets,nete,integration)
        end if
-       
+
        call ReadRestart(elem,hybrid%ithr,nets,nete,tl)
+
        ! scale PS to achieve prescribed dry mass
        if (runtype /= 1) &
             call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)  
        
-       tl%nstep0=tl%nstep+1            ! restart run: first step = first first full leapfrog step
-       
        if (runtype==2) then
-          ! branch run
-          ! reset time counters to zero since timestep may have changed
-          nEndStep = nEndStep-tl%nstep ! restart set this to nmax + tl%nstep
-          tl%nstep=0
-          tl%nstep0=2   
           ! copy prognostic variables:  tl%n0 into tl%nm1
           do ie=nets,nete
              elem(ie)%state%v(:,:,:,:,tl%nm1)=elem(ie)%state%v(:,:,:,:,tl%n0)
@@ -761,10 +762,6 @@ contains
 
           enddo
        endif ! runtype==2
-       if (hybrid%masterthread) then 
-          write(iulog,*) "initial state from restart file:"
-       end if
-       
     else  ! initial run  RUNTYPE=0
        ! ===========================================================
        ! Initial Run  - compute initial condition
@@ -839,12 +836,23 @@ contains
        ! Print state and movie output
        ! ========================================
        
-       if (hybrid%masterthread) then 
-          write(iulog,*) "initial state:"
-       end if
     end if  ! runtype
 
+!$OMP MASTER
+    tl%nstep0=2   ! This will be the first full leapfrog step
+    if (runtype==1) then
+       tl%nstep0=tl%nstep+1            ! restart run: first step = first first full leapfrog step
+    endif
+    if (runtype==2) then
+       ! branch run
+       ! reset time counters to zero since timestep may have changed
+       nEndStep = nEndStep-tl%nstep ! restart set this to nmax + tl%nstep
+       tl%nstep=0
+    endif
+!$OMP END MASTER
+!$OMP BARRIER
 #endif
+
     ! For new runs, and branch runs, convert state variable to (Qdp)
     ! because initial conditon reads in Q, not Qdp
     ! restart runs will read dpQ from restart file
@@ -877,11 +885,11 @@ contains
        enddo
     endif
     
- ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+ ! do it only for SPELT/FVM tracers, FIRST TRACER will be the AIR DENSITY   
  ! should be optimize and combined with the above caculation 
     if (ntrac>0) then 
 #if defined(_SPELT)
-      ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+      ! do it only for SPELT tracers, FIRST TRACER will be the AIR DENSITY   
       ! should be optimize and combined with the above caculation 
       do ie=nets,nete 
         do k=1,nlev
@@ -893,19 +901,13 @@ contains
      	    enddo
           !write air density in tracer 1 of FVM
           fvm(ie)%c(1:nep,1:nep,k,1,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-          do i=1,nep
-            do j=1,nep
-              fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,1,tl%n0)
-!            fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)
-            end do
-          end do
         enddo
       enddo
       call spelt_init3(elem,fvm,hybrid,nets,nete,tl%n0)
       do ie=nets,nete 
    	    do i=1-nipm,nep+nipm
    	      do j=1-nipm,nep+nipm  
-   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+   	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0) +  hvcoord%hyai(1)*hvcoord%ps0)
    	      enddo
    	    enddo
       enddo
@@ -985,16 +987,15 @@ contains
           write(iulog,'(a,2f9.2)') "CAM physics timescale:       ",phys_tscale
        endif
        write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit*max(rsplit,1)
-       write(iulog,*) "initial state from CAM:"
 #endif
     end if
 
 
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
     call cuda_mod_init(elem,deriv(hybrid%ithr),hvcoord)
 #endif
-
+    if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
   end subroutine prim_init2
 
@@ -1141,7 +1142,13 @@ contains
 #if (! defined ELEMENT_OPENMP)
 !$OMP BARRIER
 #endif
-    if (integration == "explicit") then
+    if (integration == "semi_imp") then
+       call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
+            refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
+       tot_iter=tot_iter+cg(hybrid%ithr)%iter
+    else if (integration == "full_imp") then
+       call abortmp('full_imp integration requires tstep_type > 0')
+    else 
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, compute_diagnostics)
 
@@ -1149,13 +1156,7 @@ contains
        do ie=nets,nete
           elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
        enddo
-       
-    else if (integration == "semi_imp") then
-       call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
-            refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
-       tot_iter=tot_iter+cg(hybrid%ithr)%iter
     end if
-
 
     ! =================================
     ! energy, dissipation rate diagnostics.  Uses data at t and t+1
@@ -1244,7 +1245,9 @@ contains
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use prim_advection_mod, only : vertical_remap
-
+#if USE_CUDA_FORTRAN
+    use cuda_mod, only: copy_qdp_h2d
+#endif
     
 
     type (element_t) , intent(inout)        :: elem(:)
@@ -1269,7 +1272,7 @@ contains
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
     real (kind=real_kind) :: dp_np1(np,np)
-    logical :: compute_diagnostics, compute_energy, compute_energy_forcing
+    logical :: compute_diagnostics, compute_energy
 
 
     ! ===================================
@@ -1289,20 +1292,13 @@ contains
     ! compute energy if we are using an energy fixer
     compute_diagnostics=.false.
     compute_energy=energy_fixer > 0
-    compute_energy_forcing = .false.
-    ! for forcing applied in dynamics, compute d(E)/dt due to forcing 
-    if (compute_energy .and. ftype/=1) compute_energy_forcing=.true.
 
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics=.true.  
        compute_energy = .true.
-       compute_energy_forcing = .true.
     endif
     if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
-    ! E(4) Energy at start of timestep, before CAM forcing
-    if (compute_energy_forcing) &
-       call prim_energy_halftimes(elem,hvcoord,tl,4,.true.,nets,nete)
 
 
 
@@ -1322,6 +1318,9 @@ contains
     ! qmass and variance, using Q(n0),Qdp(n0)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
+#if USE_CUDA_FORTRAN
+    call copy_qdp_h2d( elem , tl%n0 )
+#endif
 
     ! initialize dp3d from ps
     if (rsplit>0) then
@@ -1389,8 +1388,7 @@ contains
     if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
 
     if (energy_fixer > 0) then
-       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,&
-            compute_energy_forcing,nsubstep)
+       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
     endif
 
     if (compute_diagnostics) then
@@ -1442,13 +1440,13 @@ contains
 !
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, nsplit
-    use control_mod, only: statefreq,&
-           ftype, qsplit, nu_p, test_cfldep, rsplit
-    use prim_advance_mod, only : prim_advance_exp
+    use control_mod, only: statefreq, integration, ftype, qsplit, nu_p, test_cfldep, rsplit
+    use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
+    use derivative_mod, only : interpolate_gll2spelt_points
 
     type (element_t) , intent(inout)        :: elem(:)
     
@@ -1469,10 +1467,48 @@ contains
     integer :: ie, t, q,k,i,j,n, n_Q
 
     real (kind=real_kind)                          :: maxcflx, maxcfly 
-    
      
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
+
+!#ifdef TRILINOS
+!    real (c_double) ,allocatable, dimension(:) :: xstate(:)
+!! state_object is a derived data type passed thru noxinit as a pointer
+!    type(derived_type) ,target         :: state_object
+!    type(derived_type) ,pointer        :: fptr=>NULL()
+!    type(c_ptr)                        :: c_ptr_to_object
+!    type(derived_type) ,pointer         :: pptr=>NULL()
+!    type(c_ptr)                        :: c_ptr_to_pre
+!    type(derived_type) ,pointer         :: jptr=>NULL()
+!    type(c_ptr)                        :: c_ptr_to_jac
+!
+!  interface
+!    subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
+!        bind(C,name='noxinit')
+!    use ,intrinsic :: iso_c_binding
+!      integer(c_int)                :: vectorSize,comm
+!      real(c_double)  ,dimension(*) :: vector
+!      type(c_ptr)                   :: v_container
+!      type(c_ptr)                   :: p_container  !precon ptr
+!      type(c_ptr)                   :: j_container  !analytic jacobian ptr
+!    end subroutine noxinit
+!
+!   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container) &
+!     bind(C,name='noxsolve')
+!    use ,intrinsic :: iso_c_binding
+!      integer(c_int)                :: vectorSize
+!      real(c_double)  ,dimension(*) :: vector
+!      type(c_ptr)                   :: v_container
+!      type(c_ptr)                   :: p_container  !precon ptr
+!      type(c_ptr)                   :: j_container  !analytic jacobian ptr
+!    end subroutine noxsolve
+!
+!    subroutine noxfinish() bind(C,name='noxfinish')
+!    use ,intrinsic :: iso_c_binding
+!    end subroutine noxfinish
+!  end interface
+!#endif
+
     dt_q = dt*qsplit
 
     ! ===============
@@ -1523,8 +1559,6 @@ contains
        ! defer final timelevel update until after Q update.
     enddo
 
-
-
     ! ===============
     ! Tracer Advection.  SE advection uses mean flux variables:
     !        derived%dp              =  dp at start of timestep
@@ -1547,13 +1581,30 @@ contains
 #if defined(_SPELT) 
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
-       do ie=nets,nete 
-    	    do i=1-nipm,nep+nipm
-    	      do j=1-nipm,nep+nipm  
-    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
-    	      enddo
-    	    enddo
-       enddo
+        do ie=nets,nete 
+!           do k=1, nlev 
+!             fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+!           end do
+     	    do i=1-nipm,nep+nipm
+     	      do j=1-nipm,nep+nipm  
+     	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+     	      enddo
+     	    enddo
+        enddo
+        if (test_cfldep) then         
+          maxcflx=0.0D0
+          maxcfly=0.0D0
+          do k=1, nlev 
+            maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
+            maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
+          end do
+                  
+          if  (hybrid%masterthread) then
+            write(*,*) "nstep",tl%nstep,"dt_q=", dt_q, "maximum over all Level"
+            write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+            print * 
+         endif
+       endif
 #else      
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
@@ -1584,7 +1635,7 @@ contains
            endif 
        endif   
        !overwrite SE density by fvm(ie)%psc
-       !call overwrite_SEdensity(elem,fvm,hybrid,nets,nete,tl%np1) 
+!        call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1) 
 #endif
     endif
 
@@ -1605,8 +1656,7 @@ contains
 
 
 !=======================================================================================================! 
-  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,compute_energy_forcing,&
-       nsubstep)
+  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
 ! 
 ! non-subcycle code:
 !  Solution is given at times u(t-1),u(t),u(t+1)
@@ -1629,12 +1679,12 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(inout)       :: tl
-    logical, intent(inout)                 :: compute_energy_forcing
     integer, intent(in)                    :: nsubstep
 
     integer :: ie,k,i,j,nmax
     real (kind=real_kind), dimension(np,np,nlev)  :: dp   ! delta pressure
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk
+    real (kind=real_kind), pointer  :: PEner(:,:,:)
     real (kind=real_kind), dimension(np,np)  :: suml
     real (kind=real_kind) :: psum(nets:nete,4),psum_g(4),beta
 
@@ -1646,16 +1696,9 @@ contains
     real (kind=real_kind),save :: de_from_forcing_step1
     real (kind=real_kind)      :: de_from_forcing
 
-    logical :: ftype0_adjustment = .false.
-
-
     t2=tl%np1    ! timelevel for T
     if (use_cpstar /= 0 ) then
        call abortmp('Energy fixer requires use_cpstar=0')
-    endif
-
-    if (energy_fixer==2 .and. compute_energy_forcing) then
-       ftype0_adjustment = .true.
     endif
 
 
@@ -1688,6 +1731,8 @@ contains
           enddo
           enddo
        enddo
+       PEner => elem(ie)%accum%PEner(:,:,:)
+
        ! psum(:,4) = energy before forcing
        ! psum(:,1) = energy after forcing, before dynamics
        ! psum(:,2) = energy after dynamics
@@ -1695,19 +1740,13 @@ contains
        psum(ie,3) = psum(ie,3) + SUM(suml(:,:)*elem(ie)%spheremp(:,:))
        do n=1,2
           psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-               (elem(ie)%accum%PEner(:,:,n) + &
+               (PEner(:,:,n) + &
                elem(ie)%accum%IEner(:,:,n) + &
                elem(ie)%accum%KEner(:,:,n) ) )
        enddo
-       n=4
-       psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-            (elem(ie)%accum%PEner(:,:,n) + &
-            elem(ie)%accum%IEner(:,:,n) + &
-            elem(ie)%accum%KEner(:,:,n) ) )
     enddo
 
     nmax=3
-    if (ftype0_adjustment) nmax=4
 
     do ie=nets,nete
        do n=1,nmax
@@ -1720,16 +1759,6 @@ contains
     enddo
 
     beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
-
-    ! apply adjustment when forcing applied in RHS
-    if (ftype0_adjustment) then
-       de_from_forcing = psum_g(1)-psum_g(4)
-       if (nsubstep==1) then
-          de_from_forcing_step1 = de_from_forcing
-       else
-          beta = beta + (de_from_forcing_step1 - de_from_forcing)/psum_g(3)
-       endif
-    endif
 
     ! apply fixer
     do ie=nets,nete

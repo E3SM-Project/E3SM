@@ -414,7 +414,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.  
-  call t_startf('remap1_nofilter')
+!   call t_startf('remap1_nofilter')
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
@@ -532,7 +532,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   enddo
   enddo ! q loop 
   if (abort) call abortmp('Bad levels in remap1_nofilter.  usually CFL violatioin')
-  call t_stopf('remap1_nofilter')
+!   call t_stopf('remap1_nofilter')
 end subroutine remap1_nofilter
 
 !=======================================================================================================! 
@@ -918,8 +918,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
-    use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss, spelt_rkdss
+!pw use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
+    use spelt_mod, only : spelt_run, spelt_runpos, spelt_runair, spelt_runlimit, edgeveloc, spelt_mcgregordss, spelt_rkdss
     use derivative_mod, only : interpolate_gll2spelt_points
     use vertremap_mod, only: remap1_nofilter ! _EXTERNAL (actually INTERNAL)
     
@@ -956,7 +956,13 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
+!pw++
+       call t_startf('pat_spelt_bexchV')
+!pw--
        call bndry_exchangeV(hybrid,edgeAdv1)
+!pw++
+       call t_stopf('pat_spelt_bexchV')
+!pw--
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
           do k=1,nlev
@@ -992,17 +998,19 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------------------------------------------------------------      
     
-    call t_startf('spelt_depalg')
+!     call t_startf('spelt_depalg')
 !     call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
     call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
-    call t_stopf('spelt_depalg')
+!     call t_stopf('spelt_depalg')
     
     ! ! end mcgregordss
     ! spelt departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
 !     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+    
     call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-
+!     call spelt_runpos(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+!       call spelt_runlimit(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call t_stopf('prim_advec_tracers_spelt')
   end subroutine Prim_Advec_Tracers_spelt
   
@@ -1013,10 +1021,10 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
-    use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
+!pw use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
 !    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
-    use fvm_mod, only : cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
+    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1055,7 +1063,13 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
+!pw++
+       call t_startf('pat_fvm_bexchV')
+!pw--
        call bndry_exchangeV(hybrid,edgeAdv1)
+!pw++
+       call t_stopf('pat_fvm_bexchV')
+!pw--
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
           do k=1,nlev
@@ -1088,17 +1102,18 @@ contains
     ! 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------------------------------------------------------------    
-    call t_startf('fvm_depalg')
+!     call t_startf('fvm_depalg')
 
 !     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
     call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
-    call t_stopf('fvm_depalg')
+!     call t_stopf('fvm_depalg')
 
 !------------------------------------------------------------------------------------    
 
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1): 
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+!     call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
     call t_stopf('prim_advec_tracers_fvm')
   end subroutine Prim_Advec_Tracers_fvm
@@ -1133,7 +1148,7 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
   subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
-    use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
+!pw use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
     use control_mod   , only : vert_remap_q_alg, qsplit
     implicit none
@@ -1185,14 +1200,32 @@ contains
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
     !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
+!pw++
+    call t_startf('euler_step_0')
+!pw--
     rhs_multiplier = 0
     call euler_step( np1_qdp , n0_qdp  , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSdiv_vdp_ave , rhs_multiplier )
+!pw++
+    call t_stopf('euler_step_0')
+!pw--
 
+!pw++
+    call t_startf('euler_step_1')
+!pw--
     rhs_multiplier = 1
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSeta         , rhs_multiplier )
+!pw++
+    call t_stopf('euler_step_1')
+!pw--
 
+!pw++
+    call t_startf('euler_step_2')
+!pw--
     rhs_multiplier = 2
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
+!pw++
+    call t_stopf('euler_step_2')
+!pw--
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.  
     call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
@@ -1213,7 +1246,7 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     use cuda_mod, only: qdp_time_avg_cuda
 #endif
     implicit none
@@ -1221,7 +1254,7 @@ contains
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
     integer :: ie
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
     return
 #endif
@@ -1255,7 +1288,7 @@ contains
   use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   use cuda_mod, only: euler_step_cuda
 #endif
   implicit none
@@ -1286,12 +1319,12 @@ contains
     call euler_step_dg( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
     return
   endif
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   return
 #endif
 ! call t_barrierf('sync_euler_step', hybrid%par%comm)
-  call t_startf('euler_step')
+!   call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   compute Q min/max values for lim8
@@ -1387,7 +1420,7 @@ contains
       if ( nu_p > 0 ) then
         do ie = nets , nete
 #if (defined ELEMENT_OPENMP)
-          !$omp parallel do private(k, q, dp0)
+          !$omp parallel do private(k, q, dp0, dpdiss)
 #endif
           do k = 1 , nlev    
             dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1455,7 +1488,7 @@ contains
 
     ! advance Qdp
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,gradQ,dp_star,qtens)
+!$omp parallel do private(q,k,gradQ,dp_star,qtens,dpdiss)
 #endif
     do q = 1 , qsize
       do k = 1 , nlev  !  dp_star used as temporary instead of divdp (AAM)
@@ -1514,11 +1547,17 @@ contains
     endif
   enddo
 
+!pw++
+  call t_startf('eus_bexchV')
+!pw--
   if ( DSSopt == DSSno_var ) then
     call bndry_exchangeV( hybrid , edgeAdv    )
   else
     call bndry_exchangeV( hybrid , edgeAdv_p1 )
   endif
+!pw++
+  call t_stopf('eus_bexchV')
+!pw--
 
   do ie = nets , nete
     if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
@@ -1557,7 +1596,7 @@ contains
 !$OMP BARRIER
 #endif
 #endif
-  call t_stopf('euler_step')
+!   call t_stopf('euler_step')
   end subroutine euler_step
 
 !-----------------------------------------------------------------------------
@@ -1656,11 +1695,17 @@ contains
 
   end do
 
+!pw++
+  call t_startf('eus_dg_bexchV')
+!pw--
   if(DSSopt==DSSno_var)then
      call bndry_exchangeV(hybrid,edgeAdv)
   else
      call bndry_exchangeV(hybrid,edgeAdv_p1)
   endif
+!pw++
+  call t_stopf('eus_dg_bexchV')
+!pw--
 
   do ie=nets,nete
 
@@ -1673,15 +1718,15 @@ contains
      else
 	call edgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,elem(ie)%desc)
 	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
-#endif
 	do k=1,nlev
 	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
 	enddo
      endif
 
      ! compute flux and advection term
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k)
+#endif
      do k=1,nlev
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - &
              rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k) 
@@ -1689,6 +1734,9 @@ contains
         Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k)/dp(:,:,k)
      enddo
 
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,q,vtemp,divdp,pshat,i,j)
+#endif
      do q=1,qsize
         do k=1,nlev
            vtemp(:,:,1)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,1,k)
@@ -2064,7 +2112,7 @@ contains
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
   !
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   use cuda_mod       , only : advance_hypervis_scalar_cuda
 #endif
   use kinds          , only : real_kind
@@ -2074,7 +2122,7 @@ contains
   use derivative_mod , only : derivative_t
   use edge_mod       , only : EdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
-  use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
+!pw  use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
   implicit none
   type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
@@ -2103,11 +2151,11 @@ contains
   integer :: density_scaling = 0
   if ( nu_q           == 0 ) return
   if ( hypervis_order /= 2 ) return
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   call advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
   return
 #endif
-  call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
+!   call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
   call t_startf('advance_hypervis_scalar')
   
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2135,7 +2183,7 @@ contains
     do ie = nets , nete
       !spheremp     => elem(ie)%spheremp
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j)
+!$omp parallel do private(q,k,i,j,dp0)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev
@@ -2157,7 +2205,13 @@ contains
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
     enddo
 
+!pw++
+    call t_startf('ah_scalar_bexchV')
+!pw--
     call bndry_exchangeV( hybrid , edgeAdv )
+!pw++
+    call t_stopf('ah_scalar_bexchV')
+!pw--
     
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
@@ -2208,6 +2262,9 @@ contains
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
+#if USE_CUDA_FORTRAN
+  use cuda_mod, only: vertical_remap_cuda
+#endif
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2222,11 +2279,16 @@ contains
   !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout)   :: elem(:)
   type (hvcoord_t)                  :: hvcoord
-  real (kind=real_kind)             :: dt,sga
+  real (kind=real_kind)             :: dt
   
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+
+#if USE_CUDA_FORTRAN
+  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+  return
+#endif
 
   call t_startf('vertical_remap')
   
@@ -2249,7 +2311,10 @@ contains
   ! hence:
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
   !    
+
   do ie=nets,nete
+!     ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
+!     elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
      if (rsplit==0) then
         ! compute dp_star from eta_dot_dpdn():
         do k=1,nlev
@@ -2311,26 +2376,24 @@ contains
 #if defined(_SPELT)
         do i=1,nep   
           do j=1,nep
-            sga=fvm(ie)%sga(i,j)
             ! 1. compute surface pressure, 'ps_c', from SPELT air density
-            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1))/sga +  hvcoord%hyai(1)*hvcoord%ps0 
+            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0 
             ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
             ! get the dp now on the eta coordinates (reference level)
             do k=1,nlev
               dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                               (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1)/(sga*sga) 
-              dpc_star(i,j,k)=fvm(ie)%c(i,j,k,1,np1)/sga
+              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1) 
+              dpc_star(i,j,k)=fvm(ie)%c(i,j,k,1,np1)
             end do
           end do
         end do
         call remap1(cdp,nep,ntrac-1,dpc_star,dpc)
         do i=1,nep   
           do j=1,nep 
-            sga=fvm(ie)%sga(i,j)
             do k=1,nlev
-              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)*sga
-              fvm(ie)%c(i,j,k,2:ntrac,np1)=sga*cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
+              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)
+              fvm(ie)%c(i,j,k,2:ntrac,np1)=cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
             end do
           end do
         end do 

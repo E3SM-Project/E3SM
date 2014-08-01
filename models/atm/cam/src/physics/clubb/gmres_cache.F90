@@ -34,6 +34,7 @@ module gmres_cache
                           ! determine which cached array to access--this is
                           ! done via the GMRES indices for each of the
                           ! different matrices.
+!$omp threadprivate(gmres_prev_soln, gmres_prev_precond_a)
 
   real( kind = dp ), public, pointer, dimension(:) :: &
     gmres_temp_intlc, &   ! Temporary array that stores GMRES internal values
@@ -42,12 +43,14 @@ module gmres_cache
     gmres_temp_norm       ! Temporary array that stores GMRES internal values
                           ! for the non-interlaced matrices (gr%nz grid
                           ! levels)
+!$omp threadprivate(gmres_temp_intlc, gmres_temp_norm)
 
   integer, public :: &
     gmres_tempsize_norm, &     ! Size of the temporary array for
                                ! non-interlaced matrices
     gmres_tempsize_intlc       ! Size of the temporary array for
                                ! interlaced matrices
+!$omp threadprivate(gmres_tempsize_norm, gmres_tempsize_intlc)
 
   integer, public, parameter :: &
     maximum_gmres_idx = 1 ! Maximum number of different types of solves the
@@ -64,6 +67,8 @@ module gmres_cache
                     ! initial solution has been passed in for that particular
                     ! cache index. This defaults to false and is set to true
                     ! when a solution is updated.
+
+!$omp threadprivate(l_gmres_soln_ok)
 
   contains
 

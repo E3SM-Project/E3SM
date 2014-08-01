@@ -20,11 +20,9 @@ module radiation_data
   public :: init_rad_data
   public :: rad_data_readnl
 
-  integer, public :: cld_ifld,concld_ifld,rel_ifld,rei_ifld
-  integer, public :: dei_ifld,mu_ifld,lambdac_ifld,iciwp_ifld,iclwp_ifld,rel_fn_ifld
-  integer, public :: des_ifld,icswp_ifld,cldfsnow_ifld
-  integer, public :: cldemis_ifld, cldtau_ifld, cicewp_ifld, cliqwp_ifld, nmxrgn_ifld, pmxrgn_ifld
-  integer, public :: qrs_ifld, qrl_ifld
+  integer :: cld_ifld,concld_ifld,rel_ifld,rei_ifld
+  integer :: dei_ifld,mu_ifld,lambdac_ifld,iciwp_ifld,iclwp_ifld,rel_fn_ifld
+  integer :: des_ifld,icswp_ifld,cldfsnow_ifld
 
   character(len=fieldname_len), public, parameter :: &
        lndfrc_fldn    = 'rad_lndfrc      ' , &
@@ -52,12 +50,6 @@ module radiation_data
        zint_fldn      = 'rad_zint        ' , &
        pint_fldn      = 'rad_pint        ' , &
        cld_fldn       = 'rad_cld         ' , &
-       cldemis_fldn   = 'rad_cldemis     ' , &
-       cldtau_fldn    = 'rad_cldtau      ' , &
-       cicewp_fldn    = 'rad_cicewp      ' , &
-       cliqwp_fldn    = 'rad_cliqwp      ' , &
-       nmxrgn_fldn    = 'rad_nmxrgn      ' , &
-       pmxrgn_fldn    = 'rad_pmxrgn      ' , &
        cldfsnow_fldn  = 'rad_cldfsnow    ' , &
        concld_fldn    = 'rad_concld      ' , &
        rel_fldn       = 'rad_rel         ' , &
@@ -69,9 +61,7 @@ module radiation_data
        iciwp_fldn     = 'rad_iciwp       ' , &
        iclwp_fldn     = 'rad_iclwp       ' , &
        icswp_fldn     = 'rad_icswp       ' , &
-       rel_fn_fldn    = 'rad_rel_fn      ' , &
-       qrs_fldn       = 'rad_qrs         ' , &
-       qrl_fldn       = 'rad_qrl         ' 
+       rel_fn_fldn    = 'rad_rel_fn      ' 
 
   ! rad constituents mixing ratios
   integer :: ngas, naer
@@ -81,7 +71,7 @@ module radiation_data
   ! control options  
   logical          :: rad_data_output = .false.
   integer          :: rad_data_histfile_num = 2
-  character(len=1) :: rad_data_avgflag = 'I'
+  character(len=1) :: rad_data_avgflag = 'A'
 
   ! MG microphys check
   logical, public :: mg_microphys
@@ -143,19 +133,16 @@ contains
     character(len=128):: long_name
     character(len=64) :: long_name_description
     character(len=16)  :: microp_scheme  ! microphysics scheme
-    character(len=16)  :: rad_scheme
 
     if (.not.rad_data_output) return
    
-    call phys_getopts(microp_scheme_out=microp_scheme, radiation_scheme_out=rad_scheme)
+    call phys_getopts(microp_scheme_out=microp_scheme)
     mg_microphys =  (trim(microp_scheme) == 'MG')
 
     cld_ifld    = pbuf_get_index('CLD')
     concld_ifld = pbuf_get_index('CONCLD')
     rel_ifld    = pbuf_get_index('REL')
     rei_ifld    = pbuf_get_index('REI')
-    qrs_ifld    = pbuf_get_index('QRS')
-    qrl_ifld    = pbuf_get_index('QRL')
     if (mg_microphys) then
        dei_ifld      = pbuf_get_index('DEI')
        des_ifld      = pbuf_get_index('DES')
@@ -166,13 +153,6 @@ contains
        icswp_ifld    = pbuf_get_index('ICSWP')
        rel_fn_ifld   = pbuf_get_index('REL_FN')
        cldfsnow_ifld = pbuf_get_index('CLDFSNOW')
-    else
-       cldemis_ifld= pbuf_get_index('CLDEMIS')
-       cldtau_ifld = pbuf_get_index('CLDTAU')
-       cicewp_ifld = pbuf_get_index('CICEWP')
-       cliqwp_ifld = pbuf_get_index('CLIQWP')
-       nmxrgn_ifld = pbuf_get_index('NMXRGN')
-       pmxrgn_ifld = pbuf_get_index('PMXRGN')
     endif
 
     call addfld (lndfrc_fldn, 'fraction', 1,    rad_data_avgflag,&
@@ -237,11 +217,7 @@ contains
          'radiation input: effective liquid drop radius',phys_decomp)
     call addfld (rei_fldn,    'micron',   pver, rad_data_avgflag,&
          'radiation input: effective ice partical radius',phys_decomp)
-    call addfld (qrs_fldn,    'K/s',      pver, rad_data_avgflag,&
-         'radiation input: solar heating rate',phys_decomp)
-    call addfld (qrl_fldn,    'K/s',      pver, rad_data_avgflag,&
-         'radiation input: longwave heating rate',phys_decomp)
-
+    
     if (mg_microphys) then
        call addfld (dei_fldn,    'micron',   pver, rad_data_avgflag,&
             'radiation input: effective ice partical diameter',phys_decomp)
@@ -261,20 +237,6 @@ contains
             'radiation input: ice effective drop size at fixed number (indirect effect)',phys_decomp)
        call addfld (cldfsnow_fldn, 'fraction', pver, rad_data_avgflag,&
             'radiation input: cloud liquid drops + snow',phys_decomp)
-    else
-
-      call addfld (nmxrgn_fldn, ' ',        1,    rad_data_avgflag,&
-         'radiation input: ',phys_decomp)
-      call addfld (pmxrgn_fldn, 'Pa',       pverp, rad_data_avgflag,&
-         'radiation input: ',phys_decomp)
-      call addfld (cldemis_fldn, ' ',       pver, rad_data_avgflag,&
-         'radiation input: cloud property ',phys_decomp)
-      call addfld (cldtau_fldn, ' ',        pver, rad_data_avgflag,&
-         'radiation input: cloud property ',phys_decomp)
-      call addfld (cicewp_fldn, ' ',        pver, rad_data_avgflag,&
-         'radiation input: cloud property ',phys_decomp)
-      call addfld (cliqwp_fldn, ' ',        pver, rad_data_avgflag,&
-         'radiation input: cloud property ',phys_decomp)
     endif
 
     call add_default (lndfrc_fldn,    rad_data_histfile_num, ' ')
@@ -308,8 +270,6 @@ contains
     call add_default (concld_fldn,    rad_data_histfile_num, ' ')
     call add_default (rel_fldn,       rad_data_histfile_num, ' ')
     call add_default (rei_fldn,       rad_data_histfile_num, ' ')
-    call add_default (qrs_fldn,       rad_data_histfile_num, ' ')
-    call add_default (qrl_fldn,       rad_data_histfile_num, ' ')
     
     if (mg_microphys) then
        call add_default (dei_fldn,       rad_data_histfile_num, ' ')
@@ -321,23 +281,6 @@ contains
        call add_default (icswp_fldn,     rad_data_histfile_num, ' ')
        call add_default (rel_fn_fldn,    rad_data_histfile_num, ' ')
        call add_default (cldfsnow_fldn,  rad_data_histfile_num, ' ')
-    else
-       call add_default (cldemis_fldn,   rad_data_histfile_num, ' ')
-       call add_default (cldtau_fldn,    rad_data_histfile_num, ' ')
-       call add_default (cicewp_fldn,    rad_data_histfile_num, ' ')
-       call add_default (cliqwp_fldn,    rad_data_histfile_num, ' ')
-       call add_default (nmxrgn_fldn,    rad_data_histfile_num, ' ')
-       call add_default (pmxrgn_fldn,    rad_data_histfile_num, ' ')
-    endif
-    
-    if (rad_scheme=='camrt') then
-       ! some rad diagnostics
-       call add_default ('FLNT',    rad_data_histfile_num, ' ')
-       call add_default ('FLNR',    rad_data_histfile_num, ' ')
-       call add_default ('FLNS',    rad_data_histfile_num, ' ')
-       call add_default ('FSNT',    rad_data_histfile_num, ' ')
-       call add_default ('FSNR',    rad_data_histfile_num, ' ')
-       call add_default ('FSNS',    rad_data_histfile_num, ' ')
     endif
 
     ! rad constituents
@@ -413,8 +356,6 @@ contains
     real(r8):: aldif_pos (pcols)    !
 
     real(r8), pointer, dimension(:,:)  :: ptr
-    integer , pointer, dimension(:)    :: iptr1d
-    real(r8),          dimension(pcols) :: rptr1d
 
     if (.not.rad_data_output) return
 
@@ -474,13 +415,7 @@ contains
 
     call pbuf_get_field(pbuf, rei_ifld,    ptr )
     call outfld(rei_fldn,    ptr, pcols, lchnk )
-    
-    call pbuf_get_field(pbuf, qrs_ifld,    ptr )
-    call outfld(qrs_fldn,    ptr, pcols, lchnk )
-    
-    call pbuf_get_field(pbuf, qrl_ifld,    ptr )
-    call outfld(qrl_fldn,    ptr, pcols, lchnk )
-    
+
     if (mg_microphys) then
 
        call pbuf_get_field(pbuf,  dei_ifld, ptr     )
@@ -509,27 +444,6 @@ contains
 
        call pbuf_get_field(pbuf,  cldfsnow_ifld, ptr, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
        call outfld(cldfsnow_fldn, ptr, pcols, lchnk   )
-
-    else
-
-       call pbuf_get_field(pbuf, cldemis_ifld,    ptr )
-       call outfld(cldemis_fldn,   ptr, pcols, lchnk )
-
-       call pbuf_get_field(pbuf, cldtau_ifld,    ptr )
-       call outfld(cldtau_fldn,    ptr, pcols, lchnk )
-
-       call pbuf_get_field(pbuf, cicewp_ifld,    ptr )
-       call outfld(cicewp_fldn,    ptr, pcols, lchnk )
-
-       call pbuf_get_field(pbuf, cliqwp_ifld,    ptr )
-       call outfld(cliqwp_fldn,    ptr, pcols, lchnk )
-
-       call pbuf_get_field(pbuf, nmxrgn_ifld,    iptr1d )
-       rptr1d = dble(iptr1d)
-       call outfld(nmxrgn_fldn,    rptr1d, pcols, lchnk )
-
-       call pbuf_get_field(pbuf, pmxrgn_ifld,    ptr )
-       call outfld(pmxrgn_fldn,    ptr, pcols, lchnk )
 
     endif
 

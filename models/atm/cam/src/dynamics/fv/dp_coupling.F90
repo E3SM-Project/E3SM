@@ -21,7 +21,6 @@ module dp_coupling
 #endif
    use perf_mod
    use cam_logfile,   only: iulog
-   use phys_control,  only: do_waccm_phys, waccmx_is !WACCM query functions
 
 !--------------------------------------------
 !  Variables needed for WACCM-X
@@ -74,16 +73,19 @@ CONTAINS
   subroutine d_p_coupling(grid, phys_state, phys_tend,  pbuf2d, dyn_out)
 
 ! !USES:
-    use physics_buffer, only : physics_buffer_desc, pbuf_get_chunk
-    use constituents,  only: cnst_get_type_byind
-    use physics_types, only: set_state_pdry, set_wet_to_dry, &
-         physics_state_dycore_alloc
+    use physics_buffer, only: physics_buffer_desc, pbuf_get_chunk, &
+                              pbuf_get_field
+    use constituents,   only: cnst_get_type_byind
+    use physics_types,  only: set_state_pdry, set_wet_to_dry
 
-    use pmgrid, only : plev, plevp
-    use ctem, only   : ctem_diags, do_circulation_diags
+    use pmgrid,         only: plev, plevp
+    use ctem,           only: ctem_diags, do_circulation_diags
     use gravity_waves_sources, only: gws_src_fnct
-    use physconst,    only: physconst_update
-    use shr_const_mod, only: shr_const_rwv
+    use physconst,      only: physconst_update
+    use shr_const_mod,  only: shr_const_rwv
+    use dyn_comp,       only: frontgf_idx, frontga_idx, uzm_idx
+    use qbo,            only: qbo_use_forcing
+    use phys_control,   only: use_gw_front, waccmx_is
 
 !-----------------------------------------------------------------------
     implicit none
@@ -159,6 +161,8 @@ CONTAINS
 
     real(r8) :: zvirv(pcols,pver)    ! Local zvir array pointer
 
+    real(r8) :: uzm(plev,grid%jfirstxy:grid%jlastxy) ! Zonal mean zonal wind
+
     integer  :: im, jm, km, kmp1, iam
     integer  :: ifirstxy, ilastxy, jfirstxy, jlastxy
     integer  :: ic, jc
@@ -172,10 +176,12 @@ CONTAINS
 
     ! frontogenesis function for gravity wave drag
     real(r8), allocatable :: frontgf(:,:,:)
+    real(r8), pointer :: pbuf_frontgf(:,:)
     ! frontogenesis angle for gravity wave drag
     real(r8), allocatable :: frontga(:,:,:)
+    real(r8), pointer :: pbuf_frontga(:,:)
     ! needed for qbo
-    real(r8) :: uzm(plev,grid%jfirstxy:grid%jlastxy)
+    real(r8), pointer :: pbuf_uzm(:,:)
 
 !--------------------------------------------
 !  Variables needed for WACCM-X
@@ -194,26 +200,26 @@ CONTAINS
 
 !---------------------------End Local workspace-------------------------
 
-    if (do_waccm_phys()) then
-       ! Currently, only WACCM uses dycore-initialized fields in physics_state.
-
-!$omp parallel do private (lchnk)
-       do lchnk = begchunk, endchunk
-          if (.not. phys_state(lchnk)%dycore_alloc) &
-               call physics_state_dycore_alloc(phys_state(lchnk))
-       end do
+    if (use_gw_front) then
 
        allocate(frontgf(grid%ifirstxy:grid%ilastxy,plev,grid%jfirstxy:grid%jlastxy), stat=astat)
        if( astat /= 0 ) then
           write(iulog,*) 'd_p_coupling: failed to allocate frontgf; error = ',astat
           call endrun
        end if
+
        allocate(frontga(grid%ifirstxy:grid%ilastxy,plev,grid%jfirstxy:grid%jlastxy), stat=astat)
        if( astat /= 0 ) then
           write(iulog,*) 'd_p_coupling: failed to allocate frontga; error = ',astat
           call endrun
        end if
+
     end if
+
+    nullify(pbuf_chnk)
+    nullify(pbuf_frontgf)
+    nullify(pbuf_frontga)
+    nullify(pbuf_uzm)
 
     fraction = 0.1_r8
 
@@ -261,7 +267,7 @@ CONTAINS
                          psxy, pexy, grid, uzm )
        call t_stopf('DP_CPLN_ctem')
     endif
-    if (do_waccm_phys()) then
+    if (use_gw_front) then
        call t_startf('DP_CPLN_gw_sources')
        call gws_src_fnct (u3,v3,ptxy,  tracer(:,jfirstxy:jlastxy,:,1), pexy, grid, frontgf, frontga)
        call t_stopf('DP_CPLN_gw_sources')
@@ -273,12 +279,25 @@ CONTAINS
 has_local_map : &
     if (local_dp_map) then
 
-!$omp parallel do private (lchnk, ncol, i, k, m, ic, jc, lons, lats, pic)
+! This declaration is too long; this parallel section needs some stuff
+! pulled out into routines.
+!$omp parallel do private (lchnk, ncol, i, k, m, ic, jc, lons, lats, pic, pbuf_chnk, pbuf_uzm, pbuf_frontgf, pbuf_frontga)
 chnk_loop1 : &
        do lchnk = begchunk,endchunk
           ncol = phys_state(lchnk)%ncol
           call get_lon_all_p(lchnk, ncol, lons)
           call get_lat_all_p(lchnk, ncol, lats)
+
+          pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
+
+          if (use_gw_front) then
+             call pbuf_get_field(pbuf_chnk, frontgf_idx, pbuf_frontgf)
+             call pbuf_get_field(pbuf_chnk, frontga_idx, pbuf_frontga)
+          end if
+
+          if (qbo_use_forcing) then
+             call pbuf_get_field(pbuf_chnk, uzm_idx, pbuf_uzm)
+          end if
 
           do i=1,ncol
              ic = lons(i)
@@ -294,13 +313,18 @@ chnk_loop1 : &
                 phys_state(lchnk)%u    (i,k) = u3(ic,k,jc)
                 phys_state(lchnk)%v    (i,k) = v3(ic,k,jc)
                 phys_state(lchnk)%omega(i,k) = omgaxy(ic,k,jc)
-                if (do_waccm_phys()) then
-                   phys_state(lchnk)%frontgf(i,k) = frontgf(ic,k,jc)
-                   phys_state(lchnk)%frontga(i,k) = frontga(ic,k,jc)
-                   phys_state(lchnk)%uzm(i,k)     = uzm(k,jc)
-                endif
                 phys_state(lchnk)%t    (i,k) = ptxy(ic,jc,k) / (D1_0 + zvir*tracer(ic,jc,k,1))
-                phys_state(lchnk)%exner(i,k) = pic(i) / pkzxy(ic,jc,k) 
+                phys_state(lchnk)%exner(i,k) = pic(i) / pkzxy(ic,jc,k)
+
+                if (use_gw_front) then
+                   pbuf_frontgf(i,k) = frontgf(ic,k,jc)
+                   pbuf_frontga(i,k) = frontga(ic,k,jc)
+                endif
+
+                if (qbo_use_forcing) then
+                   pbuf_uzm(i,k)     = uzm(k,jc)
+                end if
+
              end do
           end do
 
@@ -333,13 +357,12 @@ chnk_loop1 : &
 
     else has_local_map
 
-       tsize = 7 + pcnst
        boff  = 6
-       if (do_waccm_phys()) then
-          tsize = tsize+3
-          boff  = boff+3
-       end if
- 
+       if (use_gw_front) boff  = boff+2
+       if (qbo_use_forcing)  boff  = boff+1
+
+       tsize = boff + 1 + pcnst
+
        blksiz = (jlastxy-jfirstxy+1)*(ilastxy-ifirstxy+1)
        allocate( bpter(blksiz,0:km),stat=astat )
        if( astat /= 0 ) then
@@ -385,9 +408,13 @@ chnk_loop1 : &
                 bbuffer(bpter(ib,k)+4) = omgaxy(i,k,j)
                 bbuffer(bpter(ib,k)+5) = ptxy(i,j,k) / (D1_0 + zvir*tracer(i,j,k,1))
                 bbuffer(bpter(ib,k)+6) = pkxy(i,j,pver+1) / pkzxy(i,j,k) 
-                if (do_waccm_phys()) then
-                   bbuffer(bpter(ib,k)+7) = frontga(i,k,j)
-                   bbuffer(bpter(ib,k)+8) = frontgf(i,k,j)
+
+                if (use_gw_front) then
+                   bbuffer(bpter(ib,k)+7) = frontgf(i,k,j)
+                   bbuffer(bpter(ib,k)+8) = frontga(i,k,j)
+                end if
+
+                if (qbo_use_forcing) then
                    bbuffer(bpter(ib,k)+9) = uzm(k,j)
                 end if
 
@@ -404,10 +431,21 @@ chnk_loop1 : &
        call transpose_block_to_chunk(tsize, bbuffer, cbuffer)
        call t_stopf  ('block_to_chunk')
 
-!$omp parallel do private (lchnk, ncol, i, k, m, cpter)
+!$omp parallel do private (lchnk, ncol, i, k, m, cpter, pbuf_chnk, pbuf_uzm, pbuf_frontgf, pbuf_frontga)
 chnk_loop2 : &
        do lchnk = begchunk,endchunk
           ncol = phys_state(lchnk)%ncol
+
+          pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
+
+          if (use_gw_front) then
+             call pbuf_get_field(pbuf_chnk, frontgf_idx, pbuf_frontgf)
+             call pbuf_get_field(pbuf_chnk, frontga_idx, pbuf_frontga)
+          end if
+
+          if (qbo_use_forcing) then
+             call pbuf_get_field(pbuf_chnk, uzm_idx, pbuf_uzm)
+          end if
 
           call block_to_chunk_recv_pters(lchnk,pcols,pver+1,tsize,cpter)
 
@@ -427,12 +465,16 @@ chnk_loop2 : &
                 phys_state(lchnk)%omega (i,k) = cbuffer(cpter(i,k)+4)
                 phys_state(lchnk)%t     (i,k) = cbuffer(cpter(i,k)+5)
                 phys_state(lchnk)%exner (i,k) = cbuffer(cpter(i,k)+6)
-                if (do_waccm_phys()) then
-                   phys_state(lchnk)%frontga(i,k)  = cbuffer(cpter(i,k)+7)
-                   phys_state(lchnk)%frontgf(i,k)  = cbuffer(cpter(i,k)+8)
-                   phys_state(lchnk)%uzm(i,k)      = cbuffer(cpter(i,k)+9)
+
+                if (use_gw_front) then
+                   pbuf_frontgf(i,k)  = cbuffer(cpter(i,k)+7)
+                   pbuf_frontga(i,k)  = cbuffer(cpter(i,k)+8)
                 end if
-                
+
+                if (qbo_use_forcing) then
+                   pbuf_uzm(i,k) = cbuffer(cpter(i,k)+9)
+                end if
+
                 ! dry type constituents converted from moist to dry at bottom of routine
                 do m=1,pcnst
                    phys_state(lchnk)%q(i,k,m) = cbuffer(cpter(i,k)+boff+m)
@@ -560,7 +602,7 @@ chnk_loop2 : &
 ! Compute initial geopotential heights
        call geopotential_t (phys_state(lchnk)%lnpint, phys_state(lchnk)%lnpmid  , phys_state(lchnk)%pint  , &
                             phys_state(lchnk)%pmid  , phys_state(lchnk)%pdel    , phys_state(lchnk)%rpdel , &
-                            phys_state(lchnk)%t     , phys_state(lchnk)%q(1,1,1), rairv(:,:,lchnk), gravit, zvirv, &
+                            phys_state(lchnk)%t     , phys_state(lchnk)%q(:,:,1), rairv(:,:,lchnk), gravit, zvirv, &
                             phys_state(lchnk)%zi    , phys_state(lchnk)%zm      , ncol                )
 
 ! Compute initial dry static energy, include surface geopotential

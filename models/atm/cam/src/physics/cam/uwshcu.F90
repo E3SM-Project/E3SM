@@ -1,7 +1,7 @@
   module uwshcu
 
   use cam_history,    only: outfld, addfld, phys_decomp
-  use shr_spfn_mod,   only: erfc => shr_spfn_erfc_nonintrinsic
+  use shr_spfn_mod,   only: erfc => shr_spfn_erfc
   use cam_logfile,    only: iulog
   use ppgrid,         only: pcols, pver, pverp
   use abortutils,     only: endrun

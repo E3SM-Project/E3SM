@@ -48,6 +48,7 @@ module parameters_radiation
 
   real( kind = dp ), public :: &
     slr     ! Fraction of daylight
+!$omp threadprivate(slr)
 
   real( kind = core_rknd ), public, dimension(20) :: &
     Fs_values, &           ! List of Fs0 values for simplified radiation

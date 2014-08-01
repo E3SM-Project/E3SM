@@ -800,7 +800,7 @@ contains
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-  function incr_filename( filename, filenames_list, datapath, cyclical_list, list_cycled, abort )
+  function incr_filename( filename, filenames_list, datapath, cyclical_list, list_cycled )
 
     !-----------------------------------------------------------------------
     ! 	... Increment or decrement a date string withing a filename
@@ -813,14 +813,14 @@ contains
 
     implicit none
 
+
     character(len=*),           intent(in)    :: filename ! present dynamical dataset filename
     character(len=*), optional, intent(in)    :: filenames_list 
     character(len=*), optional, intent(in)    :: datapath
     logical         , optional, intent(in)    :: cyclical_list  ! If true, allow list to cycle
     logical         , optional, intent(out)   :: list_cycled
-    logical         , optional, intent(in)    :: abort
-
     character(len=shr_kind_cl)                :: incr_filename         ! next filename in the sequence
+
 
     ! set new next_filename ...
 
@@ -832,13 +832,6 @@ contains
     character(len=6)   :: seconds
     character(len=5)   :: num
     integer :: ios,unitnumber
-    logical :: abort_run
- 
-    if (present(abort)) then 
-       abort_run = abort
-    else
-       abort_run = .true.
-    endif
 
     if (present(list_cycled)) list_cycled = .false.
 
@@ -870,7 +863,7 @@ contains
        if ( present(datapath) ) then
          filepath = trim(datapath) //'/'// trim(filenames_list)
        else
-         filepath = trim(filenames_list)
+         filepath = trim(datapath)
        endif
 
        open( unit=unitnumber, file=filepath, iostat=ios, status="OLD")
@@ -883,13 +876,7 @@ contains
        !-------------------------------------------------------------------
        read( unit=unitnumber, fmt='(A)', iostat=ios ) line 
        if (ios /= 0) then
-          if (abort_run) then
-             call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
-          else 
-             fn_new = 'NOT_FOUND'
-             incr_filename = trim(fn_new)
-             return
-          endif
+          call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
        endif
 
        !-------------------------------------------------------------------
@@ -904,13 +891,7 @@ contains
           do while( trim(line) /= trim(filename) )
              read( unit=unitnumber, fmt='(A)', iostat=ios ) line 
              if (ios /= 0) then
-                if (abort_run) then
-                   call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
-                else 
-                   fn_new = 'NOT_FOUND'
-                   incr_filename = trim(fn_new)
-                   return
-                endif
+                call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
              endif
           enddo
    
@@ -938,13 +919,7 @@ contains
                    call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
                 endif
              else
-                if (abort_run) then
-                   call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
-                else 
-                   fn_new = 'NOT_FOUND'
-                   incr_filename = trim(fn_new)
-                   return
-                endif
+                call endrun('not able to increment file name from filenames_list file: '//trim(filenames_list))
              endif
           endif
 

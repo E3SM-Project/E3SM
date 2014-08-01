@@ -863,7 +863,7 @@ contains
        ! ======================================
        ! Rotate cube velocities onto the sphere
        ! ======================================
-       if( integration == "explicit" )then
+       if( integration == "explicit" ) then
           do j=1,np
              do i=1,np
                 v1 = v(i,j,1,k)
@@ -892,7 +892,7 @@ contains
        ! ======================================
        ! Rotate sphere velocities onto the cube
        ! ======================================
-       if( integration == "explicit" )then
+       if( integration == "explicit" )  then
           do j=1,np
              do i=1,np
                 v1 = usph(i,j)
@@ -1072,7 +1072,7 @@ contains
 #endif
           do k=1,nlev
              call filter_P(elem(ie)%state%T(:,:,k,nfilt),flt)
-             if( integration == "explicit" )then
+       if( integration == "explicit" ) then
                 do j=1,np
                    do i=1,np
                       v1 = elem(ie)%state%v(i,j,1,k,nfilt)*rrearth
@@ -1095,7 +1095,7 @@ contains
              call filter_P(u(:,:),flt)
              call filter_P(v(:,:),flt)
 
-             if( integration == "explicit" )then
+       if( integration == "explicit" ) then
                 do j=1,np
                    do i=1,np
                       v1 = u(i,j)*rearth

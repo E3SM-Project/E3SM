@@ -422,7 +422,6 @@ CONTAINS
     use constituents,    only: pcnst
     use shr_sys_mod,     only: shr_sys_flush
     use chemistry,       only: chem_reset_fluxes
-    use offline_driver,  only: offline_driver_dorun, offline_driver_end_of_data
 
     ! 
     ! Arguments
@@ -514,11 +513,7 @@ CONTAINS
        call get_curr_date( yr, mon, day, tod )
        ymd = yr*10000 + mon*100 + day
        tod = tod
-       if( offline_driver_dorun ) then
-          dosend = offline_driver_end_of_data()
-       else
-          dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
-       endif
+       dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
        
        ! Determine if time to write cam restart and stop
        
@@ -549,11 +544,10 @@ CONTAINS
        call t_stopf  ('CAM_run4')
        
        ! Advance cam time step 
-       if( .not.offline_driver_dorun ) then
-          call t_startf ('CAM_adv_timestep')
-          call advance_timestep()
-          call t_stopf  ('CAM_adv_timestep')
-       endif
+       
+       call t_startf ('CAM_adv_timestep')
+       call advance_timestep()
+       call t_stopf  ('CAM_adv_timestep')
        
        ! Run cam radiation/clouds (run1)
           
@@ -620,7 +614,7 @@ CONTAINS
     call get_curr_date( yr, mon, day, tod, offset=-dtime )
     ymd = yr*10000 + mon*100 + day
     tod = tod
-    if ((.not.seq_timemgr_EClockDateInSync( EClock, ymd, tod )) .and. (.not.offline_driver_dorun))then
+    if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
        call seq_timemgr_EClockGetData(EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
        write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync

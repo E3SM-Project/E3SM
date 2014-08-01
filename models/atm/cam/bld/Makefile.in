@@ -347,59 +347,6 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 
 endif
 
-# Lahey
-
-ifeq ($(FC_TYPE),lahey)
-
-  CPPDEF        += -DCPRLAHEY
-  FC_FLAGS      := --wide
-  FC_FLAGS_NOOPT:= $(FC_FLAGS)
-  FREEFLAGS     :=
-  FIXEDFLAGS    := --fix
-  LDFLAGS       := --staticlink
-
-  ifeq ($(DEBUG),TRUE)
-    # --trace produces a call traceback on abort
-    # --trap causes code to stop on divide by zero or overflow exceptions
-    # --pca prevents overwriting constant arguments, but it overrides the
-    #       action of --chk a.  So don't specify both.
-    # --chk for basic compiler checking (a,e,s,u,x)
-    #TBH:  this works    FFLAGS += -g --chk --pca
-    #TBH:  this FAILS    FFLAGS += -g --chk a,e,s,u,x --pca
-    FC_FLAGS       += -g --chk a,e,s,u --trace --trap
-    CFLAGS         += -g
-  else
-    # Check for override of default Fortran compiler optimizations
-    ifeq ($(F_OPTIMIZATION_OVERRIDE),$(null))
-      FORTRAN_OPTIMIZATION := -O
-    endif
-    FC_FLAGS    += $(FORTRAN_OPTIMIZATION)
-    # Threading only works by putting thread memory on the heap rather than the stack (--threadheap).
-    # As of lf95 version 6.2 the thread stacksize limits are (still) too small to run even small
-    # resolution problems (FV at 10x15 res fails).
-    ifeq ($(SMP),TRUE)
-      FC_FLAGS       += --openmp --threadheap 4096
-      FC_FLAGS_NOOPT += --openmp --threadheap 4096
-      CFLAGS         += -fstack-check
-      LDFLAGS        += --openmp --threadheap 4096
-    endif
-  endif
-
-  FFLAGS       := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS)
-  FFLAGS_NOOPT := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS_NOOPT)
-  FC_AUTO_R8   := -CcdRR8
-
-binary_io.o: binary_io.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-wrap_nf.o: wrap_nf.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-wrap_mpi.o: wrap_mpi.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-apex_subs.o: apex_subs.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-
-endif
-
 # Intel
 
 ifeq ($(FC_TYPE),intel)
@@ -409,7 +356,7 @@ ifeq ($(FC_TYPE),intel)
   FC_FLAGS_NOOPT:= -ftz -convert big_endian -O0
   FREEFLAGS     := 
   FIXEDFLAGS    := -fixed -132
-  LDFLAGS       := -static-intel
+  LDFLAGS       := -static-intel -liomp5
 
   ifeq ($(DEBUG),TRUE)
     FC_FLAGS       += -check all -check noarg_temp_created -fpe0 -g -traceback
@@ -622,8 +569,9 @@ ifeq ($(FC_TYPE), nag)
     FC_FLAGS       += -openmp
     FC_FLAGS_NOOPT += -openmp
     # nagfor doesn't deal well with OpenMP functions called from C code.
-    # Add wrapper of Fortran OpenMP code to work with gptl.
-    LDFLAGS        += -openmp -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,--rpath=/home/santos/lib/fake_omp
+    # This will not work unless you add a wrapper of Fortran OpenMP code to
+    # work with gptl.
+    LDFLAGS        += -openmp
   endif
 
   FFLAGS       := $(cpp_path) $(mod_path) $(CPPDEF) $(FC_FLAGS)
@@ -715,14 +663,21 @@ ifeq ($(UNAMES),Darwin)
     ifneq ($(strip $(MOD_NETCDF)),)
       mod_path  += -I$(MOD_NETCDF) 
     endif
-    
+    # Needed for COSP, since it builds in its own directory.
+    ifneq ($(strip $(COSP_LIBDIR)),)
+      mod_path += -I$(COSP_LIBDIR)
+    endif
+
+    # COSP needs to autopromote to get its precision to match CAM
+    FC_AUTO_R8  := -autodouble
+
     # NOTE: use-asm is require to work with Xcode 3.2.2 and ifort 11.1.088. Perhaps this
     # will not be needed with future versions.
     FFLAGS      := $(cpp_path) $(mod_path) $(CPPDEF) -ftz -g -traceback -fp-model precise -use-asm  -convert big_endian
     LDFLAGS     := -Xlinker -map -Xlinker ./cam_map.txt
 
     FREEFLAGS   := -FR
-    FIXEDFLAGS  := -132
+    FIXEDFLAGS  := -fixed -132
 
     ifeq ($(SMP),TRUE)
       FFLAGS += -openmp
@@ -782,6 +737,13 @@ ifeq ($(UNAMES),Darwin)
     ifneq ($(strip $(MOD_NETCDF)),)
       mod_path += -I$(MOD_NETCDF) 
     endif
+    # Needed for COSP, since it builds in its own directory.
+    ifneq ($(strip $(COSP_LIBDIR)),)
+      mod_path += -I$(COSP_LIBDIR)
+    endif
+
+    # COSP needs to autopromote to get its precision to match CAM
+    FC_AUTO_R8   := -qrealsize=8
 
     FFLAGS     := $(cpp_path) $(mod_path) $(FPPFLAGS) -qspillsize=2500 
     FREEFLAGS  := -qsuffix=f=f90:cpp=F90

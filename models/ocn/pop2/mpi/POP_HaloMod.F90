@@ -2,6 +2,16 @@
 !BOP
 ! !MODULE: POP_HaloMod
 
+!pw++
+#define _SAVE_3D_BUFFERS 1
+#define _SAVE_4D_BUFFERS 1
+!pw
+!pw #define _ALTREQ 1
+!pw #define _WAITANY_2D 1
+!pw #define _WAITANY_3D 1
+!pw #define _WAITANY_4D 1
+!pw--
+
  module POP_HaloMod
 
 ! !DESCRIPTION:
@@ -31,6 +41,9 @@
    use POP_DistributionMod
    use POP_FieldMod
    use POP_GridHorzMod
+!pw++
+   use perf_mod
+!pw--
 
    implicit none
    private
@@ -1684,7 +1697,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,n,nmsg,                &! dummy loop indices
+      i,j,n,nmsg,step,           &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -1695,18 +1708,23 @@ contains
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
+#ifdef _ALTREQ
+   integer (POP_i4) :: &
+      sndRequest(halo%numMsgSend),  &! MPI request ids
+      rcvRequest(halo%numMsgRecv)    ! MPI request ids
+#else
    integer (POP_i4), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
+#endif
 
    real (POP_r8) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
+!pw++
+   call t_startf("HaloUpdate2DR8")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -1727,22 +1745,23 @@ contains
       bufTripoleR8 = fill
    endif
 
+#ifndef _ALTREQ
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate2DR8: error allocating req,status arrays')
+         'POP_HaloUpdate2DR8: error allocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -1823,9 +1842,25 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+#ifndef _WAITANY_2D
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
+#endif
 
+#ifdef _WAITANY_2D
+   do step=1,halo%numMsgRecv
+      nmsg = -1
+      call MPI_WAITANY(halo%numMsgRecv, rcvRequest, nmsg, &
+                       MPI_STATUS_IGNORE, ierr)
+
+      if ((nmsg < 1) .or. (nmsg > halo%numMsgRecv)) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate2DR8: error waiting for messages')
+         return
+      endif
+#else
    do nmsg=1,halo%numMsgRecv
+#endif
       do n=1,halo%sizeRecv(nmsg)
          iDst     = halo%recvAddr(1,n,nmsg)
          jDst     = halo%recvAddr(2,n,nmsg)
@@ -1958,18 +1993,24 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+#ifndef _ALTREQ
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate2DR8: error deallocating req,status arrays')
+         'POP_HaloUpdate2DR8: error deallocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate2DR8")
+!pw--
 
  end subroutine POP_HaloUpdate2DR8
 
@@ -2030,7 +2071,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,n,nmsg,                &! dummy loop indices
+      i,j,n,nmsg,step,           &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -2045,14 +2086,13 @@ contains
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    real (POP_r4) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
+!pw++
+   call t_startf("HaloUpdate2DR4")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2075,18 +2115,17 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate2DR4: error allocating req,status arrays')
+         'POP_HaloUpdate2DR4: error allocating req arrays')
       return
    endif
 
@@ -2169,7 +2208,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       do n=1,halo%sizeRecv(nmsg)
@@ -2302,18 +2342,22 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate2DR4: error deallocating req,status arrays')
+         'POP_HaloUpdate2DR4: error deallocating req arrays')
       return
    endif
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate2DR4")
+!pw--
 
  end subroutine POP_HaloUpdate2DR4
 
@@ -2374,7 +2418,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,n,nmsg,                &! dummy loop indices
+      i,j,n,nmsg,step,           &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -2389,14 +2433,13 @@ contains
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    integer (POP_i4) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
+!pw++
+   call t_startf("HaloUpdate2DI4")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2419,18 +2462,17 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate2DI4: error allocating req,status arrays')
+         'POP_HaloUpdate2DI4: error allocating req arrays')
       return
    endif
 
@@ -2513,7 +2555,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       do n=1,halo%sizeRecv(nmsg)
@@ -2646,18 +2689,22 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate2DI4: error deallocating req,status arrays')
+         'POP_HaloUpdate2DI4: error deallocating req arrays')
       return
    endif
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate2DI4")
+!pw--
 
  end subroutine POP_HaloUpdate2DI4
 
@@ -2718,7 +2765,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,k,n,nmsg,              &! dummy loop indices
+      i,j,k,n,nmsg,step,         &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -2730,24 +2777,50 @@ contains
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
+#ifdef _ALTREQ
+   integer (POP_i4) :: &
+      sndRequest(halo%numMsgSend),  &! MPI request ids
+      rcvRequest(halo%numMsgRecv)    ! MPI request ids
+#else
    integer (POP_i4), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
+#endif
 
    real (POP_r8) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
+#ifdef _SAVE_3D_BUFFERS
+   real (POP_r8), dimension(:,:), allocatable, save :: &
+      bufSend, bufRecv            ! 3d send,recv buffers
+
+   real (POP_r8), dimension(:,:,:), allocatable, save :: &
+      bufTripole                  ! 3d tripole buffer
+
+   integer (POP_i4), save ::  &
+      save_nxGlobal,          &
+      save_nz_a,              &
+      save_nz_b,              &
+      save_nz_c,              &
+      save_bufSizeSend,       &
+      save_bufSizeRecv,       &
+      save_numMsgSend,        &
+      save_numMsgRecv
+
+   logical (POP_logical) ::   &
+      do_allocate       ! flag used to control alloc of 3D buffers
+#else
    real (POP_r8), dimension(:,:), allocatable :: &
       bufSend, bufRecv            ! 3d send,recv buffers
 
    real (POP_r8), dimension(:,:,:), allocatable :: &
       bufTripole                  ! 3d tripole buffer
+#endif
 
+!pw++
+   call t_startf("HaloUpdate3DR8")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2765,22 +2838,23 @@ contains
    nxGlobal = 0
    if (allocated(bufTripoleR8)) nxGlobal = size(bufTripoleR8,dim=1)
 
+#ifndef _ALTREQ
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate3DR8: error allocating req,status arrays')
+         'POP_HaloUpdate3DR8: error allocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -2790,6 +2864,113 @@ contains
 
    nz = size(array, dim=3)
 
+#ifdef _SAVE_3D_BUFFERS
+   do_allocate = .false.
+   if (.not. allocated(bufSend)) then
+      do_allocate = .true.
+   else
+      if ((save_nz_a        /= nz              ) .or. &
+          (save_bufSizeSend /= bufSizeSend     ) .or. &
+          (save_numMsgSend  /= halo%numMsgSend )) then
+
+         deallocate(bufSend, stat=ierr)
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate3DR8: error deallocating bufSend')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      allocate(bufSend(bufSizeSend*nz, halo%numMsgSend), &
+               stat=ierr)
+      save_nz_a        = nz
+      save_bufSizeSend = bufSizeSend
+      save_numMsgSend  = halo%numMsgSend
+
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate3DR8: error allocating bufSend')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufRecv)) then
+      do_allocate = .true.
+   else
+      if ((save_nz_b        /= nz              ) .or. &
+          (save_bufSizeRecv /= bufSizeRecv     ) .or. &
+          (save_numMsgRecv  /= halo%numMsgRecv )) then
+
+         deallocate(bufRecv, stat=ierr)
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate3DR8: error deallocating bufRecv')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      allocate(bufRecv(bufSizeRecv*nz, halo%numMsgRecv), &
+               stat=ierr)
+      save_nz_b        = nz
+      save_bufSizeRecv = bufSizeRecv
+      save_numMsgRecv  = halo%numMsgRecv
+
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate3DR8: error allocating bufRecv')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufTripole)) then
+      do_allocate = .true.
+   else
+      if ((save_nz_c     /= nz       ) .or. &
+          (save_nxGlobal /= nxGlobal )) then
+         deallocate(bufTripole, stat=ierr)
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate3DR8: error deallocating bufTripole')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      if (nxGlobal > 0) then
+         allocate(bufTripole(nxGlobal, POP_haloWidth+1, nz), &
+                  stat=ierr)
+
+         save_nz_c     = nz
+         save_nxGlobal = nxGlobal
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate3DR8: error allocating bufTripole')
+            return
+         endif
+      endif
+   endif
+
+   if (nxGlobal > 0) then
+      bufTripole = fill
+   endif
+#else
    allocate(bufSend(bufSizeSend*nz, halo%numMsgSend), &
             bufRecv(bufSizeRecv*nz, halo%numMsgRecv), &
             stat=ierr)
@@ -2811,6 +2992,7 @@ contains
          return
       endif
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -2906,10 +3088,26 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+#ifndef _WAITANY_3D
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
+#endif
 
+#ifdef _WAITANY_3D
+   do step=1,halo%numMsgRecv
+      nmsg = -1
+      call MPI_WAITANY(halo%numMsgRecv, rcvRequest, nmsg, &
+                       MPI_STATUS_IGNORE, ierr)
+
+      if ((nmsg < 1) .or. (nmsg > halo%numMsgRecv)) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate3DR8: error waiting for messages')
+         return
+      endif
+#else
    !$OMP PARALLEL DO PRIVATE(nmsg,i,n,iDst,jDst,dstBlock,k)
    do nmsg=1,halo%numMsgRecv
+#endif
       i = 0
       do n=1,halo%sizeRecv(nmsg)
          iDst     = halo%recvAddr(1,n,nmsg)
@@ -2929,7 +3127,9 @@ contains
          endif
       end do
    end do
+#ifndef _WAITANY_3D
    !$OMP END PARALLEL DO
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -3055,27 +3255,36 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+#ifndef _ALTREQ
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate3DR8: error deallocating req,status arrays')
+         'POP_HaloUpdate3DR8: error deallocating req arrays')
       return
    endif
+#endif
 
+#ifndef _SAVE_3D_BUFFERS
    deallocate(bufSend, bufRecv, stat=ierr)
-   if (allocated(bufTripole)) deallocate(bufTripole, stat=ierr)
+   if ((ierr == 0) .and. (allocated(bufTripole))) &
+      deallocate(bufTripole, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
          'POP_HaloUpdate3DR8: error deallocating 3d buffers')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate3DR8")
+!pw--
 
  end subroutine POP_HaloUpdate3DR8
 
@@ -3136,7 +3345,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,k,n,nmsg,              &! dummy loop indices
+      i,j,k,n,nmsg,step,         &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -3152,10 +3361,6 @@ contains
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    real (POP_r4) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -3166,6 +3371,9 @@ contains
    real (POP_r4), dimension(:,:,:), allocatable :: &
       bufTripole                  ! 3d tripole buffer
 
+!pw++
+   call t_startf("HaloUpdate3DR4")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -3185,18 +3393,17 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate3DR4: error allocating req,status arrays')
+         'POP_HaloUpdate3DR4: error allocating req arrays')
       return
    endif
 
@@ -3319,7 +3526,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -3466,13 +3674,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate3DR4: error deallocating req,status arrays')
+         'POP_HaloUpdate3DR4: error deallocating req arrays')
       return
    endif
 
@@ -3487,6 +3696,9 @@ contains
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate3DR4")
+!pw--
 
  end subroutine POP_HaloUpdate3DR4
 
@@ -3547,7 +3759,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,k,n,nmsg,              &! dummy loop indices
+      i,j,k,n,nmsg,step,         &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -3563,10 +3775,6 @@ contains
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    integer (POP_i4) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -3577,6 +3785,9 @@ contains
    integer (POP_i4), dimension(:,:,:), allocatable :: &
       bufTripole                  ! 3d tripole buffer
 
+!pw++
+   call t_startf("HaloUpdate3DI4")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -3596,18 +3807,17 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate3DI4: error allocating req,status arrays')
+         'POP_HaloUpdate3DI4: error allocating req arrays')
       return
    endif
 
@@ -3730,7 +3940,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -3877,13 +4088,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate3DI4: error deallocating req,status arrays')
+         'POP_HaloUpdate3DI4: error deallocating req arrays')
       return
    endif
 
@@ -3898,6 +4110,9 @@ contains
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate3DI4")
+!pw--
 
  end subroutine POP_HaloUpdate3DI4
 
@@ -3958,7 +4173,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,k,l,n,nmsg,            &! dummy loop indices
+      i,j,k,l,n,nmsg,step,       &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -3970,24 +4185,53 @@ contains
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
+#ifdef _ALTREQ
+   integer (POP_i4) :: &
+      sndRequest(halo%numMsgSend),  &! MPI request ids
+      rcvRequest(halo%numMsgRecv)    ! MPI request ids
+#else
    integer (POP_i4), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
+#endif
 
    real (POP_r8) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
+#ifdef _SAVE_4D_BUFFERS
+   real (POP_r8), dimension(:,:), allocatable, save :: &
+      bufSend, bufRecv            ! 4d send,recv buffers
+
+   real (POP_r8), dimension(:,:,:,:), allocatable, save :: &
+      bufTripole                  ! 4d tripole buffer
+
+   integer (POP_i4), save :: &
+      save_nxGlobal,         &
+      save_nz_a,             &
+      save_nz_b,             &
+      save_nz_c,             &
+      save_nt_a,             &
+      save_nt_b,             &
+      save_nt_c,             &
+      save_bufSizeSend,      &
+      save_bufSizeRecv,      &
+      save_numMsgSend,       &
+      save_numMsgRecv
+
+   logical (POP_logical) :: &
+      do_allocate       ! flag used to control alloc of 4D buffers
+#else
    real (POP_r8), dimension(:,:), allocatable :: &
       bufSend, bufRecv            ! 4d send,recv buffers
 
    real (POP_r8), dimension(:,:,:,:), allocatable :: &
       bufTripole                  ! 4d tripole buffer
+#endif
 
+!pw++
+   call t_startf("HaloUpdate4DR8")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4005,22 +4249,23 @@ contains
    nxGlobal = 0
    if (allocated(bufTripoleR8)) nxGlobal = size(bufTripoleR8,dim=1)
 
+#ifndef _ALTREQ
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate4DR8: error allocating req,status arrays')
+         'POP_HaloUpdate4DR8: error allocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -4031,6 +4276,119 @@ contains
    nz = size(array, dim=3)
    nt = size(array, dim=4)
 
+#ifdef _SAVE_4D_BUFFERS
+   do_allocate = .false.
+   if (.not. allocated(bufSend)) then
+      do_allocate = .true.
+   else
+      if ((save_nz_a        /= nz              ) .or. &
+          (save_nt_a        /= nt              ) .or. &
+          (save_bufSizeSend /= bufSizeSend     ) .or. &
+          (save_numMsgSend  /= halo%numMsgSend )) then
+
+         deallocate(bufSend, stat=ierr)
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate4DR8: error deallocating bufSend')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      allocate(bufSend(bufSizeSend*nz*nt, halo%numMsgSend),   &
+               stat=ierr)
+      save_nz_a        = nz
+      save_nt_a        = nt
+      save_bufSizeSend = bufSizeSend
+      save_numMsgSend  = halo%numMsgSend
+
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate4DR8: error allocating bufSend')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufRecv)) then
+      do_allocate = .true.
+   else
+      if ((save_nz_b        /= nz              ) .or. &
+          (save_nt_b        /= nt              ) .or. &
+          (save_bufSizeRecv /= bufSizeRecv     ) .or. &
+          (save_numMsgRecv  /= halo%numMsgRecv )) then
+
+         deallocate(bufRecv, stat=ierr)
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate4DR8: error deallocating bufRecv')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      allocate(bufRecv(bufSizeRecv*nz*nt, halo%numMsgRecv),   &
+               stat=ierr)
+      save_nz_b        = nz
+      save_nt_b        = nt
+      save_bufSizeRecv = bufSizeRecv
+      save_numMsgRecv  = halo%numMsgRecv
+
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate4DR8: error allocating 4d buffers')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufTripole)) then
+      do_allocate = .true.
+   else
+      if ((save_nz_c     /= nz       ) .or. &
+          (save_nt_c     /= nt       ) .or. &
+          (save_nxGlobal /= nxGlobal )) then
+         deallocate(bufTripole, stat=ierr)
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate4DR8: error deallocating bufTripole')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      if (nxGlobal > 0) then
+         allocate(bufTripole(nxGlobal, POP_haloWidth+1, nz, nt), &
+                  stat=ierr)
+
+         save_nz_c     = nz
+         save_nt_c     = nt
+         save_nxGlobal = nxGlobal
+
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'POP_HaloUpdate4DR8: error allocating bufTripole')
+            return
+         endif
+      endif
+   endif
+
+   if (nxGlobal > 0) then
+      bufTripole = fill
+   endif
+#else
    allocate(bufSend(bufSizeSend*nz*nt, halo%numMsgSend),   &
             bufRecv(bufSizeRecv*nz*nt, halo%numMsgRecv),   &
             stat=ierr)
@@ -4052,6 +4410,7 @@ contains
          return
       endif
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -4151,9 +4510,25 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+#ifndef _WAITANY_4D
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
+#endif
 
+#ifdef _WAITANY_4D
+   do step=1,halo%numMsgRecv
+      nmsg = -1
+      call MPI_WAITANY(halo%numMsgRecv, rcvRequest, nmsg, &
+                       MPI_STATUS_IGNORE, ierr)
+
+      if ((nmsg < 1) .or. (nmsg > halo%numMsgRecv)) then
+         call POP_ErrorSet(errorCode, &
+            'POP_HaloUpdate4DR8: error waiting for messages')
+         return
+      endif
+#else
    do nmsg=1,halo%numMsgRecv
+#endif
       i = 0
       do n=1,halo%sizeRecv(nmsg)
          iDst     = halo%recvAddr(1,n,nmsg)
@@ -4308,27 +4683,36 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+#ifndef _ALTREQ
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate4DR8: error deallocating req,status arrays')
+         'POP_HaloUpdate4DR8: error deallocating req arrays')
       return
    endif
+#endif
 
+#ifndef _SAVE_4D_BUFFERS
    deallocate(bufSend, bufRecv, stat=ierr)
-   if (allocated(bufTripole)) deallocate(bufTripole, stat=ierr)
+   if ((ierr == 0) .and. (allocated(bufTripole))) &
+      deallocate(bufTripole, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
          'POP_HaloUpdate4DR8: error deallocating 4d buffers')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate4DR8")
+!pw--
 
  end subroutine POP_HaloUpdate4DR8
 
@@ -4389,7 +4773,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,k,l,n,nmsg,            &! dummy loop indices
+      i,j,k,l,n,nmsg,step,       &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -4405,10 +4789,6 @@ contains
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    real (POP_r4) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -4419,6 +4799,9 @@ contains
    real (POP_r4), dimension(:,:,:,:), allocatable :: &
       bufTripole                  ! 4d tripole buffer
 
+!pw++
+   call t_startf("HaloUpdate4DR4")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4438,18 +4821,17 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate4DR4: error allocating req,status arrays')
+         'POP_HaloUpdate4DR4: error allocating req arrays')
       return
    endif
 
@@ -4582,7 +4964,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -4739,13 +5122,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate4DR4: error deallocating req,status arrays')
+         'POP_HaloUpdate4DR4: error deallocating req arrays')
       return
    endif
 
@@ -4760,6 +5144,9 @@ contains
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate4DR4")
+!pw--
 
  end subroutine POP_HaloUpdate4DR4
 
@@ -4820,7 +5207,7 @@ contains
 !-----------------------------------------------------------------------
 
    integer (POP_i4) ::           &
-      i,j,k,l,n,nmsg,            &! dummy loop indices
+      i,j,k,l,n,nmsg,step,       &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       msgSize,                   &! size of an individual message
       nxGlobal,                  &! global domain size in x (tripole)
@@ -4836,10 +5223,6 @@ contains
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (POP_i4), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    integer (POP_i4) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -4850,6 +5233,9 @@ contains
    integer (POP_i4), dimension(:,:,:,:), allocatable :: &
       bufTripole                  ! 4d tripole buffer
 
+!pw++
+   call t_startf("HaloUpdate4DI4")
+!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4869,18 +5255,17 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate4DI4: error allocating req,status arrays')
+         'POP_HaloUpdate4DI4: error allocating req arrays')
       return
    endif
 
@@ -5013,7 +5398,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -5170,13 +5556,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call POP_ErrorSet(errorCode, &
-         'POP_HaloUpdate4DI4: error deallocating req,status arrays')
+         'POP_HaloUpdate4DI4: error deallocating req arrays')
       return
    endif
 
@@ -5191,6 +5578,9 @@ contains
 
 !-----------------------------------------------------------------------
 !EOC
+!pw++
+   call t_stopf("HaloUpdate4DI4")
+!pw--
 
  end subroutine POP_HaloUpdate4DI4
 

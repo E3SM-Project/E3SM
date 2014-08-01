@@ -430,7 +430,18 @@
 <solar_parms_file chem="waccm_mozart_sulfur">atm/waccm/phot/wasolar.nc</solar_parms_file>
 <solar_parms_file chem="waccm_mozart_mam3">atm/waccm/phot/wasolar.nc</solar_parms_file>
 
-<!-- Waccm gravity wave file -->
+<!-- Gravity wave settings -->
+<effgw_oro>0.125D0</effgw_oro>
+
+<effgw_cm>1.D0</effgw_cm>
+<frontgfc            >1.25D-15</frontgfc>
+<frontgfc hgrid="4x5">7.5D-16</frontgfc>
+<taubgnd             >1.5D-3</taubgnd>
+<taubgnd  hgrid="4x5">1.0D-3</taubgnd>
+
+<effgw_beres>0.1D0</effgw_beres>
+
+<!-- Beres scheme gravity wave file -->
 <gw_drag_file>atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
 
 <!-- Waccm-x runtime option -->
@@ -745,6 +756,11 @@
 
 <diff_cnsrv_mass_check                > .false. </diff_cnsrv_mass_check>
 
+<!-- Molecular diffusion limits -->
+
+<do_molec_press> 0.1D0 </do_molec_press>
+<molec_diff_bot_press> 50.D0 </molec_diff_bot_press>
+
 <!-- dust emission tuning factor -->
 <dust_emis_fact                                                 >2.76D0</dust_emis_fact>
 <dust_emis_fact                                 chem="trop_bam" >4.2D0</dust_emis_fact>
@@ -995,9 +1011,11 @@
 <!-- default variable -->
 <history_amwg>       .true.   </history_amwg>
 <history_aerosol>    .false.  </history_aerosol>
-<history_aero_optics>.false. </history_aero_optics>
+<history_aero_optics>.false.  </history_aero_optics>
 <history_eddy>       .false.  </history_eddy>
 <history_budget>     .false.  </history_budget>
+<history_waccm>      .false.  </history_waccm>
+<history_waccm waccm_phys="1"> .true. </history_waccm>
 
 
 <!-- ================================================================== -->
@@ -1023,7 +1041,7 @@
 <nu hgrid="ne120np4"> 1.0e13 </nu>
 <nu hgrid="ne240np4"> 1.0e12 </nu>
 
-<nu hgrid="ne30np4" waccm_phys="1"> 4.0D15 </nu>
+<nu hgrid="ne30np4" waccm_phys="1"> 1.5D15 </nu>
 
 <!-- This will set nu_q to nu internally. -->
 <nu_q> -1.0 </nu_q>
@@ -1032,9 +1050,13 @@
 <nu_p hgrid="ne16np4">  6.0e15 </nu_p>
 <nu_p hgrid="ne120np4"> 1.0e13 </nu_p>
 
+<nu_p hgrid="ne30np4" waccm_phys="1"> 1.5D15 </nu_p>
+
 <nu_div> 2.5e15 </nu_div>
 <nu_div hgrid="ne16np4" > 1.5e16 </nu_div>
 <nu_div hgrid="ne120np4"> 2.5e13 </nu_div>
+
+<nu_div hgrid="ne30np4" waccm_phys="1"> 3.75D15 </nu_div>
 
 <hypervis_order > 2 </hypervis_order>
 <hypervis_subcycle> 2 </hypervis_subcycle>
@@ -1043,7 +1065,11 @@
 <qsplit > 4 </qsplit>
 <qsplit    hgrid="ne120np4"> 5 </qsplit>
 
+<qsplit hgrid="ne30np4" waccm_phys="1"> 3 </qsplit>
+
 <rsplit > 5 </rsplit>
+
+<rsplit hgrid="ne30np4" waccm_phys="1"> 1 </rsplit>
 
 <se_nsplit> 1 </se_nsplit>
 <se_nsplit hgrid="ne16np8" >  3 </se_nsplit>
@@ -1052,7 +1078,7 @@
 <se_nsplit hgrid="ne120np4">  2 </se_nsplit>
 <se_nsplit hgrid="ne240np4">  5 </se_nsplit>
 
-<se_nsplit hgrid="ne30np4" waccm_phys="1"> 3 </se_nsplit>
+<se_nsplit hgrid="ne30np4" waccm_phys="1"> 8 </se_nsplit>
 
 <se_ftype> 1 </se_ftype>
 
@@ -1108,7 +1134,6 @@
 
 <!-- Plant function types (relative to {csmdata}) -->
 <fpftcon>lnd/clm2/pftdata/pft-physiology.clm40.c130424.nc</fpftcon>
-
 
 <!-- Initial condition datasets (relative to {csmdata}) -->
 <!-- The year has been removed from the ic_ymd attribute for the climatology files -->

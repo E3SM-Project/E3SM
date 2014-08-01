@@ -23,7 +23,7 @@
 
 <!-- 1850 prescribed modal aersols -->
 <prescribed_aero_cycle_yr>1850</prescribed_aero_cycle_yr>
-<prescribed_aero_datapath>/glade/p/cesm/cseg//inputdata/atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
 <prescribed_aero_file>mam3_1.9x2.5_L30_1850clim_c130319.nc</prescribed_aero_file>
 <prescribed_aero_specifier>'num_c1', 'bc_c1', 'dst_c1', 'ncl_c1', 'pom_c1', 'so4_c1', 'soa_c1', 'num_c2',
          'ncl_c2', 'so4_c2', 'soa_c2', 'num_c3', 'dst_c3', 'ncl_c3', 'so4_c3', 'num_a1_logm',
@@ -34,7 +34,7 @@
 <prescribed_aero_type>CYCLICAL</prescribed_aero_type>
 
 <aerodep_flx_cycle_yr>1850</aerodep_flx_cycle_yr>
-<aerodep_flx_datapath>/glade/p/cesm/cseg//inputdata/atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
+<aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
 <aerodep_flx_file>mam3_1.9x2.5_L30_1850clim_c130319.nc</aerodep_flx_file>
 <aerodep_flx_specifier>'bc_a1DDF', 'bc_c1DDF', 'pom_a1DDF', 'pom_c1DDF', 'soa_a1DDF', 'soa_c1DDF', 'soa_a2DDF', 'soa_c2DDF',
              'dst_a1DDF', 'dst_c1DDF', 'dst_a3DDF', 'dst_c3DDF', 'bc_a1SFWET', 'bc_c1SFWET', 'pom_a1SFWET', 'pom_c1SFWET',

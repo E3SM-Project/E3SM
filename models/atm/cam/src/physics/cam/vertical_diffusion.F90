@@ -7,7 +7,6 @@ module vertical_diffusion
   !      ( turbulent mountain stress )                                                                   !
   !   2. eddy diffusivities, including nonlocal tranport terms                                           !
   !   3. molecular diffusivities                                                                         !
-  !   4. coming soon... gravity wave drag                                                                !
   ! Lastly, a implicit diffusion solver is called, and tendencies retrieved by                           !
   ! differencing the diffused and initial states.                                                        !
   !                                                                                                      !
@@ -52,6 +51,7 @@ module vertical_diffusion
   use cam_history,      only : fieldname_len
   use perf_mod
   use cam_logfile,      only : iulog
+  use ref_pres,         only : do_molec_diff
   use phys_control,     only : phys_getopts, waccmx_is
   use time_manager,     only : is_first_step
 
@@ -88,8 +88,6 @@ module vertical_diffusion
                                                        !     'UW'       = Park and Bretherton ( UW Shallow Convection Scheme )
   character(len=16)    :: microp_scheme                ! Microphysics scheme
 
-  logical              :: do_molec_diff                ! Switch for molecular diffusion
-
   type(vdiff_selector) :: fieldlist_wet                ! Logical switches for moist mixing ratio diffusion
   type(vdiff_selector) :: fieldlist_dry                ! Logical switches for dry mixing ratio diffusion
   type(vdiff_selector) :: fieldlist_molec              ! Logical switches for molecular diffusion
@@ -105,10 +103,11 @@ module vertical_diffusion
   integer              :: ixnumice, ixnumliq
 
 
-  logical              :: history_amwg                  ! output the variables used by the AMWG diag package
-  logical              :: history_eddy                  ! output the eddy variables
+  logical              :: history_amwg                 ! output the variables used by the AMWG diag package
+  logical              :: history_eddy                 ! output the eddy variables
   logical              :: history_budget               ! Output tendencies and state variables for CAM4 T, qv, ql, qi
   integer              :: history_budget_histfile_num  ! output history file number for budget fields
+  logical              :: history_waccm                ! output variables of interest for WACCM runs
 
   integer              :: qrl_idx    = 0               ! pbuf index 
   integer              :: wsedl_idx  = 0               ! pbuf index
@@ -237,22 +236,17 @@ contains
     use diffusion_solver,  only : init_vdiff, new_fieldlist_vdiff, vdiff_select
     use constituents,      only : cnst_get_ind, cnst_get_type_byind, cnst_name, cnst_get_molec_byind
     use spmd_utils,        only : masterproc
-    use ref_pres,          only : pref_mid
+    use ref_pres,          only : ntop_molec, nbot_molec, press_lim_idx, pref_mid
     use physics_buffer,    only : pbuf_set_field, pbuf_get_index, physics_buffer_desc
     use rad_constituents,  only : rad_cnst_get_info, rad_cnst_get_mode_num_idx, &
                                   rad_cnst_get_mam_mmr_idx
-    use phys_control,      only : do_waccm_phys
 
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     character(128) :: errstring   ! Error status for init_vdiff
     integer        :: ntop_eddy   ! Top    interface level to which eddy vertical diffusion is applied ( = 1 )
     integer        :: nbot_eddy   ! Bottom interface level to which eddy vertical diffusion is applied ( = pver )
-    integer        :: ntop_molec  ! Top    interface level to which molecular vertical diffusion is applied ( = 1 )
-    integer        :: nbot_molec  ! Bottom interface level to which molecular vertical diffusion is applied
     integer        :: k           ! Vertical loop index
 
-    real(r8), parameter  :: do_molec_pres = 0.1_r8    ! If top of model is above this pressure,
-                                                     ! turn on molecular diffusion. (Pa)
     real(r8), parameter :: ntop_eddy_pres = 1.e-5_r8 ! Pressure below which eddy diffusion is not done in WACCM-X. (Pa)
 
     integer :: im, l, m, nmodes, nspec
@@ -318,44 +312,31 @@ contains
     ! Initialize molecular diffusion and get top and bottom molecular diffusion limits
     !----------------------------------------------------------------------------------------
 
-    do_molec_diff = (pref_mid(1) < do_molec_pres)
- 
     if( do_molec_diff ) then
        call init_molec_diff( r8, pcnst, rair, mwdry, avogad, gravit, &
-            cpair, boltz, pref_mid, ntop_molec, nbot_molec, errstring)
+            cpair, boltz, errstring)
 
        call handle_errmsg(errstring, subname="init_molec_diff")
 
        call addfld( 'TTPXMLC', 'K/S', 1, 'A', 'Top interf. temp. flux: molec. viscosity', phys_decomp )
        call add_default ( 'TTPXMLC', 1, ' ' )
        if( masterproc ) write(iulog,fmt='(a,i3,5x,a,i3)') 'NTOP_MOLEC =', ntop_molec, 'NBOT_MOLEC =', nbot_molec
-    else
-       ntop_molec = 1
-       nbot_molec = 0
     end if
 
     ! ---------------------------------- !    
     ! Initialize eddy diffusivity module !
     ! ---------------------------------- !
  
-    ntop_eddy  = 1      ! if >1, must be <= nbot_molec
-    nbot_eddy  = pver   ! currently always pver
-
-    !----------------------------------------------------------------------------------------
-    ! Different top used for WACCM-X extended model. Set eddy diffusion upper bound to level 
-    ! just above where pressure=1E-05 Pa
-    !----------------------------------------------------------------------------------------
-
+    ! ntop_eddy must be 1 or <= nbot_molec
+    ! Currently, it is always 1 except for WACCM-X.
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       eddy_top_loop: do k = 2, pver
-          if (pref_mid(k) .gt. ntop_eddy_pres) then
-             ntop_eddy  = k-1
-             exit eddy_top_loop
-          endif
-       end do eddy_top_loop
+       ntop_eddy  = press_lim_idx(ntop_eddy_pres, top=.true.)
+    else
+       ntop_eddy = 1
     end if
+    nbot_eddy  = pver
 
-   if (masterproc) write(iulog, fmt='(a,i3,5x,a,i3)') 'NTOP_EDDY  =', ntop_eddy, 'NBOT_EDDY  =', nbot_eddy
+    if (masterproc) write(iulog, fmt='(a,i3,5x,a,i3)') 'NTOP_EDDY  =', ntop_eddy, 'NBOT_EDDY  =', nbot_eddy
 
     select case ( eddy_scheme )
     case ( 'diag_TKE' ) 
@@ -405,7 +386,7 @@ contains
     ! Initialize diffusion solver module !
     ! ---------------------------------- !
 
-    call init_vdiff( r8, rair, gravit, do_iss, errstring )
+    call init_vdiff( r8, iulog, rair, gravit, do_iss, errstring )
     call handle_errmsg(errstring, subname="init_vdiff")
 
     ! Use fieldlist_wet to select the fields which will be diffused using moist mixing ratios ( all by default )
@@ -536,7 +517,8 @@ contains
     call phys_getopts( history_amwg_out = history_amwg, &
                        history_eddy_out = history_eddy, &
                        history_budget_out = history_budget, &
-                       history_budget_histfile_num_out = history_budget_histfile_num)
+                       history_budget_histfile_num_out = history_budget_histfile_num, &
+                       history_waccm_out = history_waccm)
 
     if (history_amwg) then
        call add_default(  vdiffnam(1), 1, ' ' )
@@ -563,7 +545,7 @@ contains
         end if
     end if
 
-    if (do_waccm_phys()) then
+    if ( history_waccm ) then
        call add_default( 'DUV'     , 1, ' ' )
        call add_default( 'DVV'     , 1, ' ' )
     end if

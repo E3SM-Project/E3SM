@@ -338,8 +338,6 @@ contains
 !===============================================================================
   subroutine reitab(ncol, t, re)
 
-    use phys_control,    only: do_waccm_phys
-
     integer, intent(in) :: ncol
     real(r8), intent(out) :: re(pcols,pver)
     real(r8), intent(in) :: t(pcols,pver)
@@ -350,7 +348,6 @@ contains
     integer i
     integer k
     integer index
-    integer min_index
     !
     !       Tabulated values of re(T) in the temperature interval
     !       180 K -- 274 K; hexagonal columns assumed:
@@ -365,7 +362,7 @@ contains
          1.4_r8,     1.5_r8,     1.6_r8,     1.8_r8,     2.0_r8,     2.2_r8,      &
          2.4_r8,     2.6_r8,     2.8_r8,     3.0_r8,     3.2_r8,     3.5_r8,      &
          3.8_r8,     4.1_r8,     4.4_r8,     4.7_r8,     5.0_r8,     5.3_r8,      &
-         5.6_r8, & ! If WACCM physics is not on, only the values below this line are used.
+         5.6_r8, &
          5.92779_r8, 6.26422_r8, 6.61973_r8, 6.99539_r8, 7.39234_r8,           &
          7.81177_r8, 8.25496_r8, 8.72323_r8, 9.21800_r8, 9.74075_r8, 10.2930_r8,	&
          10.8765_r8, 11.4929_r8, 12.1440_r8, 12.8317_r8, 13.5581_r8, 14.2319_r8, 	&
@@ -386,18 +383,10 @@ contains
     save retab
     !
 
-    ! This is done purely to preserve answers that were set when WACCM and
-    ! CAM had separate tables.
-    if (do_waccm_phys()) then
-       min_index = 1
-    else
-       min_index = 44
-    end if
-
     do k=1,pver
        do i=1,ncol
           index = int(t(i,k)-min_retab)
-          index = min(max(index,min_index),len_retab-1)
+          index = min(max(index,1),len_retab-1)
           corr = t(i,k) - int(t(i,k))
           re(i,k) = retab(index)*(1._r8-corr)		&
                +retab(index+1)*corr

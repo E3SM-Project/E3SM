@@ -107,8 +107,69 @@ echo "procs = \${procs}"
 # Run the model
 # -------------------------------------------------------------------------
 
+set string = \`qstat -lf \$COBALT_JOBID | grep SubmitTime\`
+echo "job \$COBALT_JOBID submitted: \$string" >>& \$CASEROOT/CaseStatus
+
+set string = \`qstat -lf \$COBALT_JOBID | grep StartTime\`
+echo "job \$COBALT_JOBID started: \$string" >>& \$CASEROOT/CaseStatus
+
+set syslog_id = 0
+if (\$SAVE_TIMING == 'TRUE') then
+
+  if (-d \$SAVE_TIMING_DIR) then
+    cd \$SAVE_TIMING_DIR
+    if !(-d performance_archive) then
+      mkdir performance_archive
+      chmod 777 performance_archive
+    endif
+    cd performance_archive
+    if !(-d \$CCSMUSER) then
+      mkdir \$CCSMUSER
+      chmod 775 \$CCSMUSER
+    endif
+    cd \$CCSMUSER
+    if !(-d \$CASE) then
+      mkdir \$CASE
+      chmod 775 \$CASE
+    endif
+    cd \$CASE
+    if !(-d \$LID) then
+      mkdir \$LID
+      chmod 775 \$LID
+    endif
+    cd \$LID
+    if !(-d checkpoints) then
+      mkdir checkpoints
+      chmod 775 checkpoints
+    endif
+
+    qstat -lf > qstatf.\$LID
+    qstat -lf \$COBALT_JOBID > qstatf_jobid.\$LID
+    chmod a+r *
+
+    mkdir CaseDocs.\$LID
+    chmod 775 CaseDocs.\$LID
+    cd CaseDocs.\$LID
+    cp -p \$CASEROOT/CaseDocs/* .
+    cp -p \$CASEROOT/*.run .
+    cp -p \$CASEROOT/*.xml .
+    chmod a+r *
+
+    if (\$SYSLOG_N > 0) then
+      touch \$RUNDIR/cesm.log.\$LID
+      csh \$CASEROOT/Tools/mach_syslog \$SYSLOG_N \$COBALT_JOBID \$LID \$RUNDIR \$RUNDIR/timing/checkpoints \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/checkpoints &
+      set syslog_id = \$!
+    endif
+  endif
+
+endif
+
 cd \$RUNDIR
+
+set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
+echo "aprun started \$sdate" >>& \$CASEROOT/CaseStatus
 echo "\`date\` -- CSM EXECUTION BEGINS HERE"
+
 if (\$MPILIB != "mpi-serial") then
 setenv LOCARGS "--block \${COBALT_PARTNAME}"
 
@@ -124,7 +185,49 @@ runjob --label short -p \${procs} -n \${ntasks} \${LOCARGS} --envs BG_THREADLAYO
 else
                                     \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 endif
+if (\$syslog_id != 0) kill \$syslog_id
+
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
+echo "aprun ended \$sdate" >>& \$CASEROOT/CaseStatus
+
+if (\$SAVE_TIMING == 'TRUE') then
+
+  if (-d \$SAVE_TIMING_DIR) then
+    cd \$SAVE_TIMING_DIR
+    if !(-d performance_archive) then
+      mkdir performance_archive
+      chmod 777 performance_archive
+    endif
+    cd performance_archive
+    if !(-d \$CCSMUSER) then
+      mkdir \$CCSMUSER
+      chmod 775 \$CCSMUSER
+    endif
+    cd \$CCSMUSER
+    if !(-d \$CASE) then
+      mkdir \$CASE
+      chmod 775 \$CASE
+    endif
+    cd \$CASE
+    if !(-d \$LID) then
+      mkdir \$LID
+      chmod 775 \$LID
+    endif
+    cd \$LID
+
+    cd \$CASEROOT
+
+    set string = \`ls \$COBALT_JOBID*output\`
+    cp -p \$string \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
+    chmod a+r \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
+
+    set string = \`ls \$COBALT_JOBID*cobaltlog\`
+    cp -p \$string \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
+    chmod a+r \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
+  endif
+
+endif
 
 unsetenv COBALT_JOBID 
 

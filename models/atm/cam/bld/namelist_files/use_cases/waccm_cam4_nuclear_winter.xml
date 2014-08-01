@@ -50,7 +50,7 @@
 <!-- Emissions DEFAULTS OKAY for: airpl_emis_file,ch2o_emis_file,co_emis_file,nox_emis_file-->
 
 <!-- LBC, UBC Files -->
-<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c091214.nc</flbc_file>
+<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c120204.nc</flbc_file>
 <flbc_type>'SERIAL'</flbc_type>
 
 <tgcm_ubc_file>atm/waccm/ub/tgcm_ubc_1850-2100_c100204.nc</tgcm_ubc_file>

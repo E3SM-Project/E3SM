@@ -59,7 +59,8 @@ if ($RUN_TYPE == 'branch') then
     if( -e "$RUNDIR/$nrevsn_rtm") then
       set nrevsn_rtm = "nrevsn_rtm='$nrevsn_rtm'"
     else
-      set nrevsn_rtm = "${RUN_REFCASE}.rtm.r.${RUN_REFDATE}-${RUN_REFTOD}.nc" 
+      #set nrevsn_rtm = "${RUN_REFCASE}.rtm.r.${RUN_REFDATE}-${RUN_REFTOD}.nc" 
+      set nrevsn_rtm = "nrevsn_rtm = '${RUN_REFCASE}.rtm.r.${RUN_REFDATE}-${RUN_REFTOD}.nc'" 
     endif
   if ($GET_REFCASE == 'TRUE') then
      set refdir = "$DIN_LOC_ROOT/ccsm4_init/$RUN_REFCASE/$RUN_REFDATE"

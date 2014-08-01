@@ -133,7 +133,7 @@ contains
     use cam_history,    only: outfld
     use upper_bc,       only: ubc_get_vals
     use physconst,      only: rairv, mbarv
-    use molec_diff,     only: ntop_molec
+    use ref_pres,       only: ntop_molec
 
 !------------------------------Arguments--------------------------------
     real(r8), intent(in) :: ztodt                  ! 2 delta-t
@@ -218,7 +218,7 @@ contains
 ! Turbulent diffusivities and boundary layer nonlocal transport terms are 
 ! obtained from the turbulence module.
 !---------------------------Arguments------------------------------------
-    use molec_diff,   only: lev1 => ntop_molec, lev0 => nbot_molec
+    use ref_pres,     only: lev1 => ntop_molec, lev0 => nbot_molec
     use physconst,    only: gravit
 
     integer, intent(in) :: lchnk                   ! chunk identifier

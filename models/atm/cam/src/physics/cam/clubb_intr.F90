@@ -391,7 +391,9 @@ module clubb_intr
     ! ----------------------------------------------------------------- !
     
     !  Read in parameters for CLUBB.  Just read in default values 
+!$OMP PARALLEL
       call read_parameters( -99, "", clubb_params )
+!$OMP END PARALLEL
       
     !  Fill in dummy arrays for height.  Note that these are overwrote
     !  at every CLUBB step to physical values.    
@@ -404,6 +406,7 @@ module clubb_intr
     !  when clubb_tend_cam is called.  The reason is that heights can change
     !  at each time step, which is why dummy arrays are read in here for heights
     !  as they are immediately overwrote.     
+!$OMP PARALLEL
     call setup_clubb_core     &
          ( pverp, theta0, ts_nudge, &                                 ! In
            hydromet_dim,  sclr_dim, &                                 ! In
@@ -414,6 +417,7 @@ module clubb_intr
            zi_g(1:pverp), zt_g(1:pverp), &                            ! In
            host_dx, host_dy, zi_g(1), &                               ! In
            err_code )
+!$OMP END PARALLEL
 	   
     ! ----------------------------------------------------------------- !
     ! Set-up HB diffusion.  Only intialized to diagnose PBL depth       !
@@ -585,7 +589,7 @@ module clubb_intr
     subroutine clubb_tend_cam( &
                               state,   ptend_all,   pbuf,     hdtime, &
                               cmfmc,   cmfmc2,      cam_in,   sgh30,  dlf,   &
-			      det_s, det_ice)
+			      det_s, det_ice, cmeliq)
 			      
 !-------------------------------------------------------------------------------
 ! Description: Provide tendencies of shallow convection, turbulence, and 
@@ -660,6 +664,8 @@ module clubb_intr
     ! These two variables are needed for energy check    
     real(r8),            intent(out)   :: det_s(pcols)               ! Integral of detrained static energy from ice
     real(r8),            intent(out)   :: det_ice(pcols)             ! Integral of detrained ice for energy check
+
+    real(r8),            intent(out)   :: cmeliq(pcols,pver)         ! Rate of cond-evap of liq within the cloud
         
     ! --------------- !
     ! Local Variables !
@@ -1373,11 +1379,13 @@ module clubb_intr
      enddo
 
    enddo  ! end column loop
- 
-    ! ------------------------------------------------- !
-    ! End column computation of CLUBB, begin to apply   !
-    ! and compute output, etc		 	        !
-    ! ------------------------------------------------- !
+
+   cmeliq(:,:) = ptend_loc%q(:,:,ixcldliq)
+
+   ! ------------------------------------------------- !
+   ! End column computation of CLUBB, begin to apply   !
+   ! and compute output, etc		 	        !
+   ! ------------------------------------------------- !
 
    !  Output CLUBB tendencies 
    call outfld( 'RVMTEND_CLUBB', ptend_loc%q(:,:,ixq)*1000._r8, pcols, lchnk)

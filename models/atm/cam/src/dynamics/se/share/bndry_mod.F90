@@ -28,6 +28,9 @@ contains
 #else
     use parallel_mod, only : parallel_t, abortmp
 #endif
+!pw++
+    use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
+!pw--
     type (parallel_t)              :: par
     type (EdgeBuffer_t)            :: buffer
 
@@ -43,6 +46,10 @@ contains
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
     integer        :: i
+
+!pw++
+    call t_startf('bndry_exchV_nonth')
+!pw--
 
 #ifdef _MPI
     if(omp_in_parallel()) then 
@@ -121,6 +128,10 @@ contains
 
 #endif
 
+!pw++
+    call t_stopf('bndry_exchV_nonth')
+!pw--
+
   end subroutine bndry_exchangeV_nonth
 
   subroutine long_bndry_exchangeV_nonth(par,buffer)
@@ -134,6 +145,9 @@ contains
 #else
     use parallel_mod, only : parallel_t, abortmp
 #endif
+!pw++
+    use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
+!pw--
     type (parallel_t)              :: par
     type (LongEdgeBuffer_t)            :: buffer
 
@@ -150,6 +164,9 @@ contains
 
     integer        :: i
 
+!pw++
+    call t_startf('long_bndry_exchV_nonth')
+!pw--
 #ifdef _MPI
     if(omp_in_parallel()) then 
        print *,'bndry_exchangeV: Warning you are calling a non-thread safe'
@@ -226,6 +243,9 @@ contains
 
 
 #endif
+!pw++
+    call t_stopf('long_bndry_exchV_nonth')
+!pw--
 
   end subroutine long_bndry_exchangeV_nonth
   !********************************************************************************
@@ -262,7 +282,10 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-    call t_startf('bndry_exchange')
+!pw call t_startf('bndry_exchange')
+!pw++
+    call t_startf('bndry_exchV_thsave')
+!pw--
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
 #endif
@@ -284,6 +307,9 @@ contains
        !  Fire off the sends
        !==================================================
 
+!pw++
+!pw    call t_startf('bndry_exch_send')
+!pw--
        do icycle=1,nSendCycles
           pCycle      => pSchedule%SendCycle(icycle)
           dest            = pCycle%dest - 1
@@ -298,10 +324,16 @@ contains
              print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
           endif
        end do    ! icycle
+!pw++
+!pw    call t_stopf('bndry_exch_send')
+!pw--
 
        !==================================================
        !  Post the Receives 
        !==================================================
+!pw++
+!pw    call t_startf('bndry_exch_recv')
+!pw--
        do icycle=1,nRecvCycles
           pCycle         => pSchedule%RecvCycle(icycle)
           source          = pCycle%source - 1
@@ -317,14 +349,23 @@ contains
              print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
           endif
        end do    ! icycle
+!pw++
+!pw    call t_stopf('bndry_exch_recv')
+!pw--
 
 
        !==================================================
        !  Wait for all the receives to complete
        !==================================================
 
+!pw++
+       call t_startf('bndry_exch_wait')
+!pw--
        call MPI_Waitall(nSendCycles,Srequest,status,ierr)
        call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
+!pw++
+       call t_stopf('bndry_exch_wait')
+!pw--
 
        do icycle=1,nRecvCycles
           pCycle         => pSchedule%RecvCycle(icycle)
@@ -335,13 +376,21 @@ contains
           enddo
        end do   ! icycle
 
-
 #endif
     endif  ! if (hybrid%ithr == 0)
 #if (! defined ELEMENT_OPENMP)
+!pw++
+!pw call t_startf('bndry_exchange_ompbb')
+!pw--
     !$OMP BARRIER
+!pw++
+!pw call t_stopf('bndry_exchange_ompbb')
+!pw--
 #endif
-    call t_stopf('bndry_exchange')
+!pw call t_stopf('bndry_exchange')
+!pw++
+    call t_stopf('bndry_exchV_thsave')
+!pw--
 
   end subroutine bndry_exchangeV_thsave
 

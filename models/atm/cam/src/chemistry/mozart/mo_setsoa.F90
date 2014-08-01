@@ -4,6 +4,7 @@ module mo_setsoa
   use cam_logfile,  only : iulog
   use ppgrid,       only : pcols, pver, begchunk, endchunk
   use abortutils,   only : endrun
+  use mo_constants, only : avogadro, Rgas
 
   implicit none
   private
@@ -36,8 +37,6 @@ module mo_setsoa
   real(r8), dimension(6)   :: bulk_yield               ! total yield of condensable compound (ug/m3/ppm)
   real(r8), dimension(6)   :: fraction                 ! fraction of VOC used in reaction
 
-  real(r8), parameter :: avogadro = 6.023e23_r8        ! Avogadro number
-  real(r8), parameter :: Rgas     = 8.314_r8           ! gas constant (J/K/mol)
   real(r8), parameter :: OMscale  = 2.1_r8             ! scaling factor for OM:OC [Turpin and Lim, 2001]
   logical :: has_soa = .false.
   logical :: has_soa_equil = .false.

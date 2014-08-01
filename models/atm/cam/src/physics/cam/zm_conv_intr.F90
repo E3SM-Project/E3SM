@@ -455,8 +455,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     call outfld('PCONVT  ',pcont          ,pcols   ,lchnk   )
     call outfld('PCONVB  ',pconb          ,pcols   ,lchnk   )
 
-  ! This name triggers a special case in physics_types.F90:physics_update()
-  call physics_ptend_init(ptend_all, state%psetcols, 'convect_deep')
+  call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
 
   ! add tendency from this process to tendencies from other processes
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)

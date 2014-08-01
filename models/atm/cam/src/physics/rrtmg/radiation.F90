@@ -57,6 +57,10 @@ integer :: lu_idx       = 0
 integer :: ld_idx       = 0 
 integer :: cldfsnow_idx = 0 
 integer :: cld_idx      = 0 
+integer :: concld_idx   = 0
+integer :: rel_idx      = 0
+integer :: rel_fn_idx   = 0 
+integer :: rei_idx      = 0
 
 ! Default values for namelist variables
 
@@ -551,6 +555,10 @@ end function radiation_nextsw_cday
 
     cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
     cld_idx      = pbuf_get_index('CLD')
+    concld_idx   = pbuf_get_index('CONCLD')
+    rel_idx      = pbuf_get_index('REL')
+    rel_fn_idx   = pbuf_get_index('REL_FN')
+    rei_idx      = pbuf_get_index('REI')
 
     if (cldfsnow_idx > 0) then
        call addfld ('CLDFSNOW','1',pver,'I','CLDFSNOW',phys_decomp,flag_xyfill=.true.)
@@ -591,8 +599,7 @@ end function radiation_nextsw_cday
     
     use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
     use physics_types,   only: physics_state, physics_ptend
-    use cospsimulator_intr, only: docosp, cospsimulator_intr_run
-    use cosp_share, only: cosp_nradsteps
+    use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
     use time_manager,    only: get_curr_calday
     use camsrfexch,      only: cam_out_t, cam_in_t
     use cam_history,     only: outfld
@@ -709,10 +716,14 @@ end function radiation_nextsw_cday
     real(r8) :: snow_icld_vistau(pcols,pver) ! snow in-cloud visible sw optical depth for output on history files
 
     integer itim, ifld
-
+    real(r8), pointer, dimension(:,:) :: rel      ! liquid effective drop radius (microns)
+    real(r8), pointer, dimension(:,:) :: rel_fn   ! liquid effective drop radius at fixed number
+                                                  ! for indirect effect (microns)	
+    real(r8), pointer, dimension(:,:) :: rei      ! ice effective drop size (microns)
     real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction
     real(r8), pointer, dimension(:,:) :: cldfsnow ! cloud fraction of just "snow clouds- whatever they are"
     real(r8) :: cldfprime(pcols,pver)             ! combined cloud fraction (snow plus regular)
+    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction
     real(r8), pointer, dimension(:,:) :: qrs      ! shortwave radiative heating rate 
     real(r8), pointer, dimension(:,:) :: qrl      ! longwave  radiative heating rate 
     real(r8) :: qrsc(pcols,pver)                  ! clearsky shortwave radiative heating rate 
@@ -806,9 +817,14 @@ end function radiation_nextsw_cday
        call pbuf_get_field(pbuf, cldfsnow_idx, cldfsnow, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
     endif
     call pbuf_get_field(pbuf, cld_idx,      cld,      start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+    call pbuf_get_field(pbuf, concld_idx,   concld,   start=(/1,1,itim/), kount=(/pcols,pver,1/)  )
 
     call pbuf_get_field(pbuf, qrs_idx,      qrs)
     call pbuf_get_field(pbuf, qrl_idx,      qrl)
+
+    call pbuf_get_field(pbuf, rel_idx,      rel)
+    call pbuf_get_field(pbuf, rel_fn_idx,   rel_fn)
+    call pbuf_get_field(pbuf, rei_idx,      rei)
 
     if (spectralflux) then
       call pbuf_get_field(pbuf, su_idx, su)
@@ -834,6 +850,8 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol)
+
+    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
@@ -1254,9 +1272,6 @@ end function radiation_nextsw_cday
        end if
 
     end if   !  if (dosw .or. dolw) then
-
-    ! output rad inputs and resulting heating rates
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Compute net radiative heating tendency
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &

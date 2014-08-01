@@ -53,8 +53,7 @@ module iondrag
   public :: iondrag_register         ! Register variables in pbuf physics buffer
   public :: iondrag_init             ! Initialization
   public :: iondrag_calc             ! ion drag tensors lxx,lyy,lxy,lyx
-  public :: iondrag_defaultopts
-  public :: iondrag_setopts
+  public :: iondrag_readnl
   public :: do_waccm_ions
 
   interface iondrag_calc
@@ -184,6 +183,8 @@ contains
 
   subroutine iondrag_register
 !-----------------------------------------------------------------------
+! Register E and B fields.
+!
 ! Register iondrag variables with physics buffer:
 !
 ! Hall and Pedersen conductivities
@@ -191,60 +192,60 @@ contains
 ! pcols dimension and lchnk assumed here
 !
 !-----------------------------------------------------------------------
+    use exbdrift,        only: exbdrift_register
     use physics_buffer,  only: pbuf_add_field, dtype_r8
-     
-    implicit none
+    use phys_control,    only: waccmx_is
 
-    call pbuf_add_field('PedConduct',  'physpkg', dtype_r8, (/pcols,pver/), PedConduct_idx ) ! Pedersen Conductivity 
-    call pbuf_add_field('HallConduct', 'physpkg', dtype_r8, (/pcols,pver/), HallConduct_idx) ! Hall Conductivity 
+    ! E and B fields
+    call exbdrift_register()
+
+    if ( waccmx_is("ionosphere") .or. waccmx_is("neutral") ) then
+       ! Pedersen Conductivity and Hall Conductivity
+       call pbuf_add_field('PedConduct',  'physpkg', dtype_r8, (/pcols,pver/), PedConduct_idx )
+       call pbuf_add_field('HallConduct', 'physpkg', dtype_r8, (/pcols,pver/), HallConduct_idx)
+    end if
 
   end subroutine iondrag_register
 
 !================================================================================================
 
-  subroutine iondrag_defaultopts( &
-       efield_lflux_file_out,     &
-       efield_hflux_file_out,     &
-       efield_wei96_file_out    )
+  subroutine iondrag_readnl(nlfile)
 
-    character(len=*), intent(out), optional :: efield_lflux_file_out
-    character(len=*), intent(out), optional :: efield_hflux_file_out
-    character(len=*), intent(out), optional :: efield_wei96_file_out
+    use namelist_utils,  only: find_group_name
+    use units,           only: getunit, freeunit
+    use mpishorthand
+    use abortutils,  only: endrun
 
-    if ( present(efield_lflux_file_out) ) then
-       efield_lflux_file_out = efield_lflux_file
-    endif
-    if ( present(efield_hflux_file_out) ) then
-       efield_hflux_file_out = efield_hflux_file
-    endif
-    if ( present(efield_wei96_file_out) ) then
-       efield_wei96_file_out = efield_wei96_file
-    endif
+    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
-  end subroutine iondrag_defaultopts
+    ! Local variables
+    integer :: unitn, ierr
+    character(len=*), parameter :: subname = 'iondrag_readnl'
 
-  !================================================================================================
+    namelist /iondrag_nl/ efield_lflux_file, efield_hflux_file, efield_wei96_file
 
-  subroutine iondrag_setopts(    &
-       efield_lflux_file_in,     &
-       efield_hflux_file_in,     &
-       efield_wei96_file_in )
+    if (masterproc) then
+       unitn = getunit()
+       open( unitn, file=trim(nlfile), status='old' )
+       call find_group_name(unitn, 'iondrag_nl', status=ierr)
+       if (ierr == 0) then
+          read(unitn, iondrag_nl, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun(subname // ':: ERROR reading namelist')
+          end if
+       end if
+       close(unitn)
+       call freeunit(unitn)
 
-    character(len=*), intent(in), optional :: efield_lflux_file_in
-    character(len=*), intent(in), optional :: efield_hflux_file_in
-    character(len=*), intent(in), optional :: efield_wei96_file_in
+    end if
 
-    if ( present(efield_lflux_file_in) ) then
-       efield_lflux_file = efield_lflux_file_in
-    endif
-    if ( present(efield_hflux_file_in) ) then
-       efield_hflux_file = efield_hflux_file_in
-    endif
-    if ( present(efield_wei96_file_in) ) then
-       efield_wei96_file = efield_wei96_file_in
-    endif
+#ifdef SPMD
+   call mpibcast (efield_lflux_file, len(efield_lflux_file), mpichar, 0, mpicom)
+   call mpibcast (efield_hflux_file, len(efield_hflux_file), mpichar, 0, mpicom)
+   call mpibcast (efield_wei96_file, len(efield_wei96_file), mpichar, 0, mpicom)
+#endif
 
-  end subroutine iondrag_setopts
+  end subroutine iondrag_readnl
 
   !================================================================================================
 
@@ -256,8 +257,6 @@ contains
     ! Iondrag initialization, called from inti.F90.
     !-------------------------------------------------------------------------------
 
-
-    implicit none
 
     !-------------------------------------------------------------------------------
     ! dummy arguments
@@ -396,8 +395,6 @@ contains
     use mo_chem_utls, only: get_inv_ndx
     use chem_mods,    only: fix_mass
 
-    implicit none
-
     !-------------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------------
@@ -472,7 +469,6 @@ contains
     use ppgrid
     use cam_history, only: add_default, addfld, phys_decomp
     use abortutils,  only: endrun
-    implicit none
 
     !------------------Input arguments---------------------------------------
 
@@ -565,8 +561,6 @@ contains
     use short_lived_species, only: slvd_pbf_ndx => pbf_idx
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_set_field
     use phys_control,  only: waccmx_is
-
-    implicit none
 
     !-------------------------------------------------------------------------------
     ! dummy arguments

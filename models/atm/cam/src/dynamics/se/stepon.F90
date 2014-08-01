@@ -74,7 +74,7 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
   use cam_history,    only: phys_decomp, addfld, add_default, dyn_decomp
   use control_mod,    only: smooth_phis_numcycle
   use gravity_waves_sources, only: gws_init
-  use phys_control,   only: do_waccm_phys
+  use phys_control,   only: use_gw_front
 
 ! !OUTPUT PARAMETERS
 !
@@ -94,10 +94,12 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 !-----------------------------------------------------------------------
 !BOC
 
+  ! This is not done in dyn_init due to a circular dependency issue.
   if(iam < par%nprocs) then
      call initEdgeBuffer(edgebuf, (3+pcnst)*nlev)
-     if (do_waccm_phys()) call gws_init
+     if (use_gw_front) call gws_init
   end if
+
   etamid(:) = hyam(:) + hybm(:)
 
 
@@ -231,9 +233,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    if(iam >= par%nprocs) return
 
-   call t_startf('bndry_exchange')
+!pw   call t_startf('bndry_exchange')
+!pw++
+   call t_startf('stepon_bndry_exch')
+!pw--
    ! do boundary exchange
    do ie=1,nelemd
+!pw++        
+!pw call t_startf('stepon_edgeVpack')
+!pw--
       kptr=0
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,dyn_in%elem(ie)%desc)
       kptr=kptr+2*nlev
@@ -241,9 +249,18 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,dyn_in%elem(ie)%desc)
       kptr=kptr+nlev
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
+!pw++        
+!pw call t_stopf('stepon_edgeVpack')
+!pw--
    end do
 
+!pw++
+call t_startf('stepon_bexchV')
+!pw--
    call bndry_exchangeV(par, edgebuf)
+!pw++
+call t_stopf('stepon_bexchV')
+!pw--
 
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 !  rec2dt = 1./real(dtime,r8)
@@ -258,6 +275,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
 
    do ie=1,nelemd
+!pw++        
+!pw call t_startf('stepon_edgeVunpack')
+!pw--
       kptr=0
 
       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,dyn_in%elem(ie)%desc)
@@ -267,6 +287,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       kptr=kptr+nlev
 
       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
+!pw++        
+!pw call t_stopf('stepon_edgeVunpack')
+!pw--
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -419,7 +442,10 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          end do
       endif
    end do
-   call t_stopf('bndry_exchange')
+!pw   call t_stopf('bndry_exchange')
+!pw++
+   call t_stopf('stepon_bndry_exch')
+!pw--
 
 
 

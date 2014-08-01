@@ -44,7 +44,7 @@
 <gas_wetdep_method>NEU</gas_wetdep_method>
 
 <!-- fixed lower boundary data  -->
-<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c091214.nc</flbc_file>
+<flbc_file>atm/waccm/lb/LBC_1765-2500_1.9x2.5_CMIP5_RCP45_za_c120204.nc</flbc_file>
 <flbc_type>SERIAL</flbc_type>
 
 <!-- strat aerosol data  -->

@@ -42,11 +42,13 @@ module sponge_layer_damping
     thlm_sponge_damp_settings, &
     rtm_sponge_damp_settings, &
     uv_sponge_damp_settings
+!$omp threadprivate(thlm_sponge_damp_settings, rtm_sponge_damp_settings, uv_sponge_damp_settings)
 
   type(sponge_damp_profile), public :: &
     thlm_sponge_damp_profile, &
     rtm_sponge_damp_profile, &
     uv_sponge_damp_profile
+!$omp threadprivate(thlm_sponge_damp_profile, rtm_sponge_damp_profile, uv_sponge_damp_profile)
 
 
   private

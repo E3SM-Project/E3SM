@@ -1,0 +1,25 @@
+Atmospheric drydeposition at the surface depends on certain surface
+properties including soil and land use properties.  In most cases
+these calculations can be handled in the land model and passed to he
+atmosphere through the coupler.  This is the default namelist setting
+drydep_method='xactive_lnd'.  However with modal areosols this method
+is not adequate and we must recalculate these fields in the atmosphere
+(see subroutine interp_map in mo_drydep.F90).  For unstructured grids
+it was determined to create this offline interpolation tool rather
+than generalize the subroutine interp_map.  
+
+1. Locate or create scrip mapping files for the 1x1 degree input grids and
+   the desired model output grid.
+
+2. Run the script scrip_makemaps.csh 
+https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/makemaps/trunk/scrip_makemaps.csh
+   The script will create 4 mapping files, you need only the 1x1 -> model grid 
+   area average file.
+
+3. Edit mkatmsrffile.rc and put the name of this file in the srf2atmFmapname field, edit
+   other fields as appropriate
+
+4. Set the environment variable CASEROOT to a valid cesm case directory.  This case
+   has to have been compiled on the system you will run mkatmsrffile
+
+5. Compile and run mkatmsrffile.

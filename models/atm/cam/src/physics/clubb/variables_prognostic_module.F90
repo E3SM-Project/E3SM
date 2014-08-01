@@ -47,6 +47,7 @@ module variables_prognostic_module
     rtp2,    & ! rt'^2                         [(kg/kg)^2]
     thlp2,   & ! thl'^2                        [K^2]
     rtpthlp    ! rt'thl'                       [kg/kg K]
+!$omp threadprivate(temp_clubb)
 #else
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     um,      & ! u wind                        [m/s]
@@ -147,6 +148,7 @@ module variables_prognostic_module
 #ifdef GFDL
   real( kind = core_rknd ), target, allocatable, dimension( : , : , : ), public :: & 
     RH_crit  ! critical relative humidity for droplet and ice nucleation
+!$omp threadprivate(RH_crit)
 #endif
 !<--- h1g, 2010-06-16
 
