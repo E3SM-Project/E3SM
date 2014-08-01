@@ -20,6 +20,7 @@ use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpa
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer
 use bndry_mod, only : bndry_exchangev
 use control_mod, only : hypervis_scaling, nu, nu_div
+use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
 
 implicit none
 save
@@ -146,7 +147,9 @@ logical var_coef1
 #endif
    enddo
    
+   call t_startf('biwk_bexchV')
    call bndry_exchangeV(hybrid,edge3)
+   call t_stopf('biwk_bexchV')
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
@@ -263,7 +266,9 @@ logical var_coef1
 
    enddo
    
+   call t_startf('biwkdp3d_bexchV')
    call bndry_exchangeV(hybrid,edge3)
+   call t_stopf('biwkdp3d_bexchV')
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
@@ -341,7 +346,9 @@ logical var_coef1
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
    enddo
 
+   call t_startf('biwksc_bexchV')
    call bndry_exchangeV(hybrid,edgeq)
+   call t_stopf('biwksc_bexchV')
    
    do ie=nets,nete
       call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -414,7 +421,9 @@ logical var_coef1
       call edgeVpack(edgeq,Qmax,nlev*qsize,2*nlev*qsize,elem(ie)%desc)
    enddo
    
+   call t_startf('biwkscmm_bexchV')
    call bndry_exchangeV(hybrid,edgeq)
+   call t_stopf('biwkscmm_bexchV')
    
    do ie=nets,nete
       do q=1,qsize      
@@ -479,7 +488,11 @@ do ie=nets,nete
    kptr=0
    call edgeVpack(edge1, zeta(1,1,ie),1,kptr,elem(ie)%desc)
 enddo
+
+call t_startf('makeC02d_bexchV')
 call bndry_exchangeV(hybrid,edge1)
+call t_stopf('makeC02d_bexchV')
+
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge1, zeta(1,1,ie),1,kptr,elem(ie)%desc)
@@ -516,7 +529,11 @@ do ie=nets,nete
    kptr=0
    call edgeVpack(edge1, zeta(1,1,1,ie),nlev,kptr,elem(ie)%desc)
 enddo
+
+call t_startf('makeC0_bexchV')
 call bndry_exchangeV(hybrid,edge1)
+call t_stopf('makeC0_bexchV')
+
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -561,7 +578,11 @@ do ie=nets,nete
    kptr=0
    call edgeVpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
 enddo
+
+call t_startf('makeC0vector_bexchV')
 call bndry_exchangeV(hybrid,edge2)
+call t_stopf('makeC0vector_bexchV')
+
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
@@ -835,7 +856,9 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
        call edgeVpack(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,elem(ie)%desc)
     enddo
 
+    call t_startf('nmm_bexchV')
     call bndry_exchangeV(hybrid,edgeMinMax)
+    call t_stopf('nmm_bexchV')
        
     do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -931,7 +954,9 @@ integer :: ie,k,q
        call edgeVpack(edgebuf,Qvar,nlev,2*nlev,elem(ie)%desc)
     enddo
     
+    call t_startf('nmm_bexchV')
     call bndry_exchangeV(hybrid,edgebuf)
+    call t_stopf('nmm_bexchV')
        
     do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
