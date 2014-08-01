@@ -127,6 +127,9 @@
 <profile_disable TIMER_LEVEL="neg">.true.</profile_disable>
 <profile_disable TIMER_LEVEL="pos">.false.</profile_disable>
 
+<profile_detail_limit TIMER_DETAIL="neg">0</profile_detail_limit>
+<profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
+
 <!-- =========================================  -->
 <!--- pio_default_inparm                        -->
 <!-- =========================================  -->
