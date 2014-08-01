@@ -728,7 +728,7 @@ subroutine seq_frac_check(fractions,string)
    if (wminval < 0.0_r8-eps_fracval .or. wmaxval > 1.0_r8+eps_fracval) error = .true.
    if (kminval < 0.0_r8-eps_fracval .or. kmaxval > 1.0_r8+eps_fracval) error = .true.
 
-   if (error .or. seq_frac_debug > 1) then
+   if (error .or. seq_frac_debug > 2) then
       if (ka > 0) then
          call shr_mpi_min(aminval,tmpmin,mpicom,subname//':afrac',all=.false.)
          call shr_mpi_max(amaxval,tmpmax,mpicom,subname//':afrac',all=.false.)
