@@ -4234,7 +4234,7 @@ write(0,*) 'PROCESSING OMLD'
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
 !           t(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
             t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=2)
+                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
 
