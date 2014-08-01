@@ -69,6 +69,8 @@ module prim_derived_type_mod
     integer :: ie
 
     integer                ,intent(in)  :: lenx
+    integer                ,intent(in)  :: nets
+    integer                ,intent(in)  :: nete
     type (element_t)       ,intent(in)  :: elem(nets:nete)
     type (hvcoord_t)       ,intent(in)  :: hvcoord
     type (hybrid_t)        ,intent(in)  :: hybrid
@@ -80,8 +82,6 @@ module prim_derived_type_mod
     integer                ,intent(in)  :: ntl1
     integer                ,intent(in)  :: ntl2
     integer                ,intent(in)  :: ntl3
-    integer                ,intent(in)  :: nets
-    integer                ,intent(in)  :: nete
     type(derived_type)     ,intent(out) :: object
 
    allocate(object%base(nets:nete))
