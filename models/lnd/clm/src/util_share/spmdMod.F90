@@ -125,7 +125,7 @@ contains
        write(iulog,100)npes
        write(iulog,200)
        write(iulog,220)
-       do i=0,npes-1
+       do i=0,min(100,npes-1)
           write(iulog,250)i,(procname((i))(j:j),j=1,length(i))
        end do
     endif
