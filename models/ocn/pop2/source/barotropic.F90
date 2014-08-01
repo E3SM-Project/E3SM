@@ -21,6 +21,7 @@
    use POP_GridHorzMod
    use POP_HaloMod
    use POP_SolversMod
+   use perf_mod
 
    use kinds_mod, only: int_kind, i4, r8
    use blocks, only: nx_block, ny_block, block, get_block
@@ -379,6 +380,7 @@
 !
 !-----------------------------------------------------------------------
 
+   call t_startf("tropic_mom_rhs")
    !$OMP PARALLEL DO PRIVATE(iblock, this_block, diagonalCorrection, &
    !$OMP                     WORK1, WORK2, WORK3, WORK4)
 
@@ -539,7 +541,9 @@
    end do ! block loop
 
    !$OMP END PARALLEL DO
+   call t_stopf("tropic_mom_rhs")
 
+   call t_startf("tropic_halo1")
    call POP_HaloUpdate(RHS,POP_haloClinic,  &
             POP_gridHorzLocCenter,          &
             POP_fieldKindScalar, errorCode, &
@@ -550,6 +554,7 @@
          'POP_BarotropicDriver: error updating RHS halo')
       return
    endif
+   call t_stopf("tropic_halo1")
 
 !-----------------------------------------------------------------------
 !
@@ -557,6 +562,7 @@
 !
 !-----------------------------------------------------------------------
 
+   call t_startf("tropic_solve1")
    call POP_SolversRun(PSURF(:,:,newtime,:), RHS, errorCode)
 
    if (errorCode /= POP_Success) then
@@ -564,6 +570,7 @@
          'POP_BarotropicDriver: error in solver')
       return
    endif
+   call t_stopf("tropic_solve1")
 
 !-----------------------------------------------------------------------
 !
@@ -573,6 +580,7 @@
 
    if (sfc_layer_type == sfc_layer_varthick) then
 
+      call t_startf("tropic_gblsum1")
       !$OMP PARALLEL DO PRIVATE(iblock)
       do iblock = 1,nblocks_clinic
          PCHECK(:,:,iblock) = PSURF(:,:,newtime,iblock)* &
@@ -581,8 +589,10 @@
       !$OMP END PARALLEL DO
 
       xcheck = global_sum(PCHECK,distrb_clinic,field_loc_center)
+      call t_stopf("tropic_gblsum1")
    endif
 
+   call t_startf("tropic_rem_null")
    !$OMP PARALLEL DO PRIVATE(iblock,this_block)
 
    do iblock = 1,nblocks_clinic
@@ -663,7 +673,9 @@
    end do ! block loop
 
    !$OMP END PARALLEL DO
+   call t_stopf("tropic_rem_null")
 
+   call t_startf("tropic_halo2")
    call POP_HaloUpdate(PSURF(:,:,newtime,:),POP_haloClinic,   &
                              POP_gridHorzLocCenter,           &
                              POP_fieldKindScalar, errorCode,  &
@@ -696,6 +708,7 @@
          'POP_BarotropicDriver: error updating GRADPY halo')
       return
    endif
+   call t_stopf("tropic_halo2")
 
 !-----------------------------------------------------------------------
 !EOC
