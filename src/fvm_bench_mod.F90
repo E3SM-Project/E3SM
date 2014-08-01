@@ -198,7 +198,6 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   call t_startf('fvm')
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
-  nmax=10
   DO WHILE(tl%nstep< nmax)
      
      ! start old mcgregor----------------------
@@ -252,15 +251,15 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
      
      ! ! end mcgregordss   
         
-!    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
+    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
       call cslam_runflux      (elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running ff-cslam"
-!    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-!      call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
-!      if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running cslam"
-!    else
-!      call abortmp('Bad tracer_transport_type in fvm_bench')
-!    end if
+    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+      call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
+      if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running cslam"
+    else
+      call abortmp('Bad tracer_transport_type in fvm_bench')
+    end if
 
 
       

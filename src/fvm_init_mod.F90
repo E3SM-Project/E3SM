@@ -405,6 +405,15 @@ subroutine fvm_readnl(par)
        maxits,        &
        tol,           &
        debug_level,   &
+       tracer_transport_type,           &
+       TRACERTRANSPORT_SE_GLL,          &
+       TRACERTRANSPORT_SEMILAGRANG_GLL, &
+       TRACERTRANSPORT_LAGRANGIAN_FVM,  &
+       TRACERTRANSPORT_FLUXFORM_FVM,    &
+       TRACERTRANSPORT_SPELT_FVM,       &
+       tracer_grid_type,                &
+       TRACER_GRIDTYPE_GLL,             &
+       TRACER_GRIDTYPE_FVM,             &
        test_cfldep                          
   !-----------------
   use thread_mod, only : nthreads
@@ -472,6 +481,9 @@ subroutine fvm_readnl(par)
 
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
+  use fvm_mod, only: fvm_ideal_test, ideal_test_off, ideal_test_analytical_departure, ideal_test_analytical_winds
+  use fvm_mod, only: fvm_test_type, ideal_test_boomerang, ideal_test_solidbody
+
 !=======================================================================================================!                                 
 !	Adding for SW DG										!
 !=======================================================================================================!
@@ -487,6 +499,9 @@ subroutine fvm_readnl(par)
   ! ------------------------	
 #endif
 
+  character(len=32) :: tracer_transport_method = 'se_gll'
+  character(len=32) :: cslam_ideal_test = 'off'
+  character(len=32) :: cslam_test_type = 'boomerang'
   type (parallel_t), intent(in) ::  par
   ! ============================================
   ! Namelists
@@ -500,7 +515,10 @@ subroutine fvm_readnl(par)
                     nmax,                &       ! number of steps
                     tstep,               &       ! time step
                     ndays,               &       ! number of days to simulate
-                    test_cfldep                  ! test shape of departure grid cell and cfl number
+                    test_cfldep,         &       ! test shape of departure grid cell and cfl number
+                    tracer_transport_method,&
+                    cslam_ideal_test,       &
+                    cslam_test_type
                    
   namelist /analysis_nl/                 &
                     output_prefix,       &
@@ -562,7 +580,6 @@ subroutine fvm_readnl(par)
     if (ndays .gt. 0) then
       nmax = ndays * (secpday/tstep)
     end if
-   
     nEndStep = nmax 
 
     output_prefix = ""
@@ -672,6 +689,50 @@ subroutine fvm_readnl(par)
   call MPI_bcast(io_stride , 1,MPIinteger_t,par%root,par%comm,ierr)
   call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
 
+! Set and broadcast tracer transport type
+    if (trim(tracer_transport_method) == 'se_gll') then
+      tracer_transport_type = TRACERTRANSPORT_SE_GLL
+      tracer_grid_type = TRACER_GRIDTYPE_GLL
+      if (ntrac>0) then
+         call abortmp('user specified ntrac should only be > 0 when tracer_transport_type is fvm')
+      end if
+    else if (trim(tracer_transport_method) == 'cslam_fvm') then
+      tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
+      tracer_grid_type = TRACER_GRIDTYPE_FVM
+      if (qsize>0) then
+         call abortmp('user specified qsize should only be > 0 when tracer_transport_type is se_gll')
+      end if
+    else if (trim(tracer_transport_method) == 'flux_form_cslam_fvm') then
+      tracer_transport_type = TRACERTRANSPORT_FLUXFORM_FVM
+      tracer_grid_type = TRACER_GRIDTYPE_FVM
+      if (qsize>0) then
+         call abortmp('user specified qsize should only be > 0 when tracer_transport_type is se_gll')
+      end if
+    else
+      call abortmp('Unknown tracer transport method: '//trim(tracer_transport_method))
+    end if
+    call MPI_bcast(tracer_transport_type,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(tracer_grid_type,1,MPIinteger_t,par%root,par%comm,ierr)
+! Set and broadcast CSLAM test options
+    if (trim(cslam_ideal_test) == 'off') then
+      fvm_ideal_test = IDEAL_TEST_OFF
+    else if (trim(cslam_ideal_test) == 'analytical_departure') then
+      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_DEPARTURE
+    else if (trim(cslam_ideal_test) == 'analytical_winds') then
+      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_WINDS
+    else
+      call abortmp('Unknown ideal_cslam_test: '//trim(cslam_ideal_test))
+    end if
+    if (trim(cslam_test_type) == 'boomerang') then
+      fvm_test_type = IDEAL_TEST_BOOMERANG
+    else if (trim(cslam_test_type) == 'solidbody') then
+      fvm_test_type = IDEAL_TEST_SOLIDBODY
+    else
+      call abortmp('Unknown cslam test type: '//trim(cslam_test_type))
+    end if
+    call MPI_bcast(fvm_ideal_test,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(fvm_test_type,1,MPIinteger_t,par%root,par%comm,ierr)
+
   ! set map
   if (cubed_sphere_map<0) then
      cubed_sphere_map=0  ! default is equi-angle gnomonic
@@ -708,9 +769,38 @@ subroutine fvm_readnl(par)
         call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
      endif
      write(iulog,*)"readnl: NThreads      = ",NTHREADS
-
+     
      write(iulog,*)"readnl: ne,np,nc      = ",NE,np,nc
      write(iulog,*)"readnl: ntrac, ntrac_d         = ",ntrac, ntrac_d
+     
+     ! Write CSLAM namelist values
+     select case (tracer_transport_type)
+     case (TRACERTRANSPORT_SE_GLL)
+        write(iulog, *) 'Eulerian tracer advection on GLL grid'
+     case (TRACERTRANSPORT_SEMILAGRANG_GLL)
+        write(iulog, *) 'Classic semi-Lagrangian tracer advection on GLL grid'
+     case (TRACERTRANSPORT_LAGRANGIAN_FVM)
+        write(iulog, *) 'CSLAM tracer advection on FVM grid'
+     case (TRACERTRANSPORT_FLUXFORM_FVM)
+        write(iulog, *) 'Flux-form CSLAM tracer advection on FVM grid'
+     case (TRACERTRANSPORT_SPELT_FVM)
+        write(iulog, *) 'Spelt tracer advection on FVM grid'
+     end select
+     if (fvm_ideal_test /= IDEAL_TEST_OFF) then
+        select case (fvm_test_type)
+        case (IDEAL_TEST_BOOMERANG)
+           write(iulog, *) 'Running boomerang CSLAM test'
+        case (IDEAL_TEST_SOLIDBODY)
+           write(iulog, *) 'Running solid body CSLAM test'
+        end select
+        select case (fvm_ideal_test)
+        case (IDEAL_TEST_ANALYTICAL_DEPARTURE)
+           write(iulog, *) 'Using analytical departure points for CSLAM test'
+        case (IDEAL_TEST_ANALYTICAL_WINDS)
+           write(iulog, *) 'Using analytical winds for CSLAM test'
+        end select
+     end if
+     
      
      write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
      write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
