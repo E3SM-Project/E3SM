@@ -379,7 +379,25 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
-
+<machine MACH="cascade">
+         <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
+         <OS>LINUX</OS>
+         <COMPILERS>intel,nag</COMPILERS>
+         <MPILIBS>mpich</MPILIBS>
+         <RUNDIR>/dtemp/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
+         <EXEROOT>/dtemp/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/dtemp/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
+         <BATCHQUERY>showq</BATCHQUERY>
+         <BATCHSUBMIT>msub</BATCHSUBMIT>
+         <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+</machine>
 <machine MACH="pleiades-wes">
          <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.93 GHz Westmere processors, 12 pes/node and 24 GB of memory, batch system is PBS</DESC>
 	 <COMPILERS>intel</COMPILERS>

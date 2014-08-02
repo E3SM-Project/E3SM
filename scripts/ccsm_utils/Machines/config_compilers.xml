@@ -709,7 +709,22 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
 </compiler>
+<compiler COMPILER="intel" MACH="cascade">
+  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux --enable-filesystem-hints=lustre</CONFIG_ARGS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -O0 </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lpmi </SLIBS>
+</compiler>
  
+<compiler COMPILER="nag" MACH="cascade">
+ <NETCDF_PATH>$(NETCDF_ROOT)</NETCDF_PATH >
+ <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
+ <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
+ <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
+ <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff</ADD_SLIBS>
+</compiler> 
+
 <compiler COMPILER="intel" MACH="evergreen">
   <NETCDF_PATH> $(NETCDFLIB)/..</NETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
