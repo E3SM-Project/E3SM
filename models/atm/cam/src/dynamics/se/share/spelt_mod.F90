@@ -18,9 +18,7 @@ module spelt_mod
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
-!pw++
   use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
-!pw--
 
   implicit none
   private
@@ -226,13 +224,9 @@ subroutine spelt_runtest(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !-----------------------------------------------------------------------------------! 
 !   call t_startf('SPELT Communication') 
-!pw++
   call t_startf('speltruntest_ghexchV') 
-!pw--
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
   call t_stopf('speltruntest_ghexchV') 
-!pw--
 !   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
 !   call t_startf('SPELT Unpacking')  
@@ -254,8 +248,6 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
-  ! ------EXTERNAL----------------
-!pw  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
   use control_mod, only : test_cfldep
   
@@ -401,13 +393,9 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !-----------------------------------------------------------------------------------! 
 !   call t_startf('SPELT Communication') 
-!pw++
   call t_startf('speltrun_ghexchV') 
-!pw--
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
   call t_stopf('speltrun_ghexchV') 
-!pw--
 !   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
 !   call t_startf('SPELT Unpacking')  
@@ -429,8 +417,6 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
-  ! ------EXTERNAL----------------
-!pw  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
   use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
        
@@ -572,13 +558,9 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
        ! Anti diffusive flux are computed for each cell, done!
 !   call t_startf('SPELT Communication1')      
-!pw++
   call t_startf('speltrunpos_ghexchV1') 
-!pw--
   call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
-!pw++
   call t_stopf('speltrunpos_ghexchV1') 
-!pw--
 !   call t_stopf('SPELT Communication1') 
 
   do ie=nets,nete
@@ -628,13 +610,9 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !-----------------------------------------------------------------------------------! 
 !   call t_startf('SPELT Communication2') 
-!pw++
   call t_startf('speltrunpos_ghexchV2') 
-!pw--
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
   call t_stopf('speltrunpos_ghexchV2') 
-!pw--
 !   call t_stopf('SPELT Communication2')
 !-----------------------------------------------------------------------------------!  
 !   call t_startf('SPELT Unpacking2')  
@@ -656,8 +634,6 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
-  ! ------EXTERNAL----------------
-!pw  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
   use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
   use control_mod, only : test_cfldep
@@ -923,13 +899,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpackR(factorR, spelt(ie)%Rm,nhe,nc,nlev,ntrac,nlev,elem(ie)%desc)
   end do
        ! Anti diffusive flux are computed for each cell, done!
-!pw++
   call t_startf('speltrunlim_ghexchV1') 
-!pw--
   call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
-!pw++
   call t_stopf('speltrunlim_ghexchV1') 
-!pw--
 
   do ie=nets,nete
     call ghostVunpackR(factorR, spelt(ie)%Rp, nhe, nc,nlev,ntrac,0,elem(ie)%desc)
@@ -983,13 +955,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-!pw++
   call t_startf('speltrunlim_ghexchV2') 
-!pw--
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
   call t_stopf('speltrunlim_ghexchV2') 
-!pw--
 !-----------------------------------------------------------------------------------!  
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
@@ -1062,8 +1030,6 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
-  ! ------EXTERNAL----------------
-!pw  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
   use control_mod, only : test_cfldep
 
@@ -1283,13 +1249,9 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do
   !-----------------------------------------------------------------------------------! 
   !   call t_startf('SPELT Communication') 
-!pw++
     call t_startf('speltrunair_ghexchV') 
-!pw--
     call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
     call t_stopf('speltrunair_ghexchV') 
-!pw--
   !   call t_stopf('SPELT Communication')
   !-----------------------------------------------------------------------------------!  
   !   call t_startf('SPELT Unpacking')  
@@ -1312,8 +1274,6 @@ subroutine spelt_runair_old(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
-  ! ------EXTERNAL----------------
-!pw  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
   use control_mod, only : test_cfldep
 
@@ -1555,13 +1515,9 @@ subroutine spelt_runair_old(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do
   !-----------------------------------------------------------------------------------! 
   !   call t_startf('SPELT Communication') 
-!pw++
     call t_startf('speltrunairo_ghexchV') 
-!pw--
     call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
     call t_stopf('speltrunairo_ghexchV') 
-!pw--
   !   call t_stopf('SPELT Communication')
   !-----------------------------------------------------------------------------------!  
   !   call t_startf('SPELT Unpacking')  
@@ -2040,13 +1996,9 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tnp0, timelevels,elem(ie)%desc)
   end do
   !---------------------------------------------------------------------------------!  
-!pw++
   call t_startf('speltinit3_ghexchV1') 
-!pw--
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!pw++
   call t_stopf('speltinit3_ghexchV1') 
-!pw--
   !---------------------------------------------------------------------------------!    
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tnp0, timelevels,elem(ie)%desc)
@@ -2074,13 +2026,9 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
     call ghostVpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-!pw++
   call t_startf('speltinit3_ghexchV2') 
-!pw--
   call ghost_exchangeV(hybrid,buf,nipm,nep,1)
-!pw++
   call t_stopf('speltinit3_ghexchV2') 
-!pw--
 !-----------------------------------------------------------------------------------!  
   do ie=nets,nete
     call ghostVunpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
@@ -2312,13 +2260,11 @@ subroutine spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, orderta
       call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
       call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
     enddo 
-!pw++
+
     call t_startf('speltmcg_ghexchV') 
-!pw--
     call bndry_exchangeV(hybrid,edgeveloc)
-!pw++
     call t_stopf('speltmcg_ghexchV') 
-!pw--
+
     do ie=nets,nete
        call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
        call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
@@ -2392,13 +2338,11 @@ subroutine spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, ordertaylor)
       enddo 
       call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
     enddo 
-!pw++
+
     call t_startf('speltrkdss_ghexchV') 
-!pw--
     call bndry_exchangeV(hybrid,edgeveloc)
-!pw++
     call t_stopf('speltrkdss_ghexchV') 
-!pw--
+
     do ie=nets,nete
        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
        do k=1, nlev  

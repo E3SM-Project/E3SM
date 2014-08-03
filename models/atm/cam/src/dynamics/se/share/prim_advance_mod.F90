@@ -995,13 +995,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 
-!pw++        
        call t_startf('pasi_bexchV1')
-!pw--
        call bndry_exchangeV(cg%hybrid,edge2)
-!pw++
        call t_stopf('pasi_bexchV1')
-!pw--
 
        do ie = nets, nete
 
@@ -1093,13 +1089,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! boundary exchange C
        ! ==================================
 
-!pw++        
        call t_startf('pasi_bexchV2')
-!pw--
        call bndry_exchangeV(cg%hybrid,edge1)
-!pw++
        call t_stopf('pasi_bexchV2')
-!pw--
 
        do ie=nets,nete
 
@@ -1210,13 +1202,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 
-!pw++        
        call t_startf('pasi_bexchV3')
-!pw--
        call bndry_exchangeV(cg%hybrid,edge1)
-!pw++
        call t_stopf('pasi_bexchV3')
-!pw--
 
        do ie = nets, nete
 
@@ -1346,13 +1334,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! boundary exchange v at time level n+1
        ! ======================================
 
-!pw++        
        call t_startf('pasi_bexchV4')
-!pw--
        call bndry_exchangeV(cg%hybrid,edge3p1)
-!pw++
        call t_stopf('pasi_bexchV4')
-!pw--
 
        do ie=nets,nete
 
@@ -1696,13 +1680,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
         enddo
         
-!pw++        
         call t_startf('ah_bexchV1')
-!pw--
         call bndry_exchangeV(hybrid,edge3)
-!pw++
         call t_stopf('ah_bexchV1')
-!pw--
         
         do ie=nets,nete
            
@@ -1826,13 +1806,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,pstens(:,:,ie),1,kptr,elem(ie)%desc)
         enddo
         
-!pw++        
         call t_startf('ah_bexchV2')
-!pw--
         call bndry_exchangeV(hybrid,edge3)
-!pw++
         call t_stopf('ah_bexchV2')
-!pw--
         
         do ie=nets,nete
            
@@ -1991,13 +1967,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
         enddo
         
-!pw++        
         call t_startf('ahdp_bexchV1')
-!pw--
         call bndry_exchangeV(hybrid,edge3)
-!pw++
         call t_stopf('ahdp_bexchV1')
-!pw--
         
         do ie=nets,nete
            
@@ -2100,13 +2072,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,dptens(:,:,:,ie),nlev,kptr,elem(ie)%desc)
         enddo
         
-!pw++        
         call t_startf('ahdp_bexchV2')
-!pw--
         call bndry_exchangeV(hybrid,edge3)
-!pw++
         call t_stopf('ahdp_bexchV2')
-!pw--
         
         do ie=nets,nete
            
@@ -2270,13 +2238,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
         enddo
         
-!pw++        
         call t_startf('ahlf_bexchV1')
-!pw--
         call bndry_exchangeV(hybrid,edge3)
-!pw++
         call t_stopf('ahlf_bexchV1')
-!pw--
         
         do ie=nets,nete
            
@@ -2374,13 +2338,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,pstens(:,:,ie),1,kptr,elem(ie)%desc)
         enddo
         
-!pw++
         call t_startf('ahlf_bexchV2')
-!pw--
         call bndry_exchangeV(hybrid,edge3)
-!pw++
         call t_stopf('ahlf_bexchV2')
-!pw--
         
         do ie=nets,nete
            
@@ -3021,13 +2981,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     ! Insert communications here: for shared memory, just a single
   ! sync is required
   ! =============================================================
-!pw++
   call t_startf('caar_bexchV')
-!pw--
   call bndry_exchangeV(hybrid,edge3p1)
-!pw++
   call t_stopf('caar_bexchV')
-!pw--
   
   do ie=nets,nete
      ! ===========================================================
@@ -3698,13 +3654,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! sync is required
   ! =============================================================
   
-!pw++        
   call t_startf('TriRes_bexchV')
-!pw--
   call bndry_exchangeV(hybrid,edge3p1)
-!pw++
   call t_stopf('TriRes_bexchV')
-!pw--
   
   do ie=nets,nete
      ! ===========================================================
@@ -3914,19 +3866,18 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   integer :: nt,ie,ic,i,j,order,order_max, iuse
   logical :: use_var_coef
 
+  call t_startf('smooth_phis')
 
   ! compute local element neighbor min/max
   do ie=nets,nete
      pstens(:,:,ie)=minval(phis(:,:,ie))
      call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
   enddo
-!pw++        
+
   call t_startf('smphis_bexchV1')
-!pw--
   call bndry_exchangeV(hybrid,edge3p1)
-!pw++
   call t_stopf('smphis_bexchV1')
-!pw--
+
   do ie=nets,nete
      call edgeVunpackMin(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
      pmin(ie)=minval(pstens(:,:,ie))
@@ -3935,13 +3886,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      pstens(:,:,ie)=maxval(phis(:,:,ie))
      call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
   enddo
-!pw++        
+
   call t_startf('smphis_bexchV2')
-!pw--
   call bndry_exchangeV(hybrid,edge3p1)
-!pw++
   call t_stopf('smphis_bexchV2')
-!pw--
+
   do ie=nets,nete
      call edgeVunpackMax(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
      pmax(ie)=maxval(pstens(:,:,ie))
@@ -3974,13 +3923,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=use_var_coef)
            call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
         enddo
-!pw++        
+
         call t_startf('smphis_bexchV3')
-!pw--
         call bndry_exchangeV(hybrid,edge3p1)
-!pw++
         call t_stopf('smphis_bexchV3')
-!pw--
+
         do ie=nets,nete
            call edgeVunpack(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
            pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
@@ -4033,13 +3980,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%spheremp(:,:)
         call edgeVpack(edge3p1,phis(:,:,ie),1,0,elem(ie)%desc)
      enddo
-!pw++        
+
      call t_startf('smphis_bexchV4')
-!pw--
      call bndry_exchangeV(hybrid,edge3p1)
-!pw++
      call t_stopf('smphis_bexchV4')
-!pw--
+
      do ie=nets,nete
         call edgeVunpack(edge3p1, phis(:,:,ie), 1, 0, elem(ie)%desc)
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
@@ -4050,6 +3995,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
   enddo
+  call t_stopf('smooth_phis')
+
   end subroutine smooth_phis
 
   subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
@@ -4085,6 +4032,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
     
+    call t_startf('overwr_SEdens')
+
     if ((nc .ne. 4) .or. (np .ne. 4)) then
       if(hybrid%masterthread) then 
         print *,"You are in OVERWRITE SE AIR DENSITY MODE"
@@ -4139,18 +4088,18 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)
      call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,np1),1,0,elem(ie)%desc)
   enddo
-!pw++        
+
   call t_startf('OvrSEdens_bexchV')
-!pw--
   call bndry_exchangeV(hybrid,edge3p1)
-!pw++
   call t_stopf('OvrSEdens_bexchV')
-!pw--
+
   do ie=nets,nete
      call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, elem(ie)%desc)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%rspheremp(:,:)
   enddo
 #endif    
+  call t_stopf('overwr_SEdens')
+
   end subroutine overwrite_SEdensity
 
 
