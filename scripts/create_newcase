@@ -247,6 +247,17 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
 
     # Set default and and then check if case project option is given
     $project = "$ENV{'PROJECT'}";
+
+    my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
+    if (-e $ccsm_proj_file){
+        open my $ccsm_proj, '<', $ccsm_proj_file;
+        my $firstline = <$ccsm_proj>;
+        if ($firstline =~ /^\s*(\S*)/){
+            $project = $1;
+        }
+        close $ccsm_proj;
+    }
+
     if ($opts{'project'}) {
 	$project = $opts{'project'};
     }
