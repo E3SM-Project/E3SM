@@ -10,6 +10,7 @@ source ./Tools/ccsm_getenv
 # -------------------------------------------------------------------------
 
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+
 cd $RUNDIR
 set CESMLogFile = `ls -1t cesm.log* | head -1` 
 if ($CESMLogFile == "") then
@@ -159,5 +160,6 @@ EOF
      rm tempres
    endif 
 endif
+
 
 
