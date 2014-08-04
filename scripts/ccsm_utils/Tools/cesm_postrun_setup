@@ -3,7 +3,6 @@
 # -------------------------------------------------------------------------
 
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`
-echo "run ended $sdate" >>& $CASEROOT/CaseStatus
 
 cd $RUNDIR
 set CESMLogFile = `ls -1t cesm.log* | head -1` 
@@ -161,5 +160,6 @@ EOF
      rm tempres
    endif 
 endif
+
 
 

@@ -208,7 +208,7 @@ if (! $clean ) {
 	my $file = "${caseroot}/${case}.run";
 	
 	$sysmod = "env PHASE=set_batch CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
-	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+	system ($sysmod); if ($? != 0) {die "$sysmod failed: $!\n";}
 	
 	$sysmod = "${caseroot}/Tools/taskmaker.pl -document >> $file";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}

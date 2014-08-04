@@ -67,6 +67,8 @@ OPTIONS
      -compset <name>      Specify a CESM compset (required).
      -res <name>          Specify a CESM grid resolution (required).
      -mach <name>         Specify a CESM machine (required).
+     -project <name>      Specify a project id for the case (optional)
+                          default: user-specified environment variable PROJECT
      -compiler <name>     Specify a compiler for the target machine (optional)
                           default: default compiler for the target machine
      -mpilib <name>       Specify a mpi library for the target machine (optional)
@@ -139,6 +141,7 @@ GetOptions(
     "compset=s"                 => \$opts{'compset'},
     "confopts=s"                => \$opts{'confopts'},
     "compiler=s"                => \$opts{'compiler'},  
+    "project=s"                 => \$opts{'project'},  
     "mpilib=s"                  => \$opts{'mpilib'},  
     "res=s"                     => \$opts{'res'},
     "h|help"                    => \$opts{'help'},
@@ -192,6 +195,7 @@ my $testname;
 my $pecount;
 my $xmlmode;
 my $compiler;
+my $project;
 my $mpilib;
 if (!$opts{'list'} && !$opts{'testlist'}) {
     # Check for manditory case input
@@ -234,6 +238,23 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     # Check if machine compiler option is given
     if ($opts{'compiler'}) {
 	$compiler = $opts{'compiler'};
+    }
+
+    # Set default and and then check if case project option is given
+    $project = "$ENV{'PROJECT'}";
+
+    my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
+    if (-e $ccsm_proj_file){
+        open my $ccsm_proj, '<', $ccsm_proj_file;
+        my $firstline = <$ccsm_proj>;
+        if ($firstline =~ /^\s*(\S*)/){
+            $project = $1;
+        }
+        close $ccsm_proj;
+    }
+
+    if ($opts{'project'}) {
+	$project = $opts{'project'};
     }
 
     # Check if machine mpilib option is given
@@ -508,6 +529,11 @@ if ( defined($opts{'pts_lat'}) && defined($opts{'pts_lon'}) ) {
    $cfg_ref->set('WAV_NX', 0);
    $cfg_ref->set('WAV_NY', 0);
 }
+
+#-----------------------------------------------------------------------------------------------
+# (7.5) Set project id
+#-----------------------------------------------------------------------------------------------
+$cfg_ref->set('PROJECT' , "$project");
 
 #-----------------------------------------------------------------------------------------------
 # (8) Determine pes for machine
@@ -876,7 +902,7 @@ $sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.l_archive
-my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot env PHASE=set_larch ${machdir}/mkbatch.$mach";
+my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch ${machdir}/mkbatch.$mach";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create preview_namelist file

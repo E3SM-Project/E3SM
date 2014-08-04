@@ -5,6 +5,19 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
+if ($PROJECT == "") then
+  echo "  PROJECT must be set in env_case.xml on Mira."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
+set account_name = $PROJECT
+if !(-d /projects/${account_name}) then
+  echo "  PROJECT in env_case.xml must be set to a valid project name."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
 
 set max_tasks_per_node = $MAX_TASKS_PER_NODE
 set ntasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
@@ -54,7 +67,7 @@ set npes   = \`${CASEROOT}/Tools/taskmaker.pl -sumpes\`
 set mthrds = \`${CASEROOT}/Tools/taskmaker.pl -maxthrds\`
 
 if (\${mthrds} > \${max_tasks_per_node}) then
-   echo "ERROR max threa/gpfs/mira-fs0/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/ds greater than max tasks per node"
+   echo "ERROR max threads greater than max tasks per node"
    exit 1
 endif
 
@@ -167,7 +180,7 @@ endif
 cd \$RUNDIR
 
 set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
-echo "aprun started \$sdate" >>& \$CASEROOT/CaseStatus
+echo "runjob started \$sdate" >>& \$CASEROOT/CaseStatus
 echo "\`date\` -- CSM EXECUTION BEGINS HERE"
 
 if (\$MPILIB != "mpi-serial") then
@@ -189,7 +202,7 @@ if (\$syslog_id != 0) kill \$syslog_id
 
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
 set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
-echo "aprun ended \$sdate" >>& \$CASEROOT/CaseStatus
+echo "runjob ended \$sdate" >>& \$CASEROOT/CaseStatus
 
 if (\$SAVE_TIMING == 'TRUE') then
 
@@ -232,8 +245,6 @@ endif
 unsetenv COBALT_JOBID 
 
 EOF1
-
-
 
 #################################################################################
 else if ($PHASE == set_larch) then
