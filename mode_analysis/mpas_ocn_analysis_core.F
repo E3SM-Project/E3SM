@@ -38,7 +38,7 @@ module mpas_core
 
    integer :: current_outfile_frames
 
-   type (MPAS_Clock_type) :: clock
+   type (MPAS_Clock_type), pointer :: clock
 
    character(len=*), parameter :: outputAlarmID = 'output'
    character(len=*), parameter :: restartAlarmID = 'restart'
@@ -82,6 +82,11 @@ module mpas_core
       real (kind=RKIND) :: dt
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: xtime
+
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
 
       dminfo = domain % dminfo
       err = 0
