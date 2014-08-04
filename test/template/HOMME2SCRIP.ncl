@@ -8,6 +8,10 @@ load "$NCARG_NCARG/nclscripts/csm/contributed.ncl"
 ; 
 
 begin
+if (.not. isvar("np")) then
+   np=4
+   print("NPTS not specified on command line. Using default 4.")
+end if
 
 template = name + "_tmp.nc"
 output = name + "_scrip.nc"
@@ -106,7 +110,7 @@ grid_dims=1
 grid_dims!0 = "grid_rank"
 
 ; write the 'title' global attribute
-fout@title = "ne"+ne+"np4"
+fout@title = "ne"+ne+"np" + np
 fout@Created_by = "HOMME2SCRIP.ncl mt 2009"
 fout@history = "HOMME2SCRIP.ncl mt 2009"
 

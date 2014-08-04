@@ -34,12 +34,13 @@ echo using NCPU = $NCPU
 set NPTS = 4
 # CSLAM points points within each element:
 set NC = 4  
-set ne = 0 ; 
+set ne = 8 ; 
 
 set HOMME = ~/codes/homme  # path to HOMME code
 #set MACH = $HOMME/cmake/machineFiles/redsky.cmake
-set MACH = $HOMME/cmake/machineFiles/climate.cmake
+#set MACH = $HOMME/cmake/machineFiles/climate.cmake
 #set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
+set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 set wdir = ~/scratch1
 
 mkdir -p $wdir/preqx/template/movies
@@ -145,16 +146,17 @@ if ( $status ) exit
 # the GLL interpIC template (and paraview metadata)
 set echo
 ncks -O -v lat,lon,corners movies/$output {$meshname}_tmp.nc
-ncl $input/HOMME2META.ncl  name=\"$meshname\"  ne=$ne
+ncl $input/HOMME2META.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
+ncl $input/addGLLmeta.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
 rm -f {$meshname}_tmp.nc
 
 if ( $NPTS == 4 ) then
    ncks -O -v lat,lon,area,cv_lat,cv_lon movies/$output {$meshname}_tmp.nc
-   ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne
+   ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
    rm -f {$meshname}_tmp.nc
 else
    ncks -O -v lat,lon,area movies/$output {$meshname}_tmp.nc
-   ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne
+   ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
    rm -f {$meshname}_tmp.nc
 endif
 
