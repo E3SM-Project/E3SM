@@ -383,6 +383,8 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="edison">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -xSSE4.1 </ADD_FFLAGS>  
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -xSSE4.1 </ADD_CFLAGS>  
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf $(MKL)</ADD_SLIBS>
 </compiler>
 
