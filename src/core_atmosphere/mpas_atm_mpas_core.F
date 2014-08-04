@@ -13,7 +13,7 @@ module mpas_core
    type (io_input_object), save :: sfc_update_obj
    integer :: current_outfile_frames
    
-   type (MPAS_Clock_type) :: clock
+   type (MPAS_Clock_type), pointer :: clock
 
    character(len=*), parameter :: outputAlarmID = 'output' 
    character(len=*), parameter :: restartAlarmID = 'restart' 
@@ -49,6 +49,12 @@ module mpas_core
       type (field2DReal), pointer :: u_field, pv_edge_field, ru_field, rw_field
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_sfc_update_interval, config_sfc_update_name
+
+
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
 
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)

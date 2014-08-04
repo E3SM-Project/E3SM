@@ -58,7 +58,7 @@ mpas_dmpar_types.o : mpas_kind_types.o mpas_io_units.o
 
 mpas_attlist.o: mpas_kind_types.o mpas_io_units.o
 
-mpas_grid_types.o: mpas_kind_types.o mpas_dmpar_types.o mpas_attlist.o mpas_io_units.o mpas_packages.o mpas_io_units.o pool_hash.o pool_subroutines.inc duplicate_field_array.inc duplicate_field_scalar.inc $(DEPS)
+mpas_grid_types.o: mpas_kind_types.o mpas_dmpar_types.o mpas_attlist.o mpas_io_units.o mpas_packages.o mpas_io_units.o pool_hash.o mpas_timekeeping.o pool_subroutines.inc duplicate_field_array.inc duplicate_field_scalar.inc $(DEPS)
 
 mpas_dmpar.o: mpas_sort.o streams.o mpas_kind_types.o mpas_grid_types.o mpas_hash.o mpas_io_units.o
 

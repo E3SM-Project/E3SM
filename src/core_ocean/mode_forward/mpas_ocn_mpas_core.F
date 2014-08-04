@@ -68,7 +68,7 @@ module mpas_core
 
    integer :: current_outfile_frames
 
-   type (MPAS_Clock_type) :: clock
+   type (MPAS_Clock_type), pointer :: clock
 
    character (len=*), parameter :: outputAlarmID = 'output'
    character (len=*), parameter :: restartAlarmID = 'restart'
@@ -120,6 +120,11 @@ module mpas_core
       logical, pointer :: config_write_stats_on_startup
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
       real (kind=RKIND), pointer :: config_maxMeshDensity, config_dt
+
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
 
       ! Setup ocean config pool
       call ocn_constants_init(domain % configs, domain % packages)

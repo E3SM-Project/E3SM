@@ -24,6 +24,7 @@ module mpas_grid_types
    use mpas_attlist
    use mpas_packages
    use mpas_io_units, only : stderrUnit
+   use mpas_timekeeping, only : MPAS_Clock_type
 
    integer, parameter :: nTimeLevs = 2
 
@@ -569,6 +570,8 @@ module mpas_grid_types
    type domain_type
       type (block_type), pointer :: blocklist
       type (mpas_pool_type), pointer :: configs, packages
+
+      type (MPAS_Clock_type), pointer :: clock
    
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo
@@ -777,6 +780,7 @@ module mpas_grid_types
 
       allocate(dom % configs)
       allocate(dom % packages)
+      allocate(dom % clock)
 
       call mpas_pool_create_pool(dom % configs)
       call mpas_pool_create_pool(dom % packages)
@@ -855,6 +859,7 @@ module mpas_grid_types
 
       call mpas_pool_destroy_pool(dom % configs)
       call mpas_pool_destroy_pool(dom % packages)
+      deallocate(dom % clock)
 
    end subroutine mpas_deallocate_domain!}}}
 
