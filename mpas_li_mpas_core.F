@@ -16,7 +16,7 @@ module mpas_core
    type (io_output_object), save :: restart_obj
    integer :: current_outfile_frames
 
-   type (MPAS_Clock_type) :: clock
+   type (MPAS_Clock_type), pointer :: clock
 
    !--------------------------------------------------------------------
    !
@@ -102,6 +102,11 @@ module mpas_core
       err = 0
       err_tmp = 0
       globalErr = 0
+
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
 
       !
       ! Initialize core
