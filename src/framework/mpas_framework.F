@@ -42,10 +42,6 @@ module mpas_framework
 !-----------------------------------------------------------------------
    subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit, stderrUnit)!{{{
 
-      use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
-      use mpas_c_interfacing, only : mpas_f_to_c_string
-      use mpas_stream_manager, only : MPAS_streamManager_type
-
       implicit none
 
       type (dm_info), pointer :: dminfo
@@ -59,24 +55,9 @@ module mpas_framework
       integer, intent(in), optional :: stdoutUnit, stderrUnit
 
       character(len=StrKIND), pointer :: config_calendar_type
-      character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
-      integer(kind=c_int) :: c_comm
-      integer(kind=c_int) :: ierr
-      type (MPAS_streamManager_type), target :: stream_manager
-      type (c_ptr) :: mgr_p
       integer, pointer :: config_pio_num_iotasks, config_pio_stride
       integer :: pio_num_iotasks
       integer :: pio_stride
-
-      interface
-         subroutine xml_stream_parser(fname, mgr_p, comm, ierr) bind(c)
-            use iso_c_binding, only : c_char, c_ptr, c_int
-            character(kind=c_char), dimension(*), intent(in) :: fname
-            type (c_ptr), intent(inout) :: mgr_p
-            integer(kind=c_int), intent(inout) :: comm
-            integer(kind=c_int), intent(out) :: ierr
-         end subroutine xml_stream_parser
-      end interface
 
 
       allocate(dminfo)
@@ -113,17 +94,6 @@ module mpas_framework
          pio_num_iotasks = domain % dminfo % nprocs
       end if
       call MPAS_io_init(dminfo, pio_num_iotasks, pio_stride, io_system)
-
-      !
-      ! Set up run-time streams
-      !
-      call mpas_f_to_c_string(domain % streams_filename, c_filename)
-      mgr_p = c_loc(stream_manager)
-      c_comm = dminfo % comm
-      call xml_stream_parser(c_filename, mgr_p, c_comm, ierr)
-      if (ierr /= 0) then
-         call mpas_dmpar_abort(dminfo)
-      end if
 
    end subroutine mpas_framework_init!}}}
 
