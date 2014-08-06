@@ -122,8 +122,14 @@ else
     cp -p $CASEROOT/timing/*.$LID $CASEROOT/timing/*.$LID.gz .
     cp -p $CASEROOT/CaseStatus CaseStatus.$LID
 
+    if (-f $EXEROOT/GIT_DESCRIBE) then
+      cp -p $EXEROOT/GIT_DESCRIBE GIT_DESCRIBE.$LID
+    endif
     if (-f $EXEROOT/GIT_LOGS_HEAD) then
       cp -p $EXEROOT/GIT_LOGS_HEAD GIT_LOGS_HEAD.$LID
+    endif
+    if (-f $EXEROOT/SVN_INFO) then
+      cp -p $EXEROOT/SVN_INFO SVN_INFO.$LID
     endif
     if (-f $EXEROOT/SVN_WC.DB) then
       cp -p $EXEROOT/SVN_WC.DB SVN_WC.DB.$LID
