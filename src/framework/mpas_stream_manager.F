@@ -1168,28 +1168,65 @@ end module mpas_stream_manager
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine stream_mgr_create_stream_c(mgr, str, i) bind(c)!{{{
+subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, maxRecords_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_OUTPUT, MPAS_stream_mgr_create_stream
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_stream_mgr_create_stream
+    use mpas_kind_types, only : StrKIND
 
     implicit none
 
-    type (c_ptr) :: mgr
-    character(kind=c_char) :: str(*)
-    integer(kind=c_int) :: i
+    type (c_ptr) :: manager_c
+    character(kind=c_char) :: streamID_c(*)
+    integer(kind=c_int) :: direction_c
+    character(kind=c_char) :: filename_c(*)
+    integer(kind=c_int) :: maxRecords_c
+    integer(kind=c_int) :: ierr_c
 
-    character(len=256) :: fieldname
-    integer :: i_fort
-    integer :: ierr
     type (MPAS_streamManager_type), pointer :: manager
+    character(len=StrKIND) :: streamID, filename
+    integer :: direction, maxRecords, ierr
 
-    call mpas_c_to_f_string(str, fieldname)
-    i_fort = i
- write(0,*) 'Doing something with string '//trim(fieldname)
-    call c_f_pointer(mgr, manager)
+
+    call c_f_pointer(manager_c, manager)
+    call mpas_c_to_f_string(streamID_c, streamID)
+    direction = direction_c
+    call mpas_c_to_f_string(filename_c, filename)
+    maxRecords = maxRecords_c
     
-    call MPAS_stream_mgr_create_stream(manager, fieldname, MPAS_STREAM_OUTPUT, fieldname, 1, ierr=ierr)
+    call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
 
-end subroutine stream_mgr_create_stream_c!}}}
+    ierr_c = ierr
+
+end subroutine stream_mgr_create_stream_c !}}}
+
+
+subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bind(c)
+
+    use mpas_c_interfacing, only : mpas_c_to_f_string
+    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_stream_mgr_add_field
+    use mpas_kind_types, only : StrKIND
+
+    implicit none
+
+    type (c_ptr) :: manager_c
+    character(kind=c_char) :: streamID_c(*)
+    character(kind=c_char) :: fieldName_c(*)
+    integer(kind=c_int) :: ierr_c
+
+    type (MPAS_streamManager_type), pointer :: manager
+    character(len=StrKIND) :: streamID, fieldName
+    integer :: ierr
+
+
+    call c_f_pointer(manager_c, manager)
+    call mpas_c_to_f_string(streamID_c, streamID)
+    call mpas_c_to_f_string(fieldName_c, fieldName)
+
+    call MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)
+
+    ierr_c = ierr
+
+end subroutine stream_mgr_add_field_c

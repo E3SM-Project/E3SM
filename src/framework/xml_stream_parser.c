@@ -18,7 +18,8 @@
 /* 
  * Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
-void stream_mgr_create_stream_c(void *, const char *, int *);
+void stream_mgr_create_stream_c(void *, const char *, int *, const char *, int *, int *);
+void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 
 
 /* 
@@ -348,8 +349,16 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	size_t bufsize;
 	ezxml_t streams;
 	ezxml_t stream_xml;
-	const char *attr;
+	ezxml_t varfile_xml;
+	ezxml_t var_xml;
+	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const;
+	char fieldname[256];
+	FILE *fd;
+	char msgbuf[MSGSIZE];
+	int itype;
+	int irecs;
 	int err;
+
 
 	fprintf(stderr, "MGD DEV begin parsing run-time I/O from %s\n", fname);
 	*status = 0;
@@ -378,18 +387,88 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 	/* First, handle changes to immutable stream filename templates, intervals, etc. */
 	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
-		attr = ezxml_attr(stream_xml, "name");
-		fprintf(stderr, "MGD DEV Found stream named %s\n", attr);
-		stream_mgr_create_stream_c(manager, attr, &err);
-		err++;
+		streamID = ezxml_attr(stream_xml, "name");
+		direction = ezxml_attr(stream_xml, "type");
+		filename_template = ezxml_attr(stream_xml, "filename_template");
+		records = ezxml_attr(stream_xml, "records_per_file");
+fprintf(stderr, "MGD DEV Found stream named %s\n", streamID);
+
+		irecs = atoi(records);
+
+		/* NB: These type constants must match those in the mpas_stream_manager module! */
+		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL)
+			itype = 3;
+		else if (strstr(direction, "input") != NULL)
+			itype = 1;
+		else if (strstr(direction, "output") != NULL) 
+			itype = 2;
+		else 
+			itype = 4;
+
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &err);
+		if (err != 0) {
+			*status = 1;
+			return;
+		}
 	}
 
 	/* Next, handle modifications to mutable streams as well as new stream definitions */
 	for (stream_xml = ezxml_child(streams, "stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
-		attr = ezxml_attr(stream_xml, "name");
-		fprintf(stderr, "MGD DEV Found stream named %s\n", attr);
-		stream_mgr_create_stream_c(manager, attr, &err);
-		err++;
+		streamID = ezxml_attr(stream_xml, "name");
+		direction = ezxml_attr(stream_xml, "type");
+		filename_template = ezxml_attr(stream_xml, "filename_template");
+		records = ezxml_attr(stream_xml, "records_per_file");
+fprintf(stderr, "MGD DEV Found stream named %s\n", streamID);
+
+		irecs = atoi(records);
+
+		/* NB: These type constants must match those in the mpas_stream_manager module! */
+		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL)
+			itype = 3;
+		else if (strstr(direction, "input") != NULL)
+			itype = 1;
+		else if (strstr(direction, "output") != NULL) 
+			itype = 2;
+		else 
+			itype = 4;
+
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &err);
+		if (err != 0) {
+			*status = 1;
+			return;
+		}
+
+		for (varfile_xml = ezxml_child(stream_xml, "file"); varfile_xml; varfile_xml = ezxml_next(varfile_xml)) {
+			varfile = ezxml_attr(varfile_xml, "name");
+/* TODO: We should probably only have one task open and read the file... */
+			fd = fopen(varfile, "r");
+			if (fd != NULL) {
+				while (fscanf(fd, "%s", fieldname) != EOF) {
+fprintf(stderr, "Adding %s to stream %s\n", fieldname, streamID);
+       		         		stream_mgr_add_field_c(manager, streamID, (const char *)fieldname, &err);
+					if (err != 0) {
+						*status = 1;
+						return;
+					}
+				}
+				fclose(fd);
+			}
+			else {
+				snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references file %s that cannot be opened for reading.", streamID, varfile);
+				fmt_err(msgbuf);
+				*status = 1;
+				return;
+			}
+		}
+		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+			fieldname_const = ezxml_attr(var_xml, "name");
+fprintf(stderr, "Adding %s to stream %s\n", fieldname_const, streamID);
+                	stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
 	}
 
 	free(xml_buf);
