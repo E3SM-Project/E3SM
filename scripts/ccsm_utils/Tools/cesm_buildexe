@@ -214,16 +214,32 @@ else
 endif
 
 #--- save model provenance with the executable
+cd $CCSMROOT
+
+git describe > $EXEROOT/GIT_DESCRIBE.$LID
+chmod 664 $EXEROOT/GIT_DESCRIBE.$LID
+/bin/cp -p $EXEROOT/GIT_DESCRIBE.$LID $EXEROOT/GIT_DESCRIBE
+
 if (-f $CCSMROOT/.git/logs/HEAD) then
   /bin/cp $CCSMROOT/.git/logs/HEAD $EXEROOT/GIT_LOGS_HEAD.$LID
   chmod 664 $EXEROOT/GIT_LOGS_HEAD.$LID
   /bin/cp -p $EXEROOT/GIT_LOGS_HEAD.$LID $EXEROOT/GIT_LOGS_HEAD
+else
+  /bin/rm -f $EXEROOT/GIT_LOGS_HEAD
+  touch $EXEROOT/GIT_LOGS_HEAD
 endif
+
+svn info > $EXEROOT/SVN_INFO.$LID
+chmod 664 $EXEROOT/SVN_INFO.$LID
+/bin/cp -p $EXEROOT/SVN_INFO.$LID $EXEROOT/SVN_INFO
 
 if (-f $CCSMROOT/.svn/wc.db) then
   /bin/cp $CCSMROOT/.svn/wc.db $EXEROOT/SVN_WC.DB.$LID
   chmod 664 $EXEROOT/SVN_WC.DB.$LID
   /bin/cp -p $EXEROOT/SVN_WC.DB.$LID $EXEROOT/SVN_WC.DB
+else
+  /bin/rm -f $EXEROOT/SVN_WC.DB
+  touch $EXEROOT/SVN_WC.DB
 endif
 
 if (-d $CASEROOT/SourceMods) then
