@@ -218,7 +218,7 @@ for mct, etc.
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -gopt -Mlist -time </CFLAGS>
+  <CFLAGS> -Mlist -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
