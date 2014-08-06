@@ -202,7 +202,7 @@ module mpas_stream_list
     !>  Searches through a stream list, and returns a pointer for the stream with a matching name.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_stream_list_get_stream(list, streamName, stream, ierr) !{{{
+    logical function mpas_stream_list_get_stream(list, streamName, stream, ierr) result(found) !{{{
         type (mpas_stream_list_type), pointer :: list
         character (len=*), intent(in) :: streamName
         type (mpas_stream_type), pointer :: stream
@@ -211,6 +211,7 @@ module mpas_stream_list
         type (mpas_stream_list_node_type), pointer :: node
 
         if (present(ierr)) ierr = MPAS_STREAM_LIST_NOERR
+        found = .false.
 
         ! Return if no streams exist in stream list
         if ( list % nStreams == 0 ) then
@@ -224,14 +225,15 @@ module mpas_stream_list
         do while(associated(node))
             if (trim(node % name) == trim(streamName)) then
                 stream => node % stream
+                found = .true.
                 return
             end if
             node => node % next
         end do
 
         ! If the routine hasn't returned yet, stream is not found.
-        write(stderrUnit, *) 'ERROR: mpas_stream_list_get_stream -- no streams exist in stream list with the name ', trim(streamName), '.'
-    end subroutine mpas_stream_list_get_stream!}}}
+!       write(stderrUnit, *) 'ERROR: mpas_stream_list_get_stream -- no streams exist in stream list with the name ', trim(streamName), '.'
+    end function mpas_stream_list_get_stream!}}}
 
 
 end module mpas_stream_list
