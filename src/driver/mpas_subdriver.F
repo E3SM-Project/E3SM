@@ -72,6 +72,15 @@ module mpas_subdriver
       call mpas_timer_start("total time")
       call mpas_timer_start("initialize")
 
+      !
+      ! Using information from the namelist, a graph.info file, and a file containing
+      !    mesh fields, build halos and allocate blocks in the domain
+      !
+      call mpas_bootstrap_framework(domain_ptr)
+
+      !
+      ! Read initial fields into blocks
+      !
       call mpas_input_state_for_domain(domain_ptr)
 
 
