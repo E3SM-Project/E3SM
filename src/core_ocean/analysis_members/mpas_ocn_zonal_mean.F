@@ -269,7 +269,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_alarms_zonal_mean(clock, startTime, computeAlarmID, err)!{{{
+   subroutine ocn_init_alarms_zonal_mean(configs, clock, startTime, computeAlarmID, err)!{{{
 
       use mpas_packages
 
@@ -279,6 +279,7 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (mpas_pool_type), intent(in) :: configs
       character (len=*), intent(in) :: computeAlarmID
       type (MPAS_Time_Type), intent(in) :: startTime
 
@@ -313,8 +314,8 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_zonal_mean_compute_interval', config_zonal_mean_compute_interval)
-      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(configs, 'config_zonal_mean_compute_interval', config_zonal_mean_compute_interval)
+      call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
 
       ! set compute alarm for this analysis member
       if (config_zonal_mean_compute_interval == 'same_as_output') then

@@ -43,6 +43,8 @@ module mpas_core
       logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: xtime
+      type (MPAS_Time_Type) :: startTime
+      integer :: ierr
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
@@ -54,6 +56,13 @@ module mpas_core
       clock => domain % clock
 
 
+      !
+      ! Set startTimeStamp based on the start time of the simulation clock
+      !
+      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+
+
       call sw_constants_init(domain % configs, domain % packages)
 
       if (.not. config_do_restart) call setup_sw_test_case(domain)
@@ -62,8 +71,6 @@ module mpas_core
       ! Initialize core
       !
       dt = config_dt
-
-      call simulation_clock_init(domain, dt, startTimeStamp)
 
       block => domain % blocklist
       do while (associated(block))
@@ -83,69 +90,72 @@ module mpas_core
    end subroutine mpas_core_init
 
 
-   subroutine simulation_clock_init(domain, dt, startTimeStamp)
+   subroutine simulation_clock_init(core_clock, configs, ierr)
 
       implicit none
 
-      type (domain_type), intent(inout) :: domain
-      real (kind=RKIND), intent(in) :: dt
-      character(len=*), intent(out) :: startTimeStamp
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
 
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
-      integer :: ierr
+      integer :: local_err
 
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval
+      real (kind=RKIND), pointer :: config_dt
 
-      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-      call mpas_pool_get_config(domain % configs, 'config_run_duration', config_run_duration)
-      call mpas_pool_get_config(domain % configs, 'config_stop_time', config_stop_time)
-      call mpas_pool_get_config(domain % configs, 'config_output_interval', config_output_interval)
-      call mpas_pool_get_config(domain % configs, 'config_restart_interval', config_restart_interval)
 
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
-      call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(configs, 'config_restart_interval', config_restart_interval)
+
+      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=local_err)
+      call mpas_set_timeInterval(timeStep, dt=config_dt, ierr=local_err)
 
       if (trim(config_run_duration) /= "none") then
-         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=ierr)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=ierr)
+         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=local_err)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=local_err)
 
          if (trim(config_stop_time) /= "none") then
-            call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=ierr)
+            call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
                write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
-         call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=ierr)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=ierr)
+         call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
           write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-          call mpas_dmpar_abort(domain % dminfo)
+          ierr = 1
       end if
 
       ! set output alarm
-      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=ierr)
+      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=local_err)
       alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+      call mpas_add_clock_alarm(core_clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=local_err)
 
       ! set restart alarm, if necessary
       if (trim(config_restart_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=ierr)
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=local_err)
          alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+         call mpas_add_clock_alarm(core_clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=local_err)
       end if
 
       !TODO: use this code if we desire to convert config_stats_interval to alarms 
       !(must also change config_stats_interval type to character) 
       ! set stats alarm, if necessary
       !if (trim(config_stats_interval) /= "none") then      
-      !   call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=ierr)
+      !   call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=local_err)
       !   alarmStartTime = startTime + alarmTimeStep
-      !   call mpas_add_clock_alarm(clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+      !   call mpas_add_clock_alarm(core_clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=local_err)
       !end if
-
-      call mpas_get_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=ierr)
 
    end subroutine simulation_clock_init
 
@@ -431,20 +441,20 @@ module mpas_core
 
    end subroutine compute_mesh_scaling
 
-!***********************************************************************
-!
-!  routine mpas_core_setup_packages
-!
-!> \brief   Pacakge setup routine
-!> \author  Doug Jacobsen
-!> \date    September 2011
-!> \details 
-!>  This routine is intended to correctly configure the packages for this MPAS
-!>   core. It can use any Fortran logic to properly configure packages, and it
-!>   can also make use of any namelist options. All variables in the model are
-!>   *not* allocated until after this routine is called.
-!
-!-----------------------------------------------------------------------
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_packages
+   !
+   !> \brief   Pacakge setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details 
+   !>  This routine is intended to correctly configure the packages for this MPAS
+   !>   core. It can use any Fortran logic to properly configure packages, and it
+   !>   can also make use of any namelist options. All variables in the model are
+   !>   *not* allocated until after this routine is called.
+   !
+   !-----------------------------------------------------------------------
    subroutine mpas_core_setup_packages(configPool, packagePool, ierr)!{{{
 
       implicit none
@@ -456,5 +466,35 @@ module mpas_core
       ierr = 0
 
    end subroutine mpas_core_setup_packages!}}}
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_clock
+   !
+   !> \brief   Pacakge setup routine
+   !> \author  Michael Duda
+   !> \date    6 August 2014
+   !> \details 
+   !>  The purpose of this routine is to allow the core to set up a simulation
+   !>  clock that will be used by the I/O subsystem for timing reads and writes
+   !>  of I/O streams.
+   !>  This routine is called from the superstructure after the framework 
+   !>  has been initialized but before any fields have been allocated and 
+   !>  initial fields have been read from input files. However, all namelist
+   !>  options are available.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
+
+      call simulation_clock_init(core_clock, configs, ierr)
+
+   end subroutine mpas_core_setup_clock
 
 end module mpas_core

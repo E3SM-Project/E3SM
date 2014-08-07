@@ -221,7 +221,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_init_alarms(clock, startTime, err)!{{{
+   subroutine ocn_analysis_init_alarms(configs, clock, startTime, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -229,6 +229,7 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (mpas_pool_type), intent(in) :: configs
       type (MPAS_Time_Type), intent(in) :: startTime
 
       !-----------------------------------------------------------------
@@ -260,21 +261,21 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_global_stats', config_use_global_stats)
+      call mpas_pool_get_config(configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
-          call ocn_init_alarms_global_stats(clock, startTime, compute_global_stats_AlarmID, err_tmp)
+          call ocn_init_alarms_global_stats(configs, clock, startTime, compute_global_stats_AlarmID, err_tmp)
           err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_zonal_mean', config_use_zonal_mean)
+      call mpas_pool_get_config(configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
-         call ocn_init_alarms_zonal_mean(clock, startTime, compute_zonal_mean_AlarmID, err_tmp)
+         call ocn_init_alarms_zonal_mean(configs, clock, startTime, compute_zonal_mean_AlarmID, err_tmp)
          err = ior(err, err_tmp)
       endif
 
-!      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+!      call mpas_pool_get_config(configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!         call ocn_init_alarms_TEMPLATE(clock, startTime, compute_TEMPLATE_AlarmID, err_tmp)
+!         call ocn_init_alarms_TEMPLATE(configs, clock, startTime, compute_TEMPLATE_AlarmID, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 

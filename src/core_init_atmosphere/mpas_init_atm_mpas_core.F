@@ -100,5 +100,55 @@ module mpas_core
       ierr = 0
 
    end subroutine mpas_core_setup_packages
+
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_clock
+   !
+   !> \brief   Pacakge setup routine
+   !> \author  Michael Duda
+   !> \date    6 August 2014
+   !> \details 
+   !>  The purpose of this routine is to allow the core to set up a simulation
+   !>  clock that will be used by the I/O subsystem for timing reads and writes
+   !>  of I/O streams.
+   !>  This routine is called from the superstructure after the framework 
+   !>  has been initialized but before any fields have been allocated and 
+   !>  initial fields have been read from input files. However, all namelist
+   !>  options are available.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
+
+      use mpas_timekeeping, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, &
+                                   mpas_set_time, mpas_set_timeInterval, mpas_create_clock
+      use mpas_grid_types, only : mpas_pool_type, mpas_pool_get_config
+      use mpas_kind_types, only : StrKIND
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
+
+      character(len=StrKIND), pointer :: config_start_time, config_stop_time
+      integer, pointer :: config_fg_interval
+
+      type (MPAS_Time_type)         :: start_time, stop_time
+      type (MPAS_TimeInterval_type) :: dt
+
+
+      call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(configs, 'config_fg_interval', config_fg_interval)
+
+      call mpas_set_time(start_time, dateTimeString=trim(config_start_time))
+      call mpas_set_time(stop_time, dateTimeString=trim(config_stop_time))
+      call mpas_set_timeInterval(dt, S=config_fg_interval)
+      call mpas_create_clock(core_clock, start_time, dt, stopTime=stop_time)
+
+   end subroutine mpas_core_setup_clock
    
 end module mpas_core
