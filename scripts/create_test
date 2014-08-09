@@ -49,6 +49,7 @@ my $xmlmode = 0;
 my %progconfig;
 my %opts;
 my $commandline;
+my $project;
 
 sub usage()
 {
@@ -86,6 +87,7 @@ SYNOPSIS
       [-nobatch           no_batch_submission_for_tests]
       [-nobuild           no_test_compilation]
       [-pes_file          specified_pes_file]
+      [-project           specified project id]
       [-reruntests        are_tests_rerunnable ]
       [-sharedlibroot     shared build directory to reuse static library components]
       [-testroot          root_directory_for_testsuite]
@@ -206,6 +208,10 @@ OPTIONS:
                            the test suite. 
       
       -pes_file  <file>    Specify a pes file when creating a single test. 
+
+      -project <name>      Specify a project id for the case (optional)
+                           The default is user-specified environment variable 
+                           PROJECT.
 
       -reruntests [on|off] Whether or not the test suite is re-runnable. This is
                            not yet implemented. 
@@ -382,6 +388,7 @@ sub initialize()
            nobatch              => 'off',
            nobuild              => 'off',
            pes_file             => undef,
+           project              => undef,
            reruntests           => 'off',
            testid               => $testlid,
            testname             => undef,
@@ -421,6 +428,7 @@ sub options
                "nobatch=s"           => \$opts{'nobatch'},  
                "nobuild=s"           => \$opts{'nobuild'}, 
                "pes_file=s"          => \$opts{'pes_file'},
+               "project=s"           => \$opts{'project'},  
                "reruntests=s"        => \$opts{'reruntests'}, 
      	       "sharedlibroot=s"     => \$opts{'sharedlibroot'},
                "testid=s"            => \$opts{'testid'},
@@ -590,6 +598,25 @@ sub checkOptions
     if(!defined $opts{'baselineroot'}) {
         $opts{'baselineroot'} = SetupTools::expand_env_var($cfg_ref->get('CCSM_BASELINE'), $cfg_ref);
     }
+    if(! defined $opts{'project'})
+    {
+        if (defined $ENV{'PROJECT'}){
+            $project = $ENV{'PROJECT'};
+	}
+        my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
+        if (-f $ccsm_proj_file){
+            open my $ccsm_proj, '<', $ccsm_proj_file;
+            my $firstline = <$ccsm_proj>;
+            if ($firstline =~ /^\s*(\S*)/){
+               $project = $1;
+            }
+            close $ccsm_proj;
+        }
+        if (defined $project and length $project){
+            $opts{'project'} = $project;
+            Debug("project: $opts{'project'}\n");
+        }
+    }    
     if(! defined $opts{'scratchroot'})
     {
 	$opts{'scratchroot'} = $cfg_ref->get('CESMSCRATCHROOT');
@@ -1132,9 +1159,9 @@ sub runCreateNewcase
 	$cn_args .= " -sharedlibroot $opts{'sharedlibroot'}";
   }
 
-
-
-
+  if(defined $opts{'project'}){
+      $cn_args .= " -project $opts{'project'}";
+  }
 
   my $createnewcase = "$opts{'cesmroot'}/scripts/create_newcase $cn_args";
   if($opts{'dryrun'}){
@@ -1347,6 +1374,10 @@ sub testcaseSetup
   if(defined $xmlvars{'STOP_N'})
   {
       $sysmod .= " STOP_N=$xmlvars{'STOP_N'} ";
+  }
+  if(defined $opts{'project'})
+  {
+      $sysmod .= " PROJECT=$opts{'project'} ";
   }
   if(defined $opts{'scratchroot'})
   {
