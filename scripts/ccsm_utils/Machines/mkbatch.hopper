@@ -45,7 +45,7 @@ endif
 
 cat >! $file << EOF1
 #!/bin/csh -f
-###PBS -A ${account_name}
+#PBS -A ${account_name}
 #PBS -N ${jobname}
 #PBS -q regular
 #PBS -l mppwidth=${mppsize}
