@@ -35,7 +35,8 @@ module mpas_subdriver
 
       use mpas_stream_manager, only : MPAS_stream_mgr_init
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
-      use mpas_c_interfacing, only : mpas_f_to_c_string
+      use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
+      use mpas_timekeeping, only : MPAS_Time_type, mpas_get_clock_time, mpas_get_time
  
       implicit none
 
@@ -47,16 +48,32 @@ module mpas_subdriver
       integer(kind=c_int) :: c_comm
       integer(kind=c_int) :: c_ierr
       type (c_ptr) :: mgr_p
+      character(len=StrKIND) :: mesh_stream
+      character(len=StrKIND) :: mesh_filename
+      character(len=StrKIND) :: mesh_filename_temp
+      character(kind=c_char), dimension(StrKIND+1) :: c_mesh_stream
+      character(kind=c_char), dimension(StrKIND+1) :: c_mesh_filename_temp
+      type (MPAS_Time_type) :: start_time
+      character(len=StrKIND) :: start_timestamp
 
 
       interface
-         subroutine xml_stream_parser(fname, mgr_p, comm, ierr) bind(c)
+         subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
             use iso_c_binding, only : c_char, c_ptr, c_int
-            character(kind=c_char), dimension(*), intent(in) :: fname
+            character(kind=c_char), dimension(*), intent(in) :: xmlname
             type (c_ptr), intent(inout) :: mgr_p
             integer(kind=c_int), intent(inout) :: comm
             integer(kind=c_int), intent(out) :: ierr
          end subroutine xml_stream_parser
+
+         subroutine xml_stream_get_filename(xmlname, streamname, comm, filename, ierr) bind(c)
+            use iso_c_binding, only : c_char, c_int
+            character(kind=c_char), dimension(*), intent(in) :: xmlname
+            character(kind=c_char), dimension(*), intent(in) :: streamname
+            integer(kind=c_int), intent(inout) :: comm
+            character(kind=c_char), dimension(*), intent(in) :: filename
+            integer(kind=c_int), intent(out) :: ierr
+         end subroutine xml_stream_get_filename
       end interface
 
 
@@ -76,7 +93,25 @@ module mpas_subdriver
       ! Using information from the namelist, a graph.info file, and a file containing
       !    mesh fields, build halos and allocate blocks in the domain
       !
-      call mpas_bootstrap_framework(domain_ptr)
+      call mpas_core_get_mesh_stream(domain_ptr % configs, mesh_stream, ierr)
+      if (ierr /= 0) then
+         call mpas_dmpar_abort(dminfo)
+      end if
+write(0,*) 'MGD DEBUG mesh stream is '//trim(mesh_stream)
+      call mpas_f_to_c_string(domain % streams_filename, c_filename)
+      call mpas_f_to_c_string(mesh_stream, c_mesh_stream)
+      c_comm = dminfo % comm
+      call xml_stream_get_filename(c_filename, c_mesh_stream, c_comm, c_mesh_filename_temp, c_ierr)
+      if (c_ierr /= 0) then
+         call mpas_dmpar_abort(dminfo)
+      end if
+      call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
+write(0,*) 'MGD DEBUG mesh filename template is '//trim(mesh_filename_temp)
+      start_time = mpas_get_clock_time(domain_ptr % clock, MPAS_START_TIME, ierr)
+      call mpas_get_time(start_time, dateTimeString=start_timestamp, ierr=ierr)
+      call mpas_expand_string(start_timestamp, mesh_filename_temp, mesh_filename)
+write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
+      call mpas_bootstrap_framework(domain_ptr, mesh_filename)
 
       !
       ! Read initial fields into blocks
@@ -89,9 +124,7 @@ module mpas_subdriver
       !
       call MPAS_stream_mgr_init(stream_manager, domain % clock, domain % blocklist % allFields)
 
-      call mpas_f_to_c_string(domain % streams_filename, c_filename)
       mgr_p = c_loc(stream_manager)
-      c_comm = dminfo % comm
       call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
       if (c_ierr /= 0) then
          call mpas_dmpar_abort(dminfo)

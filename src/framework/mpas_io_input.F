@@ -81,11 +81,12 @@ module mpas_io_input
    !>            mpas_initialize_vectors()
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework(domain) !{{{
+   subroutine mpas_bootstrap_framework(domain, mesh_filename) !{{{
 
       implicit none
    
       type (domain_type), pointer :: domain
+      character(len=*), intent(in) :: mesh_filename
 
       type (block_type), pointer :: readingBlock
    
@@ -136,12 +137,10 @@ module mpas_io_input
       character(len=StrKIND) :: filename
 
       integer, pointer :: config_num_halos, config_number_of_blocks
-      logical, pointer :: config_do_restart, config_explicit_proc_decomp
-      character (len=StrKIND), pointer :: config_restart_timestamp_name, config_start_time, config_restart_name, config_input_name
+      logical, pointer :: config_explicit_proc_decomp
       character (len=StrKIND), pointer :: config_block_decomp_file_prefix, config_proc_decomp_file_prefix
       integer :: nHalos
 
-      character (len=StrKIND) :: grid_filename
 
       call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
       call mpas_pool_get_config(domain % configs, 'config_number_of_blocks', config_number_of_blocks)
@@ -149,41 +148,10 @@ module mpas_io_input
       call mpas_pool_get_config(domain % configs, 'config_block_decomp_file_prefix', config_block_decomp_file_prefix)
       call mpas_pool_get_config(domain % configs, 'config_proc_decomp_file_prefix', config_proc_decomp_file_prefix)
 
-!MGD not needed for bootstrapping... get info from core
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-!MGD not needed for bootstrapping... get info from core
-      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-!MGD not needed for bootstrapping... get time from clock
-      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-!MGD not needed for bootstrapping... get time from clock
-      call mpas_pool_get_config(domain % configs, 'config_restart_name', config_restart_name)
-!MGD not needed for bootstrapping... get filename from XML (and stream name from core)
-      call mpas_pool_get_config(domain % configs, 'config_input_name', config_input_name)
-
       nHalos = config_num_halos
 
-!MGD eventually get filename and time from XML
-      if (config_do_restart) then
-        ! this get followed by set is to ensure that the time is in standard format
-        if(trim(config_start_time) == 'file') then
-          open(22,file=trim(config_restart_timestamp_name),form='formatted',status='old')
-          read(22,*) restartTimeStamp
-          close(22)
 
-        else
-          restartTimeStamp = config_start_time
-        end if
-
-        write(stderrUnit,*) 'RestartTimeStamp ', trim(restartTimeStamp)
-        call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp)
-        call mpas_get_time(curr_time=startTime, dateTimeString=timeStamp)
-        call mpas_insert_string_suffix(trim(config_restart_name), timeStamp, filename)
-
-        grid_filename = trim(filename)
-      else
-        grid_filename = trim(config_input_name)
-      end if
-      inputHandle = MPAS_io_open(trim(grid_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr)
       if (ierr /= MPAS_IO_NOERR) then
          call mpas_dmpar_abort(domain % dminfo)
       end if
@@ -292,7 +260,7 @@ module mpas_io_input
       !
       call MPAS_io_get_att(inputHandle, 'on_a_sphere', c_on_a_sphere, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit,*) 'Warning: Attribute on_a_sphere not found in '//trim(grid_filename)
+         write(stderrUnit,*) 'Warning: Attribute on_a_sphere not found in '//trim(mesh_filename)
          write(stderrUnit,*) '   Setting on_a_sphere to ''YES'''
          domain % on_a_sphere = .true.
       else
@@ -305,7 +273,7 @@ module mpas_io_input
 
       call MPAS_io_get_att(inputHandle, 'sphere_radius', r_sphere_radius, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit,*) 'Warning: Attribute sphere_radius not found in '//trim(grid_filename)
+         write(stderrUnit,*) 'Warning: Attribute sphere_radius not found in '//trim(mesh_filename)
          write(stderrUnit,*) '   Setting sphere_radius to 1.0'
          domain % sphere_radius = 1.0
       else
@@ -323,8 +291,6 @@ module mpas_io_input
 
       call MPAS_io_close(inputHandle, ierr)
 
-! MGD no need to re-index at this point, as this will be done after initial fields are read
-!      call mpas_block_creator_reindex_block_fields(domain % blocklist)
 
       call mpas_dmpar_destroy_mulithalo_exchange_list(indexToCellIDField % sendList)
       call mpas_dmpar_destroy_mulithalo_exchange_list(indexToCellIDField % recvList)

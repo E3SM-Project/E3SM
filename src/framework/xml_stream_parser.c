@@ -202,6 +202,8 @@ int attribute_check(ezxml_t stream)
 
 	/*
 	 *  Check that the filename template contains no illegal characters or variables
+	 *  NB: If new variable characters are added here, they should also be accommodated in
+	 *      the mpas_expand_string() subroutine in the mpas_timekeeping module.
 	 */
 	len = strlen(s_filename);
 	nextchar = 0;
@@ -345,7 +347,7 @@ int check_streams(ezxml_t streams)
  *********************************************************************************/
 void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 {
-        char *xml_buf;
+	char *xml_buf;
 	size_t bufsize;
 	ezxml_t streams;
 	ezxml_t stream_xml;
@@ -364,7 +366,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	*status = 0;
 
 	global_file = fname;
-        if (par_read(fname, mpi_comm, &xml_buf, &bufsize) != 0) {
+	if (par_read(fname, mpi_comm, &xml_buf, &bufsize) != 0) {
 		*status = 1;
 		return;
 	}
@@ -445,7 +447,7 @@ fprintf(stderr, "MGD DEV Found stream named %s\n", streamID);
 			if (fd != NULL) {
 				while (fscanf(fd, "%s", fieldname) != EOF) {
 fprintf(stderr, "Adding %s to stream %s\n", fieldname, streamID);
-       		         		stream_mgr_add_field_c(manager, streamID, (const char *)fieldname, &err);
+       			 		stream_mgr_add_field_c(manager, streamID, (const char *)fieldname, &err);
 					if (err != 0) {
 						*status = 1;
 						return;
@@ -463,7 +465,7 @@ fprintf(stderr, "Adding %s to stream %s\n", fieldname, streamID);
 		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
 			fieldname_const = ezxml_attr(var_xml, "name");
 fprintf(stderr, "Adding %s to stream %s\n", fieldname_const, streamID);
-                	stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
+			stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
 			if (err != 0) {
 				*status = 1;
 				return;
@@ -474,4 +476,68 @@ fprintf(stderr, "Adding %s to stream %s\n", fieldname_const, streamID);
 	free(xml_buf);
 
 	fprintf(stderr, "MGD DEV done parsing run-time I/O\n");
+}
+
+
+/*********************************************************************************
+ *
+ *  Function: xml_stream_get_filename
+ *
+ *  Parses an XML file and searches for the stream whose name matches the 'streamname'
+ *  argument; then, returns the associated filename template for that stream in 
+ *  the 'filename' argument.
+ *
+ *  The fname argument provides the name of the XML file that contains the stream
+ *  definitions, and mpi_comm is the Fortran MPI communicator used by MPAS.
+ *
+ *********************************************************************************/
+void xml_stream_get_filename(char *fname, char *streamname, int *mpi_comm, char *filename, int *status)
+{
+	char *xml_buf;
+	size_t bufsize;
+	ezxml_t streams;
+	ezxml_t stream_xml;
+	const char *streamID, *filename_template;
+	int found;
+
+
+	*status = 0;
+
+	global_file = fname;
+	if (par_read(fname, mpi_comm, &xml_buf, &bufsize) != 0) {
+		*status = 1;
+		return;
+	}
+
+	streams = ezxml_parse_str(xml_buf, bufsize);
+	if (!streams) {
+		fprintf(stderr, "********************************************************************************\n\n");
+		fprintf(stderr, "Error: Problems encountered while parsing run-time I/O config file %s\n", fname);
+		fprintf(stderr, "********************************************************************************\n\n");
+		*status = 1;
+		return;
+	}	
+
+/* TODO: is it better to check the streams here, or later when xml_stream_parser is called? */
+	if (check_streams(streams) != 0) {
+		*status = 1;
+		return;
+	}
+
+	found = 0;
+	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
+		streamID = ezxml_attr(stream_xml, "name");
+		filename_template = ezxml_attr(stream_xml, "filename_template");
+
+		if (strcmp(streamID, streamname) == 0) {
+			found = 1;
+			fprintf(stderr, "Found grid stream with template %s\n", filename_template);
+			sprintf(filename, "%s", filename_template);
+			break;
+		}
+	}
+	if (found == 0) {
+		*status = 1;
+		return;
+	}
 }

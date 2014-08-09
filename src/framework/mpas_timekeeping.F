@@ -1666,6 +1666,9 @@ module mpas_timekeeping
     !>   $g -> multi-grid level
     !-----------------------------------------------------------------------
     subroutine mpas_expand_string(timeStamp, inString, outString)!{{{
+
+        implicit none
+
         character (len=*), intent(in) :: timeStamp
         character (len=*), intent(in) :: inString
         character (len=StrKIND), intent(out) :: outString

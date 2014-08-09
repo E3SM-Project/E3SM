@@ -150,5 +150,46 @@ module mpas_core
       call mpas_create_clock(core_clock, start_time, dt, stopTime=stop_time)
 
    end subroutine mpas_core_setup_clock
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_get_mesh_stream
+   !
+   !> \brief   Returns the name of the stream containing mesh information
+   !> \author  Michael Duda
+   !> \date    8 August 2014
+   !> \details 
+   !>  This routine returns the name of the I/O stream containing dimensions,
+   !>  attributes, and mesh fields needed by the framework bootstrapping 
+   !>  routine. At the time this routine is called, only namelist options 
+   !>  are available.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
+
+      use mpas_grid_types, only : mpas_pool_type, mpas_pool_get_config
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: configs
+      character(len=*), intent(out) :: stream
+      integer, intent(out) :: ierr
+
+      logical, pointer :: config_do_restart
+
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
+
+      if (.not. associated(config_do_restart)) then
+         ierr = 1
+      else if (config_do_restart) then
+         write(stream,'(a)') 'restart'
+      else
+         write(stream,'(a)') 'input'
+      end if
+
+   end subroutine mpas_core_get_mesh_stream
    
 end module mpas_core
