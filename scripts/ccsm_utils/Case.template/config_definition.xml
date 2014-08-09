@@ -75,7 +75,7 @@
 <entry id="PROJECT" 
  type="char"
  valid_values=""  
- value="UNSET" 
+ value="PROJECT_UNSET" 
  group="case_desc"
  sdesc="project for project-sensitive build and run paths"
 ></entry> 

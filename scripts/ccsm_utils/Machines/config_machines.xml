@@ -121,12 +121,12 @@
          <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
-         <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$SCRATCH/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
@@ -275,12 +275,12 @@
          <DESC>NERSC XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,intel,gnu,cray,pathscale</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <RUNDIR>/scratch/scratchdirs/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/scratch/scratchdirs/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/scratch/scratchdirs/$USER</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{SCRATCH2}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/scratch/scratchdirs/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -342,9 +342,9 @@
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <RUNDIR>/projects/$PROJECT/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
-         <EXEROOT>/projects/$PROJECT/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/projects/$PROJECT/$CCSMUSER/scratch/exe</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/$ENV{USER}/scratch/exe</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/projects/$PROJECT/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
@@ -488,16 +488,16 @@
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,pgicuda</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <RUNDIR>/lustre/atlas/scratch/$CCSMUSER/$PROJECT/$CASE/run</RUNDIR>
-         <EXEROOT>/lustre/atlas/scratch/$CCSMUSER/$PROJECT/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/lustre/atlas/scratch/$CCSMUSER/$PROJECT</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{MEMBERWORK}/$PROJECT</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lustre/atlas/scratch/$CCSMUSER/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
-         <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>

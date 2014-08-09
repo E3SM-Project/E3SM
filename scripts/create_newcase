@@ -246,10 +246,12 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     }
 
     # Set default and and then check if case project option is given
-    $project = "$ENV{'PROJECT'}";
+    if (defined $ENV{'PROJECT'}){
+        $project = $ENV{'PROJECT'};
+    }
 
     my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
-    if (-e $ccsm_proj_file){
+    if (-f $ccsm_proj_file){
         open my $ccsm_proj, '<', $ccsm_proj_file;
         my $firstline = <$ccsm_proj>;
         if ($firstline =~ /^\s*(\S*)/){
@@ -524,7 +526,9 @@ if (defined $opts{'confopts'}) {
 #-----------------------------------------------------------------------------------------------
 # (7) Set project id
 #-----------------------------------------------------------------------------------------------
-$cfg_ref->set('PROJECT' , "$project");
+if (defined $project and length $project){
+    $cfg_ref->set('PROJECT' , "$project");
+}
 
 #-----------------------------------------------------------------------------------------------
 # (8) Determine pes for machine
