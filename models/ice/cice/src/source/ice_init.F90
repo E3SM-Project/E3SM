@@ -411,8 +411,10 @@
       if (chartmp /= 'upwind' .and. chartmp /= 'remap ') advection = 'remap'
 
       if (ncat == 1 .and. kitd == 1) then
-         write (nu_diag,*) 'Remapping the ITD is not allowed for ncat=1'
-         write (nu_diag,*) 'Using the delta function ITD option instead'
+         if (my_task == master_task) then
+            write (nu_diag,*) 'Remapping the ITD is not allowed for ncat=1'
+            write (nu_diag,*) 'Using the delta function ITD option instead'
+         endif
          kitd = 0
       endif
 

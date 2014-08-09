@@ -71,9 +71,85 @@ EOF
 endif
 
 # -------------------------------------------------------------------------
+# Process and archive performance data
+# -------------------------------------------------------------------------
+
+if ($CHECK_TIMING == 'TRUE') then
+  cd $CASEROOT
+  if !(-d timing) mkdir timing
+  $CASETOOLS/getTiming.csh -lid $LID 
+  gzip timing/ccsm_timing_stats.$LID
+endif
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "ccsm_postrun ended $sdate" >>& $CASEROOT/CaseStatus
+
+if ($SAVE_TIMING == 'FALSE') then
+  cd $RUNDIR
+  rm -rf timing
+else
+  cd $RUNDIR
+  mv timing timing.$LID
+  tar cf timing.$LID.tar timing.$LID
+  gzip timing.$LID.tar
+  rm -rf timing.$LID
+
+  if (-d $SAVE_TIMING_DIR) then
+    cd $SAVE_TIMING_DIR
+    if !(-d performance_archive) then
+      mkdir performance_archive
+      chmod 777 performance_archive
+    endif
+    cd performance_archive
+    if !(-d $CCSMUSER) then
+      mkdir $CCSMUSER
+      chmod 775 $CCSMUSER
+    endif
+    cd $CCSMUSER
+    if !(-d $CASE) then
+      mkdir $CASE
+      chmod 775 $CASE
+    endif
+    cd $CASE
+    if !(-d $LID) then
+      mkdir $LID
+      chmod 775 $LID
+    endif
+    cd $LID
+    cp -p $RUNDIR/timing.$LID.tar.gz timing.$LID.tar.gz
+    cp -p $CASEROOT/logs/cesm.log.$LID.gz cesm.log.$LID.gz
+    cp -p $CASEROOT/timing/*.$LID $CASEROOT/timing/*.$LID.gz .
+    cp -p $CASEROOT/CaseStatus CaseStatus.$LID
+
+    if (-f $EXEROOT/GIT_DESCRIBE) then
+      cp -p $EXEROOT/GIT_DESCRIBE GIT_DESCRIBE.$LID
+    endif
+    if (-f $EXEROOT/GIT_LOGS_HEAD) then
+      cp -p $EXEROOT/GIT_LOGS_HEAD GIT_LOGS_HEAD.$LID
+    endif
+    if (-f $EXEROOT/SVN_INFO) then
+      cp -p $EXEROOT/SVN_INFO SVN_INFO.$LID
+    endif
+    if (-f $EXEROOT/SVN_WC.DB) then
+      cp -p $EXEROOT/SVN_WC.DB SVN_WC.DB.$LID
+    endif
+    if (-e $EXEROOT/SourceMods.tar) then
+      cp -p $EXEROOT/SourceMods.tar SourceMods.$LID.tar
+    endif
+
+    chmod -R a+rX *
+    gzip -r *
+  endif
+
+  cd $CASEROOT
+  touch timing/timing.$LID.saved
+endif
+
+# -------------------------------------------------------------------------
 # Resubmit another run script
 # -------------------------------------------------------------------------
 
+cd $CASEROOT
 if ($RESUBMIT > 0) then
     @ RESUBMIT = $RESUBMIT - 1
     echo RESUBMIT is now $RESUBMIT
@@ -99,16 +175,6 @@ EOF
      endif
      rm tempres
    endif 
-endif
-
-if ($CHECK_TIMING == 'TRUE') then
-  if !(-d timing) mkdir timing
-  $CASETOOLS/getTiming.csh -lid $LID 
-  gzip timing/ccsm_timing_stats.$LID
-endif
-
-if ($SAVE_TIMING == 'TRUE') then
-  mv $RUNDIR/timing $RUNDIR/timing.$LID
 endif
 
 

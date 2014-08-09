@@ -184,7 +184,7 @@ subroutine diag_init()
    call addfld ('UAP     ','m/s     ',pver, 'A','Zonal wind (after physics)'        ,phys_decomp)
    call addfld ('VAP     ','m/s     ',pver, 'A','Meridional wind (after physics)'   ,phys_decomp)
    call addfld (apcnst(1) ,'kg/kg   ',pver, 'A',cnst_longname(1)//' (after physics)',phys_decomp)
-   if ( dycore_is('LR') ) then
+   if ( dycore_is('LR') .or. dycore_is('SE') ) then
       call addfld ('TFIX    ','K/s     ',1,    'A'     ,'T fixer (T equivalent of Energy correction)',phys_decomp)
       call addfld ('PTTEND_RESID','K/s ',pver, 'A'     ,&
                    'T-tendency due to BAB kluge at end of tphysac (diagnostic not part of T-budget)' ,phys_decomp)
@@ -348,7 +348,7 @@ subroutine diag_init()
       call add_default ('UAP     '  , history_budget_histfile_num, ' ')
       call add_default ('VAP     '  , history_budget_histfile_num, ' ')
       call add_default (apcnst(1)   , history_budget_histfile_num, ' ')
-      if ( dycore_is('LR') ) then
+      if ( dycore_is('LR') .or. dycore_is('SE') ) then
          call add_default ('TFIX    '    , history_budget_histfile_num, ' ')
          call add_default ('PTTEND_RESID', history_budget_histfile_num, ' ')
       end if
@@ -1645,7 +1645,7 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
 
    ! Dump out post-physics state (FV only)
 
-   if (dycore_is('LR')) then
+   if (dycore_is('LR') .or. dycore_is('SE')) then
       tmp_t(:ncol,:pver) = (tmp_t(:ncol,:pver) - state%t(:ncol,:pver))/ztodt
       call outfld('PTTEND_RESID', tmp_t, pcols, lchnk   )
    end if
@@ -1659,7 +1659,7 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
 
    ! T-tendency due to FV Energy fixer (remove from total physics tendency diagnostic)
 
-   if (dycore_is('LR')) then
+   if (dycore_is('LR') .or. dycore_is('SE')) then
       call check_energy_get_integrals( heat_glob_out=heat_glob )
       ftem2(:ncol)  = heat_glob/cpair
       call outfld('TFIX', ftem2, pcols, lchnk   )

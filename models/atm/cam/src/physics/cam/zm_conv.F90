@@ -43,6 +43,7 @@ module zm_conv
    real(r8) :: zmconv_c0_lnd = unset_r8    
    real(r8) :: zmconv_c0_ocn = unset_r8    
    real(r8) :: zmconv_ke     = unset_r8    
+   real(r8) :: zmconv_tau    = unset_r8    
 
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
@@ -86,8 +87,10 @@ subroutine zmconv_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'zmconv_readnl'
 
-   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke
+   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau
    !-----------------------------------------------------------------------------
+   ! defaut:
+   zmconv_tau = 3600._r8
 
    if (masterproc) then
       unitn = getunit()
@@ -106,6 +109,7 @@ subroutine zmconv_readnl(nlfile)
       c0_lnd = zmconv_c0_lnd
       c0_ocn = zmconv_c0_ocn
       ke = zmconv_ke
+      tau = zmconv_tau
 
    end if
 
@@ -114,6 +118,7 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(c0_lnd,            1, mpir8,  0, mpicom)
    call mpibcast(c0_ocn,            1, mpir8,  0, mpicom)
    call mpibcast(ke,                1, mpir8,  0, mpicom)
+   call mpibcast(tau,               1, mpir8,  0, mpicom)
 #endif
 
 end subroutine zmconv_readnl
@@ -150,7 +155,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    ! convection is too weak, thus adjusted to 2400.
 
    hgrid = get_resolution()
-   tau = 3600._r8
+   !tau = 3600._r8
 
    if ( masterproc ) then
       write(iulog,*) 'tuning parameters zm_convi: tau',tau

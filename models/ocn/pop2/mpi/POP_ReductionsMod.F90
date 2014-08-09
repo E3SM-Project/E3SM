@@ -1,9 +1,13 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!BOP
+! !MODULE: POP_ReductionsMod
+
+! following are options for debugging performance
+! #define _ALT_ALLREDUCE 1
+! #define _LOWER_CUBE_COLLECTIVE 1
 
  module POP_ReductionsMod
 
-!BOP
-! !MODULE: POP_ReductionsMod
 ! !DESCRIPTION:
 !  This module contains all the routines for performing global
 !  reductions like global sums, minvals, maxvals, etc.
@@ -20,6 +24,7 @@
    use POP_DistributionMod
    use POP_GridHorzMod
    use registry
+   use perf_mod
 
    implicit none
    private
@@ -201,6 +206,13 @@
    real (POP_r8), dimension(:), allocatable :: &
       blockSum_array_loc, &! sum of local blocks
       blockSum_array_glo   ! sum of all blocks
+
+#ifdef _ALT_ALLREDUCE
+   real (POP_r8), dimension(1) :: &
+      tmp_localSum,  &! sum of all local block domain
+      tmp_globalSum   ! global sum
+#endif
+
 #endif
 
    integer (POP_i4) :: &
@@ -217,6 +229,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSum2DR8")
    errorCode = POP_Success
 #ifdef REPRODUCIBLE
    localSum  = 0.0_POP_r16
@@ -241,6 +254,7 @@
       return
    endif
 
+   call t_startf("GS_Nfields2DR8_blockloop")
    do iblock=1,numBlocks
       call POP_DistributionGetBlockID(dist, iblock, &
                                       blockID, errorCode)
@@ -340,6 +354,7 @@
 #endif
 
    end do
+   call t_stopf("GS_Nfields2DR8_blockloop")
 
 !-----------------------------------------------------------------------
 !
@@ -349,20 +364,35 @@
 
 #ifdef REPRODUCIBLE
    if (POP_myTask < numProcs) then
+      call t_startf("GlobalSum2DR8_allr_repro")
       call MPI_ALLREDUCE(localSum, globalSumTmp, 1, &
                          POP_mpiR16, MPI_SUM, communicator, ierr)
+      call t_stopf("GlobalSum2DR8_allr_repro")
       globalSum = globalSumTmp
    endif
 #else
    if (.not. b4b) then
       if (POP_myTask < numProcs) then
+#ifdef _ALT_ALLREDUCE
+         call t_startf("GlobalSum2DR8_allr_alt")
+         tmp_localSum(1) = localSum
+         call ALT_AllsumR8(tmp_localSum, tmp_globalSum, 1, &
+                            numProcs, communicator, errorCode)
+         globalSum = tmp_globalSum(1)
+         call t_stopf("GlobalSum2DR8_allr_alt")
+#else
+         call t_startf("GlobalSum2DR8_allr_def")
          call MPI_ALLREDUCE(localSum, globalSum, 1, &
                             POP_mpiR8, MPI_SUM, communicator, ierr)
+         call t_stopf("GlobalSum2DR8_allr_def")
+#endif
       endif
    else
       if (POP_myTask < numProcs) then
+         call t_startf("GlobalSum2DR8_allr_b4b")
          call MPI_ALLREDUCE(blockSum_array_loc, blockSum_array_glo, POP_numBlocks, &
                             POP_mpiR8, MPI_SUM, communicator, ierr)
+         call t_stopf("GlobalSum2DR8_allr_b4b")
          globalSum = 0.0_POP_r8
          do iblock=1,POP_numBlocks
             globalSum = globalSum + blockSum_array_glo(iblock)
@@ -373,6 +403,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSum2DR8")
 !EOC
 
  end function POP_GlobalSum2DR8
@@ -454,6 +485,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSum2DR4")
    errorCode = POP_Success
 #ifdef REPRODUCIBLE
    localSum  = 0.0_POP_r8
@@ -588,6 +620,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSum2DR4")
 !EOC
 
  end function POP_GlobalSum2DR4
@@ -662,6 +695,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSum2DI4")
    errorCode = POP_Success
    localSum  = 0_POP_i4
    globalSum = 0_POP_i4
@@ -780,6 +814,7 @@
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSum2DI4")
 !EOC
 
  end function POP_GlobalSum2DI4
@@ -868,6 +903,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSumNfields2DR8")
    errorCode = POP_Success
 #ifdef REPRODUCIBLE
    localSum  = 0.0_POP_r16
@@ -1014,20 +1050,33 @@
 
 #ifdef REPRODUCIBLE
    if (POP_myTask < numProcs) then
+      call t_startf("GS_Nfields2DR8_allr_repro")
       call MPI_ALLREDUCE(localSum, globalSumTmp, numFields, &
                          POP_mpiR16, MPI_SUM, communicator, ierr)
+      call t_stopf("GS_Nfields2DR8_allr_repro")
       globalSum = globalSumTmp 
    endif
 #else
    if (.not. b4b) then
       if (POP_myTask < numProcs) then
+#ifdef _ALT_ALLREDUCE
+         call t_startf("GS_Nfields2DR8_allr_alt")
+         call ALT_AllsumR8(localSum, globalSum, numFields, &
+                            numProcs, communicator, errorCode)
+         call t_stopf("GS_Nfields2DR8_allr_alt")
+#else
+         call t_startf("GS_Nfields2DR8_allr_def")
          call MPI_ALLREDUCE(localSum, globalSum, numFields, &
                             POP_mpiR8, MPI_SUM, communicator, ierr)
+         call t_stopf("GS_Nfields2DR8_allr_def")
+#endif
       endif
    else
       if (POP_myTask < numProcs) then
+         call t_startf("GS_Nfields2DR8_allr_b4b")
          call MPI_ALLREDUCE(blockSum_array_loc, blockSum_array_glo, numFields*POP_numBlocks, &
                             POP_mpiR8, MPI_SUM, communicator, ierr)
+         call t_stopf("GS_Nfields2DR8_allr_b4b")
          globalSum = 0.0_POP_r8
          do iblock=1,POP_numBlocks
             globalSum(:) = globalSum(:) + blockSum_array_glo(:,iblock)
@@ -1038,6 +1087,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumNfields2DR8")
 !EOC
 
  end function POP_GlobalSumNfields2DR8
@@ -1095,6 +1145,7 @@
    real (POP_r16) :: &
       scalarTmp, globalSumTmp  ! higher precision for reproducibility
 #endif
+   call t_startf("GlobalSumScalarR8")
 !-----------------------------------------------------------------------
 !
 !  get communicator for MPI calls
@@ -1135,6 +1186,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumScalarR8")
 !EOC
 
  end function POP_GlobalSumScalarR8
@@ -1191,6 +1243,7 @@
    real (POP_r8) :: &
       scalarTmp, globalSumTmp  ! higher precision for reproducibility
 #endif
+   call t_startf("GlobalSumScalarR4")
 !-----------------------------------------------------------------------
 !
 !  get communicator for MPI calls
@@ -1230,6 +1283,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumScalarR4")
 !EOC
 
  end function POP_GlobalSumScalarR4
@@ -1282,6 +1336,7 @@
       numProcs,        &! number of processor participating
       communicator      ! communicator for this distribution
 
+   call t_startf("GlobalSumScalarI4")
 !-----------------------------------------------------------------------
 !
 !  get communicator for MPI calls
@@ -1312,6 +1367,7 @@
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumScalarI4")
 !EOC
 
  end function POP_GlobalSumScalarI4
@@ -1395,6 +1451,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSumProd2DR8")
    errorCode = POP_Success
 #ifdef REPRODUCIBLE
    localSum  = 0.0_POP_r16
@@ -1532,6 +1589,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumProd2DR8")
 !EOC
 
  end function POP_GlobalSumProd2DR8
@@ -1615,6 +1673,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSumProd2DR4")
    errorCode = POP_Success
 #ifdef REPRODUCIBLE
    localSum  = 0.0_POP_r8
@@ -1752,6 +1811,7 @@
 #endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumProd2DR4")
 !EOC
 
  end function POP_GlobalSumProd2DR4
@@ -1827,6 +1887,7 @@
 
 !-----------------------------------------------------------------------
 
+   call t_startf("GlobalSumProd2DI4")
    errorCode = POP_Success
    localSum  = 0_POP_i4
    globalSum = 0_POP_i4
@@ -1949,6 +2010,7 @@
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("GlobalSumProd2DI4")
 !EOC
 
  end function POP_GlobalSumProd2DI4
@@ -4870,6 +4932,589 @@
 !EOC
 
  end subroutine POP_GlobalMinloc2DI4
+
+#ifdef _ALT_ALLREDUCE
+!***********************************************************************
+!BOP
+! !IROUTINE: ALT_AllSumR8
+! !INTERFACE:
+
+ subroutine ALT_AllSumR8(localSum, globalSum, numFields, numProcs, &
+                         communicator, errorCode)
+
+! !DESCRIPTION:
+!  This routine implements an Allreduce with the sum operator for
+!  a vector of R8 values using MPI point-to-point commands, as a test 
+!  of the performance of the corresponding MPI collective routine.
+!  A simple exchange algorithm is used, which should be relatively
+!  efficient for short vectors.
+!
+! !AUTHOR:
+!  Patrick Worley (worleyph@ornl.gov)
+!
+! !REVISION HISTORY:
+!  same as module
+!
+! !REMARKS:
+!  This is local to this module.
+
+! !INPUT PARAMETERS:
+
+   integer (POP_i4), intent(in) :: &
+      numFields            ! length of vector to be reduced
+
+   real (POP_r8), intent(in) :: &
+      localSum(numFields)  ! local contribution to be sum
+
+   integer (POP_i4), intent(in) :: &
+      numProcs             ! number of processes participating in 
+                           ! global sum
+
+   integer (POP_i4), intent(in) :: &
+      communicator         ! communicator for this summation
+
+! !OUTPUT PARAMETERS:
+
+   integer (POP_i4), intent(out) :: &
+      errorCode            ! returned error flag
+
+   real (POP_r8), intent(out) :: &
+      globalSum(numFields) ! global sum, returned to all processes
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   real (POP_r8) :: &
+      tempSum(numFields)   ! work space for computing sum
+
+   integer (POP_i4) ::    &
+      length, max_len,    &! length of node name
+      c, i, j,            &! loop indices
+      mpi_tag_offset,     &! MPI tag offset
+      ierr,               &! error or status flag for MPI,alloc
+      comm_group,         &! communicator group
+      local_group,        &! local SMP specific group
+#ifdef _LOWER_CUBE_COLLECTIVE
+      lower_group,        &! lower "smp proc0" hypercube specific group
+#endif
+      mod_mytaskid,       &! temp index referring to POP_myTask
+      partner,            &! SMP id
+      step,               &! vector index
+      distance             ! distance between exchange partners
+
+   integer (POP_i4), dimension(:), allocatable :: &
+      lengths,            &! max lengths of names for use in gatherv
+      displs,             &! offsets for use in gatherv
+      proc_smp_map,       &! mapping from process id to SMP node
+      smp_procX_map        ! mapping from SMP node to "root" process on node
+
+   logical (POP_logical) ::  &
+      do_allocate,        &! flag used to control alloc of exch_partners
+      done                 ! flag used to construct list of SMP nodes
+
+   character, dimension(:), allocatable :: &
+      proc_names           ! all processor names
+
+   character(len=1) :: &
+      proc_name(MPI_MAX_PROCESSOR_NAME) ! processor name, this task
+   character(len=MPI_MAX_PROCESSOR_NAME) :: &
+      tmp_name             ! temporary storage
+   character(len=MPI_MAX_PROCESSOR_NAME), dimension(:), allocatable :: &
+      smp_names            ! SMP names
+
+#ifndef _LOWER_CUBE_COLLECTIVE
+   real (POP_r8), dimension(:,:), allocatable, save :: &
+      isendSums            ! iSend buffers
+#endif
+
+   integer (POP_i4), save ::  &
+      save_comm,          &! communicator for last global sum
+      save_numProcs,      &! numProcs for last global sum
+      nsmps,              &! number of SMPs in global sum
+      nsmp_local,         &! number of processes in local SMP
+      local_pid,          &! local id (index) in SMP node
+      local_comm,         &! local SMP specific communicator
+#ifdef _LOWER_CUBE_COLLECTIVE
+      lower_comm,         &! lower "SMP proc0" hypercube specific communicator
+#endif
+      global_pid,         &! SMP node index
+      lowerp,             &! number of SMPs in lower hypercube
+      lg2_lowerp,         &! lg2(lowerp)
+      upperp,             &! number of SMPs in upper hypercube
+      twin                 ! process id of twin SMP root in upper/lower hypercube
+
+   integer (POP_i4), dimension(:), allocatable, save :: &
+      smp_proc0_map,      &! mapping from SMP node to "root" process on node
+      smp_partners,       &! process ids in same SMP node
+#ifdef _LOWER_CUBE_COLLECTIVE
+      lower_partners       ! process ids in lower smp_proc0 hypercube
+#else
+      exch_partners,      &! process ids exchanging partial sums with
+      snd_Requests         ! MPI send requests
+#endif
+
+   logical (POP_logical), save ::   &
+      upper                ! flag that in partial upper hypercube
+
+
+!-----------------------------------------------------------------------
+
+   mpi_tag_offset = 2
+
+   ! Test whether need to (re)calculate exchange ordering
+   do_allocate = .false.
+   if (.not. allocated(smp_proc0_map)) then
+      do_allocate = .true.
+   else
+      if ((save_numProcs /= numProcs) .or. &
+          (save_comm /= communicator)) then
+
+#ifdef _LOWER_CUBE_COLLECTIVE
+         deallocate(smp_proc0_map, smp_partners, stat=ierr)
+#else
+         deallocate(smp_proc0_map, smp_partners, exch_partners, &
+                    snd_Requests, isendSums, stat=ierr)
+#endif
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error deallocating buffers')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   ! Calculate exchange ordering
+   if (do_allocate) then
+      call t_startf("ALT_AllSumR8_init")
+
+      save_comm     = communicator
+      save_numProcs = numProcs
+
+      ! determine number of SMP nodes, and
+      ! mapping of processes to these nodes
+
+      ! get processor (SMP node) name
+      max_len = MPI_MAX_PROCESSOR_NAME
+
+      call mpi_get_processor_name (tmp_name, length, ierr)
+      proc_name(:) = ' '
+      do i = 1, length
+         proc_name(i) = tmp_name(i:i)
+      end do
+
+      if (POP_myTask == 0) then
+         allocate ( proc_names(max_len*numProcs), &
+                    displs(numProcs), lengths(numProcs), &
+                    stat=ierr )
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error allocating proc_names, displs, or lengths')
+            return
+         endif
+
+         proc_names(:) = ' '
+         lengths(:) = max_len
+         do i=1,numProcs
+            displs(i) = (i-1)*max_len
+         enddo
+      else
+         allocate ( proc_names(1), displs(1), lengths(1), stat=ierr )
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error allocating proc_names, displs, or lengths')
+            return
+         endif
+      endif
+
+      call mpi_gatherv (proc_name,  max_len, MPI_CHARACTER, &
+                        proc_names, lengths, displs, MPI_CHARACTER, &
+                        0, communicator, ierr)
+
+      deallocate ( lengths, displs, stat=ierr )
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'ALT_AllSumR8: error deallocating lengths or displs')
+         return
+      endif
+
+      allocate ( proc_smp_map(0:numProcs-1), stat=ierr )
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'ALT_AllSumR8: error allocating proc_smp_map')
+         return
+      endif
+
+      proc_smp_map(:) = -1
+
+      if (POP_myTask == 0) then
+         allocate ( smp_procX_map(0:numProcs-1), smp_names(0:numProcs-1), &
+                    stat=ierr )
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error allocating smp_procX_map or smp_names')
+            return
+         endif
+
+         smp_procX_map(:) = -1
+         smp_names(:) = ' '
+ 
+         nsmps = 1
+         do c=1,max_len
+            tmp_name(c:c) = proc_names(c)
+         enddo
+         smp_names(0) = trim(tmp_name)
+         proc_smp_map(0) = 0
+         smp_procX_map(0) = 0
+
+         do i=1,numProcs-1
+  
+            ! check whether proc_name has been seen previously
+            do c=1,max_len
+               tmp_name(c:c) = proc_names(i*max_len+c)
+            enddo
+
+            j = 0
+            done = .false.
+            do while ((.not. done) .and. (j < nsmps))
+               if (smp_names(j) .eq. trim(tmp_name)) then
+                  proc_smp_map(i) = j
+                  done = .true.
+               endif
+               j = j + 1
+            enddo
+
+            ! if not, then record as a new SMP node
+            if (.not. done) then
+               smp_names(nsmps) = trim(tmp_name)
+               proc_smp_map(i) = nsmps
+               smp_procX_map(nsmps) = i
+               nsmps = nsmps + 1
+            endif
+
+         enddo
+
+         deallocate ( smp_names, stat=ierr )
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error deallocating smp_names')
+            return
+         endif
+
+      endif
+
+      ! broadcast mapping of processes to SMP nodes
+      call mpi_bcast( proc_smp_map, numProcs, MPI_INTEGER, 0, &
+                      communicator, ierr)
+
+      ! broadcast number of SMP nodes
+      call mpi_bcast( nsmps, 1, MPI_INTEGER, 0, communicator, ierr)
+
+      allocate ( smp_proc0_map(0:nsmps-1), stat=ierr )
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'ALT_AllSumR8: error allocating smp_proc0_map')
+         return
+      endif
+
+      ! broadcast mapping from SMP index to root process in each
+      if (POP_myTask == 0) then
+         smp_proc0_map(0:nsmps-1) = smp_procX_map(0:nsmps-1)
+
+         deallocate ( smp_procX_map, stat=ierr )
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error deallocating smp_procX_map')
+            return
+         endif
+      endif
+
+      call mpi_bcast( smp_proc0_map, nsmps, MPI_INTEGER, 0, &
+                      communicator, ierr)
+
+      ! find number of processes in local SMP
+      nsmp_local = 0
+      do i=0,numProcs-1
+         if (proc_smp_map(i) == proc_smp_map(POP_myTask)) then
+            nsmp_local = nsmp_local + 1
+         endif
+      enddo
+
+      ! record global (SMP) index, for convenience
+      global_pid = proc_smp_map(POP_myTask)
+
+      ! find processes in local SMP, and local index among those
+      allocate ( smp_partners(0:nsmp_local-1), stat=ierr )
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'ALT_AllSumR8: error allocating smp_partners')
+         return
+      endif
+
+      smp_partners(:) = -1
+      j = 0
+      do i=0,numProcs-1
+         if (proc_smp_map(i) == proc_smp_map(POP_myTask)) then
+            smp_partners(j) = i
+            if (i == POP_myTask) local_pid = j
+            j = j + 1
+         endif
+      enddo
+
+      ! create SMP-local communicator
+      call mpi_comm_group(communicator, comm_group, ierr)
+      call mpi_group_incl(comm_group, nsmp_local, smp_partners, &
+                          local_group, ierr)
+      call mpi_comm_create(communicator, local_group, local_comm, ierr)
+
+      deallocate ( proc_smp_map, proc_names, stat=ierr )
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'ALT_AllSumR8: error deallocating proc_smp_map or proc_names')
+         return
+      endif
+
+      ! calculate size of lower SMP hypercube, log2 of this value, and
+      ! size of upper partial hypercube
+      lowerp     = 1
+      lg2_lowerp = 0
+      do while (lowerp < nsmps)
+         lowerp     = 2*lowerp
+         lg2_lowerp = lg2_lowerp + 1
+      enddo
+
+      if (lowerp == nsmps) then
+         upperp = 0
+      else
+         lowerp     = lowerp / 2
+         lg2_lowerp = lg2_lowerp - 1
+         upperp     = nsmps - lowerp
+      endif
+
+      ! calculate exchange ordering for processes participating 
+      ! in the upper/lower hypercube stage of the algorithm 
+      if (local_pid == 0) then
+
+         ! identify lower/upper hypercube twins (remapping the
+         ! upper hypercube (global) process ids to the first upperp 
+         ! odd (POP communicator) process ids)
+         upper = .false.
+         if (upperp > 0) then
+            if (global_pid < 2*upperp) then
+               if (mod(global_pid, 2) == 0) then
+                  twin = global_pid + 1
+                  mod_mytaskid = global_pid / 2
+               else
+                  twin = global_pid - 1
+                  upper = .true.
+               endif
+            else
+               twin = -1
+               mod_mytaskid = global_pid - upperp
+            endif
+         else
+            twin = -1
+            mod_mytaskid = global_pid
+         endif
+
+      else
+         upper = .false.
+      endif
+
+#ifdef _LOWER_CUBE_COLLECTIVE
+      ! create communicator of lower hypercube smp_proc0 processes
+      allocate ( lower_partners(0:lowerp-1), stat=ierr )
+      if (ierr > 0) then
+         call POP_ErrorSet(errorCode, &
+            'ALT_AllSumR8: error allocating lower_partners')
+         return
+      endif
+
+      j=0
+      do i=0,lowerp-1
+         lower_partners(i) = smp_proc0_map(j)
+         ! skip over "upper hypercube twins" (remapping the
+         ! upper hypercube (global) process ids to the first upperp 
+         ! odd (POP communicator) process ids)
+         if (i < upperp) then
+            j = j + 2
+         else
+            j = j + 1
+         endif
+      enddo
+
+      call mpi_group_incl(comm_group, lowerp, lower_partners, &
+                          lower_group, ierr)
+      call mpi_comm_create(communicator, lower_group, &
+                           lower_comm, ierr)
+#else
+      ! calculate exchange ordering for processes participating 
+      ! in the lower hypercube stage when using the 
+      ! point-to-point implementation option
+      if (local_pid == 0) then
+
+         ! allocate buffers for exchange partners and for send requests
+         allocate(exch_partners(lg2_lowerp), snd_Requests(lg2_lowerp), &
+                  isendSums(numFields,lg2_lowerp), stat=ierr)
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error allocating buffers')
+            return
+         endif
+
+         ! calculate exchange partners in lower hypercube using 
+         ! communicator process ids
+         if (.not. upper) then
+            step = 0
+            distance = 1
+
+            do while (distance < lowerp)
+               step = step + 1
+
+               if (step > lg2_lowerp) then
+                  call POP_ErrorSet(errorCode, &
+                     'ALT_AllSumR8: step > lg2_lowerp')
+                  return
+               endif
+
+               if (mod(mod_mytaskid, 2*distance) < distance) then
+                  partner = mod_mytaskid + distance
+               else
+                  partner = mod_mytaskid - distance
+               endif
+
+               if (partner < upperp) then
+                  exch_partners(step) = smp_proc0_map(2*partner)
+               else 
+                  exch_partners(step) = smp_proc0_map(partner + upperp)
+               endif
+
+               distance = 2*distance
+            enddo
+
+         endif
+      
+      else
+
+         ! allocate dummy buffers for exchange partners and for send requests,
+         ! so that can be deallocated if necessary
+         allocate(exch_partners(1), snd_Requests(1), isendSums(1,1), &
+                  stat=ierr)
+         if (ierr > 0) then
+            call POP_ErrorSet(errorCode, &
+               'ALT_AllSumR8: error allocating buffers')
+            return
+         endif
+
+      endif
+#endif
+
+      call t_stopf("ALT_AllSumR8_init")
+   endif
+
+   ! Step 1: reduce local node contribution, either point-to-point or collective
+   if (nsmp_local > 1) then
+      call t_startf("ALT_AllSumR8_step1")
+      tempSum(:) = 0.0
+      call mpi_reduce(localSum, tempSum, numFields, MPI_REAL8, MPI_SUM, 0, &
+                      local_comm, ierr)
+      globalSum(:) = tempSum(:)
+      call t_stopf("ALT_AllSumR8_step1")
+   else
+      globalSum(:) = localSum(:)
+   endif
+
+   ! Step 2: collect partial sum from upper cube twin
+   if (local_pid == 0) then
+      if (twin .ne. -1) then
+         call t_startf("ALT_AllSumR8_step2")
+         if (.not. upper) then
+            call mpi_recv ( tempSum, numFields, POP_mpiR8, smp_proc0_map(twin), &
+                            mpi_tag_offset + smp_proc0_map(twin), communicator, &
+                            MPI_STATUS_IGNORE, ierr)
+
+            globalSum(:) = globalSum(:) + tempSum(:)
+         else
+            call mpi_send ( globalSum, numFields, POP_mpiR8, smp_proc0_map(twin), &
+                            mpi_tag_offset + POP_myTask, communicator, ierr)
+         endif
+         call t_stopf("ALT_AllSumR8_step2")
+      endif
+   endif
+
+   ! Step 3: compute allreduce in lower cube, either point-to-point or collective
+   if (local_pid == 0) then
+      if (.not. upper) then
+         call t_startf("ALT_AllSumR8_step3")
+#ifdef _LOWER_CUBE_COLLECTIVE
+         tempSum(:) = 0.0
+         call MPI_ALLREDUCE(globalSum, tempSum, numFields, &
+                            POP_mpiR8, MPI_SUM, lower_comm, ierr)
+         globalSum(:) = tempSum(:)
+#else
+         do i=1,lg2_lowerp
+            isendSums(:,i) = globalSum(:)
+
+            call mpi_isend ( isendSums(1,i), numFields, POP_mpiR8, &
+                             exch_partners(i), &
+                             mpi_tag_offset + POP_myTask, communicator, &
+                             snd_Requests(i), ierr)
+
+            call mpi_recv  ( tempSum, numFields, POP_mpiR8, exch_partners(i), &
+                             mpi_tag_offset + exch_partners(i), communicator, &
+                             MPI_STATUS_IGNORE, ierr)
+
+            globalSum(:) = globalSum(:) + tempSum(:)
+         enddo
+#endif
+         call t_stopf("ALT_AllSumR8_step3")
+      endif
+   endif
+
+   ! Step 4: send global sum to twin
+   if (local_pid == 0) then
+      if (twin .ne. -1) then
+         call t_startf("ALT_AllSumR8_step4")
+         if (.not. upper) then
+            call mpi_send ( globalSum, numFields, POP_mpiR8, smp_proc0_map(twin), &
+                            mpi_tag_offset + POP_myTask, communicator, ierr)
+
+         else
+            call mpi_recv ( globalSum, numFields, POP_mpiR8, smp_proc0_map(twin), &
+                            mpi_tag_offset + smp_proc0_map(twin), communicator, &
+                            MPI_STATUS_IGNORE, ierr)
+         endif
+         call t_stopf("ALT_AllSumR8_step4")
+      endif
+   endif
+
+   ! Step 5: send global sum to smp partners, either point-to-point or collective
+   if (nsmp_local > 1) then
+      call t_startf("ALT_AllSumR8_step5")
+      call mpi_bcast(globalSum, numFields, MPI_REAL8, 0, local_comm, ierr)
+      call t_stopf("ALT_AllSumR8_step5")
+   endif
+
+#ifndef _LOWER_CUBE_COLLECTIVE
+   ! Step 6: Wait for iSends to complete
+   if (local_pid == 0) then
+      if (.not. upper) then
+         call MPI_Waitall( lg2_lowerp, snd_Requests, MPI_STATUSES_IGNORE, ierr)
+      endif
+   endif
+#endif
+   
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ALT_AllSumR8
+#endif
 
 !***********************************************************************
 

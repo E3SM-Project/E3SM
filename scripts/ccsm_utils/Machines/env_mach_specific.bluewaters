@@ -44,6 +44,7 @@ else
 endif
 module load cmake
 
+module list
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
@@ -54,5 +55,12 @@ limit stacksize unlimited
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.  
 setenv OMP_STACKSIZE 64M
+
+# Capture logical to physics PE assignment and active environment variable 
+# settings
 setenv MPICH_ENV_DISPLAY 1
-setenv MPICH_PTL_MATCH_OFF 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv MPICH_CPUMASK_DISPLAY 1
+
+# No longer needed?
+#setenv MPICH_PTL_MATCH_OFF 1

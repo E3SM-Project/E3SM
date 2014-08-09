@@ -549,10 +549,40 @@ add_default($nl, 'histavg_option');
 add_default($nl, 'histavg_n');
 add_default($nl, 'histavg_ymd');
 
-add_default($nl, 'tprof_option');
-add_default($nl, 'tprof_n');  
-add_default($nl, 'tprof_ymd');
+# This would be better handled inside the alarm logic in the driver routines.
+# Here supporting only nday(s), nmonth(s), and nyear(s).
+my $tprofmult = 1;
+my $tprofoption = 'never';
+my $STOP_OPTION = "$xmlvars{'STOP_OPTION'}";
+if ($STOP_OPTION =~ m/nyear/) {
+    $tprofoption = 'ndays';
+    $tprofmult = 365;
+}
+elsif ($STOP_OPTION =~ m/nmonth/){ 
+    $tprofoption = 'ndays';
+    $tprofmult = 30;
+}
+elsif ($STOP_OPTION =~ m/nday/) {
+    $tprofoption = 'ndays';
+}
 
+my $tprofn;
+my $STOP_DATE = "$xmlvars{'STOP_DATE'}";
+my $TPROF_TOTAL = "$xmlvars{'TPROF_TOTAL'}"; 
+if (($TPROF_TOTAL > 0) && ($STOP_DATE < 0) && ($tprofoption =~ m/ndays/)) {
+    my $STOP_N = "$xmlvars{'STOP_N'}";
+    my $stopn = $tprofmult * $STOP_N;
+    $tprofn = int($stopn / $TPROF_TOTAL);
+    if ($tprofn < 1){
+        $tprofn = 1;
+    }
+    add_default($nl, 'tprof_option', 'val'=>"$tprofoption");
+    add_default($nl, 'tprof_n',      'val'=>"$tprofn");
+} else {
+    add_default($nl, 'tprof_option');
+    add_default($nl, 'tprof_n');  
+}
+add_default($nl, 'tprof_ymd');
 
 #############################################
 # namelist group: ccsm_pes                  #
@@ -620,10 +650,19 @@ if ( $timer_level <= 0) {
     add_default($nl, 'profile_disable'    , 'TIMER_LEVEL'=>"pos");
     add_default($nl, 'profile_depth_limit', 'TIMER_LEVEL'=>"pos");
 }
+
+my $timer_detail = $xmlvars{'TIMER_DETAIL'};
+if ( $timer_detail <= 0) {
+    add_default($nl, 'profile_detail_limit', 'TIMER_DETAIL'=>"neg");
+} elsif ($timer_level >= 1 ) {
+    add_default($nl, 'profile_detail_limit', 'TIMER_DETAIL'=>"pos");
+}
+
 add_default($nl, 'profile_timer', 'MPILIB'=>"$xmlvars{'MPILIB'}", 'OS'=>"$xmlvars{'OS'}");
 add_default($nl, 'profile_global_stats');
 add_default($nl, 'profile_single_file');
 add_default($nl, 'profile_detail_limit');
+add_default($nl, 'profile_outpe_stride',  'val'=>"16");
 add_default($nl, 'profile_barrier');
 
 

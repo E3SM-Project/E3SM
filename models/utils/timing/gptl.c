@@ -4027,6 +4027,7 @@ static inline Timer *getentryf (const Hashentry *hashtable, /* hash table */
 extern "C" {
 #endif
 
+#ifdef AUTO_INST
 #ifdef _AIX
 void __func_trace_enter (const char *function_name,
 			 const char *file_name,
@@ -4057,6 +4058,7 @@ void __cyg_profile_func_exit (void *this_fn,
 {
   (void) GPTLstop_instr (this_fn);
 }
+#endif
 #endif
 
 #ifdef __cplusplus
