@@ -383,6 +383,8 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="edison">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -xSSE4.1 </ADD_FFLAGS>  
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -xSSE4.1 </ADD_CFLAGS>  
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf $(MKL)</ADD_SLIBS>
 </compiler>
 
@@ -536,7 +538,7 @@ for mct, etc.
 
 
 <compiler COMPILER="ibm" OS="BGQ">
-  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </FFLAGS>
+  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush -qxlf2003=polymorphic</FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -Q </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en -qspillsize=4000 </ADD_FFLAGS>

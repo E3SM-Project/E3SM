@@ -918,7 +918,6 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
-!pw use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use spelt_mod, only : spelt_run, spelt_runpos, spelt_runair, spelt_runlimit, edgeveloc, spelt_mcgregordss, spelt_rkdss
     use derivative_mod, only : interpolate_gll2spelt_points
     use vertremap_mod, only: remap1_nofilter ! _EXTERNAL (actually INTERNAL)
@@ -956,13 +955,11 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
-!pw++
+
        call t_startf('pat_spelt_bexchV')
-!pw--
        call bndry_exchangeV(hybrid,edgeAdv1)
-!pw++
        call t_stopf('pat_spelt_bexchV')
-!pw--
+
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
           do k=1,nlev
@@ -1021,7 +1018,6 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
-!pw use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
 !    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
     use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
@@ -1063,13 +1059,11 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
-!pw++
+
        call t_startf('pat_fvm_bexchV')
-!pw--
        call bndry_exchangeV(hybrid,edgeAdv1)
-!pw++
        call t_stopf('pat_fvm_bexchV')
-!pw--
+
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
           do k=1,nlev
@@ -1148,7 +1142,6 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
   subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
-!pw use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
     use control_mod   , only : vert_remap_q_alg, qsplit
     implicit none
@@ -1200,32 +1193,21 @@ contains
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
     !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
-!pw++
+
     call t_startf('euler_step_0')
-!pw--
     rhs_multiplier = 0
     call euler_step( np1_qdp , n0_qdp  , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSdiv_vdp_ave , rhs_multiplier )
-!pw++
     call t_stopf('euler_step_0')
-!pw--
 
-!pw++
     call t_startf('euler_step_1')
-!pw--
     rhs_multiplier = 1
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSeta         , rhs_multiplier )
-!pw++
     call t_stopf('euler_step_1')
-!pw--
 
-!pw++
     call t_startf('euler_step_2')
-!pw--
     rhs_multiplier = 2
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
-!pw++
     call t_stopf('euler_step_2')
-!pw--
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.  
     call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
@@ -1547,17 +1529,13 @@ contains
     endif
   enddo
 
-!pw++
   call t_startf('eus_bexchV')
-!pw--
   if ( DSSopt == DSSno_var ) then
     call bndry_exchangeV( hybrid , edgeAdv    )
   else
     call bndry_exchangeV( hybrid , edgeAdv_p1 )
   endif
-!pw++
   call t_stopf('eus_bexchV')
-!pw--
 
   do ie = nets , nete
     if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
@@ -1695,17 +1673,13 @@ contains
 
   end do
 
-!pw++
   call t_startf('eus_dg_bexchV')
-!pw--
   if(DSSopt==DSSno_var)then
      call bndry_exchangeV(hybrid,edgeAdv)
   else
      call bndry_exchangeV(hybrid,edgeAdv_p1)
   endif
-!pw++
   call t_stopf('eus_dg_bexchV')
-!pw--
 
   do ie=nets,nete
 
@@ -2122,7 +2096,6 @@ contains
   use derivative_mod , only : derivative_t
   use edge_mod       , only : EdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
-!pw  use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
   implicit none
   type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
@@ -2205,13 +2178,9 @@ contains
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
     enddo
 
-!pw++
     call t_startf('ah_scalar_bexchV')
-!pw--
     call bndry_exchangeV( hybrid , edgeAdv )
-!pw++
     call t_stopf('ah_scalar_bexchV')
-!pw--
     
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )

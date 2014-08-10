@@ -2,6 +2,18 @@
 !BOP
 ! !MODULE: ice_boundary
 
+! Following are generally useful
+#define _ALT_3D_FILL 1
+#define _ALT_4D_FILL 1
+
+! Following have not proved to be generally useful
+! #define _SAVE_3D_BUFFERS 1
+! #define _SAVE_4D_BUFFERS 1
+! #define _ALTREQ 1
+! #define _WAITANY_2D 1
+! #define _WAITANY_3D 1
+! #define _WAITANY_4D 1
+
  module ice_boundary
 
 ! !DESCRIPTION:
@@ -41,6 +53,7 @@
            ice_blocksGetNbrID, get_block_parameter
    use ice_distribution, only: distrb, &
           ice_distributionGetBlockLoc, ice_distributionGet
+   use perf_mod
 
    implicit none
    private
@@ -1080,7 +1093,8 @@ contains
       lbufSizeSend,                &! buffer size for send messages
       lbufSizeRecv                  ! buffer size for recv messages
    logical (log_kind) :: &
-      tripoleTFlag           ! flag for processing tripole buffer as T-fold
+      tripoleTFlag,                &! flag for processing tripole buffer as T-fold
+      tmpflag                       ! temporary flag for if tests
 
 !-----------------------------------------------------------------------
 !
@@ -1141,7 +1155,17 @@ contains
          icel     = basehalo%sendAddr(1,n,nmsg)
          jcel     = basehalo%sendAddr(2,n,nmsg)
          nblock   = basehalo%sendAddr(3,n,nmsg)
-         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripSend(nmsg) /= 0) then
+
+! the following line fails bounds check for mask when tripSend /= 0
+!         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripSend(nmsg) /= 0) then
+         tmpflag = .false.
+         if (basehalo%tripSend(nmsg) /= 0) then
+            tmpflag = .true.
+         elseif (mask(icel,jcel,abs(nblock)) /= 0) then
+            tmpflag = .true.
+         endif
+         
+         if (tmpflag) then
             scnt = scnt + 1
             if (scnt == 1) then
                numMsgSend = numMsgSend + 1
@@ -1164,7 +1188,17 @@ contains
          icel     = basehalo%recvAddr(1,n,nmsg)
          jcel     = basehalo%recvAddr(2,n,nmsg)
          nblock   = basehalo%recvAddr(3,n,nmsg)
-         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripRecv(nmsg) /= 0) then
+
+! the following line fails bounds check for mask when tripSend /= 0
+!         if (mask(icel,jcel,abs(nblock)) /= 0 .or. basehalo%tripRecv(nmsg) /= 0) then
+         tmpflag = .false.
+         if (basehalo%tripRecv(nmsg) /= 0) then
+            tmpflag = .true.
+         elseif (mask(icel,jcel,abs(nblock)) /= 0) then
+            tmpflag = .true.
+         endif
+
+         if (tmpflag) then
             scnt = scnt + 1
             if (scnt == 1) then
                numMsgRecv = numMsgRecv + 1
@@ -1279,7 +1313,7 @@ end subroutine ice_HaloDestroy
 !-----------------------------------------------------------------------
 
    integer (int_kind) ::           &
-      i,j,n,nmsg,                &! dummy loop indices
+      i,j,n,nmsg,step,           &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       nxGlobal,                  &! global domain size in x (tripole)
       iSrc,jSrc,                 &! source addresses for message
@@ -1289,13 +1323,15 @@ end subroutine ice_HaloDestroy
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
+#ifdef _ALTREQ
+   integer (int_kind) :: &
+      sndRequest(halo%numMsgSend),  &! MPI request ids
+      rcvRequest(halo%numMsgRecv)    ! MPI request ids
+#else
    integer (int_kind), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
+#endif
 
    real (dbl_kind) :: &
       fill,            &! value to use for unknown points
@@ -1303,6 +1339,8 @@ end subroutine ice_HaloDestroy
 
    integer (int_kind) ::  len  ! length of messages
 
+   call t_startf("ice_HaloUpdate2DR8")
+   call t_startf("ice_HU2DR8_init")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -1321,22 +1359,24 @@ end subroutine ice_HaloDestroy
       bufTripoleR8 = fill
    endif
 
+#ifndef _ALTREQ
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate2DR8: error allocating req,status arrays')
+         'ice_HaloUpdate2DR8: error allocating req arrays')
       return
    endif
+#endif
+   call t_stopf("ice_HU2DR8_init")
 
 !-----------------------------------------------------------------------
 !
@@ -1378,7 +1418,6 @@ end subroutine ice_HaloDestroy
                      mpitagHalo + my_task,              &
                      halo%communicator, sndRequest(nmsg), ierr)
    end do
-
 
 !-----------------------------------------------------------------------
 !
@@ -1435,9 +1474,25 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+#ifndef _WAITANY_2D
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
+#endif
 
+#ifdef _WAITANY_2D
+   do step=1,halo%numMsgRecv
+      nmsg = -1
+      call MPI_WAITANY(halo%numMsgRecv, rcvRequest, nmsg, &
+                       MPI_STATUS_IGNORE, ierr)
+
+      if ((nmsg < 1) .or. (nmsg > halo%numMsgRecv)) then
+         call abort_ice( &
+            'ice_HaloUpdate2DR8: error waiting for messages')
+         return
+      endif
+#else
    do nmsg=1,halo%numMsgRecv
+#endif
       do n=1,halo%sizeRecv(nmsg)
          iDst     = halo%recvAddr(1,n,nmsg)
          jDst     = halo%recvAddr(2,n,nmsg)
@@ -1624,17 +1679,21 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+#ifndef _ALTREQ
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate2DR8: error deallocating req,status arrays')
+         'ice_HaloUpdate2DR8: error deallocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate2DR8")
 !EOC
 
  end subroutine ice_HaloUpdate2DR8
@@ -1703,13 +1762,15 @@ end subroutine ice_HaloDestroy
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
+#ifdef _ALTREQ
+   integer (int_kind) :: &
+      sndRequest(halo%numMsgSend),  &! MPI request ids
+      rcvRequest(halo%numMsgRecv)    ! MPI request ids
+#else
    integer (int_kind), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
+#endif
 
    real (dbl_kind) :: &
       fill,            &! value to use for unknown points
@@ -1717,6 +1778,8 @@ end subroutine ice_HaloDestroy
 
    integer (int_kind) ::  len  ! length of messages
 
+   call t_startf("ice_HaloUpdate_stress")
+   call t_startf("ice_HUstress_init")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -1735,23 +1798,24 @@ end subroutine ice_HaloDestroy
       bufTripoleR8 = fill
    endif
 
+#ifndef _ALTREQ
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate_stress: error allocating req,status arrays')
+         'ice_HaloUpdate_stress: error allocating req arrays')
       return
    endif
-
+#endif
+   call t_stopf("ice_HUstress_init")
 !-----------------------------------------------------------------------
 !
 !  post receives
@@ -1844,7 +1908,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       do n=1,halo%sizeRecv(nmsg)
@@ -1949,18 +2014,23 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+#ifndef _ALTREQ
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate_stress: error deallocating req,status arrays')
+         'ice_HaloUpdate_stress: error deallocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate_stress")
 !EOC
+
  end subroutine ice_HaloUpdate_stress
 
 !***********************************************************************
@@ -2031,16 +2101,13 @@ end subroutine ice_HaloDestroy
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    real (real_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
     integer (int_kind) :: len  ! length of messages
 
+   call t_startf("ice_HaloUpdate2DR4")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2061,18 +2128,17 @@ end subroutine ice_HaloDestroy
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate2DR4: error allocating req,status arrays')
+         'ice_HaloUpdate2DR4: error allocating req arrays')
       return
    endif
 
@@ -2172,7 +2238,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       do n=1,halo%sizeRecv(nmsg)
@@ -2361,17 +2428,19 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate2DR4: error deallocating req,status arrays')
+         'ice_HaloUpdate2DR4: error deallocating req arrays')
       return
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate2DR4")
 !EOC
 
  end subroutine ice_HaloUpdate2DR4
@@ -2444,16 +2513,13 @@ end subroutine ice_HaloDestroy
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    integer (int_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
    integer (int_kind) :: len ! length of messages
 
+   call t_startf("ice_HaloUpdate2DI4")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2474,18 +2540,17 @@ end subroutine ice_HaloDestroy
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate2DI4: error allocating req,status arrays')
+         'ice_HaloUpdate2DI4: error allocating req arrays')
       return
    endif
 
@@ -2585,7 +2650,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       do n=1,halo%sizeRecv(nmsg)
@@ -2774,17 +2840,19 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate2DI4: error deallocating req,status arrays')
+         'ice_HaloUpdate2DI4: error deallocating req arrays')
       return
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate2DI4")
 !EOC
 
  end subroutine ice_HaloUpdate2DI4
@@ -2846,7 +2914,7 @@ end subroutine ice_HaloDestroy
 !-----------------------------------------------------------------------
 
    integer (int_kind) ::           &
-      i,j,k,n,nmsg,              &! dummy loop indices
+      i,j,k,n,nmsg,step,         &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       nxGlobal,                  &! global domain size in x (tripole)
       nz,                        &! size of array in 3rd dimension
@@ -2857,28 +2925,48 @@ end subroutine ice_HaloDestroy
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
-   integer (int_kind), dimension(:), allocatable :: &
+   integer (int_kind), dimension(:), allocatable, save :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
 
    real (dbl_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
-   real (dbl_kind), dimension(:,:), allocatable :: &
+#ifdef _SAVE_3D_BUFFERS
+   real (dbl_kind), dimension(:,:), allocatable, save :: &
       bufSend, bufRecv            ! 3d send,recv buffers
 
-   real (dbl_kind), dimension(:,:,:), allocatable :: &
+   real (dbl_kind), dimension(:,:,:), allocatable, save :: &
       bufTripole                  ! 3d tripole buffer
+
+   integer (int_kind), save ::  &
+      save_nxGlobal,            &
+      save_nz_a,                &
+      save_nz_b,                &
+      save_nz_c,                &
+      save_bufSizeSend,         &
+      save_bufSizeRecv,         &
+      save_numMsgSend,          &
+      save_numMsgRecv,          &
+      save_tripoleRows
+
+   logical (log_kind) ::   &
+      do_allocate       ! flag used to control alloc of 3D buffers
+#else
+   real (dbl_kind), dimension(:,:), allocatable, save :: &
+      bufSend, bufRecv            ! 3d send,recv buffers
+
+   real (dbl_kind), dimension(:,:,:), allocatable, save :: &
+      bufTripole                  ! 3d tripole buffer
+#endif
 
    integer (int_kind) :: len ! length of message 
    logical :: do_send, do_recv
    save
 
+   call t_startf("ice_HaloUpdate3DR8")
+   call t_startf("ice_HU3DR8_init")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2909,22 +2997,21 @@ end subroutine ice_HaloDestroy
    nxGlobal = 0
    if (allocated(bufTripoleR8)) nxGlobal = size(bufTripoleR8,dim=1)
 
-!-----------------------------------------------------------------------
-!
-!  allocate request and status arrays for messages
-!
-!-----------------------------------------------------------------------
-
  if (do_send) then
+
+!-----------------------------------------------------------------------
+!
+!  allocate request arrays for messages
+!
+!-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DR8: error allocating req,status arrays')
+         'ice_HaloUpdate3DR8: error allocating req arrays')
       return
    endif
 
@@ -2936,18 +3023,219 @@ end subroutine ice_HaloDestroy
 
    nz = size(array, dim=3)
 
+#ifdef _SAVE_3D_BUFFERS
+   do_allocate = .false.
+   if (.not. allocated(bufSend)) then
+      save_nz_a        = nz
+      save_bufSizeSend = bufSizeSend
+      save_numMsgSend  = halo%numMsgSend
+      do_allocate = .true.
+   else
+      if ((save_nz_a        < nz              ) .or. &
+          (save_bufSizeSend < bufSizeSend     ) .or. &
+          (save_numMsgSend  < halo%numMsgSend )) then
+
+         deallocate(bufSend, stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate3DR8: error deallocating bufSend')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      save_nz_a        = max(nz,save_nz_a)
+      save_bufSizeSend = max(bufSizeSend,save_bufSizeSend)
+      save_numMsgSend  = max(halo%numMsgSend,save_numMsgSend)
+
+      allocate(bufSend(save_bufSizeSend*save_nz_a, save_numMsgSend), &
+               stat=ierr)
+
+      if (ierr > 0) then
+         call abort_ice( &
+            'ice_HaloUpdate3DR8: error allocating bufSend')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufRecv)) then
+      save_nz_b        = nz
+      save_bufSizeRecv = bufSizeRecv
+      save_numMsgRecv  = halo%numMsgRecv
+      do_allocate = .true.
+   else
+      if ((save_nz_b        < nz              ) .or. &
+          (save_bufSizeRecv < bufSizeRecv     ) .or. &
+          (save_numMsgRecv  < halo%numMsgRecv )) then
+
+         deallocate(bufRecv, stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate3DR8: error deallocating bufRecv')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      save_nz_b        = max(nz,save_nz_b)
+      save_bufSizeRecv = max(bufSizeRecv,save_bufSizeRecv)
+      save_numMsgRecv  = max(halo%numMsgRecv,save_numMsgRecv)
+
+      allocate(bufRecv(save_bufSizeRecv*save_nz_b, save_numMsgRecv), &
+               stat=ierr)
+
+      if (ierr > 0) then
+         call abort_ice( &
+            'ice_HaloUpdate3DR8: error allocating bufRecv')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufTripole)) then
+      save_nz_c        = nz
+      save_tripoleRows = halo%tripoleRows
+      save_nxGlobal    = nxGlobal
+      do_allocate = .true.
+   else
+      if ((save_nz_c        < nz               ) .or. &
+          (save_tripoleRows < halo%tripoleRows ) .or. &
+          (save_nxGlobal    < nxGlobal         )) then
+         deallocate(bufTripole, stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate3DR8: error deallocating bufTripole')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      if (nxGlobal > 0) then
+         save_nz_c        = max(nz,save_nz_c)
+         save_tripoleRows = max(halo%tripoleRows,save_tripoleRows)
+         save_nxGlobal    = max(nxGlobal,save_nxGlobal)
+
+         allocate(bufTripole(save_nxGlobal, save_tripoleRows, save_nz_c), &
+                  stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate3DR8: error allocating bufTripole')
+            return
+         endif
+      endif
+   endif
+#else
    allocate(bufSend(bufSizeSend*nz, halo%numMsgSend), &
             bufRecv(bufSizeRecv*nz, halo%numMsgRecv), &
-            bufTripole(nxGlobal, halo%tripoleRows, nz), &
             stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DR8: error allocating buffers')
+         'ice_HaloUpdate3DR8: error allocating bufSend and bufRecv')
       return
    endif
 
-   bufTripole = fill
+   if (nxGlobal > 0) then
+      allocate(bufTripole(nxGlobal, halo%tripoleRows, nz), &
+               stat=ierr)
+
+      if (ierr > 0) then
+         call abort_ice( &
+            'ice_HaloUpdate3DR8: error allocating bufTripole')
+         return
+      endif
+   endif
+#endif
+
+   if (nxGlobal > 0) then
+      call t_startf("ice_HU3DR8_tripole_fill")
+#ifdef _ALT_3D_FILL
+      ioffset = 0
+      joffset = 0
+      if (halo%tripoleTFlag) then
+
+        select case (fieldLoc)
+        case (field_loc_center)   ! cell center location
+           ioffset = -1
+           joffset = 0
+        case (field_loc_NEcorner)   ! cell corner location
+           ioffset = 0
+           joffset = 1
+        case (field_loc_Eface)   ! cell center location
+           ioffset = 0
+           joffset = 0
+        case (field_loc_Nface)   ! cell corner (velocity) location
+           ioffset = -1
+           joffset = 1
+        end select 
+  
+      else ! tripole u-fold
+  
+        select case (fieldLoc)
+        case (field_loc_center)   ! cell center location
+           ioffset = 0
+           joffset = 0
+        case (field_loc_NEcorner)   ! cell corner location
+           ioffset = 1
+           joffset = 1
+        case (field_loc_Eface)   ! cell center location
+           ioffset = 1
+           joffset = 0
+        case (field_loc_Nface)   ! cell corner (velocity) location
+           ioffset = 0
+           joffset = 1
+        end select
+      endif
+
+      do k=1,nz
+      do i = 1,nxGlobal
+         bufTripole(i   ,halo%tripoleRows,k) = fill
+      end do
+      end do
+
+      do nmsg=1,halo%numLocalCopies
+         srcBlock = halo%srcLocalAddr(3,nmsg)
+
+         if (srcBlock < 0) then
+            iSrc     = halo%srcLocalAddr(1,nmsg) ! tripole buffer addr
+            jSrc     = halo%srcLocalAddr(2,nmsg)
+            jDst     = halo%dstLocalAddr(2,nmsg)
+
+            !*** correct for offsets
+            iSrc = iSrc - ioffset
+            jSrc = jSrc - joffset
+            if (iSrc == 0) iSrc = nxGlobal
+            if (iSrc > nxGlobal) iSrc = iSrc - nxGlobal
+
+!           if (jSrc <= halo%tripoleRows .and. jSrc>0 .and. jDst>0) then
+            if (jSrc < halo%tripoleRows .and. jSrc>0 .and. jDst>0) then
+               do k=1,nz
+                  bufTripole(iSrc,jSrc,k) = fill
+               end do
+            endif
+
+         endif
+      end do
+#else
+      bufTripole = fill
+#endif
+      call t_stopf("ice_HU3DR8_tripole_fill")
+   endif
+   call t_stopf("ice_HU3DR8_init")
 
 !-----------------------------------------------------------------------
 !
@@ -3057,9 +3345,28 @@ end subroutine ice_HaloDestroy
 !-----------------------------------------------------------------------
 
  if (do_recv) then
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+#ifndef _WAITANY_3D
+   call t_startf("ice_HU3DR8_recvall")
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
+   call t_stopf("ice_HU3DR8_recvall")
+#endif
 
+#ifdef _WAITANY_3D
+   call t_startf("ice_HU3DR8_remote")
+   do step=1,halo%numMsgRecv
+      nmsg = -1
+      call MPI_WAITANY(halo%numMsgRecv, rcvRequest, nmsg, &
+                       MPI_STATUS_IGNORE, ierr)
+
+      if ((nmsg < 1) .or. (nmsg > halo%numMsgRecv)) then
+         call abort_ice( &
+            'ice_HaloUpdate3DR8: error waiting for messages')
+         return
+      endif
+#else
    do nmsg=1,halo%numMsgRecv
+#endif
       i = 0
       do n=1,halo%sizeRecv(nmsg)
          iDst     = halo%recvAddr(1,n,nmsg)
@@ -3079,6 +3386,9 @@ end subroutine ice_HaloDestroy
          endif
       end do
    end do
+#ifdef _WAITANY_3D
+   call t_stopf("ice_HU3DR8_remote")
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -3263,26 +3573,32 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DR8: error deallocating req,status arrays')
+         'ice_HaloUpdate3DR8: error deallocating req arrays')
       return
    endif
 
-   deallocate(bufSend, bufRecv, bufTripole, stat=ierr)
+#ifndef _SAVE_3D_BUFFERS
+   deallocate(bufSend, bufRecv, stat=ierr)
+   if ((ierr == 0) .and. (allocated(bufTripole))) &
+      deallocate(bufTripole, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
          'ice_HaloUpdate3DR8: error deallocating 3d buffers')
       return
    endif
+#endif
  endif    ! do_recv
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate3DR8")
 !EOC
 
  end subroutine ice_HaloUpdate3DR8
@@ -3356,10 +3672,6 @@ end subroutine ice_HaloDestroy
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    real (real_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -3372,6 +3684,7 @@ end subroutine ice_HaloDestroy
 
    integer (int_kind) :: len ! length of message 
 
+   call t_startf("ice_HaloUpdate3DR4")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -3389,18 +3702,17 @@ end subroutine ice_HaloDestroy
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DR4: error allocating req,status arrays')
+         'ice_HaloUpdate3DR4: error allocating req arrays')
       return
    endif
 
@@ -3531,7 +3843,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -3738,13 +4051,14 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DR4: error deallocating req,status arrays')
+         'ice_HaloUpdate3DR4: error deallocating req arrays')
       return
    endif
 
@@ -3757,6 +4071,7 @@ end subroutine ice_HaloDestroy
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate3DR4")
 !EOC
 
  end subroutine ice_HaloUpdate3DR4
@@ -3830,10 +4145,6 @@ end subroutine ice_HaloDestroy
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    integer (int_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -3846,6 +4157,7 @@ end subroutine ice_HaloDestroy
 
    integer (int_kind) :: len ! length of message
 
+   call t_startf("ice_HaloUpdate3DI4")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -3863,18 +4175,17 @@ end subroutine ice_HaloDestroy
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DI4: error allocating req,status arrays')
+         'ice_HaloUpdate3DI4: error allocating req arrays')
       return
    endif
 
@@ -4005,7 +4316,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -4212,13 +4524,14 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate3DI4: error deallocating req,status arrays')
+         'ice_HaloUpdate3DI4: error deallocating req arrays')
       return
    endif
 
@@ -4231,6 +4544,7 @@ end subroutine ice_HaloDestroy
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate3DI4")
 !EOC
 
  end subroutine ice_HaloUpdate3DI4
@@ -4289,7 +4603,7 @@ end subroutine ice_HaloDestroy
 !-----------------------------------------------------------------------
 
    integer (int_kind) ::           &
-      i,j,k,l,n,nmsg,            &! dummy loop indices
+      i,j,k,l,n,nmsg,step,       &! dummy loop indices
       ierr,                      &! error or status flag for MPI,alloc
       nxGlobal,                  &! global domain size in x (tripole)
       nz, nt,                    &! size of array in 3rd,4th dimensions
@@ -4300,26 +4614,55 @@ end subroutine ice_HaloDestroy
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
+#ifdef _ALTREQ
+   integer (int_kind) :: &
+      sndRequest(halo%numMsgSend),  &! MPI request ids
+      rcvRequest(halo%numMsgRecv)    ! MPI request ids
+#else
    integer (int_kind), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
-
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
+#endif
 
    real (dbl_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
+#ifdef _SAVE_4D_BUFFERS
+   real (dbl_kind), dimension(:,:), allocatable, save :: &
+      bufSend, bufRecv            ! 4d send,recv buffers
+
+   real (dbl_kind), dimension(:,:,:,:), allocatable, save :: &
+      bufTripole                  ! 4d tripole buffer
+
+   integer (int_kind), save :: &
+      save_nxGlobal,           &
+      save_nz_a,               &
+      save_nz_b,               &
+      save_nz_c,               &
+      save_nt_a,               &
+      save_nt_b,               &
+      save_nt_c,               &
+      save_bufSizeSend,        &
+      save_bufSizeRecv,        &
+      save_numMsgSend,         &
+      save_numMsgRecv,         &
+      save_tripoleRows
+
+   logical (log_kind) :: &
+      do_allocate       ! flag used to control alloc of 4D buffers
+#else
    real (dbl_kind), dimension(:,:), allocatable :: &
       bufSend, bufRecv            ! 4d send,recv buffers
 
    real (dbl_kind), dimension(:,:,:,:), allocatable :: &
       bufTripole                  ! 4d tripole buffer
+#endif
 
    integer (int_kind) :: len ! length of message
 
+   call t_startf("ice_HaloUpdate4DR8")
+   call t_startf("ice_HU4DR8_init")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4335,22 +4678,23 @@ end subroutine ice_HaloDestroy
    nxGlobal = 0
    if (allocated(bufTripoleR8)) nxGlobal = size(bufTripoleR8,dim=1)
 
+#ifndef _ALTREQ
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DR8: error allocating req,status arrays')
+         'ice_HaloUpdate4DR8: error allocating req arrays')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -4361,18 +4705,234 @@ end subroutine ice_HaloDestroy
    nz = size(array, dim=3)
    nt = size(array, dim=4)
 
+#ifdef _SAVE_4D_BUFFERS
+   do_allocate = .false.
+   if (.not. allocated(bufSend)) then
+      save_nz_a        = nz
+      save_nt_a        = nt
+      save_bufSizeSend = bufSizeSend
+      save_numMsgSend  = halo%numMsgSend
+      do_allocate = .true.
+   else
+      if ((save_nz_a        < nz              ) .or. &
+          (save_nt_a        < nt              ) .or. &
+          (save_bufSizeSend < bufSizeSend     ) .or. &
+          (save_numMsgSend  < halo%numMsgSend )) then
+
+         deallocate(bufSend, stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate4DR8: error deallocating bufSend')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      save_nz_a        = max(nz,save_nz_a)
+      save_nt_a        = max(nt,save_nt_a)
+      save_bufSizeSend = max(bufSizeSend,save_bufSizeSend)
+      save_numMsgSend  = max(halo%numMsgSend,save_numMsgSend)
+
+      allocate(bufSend(save_bufSizeSend*save_nz_a*save_nt_a, save_numMsgSend),   &
+               stat=ierr)
+
+      if (ierr > 0) then
+         call abort_ice( &
+            'ice_HaloUpdate4DR8: error allocating bufSend')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufRecv)) then
+      save_nz_b        = nz
+      save_nt_b        = nt
+      save_bufSizeRecv = bufSizeRecv
+      save_numMsgRecv  = halo%numMsgRecv
+      do_allocate = .true.
+   else
+      if ((save_nz_b        < nz              ) .or. &
+          (save_nt_b        < nt              ) .or. &
+          (save_bufSizeRecv < bufSizeRecv     ) .or. &
+          (save_numMsgRecv  < halo%numMsgRecv )) then
+
+         deallocate(bufRecv, stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate4DR8: error deallocating bufRecv')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      save_nz_b        = max(nz,save_nz_b)
+      save_nt_b        = max(nt,save_nt_b)
+      save_bufSizeRecv = max(bufSizeRecv,save_bufSizeRecv)
+      save_numMsgRecv  = max(halo%numMsgRecv,save_numMsgRecv)
+
+      allocate(bufRecv(save_bufSizeRecv*save_nz_b*save_nt_b, save_numMsgRecv),   &
+               stat=ierr)
+
+      if (ierr > 0) then
+         call abort_ice( &
+            'ice_HaloUpdate4DR8: error allocating bufRecv')
+         return
+      endif
+   endif
+
+   do_allocate = .false.
+   if (.not. allocated(bufTripole)) then
+      save_nz_c        = nz
+      save_nt_c        = nt
+      save_tripoleRows = halo%tripoleRows
+      save_nxGlobal    = nxGlobal
+      do_allocate = .true.
+   else
+      if ((save_nz_c        < nz               ) .or. &
+          (save_nt_c        < nt               ) .or. &
+          (save_tripoleRows < halo%tripoleRows ) .or. &
+          (save_nxGlobal    < nxGlobal         )) then
+         deallocate(bufTripole, stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate4DR8: error deallocating bufTripole')
+            return
+         endif
+
+         do_allocate = .true.
+      endif
+   endif
+
+   if (do_allocate) then
+      if (nxGlobal > 0) then
+         save_nz_c        = max(nz,save_nz_c)
+         save_nt_c        = max(nt,save_nt_c)
+         save_tripoleRows = max(halo%tripoleRows,save_tripoleRows)
+         save_nxGlobal    = max(nxGlobal,save_nxGlobal)
+
+         allocate(bufTripole(save_nxGlobal, save_tripoleRows, save_nz_c, save_nt_c), &
+                  stat=ierr)
+
+         if (ierr > 0) then
+            call abort_ice( &
+               'ice_HaloUpdate4DR8: error allocating bufTripole')
+            return
+         endif
+      endif
+   endif
+#else
    allocate(bufSend(bufSizeSend*nz*nt, halo%numMsgSend),   &
             bufRecv(bufSizeRecv*nz*nt, halo%numMsgRecv),   &
-            bufTripole(nxGlobal, halo%tripoleRows, nz, nt), &
             stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DR8: error allocating buffers')
+         'ice_HaloUpdate4DR8: error allocating bufSend and bufRecv')
       return
    endif
 
-   bufTripole = fill
+   if (nxGlobal > 0) then
+      allocate(bufTripole(nxGlobal, halo%tripoleRows, nz, nt), &
+               stat=ierr)
+
+      if (ierr > 0) then
+         call abort_ice( &
+            'ice_HaloUpdate4DR8: error allocating bufTripole')
+         return
+      endif
+   endif
+#endif
+
+   if (nxGlobal > 0) then
+      call t_startf("ice_HU4DR8_tripole_fill")
+#ifdef _ALT_4D_FILL
+      !*** initialize tripole array locations used later
+      ioffset = 0
+      joffset = 0
+      if (halo%tripoleTFlag) then
+
+        select case (fieldLoc)
+        case (field_loc_center)   ! cell center location
+           ioffset = -1
+           joffset = 0
+        case (field_loc_NEcorner)   ! cell corner location
+           ioffset = 0
+           joffset = 1
+        case (field_loc_Eface)   ! cell center location
+           ioffset = 0
+           joffset = 0
+        case (field_loc_Nface)   ! cell corner (velocity) location
+           ioffset = -1
+           joffset = 1
+        end select  
+  
+      else ! tripole u-fold  
+
+        select case (fieldLoc)
+        case (field_loc_center)   ! cell center location
+           ioffset = 0
+           joffset = 0
+        case (field_loc_NEcorner)   ! cell corner location
+           ioffset = 1
+           joffset = 1
+        case (field_loc_Eface)   ! cell center location
+           ioffset = 1
+           joffset = 0
+        case (field_loc_Nface)   ! cell corner (velocity) location
+           ioffset = 0
+           joffset = 1
+        end select
+ 
+      endif
+
+      do l=1,nt
+      do k=1,nz
+      do i = 1,nxGlobal
+         bufTripole(i   ,halo%tripoleRows,k,l) = fill
+      end do
+      end do
+      end do
+
+      do nmsg=1,halo%numLocalCopies
+         srcBlock = halo%srcLocalAddr(3,nmsg)
+
+         if (srcBlock < 0) then
+            iSrc     = halo%srcLocalAddr(1,nmsg) ! tripole buffer addr
+            jSrc     = halo%srcLocalAddr(2,nmsg)
+            jDst     = halo%dstLocalAddr(2,nmsg)
+
+            !*** correct for offsets
+            iSrc = iSrc - ioffset
+            jSrc = jSrc - joffset
+            if (iSrc == 0) iSrc = nxGlobal
+            if (iSrc > nxGlobal) iSrc = iSrc - nxGlobal
+
+!           if (jSrc <= halo%tripoleRows .and. jSrc>0 .and. jDst>0) then
+            if (jSrc < halo%tripoleRows .and. jSrc>0 .and. jDst>0) then
+               do l=1,nt
+               do k=1,nz
+                  bufTripole(iSrc,jSrc,k,l) = fill
+               end do
+               end do
+            endif
+
+         endif
+      end do
+#else
+      bufTripole = fill
+#endif
+      call t_stopf("ice_HU4DR8_tripole_fill")
+   endif
+   call t_stopf("ice_HU4DR8_init")
 
 !-----------------------------------------------------------------------
 !
@@ -4489,9 +5049,28 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+#ifndef _WAITANY_4D
+   call t_startf("ice_HU4DR8_recvall")
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
+   call t_stopf("ice_HU4DR8_recvall")
+#endif
 
+#ifdef _WAITANY_4D
+   call t_startf("ice_HU4DR8_remote")
+   do step=1,halo%numMsgRecv
+      nmsg = -1
+      call MPI_WAITANY(halo%numMsgRecv, rcvRequest, nmsg, &
+                       MPI_STATUS_IGNORE, ierr)
+
+      if ((nmsg < 1) .or. (nmsg > halo%numMsgRecv)) then
+         call abort_ice( &
+            'ice_HaloUpdate4DR8: error waiting for messages')
+         return
+      endif
+#else
    do nmsg=1,halo%numMsgRecv
+#endif
       i = 0
       do n=1,halo%sizeRecv(nmsg)
          iDst     = halo%recvAddr(1,n,nmsg)
@@ -4515,6 +5094,9 @@ end subroutine ice_HaloDestroy
          endif
       end do
    end do
+#ifdef _WAITANY_4D
+   call t_stopf("ice_HU4DR8_remote")
+#endif
 
 !-----------------------------------------------------------------------
 !
@@ -4710,25 +5292,33 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+#ifndef _ALTREQ
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DR8: error deallocating req,status arrays')
+         'ice_HaloUpdate4DR8: error deallocating req arrays')
       return
    endif
+#endif
 
-   deallocate(bufSend, bufRecv, bufTripole, stat=ierr)
+#ifndef _SAVE_4D_BUFFERS
+   deallocate(bufSend, bufRecv, stat=ierr)
+   if ((ierr == 0) .and. (allocated(bufTripole))) &
+      deallocate(bufTripole, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
          'ice_HaloUpdate4DR8: error deallocating 4d buffers')
       return
    endif
+#endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate4DR8")
 !EOC
 
  end subroutine ice_HaloUpdate4DR8
@@ -4802,10 +5392,6 @@ end subroutine ice_HaloDestroy
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    real (real_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -4818,6 +5404,7 @@ end subroutine ice_HaloDestroy
 
    integer (int_kind) :: len ! length of message
 
+   call t_startf("ice_HaloUpdate4DR4")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4835,18 +5422,17 @@ end subroutine ice_HaloDestroy
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DR4: error allocating req,status arrays')
+         'ice_HaloUpdate4DR4: error allocating req arrays')
       return
    endif
 
@@ -4987,7 +5573,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -5208,13 +5795,14 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DR4: error deallocating req,status arrays')
+         'ice_HaloUpdate4DR4: error deallocating req arrays')
       return
    endif
 
@@ -5227,6 +5815,7 @@ end subroutine ice_HaloDestroy
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate4DR4")
 !EOC
 
  end subroutine ice_HaloUpdate4DR4
@@ -5300,10 +5889,6 @@ end subroutine ice_HaloDestroy
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
-   integer (int_kind), dimension(:,:), allocatable :: &
-      sndStatus,       &! MPI status flags
-      rcvStatus         ! MPI status flags
-
    integer (int_kind) :: &
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
@@ -5316,6 +5901,7 @@ end subroutine ice_HaloDestroy
 
    integer (int_kind) :: len  ! length of messages
 
+   call t_startf("ice_HaloUpdate4DI4")
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -5333,18 +5919,17 @@ end subroutine ice_HaloDestroy
 
 !-----------------------------------------------------------------------
 !
-!  allocate request and status arrays for messages
+!  allocate request arrays for messages
 !
 !-----------------------------------------------------------------------
 
    allocate(sndRequest(halo%numMsgSend), &
             rcvRequest(halo%numMsgRecv), &
-            sndStatus(MPI_STATUS_SIZE,halo%numMsgSend), &
-            rcvStatus(MPI_STATUS_SIZE,halo%numMsgRecv), stat=ierr)
+            stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DI4: error allocating req,status arrays')
+         'ice_HaloUpdate4DI4: error allocating req arrays')
       return
    endif
 
@@ -5485,7 +6070,8 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, rcvStatus, ierr)
+   call MPI_WAITALL(halo%numMsgRecv, rcvRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
    do nmsg=1,halo%numMsgRecv
       i = 0
@@ -5706,13 +6292,14 @@ end subroutine ice_HaloDestroy
 !
 !-----------------------------------------------------------------------
 
-   call MPI_WAITALL(halo%numMsgSend, sndRequest, sndStatus, ierr)
+   call MPI_WAITALL(halo%numMsgSend, sndRequest, MPI_STATUSES_IGNORE, &
+                    ierr)
 
-   deallocate(sndRequest, rcvRequest, sndStatus, rcvStatus, stat=ierr)
+   deallocate(sndRequest, rcvRequest, stat=ierr)
 
    if (ierr > 0) then
       call abort_ice( &
-         'ice_HaloUpdate4DI4: error deallocating req,status arrays')
+         'ice_HaloUpdate4DI4: error deallocating req arrays')
       return
    endif
 
@@ -5725,6 +6312,7 @@ end subroutine ice_HaloDestroy
    endif
 
 !-----------------------------------------------------------------------
+   call t_stopf("ice_HaloUpdate4DI4")
 !EOC
 
  end subroutine ice_HaloUpdate4DI4

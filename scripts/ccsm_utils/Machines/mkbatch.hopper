@@ -5,6 +5,19 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
+if ($PROJECT == "") then
+  echo "  PROJECT must be set in env_case.xml on Hopper."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
+set account_name = $PROJECT
+if !(-d /project/projectdirs/${account_name}) then
+  echo "  PROJECT in env_case.xml must be set to a valid project name."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
 
 set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
 if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
@@ -15,10 +28,10 @@ endif
 
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
-set account_name = ` `
-if (-e ~/.ccsm_proj) then
-   set account_name = `head -1 ~/.ccsm_proj`
-endif
+#set account_name = ` `
+#if (-e ~/.ccsm_proj) then
+#   set account_name = `head -1 ~/.ccsm_proj`
+#endif
 
 set walltime = "01:15:00"
 if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
@@ -54,17 +67,17 @@ cat >> ${CASEROOT}/${CASE}.run << EOF1
 # Run the model
 # -------------------------------------------------------------------------
 
-set string = \`qstat -f \$BATCH_JOBID | grep ctime\`
-echo "job \$BATCH_JOBID created: \$string" >>& \$CASEROOT/CaseStatus
+set string = \`qstat -f \$PBS_JOBID | grep ctime\`
+echo "job \$PBS_JOBID created: \$string" >>& \$CASEROOT/CaseStatus
 
-set string = \`qstat -f \$BATCH_JOBID | grep qtime\`
-echo "job \$BATCH_JOBID queued: \$string" >>& \$CASEROOT/CaseStatus
+set string = \`qstat -f \$PBS_JOBID | grep qtime\`
+echo "job \$PBS_JOBID queued: \$string" >>& \$CASEROOT/CaseStatus
 
-set string = \`qstat -f \$BATCH_JOBID | grep etime\`
-echo "job \$BATCH_JOBID eligible to run: \$string" >>& \$CASEROOT/CaseStatus
+set string = \`qstat -f \$PBS_JOBID | grep etime\`
+echo "job \$PBS_JOBID eligible to run: \$string" >>& \$CASEROOT/CaseStatus
 
-set string = \`qstat -f \$BATCH_JOBID | grep start_time\`
-echo "job \$BATCH_JOBID started: \$string" >>& \$CASEROOT/CaseStatus
+set string = \`qstat -f \$PBS_JOBID | grep start_time\`
+echo "job \$PBS_JOBID started: \$string" >>& \$CASEROOT/CaseStatus
 
 set syslog_id = 0
 if (\$SAVE_TIMING == 'TRUE') then
@@ -98,7 +111,7 @@ if (\$SAVE_TIMING == 'TRUE') then
 
     xtdb2proc -f xtdb2proc.\$LID
     qstat -f > qstatf.\$LID
-    qstat -f \$BATCH_JOBID > qstatf_jobid.\$LID
+    qstat -f \$PBS_JOBID > qstatf_jobid.\$LID
     xtnodestat > xtnodestat.\$LID
     showq > showq.\$LID
     chmod a+r *
@@ -116,7 +129,7 @@ if (\$SAVE_TIMING == 'TRUE') then
     cd \$CASEROOT/Tools
     if (\$SYSLOG_N > 0) then
       touch \$RUNDIR/cesm.log.\$LID
-      csh \$CASEROOT/Tools/mach_syslog \$SYSLOG_N \$BATCH_JOBID \$LID \$RUNDIR \$RUNDIR/timing/checkpoints \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/checkpoints &
+      csh \$CASEROOT/Tools/mach_syslog \$SYSLOG_N \$PBS_JOBID \$LID \$RUNDIR \$RUNDIR/timing/checkpoints \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/checkpoints &
       set syslog_id = \$!
     endif
   endif
@@ -167,7 +180,7 @@ if (\$SAVE_TIMING == 'TRUE') then
     cd \$LID
 
     cd \$CASEROOT
-    set string = \`ls \$BATCH_JOBID*OU\`
+    set string = \`ls \$PBS_JOBID*OU\`
     cp -p \$string \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
     chmod a+r \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
   endif

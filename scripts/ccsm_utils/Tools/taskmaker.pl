@@ -18,7 +18,7 @@ my $maxthrds     = -1; # max threads over all mpi tasks
 my $taskgeomflag = -1; # task geometry string for IBM
 my $thrdgeomflag = -1; # thread geometry string for IBM
 my $aprunflag    = -1; # aprun options for Cray XT
-my $psbrsflag    = -1; # pbs resources option for NAS (NASA pleiades)
+my $pbsrsflag    = -1; # pbs resources option for NAS (NASA pleiades)
 my $nas_node_type    ; # NAS node type name (har|wes|san)
 my $document     = -1; # document the layout
 my $removedeadtasks = 0; # remove dead tasks or reset to 1
@@ -151,6 +151,8 @@ my $PESPN        = $xmlvars{'PES_PER_NODE'};
 my $PIO_NUMTASKS = $xmlvars{'PIO_NUMTASKS'};
 my $PIO_ASYNC_INTERFACE = $xmlvars{'PIO_ASYNC_INTERFACE'};
 
+my $COMPILER = $xmlvars{COMPILER};
+
 if ($MAXTPN < 1) {$MAXTPN = 1 ;}
 
 my @mcomps = (  $COMP_CPL,   $COMP_ATM,   $COMP_LND,   $COMP_ICE,   $COMP_OCN,   $COMP_GLC,   $COMP_WAV,   $COMP_ROF);
@@ -281,7 +283,12 @@ $fullsum = $fullsum + $sum;
 $taskgeom = $taskgeom.")";
 $taskpernode = $MAXTPN / $thrdcnt;
 $taskpernode = ($taskpernode > $taskcnt) ? $taskcnt : $taskpernode;
-$aprun = $aprun." -n $taskcnt -N $taskpernode -d $thrdcnt \${EXEROOT}/cesm.exe";
+if ($COMPILER eq "intel" && $taskpernode>1){
+    my $taskpernuma = $taskpernode/2;
+    $aprun .= " -S $taskpernuma -cc numa_node ";
+}
+$aprun .= " -n $taskcnt -N $taskpernode -d $thrdcnt \${EXEROOT}/cesm.exe";
+
 
 $nodecnt = $taskcnt / $taskpernode ;
 $pbsrs = $pbsrs."${nodecnt}:ncpus=${MAXTPN}:mpiprocs=${taskpernode}:ompthreads=${thrdcnt}:model=${nas_node_type}";

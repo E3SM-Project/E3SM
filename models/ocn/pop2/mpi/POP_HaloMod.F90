@@ -2,15 +2,15 @@
 !BOP
 ! !MODULE: POP_HaloMod
 
-!pw++
+! following are generally useful if there is enough memory
 #define _SAVE_3D_BUFFERS 1
 #define _SAVE_4D_BUFFERS 1
-!pw
-!pw #define _ALTREQ 1
-!pw #define _WAITANY_2D 1
-!pw #define _WAITANY_3D 1
-!pw #define _WAITANY_4D 1
-!pw--
+
+! following have not proven to be generally useful
+!#define _ALTREQ 1
+!#define _WAITANY_2D 1
+!#define _WAITANY_3D 1
+!#define _WAITANY_4D 1
 
  module POP_HaloMod
 
@@ -41,9 +41,7 @@
    use POP_DistributionMod
    use POP_FieldMod
    use POP_GridHorzMod
-!pw++
    use perf_mod
-!pw--
 
    implicit none
    private
@@ -1722,9 +1720,7 @@ contains
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
-!pw++
    call t_startf("HaloUpdate2DR8")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2007,10 +2003,8 @@ contains
 #endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate2DR8")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate2DR8
 
@@ -2090,9 +2084,7 @@ contains
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
-!pw++
    call t_startf("HaloUpdate2DR4")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2354,10 +2346,8 @@ contains
    endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate2DR4")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate2DR4
 
@@ -2437,9 +2427,7 @@ contains
       fill,            &! value to use for unknown points
       x1,x2,xavg        ! scalars for enforcing symmetry at U pts
 
-!pw++
    call t_startf("HaloUpdate2DI4")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -2701,10 +2689,8 @@ contains
    endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate2DI4")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate2DI4
 
@@ -2818,9 +2804,7 @@ contains
       bufTripole                  ! 3d tripole buffer
 #endif
 
-!pw++
    call t_startf("HaloUpdate3DR8")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -3281,10 +3265,8 @@ contains
 #endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate3DR8")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate3DR8
 
@@ -3371,9 +3353,7 @@ contains
    real (POP_r4), dimension(:,:,:), allocatable :: &
       bufTripole                  ! 3d tripole buffer
 
-!pw++
    call t_startf("HaloUpdate3DR4")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -3695,10 +3675,8 @@ contains
    endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate3DR4")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate3DR4
 
@@ -3785,9 +3763,7 @@ contains
    integer (POP_i4), dimension(:,:,:), allocatable :: &
       bufTripole                  ! 3d tripole buffer
 
-!pw++
    call t_startf("HaloUpdate3DI4")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4109,10 +4085,8 @@ contains
    endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate3DI4")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate3DI4
 
@@ -4229,9 +4203,7 @@ contains
       bufTripole                  ! 4d tripole buffer
 #endif
 
-!pw++
    call t_startf("HaloUpdate4DR8")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -4709,10 +4681,8 @@ contains
 #endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate4DR8")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate4DR8
 
@@ -4799,9 +4769,7 @@ contains
    real (POP_r4), dimension(:,:,:,:), allocatable :: &
       bufTripole                  ! 4d tripole buffer
 
-!pw++
    call t_startf("HaloUpdate4DR4")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -5143,10 +5111,8 @@ contains
    endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate4DR4")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate4DR4
 
@@ -5233,9 +5199,7 @@ contains
    integer (POP_i4), dimension(:,:,:,:), allocatable :: &
       bufTripole                  ! 4d tripole buffer
 
-!pw++
    call t_startf("HaloUpdate4DI4")
-!pw--
 !-----------------------------------------------------------------------
 !
 !  initialize error code and fill value
@@ -5577,10 +5541,8 @@ contains
    endif
 
 !-----------------------------------------------------------------------
-!EOC
-!pw++
    call t_stopf("HaloUpdate4DI4")
-!pw--
+!EOC
 
  end subroutine POP_HaloUpdate4DI4
 

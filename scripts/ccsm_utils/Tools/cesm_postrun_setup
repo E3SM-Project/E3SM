@@ -3,7 +3,6 @@
 # -------------------------------------------------------------------------
 
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`
-echo "run ended $sdate" >>& $CASEROOT/CaseStatus
 
 cd $RUNDIR
 set CESMLogFile = `ls -1t cesm.log* | head -1` 
@@ -122,7 +121,24 @@ else
     cp -p $CASEROOT/logs/cesm.log.$LID.gz cesm.log.$LID.gz
     cp -p $CASEROOT/timing/*.$LID $CASEROOT/timing/*.$LID.gz .
     cp -p $CASEROOT/CaseStatus CaseStatus.$LID
-    chmod -R a+r *
+
+    if (-f $EXEROOT/GIT_DESCRIBE) then
+      cp -p $EXEROOT/GIT_DESCRIBE GIT_DESCRIBE.$LID
+    endif
+    if (-f $EXEROOT/GIT_LOGS_HEAD) then
+      cp -p $EXEROOT/GIT_LOGS_HEAD GIT_LOGS_HEAD.$LID
+    endif
+    if (-f $EXEROOT/SVN_INFO) then
+      cp -p $EXEROOT/SVN_INFO SVN_INFO.$LID
+    endif
+    if (-f $EXEROOT/SVN_WC.DB) then
+      cp -p $EXEROOT/SVN_WC.DB SVN_WC.DB.$LID
+    endif
+    if (-e $EXEROOT/SourceMods.tar) then
+      cp -p $EXEROOT/SourceMods.tar SourceMods.$LID.tar
+    endif
+
+    chmod -R a+rX *
     gzip -r *
   endif
 
@@ -161,5 +177,6 @@ EOF
      rm tempres
    endif 
 endif
+
 
 

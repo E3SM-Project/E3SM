@@ -233,15 +233,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    if(iam >= par%nprocs) return
 
-!pw   call t_startf('bndry_exchange')
-!pw++
+!  call t_startf('bndry_exchange')
    call t_startf('stepon_bndry_exch')
-!pw--
+
    ! do boundary exchange
    do ie=1,nelemd
-!pw++        
-!pw call t_startf('stepon_edgeVpack')
-!pw--
       kptr=0
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,dyn_in%elem(ie)%desc)
       kptr=kptr+2*nlev
@@ -249,18 +245,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,dyn_in%elem(ie)%desc)
       kptr=kptr+nlev
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
-!pw++        
-!pw call t_stopf('stepon_edgeVpack')
-!pw--
    end do
 
-!pw++
-call t_startf('stepon_bexchV')
-!pw--
+   call t_startf('stepon_bexchV')
    call bndry_exchangeV(par, edgebuf)
-!pw++
-call t_stopf('stepon_bexchV')
-!pw--
+   call t_stopf('stepon_bexchV')
 
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 !  rec2dt = 1./real(dtime,r8)
@@ -275,9 +264,6 @@ call t_stopf('stepon_bexchV')
 
 
    do ie=1,nelemd
-!pw++        
-!pw call t_startf('stepon_edgeVunpack')
-!pw--
       kptr=0
 
       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,dyn_in%elem(ie)%desc)
@@ -287,9 +273,6 @@ call t_stopf('stepon_bexchV')
       kptr=kptr+nlev
 
       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
-!pw++        
-!pw call t_stopf('stepon_edgeVunpack')
-!pw--
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -442,10 +425,8 @@ call t_stopf('stepon_bexchV')
          end do
       endif
    end do
-!pw   call t_stopf('bndry_exchange')
-!pw++
+!  call t_stopf('bndry_exchange')
    call t_stopf('stepon_bndry_exch')
-!pw--
 
 
 

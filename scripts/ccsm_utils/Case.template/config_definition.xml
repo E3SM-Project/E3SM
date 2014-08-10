@@ -72,6 +72,14 @@
  sdesc="case user name"
 ></entry> 
 
+<entry id="PROJECT" 
+ type="char"
+ valid_values=""  
+ value="UNSET" 
+ group="case_desc"
+ sdesc="project for project-sensitive build and run paths"
+></entry> 
+
 <entry id="COMP_ATM" 
  type="char"
  valid_values="cam,wrf,datm,xatm,satm" 

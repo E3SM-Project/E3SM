@@ -5,20 +5,51 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
+if ($PROJECT == "") then
+  echo "  PROJECT must be set in env_case.xml on Edison."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
+set account_name = $PROJECT
+if !(-d /project/projectdirs/${account_name}) then
+  echo "  PROJECT in env_case.xml must be set to a valid project name."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
 
-set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
 if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
   @ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
   @ mppnodes = $mppnodes + 1
   @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
 endif
 
+set maxthrds = 0
+set minthrds = $MAX_TASKS_PER_NODE
+@ n = 0
+foreach model ($MODELS)
+  @ n = $n + 1
+  if ($NTHRDS[$n] > $MAX_TASKS_PER_NODE ) then
+     echo "ERROR, NTHRDS maximum is $MAX_TASKS_PER_NODE"
+     echo "you have set NTHRDS = ( $NTHRDS[$n] ) - must reset"
+     exit 1
+  endif   
+  if ($NTHRDS[$n] > $maxthrds) then
+     set maxthrds = $NTHRDS[$n]
+  endif
+  if ($NTHRDS[$n] < $minthrds) then
+     set minthrds = $NTHRDS[$n]
+  endif
+end
+
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
-set account_name = ` `
-if (-e ~/.ccsm_proj) then
-   set account_name = `head -1 ~/.ccsm_proj`
-endif
+#set account_name = ` `
+#if (-e ~/.ccsm_proj) then
+#   set account_name = `head -1 ~/.ccsm_proj`
+#endif
 
 set walltime = "01:15:00"
 if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
@@ -30,12 +61,22 @@ else
  set file = $CASEROOT/${CASE}.run 
 endif
 
+# For the PBS stanza always use this formula (mppnppn is broken)
+
+set mppsum = `${CASEROOT}/Tools/taskmaker.pl -sumpes` 
+if ( $mppsum > 1 ) then
+  @ mppwidth = $mppsum / 2
+else
+  @ mppwidth = 1
+endif
+
 cat >! $file << EOF1
 #!/bin/csh -f
 ###PBS -A ${account_name}
 #PBS -N ${jobname}
 #PBS -q regular
-#PBS -l mppwidth=${mppsize}
+#PBS -l mppwidth=${mppwidth}
+##PBS -l mppnppn=48
 #PBS -l walltime=${walltime}
 #PBS -j oe
 #PBS -S /bin/csh -V
@@ -48,6 +89,10 @@ else if ($PHASE == set_exe) then
 
 set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
 set myaprun = `${CASEROOT}/Tools/taskmaker.pl -aprun`
+
+#if ($maxthrds > 1) then
+set myaprun = "-j 2 $myaprun "
+#endif
 
 cat >> ${CASEROOT}/${CASE}.run << EOF1
 # -------------------------------------------------------------------------

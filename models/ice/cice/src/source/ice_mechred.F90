@@ -1121,8 +1121,9 @@
 !
 ! !USES:
 !
-      use ice_state, only: nt_aero, &
+      use ice_state, only: tr_aero, nt_aero, &
                            nt_alvl, nt_vlvl, tr_lvl
+      use ice_exit, only: abort_ice
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -1504,6 +1505,12 @@
       !-----------------------------------------------------------------
 
             if (n_aero >= 1) then
+
+               if (.not. tr_aero) then
+                  write (nu_diag,*) "n_aero >= 1 and tr_aero = .false."
+                  call abort_ice('ice mechred: n_aero >= 1 and tr_aero = .false.')
+               endif
+
                do iaero=1,n_aero
                 msoot(m,iaero) = msoot(m,iaero) &
                         + vsrdgn(ij)*(c1-fsnowrdg) &

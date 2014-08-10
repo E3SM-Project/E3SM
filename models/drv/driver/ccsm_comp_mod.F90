@@ -840,8 +840,8 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
    ! Memory test
    !-----------------------------------------------------------------------------
-!   call shr_mem_init(prt=.true.)
-    call shr_mem_init(prt=iamroot_CPLID)
+!mt call shr_mem_init(prt=.true.)
+   call shr_mem_init(prt=iamroot_CPLID)
 
    !-----------------------------------------------------------------------------
    ! Initialize coupled fields
@@ -1047,12 +1047,12 @@ subroutine ccsm_init()
       call shr_sys_flush(logunit)
    endif
 
-   call t_adj_detailf(+2)
-
    !-----------------------------------------------------------------------------
    ! Initialization atmospheric component
    !-----------------------------------------------------------------------------
 
+   call t_startf('driver_init_atm')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLATMID) then
       call seq_infodata_exchange(infodata,CPLALLATMID,'cpl2atm_init')
    endif
@@ -1071,11 +1071,15 @@ subroutine ccsm_init()
    if (iamin_CPLATMID(ens1)) then
       call seq_infodata_exchange(infodata,CPLATMID(ens1),'atm2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_atm')
 
    !-----------------------------------------------------------------------------
    ! Initialization land component
    !-----------------------------------------------------------------------------
 
+   call t_startf('driver_init_lnd')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLLNDID) then
       call seq_infodata_exchange(infodata,CPLALLLNDID,'cpl2lnd_init')
    endif
@@ -1096,11 +1100,15 @@ subroutine ccsm_init()
    if (iamin_CPLLNDID(ens1)) then
       call seq_infodata_exchange(infodata,CPLLNDID(ens1),'lnd2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_lnd')
 
    !----------------------------------------------------
    ! Initialization river runoff component 
    !----------------------------------------------------
 
+   call t_startf('driver_init_rof')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLROFID) then
       call seq_infodata_exchange(infodata,CPLALLROFID,'cpl2rof_init')
    endif
@@ -1120,11 +1128,15 @@ subroutine ccsm_init()
    if (iamin_CPLROFID(ens1)) then
       call seq_infodata_exchange(infodata,CPLROFID(ens1),'rof2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_rof')
 
    !-----------------------------------------------------------------------------
    ! Initialization ocean component
    !-----------------------------------------------------------------------------
 
+   call t_startf('driver_init_ocn')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLOCNID) then
       call seq_infodata_exchange(infodata,CPLALLOCNID,'cpl2ocn_init')
    endif
@@ -1145,11 +1157,15 @@ subroutine ccsm_init()
    if (iamin_CPLOCNID(ens1)) then
       call seq_infodata_exchange(infodata,CPLOCNID(ens1),'ocn2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_ocn')
 
    !-----------------------------------------------------------------------------
    ! Initialization ice component
    !-----------------------------------------------------------------------------
 
+   call t_startf('driver_init_ice')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLICEID) then
       call seq_infodata_exchange(infodata,CPLALLICEID,'cpl2ice_init')
    endif
@@ -1170,11 +1186,15 @@ subroutine ccsm_init()
    if (iamin_CPLICEID(ens1)) then
       call seq_infodata_exchange(infodata,CPLICEID(ens1),'ice2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_ice')
 
    !-----------------------------------------------------------------------------
    ! Initialization glc component
    !-----------------------------------------------------------------------------
 
+   call t_startf('driver_init_glc')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLGLCID) then
       call seq_infodata_exchange(infodata,CPLALLGLCID,'cpl2glc_init')
    endif
@@ -1195,11 +1215,15 @@ subroutine ccsm_init()
    if (iamin_CPLGLCID(ens1)) then
       call seq_infodata_exchange(infodata,CPLGLCID(ens1),'glc2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_glc')
 
    !-----------------------------------------------------------------------------
    ! Initialization wav component
    !-----------------------------------------------------------------------------
 
+   call t_startf('driver_init_wav')
+   call t_adj_detailf(+2)
    if (iamin_CPLALLWAVID) then
       call seq_infodata_exchange(infodata,CPLALLWAVID,'cpl2wav_init')
    endif
@@ -1220,13 +1244,14 @@ subroutine ccsm_init()
    if (iamin_CPLWAVID(ens1)) then
       call seq_infodata_exchange(infodata,CPLWAVID(ens1),'wav2cpl_init')
    endif
+   call t_adj_detailf(-2)
+   call t_stopf('driver_init_wav')
 
    !-----------------------------------------------------------------------------
 
-   call t_adj_detailf(-2)
-
    call t_stopf  ('driver_init_comps')
 
+   call t_startf ('driver_init_other')
    !-----------------------------------------------------------------------------
    ! Determine final settings for presence of land, ice and ocean and the prognostic flags
    !-----------------------------------------------------------------------------
@@ -1514,6 +1539,7 @@ subroutine ccsm_init()
          endif
       enddo
    endif
+   call t_stopf ('driver_init_other')
 
    !-----------------------------------------------------------------------------
    ! Initialize driver rearrangers and AVs on driver
@@ -1525,8 +1551,11 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
    call t_startf('driver_init_xxx2xxx')
 
+   call t_startf('driver_init_xxx2xxx_bar')
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_bar')
 
+   call t_startf('driver_init_xxx2xxx_atm')
    if (atm_present) then
       do eai = 1,num_inst_atm
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1566,7 +1595,9 @@ subroutine ccsm_init()
    endif
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_atm')
 
+   call t_startf('driver_init_xxx2xxx_lnd')
    if (lnd_present) then
       do eli = 1,num_inst_lnd
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1606,7 +1637,9 @@ subroutine ccsm_init()
    end if
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_lnd')
 
+   call t_startf('driver_init_xxx2xxx_sno')
    if (sno_present) then
       do eli = 1,num_inst_lnd
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1646,7 +1679,9 @@ subroutine ccsm_init()
    end if
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_sno')
 
+   call t_startf('driver_init_xxx2xxx_rof')
    if (rof_present) then
       do eri = 1,num_inst_rof
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1686,7 +1721,9 @@ subroutine ccsm_init()
    end if
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_rof')
 
+   call t_startf('driver_init_xxx2xxx_ice')
    if (ice_present) then
       do eii = 1,num_inst_ice
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1726,7 +1763,9 @@ subroutine ccsm_init()
    endif
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_ice')
 
+   call t_startf('driver_init_xxx2xxx_glc')
    if (glc_present) then
       do egi = 1,num_inst_glc
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1766,7 +1805,9 @@ subroutine ccsm_init()
    endif
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_glc')
 
+   call t_startf('driver_init_xxx2xxx_wav')
    if (wav_present) then
       do ewi = 1,num_inst_wav
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1806,7 +1847,9 @@ subroutine ccsm_init()
    endif
 
    call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_wav')
 
+   call t_startf('driver_init_xxx2xxx_ocn')
    if (ocn_present) then
       do eoi = 1,num_inst_ocn
          if (iamroot_CPLID) write(logunit,*) ' '
@@ -1849,6 +1892,9 @@ subroutine ccsm_init()
          endif
       enddo
    endif
+
+   call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf('driver_init_xxx2xxx_ocn')
 
    call t_stopf  ('driver_init_xxx2xxx')
 

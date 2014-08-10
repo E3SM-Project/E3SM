@@ -19,9 +19,7 @@
    use POP_FieldMod 
    use POP_GridHorzMod
    use POP_HaloMod 
-!pw++
    use perf_mod
-!pw--
 
    use kinds_mod, only: int_kind, r8, log_kind, r4, rtavg
    use blocks, only: nx_block, ny_block, block, get_block
@@ -519,9 +517,7 @@
 !
 !-----------------------------------------------------------------------
 
-!pw++
    call t_startf("comp_flux_vel_ghost")
-!pw--
    errorCode = POP_Success
 
    call comp_flux_vel_ghost(DH, errorCode)
@@ -531,9 +527,7 @@
          'baroclinic_driver: error in comp_flux_vel_ghost')
       return
    endif
-!pw++
    call t_stopf("comp_flux_vel_ghost")
-!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -541,14 +535,10 @@
 !
 !-----------------------------------------------------------------------
 
-!pw++
    call t_startf("set_int_pas_tra_3D")
-!pw--
    call set_interior_passive_tracers_3D(                            &
            TRACER (:,:,:,:,oldtime,:), TRACER (:,:,:,:,curtime,:)  )
-!pw++
    call t_stopf("set_int_pas_tra_3D")
-!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -557,9 +547,7 @@
 !-----------------------------------------------------------------------
 
 
-!pw++
    call t_startf("1_Block_Loop")
-!pw--
    !$OMP PARALLEL DO PRIVATE(iblock,this_block,k,kp1,km1,WTK,WORK1,factor)
 
    do iblock = 1,nblocks_clinic
@@ -636,9 +624,7 @@
 !-----------------------------------------------------------------------
 
          if (mix_pass /= 1) then
-!pw++
          call t_startf("tavg_accum")
-!pw--
 
          call accumulate_tavg_field(UVEL(:,:,k,curtime,iblock),tavg_UVEL,iblock,k)
 
@@ -811,9 +797,7 @@
 
          endif
 
-!pw++
          call t_stopf("tavg_accum")
-!pw--
          endif ! mix_pass
 
 !-----------------------------------------------------------------------
@@ -862,9 +846,7 @@
    enddo ! first block loop
 
    !$OMP END PARALLEL DO
-!pw++
    call t_stopf("1_Block_Loop")
-!pw--
 
 
 !-----------------------------------------------------------------------
@@ -877,9 +859,7 @@
 
    if (lpressure_avg .and. leapfrogts) then
 
-!pw++
       call t_startf("1_Halo_Upd")
-!pw--
       call POP_HaloUpdate(TRACER(:,:,:,1,newtime,:),          &
                               POP_haloClinic,                 &
                               POP_gridHorzLocCenter,          &
@@ -904,9 +884,7 @@
          return
       endif
 
-!pw++
       call t_stopf("1_Halo_Upd")
-!pw--
    endif
 
 !-----------------------------------------------------------------------
@@ -915,9 +893,7 @@
 !
 !-----------------------------------------------------------------------
 
-!pw++
    call t_startf("2_Block_Loop")
-!pw--
    !$OMP PARALLEL DO PRIVATE(iblock,this_block,k,km1,kp1,n, &
    !$OMP                     WUK,FX,FY,WORK1,WORK2)
 
@@ -934,9 +910,7 @@
       ZX(:,:,iblock) = c0
       ZY(:,:,iblock) = c0
 
-!pw++
       call t_startf("2_kloop")
-!pw--
       do k = 1,km
 
          kp1 = k+1
@@ -952,15 +926,11 @@
 !-----------------------------------------------------------------------
 
          if (lpressure_avg .and. leapfrogts) then
-!pw++
             call t_startf("2_state")
-!pw--
             call state(k,k,TRACER(:,:,k,1,newtime,iblock), &
                            TRACER(:,:,k,2,newtime,iblock), &
                            this_block, RHOOUT=RHO(:,:,k,newtime,iblock))
-!pw++
             call t_stopf("2_state")
-!pw--
          endif
 
 !-----------------------------------------------------------------------
@@ -969,9 +939,7 @@
 !
 !-----------------------------------------------------------------------
 
-!pw++
          call t_startf("clinic")
-!pw--
          call clinic(k, FX, FY, WUK,                &
                         UVEL(:,:,:,curtime,iblock), &
                         VVEL(:,:,:,curtime,iblock), &
@@ -985,9 +953,7 @@
                         SMF (:,:,:,iblock),         &
                         DHU (:,:,iblock),           &
                         this_block)
-!pw++
          call t_stopf("clinic")
-!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -1026,9 +992,7 @@
          endif
 
       enddo ! vertical (k) loop
-!pw++
       call t_stopf("2_kloop")
-!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -1058,22 +1022,16 @@
 !
 !-----------------------------------------------------------------------
 
-!pw++
       call t_startf("2_comp2")
-!pw--
       UVEL(:,:,:,newtime,iblock) = UVEL(:,:,:,oldtime,iblock) + &
                                    UVEL(:,:,:,newtime,iblock)  ! holds c2dtu*Fx
       VVEL(:,:,:,newtime,iblock) = VVEL(:,:,:,oldtime,iblock) + &
                                    VVEL(:,:,:,newtime,iblock)  ! holds c2dtu*Fy
 
       if ( overflows_on .and. overflows_interactive ) then
-!pw++
          call t_startf("2_ovf_Utlda")
-!pw--
          call ovf_Utlda(iblock)
-!pw++
          call t_stopf("2_ovf_Utlda")
-!pw--
       endif
 
 !-----------------------------------------------------------------------
@@ -1118,9 +1076,7 @@
             VVEL(:,:,k,newtime,iblock) = c0
          endwhere
       enddo
-!pw++
       call t_stopf("2_comp2")
-!pw--
 
 !-----------------------------------------------------------------------
 !
@@ -1141,9 +1097,7 @@
    enddo ! second block loop
 
    !$OMP END PARALLEL DO
-!pw++
    call t_stopf("2_Block_Loop")
-!pw--
 
 #if drifter_particles
 !-----------------------------------------------------------------------
