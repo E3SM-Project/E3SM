@@ -919,4 +919,6 @@ module mpas_io_input
 
 #include "exchange_fields.inc"
 
+#include "setup_immutable_streams.inc"
+
 end module mpas_io_input

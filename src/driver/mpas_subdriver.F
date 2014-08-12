@@ -124,6 +124,8 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       call MPAS_stream_mgr_init(stream_manager, domain % clock, domain % blocklist % allFields)
 
+      call mpas_setup_immutable_streams(stream_manager)
+
       mgr_p = c_loc(stream_manager)
       call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
       if (c_ierr /= 0) then

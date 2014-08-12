@@ -20,7 +20,7 @@
 /* 
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
-void stream_mgr_create_stream_c(void *, const char *, int *, const char *, int *, int *);
+void stream_mgr_create_stream_c(void *, const char *, int *, const char *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 
 
@@ -660,6 +660,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	char msgbuf[MSGSIZE];
 	int itype;
 	int irecs;
+	int immutable;
 	int err;
 
 
@@ -681,16 +682,10 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		return;
 	}	
 
-/*  check_streams now called from xml_stream_get_filename()
-	if (check_streams(streams) != 0) {
-		*status = 1;
-		return;
-	}
-*/
-
 	err = 0;
 
 	/* First, handle changes to immutable stream filename templates, intervals, etc. */
+	immutable = 1;
 	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
 		streamID = ezxml_attr(stream_xml, "name");
 		direction = ezxml_attr(stream_xml, "type");
@@ -711,7 +706,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		else 
 			itype = 4;
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &err);
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &immutable, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -719,6 +714,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	}
 
 	/* Next, handle modifications to mutable streams as well as new stream definitions */
+	immutable = 0;
 	for (stream_xml = ezxml_child(streams, "stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
 		streamID = ezxml_attr(stream_xml, "name");
 		direction = ezxml_attr(stream_xml, "type");
@@ -739,7 +735,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		else 
 			itype = 4;
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &err);
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &immutable, &err);
 		if (err != 0) {
 			*status = 1;
 			return;

@@ -2723,6 +2723,89 @@ int generate_field_outputs(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
 }/*}}}*/
 
 
+/*********************************************************************************
+ *
+ *  Function: generate_immutable_streams
+ *
+ *  Generates the Fortran include file 'setup_immutable_streams.inc' that contains
+ *  the subroutine mpas_generate_immutable_streams() responsible for making calls
+ *  to the stream manager to define all immutable streams. 
+ *  The mpas_generate_immutable_streams() routine should be called after blocks
+ *  have been allocated in the framework and after the stream manager has been 
+ *  initialized, but before any calls to generate mutable streams are made.
+ *
+ *********************************************************************************/
+int generate_immutable_streams(char *core_string, ezxml_t registry)
+{
+	ezxml_t streams_xml, stream_xml, var_xml, varstruct_xml;
+
+	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optimmutable;
+	FILE *fd;
+
+
+	fd = fopen("setup_immutable_streams.inc", "w+");
+
+	fprintf(stderr, "---- GENERATING IMMUTABLE STREAMS ----\n");
+
+	fortprintf(fd, "subroutine mpas%ssetup_immutable_streams(manager)\n\n", core_string);
+	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
+	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_PROPERTY_IMMUTABLE, MPAS_STREAM_IMMUTABLE, &\n");
+	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_add_field, MPAS_stream_mgr_set_property\n\n");
+	fortprintf(fd, "   implicit none\n\n");
+	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
+	fortprintf(fd, "   integer :: ierr\n\n");
+
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+
+			optimmutable = ezxml_attr(stream_xml, "immutable");
+
+			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
+
+				optname = ezxml_attr(stream_xml, "name");
+				opttype = ezxml_attr(stream_xml, "type");
+				optfilename = ezxml_attr(stream_xml, "filename_template");
+				optrecords = ezxml_attr(stream_xml, "records_per_file");
+
+				/* create the stream */
+				if (strstr(opttype, "input") != NULL && strstr(opttype, "output") != NULL) 
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+				else if (strstr(opttype, "input") != NULL)
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+				else if (strstr(opttype, "output") != NULL)
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+				else
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_NONE, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+
+				/* Loop over fields listed within the stream */
+				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = var_xml->next) {
+					optvarname = ezxml_attr(var_xml, "name");
+					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+				}
+	
+				/* Loop over fields looking for any that belong to the stream */
+				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+					for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optstream = ezxml_attr(var_xml, "streams");
+						if (optstream != NULL && strstr(optstream, optname) != NULL) {
+							optvarname = ezxml_attr(var_xml, "name");
+							fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+						}	
+					}
+				}
+
+				fortprintf(fd, "   call MPAS_stream_mgr_set_property(manager, \'%s\', MPAS_STREAM_PROPERTY_IMMUTABLE, MPAS_STREAM_IMMUTABLE, ierr=ierr)\n\n", optname);
+			}
+
+		}
+	}
+
+	fortprintf(fd, "end subroutine mpas%ssetup_immutable_streams\n", core_string);
+
+	fclose(fd);
+}
+
+
 int generate_field_reads_and_writes(ezxml_t registry){/*{{{*/
 	ezxml_t struct_xml;
 	const char *corename;
@@ -2845,6 +2928,8 @@ int generate_field_reads_and_writes(ezxml_t registry){/*{{{*/
 	fortprintf(fd, "      end do\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "   end subroutine mpas%sadd_output_atts\n", core_string);
+
+	err = generate_immutable_streams(core_string, registry);
 
 	return 0;
 }/*}}}*/

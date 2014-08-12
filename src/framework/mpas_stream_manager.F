@@ -1168,7 +1168,7 @@ end module mpas_stream_manager
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, maxRecords_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, maxRecords_c, immutable_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -1182,20 +1182,33 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     integer(kind=c_int) :: direction_c
     character(kind=c_char) :: filename_c(*)
     integer(kind=c_int) :: maxRecords_c
+    integer(kind=c_int) :: immutable_c
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, filename
-    integer :: direction, maxRecords, ierr
+    integer :: direction, maxRecords, immutable, ierr
 
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     direction = direction_c
     call mpas_c_to_f_string(filename_c, filename)
+    immutable = immutable_c
     maxRecords = maxRecords_c
     
-    call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
+    !
+    ! For immutable streams, the stream should have already been defined at this point, and
+    !    all we need to do is update the stream's filename template and maximum records per file;
+    !    otherwise, we need to create a new stream
+    !
+    ierr = 0
+    if (immutable == 1) then
+        write(0,*) '------ TODO: Set filename template for immutable stream '//trim(streamID)
+        write(0,*) '------ TODO: Set max records for immutable stream '//trim(streamID)
+    else
+        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
+    end if
 
     ierr_c = ierr
 

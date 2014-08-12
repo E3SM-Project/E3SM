@@ -64,7 +64,6 @@ int main(int argc, char ** argv)/*{{{*/
 		return 1;
 	}
 
-	//write_default_namelist(nls, corename);
 	write_default_namelist(registry);
 
 	write_default_streams(registry);
@@ -671,7 +670,7 @@ int parse_reg_xml(ezxml_t registry)/*{{{*/
 	// Generate halo exchange and copy routine
 	err = generate_field_halo_exchanges_and_copies(registry);
 
-	// Generate halo exchange and copy routine
+	// Generate code to read and write fields
 	err = generate_field_reads_and_writes(registry);
 
 	return 0;

@@ -77,7 +77,7 @@ mpas_io.o: mpas_dmpar_types.o mpas_io_units.o
 
 mpas_io_streams.o: mpas_attlist.o mpas_grid_types.o mpas_timekeeping.o mpas_io.o mpas_io_units.o $(DEPS)
 
-mpas_io_input.o: mpas_grid_types.o mpas_dmpar.o mpas_block_decomp.o mpas_block_creator.o mpas_sort.o mpas_configure.o mpas_timekeeping.o mpas_io_streams.o mpas_io_units.o random_id.o $(DEPS)
+mpas_io_input.o: mpas_grid_types.o mpas_dmpar.o mpas_block_decomp.o mpas_block_creator.o mpas_sort.o mpas_configure.o mpas_timekeeping.o mpas_io_streams.o mpas_io_units.o mpas_stream_manager.o random_id.o $(DEPS)
 
 mpas_io_output.o: mpas_grid_types.o mpas_dmpar.o mpas_sort.o mpas_configure.o mpas_io_streams.o mpas_io_units.o $(DEPS)
 
