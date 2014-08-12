@@ -291,7 +291,7 @@ sub loadmodules{
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
 	module_check($modpath,$host);
 #        module("purge");
-        module("load intel/14.0.1");
+        module("load intel/14.0.2");
 #	module("load intel/13.1.2");
 	module("load ncarcompilers/1.0");
         module("rm netcdf");

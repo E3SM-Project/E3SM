@@ -1542,13 +1542,15 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function PIO_openfile(iosystem, file, iotype, fname,mode, CheckMPI) result(ierr)
+
+    use ifcore, only: tracebackqq
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
     logical, optional, intent(in) :: CheckMPI
-
+    integer :: iorank
     interface
        integer(C_INT) function PIOc_openfile(iosysid, fh, iotype, fname,mode, CheckMPI) &
          bind(C,NAME='PIOc_openfile')
@@ -1580,6 +1582,13 @@ contains
          cfname, imode, iCheckMPI)
     deallocate(cfname)
     file%iosystem => iosystem
+   
+
+!    call PIO_get_iorank(iosystem, iorank)
+!    if(iorank==0) then
+!       call tracebackqq(user_exit_code=-1)
+!    endif
+
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif

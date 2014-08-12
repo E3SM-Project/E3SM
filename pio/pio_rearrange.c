@@ -744,8 +744,6 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
-    if(ios.iomaster)
-      printf("%d iosize %d %d\n",__LINE__,iodesc->maxiobuflen, iodesc->llen);
   }
 
   free(dest_ioproc);
@@ -786,18 +784,21 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
 
   nmaplen = 0;
   region = iodesc->firstregion;
-  region->loffset=0;
+  while(map[nmaplen++]<0);
+  region->loffset=nmaplen;
 
   iodesc->maxregions = 1;
   while(nmaplen < iodesc->llen){
     // Here we find the largest region from the current offset into the iomap
     // regionlen is the size of that region and we step to that point in the map array
     // until we reach the end 
+
+
+
     regionlen = find_first_region(iodesc->ndims, gdims, iodesc->llen-nmaplen, 
 					map+nmaplen, region->start, region->count);
-
-    //    printf("start %ld %ld %ld\n", region->start[0], region->start[1], region->start[2]);
-    // printf("count %ld %ld %ld\n", region->count[0], region->count[1], region->count[2]);
+    if(region->start[0]<0)
+      MPI_Abort(MPI_COMM_WORLD,0);
 
     nmaplen = nmaplen+regionlen;
     if(region->next==NULL && nmaplen<iodesc->llen){
@@ -950,7 +951,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 
     for(i=0;i<iodesc->llen;i++){
       (map+i)->iomap = iomap[i];
-      //     printf("iomap[%d] %ld ",i,iomap[i]);
+      //      printf("iomap[%d] %ld ",i,iomap[i]);
     }
     //printf("\n");
 
@@ -967,17 +968,12 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
     get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
 
     compute_maxIObuffersize(ios.io_comm, iodesc);
-    if(ios.iomaster)
-      printf("%d iosize %d %d\n",__LINE__,iodesc->maxiobuflen, iodesc->llen);
-
 
     free(map);
     free(iomap);
 
 
   }
-  if(ios.ioroot) 
-    printf("%d %d %d\n",__LINE__,(int) dtypes[0],(int) dtypes[1]);
   pio_swapm(destoffset, recvlths, rdispls, dtypes, 
 	    dest_ioindex, sndlths, sdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
@@ -993,7 +989,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   free(dest_ioproc);
   free(dest_ioindex);
 
-  if(ios.ioproc)
+  if(destoffset != NULL)
     free(destoffset);
 
 

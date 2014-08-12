@@ -275,7 +275,7 @@ contains
          use iso_c_binding
          integer(C_INT)                                     , value :: ncid
          integer(c_int)                                     , value :: dimid
-         integer(c_long) :: len
+         integer(c_size_t) :: len
        end function PIOc_inq_dimlen
     end interface
     
@@ -299,12 +299,23 @@ contains
          use iso_c_binding
          integer(C_INT)                                     , value :: ncid
          integer(c_int)                                     , value :: dimid
-         character(c_char) :: name
+         character(c_char) :: name(*)
        end function PIOc_inq_dimname
     end interface
-    name = ' '
-    ierr = PIOc_inq_dimname(ncid                            ,dimid-1,name)
-    call replace_c_null(name)
+    integer :: slen, i
+    character, allocatable :: cname(:)
+    slen = len(name)
+    allocate(cname(slen))
+
+    cname = C_NULL_CHAR
+    ierr = PIOc_inq_dimname(ncid                            ,dimid-1,cname)
+
+    do i=1,slen
+       if(cname(i) /= C_NULL_CHAR) then
+          name(i:i) = cname(i)
+       endif
+    enddo
+    deallocate(cname)
   end function inq_dimname_id
 
 
@@ -517,7 +528,7 @@ contains
          use iso_c_binding
          integer(C_INT)                                     , value :: ncid
          character(C_CHAR) :: name
-         integer(C_LONG)                                    , value :: len
+         integer(C_SIZE_T)                                    , value :: len
          integer(C_INT) :: dimid
        end function PIOc_def_dim
     end interface
@@ -803,10 +814,10 @@ contains
          use iso_c_binding
          integer(C_INT)                                     , value :: ncid
          integer(C_INT)                                     , value :: varid
-         character(C_CHAR) :: name
+         character(C_CHAR) :: name(*)
        end function PIOc_inq_varname
     end interface
-    name = ' '
+    name = C_NULL_CHAR
     ierr = PIOc_inq_varname(ncid                            ,varid-1,name)
     call replace_c_null(name)
   end function inq_varname_id
@@ -912,7 +923,7 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          character(C_CHAR) :: name
-         integer(C_LONG) :: len
+         integer(C_SIZE_T) :: len
        end function PIOc_inq_attlen
     end interface
 
@@ -938,8 +949,8 @@ contains
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in)           :: vardesc
     character(len=*), intent(in)      :: name
-    integer, intent(out)              :: xtype
-    integer(pio_offset_kind), intent(out)              :: len !Attribute length
+    integer, optional, intent(out)              :: xtype
+    integer(pio_offset_kind), optional, intent(out)              :: len !Attribute length
 
     ierr = pio_inq_att(file%fh, vardesc%varid, name, xtype, len)
 
@@ -975,14 +986,14 @@ contains
          integer(C_INT),value :: varid
          character(C_CHAR) :: name
          integer(C_INT) :: xtype
-         integer(C_LONG) :: len
+         integer(C_SIZE_T) :: len
        end function PIOc_inq_att
     end interface
     
     ierr = PIOc_inq_att(ncid,varid-1,trim(name)//C_NULL_CHAR,ixtype,xlen)
     if(present(len)) len=xlen
     if(present(xtype)) xtype = ixtype
-    print *,__FILE__,__LINE__,ixtype,xlen
+
   end function inq_att_id
 
 
@@ -1000,7 +1011,7 @@ contains
     integer, intent(in)           :: varid
     integer, intent(in)              :: attnum !Attribute number
     character(len=*), intent(out)     :: name
-
+    
     ierr = inq_attname_id(file%fh,varid,attnum,name)
 
   end function inq_attname_vid
@@ -1009,6 +1020,8 @@ contains
     integer, intent(in) :: varid
     integer, intent(in)              :: attnum !Attribute number
     character(len=*), intent(out)     :: name
+    character, allocatable :: cname(:)
+    integer :: slen, i
     interface
        integer(C_INT) function PIOc_inq_attname(ncid,varid,attnum,name) &
             bind(C,name="PIOc_inq_attname")
@@ -1016,12 +1029,20 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          integer(C_INT), value :: attnum
-         character(C_CHAR) :: name
+         character(C_CHAR) :: name(*)
        end function PIOc_inq_attname
     end interface
-    name = ' '
-    ierr = PIOc_inq_attname(ncid,varid-1,attnum-1,name)
-    call replace_c_null(name)
+    slen = len(name)
+    allocate(cname(slen))
+    cname = C_NULL_CHAR
+
+    ierr = PIOc_inq_attname(ncid,varid-1,attnum-1,cname)
+    do i=1,slen
+       if(cname(i) /= C_NULL_CHAR) then
+          name(i:i) = cname(i)
+       endif
+    enddo
+    deallocate(cname)
 
   end function inq_attname_id
 
