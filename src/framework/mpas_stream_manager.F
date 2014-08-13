@@ -1243,3 +1243,52 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
     ierr_c = ierr
 
 end subroutine stream_mgr_add_field_c
+
+
+subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_c, alarmInterval_c, ierr_c) bind(c)
+
+    use mpas_c_interfacing, only : mpas_c_to_f_string
+    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_stream_mgr_add_alarm
+    use mpas_kind_types, only : StrKIND
+
+    implicit none
+
+    type (c_ptr) :: manager_c
+    character(kind=c_char) :: streamID_c(*)
+    character(kind=c_char) :: direction_c(*)
+    character(kind=c_char) :: alarmTime_c(*)
+    character(kind=c_char) :: alarmInterval_c(*)
+    integer(kind=c_int) :: ierr_c
+
+    type (MPAS_streamManager_type), pointer :: manager
+    character(len=StrKIND) :: streamID, direction, alarmID, alarmTime, alarmInterval
+    integer :: idirection
+    integer :: ierr
+
+
+    ierr = 0
+
+    call c_f_pointer(manager_c, manager)
+    call mpas_c_to_f_string(streamID_c, streamID)
+    call mpas_c_to_f_string(direction_c, direction)
+    call mpas_c_to_f_string(alarmTime_c, alarmTime)
+    call mpas_c_to_f_string(alarmInterval_c, alarmInterval)
+    write(alarmID, '(a)') trim(streamID)//'_'//trim(direction)
+
+    if (trim(direction) == 'input') then
+        idirection = MPAS_STREAM_INPUT
+    else if (trim(direction) == 'output') then
+        idirection = MPAS_STREAM_OUTPUT
+    end if
+
+write(0,*) 'Adding alarm to stream '//trim(streamID)//' direction '//trim(direction)
+write(0,*) '   ID:       '//trim(alarmID)
+write(0,*) '   Time:     '//trim(alarmTime)
+write(0,*) '   Interval: '//trim(alarmInterval)
+
+    call MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, idirection, ierr=ierr)
+
+    ierr_c = ierr
+
+end subroutine stream_mgr_add_alarm_c

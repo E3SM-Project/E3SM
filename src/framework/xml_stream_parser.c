@@ -22,6 +22,7 @@
  */
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
+void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
 
 
 /*
@@ -655,6 +656,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t varfile_xml;
 	ezxml_t var_xml;
 	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const;
+	const char *interval_in, *interval_out;
 	char fieldname[256];
 	FILE *fd;
 	char msgbuf[MSGSIZE];
@@ -691,6 +693,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		direction = ezxml_attr(stream_xml, "type");
 		filename_template = ezxml_attr(stream_xml, "filename_template");
 		records = ezxml_attr(stream_xml, "records_per_file");
+		interval_in = ezxml_attr(stream_xml, "input_interval");
+		interval_out = ezxml_attr(stream_xml, "output_interval");
 
 		fprintf(stderr, "   found immutable stream %s\n", streamID);
 
@@ -711,6 +715,24 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			*status = 1;
 			return;
 		}
+
+		/* Possibly add an input alarm for this stream */
+		if (itype == 3 || itype == 1) {
+			stream_mgr_add_alarm_c(manager, streamID, "input", "none", interval_in, &err);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
+
+		/* Possibly add an output alarm for this stream */
+		if (itype == 3 || itype == 2) {
+			stream_mgr_add_alarm_c(manager, streamID, "output", "none", interval_out, &err);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
 	}
 
 	/* Next, handle modifications to mutable streams as well as new stream definitions */
@@ -720,6 +742,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		direction = ezxml_attr(stream_xml, "type");
 		filename_template = ezxml_attr(stream_xml, "filename_template");
 		records = ezxml_attr(stream_xml, "records_per_file");
+		interval_in = ezxml_attr(stream_xml, "input_interval");
+		interval_out = ezxml_attr(stream_xml, "output_interval");
 
 		fprintf(stderr, "   found mutable stream %s\n", streamID);
 
@@ -739,6 +763,24 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		if (err != 0) {
 			*status = 1;
 			return;
+		}
+
+		/* Possibly add an input alarm for this stream */
+		if (itype == 3 || itype == 1) {
+			stream_mgr_add_alarm_c(manager, streamID, "input", "none", interval_in, &err);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
+
+		/* Possibly add an output alarm for this stream */
+		if (itype == 3 || itype == 2) {
+			stream_mgr_add_alarm_c(manager, streamID, "output", "none", interval_out, &err);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
 		}
 
 		for (varfile_xml = ezxml_child(stream_xml, "file"); varfile_xml; varfile_xml = ezxml_next(varfile_xml)) {
