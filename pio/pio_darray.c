@@ -145,9 +145,11 @@
 	   if(ios->io_rank==0){
 	     for(i=0;i<iodesc->num_aiotasks;i++){
 	       if(i==0){	    
+		 buflen=1;
 		 for(j=0;j<ndims;j++){
 		   tstart[j] =  start[j];
 		   tcount[j] =  count[j];
+		   buflen *= tcount[j];
 		   tmp_buf = bufptr;
 		 }
 	       }else{
@@ -186,6 +188,7 @@
 	       tcount[i] = (size_t) count[i];
 	       buflen*=tcount[i];
 	     }
+	     //	     printf("%s %d %d %d %d %d %d %d %d %d\n",__FILE__,__LINE__,ios->io_rank,tstart[0],tstart[1],tcount[0],tcount[1],buflen,ndims,fndims);
 	     mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
 	     mpierr = MPI_Rsend( &buflen, 1, MPI_INT, 0, 1, ios->io_comm);
 	     if(buflen>0) {
