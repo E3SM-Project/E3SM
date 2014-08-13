@@ -1,6 +1,10 @@
 # CMake initial cache file for Mac OSX 10.8
 # tested with gcc/gfortran & openmpi from HOMEBREW
 # 
+# openmp is supported by GNU gcc, but not supported by Apple LLVM gcc
+#
+SET (ENABLE_OPENMP FALSE CACHE FILEPATH "")
+
 SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
