@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atm_interp_diagnostics
+ use mpas_dmpar
  use mpas_kind_types
  use mpas_grid_types
  use mpas_constants
@@ -36,6 +37,8 @@
  integer :: nVertLevelsP1
  integer, pointer :: index_qv
  integer, dimension(:,:), pointer :: cellsOnVertex
+
+ type (field2DReal), pointer:: pressure_p_field
 
  real (kind=RKIND), dimension(:), pointer :: areaTriangle
  real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
@@ -113,6 +116,9 @@
 
  qvapor  => scalars(index_qv,:,:)    !MGD does this actually work?
  
+ call mpas_pool_get_field(diag, 'pressure_p', pressure_p_field)
+ call mpas_dmpar_exch_halo_field(pressure_p_field)
+
  call mpas_pool_get_array(diag, 'exner', exner)
  call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
  call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
