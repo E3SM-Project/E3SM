@@ -109,7 +109,7 @@ contains
     
     type (ghostBuffertr_t)                      :: buflatlon
     
-    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
+!xx    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     
     call t_startf('ff-cslam scheme') 
 
@@ -117,24 +117,28 @@ contains
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
+!       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
     end do
-
+    !
+    ! fill halo for dp_fvm and c
+    !
     do ie=nets,nete
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
-       ! if changing to nhe>1 the 3rd argument has to be changed to nhe+1
-       !
-       call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
-       call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
+       ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
+       ! the reconstruction and following evaluation of reconstruction function on lat-lon points
     end do
-    !-----------------------------------------------------------------------------------! 
-    call ghost_exchangeV(hybrid,buflatlon,2,nc+1,2)
-    !-----------------------------------------------------------------------------------!  
+    call t_startf('FVM Communication')
+    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+    call t_stopf('FVM Communication')
+    !-----------------------------------------------------------------------------------!
+    call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
-       call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
-       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
-       
-    end do
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+    enddo
+    call t_stopf('FVM Unpack')
 
     jall_max=0
     do ie=nets, nete
@@ -244,8 +248,8 @@ contains
        end do  !End Level
        !fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)=fvm(ie)%div_fvm !dbg
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+!phl       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+!phl       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
        ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
        ! the reconstruction and following evaluation of reconstruction function on lat-lon points
@@ -254,17 +258,17 @@ contains
        !
     end do
     call t_stopf('ff-cslam scheme')
-    call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
-    call t_stopf('FVM Communication')
+!phl    call t_startf('FVM Communication')
+!phl    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+!phl    call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
-    call t_startf('FVM Unpack')
-    do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
-    enddo
-    call t_stopf('FVM Unpack')
-    call freeghostbuffertr(buflatlon)
+!phl    call t_startf('FVM Unpack')
+!phl    do ie=nets,nete
+!phl       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+!phl       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+!phl    enddo
+!phl    call t_stopf('FVM Unpack')
+!xxx    call freeghostbuffertr(buflatlon)
     
   end subroutine cslam_runflux
 
@@ -456,8 +460,12 @@ contains
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
     end do
-    
+
+    !
+    ! is this boundary exchange necessary? only of .EOC.=.TRUE. in fvm_lineintegrals_mod
+    !    
     do ie=nets,nete
+       ! if changing to nhe>1 the 3rd argument has to be changed to nhe+1
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
     end do
@@ -467,9 +475,30 @@ contains
     do ie=nets,nete
        call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
        call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
-       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
-       
+       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
     end do
+
+    !
+    ! fill halo for dp_fvm and c
+    !
+    do ie=nets,nete
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       !
+       ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
+       ! the reconstruction and following evaluation of reconstruction function on lat-lon points
+    end do
+    call t_startf('FVM Communication')
+    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+    call t_stopf('FVM Communication')
+    !-----------------------------------------------------------------------------------!
+    call t_startf('FVM Unpack')
+    do ie=nets,nete
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+    enddo
+    call t_stopf('FVM Unpack')
+
 
 
     do ie=nets, nete
@@ -512,20 +541,20 @@ contains
        end do  !End Level
        !note write tl%np1 in buffer                                                                 
 
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+!       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+!       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
     call t_stopf('cslam scheme')
-    call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
-    call t_stopf('FVM Communication')
+!    call t_startf('FVM Communication')
+!    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+!    call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!                         
-    call t_startf('FVM Unpack')
-    do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
-    enddo
-    call t_stopf('FVM Unpack')
+!    call t_startf('FVM Unpack')
+!    do ie=nets,nete
+!       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+!       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+!    enddo
+!    call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
 
     
