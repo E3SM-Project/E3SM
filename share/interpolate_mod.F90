@@ -631,8 +631,9 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   integer                           :: i, ix, jy, starti,endi,tmpi
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   
-  call reconstruction(f, fvm,recons)
-  call monotonic_gradient_cart(f, fvm,recons, desc)
+!  call reconstruction(f, fvm,recons)
+!  call monotonic_gradient_cart(f, fvm,recons, desc) 
+  recons=0.0
 
   tmpaxp=(corners(1)%x+corners(2)%x)/2
   tmpaxm=(corners(2)%x-corners(1)%x)/2
