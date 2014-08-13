@@ -43,7 +43,7 @@ module fvm_control_volume_mod
     real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,timelevels)
     real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nc:nc+nhc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
-    real (kind=real_kind) :: div_fvm(nc,nc,nlev) !divergence implied by fvm - mostly for debugging
+    real (kind=real_kind) :: div_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev) !divergence implied by fvm - mostly for debugging
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements
     type (spherical_polar_t) :: asphere(nc+1,nc+1) ! spherical coordinates
