@@ -1516,32 +1516,36 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
-     if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
-        do q=1,qsize
-           do k=1,nlev
-              do j=1,np
-                 do i=1,np
-                    v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                       !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                       if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                          v1=0  ! Q already negative, dont make it more so
-                       else
-                          !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                          v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-                       endif
+     !
+     ! even when running fvm tracers we need to updates forcing on ps and qv on GLL grid
+     !
+     ! for fvm tracer qsize is usually 1 (qv)
+     !
+     do q=1,qsize
+        do k=1,nlev
+           do j=1,np
+              do i=1,np
+                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
+                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                       v1=0  ! Q already negative, dont make it more so
+                    else
+                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
                     endif
-                    !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                    elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                    if (q==1) then
-                       elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                    endif
-                 enddo
+                 endif
+                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                 if (q==1) then
+                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                 endif
               enddo
            enddo
         enddo
-     else if (tracer_grid_type == TRACER_GRIDTYPE_FVM) then
+     enddo
+     if (tracer_grid_type == TRACER_GRIDTYPE_FVM) then
         ! Repeat for the fvm tracers
         do q = 1, ntrac
            do k = 1, nlev
@@ -1556,16 +1560,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                        end if
                     end if
                     fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,np1_qdp) + v1
-!                    if (q == 1) then
-!!XXgoldyXX: Should update the pressure forcing here??!!??
-!                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-!                  end if
+                    !                    if (q == 1) then
+                    !!XXgoldyXX: Should update the pressure forcing here??!!??
+                    !                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                    !                  end if
                  end do
               end do
            end do
         end do
-     else
-        call abortmp('applyCAMforcing: ERROR: unsupported value for tracer_grid_type')
      end if
 
      if (wet .and. qsize>0) then
