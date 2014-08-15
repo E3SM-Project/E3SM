@@ -20,6 +20,7 @@ module mpas_core
    integer, parameter :: sfcAlarmID = 3 
    integer, parameter :: hifreqAlarmID = 4
 
+
    contains
 
 
@@ -105,6 +106,7 @@ module mpas_core
          sfc_update_obj % stream = STREAM_SFC
 
          call mpas_io_input_init(sfc_update_obj, domain % dminfo)
+         call mpas_add_input_fields(domain, sfc_update_obj)
 
          !     
          ! We need to decide which time slice to read from the surface file - read the most recent time slice that falls before or on the start time
