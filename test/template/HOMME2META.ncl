@@ -55,6 +55,7 @@ fout@history = "HOMME2META.ncl mt 2011"
 ; write all the data to the output field:
 fout->lat = fin->lat
 fout->lon = fin->lon
+fout->area = fin->area
 if (isfilevar(fin,"corners")) then
   fout->element_corners = corners
 end if

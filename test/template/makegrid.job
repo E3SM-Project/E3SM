@@ -145,7 +145,7 @@ if ( $status ) exit
 
 # the GLL interpIC template (and paraview metadata)
 set echo
-ncks -O -v lat,lon,corners movies/$output {$meshname}_tmp.nc
+ncks -O -v lat,lon,corners,area movies/$output {$meshname}_tmp.nc
 ncl $input/HOMME2META.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
 ncl $input/addGLLmeta.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
 rm -f {$meshname}_tmp.nc
