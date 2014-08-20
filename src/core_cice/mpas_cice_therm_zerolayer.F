@@ -15,6 +15,7 @@
 module cice_therm_zerolayer
 
   use mpas_grid_types
+  use mpas_timekeeping
 
   implicit none
 
@@ -152,10 +153,19 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_zerolayer_thermodynamics(block)!{{{
+  subroutine cice_zerolayer_thermodynamics(block, clock)!{{{
+
+    use cice_constants, only: &
+         iceAreaMinimum
+
+    use cice_debug, only: &
+         cice_time_output_variable_real
 
     type(block_type), intent(inout) :: &
          block !< Input/Output: 
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -247,9 +257,17 @@ contains
           ! testing
           if (iCell == iCell_test(1)) then
           ! testing
-#endif          
+#endif   
 
-          if (iceAreaCategory(1,iCategory,iCell) > 0.0_RKIND) then
+          if (iceAreaCategory(1,iCategory,iCell) > iceAreaMinimum) then
+
+             if (iceVolumeCategory(1,iCategory,iCell) <= 0.0_RKIND) then
+                write(stderrUnit,*) "Thermodynamics: volume too small"
+                write(stderrUnit,*) "iCell: ", iCell, " iCategory: ", iCategory
+                write(stderrUnit,*) "iceAreaCategory:   ", iceAreaCategory(1,iCategory,iCell)
+                write(stderrUnit,*) "iceVolumeCategory: ", iceVolumeCategory(1,iCategory,iCell)
+                stop
+             endif
              
              call therm_zerolayer_column( &
                   iceAreaCategory(1,iCategory,iCell), &
@@ -270,7 +288,7 @@ contains
                   cumulativeBasalAccretion, &
                   dt)
              
-          else
+          else     
 
              call add_new_ice( &
                   iceAreaCategory(1,iCategory,iCell), &
@@ -296,6 +314,9 @@ contains
        enddo ! iCell
 
     enddo ! iCategory
+
+    !call cice_time_output_variable_real(mesh, iceAreaCategory(1,1,:), clock, "iceAreaCategory")
+    !call cice_time_output_variable_real(mesh, iceVolumeCategory(1,1,:), clock, "iceVolumeCategory")
 
   end subroutine cice_zerolayer_thermodynamics!}}}
 
@@ -330,7 +351,7 @@ contains
     if (airPotentialTemperature < -2.0_RKIND) then
 
        iceAreaCategory = 1.0_RKIND
-       iceVolumeCategory = 0.1_RKIND
+       iceVolumeCategory = 0.01_RKIND
        snowVolumeCategory = 0.0_RKIND
        surfaceTemperature = -2.0_RKIND
 
@@ -407,7 +428,7 @@ contains
          dlatentHeatFlux_dTsf
 
     ! determine thicknesses
-    iceThickness = iceVolumeCategory  / iceAreaCategory
+    iceThickness  = iceVolumeCategory  / iceAreaCategory
     snowThickness = snowVolumeCategory / iceAreaCategory
 
     ! calculate the bottom temperature
@@ -490,7 +511,8 @@ contains
          dt)
     
     ! all ice gone
-    if (iceThickness == 0.0_RKIND) then
+    if (iceThickness < 0.0_RKIND) then
+       iceThickness = 0.0_RKIND
        snowThickness = 0.0_RKIND
        iceAreaCategory = 0.0_RKIND
        surfaceTemperature = 0.0_RKIND
@@ -581,18 +603,22 @@ contains
          growthEnergy, &
          iceThicknessChange
 
-    call conductivity_coefficient(conductivityCoefficient, iceThickness, snowThickness)
-    
-    conductiveFlux = conductivityCoefficient * (surfaceTemperature - bottomTemperature)
-    
-    growthEnergy = (oceanicFlux - conductiveFlux) * dt
-    
-    iceThicknessChange = max(growthEnergy / basalEnergyDensity, -iceThickness)
+    if (iceThickness > 0.0_RKIND) then
 
-    iceThickness = iceThickness + iceThicknessChange
+       call conductivity_coefficient(conductivityCoefficient, iceThickness, snowThickness)
+       
+       conductiveFlux = conductivityCoefficient * (surfaceTemperature - bottomTemperature)
+       
+       growthEnergy = (oceanicFlux - conductiveFlux) * dt
+       
+       iceThicknessChange = max(growthEnergy / basalEnergyDensity, -iceThickness)
+       
+       iceThickness = iceThickness + iceThicknessChange
+       
+       cumulativeBasalAblation  = cumulativeBasalAblation  + abs(min(iceThicknessChange, 0.0_RKIND))
+       cumulativeBasalAccretion = cumulativeBasalAccretion + max(iceThicknessChange, 0.0_RKIND)
 
-    cumulativeBasalAblation  = cumulativeBasalAblation  + abs(min(iceThicknessChange, 0.0_RKIND))
-    cumulativeBasalAccretion = cumulativeBasalAccretion + max(iceThicknessChange, 0.0_RKIND)
+    endif
 
   end subroutine basal_melting_accretion!}}}
 

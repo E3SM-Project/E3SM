@@ -22,7 +22,8 @@ module cice_forcing
 
   public :: &
        cice_init_forcing, &
-       cice_get_forcing
+       cice_get_forcing, &
+       cice_convert_pop_forcing_to_mpas
          
   integer, parameter, private :: &
        epoch = 1900
@@ -65,6 +66,7 @@ module cice_forcing
   ! all forcing fields
   type, private :: forcing_fields
 
+     integer :: nCellsGlobal
      integer :: nForcingFields
      character(len=200) :: forcingDirectory
      type(forcing_field), dimension(:), allocatable :: forcingFieldsArray
@@ -113,7 +115,7 @@ contains
 
     call init_forcing_generic()
 
-    call init_atmos_forcing(mesh)
+    call init_atmos_forcing(block, mesh)
 
     elapsed_time_forcing = 0.0_RKIND
 
@@ -139,50 +141,102 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_atmos_forcing(mesh)!{{{
+  subroutine init_atmos_forcing(block, mesh)!{{{
+
+    use mpas_dmpar, only: mpas_dmpar_sum_int
+    
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
+    integer, pointer :: &
+         nCellsSolve
+
+    character(len=200), parameter :: &
+         forcingType = "MPAS"
+
+    ! global numner of cells
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call mpas_dmpar_sum_int(block % domain % dminfo, nCellsSolve, atmosForcingFields % nCellsGlobal)
+
+    ! set number of forcing fields
     atmosForcingFields % nForcingFields = 8
     allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
 
+    ! set forcing directory
     atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
 
-    ! air temperature
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(1), "interval", &
-         "/NCEP/4XDAILY/STATES/", "t_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+    if (trim(forcingType) == "POP") then
 
-    !call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(1), "interval", &
-    !     "/NCEP/4XDAILY/STATES/", "t_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+       ! air temperature
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
+            "/NCEP/4XDAILY/STATES/", "t_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
 
-    ! u air velocity
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(2), "interval", &
-         "/NCEP/4XDAILY/STATES/", "u_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+       ! u air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
+            "/NCEP/4XDAILY/STATES/", "u_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
 
-    ! v air velocity
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(3), "interval", &
-         "/NCEP/4XDAILY/STATES/", "v_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+       ! v air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
+            "/NCEP/4XDAILY/STATES/", "v_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
 
-    ! air density
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(4), "interval", &
-         "/NCEP/4XDAILY/STATES/", "dn10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+       ! air density
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
+            "/NCEP/4XDAILY/STATES/", "dn10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
 
-    ! air humidity
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(5), "interval", &
-         "/NCEP/4XDAILY/STATES/", "q_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+       ! air humidity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "interval", &
+            "/NCEP/4XDAILY/STATES/", "q_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
 
-    ! shortwave down
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(6), "monthly", &
-         "/ISCCPM/MONTHLY/RADFLX/", "swdn.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+       ! shortwave down
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
+            "/ISCCPM/MONTHLY/RADFLX/", "swdn.", ".dat", "binaryPOP", 12, 0.5_RKIND)
 
-    ! cloudFraction
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(7), "monthly", &
-         "/ISCCPM/MONTHLY/RADFLX/", "cldf.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+       ! cloudFraction
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(7), "monthly", &
+            "/ISCCPM/MONTHLY/RADFLX/", "cldf.", ".dat", "binaryPOP", 12, 0.5_RKIND)
 
-    ! precipitation
-    call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(8), "monthly", &
-         "/MXA/MONTHLY/PRECIP/", "prec.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+       ! precipitation
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(8), "monthly", &
+            "/MXA/MONTHLY/PRECIP/", "prec.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+
+    else if (trim(forcingType) == "MPAS") then
+
+       ! air temperature
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
+            "/NCEP/4XDAILY/STATES/", "t_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! u air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
+            "/NCEP/4XDAILY/STATES/", "u_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! v air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
+            "/NCEP/4XDAILY/STATES/", "v_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! air density
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
+            "/NCEP/4XDAILY/STATES/", "dn10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! air humidity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "interval", &
+            "/NCEP/4XDAILY/STATES/", "q_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! shortwave down
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
+            "/ISCCPM/MONTHLY/RADFLX/", "swdn_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+
+       ! cloudFraction
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(7), "monthly", &
+            "/ISCCPM/MONTHLY/RADFLX/", "cldf_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+
+       ! precipitation
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(8), "monthly", &
+            "/MXA/MONTHLY/PRECIP/", "prec_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+
+    endif
 
   end subroutine init_atmos_forcing!}}}
 
@@ -201,6 +255,8 @@ contains
   subroutine cice_get_forcing(&
        block, &
        clock)!{{{
+
+    use cice_debug, only: cice_time_output_variable_real
 
     type(block_type), intent(inout) :: &
          block !< Input/Output: 
@@ -221,6 +277,8 @@ contains
     real(kind=RKIND) :: &
          forcingTime, &
          forcingTimeEpoch
+
+    real(kind=RKIND), dimension(:), pointer :: airTemperature
 
     configs => block % configs
 
@@ -246,6 +304,10 @@ contains
          year, &
          month, &
          dayOfMonth)
+
+    call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
+
+    !call cice_time_output_variable_real(mesh, airTemperature, clock, "airTemperature")
 
   end subroutine cice_get_forcing!}}}
 
@@ -294,7 +356,7 @@ contains
          iCell
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     real(kind=RKIND), dimension(:), pointer :: &
          airTemperature, &
@@ -331,7 +393,7 @@ contains
     logical, pointer :: &
          config_rotate_cartesian_grid
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
@@ -368,52 +430,52 @@ contains
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(1), &
-         airTemperature(1:nCells))
+         airTemperature(1:nCellsSolve))
 
     ! u air velocity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(2), &
-         uAirVelocityPOP(1:nCells))
+         uAirVelocityPOP(1:nCellsSolve))
 
     ! v air velocity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(3), &
-         vAirVelocityPOP(1:nCells))
+         vAirVelocityPOP(1:nCellsSolve))
 
     ! air density
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(4), &
-         airDensity(1:nCells))
+         airDensity(1:nCellsSolve))
 
     ! air humidity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(5), &
-         airSpecificHumidity(1:nCells))
+         airSpecificHumidity(1:nCellsSolve))
 
     ! shortwave down
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(6), &
-         shortwaveDown(1:nCells))
+         shortwaveDown(1:nCellsSolve))
 
     ! cloudFraction
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(7), &
-         cloudFraction(1:nCells))
+         cloudFraction(1:nCellsSolve))
 
     ! precipitation
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(8), &
-         precipitationRate(1:nCells))
+         precipitationRate(1:nCellsSolve))
 
     ! calculate other quantities
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        ! rotate the geographical inputs to the rotated grid
        call cice_latlon_vector_rotation_forward(&
@@ -595,6 +657,7 @@ contains
 
   subroutine init_forcing_field(&
        mesh, &
+       nCellsGlobal, &
        forcingField, &
        forcingType, &
        filenameDirectory, &
@@ -606,6 +669,9 @@ contains
 
     type (MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
+
+    integer, intent(in) :: &
+         nCellsGlobal !< Input: 
 
     type (forcing_field), intent(inout) :: &
          forcingField !< Input/Output: 
@@ -622,11 +688,6 @@ contains
 
     real(kind=RKIND) :: &
          positionInInterval
-
-    integer, pointer :: &
-         nCells
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     forcingField % forcingType = trim(forcingType)
 
@@ -647,7 +708,7 @@ contains
     
     forcingField % currentYear = 0  
 
-    forcingField % ndata = nCells
+    forcingField % ndata = nCellsGlobal
 
     allocate(forcingField % data(1:forcingField % ndata,1:2))
 
@@ -829,6 +890,16 @@ contains
          nDesired, &
          nExist, &
          iCell
+    
+    integer, dimension(:), pointer :: &
+         indexToCellID
+
+    integer, pointer :: &
+         nCellsSolve
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+
+    call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
     iCell = POPiCell(mesh,69,59)
 
@@ -924,8 +995,10 @@ contains
     interpolationCoeff(1) = (desiredTimes(2) - forcingTimeEpoch) / (desiredTimes(2) - desiredTimes(1))
     interpolationCoeff(2) = (forcingTimeEpoch - desiredTimes(1)) / (desiredTimes(2) - desiredTimes(1))
 
-    forcingArray = forcingField % data(:,forcingField % dataOrder(1)) * interpolationCoeff(1) + &
-                   forcingField % data(:,forcingField % dataOrder(2)) * interpolationCoeff(2)
+    do iCell = 1, nCellsSolve
+       forcingArray(iCell) = forcingField % data(indexToCellID(iCell),forcingField % dataOrder(1)) * interpolationCoeff(1) + &
+                             forcingField % data(indexToCellID(iCell),forcingField % dataOrder(2)) * interpolationCoeff(2)
+    end do ! iCell
 
   end subroutine get_individual_forcing!}}}
 
@@ -1395,32 +1468,14 @@ contains
     character(len=404) :: &
          filename
 
-    real(kind=RKIND), dimension(:), allocatable :: &
-         arrayMPAS
-
     integer :: &
-         iCell, &
          recordLength, &
          usedRecordNumber
 
     logical :: &
          lexist
 
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         POPindxi, &
-         POPindxj
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
-
-    allocate(arrayMPAS(1:nCells))
-
-    recordLength = nCells * 8
+    recordLength = forcingField % ndata * 8
 
     usedRecordNumber = desiredRecordNumber
 
@@ -1434,21 +1489,9 @@ contains
 
     open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
 
-    read(55,rec=usedRecordNumber) arrayMPAS
+    read(55,rec=usedRecordNumber) forcingField % data(:,slot)
  
     close(55)
-
-    forcingField % data(:,slot) = 1.0e30_RKIND
-    
-    do iCell = 1, nCells
-
-       forcingField % data(iCell,slot) = arrayMPAS(iCell)
-
-       !write(*,*) iCell, POPindxi(iCell),POPindxj(iCell)
-
-    enddo ! iCell
-
-    deallocate(arrayMPAS)
 
   end subroutine read_data_binaryMPAS!}}}
 
@@ -2026,6 +2069,104 @@ contains
     deallocate(array_comp)
 
   end subroutine forcing_file_comparison!}}}
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  convert_pop_forcing_to_mpas
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date July 16th, 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+  
+  subroutine cice_convert_pop_forcing_to_mpas(block)
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
+
+    type(MPAS_pool_type), pointer :: mesh
+
+    ! 6 hourly
+    !character(len=1000), parameter :: &
+    !     filein  = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/v_10.1997.dat", &
+    !     fileout = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/v_10_mpas.1997.dat"
+
+    ! radiation - monthly climatology
+    !character(len=1000), parameter :: &
+    !     filein  = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/ISCCPM/MONTHLY/RADFLX/swdn.1997.dat", &
+    !     fileout = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/ISCCPM/MONTHLY/RADFLX/swdn_mpas.1997.dat"
+
+    ! precipitation - monthly climatology
+    character(len=1000), parameter :: &
+         filein  = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/MXA/MONTHLY/PRECIP/prec.1997.dat", &
+         fileout = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/MXA/MONTHLY/PRECIP/prec_mpas.1997.dat"
+
+    !integer, parameter :: nTimes = 1460
+    integer, parameter :: nTimes = 12
+
+    real(kind=RKIND), dimension(:,:), allocatable :: input_array
+    real(kind=RKIND), dimension(:), allocatable :: output_array
+
+    integer :: &
+         iTime
+
+    integer, pointer :: &
+         nCells, &
+         POP_nx, &
+         POP_ny
+
+    integer :: &
+         iCell, &
+         reclPOP, &
+         reclMPAS
+
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_dimension(mesh, "POP_ny", POP_ny)
+
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
+    allocate(input_array(POP_nx,POP_ny))
+    allocate(output_array(nCells))
+
+    reclPOP  = POP_nx * POP_ny * 8
+    reclMPAS = nCells * 8
+
+    open(55,file=trim(filein),action="read",access='direct',recl=reclPOP,form="unformatted")
+    open(56,file=trim(fileout),action="write",access='direct',recl=reclMPAS,form="unformatted")
+
+    do iTime = 1, nTimes
+       read(55,rec=iTime) input_array
+
+       do iCell = 1, nCells
+          
+          output_array(iCell) = input_array(POPindxi(iCell),POPindxj(iCell))
+
+       enddo ! iCell
+
+       write(56,rec=iTime) output_array
+    enddo ! iTime
+
+    close(55)
+    close(56)
+
+    deallocate(input_array)
+    deallocate(output_array)
+
+    stop
+
+  end subroutine cice_convert_pop_forcing_to_mpas
 
 !-----------------------------------------------------------------------
 

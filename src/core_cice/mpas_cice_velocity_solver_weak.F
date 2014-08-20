@@ -613,8 +613,6 @@ contains
           stress11Vertex = stress11Vertex / real(vertexDegree, RKIND)
           stress22Vertex = stress22Vertex / real(vertexDegree, RKIND)
           stress12Vertex = stress12Vertex / real(vertexDegree, RKIND)
-
-          write(72,*) iVertex, stressDivergenceU(iVertex), stressDivergenceU(iVertex) / areaTriangle(iVertex), areaTriangle(iVertex)
           
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)

@@ -767,7 +767,7 @@ contains
 
     nPoints = size(principalStress1)
 
-    open(48,file='principal.txt')
+    !open(48,file='principal.txt')
 
     do iPoint = 1, nPoints
 
@@ -790,11 +790,11 @@ contains
 
        endif
 
-       write(48,*) principalStress1(iPoint), principalStress2(iPoint)
+       !write(48,*) principalStress1(iPoint), principalStress2(iPoint)
 
     enddo ! iPoint
 
-    close(48)
+    !close(48)
 
   end subroutine cice_principal_stresses
 

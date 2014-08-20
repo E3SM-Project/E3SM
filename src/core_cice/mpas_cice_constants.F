@@ -28,6 +28,14 @@ module cice_constants
        ciceDensityIce  = 917.0_RKIND, &
        ciceDensitySnow = 330.0_RKIND
 
+  real(kind=RKIND), parameter :: &
+       puny = 1.0e-11_RKIND
+
+  ! minimum sea ice area
+  real(kind=RKIND), parameter, public :: &
+       iceAreaMinimum       = puny, &
+       iceThicknessMinimum  = puny, &
+       snowThicknessMinimum = puny
 
 end module cice_constants
 

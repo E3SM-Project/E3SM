@@ -49,7 +49,7 @@ contains
     use cice_velocity_solver_weak, only: &
          cice_strain_tensor_weak
 
-    use cice_diagnostics, only: &
+    use cice_debug, only: &
          cice_rms_difference, &
          cice_plot_spherical_latlon
 
@@ -749,7 +749,7 @@ contains
     use cice_velocity_solver_weak, only: &
          cice_stress_divergence_weak
 
-    use cice_diagnostics, only: &
+    use cice_debug, only: &
          cice_rms_difference, &
          cice_plot_spherical_latlon
 

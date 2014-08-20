@@ -59,7 +59,7 @@ contains
     
     use mpas_constants, only: omega
     use cice_constants, only: ciceDegreesToRadians
-    use cice_diagnostics, only: cice_init_ijpop_from_ivertex
+    use cice_debug, only: cice_init_ijpop_from_ivertex
 
     type(MPAS_pool_type), intent(inout) :: mesh
 

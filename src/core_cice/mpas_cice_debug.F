@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_diagnostics
+!  cice_debug
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_diagnostics
+module cice_debug
 
   use mpas_grid_types
 
@@ -24,8 +24,14 @@ module cice_diagnostics
        cice_test_case_output, &
        cice_rms_difference, &
        cice_init_ijpop_from_ivertex, &
-       cice_plot_spherical_latlon
-  
+       cice_plot_spherical_latlon, &
+       cice_plot_pop_grid_cells, &
+       cice_plot_pop_grid_vertices, &
+       cice_time_output_variable_real, &
+       cice_time_output_variable_real_2D, &
+       cice_time_output_variable_int, &
+       cice_time_output_variable_int_2D
+
   integer, private :: &
        iObject = 2, &
        iLabel  = 1, &
@@ -935,7 +941,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine plot_pop_grid_cells(mesh, cellArray, filename, tag)!{{{
+  subroutine cice_plot_pop_grid_cells(mesh, cellArray, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -1021,15 +1027,15 @@ contains
 
     close(55)
 
-    do iCell = 1, nCells
+    !do iCell = 1, nCells
 
-       write(*,*) iCell, POPindxi(iCell), POPindxj(iCell)
+    !   write(*,*) iCell, POPindxi(iCell), POPindxj(iCell)
 
-    enddo ! iCell
+    !enddo ! iCell
 
-    stop
+    !stop
 
-  end subroutine plot_pop_grid_cells!}}}
+  end subroutine cice_plot_pop_grid_cells!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1043,7 +1049,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename, tag)!{{{
+  subroutine cice_plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -1147,7 +1153,7 @@ contains
 
     deallocate(arrayOrdered)
 
-  end subroutine plot_pop_grid_vertices!}}}
+  end subroutine cice_plot_pop_grid_vertices!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2287,6 +2293,7 @@ contains
          block !< Input/Output: 
 
     type(MPAS_pool_type), pointer :: &
+         mesh, &
          tracers, &
          plotting
 
@@ -2300,8 +2307,17 @@ contains
          iceAreaCategoryPlot, &
          iceVolumeCategoryPlot, &
          snowVolumeCategoryPlot, &
-         surfaceTemperaturePlot
+         surfaceTemperaturePlot, &
+         iceThickness, &
+         snowThickness
 
+    integer :: &
+         iCell
+
+    integer, pointer :: &
+         nCells
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "plotting", plotting)
 
@@ -2314,15 +2330,281 @@ contains
     call MPAS_pool_get_array(plotting, "iceVolumeCategoryPlot", iceVolumeCategoryPlot)
     call MPAS_pool_get_array(plotting, "snowVolumeCategoryPlot", snowVolumeCategoryPlot)
     call MPAS_pool_get_array(plotting, "surfaceTemperaturePlot", surfaceTemperaturePlot)
+    call MPAS_pool_get_array(plotting, "iceThickness", iceThickness)
+    call MPAS_pool_get_array(plotting, "snowThickness", snowThickness)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     iceAreaCategoryPlot(:)    = iceAreaCategory(1,1,:)
     iceVolumeCategoryPlot(:)  = iceVolumeCategory(1,1,:)
     snowVolumeCategoryPlot(:) = snowVolumeCategory(1,1,:)
     surfaceTemperaturePlot(:) = surfaceTemperature(1,1,:)
 
+    do iCell = 1, nCells
+       if (iceAreaCategoryPlot(iCell) > 0.0_RKIND) then
+          iceThickness(iCell)  = iceVolumeCategoryPlot(iCell)  / iceAreaCategoryPlot(iCell)
+          snowThickness(iCell) = snowVolumeCategoryPlot(iCell) / iceAreaCategoryPlot(iCell)
+       else
+          iceThickness(iCell)  = 0.0_RKIND
+          snowThickness(iCell) = 0.0_RKIND
+       endif
+    enddo ! iCell
+
   end subroutine cice_prepare_output_variables
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_time_output_variable_real
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date August 14th 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_time_output_variable_real(mesh, array, clock, name)
+
+    use mpas_timekeeping
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
+
+    character(len=*), intent(in) :: &
+         name
+
+    integer :: &
+         iCell
+
+    type(MPAS_Time_type) :: &
+         curr_time
+
+    character(len=strKIND) :: &
+         dateTimeString, &
+         filename
+
+    curr_time = mpas_get_clock_time(clock, MPAS_NOW)
+
+    call mpas_get_time(curr_time, dateTimeString=dateTimeString)
+
+    write(filename,fmt='(a,a,a,a)') trim(name), "_", trim(dateTimeString), '.txt'
+
+    open(22,file=trim(filename))
+
+    do iCell = 1, size(array)
+
+       write(22,*) iCell, array(iCell)
+
+    enddo ! iCell
+
+    close(22)
+
+    open(22,file="diffs.txt",position="append")
+
+    write(22,*) "diff ", trim(filename), " ../restart_1/", trim(filename)
+
+    close(22)
+
+  end subroutine cice_time_output_variable_real
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_time_output_variable_real_2D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date August 10th 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_time_output_variable_real_2D(mesh, array, clock, name)
+
+    use mpas_timekeeping
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         array
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
+
+    character(len=*), intent(in) :: &
+         name
+
+    integer :: &
+         iCell1, iCell2
+
+    type(MPAS_Time_type) :: &
+         curr_time
+
+    character(len=strKIND) :: &
+         dateTimeString, &
+         filename
+
+    curr_time = mpas_get_clock_time(clock, MPAS_NOW)
+
+    call mpas_get_time(curr_time, dateTimeString=dateTimeString)
+
+    write(filename,fmt='(a,a,a,a)') trim(name), "_", trim(dateTimeString), '.txt'
+
+    open(22,file=trim(filename))
+
+    do iCell1 = 1, size(array,1)
+    do iCell2 = 1, size(array,2)
+
+       write(22,*) iCell1, iCell2, array(iCell1,iCell2)
+
+    enddo ! iCell2
+    enddo ! iCell1
+
+    close(22)
+
+    open(22,file="diffs.txt",position="append")
+
+    write(22,*) "diff ", trim(filename), " ../restart_1/", trim(filename)
+
+    close(22)
+
+  end subroutine cice_time_output_variable_real_2D
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_time_output_variable_int
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date August 14th 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_time_output_variable_int(mesh, array, clock, name)
+
+    use mpas_timekeeping
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    integer, dimension(:), intent(in) :: &
+         array
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
+
+    character(len=*), intent(in) :: &
+         name
+
+    integer :: &
+         iCell
+
+    type(MPAS_Time_type) :: &
+         curr_time
+
+    character(len=strKIND) :: &
+         dateTimeString, &
+         filename
+
+    curr_time = mpas_get_clock_time(clock, MPAS_NOW)
+
+    call mpas_get_time(curr_time, dateTimeString=dateTimeString)
+
+    write(filename,fmt='(a,a,a,a)') trim(name), "_", trim(dateTimeString), '.txt'
+
+    open(22,file=trim(filename))
+
+    do iCell = 1, size(array)
+
+       write(22,*) iCell, array(iCell)
+
+    enddo ! iCell
+
+    close(22)
+
+    open(22,file="diffs.txt",position="append")
+
+    write(22,*) "diff ", trim(filename), " ../restart_1/", trim(filename)
+
+    close(22)
+
+  end subroutine cice_time_output_variable_int
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_time_output_variable_int_2D
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date August 19th 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_time_output_variable_int_2D(mesh, array, clock, name)
+
+    use mpas_timekeeping
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    integer, dimension(:,:), intent(in) :: &
+         array
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
+
+    character(len=*), intent(in) :: &
+         name
+
+    integer :: &
+         iCell1, iCell2
+
+    type(MPAS_Time_type) :: &
+         curr_time
+
+    character(len=strKIND) :: &
+         dateTimeString, &
+         filename
+
+    curr_time = mpas_get_clock_time(clock, MPAS_NOW)
+
+    call mpas_get_time(curr_time, dateTimeString=dateTimeString)
+
+    write(filename,fmt='(a,a,a,a)') trim(name), "_", trim(dateTimeString), '.txt'
+
+    open(22,file=trim(filename))
+
+    do iCell1 = 1, size(array,1)
+    do iCell2 = 1, size(array,2)
+
+       write(22,*) iCell1, iCell2, array(iCell1,iCell2)
+
+    enddo ! iCell1
+    enddo ! iCell2
+
+    close(22)
+
+    open(22,file="diffs.txt",position="append")
+
+    write(22,*) "diff ", trim(filename), " ../restart_1/", trim(filename)
+
+    close(22)
+
+  end subroutine cice_time_output_variable_int_2D
 
 !-----------------------------------------------------------------------
 
-end module cice_diagnostics
+end module cice_debug
 

@@ -29,7 +29,11 @@ module mpas_core
       type (block_type), pointer :: block
 
       type (MPAS_pool_type), pointer :: &
-           configs
+           configs, &
+           diagnostics
+
+      character(len=strKIND), pointer :: &
+           xtime
 
       configs => domain % blocklist % configs
 
@@ -39,8 +43,12 @@ module mpas_core
 
       block => domain % blocklist
       do while (associated(block))
+
+         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
+         call MPAS_pool_get_array(diagnostics, "xtime", xtime)
+         xtime = startTimeStamp
+
          call mpas_init_block(block, dt)
-         !block % state % time_levs(1) % state % xtime % scalar = startTimeStamp
          block => block % next
       end do
 
@@ -70,7 +78,11 @@ module mpas_core
            config_run_duration, &
            config_stop_time, &
            config_output_interval, &
-           config_restart_interval
+           config_restart_interval, &
+           config_restart_timestamp_name
+
+      character(len=strKIND) :: &
+           restartTimeStamp
 
       configs => domain % blocklist % configs
       
@@ -79,8 +91,17 @@ module mpas_core
       call MPAS_pool_get_config(configs, "config_stop_time", config_stop_time)
       call MPAS_pool_get_config(configs, "config_output_interval", config_output_interval)
       call MPAS_pool_get_config(configs, "config_restart_interval", config_restart_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
+      if(trim(config_start_time) == 'file') then
+        open(22,file=config_restart_timestamp_name,form='formatted',status='old')
+        read(22,*) restartTimeStamp
+        close(22)
+        call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=ierr)
+      else
+        call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
+      end if
+
       call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)
 
       if (trim(config_run_duration) /= "none") then
@@ -132,9 +153,8 @@ module mpas_core
       type (block_type), intent(inout) :: block
       real (kind=RKIND), intent(in) :: dt
 
-      type (MPAS_pool_type), pointer :: mesh
-
-      integer, pointer :: nCells, vertexDegree
+      type (MPAS_pool_type), pointer :: &
+           mesh
 
       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
@@ -289,10 +309,19 @@ module mpas_core
 
       type (block_type), pointer :: block
 
+      type (MPAS_pool_type), pointer :: diagnostics
+      character(len=strKIND), pointer :: xtime
+
       block => domain % blocklist
       do while (associated(block))
+
+         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
+         call MPAS_pool_get_array(diagnostics, "xtime", xtime)
+         xtime = timeStamp
+
          call cice_timestep(block, clock, dt, itimestep)
          block => block % next
+
       end do
 
    end subroutine mpas_timestep

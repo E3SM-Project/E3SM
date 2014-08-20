@@ -13,6 +13,7 @@
 module cice_velocity_solver
 
   use mpas_grid_types
+  use mpas_timekeeping
 
   implicit none
 
@@ -142,8 +143,8 @@ contains
 
   subroutine cice_run_velocity_solver(&
        block, &
-       dt, &
-       nstep)!{{{
+       clock, &
+       dt)!{{{
 
     use cice_mesh, only: &
          cice_interpolate_cell_to_vertex
@@ -161,14 +162,18 @@ contains
     use mpas_constants, only: &
          pii
 
+    use cice_debug, only: &
+         cice_time_output_variable_real, &
+         cice_time_output_variable_int
+
     type (block_type), intent(inout) :: &
          block !< Input/Output: 
 
+    type (MPAS_Clock_type), intent(in) :: &
+         clock !< Input: 
+
     real(kind=RKIND), intent(in) :: &
          dt !< Input: 
-
-    integer, intent(in) :: &
-         nstep !< Input: 
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -193,12 +198,10 @@ contains
          interiorVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
-         iceAreaCell, &
          iceVolumeCell, &
          snowVolumeCell, &
          iceAreaVertex, &
          totalMassVertex, &
-         totalMassCell, &
          icePressure, &
          airStressCellU, &
          airStressCellV, &
@@ -223,7 +226,9 @@ contains
          uVelocity, &
          vVelocity, &
          fVertex, &
-         latCell
+         latCell, &
+         iceAreaCell, &
+         totalMassCell
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -250,11 +255,12 @@ contains
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
+
     call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
     call MPAS_pool_get_array(icestate, "snowVolumeCell", snowVolumeCell)
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
-    call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
 
     call MPAS_pool_get_array(velocity_solver, "solveStress", solveStress)
     call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
@@ -287,6 +293,8 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
 
     call MPAS_pool_get_array(mesh, "fVertex", fVertex)
+
+    !call cice_time_output_variable_real(mesh, uVelocity, clock, "uVelocity0")
 
     ! aggregate categories for area and volume
     call aggregate_mass_and_area(&
@@ -389,6 +397,7 @@ contains
     ! subcycle the dynamics
     call subcycle_velocity_solver(&
          mesh, &
+         clock, &
          icestate, &
          boundary, &
          velocity_solver, &
@@ -398,8 +407,7 @@ contains
          velocity_pwl, &
          ciceDynamicsTimeStep, &
          ciceElasticTimeStep, &
-         configs, &
-         nstep)
+         configs)
 
     call principal_stresses_driver(&
          velocity_weak, &
@@ -420,6 +428,16 @@ contains
          oceanStressV, &
          oceanStressCoeff, &
          solveVelocity)
+
+    !call cice_time_output_variable_real(mesh, uVelocity, clock, "uVelocity")
+    !call cice_time_output_variable_real(mesh, totalMassVertex, clock, "totalMassVertex")
+    !call cice_time_output_variable_real(mesh, iceAreaVertex, clock, "iceAreaVertex")
+    !call cice_time_output_variable_real(mesh, oceanStressU, clock, "oceanStressU")
+    !call cice_time_output_variable_real(mesh, airStressCellU, clock, "airStressCellU")
+    !call cice_time_output_variable_real(mesh, icePressure, clock, "icePressure")
+
+    !call cice_time_output_variable_int(mesh, solveVelocity, clock, "solveVelocity")
+    !call cice_time_output_variable_int(mesh, solveStress, clock, "solveStress")
 
   end subroutine cice_run_velocity_solver!}}}
 
@@ -520,6 +538,7 @@ contains
 
   subroutine subcycle_velocity_solver(&
        mesh, &
+       clock, &
        icestate, &
        boundary,  &
        velocity_solver, &
@@ -529,12 +548,14 @@ contains
        velocity_pwl, &
        dtDynamics, &
        dtElastic, &
-       configs, &
-       nstep)!{{{
+       configs)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh, & !< Input: 
          configs !< Input: 
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
 
     type(MPAS_pool_type), pointer :: &
          icestate, & !< Input/Output: 
@@ -548,10 +569,7 @@ contains
     real(kind=RKIND), intent(in) :: &
          dtDynamics, & !< Input: 
          dtElastic     !< Input: 
-    
-    integer, intent(in) :: &
-         nstep !< Input: 
-
+ 
     integer, pointer :: &
          config_elastic_subcycle_number
 
@@ -564,6 +582,7 @@ contains
 
        call single_subcycle_velocity_solver(&
             mesh, &
+            clock, &
             icestate, &
             boundary, &
             velocity_solver, &
@@ -574,8 +593,7 @@ contains
             dtDynamics, &
             dtElastic, &
             configs, &
-            iElasticSubcycle, &
-            nstep)
+            iElasticSubcycle)
 
     enddo
 
@@ -595,6 +613,7 @@ contains
 
   subroutine single_subcycle_velocity_solver(&
        mesh, &
+       clock, &
        icestate, &
        boundary,  &
        velocity_solver, &
@@ -605,8 +624,7 @@ contains
        dtDynamics, &
        dtElastic, &
        configs, &
-       iElasticSubcycle, &
-       nstep)!{{{                               
+       iElasticSubcycle)!{{{                               
 
     use cice_velocity_solver_shared, only: &
          cice_ocean_stress_coefficient, &
@@ -621,9 +639,15 @@ contains
     use cice_velocity_solver_pwl, only: &
          cice_internal_stress_pwl
 
+    use cice_debug, only: &
+         cice_time_output_variable_real
+
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh, & !< Input: 
          configs !< Input: 
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
 
     type(MPAS_pool_type), pointer :: &
          icestate, & !< Input/Output: 
@@ -639,7 +663,6 @@ contains
          dtElastic     !< Input: 
 
     integer, intent(in) :: &
-         nstep, &         !< Input: !! testing
          iElasticSubcycle !< Input: !! testing
 
     integer :: &
@@ -793,6 +816,8 @@ contains
          dtElastic, &
          mesh)
 
+    !call cice_time_output_variable_real(mesh, stressDivergenceU, clock, "stressDivergenceU")
+
   end subroutine single_subcycle_velocity_solver!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -840,13 +865,13 @@ contains
          iCategory
 
     integer, pointer :: &
-         nCells, &
+         nCellsSolve, &
          nCategories
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        totalMassCell(iCell)  = 0.0_RKIND
        iceAreaCell(iCell)    = 0.0_RKIND
