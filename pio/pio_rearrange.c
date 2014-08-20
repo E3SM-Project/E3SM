@@ -287,7 +287,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
   int ioindex;
   int tsize;
   int ndof= iodesc->ndof;
-
+  PIO_Offset s2rindex[ndof];
 
   pio_maxreq = DEF_P2P_MAXREQ;
 
@@ -327,11 +327,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
       recv_displs[i] = i*sizeof(int);
     }
   }
+  printf("%s %d\n",__FILE__,__LINE__);
 
   // Share the iodesc->scount from each compute task to all io tasks
   ierr = pio_swapm( iodesc->scount, send_counts, send_displs, sr_types, 
                     recv_buf,  recv_counts, recv_displs, sr_types,
 		    ios.union_comm, false, false, pio_maxreq);
+  printf("%s %d\n",__FILE__,__LINE__);
 
   nrecvs = 0;
   if(ios.ioproc){
@@ -365,7 +367,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
 
   iodesc->nrecvs = nrecvs;
   iodesc->sindex = (PIO_Offset *) calloc(ndof,sizeof(PIO_Offset));
-  PIO_Offset s2rindex[ndof];
+
 
   int tempcount[niotasks];
   int spos[niotasks];
@@ -379,8 +381,8 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
   for(i=0;i<ndof;i++){
     iorank =dest_ioproc[i]; 
     ioindex = dest_ioindex[i];
-    //    printf("%d iorank %d ioindex %ld\n",ios.comp_rank,iorank,ioindex);
     if(iorank > -1){
+      //      printf("i %d %d iorank %d ioindex %ld %ld\n",i,ios.comp_rank,iorank,ioindex, spos[iorank]+tempcount[iorank]);
       iodesc->sindex[spos[iorank]+tempcount[iorank]] = i;
       s2rindex[spos[iorank]+tempcount[iorank]] = ioindex;
       (tempcount[iorank])++;
@@ -418,24 +420,27 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
       iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,sizeof(PIO_Offset));
   }
 
-  //  printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
+  //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
 
   // s2rindex is the list of indeces on each compute task
-  /*    
+  /*      
   printf("%d s2rindex: ", ios.comp_rank);
   for(i=0;i<ndof;i++)
     printf("%ld ",s2rindex[i]);
   printf("\n");
   */
+  printf("%s %d %ld\n",__FILE__,__LINE__,iodesc->llen);
 
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
-		    ios.union_comm, true, false, MAX_GATHER_BLOCK_SIZE);
+		    //		    ios.union_comm, true, false, 0);
+  		    ios.union_comm, true, false, MAX_GATHER_BLOCK_SIZE);
+  printf("%s %d\n",__FILE__,__LINE__);
 
   //  rindex is an array of the indices of the data to be sent from
   //  this io task to each compute task. 
-  /* 
+  /*  
   if(ios.ioproc){
     printf("%d rindex: ",ios.io_rank);
     for(int j=0;j<iodesc->llen;j++)
@@ -454,8 +459,8 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,0);
-*/  
+  //  MPI_Abort(MPI_COMM_WORLD,0);
+  */
 
   return ierr;
 
@@ -731,16 +736,24 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       }
     }
   }
-  //    printf("dest_ioproc %d %d %d dest_ioindex %d %d %d\n",dest_ioproc[0],dest_ioproc[1],dest_ioproc[2],
-  // 	 dest_ioindex[0],dest_ioindex[1],dest_ioindex[2]);
+  //      printf("dest_ioproc %d %d %d dest_ioindex %d %d %d\n",dest_ioproc[0],dest_ioproc[1],dest_ioproc[2],
+  //  	 dest_ioindex[0],dest_ioindex[1],dest_ioindex[2]);
+  {
+    // int compmin=1000000, compmax=-1;
+    // int mycnt=0;
 
   for(k=0; k<maplen; k++){
     if(dest_ioproc[k] == -1 && compmap[k]>=0){
       fprintf(stderr,"No destination found for compmap[%d] = %ld\n",k,compmap[k]);
       MPI_Abort(MPI_COMM_WORLD,0);
     }
+    //    if(compmap[k]<compmin && compmap[k]>=0) compmin = compmap[k];
+    // if(compmap[k] > compmax) compmax=compmap[k];
+    // if(compmap[k]>=0) mycnt++;
+    //    if(compmap[k] > -1) printf("pio_rearrange %d %d %ld\n",__LINE__,k,compmap[k]);
   }
-
+  //printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,mycnt,compmin,compmax);
+  }
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
@@ -824,7 +837,7 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
 
 
 
-int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], 
+int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset compmap[], 
 			    const int gsize[], const int ndims, io_desc_t *iodesc)
 {
   int *dest_ioproc=NULL;
@@ -897,7 +910,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   for(i=0;i<taskratio;i++)
     recvlen[i]=0;
 
-  pio_swapm(&maplen, sndlths, sdispls, dtypes, 
+  pio_swapm((void *) &maplen, sndlths, sdispls, dtypes, 
 	    recvlen, recvlths, rdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
 
@@ -937,7 +950,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   for(i=0;i<nprocs;i++){
     dtypes[i] = iodesc->basetype;
   }
-  pio_swapm(compmap, sndlths, sdispls, dtypes, 
+  pio_swapm((void *) compmap, sndlths, sdispls, dtypes, 
 	    iomap, recvlths, rdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
 
@@ -951,7 +964,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 
     for(i=0;i<iodesc->llen;i++){
       (map+i)->iomap = iomap[i];
-      //      printf("iomap[%d] %ld ",i,iomap[i]);
+      //            printf("iomap[%d] %ld ",i,iomap[i]);
     }
     //printf("\n");
 
@@ -962,7 +975,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
       iomap[i]=(map+i)->iomap;
       sender = (map+i)->rfrom;
       destoffset[ rdispls[sender]/sizeof(PIO_Offset) + cnt[sender]++ ] = i;
-      //      printf("%d %d displs %d destoffset[%d] %ld\n",ios.io_rank,sender,rdispls[sender]/sizeof(PIO_Offset),i,destoffset[i]);
+      //            printf("%d %d displs %d destoffset[%d] %ld\n",ios.io_rank,sender,rdispls[sender]/sizeof(PIO_Offset),i,destoffset[i]);
     }
 
     get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
@@ -977,25 +990,27 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   pio_swapm(destoffset, recvlths, rdispls, dtypes, 
 	    dest_ioindex, sndlths, sdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
-
+  printf("%s %d\n",__FILE__,__LINE__);
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
-
+  printf("%s %d\n",__FILE__,__LINE__);
+  
   free(sndlths); 
   free(sdispls);
   free(recvlths);
   free(rdispls);
   free(dtypes);
 
-  free(dest_ioproc);
-  free(dest_ioindex);
-
+  if(dest_ioproc != NULL)
+    free(dest_ioproc);
+  if(dest_ioindex != NULL)
+    free(dest_ioindex);
   if(destoffset != NULL)
     free(destoffset);
+  
 
-
+  printf("%s %d\n",__FILE__,__LINE__);
 
   return ierr;
-
 
 }
   

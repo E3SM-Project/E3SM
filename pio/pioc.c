@@ -274,7 +274,7 @@ int PIOc_Init_Intracomm_from_F90(int f90_comp_comm,
 }
   
 
-int PIOc_set_hint(const int iosysid, const char hint[], const char hintval[])
+int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 {
   iosystem_desc_t *ios;
 

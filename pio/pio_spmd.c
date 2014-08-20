@@ -151,6 +151,11 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
 #ifndef _MPISERIAL
   if(max_requests == 0) {
+    /*    printf("sndlths %d %d %d %d\n",sndlths[0],sndlths[1],sndlths[2],sndlths[3]);
+    printf("sdispls %d %d %d %d\n",sdispls[0],sdispls[1],sdispls[2],sdispls[3]);
+    printf("rcvlths %d %d %d %d\n",rcvlths[0],rcvlths[1],rcvlths[2],rcvlths[3]);
+    printf("rdispls %d %d %d %d\n",rdispls[0],rdispls[1],rdispls[2],rdispls[3]);
+    */
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
@@ -310,6 +315,8 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   }
   //  for(int i=0;i<steps; i++)
   // printf("%d rcvids[%d] %d\n",__LINE__,i,rcvids[i]);    
+  printf("%s %d %d %d\n",__FILE__,__LINE__,steps, maxreq);
+
 #ifndef _MPISERIAL
   if(steps>0){
     CheckMPIReturn(MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);

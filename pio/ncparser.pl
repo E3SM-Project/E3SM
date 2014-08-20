@@ -201,12 +201,12 @@ foreach my $func (keys %{$functions}){
 		  print F "      file->varlist[varid].ndims = (*ndimsp);}\n";
 		  print F "      if(nattsp != NULL) mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "    if(name != NULL){ \n";
-                  print F "       char tname[PIO_MAX_NAME];\n";
-		  print F  "      if(ios->iomaster)\n";
-   		  print F "	       strcpy(tname, name);\n";
-		  print F "      mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
-		  print F "     strcpy(name,tname);\n";
-	          print F "  }\n";
+		  print F "      int slen;\n";
+		  print F "      if(ios->iomaster)\n";
+		  print F "        slen = (int) strlen(name);\n";
+		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
+
 		  print F "    if(dimidsp != NULL) {int ndims;\n";
 		  print F "      PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
 		  print F "      mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
@@ -215,18 +215,20 @@ foreach my $func (keys %{$functions}){
 
 		  
 	      }elsif($func =~ /inq_dim$/){
-		  print F  "    if(name != NULL){ char tname[PIO_MAX_NAME];\n";
-		  print F  "      if(ios->iomaster)\n";
-   		  print F "	       strcpy(tname, name);\n";
-		  print F "      mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
-		  print F "      strcpy(name,tname); }\n";
+		  print F  "    if(name != NULL){ \n";
+		  print F "      int slen;\n";
+		  print F "      if(ios->iomaster)\n";
+		  print F "        slen = (int) strlen(name);\n";
+		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 		  print F "      if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_dimname/ || $func =~ /inq_varname/ || $func =~ /inq_attname/){
-		  print F  "    { char tname[PIO_MAX_NAME];\n";
-		  print F  "        if(ios->iomaster)\n";
-   		  print F "	       strcpy(tname, name);\n";
-		  print F "        mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
-		  print F "      strcpy(name,tname); }\n";
+		  print F "    if(name != NULL){\n";
+		  print F "      int slen;\n";
+		  print F "      if(ios->iomaster)\n";
+		  print F "        slen = (int) strlen(name);\n";
+		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 	      }elsif($func =~ /inq_vardimid/){
 		  print F "    if(ierr==PIO_NOERR){\n";
                   print F "      int ndims;\n";

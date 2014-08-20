@@ -246,6 +246,7 @@ contains
 !<
   subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc, ioDesc, array, iostat)
     use iso_c_binding
+!    use ifcore, only: tracebackqq
     ! !DESCRIPTION:
     !  Reads a slab of TYPE from a netcdf file.
     !
@@ -255,18 +256,19 @@ contains
     ! !INPUT PARAMETERS:
 
     type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
+         File                   ! file information
 
     type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
+         varDesc                      ! variable descriptor
 
     type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
+         ioDesc                      ! iodecomp descriptor
 
     {VTYPE}, intent(out) ::  array{DIMSTR}                 ! array to be read
 
     integer(i4), intent(out) :: iostat
     integer(C_SIZE_T) :: tlen
+
     tlen = size(array)
 
     call read_darray_internal_{TYPE} (File%fh, vardesc%varid, iodesc%ioid, tlen, array, iostat)

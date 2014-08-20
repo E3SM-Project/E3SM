@@ -302,20 +302,11 @@ contains
          character(c_char) :: name(*)
        end function PIOc_inq_dimname
     end interface
-    integer :: slen, i
-    character, allocatable :: cname(:)
-    slen = len(name)
-    allocate(cname(slen))
 
-    cname = C_NULL_CHAR
-    ierr = PIOc_inq_dimname(ncid                            ,dimid-1,cname)
+    name = C_NULL_CHAR
+    ierr = PIOc_inq_dimname(ncid                            ,dimid-1,name)
+    call replace_c_null(name)
 
-    do i=1,slen
-       if(cname(i) /= C_NULL_CHAR) then
-          name(i:i) = cname(i)
-       endif
-    enddo
-    deallocate(cname)
   end function inq_dimname_id
 
 
@@ -807,7 +798,6 @@ contains
     integer                                                 ,intent(in) :: ncid
     integer                                                 , intent(in) :: varid
     character(len=*)                                        , intent(out)    :: name
-
     interface
        integer(C_INT) function PIOc_inq_varname(ncid        ,varid,name) &
             bind(C                                          ,name="PIOc_inq_varname")
@@ -820,6 +810,7 @@ contains
     name = C_NULL_CHAR
     ierr = PIOc_inq_varname(ncid                            ,varid-1,name)
     call replace_c_null(name)
+
   end function inq_varname_id
 
 
@@ -863,18 +854,9 @@ contains
          integer(C_INT) :: varid
        end function PIOc_inq_varid
     end interface
-    character, allocatable :: cname(:)
-    integer :: i, nl
 
-    nl = len_trim(name)
-    allocate(cname(nl+1))
-    cname = C_NULL_CHAR
-    do i=1,nl
-       if(name(i:i) == ' ') exit
-       cname(i) = name(i:i)
-    enddo
-    ierr = PIOc_inq_varid(ncid, cname, varid)
-    deallocate(cname)
+    ierr = PIOc_inq_varid(ncid, trim(name)//C_NULL_CHAR, varid)
+
     ! the fortran value is one based while the c value is 0 based
     varid = varid+1
   end function inq_varid_id
@@ -984,7 +966,7 @@ contains
          use iso_c_binding
          integer(C_INT),value :: ncid
          integer(C_INT),value :: varid
-         character(C_CHAR) :: name
+         character(C_CHAR) :: name(*)
          integer(C_INT) :: xtype
          integer(C_SIZE_T) :: len
        end function PIOc_inq_att
@@ -1020,8 +1002,6 @@ contains
     integer, intent(in) :: varid
     integer, intent(in)              :: attnum !Attribute number
     character(len=*), intent(out)     :: name
-    character, allocatable :: cname(:)
-    integer :: slen, i
     interface
        integer(C_INT) function PIOc_inq_attname(ncid,varid,attnum,name) &
             bind(C,name="PIOc_inq_attname")
@@ -1032,17 +1012,10 @@ contains
          character(C_CHAR) :: name(*)
        end function PIOc_inq_attname
     end interface
-    slen = len(name)
-    allocate(cname(slen))
-    cname = C_NULL_CHAR
+    name = C_NULL_CHAR
 
-    ierr = PIOc_inq_attname(ncid,varid-1,attnum-1,cname)
-    do i=1,slen
-       if(cname(i) /= C_NULL_CHAR) then
-          name(i:i) = cname(i)
-       endif
-    enddo
-    deallocate(cname)
+    ierr = PIOc_inq_attname(ncid,varid-1,attnum-1,name)
+    call replace_c_null(name)
 
   end function inq_attname_id
 

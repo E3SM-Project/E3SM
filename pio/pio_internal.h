@@ -62,7 +62,7 @@ long long lgcd_array(int nain, long long*ain);
   void PIO_Offset_size(MPI_Datatype *dtype, int *tsize);
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
 
-int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
+int subset_rearrange_create(const iosystem_desc_t ios,int maplen, PIO_Offset compmap[], const int gsize[],
 			 const int ndim, io_desc_t *iodesc);
 
 

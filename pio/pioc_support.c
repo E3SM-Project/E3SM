@@ -273,7 +273,7 @@ int PIOc_readmap_from_f90(const char file[],PIO_Offset *maplen, PIO_Offset *map[
 }
 
 
-int PIOc_writemap(const char file[], PIO_Offset maplen, const PIO_Offset map[], const MPI_Comm comm)
+int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const MPI_Comm comm)
 {
   int npes, myrank;
   PIO_Offset *nmaplen;

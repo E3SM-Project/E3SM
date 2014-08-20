@@ -135,11 +135,11 @@ module pio_types
 !<
     type, public :: Var_desc_t
 #ifdef SEQUENCE
-	sequence
+       sequence
 #endif	
-        integer(i4) :: varID
-	integer(i4) :: ncid
-    end type 
+       integer(i4) :: varID
+       integer(i4) :: ncid
+    end type Var_desc_t
 
 !>
 !! @defgroup PIO_iotype PIO_iotype
@@ -233,8 +233,8 @@ module pio_types
    integer, public, parameter :: PIO_noerr  = nf_noerr
    integer, public, parameter :: PIO_WRITE  = nf_write
    integer, public, parameter :: PIO_nowrite  = nf_nowrite
-   integer, public, parameter :: PIO_CLOBBER = nf_clobber	
-   integer, public, parameter :: PIO_NOCLOBBER = nf_NOclobber	
+   integer, public, parameter :: PIO_CLOBBER = nf_clobber
+   integer, public, parameter :: PIO_NOCLOBBER = nf_NOclobber
    integer, public, parameter :: PIO_NOFILL = nf_nofill
    integer, public, parameter :: PIO_MAX_NAME = nf_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf_max_var_dims

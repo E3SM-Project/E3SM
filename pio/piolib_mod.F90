@@ -1543,7 +1543,7 @@ contains
 !<
   integer function PIO_openfile(iosystem, file, iotype, fname,mode, CheckMPI) result(ierr)
 
-    use ifcore, only: tracebackqq
+!    use ifcore, only: tracebackqq
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype

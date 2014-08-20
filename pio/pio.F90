@@ -21,17 +21,17 @@ module pio
        PIO_deletefile, PIO_get_numiotasks, PIO_get_iorank
 
   use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
-	pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
-	iotype_pnetcdf, iotype_binary, iotype_direct_pbinary, iotype_pbinary, &
-        PIO_iotype_binary, PIO_iotype_direct_pbinary, PIO_iotype_pbinary, &
-        pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf,pio_iotype_netcdf, &
-	pio_global, pio_char, pio_write, pio_nowrite, pio_clobber, pio_noclobber, &
-	pio_max_name, pio_max_var_dims, pio_rearr_none, pio_rearr_subset, &
+       pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
+       iotype_pnetcdf, iotype_binary, iotype_direct_pbinary, iotype_pbinary, &
+       PIO_iotype_binary, PIO_iotype_direct_pbinary, PIO_iotype_pbinary, &
+       pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf,pio_iotype_netcdf, &
+       pio_global, pio_char, pio_write, pio_nowrite, pio_clobber, pio_noclobber, &
+       pio_max_name, pio_max_var_dims, pio_rearr_none, pio_rearr_subset, &
 #if defined(_NETCDF) || defined(_PNETCDF)
-	pio_nofill, pio_unlimited, &
+       pio_nofill, pio_unlimited, &
 #endif
-	pio_64bit_offset, pio_64bit_data, &
-        pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
+       pio_64bit_offset, pio_64bit_data, &
+       pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
 
   use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
 

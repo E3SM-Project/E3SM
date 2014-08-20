@@ -32,6 +32,7 @@ contains
       case (PIO_char)
          mtype=MPI_CHARACTER
       case default
+         mtype = -1
          call piodie( __PIO_FILE__,__LINE__, &
                       'Could not convert pio type=',ptype,' to an mpi type')
     end select
