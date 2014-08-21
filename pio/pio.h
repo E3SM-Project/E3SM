@@ -31,15 +31,20 @@
 #ifdef _MPISERIAL
 typedef int MPI_Info;
 typedef long long MPI_Offset;
-#define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
+/*#define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
 #define MPI_LONG_LONG ((MPI_Datatype)0x4c000809)
 #define  MPI_UNSIGNED_LONG_LONG ((MPI_Datatype)0x4c000819)
 #define MPI_CHARACTER ((MPI_Datatype)1275068698)
+*/
+#define MPI_OFFSET (sizeof(size_t))
+#define MPI_LONG_LONG (sizeof(long long))
+#define MPI_UNSIGNED_LONG_LONG (sizeof(unsigned long long))
+#define MPI_CHARACTER (sizeof(char))
+
 #endif
 #ifndef MPI_OFFSET
 #define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
 #endif
-
 
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset

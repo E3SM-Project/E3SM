@@ -192,15 +192,18 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   if(sndlths[mytask] > 0){
     tag = mytask + offset_t;
     ptr = (char *) rcvbuf + rdispls[mytask];
-    //    printf("%d self rcvlths %d sndlths %d\n",mytask,rcvlths[mytask],sndlths[mytask]);
-    // printf("%s %d %d %d\n",__FILE__,__LINE__,mytask,(int) rtypes[mytask]);
+
+    //     printf("%d self rcvlths %d sndlths %d\n",mytask,rcvlths[mytask],sndlths[mytask]);
+	//  printf("%s %d %d %d\n",__FILE__,__LINE__,mytask,(int) rtypes[mytask]);
+
     if(rtypes[mytask]==0)
       piodie("Bad rtype",__FILE__,__LINE__);
     CheckMPIReturn(MPI_Irecv(ptr, rcvlths[mytask], rtypes[mytask], mytask, tag, comm, rcvids), __FILE__,__LINE__);     
     ptr = (char *) sndbuf + sdispls[mytask]; 
+
     //    if(sndlths[mytask]>3)
     //  printf("%d sndbuf %d %d %d\n",mytask,((long *)ptr)[0],((long *)ptr)[1],((long *)ptr)[2]);
-    // printf("%d sndlths %d %d %d %d\n",mytask,sndlths[mytask],sdispls[mytask],rcvlths[mytask],rdispls[mytask]);
+     printf("%d sndlths %d %d %d %d\n",mytask,sndlths[mytask],sdispls[mytask],rcvlths[mytask],rdispls[mytask]);
     // printf("%d self sndlths %d %d %d\n",mytask,sndlths[mytask] ,(int) rcvids[0], (int) MPI_REQUEST_NULL);
     CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
     CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
@@ -315,7 +318,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   }
   //  for(int i=0;i<steps; i++)
   // printf("%d rcvids[%d] %d\n",__LINE__,i,rcvids[i]);    
-  printf("%s %d %d %d\n",__FILE__,__LINE__,steps, maxreq);
+  //  printf("%s %d %d %d\n",__FILE__,__LINE__,steps, maxreq);
 
 #ifndef _MPISERIAL
   if(steps>0){

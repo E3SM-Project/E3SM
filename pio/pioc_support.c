@@ -176,18 +176,22 @@ int PIOc_freedecomp(int iosysid, int ioid)
     free(iodesc->rfrom);
   if(iodesc->rtype != NULL){
     for(i=0; i<iodesc->num_rtypes; i++){
+#ifdef HAVE_MPI
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
         MPI_Type_free(&(iodesc->rtype[i]));
       }
+#endif
     }
     iodesc->num_rtypes = 0;
     free(iodesc->rtype);
   }
   if(iodesc->stype != NULL){
     for(i=0; i<iodesc->num_stypes; i++){
+#ifdef HAVE_MPI
       if(iodesc->stype[i] != MPI_DATATYPE_NULL){
         MPI_Type_free(&(iodesc->stype[i]));
       }
+#endif
     }
     iodesc->num_stypes = 0;
     free(iodesc->stype);

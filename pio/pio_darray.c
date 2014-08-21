@@ -346,7 +346,7 @@
 	 vdesc->record=0;
      }
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-      printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
+      //      printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
 
       if(region==NULL){
 	for(i=0;i<fndims;i++){
@@ -428,9 +428,9 @@
 		MPI_Recv(tmp_start, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	      }
 
-	      for(int k=0;k<ndims;k++)
-	      	printf("%s %d %d %d %ld %ld \n",__FILE__,__LINE__,vid,k,tmp_start[k],tmp_count[k]);
-	      fflush(stdout); 
+	      //	      for(int k=0;k<ndims;k++)
+	      //	      	printf("%s %d %d %d %ld %ld \n",__FILE__,__LINE__,vid,k,tmp_start[k],tmp_count[k]);
+	      //  fflush(stdout); 
 		
 	      if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 		ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, bufptr); 

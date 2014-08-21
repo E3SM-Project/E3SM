@@ -179,6 +179,8 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
       CheckMPIReturn(MPI_Type_dup(basetype, &newtype), __FILE__,__LINE__);
     }
     CheckMPIReturn(MPI_Type_commit(&newtype), __FILE__,__LINE__);
+#else
+    mtype[0] = basetype * blocksize;
 #endif     
 
     pos = 0;
@@ -327,13 +329,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
       recv_displs[i] = i*sizeof(int);
     }
   }
-  printf("%s %d\n",__FILE__,__LINE__);
+  //  printf("%s %d\n",__FILE__,__LINE__);
 
   // Share the iodesc->scount from each compute task to all io tasks
   ierr = pio_swapm( iodesc->scount, send_counts, send_displs, sr_types, 
                     recv_buf,  recv_counts, recv_displs, sr_types,
 		    ios.union_comm, false, false, pio_maxreq);
-  printf("%s %d\n",__FILE__,__LINE__);
+  //  printf("%s %d\n",__FILE__,__LINE__);
 
   nrecvs = 0;
   if(ios.ioproc){
@@ -430,13 +432,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
     printf("%ld ",s2rindex[i]);
   printf("\n");
   */
-  printf("%s %d %ld\n",__FILE__,__LINE__,iodesc->llen);
+  //  printf("%s %d %ld\n",__FILE__,__LINE__,iodesc->llen);
 
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
 		    //		    ios.union_comm, true, false, 0);
   		    ios.union_comm, true, false, MAX_GATHER_BLOCK_SIZE);
-  printf("%s %d\n",__FILE__,__LINE__);
+  // printf("%s %d\n",__FILE__,__LINE__);
 
   //  rindex is an array of the indices of the data to be sent from
   //  this io task to each compute task. 
@@ -605,6 +607,7 @@ int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sb
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
   maxreq=0;
+  
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     ios.union_comm, handshake,isend, maxreq);
@@ -990,9 +993,9 @@ int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset co
   pio_swapm(destoffset, recvlths, rdispls, dtypes, 
 	    dest_ioindex, sndlths, sdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
-  printf("%s %d\n",__FILE__,__LINE__);
+  //  printf("%s %d\n",__FILE__,__LINE__);
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
-  printf("%s %d\n",__FILE__,__LINE__);
+  // printf("%s %d\n",__FILE__,__LINE__);
   
   free(sndlths); 
   free(sdispls);
@@ -1008,7 +1011,7 @@ int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset co
     free(destoffset);
   
 
-  printf("%s %d\n",__FILE__,__LINE__);
+  //  printf("%s %d\n",__FILE__,__LINE__);
 
   return ierr;
 
