@@ -2,7 +2,6 @@
 
 #--- set modules
 source /etc/profile.d/modules.csh
-#source /share/apps/modules/Modules/3.2.7/init/csh
 if ( $COMPILER == "intel" ) then
     #MODULES UNLOAD    
     module purge
@@ -11,7 +10,6 @@ if ( $COMPILER == "intel" ) then
     module load intel/13.0.1
     module load mvapich2/1.9
     module load netcdf/4.3.0
-    #setenv NETCDF_LIB '/share/apps/netcdf/4.'
 endif
 if ( $COMPILER == "nag" ) then
     #MODULES UNLOAD    
@@ -21,9 +19,10 @@ if ( $COMPILER == "nag" ) then
     module load nag/5.3.1
     setenv COMPILER nag
     setenv COMPILER_PATH /msc/apps/compilers/nag/5.3.1/
+    #NOTE: FIRST load mvapich. Loading netcdf before mvapich loads openmpi automatically and causes compilation problems
     module load mvapich2/1.9
     module load netcdf/4.3.0
-    #module unload openmpi #NOTE: Loading netcdf before mvapich loads openmpi automatically and causes compilation problems
+    
 endif
 limit coredumpsize 1000000
 limit stacksize unlimited
