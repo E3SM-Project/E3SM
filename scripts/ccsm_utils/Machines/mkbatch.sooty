@@ -35,7 +35,6 @@ cat >! $file << EOF1
 ###SBATCH --mail-type=END
 ###SBATCH --mail-user=xyz@abc.com
 #SBATCH --output=slurm.out
-#SBATCH --error=slurm.err
 
 EOF1
 
