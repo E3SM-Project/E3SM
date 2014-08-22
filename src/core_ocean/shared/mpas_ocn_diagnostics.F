@@ -534,76 +534,82 @@ contains
       ! extrapolate tracer values to ocean surface
       ! this eventually be a modelled process
       ! at present, just copy k=1 tracer values onto surface values
-      !
+      ! field will be updated below is better approximations are available
       tracersSurfaceValue(:,:) = tracers(:,1,:)
+      normalVelocitySurfaceLayer(:) = normalVelocity(1,:)
 
       !
       ! average tracer values over the ocean surface layer
       ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
-      !
-      tracersSurfaceLayerValue(:,:) = 0.0
-      indexSurfaceLayerDepth(:) = -9.e30
-      do iCell=1,nCells
-        surfaceLayerDepth = boundaryLayerDepth(iCell) * config_cvmix_kpp_surface_layer_extent
-        sumSurfaceLayer=0.0
-        do k=1,maxLevelCell(iCell)
-         sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
-         if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-           sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
-           rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
-           indexSurfaceLayerDepth(iCell) = rSurfaceLayer
-           exit
-         endif
-        end do
-        sumSurfaceLayer = 0.0
-        do k=1,int(rSurfaceLayer)
-          sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
-          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
+      if(config_use_cvmix_kpp) then
+        tracersSurfaceLayerValue(:,:) = 0.0
+        indexSurfaceLayerDepth(:) = -9.e30
+        do iCell=1,nCells
+          surfaceLayerDepth = boundaryLayerDepth(iCell) * config_cvmix_kpp_surface_layer_extent
+          sumSurfaceLayer=0.0
+          do k=1,maxLevelCell(iCell)
+           sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+             sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
+             indexSurfaceLayerDepth(iCell) = rSurfaceLayer
+             exit
+           endif
+          end do
+          sumSurfaceLayer = 0.0
+          do k=1,int(rSurfaceLayer)
+            sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
+          enddo
+          k=int(rSurfaceLayer)+1
+          sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / sumSurfaceLayer
         enddo
-        k=int(rSurfaceLayer)+1
-        sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
-        tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
-        tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / sumSurfaceLayer
-      enddo
+      endif
 
       !
       ! average normal velocity values over the ocean surface layer
       ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
       !
-      normalVelocitySurfaceLayer(:) = 0.0
-      do iEdge=1,nEdges
-        cell1=cellsOnEdge(1,iEdge)
-        cell2=cellsOnEdge(2,iEdge)
-        boundaryLayerDepthEdge(iEdge) = 0.5*( boundaryLayerDepth(cell1)+boundaryLayerDepth(cell2) )
-        surfaceLayerDepth = boundaryLayerDepthEdge(iEdge) * config_cvmix_kpp_surface_layer_extent
-        sumSurfaceLayer=0.0
-        do k=1,maxLevelEdgeTop(iEdge)
-         rSurfaceLayer = k
-         sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
-         if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-           sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iCell)
-           rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iCell)
-           exit
-         endif
-        end do
-        sumSurfaceLayer = 0.0
-        do k=1,int(rSurfaceLayer)
-          sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
-          normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+      if (config_use_cvmix_kpp) then
+        normalVelocitySurfaceLayer(:) = 0.0
+        do iEdge=1,nEdges
+          cell1=cellsOnEdge(1,iEdge)
+          cell2=cellsOnEdge(2,iEdge)
+          boundaryLayerDepthEdge(iEdge) = 0.5*( boundaryLayerDepth(cell1)+boundaryLayerDepth(cell2) )
+          surfaceLayerDepth = boundaryLayerDepthEdge(iEdge) * config_cvmix_kpp_surface_layer_extent
+          sumSurfaceLayer=0.0
+          do k=1,maxLevelEdgeTop(iEdge)
+           rSurfaceLayer = k
+           sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iCell)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iCell)
+             exit
+           endif
+          end do
+          sumSurfaceLayer = 0.0
+          do k=1,int(rSurfaceLayer)
+            sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+          enddo
+          k=int(rSurfaceLayer)+1
+          if(k.le.maxLevelEdgeTop(iEdge)) then
+            sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
+            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer)*normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+          endif
+          if (maxLevelEdgeTop(iEdge) .gt. 0) then
+             normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
+          end if
         enddo
-        k=int(rSurfaceLayer)+1
-        if(k.le.maxLevelEdgeTop(iEdge)) then
-          sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
-          normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer)*normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
-        endif
-        if (maxLevelEdgeTop(iEdge) .gt. 0) then
-           normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
-        end if
-      enddo
+      endif ! if config_use_cvmix_kpp
 
       !
       !  compute fields used as intent(in) to CVMix/KPP
-      call computeKPPInputFields(state, forcing, mesh, diagnostics, scratch)
+      if (config_use_cvmix_kpp) then
+        call computeKPPInputFields(state, forcing, mesh, diagnostics, scratch)
+      endif
 
       !
       ! Apply the GM closure as a bolus velocity
@@ -982,7 +988,8 @@ contains
 !>    CVMix/KPP requires the following fields as intent(in):
 !>       surfaceBuoyancyForcing
 !>       surfaceFrictionVelocity
-!>       bulkRichardsonNumber
+!>       bulkRichardsonNumberBuoy
+!>       bulkRichardsonNumberShear
 !>
 !
 !-----------------------------------------------------------------------
@@ -1016,11 +1023,12 @@ contains
            indexSurfaceLayerDepth
 
       real (kind=RKIND), dimension(:,:), pointer ::  & 
-           bulkRichardsonNumber, bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
+           bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
 
       ! local
       integer :: iCell, iEdge, i, k, err, indexTempFlux, indexSaltFlux
       real (kind=RKIND) :: buoyContribution, shearContribution, factor, deltaVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND), dimension(:), allocatable :: buoySmoothed, shearSmoothed
 
       ! set scalar values
       nCells      = mesh % nCells
@@ -1042,7 +1050,6 @@ contains
       zMid                          => diagnostics % zMid % array
       zTop                          => diagnostics % zTop % array
       density                       => diagnostics % density % array
-      bulkRichardsonNumber          => diagnostics % bulkRichardsonNumber % array
       bulkRichardsonNumberBuoy      => diagnostics % bulkRichardsonNumberBuoy % array
       bulkRichardsonNumberShear     => diagnostics % bulkRichardsonNumberShear % array
       indexSurfaceLayerDepth        => diagnostics % indexSurfaceLayerDepth % array
@@ -1069,12 +1076,13 @@ contains
       thermalExpansionCoeff => scratch % thermalExpansionCoeff % array
       salineContractionCoeff => scratch % salineContractionCoeff % array
 
+      ! allocate local work space
+      allocate(buoySmoothed(nVertLevels))
+      allocate(shearSmoothed(nVertLevels))
+
       ! compute EOS by displacing SST/SSS to every vertical layer in column
       call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err, &
               thermalExpansionCoeff, salineContractionCoeff)
-
-      ! set value to out-of-bounds
-      bulkRichardsonNumber(:,:) = -1.0e34
 
       do iCell=1,nCells
        invAreaCell = 1.0 / areaCell(iCell)
@@ -1117,13 +1125,10 @@ contains
 
        ! zero the bulk Richardson number within the ocean surface layer
        ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
-    !   k = int(indexSurfaceLayerDepth(iCell))+1
-    !   bulkRichardsonNumber(1:k,iCell) = 0.0
         bulkRichardsonNumberBuoy (:,iCell) = 1.0e8
         bulkRichardsonNumberShear(:,iCell) = 1.0
 
        ! loop over vertical to compute bulk Richardson number
-    !   do k=int(indexSurfaceLayerDepth(iCell))+2,maxLevelCell(iCell)
         do k=1,maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
@@ -1136,16 +1141,34 @@ contains
          enddo
 
          buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
-         shearContribution = max(deltaVelocitySquared,1.0e-5)
+         shearContribution = max(deltaVelocitySquared,1.0e-10)
 
         ! compute bulk Richardson number
         ! we estimate the bulk Richardson number here, but its value will be updated
         ! in the ocn_vmix_coefs_cvmix_build when we have access to the turbulent velocity scale and unresolved shear
-         bulkRichardsonNumber(k,iCell) = (zMid(1,iCell) - zMid(k,iCell)) * buoyContribution / (shearContribution + 1.0e-10)
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
          bulkRichardsonNumberShear(k,iCell) = shearContribution
 
        enddo
+
+       ! remove 2dz mode from bulkRichardsonNumber{Buoy,Shear}
+        buoySmoothed(:) = 0.0
+        shearSmoothed(:) = 0.0
+        do k=2,maxLevelCell(iCell)-1
+          buoySmoothed(k)  =  (bulkRichardsonNumberBuoy(k-1,iCell) + 2*bulkRichardsonNumberBuoy(k,iCell) + bulkRichardsonNumberBuoy(k+1,iCell)) / 4.0
+          shearSmoothed(k) =  (bulkRichardsonNumberShear(k-1,iCell) + 2*bulkRichardsonNumberShear(k,iCell) + bulkRichardsonNumberShear(k+1,iCell)) / 4.0
+        enddo
+        buoySmoothed(1) = buoySmoothed(2)
+        shearSmoothed(1) = shearSmoothed(2)
+        buoySmoothed(maxLevelCell(iCell))=buoySmoothed(maxLevelCell(iCell)-1)
+        shearSmoothed(maxLevelCell(iCell))=shearSmoothed(maxLevelCell(iCell)-1)
+
+        bulkRichardsonNumberBuoy(1:maxLevelCell(iCell),iCell) = buoySmoothed(1:maxLevelCell(iCell))
+        bulkRichardsonNumberShear(1:maxLevelCell(iCell),iCell) = shearSmoothed(1:maxLevelCell(iCell))
+
+       ! bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
+       ! incorrectly diagnosing OBL to be within surface layer
+       bulkRichardsonNumberBuoy(1:indexSurfaceLayerDepth(iCell),iCell) = -1.0
 
       enddo
 
@@ -1153,6 +1176,10 @@ contains
        call mpas_deallocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
        call mpas_deallocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
        call mpas_deallocate_scratch_field(scratch % salineContractionCoeff, .true.)
+
+      ! deallocate local work space
+      deallocate(buoySmoothed)
+      deallocate(shearSmoothed)
 
     end subroutine computeKPPInputFields!}}}
 
