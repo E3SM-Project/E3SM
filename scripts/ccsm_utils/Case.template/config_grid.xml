@@ -97,6 +97,8 @@ Each grid is associated with three names
 <GRID sname="ne60np4_ne60np4"       alias="ne60_ne60"    compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne120np4_ne120np4"     alias="ne120_ne120"  compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne240np4_ne240np4"     alias="ne240_ne240"  compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</GRID>
+<GRID sname="ne0np4_arm_x8v3_lowcon_ne0np4_arm_x8v3_lowcon"     alias="armx8v3_armx8v3"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_arm_x8v3_lowcon_l%ne0np4_arm_x8v3_lowcon_oi%ne0np4_arm_x8v3_lowcon_r%r01_m%gx1v6_g%null_w%null</GRID>
+
 
 <!--- cism grids --> 
 
@@ -308,6 +310,12 @@ Each grid is associated with three names
   <nx>3110402</nx> <ny>1</ny>   
   <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc> 
 </gridhorz>
+
+<gridhorz name="ne0np4_arm_x8v3_lowcon">
+  <nx>92558</nx> <ny>1</ny>   
+  <desc>1-deg with 1/8-deg over U.S. (version 3):</desc> 
+</gridhorz>
+
 
 <!-- displaced pole/tripole grids-->
 
@@ -897,6 +905,14 @@ use the T62_g16 resolution instead:
   <ICE_DOMAIN_FILE>domain.ocn.ne240np4_gx1v6.111226.nc</ICE_DOMAIN_FILE>
 </griddom>
 
+<griddom grid="ne240np4" mask="tx0.1v2">
+  <ATM_DOMAIN_FILE>domain.lnd.ne240np4_tx0.1v2_111209.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.ne240np4_tx0.1v2_111209.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.ne240np4_tx0.1v2.121113.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.ne240np4_tx0.1v2.121113.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+
 <gridmap atm_grid="ne240np4" ocn_grid="gx1v6">
   <ATM2OCN_FMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_gx1v6_aave_110428.nc</ATM2OCN_FMAPNAME>
   <ATM2OCN_SMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_gx1v6_aave_110428.nc</ATM2OCN_SMAPNAME>
@@ -907,11 +923,12 @@ use the T62_g16 resolution instead:
 
 <gridmap atm_grid="ne240np4" ocn_grid="tx0.1v2">
   <ATM2OCN_FMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_aave_110419.nc</ATM2OCN_FMAPNAME>
-  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_aave_110419.nc</ATM2OCN_SMAPNAME>
-  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_aave_110419.nc</ATM2OCN_VMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_native_120327.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_tx0.1v2_native_120327.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/gridmaps/tx0.1v2/map_tx0.1v2_to_ne240np4_aave_110419.nc </OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/gridmaps/tx0.1v2/map_tx0.1v2_to_ne240np4_aave_110419.nc </OCN2ATM_SMAPNAME>
 </gridmap>
+
 
 <gridmap atm_grid="ne240np4" lnd_grid="0.23x0.31">
   <ATM2LND_FMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_fv0.23x0.31_aave_110428.nc   </ATM2LND_FMAPNAME>
@@ -919,6 +936,15 @@ use the T62_g16 resolution instead:
   <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_ne240np4_aave_110428.nc</LND2ATM_FMAPNAME>
   <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_ne240np4_aave_110428.nc</LND2ATM_SMAPNAME>
 </gridmap>
+
+<griddom grid="ne0np4_arm_x8v3_lowcon" mask="gx1v6">
+  <ATM_DOMAIN_FILE>domain.lnd.armx8v3_gx1v6.140517.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.armx8v3_gx1v6.140517.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.armx8v3_gx1v6.140517.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.armx8v3_gx1v6.140517.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+
 
 <!-- ====================  -->
 <!--  atm eul: T62         -->

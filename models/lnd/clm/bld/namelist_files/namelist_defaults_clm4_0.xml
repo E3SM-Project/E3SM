@@ -291,6 +291,13 @@ lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2000_c130313.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c130313.nc</fsurdat>
 
 
+
+
+<fsurdat hgrid="ne0np4_arm_x8v3_lowcon"    sim_year="2000" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_armx8v3_simyr2000_c140518.nc</fsurdat>
+
+
+
 <!-- Crop and Irrigation surface datasets -->
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" irrig=".true." crop="on"  >
 lnd/clm2/surfdata/surfdata_1.9x2.5_mp20_simyr2000_irrcr_c110427.nc</fsurdat>
@@ -379,6 +386,13 @@ lnd/clm2/surfdata_map/surfdata_ne60np4_simyr1850_c120416.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1850_c130311.nc</fsurdat>
 <fsurdat hgrid="ne240np4"    sim_year="1850" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c130313.nc</fsurdat>
+
+
+
+
+<fsurdat hgrid="ne0np4_arm_x8v3_lowcon"    sim_year="1850" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_armx8v3_simyr1850_c140518.nc</fsurdat>
+
 
 <!-- Single point data for year 1850 -->
 <fsurdat hgrid="1x1_tropicAtl" sim_year="1850" irrig=".false." crop="off" >
