@@ -15,7 +15,6 @@
  implicit none
  private
  public:: physics_namelist_check, &
-          physics_idealized_init, &
           physics_registry_init
 
  logical,public:: moist_physics
@@ -42,8 +41,11 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
+!>    * modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
+!>      core_init_atmosphere.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
 
 
  contains
@@ -281,97 +283,6 @@
  endif
 
  end subroutine physics_registry_init
-
-!==================================================================================================
- subroutine physics_idealized_init(mesh,sfc_input)
-!==================================================================================================
-
-!input and output arguments:
- type(mpas_pool_type),intent(in):: mesh
- type(mpas_pool_type),intent(inout):: sfc_input
-
-!local pointers: 
- integer,pointer:: nCells,nMonths,nSoilLevels
- integer,dimension(:),pointer:: isltyp,ivgtyp,landmask
- 
- real(kind=RKIND),dimension(:),pointer:: shdmin,shdmax,snoalb,snow,snowc,ter,vegfra,xice
- real(kind=RKIND),dimension(:),pointer:: skintemp,sst,tmn
- real(kind=RKIND),dimension(:,:),pointer:: tslb,smcrel,sh2o,smois,dzs
- real(kind=RKIND),dimension(:,:),pointer:: albedo12m,greenfrac
-
-!local variables:
- integer:: iCell,iMonth,iSoil
- 
-!--------------------------------------------------------------------------------------------------
-
- call mpas_pool_get_dimension(mesh,'nCells',nCells)
- call mpas_pool_get_dimension(mesh,'nMonths',nMonths)
- call mpas_pool_get_dimension(mesh,'nSoilLevel',nSoilLevels)
-
- call mpas_pool_get_array(sfc_input,'isltyp'   ,isltyp   )
- call mpas_pool_get_array(sfc_input,'ivgtyp'   ,ivgtyp   )
- call mpas_pool_get_array(sfc_input,'landmask' ,landmask )
- call mpas_pool_get_array(sfc_input,'shdmin'   ,shdmin   )
- call mpas_pool_get_array(sfc_input,'shdmax'   ,shdmax   )
- call mpas_pool_get_array(sfc_input,'snoalb'   ,snoalb   )
- call mpas_pool_get_array(sfc_input,'snow'     ,snow     )
- call mpas_pool_get_array(sfc_input,'snowc'    ,snowc    )
- call mpas_pool_get_array(sfc_input,'ter'      ,ter      )
- call mpas_pool_get_array(sfc_input,'vegfra'   ,vegfra   )
- call mpas_pool_get_array(sfc_input,'xice'     ,xice     )
- call mpas_pool_get_array(sfc_input,'skintemp' ,skintemp )
- call mpas_pool_get_array(sfc_input,'sst'      ,sst      )
- call mpas_pool_get_array(sfc_input,'tmn'      ,tmn      )
- call mpas_pool_get_array(sfc_input,'dzs'      ,dzs      )
- call mpas_pool_get_array(sfc_input,'sh2o'     ,sh2o     )
- call mpas_pool_get_array(sfc_input,'smcrel'   ,smcrel   )
- call mpas_pool_get_array(sfc_input,'smois'    ,smois    )
- call mpas_pool_get_array(sfc_input,'tslb'     ,tslb     )
- call mpas_pool_get_array(sfc_input,'albedo12m',albedo12m)
- call mpas_pool_get_array(sfc_input,'greenfrac',greenfrac)
-
-!initialization of surface input variables that are not needed if we run the current set of
-!idealized test cases:
-
- do iCell = 1, nCells
-    !terrain,soil type, and vegetation:
-    landmask(iCell) = 0
-    ivgtyp(iCell)   = 0
-    isltyp(iCell)   = 0
-    ter(iCell)      = 0._RKIND
-    xice(iCell)     = 0._RKIND
-    shdmin(iCell)   = 0._RKIND
-    shdmax(iCell)   = 0._RKIND
-    vegfra(iCell)   = 0._RKIND
-
-    !snow coverage:    
-    snow(iCell)   = 0._RKIND
-    snowc(iCell)  = 0._RKIND
-    snoalb(iCell) = 0.08_RKIND
-    
-    !surface and sea-surface temperatures:
-    skintemp(iCell) = 288._RKIND
-    sst(iCell)      = 288._RKIND
-    
-    !soil layers:
-    tmn(iCell) = 288._RKIND
-    do iSoil = 1, nSoilLevels
-       dzs(iSoil,iCell)    =   0._RKIND
-       sh2o(iSoil,iCell)   =   0._RKIND
-       smcrel(iSoil,iCell) =   0._RKIND
-       smois(iSoil,iCell)  =   0._RKIND
-       tslb(iSoil,iCell)   = 288._RKIND
-    enddo
-
-    !monthly climatological surface albedo and greeness fraction:
-    do iMonth = 1, nMonths
-       albedo12m(iMonth,iCell) = 0.08_RKIND
-       greenfrac(iMonth,iCell) = 0._RKIND
-    enddo
-
- enddo   
-
- end subroutine physics_idealized_init
 
 !==================================================================================================
  end module mpas_atmphys_control
