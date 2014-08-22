@@ -342,7 +342,7 @@
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/$ENV{USER}/scratch/exe</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/$ENV{USER}</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
