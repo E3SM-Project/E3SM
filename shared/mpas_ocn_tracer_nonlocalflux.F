@@ -68,7 +68,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_nonlocalflux_tend(mesh, layerThickness, vertNonLocalFlux, surfaceTracerFlux, tend, err)!{{{
+   subroutine ocn_tracer_nonlocalflux_tend(mesh, vertNonLocalFlux, surfaceTracerFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -77,9 +77,6 @@ contains
 
       type (mesh_type), intent(in) :: &
          mesh          !< Input: mesh information
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-        layerThickness !< Input: Layer thickness
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         surfaceTracerFlux !< Input: surface tracer fluxes
@@ -113,7 +110,7 @@ contains
       integer :: iCell, nCells, k, iTracer, nTracers, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
-      real (kind=RKIND) :: invLayerThickness, fluxTopOfCell, fluxBottomOfCell
+      real (kind=RKIND) :: fluxTopOfCell, fluxBottomOfCell
 
       err = 0
 
@@ -129,32 +126,28 @@ contains
       do iCell = 1, nCells
         do k = 2, maxLevelCell(iCell)-1
 
-          invLayerThickness = 1.0 / layerThickness(k,iCell)
-
           ! NOTE: at the moment, all tracers are based on the flux-profile used for temperature, i.e. vertNonLocalFlux(1,:,:)
           do iTracer = 1, nTracers
             fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
             fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell) * invLayerThickness
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
           end do
         end do
 
         ! enforce boundary conditions at bottom of column
         k = maxLevelCell(iCell)
-        invLayerThickness = 1.0 / layerThickness(k,iCell)
         do iTracer = 1, nTracers
           fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
           fluxBottomOfCell = 0.0
-          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell) * invLayerThickness
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
         end do
 
         ! enforce boundary conditions at top of column
         k = 1
-        invLayerThickness = 1.0 / layerThickness(k,iCell)
         do iTracer = 1, nTracers
           fluxTopOfCell = 0.0
           fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
-          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell) * invLayerThickness
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
         end do
 
       end do
