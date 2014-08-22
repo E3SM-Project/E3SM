@@ -221,7 +221,6 @@ contains
       allocate(cvmix_variables % dzt(nVertLevels))
       allocate(cvmix_variables % kpp_Tnonlocal_iface(nVertLevels+1))
       allocate(cvmix_variables % BulkRichardson_cntr(nVertLevels))
-      allocate(cvmix_variables % buoyancy_cntr(nVertLevels))
 
       allocate(sigma(nVertLevels))
       allocate(Nsqr_iface(nVertLevels+1))
