@@ -368,9 +368,11 @@ contains
       !
       ! Compute tracer tendency due to non-local flux computed in KPP
       !
-      call mpas_timer_start("non-local flux from KPP", .false.)
-      call ocn_tracer_nonlocalflux_tend(mesh, layerThickness, vertNonLocalFlux, surfaceTracerFlux, tend_tr, err)
-      call mpas_timer_stop("non-local flux from KPP")
+      if (config_use_cvmix_kpp) then
+        call mpas_timer_start("non-local flux from KPP", .false.)
+        call ocn_tracer_nonlocalflux_tend(mesh, vertNonLocalFlux, surfaceTracerFlux, tend_tr, err)
+        call mpas_timer_stop("non-local flux from KPP")
+      endif
 
       call mpas_timer_stop("ocn_tend_tracer")
 
