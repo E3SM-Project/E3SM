@@ -496,8 +496,8 @@
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
-                <nml_option name="config_cvmix_kpp_niteratorOBL_solver" type="integer" default_value="2" units="NA"
-                                        description="Number of iteration to solve for KPP ocean boundary layer depth"
+                <nml_option name="config_cvmix_kpp_niterate" type="integer" default_value="2" units="NA"
+                                        description="Number of iterations used to solve for KPP ocean boundary layer depth"
                                         possible_values="Any positive integer"
                 />
 		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
@@ -1072,9 +1072,6 @@
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 			<var name="vertNonLocalFluxTemp"/>
-			<var name="vertNonLocalFluxSalt"/>
-			<var name="vertNonLocalFluxZonalVel"/>
-			<var name="vertNonLocalFluxMeridVel"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1576,7 +1573,6 @@
 		<var name="uBolusGMMeridional" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
 		/>
-
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
 			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
 		/>
@@ -1593,42 +1589,33 @@
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="bulk Richardson number"
+			 description="CVMix/KPP: bulk Richardson number"
 		/>
 		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="contribution of buoyancy to bulk Richardson number"
+			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
 		/>
 		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="contribution of shear to bulk Richardson number"
+			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
-			 description="diagnosed depth of the ocean surface boundary layer"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
 		/>
 		<var name="boundaryLayerDepthEdge" type="real" dimensions="nEdges Time" units="m"
-			 description="diagnosed depth of the ocean surface boundary layer averaged to cell edges"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer averaged to cell edges"
 		/>
 		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time">
 			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
-				 description="nonlocal boundary layer mixing term for temperature"
-			/>
-			<var name="vertNonLocalFluxSalt" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxSalt"
-				 description="nonlocal boundary layer mixing term for salinity"
-			/>
-			<var name="vertNonLocalFluxZonalVel" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxZonalVel"
-				 description="nonlocal boundary layer mixing term for zonal velocity"
-			/>
-			<var name="vertNonLocalFluxMeridVel" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxMeridVel"
-				 description="nonlocal boundary layer mixing term for meridional velocity"
+				 description="CVMix/KPP: nonlocal boundary layer mixing term for temperature"
 			/>
 		</var_array>
 		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
-			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
+			 description="CVMix/KPP: int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
 		/>
 		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" streams="o" units="none"
-			 description="surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
+			 description="CVMix/KPP: surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
 		/>
 		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
-			 description="diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
+			 description="CVMix/KPP: diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
 		/>
 		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
@@ -1637,10 +1624,10 @@
 			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
 		/>
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
-			 description="Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 		/>
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
-			 description="diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
+			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 		/>
 
 		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
