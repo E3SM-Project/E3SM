@@ -81,10 +81,12 @@ module mpas_io_streams
       module procedure MPAS_writeStreamAtt_text
    end interface MPAS_writeStreamAtt
 
-   integer, parameter :: MPAS_STREAM_EXACT_TIME     = 100, &
-                         MPAS_STREAM_NEAREST        = 101, &
-                         MPAS_STREAM_LATEST_BEFORE  = 102, &
-                         MPAS_STREAM_EARLIEST_AFTER = 103
+   integer, parameter :: MPAS_STREAM_EXACT_TIME              = 100, &
+                         MPAS_STREAM_NEAREST                 = 101, &
+                         MPAS_STREAM_LATEST_BEFORE           = 102, &
+                         MPAS_STREAM_EARLIEST_AFTER          = 103, &
+                         MPAS_STREAM_LATEST_STRICTLY_BEFORE  = 104, &
+                         MPAS_STREAM_EARLIEST_STRICTLY_AFTER = 105
 
 
    ! Error codes
