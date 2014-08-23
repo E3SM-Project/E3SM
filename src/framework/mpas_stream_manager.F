@@ -33,6 +33,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_finalize, &
               MPAS_stream_mgr_create_stream, &
               MPAS_stream_mgr_destroy_stream, &
+              MPAS_stream_mgr_get_clock, &
               MPAS_stream_mgr_set_property, &
               MPAS_stream_mgr_get_property, &
               MPAS_stream_mgr_add_pkg, &
@@ -256,6 +257,35 @@ module mpas_stream_manager
         ! DWJ 07/22/2014: Might be leaking memory associated with subpools (alarms, globalAttributes, etc)
 
     end subroutine MPAS_stream_mgr_destroy_stream!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_clock
+    !
+    !> \brief Retrieves the clock used by the stream manager.
+    !> \author Michael Duda
+    !> \date   22 August 2014
+    !> \details
+    !>  Returns a pointer to the clock associated with the stream manager, 
+    !>  in which any stream alarms should be defined before being added to 
+    !>  the stream manager via the MPAS_stream_mgr_add_alarm() routine.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_clock(manager, clock, ierr)
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(in) :: manager
+        type (MPAS_Clock_type), pointer :: clock
+        integer, intent(out), optional :: ierr
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_clock()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        clock => manager % streamClock
+
+    end subroutine MPAS_stream_mgr_get_clock
 
 
     !-----------------------------------------------------------------------
@@ -1249,8 +1279,11 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_stream_mgr_add_alarm
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_stream_mgr_get_clock, &
+                                    MPAS_stream_mgr_add_alarm
     use mpas_kind_types, only : StrKIND
+    use mpas_timekeeping, only : MPAS_Clock_type, MPAS_START_TIME, MPAS_Time_type, MPAS_TimeInterval_type, mpas_add_clock_alarm, &
+                                 mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
 
     implicit none
 
@@ -1262,7 +1295,10 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
+    type (MPAS_Clock_type), pointer :: clock
     character(len=StrKIND) :: streamID, direction, alarmID, alarmTime, alarmInterval
+    type (MPAS_Time_type) :: alarmTime_local
+    type (MPAS_TimeInterval_type) :: alarmInterval_local
     integer :: idirection
     integer :: ierr
 
@@ -1276,6 +1312,12 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
     call mpas_c_to_f_string(alarmInterval_c, alarmInterval)
     write(alarmID, '(a)') trim(streamID)//'_'//trim(direction)
 
+    ! Nothing to do for this stream
+    if (trim(alarmInterval) == 'none') then
+write(0,*) 'No need to add an alarm to stream '//trim(streamID)//' direction '//trim(direction)
+        return
+    end if
+
     if (trim(direction) == 'input') then
         idirection = MPAS_STREAM_INPUT
     else if (trim(direction) == 'output') then
@@ -1286,6 +1328,21 @@ write(0,*) 'Adding alarm to stream '//trim(streamID)//' direction '//trim(direct
 write(0,*) '   ID:       '//trim(alarmID)
 write(0,*) '   Time:     '//trim(alarmTime)
 write(0,*) '   Interval: '//trim(alarmInterval)
+
+    call MPAS_stream_mgr_get_clock(manager, clock)
+
+    if (trim(alarmTime) == 'start') then
+        alarmTime_local = mpas_get_clock_time(clock, MPAS_START_TIME, ierr=ierr)
+    else
+        call mpas_set_time(alarmTime_local, dateTimeString=alarmTime)
+    end if
+
+    if (trim(alarmInterval) == 'initial_only') then
+        call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, ierr=ierr)
+    else
+        call mpas_set_timeInterval(alarmInterval_local, timeString=alarmInterval)
+        call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, alarmTimeInterval=alarmInterval_local, ierr=ierr)
+    end if
 
     call MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, idirection, ierr=ierr)
 
