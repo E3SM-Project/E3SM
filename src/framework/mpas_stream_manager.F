@@ -1077,6 +1077,114 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
+    !  routine build_filename
+    !
+    !> \brief Construct the filename that contains a specific time in a stream
+    !> \author Michael Duda
+    !> \date   21 August 2014
+    !> \details 
+    !>  Given a filename template and the information necessary to determine the time
+    !>  in the stream that matches a time available in any of the files associated with
+    !>  the stream, returns a specific filename and a record offset within that file
+    !>  matching that time.
+    !>  
+    !>  Implementation note: When two times in a stream are equidistant from the requested
+    !>  time, the MPAS_STREAM_NEAREST option for 'whence' will choose the later time when
+    !>  the requested time is before the reference time, and it will choose the earlier time
+    !>  when the requested time is after the reference time. In other words, we round the
+    !>  requested time towards the reference time.
+    !-----------------------------------------------------------------------
+    subroutine build_filename(ref_time, when, whence, maxRecords, period, filename_template, filename, offset, ierr)
+
+        implicit none
+
+        type (MPAS_Time_type), intent(in) :: ref_time
+        type (MPAS_Time_type), intent(in) :: when
+        integer, intent(in) :: whence
+        integer, intent(in) :: maxRecords
+        type (MPAS_TimeInterval_type), intent(in) :: period
+        character(len=*), intent(in) :: filename_template
+        character(len=*), intent(out) :: filename
+        integer, intent(out) :: offset
+        integer :: ierr
+
+        character(len=StrKIND) :: when_string
+        type (MPAS_Time_type) :: filetime
+        type (MPAS_TimeInterval_type) :: zero
+        type (MPAS_TimeInterval_type) :: intv, rem
+        integer :: nrecs, nfiles
+        logical :: in_future
+
+
+        ierr = 0
+
+        if (when >= ref_time) then
+            intv = when - ref_time
+            in_future = .true.
+        else 
+            intv = ref_time - when
+            in_future = .false.
+        end if
+
+        call interval_division(intv, period, nrecs, rem) 
+
+        call mpas_set_timeInterval(zero, S=0)
+
+        if (whence == MPAS_STREAM_EXACT_TIME .and. rem /= zero) then
+            ierr = 1
+            return
+
+        else if (rem /= zero) then
+            if ((whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE .or. whence == MPAS_STREAM_LATEST_BEFORE) .and. .not. in_future) then
+                nrecs = nrecs + 1
+            else if ((whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER .or. whence == MPAS_STREAM_EARLIEST_AFTER) .and. in_future) then
+                nrecs = nrecs + 1
+            else if (whence == MPAS_STREAM_NEAREST) then
+                if (rem > (period / 2)) then
+                    nrecs = nrecs + 1
+                end if
+            end if
+
+        else if (rem == zero) then
+            if (in_future) then
+                if (whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
+                    nrecs = nrecs + 1
+                else if (whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
+                    nrecs = nrecs - 1
+                end if
+            else
+                if (whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
+                    nrecs = nrecs - 1
+                else if (whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
+                    nrecs = nrecs + 1
+                end if
+            end if
+        end if 
+
+        nfiles = nrecs / maxRecords
+        offset = nrecs - (nfiles * maxRecords)
+
+        if (in_future) then
+            filetime = ref_time + period * (maxRecords * nfiles)
+        else
+            if (offset /= 0) then
+                nfiles = nfiles + 1
+                offset = maxRecords - offset
+            end if
+            filetime = ref_time - period * (maxRecords * nfiles)
+        end if
+
+        ! Switch from a 0-based to a 1-based offset
+        offset = offset + 1
+
+        call mpas_get_time(filetime, dateTimeString=when_string)
+
+        call mpas_expand_string(when_string, filename_template, filename)
+
+    end subroutine build_filename
+
+
+    !-----------------------------------------------------------------------
     !  routine mpas_stream_mgr_build_stream
     !
     !> \brief This is a utility routine to build a stream type from a pool representing a stream.
