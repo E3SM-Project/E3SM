@@ -1186,9 +1186,9 @@ module mpas_timekeeping
          if (ierr == ESMF_SUCCESS) ierr = 0
       end if
 
-      if (interval <= zeroInterval) then
+      if (interval < zeroInterval) then
          if (present(ierr)) ierr = 1   
-         write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
+         write(stderrUnit,*) 'ERROR: TimeInterval must not be negative.'
       end if
 
       
@@ -1340,6 +1340,76 @@ module mpas_timekeeping
       div_ti_n % ti = ti % ti / n
 
    end function div_ti_n
+
+
+   subroutine interval_division(num, den, n, rem)
+
+      implicit none
+
+      type (MPAS_TimeInterval_type), intent(in) :: num
+      type (MPAS_TimeInterval_type), intent(in) :: den
+      integer, intent(out) :: n
+      type (MPAS_TimeInterval_type), intent(out) :: rem
+
+      type (MPAS_TimeInterval_type) :: temp
+      type (MPAS_TimeInterval_type) :: zero
+      integer :: nn
+
+
+      call mpas_set_timeInterval(zero, S=0)
+
+      !
+      ! If the numerator is smaller than the denominator, just return the numerator as the remainder
+      !
+      if (num < den) then
+         n = 0
+         rem = num
+         return
+      end if
+
+
+      !
+      ! Avoid division by zero
+      !
+      if (den == zero) then
+         write(stderrUnit,*) 'Error: Attempting to divide by zero.\n'
+         n = 0
+         rem = zero
+         return
+      end if
+
+
+      !
+      ! Begin by finding the smallest multiple of the denominator that is at least as large as the numerator and is also a power of two
+      !
+      temp = den
+      nn = 1
+      do while (temp <= num)
+         temp = temp * 2
+         nn = nn * 2
+      end do
+
+      !
+      ! Dividing by two, we're guaranteed that temp is at most the value of the numerator
+      !
+      temp = temp / 2
+      nn = nn / 2
+
+      !
+      ! Work backwards to zero
+      !
+      n = 0
+      rem = num
+      do while (nn > 0)
+         if (temp <= rem) then
+            rem = rem - temp
+            n = n + nn
+         end if
+         nn = nn / 2
+         temp = temp / 2
+      end do
+
+   end subroutine interval_division
 
 
    logical function eq_t_t(t1, t2)
