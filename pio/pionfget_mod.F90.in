@@ -299,7 +299,7 @@ CONTAINS
     character(len=*), intent(out) :: ival
 
 
-    ival = ' '
+    ival =C_NULL_CHAR
     ierr = PIOc_get_var_text(File%fh, varid-1, ival)
     call replace_c_null(ival)
 

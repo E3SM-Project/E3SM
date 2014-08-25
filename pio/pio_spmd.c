@@ -203,7 +203,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
     //    if(sndlths[mytask]>3)
     //  printf("%d sndbuf %d %d %d\n",mytask,((long *)ptr)[0],((long *)ptr)[1],((long *)ptr)[2]);
-     printf("%d sndlths %d %d %d %d\n",mytask,sndlths[mytask],sdispls[mytask],rcvlths[mytask],rdispls[mytask]);
+    //     printf("%d sndlths %d %d %d %d\n",mytask,sndlths[mytask],sdispls[mytask],rcvlths[mytask],rdispls[mytask]);
     // printf("%d self sndlths %d %d %d\n",mytask,sndlths[mytask] ,(int) rcvids[0], (int) MPI_REQUEST_NULL);
     CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
     CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);

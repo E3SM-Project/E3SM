@@ -30,7 +30,9 @@ void pio_add_to_file_list(file_desc_t *file)
       }
     cfile->next = file;
   }
-  if(! file->iosystem->ioproc)
+  if(! file->iosystem->ioproc || ((file->iotype != PIO_IOTYPE_PNETCDF &&
+				   file->iotype != PIO_IOTYPE_NETCDF4P)  && 
+				  file->iosystem->io_rank>0)) 
     file->fh = cnt;
   
   cfile = pio_file_list;
