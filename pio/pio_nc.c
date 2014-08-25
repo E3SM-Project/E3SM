@@ -2207,6 +2207,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
 
+
   if(ios->ioproc){
     switch(file->iotype){
 #ifdef _NETCDF
@@ -2233,7 +2234,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-  mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
+    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
 }

@@ -407,7 +407,6 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_get_var_double_all(file->fh, varid,  buf);;
-      //      printf("%s %d %f\n",__FILE__,__LINE__,buf[0]);
       break;
 #endif
     default:
@@ -422,7 +421,6 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
 
   if(ios->async_interface ||  (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
-    //printf("%s %d %d %d %f\n",__FILE__,__LINE__,ibufcnt,ibuftype,buf[0]);
   }
 
   return ierr;
