@@ -581,6 +581,27 @@ sub checkOptions
       $opts{'guessmach'} = $1;
   }
 
+  # Check whether project is set via one of the other supported mechanisms
+  if(! defined $opts{'project'})
+  {
+    if (defined $ENV{'PROJECT'}){
+      $project = $ENV{'PROJECT'};
+    }
+    my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
+    if (-f $ccsm_proj_file){
+      open my $ccsm_proj, '<', $ccsm_proj_file;
+      my $firstline = <$ccsm_proj>;
+      if ($firstline =~ /^\s*(\S*)/){
+        $project = $1;
+      }
+      close $ccsm_proj;
+    }
+    if (defined $project and length $project){
+      $opts{'project'} = $project;
+      Debug("project: $opts{'project'}\n");
+    }
+  }    
+
 # Read options from config_machines.xml
     my $machine = (defined $opts{mach}) ? $opts{mach} : $opts{xml_mach};
 
@@ -598,25 +619,6 @@ sub checkOptions
     if(!defined $opts{'baselineroot'}) {
         $opts{'baselineroot'} = SetupTools::expand_env_var($cfg_ref->get('CCSM_BASELINE'), $cfg_ref);
     }
-    if(! defined $opts{'project'})
-    {
-        if (defined $ENV{'PROJECT'}){
-            $project = $ENV{'PROJECT'};
-	}
-        my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
-        if (-f $ccsm_proj_file){
-            open my $ccsm_proj, '<', $ccsm_proj_file;
-            my $firstline = <$ccsm_proj>;
-            if ($firstline =~ /^\s*(\S*)/){
-               $project = $1;
-            }
-            close $ccsm_proj;
-        }
-        if (defined $project and length $project){
-            $opts{'project'} = $project;
-            Debug("project: $opts{'project'}\n");
-        }
-    }    
     if(! defined $opts{'scratchroot'})
     {
 	$opts{'scratchroot'} = $cfg_ref->get('CESMSCRATCHROOT');
@@ -625,6 +627,18 @@ sub checkOptions
     if(! defined $opts{'sharedlibroot'} && $suitemode)
     {
 	$opts{'sharedlibroot'} = $opts{scratchroot}.'/sharedlibroot.' . $opts{'testid'};
+
+        # When sharedlibroot is passed to create_newcase, anything
+        # that looks like an environment variable gets expanded by the
+        # shell. This is problematic for $PROJECT, which is now a CESM
+        # xml variable: if you don't have a $PROJECT environment
+        # variable defined on machines that use $PROJECT in
+        # $CESMSCRATCHROOT, it will get expanded to ''. To avoid this,
+        # we escape the '$' in '$PROJECT'. (Note: we may want to more
+        # generally escape all instances of '$' in sharedlibroot, but
+        # that might cause its own problems.)                                                                                                                                   
+        $opts{'sharedlibroot'} =~ s/\$PROJECT/\\\$PROJECT/g;
+
 	Debug("sharedlibroot: $opts{'sharedlibroot'}\n");
   }
 
