@@ -7,6 +7,9 @@
 !
 module mpas_io_streams
 
+#define COMMA ,
+#define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) M
+
 #ifdef SINGLE_PRECISION
 #define REAL_IO_TYPE MPAS_IO_REAL
 #else
@@ -65,6 +68,20 @@ module mpas_io_streams
       module procedure MPAS_streamAddField_0dChar
    end interface MPAS_streamAddField
 
+   interface MPAS_streamUpdateField
+      module procedure MPAS_streamUpdateField_0dInteger
+      module procedure MPAS_streamUpdateField_1dInteger
+      module procedure MPAS_streamUpdateField_2dInteger
+      module procedure MPAS_streamUpdateField_3dInteger
+      module procedure MPAS_streamUpdateField_0dReal
+      module procedure MPAS_streamUpdateField_1dReal
+      module procedure MPAS_streamUpdateField_2dReal
+      module procedure MPAS_streamUpdateField_3dReal
+      module procedure MPAS_streamUpdateField_4dReal
+      module procedure MPAS_streamUpdateField_5dReal
+      module procedure MPAS_streamUpdateField_0dChar
+   end interface MPAS_streamUpdateField
+
    interface MPAS_readStreamAtt
       module procedure MPAS_readStreamAtt_0dInteger
       module procedure MPAS_readStreamAtt_1dInteger
@@ -92,7 +109,8 @@ module mpas_io_streams
    ! Error codes
    integer, parameter :: MPAS_STREAM_NOERR              =  0, &
                          MPAS_STREAM_NOT_INITIALIZED    = -1, &
-                         MPAS_IO_ERR                    = -2
+                         MPAS_STREAM_FIELD_NOT_FOUND    = -2, &
+                         MPAS_IO_ERR                    = -3
 
    integer, parameter :: FIELD_0D_INT   =  1, &
                          FIELD_1D_INT   =  2, &
@@ -1586,6 +1604,532 @@ contains
       end if
 
    end subroutine MPAS_streamAddField_generic
+
+
+   subroutine MPAS_streamUpdateField_0dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field0DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 0d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_0D_INT) then
+            if (field_cursor % int0dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 0d integer named '//trim(field_cursor % int0dField % fieldname) )
+               field_cursor % int0dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 0d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_0dInteger
+
+
+   subroutine MPAS_streamUpdateField_1dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field1DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 1d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_1D_INT) then
+            if (field_cursor % int1dField % fieldname == field % fieldname .and. &
+                field_cursor % int1dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % int1dField % dimNames(1) == field % dimNames(1)) then
+               STREAM_DEBUG_WRITE( '... found 1d integer named '//trim(field_cursor % int1dField % fieldname) )
+               field_cursor % int1dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 1d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_1dInteger
+
+
+   subroutine MPAS_streamUpdateField_2dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field2DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 2d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_2D_INT) then
+            if (field_cursor % int2dField % fieldname == field % fieldname .and. &
+                field_cursor % int2dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % int2dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % int2dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % int2dField % dimNames(2) == field % dimNames(2)) then
+               STREAM_DEBUG_WRITE( '... found 2d integer named '//trim(field_cursor % int2dField % fieldname) )
+               field_cursor % int2dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 2d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_2dInteger
+
+
+   subroutine MPAS_streamUpdateField_3dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field3DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 3d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_3D_INT) then
+            if (field_cursor % int3dField % fieldname == field % fieldname .and. &
+                field_cursor % int3dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % int3dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % int3dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % int3dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % int3dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % int3dField % dimNames(3) == field % dimNames(3)) then
+               STREAM_DEBUG_WRITE( '... found 3d integer named '//trim(field_cursor % int3dField % fieldname) )
+               field_cursor % int3dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 3d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_3dInteger
+
+
+   subroutine MPAS_streamUpdateField_0dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field0DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 0d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_0D_REAL) then
+            if (field_cursor % real0dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 0d real named '//trim(field_cursor % real0dField % fieldname) )
+               field_cursor % real0dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 0d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_0dReal
+
+
+   subroutine MPAS_streamUpdateField_1dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field1DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 1d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_1D_REAL) then
+            if (field_cursor % real1dField % fieldname == field % fieldname .and. &
+                field_cursor % real1dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real1dField % dimNames(1) == field % dimNames(1)) then
+               STREAM_DEBUG_WRITE( '... found 1d real named '//trim(field_cursor % real1dField % fieldname) )
+               field_cursor % real1dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 1d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_1dReal
+
+
+   subroutine MPAS_streamUpdateField_2dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field2DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 2d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_2D_REAL) then
+            if (field_cursor % real2dField % fieldname == field % fieldname .and. &
+                field_cursor % real2dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real2dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real2dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real2dField % dimNames(2) == field % dimNames(2)) then
+               STREAM_DEBUG_WRITE( '... found 2d real named '//trim(field_cursor % real2dField % fieldname) )
+               field_cursor % real2dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 2d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_2dReal
+
+
+   subroutine MPAS_streamUpdateField_3dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field3DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 3d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_3D_REAL) then
+            if (field_cursor % real3dField % fieldname == field % fieldname .and. &
+                field_cursor % real3dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real3dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real3dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % real3dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real3dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % real3dField % dimNames(3) == field % dimNames(3)) then
+               STREAM_DEBUG_WRITE( '... found 3d real named '//trim(field_cursor % real3dField % fieldname) )
+               field_cursor % real3dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 3d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_3dReal
+
+
+   subroutine MPAS_streamUpdateField_4dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field4DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 4d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_4D_REAL) then
+            if (field_cursor % real4dField % fieldname == field % fieldname .and. &
+                field_cursor % real4dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real4dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real4dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % real4dField % dimSizes(4) == field % dimSizes(4) .and. &
+                field_cursor % real4dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real4dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % real4dField % dimNames(3) == field % dimNames(3) .and. &
+                field_cursor % real4dField % dimNames(4) == field % dimNames(4)) then
+               STREAM_DEBUG_WRITE( '... found 4d real named '//trim(field_cursor % real4dField % fieldname) )
+               field_cursor % real4dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 4d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_4dReal
+
+
+   subroutine MPAS_streamUpdateField_5dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field5DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 5d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_5D_REAL) then
+            if (field_cursor % real5dField % fieldname == field % fieldname .and. &
+                field_cursor % real5dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real5dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real5dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % real5dField % dimSizes(4) == field % dimSizes(4) .and. &
+                field_cursor % real5dField % dimSizes(5) == field % dimSizes(5) .and. &
+                field_cursor % real5dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real5dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % real5dField % dimNames(3) == field % dimNames(3) .and. &
+                field_cursor % real5dField % dimNames(4) == field % dimNames(4) .and. &
+                field_cursor % real5dField % dimNames(5) == field % dimNames(5)) then
+               STREAM_DEBUG_WRITE( '... found 5d real named '//trim(field_cursor % real5dField % fieldname) )
+               field_cursor % real5dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 5d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_5dReal
+
+
+   subroutine MPAS_streamUpdateField_0dChar(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field0DChar), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 0d char field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_0D_CHAR) then
+            if (field_cursor % char0dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 0d char named '//trim(field_cursor % char0dField % fieldname) )
+               field_cursor % char0dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 0d char field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_0dChar
 
 
    subroutine MPAS_readStream(stream, frame, ierr)
