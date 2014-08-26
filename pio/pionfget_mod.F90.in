@@ -357,6 +357,7 @@ CONTAINS
 
 ! TYPE int,real,double
   integer function get_vara_{TYPE}_internal  (ncid,varid, start, count, ival) result(ierr)
+    use pio_nf, only : pio_inq_varndims
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     integer, intent(in) :: start(:)
@@ -365,7 +366,7 @@ CONTAINS
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i, ndims
 
-    ndims = size(start)
+    ierr = pio_inq_varndims(ncid,varid, ndims)
     allocate(cstart(ndims),ccount(ndims))
     do i=1,ndims
        cstart(i) = start(ndims-i+1)-1
@@ -378,6 +379,7 @@ CONTAINS
   end function get_vara_{TYPE}_internal
 
   integer function get_vara_text_internal  (ncid,varid, start, count, nstrs, ival) result(ierr)
+    use pio_nf, only : pio_inq_varndims
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     integer, intent(in) :: start(:)
@@ -388,7 +390,7 @@ CONTAINS
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i, ndims
 
-    ndims = size(start)
+    ierr = pio_inq_varndims(ncid,varid, ndims)
     allocate(cstart(ndims),ccount(ndims))
     do i=1,ndims
        cstart(i) = start(ndims-i+1)-1

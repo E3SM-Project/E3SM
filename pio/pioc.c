@@ -65,8 +65,9 @@ int PIOc_setframe(const int ncid, const int varid,const int frame)
 {
   file_desc_t *file;
   file = pio_get_file_from_id(ncid);
-  if(file == NULL)
+  if(file == NULL || varid<0 || varid>=PIO_MAX_VARS){
     return PIO_EBADID;
+  }
 
   file->varlist[varid].record = frame;
 
