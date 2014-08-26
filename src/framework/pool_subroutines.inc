@@ -4445,16 +4445,16 @@
       character (len=*), intent(in) :: key
       real (kind=RKIND), pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
-	  if ( present(record) ) then
+      if ( present(record) ) then
          call mpas_pool_get_subpool(inPool, record, recordPool)
          mem => pool_get_member(recordPool, key, MPAS_POOL_CONFIG)
       else
          mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
-	  end if
+      end if
 
       if (associated(mem)) then
          if (mem % contentsType /= MPAS_POOL_REAL) then
@@ -4487,7 +4487,7 @@
       character (len=*), intent(in) :: key
       integer, pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
@@ -4529,7 +4529,7 @@
       character (len=*), intent(in) :: key
       character (len=StrKIND), pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
@@ -4572,7 +4572,7 @@
       character (len=*), intent(in) :: key
       logical, pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
@@ -4945,7 +4945,12 @@
       type (mpas_pool_data_type), pointer :: mem
 
       !todo: if configs are pointers when being added, don't deallocate when removing.
-      mem = pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+      mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+
+      if (.not. associated(mem)) then
+         call pool_mesg('Error: Config '//trim(key)//' not found in pool.')
+         return
+      end if
 
       if (mem % contentsType == MPAS_POOL_REAL) then
          deallocate(mem % simple_real)
@@ -4984,7 +4989,12 @@
       type (mpas_pool_data_type), pointer :: mem
 
       !todo: if dimensions are pointers when being added, don't deallocate when removing.
-      mem = pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
+      mem => pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
+
+      if (.not. associated(mem)) then
+         call pool_mesg('Error: Dimension '//trim(key)//' not found in pool.')
+         return
+      end if
 
       if (mem % contentsDims == 0) then
          deallocate(mem % simple_int)
