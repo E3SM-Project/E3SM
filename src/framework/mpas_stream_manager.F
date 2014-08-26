@@ -1,12 +1,15 @@
 module mpas_stream_manager
 
-#define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) (M)
+#define COMMA ,
+#define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) M
 
     use mpas_kind_types
     use mpas_grid_types
     use mpas_timekeeping
     use mpas_io_units
     use mpas_io_streams
+    use mpas_stream_list
+
 
     integer, public, parameter :: MPAS_STREAM_ERR_FATAL  = 1000, &
                                   MPAS_STREAM_ERR_WARN   = 1001, &
@@ -1310,7 +1313,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_stream_mgr_create_stream
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_create_stream
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -1348,7 +1351,11 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
     end if
 
-    ierr_c = ierr
+    if (ierr == MPAS_STREAM_MGR_NOERR) then
+        ierr_c = 0
+    else
+        ierr_c = 1
+    end if
 
 end subroutine stream_mgr_create_stream_c !}}}
 
@@ -1357,7 +1364,7 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_stream_mgr_add_field
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_field
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -1378,7 +1385,11 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
 
     call MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)
 
-    ierr_c = ierr
+    if (ierr == MPAS_STREAM_MGR_NOERR) then
+        ierr_c = 0
+    else
+        ierr_c = 1
+    end if
 
 end subroutine stream_mgr_add_field_c
 
@@ -1387,8 +1398,8 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_stream_mgr_get_clock, &
-                                    MPAS_stream_mgr_add_alarm
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, &
+                                    MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
     use mpas_kind_types, only : StrKIND
     use mpas_timekeeping, only : MPAS_Clock_type, MPAS_START_TIME, MPAS_Time_type, MPAS_TimeInterval_type, mpas_add_clock_alarm, &
                                  mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
@@ -1454,6 +1465,10 @@ write(0,*) '   Interval: '//trim(alarmInterval)
 
     call MPAS_stream_mgr_add_alarm(manager, streamID, alarmID, idirection, ierr=ierr)
 
-    ierr_c = ierr
+    if (ierr == MPAS_STREAM_MGR_NOERR) then
+        ierr_c = 0
+    else
+        ierr_c = 1
+    end if
 
 end subroutine stream_mgr_add_alarm_c
