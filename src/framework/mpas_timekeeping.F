@@ -553,6 +553,43 @@ module mpas_timekeeping
 
 
 
+    !-----------------------------------------------------------------------
+    !  routine mpas_is_alarm_defined
+    !
+    !> \brief Check whether an alarm has been defined on a clock
+    !> \author Michael Duda
+    !> \date   26 August 2014
+    !> \details
+    !>  For a specified clock and alarm ID, checks whether that alarm ID has
+    !>  been defined on the clock and returns the result.
+    !
+    !-----------------------------------------------------------------------
+   logical function mpas_is_alarm_defined(clock, alarmID, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      integer, intent(out) :: ierr
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      ierr = 0
+      mpas_is_alarm_defined = .false.
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            mpas_is_alarm_defined = .true.
+            return
+         end if
+         alarmPtr => alarmPtr % next 
+      end do
+
+   end function mpas_is_alarm_defined
+
+
+
    subroutine mpas_print_alarm(clock, alarmID, ierr)
 
       implicit none
