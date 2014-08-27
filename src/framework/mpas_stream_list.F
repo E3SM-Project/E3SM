@@ -21,13 +21,15 @@ module mpas_stream_list
         type (MPAS_stream_list_type), pointer :: head => null()
 
         ! Used by streams
+        integer :: direction
         logical :: valid = .false.
         character(len=StrKIND) :: filename
         character(len=StrKIND) :: filename_template
-        type (MPAS_Stream_type) :: stream
+        type (MPAS_Stream_type), pointer :: stream => null()
         integer :: maxRecords
         integer :: nRecords
-        type (MPAS_stream_list_type), pointer :: alarmList => null()
+        type (MPAS_stream_list_type), pointer :: alarmList_in => null()
+        type (MPAS_stream_list_type), pointer :: alarmList_out => null()
         type (mpas_pool_type), pointer :: att_pool => null()
         type (mpas_pool_type), pointer :: field_pool => null()
 
@@ -128,12 +130,12 @@ module mpas_stream_list
     !>  Adds a stream to the list of streams, first makes sure the stream doesn't exist in the stream list.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_list_insert(list, streamName, ierr) !{{{
+    subroutine MPAS_stream_list_insert(list, stream, ierr) !{{{
 
         implicit none
 
         type (MPAS_stream_list_type), intent(inout) :: list
-        character (len=*), intent(in) :: streamName
+        type (MPAS_stream_list_type), pointer :: stream
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: node
@@ -143,26 +145,24 @@ module mpas_stream_list
 
         if (present(ierr)) ierr = MPAS_STREAM_LIST_NOERR
 
+        nullify(stream % next)
+
         if (.not. associated(list % head)) then
-            allocate(list % head)
-            node => list % head
+            list % head => stream
         else
             node => list % head
             do while (associated(node % next))
-                if (node % name == streamName) then
+                if (node % name == stream % name) then
                     if (present(ierr)) ierr = MPAS_STREAM_LIST_DUPLICATE
-                    LIST_DEBUG_WRITE(' -- Found duplicate item '//trim(streamName)//' in list.')
+                    LIST_DEBUG_WRITE(' -- Found duplicate item '//trim(stream % name)//' in list.')
                     return
                 end if
                 node => node % next
             end do
-            allocate(node % next)
-            node => node % next
+            node % next => stream
         end if
 
         list % nItems = list % nItems + 1
-        nullify(node % next)
-        node % name = streamName
 
     end subroutine MPAS_stream_list_insert !}}}
 
@@ -177,12 +177,13 @@ module mpas_stream_list
     !>  Removes a stream from the list of streams. Exits if the stream doesn't exist.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_list_remove(list, streamName, ierr) !{{{
+    subroutine MPAS_stream_list_remove(list, streamName, stream, ierr) !{{{
 
         implicit none
 
         type (MPAS_stream_list_type), intent(inout) :: list
         character (len=*), intent(in) :: streamName
+        type (MPAS_stream_list_type), pointer :: stream
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: node, nodePrev
@@ -196,6 +197,7 @@ module mpas_stream_list
         if ( list % nItems == 0 ) then
             if (present(ierr)) ierr = MPAS_STREAM_LIST_NOT_FOUND
             LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+            nullify(stream)
             return
         end if
 
@@ -204,7 +206,7 @@ module mpas_stream_list
         if (associated(node)) then
             if (node % name == streamName) then
                 list % head => node % next
-                deallocate(node)
+                stream => node
                 list % nItems = list % nItems - 1
                 return
             end if
@@ -216,7 +218,7 @@ module mpas_stream_list
         do while (associated(node))
             if (node % name == streamName) then
                 nodePrev % next => node % next
-                deallocate(node)
+                stream => node
                 list % nItems = list % nItems - 1
                 return
             end if
@@ -228,6 +230,7 @@ module mpas_stream_list
         ! If the routine hasn't returned yet, the stream was not found. Return an error.
         if (present(ierr)) ierr = MPAS_STREAM_LIST_NOT_FOUND
         LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+        nullify(stream)
 
     end subroutine MPAS_stream_list_remove !}}}
 
@@ -242,12 +245,13 @@ module mpas_stream_list
     !>  Searches through a stream list, and returns a pointer for the stream with a matching name.
     !
     !-----------------------------------------------------------------------
-    logical function MPAS_stream_list_query(list, streamName, ierr) result(found) !{{{
+    logical function MPAS_stream_list_query(list, streamName, stream, ierr) result(found) !{{{
 
         implicit none
 
         type (MPAS_stream_list_type), intent(in) :: list
         character (len=*), intent(in) :: streamName
+        type (MPAS_stream_list_type), pointer :: stream
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: node
@@ -260,6 +264,8 @@ module mpas_stream_list
 
         ! Return if no streams exist in stream list
         if ( list % nItems == 0 ) then
+            LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+            nullify(stream)
             return
         end if
 
@@ -267,12 +273,14 @@ module mpas_stream_list
         do while (associated(node))
             if (node % name == streamName) then
                 found = .true.
+                stream => node
                 return
             end if
             node => node % next
         end do
 
         LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+        nullify(stream)
 
     end function MPAS_stream_list_query !}}}
 
@@ -293,8 +301,6 @@ module mpas_stream_list
 
         type (MPAS_stream_list_type), intent(in) :: list
         integer, intent(out), optional :: ierr
-
-        type (MPAS_stream_list_type), pointer :: node
 
 
         LIST_DEBUG_WRITE(' -- Called MPAS_stream_list_length()')
