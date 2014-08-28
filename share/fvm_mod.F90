@@ -60,7 +60,7 @@ contains
   !
   !**************************************************************************************
   !  
-  subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+  subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
     ! ---------------------------------------------------------------------------------  
@@ -74,7 +74,8 @@ contains
     ! -----------------------------------------------
     use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
          initghostbufferTR,freeghostbuffertr
-    
+    use control_mod, only : qsplit
+    use time_mod   , only : TimeLevel_Qdp
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -83,6 +84,7 @@ contains
     integer, intent(in)                         :: nets  ! starting thread element number (private)
     integer, intent(in)                         :: nete  ! ending thread element number   (private)
     real (kind=real_kind)                       :: tstep
+    real (kind=real_kind), intent(in)           :: p_top
     
     integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
     type (TimeLevel_t)                          :: tl              ! time level struct
@@ -100,7 +102,7 @@ contains
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
     
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nc:nc+nhc)        :: tracer_air0   
-    integer (kind=int_kind) :: itmp, jtmp
+    integer (kind=int_kind) :: n0_fvm, np1_fvm
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_air
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_tracer
     real (kind=real_kind) :: q0,q1,rho0,rho1,area,diff_dbg 
@@ -112,22 +114,24 @@ contains
 !xx    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     
     call t_startf('ff-cslam scheme') 
-
+    
+    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
-!       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
+       !       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
     end do
     !
     ! fill halo for dp_fvm and c
     !
     do ie=nets,nete
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
        ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
        ! the reconstruction and following evaluation of reconstruction function on lat-lon points
+       !
     end do
     call t_startf('FVM Communication')
     call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
@@ -135,30 +139,30 @@ contains
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
-
+    
     jall_max=0
     do ie=nets, nete
        do k=1,nlev
           !
           ! zero velocity - for debugging
           !
-!          if (fvm(ie)%cubeboundary > 0) then
-!             do j=1,nc+1                                                                             
-!                do i=1,nc+1                                                                              
-!                   if (i==1.or.j==1.or.i==nc+1.or.j==nc+1) then
-!                      fvm%dsphere(i,j,k)=fvm%asphere(i,j) !zero velocity
-!                   end if
-!                end do
-!             end do
-!          end if
-
+          !          if (fvm(ie)%cubeboundary > 0) then
+          !             do j=1,nc+1                                                                             
+          !                do i=1,nc+1                                                                              
+          !                   if (i==1.or.j==1.or.i==nc+1.or.j==nc+1) then
+          !                      fvm%dsphere(i,j,k)=fvm%asphere(i,j) !zero velocity
+          !                   end if
+          !                end do
+          !             end do
+          !          end if
+          
           call compute_weights_fluxform(fvm(ie),6,weights_all_flux,weights_eul_index_all_flux, &
-             weights_lgr_index_all_flux,k,jall)
-
+               weights_lgr_index_all_flux,k,jall)
+          
           if (jall(1)>num_weights_flux) then
              write(*,*) "jall(1)>num_weights_flux"
              stop
@@ -167,8 +171,8 @@ contains
              write(*,*) "jall(2)>num_weights_flux"
              stop
           endif
-
-          tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
+          
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,n0_fvm)       
           call reconstruction(tracer_air0, fvm(ie),recons)
           !
           ! limiter is usually not needed for air mass
@@ -190,7 +194,8 @@ contains
           !
           do j=1,nc
              do i=1,nc
-                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
+!                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
+                fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
                 !
@@ -213,7 +218,8 @@ contains
           !loop through all tracers
           !
           do itr=1,ntrac
-             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+!             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+             tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
 !             recons=0.0
@@ -229,9 +235,9 @@ contains
              !
              do j=1,nc
                 do i=1,nc
-                   q0   = fvm(ie)%c(i,j,k,itr,tl%n0)
-                   rho0 = fvm(ie)%dp_fvm(i,j,k,tl%n0)
-                   rho1 = fvm(ie)%dp_fvm(i,j,k,tl%np1)
+                   q0   = fvm(ie)%c(i,j,k,itr,n0_fvm)
+                   rho0 = fvm(ie)%dp_fvm(i,j,k,n0_fvm)
+                   rho1 = fvm(ie)%dp_fvm(i,j,k,np1_fvm)
                    area = fvm(ie)%area_sphere(i,j)
                    !
                    q1=q0*rho0-(&  
@@ -241,11 +247,20 @@ contains
                         flux_air(i  ,j+1,2)*flux_tracer(i  ,j+1,2)-&
                         flux_air(i  ,j  ,2)*flux_tracer(i  ,j  ,2)&
                         )/area
-                   fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
+!                   fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
+                   fvm(ie)%c(i,j,k,itr,np1_fvm)=q1/rho1
                 end do
              end do
           enddo  !End Tracer
        end do  !End Level
+       !
+       ! Compute surface pressure implied by fvm
+       !
+       do j=1,nc
+          do i=1,nc
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  p_top
+          end do
+       end do
        !fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)=fvm(ie)%div_fvm !dbg
        !note write tl%np1 in buffer
 !phl       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
@@ -410,7 +425,7 @@ contains
 
 
   ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
-  subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+  subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_mod, only: compute_weights
     ! ---------------------------------------------------------------------------------  
@@ -423,7 +438,9 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
     use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
-    
+    use control_mod, only : qsplit
+    use time_mod   , only : TimeLevel_Qdp    
+
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -432,6 +449,7 @@ contains
     integer, intent(in)                         :: nets  ! starting thread element number (private)
     integer, intent(in)                         :: nete  ! ending thread element number   (private)
     real (kind=real_kind)                       :: tstep
+    real (kind=real_kind), intent(in)           :: p_top
     
     integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
     type (TimeLevel_t)                          :: tl              ! time level struct
@@ -449,12 +467,14 @@ contains
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
     real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
+    integer (kind=int_kind) :: n0_fvm, np1_fvm
 
     type (ghostBuffertr_t)                      :: buflatlon
 
     call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     call t_startf('cslam scheme') 
 
+    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -482,8 +502,8 @@ contains
     ! fill halo for dp_fvm and c
     !
     do ie=nets,nete
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
        ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
        ! the reconstruction and following evaluation of reconstruction function on lat-lon points
@@ -494,8 +514,8 @@ contains
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,tl%n0), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,tl%n0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
 
@@ -506,7 +526,7 @@ contains
           !-Departure fvm Meshes, initialization done                                                               
           call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
                weights_lgr_index_all,k,jall)     
-          tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)     
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,n0_fvm)     
           call reconstruction(tracer_air0, fvm(ie),recons_air)
 !          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
           tracer_air1=0.0D0   
@@ -516,12 +536,12 @@ contains
           do j=1,nc
              do i=1,nc
                 tracer_air1(i,j)=tracer_air1(i,j)/fvm(ie)%area_sphere(i,j)
-                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air1(i,j)
+                fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air1(i,j)
              end do
           end do
           !loop through all tracers
           do itr=1,ntrac
-             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+             tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
              tracer1=0.0D0   
@@ -532,13 +552,23 @@ contains
              ! finish scheme
              do j=1,nc
                 do i=1,nc
-                   fvm(ie)%c(i,j,k,itr,tl%np1)= &
+                   fvm(ie)%c(i,j,k,itr,np1_fvm)= &
                         (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
-                   !             fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+                   !             fvm(ie)%c(i,j,k,itr,np1_fvm)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
                 end do
              end do
           enddo  !End Tracer
        end do  !End Level
+
+       !
+       ! Compute surface pressure implied by fvm
+       !
+       do j=1,nc
+          do i=1,nc
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  p_top
+          end do
+       end do
+
        !note write tl%np1 in buffer                                                                 
 
 !       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)

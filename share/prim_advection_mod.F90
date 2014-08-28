@@ -1171,9 +1171,9 @@ contains
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
     if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
-      call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete,hvcoord%hyai(1)*hvcoord%ps0)
     else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,hvcoord%hyai(1)*hvcoord%ps0)
     else
       call abortmp('Bad tracer_transport_type in Prim_Advec_Tracers_fvm')
     end if
@@ -3020,10 +3020,10 @@ end subroutine ALE_parametric_coords
         if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
             tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
            !
-           ! Recompute dp_fvm (this will not be necessary when SE fluxes are coded
+           ! Recompute dp_fvm (this will not be necessary when SE fluxes are coded)
            !
            do k = 1, nlev
-              fvm(ie)%dp_fvm(1:nc,1:nc,k,np1)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
+              fvm(ie)%dp_fvm(1:nc,1:nc,k,np1_qdp)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
            end do
            !
            !
@@ -3032,24 +3032,24 @@ end subroutine ALE_parametric_coords
               do j=1,nc
                  !
                  ! compute surface pressure implied by fvm scheme: psC
-                 psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+                 psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1_qdp)) +  hvcoord%hyai(1)*hvcoord%ps0
                  !
                  ! compute source (cdp) and target (dpc) pressure grids for vertical remapping
                  !
                  do k=1,nlev
                     dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                          (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-                    cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1)*fvm(ie)%dp_fvm(i,j,k,np1)
+                    cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1_qdp)*fvm(ie)%dp_fvm(i,j,k,np1_qdp)
                  end do
               end do
            end do
-           dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1)
+           dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1_qdp)
            call remap1(cdp,nc,ntrac,dpc_star,dpc)
            do k=1,nlev
               do j=1,nc
                  do i=1,nc
-                    fvm(ie)%dp_fvm(i,j,k,np1)=dpc(i,j,k) !!XXgoldyXX??
-                    fvm(ie)%c(i,j,k,1:ntrac,np1)=cdp(i,j,k,1:ntrac)/dpc(i,j,k)
+                    fvm(ie)%dp_fvm(i,j,k,np1_qdp)=dpc(i,j,k) !!XXgoldyXX??
+                    fvm(ie)%c(i,j,k,1:ntrac,np1_qdp)=cdp(i,j,k,1:ntrac)/dpc(i,j,k)
                  end do
               end do
            end do
