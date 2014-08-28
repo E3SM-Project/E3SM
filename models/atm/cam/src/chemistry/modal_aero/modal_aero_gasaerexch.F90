@@ -34,9 +34,8 @@
   integer, public :: lspecfrm_pcage(maxspec_pcage)
   integer, public :: lspectoo_pcage(maxspec_pcage)
 
+  real(r8), parameter, public :: n_so4_monolayers_pcage = 8.0_r8
 
-! real(r8), parameter, public :: n_so4_monolayers_pcage = 1.0_r8
-  real(r8), parameter, public :: n_so4_monolayers_pcage = 3.0_r8
 ! number of so4(+nh4) monolayers needed to "age" a carbon particle
 
   real(r8), parameter, public :: &
@@ -457,6 +456,7 @@ implicit none
 !   due to simple gas uptake
         pdel_fac = pdel(i,k)/gravit
         sum_dqdt_nh4_b = 0.0_r8
+        dqdt_nh4(:) = 0._r8
         do n = 1, ntot_amode
             dqdt_so4(n) = fgain_so4(n)*(sum_dqdt_so4 + sum_dqdt_msa)
  

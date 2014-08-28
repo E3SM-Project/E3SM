@@ -249,30 +249,36 @@ subroutine modal_aer_opt_init()
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
   end if
+  !BSINGH - Added for MAM4 simulations
+  if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then
+     call addfld ('AODDUST4','  ',1,    'A','Aerosol optical depth 550 nm model 4 from dust',phys_decomp, flag_xyfill=.true.)     
+     call addfld ('AODMODE4','  ',1,    'A','Aerosol optical depth 550 nm mode 4',phys_decomp, flag_xyfill=.true.)
+     call addfld ('BURDEN4','kg/m2',1,    'A','Aerosol burden mode 4',phys_decomp, flag_xyfill=.true.)
 
-   if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then
-      call addfld ('AODDUST4','  ',1,    'A','Aerosol optical depth 550 nm model 4 from dust',phys_decomp, flag_xyfill=.true.)
+     if (history_aero_optics) then
+        call add_default ('AODDUST4', 1, ' ')
+        call add_default ('AODMODE4', 1, ' ')
+        call add_default ('BURDEN4' , 1, ' ')
+     end if
+  end if
+  !BSINGH - Added for MAM4 simulations - ENDS
+   if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then      
       call addfld ('AODDUST5','  ',1,    'A','Aerosol optical depth 550 nm model 5 from dust',phys_decomp, flag_xyfill=.true.)
       call addfld ('AODDUST6','  ',1,    'A','Aerosol optical depth 550 nm model 6 from dust',phys_decomp, flag_xyfill=.true.)
       call addfld ('AODDUST7','  ',1,    'A','Aerosol optical depth 550 nm model 7 from dust',phys_decomp, flag_xyfill=.true.)
-      call addfld ('AODMODE4','  ',1,    'A','Aerosol optical depth 550 nm mode 4',phys_decomp, flag_xyfill=.true.)
       call addfld ('AODMODE5','  ',1,    'A','Aerosol optical depth 550 nm mode 5',phys_decomp, flag_xyfill=.true.)
       call addfld ('AODMODE6','  ',1,    'A','Aerosol optical depth 550 nm mode 6',phys_decomp, flag_xyfill=.true.)
       call addfld ('AODMODE7','  ',1,    'A','Aerosol optical depth 550 nm mode 7',phys_decomp, flag_xyfill=.true.)
-      call addfld ('BURDEN4','kg/m2',1,    'A','Aerosol burden mode 4',phys_decomp, flag_xyfill=.true.)
       call addfld ('BURDEN5','kg/m2',1,    'A','Aerosol burden mode 5',phys_decomp, flag_xyfill=.true.)
       call addfld ('BURDEN6','kg/m2',1,    'A','Aerosol burden mode 6',phys_decomp, flag_xyfill=.true.)
       call addfld ('BURDEN7','kg/m2',1,    'A','Aerosol burden mode 7',phys_decomp, flag_xyfill=.true.)
       if (history_aero_optics) then 
-         call add_default ('AODDUST4', 1, ' ')
          call add_default ('AODDUST5', 1, ' ')
          call add_default ('AODDUST6', 1, ' ')
-         call add_default ('AODDUST7', 1, ' ')
-         call add_default ('AODMODE4', 1, ' ')
+         call add_default ('AODDUST7', 1, ' ')        
          call add_default ('AODMODE5', 1, ' ')
          call add_default ('AODMODE6', 1, ' ')
-         call add_default ('AODMODE7', 1, ' ')
-         call add_default ('BURDEN4', 1, ' ')
+         call add_default ('AODMODE7', 1, ' ')         
          call add_default ('BURDEN5', 1, ' ')
          call add_default ('BURDEN6', 1, ' ')
          call add_default ('BURDEN7', 1, ' ')

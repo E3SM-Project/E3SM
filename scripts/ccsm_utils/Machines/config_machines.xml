@@ -390,7 +390,7 @@
          <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/dtemp/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_BASELINE>/dtemp/$CCSMUSER/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>showq</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>

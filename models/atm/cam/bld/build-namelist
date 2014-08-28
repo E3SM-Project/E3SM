@@ -1038,6 +1038,7 @@ if ($prescribed_aero_model eq 'modal' or $chem =~ /_mam/) {$aer_model = 'mam';}
 if ($aer_model eq 'mam' ) {
 
   my $aero_modes = '3mode';
+  if ($chem =~ /_mam4/) {$aero_modes = '4mode';}
   if ($chem =~ /_mam7/) {$aero_modes = '7mode';}
 
   my @mode_names;
@@ -1093,7 +1094,47 @@ if ($aer_model eq 'mam' ) {
 	    [qw(N N N)],
 	    );
     }
-  } else { 
+  } elsif($aero_modes eq '4mode') {
+      # For 4 modes
+
+    # MAM rad_climate settings.  The externally mixed quantities in the modal aerosol
+    # model are the modes.
+    push @aero_names, qw(mam4_mode1 mam4_mode2 mam4_mode3 mam4_mode4);
+    push @aerosources, qw(M: M: M: M:);
+  
+    # Each of the mode names put into the @aero_names array needs to be defined.
+    @mode_names    = qw(mam4_mode1 mam4_mode2 mam4_mode3 mam4_mode4);
+    @mode_types    = qw(accum aitken coarse primary_carbon);
+    @mode_num      = qw(num_a1 num_a2 num_a3 num_a4);
+    @mode_num_cw   = qw(num_c1 num_c2 num_c3 num_c4);
+    @mode_spec     = (
+	[qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1)],
+	[qw(so4_a2 soa_a2 ncl_a2)],
+	[qw(dst_a3 ncl_a3 so4_a3)],
+	[qw(pom_a4 bc_a4)],
+	);
+    @mode_spec_type = (
+	[qw(sulfate p-organic s-organic black-c dust seasalt)],
+	[qw(sulfate s-organic seasalt)],
+	[qw(dust seasalt sulfate)],
+	[qw(p-organic black-c)],
+	);
+    @mode_spec_cw  = (
+	[qw(so4_c1 pom_c1 soa_c1 bc_c1 dst_c1 ncl_c1)],
+	[qw(so4_c2 soa_c2 ncl_c2)],
+	[qw(dst_c3 ncl_c3 so4_c3)],
+	[qw(pom_c4 bc_c4)],
+	);
+      
+    @mode_num_src  = qw(A A A A);
+    @mode_spec_src = (
+	[qw(A A A A A A)],
+	[qw(A A A)],
+	[qw(A A A)],
+	[qw(A A)],
+	);
+     
+  } elsif($aero_modes eq '7mode') { 
 
     # For 7 modes
 
@@ -2151,7 +2192,93 @@ if ($chem eq 'waccm_mozart_mam3') {
     }
 
 }
+if ($chem eq 'trop_mam4') {
 
+    my %species;
+
+    # Surface emission datasets:
+    %species = ();
+    %species = ('DMS       -> ' => 'dms_emis_file',
+                'SO2       -> ' => 'so2_emis_file',
+                'SOAG      -> ' => 'soag_emis_file',
+                'bc_a4     -> ' => 'bc_a4_emis_file',
+                'pom_a4    -> ' => 'pom_a4_emis_file',
+                'so4_a1    -> ' => 'so4_a1_emis_file',
+                'so4_a2    -> ' => 'so4_a2_emis_file',
+                'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                'num_a2    -> ' => 'num_a2_emis_file',
+                'num_a4    -> ' => 'mam7_num_a3_emis_file',
+        );
+    my %verhash = ('ver'=>'mam');
+    my $first = 1;
+    my $pre = "";
+    my $val = "";
+    foreach my $id (sort keys %species) {
+        my $rel_filepath = get_default_value($species{$id}, \%verhash);
+        my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+        $val .= $pre . quote_string($id . $abs_filepath);
+        if ($first) {
+            $pre = ",";
+            $first = 0;
+        }
+    }
+    add_default($nl, 'srf_emis_specifier', 'val'=>$val);
+    unless (defined $nl->get_value('srf_emis_type')) {
+	add_default($nl, 'srf_emis_type',      'val'=>'CYCLICAL');
+	add_default($nl, 'srf_emis_cycle_yr',  'val'=>2000);
+    }
+
+    # Vertical emission datasets:
+    %species = ();
+    %species = ('SO2         -> ' => 'so2_ext_file',
+                'so4_a1      -> ' => 'so4_a1_ext_file',
+                'so4_a2      -> ' => 'so4_a2_ext_file',
+                'pom_a4      -> ' => 'pom_a4_ext_file',
+                'bc_a4       -> ' => 'bc_a4_ext_file',
+                'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                'num_a2      -> ' => 'num_a2_ext_file',
+                'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    $first = 1;
+    $pre = "";
+    $val = "";
+    foreach my $id (sort keys %species) {
+        my $rel_filepath = get_default_value($species{$id}, \%verhash);
+        my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+        $val .= $pre . quote_string($id . $abs_filepath);
+        if ($first) {
+            $pre = ",";
+            $first = 0;
+        }
+    }
+    add_default($nl, 'ext_frc_specifier', 'val'=>$val);
+    unless (defined $nl->get_value('ext_frc_type')) {
+	add_default($nl, 'ext_frc_type',      'val'=>"'CYCLICAL'");
+	add_default($nl, 'ext_frc_cycle_yr',  'val'=>2000);
+    }
+
+    # Prescribed species
+    add_default($nl, 'tracer_cnst_specifier', 'val'=>"'O3','OH','NO3','HO2'");
+    unless (defined $nl->get_value('tracer_cnst_type')) {
+        add_default($nl, 'tracer_cnst_type',    'ver'=>'fixed_ox');
+        add_default($nl, 'tracer_cnst_cycle_yr','ver'=>'fixed_ox');
+    }
+
+    my @files = ('tracer_cnst_datapath', 'tracer_cnst_file', 'tracer_cnst_filelist');
+    foreach my $file (@files) {
+        add_default($nl, $file, 'ver'=>'fixed_ox');
+    }
+
+    add_default($nl, 'fstrat_list', 'val'=>"' '");
+    add_default($nl, 'flbc_list', 'val'=>"' '");
+    add_default($nl, 'xactive_prates', 'val'=>'.false.');
+
+    # Datasets
+    my @files = ('soil_erod_file',
+                 'xs_long_file', 'rsf_file', 'exo_coldens_file' );
+    foreach my $file (@files) {
+        add_default($nl, $file);
+    }
+}
 if ($chem eq 'trop_mam7') {
 
     my %species;
@@ -2441,6 +2568,10 @@ if ($chem eq 'waccm_mozart_sulfur') {
 }
 
 $nl->set_variable_value('phys_ctl_nl', 'cam_chempkg', $cam_chempkg);
+
+#BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag 
+#This flag is kept to test b4b with the default code(this must be REMOVED when this branch merge into master)
+add_default($nl,'fix_g1_err_ndrop','val'=>'.false.');
 
 # Deep convection scheme
 add_default($nl, 'deep_scheme');
@@ -3561,7 +3692,7 @@ sub create_mode_defs {
 
     # number of modes
     my $nmodes = scalar(@$names);
-
+    my $aero_modes = "${nmodes}mode";
     for (my $m=0; $m < $nmodes; ++$m) {
 
 	# initial mode definition string
@@ -3587,7 +3718,9 @@ sub create_mode_defs {
 
 	    # get default properties file
 	    my $spec_name = $spec->[$m][$i];
-	    my $rel_filepath = get_default_value("mam_$spec_name");
+	    my %aero_modes_hash = ('mam'=>$aero_modes); 
+	    (my $constituent = $spec_name) =~ s/_.*//;
+	    my $rel_filepath = get_default_value("mam_${constituent}",\%aero_modes_hash);
 	    my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
 
  	    # add species info. the source of the mixing ratio

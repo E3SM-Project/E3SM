@@ -2703,6 +2703,12 @@ Default: 1
 Switch for diagnostic output used primarily for WACCM runs.
 Default: .true. if WACCM physics is on, .false. otherwise.
 </entry>
+<!-- Bug fix flags -->
+<entry id="fix_g1_err_ndrop" type="logical"  category="bugfixes"
+       group="phys_ctl_nl" valid_values=".true.,.false.,.TRUE.,.FALSE." >
+Switch to fix a bug in ndrop.F90 for "repeated g1 eqn".
+Default: .false. 
+
 
 <!-- Radiation -->
 <entry id="radiation_scheme" type="char*16" category="radiation"

@@ -31,6 +31,11 @@ contains
          'num_a4  ', 'num_a5  ', 'num_a6  ', 'num_a7  ' /)
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', 'num_c3  ', &
          'num_c4  ', 'num_c5  ', 'num_c6  ', 'num_c7  ' /)
+#elif ( defined MODAL_AERO_4MODE ) 
+    character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
+         'num_a3  ', 'num_a4  ' /)
+    character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', &
+         'num_c3  ', 'num_c4  ' /)
 #elif ( defined MODAL_AERO_3MODE )
     character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
          'num_a3  ' /)
@@ -57,7 +62,7 @@ contains
             'pom_c1  ', 'soa_c1  ', 'bc_c1   ', 'ncl_c1  ' /)
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ' /)
-#elif ( defined MODAL_AERO_3MODE )
+#elif ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
             'dst_a1  ', 'ncl_a1  ' /)
@@ -77,7 +82,7 @@ contains
             'soa_c2  ', 'ncl_c2  ' /)
        xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
             's-organic ', 'seasalt   ' /)
-#elif ( defined MODAL_AERO_3MODE )
+#elif ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
             'soa_a2  ', 'ncl_a2  ' /)
        xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
@@ -91,11 +96,18 @@ contains
        xname_massptr(:nspec_amode(3),3)   = (/ 'pom_a3  ', 'bc_a3   ' /)
        xname_massptrcw(:nspec_amode(3),3) = (/ 'pom_c3  ', 'bc_c3   ' /)
        xname_spectype(:nspec_amode(3),3)  = (/ 'p-organic ', 'black-c   ' /)
-#elif ( defined MODAL_AERO_3MODE )
+#elif ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )
        ! mode 3 (coarse dust & seasalt) species
        xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
        xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
        xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#endif
+
+#if ( defined MODAL_AERO_4MODE )
+       ! mode 4 (primary carbon) species
+       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
+       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ' /)
+       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ' /)
 #endif
 
 
@@ -281,13 +293,6 @@ contains
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
-
-       ! safety check on modal_aero, and modal_aero_3mode, modal_aero_7mode
-#if ( defined MODAL_AERO_3MODE ) && ( defined MODAL_AERO_7MODE )
-       call endrun( 'Error - when modal_aero defined, just 1 of modal_aero_3/7mode must be defined'
-#elif ( ! ( defined MODAL_AERO_3MODE ) ) && ( ! ( defined MODAL_AERO_7MODE ) )
-       call endrun( 'Error - when modal_aero defined, at least 1 of modal_aero_3/7mode must be defined'
-#endif
 
        ! Mode specific properties.
        do m = 1, ntot_amode
@@ -888,6 +893,7 @@ contains
           if (name == 'so4_a1' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'so4_a2' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'pom_a3' ) write( *, '(2a)' ) '    doing ', name
+          if (name == 'pom_a4' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'ncl_a4' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'dst_a5' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'ncl_a6' ) write( *, '(2a)' ) '    doing ', name
@@ -910,6 +916,7 @@ contains
           if (name == 'so4_a1' ) q(:,k,:) = duma*1.0_r8
           if (name == 'so4_a2' ) q(:,k,:) = duma*0.002_r8
           if (name == 'pom_a3' ) q(:,k,:) = duma*0.3_r8
+          if (name == 'pom_a4' ) q(:,k,:) = duma*0.3_r8
           if (name == 'ncl_a4' ) q(:,k,:) = duma*0.4_r8
           if (name == 'dst_a5' ) q(:,k,:) = duma*0.5_r8
           if (name == 'ncl_a6' ) q(:,k,:) = duma*0.6_r8

@@ -25,7 +25,7 @@ module seasalt_model
 #if  ( defined MODAL_AERO_7MODE )
   character(len=6),parameter :: seasalt_names(nslt+nnum) = &
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a4', 'ncl_a6', 'num_a1', 'num_a2', 'num_a4', 'num_a6' /)
-#elif( defined MODAL_AERO_3MODE )
+#elif( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
   character(len=6),parameter :: seasalt_names(nslt+nnum) = &
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', 'num_a1', 'num_a2', 'num_a3'/)
 #endif
@@ -81,7 +81,7 @@ contains
     real(r8), parameter :: emis_scale = 1.62_r8
     real(r8), parameter :: sst_sz_range_lo (nslt) = (/ 0.08e-6_r8, 0.02e-6_r8, 0.3e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, fine, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt) = (/ 0.3e-6_r8,  0.08e-6_r8, 1.0e-6_r8, 10.0e-6_r8 /)
-#elif( defined MODAL_AERO_3MODE )
+#elif( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
     real(r8), parameter :: emis_scale = 1.35_r8 
     real(r8), parameter :: sst_sz_range_lo (nslt) =  (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt) =  (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)

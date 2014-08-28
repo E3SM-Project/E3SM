@@ -63,9 +63,9 @@ meteor_smoke (Meteor Smoke), mixed_sulfate (Meteor Smoke and Sulfate), pmc (Pola
 sulfate (Sulfate Aerosols), tholin (early earth haze), test_detrain (Detrainment), test_growth (Particle Growth), test_passive (Passive Dust), 
 test_radiative (Radiatively Active Dust), test_swelling (Sea Salt), test_tracers (Asian Monsoon), test_tracers2 (Guam).
 </entry>
-<entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam7,none"
+<entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam7,none"
  value="">
-Chemistry package: waccm_mozart, waccm_mozart_mam3, waccm_mozart_sulfur, waccm_ghg, trop_mozart, trop_mozart_mam3, trop_mozart_soa, trop_strat_soa, trop_strat_mam3, trop_strat_mam7, super_fast_llnl, trop_ghg, trop_bam, trop_mam3, trop_mam7, or none.
+Chemistry package: waccm_mozart, waccm_mozart_mam3, waccm_mozart_sulfur, waccm_ghg, trop_mozart, trop_mozart_mam3, trop_mozart_soa, trop_strat_soa, trop_strat_mam3, trop_strat_mam7, super_fast_llnl, trop_ghg, trop_bam, trop_mam3, trop_mam4, trop_mam7, or none.
 </entry>
 <entry id="prog_species" valid_values="DST,SSLT,SO4,GHG,OC,BC,CARBON16" value="" list="1">
 Prognostic mozart species packages: list of any subset of the following: DST,SSLT,SO4,GHG,OC,BC,CARBON16

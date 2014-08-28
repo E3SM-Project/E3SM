@@ -251,36 +251,14 @@
 <!-- CAM-Chem modal aerosols (different names used in prescribed and prognostic modes) -->
 <!-- Optics for RRTMG -->
 <!-- 3 mode -->
-<mam_so4_a1  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a1>
-<mam_pom_a1  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c101112.nc</mam_pom_a1>
-<mam_soa_a1  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa_a1>
-<mam_bc_a1   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc_a1>
-<mam_dst_a1  rad="rrtmg">atm/cam/physprops/dust4_rrtmg_c090521.nc</mam_dst_a1>
-<mam_ncl_a1  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl_a1>
-<mam_so4_a2  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a2>
-<mam_soa_a2  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa_a2>
-<mam_ncl_a2  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl_a2>
-<mam_dst_a3  rad="rrtmg">atm/cam/physprops/dust4_rrtmg_c090521.nc</mam_dst_a3>
-<mam_ncl_a3  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl_a3>
-<mam_so4_a3  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a3>
-
-<!-- 7 mode -->
-<mam_dst_a5  rad="rrtmg">atm/cam/physprops/dust4_rrtmg_c090521.nc</mam_dst_a5>
-<mam_dst_a7  rad="rrtmg">atm/cam/physprops/dust4_rrtmg_c090521.nc</mam_dst_a7>
-<mam_ncl_a4  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl_a4>
-<mam_ncl_a6  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl_a6>
-<mam_pom_a3  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c101112.nc</mam_pom_a3>
-<mam_so4_a4  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a4>
-<mam_so4_a5  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a5>
-<mam_so4_a6  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a6>
-<mam_so4_a7  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4_a7>
-<mam_nh4_a1  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4_a1>
-<mam_nh4_a2  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4_a2>
-<mam_nh4_a4  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4_a4>
-<mam_nh4_a5  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4_a5>
-<mam_nh4_a6  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4_a6>
-<mam_nh4_a7  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4_a7>
-<mam_bc_a3   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc_a3>
+<mam_so4  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4>
+<mam_pom  rad="rrtmg" mam="3mode">atm/cam/physprops/ocpho_rrtmg_c101112.nc</mam_pom>
+<mam_pom  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom>
+<mam_soa  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa>
+<mam_bc   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc>
+<mam_dst  rad="rrtmg">atm/cam/physprops/dust4_rrtmg_c090521.nc</mam_dst>
+<mam_ncl  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl>
+<mam_nh4  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4>
 
 <!-- Eruptive volcanic aerosols  -->
 <VOLC_MMR rad="camrt">atm/cam/physprops/sulfuricacid_cam3_c080918.nc</VOLC_MMR>
@@ -290,6 +268,11 @@
 <mam3_mode1_file rad="rrtmg">atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc</mam3_mode1_file>
 <mam3_mode2_file rad="rrtmg">atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc</mam3_mode2_file>
 <mam3_mode3_file rad="rrtmg">atm/cam/physprops/mam3_mode3_rrtmg_c110318.nc</mam3_mode3_file>
+
+<mam4_mode1_file rad="rrtmg">atm/cam/physprops/mam4_mode1_rrtmg_c130628.nc</mam4_mode1_file>
+<mam4_mode2_file rad="rrtmg">atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc</mam4_mode2_file>
+<mam4_mode3_file rad="rrtmg">atm/cam/physprops/mam4_mode3_rrtmg_c130628.nc</mam4_mode3_file>
+<mam4_mode4_file rad="rrtmg">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam4_mode4_file>
 
 <mam7_mode1_file rad="rrtmg">atm/cam/physprops/mam7_mode1_rrtmg_c120904.nc</mam7_mode1_file>
 <mam7_mode2_file rad="rrtmg">atm/cam/physprops/mam7_mode2_rrtmg_c120904.nc</mam7_mode2_file>
@@ -556,8 +539,10 @@
 <soag_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_2000_c130422.nc</soag_emis_file>
 <bc_a1_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a1_emis_file>
 <bc_a3_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a3_emis_file>
+<bc_a4_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a4_emis_file>
 <pom_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_2000_c130422.nc</pom_a1_emis_file>
 <pom_a3_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_2000_c130422.nc</pom_a3_emis_file>
+<pom_a4_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_surf_2000_c130422.nc</pom_a4_emis_file>
 <so4_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_surf_2000_c120315.nc</so4_a1_emis_file>
 <so4_a2_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_surf_2000_c120315.nc</so4_a2_emis_file>
 <num_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_2000_c120315.nc</num_a1_emis_file>
@@ -570,8 +555,10 @@
 <num_a2_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_elev_2000_c120315.nc</num_a2_ext_file>
 <pom_a1_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a1_ext_file>
 <pom_a3_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a3_ext_file>
+<pom_a4_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_pom_elev_2000_c130422.nc </pom_a4_ext_file>
 <bc_a1_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a1_ext_file>
 <bc_a3_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a3_ext_file>
+<bc_a4_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a4_ext_file>
 
 <mam7_num_a1_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_surf_2000_c120716.nc</mam7_num_a1_emis_file>
 <mam7_num_a3_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_surf_2000_c120716.nc</mam7_num_a3_emis_file>
@@ -607,6 +594,7 @@
 <!-- dry deposition method -->
 <drydep_method                 >xactive_lnd</drydep_method>
 <drydep_method chem="trop_mam3">xactive_atm</drydep_method>
+<drydep_method chem="trop_mam4">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam7">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
@@ -633,6 +621,7 @@
 <xs_long_file  chem="trop_mam3">atm/waccm/phot/temp_prs_GT200nm_jpl06_c080930.nc</xs_long_file>
 <rsf_file                     >atm/waccm/phot/RSF_GT200nm_v3.0_c080811.nc</rsf_file>
 <rsf_file     chem="trop_mam3">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
+<rsf_file     chem="trop_mam4">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
 <exo_coldens_file>atm/cam/chem/trop_mozart/phot/exo_coldens.nc</exo_coldens_file>
 
 <!-- WACCM Upper boundary conditions -->
@@ -1029,6 +1018,9 @@
 <history_budget>               .false.  </history_budget>
 <history_waccm>                .false.  </history_waccm>
 <history_waccm waccm_phys="1"> .true.   </history_waccm>
+
+<!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
+<fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
 
 
 <!-- ================================================================== -->

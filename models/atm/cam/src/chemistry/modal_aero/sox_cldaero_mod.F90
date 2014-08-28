@@ -107,7 +107,7 @@ contains
 
     logical :: mode7
 
-    mode7 = ntot_amode > 3
+    mode7 = ntot_amode == 7
 
     conc_obj => cldaero_allocate()
 

@@ -73,6 +73,9 @@ logical           :: state_debug_checks   = .false.    ! Extra checks for validi
 
 logical :: prog_modal_aero ! determines whether prognostic modal aerosols are present in the run.
 
+!BSINGH -  Bugfix flags (Must be removed once the bug fix is accepted for master merge)
+logical :: fix_g1_err_ndrop = .false. !BSINGH - default is false
+
 ! Which gravity wave sources are used?
 ! Orographic
 logical, public, protected :: use_gw_oro = .true.
@@ -102,7 +105,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, & 
       conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks, &
-      use_gw_oro, use_gw_front, use_gw_convect
+      use_gw_oro, use_gw_front, use_gw_convect, fix_g1_err_ndrop
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -148,6 +151,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
+   call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)!BSINGH - bugfix for ndrop.F90
 #endif
 
    ! Error checking:
@@ -209,6 +213,7 @@ subroutine phys_ctl_readnl(nlfile)
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
+                      .or. cam_chempkg_is('trop_mam4') &
                       .or. cam_chempkg_is('trop_mam7') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
@@ -257,7 +262,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         history_amwg_out, history_vdiag_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out )
+                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out )!BSINGH - bugfix for ndrop.F90
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
 !          deep_scheme_out   : deep convection scheme
@@ -289,6 +294,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: prog_modal_aero_out
    logical,           intent(out), optional :: do_tms_out
    logical,           intent(out), optional :: state_debug_checks_out
+   logical,           intent(out), optional :: fix_g1_err_ndrop_out!BSINGH - bugfix for ndrop.F90
 
    if ( present(deep_scheme_out         ) ) deep_scheme_out          = deep_scheme
    if ( present(shallow_scheme_out      ) ) shallow_scheme_out       = shallow_scheme
@@ -313,6 +319,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
+   if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop !BSINGH - bugfix for ndrop.F90
 
 end subroutine phys_getopts
 

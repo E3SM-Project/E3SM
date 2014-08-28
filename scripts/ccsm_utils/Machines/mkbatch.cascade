@@ -26,14 +26,14 @@ endif
 
 cat >! $file << EOF1
 #!/bin/csh -f
-##MSUB -A <project number>
+#MSUB -A ${CESM_PROJ}
 #MSUB -N ${CASE}
 #MSUB -l walltime=$tlimit
 #MSUB -l nodes=${nodes}:ppn=${MAX_TASKS_PER_NODE}
 #MSUB -m ae
 #MSUB -o job.output
 #MSUB -e job.error
-##MSUB -M <include a valid email>
+#MSUB -M ${CESM_EMAIL}
 EOF1
 
 #################################################################################

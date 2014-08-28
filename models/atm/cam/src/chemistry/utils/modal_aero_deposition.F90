@@ -14,6 +14,7 @@ module modal_aero_deposition
 ! Jul 2011  F Vitt -- made avaliable to be used in a prescribed modal aerosol mode (no prognostic MAM)
 ! Mar 2012  F Vitt -- made changes for to prevent abort when 7-mode aeroslol model is used
 !                     some of the needed consituents do not exist in 7-mode so bin_fluxes will be false
+! May 2014  F Vitt -- included contributions from MAM4 aerosols and added soa_a2 to the ocphiwet fluxes
 !------------------------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
@@ -40,6 +41,9 @@ integer :: idx_dst1 = -1
 integer :: idx_dst3 = -1
 integer :: idx_ncl3 = -1
 integer :: idx_so43 = -1
+integer :: idx_bc4  = -1
+integer :: idx_pom4 = -1
+
 logical :: bin_fluxes = .false.
 
 logical :: initialized = .false.
@@ -48,7 +52,8 @@ logical :: initialized = .false.
 contains
 !==============================================================================
 
-subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx)
+subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
+                            dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx)
 
 ! set aerosol indices for re-mapping surface deposition fluxes:
 ! *_a1 = accumulation mode
@@ -59,6 +64,7 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    ! if called from aerodep_flx module (for prescribed modal aerosol fluxes) then these indices are specified
 
    integer, optional, intent(in) :: bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx
+   integer, optional, intent(in) :: bc4_ndx,pom4_ndx
 
    ! if already initialized abort the run
    if (initialized) then
@@ -105,6 +111,16 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    else
       call cnst_get_ind('so4_a3', idx_so43,abort=.false.)
    endif
+   if (present(bc4_ndx)) then
+      idx_bc4 = bc4_ndx
+   else
+      call cnst_get_ind('bc_a4', idx_bc4,abort=.false.)
+   endif
+   if (present(pom4_ndx)) then
+      idx_pom4 = pom4_ndx
+   else
+      call cnst_get_ind('pom_a4', idx_pom4,abort=.false.)   
+   endif
 
 !  for 7 mode bin_fluxes will be false
    bin_fluxes = idx_dst1>0 .and. idx_dst3>0 .and.idx_ncl3>0 .and. idx_so43>0
@@ -131,16 +147,30 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
    ncol = cam_out%ncol
 
+   cam_out%bcphiwet(:) = 0._r8
+   cam_out%ocphiwet(:) = 0._r8
+
    ! derive cam_out variables from deposition fluxes
    !  note: wet deposition fluxes are negative into surface, 
    !        dry deposition fluxes are positive into surface.
-   !        CLM wants positive definite fluxes.
+   !        srf models want positive definite fluxes.
    do i = 1, ncol
+
       ! black carbon fluxes
-      cam_out%bcphiwet(i) = -(aerdepwetis(i,idx_bc1)+aerdepwetcw(i,idx_bc1))
+      if (idx_bc1>0) &
+         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc1)+aerdepwetcw(i,idx_bc1))
+      if (idx_bc4>0) &
+         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc4)+aerdepwetcw(i,idx_bc4))
 
       ! organic carbon fluxes
-      cam_out%ocphiwet(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_soa1)+aerdepwetcw(i,idx_pom1)+aerdepwetcw(i,idx_soa1))
+      if (idx_soa1>0) &
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_soa1)+aerdepwetcw(i,idx_soa1))
+      if (idx_soa2>0) &
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_soa2)+aerdepwetcw(i,idx_soa2))
+      if (idx_pom1>0) &
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom1)+aerdepwetcw(i,idx_pom1))
+      if (idx_pom4>0) &
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom4)+aerdepwetcw(i,idx_pom4))
 
       ! dust fluxes
       !
@@ -180,18 +210,32 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 
    ncol = cam_out%ncol
 
+   cam_out%bcphidry(:) = 0._r8
+   cam_out%bcphodry(:) = 0._r8
+   cam_out%ocphidry(:) = 0._r8
+   cam_out%ocphodry(:) = 0._r8
+
    ! derive cam_out variables from deposition fluxes
    !  note: wet deposition fluxes are negative into surface, 
    !        dry deposition fluxes are positive into surface.
-   !        CLM wants positive definite fluxes.
+   !        srf models want positive definite fluxes.
    do i = 1, ncol
+
       ! black carbon fluxes
-      cam_out%bcphidry(i) = aerdepdryis(i,idx_bc1)+aerdepdrycw(i,idx_bc1)
-      cam_out%bcphodry(i) = 0._r8
+      if (idx_bc1>0) &
+           cam_out%bcphidry(i) = cam_out%bcphidry(i) + aerdepdryis(i,idx_bc1)+aerdepdrycw(i,idx_bc1)
+      if (idx_bc4>0) &
+           cam_out%bcphodry(i) = cam_out%bcphodry(i) + aerdepdryis(i,idx_bc4)+aerdepdrycw(i,idx_bc4)
 
       ! organic carbon fluxes
-      cam_out%ocphidry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_soa1)+aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_soa1)
-      cam_out%ocphodry(i) = aerdepdryis(i,idx_soa2)+aerdepdrycw(i,idx_soa2)
+      if (idx_pom1>0) &
+           cam_out%ocphidry(i) = cam_out%ocphidry(i) + aerdepdryis(i,idx_pom1)+aerdepdrycw(i,idx_pom1)
+      if( idx_pom4>0) &
+           cam_out%ocphodry(i) = cam_out%ocphodry(i) + aerdepdryis(i,idx_pom4)+aerdepdrycw(i,idx_pom4)
+      if (idx_soa1>0) &
+           cam_out%ocphidry(i) = cam_out%ocphidry(i) + aerdepdryis(i,idx_soa1)+aerdepdrycw(i,idx_soa1)
+      if (idx_soa2>0) &
+           cam_out%ocphodry(i) = cam_out%ocphodry(i) + aerdepdryis(i,idx_soa2)+aerdepdrycw(i,idx_soa2)
 
       ! dust fluxes
       !
