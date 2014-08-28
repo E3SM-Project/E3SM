@@ -58,7 +58,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   use perf_mod, only : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   ! -----------------------------------------------
   use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
-  use control_mod, only : tracer_transport_type
+  use control_mod, only : tracer_transport_type, qsplit
   use parallel_mod, only: abortmp
 #ifdef PIO_INTERP
      use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
@@ -111,9 +111,10 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     print *,"!  Test CASE for fvm, Christoph Erath                                 !" 
     print *,"!-----------------------------------------------------------------------!" 
   endif
-    
-    
-     
+  qsplit=1
+  tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
+
+
   ! Initialize derivative structure
   ! fvm nodes are equally spaced in alpha/beta
   ! HOMME with equ-angular gnomonic projection maps alpha/beta space
@@ -129,6 +130,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   do ie=nets,nete
      call fvm_bsp(fvm(ie),tl)
      fvm(ie)%elem_mass=0.0D0
+     fvm(ie)%dp_fvm = 1.0D0       
      do j=1,nc
         do i=1,nc
               fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
@@ -252,10 +254,10 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
      ! ! end mcgregordss   
         
     if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
-      call cslam_runflux      (elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+      call cslam_runflux      (elem,fvm,hybrid,deriv,tstep,tl,nets,nete,0.0D0)
       if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running ff-cslam"
     else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
+      call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,0.0D0) !run regular CSLAM
       if(mod(tl%nstep,1)==0.and.hybrid%masterthread) write(*,*) "running cslam"
     else
       call abortmp('Bad tracer_transport_type in fvm_bench')

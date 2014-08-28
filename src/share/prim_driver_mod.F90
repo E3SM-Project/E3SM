@@ -616,6 +616,7 @@ contains
     integer :: ierr
     integer :: nfrc
     integer :: n0_qdp
+    integer :: n0_fvm, np1_fvm
 
 #ifdef TRILINOS
      integer :: lenx
@@ -963,6 +964,7 @@ contains
     endif
 
     if (ntrac>0) then
+       call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)
 #if defined(_SPELT)
       ! do it only for SPELT tracers, FIRST TRACER will be the AIR DENSITY
       ! should be optimize and combined with the above caculation
@@ -998,19 +1000,18 @@ contains
 	    do i=1,np
 	      do j=1,np
 		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0_fvm)
 	      enddo
 	    enddo
           !write air density in dp_fvm field of FVM
-          fvm(ie)%dp_fvm(1:nc,1:nc,k,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
-      call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
+      call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
       do ie=nets,nete
 	    do i=1-nhc,nc+nhc
 	      do j=1-nhc,nc+nhc
-!	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
-	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
+	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
 	      enddo
 	    enddo
       enddo
@@ -1022,7 +1023,7 @@ contains
 
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
     if (runtype==1) then
-       call TimeLevel_Qdp( tl, qsplit, n0_qdp)
+       call TimeLevel_Qdp( tl, qsplit, n0_qdp) !phl: isn't there an argument missing?
        do ie=nets,nete
 #if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, t, q, i, j, dp)
@@ -1400,7 +1401,7 @@ contains
     ! ftype=1  forcing was applied time-split in CAM coupling layer
     ! ftype=0 means forcing apply here
     ! ftype=-1 do not apply forcing
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp)!phl: isn't there an argument missing?
     if (ftype==0) then
       call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
     end if
@@ -1576,12 +1577,14 @@ contains
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
     real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n, n_Q
+    integer :: ie, t, q,k,i,j,n
 
     real (kind=real_kind)                          :: maxcflx, maxcfly
 
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
+
+    integer :: n0_fvm, np1_fvm
 
     dt_q = dt*qsplit
 
@@ -1636,9 +1639,6 @@ contains
     ! ===============
     ! Dynamical Step
     ! ===============
-    n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
-                 ! FV tracers still carry 3 timelevels
-                 ! SE tracers only carry 2 timelevels
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
@@ -1674,16 +1674,14 @@ contains
       call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
            dt_q,tl,nets,nete)
     else
-      ! FVM transport
-
-      if ( n_Q /= tl%n0 ) then
-        ! make sure tl%n0 contains tracers at start of timestep
-        do ie=nets,nete
-          fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
-          fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
-        enddo
-      endif
+       !
+       ! FVM transport
+       !
 #if defined(_SPELT)
+       !
+       ! Since N_Q code has been removed - add call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)
+       ! to spelt code to get right time-levels
+       !
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
         do ie=nets,nete
@@ -1713,14 +1711,6 @@ contains
 #else
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
-           ! values in the halo zone are only in np1 at this time
-       do ie=nets,nete
-         do i=1-nhc,nc+nhc
-           do j=1-nhc,nc+nhc
-             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
-           enddo
-         enddo
-       enddo
 
        if(test_cfldep) then
          maxcflx=0.0D0

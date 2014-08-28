@@ -499,7 +499,7 @@ subroutine fvm_readnl(par)
   ! ------------------------	
 #endif
 
-  character(len=32) :: tracer_transport_method = 'se_gll'
+  character(len=32) :: tracer_transport_method = 'cslam_fvm'
   character(len=32) :: cslam_ideal_test = 'off'
   character(len=32) :: cslam_test_type = 'boomerang'
   type (parallel_t), intent(in) ::  par
