@@ -198,7 +198,11 @@ runjob --label short -p \${procs} -n \${ntasks} \${LOCARGS} --envs BG_THREADLAYO
 else
                                     \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 endif
-if (\$syslog_id != 0) kill \$syslog_id
+if (\$syslog_id != 0) then
+  if { kill -0 \$syslog_id } then 
+    kill \$syslog_id
+  endif
+endif
 
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
 set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
