@@ -21,6 +21,7 @@
 <dtime dyn="se"    hgrid="ne60np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne120np4">900 </dtime>
 <dtime dyn="se"    hgrid="ne240np4">600 </dtime>
+<dtime dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  >600</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -144,7 +145,14 @@
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne240np4" nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne30np4x8arm"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm30x8_L30_c130424.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4x8arm"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm30x8_L26_ape_c000000.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm_x8v3_lowcon_np4_L26_ape_c000000.nc</ncdata>
+
 
 <ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
@@ -154,6 +162,8 @@
 
 <ncdata dyn="se" hgrid="ne16np4"  nlev="30"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L30_ape_c101201.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="30"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L30_ape_c111020.nc</ncdata>
+
+
 
 <!-- Topography -->
 <bnd_topo hgrid="256x512" >atm/cam/topo/topo-from-cami_0000-01-01_256x512_L26_c030918.nc</bnd_topo>
@@ -616,6 +626,7 @@
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
