@@ -54,6 +54,218 @@
           that have only a small number of allowed values.
                                                                         -->
 
+<!-- Nudging Parameters -->
+
+<entry id="Nudge_Model" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Toggle Model Nudging ON/OFF.
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_Path" type="char*256" input_pathname="abs" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Full pathname of analyses data to use for nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_File_Template" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Template for Nudging analyses file names.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Times_Per_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of analyses files per day.
+       Default: none
+       </entry>
+
+<entry id="Model_Times_Per_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of time to update model data per day.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Uprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for U nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Ucoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for U nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for V nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for V nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Tprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for T nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Tcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for T nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Qprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for Q nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Qcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for Q nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_PSprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for PS nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_PScoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for PS nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Beg_Year" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Year at which Nudging Begins.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Beg_Month" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Month at which Nudging Begins.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Beg_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Day at which Nudging Begins.
+       Default: none
+       </entry>
+
+<entry id="Nudge_End_Year" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Year at which Nudging Ends.
+       Default: none
+       </entry>
+
+<entry id="Nudge_End_Month" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Month at which Nudging Ends.
+       Default: none
+       </entry>
+
+<entry id="Nudge_End_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Day at which Nudging Ends.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lo" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LOW Coeffcient for Horizontal Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_hi" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       HIGH Coeffcient for Horizontal Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lat0" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LAT0 of Horizonalt Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_latWidth" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Width of LAT Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_latDelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of LAT Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lon0" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LON0 of Horizontal Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lonWidth" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Width of LON Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Hwin_lonDelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of LON Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_lo" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LOW Coeffcient for Vertical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_hi" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       HIGH Coeffcient for Vertical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Hindex" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       HIGH Level Index for Verical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Hdelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of HIGH end of Vertical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Lindex" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       LOW Level Index for Verical Window.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Vwin_Ldelta" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Steepness of LOW end of Vertical Window.
+       Default: none
+       </entry>
+
 <!-- Aerosols: Data (CAM version) -->
 
 <entry id="bndtvaer" type="char*256" input_pathname="abs" category="aero_data_cam"

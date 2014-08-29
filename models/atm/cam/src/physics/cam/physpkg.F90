@@ -680,6 +680,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use tropopause,         only: tropopause_init
     use solar_data,         only: solar_data_init
     use rad_solar_var,      only: rad_solar_var_init
+    use nudging,            only: Nudge_Model,nudging_init
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -851,6 +852,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        call modal_aero_wateruptake_init(pbuf2d)
 
     end if
+
+    ! Initialize Nudging Parameters
+    !--------------------------------
+    if(Nudge_Model) call nudging_init
 
 end subroutine phys_init
 
@@ -1271,6 +1276,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use perf_mod
     use phys_control,       only: phys_do_flux_avg, waccmx_is
     use flux_avg,           only: flux_avg_run
+    use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
 
     implicit none
 
@@ -1595,6 +1601,13 @@ subroutine tphysac (ztodt,   cam_in,  &
        endif
     endif
 
+    !===================================================
+    ! Update Nudging values, if needed
+    !===================================================
+    if((Nudge_Model).and.(Nudge_ON)) then
+      call nudging_timestep_tend(state,ptend)
+      call physics_update(state,ptend,ztodt,tend)
+    endif
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
          tmp_t, qini, cldliqini, cldiceini)
@@ -2276,6 +2289,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
+  use nudging,             only: Nudge_Model,nudging_timestep_init
 
 
   implicit none
@@ -2340,6 +2354,10 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
+
+  ! Update Nudging values, if needed
+  !----------------------------------
+  if(Nudge_Model) call nudging_timestep_init(phys_state)
 
 end subroutine phys_timestep_init
 
