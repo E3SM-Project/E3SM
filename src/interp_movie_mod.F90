@@ -465,6 +465,8 @@ contains
     use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+    use control_mod, only : qsplit
+    use time_mod   , only : TimeLevel_Qdp
     ! ---------------------    
     type (element_t),target    :: elem(:)
     
@@ -505,6 +507,8 @@ contains
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
     real (kind=real_kind) :: v1,v2
 
+    integer (kind=int_kind) :: n0_fvm, np1_fvm !fvm time-level pointers
+
     type (derivative_t)  :: deriv
 
 
@@ -513,6 +517,8 @@ contains
          call abortmp('Error: interp_movie_output can only be called outside threaded region')
 
     n0 = tl%n0
+    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
+
     call derivinit(deriv)
 
 !    if (0==piofs%io_rank) write(*,'(a,i4,a,i1)') &
@@ -709,7 +715,7 @@ contains
                   do ie=nets,nete
                      en=st+interpdata(ie)%n_interp-1
                      do k=1,nlev                       
-                       call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
+                       call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0_fvm), &
                                           fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
                      end do
                      st=st+interpdata(ie)%n_interp
@@ -726,7 +732,7 @@ contains
                do ie=nets,nete
                   en=st+interpdata(ie)%n_interp-1
                   do k=1,nlev                       
-                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%dp_fvm(:,:,k,n0), &
+                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%dp_fvm(:,:,k,n0_fvm), &
                           fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
                   end do
                   st=st+interpdata(ie)%n_interp
