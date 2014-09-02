@@ -38,6 +38,7 @@ module mpas_stream_list
 
         ! Used by streams and alarms
         character(len=StrKIND) :: name
+        type (MPAS_stream_list_type), pointer :: xref => null()
         type (MPAS_stream_list_type), pointer :: next => null()
 
     end type MPAS_stream_list_type
@@ -283,6 +284,39 @@ module mpas_stream_list
         nullify(stream)
 
     end function MPAS_stream_list_query !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine printlist
+    !
+    !> \brief Prints the contents of a list.
+    !> \author Michael Duda
+    !> \date   25 August 2014
+    !> \details
+    !>  Traverses a list, printing the 'name' component from each node.
+    !
+    !-----------------------------------------------------------------------
+    subroutine printlist(list)
+
+        implicit none
+
+        type (MPAS_stream_list_type), intent(in) :: list
+
+        type (MPAS_stream_list_type), pointer :: node
+        integer :: i
+
+        i = 1
+        write(stderrUnit,*) '----------------------------'
+        write(stderrUnit,*) 'List contains:'
+        node => list % head
+        do while (associated(node))
+            write(stderrUnit,'(a,i3,a)') '    ', i, ') '//trim(node % name)
+            i = i + 1
+            node => node % next
+        end do
+        write(stderrUnit,*) '----------------------------'
+
+    end subroutine printlist
 
 
     !-----------------------------------------------------------------------
