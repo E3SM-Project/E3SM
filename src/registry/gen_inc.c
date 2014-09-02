@@ -2803,6 +2803,8 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 	fortprintf(fd, "end subroutine mpas%ssetup_immutable_streams\n", core_string);
 
 	fclose(fd);
+
+	return 0;
 }
 
 
