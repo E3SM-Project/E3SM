@@ -786,6 +786,7 @@
 			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
+			<var name="seaSurfacePressure"/>
 		</stream>
 		<stream name="restart" type="restart">
 			<var name="temperature"/>
