@@ -60,9 +60,9 @@
         <PIO_CONFIG_OPTS> --enable-filesystem-hints=lustre </PIO_CONFIG_OPTS>
         <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
         <MPILIBS>openmpi</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
-        <CESMSCRATCHROOT>/gscratch2/$CCSMUSER/$CASE/scratch</CESMSCRATCHROOT>                     <!-- complete path to the 'scratch' directory -->
-        <RUNDIR>/gscratch2/$CCSMUSER/$CASE/run</RUNDIR>                       <!-- complete path to the run directory -->
-        <EXEROOT>/gscratch2/$CCSMUSER/$CASE</EXEROOT>                     <!-- complete path to the build directory -->
+        <CESMSCRATCHROOT>/gscratch2/$USER</CESMSCRATCHROOT>
+        <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+        <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
         <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
         <DOUT_S>FALSE</DOUT_S>                                            <!-- logical for short term archiving -->
