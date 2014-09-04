@@ -13,8 +13,7 @@
 !> \author Mark Petersen
 !> \date   November 2013
 !> \details
-!>  This module contains the routines for computing
-!>  diagnostic variables, and other quantities such as vertTransportVelocityTop.
+!>  This module contains the routines for computing individual diagnostic variables
 !
 !-----------------------------------------------------------------------
 

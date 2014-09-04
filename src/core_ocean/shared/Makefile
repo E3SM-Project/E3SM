@@ -24,6 +24,7 @@ OBJS = mpas_ocn_init.o \
 	   mpas_ocn_vmix_coefs_const.o \
 	   mpas_ocn_vmix_coefs_rich.o \
 	   mpas_ocn_vmix_coefs_tanh.o \
+       mpas_ocn_vmix_coefs_redi.o \
 	   mpas_ocn_vmix_cvmix.o \
 	   mpas_ocn_tendency.o \
 	   mpas_ocn_tracer_hmix.o \
@@ -106,7 +107,7 @@ mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_j
 
 mpas_ocn_tracer_short_wave_absorption_jerlov.o:
 
-mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o 
+mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o
 
 mpas_ocn_vmix_coefs_const.o:
 
@@ -115,6 +116,8 @@ mpas_ocn_vmix_coefs_rich.o: mpas_ocn_equation_of_state.o
 mpas_ocn_vmix_coefs_tanh.o:
 
 mpas_ocn_vmix_cvmix.o: 
+
+mpas_ocn_vmix_coefs_redi.o:
 
 mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o
 
