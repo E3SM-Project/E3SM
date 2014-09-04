@@ -1,0 +1,7 @@
+ice_boundary.o: ice_boundary.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+
+dyn_comp.o: dyn_comp.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+	
+
