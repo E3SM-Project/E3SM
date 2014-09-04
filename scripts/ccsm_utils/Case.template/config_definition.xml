@@ -77,8 +77,16 @@
  valid_values=""  
  value="PROJECT_UNSET" 
  group="case_desc"
- sdesc="project for project-sensitive build and run paths"
+ sdesc="project for project-sensitive build and run paths, and job scripts"
 ></entry> 
+
+<entry id="PROJECT_REQUIRED"
+ type="logical"
+ valid_values="TRUE,FALSE"
+ value="FALSE"
+ group="case_desc"
+ sdesc="whether the PROJECT value is required on this machine"
+></entry>
 
 <entry id="COMP_ATM" 
  type="char"
