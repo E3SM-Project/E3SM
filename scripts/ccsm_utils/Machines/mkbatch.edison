@@ -5,14 +5,8 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
-if ($PROJECT == "") then
-  echo "  PROJECT must be set in env_case.xml on Edison."
-  echo "  This can be specified in create_newcase with the -project parameter"
-  echo "  or by setting a PROJECT environment variable before executing create_newcase."
-  exit -1
-endif
-set account_name = $PROJECT
-if !(-d /project/projectdirs/${account_name}) then
+
+if !(-d /project/projectdirs/${PROJECT}) then
   echo "  PROJECT in env_case.xml must be set to a valid project name."
   echo "  This can be specified in create_newcase with the -project parameter"
   echo "  or by setting a PROJECT environment variable before executing create_newcase."
@@ -46,10 +40,6 @@ end
 
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
-#set account_name = ` `
-#if (-e ~/.ccsm_proj) then
-#   set account_name = `head -1 ~/.ccsm_proj`
-#endif
 
 set walltime = "01:15:00"
 if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
@@ -72,7 +62,7 @@ endif
 
 cat >! $file << EOF1
 #!/bin/csh -f
-#PBS -A ${account_name}
+#PBS -A ${PROJECT}
 #PBS -N ${jobname}
 #PBS -q regular
 #PBS -l mppwidth=${mppwidth}
@@ -225,14 +215,9 @@ EOF1
 else if ($PHASE == set_larch) then
 #################################################################################
 
-set account_name = ` `
-if (-e ~/.ccsm_proj) then
-   set account_name = `head -1 ~/.ccsm_proj`
-endif
-
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f
-###PBS -A ${account_name}
+#PBS -A ${PROJECT}
 #PBS -N ${CASE}.l_archive
 #PBS -q xfer
 #PBS -l walltime=02:00:00
