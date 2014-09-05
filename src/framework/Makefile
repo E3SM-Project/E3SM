@@ -83,7 +83,7 @@ mpas_io_output.o: mpas_grid_types.o mpas_dmpar.o mpas_sort.o mpas_configure.o mp
 
 mpas_io_units.o:
 
-mpas_stream_list.o: mpas_grid_types.o mpas_kind_types.o mpas_io_units.o mpas_io_streams.o
+mpas_stream_list.o: mpas_grid_types.o mpas_kind_types.o mpas_io_units.o mpas_io_streams.o mpas_timekeeping.o
 
 mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_grid_types.o mpas_io_units.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o 
 

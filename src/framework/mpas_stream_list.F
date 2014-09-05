@@ -7,6 +7,7 @@ module mpas_stream_list
     use mpas_io_units, only : stderrUnit
     use mpas_grid_types, only : mpas_pool_type
     use mpas_io_streams, only : MPAS_Stream_type
+    use mpas_timekeeping, only : MPAS_Time_type, MPAS_TimeInterval_type
 
 
     integer, parameter :: MPAS_STREAM_LIST_NOERR     = 0, &
@@ -26,12 +27,15 @@ module mpas_stream_list
         character(len=StrKIND) :: filename
         character(len=StrKIND) :: filename_template
         type (MPAS_Stream_type), pointer :: stream => null()
+        integer :: timeLevel = 0
         integer :: maxRecords
         integer :: nRecords
+        type (MPAS_TimeInterval_type), pointer :: recordInterval => null()
         type (MPAS_stream_list_type), pointer :: alarmList_in => null()
         type (MPAS_stream_list_type), pointer :: alarmList_out => null()
         type (mpas_pool_type), pointer :: att_pool => null()
         type (mpas_pool_type), pointer :: field_pool => null()
+        type (MPAS_Time_type), pointer :: referenceTime => null()
 
         ! Used by alarms
         type (MPAS_stream_list_type), pointer :: streamList => null()
