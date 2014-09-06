@@ -46,6 +46,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_remove_field, &
               MPAS_stream_mgr_add_alarm, &
               MPAS_stream_mgr_remove_alarm, &
+              MPAS_stream_mgr_reset_alarms, &
               MPAS_stream_mgr_write, &
               MPAS_stream_mgr_read
 
@@ -234,10 +235,14 @@ module mpas_stream_manager
     !>  the stream, thereby determining where the "file breaks" will occur between 
     !>  timestamps. If no "referenceTime" is specified, the start time of the 
     !>  clock associated with the stream handler will be used as the reference 
-    !>  time.
+    !>  time. Additionally, the interval between records in the file may be
+    !>  specified using the optional "recordInterval" argument; if this argument
+    !>  is not supplied, the stream manager will assume that this interval is
+    !>  equal to the shortest period of any periodic alarm attached to the stream.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, referenceTime, ierr)!{{{
+    subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, &
+                                             referenceTime, recordInterval, ierr) !{{{
 
         implicit none
 
@@ -249,6 +254,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: filename
         integer, intent(in) :: maxRecords
         type (MPAS_Time_type), intent(in), optional :: referenceTime
+        type (MPAS_TimeInterval_type), intent(in), optional :: recordInterval
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: new_stream
@@ -278,6 +284,16 @@ module mpas_stream_manager
         new_stream % filename_template = filename
         new_stream % maxRecords = maxRecords
         new_stream % nRecords = 0
+        allocate(new_stream % referenceTime)
+        if (present(referenceTime)) then
+            new_stream % referenceTime = referenceTime
+        else
+            new_stream % referenceTime = mpas_get_clock_time(manager % streamClock, MPAS_START_TIME)
+        end if
+        if (present(referenceTime)) then
+            allocate(new_stream % recordInterval)
+            new_stream % recordInterval = recordInterval
+        end if
         call MPAS_stream_list_create(new_stream % alarmList_in, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -390,6 +406,12 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(stream % alarmList_out, ierr=err_local)
         call mpas_pool_destroy_pool(stream % att_pool)
         call mpas_pool_destroy_pool(stream % field_pool)
+        if (associated(stream % referenceTime)) then
+            deallocate(stream % referenceTime)
+        end if
+        if (associated(stream % recordInterval)) then
+            deallocate(stream % recordInterval)
+        end if
         if (stream % valid) then
             call MPAS_closeStream(stream % stream, ierr=err_local)
             if (err_local /= MPAS_STREAM_NOERR) then
@@ -840,6 +862,94 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_reset_alarms
+    !
+    !> \brief Reset I/O alarms in a stream manager
+    !> \author Michael Duda
+    !> \date   2 September 2014
+    !> \details
+    !>  Resets all alarms used by the stream manager. If the optional argument
+    !>  'streamID' is provided, only alarms associated with that stream will be
+    !>  reset. If the optional 'direction' argument is provided, only alarms 
+    !>  associated with that direction will be reset.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_reset_alarms(manager, streamID, direction, ierr)!{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in), optional :: streamID
+        integer, intent(in), optional :: direction
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream
+        type (MPAS_stream_list_type), pointer :: alarm_cursor
+        integer :: local_direction
+        integer :: local_ierr
+
+        
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+
+        !
+        ! Check for optional direction argument; default direction is both input and output.
+        !
+        if (present(direction)) then
+            local_direction = direction
+        else
+            local_direction = MPAS_STREAM_INPUT_OUTPUT
+        end if
+
+
+        !
+        ! Check for optional streamID argument; default is to handle all alarms in the manager.
+        !
+        nullify(stream)
+        if (present(streamID)) then
+            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=local_ierr)) then
+                STREAM_DEBUG_WRITE('-- Stream '//trim(streamID)//' does not exist in stream manager.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+        end if
+
+        
+        if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+            if (associated(stream)) then
+                alarm_cursor => stream % alarmList_in % head
+            else
+                alarm_cursor => manager % alarms_in % head
+            end if
+            do while (associated(alarm_cursor))
+                if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                    call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
+                end if
+                alarm_cursor => alarm_cursor % next
+            end do
+        end if
+
+
+        if (local_direction == MPAS_STREAM_OUTPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+            if (associated(stream)) then
+                alarm_cursor => stream % alarmList_out % head
+            else
+                alarm_cursor => manager % alarms_out % head
+            end if
+            do while (associated(alarm_cursor))
+                if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                    call mpas_reset_clock_alarm(manager % streamClock, alarm_cursor % name, ierr=local_ierr) 
+                end if
+                alarm_cursor => alarm_cursor % next
+            end do
+        end if
+
+    end subroutine MPAS_stream_mgr_reset_alarms
+
+
+    !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_set_property
     !
     !> \brief Sets a property of a stream in an MPAS stream manager.
@@ -1113,12 +1223,264 @@ module mpas_stream_manager
         logical, intent(in), optional :: forceWriteNow
         integer, intent(out), optional :: ierr
 
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: local_timeLevel
+        integer :: local_mgLevel
+        logical :: local_forceWrite
+        integer :: local_ierr
+        integer :: temp_ierr
+
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_write()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
+        !
+        ! Use optional arguments or set defaults
+        !
+        if (present(timeLevel)) then
+            local_timeLevel = timeLevel
+        else
+            local_timeLevel = 1
+        end if
+
+        if (present(mgLevel)) then
+            local_mgLevel = mgLevel
+        else
+            local_mgLevel = 1
+        end if
+
+        if (present(forceWriteNow)) then
+            local_forceWrite = forceWriteNow
+        else
+            local_forceWrite = .false.
+        end if
+
+
+        !
+        ! If a stream is specified, we process just that stream; otherwise,
+        !    process all streams
+        !
+        if (present(streamID)) then
+            nullify(stream_cursor)
+            if (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr)) then
+                STREAM_DEBUG_WRITE('-- Handling write of stream '//trim(stream_cursor % name))
+
+                ! Verify that the stream is an output stream
+                if (stream_cursor % direction /= MPAS_STREAM_OUTPUT .and. &
+                    stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an output stream.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+
+                call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_ierr)
+            else
+                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_write().')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+        else
+            nullify(stream_cursor)
+            stream_cursor => manager % streams % head
+            do while (associated(stream_cursor))
+                STREAM_DEBUG_WRITE('-- Handling write of stream '//trim(stream_cursor % name))
+
+                ! Verify that the stream is an output stream
+                if (stream_cursor % direction /= MPAS_STREAM_OUTPUT .and. &
+                    stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an output stream.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+
+                call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, temp_ierr)
+                if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                    local_ierr = MPAS_STREAM_MGR_ERROR
+                end if
+                stream_cursor => stream_cursor % next
+            end do
+        end if
+
+        if (present(ierr)) ierr = local_ierr
+
     end subroutine MPAS_stream_mgr_write
+
+
+    !-----------------------------------------------------------------------
+    !  routine write_stream
+    !
+    !> \brief Handle the writing of a stream pointed to by the stream list node
+    !> \author Michael Duda
+    !> \date   2 September 2014
+    !> \details
+    !>  Private subroutine to handle the details of actually writing a stream.
+    !
+    !-----------------------------------------------------------------------
+    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, ierr)
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        type (MPAS_stream_list_type), intent(inout) :: stream
+        integer, intent(in) :: timeLevel
+        integer, intent(in) :: mgLevel
+        logical, intent(in) :: forceWriteNow
+        integer, intent(out) :: ierr
+
+        type (MPAS_stream_list_type), pointer :: alarm_cursor
+        type (MPAS_Time_type) :: now_time
+        type (MPAS_TimeInterval_type) :: temp_interval
+        type (MPAS_TimeInterval_type) :: write_interval
+        character (len=StrKIND) :: now_string
+        character (len=StrKIND) :: temp_filename
+        logical :: ringing_alarm
+        integer :: nAlarms
+        integer :: local_ierr
+
+
+        ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Check whether any of the output alarms for the stream are ringing
+        !
+        ringing_alarm = .false.
+        alarm_cursor => stream % alarmList_out % head
+        do while (associated(alarm_cursor))
+            if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                ringing_alarm = .true.
+                exit
+            end if
+            alarm_cursor => alarm_cursor % next
+        end do
+
+        if ((.not. ringing_alarm) .and. (.not. forceWriteNow)) then
+            return
+        end if
+
+
+        !
+        ! Figure out the write interval for the stream, defined as the minimum
+        !    period of any output alarm associated with the stream
+        !
+        alarm_cursor => stream % alarmList_out % head
+        nAlarms = 0
+        do while (associated(alarm_cursor))
+            temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, local_ierr)
+            if (local_ierr == 0) then
+                if (nAlarms == 0) then
+                    write_interval = temp_interval
+                else if (temp_interval < write_interval) then
+                    write_interval = temp_interval
+                end if
+                nAlarms = nAlarms + 1
+            end if
+            alarm_cursor => alarm_cursor % next
+        end do
+
+
+        !
+        ! If the stream is not valid, assume that we have not yet written this
+        ! stream, in which case we create the stream from scratch
+        !
+        if (.not. stream % valid) then
+            now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+            call mpas_get_time(now_time, dateTimeString=now_string, ierr=local_ierr)
+            if (stream % maxRecords == 0 .or. nAlarms == 0) then
+                call mpas_expand_string(now_string, stream % filename_template, stream % filename)
+                stream % nRecords = 1
+            else
+                call build_filename(stream % referenceTime, now_time, MPAS_STREAM_EXACT_TIME, stream % maxRecords, write_interval, &
+                                    stream % filename_template, stream % filename, stream % nRecords, local_ierr)
+            end if
+            if (local_ierr /= 0) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+
+            !
+            ! Build stream from pools of fields and attributes
+            !
+            allocate(stream % stream)
+            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, stream % maxRecords, &
+                                   ierr=local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+            call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+            stream % timeLevel = timeLevel
+
+            stream % valid = .true.
+        else
+            if (stream % maxRecords /= 0 .and. nAlarms /= 0) then
+                now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                call build_filename(stream % referenceTime, now_time, MPAS_STREAM_EXACT_TIME, stream % maxRecords, write_interval, &
+                                    stream % filename_template, temp_filename, stream % nRecords, local_ierr)
+                if (local_ierr /= 0) then
+                    ierr = MPAS_STREAM_MGR_ERROR
+                    return
+                end if
+
+                if (temp_filename /= stream % filename) then
+
+                    stream % filename = temp_filename
+
+                    !
+                    ! Close existing stream
+                    !
+                    call MPAS_closeStream(stream % stream, ierr=local_ierr)
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+
+                    !
+                    ! Build new stream from pools of fields and attributes
+                    !
+                    call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, &
+                                           stream % maxRecords, ierr=local_ierr)
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+                    call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+                    stream % timeLevel = timeLevel
+
+                end if
+            else
+                stream % nRecords = stream % nRecords + 1
+            end if
+        end if
+
+        if (timeLevel /= stream % timeLevel) then
+
+            call update_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+            stream % timeLevel = timeLevel
+        end if
+
+        ! 
+        ! Write the stream
+        ! 
+        call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
+        if (local_ierr /= MPAS_STREAM_NOERR) then
+            ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+    end subroutine write_stream
 
 
     !-----------------------------------------------------------------------
@@ -1164,13 +1526,312 @@ module mpas_stream_manager
         character (len=*), intent(out), optional :: actualWhen
         integer, intent(out), optional :: ierr
 
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: local_timeLevel
+        integer :: local_mgLevel
+        logical :: local_rightNow
+        character (len=StrKIND) :: local_when
+        integer :: local_whence
+        integer :: local_ierr
+        integer :: temp_ierr
+        type (MPAS_Time_type) :: now_time 
+
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_read()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
         if (present(actualWhen)) write(actualWhen,'(a)') '0000-01-01_00:00:00'
 
+        !
+        ! Use optional arguments or set defaults
+        !
+        if (present(timeLevel)) then
+            local_timeLevel = timeLevel
+        else
+            local_timeLevel = 1
+        end if
+
+        if (present(mgLevel)) then
+            local_mgLevel = mgLevel
+        else
+            local_mgLevel = 1
+        end if
+
+        if (present(rightNow)) then
+            local_rightNow = rightNow
+        else
+            local_rightNow = .false.
+        end if
+
+        if (present(when)) then
+            local_when = when
+        else
+            now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+            call mpas_get_time(now_time, dateTimeString=local_when)
+        end if
+
+        if (present(whence)) then
+            local_whence = whence
+        else
+            local_whence = MPAS_STREAM_EXACT_TIME
+        end if
+
+
+        !
+        ! If a stream is specified, we process just that stream; otherwise,
+        !    process all streams
+        !
+        if (present(streamID)) then
+            nullify(stream_cursor)
+            if (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=ierr)) then
+                STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
+
+                ! Verify that the stream is an input stream
+                if (stream_cursor % direction /= MPAS_STREAM_INPUT .and. stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an input stream.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+
+                call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, local_whence, &
+                                 actualWhen, local_ierr)
+            else
+                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_read().')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+        else
+            nullify(stream_cursor)
+            stream_cursor => manager % streams % head
+            do while (associated(stream_cursor))
+                STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
+
+                ! Verify that the stream is an input stream
+                if (stream_cursor % direction /= MPAS_STREAM_INPUT .and. stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an input stream.')
+                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    return 
+                end if
+
+                !
+                ! What should be the meaning of actualWhen if we read multiple streams in this call?
+                !
+                call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, local_whence, &
+                                 actualWhen, temp_ierr)
+                if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                    local_ierr = MPAS_STREAM_MGR_ERROR
+                end if
+
+                stream_cursor => stream_cursor % next
+            end do
+        end if
+
+        if (present(ierr)) ierr = local_ierr
+
     end subroutine MPAS_stream_mgr_read
+
+
+    !-----------------------------------------------------------------------
+    !  routine read_stream
+    !
+    !> \brief Handle the reading of a stream pointed to by the stream list node
+    !> \author Michael Duda
+    !> \date   4 September 2014
+    !> \details
+    !>  Private subroutine to handle the details of actually reading a stream.
+    !
+    !-----------------------------------------------------------------------
+    subroutine read_stream(manager, stream, timeLevel, mgLevel, forceReadNow, when, whence, actualWhen, ierr)
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        type (MPAS_stream_list_type), intent(inout) :: stream
+        integer, intent(in) :: timeLevel
+        integer, intent(in) :: mgLevel
+        logical, intent(in) :: forceReadNow
+        character (len=*), intent(in) :: when
+        integer, intent(in) :: whence
+        character (len=*), intent(out), optional :: actualWhen
+        integer, intent(out) :: ierr
+
+        type (MPAS_stream_list_type), pointer :: alarm_cursor
+        type (MPAS_Time_type) :: now_time
+        type (MPAS_TimeInterval_type) :: temp_interval
+        type (MPAS_TimeInterval_type) :: read_interval
+        character (len=StrKIND) :: temp_filename
+        logical :: ringing_alarm
+        integer :: nAlarms
+        integer :: local_ierr
+
+
+        ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Check whether any of the input alarms for the stream are ringing
+        !
+        ringing_alarm = .false.
+        alarm_cursor => stream % alarmList_in % head
+        do while (associated(alarm_cursor))
+            if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                ringing_alarm = .true.
+                exit
+            end if
+            alarm_cursor => alarm_cursor % next
+        end do
+
+        if ((.not. ringing_alarm) .and. (.not. forceReadNow)) then
+            return
+        end if
+
+
+        !
+        ! Figure out the read interval for the stream, defined as the minimum
+        !    period of any input alarm associated with the stream
+        !
+        if (.not. associated(stream % recordInterval)) then
+            alarm_cursor => stream % alarmList_in % head
+            nAlarms = 0
+            do while (associated(alarm_cursor))
+                temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, local_ierr)
+                if (local_ierr == 0) then
+                    if (nAlarms == 0) then
+                        read_interval = temp_interval
+                    else if (temp_interval < read_interval) then
+                        read_interval = temp_interval
+                    end if
+                    nAlarms = nAlarms + 1
+                end if
+                alarm_cursor => alarm_cursor % next
+            end do
+        else
+            read_interval = stream % recordInterval
+
+            ! We should handle this stream below as if it were periodic and therefore had a periodic alarm
+            nAlarms = 1       
+        end if
+
+
+        !
+        ! If the stream is not valid, assume that we have not yet written this
+        ! stream, in which case we create the stream from scratch
+        !
+        if (.not. stream % valid) then
+            if (stream % maxRecords == 0 .or. nAlarms == 0) then
+                call mpas_expand_string(when, stream % filename_template, stream % filename)
+                stream % nRecords = 1
+            else
+                call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
+                call build_filename(stream % referenceTime, now_time, whence, stream % maxRecords, read_interval, &
+                                    stream % filename_template, stream % filename, stream % nRecords, local_ierr)
+                if (local_ierr /= 0) then
+                    ierr = MPAS_STREAM_MGR_ERROR
+                    return
+                end if
+            end if
+
+            !
+            ! Build stream from pools of fields and attributes
+            !
+            allocate(stream % stream)
+            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, stream % maxRecords, &
+                                   ierr=local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+
+            call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+            stream % timeLevel = timeLevel
+
+            stream % valid = .true.
+        else
+            if (stream % maxRecords /= 0 .and. nAlarms /= 0) then
+                call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
+                call build_filename(stream % referenceTime, now_time, whence, stream % maxRecords, read_interval, &
+                                    stream % filename_template, temp_filename, stream % nRecords, local_ierr)
+                if (local_ierr /= 0) then
+                    ierr = MPAS_STREAM_MGR_ERROR
+                    return
+                end if
+
+                if (temp_filename /= stream % filename) then
+
+                    stream % filename = temp_filename
+
+                    !
+                    ! Close existing stream
+                    !
+                    call MPAS_closeStream(stream % stream, ierr=local_ierr)
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+
+                    !
+                    ! Build new stream from pools of fields and attributes
+                    !
+                    call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
+                                           stream % maxRecords, ierr=local_ierr)
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+                    call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+                    stream % timeLevel = timeLevel
+
+                end if
+            else
+
+                !
+                ! TODO: Here, perhaps we should call build_filename just to ensure we read from the proper record,
+                !       rather than assuming the records are at the same interval as calls to read the stream
+                !
+
+                stream % nRecords = stream % nRecords + 1
+            end if
+        end if
+
+        if (timeLevel /= stream % timeLevel) then
+
+            call update_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+            stream % timeLevel = timeLevel
+        end if
+
+
+        ! 
+        ! Read the stream
+        ! 
+        call MPAS_readStream(stream % stream, stream % nRecords, ierr=local_ierr)
+        if (local_ierr /= MPAS_STREAM_NOERR) then
+            ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        if (present(actualWhen)) then
+            call MPAS_streamTime(stream % stream, stream % nRecords, actualWhen, ierr=local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+!
+! TODO: Add debug prints for all error conditions
+!
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+        end if
+
+    end subroutine read_stream
 
 
     !-----------------------------------------------------------------------
@@ -1230,7 +1891,7 @@ module mpas_stream_manager
         character(len=*), intent(in) :: filename_template
         character(len=*), intent(out) :: filename
         integer, intent(out) :: offset
-        integer :: ierr
+        integer, intent(out) :: ierr
 
         character(len=StrKIND) :: when_string
         type (MPAS_Time_type) :: filetime
@@ -1239,6 +1900,9 @@ module mpas_stream_manager
         integer :: nrecs, nfiles
         logical :: in_future
 
+!
+! TODO: Use more descriptive error codes so that caller can tell why we couldn't build a filename
+!
 
         ierr = 0
 
@@ -1309,31 +1973,28 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
-    !  routine mpas_stream_mgr_build_stream
+    !  routine build_stream
     !
     !> \brief This is a utility routine to build a stream type from a pool representing a stream.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   07/23/2014
-    !> \details This routine will take as input a pool representing a stream.
+    !> \details 
+    !>  This routine will take as input a pool representing a stream.
     !>  It will then generate a stream type based on this pool, and return that.
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_build_stream(timeStamp, inPool, direction, timeLevelIn, stream)!{{{
+    subroutine build_stream(stream, allFields, timeLevelIn, mgLevelIn, ierr) !{{{
 
         implicit none
 
-        character (len=*), intent(in) :: timeStamp
-        type (MPAS_Pool_type), intent(inout) :: inPool
-        type (MPAS_Stream_type), pointer :: stream
-        integer, intent(in), optional :: timeLevelIn
+        type (MPAS_stream_list_type), intent(inout) :: stream
+        type (MPAS_Pool_type), intent(in) :: allFields
+        integer, intent(in) :: timeLevelIn
+        integer, intent(in) :: mgLevelIn
+        integer, intent(out) :: ierr
 
         type (MPAS_Pool_iterator_type) :: itr
-
+        type (mpas_pool_field_info_type) :: info
         integer :: timeLevel
-
-        character (len=StrKIND), pointer :: filenameTemplate
-        character (len=StrKIND) :: filename
-        integer, pointer :: direction
-        integer, pointer :: maxRecords
 
         type (field5DReal), pointer :: real5d
         type (field4DReal), pointer :: real4d
@@ -1347,80 +2008,199 @@ module mpas_stream_manager
         type (field1DInteger), pointer :: int1d
         type (field0DInteger), pointer :: int0d
 
-        type (field1DInteger), pointer :: char1d
-        type (field0DInteger), pointer :: char0d
+        type (field1DChar), pointer :: char1d
+        type (field0DChar), pointer :: char0d
 
-        call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_FILENAME, filenameTemplate)
-        call mpas_pool_get_config(inPool, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords)
 
-        call mpas_expand_string(timeStamp, filenameTemplate, filename)
+        ierr = MPAS_STREAM_MGR_NOERR
 
-        call mpas_createStream(stream, filename, MPAS_IO_PNETCDF, direction, maxRecords)
+        call mpas_pool_begin_iteration(stream % field_pool)
 
-        do while ( mpas_pool_get_next_member(inPool, itr) )
-            if (itr % memberType == MPAS_POOL_FIELD) then
-                ! Set time level to read.
-                if (present(timeLevelIn)) then
-                    if (itr % nTimeLevels >= timeLevelIn) then
-                        timeLevel = timeLevelIn
-                    else
-                        timeLevel = 1
-                    end if
+        do while ( mpas_pool_get_next_member(stream % field_pool, itr) )
+
+            if (itr % memberType == MPAS_POOL_CONFIG) then
+
+                ! To avoid accidentally matching in case statements below...
+                info % fieldType = -1
+
+                call mpas_pool_get_field_info(allFields, itr % memberName, info)
+
+                ! Set time level to read
+                if (info % nTimeLevels >= timeLevelIn) then
+                    timeLevel = timeLevelIn
                 else
                     timeLevel = 1
                 end if
 
-                select case (itr % dataType)
+                select case (info % fieldType)
                     case (MPAS_POOL_REAL)
-                        select case (itr % nDims)
+                        select case (info % nDims)
                             case (0)
-                                call mpas_pool_get_field(inPool, itr % memberName, real0d, timeLevel)
-                                call mpas_streamAddField(stream, real0d)
+                                call mpas_pool_get_field(allFields, itr % memberName, real0d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, real0d)
                             case (1)
-                                call mpas_pool_get_field(inPool, itr % memberName, real1d, timeLevel)
-                                call mpas_streamAddField(stream, real1d)
+                                call mpas_pool_get_field(allFields, itr % memberName, real1d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, real1d)
                             case (2)
-                                call mpas_pool_get_field(inPool, itr % memberName, real2d, timeLevel)
-                                call mpas_streamAddField(stream, real2d)
+                                call mpas_pool_get_field(allFields, itr % memberName, real2d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, real2d)
                             case (3)
-                                call mpas_pool_get_field(inPool, itr % memberName, real3d, timeLevel)
-                                call mpas_streamAddField(stream, real3d)
+                                call mpas_pool_get_field(allFields, itr % memberName, real3d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, real3d)
                             case (4)
-                                call mpas_pool_get_field(inPool, itr % memberName, real4d, timeLevel)
-                                call mpas_streamAddField(stream, real4d)
+                                call mpas_pool_get_field(allFields, itr % memberName, real4d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, real4d)
                             case (5)
-                                call mpas_pool_get_field(inPool, itr % memberName, real5d, timeLevel)
-                                call mpas_streamAddField(stream, real5d)
+                                call mpas_pool_get_field(allFields, itr % memberName, real5d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, real5d)
                         end select
                     case (MPAS_POOL_INTEGER)
-                        select case (itr % nDims)
+                        select case (info % nDims)
                             case (0)
-                                call mpas_pool_get_field(inPool, itr % memberName, int0d, timeLevel)
-                                call mpas_streamAddField(stream, int0d)
+                                call mpas_pool_get_field(allFields, itr % memberName, int0d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, int0d)
                             case (1)
-                                call mpas_pool_get_field(inPool, itr % memberName, int1d, timeLevel)
-                                call mpas_streamAddField(stream, int1d)
+                                call mpas_pool_get_field(allFields, itr % memberName, int1d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, int1d)
                             case (2)
-                                call mpas_pool_get_field(inPool, itr % memberName, int2d, timeLevel)
-                                call mpas_streamAddField(stream, int2d)
+                                call mpas_pool_get_field(allFields, itr % memberName, int2d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, int2d)
                             case (3)
-                                call mpas_pool_get_field(inPool, itr % memberName, int3d, timeLevel)
-                                call mpas_streamAddField(stream, int3d)
+                                call mpas_pool_get_field(allFields, itr % memberName, int3d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, int3d)
                         end select
                     case (MPAS_POOL_CHARACTER)
-                        select case (itr % nDims)
+                        select case (info % nDims)
                             case (0)
-                                call mpas_pool_get_field(inPool, itr % memberName, char0d, timeLevel)
-                                call mpas_streamAddField(stream, char0d)
+                                call mpas_pool_get_field(allFields, itr % memberName, char0d, timeLevel)
+                                call MPAS_streamAddField(stream % stream, char0d)
                             case (1)
-                                call mpas_pool_get_field(inPool, itr % memberName, char1d, timeLevel)
-                                call mpas_streamAddField(stream, char1d)
+!                                call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
+!                                call MPAS_streamAddField(stream % stream, char1d)
+                                 write(stderrUnit,*) 'Error: In build_stream, unsupported type field1DChar.'
                         end select
                 end select
+
             end if
         end do
 
-    end subroutine MPAS_stream_mgr_build_stream!}}}
+    end subroutine build_stream !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine update_stream
+    !
+    !> \brief Updates the time level for fields in a stream
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   07/23/2014
+    !> \details 
+    !>  For an existing stream, updates the time levels for all fields in 
+    !>  the stream so that subsequent reads/writes of the stream will read
+    !>  from / write to the specified time level.
+    !-----------------------------------------------------------------------
+    subroutine update_stream(stream, allFields, timeLevelIn, mgLevelIn, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_stream_list_type), intent(inout) :: stream
+        type (MPAS_Pool_type), intent(in) :: allFields
+        integer, intent(in) :: timeLevelIn
+        integer, intent(in) :: mgLevelIn
+        integer, intent(out) :: ierr
+
+        type (MPAS_Pool_iterator_type) :: itr
+        type (mpas_pool_field_info_type) :: info
+        integer :: timeLevel
+
+        type (field5DReal), pointer :: real5d
+        type (field4DReal), pointer :: real4d
+        type (field3DReal), pointer :: real3d
+        type (field2DReal), pointer :: real2d
+        type (field1DReal), pointer :: real1d
+        type (field0DReal), pointer :: real0d
+
+        type (field3DInteger), pointer :: int3d
+        type (field2DInteger), pointer :: int2d
+        type (field1DInteger), pointer :: int1d
+        type (field0DInteger), pointer :: int0d
+
+        type (field1DChar), pointer :: char1d
+        type (field0DChar), pointer :: char0d
+
+
+        ierr = MPAS_STREAM_MGR_NOERR
+
+        call mpas_pool_begin_iteration(stream % field_pool)
+
+        do while ( mpas_pool_get_next_member(stream % field_pool, itr) )
+
+            if (itr % memberType == MPAS_POOL_CONFIG) then
+
+                ! To avoid accidentally matching in case statements below...
+                info % fieldType = -1
+
+                call mpas_pool_get_field_info(allFields, itr % memberName, info)
+
+                ! Set time level to read
+                if (info % nTimeLevels >= timeLevelIn) then
+                    timeLevel = timeLevelIn
+                else
+                    timeLevel = 1
+                end if
+
+                select case (info % fieldType)
+                    case (MPAS_POOL_REAL)
+                        select case (info % nDims)
+                            case (0)
+                                call mpas_pool_get_field(allFields, itr % memberName, real0d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, real0d)
+                            case (1)
+                                call mpas_pool_get_field(allFields, itr % memberName, real1d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, real1d)
+                            case (2)
+                                call mpas_pool_get_field(allFields, itr % memberName, real2d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, real2d)
+                            case (3)
+                                call mpas_pool_get_field(allFields, itr % memberName, real3d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, real3d)
+                            case (4)
+                                call mpas_pool_get_field(allFields, itr % memberName, real4d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, real4d)
+                            case (5)
+                                call mpas_pool_get_field(allFields, itr % memberName, real5d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, real5d)
+                        end select
+                    case (MPAS_POOL_INTEGER)
+                        select case (info % nDims)
+                            case (0)
+                                call mpas_pool_get_field(allFields, itr % memberName, int0d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, int0d)
+                            case (1)
+                                call mpas_pool_get_field(allFields, itr % memberName, int1d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, int1d)
+                            case (2)
+                                call mpas_pool_get_field(allFields, itr % memberName, int2d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, int2d)
+                            case (3)
+                                call mpas_pool_get_field(allFields, itr % memberName, int3d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, int3d)
+                        end select
+                    case (MPAS_POOL_CHARACTER)
+                        select case (info % nDims)
+                            case (0)
+                                call mpas_pool_get_field(allFields, itr % memberName, char0d, timeLevel)
+                                call MPAS_streamUpdateField(stream % stream, char0d)
+                            case (1)
+!                                call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
+!                                call MPAS_streamUpdateField(stream % stream, char1d)
+                                 write(stderrUnit,*) 'Error: In update_stream, unsupported type field1DChar.'
+                        end select
+                end select
+
+            end if
+        end do
+
+    end subroutine update_stream !}}}
 
    
 end module mpas_stream_manager
