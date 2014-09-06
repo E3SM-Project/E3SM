@@ -281,6 +281,52 @@ contains
    end function MPAS_seekStream
 
 
+   subroutine MPAS_streamTime(stream, frame, frameValidTime, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      integer, intent(in) :: frame
+      character (len=*), intent(out) :: frameValidTime
+      integer, intent(out), optional :: ierr
+      
+      integer :: io_err
+      integer :: timeDim
+
+
+!      write(stderrUnit,*) 'Called MPAS_streamTime'
+
+      !
+      ! Initialize output arguments
+      !
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_IO_ERR
+         return
+      end if
+
+      call MPAS_io_inq_var(stream % fileHandle, 'xtime', ierr=io_err)
+      if (io_err /= MPAS_IO_NOERR) then
+         if (present(ierr)) ierr = MPAS_IO_ERR
+         return
+      end if
+
+!write(stderrUnit,*) 'Found xtime variable'
+
+      call MPAS_io_set_frame(stream % fileHandle, frame, io_err)
+      call MPAS_io_get_var(stream % fileHandle, 'xtime', frameValidTime, io_err)
+      if (io_err /= MPAS_IO_NOERR) then
+         if (present(ierr)) ierr = MPAS_IO_ERR
+         return
+      end if
+
+   end subroutine MPAS_streamTime
+
+
    subroutine MPAS_streamAddField_0dInteger(stream, field, ierr)
 
       implicit none
