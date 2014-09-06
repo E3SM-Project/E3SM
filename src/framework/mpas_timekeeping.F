@@ -552,18 +552,17 @@ module mpas_timekeeping
    end subroutine mpas_remove_clock_alarm
 
 
-
-    !-----------------------------------------------------------------------
-    !  routine mpas_is_alarm_defined
-    !
-    !> \brief Check whether an alarm has been defined on a clock
-    !> \author Michael Duda
-    !> \date   26 August 2014
-    !> \details
-    !>  For a specified clock and alarm ID, checks whether that alarm ID has
-    !>  been defined on the clock and returns the result.
-    !
-    !-----------------------------------------------------------------------
+   !-----------------------------------------------------------------------
+   !  routine mpas_is_alarm_defined
+   !
+   !> \brief Check whether an alarm has been defined on a clock
+   !> \author Michael Duda
+   !> \date   26 August 2014
+   !> \details
+   !>  For a specified clock and alarm ID, checks whether that alarm ID has
+   !>  been defined on the clock and returns the result.
+   !
+   !-----------------------------------------------------------------------
    logical function mpas_is_alarm_defined(clock, alarmID, ierr)
 
       implicit none
@@ -588,6 +587,44 @@ module mpas_timekeeping
 
    end function mpas_is_alarm_defined
 
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_alarm_interval
+   !
+   !> \brief Retrieve the interval for an alarm
+   !> \author Michael Duda
+   !> \date   4 September 2014
+   !> \details
+   !>  For a specified clock and alarm ID, returns the time interval
+   !>  associated with the alarm.
+   !
+   !-----------------------------------------------------------------------
+   type (MPAS_TimeInterval_type) function mpas_alarm_interval(clock, alarmID, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      integer, intent(out) :: ierr
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      ierr = 1
+      call mpas_set_timeInterval(mpas_alarm_interval, S=0)
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            if (alarmPtr % isSet .and. alarmPtr % isRecurring) then
+               ierr = 0
+               mpas_alarm_interval = alarmPtr % ringTimeInterval
+            end if
+            return
+         end if
+         alarmPtr => alarmPtr % next 
+      end do
+
+   end function mpas_alarm_interval
 
 
    subroutine mpas_print_alarm(clock, alarmID, ierr)
