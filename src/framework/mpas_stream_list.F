@@ -24,6 +24,8 @@ module mpas_stream_list
         ! Used by streams
         integer :: direction
         logical :: valid = .false.
+        logical :: immutable = .false.
+        logical :: active_stream = .true.
         character(len=StrKIND) :: filename
         character(len=StrKIND) :: filename_template
         type (MPAS_Stream_type), pointer :: stream => null()

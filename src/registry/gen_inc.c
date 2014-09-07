@@ -2749,7 +2749,7 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 
 	fortprintf(fd, "subroutine mpas%ssetup_immutable_streams(manager)\n\n", core_string);
 	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
-	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_PROPERTY_IMMUTABLE, MPAS_STREAM_IMMUTABLE, &\n");
+	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_PROPERTY_IMMUTABLE, &\n");
 	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_add_field, MPAS_stream_mgr_set_property\n\n");
 	fortprintf(fd, "   implicit none\n\n");
 	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
@@ -2794,7 +2794,7 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 					}
 				}
 
-				fortprintf(fd, "   call MPAS_stream_mgr_set_property(manager, \'%s\', MPAS_STREAM_PROPERTY_IMMUTABLE, MPAS_STREAM_IMMUTABLE, ierr=ierr)\n\n", optname);
+				fortprintf(fd, "   call MPAS_stream_mgr_set_property(manager, \'%s\', MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)\n\n", optname);
 			}
 
 		}

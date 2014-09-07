@@ -23,14 +23,12 @@ module mpas_stream_manager
                                   MPAS_STREAM_INPUT_OUTPUT = 3, &
                                   MPAS_STREAM_NONE = 4
 
-    integer, public, parameter :: MPAS_STREAM_IMMUTABLE = 5, &
-                                  MPAS_STREAM_MUTABLE   = 6
-
-    character(len=*), public, parameter :: MPAS_STREAM_PROPERTY_DIRECTION = 'direction', &
-                                           MPAS_STREAM_PROPERTY_IMMUTABLE = 'immutable', &
-                                           MPAS_STREAM_PROPERTY_FILENAME = 'filename', &
-                                           MPAS_STREAM_PROPERTY_MAX_RECORDS = 'maxRecords', &
-                                           MPAS_STREAM_PROPERTY_REF_TIME = 'referenceTime'
+    integer, public, parameter :: MPAS_STREAM_PROPERTY_ACTIVE      =  5, &
+                                  MPAS_STREAM_PROPERTY_IMMUTABLE   =  6, &
+                                  MPAS_STREAM_PROPERTY_FILENAME    =  7, &
+                                  MPAS_STREAM_PROPERTY_MAX_RECORDS =  8, &
+                                  MPAS_STREAM_PROPERTY_REF_TIME    =  9, &
+                                  MPAS_STREAM_PROPERTY_RECORD_INTV = 10
 
     public :: MPAS_streamManager_type, &
               MPAS_stream_mgr_init, &
@@ -47,6 +45,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_add_alarm, &
               MPAS_stream_mgr_remove_alarm, &
               MPAS_stream_mgr_reset_alarms, &
+              MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
               MPAS_stream_mgr_read
 
@@ -65,6 +64,20 @@ module mpas_stream_manager
         type (MPAS_stream_list_type), pointer :: alarms_out
 
     end type MPAS_streamManager_type
+
+
+    interface MPAS_stream_mgr_set_property
+        module procedure MPAS_stream_mgr_set_property_int
+        module procedure MPAS_stream_mgr_set_property_char
+        module procedure MPAS_stream_mgr_set_property_logical
+    end interface
+
+
+    interface MPAS_stream_mgr_get_property
+        module procedure MPAS_stream_mgr_get_property_int
+        module procedure MPAS_stream_mgr_get_property_char
+        module procedure MPAS_stream_mgr_get_property_logical
+    end interface
 
 
     interface MPAS_stream_mgr_add_att
@@ -281,6 +294,7 @@ module mpas_stream_manager
         new_stream % name = streamID
         new_stream % direction = direction
         new_stream % valid = .false.
+!TODO: ensure that filename does not contain ':' characters, which PNETCDF does not like...
         new_stream % filename_template = filename
         new_stream % maxRecords = maxRecords
         new_stream % nRecords = 0
@@ -950,7 +964,7 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
-    !  routine MPAS_stream_mgr_set_property
+    !  routine MPAS_stream_mgr_set_property_int
     !
     !> \brief Sets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
@@ -959,55 +973,381 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_set_property(manager, streamID, propertyName, propertyValue, ierr)!{{{
+    subroutine MPAS_stream_mgr_set_property_int(manager, streamID, propertyName, propertyValue, ierr) !{{{
 
         implicit none
 
-        character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property'
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_int'
 
         type (MPAS_streamManager_type), pointer :: manager
         character (len=*), intent(in) :: streamID
-        character (len=*), intent(in) :: propertyName
+        integer, intent(in) :: propertyName
         integer, intent(in) :: propertyValue
         integer, intent(out), optional :: ierr
 
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_set_property()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
-    end subroutine MPAS_stream_mgr_set_property!}}}
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Set property
+        !
+        select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_MAX_RECORDS)
+                stream_cursor % maxRecords = propertyValue
+
+            case default
+                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                STREAM_DEBUG_WRITE('          or specified property is not of type integer.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end select
+
+    end subroutine MPAS_stream_mgr_set_property_int !}}}
 
 
     !-----------------------------------------------------------------------
-    !  routine MPAS_stream_mgr_get_property
+    !  routine MPAS_stream_mgr_set_property_char
     !
-    !> \brief Queries the status of a stream property in an MPAS stream manager.
+    !> \brief Sets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Returns the value of a property defined on a particular stream within
-    !>  an MPAS stream manager.
+    !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_get_property(manager, streamID, propertyName, propertyValue, ierr)!{{{
+    subroutine MPAS_stream_mgr_set_property_char(manager, streamID, propertyName, propertyValue, ierr) !{{{
 
         implicit none
 
-        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_char'
+
+        type (MPAS_streamManager_type), pointer :: manager
         character (len=*), intent(in) :: streamID
-        character (len=*), intent(in) :: propertyName
+        integer, intent(in) :: propertyName
+        character (len=*), intent(in) :: propertyValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_set_property()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Set property
+        !
+        select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_FILENAME)
+!TODO: ensure that filename does not contain ':' characters, which PNETCDF does not like...
+                stream_cursor % filename_template = propertyValue
+
+            case (MPAS_STREAM_PROPERTY_REF_TIME)
+                call mpas_set_time(stream_cursor % referenceTime, dateTimeString=propertyValue)
+
+            case (MPAS_STREAM_PROPERTY_RECORD_INTV)
+ 
+                ! The interval between records may not have been allocated if the optional recordInterval
+                !    argument was not provided when the stream was created
+                if (.not. associated(stream_cursor % recordInterval)) then
+                    allocate(stream_cursor % recordInterval)
+                end if
+                call mpas_set_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
+
+            case default
+                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                STREAM_DEBUG_WRITE('          or specified property is not of type character.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end select
+
+    end subroutine MPAS_stream_mgr_set_property_char !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_set_property_logical
+    !
+    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Sets the value of a stream property within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_set_property_logical(manager, streamID, propertyName, propertyValue, ierr) !{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_logical'
+
+        type (MPAS_streamManager_type), pointer :: manager
+        character (len=*), intent(in) :: streamID
+        integer, intent(in) :: propertyName
+        logical, intent(in) :: propertyValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_set_property()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Set property
+        !
+        select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_ACTIVE)
+                stream_cursor % active_stream = propertyValue
+
+            case (MPAS_STREAM_PROPERTY_IMMUTABLE)
+                stream_cursor % immutable = propertyValue
+
+            case default
+                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                STREAM_DEBUG_WRITE('          or specified property is not of type logical.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end select
+
+    end subroutine MPAS_stream_mgr_set_property_logical !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_property_int
+    !
+    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Sets the value of a stream property within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_property_int(manager, streamID, propertyName, propertyValue, ierr) !{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_int'
+
+        type (MPAS_streamManager_type), pointer :: manager
+        character (len=*), intent(in) :: streamID
+        integer, intent(in) :: propertyName
         integer, intent(out) :: propertyValue
         integer, intent(out), optional :: ierr
 
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_property()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
-        propertyValue = 0
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
 
-    end subroutine MPAS_stream_mgr_get_property!}}}
+        !
+        ! Set property
+        !
+        select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_MAX_RECORDS)
+                propertyValue = stream_cursor % maxRecords
+
+            case default
+                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_DEBUG_WRITE('          or specified property is not of type integer.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end select
+
+    end subroutine MPAS_stream_mgr_get_property_int !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_property_char
+    !
+    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Sets the value of a stream property within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_property_char(manager, streamID, propertyName, propertyValue, ierr) !{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_property_char'
+
+        type (MPAS_streamManager_type), pointer :: manager
+        character (len=*), intent(in) :: streamID
+        integer, intent(in) :: propertyName
+        character (len=*), intent(out) :: propertyValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        type (MPAS_stream_list_type), pointer :: alarm_cursor
+        type (MPAS_timeInterval_type) :: temp_interval, read_interval
+        integer :: nAlarms
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_property()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Set property
+        !
+        select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_FILENAME)
+                propertyValue = stream_cursor % filename_template
+
+            case (MPAS_STREAM_PROPERTY_REF_TIME)
+                call mpas_get_time(stream_cursor % referenceTime, dateTimeString=propertyValue)
+
+            case (MPAS_STREAM_PROPERTY_RECORD_INTV)
+
+                ! The interval between records may not have been allocated if the optional recordInterval
+                !    argument was not provided when the stream was created. If there is no explicit recordInterval,
+                !    assume that the interval is the shortest interval between alarms on the stream; since
+                !    recordInterval is only used for reading, use the input alarm list in this check.
+                if (.not. associated(stream_cursor % recordInterval)) then
+                    alarm_cursor => stream_cursor % alarmList_in % head
+                    nAlarms = 0
+                    do while (associated(alarm_cursor))
+                        temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, err_local)
+                        if (err_local == 0) then
+                            if (nAlarms == 0) then
+                                read_interval = temp_interval
+                            else if (temp_interval < read_interval) then
+                                read_interval = temp_interval
+                            end if
+                            nAlarms = nAlarms + 1
+                        end if
+                        alarm_cursor => alarm_cursor % next
+                    end do
+                    if (nAlarms > 0) then
+                        call mpas_get_timeInterval(read_interval, timeString=propertyValue)
+                    else
+                        propertyValue = '00:00:00'
+                    end if
+                else
+                    call mpas_get_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
+                end if
+
+            case default
+                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_DEBUG_WRITE('          or specified property is not of type character.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end select
+
+    end subroutine MPAS_stream_mgr_get_property_char !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_property_logical
+    !
+    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   13 June 2014
+    !> \details
+    !>  Sets the value of a stream property within an MPAS stream manager.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_property_logical(manager, streamID, propertyName, propertyValue, ierr) !{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_property'
+
+        type (MPAS_streamManager_type), pointer :: manager
+        character (len=*), intent(in) :: streamID
+        integer, intent(in) :: propertyName
+        logical, intent(out) :: propertyValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_property_logical()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Set property
+        !
+        select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_ACTIVE)
+                propertyValue = stream_cursor % active_stream
+
+            case (MPAS_STREAM_PROPERTY_IMMUTABLE)
+                propertyValue = stream_cursor % immutable
+
+            case default
+                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_DEBUG_WRITE('          or specified property is not of type logical.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end select
+
+    end subroutine MPAS_stream_mgr_get_property_logical !}}}
+
+
 
 
     !-----------------------------------------------------------------------
@@ -1394,6 +1734,10 @@ module mpas_stream_manager
                                     stream % filename_template, stream % filename, stream % nRecords, local_ierr)
             end if
             if (local_ierr /= 0) then
+                if (local_ierr == 1) then
+                    STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
+                    STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                end if
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
             end if
@@ -1422,6 +1766,10 @@ module mpas_stream_manager
                 call build_filename(stream % referenceTime, now_time, MPAS_STREAM_EXACT_TIME, stream % maxRecords, write_interval, &
                                     stream % filename_template, temp_filename, stream % nRecords, local_ierr)
                 if (local_ierr /= 0) then
+                    if (local_ierr == 1) then
+                        STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
+                        STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                    end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
                 end if
@@ -1725,6 +2073,10 @@ module mpas_stream_manager
                 call build_filename(stream % referenceTime, now_time, whence, stream % maxRecords, read_interval, &
                                     stream % filename_template, stream % filename, stream % nRecords, local_ierr)
                 if (local_ierr /= 0) then
+                    if (local_ierr == 1) then
+                        STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
+                        STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                    end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
                 end if
@@ -1755,6 +2107,10 @@ module mpas_stream_manager
                 call build_filename(stream % referenceTime, now_time, whence, stream % maxRecords, read_interval, &
                                     stream % filename_template, temp_filename, stream % nRecords, local_ierr)
                 if (local_ierr /= 0) then
+                    if (local_ierr == 1) then
+                        STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
+                        STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                    end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
                 end if
@@ -1878,6 +2234,10 @@ module mpas_stream_manager
     !>  the requested time is before the reference time, and it will choose the earlier time
     !>  when the requested time is after the reference time. In other words, we round the
     !>  requested time towards the reference time.
+    !>  
+    !>  Return error codes:
+    !>  0 no error
+    !>  1 requested exact match for time but found remainder when calculating offset
     !-----------------------------------------------------------------------
     subroutine build_filename(ref_time, when, whence, maxRecords, period, filename_template, filename, offset, ierr)
 
@@ -2217,7 +2577,8 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_create_stream
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
+                                    MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -2249,8 +2610,8 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     !
     ierr = 0
     if (immutable == 1) then
-        write(0,*) '------ TODO: Set filename template for immutable stream '//trim(streamID)
-        write(0,*) '------ TODO: Set max records for immutable stream '//trim(streamID)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_FILENAME, filename, ierr=ierr)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords, ierr=ierr)
     else
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
     end if
