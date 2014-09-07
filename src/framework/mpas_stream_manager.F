@@ -511,6 +511,15 @@ module mpas_stream_manager
         end if
 
         !
+        ! Don't modify an immutable stream
+        !
+        if (stream % immutable) then
+            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' is immutable.')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
         ! Check that field exists
         !
         info % nDims = -1
@@ -575,6 +584,15 @@ module mpas_stream_manager
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
             STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Don't modify an immutable stream
+        !
+        if (stream % immutable) then
+            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' is immutable.')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -1682,6 +1700,14 @@ module mpas_stream_manager
         ierr = MPAS_STREAM_MGR_NOERR
 
         !
+        ! Check whether this stream is active
+        !
+        if (.not. stream % active_stream) then
+            STREAM_DEBUG_WRITE('-- Stream '//trim(stream % name)//' is not currently active and will not be written.')
+            return
+        end if
+
+        !
         ! Check whether any of the output alarms for the stream are ringing
         !
         ringing_alarm = .false.
@@ -2014,6 +2040,14 @@ module mpas_stream_manager
 
 
         ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Check whether this stream is active
+        !
+        if (.not. stream % active_stream) then
+            STREAM_DEBUG_WRITE('-- Stream '//trim(stream % name)//' is not currently active and will not be read.')
+            return
+        end if
 
         !
         ! Check whether any of the input alarms for the stream are ringing
