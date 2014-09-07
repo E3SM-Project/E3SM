@@ -290,7 +290,7 @@ module mpas_stream_manager
         else
             new_stream % referenceTime = mpas_get_clock_time(manager % streamClock, MPAS_START_TIME)
         end if
-        if (present(referenceTime)) then
+        if (present(recordInterval)) then
             allocate(new_stream % recordInterval)
             new_stream % recordInterval = recordInterval
         end if
