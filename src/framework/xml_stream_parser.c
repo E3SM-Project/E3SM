@@ -582,8 +582,12 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 
 		if (len > 0) {
 
+			/* Probably a comment tag -- though this is not a perfect check... */
+			if (tag_buf[0] == '!' && tag_buf[len-1] == '-') {
+				/* Would it be better for the tag parser to just skip over comments? */
+			}
 			/* An opening tag. Push it onto the stack... */
-			if (tag_buf[0] != '/' && tag_buf[len-1] != '/') {
+			else if (tag_buf[0] != '/' && tag_buf[len-1] != '/') {
 				node = (struct stacknode *)malloc(sizeof(struct stacknode));
 				parse_xml_tag_name(tag_buf, node->name);
 				node->line = start_line;
