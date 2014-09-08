@@ -20,7 +20,7 @@
 /* 
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
-void stream_mgr_create_stream_c(void *, const char *, int *, const char *, int *, int *, int *);
+void stream_mgr_create_stream_c(void *, const char *, int *, const char *, char *, char *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
 
@@ -655,8 +655,10 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t stream_xml;
 	ezxml_t varfile_xml;
 	ezxml_t var_xml;
-	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const;
+	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval;
 	const char *interval_in, *interval_out;
+	char ref_time_local[256];
+	char rec_intv_local[256];
 	char fieldname[256];
 	FILE *fd;
 	char msgbuf[MSGSIZE];
@@ -695,6 +697,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		records = ezxml_attr(stream_xml, "records_per_file");
 		interval_in = ezxml_attr(stream_xml, "input_interval");
 		interval_out = ezxml_attr(stream_xml, "output_interval");
+		reference_time = ezxml_attr(stream_xml, "reference_time");
+		record_interval = ezxml_attr(stream_xml, "record_interval");
 
 		fprintf(stderr, "   found immutable stream %s\n", streamID);
 
@@ -710,7 +714,22 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		else 
 			itype = 4;
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &immutable, &err);
+		if (reference_time != NULL) {
+			snprintf(ref_time_local, 256, "%s", reference_time);
+		}
+		else {
+			snprintf(ref_time_local, 256, "none");
+		}
+
+		if (record_interval != NULL) {
+			snprintf(rec_intv_local, 256, "%s", record_interval);
+		}
+		else {
+			snprintf(rec_intv_local, 256, "none");
+		}
+
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
+                                           &irecs, &immutable, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -744,6 +763,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		records = ezxml_attr(stream_xml, "records_per_file");
 		interval_in = ezxml_attr(stream_xml, "input_interval");
 		interval_out = ezxml_attr(stream_xml, "output_interval");
+		reference_time = ezxml_attr(stream_xml, "reference_time");
+		record_interval = ezxml_attr(stream_xml, "record_interval");
 
 		fprintf(stderr, "   found mutable stream %s\n", streamID);
 
@@ -759,7 +780,23 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		else 
 			itype = 4;
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, &irecs, &immutable, &err);
+		if (reference_time != NULL) {
+			snprintf(ref_time_local, 256, "%s", reference_time);
+		}
+		else {
+			snprintf(ref_time_local, 256, "none");
+		}
+
+		if (record_interval != NULL) {
+			snprintf(rec_intv_local, 256, "%s", record_interval);
+		}
+		else {
+			snprintf(rec_intv_local, 256, "none");
+		}
+
+
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
+                                           &irecs, &immutable, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -789,7 +826,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			fd = fopen(varfile, "r");
 			if (fd != NULL) {
 				while (fscanf(fd, "%s", fieldname) != EOF) {
-       			 		stream_mgr_add_field_c(manager, streamID, (const char *)fieldname, &err);
+					stream_mgr_add_field_c(manager, streamID, (const char *)fieldname, &err);
 					if (err != 0) {
 						*status = 1;
 						return;

@@ -2607,12 +2607,14 @@ end module mpas_stream_manager
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, maxRecords_c, immutable_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, ref_time_c, rec_intv_c, &
+                                      maxRecords_c, immutable_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
-                                    MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
+                                    MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_STREAM_PROPERTY_REF_TIME, &
+                                    MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -2621,12 +2623,14 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     character(kind=c_char) :: streamID_c(*)
     integer(kind=c_int) :: direction_c
     character(kind=c_char) :: filename_c(*)
+    character(kind=c_char) :: ref_time_c(*)
+    character(kind=c_char) :: rec_intv_c(*)
     integer(kind=c_int) :: maxRecords_c
     integer(kind=c_int) :: immutable_c
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, filename
+    character(len=StrKIND) :: streamID, filename, reference_time, record_interval
     integer :: direction, maxRecords, immutable, ierr
 
 
@@ -2634,6 +2638,8 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     call mpas_c_to_f_string(streamID_c, streamID)
     direction = direction_c
     call mpas_c_to_f_string(filename_c, filename)
+    call mpas_c_to_f_string(ref_time_c, reference_time)
+    call mpas_c_to_f_string(rec_intv_c, record_interval)
     immutable = immutable_c
     maxRecords = maxRecords_c
     
@@ -2648,6 +2654,16 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords, ierr=ierr)
     else
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
+    end if
+
+    if (reference_time /= 'none') then
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, reference_time, ierr=ierr)
+write(0,*) 'For stream '//trim(streamID)//' found reference time '//trim(reference_time)
+    end if
+
+    if (record_interval /= 'none') then
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_RECORD_INTV, record_interval, ierr=ierr)
+write(0,*) 'For stream '//trim(streamID)//' found record interval '//trim(record_interval)
     end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
