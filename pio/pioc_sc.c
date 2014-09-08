@@ -144,6 +144,7 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   PIO_Offset del_arr[arrlen-1];
   PIO_Offset loc_arr[arrlen-1];
 
+  // printf("%s %d\n",__FILE__,__LINE__);
 
   numblks=0;
   numgaps=0;
@@ -160,48 +161,58 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   else
     n = numtimes;
 
-  if(numblks==1) return(arrlen);
-
-  blk_len =  (PIO_Offset*) calloc(numblks,sizeof(PIO_Offset));
-  //  loc_arr = (PIO_Offset*) malloc((arrlen-1)*sizeof(PIO_Offset));
-  if(numtimes>0){
-    gaps = (PIO_Offset *) calloc(numtimes,sizeof(PIO_Offset));
-    ii=0;
-    for(i=0;i<arrlen-1;i++){
-      if(del_arr[i]>1)
-	gaps[ii++] = del_arr[i] - 1;
+  //printf("%s %d %d\n",__FILE__,__LINE__,numblks);
+  bsize = (PIO_Offset) arrlen;
+  if(numblks>1){
+    PIO_Offset blk_len[numblks];
+    PIO_Offset gaps[numtimes];
+    //    blk_len =  (PIO_Offset*) calloc(numblks,sizeof(PIO_Offset));
+    //  loc_arr = (PIO_Offset*) malloc((arrlen-1)*sizeof(PIO_Offset));
+    //printf("%s %d %d\n",__FILE__,__LINE__,numtimes);
+    if(numtimes>0){
+      //      gaps = (PIO_Offset *) calloc(numtimes,sizeof(PIO_Offset));
+      ii=0;
+      // printf("%s %d %d\n",__FILE__,__LINE__,arrlen);
+      for(i=0;i<arrlen-1;i++){
+	if(del_arr[i]>1)
+	  gaps[ii++] = del_arr[i] - 1;
+      }
+      numgaps=ii;
     }
-    numgaps=ii;
-  }
+    // printf("%s %d\n",__FILE__,__LINE__);
+    
+    j=0;
+    for(i=0;i<n;i++)
+      loc_arr[i]=1;
+    for(i=0;i<arrlen-1;i++){
+      if(del_arr[i] != 1)
+	loc_arr[ j++ ]  = i;
+    }
+    // printf("%s %d\n",__FILE__,__LINE__);
 
-  j=0;
-  for(i=0;i<n;i++)
-    loc_arr[i]=1;
-  for(i=0;i<arrlen-1;i++){
-    if(del_arr[i] != 1)
-      loc_arr[ j++ ]  = i;
-  }
+    blk_len[0] = loc_arr[0];
+    blklensum=blk_len[0];
+    for(i=1;i<numblks-1;i++){
+      blk_len[i] = loc_arr[i] - loc_arr[i-1];
+      blklensum+= blk_len[i];
+    }
+    blk_len[numblks-1] = arrlen - blklensum;
+    
+    bsize = lgcd_array(numblks, blk_len);
+    if(numgaps > 0) {
+      bsizeg = lgcd_array(numgaps, gaps);
+      bsize = lgcd(bsize,bsizeg);
+      //   free(gaps);
+    }
+    if(arr_in[0]>0) 
+      bsize = lgcd(bsize,arr_in[0]);
+    //   printf("%s %d\n",__FILE__,__LINE__);
 
-  blk_len[0] = loc_arr[0];
-  blklensum=blk_len[0];
-  for(i=1;i<numblks-1;i++){
-    blk_len[i] = loc_arr[i] - loc_arr[i-1];
-    blklensum+= blk_len[i];
+    //  free(loc_arr);
+    // free(del_arr);
+    // free(blk_len);
   }
-  blk_len[numblks-1] = arrlen - blklensum;
-
-  bsize = lgcd_array(numblks, blk_len);
-  if(numgaps > 0) {
-    bsizeg = lgcd_array(numgaps, gaps);
-    bsize = lgcd(bsize,bsizeg);
-    free(gaps);
-  }
-  if(arr_in[0]>0) 
-    bsize = lgcd(bsize,arr_in[0]);
-
-  //  free(loc_arr);
-  // free(del_arr);
-  free(blk_len);
+  //  printf("%s %d\n",__FILE__,__LINE__);
   return bsize;
 }
 

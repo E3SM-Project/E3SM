@@ -30,6 +30,12 @@ extern "C" {
 #endif
 
 
+typedef struct mapsort
+{
+  int rfrom;
+  PIO_Offset soffset;
+  PIO_Offset iomap;
+} mapsort;
 
 int  pio_add_to_iodesc_list(io_desc_t *iodesc);
 io_desc_t *pio_get_iodesc_from_id(int ioid);
@@ -62,7 +68,7 @@ long long lgcd_array(int nain, long long*ain);
   void PIO_Offset_size(MPI_Datatype *dtype, int *tsize);
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
 
-int subset_rearrange_create(const iosystem_desc_t ios,int maplen, PIO_Offset compmap[], const int gsize[],
+int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offset compmap[], const int gsize[],
 			 const int ndim, io_desc_t *iodesc);
 
 
@@ -81,6 +87,36 @@ int flush_output_buffer(file_desc_t *file);
 void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc);
 io_region *alloc_region(const int ndims);
   int pio_delete_iosystem_from_list(int piosysid);
+int gcd(int a, int b); 
+long long lgcd (long long a,long long b );
+int gcd_array(int nain, int *ain);
+  void free_region_list(io_region *top);
+  void gindex_to_coord(const int ndims, const PIO_Offset gindex, const PIO_Offset gstride[], PIO_Offset *gcoord);
+  PIO_Offset coord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PIO_Offset count[]);
+
+  int ceil2(const int i);
+  int pair(const int np, const int p, const int k);
+  int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc);
+  int expand_region(const int maplen, const PIO_Offset map[], const int region_size,
+		    const int stride, const int max_size);
+  int find_first_region(const int ndims, const int gdims[],
+			const int maplen, const PIO_Offset map[],
+			PIO_Offset start[], PIO_Offset count[]);
+  int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, 
+			   const PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[]);
+  int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_ioproc[], 
+		     const PIO_Offset dest_ioindex[]);
+  int box_rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
+			    void *rbuf, const int comm_option, const int fc_options);
+  int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
+			    void *rbuf, const int comm_option, const int fc_options);
+  int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
+			  const int ndims, io_desc_t *iodesc);
+  int compare_offsets(const void *a,const void *b) ;
+
+  void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, const int gdims[],const PIO_Offset map[]);
+  int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset compmap[], 
+			      const int gsize[], const int ndims, io_desc_t *iodesc);
 
 #if defined(__cplusplus)
 }
