@@ -261,7 +261,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_create_stream'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: direction
         character (len=*), intent(in) :: filename
@@ -997,7 +997,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_int'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         integer, intent(in) :: propertyValue
@@ -1052,7 +1052,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_char'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         character (len=*), intent(in) :: propertyValue
@@ -1120,7 +1120,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_logical'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         logical, intent(in) :: propertyValue
@@ -1178,7 +1178,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_set_property_int'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         integer, intent(out) :: propertyValue
@@ -1233,7 +1233,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_property_char'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         character (len=*), intent(out) :: propertyValue
@@ -1324,7 +1324,7 @@ module mpas_stream_manager
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_property'
 
-        type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         logical, intent(out) :: propertyValue
@@ -1645,16 +1645,14 @@ module mpas_stream_manager
                 STREAM_DEBUG_WRITE('-- Handling write of stream '//trim(stream_cursor % name))
 
                 ! Verify that the stream is an output stream
-                if (stream_cursor % direction /= MPAS_STREAM_OUTPUT .and. &
-                    stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
-                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an output stream.')
-                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                    return 
-                end if
+                if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
+                    stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
-                call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, temp_ierr)
-                if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
-                    local_ierr = MPAS_STREAM_MGR_ERROR
+                    call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, temp_ierr)
+                    if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                        local_ierr = MPAS_STREAM_MGR_ERROR
+                    end if
+
                 end if
                 stream_cursor => stream_cursor % next
             end do
@@ -1981,19 +1979,17 @@ module mpas_stream_manager
                 STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
 
                 ! Verify that the stream is an input stream
-                if (stream_cursor % direction /= MPAS_STREAM_INPUT .and. stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
-                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an input stream.')
-                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                    return 
-                end if
+                if (stream_cursor % direction == MPAS_STREAM_INPUT .or. &
+                    stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
 
-                !
-                ! What should be the meaning of actualWhen if we read multiple streams in this call?
-                !
-                call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, local_whence, &
-                                 actualWhen, temp_ierr)
-                if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
-                    local_ierr = MPAS_STREAM_MGR_ERROR
+                    !
+                    ! What should be the meaning of actualWhen if we read multiple streams in this call?
+                    !
+                    call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
+                                     local_when, local_whence, actualWhen, temp_ierr)
+                    if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                        local_ierr = MPAS_STREAM_MGR_ERROR
+                    end if
                 end if
 
                 stream_cursor => stream_cursor % next
