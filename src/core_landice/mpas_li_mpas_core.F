@@ -61,10 +61,11 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, startTimeStamp)
+   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
    
       use mpas_configure
       use mpas_grid_types
+      use mpas_stream_manager
       use li_velocity
       use li_setup
 !!!      use mpas_tracer_advection
@@ -84,6 +85,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/output: Domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -172,10 +174,11 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, output_obj, output_frame)
+   subroutine mpas_core_run(domain, stream_manager, output_obj, output_frame)
    
       use mpas_grid_types
       use mpas_kind_types
+      use mpas_stream_manager
       use mpas_io_output
       use mpas_timer
       use li_diagnostic_vars
@@ -196,6 +199,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
       type (io_output_object), intent(inout) :: output_obj   !< Input/output: i/o output object
       integer, intent(inout) :: output_frame   !< Input/output: output frame number
 
@@ -389,9 +393,10 @@ module mpas_core
 !>  This routine finalizes the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_finalize(domain)
+   subroutine mpas_core_finalize(domain, stream_manager)
    
       use mpas_grid_types
+      use mpas_stream_manager
       use li_velocity, only: li_velocity_finalize
    
       implicit none
@@ -408,6 +413,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain    !< Input/output: Domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !

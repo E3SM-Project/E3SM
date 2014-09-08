@@ -23,16 +23,18 @@ module mpas_core
    contains
 
 
-   subroutine mpas_core_init(domain, startTimeStamp)
+   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
    
       use mpas_configure
       use mpas_grid_types
+      use mpas_stream_manager
       use sw_test_cases
       use sw_constants
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
    
       real (kind=RKIND) :: dt
@@ -200,16 +202,18 @@ module mpas_core
    end subroutine mpas_init_block
    
    
-   subroutine mpas_core_run(domain, output_obj, output_frame)
+   subroutine mpas_core_run(domain, stream_manager, output_obj, output_frame)
    
       use mpas_grid_types
       use mpas_kind_types
+      use mpas_stream_manager
       use mpas_io_output
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
 
@@ -386,13 +390,15 @@ module mpas_core
    end subroutine mpas_timestep
    
    
-   subroutine mpas_core_finalize(domain)
+   subroutine mpas_core_finalize(domain, stream_manager)
    
       use mpas_grid_types
+      use mpas_stream_manager
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
  
      call mpas_destroy_clock(clock, ierr)

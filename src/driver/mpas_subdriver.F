@@ -136,7 +136,7 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       ! Initialize core
       !
-      call mpas_core_init(domain_ptr, timeStamp)
+      call mpas_core_init(domain_ptr, stream_manager, timeStamp)
 
       call mpas_timer_stop("initialize")
 
@@ -161,7 +161,7 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
 
       implicit none
 
-      call mpas_core_run(domain_ptr, output_obj, output_frame)
+      call mpas_core_run(domain_ptr, stream_manager, output_obj, output_frame)
 
    end subroutine mpas_run
 
@@ -177,13 +177,11 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       call mpas_output_state_finalize(output_obj, domain_ptr % dminfo)
 
-      call MPAS_stream_mgr_finalize(stream_manager)
-
 
       !
       ! Finalize core
       !
-      call mpas_core_finalize(domain_ptr)
+      call mpas_core_finalize(domain_ptr, stream_manager)
 
       call mpas_timer_stop("total time")
       call mpas_timer_write()
@@ -192,6 +190,8 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       ! Finalize infrastructure
       !
+      call MPAS_stream_mgr_finalize(stream_manager)
+
       call mpas_framework_finalize(dminfo, domain_ptr)
 
    end subroutine mpas_finalize
