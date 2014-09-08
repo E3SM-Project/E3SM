@@ -93,14 +93,16 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, startTimeStamp)!{{{
+   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)!{{{
 
       use mpas_grid_types
+      use mpas_stream_manager
       use ocn_tracer_advection
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       real (kind=RKIND) :: dt
@@ -541,16 +543,18 @@ print *, 'output alarmTimeStep', alarmTimeStep, err_tmp
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, output_obj, output_frame)!{{{
+   subroutine mpas_core_run(domain, stream_manager, output_obj, output_frame)!{{{
    
       use mpas_kind_types
       use mpas_grid_types
+      use mpas_stream_manager
       use mpas_io_output
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
    
@@ -970,13 +974,15 @@ print *, 'output alarmTimeStep', alarmTimeStep, err_tmp
 
    end subroutine ocn_init_split_timestep!}}}
  
-   subroutine mpas_core_finalize(domain)!{{{
+   subroutine mpas_core_finalize(domain, stream_manager)!{{{
    
       use mpas_grid_types
+      use mpas_stream_manager
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
 
       call ocn_analysis_finalize(domain, ierr) 
