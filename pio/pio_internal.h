@@ -76,9 +76,9 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
 			 const int ndim, io_desc_t *iodesc);
 
 
-int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
+int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
-int box_rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
+int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[],int displace[]);
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);
@@ -106,12 +106,7 @@ int gcd_array(int nain, int *ain);
 			   const PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[]);
   int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_ioproc[], 
 		     const PIO_Offset dest_ioindex[]);
-  int box_rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
-			    void *rbuf, const int comm_option, const int fc_options);
-  int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
-			    void *rbuf, const int comm_option, const int fc_options);
-  int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
-			  const int ndims, io_desc_t *iodesc);
+
   int compare_offsets(const void *a,const void *b) ;
 
   void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, const int gdims[],const PIO_Offset map[]);

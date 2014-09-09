@@ -283,7 +283,7 @@
      //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
      //  }
-     ierr = box_rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
+     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
    }else{
      iobuf = array;
    }
@@ -417,6 +417,7 @@
 	    MPI_Send( tmp_start, ndims, MPI_OFFSET, 0, ios->io_rank, ios->io_comm);
 	    MPI_Recv( bufptr, tmp_bufsize, iodesc->basetype, 0, ios->io_rank, ios->io_comm, &status);
 	  }
+	  //	  printf("%s %d %d %d %d %d %d %d\n",__FILE__,__LINE__,regioncnt,tmp_start[1],tmp_start[2],tmp_count[1],tmp_count[2], ndims);
 	}else if(ios->io_rank==0){
 	  for( i=ios->num_iotasks-1; i>=0; i--){
 	    if(i==0){
@@ -559,7 +560,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
   if(iodesc->rearranger > 0){
     //    printf("%s %d %d %ld\n",__FILE__,__LINE__,rlen,arraylen);
-    ierr = box_rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
+    ierr = rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
 
     if(rlen>0)
       free(iobuf);
