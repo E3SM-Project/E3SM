@@ -103,9 +103,9 @@ int gcd_array(int nain, int *ain);
 			const int maplen, const PIO_Offset map[],
 			PIO_Offset start[], PIO_Offset count[]);
   int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, 
-			   const PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[]);
-  int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_ioproc[], 
-		     const PIO_Offset dest_ioindex[]);
+			   const PIO_Offset mindex[],const int mcount[], int *mfrom, MPI_Datatype mtype[]);
+  int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maplen, const int dest_ioproc[], 
+		     const PIO_Offset dest_ioindex[], MPI_Comm mycomm);
 
   int compare_offsets(const void *a,const void *b) ;
 
