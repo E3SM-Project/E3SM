@@ -288,9 +288,7 @@ my $OCN_GRID        = $xmlvars{'OCN_GRID'};
 my $DOCN_MODE       = $xmlvars{'DOCN_MODE'};
 my $SSTICE_STREAM   = $xmlvars{'SSTICE_STREAM'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
     print "CESM inputdata root directory: $DIN_LOC_ROOT \n"; 
     print "  docn mode is $DOCN_MODE \n";

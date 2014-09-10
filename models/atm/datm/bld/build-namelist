@@ -400,9 +400,7 @@ if ( $GRID eq "CLM_USRDAT" && $CLM_USRDAT_NAME =~ /^(UNSET|)$/ ) {
 EOF
 }
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 if ($opts{'test'}) {
