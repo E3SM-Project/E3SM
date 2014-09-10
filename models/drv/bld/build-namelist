@@ -806,7 +806,7 @@ check_input_files($nl, $DIN_LOC_ROOT, "../cpl.input_data_list");
 
 $definition = Build::NamelistDefinition->new($nl_modio_definition_file);
 
-foreach my $model qw(cpl atm lnd ice ocn glc rof wav) {
+foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
 
     my $LID     = "$ENV{'LID'}";
     my $moddiri = "$xmlvars{'EXEROOT'}/${model}";
