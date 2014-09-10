@@ -287,9 +287,7 @@ my $ICE_DOMAIN_PATH = $xmlvars{'ICE_DOMAIN_PATH'};
 my $ICE_GRID        = $xmlvars{'ICE_GRID'};
 my $DICE_MODE       = $xmlvars{'DICE_MODE'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
     print "  CESM inputdata root directory: $DIN_LOC_ROOT$eol"; 
     print "  dice_mode is $DICE_MODE \n";
