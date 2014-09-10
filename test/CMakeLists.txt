@@ -1,3 +1,8 @@
+# Include PIO include and lib directories
+INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
+LINK_DIRECTORIES(${PIO_LIB_DIR})
+
+# Include test util
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/util)
 
 # PIO Test util sources
