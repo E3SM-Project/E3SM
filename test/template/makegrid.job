@@ -40,7 +40,12 @@ set HOMME = ~/codes/homme  # path to HOMME code
 #set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 #set MACH = $HOMME/cmake/machineFiles/climate.cmake
 #set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
-set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+if (! ${?MACH} ) then
+   echo "edit this script to set MACH to your cmake machine file"
+   exit 1
+endif
+
 set wdir = ~/scratch1
 
 mkdir -p $wdir/preqx/template/movies
@@ -59,19 +64,12 @@ set output = jw_baroclinic1.nc
 
 
 if ( $ne == 0 ) then
-#    set meshname = ARM_30_x8.g
-#    set meshfile=~/codes/mapping/grids/$meshname
-#    set meshname = arm_30_x8_lowconn.g
-#    set meshfile=~/codes/mapping/grids/$meshname
-    set meshname = mountain_10_x2.g
+#    set meshname = mountain_10_x2.g
+#    set meshfile=$HOMME/test/mesh_refine/grids/$meshname
+
+    set meshname = kite_grid.g
     set meshfile=$HOMME/test/mesh_refine/grids/$meshname
 
-#    set meshname = mountain_10_x8.g
-#    set meshfile=$HOMME/test/mesh_refine/grids/mountain_10_x8.g
-#    set meshname = neale2_15_x8.g
-#    set meshfile=~/codes/mapping/grids/$meshname
-#    set meshname = ncar16_x8_lowconV2.g
-#    set meshfile=~/codes/mapping/grids/$meshname
 
     set nu = 1.1e12
 #    dtime=600 nsplit=19  qsplit=5   tstep=6.3
