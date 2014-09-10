@@ -93,12 +93,17 @@ endif
 set nlev=20
 set qsize = 0
 
-if ( $NPTS == 4 ) then
-   set outnames = "'area','cv_lat','cv_lon','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area','hypervis'"
-else
-   set outnames = "'area','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area','hypervis'"
-endif
 
+set outnames = "'area','corners','hypervis'"
+if ( $NPTS == 4 ) then
+   # if NPTS=4, HOMME can compute cv_lat and cv_lon 
+   set outnames = "$outnames,'cv_lat','cv_lon'"
+endif
+if ( $ne != 0 )  then
+   # can compute CSLAM/physics grid
+   set outnames = "$outnames,'phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+endif
+echo $outnames
 
 cd $bld
 if (!( -f $exe )) then
