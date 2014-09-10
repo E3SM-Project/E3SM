@@ -363,7 +363,7 @@
 	if(regioncnt==0)
 	  bufptr = IOBUF;
 	else
-	  (char *) bufptr=(char *) IOBUF + tsize*region->loffset;
+	  bufptr=(void *)((char *) IOBUF + tsize*region->loffset);
 	if(vdesc->record >= 0 && fndims>1){
 	  start[0] = vdesc->record;
 	  count[0] = 1;
