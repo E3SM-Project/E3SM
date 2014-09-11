@@ -59,8 +59,8 @@
         <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
         <PIO_CONFIG_OPTS> --enable-filesystem-hints=lustre </PIO_CONFIG_OPTS>
         <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
-        <MPILIBS>openmpi</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
-        <CESMSCRATCHROOT>/gscratch1/$USER</CESMSCRATCHROOT>
+        <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
+        <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch</CESMSCRATCHROOT>
         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
