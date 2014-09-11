@@ -20,7 +20,6 @@
 
 module mpas_core
 
-   use mpas_configure
    use mpas_framework
    use mpas_timekeeping
    use mpas_dmpar
@@ -52,6 +51,8 @@ module mpas_core
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_nonlocalflux
    use ocn_gm
+
+   use ocn_high_freq_thickness_hmix_del2
 
    use ocn_equation_of_state
 
@@ -108,9 +109,32 @@ module mpas_core
       type (dm_info) :: dminfo
 
       integer :: err, err_tmp
+      integer, pointer :: nVertLevels
       real (kind=RKIND) :: maxDensity, maxDensity_global
+      real (kind=RKIND), dimension(:), pointer :: meshDensity
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
+
+      character (len=StrKIND), pointer :: xtime
+
+      logical, pointer :: config_do_restart, config_filter_btr_mode, config_conduct_tests
+      logical, pointer :: config_write_stats_on_startup
+      character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
+      real (kind=RKIND), pointer :: config_maxMeshDensity, config_dt
+
+      ! Setup ocean config pool
+      call ocn_constants_init(domain % configs, domain % packages)
 
       dminfo = domain % dminfo
+
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
+      call mpas_pool_get_config(domain % configs, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
+      call mpas_pool_get_config(domain % configs, 'config_maxMeshDensity', config_maxMeshDensity)
+      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(domain % configs, 'config_conduct_tests', config_conduct_tests)
+      call mpas_pool_get_config(domain % configs, 'config_write_stats_on_startup', config_write_stats_on_startup)
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -146,7 +170,7 @@ module mpas_core
       call ocn_tracer_nonlocalflux_init(err_tmp)
       err = ior(err,err_tmp)
 
-      call ocn_vmix_init(domain,err_tmp)
+      call ocn_vmix_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_equation_of_state_init(err_tmp)
@@ -160,17 +184,18 @@ module mpas_core
       call ocn_forcing_init(err_tmp)
       err = ior(err,err_tmp)
 
+      call ocn_high_freq_thickness_hmix_del2_init(err_tmp)
+      err = ior(err,err_tmp)
 
       call ocn_global_diagnostics_init(dminfo,err_tmp)
       err = ior(err, err_tmp)
 
-      call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
+      call ocn_sea_ice_init(nVertLevels, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
-
-      call ocn_constants_init()
 
       call mpas_timer_init(domain)
 
@@ -218,7 +243,9 @@ module mpas_core
         maxDensity=-1
         block => domain % blocklist
         do while (associated(block))
-          maxDensity = max(maxDensity, maxval(block % mesh % meshDensity % array))
+          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+          call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
+          maxDensity = max(maxDensity, maxval(meshDensity))
           block => block % next
         end do
         call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
@@ -234,11 +261,14 @@ module mpas_core
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_init_block(block, block % mesh, dt, err)
+         call mpas_init_block(block, dt, err)
          if(err.eq.1) then
              call mpas_dmpar_abort(dminfo)
          endif
-         block % diagnostics % xtime % scalar = startTimeStamp 
+
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+         xtime = startTimeStamp 
          block => block % next
       end do
 
@@ -281,9 +311,20 @@ module mpas_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character(len=StrKIND) :: restartTimeStamp
+      character(len=StrKIND), pointer :: config_start_time, config_stop_time, config_run_duration
+      character(len=StrKIND), pointer :: config_restart_timestamp_name
+      character(len=StrKIND), pointer :: config_output_interval, config_restart_interval, config_stats_interval
       integer :: ierr
 
-      if(config_start_time == 'file') then
+      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(domain % configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(domain % configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(domain % configs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(domain % configs, 'config_restart_interval', config_restart_interval)
+      call mpas_pool_get_config(domain % configs, 'config_stats_interval', config_stats_interval)
+
+      if(trim(config_start_time) == 'file') then
         open(22,file=config_restart_timestamp_name,form='formatted',status='old')
         read(22,*) restartTimeStamp
         close(22)
@@ -352,7 +393,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_init_block(block, mesh, dt, err)!{{{
+   subroutine mpas_init_block(block, dt, err)!{{{
    
       use mpas_grid_types
       use mpas_rbf_interpolation
@@ -363,71 +404,122 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       implicit none
    
       type (block_type), intent(inout) :: block
-      type (mesh_type), intent(inout) :: mesh
       real (kind=RKIND), intent(in) :: dt
       integer, intent(out) :: err
+
+      type (mpas_pool_type), pointer :: meshPool, averagePool, statePool
+      type (mpas_pool_type), pointer :: forcingPool, diagnosticsPool, scratchPool
       integer :: i, iEdge, iCell, k
       integer :: err1
+
+      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell
+      integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, uTransport
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uBolusGM, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels
+      integer, pointer :: config_horiz_tracer_adv_order
+      logical, pointer :: config_hmix_scaleWithMesh
+      real (kind=RKIND), pointer :: config_maxMeshDensity
+
+      call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(block % dimensions, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'state', statePool)
+      call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+      call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+      call mpas_pool_get_subpool(block % structs, 'average', averagePool)
+
+      call mpas_pool_get_array(meshPool, 'derivTwo', derivTwo)
+      call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
+      call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
+      call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge', nAdvCellsForEdge)
+      call mpas_pool_get_array(meshPool, 'advCellsForEdge', advCellsForEdge)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', highOrderAdvectionMask)
+      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
+      call mpas_pool_get_array(meshPool, 'edgeTangentVectors', edgeTangentVectors)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+
+      call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
+      call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
+      call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
    
-      call ocn_setup_sign_and_index_fields(mesh)
-      call mpas_initialize_deriv_two(mesh, mesh % derivTwo % array, err)
-      call mpas_tracer_advection_coefficients(mesh, &
-          config_horiz_tracer_adv_order, mesh % derivTwo % array, mesh % advCoefs % array, &
-          mesh % advCoefs3rd % array, mesh % nAdvCellsForEdge % array, mesh % advCellsForEdge % array, &
-          err1, mesh % maxLevelCell % array, mesh % highOrderAdvectionMask % array, &
-          mesh % boundaryCell % array)
+      call ocn_setup_sign_and_index_fields(meshPool)
+      call mpas_initialize_deriv_two(meshPool, derivTwo, err)
+      call mpas_tracer_advection_coefficients(meshPool, &
+          config_horiz_tracer_adv_order, derivTwo, advCoefs, &
+          advCoefs3rd, nAdvCellsForEdge, advCellsForEdge, &
+          err1, maxLevelCell, highOrderAdvectionMask, &
+          boundaryCell)
       err = ior(err, err1)
 
-      call ocn_time_average_init(block % average)
+      call ocn_time_average_init(averagePool)
    
       call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
-      call ocn_diagnostic_solve(dt,  block % state % time_levs(1) % state, block % forcing, mesh, block % diagnostics, block % scratch)
+      call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool)
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-      block % diagnostics % uTransport % array(:,:) &
-            = block % state % time_levs(1) % state % normalVelocity % array(:,:) &
-            + block % diagnostics % uBolusGM % array(:,:)
+      uTransport(:,:) = normalVelocity(:,:) + uBolusGM(:,:)
 
-      call ocn_compute_mesh_scaling(mesh)
+      call ocn_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
  
-      call mpas_rbf_interp_initialize(mesh)
-      call mpas_initialize_tangent_vectors(mesh, mesh % edgeTangentVectors % array)
+      call mpas_rbf_interp_initialize(meshPool)
+      call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
 
-      call mpas_init_reconstruct(mesh)
-      call mpas_reconstruct(mesh, block % state % time_levs(1) % state % normalVelocity % array,                  &
-                       block % diagnostics % normalVelocityX % array,            &
-                       block % diagnostics % normalVelocityY % array,            &
-                       block % diagnostics % normalVelocityZ % array,            &
-                       block % diagnostics % normalVelocityZonal % array,        &
-                       block % diagnostics % normalVelocityMeridional % array    &
+      call mpas_init_reconstruct(meshPool)
+      call mpas_reconstruct(meshPool, normalVelocity,        &
+                       normalVelocityX,            &
+                       normalVelocityY,            &
+                       normalVelocityZ,            &
+                       normalVelocityZonal,        &
+                       normalVelocityMeridional    &
                       )
 
       ! initialize velocities and tracers on land to be zero.
+      areaCell(nCells+1) = -1.0e34
 
-      block % mesh % areaCell % array(block % mesh % nCells+1) = -1.0e34
+      layerThickness(:, nCells+1) = 0.0
 
-      block % state % time_levs(1) % state % layerThickness % array(:,block % mesh % nCells+1) = 0.0
+      do iEdge=1, nEdges
+         normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0
 
-      do iEdge=1,block % mesh % nEdges
-         block % state % time_levs(1) % state % normalVelocity % array( &
-             block % mesh % maxLevelEdgeTop % array(iEdge)+1 &
-            :block % mesh % maxLevelEdgeBot % array(iEdge), iEdge) = 0.0
-
-         block % state % time_levs(1) % state % normalVelocity % array( &
-             block % mesh % maxLevelEdgeBot % array(iEdge)+1: &
-             block % mesh % nVertLevels,iEdge) = -1.0e34
-      end do
-      do iCell=1,block % mesh % nCells
-         block % state % time_levs(1) % state % tracers % array( &
-            :, block % mesh % maxLevelCell % array(iCell)+1 &
-              :block % mesh % nVertLevels,iCell) =  -1.0e34
+         normalVelocity(maxLevelEdgeBot(iEdge)+1:nVertLevels,iEdge) = -1.0e34
       end do
 
-      do i=2,nTimeLevs
-        call mpas_copy_state(block % state % time_levs(i) % state, &
-                             block % state % time_levs(1) % state)
+      do iCell=1,nCells
+         tracers(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34
       end do
+
+      call mpas_pool_initialize_time_levels(statePool)
 
    end subroutine mpas_init_block!}}}
    
@@ -464,7 +556,18 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr
+
+      type (mpas_pool_type), pointer :: averagePool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: forcingPool
+
+      real (kind=RKIND), pointer :: config_dt
+      logical, pointer :: config_write_output_on_startup
    
+      call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
+      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+
       ! Eventually, dt should be domain specific
       dt = config_dt
 
@@ -480,7 +583,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
-        call ocn_time_average_init(block_ptr % average)
+        call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
+        call ocn_time_average_init(averagePool)
         block_ptr => block_ptr % next
       end do
 
@@ -498,8 +602,11 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
    
          block_ptr => domain % blocklist
          do while(associated(block_ptr))
-           call ocn_forcing_build_arrays(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % forcing, ierr)
-           call ocn_forcing_build_transmission_array(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % forcing, ierr)
+           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+           call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
+           call ocn_forcing_build_transmission_array(meshPool, statePool, forcingpool, ierr, 1)
            block_ptr => block_ptr % next
          end do
 
@@ -510,7 +617,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain % blocklist
          do while(associated(block_ptr))
-            call mpas_shift_time_levels_state(block_ptr % state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+            call mpas_pool_shift_time_levels(statePool)
             block_ptr => block_ptr % next
          end do
       
@@ -527,7 +635,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
-                call ocn_time_average_normalize(block_ptr % average)
+                call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
+                call ocn_time_average_normalize(averagePool)
                 block_ptr => block_ptr % next
             end do
 
@@ -535,7 +644,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
-                call ocn_time_average_init(block_ptr % average)
+                call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
+                call ocn_time_average_init(averagePool)
                 block_ptr => block_ptr % next
             end do
          end if
@@ -576,38 +686,70 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       integer :: i, j, k
       integer :: eoe
       type (block_type), pointer :: block_ptr
+
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: scratchPool
+
+      type (field2DReal), pointer :: windStressFull, windStressX, windStressY, windStressZ, windStressZonal, windStressMeridional
+
+      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, windStressZonalDiag, windStressMeridionalDiag
+
+      integer, pointer :: config_frames_per_outfile
+
+      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
    
       ! Compute output diagnostics
       block_ptr => domain % blocklist
       do while (associated(block_ptr))
-         call ocn_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
-         call mpas_allocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % windStressX, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % windStressY, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % windStressZ, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % windStressZonal, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % windStressMeridional, .true.)
+         call mpas_pool_get_field(scratchPool, 'windStressFullScratch', windStressFull)
+         call mpas_pool_get_field(scratchPool, 'windStressXScratch', windStressX)
+         call mpas_pool_get_field(scratchPool, 'windStressYScratch', windStressY)
+         call mpas_pool_get_field(scratchPool, 'windStressZScratch', windStressZ)
+         call mpas_pool_get_field(scratchPool, 'windStressZonalScratch', windStressZonal)
+         call mpas_pool_get_field(scratchPool, 'windStressMeridionalScratch', windStressMeridional)
 
-         block_ptr % scratch % windStressFull % array = 0.0_RKIND
-         block_ptr % scratch % windStressFull % array(1,:) = block_ptr % forcing % surfaceWindStress % array
+         call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
 
-         call mpas_reconstruct(block_ptr % mesh, block_ptr % scratch % windStressFull % array, &
-                               block_ptr % scratch % windStressX % array, &
-                               block_ptr % scratch % windStressY % array, &
-                               block_ptr % scratch % windStressZ % array, &
-                               block_ptr % scratch % windStressZonal % array, &
-                               block_ptr % scratch % windStressMeridional % array)
+         call mpas_pool_get_array(diagnosticsPool, 'windStressZonalDiag', windStressZonalDiag)
+         call mpas_pool_get_array(diagnosticsPool, 'windStressMeridionalDiag', windStressMeridionalDiag)
 
-         block_ptr % diagnostics % windStressZonalDiag % array(:) = block_ptr % scratch % windStressZonal % array(1,:)
-         block_ptr % diagnostics % windStressMeridionalDiag % array(:) = block_ptr % scratch % windStressMeridional % array(1,:)
+         call ocn_compute_output_diagnostics(statePool, meshPool, block_ptr % dimensions)
 
-         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressX, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressY, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZ, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZonal, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressMeridional, .true.)
+         call mpas_allocate_scratch_field(windStressFull, .true.)
+         call mpas_allocate_scratch_field(windStressX, .true.)
+         call mpas_allocate_scratch_field(windStressY, .true.)
+         call mpas_allocate_scratch_field(windStressZ, .true.)
+         call mpas_allocate_scratch_field(windStressZonal, .true.)
+         call mpas_allocate_scratch_field(windStressMeridional, .true.)
+
+         windStressFull % array = 0.0_RKIND
+         windStressFull % array(1,:) = surfaceWindStress
+
+         call mpas_reconstruct(meshPool, windStressFull % array, &
+                               windStressX % array, &
+                               windStressY % array, &
+                               windStressZ % array, &
+                               windStressZonal % array, &
+                               windStressMeridional % array)
+
+         windStressZonalDiag(:) = windStressZonal % array(1,:)
+         windStressMeridionalDiag(:) = windStressMeridional % array(1,:)
+
+         call mpas_deallocate_scratch_field(windStressFull, .true.)
+         call mpas_deallocate_scratch_field(windStressX, .true.)
+         call mpas_deallocate_scratch_field(windStressY, .true.)
+         call mpas_deallocate_scratch_field(windStressZ, .true.)
+         call mpas_deallocate_scratch_field(windStressZonal, .true.)
+         call mpas_deallocate_scratch_field(windStressMeridional, .true.)
 
          block_ptr => block_ptr % next
       end do
@@ -626,7 +768,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
    
    end subroutine ocn_write_output_frame!}}}
    
-   subroutine ocn_compute_output_diagnostics(state, mesh)!{{{
+   subroutine ocn_compute_output_diagnostics(statePool, meshPool, dimensionsPool)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain
    !
@@ -639,9 +781,10 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       use mpas_grid_types
    
       implicit none
-   
-      type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: mesh
+
+      type (mpas_pool_type), intent(in) :: statePool
+      type (mpas_pool_type), intent(in) :: meshPool
+      type (mpas_pool_type), intent(in) :: dimensionsPool
    
       integer :: i, eoe
       integer :: iEdge, k
@@ -718,41 +861,60 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       integer :: i, iCell, iEdge, iVertex, k
       type (block_type), pointer :: block
 
+      type (mpas_pool_type), pointer :: statePool, meshPool
+
       integer :: iTracer, cell, cell1, cell2
+      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND) :: normalThicknessFluxSum, layerThicknessSum, layerThicknessEdge1
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, normalBarotropicVelocity
          
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      integer :: nVertLevels
+      real (kind=RKIND), dimension(:,:), pointer :: normalBaroclinicVelocity, normalVelocity
+      integer, pointer :: nVertLevels, nCells, nEdges
+      character (len=StrKIND), pointer :: config_time_integrator
+      logical, pointer :: config_filter_btr_mode
 
       ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_config(block % configs, 'config_time_integrator', config_time_integrator)
+         call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-         layerThickness          => block % state % time_levs(1) % state % layerThickness % array
-         refBottomDepth => block % mesh % refBottomDepth % array
-         nVertLevels = block % mesh % nVertLevels
+         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
+         call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, 1)
+         
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
          ! Compute barotropic velocity at first timestep
          ! This is only done upon start-up.
          if (trim(config_time_integrator) == 'unsplit_explicit') then
-            block % state % time_levs(1) % state % normalBarotropicVelocity % array(:) = 0.0
+            call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity)
+            normalBarotropicVelocity(:) = 0.0
 
-              block % state % time_levs(1) % state % normalBaroclinicVelocity % array(:,:) &
-            = block % state % time_levs(1) % state % normalVelocity % array(:,:) 
+            normalBaroclinicVelocity(:,:) = normalVelocity(:,:) 
 
          elseif (trim(config_time_integrator) == 'split_explicit') then
 
             if (config_filter_btr_mode) then
-               do iCell=1,block % mesh % nCells
-                  block % state % time_levs(1) % state % layerThickness % array(1,iCell) & 
-                = block % mesh % refBottomDepth % array(1)
+               do iCell = 1, nCells
+                  layerThickness(1,iCell) = refBottomDepth(1)
                enddo
             endif 
 
-            do iEdge=1,block % mesh % nEdges
-               cell1 = block % mesh % cellsOnEdge % array(1,iEdge)
-               cell2 = block % mesh % cellsOnEdge % array(2,iEdge)
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
 
                ! normalBarotropicVelocity = sum(u)/sum(h) on each column
                ! ocn_diagnostic_solve has not yet been called, so compute hEdge 
@@ -761,46 +923,39 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
                ! thicknessSum is initialized outside the loop because on land boundaries 
                ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a 
                ! nonzero value to avoid a NaN.
-               layerThicknessEdge1 = 0.5*( &
-                   block % state % time_levs(1) % state % layerThickness % array(1,cell1) & 
-                 + block % state % time_levs(1) % state % layerThickness % array(1,cell2) ) 
-               normalThicknessFluxSum = layerThicknessEdge1*block % state % time_levs(1) % state % normalVelocity % array(1,iEdge)
+               layerThicknessEdge1 = 0.5*( layerThickness(1,cell1) + layerThickness(1,cell2) ) 
+               normalThicknessFluxSum = layerThicknessEdge1 * normalVelocity(1,iEdge)
                layerThicknessSum = layerThicknessEdge1
 
-               do k=2,block % mesh % maxLevelEdgeTop % array(iEdge)
+               do k=2, maxLevelEdgeTop(iEdge)
                   ! ocn_diagnostic_solve has not yet been called, so compute hEdge 
                   ! just for this edge.
-                  layerThicknessEdge1 = 0.5*( &
-                      block % state % time_levs(1) % state % layerThickness % array(k,cell1) & 
-                    + block % state % time_levs(1) % state % layerThickness % array(k,cell2) ) 
+                  layerThicknessEdge1 = 0.5*( layerThickness(k,cell1) + layerThickness(k,cell2) ) 
 
                   normalThicknessFluxSum = normalThicknessFluxSum &
-                     + layerThicknessEdge1*block % state % time_levs(1) % state % normalVelocity % array(k,iEdge)
+                     + layerThicknessEdge1 * normalVelocity(k,iEdge)
                   layerThicknessSum = layerThicknessSum + layerThicknessEdge1
 
                enddo
-               block % state % time_levs(1) % state % normalBarotropicVelocity % array(iEdge) = normalThicknessFluxSum/layerThicknessSum
+               normalBarotropicVelocity(iEdge) = normalThicknessFluxSum / layerThicknessSum
 
                ! normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
-               do k=1,block % mesh % maxLevelEdgeTop % array(iEdge)
-                 block % state % time_levs(1) % state % normalBaroclinicVelocity % array(k,iEdge) &
-                 = block % state % time_levs(1) % state % normalVelocity % array(k,iEdge) &
-                 - block % state % time_levs(1) % state % normalBarotropicVelocity % array(iEdge)
+               do k = 1, maxLevelEdgeTop(iEdge)
+                  normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
                enddo
 
                ! normalBaroclinicVelocity=0, normalVelocity=0 on land cells
-               do k=block % mesh % maxLevelEdgeTop % array(iEdge)+1, block % mesh % nVertLevels
-                 block % state % time_levs(1) % state % normalBaroclinicVelocity % array(k,iEdge) = 0.0
-                 block % state % time_levs(1) % state % normalVelocity % array(k,iEdge) = 0.0
+               do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
+                  normalBaroclinicVelocity(k,iEdge) = 0.0
+                  normalVelocity(k,iEdge) = 0.0
                enddo
             enddo
 
             if (config_filter_btr_mode) then
                ! filter normalBarotropicVelocity out of initial condition
-                block % state % time_levs(1) % state % normalVelocity % array(:,:) &
-              = block % state % time_levs(1) % state % normalBaroclinicVelocity % array(:,:)
+                normalVelocity(:,:) = normalBaroclinicVelocity(:,:)
 
-               block % state % time_levs(1) % state % normalBarotropicVelocity % array(:) = 0.0
+                normalBarotropicVelocity(:) = 0.0
             endif 
 
          endif
@@ -839,15 +994,37 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 !>   *not* allocated until after this routine is called.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(ierr)!{{{
-
-      use mpas_packages
+   subroutine mpas_core_setup_packages(configPool, packagePool, ierr)!{{{
 
       implicit none
+
+      type (mpas_pool_type), intent(in) :: configPool
+      type (mpas_pool_type), intent(in) :: packagePool
 
       integer, intent(out) :: ierr
 
       integer :: err_tmp
+
+      logical, pointer :: thicknessFilterActive
+      logical, pointer :: splitTimeIntegratorActive
+      logical, pointer :: surfaceRestoringActive
+      logical, pointer :: bulkForcingActive
+      logical, pointer :: frazilIceActive
+
+      logical, pointer :: config_use_freq_filtered_thickness
+      logical, pointer :: config_frazil_ice_formation
+      character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type
+
+      call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
+      call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
+      call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
+      call mpas_pool_get_package(packagePool, 'bulkForcingActive', bulkForcingActive)
+      call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
+
+      call mpas_pool_get_config(configPool, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
+      call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
+      call mpas_pool_get_config(configPool, 'config_forcing_type', config_forcing_type)
+      call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)
 
       ierr = 0
 
@@ -871,7 +1048,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
          frazilIceActive = .true.
       end if
 
-      call ocn_analysis_setup_packages(err_tmp)
+      call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
       ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}

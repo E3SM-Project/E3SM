@@ -21,7 +21,7 @@
 module ocn_vel_forcing_rayleigh
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_rayleigh_tend(mesh, normalVelocity, tend, err)!{{{
+   subroutine ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -80,8 +80,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity    !< Input: velocity 
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -106,7 +106,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, k
+      integer :: iEdge, k
+      integer, pointer :: nEdgesSolve
       integer, dimension(:), pointer :: maxLevelEdgeTop
 
       !-----------------------------------------------------------------
@@ -119,13 +120,13 @@ contains
 
       err = 0
 
-      if(.not.rayleighFrictionOn) return
+      if ( .not. rayleighFrictionOn ) return
 
-      nEdgesSolve = mesh % nEdgesSolve
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-      do iEdge=1,nEdgesSolve
-        do k=1,maxLevelEdgeTop(iEdge)
+      do iEdge = 1, nEdgesSolve
+        do k = 1, maxLevelEdgeTop(iEdge)
 
            tend(k,iEdge) = tend(k,iEdge) - rayleighDampingCoef * normalVelocity(k,iEdge)
 
@@ -162,14 +163,19 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_Rayleigh_friction
+      real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff
 
       err = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', config_Rayleigh_friction)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', config_Rayleigh_damping_coeff)
+
       rayleighDampingCoef = 0.0
 
-      if (config_rayleigh_friction) then
+      if (config_Rayleigh_friction) then
           rayleighFrictionOn = .true.
-          rayleighDampingCoef = config_rayleigh_damping_coeff
+          rayleighDampingCoef = config_Rayleigh_damping_coeff
       endif
 
    !--------------------------------------------------------------------

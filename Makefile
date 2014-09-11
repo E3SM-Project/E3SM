@@ -39,17 +39,16 @@ error_msg: error_head
 
 endif # IFDEF MODE
 
-libcvmix:
-	if [ ! -d cvmix ]; then \
-		(chmod a+x get_cvmix.sh; ./get_cvmix.sh) \
-	fi
+cvmix_source: get_cvmix.sh
+	(chmod a+x get_cvmix.sh; ./get_cvmix.sh)
+	(cd cvmix; make clean)
+
+libcvmix: cvmix_source
 	if [ -d cvmix ]; then \
-		(cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd cvmix; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
 		(exit 1) \
 	fi
-
-
 
 shared: libcvmix
 	(cd shared; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)")

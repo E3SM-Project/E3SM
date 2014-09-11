@@ -21,10 +21,11 @@
 module ocn_thick_ale
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
    use mpas_timer
    use mpas_packages
+
+   use ocn_constants
 
    implicit none
    private
@@ -69,7 +70,7 @@ contains
 !>  (z-tilde), and imposes a minimum layer thickness.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_ALE_thickness(mesh, verticalMesh, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
+   subroutine ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -77,11 +78,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh           !< Input: horizonal mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool           !< Input: horizonal mesh information
 
-      type (verticalMesh_type), intent(in) :: &
-         verticalMesh   !< Input: vertical mesh information
+      type (mpas_pool_type), intent(in) :: &
+         verticalMeshPool   !< Input: vertical mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          oldSSH,   &!< Input: sea surface height at old time
@@ -110,7 +111,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, i, nCells, nVertLevels, kMax
+      integer :: iCell, k, i, kMax
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: thicknessSum, newSSH, remainder, newThickness, thicknessWithRemainder
@@ -123,15 +125,26 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
          restingThickness   !>  Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
 
+      logical, pointer :: thicknessFilterActive
+      logical, pointer :: config_use_min_max_thickness
+      real (kind=RKIND), pointer :: config_max_thickness_factor
+      real (kind=RKIND), pointer :: config_min_thickness
+
       err = 0
 
-      maxLevelCell      => mesh % maxLevelCell % array
-      vertCoordMovementWeights => mesh % vertCoordMovementWeights % array
+      call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
 
-      restingThickness => verticalMesh % restingThickness % array
+      call mpas_pool_get_config(ocnConfigs, 'config_use_min_max_thickness', config_use_min_max_thickness)
+      call mpas_pool_get_config(ocnConfigs, 'config_max_thickness_factor', config_max_thickness_factor)
+      call mpas_pool_get_config(ocnConfigs, 'config_min_thickness', config_min_thickness)
 
-      nCells      = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
+
+      call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       allocate(SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
@@ -139,7 +152,7 @@ contains
       !
       ! ALE thickness alteration due to SSH (z-star)
       !
-      do iCell=1,nCells
+      do iCell = 1, nCells
          kMax = maxLevelCell(iCell)
 
          newSSH = oldSSH(iCell) - dt*div_hu_btr(iCell)
@@ -157,7 +170,7 @@ contains
       enddo
 
       if (thicknessFilterActive) then
-         do iCell=1,nCells
+         do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
    
             ALE_Thickness(1:kMax, iCell) = &
@@ -171,14 +184,14 @@ contains
       !
       if (config_use_min_max_thickness) then
 
-         do iCell=1,nCells
+         do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
 
             ! go down the column:
             prelim_ALE_Thickness(1:kMax) = ALE_Thickness(1:kMax, iCell)
             remainder = 0.0
             do k = 1, kMax
-               newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
+               newThickness = max(min(prelim_ALE_Thickness(k) + remainder, config_max_thickness_factor * restingThickness(k,iCell)), config_min_thickness)
                min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k) 
                remainder = remainder - min_ALE_thickness_down(k)
             end do
@@ -186,8 +199,8 @@ contains
             ! go back up the column:
             min_ALE_thickness_up(kMax) = 0.0
             prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
-            do k = kMax-1,1,-1
-               newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
+            do k = kMax-1, 1, -1
+               newThickness = max(min(prelim_ALE_Thickness(k) + remainder, config_max_thickness_factor * restingThickness(k,iCell)), config_min_thickness)
                min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k) 
                remainder = remainder - min_ALE_thickness_up(k)
             end do
@@ -202,7 +215,6 @@ contains
       deallocate(SSH_ALE_Thickness, prelim_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
 
    end subroutine ocn_ALE_thickness!}}}
-
 
 !***********************************************************************
 !

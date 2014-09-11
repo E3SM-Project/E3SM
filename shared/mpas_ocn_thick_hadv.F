@@ -21,7 +21,7 @@
 module ocn_thick_hadv
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_hadv_tend(mesh, normalVelocity, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_thick_hadv_tend(meshPool, normalVelocity, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -81,8 +81,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -107,8 +107,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, cell1, cell2, nVertLevels, k, i
-      integer :: iCell, nCells
+      integer :: iEdge, cell1, cell2, k, i, iCell 
+      integer, pointer :: nCells, nEdges, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelEdgeBot, MaxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
@@ -128,19 +128,19 @@ contains
 
       if(.not.thickHadvOn) return
 
-      nEdges = mesh % nEdges
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      maxLevelCell      => mesh % maxLevelCell % array
-      maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      dvEdge => mesh % dvEdge % array
-      areaCell => mesh % areaCell % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell => mesh % edgesOnCell % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)
@@ -182,7 +182,11 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_disable_thick_hadv
+
       thickHadvOn = .true.
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_hadv', config_disable_thick_hadv)
 
       if(config_disable_thick_hadv) thickHadvOn = .false.
 

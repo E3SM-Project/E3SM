@@ -220,7 +220,7 @@
 		/>
 	</nml_record>
 	<nml_record name="hmix" in_defaults="true">
-		<nml_option name="config_hmix_ScaleWithMesh" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_hmix_scaleWithMesh" type="logical" default_value=".false." units="unitless"
 					description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."
 					possible_values=".true. or .false."
 		/>
@@ -1124,7 +1124,7 @@
 			 packages="splitTimeIntegrator"
 		/>
 	</var_struct>
-	<var_struct name="mesh" time_levs="0">
+	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
 			 description="Latitude location of cell centers in radians."
 		/>
@@ -1347,7 +1347,7 @@
 			 description="Index of kite in dual grid, based on verticesOnCell."
 		/>
 	</var_struct>
-	<var_struct name="verticalMesh" time_levs="0">
+	<var_struct name="verticalMesh" time_levs="1">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"
 			 description="Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations."
 		/>
@@ -1358,7 +1358,7 @@
 			 description="Reference layerThickness of ocean for each vertical level."
 		/>
 	</var_struct>
-	<var_struct name="tend" time_levs="0">
+	<var_struct name="tend" time_levs="1">
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
 			<var name="tendTemperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
 				 description="time tendency of potential temperature"
@@ -1388,7 +1388,7 @@
 			 packages="thicknessFilter"
 		/>
 	</var_struct>
-	<var_struct name="diagnostics" time_levs="0">
+	<var_struct name="diagnostics" time_levs="1">
 		<var name="xtime" type="text" dimensions="Time" units="unitless"
 			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
@@ -1649,7 +1649,7 @@
 			 description="maximum CFL number over the full domain"
 		/>
 	</var_struct>
-	<var_struct name="average" time_levs="0">
+	<var_struct name="average" time_levs="1">
 		<var name="nAverage" type="real" dimensions="Time" units="unitless"
 			 description="number of timesteps in time-averaged variables"
 		/>
@@ -1681,7 +1681,7 @@
 			 description="time-averaged vertical velocity at top of cell"
 		/>
 	</var_struct>
-    <var_struct name="forcing" time_levs="0">
+    <var_struct name="forcing" time_levs="1">
 		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
 			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>
@@ -1842,7 +1842,7 @@
 			/>
 		</var_array>
 	</var_struct>
-	<var_struct name="scratch" time_levs="0">
+	<var_struct name="scratch" time_levs="1">
 		<var name="vorticityGradientTangentialComponent" 
 			persistence="scratch" 
 			type="real" dimensions="nVertLevels nEdges Time" 
@@ -1967,27 +1967,27 @@
                      type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 		     description="Vector component tangent to an edge."
 		/>
-		<var name="windStressFull" type="real" dimensions="nVertLevels nEdges Time" units="N m^{-2}"
+		<var name="windStressFullScratch" type="real" dimensions="nVertLevels nEdges Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="Wind stress used for reconstructing diagnostic output fields."
 		/>
-		<var name="windStressX" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		<var name="windStressXScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the x direction. Used for diagnostics."
 		/>
-		<var name="windStressY" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		<var name="windStressYScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the y direction. User for diagnostics."
 		/>
-		<var name="windStressZ" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		<var name="windStressZScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the z direction. User for diagnostics."
 		/>
-		<var name="windStressZonal" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		<var name="windStressZonalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
 		/>
-		<var name="windStressMeridional" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		<var name="windStressMeridionalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
 		/>

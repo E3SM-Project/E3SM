@@ -44,7 +44,7 @@
 			<var name="tracer1ZonalMean"/>
 		</stream>
 	</streams>
-	<var_struct name="amZonalMean" time_levs="0" packages="amZonalMean">
+	<var_struct name="amZonalMean" time_levs="1" packages="amZonalMean">
 		<var name="binCenterZonalMean" type="real" dimensions="nZonalMeanBins" units="varies"
 			 description="Central coordinate of zonal mean bin, either in latitude or y, for plotting."
 		/>

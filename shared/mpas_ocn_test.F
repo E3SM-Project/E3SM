@@ -20,7 +20,6 @@
 
 module ocn_test
 
-   use mpas_configure
    use mpas_framework
    use mpas_timekeeping
    use mpas_dmpar
@@ -104,7 +103,6 @@ contains
 
    end subroutine ocn_test_suite!}}}
 
-
 !***********************************************************************
 !
 !  routine ocn_prep_test_tensor
@@ -135,52 +133,96 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      type (mpas_pool_type), pointer :: scratchPool, meshPool
+      logical, pointer :: config_test_tensors
+      character (len=StrKIND), pointer :: config_tensor_test_function
+
+      type (field2DInteger), pointer :: edgeSignOnCellField
+      type (field2DReal), pointer :: edgeTangentVectorsField
+      type (field2DReal), pointer :: normalVelocityTestField
+      type (field2DReal), pointer :: tangentialVelocityTestField
+      type (field3DReal), pointer :: strainRateR3CellField
+      type (field3DReal), pointer :: strainRateR3CellSolutionField
+      type (field3DReal), pointer :: strainRateR3EdgeField
+      type (field3DReal), pointer :: strainRateLonLatRCellField
+      type (field3DReal), pointer :: strainRateLonLatRCellSolutionField
+      type (field3DReal), pointer :: strainRateLonLatREdgeField
+      type (field3DReal), pointer :: divTensorR3CellField
+      type (field3DReal), pointer :: divTensorR3CellSolutionField
+      type (field3DReal), pointer :: divTensorLonLatRCellField
+      type (field3DReal), pointer :: divTensorLonLatRCellSolutionField
+      type (field3DReal), pointer :: outerProductEdgeField
+
+      call mpas_pool_get_config(domain % configs, 'config_test_tensors', config_test_tensors)
+
       if (.not.config_test_tensors) return
 
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % normalVelocityTest, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % tangentialVelocityTest, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatREdge, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorR3Cell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorR3CellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
+      call mpas_pool_get_config(domain % configs, 'config_tensor_test_function', config_tensor_test_function)
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+
+      call mpas_pool_get_field(meshPool, 'edgeSignOnCell', edgeSignOnCellField)
+      call mpas_pool_get_field(meshPool, 'edgeTangentVectors', edgeTangentVectorsField)
+
+      call mpas_pool_get_field(scratchPool, 'normalVelocityTest', normalVelocityTestField)
+      call mpas_pool_get_field(scratchPool, 'tangentialVelocityTest', tangentialVelocityTestField)
+      call mpas_pool_get_field(scratchPool, 'strainRateR3Cell', strainRateR3CellField)
+      call mpas_pool_get_field(scratchPool, 'strainRateR3CellSolution', strainRateR3CellSolutionField)
+      call mpas_pool_get_field(scratchPool, 'strainRateR3Edge', strainRateR3EdgeField)
+      call mpas_pool_get_field(scratchPool, 'strainRateLonLatRCell', strainRateLonLatRCellField)
+      call mpas_pool_get_field(scratchPool, 'strainRateLonLatRCellSolution', strainRateLonLatRCellSolutionField)
+      call mpas_pool_get_field(scratchPool, 'strainRateLonLatREdge', strainRateLonLatREdgeField)
+      call mpas_pool_get_field(scratchPool, 'divTensorR3Cell', divTensorR3CellField)
+      call mpas_pool_get_field(scratchPool, 'divTensorR3CellSolution', divTensorR3CellSolutionField)
+      call mpas_pool_get_field(scratchPool, 'divTensorLonLatRCell', divTensorLonLatRCellField)
+      call mpas_pool_get_field(scratchPool, 'divTensorLonLatRCellSolution', divTensorLonLatRCellSolutionField)
+      call mpas_pool_get_field(scratchPool, 'outerProductEdge', outerProductEdgeField)
+
+      call mpas_allocate_scratch_field(normalVelocityTestField, .false.)
+      call mpas_allocate_scratch_field(tangentialVelocityTestField, .false.)
+      call mpas_allocate_scratch_field(strainRateR3CellField, .false.)
+      call mpas_allocate_scratch_field(strainRateR3CellSolutionField, .false.)
+      call mpas_allocate_scratch_field(strainRateR3EdgeField, .false.)
+      call mpas_allocate_scratch_field(strainRateLonLatRCellField, .false.)
+      call mpas_allocate_scratch_field(strainRateLonLatRCellSolutionField, .false.)
+      call mpas_allocate_scratch_field(strainRateLonLatREdgeField, .false.)
+      call mpas_allocate_scratch_field(divTensorR3CellField, .false.)
+      call mpas_allocate_scratch_field(divTensorR3CellSolutionField, .false.)
+      call mpas_allocate_scratch_field(divTensorLonLatRCellField, .false.)
+      call mpas_allocate_scratch_field(divTensorLonLatRCellSolutionField, .false.)
+      call mpas_allocate_scratch_field(outerProductEdgeField, .false.)
 
       call mpas_test_tensor(domain, config_tensor_test_function, &
-         domain % blocklist % mesh % edgeSignOnCell, &
-         domain % blocklist % mesh % edgeTangentVectors, &
-         domain % blocklist % scratch % normalVelocityTest, &
-         domain % blocklist % scratch % tangentialVelocityTest, &
-         domain % blocklist % scratch % strainRateR3Cell, &
-         domain % blocklist % scratch % strainRateR3CellSolution, &
-         domain % blocklist % scratch % strainRateR3Edge, &
-         domain % blocklist % scratch % strainRateLonLatRCell, &
-         domain % blocklist % scratch % strainRateLonLatRCellSolution, &
-         domain % blocklist % scratch % strainRateLonLatREdge, &
-         domain % blocklist % scratch % divTensorR3Cell, &
-         domain % blocklist % scratch % divTensorR3CellSolution, &
-         domain % blocklist % scratch % divTensorLonLatRCell, &
-         domain % blocklist % scratch % divTensorLonLatRCellSolution, &
-         domain % blocklist % scratch % outerProductEdge )
+         edgeSignOnCellField, &
+         edgeTangentVectorsField, &
+         normalVelocityTestField, &
+         tangentialVelocityTestField, &
+         strainRateR3CellField, &
+         strainRateR3CellSolutionField, &
+         strainRateR3EdgeField, &
+         strainRateLonLatRCellField, &
+         strainRateLonLatRCellSolutionField, &
+         strainRateLonLatREdgeField, &
+         divTensorR3CellField, &
+         divTensorR3CellSolutionField, &
+         divTensorLonLatRCellField, &
+         divTensorLonLatRCellSolutionField, &
+         outerProductEdgeField )
 
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % normalVelocityTest, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % tangentialVelocityTest, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatREdge, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorR3Cell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorR3CellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
+      call mpas_deallocate_scratch_field(normalVelocityTestField, .false.)
+      call mpas_deallocate_scratch_field(tangentialVelocityTestField, .false.)
+      call mpas_deallocate_scratch_field(strainRateR3CellField, .false.)
+      call mpas_deallocate_scratch_field(strainRateR3CellSolutionField, .false.)
+      call mpas_deallocate_scratch_field(strainRateR3EdgeField, .false.)
+      call mpas_deallocate_scratch_field(strainRateLonLatRCellField, .false.)
+      call mpas_deallocate_scratch_field(strainRateLonLatRCellSolutionField, .false.)
+      call mpas_deallocate_scratch_field(strainRateLonLatREdgeField, .false.)
+      call mpas_deallocate_scratch_field(divTensorR3CellField, .false.)
+      call mpas_deallocate_scratch_field(divTensorR3CellSolutionField, .false.)
+      call mpas_deallocate_scratch_field(divTensorLonLatRCellField, .false.)
+      call mpas_deallocate_scratch_field(divTensorLonLatRCellSolutionField, .false.)
+      call mpas_deallocate_scratch_field(outerProductEdgeField, .false.)
 
       err = 0
 

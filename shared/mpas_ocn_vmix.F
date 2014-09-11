@@ -23,9 +23,9 @@ module ocn_vmix
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_timer
 
+   use ocn_constants
    use ocn_vmix_coefs_const
    use ocn_vmix_coefs_tanh
    use ocn_vmix_coefs_rich
@@ -81,7 +81,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs(mesh, s, d, err)!{{{
+   subroutine ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -89,8 +89,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+      
+      integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
       !-----------------------------------------------------------------
       !
@@ -98,11 +100,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         s             !< Input/Output: state information
+      type (mpas_pool_type), intent(inout) :: &
+         statePool             !< Input/Output: state information
 
-      type (diagnostics_type), intent(inout) :: &
-         d             !< Input/Output: diagnostic information
+      type (mpas_pool_type), intent(inout) :: &
+         diagnosticsPool             !< Input/Output: diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -119,6 +121,9 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err1, err2, err3, err4
+      integer :: timeLevel
+
+      real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge, vertDiffTopOfCell
 
       !-----------------------------------------------------------------
       !
@@ -128,13 +133,21 @@ contains
 
       err = 0
 
-      d % vertViscTopOfEdge % array = 0.0_RKIND
-      d % vertDiffTopOfCell % array = 0.0_RKIND
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      call ocn_vmix_coefs_const_build(mesh, s, d, err1)
-      call ocn_vmix_coefs_tanh_build(mesh, s, d, err2)
-      call ocn_vmix_coefs_rich_build(mesh, s, d, err3)
-      call ocn_vmix_coefs_cvmix_build(mesh, s, d, err4)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+      vertViscTopOfEdge = 0.0_RKIND
+      vertDiffTopOfCell = 0.0_RKIND
+
+      call ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err1, timeLevel)
+      call ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
+      call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, err3, timeLevel)
+      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, diagnosticsPool, err4, timeLevel)
 
       err = ior(err1, err2)
       err = ior(err,  err3)
@@ -157,7 +170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_tend_implicit(mesh, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)!{{{
+   subroutine ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -165,8 +178,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          kineticEnergyCell        !< Input: kinetic energy at cell
@@ -206,7 +219,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, k, cell1, cell2, nVertLevels, N
+      integer :: iEdge, k, cell1, cell2, N
+      integer, pointer :: nEdges, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
 
@@ -214,40 +228,45 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
 
+      real (kind=RKIND), pointer :: config_bottom_drag_coeff
+
       err = 0
 
       if(.not.velVmixOn) return
 
-      nEdges = mesh % nEdges
-      nVertLevels = mesh % nVertLevels
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      cellsOnEdge => mesh % cellsOnEdge % array
+      call mpas_pool_get_config(ocnConfigs, 'config_bottom_drag_coeff', config_bottom_drag_coeff)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels)) 
       A(1)=0
 
-      do iEdge=1,nEdges
-        N=maxLevelEdgeTop(iEdge)
-        if (N.gt.0) then
+      do iEdge = 1, nEdges
+        N = maxLevelEdgeTop(iEdge)
+        if (N .gt. 0) then
 
          ! Compute A(k), B(k), C(k)
          ! layerThicknessEdge is computed in compute_solve_diag, and is not available yet,
          ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k=1,N
+         do k = 1, N
             layerThicknessEdge(k,iEdge) = 0.5 * (layerThickness(k,cell1) + layerThickness(k,cell2))
          end do
 
          ! A is lower diagonal term
-         do k=2,N
+         do k = 2, N
             A(k) = -2.0*dt*vertViscTopOfEdge(k,iEdge) &
                / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
 
          ! C is upper diagonal term
-         do k=1,N-1
+         do k = 1, N-1
             C(k) = -2.0*dt*vertViscTopOfEdge(k+1,iEdge) &
                / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
                / layerThicknessEdge(k,iEdge)
@@ -255,14 +274,14 @@ contains
 
          ! B is diagonal term
          B(1) = 1 - C(1)
-         do k=2,N-1
+         do k = 2, N-1
             B(k) = 1 - A(k) - C(k)
          enddo
 
          ! Apply bottom drag boundary condition on the viscous term
          ! second line uses sqrt(2.0*kineticEnergyEdge(k,iEdge))
          B(N) = 1 - A(N) + dt*config_bottom_drag_coeff  &
-            *sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2))/layerThicknessEdge(k,iEdge)
+              * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) / layerThicknessEdge(k,iEdge)
 
          call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
 
@@ -291,7 +310,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_tend_implicit(mesh, dt, vertDiffTopOfCell, layerThickness, tracers, err)!{{{
+   subroutine ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracers, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -299,8 +318,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          vertDiffTopOfCell !< Input: vertical mixing coefficients
@@ -334,7 +353,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k, nVertLevels, num_tracers, N
+      integer :: iCell, k, num_tracers, N
+      integer, pointer :: nCells, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -345,33 +365,34 @@ contains
 
       if(.not.tracerVmixOn) return
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
-      maxLevelCell => mesh % maxLevelCell % array
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
 
-      do iCell=1,nCells
+      do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
          N = maxLevelCell(iCell)
 
          ! A is lower diagonal term
          A(1)=0
-         do k=2,N
+         do k = 2, N
             A(k) = -2.0*dt*vertDiffTopOfCell(k,iCell) &
                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) / layerThickness(k,iCell)
          enddo
 
          ! C is upper diagonal term
-         do k=1,N-1
+         do k = 1, N-1
             C(k) = -2.0*dt*vertDiffTopOfCell(k+1,iCell) &
                  / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) / layerThickness(k,iCell)
          enddo
          C(N) = 0.0
 
          ! B is diagonal term
-         do k=1,N
+         do k = 1, N
             B(k) = 1 - A(k) - C(k)
          enddo
 
@@ -402,38 +423,51 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_implicit(dt, mesh, diagnostics, state, err)!{{{
+   subroutine ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, err, timeLevelIn)!{{{
       real (kind=RKIND), intent(in) :: dt
-      type (mesh_type), intent(in) :: mesh
-      type (diagnostics_type), intent(inout) :: diagnostics
-      type (state_type), intent(inout) :: state
+      type (mpas_pool_type), intent(in) :: meshPool
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool
+      type (mpas_pool_type), intent(inout) :: statePool
       integer, intent(out) :: err
+      integer, intent(in), optional :: timeLevelIn
 
-      integer :: nCells, nEdges, k, cell1, cell2, iEdge
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge
-      real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell, vertViscTopOfCell
+      integer :: timeLevel, k, cell1, cell2, iEdge
+      integer, pointer :: nCells, nEdges
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell
+      real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
+      logical, pointer :: config_use_cvmix
 
       err = 0
 
-      normalVelocity     => state % normalVelocity % array
-      tracers            => state % tracers % array
-      layerThickness     => state % layerThickness % array
-      kineticEnergyCell  => diagnostics % kineticEnergyCell % array
-      layerThicknessEdge => diagnostics % layerThicknessEdge % array
-      vertViscTopOfEdge  => diagnostics % vertViscTopOfEdge % array
-      vertViscTopOfCell  => diagnostics % vertViscTopOfCell % array
-      vertDiffTopOfCell  => diagnostics % vertDiffTopOfCell % array
-      maxLevelCell       => mesh % maxLevelCell % array
-      maxLevelEdgeTop    => mesh % maxLevelEdgeTop % array
-      cellsOnEdge        => mesh % cellsOnEdge % array
-               
-      nCells      = mesh % nCells
-      nEdges = mesh % nEdges
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      call ocn_vmix_coefs(mesh, state, diagnostics, err)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
+
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+
+      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+               
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, err, timeLevel)
 
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
       if ( config_use_cvmix ) then
@@ -450,13 +484,13 @@ contains
       !
       !  Implicit vertical solve for momentum
       !
-      call ocn_vel_vmix_tend_implicit(mesh, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
+      call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
 
       !
       !  Implicit vertical solve for tracers
       !
 
-      call ocn_tracer_vmix_tend_implicit(mesh, dt, vertDiffTopOfCell, layerThickness, tracers, err)
+      call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracers, err)
 
    end subroutine ocn_vmix_implicit!}}}
 
@@ -473,7 +507,6 @@ contains
 !
 !-----------------------------------------------------------------------
 
-
    subroutine ocn_vmix_init(domain, err)!{{{
 
    !--------------------------------------------------------------------
@@ -489,8 +522,12 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       integer :: err1, err2, err3, err4
+      logical, pointer :: config_disable_vel_vmix, config_disable_tr_vmix
 
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_vmix', config_disable_vel_vmix)
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_vmix', config_disable_tr_vmix)
 
       velVmixOn = .true.
       tracerVmixOn = .true.

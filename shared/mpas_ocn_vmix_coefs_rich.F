@@ -22,10 +22,10 @@
 module ocn_vmix_coefs_rich
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
    use mpas_timer
 
+   use ocn_constants
    use ocn_equation_of_state
 
    implicit none
@@ -73,7 +73,7 @@ contains
 !>  and tracers based user choices of mixing parameterization.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vmix_coefs_rich_build(mesh, state, diagnostics, err)!{{{
+   subroutine ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -81,8 +81,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
       !-----------------------------------------------------------------
       !
@@ -90,11 +92,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state             !< Input/Output: state information
+      type (mpas_pool_type), intent(inout) :: &
+         statePool             !< Input/Output: state information
 
-      type (diagnostics_type), intent(inout) :: &
-         diagnostics             !< Input/Output: diagnostic information
+      type (mpas_pool_type), intent(inout) :: &
+         diagnosticsPool             !< Input/Output: diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -110,7 +112,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3, indexT, indexS
+      integer :: err1, err2, err3, timeLevel
+      integer, pointer :: indexT, indexS
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfEdge, vertDiffTopOfCell, normalVelocity, layerThickness, layerThicknessEdge, density, displacedDensity
@@ -129,37 +132,43 @@ contains
 
       err = 0
 
-      indexT = state % index_temperature
-      indexS = state % index_salinity
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      vertViscTopOfEdge => diagnostics % vertViscTopOfEdge % array
-      vertDiffTopOfCell => diagnostics % vertDiffTopOfCell % array
-      RiTopOfEdge => diagnostics % RiTopOfEdge % array
-      RiTopOfCell => diagnostics % RiTopOfCell % array
-      density => diagnostics % density % array
-      displacedDensity => diagnostics % displacedDensity % array
-      layerThicknessEdge => diagnostics % layerThicknessEdge % array
+      call mpas_pool_get_dimension(statePool, 'index_temperature', indexT)
+      call mpas_pool_get_dimension(statePool, 'index_salinity', indexS)
 
-      normalVelocity => state % normalVelocity % array
-      layerThickness => state % layerThickness % array
-      tracers => state % tracers % array
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'RiTopOfEdge', RiTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'density', density)
+      call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
 
       call mpas_timer_start("eos rich", .false., richEOSTimer)
 
       ! compute in-place density
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'relative', density, err)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 1, 'relative', displacedDensity, err)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 1, 'relative', displacedDensity, err, timeLevelIn=timeLevel)
 
       call mpas_timer_stop("eos rich", richEOSTimer)
 
-      call ocn_vmix_get_rich_numbers(mesh, indexT, indexS, normalVelocity, layerThickness, layerThicknessEdge, & 
+      call ocn_vmix_get_rich_numbers(meshPool, indexT, indexS, normalVelocity, layerThickness, layerThicknessEdge, & 
                                   density, displacedDensity, tracers, RiTopOfEdge, RiTopOfCell, err1)
 
-      call ocn_vel_vmix_coefs_rich(mesh, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err2)
-      call ocn_tracer_vmix_coefs_rich(mesh, RiTopOfCell, layerThickness, vertDiffTopOfCell, err3)
+      call ocn_vel_vmix_coefs_rich(meshPool, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err2)
+      call ocn_tracer_vmix_coefs_rich(meshPool, RiTopOfCell, layerThickness, vertDiffTopOfCell, err3)
 
       err = ior(err1, ior(err2, err3))
 
@@ -179,7 +188,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_coefs_rich(mesh, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err)!{{{
+   subroutine ocn_vel_vmix_coefs_rich(meshPool, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -187,8 +196,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge        !< Input: thickness at edge
@@ -218,20 +227,27 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, k
+      integer :: iEdge, k
+      integer, pointer :: nEdges
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
+
+      real (kind=RKIND), pointer :: config_rich_mix, config_bkrd_vert_visc, config_convective_visc
 
       err = 0
 
       if(.not.richViscOn) return
 
-      nEdges = mesh % nEdges
+      call mpas_pool_get_config(ocnConfigs, 'config_rich_mix', config_rich_mix)
+      call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_visc', config_bkrd_vert_visc)
+      call mpas_pool_get_config(ocnConfigs, 'config_convective_visc', config_convective_visc)
 
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      do iEdge = 1,nEdges
-         do k = 2,maxLevelEdgeTop(iEdge)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+      do iEdge = 1, nEdges
+         do k = 2, maxLevelEdgeTop(iEdge)
             ! efficiency note: these if statements are inside iEdge and k loops.
             ! Perhaps there is a more efficient way to do this.
             if (RiTopOfEdge(k,iEdge)>0.0) then
@@ -264,7 +280,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_rich(mesh, RiTopOfCell, layerThickness, vertDiffTopOfCell, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_rich(meshPool, RiTopOfCell, layerThickness, vertDiffTopOfCell, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -272,8 +288,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness             !< Input: thickness at cell center
@@ -303,23 +319,31 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k
+      integer :: iCell, k
+      integer, pointer :: nCells
 
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: coef
+      real (kind=RKIND), pointer :: config_density0, config_bkrd_vert_diff, config_bkrd_vert_visc, config_rich_mix, config_convective_diff
 
       err = 0
 
       if(.not.richDiffOn) return
 
-      nCells = mesh % nCells
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
+      call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_diff', config_bkrd_vert_diff)
+      call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_visc', config_bkrd_vert_visc)
+      call mpas_pool_get_config(ocnConfigs, 'config_rich_mix', config_rich_mix)
+      call mpas_pool_get_config(ocnConfigs, 'config_convective_diff', config_convective_diff)
 
-      maxLevelCell => mesh % maxLevelCell % array
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-      coef = -gravity/config_density0/2.0
-      do iCell = 1,nCells
-         do k = 2,maxLevelCell(iCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+      coef = -gravity / config_density0 / 2.0
+      do iCell = 1, nCells
+         do k = 2, maxLevelCell(iCell)
             ! efficiency note: these if statements are inside iEdge and k loops.
             ! Perhaps there is a more efficient way to do this.
             if (RiTopOfCell(k,iCell)>0.0) then
@@ -355,7 +379,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_get_rich_numbers(mesh, indexT, indexS, normalVelocity, layerThickness, layerThicknessEdge, & !{{{
+   subroutine ocn_vmix_get_rich_numbers(meshPool, indexT, indexS, normalVelocity, layerThickness, layerThicknessEdge, & !{{{
                                  density, displacedDensity, tracers, RiTopOfEdge, RiTopOfCell, err)
 
       !-----------------------------------------------------------------
@@ -364,8 +388,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       integer, intent(in) :: indexT !< Input: index for temperature
       integer, intent(in) :: indexS !< Input: index for salinity
@@ -401,8 +425,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: nVertLevels, nCells, nEdges, iCell, iEdge, k, i
+      integer :: iCell, iEdge, k, i
       integer :: cell1, cell2
+      integer, pointer :: nVertLevels, nCells, nEdges
 
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell, edgeSignOnCell
@@ -412,24 +437,28 @@ contains
       real (kind=RKIND), dimension(:,:), allocatable :: ddensityTopOfCell, du2TopOfCell, &
                                                         ddensityTopOfEdge, du2TopOfEdge
 
+      real (kind=RKIND), pointer :: config_density0
+
       err = 0
 
-      if((.not.richViscOn) .and. (.not.richDiffOn)) return
+      if ( ( .not. richViscOn ) .and. ( .not. richDiffOn ) ) return
 
-      nVertLevels = mesh % nVertLevels
-      nCells = mesh % nCells
-      nEdges = mesh % nEdges
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
-      maxLevelCell => mesh % maxLevelCell % array
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      maxLevelEdgeBot => mesh % maxLevelEdgeBot % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      dvEdge => mesh % dvEdge % array
-      dcEdge => mesh % dcEdge % array
-      areaCell => mesh % areaCell % array
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell => mesh % edgesOnCell % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       allocate( &
          ddensityTopOfCell(nVertLevels+1,nCells+1), ddensityTopOfEdge(nVertLevels+1,nEdges), &
@@ -437,18 +466,18 @@ contains
 
       ! ddensityTopOfCell(k) = $\rho^*_{k-1}-\rho_k$, where $\rho^*$ has been adiabatically displaced to level k.
       ddensityTopOfCell = 0.0
-      do iCell=1,nCells
-         do k=2,maxLevelCell(iCell)
+      do iCell = 1, nCells
+         do k = 2, maxLevelCell(iCell)
             ddensityTopOfCell(k,iCell) = displacedDensity(k-1,iCell) - density(k,iCell)
           end do
       end do
 
       ! interpolate ddensityTopOfCell to ddensityTopOfEdge
       ddensityTopOfEdge = 0.0
-      do iEdge=1,nEdges
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k=2,maxLevelEdgeTop(iEdge)
+         do k = 2, maxLevelEdgeTop(iEdge)
             ddensityTopOfEdge(k,iEdge) = &
                (ddensityTopOfCell(k,cell1) + &
                 ddensityTopOfCell(k,cell2))/2  
@@ -457,8 +486,8 @@ contains
 
       ! du2TopOfEdge(k) = $u_{k-1}-u_k$
       du2TopOfEdge=0.0
-      do iEdge=1,nEdges
-         do k=2,maxLevelEdgeTop(iEdge)
+      do iEdge = 1, nEdges
+         do k = 2, maxLevelEdgeTop(iEdge)
             du2TopOfEdge(k,iEdge) = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
          end do
       end do
@@ -479,12 +508,12 @@ contains
       ! compute RiTopOfEdge using ddensityTopOfEdge and du2TopOfEdge
       ! coef = -g/density_0/2
       RiTopOfEdge = 0.0
-      coef = -gravity/config_density0/2.0
-      do iEdge = 1,nEdges
-         do k = 2,maxLevelEdgeTop(iEdge)
-            RiTopOfEdge(k,iEdge) = coef*ddensityTopOfEdge(k,iEdge) &
-               *(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge)) &
-               / (du2TopOfEdge(k,iEdge) + 1e-20)
+      coef = -gravity / config_density0 / 2.0
+      do iEdge = 1, nEdges
+         do k = 2, maxLevelEdgeTop(iEdge)
+            RiTopOfEdge(k,iEdge) = coef * ddensityTopOfEdge(k,iEdge) &
+               * ( layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge) ) &
+               / ( du2TopOfEdge(k,iEdge) + 1e-20 )
          end do
       end do
 
@@ -493,8 +522,8 @@ contains
       RiTopOfCell = 0.0
       do iCell = 1,nCells
          do k = 2,maxLevelCell(iCell)
-            RiTopOfCell(k,iCell) = coef*ddensityTopOfCell(k,iCell) &
-               *(layerThickness(k-1,iCell)+layerThickness(k,iCell)) &
+            RiTopOfCell(k,iCell) = coef * ddensityTopOfCell(k,iCell) &
+               * (layerThickness(k-1,iCell) + layerThickness(k,iCell)) &
                / (du2TopOfCell(k,iCell) + 1e-20)
          end do
       end do
@@ -534,7 +563,12 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_use_rich_visc, config_use_rich_diff
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_rich_visc', config_use_rich_visc)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_rich_diff', config_use_rich_diff)
 
       richViscOn = config_use_rich_visc
       richDiffOn = config_use_rich_diff
