@@ -68,6 +68,10 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * In ./physics_wrf, updated the Tiedtke convection scheme to that in WRF version 3.6.1. The
+!>      call to subroutine cu_tiedtke has been updated accordingly to include the sensible heat
+!>      flux.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-11. 
 
 
  contains
@@ -132,6 +136,7 @@
        enddo
 
     case ("tiedtke")
+       if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
        if(.not.allocated(rqvdynten_p)  ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme)  )
@@ -141,6 +146,7 @@
 
        do i = its,ite
        do j = jts,jte
+          hfx_p(i,j)   = 0._RKIND
           qfx_p(i,j)   = 0._RKIND
           xland_p(i,j) = 0._RKIND
        enddo
@@ -188,6 +194,7 @@
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
     case ("tiedtke")
+       if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
        if(allocated(rqvdynten_p)  ) deallocate(rqvdynten_p  )
@@ -347,24 +354,24 @@
     case("tiedtke")
        write(0,*) '--- enter subroutine cu_tiedtke:'
        call cu_tiedtke ( &
-             pcps        = pres_hyd_p  , p8w             = pres2_hyd_p     ,         &
-             znu         = znu_hyd_p   , t3d             = t_p             ,         &              
-             dt          = dt_dyn      , itimestep       = itimestep       ,         &
-             stepcu      = n_cu        , raincv          = raincv_p        ,         &
-             pratec      = pratec_p    , qfx             = qfx_p           ,         &
-             u3d         = u_p         , v3d             = v_p             ,         & 
-             w           = w_p         , qv3d            = qv_p            ,         &
-             qc3d        = qc_p        , qi3d            = qi_p            ,         &
-             pi3d        = pi_p        , rho3d           = rho_p           ,         &
-             qvften      = rqvdynten_p , qvpblten        = rqvdynblten_p   ,         &
-             dz8w        = dz_p        , xland           = xland_p         ,         &
-             cu_act_flag = cu_act_flag , cudt            = dt_cu           ,         &
-             f_qv        = f_qv        , f_qc            = f_qc            ,         &
-             f_qr        = f_qr        , f_qi            = f_qi            ,         &
-             f_qs        = f_qs        , rthcuten        = rthcuten_p      ,         &
-             rqvcuten    = rqvcuten_p  , rqccuten        = rqccuten_p      ,         &
-             rqicuten    = rqicuten_p  , rucuten         = rucuten_p       ,         &
-             rvcuten     = rvcuten_p   ,                                             &
+             pcps        = pres_hyd_p    , p8w             = pres2_hyd_p ,           &
+             znu         = znu_hyd_p     , t3d             = t_p         ,           &              
+             dt          = dt_dyn        , itimestep       = itimestep   ,           &
+             stepcu      = n_cu          , raincv          = raincv_p    ,           &
+             pratec      = pratec_p      , hfx             = hfx_p       ,           &
+             qfx         = qfx_p         , u3d             = u_p         ,           &
+             v3d         = v_p           , w               = w_p         ,           &
+             qv3d        = qv_p          , qc3d            = qc_p        ,           &
+             qi3d        = qi_p          , pi3d            = pi_p        ,           &
+             rho3d       = rho_p         , qvften          = rqvdynten_p ,           &
+             qvpblten    = rqvdynblten_p , dz8w            = dz_p        ,           &
+             xland       = xland_p       , cu_act_flag     = cu_act_flag ,           &
+             f_qv        = f_qv          , f_qc            = f_qc        ,           &
+             f_qr        = f_qr          , f_qi            = f_qi        ,           &
+             f_qs        = f_qs          , rthcuten        = rthcuten_p  ,           &
+             rqvcuten    = rqvcuten_p    , rqccuten        = rqccuten_p  ,           &
+             rqicuten    = rqicuten_p    , rucuten         = rucuten_p   ,           &
+             rvcuten     = rvcuten_p     ,                                           &
              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
@@ -395,7 +402,7 @@
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: areaCell,dcEdge_m
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
- real(kind=RKIND),dimension(:),pointer  :: qfx,xland
+ real(kind=RKIND),dimension(:),pointer  :: hfx,qfx,xland
  real(kind=RKIND),dimension(:,:),pointer:: w0avg
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten 
  real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten 
@@ -415,6 +422,7 @@
  call mpas_pool_get_array(diag_physics,'cuprec'   ,cuprec   )
  call mpas_pool_get_array(diag_physics,'raincv'   ,raincv   )
  call mpas_pool_get_array(diag_physics,'w0avg'    ,w0avg    )
+ call mpas_pool_get_array(diag_physics,'hfx'      ,hfx      )
  call mpas_pool_get_array(diag_physics,'qfx'      ,qfx      )
 
  call mpas_pool_get_array(tend_physics,'rthcuten' ,rthcuten )
@@ -473,6 +481,7 @@
        do j = jts,jte
        do i = its,ite
           xland_p(i,j) = xland(i)
+          hfx_p(i,j)   = hfx(i)
           qfx_p(i,j)   = qfx(i)
        enddo
 
