@@ -54,8 +54,9 @@ print F
 * \@date     Feburary 2014 
 * \@brief    PIO interfaces to netcdf support functions
 *
-* This file provides an interface to the netcdf support functions.  It calls the underlying netcdf or pnetcdf or netcdf4 
-* functions from the appropriate subset of mpi tasks.  
+* This file provides an interface to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf support functions.</A>
+*  It calls the underlying netcdf or pnetcdf or netcdf4 functions from the appropriate subset of mpi tasks (io_comm), it must be called collectively from union_comm
+*  
 */
 #include <pio.h>
 #include <pio_internal.h>\n\n";

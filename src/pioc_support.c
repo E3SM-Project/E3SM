@@ -36,6 +36,20 @@ void piodie(const char *msg,const char *fname, const int line){
 }
 
 
+void pioassert(bool expression, char *msg, char *fname, const int line)
+{
+#ifdef DEBUG
+  if(! expression){
+    piodie(msg,fname,line);
+  }
+#endif  
+
+}
+
+
+
+
+
 int check_netcdf(file_desc_t *file,int status, const char *fname, const int line){
   iosystem_desc_t *ios;
   int ierr;
