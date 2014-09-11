@@ -2632,6 +2632,19 @@ subroutine get_rf_scales(scales)
 
   integer i                                  ! loop index
 
+  write(0,*)
+  write(0,*) '--- enter subroutine get_rf_scales:'
+  write(0,*) '--- naer_all = ', naer_all
+  write(0,*) '--- idxBG    = ', idxBG
+  write(0,*) '--- idxSUL   = ', idxSUL
+  write(0,*) '--- idxSSLT  = ', idxSSLT
+  write(0,*) '--- idxCARBONfirst = ', idxCARBONfirst
+  write(0,*) '--- numCARBON = ', numCARBON
+  write(0,*) '--- idxDUSTfirst = ', idxDUSTfirst
+  write(0,*) '--- numDUST   = ', numDUST
+  write(0,*) '--- idxVOLC = ', idxVOLC
+  stop
+
   scales(idxBG) = bgscl_rf
   scales(idxSUL) = sulscl_rf
   scales(idxSSLT) = ssltscl_rf

@@ -7,8 +7,8 @@
 !
 !==================================================================================================
  module mpas_atmphys_update_surface
- use mpas_configure, only: config_frac_seaice,config_sfc_albedo
  use mpas_dmpar
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_date_time
@@ -41,45 +41,51 @@
 !> ----------------------------------------
 !>    * revised subroutine physics_update_sst.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
 
+
 !==================================================================================================
- subroutine physics_update_surface(current_date,mesh,sfc_input)
+ subroutine physics_update_surface(current_date,config_sfc_albedo,mesh,sfc_input)
 !==================================================================================================
 
 !input variables:
- type(mesh_type),intent(in) :: mesh
+ type(mpas_pool_type),intent(in):: mesh
  character(len=*),intent(in):: current_date
+ logical,intent(in):: config_sfc_albedo
 
 !inout variables:
- type(sfc_input_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: sfc_input
 
-!local variables:
- integer:: iCell
+!local pointers:
+!logical,pointer:: config_sfc_albedo
 
- integer:: nCellsSolve
+ integer,pointer:: nCellsSolve
  integer,dimension(:),pointer:: landmask
 
  real(kind=RKIND),dimension(:)  ,pointer:: sfc_albbck
  real(kind=RKIND),dimension(:,:),pointer:: albedo12m
-
  real(kind=RKIND),dimension(:)  ,pointer:: vegfra,shdmin,shdmax
  real(kind=RKIND),dimension(:,:),pointer:: greenfrac
  
+!local variables:
+ integer:: iCell
+
 !--------------------------------------------------------------------------------------------------
 
- nCellsSolve = mesh % nCellsSolve
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
- landmask   => sfc_input % landmask   % array
- albedo12m  => sfc_input % albedo12m  % array
- sfc_albbck => sfc_input % sfc_albbck % array
+ call mpas_pool_get_array(sfc_input,'landmask'  , landmask  )
+ call mpas_pool_get_array(sfc_input,'albedo12m' , albedo12m )
+ call mpas_pool_get_array(sfc_input,'sfc_albbck', sfc_albbck)
 
- greenfrac  => sfc_input % greenfrac  % array
- vegfra     => sfc_input % vegfra     % array
- shdmin     => sfc_input % shdmin     % array
- shdmax     => sfc_input % shdmax     % array
+ call mpas_pool_get_array(sfc_input,'greenfrac' , greenfrac )
+ call mpas_pool_get_array(sfc_input,'vegfra'    , vegfra    )
+ call mpas_pool_get_array(sfc_input,'shdmin'    , shdmin    )
+ call mpas_pool_get_array(sfc_input,'shdmax'    , shdmax    )
 
 !updates the surface background albedo for the current date as a function of the monthly-mean
 !surface background albedo valid on the 15th day of the month, if config_sfc_albedo is true:
@@ -103,26 +109,20 @@
  end subroutine physics_update_surface
 
 !==================================================================================================
- subroutine physics_update_sst(dminfo,mesh,sfc_input,diag_physics)
+ subroutine physics_update_sst(dminfo,config_frac_seaice,mesh,sfc_input,diag_physics)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
+ logical,intent(in):: config_frac_seaice
 
 !inout arguments:
- type(sfc_input_type),intent(inout)   :: sfc_input
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: icheck
- integer:: iCell,iSoil,nCellsSolve,nSoilLevels
- integer:: nb_to_land,nb_to_ocean,nb_removed
- integer,dimension(:),pointer:: isltyp,ivgtyp,landmask
 
- real(kind=RKIND):: local_min,local_max
- real(kind=RKIND):: global_sst_min,global_sst_max
- real(kind=RKIND):: global_xice_min,global_xice_max
+ integer,pointer:: nCellsSolve,nSoilLevels
 
  real(kind=RKIND),dimension(:),pointer  :: sfc_albbck,sst,snow,tmn,tsk,vegfra,xice,seaice
  real(kind=RKIND),dimension(:),pointer  :: snowc,snowh
@@ -131,39 +131,50 @@
  real(kind=RKIND),dimension(:),pointer:: sfc_albedo,sfc_emiss,sfc_emibck
  real(kind=RKIND),dimension(:),pointer:: xicem,xland
 
+!local variables:
+ integer:: icheck
+ integer:: iCell,iSoil
+ integer:: nb_to_land,nb_to_ocean,nb_removed
+ integer,dimension(:),pointer:: isltyp,ivgtyp,landmask
+
+ real(kind=RKIND):: local_min,local_max
+ real(kind=RKIND):: global_sst_min,global_sst_max
+ real(kind=RKIND):: global_xice_min,global_xice_max
+
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nSoilLevels',nSoilLevels)
+
+ call mpas_pool_get_array(sfc_input,'isltyp'    ,isltyp    )    
+ call mpas_pool_get_array(sfc_input,'ivgtyp'    ,ivgtyp    )
+ call mpas_pool_get_array(sfc_input,'landmask'  ,landmask  )
+ call mpas_pool_get_array(sfc_input,'vegfra'    ,vegfra    )
+ call mpas_pool_get_array(sfc_input,'sfc_albbck',sfc_albbck)
+ call mpas_pool_get_array(sfc_input,'sst'       ,sst       )
+ call mpas_pool_get_array(sfc_input,'tmn'       ,tmn       )
+ call mpas_pool_get_array(sfc_input,'skintemp'  ,tsk       )
+ call mpas_pool_get_array(sfc_input,'tslb'      ,tslb      )
+ call mpas_pool_get_array(sfc_input,'sh2o'      ,sh2o      )
+ call mpas_pool_get_array(sfc_input,'smois'     ,smois     )
+ call mpas_pool_get_array(sfc_input,'snow'      ,snow      )
+ call mpas_pool_get_array(sfc_input,'snowc'     ,snowc     )
+ call mpas_pool_get_array(sfc_input,'snowh'     ,snowh     )
+ call mpas_pool_get_array(sfc_input,'seaice'    ,seaice    )
+ call mpas_pool_get_array(sfc_input,'xice'      ,xice      )
+ call mpas_pool_get_array(sfc_input,'xland'     ,xland     )
+
+ call mpas_pool_get_array(diag_physics,'sfc_albedo',sfc_albedo)
+ call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
+ call mpas_pool_get_array(diag_physics,'sfc_emibck',sfc_emibck)
+ call mpas_pool_get_array(diag_physics,'xicem'     ,xicem     )
+
  write(0,*)
  write(0,*) '--- enter subroutine physics_update_sst:'
  write(0,*) '--- config_frac_seaice =', config_frac_seaice
  write(0,*) '--- xice_threshold     =', xice_threshold
  write(0,*) '--- isice  =', isice
  write(0,*) '--- iswater=', iswater
-
- nCellsSolve = mesh % nCellsSolve
- nSoilLevels = mesh % nSoilLevels
-
- isltyp     => sfc_input    % isltyp   % array    
- ivgtyp     => sfc_input    % ivgtyp   % array
- landmask   => sfc_input    % landmask % array
- vegfra     => sfc_input    % vegfra   % array
- sfc_albbck => sfc_input    % sfc_albbck % array
- sst        => sfc_input    % sst        % array
- tmn        => sfc_input    % tmn        % array
- tsk        => sfc_input    % skintemp   % array
- tslb       => sfc_input    % tslb       % array
- sh2o       => sfc_input    % sh2o       % array
- smois      => sfc_input    % smois      % array
- snow       => sfc_input    % snow       % array
- snowc      => sfc_input    % snowc      % array
- snowh      => sfc_input    % snowh      % array
- seaice     => sfc_input    % seaice     % array
- xice       => sfc_input    % xice       % array
- xland      => sfc_input    % xland      % array
-
- sfc_albedo => diag_physics % sfc_albedo % array
- sfc_emiss  => diag_physics % sfc_emiss  % array
- sfc_emibck => diag_physics % sfc_emibck % array
- xicem      => diag_physics % xicem      % array
 
  if(config_frac_seaice) then
     do iCell = 1,nCellsSolve
@@ -312,24 +323,15 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
  real(kind=RKIND),intent(in):: dt
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type),intent(inout)   :: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
 
-!local parameters:
- integer, parameter:: n=1152
- real(kind=RKIND),parameter:: z1=3.,an=.3,zk=.4,rho=1.2,rhow=1025.,cw=4190.
- real(kind=RKIND),parameter:: g=9.8,znuw=1.e-6,zkw=1.4e-7,sdate=1201.6667
-
-!local variables:
- integer:: iCell,nCellsSolve
-
- real(kind=RKIND):: lw, sw, q, qn, zeta, dep, dtw3, skinmax, skinmin
- real(kind=RKIND):: fs, con1, con2, con3, con4, con5, zlan, q2, ts, phi, qn1
- real(kind=RKIND):: usw, qo, swo, us, tb, dtc, dtw, alw, dtwo, delt, f1
+!local pointers:
+ integer,pointer:: nCellsSolve
 
  real(kind=RKIND),dimension(:),pointer:: sst,tsk,xland
  real(kind=RKIND),dimension(:),pointer:: glw,gsw
@@ -337,25 +339,37 @@
  real(kind=RKIND),dimension(:),pointer:: emiss,ust
  real(kind=RKIND),dimension(:),pointer:: sstsk,dtc1,dtw1
 
+!local parameters:
+ integer, parameter:: n=1152
+ real(kind=RKIND),parameter:: z1=3.,an=.3,zk=.4,rho=1.2,rhow=1025.,cw=4190.
+ real(kind=RKIND),parameter:: g=9.8,znuw=1.e-6,zkw=1.4e-7,sdate=1201.6667
+
+!local variables:
+ integer:: iCell
+
+ real(kind=RKIND):: lw, sw, q, qn, zeta, dep, dtw3, skinmax, skinmin
+ real(kind=RKIND):: fs, con1, con2, con3, con4, con5, zlan, q2, ts, phi, qn1
+ real(kind=RKIND):: usw, qo, swo, us, tb, dtc, dtw, alw, dtwo, delt, f1
+
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_update_sstskin:'
 
- nCellsSolve = mesh % nCellsSolve
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
- tsk   => sfc_input % skintemp % array
- sst   => sfc_input % sst      % array
- xland => sfc_input % xland    % array
+ call mpas_pool_get_array(sfc_input,'skintemp',tsk  )
+ call mpas_pool_get_array(sfc_input,'sst'     ,sst  )
+ call mpas_pool_get_array(sfc_input,'xland'   ,xland)
 
- sstsk => diag_physics % sstsk      % array
- dtc1  => diag_physics % sstsk_dtc  % array
- dtw1  => diag_physics % sstsk_dtw  % array
- emiss => diag_physics % sfc_emiss  % array
- glw   => diag_physics % glw        % array
- gsw   => diag_physics % gsw        % array
- hfx   => diag_physics % hfx        % array
- qfx   => diag_physics % qfx        % array
- ust   => diag_physics % ust        % array
+ call mpas_pool_get_array(diag_physics,'sstsk'    ,sstsk)
+ call mpas_pool_get_array(diag_physics,'sstsk_dtc',dtc1 )
+ call mpas_pool_get_array(diag_physics,'sstsk_dtw',dtw1 )
+ call mpas_pool_get_array(diag_physics,'sfc_emiss',emiss)
+ call mpas_pool_get_array(diag_physics,'glw'      ,glw  )
+ call mpas_pool_get_array(diag_physics,'gsw'      ,gsw  )
+ call mpas_pool_get_array(diag_physics,'hfx'      ,hfx  )
+ call mpas_pool_get_array(diag_physics,'qfx'      ,qfx  )
+ call mpas_pool_get_array(diag_physics,'ust'      ,ust  )
 
  skinmax = -9999.
  skinmin =  9999.
@@ -447,39 +461,43 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
+ type(mpas_pool_type),intent(in) :: mesh
  logical,intent(in):: LeapYear
  real(kind=RKIND),intent(in):: dt,julian_in
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type),intent(inout)   :: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
 
-!local variables:
- integer:: iCell,iLag,n,nCellsSolve,nLags
+!local pointers:
+ integer,pointer:: nCellsSolve,nLags
 
- real(kind=RKIND),parameter:: tconst = 0.6
- real(kind=RKIND):: deltat,julian,tprior,yrday
  real(kind=RKIND),dimension(:),pointer:: nsteps_accum,ndays_accum
  real(kind=RKIND),dimension(:),pointer  :: tday_accum,tmn,tsk,tyear_accum,tyear_mean
  real(kind=RKIND),dimension(:,:),pointer:: tlag 
+
+!local variables:
+ integer:: iCell,iLag,n
+
+ real(kind=RKIND),parameter:: tconst = 0.6
+ real(kind=RKIND):: deltat,julian,tprior,yrday
 
 !--------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine physics_update_deepsoiltemp:' 
 
- nCellsSolve = mesh % nCellsSolve
- nLags       = mesh % nLags
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nLags'      ,nLags      )
 
- nsteps_accum => diag_physics % nsteps_accum % array
- ndays_accum  => diag_physics % ndays_accum  % array
+ call mpas_pool_get_array(diag_physics,'nsteps_accum',nsteps_accum)
+ call mpas_pool_get_array(diag_physics,'ndays_accum' ,ndays_accum )
+ call mpas_pool_get_array(diag_physics,'tday_accum'  ,tday_accum  )
+ call mpas_pool_get_array(diag_physics,'tyear_accum' ,tyear_accum )
+ call mpas_pool_get_array(diag_physics,'tyear_mean'  ,tyear_mean  )
 
- tmn  => sfc_input    % tmn       % array
- tsk  => sfc_input    % skintemp  % array
- tlag => diag_physics % tlag      % array
- tday_accum  => diag_physics % tday_accum  % array
- tyear_accum => diag_physics % tyear_accum % array
- tyear_mean  => diag_physics % tyear_mean  % array
+ call mpas_pool_get_array(sfc_input,'tmn'     ,tmn )
+ call mpas_pool_get_array(sfc_input,'skintemp',tsk )
+ call mpas_pool_get_array(sfc_input,'tlag'    ,tlag)
 
 !... defines the number of days in the year:
  if(LeapYear) then

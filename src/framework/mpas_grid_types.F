@@ -23,6 +23,7 @@ module mpas_grid_types
    use mpas_dmpar_types
    use mpas_attlist
    use mpas_packages
+   use mpas_io_units, only : stderrUnit
 
    integer, parameter :: nTimeLevs = 2
 
@@ -403,22 +404,131 @@ module mpas_grid_types
    end type field0DChar
 
 
-   ! Derived type for storing grid meta-data
-   type mesh_type
-
+   ! Derived type for storing fields
+   type field0DLogical
+  
+      ! Back-pointer to the containing block
       type (block_type), pointer :: block
 
-#include "field_dimensions.inc"
+      ! Raw array holding field data on this block
+      logical :: scalar
 
-      logical :: on_a_sphere
-      real (kind=RKIND) :: sphere_radius
+      ! Information used by the I/O layer
+      type (io_info), pointer :: ioinfo       ! to be removed later
+      character (len=StrKIND) :: fieldName
+      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      logical :: hasTimeDimension
+      logical :: isActive
+      logical :: isVarArray
+      type (att_list_type), pointer :: attList => null()     
 
-#include "time_invariant_fields.inc"
+      ! Pointers to the prev and next blocks for this field on this task
+      type (field0DLogical), pointer :: prev, next
 
-   end type mesh_type
+      ! Halo communication lists
+      type (mpas_multihalo_exchange_list), pointer :: sendList
+      type (mpas_multihalo_exchange_list), pointer :: recvList
+      type (mpas_multihalo_exchange_list), pointer :: copyList
+   end type field0DLogical
 
+   !!! TYPES FOR MPAS_POOL
+   integer, parameter :: MPAS_POOL_TABLE_SIZE = 128
 
-#include "variable_groups.inc"
+   integer, parameter :: MPAS_POOL_SILENT = 1001, &
+                         MPAS_POOL_WARN   = 1002, &
+                         MPAS_POOL_FATAL  = 1003
+
+   integer, parameter :: MPAS_POOL_FIELD     = 1004, &
+                         MPAS_POOL_CONFIG    = 1005, &
+                         MPAS_POOL_DIMENSION = 1006, &
+                         MPAS_POOL_SUBPOOL   = 1007, &
+                         MPAS_POOL_PACKAGE   = 1008
+
+   integer, parameter :: MPAS_POOL_REAL      = 1009, &
+                         MPAS_POOL_INTEGER   = 1010, &
+                         MPAS_POOL_LOGICAL   = 1011, &
+                         MPAS_POOL_CHARACTER = 1012
+
+   integer, parameter :: MPAS_DECOMP_NONDECOMP = 1013, &
+                         MPAS_DECOMP_CELLS     = 1014, &
+                         MPAS_DECOMP_EDGES     = 1015, &
+                         MPAS_DECOMP_VERTICES  = 1016
+
+   type mpas_pool_data_type
+      integer :: contentsType
+      integer :: contentsDims
+      integer :: contentsTimeLevs
+
+      ! For storing fields
+      type (field0DReal), pointer :: r0 => null()
+      type (field1DReal), pointer :: r1 => null()
+      type (field2DReal), pointer :: r2 => null()
+      type (field3DReal), pointer :: r3 => null()
+      type (field4DReal), pointer :: r4 => null()
+      type (field5DReal), pointer :: r5 => null()
+      type (field0DReal), dimension(:), pointer :: r0a => null()
+      type (field1DReal), dimension(:), pointer :: r1a => null()
+      type (field2DReal), dimension(:), pointer :: r2a => null()
+      type (field3DReal), dimension(:), pointer :: r3a => null()
+      type (field4DReal), dimension(:), pointer :: r4a => null()
+      type (field5DReal), dimension(:), pointer :: r5a => null()
+      type (field0DInteger), pointer :: i0 => null()
+      type (field1DInteger), pointer :: i1 => null()
+      type (field2DInteger), pointer :: i2 => null()
+      type (field3DInteger), pointer :: i3 => null()
+      type (field0DInteger), dimension(:), pointer :: i0a => null()
+      type (field1DInteger), dimension(:), pointer :: i1a => null()
+      type (field2DInteger), dimension(:), pointer :: i2a => null()
+      type (field3DInteger), dimension(:), pointer :: i3a => null()
+      type (field0DChar), pointer :: c0 => null()
+      type (field1DChar), pointer :: c1 => null()
+      type (field0DChar), dimension(:), pointer :: c0a => null()
+      type (field1DChar), dimension(:), pointer :: c1a => null()
+      type (field0DLogical), pointer :: l0 => null()
+      type (field0DLogical), dimension(:), pointer :: l0a => null()
+      type (mpas_pool_type), pointer :: p => null()
+ 
+      ! For storing config options, dimensions, and packages
+      integer, pointer :: simple_int
+      integer, dimension(:), pointer :: simple_int_arr => null()
+      real(kind=RKIND), pointer :: simple_real
+      logical, pointer :: simple_logical
+      character(len=StrKIND), pointer :: simple_char
+   end type mpas_pool_data_type
+
+   type mpas_pool_member_type
+      character (len=StrKIND) :: key
+      integer :: keyLen
+      integer :: contentsType
+      type (mpas_pool_data_type), pointer :: data => null()
+      type (mpas_pool_member_type), pointer :: next => null()
+   end type mpas_pool_member_type
+
+   type mpas_pool_head_type
+      type (mpas_pool_member_type), pointer :: head => null()
+   end type mpas_pool_head_type
+
+   type mpas_pool_type
+      integer :: size
+      integer :: iteratorIndex
+      type (mpas_pool_head_type), dimension(:), pointer :: table => null()
+      type (mpas_pool_member_type), pointer :: iterator => null()
+   end type mpas_pool_type
+
+   type mpas_pool_iterator_type
+      character (len=StrKIND) :: memberName
+      integer :: memberType
+      integer :: dataType
+      integer :: nDims
+      integer :: nTimeLevels
+   end type mpas_pool_iterator_type
+
+   type mpas_pool_field_info_type
+      integer :: fieldType
+      integer :: nDims
+      integer :: nTimeLevels
+   end type mpas_pool_field_info_type
+   !!! END TYPES FOR MPAS POOL
 
 
    ! Type for storing (possibly architecture specific) information concerning to parallelism
@@ -440,8 +550,6 @@ module mpas_grid_types
    ! Derived type for storing part of a domain; used as a basic unit of work for a process
    type block_type
 
-#include "block_group_members.inc"
-
       integer :: blockID   ! Unique global ID number for this block
       integer :: localBlockID  ! Unique local ID number for this block
 
@@ -449,17 +557,24 @@ module mpas_grid_types
 
       type (parallel_info), pointer :: parinfo
 
-      type (block_type), pointer :: prev, next
+      type (block_type), pointer :: prev => null()
+      type (block_type), pointer :: next => null()
+
+      type (mpas_pool_type), pointer :: structs, dimensions, configs, packages
+      type (mpas_pool_type), pointer :: allFields
    end type block_type
 
 
    ! Derived type for storing list of blocks from a domain to be handled by a process
    type domain_type
       type (block_type), pointer :: blocklist
+      type (mpas_pool_type), pointer :: configs, packages
    
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo
 #include "model_variables.inc"
+      logical :: on_a_sphere
+      real (kind=RKIND) :: sphere_radius
       character (len=StrKIND*2) :: history !< History attribute, read in from input file.
       character (len=StrKIND) :: mesh_id !< mesh_id attribute, randomly generated
       character (len=StrKIND) :: Conventions !< Conventions attribute, read in from input file.
@@ -468,44 +583,173 @@ module mpas_grid_types
       character (len=StrKIND) :: parent_id !< parent_id attribute, read in from input file.
    end type domain_type
 
+   interface mpas_allocate_mold
+      module procedure mpas_allocate_mold_1dreal
+      module procedure mpas_allocate_mold_2dreal
+      module procedure mpas_allocate_mold_3dreal
+      module procedure mpas_allocate_mold_4dreal
+      module procedure mpas_allocate_mold_5dreal
+      module procedure mpas_allocate_mold_1dinteger
+      module procedure mpas_allocate_mold_2dinteger
+      module procedure mpas_allocate_mold_3dinteger
+      module procedure mpas_allocate_mold_1dchar
+   end interface
+
+   interface mpas_duplicate_field
+      module procedure mpas_duplicate_field0d_real
+      module procedure mpas_duplicate_field1d_real
+      module procedure mpas_duplicate_field2d_real
+      module procedure mpas_duplicate_field3d_real
+      module procedure mpas_duplicate_field4d_real
+      module procedure mpas_duplicate_field5d_real
+      module procedure mpas_duplicate_field0d_integer
+      module procedure mpas_duplicate_field1d_integer
+      module procedure mpas_duplicate_field2d_integer
+      module procedure mpas_duplicate_field3d_integer
+      module procedure mpas_duplicate_field0d_char
+      module procedure mpas_duplicate_field1d_char
+      module procedure mpas_duplicate_field0d_logical
+   end interface
+
+   interface mpas_shift_time_levs
+      module procedure mpas_shift_time_levs_0dreal
+      module procedure mpas_shift_time_levs_1dreal
+      module procedure mpas_shift_time_levs_2dreal
+      module procedure mpas_shift_time_levs_3dreal
+      module procedure mpas_shift_time_levs_4dreal
+      module procedure mpas_shift_time_levs_5dreal
+      module procedure mpas_shift_time_levs_0dinteger
+      module procedure mpas_shift_time_levs_1dinteger
+      module procedure mpas_shift_time_levs_2dinteger
+      module procedure mpas_shift_time_levs_3dinteger
+      module procedure mpas_shift_time_levs_0dchar
+      module procedure mpas_shift_time_levs_1dchar
+      module procedure mpas_shift_time_levs_0dlogical
+   end interface
+
    interface mpas_allocate_scratch_field
-     module procedure mpas_allocate_scratch_field1d_integer
-     module procedure mpas_allocate_scratch_field2d_integer
-     module procedure mpas_allocate_scratch_field3d_integer
-     module procedure mpas_allocate_scratch_field1d_real
-     module procedure mpas_allocate_scratch_field2d_real
-     module procedure mpas_allocate_scratch_field3d_real
-     module procedure mpas_allocate_scratch_field4d_real
-     module procedure mpas_allocate_scratch_field5d_real
-     module procedure mpas_allocate_scratch_field1d_char
+      module procedure mpas_allocate_scratch_field1d_integer
+      module procedure mpas_allocate_scratch_field2d_integer
+      module procedure mpas_allocate_scratch_field3d_integer
+      module procedure mpas_allocate_scratch_field1d_real
+      module procedure mpas_allocate_scratch_field2d_real
+      module procedure mpas_allocate_scratch_field3d_real
+      module procedure mpas_allocate_scratch_field4d_real
+      module procedure mpas_allocate_scratch_field5d_real
+      module procedure mpas_allocate_scratch_field1d_char
    end interface
 
    interface mpas_deallocate_scratch_field
-     module procedure mpas_deallocate_scratch_field1d_integer
-     module procedure mpas_deallocate_scratch_field2d_integer
-     module procedure mpas_deallocate_scratch_field3d_integer
-     module procedure mpas_deallocate_scratch_field1d_real
-     module procedure mpas_deallocate_scratch_field2d_real
-     module procedure mpas_deallocate_scratch_field3d_real
-     module procedure mpas_deallocate_scratch_field4d_real
-     module procedure mpas_deallocate_scratch_field5d_real
-     module procedure mpas_deallocate_scratch_field1d_char
+      module procedure mpas_deallocate_scratch_field1d_integer
+      module procedure mpas_deallocate_scratch_field2d_integer
+      module procedure mpas_deallocate_scratch_field3d_integer
+      module procedure mpas_deallocate_scratch_field1d_real
+      module procedure mpas_deallocate_scratch_field2d_real
+      module procedure mpas_deallocate_scratch_field3d_real
+      module procedure mpas_deallocate_scratch_field4d_real
+      module procedure mpas_deallocate_scratch_field5d_real
+      module procedure mpas_deallocate_scratch_field1d_char
    end interface
 
    interface mpas_deallocate_field
-     module procedure mpas_deallocate_field0d_integer
-     module procedure mpas_deallocate_field1d_integer
-     module procedure mpas_deallocate_field2d_integer
-     module procedure mpas_deallocate_field3d_integer
-     module procedure mpas_deallocate_field0d_real
-     module procedure mpas_deallocate_field1d_real
-     module procedure mpas_deallocate_field2d_real
-     module procedure mpas_deallocate_field3d_real
-     module procedure mpas_deallocate_field4d_real
-     module procedure mpas_deallocate_field5d_real
-     module procedure mpas_deallocate_field0d_char
-     module procedure mpas_deallocate_field1d_char
+      module procedure mpas_deallocate_field0d_logical
+      module procedure mpas_deallocate_field0d_integer
+      module procedure mpas_deallocate_field1d_integer
+      module procedure mpas_deallocate_field2d_integer
+      module procedure mpas_deallocate_field3d_integer
+      module procedure mpas_deallocate_field0d_real
+      module procedure mpas_deallocate_field1d_real
+      module procedure mpas_deallocate_field2d_real
+      module procedure mpas_deallocate_field3d_real
+      module procedure mpas_deallocate_field4d_real
+      module procedure mpas_deallocate_field5d_real
+      module procedure mpas_deallocate_field0d_char
+      module procedure mpas_deallocate_field1d_char
    end interface
+
+   interface mpas_pool_add_field
+      module procedure mpas_pool_add_field_0d_real
+      module procedure mpas_pool_add_field_1d_real
+      module procedure mpas_pool_add_field_2d_real
+      module procedure mpas_pool_add_field_3d_real
+      module procedure mpas_pool_add_field_4d_real
+      module procedure mpas_pool_add_field_5d_real
+      module procedure mpas_pool_add_field_0d_int
+      module procedure mpas_pool_add_field_1d_int
+      module procedure mpas_pool_add_field_2d_int
+      module procedure mpas_pool_add_field_3d_int
+      module procedure mpas_pool_add_field_0d_char
+      module procedure mpas_pool_add_field_1d_char
+      module procedure mpas_pool_add_field_0d_reals
+      module procedure mpas_pool_add_field_1d_reals
+      module procedure mpas_pool_add_field_2d_reals
+      module procedure mpas_pool_add_field_3d_reals
+      module procedure mpas_pool_add_field_4d_reals
+      module procedure mpas_pool_add_field_5d_reals
+      module procedure mpas_pool_add_field_0d_ints
+      module procedure mpas_pool_add_field_1d_ints
+      module procedure mpas_pool_add_field_2d_ints
+      module procedure mpas_pool_add_field_3d_ints
+      module procedure mpas_pool_add_field_0d_chars
+      module procedure mpas_pool_add_field_1d_chars
+   end interface
+
+   interface mpas_pool_get_field
+      module procedure mpas_pool_get_field_0d_real
+      module procedure mpas_pool_get_field_1d_real
+      module procedure mpas_pool_get_field_2d_real
+      module procedure mpas_pool_get_field_3d_real
+      module procedure mpas_pool_get_field_4d_real
+      module procedure mpas_pool_get_field_5d_real
+      module procedure mpas_pool_get_field_0d_int
+      module procedure mpas_pool_get_field_1d_int
+      module procedure mpas_pool_get_field_2d_int
+      module procedure mpas_pool_get_field_3d_int
+      module procedure mpas_pool_get_field_0d_char
+      module procedure mpas_pool_get_field_1d_char
+   end interface
+
+   interface mpas_pool_get_array
+      module procedure mpas_pool_get_array_0d_real
+      module procedure mpas_pool_get_array_1d_real
+      module procedure mpas_pool_get_array_2d_real
+      module procedure mpas_pool_get_array_3d_real
+      module procedure mpas_pool_get_array_4d_real
+      module procedure mpas_pool_get_array_5d_real
+      module procedure mpas_pool_get_array_0d_int
+      module procedure mpas_pool_get_array_1d_int
+      module procedure mpas_pool_get_array_2d_int
+      module procedure mpas_pool_get_array_3d_int
+      module procedure mpas_pool_get_array_0d_char
+      module procedure mpas_pool_get_array_1d_char
+   end interface
+
+   interface mpas_pool_add_config
+      module procedure mpas_pool_add_config_real
+      module procedure mpas_pool_add_config_int
+      module procedure mpas_pool_add_config_char
+      module procedure mpas_pool_add_config_logical
+   end interface
+
+   interface mpas_pool_get_config
+      module procedure mpas_pool_get_config_real
+      module procedure mpas_pool_get_config_int
+      module procedure mpas_pool_get_config_char
+      module procedure mpas_pool_get_config_logical
+   end interface
+
+   interface mpas_pool_add_dimension
+      module procedure mpas_pool_add_dimension_0d
+      module procedure mpas_pool_add_dimension_1d
+   end interface
+
+   interface mpas_pool_get_dimension
+      module procedure mpas_pool_get_dimension_0d
+      module procedure mpas_pool_get_dimension_1d
+   end interface
+
+   integer :: currentErrorLevel = MPAS_POOL_SILENT
+
 
 
    contains
@@ -531,6 +775,12 @@ module mpas_grid_types
       nullify(dom % blocklist)
       dom % dminfo => dminfo
 
+      allocate(dom % configs)
+      allocate(dom % packages)
+
+      call mpas_pool_create_pool(dom % configs)
+      call mpas_pool_create_pool(dom % packages)
+
    end subroutine mpas_allocate_domain!}}}
 
 !***********************************************************************
@@ -555,9 +805,7 @@ module mpas_grid_types
       type (block_type), pointer :: b !< Input/Output: Block structure
       type (domain_type), pointer :: dom !< Input: Domain structure
       integer, intent(in) :: blockID !< Input: Global ID of block
-#include "dim_dummy_decls.inc"
-
-
+#include "dim_dummy_defines_input.inc"
 
       integer :: i
 
@@ -567,14 +815,18 @@ module mpas_grid_types
 
       b % domain => dom
 
-#include "block_allocs.inc"
+      allocate(b % structs)
+      allocate(b % dimensions)
+      allocate(b % allFields)
+      call mpas_pool_create_pool(b % structs)
+      call mpas_pool_create_pool(b % dimensions)
+      call mpas_pool_create_pool(b % allFields)
+
+      b % configs => dom % configs
+      b % packages => dom % packages
 
    end subroutine mpas_allocate_block!}}}
 
-
-#include "group_alloc_routines.inc"
-
-#include "provis_alloc_routines.inc"
 
 !***********************************************************************
 !
@@ -600,6 +852,9 @@ module mpas_grid_types
          call mpas_deallocate_block(block_ptr)
          block_ptr => block_ptr % next
       end do
+
+      call mpas_pool_destroy_pool(dom % configs)
+      call mpas_pool_destroy_pool(dom % packages)
 
    end subroutine mpas_deallocate_domain!}}}
 
@@ -1388,6 +1643,40 @@ module mpas_grid_types
 
 !***********************************************************************
 !
+!  routine mpas_deallocate_field0d_logical
+!
+!> \brief   MPAS 0D logical deallocation routine.
+!> \author  Doug Jacobsen
+!> \date    04/02/13
+!> \details 
+!> This routine deallocates a 0D logical field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field0d_logical(f)!{{{
+       type (field0dLogical), pointer :: f !< Input: Field to deallocate
+       type (field0dLogical), pointer :: f_cursor
+
+       f_cursor => f
+
+       do while(associated(f_cursor))
+         if(associated(f % next)) then
+           f => f % next
+         else
+           nullify(f)
+         end if
+
+         if(associated(f_cursor % ioinfo)) then
+           deallocate(f_cursor % ioinfo)
+         end if
+
+         deallocate(f_cursor)
+         f_cursor => f
+       end do
+
+   end subroutine mpas_deallocate_field0d_logical!}}}
+
+!***********************************************************************
+!
 !  routine mpas_deallocate_field0d_integer
 !
 !> \brief   MPAS 0D integer deallocation routine.
@@ -1854,6 +2143,9 @@ module mpas_grid_types
       !      deallocate the array of head pointers and the parinfo type...
       !      It also seems like these deallocations should happen with mpas_dmpar_destroy_multihalo_exchange_list
 
+      call mpas_pool_destroy_pool(b % structs)
+      call mpas_pool_destroy_pool(b % dimensions)
+
       deallocate(b % parinfo % cellsToSend)
       deallocate(b % parinfo % cellsToRecv)
       deallocate(b % parinfo % cellsToCopy)
@@ -1868,21 +2160,1055 @@ module mpas_grid_types
 
       deallocate(b % parinfo)
 
-#include "block_deallocs.inc"
-
    end subroutine mpas_deallocate_block!}}}
 
 
-#include "group_dealloc_routines.inc"
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_1dreal
+!
+!> \brief   Allocates a 1-d real array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_1dreal(dst, src)
+
+      implicit none
+
+      real(kind=RKIND), dimension(:), pointer :: dst
+      real(kind=RKIND), dimension(:), intent(in) :: src
+  
+      allocate(dst(size(src)))
+
+   end subroutine mpas_allocate_mold_1dreal
 
 
-#include "group_copy_routines.inc"
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_2dreal
+!
+!> \brief   Allocates a 2-d real array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_2dreal(dst, src)
+
+      implicit none
+
+      real(kind=RKIND), dimension(:,:), pointer :: dst
+      real(kind=RKIND), dimension(:,:), intent(in) :: src
+  
+      integer, dimension(2) :: dims
+
+      dims = shape(src)
+
+      allocate(dst(dims(1),dims(2)))
+
+   end subroutine mpas_allocate_mold_2dreal
 
 
-#include "group_shift_level_routines.inc"
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_3dreal
+!
+!> \brief   Allocates a 3-d real array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_3dreal(dst, src)
+
+      implicit none
+
+      real(kind=RKIND), dimension(:,:,:), pointer :: dst
+      real(kind=RKIND), dimension(:,:,:), intent(in) :: src
+  
+      integer, dimension(3) :: dims
+
+      dims = shape(src)
+
+      allocate(dst(dims(1),dims(2),dims(3)))
+
+   end subroutine mpas_allocate_mold_3dreal
 
 
-#include "field_links.inc"
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_4dreal
+!
+!> \brief   Allocates a 4-d real array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_4dreal(dst, src)
+
+      implicit none
+
+      real(kind=RKIND), dimension(:,:,:,:), pointer :: dst
+      real(kind=RKIND), dimension(:,:,:,:), intent(in) :: src
+  
+      integer, dimension(4) :: dims
+
+      dims = shape(src)
+
+      allocate(dst(dims(1),dims(2),dims(3),dims(4)))
+
+   end subroutine mpas_allocate_mold_4dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_5dreal
+!
+!> \brief   Allocates a 5-d real array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_5dreal(dst, src)
+
+      implicit none
+
+      real(kind=RKIND), dimension(:,:,:,:,:), pointer :: dst
+      real(kind=RKIND), dimension(:,:,:,:,:), intent(in) :: src
+  
+      integer, dimension(5) :: dims
+
+      dims = shape(src)
+
+      allocate(dst(dims(1),dims(2),dims(3),dims(4),dims(5)))
+
+   end subroutine mpas_allocate_mold_5dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_1dinteger
+!
+!> \brief   Allocates a 1-d integer array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_1dinteger(dst, src)
+
+      implicit none
+
+      integer, dimension(:), pointer :: dst
+      integer, dimension(:), intent(in) :: src
+  
+      allocate(dst(size(src)))
+
+   end subroutine mpas_allocate_mold_1dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_2dinteger
+!
+!> \brief   Allocates a 2-d integer array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_2dinteger(dst, src)
+
+      implicit none
+
+      integer, dimension(:,:), pointer :: dst
+      integer, dimension(:,:), intent(in) :: src
+  
+      integer, dimension(2) :: dims
+
+      dims = shape(src)
+
+      allocate(dst(dims(1),dims(2)))
+
+   end subroutine mpas_allocate_mold_2dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_3dinteger
+!
+!> \brief   Allocates a 3-d integer array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_3dinteger(dst, src)
+
+      implicit none
+
+      integer, dimension(:,:,:), pointer :: dst
+      integer, dimension(:,:,:), intent(in) :: src
+  
+      integer, dimension(3) :: dims
+
+      dims = shape(src)
+
+      allocate(dst(dims(1),dims(2),dims(3)))
+
+   end subroutine mpas_allocate_mold_3dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_allocate_mold_1dchar
+!
+!> \brief   Allocates a 1-d character array using the dimensions of another array
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Allocates the array dst to have the same dimensions as the array src.
+!> This routine exists to provide the same functionality as F2008's 
+!> ALLOCATE(A,MOLD=B) functionality, or a similar functionality to F2003's
+!> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_allocate_mold_1dchar(dst, src)
+
+      implicit none
+
+      character(len=StrKIND), dimension(:), pointer :: dst
+      character(len=StrKIND), dimension(:), intent(in) :: src
+  
+      allocate(dst(size(src)))
+
+   end subroutine mpas_allocate_mold_1dchar
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field0d_real
+!
+!> \brief   MPAS 0D real field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field0d_real(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field0DReal), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field0DReal), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field0DReal), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_scalar.inc"
+
+   end subroutine mpas_duplicate_field0d_real !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field1d_real
+!
+!> \brief   MPAS 1D real field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field1d_real(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field1DReal), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field1DReal), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field1DReal), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field1d_real !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field2d_real
+!
+!> \brief   MPAS 2D real field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field2d_real(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field2DReal), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field2DReal), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field2DReal), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field2d_real !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field3d_real
+!
+!> \brief   MPAS 3D real field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field3d_real(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field3DReal), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field3DReal), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field3DReal), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field3d_real !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field4d_real
+!
+!> \brief   MPAS 4D real field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field4d_real(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field4DReal), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field4DReal), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field4DReal), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field4d_real !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field5d_real
+!
+!> \brief   MPAS 5D real field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field5d_real(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field5DReal), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field5DReal), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field5DReal), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field5d_real !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field0d_integer
+!
+!> \brief   MPAS 0D integer field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field0d_integer(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field0DInteger), intent(in), target :: src  !< Input: Field to be duplicated
+      type (field0DInteger), pointer :: dst             !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field0DInteger), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_scalar.inc"
+
+   end subroutine mpas_duplicate_field0d_integer !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field1d_integer
+!
+!> \brief   MPAS 1D integer field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field1d_integer(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field1DInteger), intent(in), target :: src  !< Input: Field to be duplicated
+      type (field1DInteger), pointer :: dst             !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field1DInteger), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field1d_integer !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field2d_integer
+!
+!> \brief   MPAS 2D integer field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field2d_integer(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field2DInteger), intent(in), target :: src  !< Input: Field to be duplicated
+      type (field2DInteger), pointer :: dst             !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field2DInteger), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field2d_integer !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field3d_integer
+!
+!> \brief   MPAS 3D integer field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field3d_integer(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field3DInteger), intent(in), target :: src  !< Input: Field to be duplicated
+      type (field3DInteger), pointer :: dst             !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field3DInteger), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field3d_integer !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field0d_char
+!
+!> \brief   MPAS 0D character field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field0d_char(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field0DChar), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field0DChar), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field0DChar), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_scalar.inc"
+
+   end subroutine mpas_duplicate_field0d_char !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field1d_char
+!
+!> \brief   MPAS 1D character field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field1d_char(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field1DChar), intent(in), target :: src     !< Input: Field to be duplicated
+      type (field1DChar), pointer :: dst                !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field1DChar), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_array.inc"
+
+   end subroutine mpas_duplicate_field1d_char !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_duplicate_field0d_logical
+!
+!> \brief   MPAS 0D logical field duplication routine.
+!> \author  Michael Duda
+!> \date    04/12/14
+!> \details 
+!> Creates a duplicate of the source field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_field0d_logical(src, dst, copy_array_only) !{{{
+
+      implicit none
+
+      type (field0DLogical), intent(in), target :: src  !< Input: Field to be duplicated
+      type (field0DLogical), pointer :: dst             !< Output: Field to contain the duplicate
+      logical, intent(in), optional :: copy_array_only  !< Input: whether to assume that dst exists, and only copy array data
+
+      type (field0DLogical), pointer :: src_cursor, dst_cursor
+      logical :: local_copy_only
+
+#include "duplicate_field_scalar.inc"
+
+   end subroutine mpas_duplicate_field0d_logical !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_0dreal
+!
+!> \brief   MPAS 0D real time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_0dreal(fldarr)
+
+      implicit none
+
+      type (field0DReal), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field0DReal), dimension(:), pointer :: fldarr_ptr
+      real(kind=RKIND) :: scalar
+      
+#include "shift_time_levs_scalar.inc"
+
+   end subroutine mpas_shift_time_levs_0dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_1dreal
+!
+!> \brief   MPAS 1D real time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_1dreal(fldarr)
+
+      implicit none
+
+      type (field1DReal), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field1DReal), dimension(:), pointer :: fldarr_ptr
+      real(kind=RKIND), dimension(:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_1dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_2dreal
+!
+!> \brief   MPAS 2D real time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_2dreal(fldarr)
+
+      implicit none
+
+      type (field2DReal), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field2DReal), dimension(:), pointer :: fldarr_ptr
+      real(kind=RKIND), dimension(:,:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_2dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_3dreal
+!
+!> \brief   MPAS 3D real time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_3dreal(fldarr)
+
+      implicit none
+
+      type (field3DReal), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field3DReal), dimension(:), pointer :: fldarr_ptr
+      real(kind=RKIND), dimension(:,:,:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_3dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_4dreal
+!
+!> \brief   MPAS 4D real time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_4dreal(fldarr)
+
+      implicit none
+
+      type (field4DReal), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field4DReal), dimension(:), pointer :: fldarr_ptr
+      real(kind=RKIND), dimension(:,:,:,:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_4dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_5dreal
+!
+!> \brief   MPAS 5D real time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_5dreal(fldarr)
+
+      implicit none
+
+      type (field5DReal), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field5DReal), dimension(:), pointer :: fldarr_ptr
+      real(kind=RKIND), dimension(:,:,:,:,:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_5dreal
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_0dinteger
+!
+!> \brief   MPAS 0D integer time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_0dinteger(fldarr)
+
+      implicit none
+
+      type (field0DInteger), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field0DInteger), dimension(:), pointer :: fldarr_ptr
+      integer :: scalar
+      
+#include "shift_time_levs_scalar.inc"
+
+   end subroutine mpas_shift_time_levs_0dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_1dinteger
+!
+!> \brief   MPAS 1D integer time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_1dinteger(fldarr)
+
+      implicit none
+
+      type (field1DInteger), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field1DInteger), dimension(:), pointer :: fldarr_ptr
+      integer, dimension(:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_1dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_2dinteger
+!
+!> \brief   MPAS 2D integer time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_2dinteger(fldarr)
+
+      implicit none
+
+      type (field2DInteger), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field2DInteger), dimension(:), pointer :: fldarr_ptr
+      integer, dimension(:,:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_2dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_3dinteger
+!
+!> \brief   MPAS 3D integer time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_3dinteger(fldarr)
+
+      implicit none
+
+      type (field3DInteger), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field3DInteger), dimension(:), pointer :: fldarr_ptr
+      integer, dimension(:,:,:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_3dinteger
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_0dchar
+!
+!> \brief   MPAS 0D character time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_0dchar(fldarr)
+
+      implicit none
+
+      type (field0DChar), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field0DChar), dimension(:), pointer :: fldarr_ptr
+      character (len=StrKIND) :: scalar
+      
+#include "shift_time_levs_scalar.inc"
+
+   end subroutine mpas_shift_time_levs_0dchar
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_1dchar
+!
+!> \brief   MPAS 1D character time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_1dchar(fldarr)
+
+      implicit none
+
+      type (field1DChar), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field1DChar), dimension(:), pointer :: fldarr_ptr
+      character (len=StrKIND), dimension(:), pointer :: arr_ptr
+      
+#include "shift_time_levs_array.inc"
+
+   end subroutine mpas_shift_time_levs_1dchar
+
+
+!***********************************************************************
+!
+!  routine mpas_shift_time_levs_0dlogical
+!
+!> \brief   MPAS 0D logical time-level shift routine
+!> \author  Michael Duda
+!> \date    04/14/14
+!> \details 
+!> Shifts the contents of the array of fields provided by the input argument.
+!> After returning, the storage for fldarr(n) will point to what was the storage 
+!> for fldarr(n+1) in a period fashion, so that, for N time levels, the storage
+!> for fldarr(N) will point to what was the storage for fldarr(1).
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_shift_time_levs_0dlogical(fldarr)
+
+      implicit none
+
+      type (field0DLogical), dimension(:), pointer :: fldarr
+
+      integer :: i, nlevs
+      type (field0DLogical), dimension(:), pointer :: fldarr_ptr
+      logical :: scalar
+      
+#include "shift_time_levs_scalar.inc"
+
+   end subroutine mpas_shift_time_levs_0dlogical
+
+!***********************************************************************
+!
+!  routine mpas_link_fields
+!
+!> \brief   MPAS Link Fields routine
+!> \author  Doug Jacobsen
+!> \date    04/24/2014
+!> \details 
+!> Sets up field links across blocks. This routine should be called prior to
+!> any halo exchanges. Also links parinfo into each field.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_link_fields(domain)!{{{
+      type (domain_type), intent(in) :: domain
+
+      type (block_type), pointer :: blockPtr
+      type (block_type), pointer :: prevBlock
+      type (block_type), pointer :: nextBlock
+
+      blockPtr => domain % blocklist
+      do while(associated(blockPtr))
+         if (associated(blockPtr % prev)) then
+            prevBlock => blockPtr % prev
+         else
+            nullify(prevBlock)
+         end if
+
+         if (associated(blockPtr % next)) then
+            nextBlock => blockPtr % next
+         else
+            nullify(nextBlock)
+         end if
+
+         if (associated(prevBlock) .and. associated(nextBlock)) then
+            call mpas_pool_link_pools(blockPtr % structs, prevBlock % structs, nextBlock % structs)
+         else if (associated(prevBlock)) then
+            call mpas_pool_link_pools(blockPtr % structs, prevBlock % structs)
+         else if (associated(nextBlock)) then
+            call mpas_pool_link_pools(blockPtr % structs, nextPool=nextBlock % structs)
+         else
+            call mpas_pool_link_pools(blockPtr % structs)
+         end if
+
+         call mpas_pool_link_parinfo(blockPtr, blockPtr % structs)
+
+         blockPtr => blockPtr % next
+      end do
+
+   end subroutine mpas_link_fields!}}}
+
+
+
+
+
+#include "pool_subroutines.inc"
+
+
+#include "define_dimensions.inc"
+#include "define_packages.inc"
+!#include "link_fields.inc"
+#include "structs_and_variables.inc"
 
 
 end module mpas_grid_types

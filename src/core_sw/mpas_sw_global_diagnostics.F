@@ -12,13 +12,15 @@ module sw_global_diagnostics
    use mpas_constants
    use mpas_dmpar
 
+   use sw_constants
+
    implicit none
    save
    public
 
    contains
 
-   subroutine sw_compute_global_diagnostics(dminfo, state, grid, timeIndex, dt)
+   subroutine sw_compute_global_diagnostics(dminfo, statePool, meshPool, timeIndex, dt, timeLevelIn)
 
       ! Note: this routine assumes that there is only one block per processor. No looping
       ! is preformed over blocks.
@@ -44,13 +46,14 @@ module sw_global_diagnostics
       implicit none
 
       type (dm_info), intent(in) :: dminfo
-      type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(inout) :: statePool
+      type (mpas_pool_type), intent(in) :: meshPool
       integer, intent(in) :: timeIndex
       real (kind=RKIND), intent(in) :: dt
+      integer, intent(in), optional :: timeLevelIn
 
-      integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
-      integer :: nCells
+      integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
+      integer, pointer :: nCells, nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve
 
       ! Step 1
       ! 1. Define the array to integrate, and the variable for the value to be stored in after the integration
@@ -80,42 +83,50 @@ module sw_global_diagnostics
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
       integer :: timeLevel, eoe, iLevel, iCell, iEdge, iVertex
       integer :: fileID, iCell1, iCell2, j
+      integer, pointer :: config_stats_interval
 
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgesOnEdge
       integer, dimension(:), pointer :: nEdgesOnEdge
+
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      endif
+
+      call mpas_pool_get_config(swConfigs, 'config_stats_interval', config_stats_interval)
       
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgesOnCell => grid % edgesOnCell % array
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-      nVertLevels = grid % nVertLevels
-      nCellsSolve = grid % nCellsSolve
-      nEdgesSolve = grid % nEdgesSolve
-      nVerticesSolve = grid % nVerticesSolve
-      nCells = grid % nCells
-
-      h_s => grid % h_s % array
-      areaCell => grid % areaCell % array
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
-      areaTriangle => grid % areaTriangle % array
-      fCell => grid % fCell % array
-      fEdge => grid % fEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'h_s', h_s)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'fCell', fCell)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
 
       allocate(areaEdge(1:nEdgesSolve))
       areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
-      weightsOnEdge     => grid % weightsOnEdge % array
 
-      h => state % h % array
-      u => state % u % array
-      v => state % v % array
-      tracers => state % tracers % array
-      h_edge => state % h_edge % array
-      h_vertex => state % h_vertex % array
-      pv_edge => state % pv_edge % array
-      pv_vertex => state % pv_vertex % array
-      pv_cell => state % pv_cell % array
+      call mpas_pool_get_array(statePool, 'h', h, timeLevel)
+      call mpas_pool_get_array(statePool, 'u', u, timeLevel)
+      call mpas_pool_get_array(statePool, 'v', v, timeLevel)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_array(statePool, 'h_edge', h_edge, timeLevel)
+      call mpas_pool_get_array(statePool, 'h_vertex', h_vertex, timeLevel)
+      call mpas_pool_get_array(statePool, 'pv_edge', pv_edge, timeLevel)
+      call mpas_pool_get_array(statePool, 'pv_vertex', pv_vertex, timeLevel)
+      call mpas_pool_get_array(statePool, 'pv_cell', pv_cell, timeLevel)
 
       ! Step 2
       ! 2. Allocate the array with the correct dimensions.
@@ -242,7 +253,7 @@ module sw_global_diagnostics
       globalPotentialEnstrophy = globalPotentialEnstrophy/sumVertexVolume
 
       ! Compte Potential Enstrophy Reservior
-      potentialEnstrophyReservior(:) = areaCell(:)*fCell(:)*fCell(:)/averageThickness
+      potentialEnstrophyReservior(:) = areaCell(1:nCellsSolve)*fCell(1:nCellsSolve)*fCell(1:nCellsSolve)/averageThickness
       call sw_compute_global_sum(dminfo, 1, nCellsSolve, potentialEnstrophyReservior, globalPotentialEnstrophyReservoir)
       globalPotentialEnstrophyReservoir = globalPotentialEnstrophyReservoir/sumCellVolume
 

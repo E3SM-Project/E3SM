@@ -21,7 +21,6 @@ module ocn_sea_ice
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_timekeeping
    use ocn_constants
 
@@ -70,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_sea_ice_formation(grid, indexTemperature, indexSalinity, layerThickness, tracers, seaIceEnergy, err)!{{{
+   subroutine ocn_sea_ice_formation(meshPool, indexTemperature, indexSalinity, layerThickness, tracers, seaIceEnergy, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -78,7 +77,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: grid !< Input: Grid/Mesh information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       integer :: indexTemperature !< Input: Index in tracers array for temperature
       integer :: indexSalinity !< Input: Index in tracers array for salinity
@@ -106,8 +105,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: nCells, nVertLevels, maxLevel, nTracers, nCellsSolve
+      integer :: maxLevel, nTracers
       integer :: iCell, k, iTracer
+      integer, pointer :: nCells, nVertLevels, nCellsSolve
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -116,15 +116,18 @@ contains
       real (kind=RKIND) :: referenceSalinity, iceSalinity
       real (kind=RKIND) :: freezingTemp, density_ice
       real (kind=RKIND), dimension(:), allocatable :: iceTracer
+      real (kind=RKIND), pointer :: config_density0
 
       if(.not. frazilFormationOn) return
 
-      nCells = grid % nCells
-      nCellsSolve = grid % nCellsSolve
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, dim=1)
 
-      maxLevelCell => grid % maxLevelCell % array
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       allocate(iceTracer(nTracers))
       iceTracer = 0.0_RKIND
@@ -272,7 +275,12 @@ contains
       integer, intent(in) :: nVertLevels !< Input: Number of vertical levels suggested for level cap
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_frazil_ice_formation, config_monotonic
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_ice_formation', config_frazil_ice_formation)
+      call mpas_pool_get_config(ocnConfigs, 'config_monotonic', config_monotonic)
 
       frazilFormationOn = .false.
 

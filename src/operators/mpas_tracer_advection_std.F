@@ -51,7 +51,7 @@ module mpas_tracer_advection_std
 !
 !-----------------------------------------------------------------------
    subroutine mpas_tracer_advection_std_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, &!{{{
-                                             w, layerThickness, verticalCellSize, dt, mesh, tend_layerThickness, tend, maxLevelCell_in, &
+                                             w, layerThickness, verticalCellSize, dt, meshPool, tend_layerThickness, tend, maxLevelCell_in, &
                                              maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
@@ -65,7 +65,7 @@ module mpas_tracer_advection_std
       real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell - (nVertLevels, nCells)
       real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field - (nVertLevels, nCells)
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
       integer, dimension(:), pointer, optional :: maxLevelCell_in !< Input - optional: Index to max level at cell center
       integer, dimension(:), pointer, optional :: maxLevelEdgeTop_in !< Input - optional: Index to max level at edge with non-land cells on both sides
@@ -74,7 +74,8 @@ module mpas_tracer_advection_std
       integer, dimension(:, :), pointer, optional :: edgeSignOnCell_in !< Input - optional: Sign for flux from edge on each cell. Used for bit-reproducibility
 
       integer :: i, iCell, iEdge, k, iTracer, cell1, cell2
-      integer :: nVertLevels, num_tracers, nCells, nEdges, nCellsSolve, maxEdges
+      integer :: nVertLevels, num_tracers
+      integer, pointer :: nCells, nEdges, nCellsSolve, maxEdges
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
 
@@ -85,20 +86,20 @@ module mpas_tracer_advection_std
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
       ! Get dimensions
-      nCells = mesh % nCells
-      nCellsSolve = mesh % nCellsSolve
-      nEdges = mesh % nEdges
-      maxEdges = mesh % maxEdges
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
       nVertLevels = size(tracers,dim=2)
       num_tracers = size(tracers,dim=1)
 
       ! Initialize pointers
-      dvEdge      => mesh % dvEdge % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      edgesOnCell => mesh % edgesOnCell % array
-      cellsOnCell => mesh % cellsOnCell % array
-      areaCell    => mesh % areaCell % array
-      nEdgesOnCell => mesh % nEdgesOnCell % array
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       
       ! Setup arrays from optional arguments
       if(present(maxLevelCell_in)) then
@@ -307,3 +308,4 @@ module mpas_tracer_advection_std
    end subroutine mpas_tracer_advection_std_init!}}}
 
 end module mpas_tracer_advection_std
+

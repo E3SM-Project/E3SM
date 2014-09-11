@@ -51,7 +51,7 @@ module mpas_tracer_advection_mono
 !
 !-----------------------------------------------------------------------
    subroutine mpas_tracer_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, &!{{{
-                                              w, layerThickness, verticalCellSize, dt, mesh, tend_layerThickness, tend, maxLevelCell_in, & 
+                                              w, layerThickness, verticalCellSize, dt, meshPool, tend_layerThickness, tend, maxLevelCell_in, & 
                                               maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
@@ -65,7 +65,7 @@ module mpas_tracer_advection_mono
       real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell - (nVertLevels, nCells)
       real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field - (nVertLevels, nCells)
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
       integer, dimension(:), pointer, optional :: maxLevelCell_in !< Input - optional: Index to max level at cell center
       integer, dimension(:), pointer, optional :: maxLevelEdgeTop_in !< Input - optional: Index to max level at edge with non-land cells on both sides
@@ -73,8 +73,8 @@ module mpas_tracer_advection_mono
       real (kind=RKIND), dimension(:), pointer, optional :: verticalDivergenceFactor_in !< Input - optional: Denominator for vertical divergence. Given as an inverse which can be multiplied.
       integer, dimension(:, :), pointer, optional :: edgeSignOnCell_in !< Input - optional: Sign for flux from edge on each cell. Used for bit-reproducibility
 
-      integer :: i, iCell, iEdge, k, iTracer, cell1, cell2
-      integer :: nVertLevels, num_tracers, nCells, nEdges, nCellsSolve, maxEdges
+      integer :: i, iCell, iEdge, k, iTracer, cell1, cell2, nVertLevels, num_tracers
+      integer, pointer :: nCells, nEdges, nCellsSolve, maxEdges
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
 
@@ -88,20 +88,20 @@ module mpas_tracer_advection_mono
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
       ! Get dimensions
-      nCells = mesh % nCells
-      nCellsSolve = mesh % nCellsSolve
-      nEdges = mesh % nEdges
-      maxEdges = mesh % maxEdges
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
       nVertLevels = size(tracers,dim=2)
       num_tracers = size(tracers,dim=1)
 
       ! Initialize pointers
-      dvEdge      => mesh % dvEdge % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      edgesOnCell => mesh % edgesOnCell % array
-      cellsOnCell => mesh % cellsOnCell % array
-      areaCell    => mesh % areaCell % array
-      nEdgesOnCell => mesh % nEdgesOnCell % array
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       
       ! Setup arrays from optional arguments
       if(present(maxLevelCell_in)) then
@@ -459,9 +459,10 @@ module mpas_tracer_advection_mono
 !>  This routine initializes the monotonic tracer advection tendencity using a FCT.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_mono_init(horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, check_monotonicity, err)!{{{
+   subroutine mpas_tracer_advection_mono_init(nHalos, horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, check_monotonicity, err)!{{{
 
       use mpas_dmpar
+      integer, intent(in) :: nHalos !< Input: number of halos in current simulation
       integer, intent(in) :: horiz_adv_order !< Input: Order for horizontal advection
       integer, intent(in) :: vert_adv_order !< Input: Order for vertical advection
       real (kind=RKIND), intent(in) :: coef_3rd_order_in !< Input: coefficient for blending advection orders.
@@ -494,7 +495,7 @@ module mpas_tracer_advection_mono
           end if
       end if
 
-      if (config_num_halos < 3) then
+      if (nHalos < 3) then
         call mpas_dmpar_global_abort('ERROR: Monotonic advection cannot be used with less than 3 halos.')
       end if
 
@@ -504,3 +505,4 @@ module mpas_tracer_advection_mono
    end subroutine mpas_tracer_advection_mono_init!}}}
 
 end module mpas_tracer_advection_mono
+

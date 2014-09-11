@@ -876,7 +876,7 @@
 <!-- ************************************** Variables *************************************** -->
 <!-- **************************************************************************************** -->
 
-        <var_struct name="mesh" time_levs="0">
+        <var_struct name="mesh" time_levs="1">
 
                 <!-- horizontal grid structure -->
                 <var name="latCell"                   type="real"     dimensions="nCells"/>
@@ -1136,7 +1136,7 @@
                 <var name="tend_w_buoy"        name_in_code="w_buoy"      type="real"     dimensions="nVertLevelsP1 nCells Time"/>
 
                 <!-- scalar tendencies -->
-                <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
+                <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
                         <var name="tend_qv"    name_in_code="qv"        array_group="moist"/>
                         <var name="tend_qc"    name_in_code="qc"        array_group="moist"/>
                         <var name="tend_qr"    name_in_code="qr"        array_group="moist"/>
@@ -1690,13 +1690,13 @@
                 <var name="rthratenlw"  type="real"     dimensions="nVertLevels nCells Time"/>
         </var_struct>
 
-        <var_struct name="atm_input" time_levs="0">
+        <var_struct name="atm_input" time_levs="1">
                 <!-- Monthly mean ozone climatology used in the CAM and RRTMG radiation codes -->
                 <var name="pin"         type="real"     dimensions="nOznLevels"/>
                 <var name="ozmixm"      type="real"     dimensions="nMonths nOznLevels nCells"/>
         </var_struct>
 
-        <var_struct name="sfc_input" time_levs="0">
+        <var_struct name="sfc_input" time_levs="1">
 
                 <!-- ================================================================================================== -->
                 <!-- ... SURFACE CHARACTERISTICS THAT NEED TO BE READ FROM GRID.NC:                                     -->

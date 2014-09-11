@@ -359,7 +359,7 @@
 	</streams>
 
 	<var_struct name="state" time_levs="2">
-		<var name="xtime" type="text" dimensions="Time" units="unitless"
+		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<!-- Prognostic Variables: typically read from input, saved in restart, written to output --> 
@@ -416,7 +416,7 @@
 	</var_struct>
 
 	<!-- Tendency Variables --> 
-	<var_struct name="tend" time_levs="0">
+	<var_struct name="tend" time_levs="1">
 		<var name="tend_layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
 		     description="time tendency of layer thickness"
 		/>
@@ -428,7 +428,7 @@
 	</var_struct>
 
 	<!-- Mesh Variables (includes some time-independent variables)--> 
-	<var_struct name="mesh" time_levs="0">
+	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
 			 description="Latitude location of cell centers in radians."
 		/>

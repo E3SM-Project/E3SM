@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## CVMix Tag for build
-CVMIX_TAG=v0.5-beta
+CVMIX_TAG=v0.60-beta
 
 ## Subdirectory in CVMix repo to use
 CVMIX_SUBDIR=src/shared
@@ -10,7 +10,7 @@ CVMIX_SUBDIR=src/shared
 CVMIX_GIT_HTTP_ADDRESS=https://github.com/CVMix/CVMix-src.git
 CVMIX_GIT_SSH_ADDRESS=git@github.com:CVMix/CVMix-src.git
 CVMIX_SVN_ADDRESS=https://github.com/CVMix/CVMix-src/tags
-CVMIX_WEB_ADDRESS=https://github.com/CVMix/CVMix-src/archiv
+CVMIX_WEB_ADDRESS=https://github.com/CVMix/CVMix-src/archive
 
 GIT=`which git`
 SVN=`which svn`
@@ -23,8 +23,8 @@ if [ -d cvmix ]; then
 
 	if [ -d .cvmix_all/.git ]; then
 		cd .cvmix_all
-		git fetch origin
-		git checkout ${CVMIX_TAG}
+		git fetch origin &> /dev/null
+		git checkout ${CVMIX_TAG} &> /dev/null
 		cd ../
 		ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
 	else

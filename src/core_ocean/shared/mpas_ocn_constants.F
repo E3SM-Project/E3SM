@@ -19,6 +19,7 @@
 
 module ocn_constants
 
+   use mpas_grid_types
    use mpas_kind_types
 
 #ifdef MPAS_CESM
@@ -28,6 +29,9 @@ module ocn_constants
 
    implicit none
    save
+
+   type (mpas_pool_type), pointer :: ocnConfigs
+   type (mpas_pool_type), pointer :: ocnPackages
 
    real (kind=RKIND), public ::      &
       rho_air               ,&! ambient air density (kg/m^3)
@@ -80,9 +84,13 @@ contains
 !>  This routine sets up constants for use in the ocean model.
 !
 !-----------------------------------------------------------------------
-
-   subroutine ocn_constants_init()!{{{
+   subroutine ocn_constants_init(configPool, packagePool)!{{{
+       type (mpas_pool_type), pointer :: configPool
+       type (mpas_pool_type), pointer :: packagePool
        integer :: n
+
+       ocnConfigs => configPool
+       ocnPackages => packagePool
 
        !-----------------------------------------------------------------------
        !

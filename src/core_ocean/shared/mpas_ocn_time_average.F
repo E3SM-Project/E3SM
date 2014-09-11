@@ -15,8 +15,8 @@ module ocn_time_average
 
     contains 
 
-    subroutine ocn_time_average_init(average)!{{{
-        type (average_type), intent(inout) :: average
+    subroutine ocn_time_average_init(averagePool)!{{{
+        type (mpas_pool_type), intent(inout) :: averagePool
 
         real (kind=RKIND), pointer :: nAverage
 
@@ -24,17 +24,17 @@ module ocn_time_average
         real (kind=RKIND), dimension(:,:), pointer :: avgVelocityZonal, avgVelocityMeridional, varVelocityZonal, varVelocityMeridional
         real (kind=RKIND), dimension(:,:), pointer :: avgNormalVelocity, varNormalVelocity, avgVertVelocityTop
 
-        nAverage => average % nAverage % scalar
+        call mpas_pool_get_array(averagePool, 'nAverage', nAverage)
 
-        avgSSH                => average % avgSSH % array
-        varSSH                => average % varSSH % array
-        avgVelocityZonal      => average % avgVelocityZonal % array
-        avgVelocityMeridional => average % avgVelocityMeridional % array
-        varVelocityZonal      => average % varVelocityZonal % array
-        varVelocityMeridional => average % varVelocityMeridional % array
-        avgNormalVelocity     => average % avgNormalVelocity % array
-        varNormalVelocity     => average % varNormalVelocity % array
-        avgVertVelocityTop    => average % avgVertVelocityTop % array
+        call mpas_pool_get_array(averagePool, 'avgSsh', avgSSH)
+        call mpas_pool_get_array(averagePool, 'varSsh', varSSH)
+        call mpas_pool_get_array(averagePool, 'avgVelocityZonal', avgVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgVelocityMeridional', avgVelocityMeridional)
+        call mpas_pool_get_array(averagePool, 'varVelocityZonal', varVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'varVelocityMeridional', varVelocityMeridional)
+        call mpas_pool_get_array(averagePool, 'avgNormalVelocity', avgNormalVelocity)
+        call mpas_pool_get_array(averagePool, 'varNormalVelocity', varNormalVelocity)
+        call mpas_pool_get_array(averagePool, 'avgVertVelocityTop', avgVertVelocityTop)
 
         nAverage = 0
 
@@ -50,10 +50,11 @@ module ocn_time_average
 
     end subroutine ocn_time_average_init!}}}
 
-    subroutine ocn_time_average_accumulate(average, state, diagnostics)!{{{
-        type (average_type), intent(inout) :: average
-        type (state_type), intent(in) :: state
-        type (diagnostics_type), intent(in) :: diagnostics
+    subroutine ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, timeLevelIn)!{{{
+        type (mpas_pool_type), intent(inout) :: averagePool
+        type (mpas_pool_type), intent(in) :: statePool
+        type (mpas_pool_type), intent(in) :: diagnosticsPool
+        integer, intent(in), optional :: timeLevelIn
 
         real (kind=RKIND), pointer :: nAverage, old_nAverage
 
@@ -68,24 +69,32 @@ module ocn_time_average
         real (kind=RKIND), dimension(:,:), pointer :: old_avgVelocityZonal, old_avgVelocityMeridional, old_varVelocityZonal, old_varVelocityMeridional
         real (kind=RKIND), dimension(:), pointer :: old_avgSSH, old_varSSH
 
-        nAverage     => average % nAverage  % scalar
+        integer :: timeLevel
 
-        normalVelocity  => state % normalVelocity % array
-        ssh             => state % ssh % array
+        if (present(timeLevelIn)) then
+           timeLevel = timeLevelIn
+        else
+           timeLevel = 1
+        end if
 
-        normalVelocityZonal      => diagnostics % normalVelocityZonal % array
-        normalVelocityMeridional => diagnostics % normalVelocityMeridional % array
-        vertVelocityTop          => diagnostics % vertVelocityTop % array
+        call mpas_pool_get_array(averagePool, 'nAverage ', nAverage)
 
-        avgSSH                   => average % avgSSH % array
-        varSSH                   => average % varSSH % array
-        avgVelocityZonal         => average % avgVelocityZonal % array
-        avgVelocityMeridional    => average % avgVelocityMeridional % array
-        varVelocityZonal         => average % varVelocityZonal % array
-        varVelocityMeridional    => average % varVelocityMeridional % array
-        avgNormalVelocity        => average % avgNormalVelocity % array
-        varNormalVelocity        => average % varNormalVelocity % array
-        avgVertVelocityTop       => average % avgVertVelocityTop % array
+        call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
+
+        call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
+        call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+        call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+
+        call mpas_pool_get_array(averagePool, 'avgSsh', avgSSH)
+        call mpas_pool_get_array(averagePool, 'varSsh', varSSH)
+        call mpas_pool_get_array(averagePool, 'avgVelocityZonal', avgVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgVelocityMeridional', avgVelocityMeridional)
+        call mpas_pool_get_array(averagePool, 'varVelocityZonal', varVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'varVelocityMeridional', varVelocityMeridional)
+        call mpas_pool_get_array(averagePool, 'avgNormalVelocity', avgNormalVelocity)
+        call mpas_pool_get_array(averagePool, 'varNormalVelocity', varNormalVelocity)
+        call mpas_pool_get_array(averagePool, 'avgVertVelocityTop', avgVertVelocityTop)
 
         avgSSH = avgSSH + ssh
         varSSH = varSSH + ssh**2
@@ -100,8 +109,8 @@ module ocn_time_average
         nAverage = nAverage + 1
     end subroutine ocn_time_average_accumulate!}}}
 
-    subroutine ocn_time_average_normalize(average)!{{{
-        type (average_type), intent(inout) :: average
+    subroutine ocn_time_average_normalize(averagePool)!{{{
+        type (mpas_pool_type), intent(inout) :: averagePool
 
         real (kind=RKIND), pointer :: nAverage
 
@@ -109,17 +118,17 @@ module ocn_time_average
         real (kind=RKIND), dimension(:,:), pointer :: avgVelocityZonal, avgVelocityMeridional, varVelocityZonal, varVelocityMeridional
         real (kind=RKIND), dimension(:,:), pointer :: avgNormalVelocity, varNormalVelocity, avgVertVelocityTop
 
-        nAverage => average % nAverage  % scalar
+        call mpas_pool_get_array(averagePool, 'nAverage ', nAverage)
 
-        avgSSH                => average % avgSSH % array
-        varSSH                => average % varSSH % array
-        avgVelocityZonal      => average % avgVelocityZonal % array
-        avgVelocityMeridional => average % avgVelocityMeridional % array
-        varVelocityZonal      => average % varVelocityZonal % array
-        varVelocityMeridional => average % varVelocityMeridional % array
-        avgNormalVelocity     => average % avgNormalVelocity % array
-        varNormalVelocity     => average % varNormalVelocity % array
-        avgVertVelocityTop    => average % avgVertVelocityTop % array
+        call mpas_pool_get_array(averagePool, 'avgSsh', avgSSH)
+        call mpas_pool_get_array(averagePool, 'varSsh', varSSH)
+        call mpas_pool_get_array(averagePool, 'avgVelocityZonal', avgVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgVelocityMeridional', avgVelocityMeridional)
+        call mpas_pool_get_array(averagePool, 'varVelocityZonal', varVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'varVelocityMeridional', varVelocityMeridional)
+        call mpas_pool_get_array(averagePool, 'avgNormalVelocity', avgNormalVelocity)
+        call mpas_pool_get_array(averagePool, 'varNormalVelocity', varNormalVelocity)
+        call mpas_pool_get_array(averagePool, 'avgVertVelocityTop', avgVertVelocityTop)
 
         if(nAverage > 0) then
           avgSSH = avgSSH / nAverage

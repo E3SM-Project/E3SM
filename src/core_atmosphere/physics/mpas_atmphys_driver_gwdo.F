@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_gwdo
- use mpas_configure, only: len_disp => config_len_disp
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants
@@ -52,9 +52,14 @@
 !>    * in call to subroutine gwdo, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_gwdo
@@ -113,44 +118,70 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(in)   :: sfc_input
- type(diag_physics_type),intent(in):: diag_physics
- type(tend_physics_type),intent(in):: tend_physics
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: sfc_input
+ type(mpas_pool_type),intent(in):: diag_physics
+ type(mpas_pool_type),intent(in):: tend_physics
+
+!local pointers:
+ integer,dimension(:),pointer:: kpbl
+ real(kind=RKIND),dimension(:),pointer  :: oa1,oa2,oa3,oa4,ol1,ol2,ol3,ol4,con,var2d
+ real(kind=RKIND),dimension(:),pointer  :: dcEdge_m,dusfcg,dvsfcg
+ real(kind=RKIND),dimension(:,:),pointer:: dtaux3d,dtauy3d,rublten,rvblten
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_array(sfc_input,'oa1'  ,oa1  )
+ call mpas_pool_get_array(sfc_input,'oa2'  ,oa2  )
+ call mpas_pool_get_array(sfc_input,'oa3'  ,oa3  )
+ call mpas_pool_get_array(sfc_input,'oa4'  ,oa4  )
+ call mpas_pool_get_array(sfc_input,'ol1'  ,ol1  )
+ call mpas_pool_get_array(sfc_input,'ol2'  ,ol2  )
+ call mpas_pool_get_array(sfc_input,'ol3'  ,ol3  )
+ call mpas_pool_get_array(sfc_input,'ol4'  ,ol4  )
+ call mpas_pool_get_array(sfc_input,'con'  ,con  )
+ call mpas_pool_get_array(sfc_input,'var2d',var2d)
+
+ call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
+ call mpas_pool_get_array(diag_physics,'kpbl'    ,kpbl    )
+ call mpas_pool_get_array(diag_physics,'dusfcg'  ,dusfcg  )
+ call mpas_pool_get_array(diag_physics,'dvsfcg'  ,dvsfcg  )
+ call mpas_pool_get_array(diag_physics,'dtaux3d' ,dtaux3d )
+ call mpas_pool_get_array(diag_physics,'dtauy3d' ,dtauy3d )
+ call mpas_pool_get_array(tend_physics,'rublten' ,rublten )
+ call mpas_pool_get_array(tend_physics,'rvblten' ,rvblten )
+
  do j = jts,jte
  do i = its,ite
-    var2d_p(i,j) = sfc_input % var2d % array(i)
-    con_p(i,j)   = sfc_input % con   % array(i)
-    oa1_p(i,j)   = sfc_input % oa1   % array(i)
-    oa2_p(i,j)   = sfc_input % oa2   % array(i)
-    oa3_p(i,j)   = sfc_input % oa3   % array(i)
-    oa4_p(i,j)   = sfc_input % oa4   % array(i)
-    ol1_p(i,j)   = sfc_input % ol1   % array(i)
-    ol2_p(i,j)   = sfc_input % ol2   % array(i)
-    ol3_p(i,j)   = sfc_input % ol3   % array(i)
-    ol4_p(i,j)   = sfc_input % ol4   % array(i)
+    var2d_p(i,j) = var2d(i)
+    con_p(i,j)   = con(i)
+    oa1_p(i,j)   = oa1(i)
+    oa2_p(i,j)   = oa2(i)
+    oa3_p(i,j)   = oa3(i)
+    oa4_p(i,j)   = oa4(i)
+    ol1_p(i,j)   = ol1(i)
+    ol2_p(i,j)   = ol2(i)
+    ol3_p(i,j)   = ol3(i)
+    ol4_p(i,j)   = ol4(i)
  enddo
  enddo
 
  do j = jts,jte
  do i = its,ite
-    dx_p(i,j)     = diag_physics % dcEdge_m % array(i)
-    kpbl_p(i,j)   = diag_physics % kpbl     % array(i)
-    dusfcg_p(i,j) = diag_physics % dusfcg   % array(i)
-    dvsfcg_p(i,j) = diag_physics % dvsfcg   % array(i)
+    dx_p(i,j)     = dcEdge_m(i)
+    kpbl_p(i,j)   = kpbl(i)
+    dusfcg_p(i,j) = dusfcg(i)
+    dvsfcg_p(i,j) = dvsfcg(i)
  enddo
  enddo
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    dtaux3d_p(i,k,j) = diag_physics % dtaux3d % array(k,i)
-    dtauy3d_p(i,k,j) = diag_physics % dtauy3d % array(k,i)
-    rublten_p(i,k,j) = tend_physics % rublten % array(k,i)
-    rvblten_p(i,k,j) = tend_physics % rvblten % array(k,i)
+    dtaux3d_p(i,k,j) = dtaux3d(k,i)
+    dtauy3d_p(i,k,j) = dtauy3d(k,i)
+    rublten_p(i,k,j) = rublten(k,i)
+    rvblten_p(i,k,j) = rvblten(k,i)
  enddo
  enddo
  enddo
@@ -162,38 +193,43 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
+
+!local pointers:
+ real(kind=RKIND),dimension(:),pointer  :: dusfcg,dvsfcg
+ real(kind=RKIND),dimension(:,:),pointer:: dtaux3d,dtauy3d,rubldiff,rvbldiff,rublten,rvblten
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_array(diag_physics,'dusfcg'  ,dusfcg  )
+ call mpas_pool_get_array(diag_physics,'dvsfcg'  ,dvsfcg  )
+ call mpas_pool_get_array(diag_physics,'dtaux3d' ,dtaux3d )
+ call mpas_pool_get_array(diag_physics,'dtauy3d' ,dtauy3d )
+ call mpas_pool_get_array(diag_physics,'rubldiff',rubldiff)
+ call mpas_pool_get_array(diag_physics,'rvbldiff',rvbldiff)
+ call mpas_pool_get_array(tend_physics,'rublten' ,rublten )
+ call mpas_pool_get_array(tend_physics,'rvblten' ,rvblten )
+
  do j = jts,jte
  do i = its,ite
-    diag_physics % dusfcg % array(i) = dusfcg_p(i,j) 
-    diag_physics % dvsfcg % array(i) = dvsfcg_p(i,j)
+    dusfcg(i) = dusfcg_p(i,j) 
+    dvsfcg(i) = dvsfcg_p(i,j)
  enddo
  enddo
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    diag_physics % dtaux3d % array(k,i) = dtaux3d_p(i,k,j)
-    diag_physics % dtauy3d % array(k,i) = dtauy3d_p(i,k,j)
-    diag_physics % rubldiff % array(k,i) = rublten_p(i,k,j)-tend_physics%rublten%array(k,i)
-    diag_physics % rvbldiff % array(k,i) = rvblten_p(i,k,j)-tend_physics%rvblten%array(k,i) 
-
-    tend_physics % rublten % array(k,i) = rublten_p(i,k,j)
-    tend_physics % rvblten % array(k,i) = rvblten_p(i,k,j)
+    dtaux3d(k,i)  = dtaux3d_p(i,k,j)
+    dtauy3d(k,i)  = dtauy3d_p(i,k,j)
+    rubldiff(k,i) = rublten_p(i,k,j)-rublten(k,i)
+    rvbldiff(k,i) = rvblten_p(i,k,j)-rvblten(k,i) 
+    rublten(k,i)  = rublten_p(i,k,j)
+    rvblten(k,i)  = rvblten_p(i,k,j)
  enddo
  enddo
  enddo
-
-!write(0,*)
-!write(0,*) '--- end subroutine gwdo_to_MPAS:'
-!do i = its,ite
-!   write(0,101) i,diag_physics%dusfcg%array(i),diag_physics%dvsfcg%array(i)
-!enddo
-!101 format(i8,2(1x,e15.8))
 
  end subroutine gwdo_to_MPAS
  
@@ -202,13 +238,13 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(in):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: sfc_input
  integer,intent(in):: itimestep
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables:
  integer:: i,iCell,iEdge

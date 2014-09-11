@@ -18,67 +18,143 @@
  contains
 
 !==================================================================================================
- subroutine interp_diagnostics(mesh,state,diag,diag_physics)
+ subroutine interp_diagnostics(mesh, state, time_lev, diag, diag_physics)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
- type(state_type),intent(in):: state
+ type (mpas_pool_type), intent(in)  :: mesh
+ type (mpas_pool_type), intent(in) :: state
+ integer, intent(in) :: time_lev              ! which time level to use from state
 
 !inout arguments:
- type(diag_type),intent(inout):: diag
- type(diag_physics_type),intent(inout):: diag_physics
+ type (mpas_pool_type), intent(inout) :: diag
+ type (mpas_pool_type), intent(inout) :: diag_physics
 
 !local variables:
- integer:: iCell,iVert,iVertD,k,kk
- integer:: nCells,nVertLevels,nVertLevelsP1,nVertices,VertexDegree
- integer,dimension(:,:),pointer:: cellsOnVertex
+ integer :: iCell,iVert,iVertD,k,kk
+ integer, pointer :: nCells, nVertLevels, nVertices, vertexDegree
+ integer :: nVertLevelsP1
+ integer, pointer :: index_qv
+ integer, dimension(:,:), pointer :: cellsOnVertex
 
- real(kind=RKIND),dimension(:),pointer:: areaTriangle
- real(kind=RKIND),dimension(:,:),pointer:: kiteAreasOnVertex
+ real (kind=RKIND), dimension(:), pointer :: areaTriangle
+ real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
  
- real(kind=RKIND),dimension(:,:),pointer:: exner,height
- real(kind=RKIND),dimension(:,:),pointer:: pressure_b,pressure_p 
- real(kind=RKIND),dimension(:,:),pointer:: qvapor,relhum,theta_m,vorticity
- real(kind=RKIND),dimension(:,:),pointer:: umeridional,uzonal,vvel
+ real (kind=RKIND), dimension(:,:), pointer :: exner, height
+ real (kind=RKIND), dimension(:,:), pointer :: pressure_b, pressure_p 
+ real (kind=RKIND), dimension(:,:), pointer :: qvapor, relhum, theta_m, vorticity
+ real (kind=RKIND), dimension(:,:), pointer :: umeridional, uzonal, vvel
+ real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
- real(kind=RKIND),dimension(:,:),allocatable:: pressure,pressureCp1,pressure2,pressure_v,temperature
+ real (kind=RKIND), dimension(:), pointer :: temperature_200hPa
+ real (kind=RKIND), dimension(:), pointer :: temperature_500hPa
+ real (kind=RKIND), dimension(:), pointer :: temperature_700hPa
+ real (kind=RKIND), dimension(:), pointer :: temperature_850hPa
+
+ real (kind=RKIND), dimension(:), pointer :: relhum_200hPa
+ real (kind=RKIND), dimension(:), pointer :: relhum_500hPa
+ real (kind=RKIND), dimension(:), pointer :: relhum_700hPa
+ real (kind=RKIND), dimension(:), pointer :: relhum_850hPa
+
+ real (kind=RKIND), dimension(:), pointer :: uzonal_200hPa
+ real (kind=RKIND), dimension(:), pointer :: uzonal_500hPa
+ real (kind=RKIND), dimension(:), pointer :: uzonal_700hPa
+ real (kind=RKIND), dimension(:), pointer :: uzonal_850hPa
+
+ real (kind=RKIND), dimension(:), pointer :: umeridional_200hPa
+ real (kind=RKIND), dimension(:), pointer :: umeridional_500hPa
+ real (kind=RKIND), dimension(:), pointer :: umeridional_700hPa
+ real (kind=RKIND), dimension(:), pointer :: umeridional_850hPa
+
+ real (kind=RKIND), dimension(:), pointer :: height_200hPa
+ real (kind=RKIND), dimension(:), pointer :: height_500hPa
+ real (kind=RKIND), dimension(:), pointer :: height_700hPa
+ real (kind=RKIND), dimension(:), pointer :: height_850hPa
+
+ real (kind=RKIND), dimension(:), pointer :: w_200hPa
+ real (kind=RKIND), dimension(:), pointer :: w_500hPa
+ real (kind=RKIND), dimension(:), pointer :: w_700hPa
+ real (kind=RKIND), dimension(:), pointer :: w_850hPa
+
+ real (kind=RKIND), dimension(:), pointer :: vorticity_200hPa
+ real (kind=RKIND), dimension(:), pointer :: vorticity_500hPa
+ real (kind=RKIND), dimension(:), pointer :: vorticity_700hPa
+ real (kind=RKIND), dimension(:), pointer :: vorticity_850hPa
+
+ real (kind=RKIND), dimension(:,:), allocatable :: pressure, pressureCp1, pressure2, pressure_v, temperature
 
 !local interpolated fields:
- integer:: nIntP
- real(kind=RKIND):: w1,w2,z0,z1,z2
- real(kind=RKIND),dimension(:,:),allocatable:: field_in,press_in
- real(kind=RKIND),dimension(:,:),allocatable:: field_interp,press_interp
+ integer :: nIntP
+ real (kind=RKIND) :: w1,w2,z0,z1,z2
+ real (kind=RKIND), dimension(:,:), allocatable :: field_in,press_in
+ real (kind=RKIND), dimension(:,:), allocatable :: field_interp,press_interp
  
 !--------------------------------------------------------------------------------------------------
 
  write(0,*)
  write(0,*) '--- enter subroutine interp_diagnostics:'
 
- nCells        = mesh % nCells
- nVertLevels   = mesh % nVertLevels
-!nVertLevelsP1 = mesh % nVertLevelsP1
- nVertices     = mesh % nVertices
- VertexDegree  = mesh % vertexDegree
+ call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+ call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+ call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+ call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+ call mpas_pool_get_dimension(state, 'index_qv', index_qv)
+
  nVertLevelsP1 = nVertLevels + 1
 
- cellsOnVertex     => mesh % cellsOnVertex     % array
- areaTriangle      => mesh % areaTriangle      % array
- kiteAreasOnVertex => mesh % kiteAreasOnVertex % array
+ call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+ call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+ call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
 
- height  => mesh  % zgrid   % array
- vvel    => state % w       % array
- theta_m => state % theta_m % array
- qvapor  => state % scalars % array(state%index_qv,:,:)
+ call mpas_pool_get_array(mesh, 'zgrid', height)
+ call mpas_pool_get_array(state, 'w', vvel, time_lev)
+ call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
+ call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
+
+ qvapor  => scalars(index_qv,:,:)    !MGD does this actually work?
  
- exner       => diag % exner         % array
- pressure_b  => diag % pressure_base % array
- pressure_p  => diag % pressure_p    % array
- vorticity   => diag % vorticity     % array
- umeridional => diag % uReconstructMeridional % array
- uzonal      => diag % uReconstructZonal      % array
+ call mpas_pool_get_array(diag, 'exner', exner)
+ call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
+ call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+ call mpas_pool_get_array(diag, 'vorticity', vorticity)
+ call mpas_pool_get_array(diag, 'uReconstructMeridional', umeridional)
+ call mpas_pool_get_array(diag, 'uReconstructZonal', uzonal)
+ call mpas_pool_get_array(diag_physics, 'relhum', relhum)
 
- relhum => diag_physics % relhum % array
+ call mpas_pool_get_array(diag, 'temperature_200hPa', temperature_200hPa)
+ call mpas_pool_get_array(diag, 'temperature_500hPa', temperature_500hPa)
+ call mpas_pool_get_array(diag, 'temperature_700hPa', temperature_700hPa)
+ call mpas_pool_get_array(diag, 'temperature_850hPa', temperature_850hPa)
+
+ call mpas_pool_get_array(diag, 'relhum_200hPa', relhum_200hPa)
+ call mpas_pool_get_array(diag, 'relhum_500hPa', relhum_500hPa)
+ call mpas_pool_get_array(diag, 'relhum_700hPa', relhum_700hPa)
+ call mpas_pool_get_array(diag, 'relhum_850hPa', relhum_850hPa)
+
+ call mpas_pool_get_array(diag, 'uzonal_200hPa', uzonal_200hPa)
+ call mpas_pool_get_array(diag, 'uzonal_500hPa', uzonal_500hPa)
+ call mpas_pool_get_array(diag, 'uzonal_700hPa', uzonal_700hPa)
+ call mpas_pool_get_array(diag, 'uzonal_850hPa', uzonal_850hPa)
+
+ call mpas_pool_get_array(diag, 'umeridional_200hPa', umeridional_200hPa)
+ call mpas_pool_get_array(diag, 'umeridional_500hPa', umeridional_500hPa)
+ call mpas_pool_get_array(diag, 'umeridional_700hPa', umeridional_700hPa)
+ call mpas_pool_get_array(diag, 'umeridional_850hPa', umeridional_850hPa)
+
+ call mpas_pool_get_array(diag, 'height_200hPa', height_200hPa)
+ call mpas_pool_get_array(diag, 'height_500hPa', height_500hPa)
+ call mpas_pool_get_array(diag, 'height_700hPa', height_700hPa)
+ call mpas_pool_get_array(diag, 'height_850hPa', height_850hPa)
+
+ call mpas_pool_get_array(diag, 'w_200hPa', w_200hPa)
+ call mpas_pool_get_array(diag, 'w_500hPa', w_500hPa)
+ call mpas_pool_get_array(diag, 'w_700hPa', w_700hPa)
+ call mpas_pool_get_array(diag, 'w_850hPa', w_850hPa)
+
+ call mpas_pool_get_array(diag, 'vorticity_200hPa', vorticity_200hPa)
+ call mpas_pool_get_array(diag, 'vorticity_500hPa', vorticity_500hPa)
+ call mpas_pool_get_array(diag, 'vorticity_700hPa', vorticity_700hPa)
+ call mpas_pool_get_array(diag, 'vorticity_850hPa', vorticity_850hPa)
 
  if(.not.allocated(pressure)    ) allocate(pressure(nVertLevels,nCells)      )
  if(.not.allocated(pressureCp1) ) allocate(pressureCp1(nVertLevels,nCells+1) )
@@ -175,10 +251,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
- diag % temperature_200hPa % array(1:nCells) = field_interp(1:nCells,1)
- diag % temperature_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % temperature_700hPa % array(1:nCells) = field_interp(1:nCells,3)
- diag % temperature_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ temperature_200hPa(1:nCells) = field_interp(1:nCells,1)
+ temperature_500hPa(1:nCells) = field_interp(1:nCells,2)
+ temperature_700hPa(1:nCells) = field_interp(1:nCells,3)
+ temperature_850hPa(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate temperature:'
 
 !... relative humidity:
@@ -189,10 +265,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
- diag % relhum_200hPa % array(1:nCells) = field_interp(1:nCells,1)
- diag % relhum_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % relhum_700hPa % array(1:nCells) = field_interp(1:nCells,3)
- diag % relhum_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ relhum_200hPa(1:nCells) = field_interp(1:nCells,1)
+ relhum_500hPa(1:nCells) = field_interp(1:nCells,2)
+ relhum_700hPa(1:nCells) = field_interp(1:nCells,3)
+ relhum_850hPa(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate relative humidity:'
 
 !... u zonal wind:
@@ -203,10 +279,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
- diag % uzonal_200hPa % array(1:nCells) = field_interp(1:nCells,1)
- diag % uzonal_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % uzonal_700hPa % array(1:nCells) = field_interp(1:nCells,3)
- diag % uzonal_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ uzonal_200hPa(1:nCells) = field_interp(1:nCells,1)
+ uzonal_500hPa(1:nCells) = field_interp(1:nCells,2)
+ uzonal_700hPa(1:nCells) = field_interp(1:nCells,3)
+ uzonal_850hPa(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate zonal wind:'
 
 !... u meridional wind:
@@ -217,10 +293,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
- diag % umeridional_200hPa % array(1:nCells) = field_interp(1:nCells,1)
- diag % umeridional_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % umeridional_700hPa % array(1:nCells) = field_interp(1:nCells,3)
- diag % umeridional_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ umeridional_200hPa(1:nCells) = field_interp(1:nCells,1)
+ umeridional_500hPa(1:nCells) = field_interp(1:nCells,2)
+ umeridional_700hPa(1:nCells) = field_interp(1:nCells,3)
+ umeridional_850hPa(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate meridional wind:'
 
  if(allocated(field_in)) deallocate(field_in)
@@ -245,10 +321,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nCells,nVertLevelsP1,nIntP,press_in,field_in,press_interp,field_interp)
- diag % height_200hPa % array(1:nCells) = field_interp(1:nCells,1)
- diag % height_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % height_700hPa % array(1:nCells) = field_interp(1:nCells,3)
- diag % height_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ height_200hPa(1:nCells) = field_interp(1:nCells,1)
+ height_500hPa(1:nCells) = field_interp(1:nCells,2)
+ height_700hPa(1:nCells) = field_interp(1:nCells,3)
+ height_850hPa(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate height:'
  
 !... vertical velocity
@@ -259,10 +335,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nCells,nVertLevelsP1,nIntP,press_in,field_in,press_interp,field_interp)
- diag % w_200hPa % array(1:nCells) = field_interp(1:nCells,1)
- diag % w_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % w_700hPa % array(1:nCells) = field_interp(1:nCells,3)
- diag % w_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ w_200hPa(1:nCells) = field_interp(1:nCells,1)
+ w_500hPa(1:nCells) = field_interp(1:nCells,2)
+ w_700hPa(1:nCells) = field_interp(1:nCells,3)
+ w_850hPa(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate vertical velocity:'
  
  if(allocated(field_interp)) deallocate(field_interp)
@@ -299,10 +375,10 @@
  enddo
  enddo
  call interp_tofixed_pressure(nVertices,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
- diag % vorticity_200hPa % array(1:nVertices) = field_interp(1:nVertices,1)
- diag % vorticity_500hPa % array(1:nVertices) = field_interp(1:nVertices,2)
- diag % vorticity_700hPa % array(1:nVertices) = field_interp(1:nVertices,3)
- diag % vorticity_850hPa % array(1:nVertices) = field_interp(1:nVertices,4)
+ vorticity_200hPa(1:nVertices) = field_interp(1:nVertices,1)
+ vorticity_500hPa(1:nVertices) = field_interp(1:nVertices,2)
+ vorticity_700hPa(1:nVertices) = field_interp(1:nVertices,3)
+ vorticity_850hPa(1:nVertices) = field_interp(1:nVertices,4)
  write(0,*) '--- end interpolate relative vorticity:'
 
  if(allocated(field_interp)) deallocate(field_interp)

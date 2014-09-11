@@ -128,13 +128,13 @@ module mpas_rbf_interpolation
 !>      localVerticalUnitVectors - the unit normal vector of the tangent plane at the center 
 !>                         of each cell
 !-----------------------------------------------------------------------
-  subroutine mpas_rbf_interp_initialize(grid)!{{{
+  subroutine mpas_rbf_interp_initialize(meshPool)!{{{
 
     implicit none
 
-    type (mesh_type), intent(inout) :: grid  !< Input/Output: Grid information
+    type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: Grid information
 
-    call mpas_initialize_vectors(grid)
+    call mpas_initialize_vectors(meshPool)
 
   end subroutine mpas_rbf_interp_initialize!}}}
 

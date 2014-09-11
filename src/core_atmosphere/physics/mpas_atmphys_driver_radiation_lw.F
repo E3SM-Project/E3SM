@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_radiation_lw
- use mpas_configure, only: config_do_restart, config_o3climatology
+ use mpas_kind_types
  use mpas_grid_types
  use mpas_timer
 
@@ -68,9 +68,14 @@
 !>    * in call to subroutine rrtmg_lwrad, replaced the variable g (that originally pointed to 
 !>      gravity) with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_radiation_lw(xtime_s)
@@ -237,39 +242,75 @@
  end subroutine deallocate_radiation_lw
 
 !==================================================================================================
- subroutine radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,atm_input,sfc_input)
+ subroutine radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
+                                   sfc_input)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
- type(state_type),intent(in):: state
- type(atm_input_type)   ,intent(in):: atm_input
- type(sfc_input_type)   ,intent(in):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: state
+ type(mpas_pool_type),intent(in):: atm_input
+ type(mpas_pool_type),intent(in):: sfc_input
 
-!inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
-
+ integer,intent(in):: time_lev
  real(kind=RKIND),intent(in):: xtime_s
 
-!local variables:
+!inout arguments:
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ logical,pointer:: config_o3climatology
+
+ real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
+ real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
+ real(kind=RKIND),dimension(:),pointer    :: m_ps,pin
+ real(kind=RKIND),dimension(:),pointer    :: sfc_albedo,sfc_emiss
+ real(kind=RKIND),dimension(:,:),pointer  :: cldfrac,m_hybi,o3clim,o3vmr
+ real(kind=RKIND),dimension(:,:,:),pointer:: aerosols,ozmixm
+
+!local variables and arrays:
  integer:: ncols,nlevs
  real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+
+ call mpas_pool_get_array(mesh,'latCell',latCell)
+ call mpas_pool_get_array(mesh,'lonCell',lonCell)
+ call mpas_pool_get_array(mesh,'m_hybi' ,m_hybi )
+
+ call mpas_pool_get_array(state,'m_ps'    ,m_ps    ,time_lev)
+ call mpas_pool_get_array(state,'aerosols',aerosols,time_lev)
+
+ call mpas_pool_get_array(sfc_input,'skintemp',skintemp)
+ call mpas_pool_get_array(sfc_input,'snow'    ,snow    )
+ call mpas_pool_get_array(sfc_input,'xice'    ,xice    )
+ call mpas_pool_get_array(sfc_input,'xland'   ,xland   )
+
+ call mpas_pool_get_array(atm_input,'pin'     ,pin     )
+ call mpas_pool_get_array(atm_input,'ozmixm'  ,ozmixm  )
+
+ call mpas_pool_get_array(diag_physics,'sfc_albedo',sfc_albedo)
+ call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
+ call mpas_pool_get_array(diag_physics,'cldfrac'   ,cldfrac   )
+ call mpas_pool_get_array(diag_physics,'o3clim'    ,o3clim    )
+ call mpas_pool_get_array(diag_physics,'o3vmr'     ,o3vmr     )
+
  do j = jts,jte
  do i = its,ite
-    sfc_emiss_p(i,j) = diag_physics % sfc_emiss % array(i)
-    tsk_p(i,j)       = sfc_input % skintemp % array(i)
-    snow_p(i,j)      = sfc_input % snow     % array(i)
-    xice_p(i,j)      = sfc_input % xice     % array(i)
-    xland_p(i,j)     = sfc_input % xland    % array(i)
+    sfc_emiss_p(i,j) = sfc_emiss(i)
+    tsk_p(i,j)       = skintemp(i)
+    snow_p(i,j)      = snow(i)
+    xice_p(i,j)      = xice(i)
+    xland_p(i,j)     = xland(i)
  enddo
  enddo
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac_p(i,k,j) = diag_physics % cldfrac % array(k,i)
+    cldfrac_p(i,k,j) = cldfrac(k,i)
  enddo
  enddo
  enddo
@@ -323,12 +364,12 @@
        if(config_o3climatology) then
           !ozone mixing ratio:
           do k = 1, num_oznLevels
-             pin_p(k) = atm_input % pin % array(k)         
+             pin_p(k) = pin(k)
           enddo
           do j = jts,jte
           do k = 1, num_oznLevels
              do i = its,ite
-                o3clim_p(i,k,j) = diag_physics % o3clim % array(k,i)
+                o3clim_p(i,k,j) = o3clim(k,i)
              enddo
           enddo
           enddo
@@ -347,7 +388,7 @@
              call vinterp_ozn(1,ncols,ncols,nlevs,p2d,pin_p,num_oznlevels,o3clim_p(1,1,j),o32d)
              do i = its,ite
              do k = kts,kte
-                diag_physics % o3vmr % array(k,i) = o32d(i,k)
+                o3vmr(k,i) = o32d(i,k)
              enddo
              enddo
           enddo
@@ -368,9 +409,9 @@
     case("cam_lw")
        do j = jts,jte
        do i = its,ite
-          xlat_p(i,j) = (mesh % latCell % array(i)) / degrad
-          xlon_p(i,j) = (mesh % lonCell % array(i)) / degrad
-          sfc_albedo_p(i,j) = diag_physics % sfc_albedo % array(i)
+          xlat_p(i,j) = latCell(i) / degrad
+          xlon_p(i,j) = lonCell(i) / degrad
+          sfc_albedo_p(i,j) = sfc_albedo(i)
 
           coszr_p(i,j)      = 0.0_RKIND
           gsw_p(i,j)        = 0.0_RKIND
@@ -426,33 +467,33 @@
        call mpas_timer_start("CAM lw: ozone and aerosols")
        !ozone mixing ratio:
        do k = 1, num_oznlevels
-          pin_p(k) = atm_input % pin % array(k)
+          pin_p(k) = pin(k)
        enddo
        do n = 1, num_months
           do j = jts,jte
           do k = 1, num_oznlevels
           do i = its,ite
-             ozmixm_p(i,k,j,n) = atm_input % ozmixm % array(n,k,i)
+             ozmixm_p(i,k,j,n) = ozmixm(n,k,i)
           enddo
           enddo
           enddo
        enddo
        !aerosol mixing ratio:
        do k = 1, num_aerlevels
-          m_hybi_p(k) = mesh % m_hybi % array(k,1)
+          m_hybi_p(k) = m_hybi(k,1)
        enddo
        do i = its,ite
        do j = jts,jte
-          m_psp_p(i,j) = state % m_ps % array(i)
-          m_psn_p(i,j) = state % m_ps % array(i)
+          m_psp_p(i,j) = m_ps(i)
+          m_psn_p(i,j) = m_ps(i)
        enddo
        enddo
        do n = 1,num_aerosols
        do j = jts,jte
        do k = 1, num_aerlevels
        do i = its,ite
-          aerosolcp_p(i,k,j,n) = state % aerosols % array(n,k,i)
-          aerosolcn_p(i,k,j,n) = state % aerosols % array(n,k,i)
+          aerosolcp_p(i,k,j,n) = aerosols(n,k,i)
+          aerosolcn_p(i,k,j,n) = aerosols(n,k,i)
        enddo
        enddo
        enddo
@@ -474,33 +515,52 @@
 !==================================================================================================
 
 !input arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
-!local variables:
+!local pointers:
+ real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
+                                          lwupt,lwuptc,olrtoa
+ real(kind=RKIND),dimension(:,:),pointer:: rthratenlw
+
+!local variables and arrays:
  integer:: nlay,pcols
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_array(diag_physics,'glw'   ,glw   )
+ call mpas_pool_get_array(diag_physics,'lwcf'  ,lwcf  )
+ call mpas_pool_get_array(diag_physics,'lwdnb' ,lwdnb )
+ call mpas_pool_get_array(diag_physics,'lwdnbc',lwdnbc)
+ call mpas_pool_get_array(diag_physics,'lwdnt' ,lwdnt )
+ call mpas_pool_get_array(diag_physics,'lwdntc',lwdntc)
+ call mpas_pool_get_array(diag_physics,'lwupb' ,lwupb )
+ call mpas_pool_get_array(diag_physics,'lwupbc',lwupbc)
+ call mpas_pool_get_array(diag_physics,'lwupt' ,lwupt )
+ call mpas_pool_get_array(diag_physics,'lwuptc',lwuptc)
+ call mpas_pool_get_array(diag_physics,'olrtoa',olrtoa)
+
+ call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
+
  do j = jts,jte
  do i = its,ite
-    diag_physics % glw    % array(i) = glw_p(i,j)
-    diag_physics % lwcf   % array(i) = lwcf_p(i,j)
-    diag_physics % lwdnb  % array(i) = lwdnb_p(i,j)
-    diag_physics % lwdnbc % array(i) = lwdnbc_p(i,j)
-    diag_physics % lwdnt  % array(i) = lwdnt_p(i,j)
-    diag_physics % lwdntc % array(i) = lwdntc_p(i,j)
-    diag_physics % lwupb  % array(i) = lwupb_p(i,j)
-    diag_physics % lwupbc % array(i) = lwupbc_p(i,j)
-    diag_physics % lwupt  % array(i) = lwupt_p(i,j)
-    diag_physics % lwuptc % array(i) = lwuptc_p(i,j)
-    diag_physics % olrtoa % array(i) = olrtoa_p(i,j)
+    glw(i)    = glw_p(i,j)
+    lwcf(i)   = lwcf_p(i,j)
+    lwdnb(i)  = lwdnb_p(i,j)
+    lwdnbc(i) = lwdnbc_p(i,j)
+    lwdnt(i)  = lwdnt_p(i,j)
+    lwdntc(i) = lwdntc_p(i,j)
+    lwupb(i)  = lwupb_p(i,j)
+    lwupbc(i) = lwupbc_p(i,j)
+    lwupt(i)  = lwupt_p(i,j)
+    lwuptc(i) = lwuptc_p(i,j)
+    olrtoa(i) = olrtoa_p(i,j)
  enddo
 
  do k = kts,kte
  do i = its,ite
-    tend_physics % rthratenlw % array(k,i) = rthratenlw_p(i,k,j)
+    rthratenlw(k,i) = rthratenlw_p(i,k,j)
  enddo
  enddo
  enddo
@@ -512,29 +572,37 @@
 !==================================================================================================
 
 !input arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ real(kind=RKIND),dimension(:,:),pointer  :: emstot
+ real(kind=RKIND),dimension(:,:,:),pointer:: absnxt,abstot
 
 !---------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_array(diag_physics,'absnxt',absnxt)
+ call mpas_pool_get_array(diag_physics,'abstot',abstot)
+ call mpas_pool_get_array(diag_physics,'emstot',emstot)
 
 !write(0,*) '--- writing absnxt,abstot,and emstot to restart =', l_camlw
  do j = jts,jte
  do n = 1,cam_abs_dim1
  do k = kts,kte
  do i = its,ite
-    diag_physics % absnxt % array(k,n,i) = absnxt_p(i,k,n,j)
+    absnxt(k,n,i) = absnxt_p(i,k,n,j)
  enddo
  enddo
  enddo
  do n = 1,cam_abs_dim2
  do k = kts,kte+1
  do i = its,ite
-    diag_physics % abstot % array(k,n,i) = abstot_p(i,k,n,j)
+    abstot(k,n,i) = abstot_p(i,k,n,j)
  enddo
  enddo
  enddo
  do k = kts,kte+1
  do i = its,ite
-    diag_physics % emstot % array(k,i) = emstot_p(i,k,j)
+    emstot(k,i) = emstot_p(i,k,j)
  enddo
  enddo
  enddo
@@ -542,17 +610,19 @@
  end subroutine radiation_camlw_to_MPAS
 
 !==================================================================================================
- subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state_1,state_2)
+ subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in),optional:: mesh
- type(diag_type),intent(in),optional:: diag
+ type(mpas_pool_type),intent(in),optional:: mesh
+ type(mpas_pool_type),intent(in),optional:: diag
+
+ integer,intent(in),optional:: time_lev
 
 !inout arguments:
- type(atm_input_type),intent(inout),optional:: atm_input
- type(state_type),intent(inout),optional:: state_1,state_2 
+ type(mpas_pool_type),intent(inout),optional:: atm_input
+ type(mpas_pool_type),intent(inout),optional:: state
 
 !--------------------------------------------------------------------------------------------------
 
@@ -567,7 +637,7 @@
 
     case("cam_lw")
        write(0,*) '    enter subroutine camradinit:'
-       call camradinit(dminfo,mesh,atm_input,diag,state_1,state_2)
+       call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
        write(0,*) '    end subroutine camradinit'
     
     case default
@@ -578,19 +648,26 @@
  end subroutine init_radiation_lw
 
 !==================================================================================================
- subroutine driver_radiation_lw(xtime_s,mesh,state,diag_physics,atm_input,sfc_input,tend_physics)
+ subroutine driver_radiation_lw(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
+                                sfc_input,tend_physics)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+
+ integer,intent(in):: time_lev
  real(kind=RKIND),intent(in):: xtime_s
 
 !inout arguments:
- type(state_type)       ,intent(inout):: state
- type(diag_physics_type),intent(inout):: diag_physics
- type(atm_input_type)   ,intent(inout):: atm_input
- type(sfc_input_type)   ,intent(inout):: sfc_input
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: state
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: atm_input
+ type(mpas_pool_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: tend_physics
+
+!local pointers:
+ logical,pointer:: config_o3climatology
 
 !local variables:
  integer:: o3input
@@ -604,8 +681,10 @@
  100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
  101 format(i8,12(1x,e15.8))
 
+ call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+
 !copy MPAS arrays to local arrays:
- call radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,atm_input,sfc_input)
+ call radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input)
 
 !call to longwave radiation scheme:
  radiation_lw_select: select case (trim(radt_lw_scheme))
@@ -636,6 +715,7 @@
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
+       write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
        xtime_m = xtime_s/60.

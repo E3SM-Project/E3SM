@@ -21,7 +21,7 @@
 module ocn_thick_vadv
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_vadv_tend(mesh, vertTransportVelocityTop, tend, err)!{{{
+   subroutine ocn_thick_vadv_tend(meshPool, vertTransportVelocityTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -78,8 +78,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          vertTransportVelocityTop     !< Input: vertical velocity on top layer
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -104,7 +104,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, nVertLevels, k
+      integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: MaxLevelCell
 
       !-----------------------------------------------------------------
@@ -119,13 +120,13 @@ contains
 
       if(.not.thickVadvOn) return
 
-      maxLevelCell      => mesh % maxLevelCell % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      do iCell=1,nCells
-         do k=1,maxLevelCell(iCell)
+      do iCell = 1, nCells
+         do k = 1, maxLevelCell(iCell)
             tend(k,iCell) = tend(k,iCell) + vertTransportVelocityTop(k+1,iCell) - vertTransportVelocityTop(k,iCell)
          end do
       end do
@@ -158,6 +159,10 @@ contains
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err !< Output: error flag
+
+      logical, pointer :: config_disable_thick_vadv
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_vadv', config_disable_thick_vadv)
 
       thickVadvOn = .true.
 

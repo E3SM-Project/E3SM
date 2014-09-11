@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_cloudiness
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants, only: ep_2
@@ -37,12 +38,16 @@
 !> calc_cldincidence    : calculates the cloud fraction as 0 or 1, depending on cloud condensates.
 !> calc_cldfraction     : calculates the cloud fraction as a function of the relative humidity.
 !>
-!> comments:
-!> The subroutine calc_cldfraction has not been testted in MPAS. The default is to use subroutine
-!> calc_cldincidence.
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_cloudiness
@@ -65,14 +70,14 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac_p(i,k,j) = 0.
+    cldfrac_p(i,k,j) = 0._RKIND
  enddo
  enddo
  enddo
@@ -84,14 +89,19 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ real(kind=RKIND),dimension(:,:),pointer:: cldfrac
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_array(diag_physics,'cldfrac',cldfrac)
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    diag_physics % cldfrac % array(k,i) = cldfrac_p(i,k,j)
+    cldfrac(k,i) = cldfrac_p(i,k,j)
  enddo
  enddo
  enddo
@@ -103,7 +113,7 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)

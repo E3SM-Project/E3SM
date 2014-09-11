@@ -8,20 +8,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "fortprintf.h"
 #include "registry_types.h"
 #include "gen_inc.h"
 #include "ezxml/ezxml.h"
+#include "utility.h"
 
-int getword(FILE *, char *);
+
+int is_unique_field(ezxml_t registry, ezxml_t field, const char *check_name);
+int check_for_unique_names(ezxml_t registry);
 int is_integer_constant(char *);
-void sort_vars(struct variable *);
-void sort_group_vars(struct group_list *);
-int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, struct package ** pkgs, char * modelname, char * corename, char * version);
+int parse_reg_xml(ezxml_t registry);
 int validate_reg_xml(ezxml_t registry);
-char * check_packages(ezxml_t registry, char * dims);
-char * check_dimensions(ezxml_t registry, char * dims);
-char * check_streams(char * streams);
-int check_persistence(const char * persistence);
+
 
 int main(int argc, char ** argv)/*{{{*/
 {
@@ -31,12 +30,7 @@ int main(int argc, char ** argv)/*{{{*/
 	struct variable * vars;
 	struct group_list * groups;
 	struct package * pkgs;
-
-	char *modelname, *corename, *version;
-
-	modelname = (char *)malloc(sizeof(char)*1024);
-	corename = (char *)malloc(sizeof(char)*1024);
-	version = (char *)malloc(sizeof(char)*1024);
+	int err;
 
 	if (argc != 2) {
 		fprintf(stderr,"Reading registry file from standard input\n");
@@ -53,33 +47,29 @@ int main(int argc, char ** argv)/*{{{*/
 
 	ezxml_t registry = ezxml_parse_fp(regfile);
 
+	// Cleanup registry structures
+	err = push_attributes(registry);
+	err = merge_structs_and_var_arrays(registry);
+	err = merge_streams(registry);
+
 	if (validate_reg_xml(registry)) {
 		fprintf(stderr, "Validation failed.....\n");
 		return 1;
 	}
 
-	if (parse_reg_xml(registry, &nls, &dims, &vars, &groups, &pkgs, modelname, corename, version)) {
+	write_model_variables(registry);
+
+	if (parse_reg_xml(registry)) {
 		fprintf(stderr, "Parsing failed.....\n");
 		return 1;
 	}
 
-	sort_vars(vars);
-	sort_group_vars(groups);
-
-	write_default_namelist(nls, corename);
-	gen_history_attributes(modelname, corename, version);
-	gen_namelists(nls);
-	gen_field_defs(groups, vars, dims);
-	gen_reads(groups, vars, dims);
-	gen_writes(groups, vars, dims, nls);
-	gen_packages(pkgs);
-
-	free(modelname);
-	free(corename);
-	free(version);
+	//write_default_namelist(nls, corename);
+	write_default_namelist(registry);
 
 	return 0;
 }/*}}}*/
+
 
 int validate_reg_xml(ezxml_t registry)/*{{{*/
 {
@@ -91,13 +81,14 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmlrecindef;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
-	const char *structname, *structlevs, *structpackages;
+	const char *structname, *structpackages;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
 	const char *streamname;
 	const char *streamtype;
+	const char *time_levs;
 
 	char *string, *err_string;
 	char name_holder[1024];
@@ -218,7 +209,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	// Validate Variable Structures
 	for(structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
 		structname = ezxml_attr(structs_xml, "name");
-		structlevs = ezxml_attr(structs_xml, "time_levs");
+		time_levs = ezxml_attr(structs_xml, "time_levs");
 		structpackages = ezxml_attr(structs_xml, "packages");
 
 		if (structname == NULL){
@@ -226,9 +217,16 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			return 1;
 		}
 
-		if (structlevs == NULL){
+		if (time_levs == NULL){
 			fprintf(stderr,"ERROR: time_levs attribute missing for var_struct %s.\n", structname);
 			return 1;
+		} else {
+			if (atoi(time_levs) == 0){
+				fprintf(stderr, "WARNING: time_levs attribute on var_struct %s is 0. It will be replaced with 1.\n", structname);
+			} else if (atoi(time_levs) < 1){
+				fprintf(stderr, "ERROR: time_levs attribute on var_struct %s is negative.\n", structname);
+				return 1;
+			}
 		}
 
 		if (structpackages != NULL) {
@@ -249,10 +247,20 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
 			vararrpackages = ezxml_attr(var_arr_xml, "packages");
+			time_levs = ezxml_attr(var_arr_xml, "time_levs");
 
 			if (vararrname == NULL){
 				fprintf(stderr,"ERROR: Name attribute missing for var_array in var_struct %s.\n", structname);
 				return 1;
+			}
+
+			if (time_levs != NULL){
+				if (atoi(time_levs) == 0){
+					fprintf(stderr, "WARNING: time_levs attribute on var_array %s in var_struct %s is 0. It will be replaced with 1.\n", vararrname, structname);
+				} else if (atoi(time_levs) < 1){
+					fprintf(stderr, "ERROR: time_levs attribute on var_array %s in var_struct %s is negative.\n", vararrname, structname);
+					return 1;
+				}
 			}
 
 			if (vararrtype == NULL){
@@ -353,10 +361,20 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vardesc = ezxml_attr(var_xml, "description");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			varpackages = ezxml_attr(var_xml, "packages");
+			time_levs = ezxml_attr(var_xml, "time_levs");
 
 			if (varname == NULL) {
 				fprintf(stderr,"ERROR: Variable name missing in var_struct %s\n.", structname);
 				return 1;
+			}
+
+			if (time_levs != NULL){
+				if (atoi(time_levs) == 0){
+					fprintf(stderr, "WARNING: time_levs attribute on var %s in var_struct %s is 0. It will be replaced with 1.\n", varname, structname);
+				} else if (atoi(time_levs) < 1){
+					fprintf(stderr, "ERROR: time_levs attribute on var %s in var_struct %s is negative.\n", varname, structname);
+					return 1;
+				}
 			}
 
 			if(vartype == NULL) {
@@ -468,839 +486,104 @@ done_searching:
 		}
 	}
 
+	if(check_for_unique_names(registry)){
+		fprintf(stderr, "ERROR: Fields are required to have unique names for I/O reasons.\n");
+		fprintf(stderr, "       Please fix duplicates in the Registry.xml file.\n");
+		return 1;
+	}
+
 	return 0;
 }/*}}}*/
 
-int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, struct package ** pkgs, char * modelname, char * corename, char * version)/*{{{*/
-{
-	struct namelist * nls_ptr, *nls_ptr2;
-	struct namelist * nls_chk_ptr;
-	struct dimension * dim_ptr, *dim_ptr2;
-	struct variable * var_ptr, *var_ptr2;
-	struct dimension_list * dimlist_ptr;
-	struct dimension * dimlist_cursor;
-	struct group_list * grouplist_ptr;
-	struct variable_list * vlist_cursor;
-	struct package * pkg_ptr;
 
+int parse_reg_xml(ezxml_t registry)/*{{{*/
+{
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
 	ezxml_t packages_xml, package_xml;
 	ezxml_t streams_xml, stream_xml;
 
-	const char *dimname, *dimunits, *dimdesc, *dimdef;
-	const char *nmlrecname, *nmlrecindef;
-	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
-	const char *structname, *structlevs, *structpackages;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
-	const char *packagename, *packagedesc;
-	const char *varname_in_code;
-	const char *const_model, *const_core, *const_version;
-	const char *streamname;
+	int err;
 
-	char dimensions[2048];
-	char *dimension_list;
-	char dimension_buffer[128];
-	char default_value[1024];
-
-	char *string, *tofree, *token;
-	int found;
-
-	NEW_NAMELIST(nls_ptr)
-		NEW_DIMENSION(dim_ptr)
-		NEW_VARIABLE(var_ptr)
-		NEW_GROUP_LIST(grouplist_ptr);
-	NEW_PACKAGE(pkg_ptr);
-	*nls = nls_ptr;
-	*dims = dim_ptr;
-	*vars = var_ptr;
-	*groups = grouplist_ptr;
-	*pkgs = pkg_ptr;
-
-	snprintf(pkg_ptr->name, 1024, "%c", '\0');
-
-	// Get model information
-	const_model = ezxml_attr(registry, "model");
-	const_core = ezxml_attr(registry, "core");
-	const_version = ezxml_attr(registry, "version");
-
-	if(const_model == NULL)
-		sprintf(modelname, "MISSING");
-	else
-		sprintf(modelname, "%s", const_model);
-
-	if(const_core == NULL)
-		sprintf(corename, "MISSING");
-	else
-		sprintf(corename, "%s", const_core);
-
-	if(const_version == NULL)
-		sprintf(version, "MISSING");
-	else
-		sprintf(version, "%s", const_version);
-
-	// Parse Namelist Records
-	for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
-		nmlrecname = ezxml_attr(nmlrecs_xml, "name");
-		nmlrecindef = ezxml_attr(nmlrecs_xml, "in_defaults");
-		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
-			nmloptname = ezxml_attr(nmlopt_xml, "name");
-			nmlopttype = ezxml_attr(nmlopt_xml, "type");
-			nmloptval = ezxml_attr(nmlopt_xml, "default_value");
-			nmloptunits = ezxml_attr(nmlopt_xml, "units");
-			nmloptdesc = ezxml_attr(nmlopt_xml, "description");
-			nmloptposvals = ezxml_attr(nmlopt_xml, "possible_values");
-			nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
-
-			snprintf(nls_ptr->record, 1024, "%s", nmlrecname);
-			snprintf(nls_ptr->name, 1024, "%s", nmloptname);
-
-			if(strncmp(nmlopttype, "real", 1024) == 0){
-				nls_ptr->vtype = REAL;
-			} else if(strncmp(nmlopttype, "integer", 1024) == 0){
-				nls_ptr->vtype = INTEGER;
-			} else if(strncmp(nmlopttype, "logical", 1024) == 0){
-				nls_ptr->vtype = LOGICAL;
-			} else if(strncmp(nmlopttype, "character", 1024) == 0){
-				nls_ptr->vtype = CHARACTER;
-			}
-
-			switch(nls_ptr->vtype){
-				case REAL:
-					nls_ptr->defval.rval = (float)atof(nmloptval);
-					break;
-				case INTEGER:
-					nls_ptr->defval.ival = atoi(nmloptval);
-					break;
-				case LOGICAL:
-					if(strncmp(nmloptval, "true", 1024) == 0 || strncmp(nmloptval, ".true.", 1024) == 0){
-						nls_ptr->defval.lval = 1;
-					} else if (strncmp(nmloptval, "false", 1024) == 0 || strncmp(nmloptval, ".false.", 1024) == 0){
-						nls_ptr->defval.lval = 0;
-					}
-					break;
-				case CHARACTER:
-					snprintf(nls_ptr->defval.cval, 32, "%s", nmloptval);
-					break;
-			}
-
-			if(nmloptindef == NULL){
-				if(nmlrecindef == NULL){
-					nls_ptr->write_in_default = 0;
-				} else {
-					if(strncmp(nmlrecindef, "true", 1024) == 0){
-						nls_ptr->write_in_default = 1;
-					} else if (strncmp(nmlrecindef, "false", 1024) == 0){
-						nls_ptr->write_in_default = 0;
-					}
-				}
-			} else {
-				if(strncmp(nmloptindef, "true", 1024) == 0){
-					nls_ptr->write_in_default = 1;
-				} else if (strncmp(nmloptindef, "false", 1024) == 0){
-					nls_ptr->write_in_default = 0;
-				}
-			}
-
-			NEW_NAMELIST(nls_ptr->next)
-				nls_ptr2 = nls_ptr;
-			nls_ptr = nls_ptr->next;
-		}
-	}
-
-	if(nls_ptr2->next) free(nls_ptr2->next);
-	nls_ptr2->next = NULL;
 
 	// Parse Packages
-	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
-		for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
-			packagename = ezxml_attr(package_xml, "name");
-			packagedesc = ezxml_attr(package_xml, "description");
+	err = parse_packages_from_registry(registry);
 
-			if (strlen(pkg_ptr->name) == 0) {
-				snprintf(pkg_ptr->name, 1024, "%s", packagename);
-			} else {
-				NEW_PACKAGE(pkg_ptr->next);
-				pkg_ptr = pkg_ptr->next;
-				snprintf(pkg_ptr->name, 1024, "%s", packagename);
-			}
-		}
-	}
+	// Parse namelist records
+	err = parse_namelist_records_from_registry(registry);
 
-	// Parse Dimensions
-	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
-		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
-			dimname = ezxml_attr(dim_xml, "name");
-			dimdef = ezxml_attr(dim_xml, "definition");	
-			dimunits = ezxml_attr(dim_xml, "units");
-			dimdesc = ezxml_attr(dim_xml, "description");
+	// Parse dimensions
+	err = parse_dimensions_from_registry(registry);
 
-			dim_ptr->namelist_defined = 0;
+	// Parse variable structures
+	err = parse_structs_from_registry(registry);
 
-			snprintf(dim_ptr->name_in_file, 1024, "%s", dimname);
-			if(dimdef == NULL){
-				snprintf(dim_ptr->name_in_code, 1024, "%s", dimname);
-				dim_ptr->constant_value = -1;
-			} else {
-				snprintf(dim_ptr->name_in_code, 1024, "%s", dimdef);
-				// Check namelist defined ??
-				dim_ptr->constant_value = is_integer_constant(dim_ptr->name_in_code);
-				if(strncmp(dim_ptr->name_in_code, "namelist:", 9) == 0) {
-					dim_ptr->namelist_defined = 1;
-					snprintf(dim_ptr->name_in_code, 1024, "%s", (dim_ptr->name_in_code)+9);
+	// Generate routines to link fields for multiple blocks
+	err = generate_field_links(registry);
 
-					/* Check that the referenced namelist variable is defined as an integer variable */
-					nls_chk_ptr = (*nls)->next;
-					while (nls_chk_ptr) {
-						if (strncmp(nls_chk_ptr->name, dim_ptr->name_in_code, 1024) == 0) {
-							if (nls_chk_ptr->vtype != INTEGER) {
-								fprintf(stderr,"\nRegistry error: Namelist variable %s must be an integer for namelist-derived dimension %s\n\n", nls_chk_ptr->name, dim_ptr->name_in_file);
-								return 1;
-							}
-							break;
-						} 
-						nls_chk_ptr = nls_chk_ptr->next;
-					}
-					if (!nls_chk_ptr) {
-						fprintf(stderr,"\nRegistry error: Namelist variable %s not defined for namelist-derived dimension %s\n\n", dim_ptr->name_in_code, dim_ptr->name_in_file);
-						return 1;
-					}
-				}
-			}
+	// Generate halo exchange and copy routine
+	err = generate_field_halo_exchanges_and_copies(registry);
 
-			NEW_DIMENSION(dim_ptr->next)
-				dim_ptr2 = dim_ptr;
-			dim_ptr = dim_ptr->next;
-		}   
-	}
-
-	if(dim_ptr2->next) free(dim_ptr2->next);
-	dim_ptr2->next = NULL;
-
-	// Parse Variable Structures
-	for(structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
-		structname = ezxml_attr(structs_xml, "name");
-		structlevs = ezxml_attr(structs_xml, "time_levs");
-		structpackages = ezxml_attr(structs_xml, "packages");
-
-		found = 0;
-		grouplist_ptr = *groups;
-		while(!found){
-			if(strncmp(grouplist_ptr->name, structname, 1024) == 0){
-				found = 1;
-				printf("Found %s\n", structname);
-			} else if (grouplist_ptr->next){
-				grouplist_ptr = grouplist_ptr->next;
-			} else {
-				break;
-			}
-		}
-		if(!found){
-			NEW_GROUP_LIST(grouplist_ptr->next);
-			grouplist_ptr = grouplist_ptr->next;
-			snprintf(grouplist_ptr->name, 1024, "%s", structname);
-			grouplist_ptr->ntime_levs = atoi(structlevs);
-			vlist_cursor = NULL;
-		} else {
-			vlist_cursor = grouplist_ptr->vlist;
-			while(vlist_cursor->next) vlist_cursor = vlist_cursor->next;
-		}
-
-		// Parse variable arrays
-		for(var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
-			vararrname = ezxml_attr(var_arr_xml, "name");
-			vararrtype = ezxml_attr(var_arr_xml, "type");
-			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
-			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
-			vararrdefaultval = ezxml_attr(var_arr_xml, "default_value");
-			vararrpackages = ezxml_attr(var_arr_xml, "packages");
-
-			//Parse variables in variable arrays
-			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
-				varname = ezxml_attr(var_xml, "name");
-				varunits = ezxml_attr(var_xml, "units");
-				vardesc = ezxml_attr(var_xml, "description");
-				vararrgroup = ezxml_attr(var_xml, "array_group");
-				varname_in_code = ezxml_attr(var_xml, "name_in_code");
-				varpackages = ezxml_attr(var_xml, "packages");
-
-				if(vlist_cursor == NULL){
-					NEW_VARIABLE_LIST(grouplist_ptr->vlist);
-					vlist_cursor = grouplist_ptr->vlist;
-				} else {
-					NEW_VARIABLE_LIST(vlist_cursor->next);
-					vlist_cursor->next->prev = vlist_cursor;
-					vlist_cursor = vlist_cursor->next;
-				}
-				vlist_cursor->var = var_ptr;
-				vlist_cursor->next = NULL;
-
-				var_ptr->ndims = 0;
-				var_ptr->timedim = 0;
-				var_ptr->iostreams = 0;
-
-				snprintf(var_ptr->name_in_file, 1024, "%s", varname);
-
-				var_ptr->persistence = PERSISTENT;
-				if(vararrpersistence != NULL){
-					var_ptr->persistence = check_persistence(vararrpersistence);
-					if (var_ptr->persistence == -1) return 1;
-				}
-
-				/* Check var_arr packages attribute */
-				if(varpackages == NULL) {
-					varpackages = ezxml_attr(var_arr_xml, "packages");
-				}
-
-				/* Check var_struct packages attribute */
-				if(varpackages == NULL) {
-					varpackages = ezxml_attr(structs_xml, "packages");
-				}
-
-				if(varpackages != NULL && var_ptr->persistence == PERSISTENT){
-					var_ptr->persistence = PACKAGE;
-				}
-
-				if(var_ptr->persistence == PACKAGE) {
-					NEW_PACKAGE(var_ptr->package_name);
-
-					string = strdup(varpackages);
-					tofree = string;
-					token = strsep(&string, ";");
-
-					snprintf(var_ptr->package_name->name, 1024, "%s", token);
-					pkg_ptr = var_ptr->package_name;
-
-					while( (token = strsep(&string, ";")) != NULL) {
-						NEW_PACKAGE(pkg_ptr->next);						
-						pkg_ptr = pkg_ptr->next;
-						snprintf(pkg_ptr->name, 1024, "%s", token);
-					}
-				}
-
-				if(strncmp(vararrtype, "real", 1024) == 0){
-					var_ptr->vtype = REAL;
-					snprintf(default_value, 1024, "0.0_RKIND");
-				} else if(strncmp(vararrtype, "integer", 1024) == 0){
-					var_ptr->vtype = INTEGER;
-					snprintf(default_value, 1024, "0");
-				} else if(strncmp(vararrtype, "logical", 1024) == 0){
-					var_ptr->vtype = LOGICAL;
-					snprintf(default_value, 1024, ".false.");
-				} else if(strncmp(vararrtype, "text", 1024) == 0){
-					var_ptr->vtype = CHARACTER;
-					snprintf(default_value, 1024, "''");
-				}
-
-				NEW_DIMENSION_LIST(dimlist_ptr)
-					var_ptr->dimlist = dimlist_ptr;
-
-				snprintf(dimensions,2048, "%s", vararrdims);
-				dimension_list = strtok(dimensions, " ");
-				while(dimension_list != NULL){
-					snprintf(dimension_buffer, 128, "%s", dimension_list);
-					if(strncmp(dimension_buffer, "Time", 1024) == 0){
-						var_ptr->timedim = 1;
-					} else {
-						NEW_DIMENSION_LIST(dimlist_ptr->next)
-							dimlist_ptr->next->prev = dimlist_ptr;
-						dimlist_ptr = dimlist_ptr->next;
-
-						dimlist_cursor = (*dims);
-						while(dimlist_cursor && (strncmp(dimension_buffer, dimlist_cursor->name_in_file, 1024) != 0)){
-							dimlist_cursor = dimlist_cursor->next;
-						}
-						if (dimlist_cursor) {
-							dimlist_ptr->dim = dimlist_cursor;
-						} else {
-							fprintf(stderr, "Error: Unknown dimension %s for variable %s\n", dimension_buffer, var_ptr->name_in_file);
-							return 1;
-						}
-						var_ptr->ndims++;
-					}
-					dimension_list = strtok(NULL, " ");
-				}
-				dimlist_ptr = var_ptr->dimlist;
-				if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
-				free(dimlist_ptr);
-
-				if(varname_in_code == NULL){
-					snprintf(var_ptr->name_in_code, 1024, "%s", varname);
-				} else {
-					snprintf(var_ptr->name_in_code, 1024, "%s", varname_in_code);
-				}
-
-				if(vararrdefaultval == NULL){
-					snprintf(var_ptr->default_value, 1024, "%s", default_value);
-				} else {
-					snprintf(var_ptr->default_value, 1024, "%s", vararrdefaultval);
-				}
-
-				snprintf(var_ptr->var_array, 1024, "%s", vararrname);
-				snprintf(var_ptr->array_class, 1024, "%s", vararrgroup);
-
-				NEW_VARIABLE(var_ptr->next);
-				var_ptr2 = var_ptr;
-				var_ptr = var_ptr->next;
-			}
-		}
-
-		for(var_xml = ezxml_child(structs_xml, "var"); var_xml; var_xml = var_xml->next){
-			varname = ezxml_attr(var_xml, "name");
-			varpersistence = ezxml_attr(var_xml, "persistence");
-			vartype = ezxml_attr(var_xml, "type");
-			vardims = ezxml_attr(var_xml, "dimensions");
-			varunits = ezxml_attr(var_xml, "units");
-			vardesc = ezxml_attr(var_xml, "description");
-			varname_in_code = ezxml_attr(var_xml, "name_in_code");
-			vardefaultval = ezxml_attr(var_xml, "default_value");
-			varpackages = ezxml_attr(var_xml, "packages");
-
-			if(vlist_cursor == NULL){
-				NEW_VARIABLE_LIST(grouplist_ptr->vlist);
-				vlist_cursor = grouplist_ptr->vlist;
-			} else {
-				NEW_VARIABLE_LIST(vlist_cursor->next);
-				vlist_cursor->next->prev = vlist_cursor;
-				vlist_cursor = vlist_cursor->next;
-			}
-			vlist_cursor->var = var_ptr;
-			vlist_cursor->next = NULL;
-
-			var_ptr->ndims = 0;
-			var_ptr->timedim = 0;
-			var_ptr->iostreams = 0;
-
-			snprintf(var_ptr->name_in_file, 1024, "%s", varname);
-
-			var_ptr->persistence = PERSISTENT;
-			if(varpersistence != NULL){
-				var_ptr->persistence = check_persistence(varpersistence);
-				if(var_ptr->persistence == -1) return 1;
-			}
-
-			/* Check packages attribute on var_struct */
-			if(varpackages == NULL){
-				varpackages = ezxml_attr(structs_xml, "packages");
-			}
-
-			if(varpackages != NULL && var_ptr->persistence == PERSISTENT){
-				var_ptr->persistence = PACKAGE;
-			}
-
-			if(var_ptr->persistence == PACKAGE) {
-				NEW_PACKAGE(var_ptr->package_name);
-
-				string = strdup(varpackages);
-				tofree = string;
-				token = strsep(&string, ";");
-
-				snprintf(var_ptr->package_name->name, 1024, "%s", token);
-				pkg_ptr = var_ptr->package_name;
-
-				while( (token = strsep(&string, ";")) != NULL) {
-					NEW_PACKAGE(pkg_ptr->next);						
-					pkg_ptr = pkg_ptr->next;
-					snprintf(pkg_ptr->name, 1024, "%s", token);
-				}
-			}
-
-
-			if(strncmp(vartype, "real", 1024) == 0){
-				var_ptr->vtype = REAL;
-				snprintf(default_value, 1024, "0.0_RKIND");
-			} else if(strncmp(vartype, "integer", 1024) == 0){
-				var_ptr->vtype = INTEGER;
-				snprintf(default_value, 1024, "0");
-			} else if(strncmp(vartype, "logical", 1024) == 0){
-				var_ptr->vtype = LOGICAL;
-				snprintf(default_value, 1024, ".false.");
-			} else if(strncmp(vartype, "text", 1024) == 0){
-				var_ptr->vtype = CHARACTER;
-				snprintf(default_value, 1024, "''");
-			}
-
-			NEW_DIMENSION_LIST(dimlist_ptr)
-				var_ptr->dimlist = dimlist_ptr;
-
-			snprintf(dimensions, 2048, "%s", vardims);
-			dimension_list = strtok(dimensions, " ");
-			while(dimension_list != NULL){
-				snprintf(dimension_buffer, 128, "%s", dimension_list);
-				if(strncmp(dimension_buffer, "Time", 1024) == 0){
-					var_ptr->timedim = 1;
-				} else {
-					NEW_DIMENSION_LIST(dimlist_ptr->next)
-						dimlist_ptr->next->prev = dimlist_ptr;
-					dimlist_ptr = dimlist_ptr->next;
-
-					dimlist_cursor = (*dims);
-					while(dimlist_cursor && (strncmp(dimension_buffer, dimlist_cursor->name_in_file, 1024) != 0) )
-						dimlist_cursor = dimlist_cursor->next;
-					if (dimlist_cursor) {
-						dimlist_ptr->dim = dimlist_cursor;
-					} else {
-						fprintf(stderr, "Error: Unknown dimension %s for variable %s\n", dimension_buffer, var_ptr->name_in_file);
-						return 1;
-					}
-					var_ptr->ndims++;
-				}
-				dimension_list = strtok(NULL, " ");
-			}
-
-			dimlist_ptr = var_ptr->dimlist;
-			if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
-			free(dimlist_ptr);
-
-
-			if(varname_in_code == NULL){
-				snprintf(var_ptr->name_in_code, 1024, "%s", varname);
-			} else {
-				snprintf(var_ptr->name_in_code, 1024, "%s", varname_in_code);
-			}
-
-			snprintf(var_ptr->var_array, 1024, "-");
-			snprintf(var_ptr->array_class, 1024, "-");
-
-			if(vardefaultval == NULL){
-				snprintf(var_ptr->default_value, 1024, "%s", default_value);
-			} else {
-				snprintf(var_ptr->default_value, 1024, "%s", vardefaultval);
-			}
-
-			NEW_VARIABLE(var_ptr->next);
-			var_ptr2 = var_ptr;
-			var_ptr = var_ptr->next;
-		}
-	}
-
-	if(var_ptr2->next) free(var_ptr2->next);
-	var_ptr2->next = NULL;
-
-	grouplist_ptr = *groups;
-	if ((*groups)->next) *groups = (*groups)->next;
-	if (grouplist_ptr) free(grouplist_ptr);
-
-	// Parse streams
-	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
-		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
-			streamname = ezxml_attr(stream_xml, "name");
-			if (streamname != NULL) {     /* this should be assured by validate_reg_xml() */
-				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = var_xml->next) {
-					varname = ezxml_attr(var_xml, "name");
-					if (varname != NULL) {     /* this should be assured by validate_reg_xml() */
-						var_ptr = *vars;
-						while (var_ptr) {
-							if (strcmp(var_ptr->name_in_file, varname) == 0) {
-								if (strcmp(streamname, "output") == 0) {
-									var_ptr->iostreams |= OUTPUT0;
-								}
-								else if (strcmp(streamname, "surface") == 0) {
-									var_ptr->iostreams |= SFC0;
-								}
-								else if (strcmp(streamname, "input") == 0) {
-									var_ptr->iostreams |= INPUT0;
-								}
-								else if (strcmp(streamname, "restart") == 0) {
-									var_ptr->iostreams |= RESTART0;
-								}
-								break;
-							}
-							var_ptr = var_ptr->next;
-						}
-					}
-				}
-			}
-		}
-	}
-
+	// Generate halo exchange and copy routine
+	err = generate_field_reads_and_writes(registry);
 
 	return 0;
 }/*}}}*/
 
-int getword(FILE * regfile, char * word)/*{{{*/
-{
-	int i;
-	int c;
 
-	i = 0;
+int is_unique_field(ezxml_t registry, ezxml_t field, const char *check_name){/*{{{*/
+	ezxml_t struct_xml, var_arr_xml, var_xml;
 
-	do { c = getc(regfile); } while (((char)c == ' ' || (char)c == '\n' || (char)c == '\t') && c != EOF);
+	const char *name;
 
-	while ((char)c == '%') {
-		do { c = getc(regfile); } while ((char)c != '\n' && c != EOF);
-		do { c = getc(regfile); } while (((char)c == ' ' || (char)c == '\n' || (char)c == '\t') && c != EOF);
-	};
-	while((char)c != ' ' && (char)c != '\n' && (char)c != '\t' && c != EOF && (char)c != '%') {
-		word[i++] = (char)c; 
-		c = (char)getc(regfile);
-	} 
-	word[i] = '\0';
+	for(struct_xml = ezxml_child(registry, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+		for(var_arr_xml = ezxml_child(struct_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
+			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
+				name = ezxml_attr(var_xml, "name");
 
-	if ((char)c == '%') do { c = getc(regfile); } while ((char)c != '\n' && c != EOF);
-
-	fprintf(stdout,"%s ",word);
-	return c;
-}/*}}}*/
-
-int is_integer_constant(char * c) {/*{{{*/
-	int i;
-
-	i = 0;
-	while (c[i] != '\0') {
-		if (c[i] < '0' || c[i] > '9') return -1;
-		i++;
-	}
-
-	return atoi(c);
-}/*}}}*/
-
-void sort_vars(struct variable * vars)/*{{{*/
-{
-	struct variable * var_ptr;
-	struct variable * var_ptr2;
-	struct variable * var_ptr2_prev;
-	char var_array[1024];
-	char array_class[1024];
-
-	var_ptr = vars;
-
-	/* Attempt at sorting first on super-array, then on class in the same loop
-	   while (var_ptr) {
-	   memcpy(var_array, var_ptr->var_array, 1024);
-	   memcpy(array_class, var_ptr->array_class, 1024);
-	   var_ptr2_prev = var_ptr;
-	   var_ptr2 = var_ptr->next;
-	   if (var_ptr2 && 
-	   (strncmp(var_array, var_ptr2->var_array, 1024) != 0 || strncmp(array_class, var_ptr2->array_class, 1024) != 0)) {
-	   while (var_ptr2) {
-	   if (strncmp(var_array, var_ptr2->var_array, 1024) == 0 && strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
-	   var_ptr2_prev->next = var_ptr2->next;
-	   var_ptr2->next = var_ptr->next;
-	   var_ptr->next = var_ptr2;
-	   var_ptr2 = var_ptr2_prev->next;
-	   }
-	   else {
-	   var_ptr2_prev = var_ptr2_prev->next;
-	   var_ptr2 = var_ptr2->next;
-	   }
-	   }
-	   } 
-	   var_ptr = var_ptr->next;
-	   }
-	   */
-
-	while (var_ptr) {
-		memcpy(var_array, var_ptr->var_array, 1024);
-		var_ptr2_prev = var_ptr;
-		var_ptr2 = var_ptr->next;
-		if (var_ptr2 && strncmp(var_array, var_ptr2->var_array, 1024) != 0) {
-			while (var_ptr2) {
-				if (strncmp(var_array, var_ptr2->var_array, 1024) == 0) {
-					var_ptr2_prev->next = var_ptr2->next;
-					var_ptr2->next = var_ptr->next;
-					var_ptr->next = var_ptr2;
-					var_ptr2 = var_ptr2_prev->next;
-				}
-				else {
-					var_ptr2_prev = var_ptr2_prev->next;
-					var_ptr2 = var_ptr2->next;
+				if(strcmp(name, check_name) == 0 && var_xml != field){
+					return 0;
 				}
 			}
-		} 
-		var_ptr = var_ptr->next;
-	}
+		}
+		for(var_xml = ezxml_child(struct_xml, "var"); var_xml; var_xml = var_xml->next){
+			name = ezxml_attr(var_xml, "name");
 
-	var_ptr = vars;
-
-	while (var_ptr) {
-		memcpy(array_class, var_ptr->array_class, 1024);
-		var_ptr2_prev = var_ptr;
-		var_ptr2 = var_ptr->next;
-		if (var_ptr2 && strncmp(array_class, var_ptr2->array_class, 1024) != 0) {
-			while (var_ptr2) {
-				if (strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
-					var_ptr2_prev->next = var_ptr2->next;
-					var_ptr2->next = var_ptr->next;
-					var_ptr->next = var_ptr2;
-					var_ptr2 = var_ptr2_prev->next;
-				}
-				else {
-					var_ptr2_prev = var_ptr2_prev->next;
-					var_ptr2 = var_ptr2->next;
-				}
+			if(strcmp(name, check_name) == 0 && var_xml != field){
+				return 0;
 			}
-		} 
-		var_ptr = var_ptr->next;
+		}
 	}
+
+	return 1;
 }/*}}}*/
 
-void sort_group_vars(struct group_list * groups)/*{{{*/
-{
-	struct variable_list * var_list;
-	struct variable_list * var_ptr;
-	struct variable_list * var_ptr2;
-	struct variable_list * var_ptr2_prev;
-	struct group_list * group_ptr;
-	char var_array[1024];
-	char array_class[1024];
 
-	group_ptr = groups;
+int check_for_unique_names(ezxml_t registry){/*{{{*/
+	ezxml_t struct_xml, var_arr_xml, var_xml;
 
-	while (group_ptr) {
+	const char *name;
 
-		var_ptr = group_ptr->vlist;
-
-		while (var_ptr) {
-			memcpy(var_array, var_ptr->var->var_array, 1024);
-			var_ptr2_prev = var_ptr;
-			var_ptr2 = var_ptr->next;
-			if (var_ptr2 != NULL && strncmp(var_array, var_ptr2->var->var_array, 1024) != 0) {
-				while (var_ptr2) {
-					if (strncmp(var_array, var_ptr2->var->var_array, 1024) == 0) {
-						var_ptr2_prev->next = var_ptr2->next;
-						var_ptr2->next = var_ptr->next;
-						var_ptr->next = var_ptr2;
-						var_ptr2 = var_ptr2_prev->next;
-					}
-					else {
-						var_ptr2_prev = var_ptr2_prev->next;
-						var_ptr2 = var_ptr2->next;
-					}
-				}
-			} 
-			var_ptr = var_ptr->next;
-		}
-
-		var_ptr = group_ptr->vlist;
-
-		while (var_ptr) {
-			memcpy(array_class, var_ptr->var->array_class, 1024);
-			var_ptr2_prev = var_ptr;
-			var_ptr2 = var_ptr->next;
-			if (var_ptr2 && strncmp(array_class, var_ptr2->var->array_class, 1024) != 0) {
-				while (var_ptr2) {
-					if (strncmp(array_class, var_ptr2->var->array_class, 1024) == 0) {
-						var_ptr2_prev->next = var_ptr2->next;
-						var_ptr2->next = var_ptr->next;
-						var_ptr->next = var_ptr2;
-						var_ptr2 = var_ptr2_prev->next;
-					}
-					else {
-						var_ptr2_prev = var_ptr2_prev->next;
-						var_ptr2 = var_ptr2->next;
-					}
-				}
-			} 
-			var_ptr = var_ptr->next;
-		}
-
-		group_ptr = group_ptr->next;
-	}
-}/*}}}*/
-
-char * check_packages(ezxml_t registry, char * packages){/*{{{*/
-	ezxml_t packages_xml, package_xml;
-
-	const char *packagename;
-
-	char *string, *tofree, *token;
-	char *failed;
-	int missing_package;
-
-	string = strdup(packages);
-	tofree = string;
-	failed = NULL;
-
-	while( (token = strsep(&string, ";")) != NULL) {
-		missing_package = 1;
-		for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
-			for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
-				packagename = ezxml_attr(package_xml, "name");
-
-				if(strcasecmp(packagename, token) == 0){
-					missing_package = 0;
+	for(struct_xml = ezxml_child(registry, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+		for(var_arr_xml = ezxml_child(struct_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
+			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
+				name = ezxml_attr(var_xml, "name");
+				if(!is_unique_field(registry, var_xml, name)){
+					fprintf(stderr, "ERROR: Field %s is not unique.\n", name);
+					return 1;
 				}
 			}
 		}
 
-		if (missing_package) {
-			failed = strdup(token);
-			free(tofree);
-			return failed;
-		}
-	}
-	free(tofree);
-	return failed;
-}/*}}}*/
-
-char * check_dimensions(ezxml_t registry, char * dims){/*{{{*/
-	ezxml_t dims_xml, dim_xml;
-
-	const char *dimname;
-
-	char *string, *tofree, *token;
-	int missing_dim;
-
-	string = strdup(dims);
-	tofree = string;
-
-	while( (token = strsep(&string, " ")) != NULL) {
-		if (strcasecmp(token, "Time") != 0){
-			missing_dim = 1;
-			for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
-				for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
-					dimname = ezxml_attr(dim_xml, "name");
-
-					if(strcasecmp(dimname, token) == 0){
-						missing_dim = 0;
-					}
-				}
-			}
-
-			if (missing_dim) {
-				free(tofree);
-				return token;
+		for(var_xml = ezxml_child(struct_xml, "var"); var_xml; var_xml = var_xml->next){
+			name = ezxml_attr(var_xml, "name");
+			if(!is_unique_field(registry, var_xml, name)){
+				fprintf(stderr, "ERROR: Field %s is not unique.\n", name);
+				return 1;
 			}
 		}
 	}
-	free(tofree);
-	return NULL;
-}/*}}}*/
 
-char * check_streams(char * streams){/*{{{*/
-	char * stream;
-	int length, i, bad_streams;
-
-	length = strlen(streams);
-
-	stream = (char *)malloc(2*sizeof(char));
-	stream[1] = '\0';
-
-	for (i = 0; i < length; i++){
-		bad_streams = 1;	
-		stream[0] = streams[i];
-		if(strcmp(stream, "i") == 0 || strcmp(stream, "r") == 0 || strcmp(stream, "o") == 0 || strcmp(stream, "s") == 0){
-			bad_streams = 0;
-		}
-
-		if (bad_streams == 1){
-			return stream;
-		}
-	}
-
-	return NULL;
-}/*}}}*/
-
-int check_persistence(const char * persistence){/*{{{*/
-	if(strncmp(persistence, "persistent", 1024) == 0){
-		return PERSISTENT;
-	} else if(strncmp(persistence, "scratch", 1024) == 0){
-		return SCRATCH;
-	} else {
-		fprintf(stderr, "ERROR: In check_persistence. Persistence not equal to persistent or scratch.\n");
-		return -1;
-	}
+	return 0;
 }/*}}}*/

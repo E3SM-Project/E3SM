@@ -319,7 +319,6 @@ else
 	GEN_F90_MESSAGE="MPAS was built with .F files."
 endif
 
-
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
 
 ifneq ($(wildcard .mpas_core_$(CORE)), ) # CHECK FOR SAME CORE AS ATTEMPTED BUILD.

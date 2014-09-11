@@ -1,6 +1,6 @@
 .SUFFIXES: .c .o
 
-OBJS = parse.o dictionary.o gen_inc.o fortprintf.o ezxml/ezxml.o
+OBJS = parse.o dictionary.o gen_inc.o fortprintf.o utility.o ezxml/ezxml.o
 
 all: parse
 	($(MAKE) clean)

@@ -13,10 +13,6 @@
 
 !==================================================================================================
  module mpas_atmphys_lsm_noahinit
- use mpas_configure, only: restart => config_do_restart,  &
-                           mminlu  => input_landuse_data, &
-                           mminsl  => input_soil_data   , &
-                           input_sfc_albedo => config_sfc_snowalbedo
  use mpas_dmpar
  use mpas_grid_types
 
@@ -50,40 +46,53 @@
  contains
 
 !==================================================================================================
- subroutine noah_init_forMPAS(dminfo,mesh,diag_physics,sfc_input)
+ subroutine noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
  type(dm_info):: dminfo
- type(mesh_type):: mesh
+ type(mpas_pool_type):: mesh
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
 
 !--------------------------------------------------------------------------------------------------
 
 !read formatted files needed for land-surface model:
- call lsminit(dminfo,mesh,diag_physics,sfc_input)
+ call lsminit(dminfo,mesh,configs,diag_physics,sfc_input)
 
  end subroutine noah_init_forMPAS
 
 !==================================================================================================
- subroutine lsminit(dminfo,mesh,diag_physics,sfc_input)
+ subroutine lsminit(dminfo,mesh,configs,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
+
+!local pointers::
+ logical,pointer:: input_sfc_albedo,restart
+
+ character(len=StrKIND),pointer:: mminlu,mminsl
+
+ integer,pointer:: nCells,nSoilLevels
+ integer,dimension(:),pointer:: ivgtyp,isltyp
+
+ real(kind=RKIND),dimension(:),pointer:: snoalb,snow,snowh
+ real(kind=RKIND),dimension(:,:),pointer:: tslb,smois,sh2o
 
 !local variables:
  logical,parameter:: fndsnowh = .true.
 
- integer:: iCell,nCells,nSoilLevels
+ integer:: iCell
  integer:: errflag,ns
 
  real(kind=RKIND):: bx,fk,smcmax,psisat,free
@@ -91,23 +100,24 @@
  real(kind=RKIND),parameter:: hlice = 3.335e5
  real(kind=RKIND),parameter:: t0 = 273.15
 
- integer,dimension(:),pointer:: ivgtyp,isltyp
- real(kind=RKIND),dimension(:),pointer:: snoalb,snow,snowh
- real(kind=RKIND),dimension(:,:),pointer:: tslb,smois,sh2o
-
 !--------------------------------------------------------------------------------------------------
 
- nCells = mesh % nCells
- nSoilLevels = mesh % nSoilLevels
+ call mpas_pool_get_config(configs,'input_landuse_data'   ,mminlu          )
+ call mpas_pool_get_config(configs,'input_soil_data'      ,mminsl          )
+ call mpas_pool_get_config(configs,'config_sfc_snowalbedo',input_sfc_albedo)
+ call mpas_pool_get_config(configs,'config_do_restart'    ,restart         )
 
- isltyp => sfc_input % isltyp % array
- ivgtyp => sfc_input % ivgtyp % array
- sh2o   => sfc_input % sh2o   % array
- smois  => sfc_input % smois  % array
- tslb   => sfc_input % tslb   % array
- snoalb => sfc_input % snoalb % array
- snow   => sfc_input % snow   % array
- snowh  => sfc_input % snowh  % array
+ call mpas_pool_get_dimension(mesh,'nCells'     ,nCells     )
+ call mpas_pool_get_dimension(mesh,'nSoilLevels',nSoilLevels)
+
+ call mpas_pool_get_array(sfc_input,'isltyp', isltyp)
+ call mpas_pool_get_array(sfc_input,'ivgtyp', ivgtyp)
+ call mpas_pool_get_array(sfc_input,'sh2o'  , sh2o  )
+ call mpas_pool_get_array(sfc_input,'smois' , smois )
+ call mpas_pool_get_array(sfc_input,'tslb'  , tslb  )
+ call mpas_pool_get_array(sfc_input,'snoalb', snoalb)
+ call mpas_pool_get_array(sfc_input,'snow'  , snow  )
+ call mpas_pool_get_array(sfc_input,'snowh' , snowh )
 
 !reads the NOAH LSM tables:
  call physics_message( '    initialize NOAH LSM tables' )

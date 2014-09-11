@@ -7,8 +7,8 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_lsm
+ use mpas_kind_types
  use mpas_grid_types
- use mpas_configure
 
  use mpas_atmphys_constants
  use mpas_atmphys_landuse
@@ -59,6 +59,11 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine lsm.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+
 !>
 !> DOCUMENTATION:
 !> ./physics_wrf/module_sf_noahdrv.F: main driver for the "NOAH" land-surface parameterization.
@@ -68,7 +73,9 @@
 !> .. ust_urb2d;frc_urb2d;utype_urb2d.
 !> Laura D. Fowler (01-18-2011).
 
+
  contains
+
 
 !==================================================================================================
  subroutine allocate_lsm
@@ -203,91 +210,157 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type)   ,intent(inout):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
 
-!local variables:
+!local pointers:
+ integer,dimension(:),pointer:: isltyp,ivgtyp
+
+ real(kind=RKIND),dimension(:),pointer  :: acsnom,acsnow,canwat,chs,chs2,chklowq,cpm,cqs2,glw, &
+                                           grdflx,gsw,hfx,lai,lh,noahres,potevp,qfx,qgh,qsfc,  &
+                                           qz0,br,sfc_albedo,sfc_emibck,sfc_emiss,sfcrunoff,   &
+                                           smstav,smstot,snotime,snopcx,sr,udrunoff,z0,znt
+ real(kind=RKIND),dimension(:),pointer  :: shdmin,shdmax,snoalb,sfc_albbck,snow,snowc,snowh,tmn, &
+                                           skintemp,vegfra,xice,xland
+ real(kind=RKIND),dimension(:),pointer  :: raincv,rainncv
+ real(kind=RKIND),dimension(:,:),pointer:: sh2o,smcrel,smois,tslb,dzs
+
+!local variables and arrays:
  logical:: do_fill
-
  integer:: ip,iEdg
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_array(diag_physics,'acsnom'    ,acsnom    )
+ call mpas_pool_get_array(diag_physics,'acsnow'    ,acsnow    )
+ call mpas_pool_get_array(diag_physics,'canwat'    ,canwat    )
+ call mpas_pool_get_array(diag_physics,'chs'       ,chs       )
+ call mpas_pool_get_array(diag_physics,'chs2'      ,chs2      )
+ call mpas_pool_get_array(diag_physics,'chklowq'   ,chklowq   )
+ call mpas_pool_get_array(diag_physics,'cpm'       ,cpm       )
+ call mpas_pool_get_array(diag_physics,'cqs2'      ,cqs2      )
+ call mpas_pool_get_array(diag_physics,'glw'       ,glw       )
+ call mpas_pool_get_array(diag_physics,'grdflx'    ,grdflx    )
+ call mpas_pool_get_array(diag_physics,'gsw'       ,gsw       )
+ call mpas_pool_get_array(diag_physics,'hfx'       ,hfx       )
+ call mpas_pool_get_array(diag_physics,'lai'       ,lai       )
+ call mpas_pool_get_array(diag_physics,'lh'        ,lh        )
+ call mpas_pool_get_array(diag_physics,'noahres'   ,noahres   )
+ call mpas_pool_get_array(diag_physics,'potevp'    ,potevp    )
+ call mpas_pool_get_array(diag_physics,'qfx'       ,qfx       )
+ call mpas_pool_get_array(diag_physics,'qgh'       ,qgh       )
+ call mpas_pool_get_array(diag_physics,'qsfc'      ,qsfc      )
+ call mpas_pool_get_array(diag_physics,'qz0'       ,qz0       )
+ call mpas_pool_get_array(diag_physics,'br'        ,br        )
+ call mpas_pool_get_array(diag_physics,'raincv'    ,raincv    )
+ call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
+ call mpas_pool_get_array(diag_physics,'sfc_albedo',sfc_albedo)
+ call mpas_pool_get_array(diag_physics,'sfc_emibck',sfc_emibck)
+ call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
+ call mpas_pool_get_array(diag_physics,'sfcrunoff' ,sfcrunoff )
+ call mpas_pool_get_array(diag_physics,'smstav'    ,smstav    )
+ call mpas_pool_get_array(diag_physics,'smstot'    ,smstot    )
+ call mpas_pool_get_array(diag_physics,'snotime'   ,snotime   )
+ call mpas_pool_get_array(diag_physics,'snopcx'    ,snopcx    )
+ call mpas_pool_get_array(diag_physics,'sr'        ,sr        ) 
+ call mpas_pool_get_array(diag_physics,'udrunoff'  ,udrunoff  )
+ call mpas_pool_get_array(diag_physics,'z0'        ,z0        )
+ call mpas_pool_get_array(diag_physics,'znt'       ,znt       )
+
+ call mpas_pool_get_array(sfc_input,'isltyp'       ,isltyp    )
+ call mpas_pool_get_array(sfc_input,'ivgtyp'       ,ivgtyp    )
+ call mpas_pool_get_array(sfc_input,'shdmin'       ,shdmin    )
+ call mpas_pool_get_array(sfc_input,'shdmax'       ,shdmax    )
+ call mpas_pool_get_array(sfc_input,'snoalb'       ,snoalb    )
+ call mpas_pool_get_array(sfc_input,'sfc_albbck'   ,sfc_albbck)
+ call mpas_pool_get_array(sfc_input,'snow'         ,snow      )
+ call mpas_pool_get_array(sfc_input,'snowc'        ,snowc     )
+ call mpas_pool_get_array(sfc_input,'snowh'        ,snowh     )
+ call mpas_pool_get_array(sfc_input,'tmn'          ,tmn       )
+ call mpas_pool_get_array(sfc_input,'skintemp'     ,skintemp  )
+ call mpas_pool_get_array(sfc_input,'vegfra'       ,vegfra    )
+ call mpas_pool_get_array(sfc_input,'xice'         ,xice      )
+ call mpas_pool_get_array(sfc_input,'xland'        ,xland     )
+ call mpas_pool_get_array(sfc_input,'dzs'          ,dzs       )
+ call mpas_pool_get_array(sfc_input,'sh2o'         ,sh2o      )
+ call mpas_pool_get_array(sfc_input,'smcrel'       ,smcrel    )
+ call mpas_pool_get_array(sfc_input,'smois'        ,smois     )
+ call mpas_pool_get_array(sfc_input,'tslb'         ,tslb      )
+
  do n = 1,num_soils
-    dzs_p(n) = maxval(sfc_input%dzs%array(n,:))
+    dzs_p(n) = maxval(dzs(n,:))
  enddo
 
  do j = jts,jte
  do n = 1,num_soils
  do i = its,ite
-    sh2o_p(i,n,j)   = sfc_input % sh2o     % array(n,i)
-    smcrel_p(i,n,j) = sfc_input % smcrel   % array(n,i)
-    smois_p(i,n,j)  = sfc_input % smois    % array(n,i)
-    tslb_p(i,n,j)   = sfc_input % tslb     % array(n,i)
+    sh2o_p(i,n,j)   = sh2o(n,i)
+    smcrel_p(i,n,j) = smcrel(n,i)
+    smois_p(i,n,j)  = smois(n,i)
+    tslb_p(i,n,j)   = tslb(n,i)
  enddo
  enddo
  enddo
 
  do j = jts,jte
  do i = its,ite
-    acsnom_p(i,j)     = diag_physics % acsnom     % array(i)
-    acsnow_p(i,j)     = diag_physics % acsnow     % array(i)
-    canwat_p(i,j)     = diag_physics % canwat     % array(i)
-    chs_p(i,j)        = diag_physics % chs        % array(i)
-    chs2_p(i,j)       = diag_physics % chs2       % array(i)
-    chklowq_p(i,j)    = diag_physics % chklowq    % array(i)
-    cpm_p(i,j)        = diag_physics % cpm        % array(i)
-    cqs2_p(i,j)       = diag_physics % cqs2       % array(i)
-    glw_p(i,j)        = diag_physics % glw        % array(i)
-    grdflx_p(i,j)     = diag_physics % grdflx     % array(i)
-    gsw_p(i,j)        = diag_physics % gsw        % array(i)
-    hfx_p(i,j)        = diag_physics % hfx        % array(i)
-    lai_p(i,j)        = diag_physics % lai        % array(i)
-    lh_p(i,j)         = diag_physics % lh         % array(i)
-    noahres_p(i,j)    = diag_physics % noahres    % array(i)
-    potevp_p(i,j)     = diag_physics % potevp     % array(i)
-    qfx_p(i,j)        = diag_physics % qfx        % array(i)
-    qgh_p(i,j)        = diag_physics % qgh        % array(i)
-    qsfc_p(i,j)       = diag_physics % qsfc       % array(i)
-    qz0_p(i,j)        = diag_physics % qz0        % array(i)
-    br_p(i,j)         = diag_physics % br         % array(i)
-    sfc_albedo_p(i,j) = diag_physics % sfc_albedo % array(i)
-    sfc_emibck_p(i,j) = diag_physics % sfc_emibck % array(i)
-    sfc_emiss_p(i,j)  = diag_physics % sfc_emiss  % array(i)
-    sfcrunoff_p(i,j)  = diag_physics % sfcrunoff  % array(i)
-    smstav_p(i,j)     = diag_physics % smstav     % array(i)
-    smstot_p(i,j)     = diag_physics % smstot     % array(i)
-    snotime_p(i,j)    = diag_physics % snotime    % array(i)
-    snopcx_p(i,j)     = diag_physics % snopcx     % array(i)
-    sr_p(i,j)         = diag_physics % sr         % array(i)
-    udrunoff_p(i,j)   = diag_physics % udrunoff   % array(i)
-    z0_p(i,j)         = diag_physics % z0         % array(i)
-    znt_p(i,j)        = diag_physics % znt        % array(i)
+    acsnom_p(i,j)     = acsnom(i)
+    acsnow_p(i,j)     = acsnow(i)
+    canwat_p(i,j)     = canwat(i)
+    chs_p(i,j)        = chs(i)
+    chs2_p(i,j)       = chs2(i)
+    chklowq_p(i,j)    = chklowq(i)
+    cpm_p(i,j)        = cpm(i)
+    cqs2_p(i,j)       = cqs2(i)
+    glw_p(i,j)        = glw(i)
+    grdflx_p(i,j)     = grdflx(i)
+    gsw_p(i,j)        = gsw(i)
+    hfx_p(i,j)        = hfx(i)
+    lai_p(i,j)        = lai(i)
+    lh_p(i,j)         = lh(i)
+    noahres_p(i,j)    = noahres(i)
+    potevp_p(i,j)     = potevp(i)
+    qfx_p(i,j)        = qfx(i)
+    qgh_p(i,j)        = qgh(i)
+    qsfc_p(i,j)       = qsfc(i)
+    qz0_p(i,j)        = qz0(i)
+    br_p(i,j)         = br(i)
+    sfc_albedo_p(i,j) = sfc_albedo(i)
+    sfc_emibck_p(i,j) = sfc_emibck(i)
+    sfc_emiss_p(i,j)  = sfc_emiss(i)
+    sfcrunoff_p(i,j)  = sfcrunoff(i)
+    smstav_p(i,j)     = smstav(i)
+    smstot_p(i,j)     = smstot(i)
+    snotime_p(i,j)    = snotime(i)
+    snopcx_p(i,j)     = snopcx(i)
+    sr_p(i,j)         = sr(i)
+    udrunoff_p(i,j)   = udrunoff(i)
+    z0_p(i,j)         = z0(i)
+    znt_p(i,j)        = znt(i)
 
-    isltyp_p(i,j)     = sfc_input % isltyp     % array(i)
-    ivgtyp_p(i,j)     = sfc_input % ivgtyp     % array(i)
-    shdmin_p(i,j)     = sfc_input % shdmin     % array(i)
-    shdmax_p(i,j)     = sfc_input % shdmax     % array(i)
-    snoalb_p(i,j)     = sfc_input % snoalb     % array(i)
-    sfc_albbck_p(i,j) = sfc_input % sfc_albbck % array(i)
-    snow_p(i,j)       = sfc_input % snow       % array(i)
-    snowc_p(i,j)      = sfc_input % snowc      % array(i)
-    snowh_p(i,j)      = sfc_input % snowh      % array(i)
-    tmn_p(i,j)        = sfc_input % tmn        % array(i)
-    tsk_p(i,j)        = sfc_input % skintemp   % array(i)
-    vegfra_p(i,j)     = sfc_input % vegfra     % array(i)
-    xice_p(i,j)       = sfc_input % xice       % array(i)
-    xland_p(i,j)      = sfc_input % xland      % array(i)
+    isltyp_p(i,j)     = isltyp(i)
+    ivgtyp_p(i,j)     = ivgtyp(i)
+    shdmin_p(i,j)     = shdmin(i)
+    shdmax_p(i,j)     = shdmax(i)
+    snoalb_p(i,j)     = snoalb(i)
+    sfc_albbck_p(i,j) = sfc_albbck(i)
+    snow_p(i,j)       = snow(i)
+    snowc_p(i,j)      = snowc(i)
+    snowh_p(i,j)      = snowh(i)
+    tmn_p(i,j)        = tmn(i)
+    tsk_p(i,j)        = skintemp(i)
+    vegfra_p(i,j)     = vegfra(i)
+    xice_p(i,j)       = xice(i)
+    xland_p(i,j)      = xland(i)
 
  enddo
  enddo
 
  do j = jts,jte
  do i = its,ite
-    rainbl_p(i,j) = diag_physics % raincv % array(i) + diag_physics % rainncv % array(i)
-    swdown_p(i,j) = diag_physics % gsw % array(i) &
-                  / (1. - diag_physics % sfc_albedo % array(i))
+    rainbl_p(i,j) = raincv(i) + rainncv(i)
+    swdown_p(i,j) = gsw(i) / (1._RKIND - sfc_albedo(i))
  enddo
  enddo
 
@@ -298,93 +371,160 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type)   ,intent(inout):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
 
+!local pointers:
+ integer,dimension(:),pointer:: isltyp,ivgtyp
+
+ real(kind=RKIND),dimension(:),pointer  :: acsnom,acsnow,canwat,chs,chs2,chklowq,cpm,cqs2,glw, &
+                                           grdflx,gsw,hfx,lai,lh,noahres,potevp,qfx,qgh,qsfc,  &
+                                           qz0,br,sfc_albedo,sfc_emibck,sfc_emiss,sfcrunoff,   &
+                                           smstav,smstot,snotime,snopcx,sr,udrunoff,z0,znt
+ real(kind=RKIND),dimension(:),pointer  :: shdmin,shdmax,snoalb,sfc_albbck,snow,snowc,snowh,tmn, &
+                                           skintemp,vegfra,xice,xland
+ real(kind=RKIND),dimension(:),pointer  :: raincv,rainncv
+ real(kind=RKIND),dimension(:,:),pointer:: sh2o,smcrel,smois,tslb
+
+!local variables and arrays:
  integer:: ip,iEdg
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_array(diag_physics,'acsnom'    ,acsnom    )
+ call mpas_pool_get_array(diag_physics,'acsnow'    ,acsnow    )
+ call mpas_pool_get_array(diag_physics,'canwat'    ,canwat    )
+ call mpas_pool_get_array(diag_physics,'chs'       ,chs       )
+ call mpas_pool_get_array(diag_physics,'chs2'      ,chs2      )
+ call mpas_pool_get_array(diag_physics,'chklowq'   ,chklowq   )
+ call mpas_pool_get_array(diag_physics,'cpm'       ,cpm       )
+ call mpas_pool_get_array(diag_physics,'cqs2'      ,cqs2      )
+ call mpas_pool_get_array(diag_physics,'glw'       ,glw       )
+ call mpas_pool_get_array(diag_physics,'grdflx'    ,grdflx    )
+ call mpas_pool_get_array(diag_physics,'gsw'       ,gsw       )
+ call mpas_pool_get_array(diag_physics,'hfx'       ,hfx       )
+ call mpas_pool_get_array(diag_physics,'lai'       ,lai       )
+ call mpas_pool_get_array(diag_physics,'lh'        ,lh        )
+ call mpas_pool_get_array(diag_physics,'noahres'   ,noahres   )
+ call mpas_pool_get_array(diag_physics,'potevp'    ,potevp    )
+ call mpas_pool_get_array(diag_physics,'qfx'       ,qfx       )
+ call mpas_pool_get_array(diag_physics,'qgh'       ,qgh       )
+ call mpas_pool_get_array(diag_physics,'qsfc'      ,qsfc      )
+ call mpas_pool_get_array(diag_physics,'qz0'       ,qz0       )
+ call mpas_pool_get_array(diag_physics,'br'        ,br        )
+ call mpas_pool_get_array(diag_physics,'raincv'    ,raincv    )
+ call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
+ call mpas_pool_get_array(diag_physics,'sfc_albedo',sfc_albedo)
+ call mpas_pool_get_array(diag_physics,'sfc_emibck',sfc_emibck)
+ call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
+ call mpas_pool_get_array(diag_physics,'sfcrunoff' ,sfcrunoff )
+ call mpas_pool_get_array(diag_physics,'smstav'    ,smstav    )
+ call mpas_pool_get_array(diag_physics,'smstot'    ,smstot    )
+ call mpas_pool_get_array(diag_physics,'snotime'   ,snotime   )
+ call mpas_pool_get_array(diag_physics,'snopcx'    ,snopcx    )
+ call mpas_pool_get_array(diag_physics,'sr'        ,sr        ) 
+ call mpas_pool_get_array(diag_physics,'udrunoff'  ,udrunoff  )
+ call mpas_pool_get_array(diag_physics,'z0'        ,z0        )
+ call mpas_pool_get_array(diag_physics,'znt'       ,znt       )
+
+ call mpas_pool_get_array(sfc_input,'isltyp'       ,isltyp    )
+ call mpas_pool_get_array(sfc_input,'ivgtyp'       ,ivgtyp    )
+ call mpas_pool_get_array(sfc_input,'shdmin'       ,shdmin    )
+ call mpas_pool_get_array(sfc_input,'shdmax'       ,shdmax    )
+ call mpas_pool_get_array(sfc_input,'snoalb'       ,snoalb    )
+ call mpas_pool_get_array(sfc_input,'sfc_albbck'   ,sfc_albbck)
+ call mpas_pool_get_array(sfc_input,'snow'         ,snow      )
+ call mpas_pool_get_array(sfc_input,'snowc'        ,snowc     )
+ call mpas_pool_get_array(sfc_input,'snowh'        ,snowh     )
+ call mpas_pool_get_array(sfc_input,'tmn'          ,tmn       )
+ call mpas_pool_get_array(sfc_input,'skintemp'     ,skintemp  )
+ call mpas_pool_get_array(sfc_input,'vegfra'       ,vegfra    )
+ call mpas_pool_get_array(sfc_input,'xice'         ,xice      )
+ call mpas_pool_get_array(sfc_input,'xland'        ,xland     )
+ call mpas_pool_get_array(sfc_input,'sh2o'         ,sh2o      )
+ call mpas_pool_get_array(sfc_input,'smcrel'       ,smcrel    )
+ call mpas_pool_get_array(sfc_input,'smois'        ,smois     )
+ call mpas_pool_get_array(sfc_input,'tslb'         ,tslb      )
+
  do j = jts,jte
  do n = 1,num_soils
  do i = its,ite
-    sfc_input % sh2o   % array(n,i) = sh2o_p(i,n,j)
-    sfc_input % smcrel % array(n,i) = smcrel_p(i,n,j)
-    sfc_input % smois  % array(n,i) = smois_p(i,n,j)
-    sfc_input % tslb   % array(n,i) = tslb_p(i,n,j)
+    sh2o(n,i)   = sh2o_p(i,n,j)
+    smcrel(n,i) = smcrel_p(i,n,j)
+    smois(n,i)  = smois_p(i,n,j)
+    tslb(n,i)   = tslb_p(i,n,j)
  enddo
  enddo
  enddo
 
  do j = jts,jte
  do i = its,ite
-    diag_physics % acsnom     % array(i) = acsnom_p(i,j)
-    diag_physics % acsnow     % array(i) = acsnow_p(i,j)
-    diag_physics % canwat     % array(i) = canwat_p(i,j)
-    diag_physics % chs        % array(i) = chs_p(i,j)
-    diag_physics % chs2       % array(i) = chs2_p(i,j)
-    diag_physics % chklowq    % array(i) = chklowq_p(i,j)
-    diag_physics % cpm        % array(i) = cpm_p(i,j)
-    diag_physics % cqs2       % array(i) = cqs2_p(i,j)
-    diag_physics % glw        % array(i) = glw_p(i,j)
-    diag_physics % grdflx     % array(i) = grdflx_p(i,j)
-    diag_physics % gsw        % array(i) = gsw_p(i,j)
-    diag_physics % hfx        % array(i) = hfx_p(i,j)
-    diag_physics % lai        % array(i) = lai_p(i,j)
-    diag_physics % lh         % array(i) = lh_p(i,j)
-    diag_physics % noahres    % array(i) = noahres_p(i,j)
-    diag_physics % potevp     % array(i) = potevp_p(i,j)
-    diag_physics % qfx        % array(i) = qfx_p(i,j)
-    diag_physics % qgh        % array(i) = qgh_p(i,j)
-    diag_physics % qsfc       % array(i) = qsfc_p(i,j)
-    diag_physics % qz0        % array(i) = qz0_p(i,j)
-    diag_physics % br         % array(i) = br_p(i,j)
-    diag_physics % sfc_albedo % array(i) = sfc_albedo_p(i,j)
-    diag_physics % sfc_emibck % array(i) = sfc_emibck_p(i,j)
-    diag_physics % sfc_emiss  % array(i) = sfc_emiss_p(i,j)
-    diag_physics % sfcrunoff  % array(i) = sfcrunoff_p(i,j)
-    diag_physics % smstav     % array(i) = smstav_p(i,j)
-    diag_physics % smstot     % array(i) = smstot_p(i,j)
-    diag_physics % snotime    % array(i) = snotime_p(i,j)
-    diag_physics % snopcx     % array(i) = snopcx_p(i,j)
-    diag_physics % sr         % array(i) = sr_p(i,j)
-    diag_physics % udrunoff   % array(i) = udrunoff_p(i,j)
-    diag_physics % z0         % array(i) = z0_p(i,j)
-    diag_physics % znt        % array(i) = znt_p(i,j)
+    acsnom(i)     = acsnom_p(i,j)
+    acsnow(i)     = acsnow_p(i,j)
+    canwat(i)     = canwat_p(i,j)
+    chs(i)        = chs_p(i,j)
+    chs2(i)       = chs2_p(i,j)
+    chklowq(i)    = chklowq_p(i,j)
+    cpm(i)        = cpm_p(i,j)
+    cqs2(i)       = cqs2_p(i,j)
+    glw(i)        = glw_p(i,j)
+    grdflx(i)     = grdflx_p(i,j)
+    gsw(i)        = gsw_p(i,j)
+    hfx(i)        = hfx_p(i,j)
+    lai(i)        = lai_p(i,j)
+    lh(i)         = lh_p(i,j)
+    noahres(i)    = noahres_p(i,j)
+    potevp(i)     = potevp_p(i,j)
+    qfx(i)        = qfx_p(i,j)
+    qgh(i)        = qgh_p(i,j)
+    qsfc(i)       = qsfc_p(i,j)
+    qz0(i)        = qz0_p(i,j)
+    br(i)         = br_p(i,j)
+    sfc_albedo(i) = sfc_albedo_p(i,j)
+    sfc_emibck(i) = sfc_emibck_p(i,j)
+    sfc_emiss(i)  = sfc_emiss_p(i,j)
+    sfcrunoff(i)  = sfcrunoff_p(i,j)
+    smstav(i)     = smstav_p(i,j)
+    smstot(i)     = smstot_p(i,j)
+    snotime(i)    = snotime_p(i,j)
+    snopcx(i)     = snopcx_p(i,j)
+    sr(i)         = sr_p(i,j)
+    udrunoff(i)   = udrunoff_p(i,j)
+    z0(i)         = z0_p(i,j)
+    znt(i)        = znt_p(i,j)
 
-    !not needed ?:
-    sfc_input % isltyp     % array(i) = isltyp_p(i,j)
-    sfc_input % ivgtyp     % array(i) = ivgtyp_p(i,j)
-    sfc_input % shdmin     % array(i) = shdmin_p(i,j)
-    sfc_input % shdmax     % array(i) = shdmax_p(i,j)
-    sfc_input % snoalb     % array(i) = snoalb_p(i,j)
-    sfc_input % sfc_albbck % array(i) = sfc_albbck_p(i,j)
-    sfc_input % snow       % array(i) = snow_p(i,j)
-    sfc_input % snowc      % array(i) = snowc_p(i,j)
-    sfc_input % snowh      % array(i) = snowh_p(i,j)
-    sfc_input % skintemp   % array(i) = tsk_p(i,j)
-    sfc_input % tmn        % array(i) = tmn_p(i,j)
-    sfc_input % vegfra     % array(i) = vegfra_p(i,j)
-    sfc_input % xice       % array(i) = xice_p(i,j)
-    sfc_input % xland      % array(i) = xland_p(i,j)
-
+    isltyp(i)     = isltyp_p(i,j)
+    ivgtyp(i)     = ivgtyp_p(i,j)
+    shdmin(i)     = shdmin_p(i,j)
+    shdmax(i)     = shdmax_p(i,j)
+    snoalb(i)     = snoalb_p(i,j)
+    sfc_albbck(i) = sfc_albbck_p(i,j)
+    snow(i)       = snow_p(i,j)
+    snowc(i)      = snowc_p(i,j)
+    snowh(i)      = snowh_p(i,j)
+    skintemp(i)   = tsk_p(i,j)
+    tmn(i)        = tmn_p(i,j)
+    vegfra(i)     = vegfra_p(i,j)
+    xice(i)       = xice_p(i,j)
+    xland(i)      = xland_p(i,j)
  enddo
  enddo
 
  end subroutine lsm_to_MPAS
  
 !==================================================================================================
- subroutine init_lsm(dminfo,mesh,diag_physics,sfc_input)
+ subroutine init_lsm(dminfo,mesh,configs,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type):: mesh
+ type(mpas_pool_type):: mesh
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
@@ -394,7 +534,7 @@
 
     case ("noah")
        write(0,*) '    enter subroutine noah_init_forMPAS:'
-       call noah_init_forMPAS(dminfo,mesh,diag_physics,sfc_input)
+       call noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
        write(0,*) '    end subroutine noah_init_forMPAS'
     
     case default
@@ -406,16 +546,21 @@
  end subroutine init_lsm
 
 !==================================================================================================
- subroutine driver_lsm(itimestep,mesh,diag_physics,sfc_input)
+ subroutine driver_lsm(itimestep,configs,mesh,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type),intent(inout)   :: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
+
+!local pointers:
+ logical,pointer:: config_sfc_albedo
+ character(len=StrKIND),pointer:: input_landuse_data
 
 !---------------------------------------------------------------------------------------------
  write(0,*)
@@ -424,12 +569,16 @@
  write(0,*) '--- iswater = ', iswater
  write(0,*) '--- isurban = ', isurban
 
+ call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
+ call mpas_pool_get_config(configs,'input_landuse_data',input_landuse_data)
+
 !formats:
  101 format(2i6,8(1x,e15.8))
  102 format(3i6,8(1x,e15.8))
 
 !copy MPAS arrays to local arrays:
  call lsm_from_MPAS(mesh,diag_physics,sfc_input)
+ write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
  lsm_select: select case (trim(lsm_scheme))
@@ -461,11 +610,11 @@
                 xice_threshold   = xice_threshold     ,                                       &
                 usemonalb        = config_sfc_albedo  ,                                       &
                 mminlu           = input_landuse_data ,                                       &
-                num_soil_layers  = num_soil_layers    ,                                       &         
-                num_roof_layers  = num_soil_layers    ,                                       &
-                num_wall_layers  = num_soil_layers    ,                                       &
-                num_road_layers  = num_soil_layers    ,                                       &
-                num_urban_layers = num_soil_layers    ,                                       &
+                num_soil_layers  = num_soils          ,                                       &         
+                num_roof_layers  = num_soils    ,                                             &
+                num_wall_layers  = num_soils    ,                                             &
+                num_road_layers  = num_soils    ,                                             &
+                num_urban_layers = num_soils    ,                                             &
                 sf_urban_physics = sf_urban_physics   ,                                       &
                 ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,       &
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,       &

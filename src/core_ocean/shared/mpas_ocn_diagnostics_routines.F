@@ -21,7 +21,6 @@
 module ocn_diagnostics_routines
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
    use mpas_timer
 
@@ -67,7 +66,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, mesh, normalVelocity, err)!{{{
+   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -75,8 +74,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          
+      type (mpas_pool_type), intent(in) :: &
+         meshPool
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity
@@ -101,7 +100,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iVertex, iEdge, i, k, nEdges, nVertices, vertexDegree
+      integer :: iVertex, iEdge, i, k
+      integer, pointer :: nEdges, nVertices, vertexDegree
       integer, dimension(:), pointer :: maxLevelVertexBot
       integer, dimension(:,:), pointer :: edgesOnVertex, edgeSignOnVertex
 
@@ -109,16 +109,16 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
               dcEdge, areaTriangle
 
-      nEdges      = mesh % nEdges
-      nVertices   = mesh % nVertices
-      vertexDegree = mesh % vertexDegree
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-      maxLevelVertexBot => mesh % maxLevelVertexBot % array
-      edgesOnVertex     => mesh % edgesOnVertex % array
-      edgeSignOnVertex => mesh % edgeSignOnVertex % array
+      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
+      call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
 
-      areaTriangle      => mesh % areaTriangle % array
-      dcEdge            => mesh % dcEdge % array
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
       err = 0
 

@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_control
- use mpas_configure
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_utilities
@@ -39,13 +39,46 @@
 !>    * removed the namelist option config_eddy_scheme and associated sourcecode.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>    * removed controls to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+
 
  contains
 
+
 !==================================================================================================
- subroutine physics_namelist_check
+ subroutine physics_namelist_check(mesh,configs)
 !==================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: config_microp_scheme,    &
+                                  config_conv_deep_scheme, &
+                                  config_lsm_scheme,       &
+                                  config_pbl_scheme,       &
+                                  config_gwdo_scheme,      &
+                                  config_radt_cld_scheme,  &
+                                  config_radt_lw_scheme,   &
+                                  config_radt_sw_scheme,   &
+                                  config_sfclayer_scheme
+
+!--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme'   ,config_microp_scheme   )
+ call mpas_pool_get_config(configs,'config_conv_deep_scheme',config_conv_deep_scheme)
+ call mpas_pool_get_config(configs,'config_lsm_scheme'      ,config_lsm_scheme      )
+ call mpas_pool_get_config(configs,'config_pbl_scheme'      ,config_pbl_scheme      )
+ call mpas_pool_get_config(configs,'config_gwdo_scheme'     ,config_gwdo_scheme     )
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme' ,config_radt_cld_scheme )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
 
  write(0,*)
  write(0,*) '--- enter subroutine physics_namelist_check:'
@@ -195,18 +228,34 @@
  end subroutine physics_namelist_check
 
 !==================================================================================================
- subroutine physics_registry_init(config_do_restart,mesh,sfc_input)
+ subroutine physics_registry_init(mesh,configs,sfc_input)
 !==================================================================================================
 
-!input and output arguments:
- logical,intent(in):: config_do_restart
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(inout):: sfc_input
+!input and inout arguments:
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(inout):: sfc_input
+
+!local pointers:
+ logical,pointer:: config_do_restart
+ character(len=StrKIND),pointer:: config_lsm_scheme
+ integer,pointer:: nCells
+ integer,dimension(:),pointer:: landmask
+
+ real(kind=RKIND),dimension(:,:),pointer:: dzs
 
 !local variables:
  integer:: iCell
- 
+
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
+ call mpas_pool_get_config(configs,'config_lsm_scheme',config_lsm_scheme)
+
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+
+ call mpas_pool_get_array(sfc_input,'landmask',landmask)
+ call mpas_pool_get_array(sfc_input,'dzs'     , dzs    )
 
 !initialization of input variables, if needed:
 
@@ -216,12 +265,12 @@
 
        case("noah")
        !initialize the thickness of the soil layers for the Noah scheme:
-          do iCell = 1, mesh % nCells
-             if(sfc_input % landmask % array(iCell) == 1) then  
-                sfc_input % dzs % array(1,iCell) = 0.10
-                sfc_input % dzs % array(2,iCell) = 0.30
-                sfc_input % dzs % array(3,iCell) = 0.60
-                sfc_input % dzs % array(4,iCell) = 1.00
+          do iCell = 1, nCells
+             if(landmask(iCell) == 1) then  
+                dzs(1,iCell) = 0.10_RKIND
+                dzs(2,iCell) = 0.30_RKIND
+                dzs(3,iCell) = 0.60_RKIND
+                dzs(4,iCell) = 1.00_RKIND
              endif
           enddo
 
@@ -238,51 +287,86 @@
 !==================================================================================================
 
 !input and output arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(inout):: sfc_input
+
+!local pointers: 
+ integer,pointer:: nCells,nMonths,nSoilLevels
+ integer,dimension(:),pointer:: isltyp,ivgtyp,landmask
+ 
+ real(kind=RKIND),dimension(:),pointer:: shdmin,shdmax,snoalb,snow,snowc,ter,vegfra,xice
+ real(kind=RKIND),dimension(:),pointer:: skintemp,sst,tmn
+ real(kind=RKIND),dimension(:,:),pointer:: tslb,smcrel,sh2o,smois,dzs
+ real(kind=RKIND),dimension(:,:),pointer:: albedo12m,greenfrac
 
 !local variables:
  integer:: iCell,iMonth,iSoil
  
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+ call mpas_pool_get_dimension(mesh,'nMonths',nMonths)
+ call mpas_pool_get_dimension(mesh,'nSoilLevel',nSoilLevels)
+
+ call mpas_pool_get_array(sfc_input,'isltyp'   ,isltyp   )
+ call mpas_pool_get_array(sfc_input,'ivgtyp'   ,ivgtyp   )
+ call mpas_pool_get_array(sfc_input,'landmask' ,landmask )
+ call mpas_pool_get_array(sfc_input,'shdmin'   ,shdmin   )
+ call mpas_pool_get_array(sfc_input,'shdmax'   ,shdmax   )
+ call mpas_pool_get_array(sfc_input,'snoalb'   ,snoalb   )
+ call mpas_pool_get_array(sfc_input,'snow'     ,snow     )
+ call mpas_pool_get_array(sfc_input,'snowc'    ,snowc    )
+ call mpas_pool_get_array(sfc_input,'ter'      ,ter      )
+ call mpas_pool_get_array(sfc_input,'vegfra'   ,vegfra   )
+ call mpas_pool_get_array(sfc_input,'xice'     ,xice     )
+ call mpas_pool_get_array(sfc_input,'skintemp' ,skintemp )
+ call mpas_pool_get_array(sfc_input,'sst'      ,sst      )
+ call mpas_pool_get_array(sfc_input,'tmn'      ,tmn      )
+ call mpas_pool_get_array(sfc_input,'dzs'      ,dzs      )
+ call mpas_pool_get_array(sfc_input,'sh2o'     ,sh2o     )
+ call mpas_pool_get_array(sfc_input,'smcrel'   ,smcrel   )
+ call mpas_pool_get_array(sfc_input,'smois'    ,smois    )
+ call mpas_pool_get_array(sfc_input,'tslb'     ,tslb     )
+ call mpas_pool_get_array(sfc_input,'albedo12m',albedo12m)
+ call mpas_pool_get_array(sfc_input,'greenfrac',greenfrac)
+
 !initialization of surface input variables that are not needed if we run the current set of
 !idealized test cases:
 
- do iCell = 1, mesh % nCells
+ do iCell = 1, nCells
     !terrain,soil type, and vegetation:
-    sfc_input % ter      % array(iCell) = 0.
-    sfc_input % xice     % array(iCell) = 0.
-    sfc_input % landmask % array(iCell) = 0
-    sfc_input % ivgtyp   % array(iCell) = 0
-    sfc_input % isltyp   % array(iCell) = 0
-    sfc_input % shdmin   % array(iCell) = 0.
-    sfc_input % shdmax   % array(iCell) = 0.
-    sfc_input % vegfra   % array(iCell) = 0.
+    landmask(iCell) = 0
+    ivgtyp(iCell)   = 0
+    isltyp(iCell)   = 0
+    ter(iCell)      = 0._RKIND
+    xice(iCell)     = 0._RKIND
+    shdmin(iCell)   = 0._RKIND
+    shdmax(iCell)   = 0._RKIND
+    vegfra(iCell)   = 0._RKIND
 
     !snow coverage:    
-    sfc_input % snow     % array(iCell) = 0.
-    sfc_input % snowc    % array(iCell) = 0.
-    sfc_input % snoalb   % array(iCell) = 0.08 
+    snow(iCell)   = 0._RKIND
+    snowc(iCell)  = 0._RKIND
+    snoalb(iCell) = 0.08_RKIND
     
     !surface and sea-surface temperatures:
-    sfc_input % skintemp % array(iCell) = 288.0
-    sfc_input % sst      % array(iCell) = 288.0
+    skintemp(iCell) = 288._RKIND
+    sst(iCell)      = 288._RKIND
     
     !soil layers:
-    sfc_input % tmn % array(iCell) = 288.0
-    do iSoil = 1, mesh % nSoilLevels
-       sfc_input % tslb % array(iSoil,iCell)   = 288.0
-       sfc_input % smcrel % array(iSoil,iCell) =   0.0
-       sfc_input % sh2o   % array(iSoil,iCell) =   0.0
-       sfc_input % smois  % array(iSoil,iCell) =   0.0
-       sfc_input % dzs    % array(iSoil,iCell) =   0.0
+    tmn(iCell) = 288._RKIND
+    do iSoil = 1, nSoilLevels
+       dzs(iSoil,iCell)    =   0._RKIND
+       sh2o(iSoil,iCell)   =   0._RKIND
+       smcrel(iSoil,iCell) =   0._RKIND
+       smois(iSoil,iCell)  =   0._RKIND
+       tslb(iSoil,iCell)   = 288._RKIND
     enddo
 
     !monthly climatological surface albedo and greeness fraction:
-    do iMonth = 1, mesh % nMonths
-       sfc_input % albedo12m % array(iMonth,iCell) = 0.08
-       sfc_input % greenfrac % array(iMonth,iCell) = 0.
+    do iMonth = 1, nMonths
+       albedo12m(iMonth,iCell) = 0.08_RKIND
+       greenfrac(iMonth,iCell) = 0._RKIND
     enddo
 
  enddo   

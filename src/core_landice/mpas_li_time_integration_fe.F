@@ -31,6 +31,7 @@ module li_time_integration_fe
    use li_velocity, only: li_velocity_solve
    use li_tendency
    use li_diagnostic_vars
+   use li_setup
 
    implicit none
    private
@@ -75,52 +76,32 @@ module li_time_integration_fe
    subroutine li_time_integrator_forwardeuler(domain, deltat, err)
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(in) :: deltat  !< Input: time step
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
-
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object 
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
-      type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (state_type), pointer :: stateOld, stateNew
-      type (mesh_type), pointer :: mesh
-
-      real (kind=RKIND), dimension(:), pointer :: thicknessOld, thicknessNew, layerThicknessFractions, iceAreaOld, iceAreaNew, iceArea_tend
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityOld, normalVelocityNew, layerThicknessOld, layerThicknessNew, layerThickness_tend
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracer_tendency, tracersNew, tracersOld
-      integer, dimension(:), pointer :: cellMaskOld
-      integer :: nVertLevels, k, iEdge, iTracer
       integer :: err_tmp
-      
+
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       ! (time level 1 should not be modified.)
 
-      dminfo => domain % dminfo
 !!!      procVertexMaskChanged = 0
 
 ! === Implicit column physics (vertical temperature diffusion) ===========
@@ -186,43 +167,38 @@ module li_time_integration_fe
    subroutine calculate_tendencies(domain, deltat, err)
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
-
       real (kind=RKIND) :: deltat
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
-
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (state_type), pointer :: stateOld
-      type (mesh_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: tendPool
+
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness_tend
+      type (field2DReal), pointer :: layerThickness_tend_field
       integer :: allowableDtProcNumber, allowableDtMinProcNumber
       real (kind=RKIND) :: allowableDt, allowableDtMin
+      logical, pointer :: config_print_thickness_advection_info
 
       err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       dminfo => domain % dminfo
 
@@ -231,20 +207,23 @@ module li_time_integration_fe
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         mesh => block % mesh
-         stateOld => block % state % time_levs(1) % state
-         layerThickness_tend => block % tend % layerThickness % array
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+         call mpas_pool_get_array(tendPool, 'layerThickness', layerThickness_tend)
 
          ! Calculate thickness tendency using state at time n =========
-         call li_tendency_thickness(mesh, stateOld, layerThickness_tend, deltat, dminfo, allowableDt, err)
+         call li_tendency_thickness(meshPool, statePool, layerThickness_tend, deltat, dminfo, allowableDt, err)
 
          block => block % next
       end do
 
       ! Now that we have exited the block loop, do any needed halo updates.
-      ! update halos on thickness tend 
+      ! update halos on thickness tend
       call mpas_timer_start("halo updates")
-      call mpas_dmpar_exch_halo_field(domain % blocklist % tend % layerThickness)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
+      call mpas_pool_get_field(tendPool, 'layerThickness', layerThickness_tend_field)
+      call mpas_dmpar_exch_halo_field(layerThickness_tend_field)
       call mpas_timer_stop("halo updates")
 
       ! If we are printing advection debug information, 
@@ -331,37 +310,29 @@ module li_time_integration_fe
    subroutine update_prognostics(domain, deltat, err)
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
-
       real (kind=RKIND) :: deltat
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
-
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (mesh_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: meshPool, statePool, tendPool
+      integer, pointer :: nCells
+      logical, pointer :: config_print_thickness_advection_info
+
       real (kind=RKIND), dimension(:), pointer :: thicknessNew, layerThicknessFractions
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessOld, layerThicknessNew, layerThickness_tend
 !!!      real (kind=RKIND), dimension(:,:,:), pointer :: tracer_tendency, tracersNew, tracersOld
@@ -371,25 +342,30 @@ module li_time_integration_fe
       err = 0
 
       dminfo => domain % dminfo
+      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       block => domain % blocklist
       do while (associated(block))
          ! Mesh information
-         mesh => block % mesh
-         layerThicknessFractions => mesh % layerThicknessFractions % array
+
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
          ! State at time n
-         layerThicknessOld => block % state % time_levs(1) % state % layerThickness % array
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessOld, timeLevel=1)
 !!!         tracersOld => stateOld % tracers % array
 !!!         cellMaskOld => stateOld % cellMask % array
 
          ! State at time n+1 (advanced by dt by Forward Euler)
-         thicknessNew => block % state % time_levs(2) % state % thickness % array
-         layerThicknessNew => block % state % time_levs(2) % state % layerThickness % array
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, timeLevel=2)
+         call mpas_pool_get_array(statePool, 'thickness', thicknessNew, timeLevel=2)
 !!!         tracersNew => stateNew % tracers % array
 
          ! Tendencies
-         layerThickness_tend => block % tend % layerThickness % array
+         call mpas_pool_get_array(tendPool, 'layerThickness', layerThickness_tend)
 !!!         tracer_tendency => block % tend % tracers % array
 
 
@@ -401,15 +377,15 @@ module li_time_integration_fe
          !!!stateNew % sup_thickness % array(1,:,:) = (stateOld % tracers % array(stateOld % index_temperature,:,:) * layerThicknessOld  + tracer_tendency(stateOld % index_temperature, :, :) * dt / SecondsInYear) / (layerThicknessNew+1.0e-12)
 
 
-         layerThicknessNew = layerThicknessOld + layerThickness_tend * deltat 
-         thicknessNew = sum(layerThicknessNew, 1)     
+         layerThicknessNew = layerThicknessOld + layerThickness_tend * deltat
+         thicknessNew = sum(layerThicknessNew, 1)
 
 
          !Optionally print some information about the new thickness
          !print *, 'thickness_tend maxval:', maxval(thickness_tend(1:mesh % nCellsSolve))       
          !print *, 'thicknessOld maxval:', maxval(thicknessOld(1:mesh % nCellsSolve))
          !print *, '  thicknessNew maxval:', maxval(thicknessNew(1:mesh % nCellsSolve))
-         allocate(masktmp(mesh%nCells + 1))
+         allocate( masktmp(nCells + 1) )
          masktmp = 0
 
 !!!         ! if holding advance within initial extent of ice, set thickness to 0 anywhere it has expanded beyond initial extent

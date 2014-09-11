@@ -23,7 +23,7 @@
 module ocn_tracer_hmix_del4
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del4_tend(mesh, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,8 +83,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge    !< Input: thickness at edge
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -112,8 +112,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, num_tracers, nVertLevels, nCells
+      integer :: iEdge, num_tracers
       integer :: iTracer, k, iCell, cell1, cell2, i
+      integer, pointer :: nEdges, nVertLevels, nCells
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
@@ -135,27 +136,27 @@ contains
 
       err = 0
 
-      if (.not.del4On) return
+      if ( .not. del4On ) return
 
-      nEdges = mesh % nEdges
-      nCells = mesh % nCells
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
-      nVertLevels = mesh % nVertLevels
 
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      maxLevelCell => mesh % maxLevelCell % array
-      cellsOnEdge => mesh % cellsOnEdge % array
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      dcEdge => mesh % dcEdge % array
-      dvEdge => mesh % dvEdge % array
-      areaCell => mesh % areaCell % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
 
-      edgeMask => mesh % edgeMask % array
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell => mesh % edgesOnCell % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
 
@@ -234,7 +235,14 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_use_tracer_del4
+      real (kind=RKIND), pointer :: config_tracer_del4
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tracer_del4', config_use_tracer_del4)
+      call mpas_pool_get_config(ocnConfigs, 'config_tracer_del4', config_tracer_del4)
+
       del4on = .false.
 
       if ( config_tracer_del4 > 0.0 ) then
@@ -242,7 +250,7 @@ contains
           eddyDiff4 = config_tracer_del4
       endif
 
-      if(.not.config_use_tracer_del4) del4on = .false.
+      if ( .not. config_use_tracer_del4 ) del4on = .false.
 
    !--------------------------------------------------------------------
 

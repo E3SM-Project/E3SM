@@ -206,34 +206,6 @@ include 'mpif.h'
    end subroutine mpas_dmpar_abort!}}}
 
 !-----------------------------------------------------------------------
-!  routine mpas_dmpar_global_abort
-!
-!> \brief MPAS dmpar global abort routine.
-!> \author Michael Duda
-!> \date   03/26/13
-!> \details
-!>  This routine aborts MPI. A call to it kills the model through the use of MPI_Abort on the world communicator, and outputs a message.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_dmpar_global_abort(mesg)!{{{
-
-      implicit none
-
-      character (len=*), intent(in) :: mesg !< Input: Abort message
-
-#ifdef _MPI
-      integer :: mpi_ierr, mpi_errcode
-
-      write(stderrUnit,*) trim(mesg)
-      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
-#endif
-
-      write(stderrUnit,*) trim(mesg)
-      stop
-
-   end subroutine mpas_dmpar_global_abort!}}}
-
-!-----------------------------------------------------------------------
 !  routine mpas_dmpar_bcast_int
 !
 !> \brief MPAS dmpar broadcast integer routine.
@@ -5742,3 +5714,37 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
    end subroutine mpas_dmpar_copy_field5d_real!}}}
 
 end module mpas_dmpar
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_global_abort
+!
+!> \brief MPAS dmpar global abort routine.
+!> \author Michael Duda
+!> \date   03/26/13
+!> \details
+!>  This routine aborts MPI. A call to it kills the model through the use of MPI_Abort on the world communicator, and outputs a message.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_global_abort(mesg)!{{{
+
+      use mpas_io_units
+
+      implicit none
+
+      include 'mpif.h'
+
+      character (len=*), intent(in) :: mesg !< Input: Abort message
+
+#ifdef _MPI
+      integer :: mpi_ierr, mpi_errcode
+
+      write(stderrUnit,*) trim(mesg)
+      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
+#endif
+
+      write(stderrUnit,*) trim(mesg)
+      stop
+
+   end subroutine mpas_dmpar_global_abort!}}}
+
+

@@ -23,7 +23,8 @@
 module ocn_tracer_hmix_del2
 
    use mpas_grid_types
-   use mpas_configure
+
+   use ocn_constants
 
    implicit none
    private
@@ -72,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del2_tend(mesh, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,8 +84,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge    !< Input: thickness at edge
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -112,8 +113,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, iEdge, nCells, nVertLevels, cell1, cell2
+      integer :: iCell, iEdge, cell1, cell2
       integer :: i, k, iTracer, num_tracers
+      integer, pointer :: nCells, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask, edgesOnCell, edgeSignOnCell
@@ -126,21 +128,21 @@ contains
 
       if (.not.del2On) return
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
 
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      edgeMask => mesh % edgeMask % array
-      areaCell => mesh % areaCell % array
-      dvEdge => mesh % dvEdge % array
-      dcEdge => mesh % dcEdge % array
-      meshScalingDel2 => mesh % meshScalingDel2 % array
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
 
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell => mesh % edgesOnCell % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)
@@ -195,7 +197,13 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_use_tracer_del2
+      real (kind=RKIND), pointer :: config_tracer_del2
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tracer_del2', config_use_tracer_del2)
+      call mpas_pool_get_config(ocnConfigs, 'config_tracer_del2', config_tracer_del2)
 
       del2on = .false.
 

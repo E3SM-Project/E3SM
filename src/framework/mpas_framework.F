@@ -53,6 +53,8 @@ module mpas_framework
 
       integer, intent(in), optional :: stdoutUnit, stderrUnit
 
+      character (len=StrKIND), pointer :: config_calendar_type
+      integer, pointer :: config_pio_num_iotasks, config_pio_stride
       integer :: pio_num_iotasks
       integer :: pio_stride
 
@@ -60,13 +62,23 @@ module mpas_framework
       call mpas_io_units_init(stdoutUnit, stderrUnit)
       call mpas_dmpar_init(dminfo, mpi_comm)
 
-      if (.not.present(nml_filename)) then
-        call mpas_read_namelist(dminfo, domain % namelist_filename)
-      else
-        call mpas_read_namelist(dminfo, nml_filename)
-      end if
+#ifdef MPAS_DEBUG
+      call mpas_pool_set_error_level(MPAS_POOL_WARN)
+#endif
 
       call mpas_allocate_domain(domain, dminfo)
+
+      if (.not. present(nml_filename)) then
+         call mpas_setup_namelists(domain % configs, domain % namelist_filename, domain % dminfo)
+      else
+         call mpas_setup_namelists(domain % configs, nml_filename, domain % dminfo)
+      end if
+
+      call mpas_pool_get_config(domain % configs, 'config_calendar_type', config_calendar_type)
+      call mpas_pool_get_config(domain % configs, 'config_pio_num_iotasks', config_pio_num_iotasks)
+      call mpas_pool_get_config(domain % configs, 'config_pio_stride', config_pio_stride)
+
+      call mpas_generate_packages(domain % packages)
       
       if(present(calendar)) then
         call mpas_timekeeping_init(calendar)

@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_pbl
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants
@@ -49,9 +50,14 @@
 !>    * in call to subroutine ysu, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_pbl
@@ -134,29 +140,48 @@
 !==================================================================================================
 
 !input arguments:
- type(diag_physics_type),intent(in):: diag_physics
- type(sfc_input_type),intent(in)   :: sfc_input
+ type(mpas_pool_type),intent(in):: diag_physics
+ type(mpas_pool_type),intent(in):: sfc_input
+
+!local pointers:
+ real(kind=RKIND),dimension(:),pointer:: xland
+ real(kind=RKIND),dimension(:),pointer:: br,gz1oz0,hfx,hpbl,fm,fh,qfx,regime,u10,ust,v10,wspd,znt
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_array(diag_physics,'br'    ,br    )
+ call mpas_pool_get_array(diag_physics,'gz1oz0',gz1oz0)
+ call mpas_pool_get_array(diag_physics,'hfx'   ,hfx   )
+ call mpas_pool_get_array(diag_physics,'hpbl'  ,hpbl  )
+ call mpas_pool_get_array(diag_physics,'fm'    ,fm    )
+ call mpas_pool_get_array(diag_physics,'fh'    ,fh    )
+ call mpas_pool_get_array(diag_physics,'qfx'   ,qfx   )
+ call mpas_pool_get_array(diag_physics,'regime',regime)
+ call mpas_pool_get_array(diag_physics,'u10'   ,u10   )
+ call mpas_pool_get_array(diag_physics,'ust'   ,ust   )
+ call mpas_pool_get_array(diag_physics,'v10'   ,v10   )
+ call mpas_pool_get_array(diag_physics,'wspd'  ,wspd  )
+ call mpas_pool_get_array(diag_physics,'znt'   ,znt   )
+ call mpas_pool_get_array(sfc_input   ,'xland' ,xland )
 
  do j = jts,jte
  do i = its,ite
 !from surface-layer model:
-    br_p(i,j)     = diag_physics % br     % array(i)
-    gz1oz0_p(i,j) = diag_physics % gz1oz0 % array(i)
-    hfx_p(i,j)    = diag_physics % hfx    % array(i)
-    hpbl_p(i,j)   = diag_physics % hpbl   % array(i)
-    psim_p(i,j)   = diag_physics % fm     % array(i)
-    psih_p(i,j)   = diag_physics % fh     % array(i)
-    qfx_p(i,j)    = diag_physics % qfx    % array(i)
-    regime_p(i,j) = diag_physics % regime % array(i)
-    u10_p(i,j)    = diag_physics % u10    % array(i)
-    ust_p(i,j)    = diag_physics % ust    % array(i)
-    v10_p(i,j)    = diag_physics % v10    % array(i)
-    wspd_p(i,j)   = diag_physics % wspd   % array(i)
-    znt_p(i,j)    = diag_physics % znt    % array(i)
+    br_p(i,j)     = br(i)
+    gz1oz0_p(i,j) = gz1oz0(i)
+    hfx_p(i,j)    = hfx(i)
+    hpbl_p(i,j)   = hpbl(i)
+    psim_p(i,j)   = fm(i)
+    psih_p(i,j)   = fh(i)
+    qfx_p(i,j)    = qfx(i)
+    regime_p(i,j) = regime(i)
+    u10_p(i,j)    = u10(i)
+    ust_p(i,j)    = ust(i)
+    v10_p(i,j)    = v10(i)
+    wspd_p(i,j)   = wspd(i)
+    znt_p(i,j)    = znt(i)
 
-    xland_p(i,j)  = sfc_input % xland  % array(i)       
+    xland_p(i,j)  = xland(i)       
 !initialization for YSU PBL scheme:
     ctopo_p(i,j)  = 1._RKIND
     ctopo2_p(i,j) = 1._RKIND
@@ -189,32 +214,52 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
+
+!local pointers:
+ integer,dimension(:),pointer:: kpbl
+ real(kind=RKIND),dimension(:),pointer  :: hpbl
+ real(kind=RKIND),dimension(:,:),pointer:: exch_h,kzh,kzm,kzq
+ real(kind=RKIND),dimension(:,:),pointer:: rublten,rvblten,rthblten,rqvblten,rqcblten,rqiblten
 
 !--------------------------------------------------------------------------------------------------
- 
+
+ call mpas_pool_get_array(diag_physics,'kpbl'  ,kpbl  )
+ call mpas_pool_get_array(diag_physics,'hpbl'  ,hpbl  )
+ call mpas_pool_get_array(diag_physics,'exch_h',exch_h)
+ call mpas_pool_get_array(diag_physics,'kzh'   ,kzh   )
+ call mpas_pool_get_array(diag_physics,'kzm'   ,kzm   )
+ call mpas_pool_get_array(diag_physics,'kzq'   ,kzq   )
+
+ call mpas_pool_get_array(tend_physics,'rublten',rublten  )
+ call mpas_pool_get_array(tend_physics,'rvblten',rvblten  )
+ call mpas_pool_get_array(tend_physics,'rthblten',rthblten)
+ call mpas_pool_get_array(tend_physics,'rqvblten',rqvblten)
+ call mpas_pool_get_array(tend_physics,'rqcblten',rqcblten)
+ call mpas_pool_get_array(tend_physics,'rqiblten',rqiblten)
+
  do j = jts,jte
  do i = its,ite
-    diag_physics % hpbl % array(i) = hpbl_p(i,j)
-    diag_physics % kpbl % array(i) = kpbl_p(i,j)
+    hpbl(i) = hpbl_p(i,j)
+    kpbl(i) = kpbl_p(i,j)
  enddo
  enddo
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    diag_physics % exch_h   % array(k,i) = exch_p(i,k,j)
-    tend_physics % rublten  % array(k,i) = rublten_p(i,k,j) 
-    tend_physics % rvblten  % array(k,i) = rvblten_p(i,k,j)
-    tend_physics % rthblten % array(k,i) = rthblten_p(i,k,j)
-    tend_physics % rqvblten % array(k,i) = rqvblten_p(i,k,j)
-    tend_physics % rqcblten % array(k,i) = rqcblten_p(i,k,j)
-    tend_physics % rqiblten % array(k,i) = rqiblten_p(i,k,j)
+    exch_h(k,i) = exch_p(i,k,j)
+    rublten(k,i) = rublten_p(i,k,j) 
+    rvblten(k,i) = rvblten_p(i,k,j)
+    rthblten(k,i) = rthblten_p(i,k,j)
+    rqvblten(k,i) = rqvblten_p(i,k,j)
+    rqcblten(k,i) = rqcblten_p(i,k,j)
+    rqiblten(k,i) = rqiblten_p(i,k,j)
 !temporary for debugging the YSU PBL scheme:
-    diag_physics % kzh % array(k,i) = kzh_p(i,k,j)
-    diag_physics % kzm % array(k,i) = kzm_p(i,k,j)
-    diag_physics % kzq % array(k,i) = kzq_p(i,k,j)
+    kzh(k,i) = kzh_p(i,k,j)
+    kzm(k,i) = kzm_p(i,k,j)
+    kzq(k,i) = kzq_p(i,k,j)
  enddo
  enddo
  enddo
@@ -227,9 +272,9 @@
 
 !input and output arguments:
 !---------------------------
- type(sfc_input_type),intent(inout)   :: sfc_input
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)

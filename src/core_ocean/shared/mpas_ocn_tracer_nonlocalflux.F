@@ -23,6 +23,7 @@ module ocn_tracer_nonlocalflux
 
    use mpas_grid_types
    use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -62,21 +63,20 @@ contains
 !> \brief   Computes tendency term due to non-local flux transport
 !> \author  Todd Ringler
 !> \date    11/25/13
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the tendency for tracers based the vertical divergence of non-local fluxes.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_nonlocalflux_tend(mesh, vertNonLocalFlux, surfaceTracerFlux, tend, err)!{{{
+   subroutine ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, surfaceTracerFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         surfaceTracerFlux !< Input: surface tracer fluxes
@@ -107,7 +107,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k, iTracer, nTracers, nVertLevels
+      integer :: iCell, k, iTracer, nTracers
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
       real (kind=RKIND) :: fluxTopOfCell, fluxBottomOfCell
@@ -116,12 +117,12 @@ contains
 
       if (.not. nonLocalFluxOn) return
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
 
-      maxLevelCell => mesh % maxLevelCell % array
-      cellMask => mesh % cellMask % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       do iCell = 1, nCells
         do k = 2, maxLevelCell(iCell)-1
@@ -174,8 +175,12 @@ contains
    !--------------------------------------------------------------------
 
       integer, intent(out) :: err !< Output: error flag
+      logical, pointer :: config_disable_tr_nonlocalflux, config_use_cvmix_kpp
 
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_nonlocalflux', config_disable_tr_nonlocalflux)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       nonLocalFluxOn = .true.
 

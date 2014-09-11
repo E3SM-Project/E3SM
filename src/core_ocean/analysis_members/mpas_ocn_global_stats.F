@@ -19,12 +19,12 @@
 
 module ocn_global_stats
 
-   use mpas_configure
    use mpas_grid_types
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
 
+   use ocn_constants
    use ocn_diagnostics_routines
 
    implicit none
@@ -76,15 +76,16 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_global_stats(err)!{{{
-
-      use mpas_packages
+   subroutine ocn_setup_packages_global_stats(configPool, packagePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: configPool
+      type (mpas_pool_type), intent(in) :: packagePool
 
       !-----------------------------------------------------------------
       !
@@ -106,7 +107,11 @@ contains
       !
       !-----------------------------------------------------------------
 
+      logical, pointer :: amGlobalStatsActive
+
       err = 0
+
+      call mpas_pool_get_package(packagePool, 'amGlobalStatsActive', amGlobalStatsActive)
 
       ! turn on package for this analysis member
       amGlobalStatsActive = .true.
@@ -178,8 +183,6 @@ contains
 
    subroutine ocn_init_alarms_global_stats(clock, startTime, computeAlarmID, err)!{{{
 
-      use mpas_packages
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -216,7 +219,12 @@ contains
       type (MPAS_Time_Type) :: alarmStartTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
+      character (len=StrKIND), pointer :: config_global_stats_compute_interval, config_output_interval
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_global_stats_compute_interval', config_global_stats_compute_interval)
+      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
 
       ! set compute alarm for this analysis member
       if (config_global_stats_compute_interval=='same_as_output') then
@@ -276,22 +284,25 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (amGlobalStats_type), pointer :: amGlobalStats
+      type (mpas_pool_type), pointer :: amGlobalStatsPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (state_type), pointer :: state
-      type (mesh_type), pointer :: mesh
-      type (scratch_type), pointer :: scratch
-      type (diagnostics_type), pointer :: diagnostics
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: scratchPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
 
       integer :: err_tmp
-      integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
+      integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
-      integer :: k,i, num_tracers, fileID
+      integer :: k, i, fileID
       integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
+      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
       character*1 timeChar
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
+
+      character (len=StrKIND), pointer :: xtime
 
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
@@ -300,16 +311,31 @@ contains
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
-      real (kind=RKIND), dimension(kMaxVariables) :: sums, sumSquares, mins, maxes, averages, rms, verticalSumMins, verticalSumMaxes, reductions
+      real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, verticalSumMaxes
+      real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
       real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
+
+      logical, pointer :: thicknessFilterActive
 
       err = 0
 
       dminfo = domain % dminfo
 
       call mpas_timer_start("compute_global_stats", .false., amGlobalStatsTimer)
+
+      call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
+
+      ! write out data to Analysis Member output
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'amGlobalStats', amGlobalStatsPool)
+      call mpas_pool_get_array(amGlobalStatsPool, 'minGlobalStats', minGlobalStats)
+      call mpas_pool_get_array(amGlobalStatsPool, 'maxGlobalStats', maxGlobalStats)
+      call mpas_pool_get_array(amGlobalStatsPool, 'sumGlobalStats', sumGlobalStats)
+      call mpas_pool_get_array(amGlobalStatsPool, 'rmsGlobalStats', rms)
+      call mpas_pool_get_array(amGlobalStatsPool, 'avgGlobalStats', averages)
+      call mpas_pool_get_array(amGlobalStatsPool, 'vertSumMinGlobalStats', verticalSumMins)
+      call mpas_pool_get_array(amGlobalStatsPool, 'vertSumMaxGlobalStats', verticalSumMaxes)
 
       sums = 0.0
       sumSquares = 0.0
@@ -322,48 +348,52 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
-         state => block % state % time_levs(timeLevel) % state
-         mesh => block % mesh
-         scratch => block % scratch
-         diagnostics => block % diagnostics
+         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
+
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block % structs, 'amGlobalStats', amGlobalStatsPool)
          
-         num_tracers = state % num_tracers
+         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
-         nVertLevels = mesh % nVertLevels
-         nCellsSolve = mesh % nCellsSolve
-         nEdgesSolve = mesh % nEdgesSolve
-         nVerticesSolve = mesh % nVerticesSolve
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)          
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)          
+         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)    
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop) 
+         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
-         areaCell          => mesh % areaCell % array
-         dcEdge            => mesh % dcEdge % array
-         dvEdge            => mesh % dvEdge % array
-         areaTriangle      => mesh % areaTriangle % array
-         maxLevelCell      => mesh % maxLevelCell % array
-         maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
-         maxLevelVertexBot => mesh % maxLevelVertexBot % array
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)  
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity)  
+         call mpas_pool_get_array(statePool, 'tracers', tracers)         
+         if(thicknessFilterActive) then
+            call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence)
+            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness)
+         end if
+
+         call mpas_pool_get_array(diagnosticsPool, 'density', density)
+         call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', montgomeryPotential)
+         call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
+         call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
+
+         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
 
-         layerThickness    => state % layerThickness % array
-         normalVelocity    => state % normalVelocity % array
-         tracers           => state % tracers % array
-         if(thicknessFilterActive) then
-            lowFreqDivergence => state % lowFreqDivergence % array
-            highFreqThickness => state % highFreqThickness % array
-         end if
-
-         density                          => diagnostics % density % array
-         montgomeryPotential              => diagnostics % montgomeryPotential % array
-         pressure                         => diagnostics % pressure % array
-         relativeVorticity                => diagnostics % relativeVorticity % array
-         normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
-         normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
-         vertTransportVelocityTop         => diagnostics % vertTransportVelocityTop % array
-         vertVelocityTop                  => diagnostics % vertVelocityTop % array
-         tangentialVelocity               => diagnostics % tangentialVelocity % array
-         layerThicknessEdge               => diagnostics % layerThicknessEdge % array
-         kineticEnergyCell                => diagnostics % kineticEnergyCell % array
 
          allocate(workArray(nVertLevels,nCellsSolve))
 
@@ -600,6 +630,8 @@ contains
          nMins = nMins + nVariables
          nMaxes = nMaxes + nVariables
 
+         deallocate(areaEdge)
+
          block => block % next
       end do
 
@@ -631,7 +663,7 @@ contains
       variableIndex = 0
 
       ! time, in days, using a 360 day calendar
-      read (diagnostics % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
+      read (xtime, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
       time_days = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
 
@@ -724,17 +756,9 @@ contains
         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
       enddo
 
-      ! write out data to Analysis Member output
-      amGlobalStats => domain % blocklist % amGlobalStats
-      amGlobalStats % minGlobalStats % array(1:nVariables) =  mins(1:nVariables)
-      amGlobalStats % maxGlobalStats % array(1:nVariables) =  maxes(1:nVariables)
-      amGlobalStats % sumGlobalStats % array(1:nVariables) =  sums(1:nVariables)
-      amGlobalStats % rmsGlobalStats % array(1:nVariables) =  rms(1:nVariables)
-      amGlobalStats % avgGlobalStats % array(1:nVariables) =  averages(1:nVariables)
-      amGlobalStats % vertSumMinGlobalStats % array(1:nVariables) =  verticalSumMins(1:nVariables)
-      amGlobalStats % vertSumMaxGlobalStats % array(1:nVariables) =  verticalSumMaxes(1:nVariables)
-
-      deallocate(areaEdge)
+      minGlobalStats(1:nVariables) =  mins(1:nVariables)
+      maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
+      sumGlobalStats(1:nVariables) =  sums(1:nVariables)
 
       call mpas_timer_stop("global_stats", amGlobalStatsTimer)
 
@@ -955,7 +979,6 @@ contains
       end do
 
    end subroutine ocn_compute_field_volume_weighted_local_stats_max_level!}}}
-
 
 end module ocn_global_stats
 

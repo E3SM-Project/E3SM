@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_microphysics
- use mpas_configure
+ use mpas_kind_types
  use mpas_grid_types
  
  use mpas_atmphys_constants
@@ -64,9 +64,14 @@
 !>    * in call to subroutine wsm6, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_microphysics
@@ -174,23 +179,23 @@
  end subroutine microphysics_init
 
 !==================================================================================================
- subroutine microphysics_driver(state,diag,diag_physics,tend,mesh,itimestep)
+ subroutine microphysics_driver(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep)
 !==================================================================================================
 
 !input arguments:
-!----------------
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: mesh
+
+ integer,intent(in):: time_lev
  integer,intent(in):: itimestep
     
 !inout arguments:
-!----------------
- type(state_type),intent(inout):: state
- type(diag_type),intent(inout):: diag
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_type),intent(inout):: tend
+ type(mpas_pool_type),intent(inout):: state
+ type(mpas_pool_type),intent(inout):: diag
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend
 
 !local variables and arrays:
-!---------------------------
  logical:: log_microphysics
  integer:: i,icell,icount,istep,j,k,kk
 
@@ -220,7 +225,7 @@
  call precip_from_MPAS(diag_physics,mesh)
 
 !... initialization of soundings for non-hydrostatic dynamical cores.
- call microphysics_from_MPAS(mesh,state,diag)
+ call microphysics_from_MPAS(mesh,state,time_lev,diag)
 
 !--------------------------------------------------------------------------------------------------
 
@@ -292,16 +297,16 @@
 
     ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
     ! over ice otherwise.
-    call compute_relhum(diag_physics)
+    call compute_relhum(mesh,diag_physics)
 
  end if
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
- call precip_to_MPAS(config_bucket_rainnc,diag_physics)
+ call precip_to_MPAS(configs,mesh,diag_physics)
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
- call microphysics_to_MPAS(mesh,state,diag,tend,itimestep)
+ call microphysics_to_MPAS(mesh,state,time_lev,diag,tend,itimestep)
 
 !... deallocation of all microphysics arrays:
  call deallocate_microphysics
@@ -319,15 +324,26 @@
 !==================================================================================================
 
 !input variables:
- type(mesh_type) ,intent(in):: mesh
+ type(mpas_pool_type) ,intent(in):: mesh
 
 !output variables:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
+!local pointers:
+ integer,pointer:: nCellsSolve
+ real,dimension(:),pointer:: graupelncv,rainncv,snowncv,sr 
+
+!local variables and arrays:
  integer:: i,iCell,j
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+
+ call mpas_pool_get_array(diag_physics,'graupelncv',graupelncv)
+ call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
+ call mpas_pool_get_array(diag_physics,'snowncv'   ,snowncv   )
+ call mpas_pool_get_array(diag_physics,'sr'        ,sr        )
 
 !variables common to all cloud microphysics schemes:
  do j = jts, jte
@@ -337,8 +353,8 @@
  enddo
  enddo
 
- do iCell = 1, mesh % nCellsSolve
-    diag_physics % rainncv % array(iCell) = 0._RKIND
+ do iCell = 1, nCellsSolve
+    rainncv(iCell) = 0._RKIND
  enddo
 
 !variables specific to different cloud microphysics schemes:
@@ -357,10 +373,10 @@
        enddo
        enddo
 
-       do iCell = 1, mesh % nCellsSolve
-          diag_physics % snowncv % array(iCell)    = 0._RKIND
-          diag_physics % graupelncv % array(iCell) = 0._RKIND
-          diag_physics % sr % array(iCell)         = 0._RKIND
+       do iCell = 1, nCellsSolve
+          snowncv(iCell)    = 0._RKIND
+          graupelncv(iCell) = 0._RKIND
+          sr(iCell)         = 0._RKIND
        enddo 
 
     case default
@@ -370,18 +386,48 @@
  end subroutine precip_from_MPAS
 
 !==================================================================================================
- subroutine precip_to_MPAS(bucket_rainnc,diag_physics)
+ subroutine precip_to_MPAS(configs,mesh,diag_physics)
 !==================================================================================================
 
-!output variables:
- real(kind=RKIND),intent(in):: bucket_rainnc
- type(diag_physics_type),intent(inout):: diag_physics
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: mesh
 
-!local variables:
+!inout arguments:
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ integer,pointer:: nCellsSolve
+ integer,dimension(:),pointer:: i_rainnc
+
+ real(kind=RKIND),pointer:: config_bucket_rainnc
+ real(kind=RKIND),dimension(:),pointer:: precipw
+ real(kind=RKIND),dimension(:),pointer:: graupelnc,rainnc,snownc
+ real(kind=RKIND),dimension(:),pointer:: graupelncv,rainncv,snowncv,sr
+
+!local variables and arrays:
  integer:: i,j,k
  real(kind=RKIND):: rho_a
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_bucket_rainnc',config_bucket_rainnc)
+
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+
+ call mpas_pool_get_array(diag_physics,'i_rainnc'  ,i_rainnc  )
+ call mpas_pool_get_array(diag_physics,'precipw'   ,precipw   )
+ call mpas_pool_get_array(diag_physics,'graupelnc' ,graupelnc )
+ call mpas_pool_get_array(diag_physics,'graupelncv',graupelncv)
+ call mpas_pool_get_array(diag_physics,'rainnc'    ,rainnc    )
+ call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
+ call mpas_pool_get_array(diag_physics,'snownc'    ,snownc    )
+ call mpas_pool_get_array(diag_physics,'snowncv'   ,snowncv   )
+ call mpas_pool_get_array(diag_physics,'sr'        ,sr        )
+
+ do i = 1, nCellsSolve
+    precipw(i) = 0._RKIND    
+ enddo
 
 !variables common to all cloud microphysics schemes:
 
@@ -389,24 +435,21 @@
  do i = its,ite
 
     !precipitable water:
-    diag_physics % precipw % array(i) = 0._RKIND
     do k = kts,kte
        rho_a = rho_p(i,k,j) / (1._RKIND + qv_p(i,k,j))
-       diag_physics % precipw % array(i) = &
-            diag_physics % precipw % array(i) + qv_p(i,k,j) * rho_a * dz_p(i,k,j)
+       precipw(i) = precipw(i) + qv_p(i,k,j) * rho_a * dz_p(i,k,j)
     enddo
 
     !time-step precipitation:
-    diag_physics % rainncv % array(i) = rainnc_p(i,j)
+    rainncv(i) = rainnc_p(i,j)
     
     !accumulated precipitation:
-    diag_physics % rainnc % array(i) = diag_physics % rainnc % array(i) &
-                                     + diag_physics % rainncv % array(i)
+    rainnc(i) = rainnc(i) + rainncv(i)
 
-   if(l_acrain .and. bucket_rainnc.gt.0._RKIND .and. &
-      diag_physics%rainnc%array(i).gt.bucket_rainnc) then
-      diag_physics % i_rainnc % array(i) = diag_physics % i_rainnc % array(i) + 1
-      diag_physics % rainnc % array(i) = diag_physics % rainnc % array(i) - bucket_rainnc
+   if(l_acrain .and. config_bucket_rainnc.gt.0._RKIND .and. &
+      rainnc(i).gt.config_bucket_rainnc) then
+      i_rainnc(i) = i_rainnc(i) + 1
+      rainnc(i)   = rainnc(i) - config_bucket_rainnc
    endif
  
  enddo
@@ -422,16 +465,13 @@
        do i = its,ite
        
           !time-step precipitation:
-          diag_physics % snowncv % array(i)    = snownc_p(i,j)
-          diag_physics % graupelncv % array(i) = graupelnc_p(i,j)
-          diag_physics % sr % array(i) = &
-                         (snownc_p(i,j) + graupelnc_p(i,j)) / (rainnc_p(i,j)+1.e-12)
+          snowncv(i)    = snownc_p(i,j)
+          graupelncv(i) = graupelnc_p(i,j)
+          sr(i) = (snownc_p(i,j) + graupelnc_p(i,j)) / (rainnc_p(i,j)+1.e-12)
 
           !accumulated precipitation:
-          diag_physics % snownc % array(i)    = diag_physics % snownc  % array(i)    &
-                                              + diag_physics % snowncv % array(i)
-          diag_physics % graupelnc % array(i) = diag_physics % graupelnc  % array(i) &
-                                              + diag_physics % graupelncv % array(i)
+          snownc(i)    = snownc(i) + snowncv(i)
+          graupelnc(i) = graupelnc(i) + graupelncv(i)
 
        enddo
        enddo
@@ -447,15 +487,20 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
+!local pointers:
+ real(kind=RKIND),dimension(:),pointer:: refl10cm_max
+
+!local variables and arrays:
  integer:: i,j,k
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d
 
 !--------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
+
+ call mpas_pool_get_array(diag_physics,'refl10cm_max',refl10cm_max)
 
  microp_select: select case(microp_scheme)
 
@@ -491,9 +536,8 @@
              dBZ1d(k) = max(-35._RKIND,dBZ1d(k))
 !            write(0,201) i,k,dBZ1d(k)
           enddo
-          diag_physics % refl10cm_max % array(i) = maxval(dBZ1d(:))
-!         if(diag_physics % refl10cm_max % array(i) .gt. 0.) &
-!            write(0,201) j,i,diag_physics % refl10cm_max % array(i)
+          refl10cm_max(i) = maxval(dBZ1d(:))
+!         if(refl10cm_max(i) .gt. 0.) write(0,201) j,i,refl10cm_max(i)
        enddo
        enddo
 
@@ -515,20 +559,33 @@
  end subroutine compute_radar_reflectivity
 
 !==================================================================================================
- subroutine compute_relhum(diag_physics)
+ subroutine compute_relhum(mesh,diag_physics)
 !==================================================================================================
 
-!inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+!input arguments:
+ type(mpas_pool_type),intent(in):: mesh
 
-!local variables:
+!inout arguments:
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ integer,pointer:: nCellsSolve,nVertLevels
+ real(kind=RKIND),dimension(:,:),pointer:: relhum
+
+!local variables and arrays:
  integer:: i,j,k
+
  real(kind=RKIND):: tempc
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qvs1d,t1d,p1d
 
 !--------------------------------------------------------------------------------------------------
 
- diag_physics % relhum % array(:,:) = 0._RKIND
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
+
+ call mpas_pool_get_array(diag_physics,'relhum',relhum)
+
+ relhum(1:nVertLevels,1:nCellsSolve) = 0._RKIND
 
  if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
  if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
@@ -545,7 +602,7 @@
        qvs1d(k) = rslf(p1d(k),t1d(k))
        if(tempc .le. 0._RKIND) qvs1d(k) = rsif(p1d(k),t1d(k))
        qv1d(k) = qv_p(i,k,j)
-       diag_physics % relhum % array(k,i) = qv1d(k) / qvs1d(k)
+       relhum(k,i) = qv1d(k) / qvs1d(k)
     enddo
 
  enddo

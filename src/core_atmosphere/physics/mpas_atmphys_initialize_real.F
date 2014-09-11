@@ -8,15 +8,10 @@
 !==================================================================================================
  module mpas_atmphys_initialize_real
  use mpas_kind_types
- use mpas_configure, only: config_met_prefix,  &
-                           config_frac_seaice, &
-                           config_input_sst,   &
-                           config_nsoillevels, &
-                           config_start_time,  &
-                           config_sfc_prefix
  use mpas_dmpar
  use mpas_grid_types
  use mpas_init_atm_surface
+
  use mpas_atmphys_date_time
  use mpas_atmphys_utilities
 
@@ -50,24 +45,29 @@
 !>      -> revised subroutine physics_init_sst.
 !>      -> revised subroutine physics_init_seaice.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-02.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
 
 !==================================================================================================
- subroutine physics_initialize_real(mesh,fg,dminfo)
+ subroutine physics_initialize_real(mesh, fg, dminfo, dims, configs)
 !==================================================================================================
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(dm_info),intent(in)  :: dminfo
+ type (mpas_pool_type), intent(in) :: mesh
+ type (dm_info), intent(in) :: dminfo
+ type (mpas_pool_type), intent(in) :: dims
+ type (mpas_pool_type), intent(in) :: configs
 
 !inout arguments:
- type(fg_type),intent(inout):: fg 
+ type (mpas_pool_type), intent(inout) :: fg 
 
 !local variables:
  character(len=StrKIND):: initial_date
 
- integer:: iCell,nCellsSolve
+ integer:: iCell
+ integer, pointer :: nCellsSolve
  integer,dimension(:),pointer:: landmask
 
  real(kind=RKIND),dimension(:)  ,pointer:: sfc_albbck
@@ -79,6 +79,10 @@
  real(kind=RKIND),dimension(:,:),pointer:: greenfrac
 
  real(kind=RKIND),dimension(:),pointer:: skintemp,sst
+
+ character (len=StrKIND), pointer :: config_sfc_prefix
+ character (len=StrKIND), pointer :: config_start_time
+ logical, pointer :: config_input_sst
  
 !temporary:
  integer:: iSoil,nSoilLevels
@@ -88,24 +92,28 @@
  write(0,*)
  write(0,*) '--- enter physics_initialize_real:'
 
- nCellsSolve = mesh % nCellsSolve
+ call mpas_pool_get_config(configs, 'config_sfc_prefix', config_sfc_prefix)
+ call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+ call mpas_pool_get_config(configs, 'config_input_sst', config_input_sst)
 
- landmask   => mesh % landmask  % array
- albedo12m  => mesh % albedo12m % array
- greenfrac  => mesh % greenfrac % array
- shdmin     => mesh % shdmin    % array
- shdmax     => mesh % shdmax    % array
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
 
- sfc_albbck => fg % sfc_albbck % array
- vegfra     => fg % vegfra     % array
- snow       => fg % snow       % array
- snowc      => fg % snowc      % array
- snowh      => fg % snowh      % array
- skintemp   => fg % skintemp   % array
- sst        => fg % sst        % array
- seaice     => fg % seaice     % array
- xice       => fg % xice       % array
- xland      => fg % xland      % array
+ call mpas_pool_get_array(mesh, 'landmask', landmask)
+ call mpas_pool_get_array(mesh, 'albedo12m', albedo12m)
+ call mpas_pool_get_array(mesh, 'greenfrac', greenfrac)
+ call mpas_pool_get_array(mesh, 'shdmin', shdmin)
+ call mpas_pool_get_array(mesh, 'shdmax', shdmax)
+
+ call mpas_pool_get_array(fg, 'sfc_albbck', sfc_albbck)
+ call mpas_pool_get_array(fg, 'vegfra', vegfra)
+ call mpas_pool_get_array(fg, 'snow', snow)
+ call mpas_pool_get_array(fg, 'snowc', snowc)
+ call mpas_pool_get_array(fg, 'snowh', snowh)
+ call mpas_pool_get_array(fg, 'skintemp', skintemp)
+ call mpas_pool_get_array(fg, 'sst', sst)
+ call mpas_pool_get_array(fg, 'seaice', seaice)
+ call mpas_pool_get_array(fg, 'xice', xice)
+ call mpas_pool_get_array(fg, 'xland', xland)
 
 !initialization of xland:
  do iCell = 1, nCellsSolve
@@ -122,8 +130,8 @@
 !in the file defined by config_input_name:
  if(config_input_sst) then
     write(0,*) '--- read sea-surface temperature from auxillary file:'
-    call interp_sfc_to_MPAS(config_start_time(1:13),mesh,fg,dminfo)
-    call physics_init_sst(mesh,fg)
+    call interp_sfc_to_MPAS(config_start_time(1:13),mesh,fg,dims,dminfo,config_sfc_prefix)
+    call physics_init_sst(mesh,fg,dims,configs)
  endif
 
 !initialization of the surface background albedo: interpolation of the monthly values to the
@@ -157,52 +165,55 @@
  enddo
 
 !initialization of soil layers properties:
- call init_soil_layers(mesh,fg,dminfo)
+ call init_soil_layers(mesh,fg,dminfo,dims,configs)
 
 !initialize seaice points:
- call physics_init_seaice(mesh,fg)
+ call physics_init_seaice(mesh,fg,dims,configs)
  
  write(0,*) '--- end physics_initialize_real:'
 
  end subroutine physics_initialize_real
 
 !==================================================================================================
- subroutine init_soil_layers(mesh,fg,dminfo)
+ subroutine init_soil_layers(mesh,fg,dminfo,dims,configs)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
  type(dm_info),intent(in)  :: dminfo
+ type(mpas_pool_type),intent(in):: dims
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
- type(fg_type),intent(inout):: fg
+ type(mpas_pool_type),intent(inout):: fg
 
 !--------------------------------------------------------------------------------------------------
 
 !adjust the annual mean deep soil temperature:
- call adjust_input_soiltemps(mesh,fg)
+ call adjust_input_soiltemps(mesh,fg,dims)
 
 !initialize the depth of the soil layers:
- call init_soil_layers_depth(mesh,fg)
+ call init_soil_layers_depth(mesh,fg,dims,configs)
  
 !initialize the temperature, moisture, and liquid water of the individual soil layers:
- call init_soil_layers_properties(mesh,fg,dminfo)
+ call init_soil_layers_properties(mesh,fg,dminfo,dims,configs)
 
  end subroutine init_soil_layers
 
 !==================================================================================================
- subroutine adjust_input_soiltemps(mesh,fg)
+ subroutine adjust_input_soiltemps(mesh, fg, dims)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
+ type (mpas_pool_type), intent(in) :: mesh
+ type (mpas_pool_type), intent(in) :: dims
 
 !inout arguments:
- type(fg_type),intent(inout):: fg 
+ type (mpas_pool_type), intent(inout) :: fg 
 
 !local variables:
  integer:: iCell,ifgSoil
- integer:: nCellsSolve,nFGSoilLevels
+ integer, pointer:: nCellsSolve,nFGSoilLevels
  integer,dimension(:),pointer:: landmask
 
  real(kind=RKIND),dimension(:),pointer  :: soilz,ter
@@ -211,17 +222,19 @@
 
 !--------------------------------------------------------------------------------------------------
 
- nCellsSolve   = mesh % nCellsSolve
- nFGSoilLevels = mesh % nFGSoilLevels
 
- landmask => mesh % landmask % array
- soiltemp => mesh % soiltemp % array
- ter      => mesh % ter      % array
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
+ call mpas_pool_get_dimension(dims, 'nFGSoilLevels', nFGSoilLevels)
 
- skintemp => fg % skintemp % array
- tmn      => fg % tmn      % array
- st_fg    => fg % st_fg    % array
- soilz    => fg % soilz    % array
+ call mpas_pool_get_array(mesh, 'landmask', landmask)
+ call mpas_pool_get_array(mesh, 'soiltemp', soiltemp)
+ call mpas_pool_get_array(mesh, 'ter', ter)
+
+ call mpas_pool_get_array(fg, 'skintemp', skintemp)
+ call mpas_pool_get_array(fg, 'tmn', tmn)
+ call mpas_pool_get_array(fg, 'st_fg', st_fg)
+ call mpas_pool_get_array(fg, 'soilz', soilz)
+
 
  do iCell = 1, nCellsSolve
     if(landmask(iCell) .eq. 1) then
@@ -233,7 +246,7 @@
        !adjust the soil layer temperatures:
        do ifgSoil = 1, nFGSoilLevels
           st_fg(ifgSoil,iCell) = st_fg(ifgSoil,iCell) - 0.0065_RKIND * (ter(iCell)-soilz(iCell))
-       enddo
+       end do
 
     elseif(landmask(iCell) .eq. 0) then
 
@@ -245,55 +258,66 @@
  end subroutine adjust_input_soiltemps
 
 !==================================================================================================
- subroutine init_soil_layers_depth(mesh,fg)
+ subroutine init_soil_layers_depth(mesh, fg, dims, configs)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type (mpas_pool_type), intent(in) :: mesh
+ type (mpas_pool_type), intent(in) :: dims
+ type (mpas_pool_type), intent(in) :: configs
 
 !inout arguments:
- type(fg_type),intent(inout):: fg 
+ type (mpas_pool_type), intent(inout) :: fg 
 
-!local variables:
- integer:: iCell,iSoil
- integer:: nCellsSolve,nSoilLevels,nFGSoilLevels
+!local variables and arrays:
+ integer :: iCell,iSoil
+ integer, pointer :: nCellsSolve,nSoilLevels,nFGSoilLevels
+ integer, pointer :: config_nsoillevels
+
+ real(kind=RKIND),dimension(:,:),pointer:: dzs_fg,zs_fg
+ real(kind=RKIND),dimension(:,:),pointer:: dzs,zs
 
 !--------------------------------------------------------------------------------------------------
 
  write(0,*)
  write(0,*) '--- enter subroutine init_soil_layers_depth:'
 
- nCellsSolve   = mesh % nCellsSolve
- nSoilLevels   = mesh % nSoilLevels
- nFGSoilLevels = mesh % nFGSoilLevels
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
+ call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
+ call mpas_pool_get_dimension(dims, 'nFGSoilLevels', nFGSoilLevels)
+
+ call mpas_pool_get_array(fg, 'zs_fg', zs_fg)
+ call mpas_pool_get_array(fg, 'dzs_fg', dzs_fg)
+ call mpas_pool_get_array(fg, 'zs', zs)
+ call mpas_pool_get_array(fg, 'dzs', dzs)
+
+ call mpas_pool_get_config(configs, 'config_nsoillevels', config_nsoillevels)
 
  if(config_nsoillevels .ne. 4) &
     call physics_error_fatal('NOAH lsm uses 4 soil layers. Correct config_nsoillevels.')
 
  do iCell = 1, nCellsSolve
-
     iSoil = 1
-    fg % zs_fg % array(iSoil,iCell) = 0.5_RKIND * fg % dzs_fg % array(iSoil,iCell)
+    zs_fg(iSoil,iCell) = 0.5_RKIND * dzs_fg(iSoil,iCell)
     do iSoil = 2, nFGSoilLevels
-       fg % zs_fg % array(iSoil,iCell) = fg % zs_fg % array(iSoil-1,iCell)        &
-                                 + 0.5_RKIND * fg % dzs_fg % array(iSoil-1,iCell) &
-                                 + 0.5_RKIND * fg % dzs_fg % array(iSoil,iCell)
+       zs_fg(iSoil,iCell) = zs_fg(iSoil-1,iCell)        &
+                          + 0.5_RKIND * dzs_fg(iSoil-1,iCell) &
+                          + 0.5_RKIND * dzs_fg(iSoil,iCell)
     enddo
-
  enddo
 
  do iCell = 1, nCellsSolve
-    fg % dzs % array(1,iCell) = 0.10_RKIND
-    fg % dzs % array(2,iCell) = 0.30_RKIND
-    fg % dzs % array(3,iCell) = 0.60_RKIND
-    fg % dzs % array(4,iCell) = 1.00_RKIND
+    dzs(1,iCell) = 0.10_RKIND
+    dzs(2,iCell) = 0.30_RKIND
+    dzs(3,iCell) = 0.60_RKIND
+    dzs(4,iCell) = 1.00_RKIND
 
     iSoil = 1
-    fg % zs % array(iSoil,iCell)  = 0.5_RKIND * fg % dzs % array(iSoil,iCell)
+    zs(iSoil,iCell)  = 0.5_RKIND * dzs(iSoil,iCell)
     do iSoil = 2, nSoilLevels
-       fg % zs % array(iSoil,iCell) = fg % zs % array(iSoil-1,iCell)              &
-                                    + 0.5_RKIND * fg % dzs % array(iSoil-1,iCell) &
-                                    + 0.5_RKIND * fg % dzs % array(iSoil,iCell)
+       zs(iSoil,iCell) = zs(iSoil-1,iCell)              &
+                       + 0.5_RKIND * dzs(iSoil-1,iCell) &
+                       + 0.5_RKIND * dzs(iSoil,iCell)
     enddo
 
  enddo
@@ -301,19 +325,21 @@
  end subroutine init_soil_layers_depth
 
 !==================================================================================================
- subroutine init_soil_layers_properties(mesh,fg,dminfo)
+ subroutine init_soil_layers_properties(mesh, fg, dminfo, dims, configs)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(dm_info),intent(in)  :: dminfo
+ type (mpas_pool_type), intent(in) :: mesh
+ type (dm_info), intent(in) :: dminfo
+ type (mpas_pool_type), intent(in) :: dims
+ type (mpas_pool_type), intent(in) :: configs
 
 !inout arguments:
- type(fg_type),intent(inout):: fg 
+ type (mpas_pool_type), intent(inout) :: fg 
 
 !local variables:
  integer:: iCell,ifgSoil,iSoil
- integer:: nCellsSolve,nFGSoilLevels,nSoilLevels
+ integer, pointer:: nCellsSolve,nFGSoilLevels,nSoilLevels
  integer:: num_sm,num_st
  integer,dimension(:),pointer:: landmask
  
@@ -323,31 +349,35 @@
  real(kind=RKIND),dimension(:,:),pointer:: dzs,zs,tslb,smois,sh2o,smcrel
  real(kind=RKIND),dimension(:,:),pointer:: sm_fg,st_fg,zs_fg
 
+ integer, pointer :: config_nsoillevels
+
 !--------------------------------------------------------------------------------------------------
 
 !write(0,*)
  write(0,*) '--- enter subroutine init_soil_layers_properties:'
 
- nCellsSolve   = mesh % nCellsSolve
- nSoilLevels   = mesh % nSoilLevels
- nFGSoilLevels = mesh % nFGSoilLevels
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
+ call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
+ call mpas_pool_get_dimension(dims, 'nFGSoilLevels', nFGSoilLevels)
+
+ call mpas_pool_get_array(mesh, 'landmask', landmask)
+ call mpas_pool_get_array(fg, 'zs_fg', zs_fg)
+ call mpas_pool_get_array(fg, 'st_fg', st_fg)
+ call mpas_pool_get_array(fg, 'sm_fg', sm_fg)
+ call mpas_pool_get_array(fg, 'zs', zs)
+ call mpas_pool_get_array(fg, 'dzs', dzs)
+ call mpas_pool_get_array(fg, 'sh2o', sh2o)
+ call mpas_pool_get_array(fg, 'smcrel', smcrel)
+ call mpas_pool_get_array(fg, 'smois', smois)
+ call mpas_pool_get_array(fg, 'tslb', tslb)
+ call mpas_pool_get_array(fg, 'skintemp', skintemp)
+ call mpas_pool_get_array(fg, 'tmn', tmn)
+
+ call mpas_pool_get_config(configs, 'config_nsoillevels', config_nsoillevels)
+
  write(0,*) 'nSoilLevels   =',nSoilLevels
  write(0,*) 'nFGSoilLevels =',nFGSoilLevels
 
- landmask => mesh % landmask % array
-
- zs_fg => fg % zs_fg % array
- st_fg => fg % st_fg % array
- sm_fg => fg % sm_fg % array
-
- zs     => fg % zs  % array
- dzs    => fg % dzs % array 
- sh2o   => fg % sh2o    % array
- smcrel => fg % smcrel % array
- smois  => fg % smois   % array 
- tslb   => fg % tslb    % array
- skintemp => fg % skintemp % array
- tmn      => fg % tmn      % array
 
 !check that interpolation of the meteorological data to the MPAS grid did not create negative
 !values for the first-guess soil temperatures and soil moistures.
@@ -473,42 +503,42 @@
  end subroutine init_soil_layers_properties
 
 !==================================================================================================
- subroutine physics_init_sst(mesh,input)
+ subroutine physics_init_sst(mesh, input, dims, configs)
 !==================================================================================================
 
 !input arguments: 
- type(mesh_type),intent(in):: mesh
-
-#if !defined(mpas)
-!inout arguments: this subroutine is called from the MPAS initialization side.
- type(fg_type),intent(inout):: input
-#else
-!inout arguments: this subroutine is called from the MPAS model side.
- type(sfc_input_type),intent(inout):: input
-#endif
+ type (mpas_pool_type), intent(in) :: mesh
+ type (mpas_pool_type), intent(inout) :: input
+ type (mpas_pool_type), intent(in) :: dims
+ type (mpas_pool_type), intent(in) :: configs
 
 !local variables:
  character(len=StrKIND):: mess
 
- integer:: iCell,nCellsSolve
+ integer, pointer:: nCellsSolve
+ integer:: iCell
  integer:: num_seaice_changes
  integer,dimension(:),pointer:: landmask
 
  real(kind=RKIND):: xice_threshold
  real(kind=RKIND),dimension(:),pointer  :: seaice,sst,tsk,xice
 
+ logical, pointer :: config_frac_seaice
+
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_init_sst:'
 
-!initialization:
- nCellsSolve = mesh % nCellsSolve
+ call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
 
- landmask => mesh % landmask % array
- sst    => input % sst       % array
- seaice => input % seaice    % array
- tsk    => input % skintemp  % array
- xice   => input % xice      % array
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
+
+ call mpas_pool_get_array(mesh, 'landmask', landmask)
+ call mpas_pool_get_array(input, 'sst', sst)
+ call mpas_pool_get_array(input, 'seaice', seaice)
+ call mpas_pool_get_array(input, 'skintemp', tsk)
+ call mpas_pool_get_array(input, 'xice', xice)
+
 
  if(.not. config_frac_seaice) then
     xice_threshold = 0.5_RKIND
@@ -543,23 +573,21 @@
  end subroutine physics_init_sst
 
 !==================================================================================================
- subroutine physics_init_seaice(mesh,input)
+ subroutine physics_init_seaice(mesh, input, dims, configs)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
+ type (mpas_pool_type), intent(in) :: mesh
+ type (mpas_pool_type), intent(in) :: dims
+ type (mpas_pool_type), intent(in) :: configs
 
-#if !defined(mpas)
-!inout arguments: this subroutine is called from the MPAS initialization side.
- type(fg_type),intent(inout):: input
-#else
 !inout arguments: this subroutine is called from the MPAS model side.
- type(sfc_input_type),intent(inout):: input
-#endif
+ type (mpas_pool_type), intent(inout) :: input
 
 !local variables:
  character(len=StrKIND):: mess
- integer:: iCell,iSoil,nCellsSolve,nSoilLevels
+ integer, pointer:: nCellsSolve,nSoilLevels
+ integer:: iCell,iSoil
  integer:: num_seaice_changes
  integer,dimension(:),pointer:: landmask,isltyp,ivgtyp
 
@@ -569,6 +597,8 @@
  real(kind=RKIND),dimension(:),pointer  :: seaice,xice
  real(kind=RKIND),dimension(:),pointer  :: skintemp,tmn,xland
  real(kind=RKIND),dimension(:,:),pointer:: tslb,smois,sh2o,smcrel
+
+ logical, pointer :: config_frac_seaice
 
 !note that this threshold is also defined in module_physics_vars.F.It is defined here to avoid
 !adding "use module_physics_vars" since this subroutine is only used for the initialization of
@@ -580,25 +610,28 @@
  write(0,*)
  write(0,*) '--- enter physics_init_seaice:'
 
- nCellsSolve = mesh % nCellsSolve
- nSoilLevels = mesh % nSoilLevels
+ call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
 
- landmask => mesh % landmask    % array
- isltyp   => mesh % soilcat_top % array
- ivgtyp   => mesh % lu_index    % array
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
+ call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
 
- seaice   => input % seaice     % array
- xice     => input % xice       % array
- vegfra   => input % vegfra     % array
+ call mpas_pool_get_array(mesh, 'landmask', landmask)
+ call mpas_pool_get_array(mesh, 'lu_index', ivgtyp)
+ call mpas_pool_get_array(mesh, 'soilcat_top', isltyp)
 
- skintemp => input % skintemp   % array
- tmn      => input % tmn        % array
- xland    => input % xland      % array
+ call mpas_pool_get_array(input, 'seaice', seaice)
+ call mpas_pool_get_array(input, 'xice', xice)
+ call mpas_pool_get_array(input, 'vegfra', vegfra)
 
- tslb     => input % tslb       % array
- smois    => input % smois      % array
- sh2o     => input % sh2o       % array
- smcrel   => input % smcrel     % array
+ call mpas_pool_get_array(input, 'skintemp', skintemp)
+ call mpas_pool_get_array(input, 'tmn', tmn)
+ call mpas_pool_get_array(input, 'xland', xland)
+
+ call mpas_pool_get_array(input, 'tslb', tslb)
+ call mpas_pool_get_array(input, 'smois', smois)
+ call mpas_pool_get_array(input, 'sh2o', sh2o)
+ call mpas_pool_get_array(input, 'smcrel', smcrel)
+
 
 !assign the threshold value for xice as a function of config_frac_seaice:
  if(.not. config_frac_seaice) then

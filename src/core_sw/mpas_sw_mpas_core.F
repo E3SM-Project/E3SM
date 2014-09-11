@@ -26,6 +26,7 @@ module mpas_core
       use mpas_configure
       use mpas_grid_types
       use sw_test_cases
+      use sw_constants
    
       implicit none
    
@@ -34,7 +35,17 @@ module mpas_core
    
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool
 
+      logical, pointer :: config_do_restart
+      real (kind=RKIND), pointer :: config_dt
+      character (len=StrKIND), pointer :: xtime
+
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+
+      call sw_constants_init(domain % configs, domain % packages)
 
       if (.not. config_do_restart) call setup_sw_test_case(domain)
 
@@ -47,8 +58,14 @@ module mpas_core
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_init_block(block, block % mesh, dt)
-         block % state % time_levs(1) % state % xtime % scalar = startTimeStamp
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+
+         call mpas_init_block(block, meshPool, dt)
+
+         call mpas_pool_get_array(statePool, 'xtime', xtime, 1)
+
+         xtime = startTimeStamp
          block => block % next
       end do
 
@@ -68,6 +85,14 @@ module mpas_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       integer :: ierr
+
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval
+
+      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(domain % configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(domain % configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(domain % configs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(domain % configs, 'config_restart_interval', config_restart_interval)
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
       call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)
@@ -116,7 +141,7 @@ module mpas_core
    end subroutine simulation_clock_init
 
 
-   subroutine mpas_init_block(block, mesh, dt)
+   subroutine mpas_init_block(block, meshPool, dt)
    
       use mpas_grid_types
       use sw_time_integration
@@ -126,22 +151,31 @@ module mpas_core
       implicit none
    
       type (block_type), intent(inout) :: block
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: meshPool
       real (kind=RKIND), intent(in) :: dt
+
+      type (mpas_pool_type), pointer :: statePool
+
+      real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
    
+      call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
-      call sw_compute_solve_diagnostics(dt, block % state % time_levs(1) % state, mesh)
-      call compute_mesh_scaling(mesh) 
 
-      call mpas_rbf_interp_initialize(mesh)
-      call mpas_init_reconstruct(mesh)
-      call mpas_reconstruct(mesh, block % state % time_levs(1) % state % u % array,                  &
-                       block % state % time_levs(1) % state % uReconstructX % array,            &
-                       block % state % time_levs(1) % state % uReconstructY % array,            &
-                       block % state % time_levs(1) % state % uReconstructZ % array,            &
-                       block % state % time_levs(1) % state % uReconstructZonal % array,        &
-                       block % state % time_levs(1) % state % uReconstructMeridional % array    &
-                      )
+      call mpas_pool_get_array(statePool, 'u', u, 1)
+      call mpas_pool_get_array(statePool, 'uReconstructX', uReconstructX, 1)
+      call mpas_pool_get_array(statePool, 'uReconstructY', uReconstructY, 1)
+      call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, 1)
+      call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, 1)
+      call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, 1)
+
+      call sw_compute_solve_diagnostics(dt, statePool, meshPool, 1)
+      call compute_mesh_scaling(meshPool) 
+
+      call mpas_rbf_interp_initialize(meshPool)
+      call mpas_init_reconstruct(meshPool)
+      call mpas_reconstruct(meshPool, u,                  &
+                       uReconstructX, uReconstructY, uReconstructZ, &
+                       uReconstructZonal, uReconstructMeridional)
 
    
    end subroutine mpas_init_block
@@ -163,10 +197,15 @@ module mpas_core
       integer :: itimestep
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block_ptr
+      type (mpas_pool_type), pointer :: statePool
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr
+      
+      real (kind=RKIND), pointer :: config_dt
+
+      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
    
       ! Eventually, dt should be domain specific
       dt = config_dt
@@ -196,7 +235,8 @@ module mpas_core
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain % blocklist
          do while(associated(block_ptr))
-            call mpas_shift_time_levels_state(block_ptr % state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+            call mpas_pool_shift_time_levels(statePool)
             block_ptr => block_ptr % next
          end do
 
@@ -246,12 +286,10 @@ module mpas_core
       integer :: i, j, k
       integer :: eoe
       type (block_type), pointer :: block_ptr
-   
-      block_ptr => domain % blocklist
-      do while (associated(block_ptr))
-         call compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
-         block_ptr => block_ptr % next
-      end do
+
+      integer, pointer :: config_frames_per_outfile
+
+      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
    
       call mpas_output_state_for_domain(output_obj, domain, output_frame)
       output_frame = output_frame + 1
@@ -266,29 +304,6 @@ module mpas_core
       end if
 
    end subroutine write_output_frame
-   
-   
-   subroutine compute_output_diagnostics(state, grid)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain
-   !
-   ! Input: state - contains model prognostic fields
-   !        grid  - contains grid metadata
-   !
-   ! Output: state - upon returning, diagnostic fields will have be computed
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-   
-      implicit none
-   
-      type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: grid
-   
-      integer :: i, eoe
-      integer :: iEdge, k
-   
-   end subroutine compute_output_diagnostics
    
    
    subroutine mpas_timestep(domain, itimestep, dt, timeStamp)
@@ -306,7 +321,11 @@ module mpas_core
       character(len=*), intent(in) :: timeStamp
       
       type (block_type), pointer :: block_ptr
+      type (mpas_pool_type), pointer :: statePool, meshPool
       integer :: ierr
+      integer, pointer :: config_stats_interval
+
+      call mpas_pool_get_config(domain % configs, 'config_stats_interval', config_stats_interval)
    
       call sw_timestep(domain, dt, timeStamp)
    
@@ -317,11 +336,13 @@ module mpas_core
                   write(0,*) 'Error: computeGlobalDiagnostics assumes ',&
                              'that there is only one block per processor.'
               end if
+
+              call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+              call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
    
               call mpas_timer_start("global_diagnostics")
               call sw_compute_global_diagnostics(domain % dminfo, &
-                       block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
-                       itimestep, dt)
+                       statePool, meshPool, itimestep, dt, 2)
               call mpas_timer_stop("global_diagnostics")
           end if
       end if
@@ -360,20 +381,30 @@ module mpas_core
    end subroutine mpas_core_finalize
 
 
-   subroutine compute_mesh_scaling(mesh)
+   subroutine compute_mesh_scaling(meshPool)
 
       use mpas_grid_types
+      use sw_constants
 
       implicit none
 
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: meshPool
 
       integer :: iEdge, cell1, cell2
+      integer, pointer :: nEdges
+      integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4
 
-      meshDensity => mesh % meshDensity % array
-      meshScalingDel2 => mesh % meshScalingDel2 % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
+      logical, pointer :: config_h_ScaleWithMesh
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
+
+      call mpas_pool_get_config(swConfigs, 'config_h_ScaleWithMesh', config_h_ScaleWithMesh)
 
       !
       ! Compute the scaling factors to be used in the del2 and del4 dissipation
@@ -381,9 +412,9 @@ module mpas_core
       meshScalingDel2(:) = 1.0
       meshScalingDel4(:) = 1.0
       if (config_h_ScaleWithMesh) then
-         do iEdge=1,mesh%nEdges
-            cell1 = mesh % cellsOnEdge % array(1,iEdge)
-            cell2 = mesh % cellsOnEdge % array(2,iEdge)
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
             meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**(5.0/12.0)
             meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**(5.0/6.0)
          end do
@@ -405,12 +436,12 @@ module mpas_core
 !>   *not* allocated until after this routine is called.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(ierr)!{{{
-
-      use mpas_packages
+   subroutine mpas_core_setup_packages(configPool, packagePool, ierr)!{{{
 
       implicit none
 
+      type (mpas_pool_type), intent(in) :: configPool
+      type (mpas_pool_type), intent(in) :: packagePool
       integer, intent(out) :: ierr
 
       ierr = 0

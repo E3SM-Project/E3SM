@@ -255,7 +255,7 @@
 		<var name="gradPVn"                           type="real"     dimensions="nVertLevels nEdges Time"/>
 		<var name="h_vertex"                          type="real"     dimensions="nVertLevels nVertices Time"/>
 	</var_struct>
-	<var_struct name="mesh" time_levs="0">
+	<var_struct name="mesh" time_levs="1">
 		<var name="latCell"                           type="real"     dimensions="nCells"/>
 		<var name="lonCell"                           type="real"     dimensions="nCells"/>
 		<var name="xCell"                             type="real"     dimensions="nCells"/>

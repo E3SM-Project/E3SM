@@ -11,11 +11,8 @@
 
 !==================================================================================================
  module mpas_atmphys_landuse
- use mpas_configure,only: input_landuse_data, &
-                          config_sfc_albedo,  &
-                          config_frac_seaice, &
-                          config_do_restart
  use mpas_dmpar
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_utilities
@@ -71,21 +68,41 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24. 
 !>    * added initialization of the background surface albedo over snow.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-10-19.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
 
+
 !==================================================================================================
- subroutine landuse_init_forMPAS(dminfo,julday,mesh,diag_physics,sfc_input)
+ subroutine landuse_init_forMPAS(dminfo,julday,mesh,configs,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in):: mesh
- type(diag_physics_type),intent(in):: diag_physics
- type(sfc_input_type)   ,intent(in):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: diag_physics
+ type(mpas_pool_type),intent(in):: sfc_input
 
  integer,intent(in):: julday
+
+!local pointers:
+ logical,pointer:: config_do_restart,  &
+                   config_frac_seaice, &
+                   config_sfc_albedo
+
+ character(len=StrKIND),pointer:: input_landuse_data
+
+ integer,pointer:: nCells
+ integer,dimension(:),pointer:: ivgtyp
+ integer,dimension(:),pointer:: landmask
+
+ real(kind=RKIND),dimension(:),pointer:: latCell
+ real(kind=RKIND),dimension(:),pointer:: snoalb,snowc,xice
+ real(kind=RKIND),dimension(:),pointer:: albbck,embck,xicem,xland,z0
+ real(kind=RKIND),dimension(:),pointer:: mavail,sfc_albedo,sfc_emiss,thc,znt
 
 !local variables:
  character(len=StrKIND) :: lutype
@@ -98,45 +115,45 @@
 
  integer:: ierr,istat
  integer:: ic,is,isn,lucats,lumatch,luseas
- integer:: iCell,nCells
+ integer:: iCell
  integer:: julday_init
- integer,dimension(:),pointer:: ivgtyp
- integer,dimension(:),pointer:: landmask
 
  real(kind=RKIND):: li
  real(kind=RKIND),dimension(max_cats,max_seas):: albd,slmo,sfem,sfz0,therin,scfx,sfhc
 
- real(kind=RKIND),dimension(:),pointer:: latCell
- real(kind=RKIND),dimension(:),pointer:: snoalb,snowc,xice
- real(kind=RKIND),dimension(:),pointer:: albbck,embck,xicem,xland,z0
- real(kind=RKIND),dimension(:),pointer:: mavail,sfc_albedo,sfc_emiss,thc,znt
-
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_do_restart' ,config_do_restart )
+ call mpas_pool_get_config(configs,'config_frac_seaice',config_frac_seaice)
+ call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
+ call mpas_pool_get_config(configs,'input_landuse_data',input_landuse_data)
+
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+
+ call mpas_pool_get_array(mesh,'latCell',latCell)
+ 
+ call mpas_pool_get_array(sfc_input,'landmask'  , landmask  )
+ call mpas_pool_get_array(sfc_input,'ivgtyp'    , ivgtyp    )
+ call mpas_pool_get_array(sfc_input,'snoalb'    , snoalb    )
+ call mpas_pool_get_array(sfc_input,'snowc'     , snowc     )
+ call mpas_pool_get_array(sfc_input,'xice'      , xice      )
+ call mpas_pool_get_array(sfc_input,'xland'     , xland     )
+ call mpas_pool_get_array(sfc_input,'sfc_albbck', albbck    )
+
+ call mpas_pool_get_array(diag_physics,'sfc_emibck', embck     )
+ call mpas_pool_get_array(diag_physics,'mavail'    , mavail    )
+ call mpas_pool_get_array(diag_physics,'sfc_albedo', sfc_albedo)
+ call mpas_pool_get_array(diag_physics,'sfc_emiss' , sfc_emiss )
+ call mpas_pool_get_array(diag_physics,'thc'       , thc       )
+ call mpas_pool_get_array(diag_physics,'xicem'     , xicem     )
+ call mpas_pool_get_array(diag_physics,'z0'        , z0        )
+ call mpas_pool_get_array(diag_physics,'znt'       , znt       )
+ 
  write(0,*)
  write(0,*) '--- enter subroutine landuse_init_forMPAS: julian day=', julday
  write(0,*) '--- config_frac_seaice = ',config_frac_seaice
  write(0,*) '--- xice_threshold     = ',xice_threshold
 
- nCells = mesh % nCells
- latCell  => mesh % latCell % array
- 
- landmask => sfc_input % landmask   % array
- ivgtyp   => sfc_input % ivgtyp     % array
- snoalb   => sfc_input % snoalb     % array
- snowc    => sfc_input % snowc      % array
- xice     => sfc_input % xice       % array
- xland    => sfc_input % xland      % array
- albbck   => sfc_input % sfc_albbck % array
-
- embck      => diag_physics % sfc_emibck % array
- mavail     => diag_physics % mavail     % array
- sfc_albedo => diag_physics % sfc_albedo % array
- sfc_emiss  => diag_physics % sfc_emiss  % array
- thc        => diag_physics % thc        % array
- xicem      => diag_physics % xicem      % array
- z0         => diag_physics % z0         % array
- znt        => diag_physics % znt        % array
- 
 !reads in the landuse properties from landuse.tbl:
  if(dminfo % my_proc_id == IO_NODE) then
     open(land_unit,file='LANDUSE.TBL',action='READ',status='OLD',iostat=istat)

@@ -22,8 +22,8 @@
 module ocn_vmix_coefs_const
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_timer
+   use ocn_constants
 
    implicit none
    private
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_const_build(mesh, s, d, err)!{{{
+   subroutine ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,8 +83,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
       !-----------------------------------------------------------------
       !
@@ -92,11 +94,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         s             !< Input/Output: state information
+      type (mpas_pool_type), intent(inout) :: &
+         statePool             !< Input/Output: state information
 
-      type (diagnostics_type), intent(inout) :: &
-         d             !< Input/Output: diagnostic information
+      type (mpas_pool_type), intent(inout) :: &
+         diagnosticsPool             !< Input/Output: diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -117,6 +119,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfEdge, vertDiffTopOfCell
 
+      integer :: timeLevel
+
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
@@ -127,11 +131,17 @@ contains
 
       err = 0
 
-      vertViscTopOfEdge => d % vertViscTopOfEdge % array
-      vertDiffTopOfCell => d % vertDiffTopOfCell % array
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      call ocn_vel_vmix_coefs_const(mesh, vertViscTopOfEdge, err1)
-      call ocn_tracer_vmix_coefs_const(mesh, vertDiffTopOfCell, err2)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+
+      call ocn_vel_vmix_coefs_const(meshPool, vertViscTopOfEdge, err1)
+      call ocn_tracer_vmix_coefs_const(meshPool, vertDiffTopOfCell, err2)
 
       err = ior(err1, err2)
 
@@ -151,7 +161,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_coefs_const(mesh, vertViscTopOfEdge, err)!{{{
+   subroutine ocn_vel_vmix_coefs_const(meshPool, vertViscTopOfEdge, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -159,8 +169,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -186,7 +196,7 @@ contains
 
       err = 0
 
-      if(.not.constViscOn) return
+      if ( .not. constViscOn ) return
 
       vertViscTopOfEdge = vertViscTopOfEdge + constVisc
 
@@ -206,7 +216,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_const(mesh, vertDiffTopOfCell, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_const(meshPool, vertDiffTopOfCell, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -214,8 +224,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -241,14 +251,13 @@ contains
 
       err = 0
 
-      if(.not.constDiffOn) return
+      if ( .not. constDiffOn ) return
 
       vertDiffTopOfCell = vertDiffTopOfCell + constDiff
 
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_vmix_coefs_const!}}}
-
 
 !***********************************************************************
 !
@@ -265,7 +274,6 @@ contains
 !
 !-----------------------------------------------------------------------
 
-
    subroutine ocn_vmix_coefs_const_init(err)!{{{
 
    !--------------------------------------------------------------------
@@ -278,7 +286,15 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      real (kind=RKIND), pointer :: config_vert_visc, config_vert_diff
+      logical, pointer :: config_use_const_visc, config_use_const_diff
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_const_visc', config_use_const_visc)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_const_diff', config_use_const_diff)
+      call mpas_pool_get_config(ocnConfigs, 'config_vert_visc', config_vert_visc)
+      call mpas_pool_get_config(ocnConfigs, 'config_vert_diff', config_vert_diff)
 
       constViscOn = config_use_const_visc
       constDiffOn = config_use_const_diff

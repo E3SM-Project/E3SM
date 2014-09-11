@@ -16,7 +16,6 @@
 !>  This module contains the routines for matrix operations
 !
 !-----------------------------------------------------------------------
-
 module mpas_matrix_operations
 
    use mpas_grid_types
@@ -316,7 +315,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_matrix_cell_to_edge(matrixCell, grid, includeHalo, matrixEdge)!{{{
+   subroutine mpas_matrix_cell_to_edge(matrixCell, meshPool, includeHalo, matrixEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -327,8 +326,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          matrixCell   !< Input: matrix located at Cell
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: grid information
 
       logical, intent(in) :: & 
          includeHalo !< Input: If true, halo cells and edges are included in computation
@@ -348,17 +347,18 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesCompute, cell1, cell2, k, nVertLevels
+      integer :: iEdge, cell1, cell2, k
+      integer, pointer :: nEdgesCompute, nVertLevels
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       if (includeHalo) then
-         nEdgesCompute = grid % nEdges
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
       else 
-         nEdgesCompute = grid % nEdgesSolve
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      cellsOnEdge => grid % cellsOnEdge % array
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       ! error check that index 1 of matrixEdge and matrixCell are same length?
 
@@ -440,4 +440,3 @@ end module mpas_matrix_operations
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
-
