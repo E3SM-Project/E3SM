@@ -220,7 +220,7 @@
                         input_interval="initial_only"
                         immutable="true">
 
-			<var name="temperature"/>
+			<var_array name="tracers"/>
 			<var name="thickness"/>
 			<var name="normalVelocity"/>
 			<var name="latCell"/>
@@ -270,7 +270,7 @@
                         output_interval="3650_00:00:00"
                         immutable="true">
 
-			<var name="temperature"/>
+			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
 			<var name="cellMask"/>
@@ -321,7 +321,7 @@
                         output_interval="0001_00:00:00"
                         runtime_format="single_file">
 
-			<var name="temperature"/>
+			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
 			<var name="layerThickness"/>
