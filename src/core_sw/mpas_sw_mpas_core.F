@@ -10,15 +10,7 @@ module mpas_core
    use mpas_framework
    use mpas_timekeeping
 
-   type (io_output_object), save :: restart_obj
-   integer :: current_outfile_frames
-
    type (MPAS_Clock_type), pointer :: clock
-
-   character(len=*), parameter :: outputAlarmID = 'output'
-   character(len=*), parameter :: restartAlarmID = 'reset'
-   !character(len=*), parameter :: statsAlarmID = 'stats'
-
 
    contains
 
@@ -64,6 +56,22 @@ module mpas_core
       startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
 
+      !
+      ! If this is a restart run, read the restart stream, else read the input stream.
+      ! Regardless of which stream we read for initial conditions, reset the
+      ! input alarms for both input and restart before reading any remaining input streams.
+      !
+      if (config_do_restart) then
+         call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=ierr)
+      else
+         call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=ierr)
+      end if
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+      ! Read all other inputs
+      call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
       call sw_constants_init(domain % configs, domain % packages)
 
@@ -86,8 +94,6 @@ module mpas_core
          xtime = startTimeStamp
          block => block % next
       end do
-
-      current_outfile_frames = 0
 
    end subroutine mpas_core_init
 
@@ -136,18 +142,6 @@ module mpas_core
       else
           write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
           ierr = 1
-      end if
-
-      ! set output alarm
-      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=local_err)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(core_clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=local_err)
-
-      ! set restart alarm, if necessary
-      if (trim(config_restart_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=local_err)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(core_clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=local_err)
       end if
 
       !TODO: use this code if we desire to convert config_stats_interval to alarms 
@@ -237,7 +231,11 @@ module mpas_core
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
       write(0,*) 'Initial timestep ', trim(timeStamp)
 
-      call write_output_frame(output_obj, output_frame, domain)
+      ! Avoid writing a restart file at the initial time
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
+      call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -263,70 +261,12 @@ module mpas_core
             block_ptr => block_ptr % next
          end do
 
-         !TODO: mpas_get_clock_ringing_alarms is probably faster than multiple mpas_is_alarm_ringing...
-
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=ierr)
-            ! output_frame will always be > 1 here unless it was reset after the maximum number of frames per outfile was reached
-            if(output_frame == 1) then
-               call mpas_output_state_finalize(output_obj, domain % dminfo)
-               call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
-            end if
-            call write_output_frame(output_obj, output_frame, domain)
-         end if
-
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=ierr)
-
-            ! Write one restart time per file
-            call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
-            call mpas_output_state_for_domain(restart_obj, domain, 1)
-            call mpas_output_state_finalize(restart_obj, domain % dminfo)
-         end if
+         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       end do
 
    end subroutine mpas_core_run
-   
-   
-   subroutine write_output_frame(output_obj, output_frame, domain)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain and write model state to output file
-   !
-   ! Input/Output: domain - contains model state; diagnostic field are computed
-   !                        before returning
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-      use mpas_io_output
-   
-      implicit none
-
-      type (io_output_object), intent(inout) :: output_obj
-      integer, intent(inout) :: output_frame
-      type (domain_type), intent(inout) :: domain
-   
-      integer :: i, j, k
-      integer :: eoe
-      type (block_type), pointer :: block_ptr
-
-      integer, pointer :: config_frames_per_outfile
-
-      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
-   
-      call mpas_output_state_for_domain(output_obj, domain, output_frame)
-      output_frame = output_frame + 1
-
-      ! reset frame if the maximum number of frames per outfile has been reached
-      if (config_frames_per_outfile > 0) then
-         current_outfile_frames = current_outfile_frames + 1            
-         if(current_outfile_frames >= config_frames_per_outfile) then
-            current_outfile_frames = 0
-            output_frame = 1
-         end if
-      end if
-
-   end subroutine write_output_frame
    
    
    subroutine mpas_timestep(domain, itimestep, dt, timeStamp)
