@@ -24,6 +24,7 @@ module ocn_zonal_mean
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_stream_manager
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -46,9 +47,7 @@ module ocn_zonal_mean
 
    public :: ocn_setup_packages_zonal_mean, &
              ocn_init_zonal_mean, &
-             ocn_init_alarms_zonal_mean, &
              ocn_compute_zonal_mean, &
-             ocn_write_zonal_mean, &
              ocn_restart_zonal_mean, &
              ocn_finalize_zonal_mean
 
@@ -119,7 +118,6 @@ contains
       amZonalMeanActive = .true.
 
    end subroutine ocn_setup_packages_zonal_mean!}}}
-
 
 !***********************************************************************
 !
@@ -255,80 +253,6 @@ contains
       binBoundaryZonalMean(nZonalMeanBinsUsed+1) = binBoundaryZonalMean(nZonalMeanBinsUsed) + binWidth
 
    end subroutine ocn_init_zonal_mean!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_alarms_zonal_mean
-!
-!> \brief   Initialize alarms for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine conducts all alarm initializations required for the 
-!>  MPAS-Ocean analysis member.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_alarms_zonal_mean(configs, clock, startTime, computeAlarmID, err)!{{{
-
-      use mpas_packages
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: configs
-      character (len=*), intent(in) :: computeAlarmID
-      type (MPAS_Time_Type), intent(in) :: startTime
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (MPAS_Clock_type), intent(inout) :: clock
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: ierr
-      character(len=StrKIND) :: compute_interval
-      type (MPAS_Time_Type) :: alarmStartTime
-      type (MPAS_TimeInterval_type) :: alarmTimeStep
-
-      character (len=StrKIND), pointer :: config_zonal_mean_compute_interval, config_output_interval
-
-      err = 0
-
-      call mpas_pool_get_config(configs, 'config_zonal_mean_compute_interval', config_zonal_mean_compute_interval)
-      call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
-
-      ! set compute alarm for this analysis member
-      if (config_zonal_mean_compute_interval == 'same_as_output') then
-         compute_interval = config_output_interval
-      else
-         compute_interval = config_zonal_mean_compute_interval
-      endif
-
-      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-
-   end subroutine ocn_init_alarms_zonal_mean!}}}
 
 !***********************************************************************
 !
@@ -591,54 +515,6 @@ contains
       err = 0
 
    end subroutine ocn_restart_zonal_mean!}}}
-
-!***********************************************************************
-!
-!  routine ocn_write_zonal_mean
-!
-!> \brief   MPAS-Ocean analysis output
-!> \author  Mark Petersen
-!> \date    March 2014
-!> \details 
-!>  This routine writes all output for this MPAS-Ocean analysis member.
-!>  At this time this is just a stub, and all analysis output is written
-!>  to the output file specified by config_output_name.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_write_zonal_mean(domain, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(in) :: domain
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      err = 0
-
-   end subroutine ocn_write_zonal_mean!}}}
 
 !***********************************************************************
 !

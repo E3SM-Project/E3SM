@@ -43,6 +43,7 @@ module ocn_TEMPLATE
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_stream_manager
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -67,7 +68,6 @@ module ocn_TEMPLATE
              ocn_init_TEMPLATE, &
              ocn_init_alarms_TEMPLATE, &
              ocn_compute_TEMPLATE, &
-             ocn_write_TEMPLATE, &
              ocn_restart_TEMPLATE, &
              ocn_finalize_TEMPLATE
 
@@ -431,54 +431,6 @@ contains
       err = 0
 
    end subroutine ocn_restart_TEMPLATE!}}}
-
-!***********************************************************************
-!
-!  routine ocn_write_TEMPLATE
-!
-!> \brief   MPAS-Ocean analysis output
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
-!> \details 
-!>  This routine writes all output for this MPAS-Ocean analysis member.
-!>  At this time this is just a stub, and all analysis output is written
-!>  to the output file specified by config_output_name.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_write_TEMPLATE(domain, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(in) :: domain
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      err = 0
-
-   end subroutine ocn_write_TEMPLATE!}}}
 
 !***********************************************************************
 !
