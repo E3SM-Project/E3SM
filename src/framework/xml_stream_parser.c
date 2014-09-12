@@ -14,7 +14,7 @@
 #include <string.h>
 #include "ezxml/ezxml.h"
 
-#define MSGSIZE 128
+#define MSGSIZE 256
 
 
 /* 
@@ -500,6 +500,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 	size_t i;
 	size_t len;
 	int nleft, nright, line, start_line;
+	int nleftcom, nrightcom;
 	char msgbuf[MSGSIZE];
 	char *tag_buf;
 	struct stacknode *node;
@@ -511,22 +512,57 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 	 */
 	nleft = 0;
 	nright = 0;
+	nleftcom = 0;
+	nrightcom = 0;
 	line = 1;
+
+	if ( xml_buf[0] == '>' ) {
+		snprintf(msgbuf, MSGSIZE, "line %i, unexpected starting \'>\' character. A file cannot start with a  \'>\' character.", line);
+		fmt_err(msgbuf);
+		return 1;
+	}
+
 	for (i=0; i<bufsize; i++) {
 		if (xml_buf[i] == '<') {
-			nleft++;
-			if (nleft - nright > 1) {
-				snprintf(msgbuf, MSGSIZE, "line %i, unexpected \'<\' character. Is the previous XML tag missing a \'>\'?", line);
-				fmt_err(msgbuf);
-				return 1;
+			if (i+1 < bufsize && xml_buf[i+1] == '!'){
+				nleftcom++;
+				if (nleftcom - nrightcom > 1) {
+					snprintf(msgbuf, MSGSIZE, "line %i, unexpected XML comment open. Is the previous XML comment missing a \'-->\'?", line);
+					fmt_err(msgbuf);
+					return 1;
+				} else if (nleft != nright) {
+					snprintf(msgbuf, MSGSIZE, "line %i, unexpected XML comment open. Is the previous XML tag missing a \'>\'?\n   NOTE: Comments are not allowed within an open XML tag.", line);
+					fmt_err(msgbuf);
+					return 1;
+				}
+			} else {
+				nleft++;
+				if (nleft - nright > 1){
+					snprintf(msgbuf, MSGSIZE, "line %i, unexpected \'<\' character. Is the previous XML tag missing a \'>\'?", line);
+					fmt_err(msgbuf);
+					return 1;
+				}
 			}
 		}
 		else if (xml_buf[i] == '>') {
-			nright++;
-			if (nleft != nright) {
-				snprintf(msgbuf, MSGSIZE, "line %i, unexpected \'>\' character. Is the XML tag missing a \'<\'?", line);
-				fmt_err(msgbuf);
-				return 1;
+			if (i > 0 && xml_buf[i-1] == '-'){
+				nrightcom++;
+				if (nleftcom != nrightcom) {
+					snprintf(msgbuf, MSGSIZE, "line %i, unexpected XML comment close. Is the XML comment missing a \'<!--\'?", line);
+					fmt_err(msgbuf);
+					return 1;
+				} else if (nleft != nright) {
+					snprintf(msgbuf, MSGSIZE, "line %i, unexpected XML comment close. Is the previous XML tag missing a \'>\'?\n   NOTE: Comments are not allowed within an open XML tag.", line);
+					fmt_err(msgbuf);
+					return 1;
+				}
+			} else {
+				nright++;
+				if (nleft != nright) {
+					snprintf(msgbuf, MSGSIZE, "line %i, unexpected \'>\' character. Is the XML tag missing a \'<\'?", line);
+					fmt_err(msgbuf);
+					return 1;
+				}
 			}
 		}
 		else if (xml_buf[i] == '\n') {
