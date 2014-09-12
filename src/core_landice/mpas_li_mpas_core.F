@@ -118,6 +118,8 @@ module mpas_core
       err = ior(err, err_tmp)
       call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+      err = ior(err, err_tmp)
 
       !
       ! Initialize core
@@ -210,7 +212,7 @@ module mpas_core
       integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
-      logical, pointer :: config_do_restart
+      logical, pointer :: config_do_restart, config_write_output_on_startup
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
@@ -225,7 +227,7 @@ module mpas_core
 
       ! Get Pool stuff that will be needed
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
-
+      call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -264,28 +266,17 @@ module mpas_core
       ! === Write Initial Output
       ! ===
       call mpas_timer_start("write output")
-      call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
-      err = ior(err, err_tmp)
+      if (config_write_output_on_startup) then
+         call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=err_tmp)
+      endif
       call mpas_timer_stop("write output")
-
-!!! These lines were used previously instead of the one above - but we may need to reassess how we want output to work.
-!!!      if (config_write_output_on_startup) then
-!!!         call mpas_timer_start("write output frame")
-!!!         call write_output_frame(output_obj, output_frame, domain)
-!!!         call mpas_timer_stop("write output frame")
-!!!      elseif (config_frames_per_outfile /= 0) then
-!!!         ! if we are not writing on startup then close the already open file since it will have a confusing time stamp (the time stamp would be the inital time, but the intial time is not present in the file!)
-!!!         call mpas_output_state_finalize(output_obj, domain % dminfo)
-!!!      endif
-
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
           call mpas_dmpar_global_abort("An error has occurred in mpas_core_run before time-stepping. Aborting...")
       endif
+
 
 
       ! During integration, time level 1 stores the model state at the beginning of the
