@@ -60,6 +60,10 @@ typedef struct mapsort
 		     void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		     MPI_Comm comm, const int flow_cntl);
   
+  int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
+		      void *recvbuf, const int recvcnts[], const int rdispls[], const MPI_Datatype recvtype, const int root, 
+		     MPI_Comm comm, const int flow_cntl);
+  
   int pio_swapm(void *sndbuf, int sndlths[], int sdispls[], MPI_Datatype stypes[], 
 		void *rcvbuf, int rcvlths[], int rdispls[], MPI_Datatype rtypes[], 
 		MPI_Comm comm, const bool handshake, bool isend, const int max_requests);
