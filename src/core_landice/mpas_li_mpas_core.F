@@ -13,9 +13,6 @@ module mpas_core
    implicit none
    private
 
-   type (io_output_object), save :: restart_obj
-   integer :: current_outfile_frames
-
    type (MPAS_Clock_type), pointer :: clock
 
    !--------------------------------------------------------------------
@@ -37,9 +34,6 @@ module mpas_core
    !
    !--------------------------------------------------------------------
 
-   character(len=*), parameter :: outputAlarmID = 'output'
-   character(len=*), parameter :: restartAlarmID = 'restart'
-   !character(len=*), parameter :: statsAlarmID = 'stats'
 
 !***********************************************************************
 
@@ -120,6 +114,10 @@ module mpas_core
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
       err = ior(err, err_tmp)
 
+      call MPAS_stream_mgr_read(stream_manager, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+      err = ior(err, err_tmp)
 
       !
       ! Initialize core
@@ -148,8 +146,6 @@ module mpas_core
 
          block => block % next
       end do
-
-      current_outfile_frames = 0
 
       ! check for errors and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -267,7 +263,12 @@ module mpas_core
       ! ===
       ! === Write Initial Output
       ! ===
-      call write_output_frame(output_obj, output_frame, domain)
+      call mpas_timer_start("write output")
+      call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("write output")
 
 !!! These lines were used previously instead of the one above - but we may need to reassess how we want output to work.
 !!!      if (config_write_output_on_startup) then
@@ -334,36 +335,16 @@ module mpas_core
          !TODO: mpas_get_clock_ringing_alarms is probably faster than multiple mpas_is_alarm_ringing...
 
          ! ===
-         ! === Write Output, if needed
+         ! === Write Output and/or Restart, if needed
          ! ===
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=err_tmp)) then
-            call mpas_timer_start("write output")
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=err_tmp)
-            ! output_frame will always be > 1 here unless it was reset after the maximum number of frames per outfile was reached
-            ! MJH: See old code for adjustments made here to deal with some obscure, specific use-cases
-            if(output_frame == 1) then
-               call mpas_output_state_finalize(output_obj, domain % dminfo)
-               call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
-            end if
-            call write_output_frame(output_obj, output_frame, domain)
-            call mpas_timer_stop("write output")
-         end if
-         err = ior(err, err_tmp)
 
-         ! ===
-         ! === Write Restart, if needed
-         ! ===
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=err_tmp)) then
-            call mpas_timer_start("write restart")
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=err_tmp)
-
-            ! Write one restart time per file
-            call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
-            call mpas_output_state_for_domain(restart_obj, domain, 1)
-            call mpas_output_state_finalize(restart_obj, domain % dminfo)
-            call mpas_timer_stop("write restart")
-         end if
+         call mpas_timer_start("write output")
+         call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
          err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_timer_stop("write output")
+
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -871,30 +852,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
           ierr = 1
       end if
 
-      ! set output alarm
-      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(core_clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
-
-      ! set restart alarm, if necessary
-      if (trim(config_restart_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=err_tmp)
-         ierr = ior(ierr,err_tmp)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(core_clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
-         ierr = ior(ierr,err_tmp)
-      end if
-
-      !TODO: use this code if we desire to convert config_stats_interval to alarms 
-      !(must also change config_stats_interval type to character) 
-      ! set stats alarm, if necessary
-      !if (trim(config_stats_interval) /= "none") then      
-      !   call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=err_tmp)
-      !   alarmStartTime = startTime + alarmTimeStep
-      !   call mpas_add_clock_alarm(core_clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
-      !end if
 
       ! === error check
       if (ierr > 0) then
@@ -904,56 +861,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
    !--------------------------------------------------------------------
    end subroutine simulation_clock_init
 
-
-
-!***********************************************************************
-!
-!  routine write_output_frame
-!
-!> \brief   Writes an output frame
-!> \author  ??
-!> \date    ??
-!> \details
-!>  This routine writes an output frame.
-!
-!-----------------------------------------------------------------------
-   subroutine write_output_frame(output_obj, output_frame, domain)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain and write model state to output file
-   !
-   ! Input/Output: domain - contains model state; diagnostic field are computed
-   !                        before returning
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-      use mpas_io_output
-
-      implicit none
-
-      type (io_output_object), intent(inout) :: output_obj
-      integer, intent(inout) :: output_frame
-      type (domain_type), intent(inout) :: domain
-      integer, pointer :: config_frames_per_outfile
-
-      integer :: i, j, k
-      integer :: eoe
-
-      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
-
-      call mpas_output_state_for_domain(output_obj, domain, output_frame)
-      output_frame = output_frame + 1
-
-      ! reset frame if the maximum number of frames per outfile has been reached
-      if (config_frames_per_outfile > 0) then
-         current_outfile_frames = current_outfile_frames + 1            
-         if(current_outfile_frames >= config_frames_per_outfile) then
-! MJH: My old version did things a bit differently here.
-            current_outfile_frames = 0
-            output_frame = 1
-         end if
-      end if
-
-   end subroutine write_output_frame
 
 
 end module mpas_core
