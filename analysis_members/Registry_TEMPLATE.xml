@@ -16,7 +16,11 @@
 		<package name="amTemplate" description="This package includes variables required for the amTemplate analysis member."/>
 	</packages>
 	<streams>
-		<stream name="output" type="output">
+		<stream name="TemplateOutput" type="output"
+				filename_template="analysis_members/template.$Y-$M-$D.nc"
+				records_per_file="4"
+				output_interval="00_06:00:00"
+				runtime_format="single_file">
 			<var name="example_variable1"/> 
 			<var name="example_variable2"/> 
 		</stream>
