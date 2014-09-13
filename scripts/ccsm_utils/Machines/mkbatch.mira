@@ -5,14 +5,8 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
-if ($PROJECT == "") then
-  echo "  PROJECT must be set in env_case.xml on Mira."
-  echo "  This can be specified in create_newcase with the -project parameter"
-  echo "  or by setting a PROJECT environment variable before executing create_newcase."
-  exit -1
-endif
-set account_name = $PROJECT
-if !(-d /projects/${account_name}) then
+
+if !(-d /projects/${PROJECT}) then
   echo "  PROJECT in env_case.xml must be set to a valid project name."
   echo "  This can be specified in create_newcase with the -project parameter"
   echo "  or by setting a PROJECT environment variable before executing create_newcase."
