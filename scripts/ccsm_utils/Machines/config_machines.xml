@@ -28,8 +28,13 @@
  of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment 
  variable of the same name if it exists.
 
- NOTE: The variable CESMSCRATCHROOT must be fully resolved before a case is built so cannot 
-            contain other variables defined in cesm.
+ ===============================================================
+ PROJECT_REQUIRED
+ ===============================================================
+ A machine may need the PROJECT xml variable to be defined either because it is
+ used in some paths, or because it is used to give an account number in the job
+ submission script. If either of these are the case, then PROJECT_REQUIRED
+ should be set to TRUE for the given machine.
 
 -->
 <machine MACH="userdefined">
@@ -138,6 +143,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>24</PES_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 
@@ -204,6 +210,7 @@
          <GMAKE_J>8</GMAKE_J>
          <PES_PER_NODE>16</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="goldbach">
@@ -291,6 +298,7 @@
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="janus">
@@ -358,6 +366,7 @@
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 
@@ -545,6 +554,7 @@
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="yellowstone">
