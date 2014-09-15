@@ -15,7 +15,7 @@ if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
 endif
 @ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
 #set qname = batch
-set tlimit = "00:59:00"
+set tlimit = "24:00:00"
 
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
