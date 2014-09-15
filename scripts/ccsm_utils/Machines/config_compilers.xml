@@ -509,6 +509,11 @@ for mct, etc.
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="mac">
+  <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
+  <ADD_LDFLAGS>-framework Accelerate</ADD_LDFLAGS>
+  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
+</compiler>
 
 <compiler>
   <ADD_CPPDEFS MODEL="pop2"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>

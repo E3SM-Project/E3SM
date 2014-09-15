@@ -1,0 +1,28 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# MAC
+# This file allows ACME to be built on a Mac that uses Homebrew to manage 
+# the installation of supporting software. Steps for producing a reliable 
+# Mac environment for ACME:
+#
+# 1. Install Homebrew (see http://brew.sh).
+# 2. Install a recent version of the GNU compilers (gcc48 or gcc49).
+# 3. Install the openmpi or mpich package, using /usr/local/bin/gcc-4.x 
+#    as its compiler (where, e.g., x is 8 or 9). This can be done by 
+#    editing the openmpi/mpich recipe using 'edit openmpi' (or 'edit mpich') 
+#    and following the procedure outlined in 
+#    http://stackoverflow.com/questions/9186033/using-homebrew-with-gcc-4-6
+# 4. Install parallel HDF5 with 'brew install hdf5 --enable-parallel'
+# 5. Install NetCDF 'brew install netcdf --enable-fortran'
+# 6. Link NetCDF using 'brew link netcdf'
+#
+# If you use Fink or MacPorts, you're on your own. There's a reason that 
+# HomeBrew exists. :-)
+#
+# -------------------------------------------------------------------------
+
+setenv NETCDF /usr/local
+setenv NETCDF_PATH $NETCDF
+setenv NETCDF_DIR $NETCDF
+
