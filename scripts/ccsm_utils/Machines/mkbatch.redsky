@@ -38,6 +38,7 @@ cat >! $file << EOF1
 #SBATCH -N ${nodes}
 #SBATCH --account=FY140052
 #SBATCH --time=${tlimit}
+#SBATCH --partition=ec
 
 
 #limit coredumpsize 1000000
