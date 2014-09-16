@@ -562,7 +562,7 @@ module mpas_grid_types
       type (block_type), pointer :: next => null()
 
       type (mpas_pool_type), pointer :: structs, dimensions, configs, packages
-      type (mpas_pool_type), pointer :: allFields
+      type (mpas_pool_type), pointer :: allFields, allStructs
    end type block_type
 
 
@@ -825,6 +825,7 @@ module mpas_grid_types
       call mpas_pool_create_pool(b % structs)
       call mpas_pool_create_pool(b % dimensions)
       call mpas_pool_create_pool(b % allFields)
+      call mpas_pool_create_pool(b % allStructs)
 
       b % configs => dom % configs
       b % packages => dom % packages

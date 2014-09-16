@@ -68,7 +68,7 @@ mpas_timer.o: mpas_kind_types.o mpas_io_units.o
 
 mpas_block_decomp.o: mpas_grid_types.o mpas_hash.o mpas_configure.o mpas_io_units.o
 
-mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_configure.o mpas_io_units.o $(DEPS)
+mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_configure.o mpas_io_units.o mpas_block_decomp.o $(DEPS)
 
 mpas_io.o: mpas_dmpar_types.o mpas_io_units.o
 

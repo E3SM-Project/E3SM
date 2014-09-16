@@ -44,6 +44,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_get_property, &
               MPAS_stream_mgr_add_pkg, &
               MPAS_stream_mgr_remove_pkg, &
+              MPAS_stream_mgr_add_pool, &
               MPAS_stream_mgr_add_field, &
               MPAS_stream_mgr_remove_field, &
               MPAS_stream_mgr_add_alarm, &
@@ -63,6 +64,7 @@ module mpas_stream_manager
         type (MPAS_Clock_type), pointer :: streamClock
         type (MPAS_Pool_type), pointer :: allFields
         type (MPAS_Pool_type), pointer :: allPackages
+        type (MPAS_Pool_type), pointer :: allStructs
         type (MPAS_Pool_type), pointer :: defaultAtts
 
         type (MPAS_stream_list_type), pointer :: streams
@@ -123,7 +125,7 @@ module mpas_stream_manager
     !>  clock and a pool from which fields may be drawn and added to streams.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_init(manager, clock, allFields, allPackages, ierr)!{{{
+    subroutine MPAS_stream_mgr_init(manager, clock, allFields, allPackages, allStructs, ierr)!{{{
 
         implicit none
 
@@ -133,6 +135,7 @@ module mpas_stream_manager
         type (MPAS_Clock_type), pointer :: clock
         type (MPAS_Pool_type), pointer :: allFields
         type (MPAS_Pool_type), pointer :: allPackages
+        type (MPAS_Pool_type), pointer :: allStructs
         integer, intent(out), optional :: ierr
 
         integer :: err_local
@@ -145,6 +148,7 @@ module mpas_stream_manager
         allocate(manager)
         manager % allFields => allFields
         manager % allPackages => allPackages
+        manager % allStructs => allStructs
         manager % streamClock => clock
         manager % numStreams = 0
         manager % errorLevel = MPAS_STREAM_ERR_SILENT
@@ -504,6 +508,141 @@ module mpas_stream_manager
         clock => manager % streamClock
 
     end subroutine MPAS_stream_mgr_get_clock !}}}
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_add_pool
+    !
+    !> \brief Add a pool of fields to the specified stream in an MPAS stream manager.
+    !> \author Doug Jacobsen
+    !> \date   09/15/2014
+    !> \details
+    !>  Adds a pool from the allStructs pool to the specified stream in an MPAS
+    !>   stream manager. Currently, it adds only explicitly named var's and
+    !>   var_array's to the stream, but commented code will allow adding all nested
+    !>   structs as well.
+    !
+    !-----------------------------------------------------------------------
+    recursive subroutine MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_pool'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: poolName
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream
+        type (mpas_pool_field_info_type) :: info
+        integer, pointer :: test_ptr
+        integer :: err_local
+
+        type (mpas_pool_type), pointer :: fieldPool
+        type (mpas_pool_iterator_type) :: poolItr
+
+        type (field0DReal), pointer :: real0DField
+        type (field1DReal), pointer :: real1DField
+        type (field2DReal), pointer :: real2DField
+        type (field3DReal), pointer :: real3DField
+        type (field4DReal), pointer :: real4DField
+        type (field5DReal), pointer :: real5DField
+        type (field0DInteger), pointer :: int0DField
+        type (field1DInteger), pointer :: int1DField
+        type (field2DInteger), pointer :: int2DField
+        type (field3DInteger), pointer :: int3DField
+        type (field0DChar), pointer :: char0DField
+        type (field1DChar), pointer :: char1DField
+
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_pool()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Check that stream exists
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Don't modify an immutable stream
+        !
+        if (stream % immutable) then
+            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' is immutable.')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Check that the pool exists
+        !
+        call mpas_pool_get_subpool(manager % allStructs, poolName, fieldPool)
+        if (.not. associated(fieldPool) ) then
+            STREAM_DEBUG_WRITE('-- Requested pool '//trim(poolName)//' does not exist.')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Iterate over pool, adding each field to the stream, and recursively calling this subroutine for each subpool
+        !
+        call mpas_pool_begin_iteration(fieldPool)
+        do while (mpas_pool_get_next_member(fieldPool, poolItr))
+            if (poolItr % memberType == MPAS_POOL_SUBPOOL) then
+                STREAM_DEBUG_WRITE('-- Try to add subpool...')
+                ! call mpas_stream_mgr_add_pool(manager, streamId, poolItr % memberName, iErr)
+            else if (poolItr % memberType == MPAS_POOL_FIELD) then
+                if (poolItr % dataType == MPAS_POOL_REAL) then
+                    if (poolItr % nDims == 0) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, ierr)
+                    else if (poolItr % nDims == 1) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, ierr)
+                    else if (poolItr % nDims == 2) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, ierr)
+                    else if (poolItr % nDims == 3) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, ierr)
+                    else if (poolItr % nDims == 4) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, ierr)
+                    else if (poolItr % nDims == 5) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, ierr)
+                    end if
+                else if (poolItr % dataType == MPAS_POOL_INTEGER) then
+                    if (poolItr % nDims == 0) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, ierr)
+                    else if (poolItr % nDims == 1) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, ierr)
+                    else if (poolItr % nDims == 2) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, ierr)
+                    else if (poolItr % nDims == 3) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, ierr)
+                    end if
+                else if (poolItr % dataType == MPAS_POOL_CHARACTER) then
+                    if (poolItr % nDims == 0) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, ierr)
+                    else if (poolItr % nDims == 1) then
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField)
+                        call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, ierr)
+                    end if
+                end if
+            end if
+        end do
+
+    end subroutine MPAS_stream_mgr_add_pool!}}}
 
 
     !-----------------------------------------------------------------------
@@ -3845,6 +3984,40 @@ write(0,*) 'For stream '//trim(streamID)//' found record interval '//trim(record
     end if
 
 end subroutine stream_mgr_create_stream_c !}}}
+
+
+subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind(c)!{{{
+
+    use mpas_c_interfacing, only : mpas_c_to_f_string
+    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_pool
+    use mpas_kind_types, only : StrKIND
+
+    implicit none
+
+    type (c_ptr) :: manager_c
+    character(kind=c_char) :: streamID_c(*)
+    character(kind=c_char) :: poolName_c(*)
+    integer(kind=c_int) :: ierr_c
+
+    type (MPAS_streamManager_type), pointer :: manager
+    character(len=StrKIND) :: streamID, poolName
+    integer :: ierr
+
+
+    call c_f_pointer(manager_c, manager)
+    call mpas_c_to_f_string(streamID_c, streamID)
+    call mpas_c_to_f_string(poolName_c, poolName)
+
+    call MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr)
+
+    if (ierr == MPAS_STREAM_MGR_NOERR) then
+        ierr_c = 0
+    else
+        ierr_c = 1
+    end if
+
+end subroutine stream_mgr_add_pool_c!}}}
 
 
 subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bind(c) !{{{

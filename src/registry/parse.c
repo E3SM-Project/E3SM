@@ -16,7 +16,8 @@
 
 
 int is_unique_field(ezxml_t registry, ezxml_t field, const char *check_name);
-int check_for_unique_names(ezxml_t registry);
+int is_unique_struct(ezxml_t registry, ezxml_t check_struct, const char *check_name);
+int check_for_unique_names(ezxml_t registry, ezxml_t current_position);
 int is_integer_constant(char *);
 int parse_reg_xml(ezxml_t registry);
 int validate_reg_xml(ezxml_t registry);
@@ -631,9 +632,11 @@ done_searching:
 		}
 	}
 
-	if(check_for_unique_names(registry)){
-		fprintf(stderr, "ERROR: Fields are required to have unique names for I/O reasons.\n");
+	if(check_for_unique_names(registry, registry)){
+		fprintf(stderr, "ERROR: Structures and Fields are required to have unique names for I/O reasons.\n");
 		fprintf(stderr, "       Please fix duplicates in the Registry.xml file.\n");
+		fprintf(stderr, "       You may use the name_in_code attribute to give them the same name inside the model,\n");
+		fprintf(stderr, "       but the name attribute is required to be unique.\n");
 		return 1;
 	}
 
@@ -668,7 +671,7 @@ int parse_reg_xml(ezxml_t registry)/*{{{*/
 	err = generate_field_links(registry);
 
 	// Generate code to read and write fields
-	err = generate_field_reads_and_writes(registry);
+	err = generate_immutable_streams(registry);
 
 	return 0;
 }/*}}}*/
@@ -702,12 +705,46 @@ int is_unique_field(ezxml_t registry, ezxml_t field, const char *check_name){/*{
 }/*}}}*/
 
 
-int check_for_unique_names(ezxml_t registry){/*{{{*/
+int is_unique_struct(ezxml_t current_position, ezxml_t check_struct, const char *check_name){/*{{{*/
+	ezxml_t struct_xml;
+
+	const char *name;
+
+	int test;
+
+
+	test = 1;
+
+	for(struct_xml = ezxml_child(current_position, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+		name = ezxml_attr(struct_xml, "name");
+
+		if(strcmp(name, check_name) == 0 && struct_xml != check_struct){
+			return 0;
+		} else {
+			test = is_unique_struct(struct_xml, check_struct, check_name);
+			if ( !test ) {
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}/*}}}*/
+
+
+int check_for_unique_names(ezxml_t registry, ezxml_t current_position){/*{{{*/
 	ezxml_t struct_xml, var_arr_xml, var_xml;
 
 	const char *name;
 
-	for(struct_xml = ezxml_child(registry, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+	for(struct_xml = ezxml_child(current_position, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+		name = ezxml_attr(struct_xml, "name");
+
+		if(!is_unique_struct(registry, struct_xml, name)){
+			fprintf(stderr, "ERROR: Struct %s is not uniqe.\n", name);
+			return 1;
+		}
+
 		for(var_arr_xml = ezxml_child(struct_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
 				name = ezxml_attr(var_xml, "name");
@@ -725,6 +762,8 @@ int check_for_unique_names(ezxml_t registry){/*{{{*/
 				return 1;
 			}
 		}
+
+		check_for_unique_names(registry, struct_xml);
 	}
 
 	return 0;

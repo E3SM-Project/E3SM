@@ -169,10 +169,12 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 
 	char *token, *string, *tofree;
 	int empty_packages;
+	int empty_struct;
 
 	package_list = ezxml_attr(currentPosition, "packages");
 
 	empty_packages = 0;
+	empty_struct = 1;
 
 	// Check for vars that don't have packages.
 	for(child_xml1 = ezxml_child(currentPosition, "var"); child_xml1 && !empty_packages; child_xml1 = child_xml1->next){
@@ -181,6 +183,7 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 		if(!package_list){
 			empty_packages = 1;
 		}
+		empty_struct = 0;
 	}
 
 	// Check for vararrays and constituents that don't have packages.
@@ -194,12 +197,13 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 				if(!package_list){
 					empty_packages = 1;
 				}
+				empty_struct = 0;
 			}
 		}
 	}
 
 	// If any var/var_array doesn't have packages on it, the struct doesn't have packages on it.
-	if(empty_packages){
+	if(empty_packages || empty_struct){
 		return 1;
 	} else {
 		// Build unique list of packages from nested vars and var arrays.
@@ -450,8 +454,7 @@ void write_default_namelist(ezxml_t registry) /*{{{*/
 }/*}}}*/
 
 
-void write_default_streams(ezxml_t registry)
-{
+void write_default_streams(ezxml_t registry){/*{{{*/
 	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml, vararray_xml, stream_xml;
 
 	const char *optstream, *optname, *optvarname, *opttype;
@@ -607,7 +610,7 @@ void write_default_streams(ezxml_t registry)
 	fprintf(fd, "</streams>\n");
 
 	fclose(fd);
-}
+}/*}}}*/
 
 
 int parse_packages_from_registry(ezxml_t registry)/*{{{*/
@@ -1680,6 +1683,7 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	const char *substructname;
 	const char *streamname, *streamname2;
 	const char *packagename;
+	const char *structnameincode;
 
 	char *string, *tofree, *token;
 	char spacing[1024];
@@ -1702,6 +1706,12 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	}
 
 	structname = ezxml_attr(superStruct, "name");
+	structnameincode = ezxml_attr(superStruct, "name_in_code");
+	
+	if(!structnameincode){
+		structnameincode = ezxml_attr(superStruct, "name");
+	}
+
 	structpackages = ezxml_attr(superStruct, "packages");
 
 	// Extract all sub structs
@@ -1758,7 +1768,8 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	// Setup new pool to be added into structPool
 	fortprintf(fd, "      allocate(newSubPool)\n");
 	fortprintf(fd, "      call mpas_pool_create_pool(newSubPool)\n");
-	fortprintf(fd, "      call mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", structname);
+	fortprintf(fd, "      call mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", structnameincode);
+	fortprintf(fd, "      call mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", structname);
 	fortprintf(fd, "\n");
 
 	// Need to get value of package flags
@@ -2150,13 +2161,21 @@ int generate_field_links(ezxml_t registry){/*{{{*/
  *  initialized, but before any calls to generate mutable streams are made.
  *
  *********************************************************************************/
-int generate_immutable_streams(char *core_string, ezxml_t registry)
-{
+int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	ezxml_t streams_xml, stream_xml, var_xml, varstruct_xml;
 
 	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optimmutable;
+	const char *corename;
 	FILE *fd;
 
+	char core_string[1024];
+
+	corename = ezxml_attr(registry, "core");
+
+	sprintf(core_string, "_%s_", corename);
+
+	// For now, don't include core name in subroutines
+	sprintf(core_string, "_");
 
 	fd = fopen("setup_immutable_streams.inc", "w+");
 
@@ -2218,27 +2237,6 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 	fortprintf(fd, "end subroutine mpas%ssetup_immutable_streams\n", core_string);
 
 	fclose(fd);
-
-	return 0;
-}
-
-
-int generate_field_reads_and_writes(ezxml_t registry){/*{{{*/
-	ezxml_t struct_xml;
-	const char *corename;
-	FILE *fd;
-	int i, err;
-
-	char core_string[1024];
-
-	corename = ezxml_attr(registry, "core");
-
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
-
-	err = generate_immutable_streams(core_string, registry);
 
 	return 0;
 }/*}}}*/

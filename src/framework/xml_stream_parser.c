@@ -22,6 +22,7 @@
  */
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, char *, char *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
+void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
 void stream_mgr_add_pkg_c(void *, const char *, const char *, int *);
 
@@ -254,7 +255,7 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 #endif
 	
 		*xml_buf = (char *)malloc(*bufsize);
-		read(iofd, (void *)(*xml_buf), *bufsize);
+		err = read(iofd, (void *)(*xml_buf), *bufsize);
 
 #ifdef _MPI
 		err = MPI_Bcast((void *)(*xml_buf), (int)(*bufsize), MPI_CHAR, 0, comm);
@@ -700,7 +701,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t varstruct_xml;
 	ezxml_t substream_xml;
 	ezxml_t streamsmatch_xml, streammatch_xml;
-	const char *compstreamname_const;
+	const char *compstreamname_const, *structname_const;
 	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const;
 	const char *interval_in, *interval_out, *packagelist;
 	char *packages, *package;
@@ -919,7 +920,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		for (varfile_xml = ezxml_child(stream_xml, "file"); varfile_xml; varfile_xml = ezxml_next(varfile_xml)) {
 			varfile = ezxml_attr(varfile_xml, "name");
-/* TODO: We should probably only have one task open and read the file... */
+			/* TODO: We should probably only have one task open and read the file... */
+			/* TODO: This doesn't seem like it supports var_arrays, var_structs, or streams.... */
 			fd = fopen(varfile, "r");
 			if (fd != NULL) {
 				while (fscanf(fd, "%s", fieldname) != EOF) {
@@ -956,6 +958,14 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 		}
+		for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+			structname_const = ezxml_attr(varstruct_xml, "name");
+			stream_mgr_add_pool_c(manager, streamID, structname_const, &err);
+			if (err != 0){
+				*status = 1;
+				return;
+			}
+		}
 
 		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
 			streamname_const = ezxml_attr(substream_xml, "name");
@@ -982,11 +992,18 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 							return;
 						}
 					}
+
+					for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+						structname_const = ezxml_attr(varstruct_xml, "name");
+						stream_mgr_add_pool_c(manager, streamID, structname_const, &err);
+						if (err != 0){
+							*status = 1;
+							return;
+						}
+					}
 				}
 			}
 		}
-
-
 	}
 
 	free(xml_buf);
