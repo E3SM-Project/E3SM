@@ -19,7 +19,8 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_1dval
   call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
   filename = "test_pio_ncdf_get_put.testfile"
   do i=1,num_iotypes
-    ret = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_write)
+    PIO_TF_LOG(0,*) "Testing type :", iotype_descs(i)
+    ret = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
     PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(filename))
 
     ! Since file is just created no need to enter redef
@@ -75,7 +76,8 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dval
   call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
   filename = "test_pio_ncdf_get_put.testfile"
   do i=1,num_iotypes
-    ret = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_write)
+    PIO_TF_LOG(0,*) "Testing type :", iotype_descs(i)
+    ret = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
     PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(filename))
 
     ! Since file is just created no need to enter redef
