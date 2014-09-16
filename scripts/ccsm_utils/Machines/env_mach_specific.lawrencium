@@ -1,0 +1,24 @@
+#! /bin/csh -f
+
+source /etc/profile.d/modules.csh
+module purge
+    module load cmake
+if ( $COMPILER == "pgi" ) then
+    module load precision/i4
+    module load pgi/13.8
+    module load mvapich2/1.9
+    module load netcdf/4.1.3
+endif
+
+if ( $COMPILER == "intel" ) then
+    module load intel/14.0.1
+    module load mvapich2/1.9
+    module load netcdf/4.1.3
+endif
+
+#-------------------------------------------------------------------------------
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+
+
