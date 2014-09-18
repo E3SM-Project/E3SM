@@ -570,6 +570,7 @@ contains
     use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
     use aquaplanet, only : aquaplanet_init_state
+    use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 #endif
 #if USE_CUDA_FORTRAN
     use cuda_mod, only: cuda_mod_init
@@ -616,7 +617,6 @@ contains
     integer :: ierr
     integer :: nfrc
     integer :: n0_qdp
-    integer :: n0_fvm, np1_fvm
 
 #ifdef TRILINOS
      integer :: lenx
@@ -964,7 +964,6 @@ contains
     endif
 
     if (ntrac>0) then
-       call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)
 #if defined(_SPELT)
       ! do it only for SPELT tracers, FIRST TRACER will be the AIR DENSITY
       ! should be optimize and combined with the above caculation
@@ -1000,30 +999,33 @@ contains
 	    do i=1,np
 	      do j=1,np
 		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0_fvm)
+		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
 	      enddo
 	    enddo
           !write air density in dp_fvm field of FVM
           fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
-      call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
+!phl      call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm) !boundary exchange now takes place in transport subroutine (cslam_runflux)
       do ie=nets,nete
-	    do i=1-nhc,nc+nhc
-	      do j=1-nhc,nc+nhc
+!	    do i=1-nhc,nc+nhc
+!	      do j=1-nhc,nc+nhc
+!phl is it necessary to compute psc here?
+	    do i=1,nc
+	      do j=1,nc
 	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
 	      enddo
 	    enddo
       enddo
       if (hybrid%masterthread) then
-         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized.'
+         write(iulog,*) 'FVM tracers initialized.'
       end if
 #endif
     endif
 
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
     if (runtype==1) then
-       call TimeLevel_Qdp( tl, qsplit, n0_qdp) !phl: isn't there an argument missing?
+       call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, t, q, i, j, dp)
@@ -1336,6 +1338,7 @@ contains
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use prim_advection_mod, only : vertical_remap
+    use fvm_control_volume_mod, only : n0_fvm
 #if USE_CUDA_FORTRAN
     use cuda_mod, only: copy_qdp_h2d, copy_qdp_d2h
 #endif
@@ -1401,7 +1404,7 @@ contains
     ! ftype=1  forcing was applied time-split in CAM coupling layer
     ! ftype=0 means forcing apply here
     ! ftype=-1 do not apply forcing
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp)!phl: isn't there an argument missing?
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp)
     if (ftype==0) then
       call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
     end if
@@ -1450,7 +1453,8 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+    ! note: time level update for fvm tracers takes place in fvm_mod
+    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
 
 #if USE_CUDA_FORTRAN
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1505,6 +1509,7 @@ contains
     ! update dynamics time level pointers
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
+    ! note: time level update for fvm tracers takes place in fvm_mod
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_remap - dt       (Robert-filtered)
@@ -1583,8 +1588,6 @@ contains
 
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
-
-    integer :: n0_fvm, np1_fvm
 
     dt_q = dt*qsplit
 
@@ -1678,9 +1681,6 @@ contains
        ! FVM transport
        !
 #if defined(_SPELT)
-       !
-       ! Since N_Q code has been removed - add call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)
-       ! to spelt code to get right time-levels
        !
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
