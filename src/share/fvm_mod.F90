@@ -63,6 +63,7 @@ contains
   subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
+    use fvm_control_volume_mod     , only: n0_fvm, np1_fvm
     ! ---------------------------------------------------------------------------------  
     use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
@@ -86,7 +87,7 @@ contains
     real (kind=real_kind)                       :: tstep
     real (kind=real_kind), intent(in)           :: p_top
     
-    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
+    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h, ntmp
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
@@ -102,7 +103,6 @@ contains
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
     
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nc:nc+nhc)        :: tracer_air0   
-    integer (kind=int_kind) :: n0_fvm, np1_fvm
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_air
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_tracer
     real (kind=real_kind) :: q0,q1,rho0,rho1,area,diff_dbg 
@@ -115,7 +115,8 @@ contains
     
     call t_startf('ff-cslam scheme') 
     
-    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
+!    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
+
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -272,6 +273,14 @@ contains
        ! Note done for performance reasons - a hack is to put div_fvm into fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)
        !
     end do
+    !
+    ! advance fvm time-levels
+    !
+    ntmp     = np1_fvm
+    np1_fvm  = n0_fvm
+    n0_fvm   = ntmp
+
+
     call t_stopf('ff-cslam scheme')
 !phl    call t_startf('FVM Communication')
 !phl    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
@@ -428,6 +437,7 @@ contains
   subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_mod, only: compute_weights
+    use fvm_control_volume_mod, only: n0_fvm, np1_fvm
     ! ---------------------------------------------------------------------------------  
     use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
@@ -451,7 +461,7 @@ contains
     real (kind=real_kind)                       :: tstep
     real (kind=real_kind), intent(in)           :: p_top
     
-    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
+    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h, ntmp
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
@@ -467,14 +477,12 @@ contains
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
     real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
-    integer (kind=int_kind) :: n0_fvm, np1_fvm
 
     type (ghostBuffertr_t)                      :: buflatlon
 
     call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     call t_startf('cslam scheme') 
 
-    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -574,6 +582,16 @@ contains
 !       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
 !       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
+
+    !
+    ! advance fvm time-levels
+    !
+    ntmp     = np1_fvm
+    np1_fvm  = n0_fvm
+    n0_fvm   = ntmp
+
+
+
     call t_stopf('cslam scheme')
 !    call t_startf('FVM Communication')
 !    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
@@ -775,8 +793,15 @@ contains
     use parallel_mod, only : parallel_t, haltmp
     use control_mod, only : tracer_transport_type, tracer_grid_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACER_GRIDTYPE_FVM
+    use fvm_control_volume_mod     , only: n0_fvm, np1_fvm
     type (parallel_t) :: par
 
+    !
+    ! initialize fvm time-levels
+    !
+    n0_fvm  = 1
+    np1_fvm = 2
+    !
     if (par%masterproc) then 
        print *, "                                       "
        print *, "|-------------------------------------|"

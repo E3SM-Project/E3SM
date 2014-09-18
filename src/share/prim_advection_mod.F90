@@ -2843,7 +2843,7 @@ end subroutine ALE_parametric_coords
 
 
 
-  subroutine vertical_remap(hybrid,elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+  subroutine vertical_remap(hybrid,elem,fvm,hvcoord,dt,np1,np1_qdp,np1_fvm,nets,nete)
   ! This routine is called at the end of the vertically Lagrangian
   ! dynamics step to compute the vertical flux needed to get back
   ! to reference eta levels
@@ -2889,7 +2889,7 @@ end subroutine ALE_parametric_coords
   type (hvcoord_t)                  :: hvcoord
   real (kind=real_kind)             :: dt
 
-  integer :: ie,i,j,k,np1,nets,nete,np1_qdp
+  integer :: ie,i,j,k,np1,nets,nete,np1_qdp,np1_fvm
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
 
@@ -2919,6 +2919,8 @@ end subroutine ALE_parametric_coords
   ! hence:
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) )
   !
+
+  write(*,*) "phl: vertical remap np1,np1_qdp,np1_fvm: ",np1,np1_qdp,np1_fvm
 
   do ie=nets,nete
 !     ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
@@ -3008,22 +3010,21 @@ end subroutine ALE_parametric_coords
 !         call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
 #else
         ! create local variable  cdp(1:nc,1:nc,nlev,ntrac)
-        ! cdp(:,:,:,n) = fvm%c(:,:,:,n,np1)*fvm%dp_fvm(:,:,:,np1)
+        ! cdp(:,:,:,n) = fvm%c(:,:,:,n,np1_fvm)*fvm%dp_fvm(:,:,:,np1_fvm)
         ! dp(:,:,:) = reference level thicknesses
 
-        ! call remap1(cdp,nc,ntrac-1,fvm%c(:,:,:,1,np1),dp)
+        ! call remap1(cdp,nc,ntrac-1,fvm%c(:,:,:,1,np1_fvm),dp)
 
         ! convert back to mass:
-        ! fvm%dp_fvm(:,:,:,np1) = dp(:,:,:) ??XXgoldyXX??
-        ! fvm%c(:,:,:,n,np1) = fvm%c(:,:,:,n,np1)/dp(:,:,:)
+        ! fvm%dp_fvm(:,:,:,np1_fvm) = dp(:,:,:) ??XXgoldyXX??
+        ! fvm%c(:,:,:,n,np1_fvm) = fvm%c(:,:,:,n,np1_fvm)/dp(:,:,:)
 
-        if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
-            tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+        if (ntrac>0) then
            !
            ! Recompute dp_fvm (this will not be necessary when SE fluxes are coded)
            !
            do k = 1, nlev
-              fvm(ie)%dp_fvm(1:nc,1:nc,k,np1_qdp)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
+              fvm(ie)%dp_fvm(1:nc,1:nc,k,np1_fvm)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
            end do
            !
            !
@@ -3032,24 +3033,24 @@ end subroutine ALE_parametric_coords
               do j=1,nc
                  !
                  ! compute surface pressure implied by fvm scheme: psC
-                 psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1_qdp)) +  hvcoord%hyai(1)*hvcoord%ps0
+                 psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
                  !
                  ! compute source (cdp) and target (dpc) pressure grids for vertical remapping
                  !
                  do k=1,nlev
                     dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                          (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-                    cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1_qdp)*fvm(ie)%dp_fvm(i,j,k,np1_qdp)
+                    cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1_fvm)*fvm(ie)%dp_fvm(i,j,k,np1_fvm)
                  end do
               end do
            end do
-           dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1_qdp)
+           dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1_fvm)
            call remap1(cdp,nc,ntrac,dpc_star,dpc)
            do k=1,nlev
               do j=1,nc
                  do i=1,nc
-                    fvm(ie)%dp_fvm(i,j,k,np1_qdp)=dpc(i,j,k) !!XXgoldyXX??
-                    fvm(ie)%c(i,j,k,1:ntrac,np1_qdp)=cdp(i,j,k,1:ntrac)/dpc(i,j,k)
+                    fvm(ie)%dp_fvm(i,j,k,np1_fvm)=dpc(i,j,k) !!XXgoldyXX??
+                    fvm(ie)%c(i,j,k,1:ntrac,np1_fvm)=cdp(i,j,k,1:ntrac)/dpc(i,j,k)
                  end do
               end do
            end do
