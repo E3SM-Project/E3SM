@@ -82,6 +82,7 @@
 ! Required inherited and overridden ESMF_Base class methods
 
       public ESMF_TimeCopy
+      public ESMF_SetYearWidth
 
 ! !PRIVATE MEMBER FUNCTIONS:
 
@@ -121,6 +122,8 @@
 ! The following line turns the CVS identifier string into a printable variable.
       character(*), parameter, private :: version = &
       '$Id$'
+
+      integer :: yearWidth = 4
 
 !==============================================================================
 !
@@ -805,6 +808,7 @@ recursive subroutine ESMF_TimeGet(time, YY, MM, DD, D, Dl, H, M, S, MS, &
       integer, intent(in) :: minute
       integer, intent(in) :: second
       character*(*), intent(out) :: TimeString
+      character*(256) :: TimeFormatString
 ! !DESCRIPTION:
 !     Convert {\tt ESMF\_Time}'s value into ISO 8601 format YYYY-MM-DDThh:mm:ss
 !
@@ -831,8 +835,8 @@ recursive subroutine ESMF_TimeGet(time, YY, MM, DD, D, Dl, H, M, S, MS, &
 
 !$$$here...  add negative sign for YR<0
 !$$$here...  add Sn, Sd ??
-      write(TimeString,FMT="(I4.4,'-',I2.2,'-',I2.2,'_',I2.2,':',I2.2,':',I2.2)") &
-             year,month,dayofmonth,hour,minute,second
+      write(TimeFormatString,FMT="(A,I4.4,A,I4.4,A)") "(I", yearWidth, ".", yearWidth, "'-',I2.2,'-',I2.2,'_',I2.2,':',I2.2,':',I2.2)"
+      write(TimeString,FMT=TimeFormatString) year,month,dayofmonth,hour,minute,second
 
       end subroutine ESMFold_TimeGetString
 
@@ -1545,6 +1549,20 @@ SUBROUTINE timeaddmonths( time, MM, ierr )
   time%basetime%s = time%basetime%s + isec
 
 END SUBROUTINE timeaddmonths
+
+!==============================================================================
+
+! Increment Time by number of seconds between start of year and start 
+! of month MM.  
+! 1 <= MM <= 12
+! Time is NOT normalized.  
+SUBROUTINE ESMF_setYearWidth( yearWidthIn )
+
+    integer, intent(in) :: yearWidthIn
+
+    yearWidth = yearWidthIn
+
+END SUBROUTINE ESMF_setYearWidth
 
 !==============================================================================
 !==============================================================================

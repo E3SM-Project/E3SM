@@ -31,10 +31,10 @@ module mpas_timekeeping
                          MPAS_360DAY = 2
 
    integer :: TheCalendar 
+   integer :: yearWidth
 
    integer, dimension(12), parameter :: daysInMonth     = (/31,28,31,30,31,30,31,31,30,31,30,31/)
    integer, dimension(12), parameter :: daysInMonthLeap = (/31,29,31,30,31,30,31,31,30,31,30,31/)
-
 
    type MPAS_Time_type
       type (ESMF_Time) :: t
@@ -161,6 +161,31 @@ module mpas_timekeeping
 
    end subroutine mpas_timekeeping_finalize
 
+   !-----------------------------------------------------------------------
+   !  routine mpas_timekeeping_set_year_width
+   !
+   !> \brief This routine sets the width of the year portion of timestamps.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   07/23/2014
+   !> \details This routine sets the width of the year portion of timestamps.
+   !>   It can be used to make the year portion of a time stamp or an expanded
+   !>   string more than 4 digits, to support years larger than 9999.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_timekeeping_set_year_width(yearWidthIn)!{{{
+      integer, intent(in) :: yearWidthIn
+
+      if (yearWidthIn <= 0) then
+          write(stderrUnit,*) 'ERROR: mpas_set_year_width: yearWidth cannot be less than or equal to zero.' 
+          ierr = 1
+          return
+      end if
+
+      yearWidth = yearWidthIn
+
+      call ESMF_setYearWidth(yearWidthIn)
+
+   end subroutine mpas_timekeeping_set_year_width!}}}
 
    subroutine mpas_create_clock(clock, startTime, timeStep, stopTime, runDuration, ierr)
 
