@@ -11,6 +11,7 @@
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -33,6 +34,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -51,14 +53,17 @@
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_N2">
@@ -78,6 +83,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -91,6 +97,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
         <machine compiler="intel" testtype="aux_esmf">yellowstone</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
@@ -130,6 +137,7 @@
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
       </test>
       <test name="PEA_P1_M">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -138,6 +146,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -160,6 +169,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -178,14 +188,17 @@
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -242,6 +255,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -321,6 +335,7 @@
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -346,6 +361,7 @@
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
       <test name="ERS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -356,6 +372,7 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -379,6 +396,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -390,6 +408,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -400,6 +419,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -418,6 +438,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -426,6 +447,7 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="NOC">
+        <machine compiler="intel" testtype="prebeta" comment="Tony added the test script as of scripts4_131106">redsky</machine>
         <machine compiler="intel" testtype="prebeta" comment="Tony added the test script as of scripts4_131106">yellowstone</machine>
       </test>
       <test name="SMS_D">
@@ -479,6 +501,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -503,14 +526,17 @@
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_Ld7">
@@ -518,6 +544,7 @@
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prealpha">janus</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
@@ -543,6 +570,7 @@
         <machine compiler="intel" testtype="prealpha">janus</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -579,6 +607,7 @@
   <compset name="B1850W5CN">
     <grid name="f19_g16">
       <test name="ERS_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prerelease">yellowstone</machine>
       </test>
@@ -595,6 +624,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -604,6 +634,7 @@
   <compset name="B1850WSCCN">
     <grid name="f19_g16">
       <test name="ERS_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prerelease">yellowstone</machine>
       </test>
@@ -617,6 +648,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -668,6 +700,7 @@
       </test>
       <test name="ERS_IOP">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -697,6 +730,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -716,14 +750,17 @@
     </grid>
     <grid name="f19_g16">
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_N2">
@@ -732,6 +769,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -861,6 +899,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -893,6 +932,7 @@
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -902,6 +942,7 @@
   <compset name="BGCNIS2">
     <grid name="T31_g37_gl10">
       <test name="SMS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
@@ -959,6 +1000,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -973,6 +1015,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -988,6 +1031,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1017,6 +1061,7 @@
   <compset name="BRCP45BDRD">
     <grid name="f09_g16">
       <test name="ERS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1040,6 +1085,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -1047,6 +1093,7 @@
       </test>
       <test name="ERI_PT">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1076,6 +1123,7 @@
   <compset name="BRCP85BDRD">
     <grid name="f09_g16">
       <test name="ERS_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1083,6 +1131,7 @@
   <compset name="BRCP85BPRP">
     <grid name="f09_g16">
       <test name="SMS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1165,6 +1214,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1189,6 +1239,7 @@
     <grid name="T62_g16">
       <test name="ERS_IOP">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1199,6 +1250,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1255,12 +1307,14 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1275,6 +1329,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1340,6 +1395,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
@@ -1383,6 +1439,7 @@
     </grid>
     <grid name="ne30_g16">
       <test name="ERS_PT">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1390,9 +1447,11 @@
     </grid>
     <grid name="ne30_ne30">
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1422,14 +1481,17 @@
     </grid>
     <grid name="ne30_ne30">
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_Ld3">
@@ -1469,6 +1531,7 @@
   <compset name="F1850C5PM">
     <grid name="f19_f19">
       <test name="ERI">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1516,11 +1579,13 @@
   <compset name="FAMIPC5">
     <grid name="f19_f19">
       <test name="ERS">
+        <machine compiler="intel" testtype="prebeta" testmods="cam/cosp">redsky</machine>
         <machine compiler="intel" testtype="aux_science">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="cam/cosp">yellowstone</machine>
       </test>
       <test name="ERS_IOP_Ld3">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1582,6 +1647,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1591,6 +1657,7 @@
   <compset name="FC4AQUAP">
     <grid name="f19_f19">
       <test name="ERS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1640,6 +1707,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1651,6 +1719,7 @@
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prealpha">janus</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -1665,6 +1734,7 @@
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prealpha">janus</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -1677,6 +1747,7 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -1702,6 +1773,7 @@
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="SMS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1711,6 +1783,7 @@
   <compset name="FC5CLUBB">
     <grid name="f19_f19">
       <test name="ERI">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1720,6 +1793,7 @@
   <compset name="FC5PM">
     <grid name="f19_f19">
       <test name="ERI">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1835,6 +1909,7 @@
   <compset name="FSCM4A95">
     <grid name="T42_T42">
       <test name="SMS_Mmpi-serial">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1863,6 +1938,7 @@
     <grid name="f19_f19">
       <test name="ERS_IOP">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1876,6 +1952,7 @@
   <compset name="FSDSMAM">
     <grid name="f19_f19">
       <test name="ERS_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1883,6 +1960,7 @@
   <compset name="FSDSSOA">
     <grid name="f19_f19">
       <test name="ERS_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -1895,6 +1973,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1904,6 +1983,7 @@
   <compset name="FSDWSF">
     <grid name="f19_f19">
       <test name="ERS_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prerelease">yellowstone</machine>
       </test>
@@ -1912,6 +1992,7 @@
   <compset name="FSSOA">
     <grid name="f19_f19">
       <test name="ERI">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1954,6 +2035,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -1968,6 +2050,7 @@
     <grid name="f19_f19">
       <test name="ERS_IOP_Ld3">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -1997,6 +2080,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
@@ -2006,6 +2090,7 @@
     </grid>
     <grid name="T62_g37">
       <test name="ERS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -2031,6 +2116,7 @@
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -2039,6 +2125,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -2091,6 +2178,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -2140,6 +2228,7 @@
         <machine compiler="pgi" testtype="prerelease" testmods="clm/ptsRLA">hopper</machine>
         <machine compiler="ibm" testtype="prerelease" testmods="clm/ptsRLA">intrepid</machine>
         <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLA">janus</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLA">redsky</machine>
         <machine compiler="intel" testtype="aux_clm40" testmods="clm/ptsRLA">yellowstone</machine>
         <machine compiler="intel" testtype="aux_clm40" testmods="clm/ptsROA">yellowstone</machine>
         <machine compiler="pgi" testtype="aux_clm40" testmods="clm/ptsRLB">yellowstone</machine>
@@ -2446,6 +2535,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -2658,6 +2748,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -2919,6 +3010,7 @@
   <compset name="ICLM45CNTEST">
     <grid name="1x1_camdenNJ">
       <test name="ERI_D">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -2926,6 +3018,7 @@
   <compset name="ICLM45CRUBGC">
     <grid name="f19_g16">
       <test name="SMS">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
     </grid>
@@ -3013,6 +3106,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="pgi" testtype="aux_clm40">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -3304,6 +3398,7 @@
       <test name="ERI">
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -3317,6 +3412,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -3575,6 +3671,7 @@
     <grid name="5amazon">
       <test name="SMS_D">
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -3605,6 +3702,7 @@
     <grid name="f45_f45">
       <test name="SMS">
         <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLB">janus</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLB">redsky</machine>
         <machine compiler="gnu" testtype="prebeta" testmods="clm/ptsRLB">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLB">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta" testmods="clm/ptsRLB">yellowstone</machine>
@@ -3630,6 +3728,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
@@ -3640,6 +3739,7 @@
   <compset name="TG">
     <grid name="f09_g16">
       <test name="ERS_Ly21">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -3714,6 +3814,7 @@
         <machine compiler="intel" testtype="aux_glc_short">yellowstone</machine>
       </test>
       <test name="SMS_Ly2">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
@@ -3747,6 +3848,7 @@
   <compset name="X">
     <grid name="T31_g37">
       <test name="PEA_P1_M">
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -3791,6 +3893,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -3799,6 +3902,7 @@
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">redsky</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>

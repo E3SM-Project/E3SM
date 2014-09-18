@@ -2,31 +2,34 @@
 
 <config_machines>
 
-<!--  
+<!--
 
  ===============================================================
- COMPILER and COMPILERS 
+ COMPILER and COMPILERS
  ===============================================================
- If a machine supports multiple compilers - then 
+ If a machine supports multiple compilers - then
   - the settings for COMPILERS should reflect the supported compilers
     as a comma separated string
-  - the setting for COMPILER should be the default compiler 
+  - the setting for COMPILER should be the default compiler
     (which is one of the values in COMPILERS)
-   
+
  ===============================================================
  MPILIB and MPILIBS
  ===============================================================
- If a machine supports only one MPILIB is supported - then 
- the setting for  MPILIB and MPILIBS should be blank ("")   
+ If a machine supports only one MPILIB is supported - then
+ the setting for  MPILIB and MPILIBS should be blank ("")
  If a machine supports multiple mpi libraries (e.g. mpich and openmpi)
   - the settings for MPILIBS should reflect the supported mpi libraries
     as a comma separated string
 
- The default settings for COMPILERS and MPILIBS is blank (in config_machines.xml)  
+ The default settings for COMPILERS and MPILIBS is blank (in config_machines.xml)
 
  Normally variable substitutions are not made until the case scripts are run, however variables
- of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment 
+ of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment
  variable of the same name if it exists.
+
+ NOTE: The variable CESMSCRATCHROOT must be fully resolved before a case is built so cannot
+            contain other variables defined in cesm.
 
  ===============================================================
  PROJECT_REQUIRED
@@ -52,11 +55,34 @@
         <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
         <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>           <!-- where the cesm testing scripts write and read baseline results -->
         <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-        <BATCHQUERY>USERDEFINED_optional_run</BATCHQUERY> 
+        <BATCHQUERY>USERDEFINED_optional_run</BATCHQUERY>
         <BATCHSUBMIT>USERDEFINED_optional_run</BATCHSUBMIT>
-        <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>                 
+        <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>
         <GMAKE_J>1</GMAKE_J>
         <MAX_TASKS_PER_NODE>USERDEFINED_required_build</MAX_TASKS_PER_NODE>
+</machine>
+
+<machine MACH="redsky">
+        <DESC>SNL Redsky cluster, Linux (x86_64)</DESC>                                 <!-- can be anything -->
+        <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
+        <PIO_CONFIG_OPTS> --enable-filesystem-hints=lustre </PIO_CONFIG_OPTS>
+        <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
+        <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
+        <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch</CESMSCRATCHROOT>
+        <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+        <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+        <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+        <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
+        <DOUT_S>FALSE</DOUT_S>                                            <!-- logical for short term archiving -->
+        <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
+        <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
+        <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+        <BATCHQUERY>qstat</BATCHQUERY>
+        <BATCHSUBMIT>sbatch &lt;</BATCHSUBMIT>
+        <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>
+        <GMAKE_J>4</GMAKE_J>
+        <MAX_TASKS_PER_NODE>8 </MAX_TASKS_PER_NODE>
 </machine>
 
 <machine MACH="bluewaters">
@@ -523,7 +549,7 @@
         <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
         <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
         <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
+        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
         <CCSM_BASELINE>/scratch/projects/xsede/CESM/ccsm_baselines</CCSM_BASELINE>
         <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
         <BATCHQUERY>squeue</BATCHQUERY>
@@ -568,10 +594,10 @@
         <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
         <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
-        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
-        <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
+        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+        <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
         <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
-        <BATCHQUERY>bjobs -w</BATCHQUERY>                                                                     
+        <BATCHQUERY>bjobs -w</BATCHQUERY>
         <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
         <SUPPORTED_BY>cseg</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
@@ -590,10 +616,10 @@
         <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
         <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
         <DOUT_S_ROOT>/glade/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
-        <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
+        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+        <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
         <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
-        <BATCHQUERY>bjobs -w</BATCHQUERY>                                                                     
+        <BATCHQUERY>bjobs -w</BATCHQUERY>
         <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
         <SUPPORTED_BY>srinathv -at- ucar.edu</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>

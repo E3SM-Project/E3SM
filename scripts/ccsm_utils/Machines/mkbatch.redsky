@@ -1,0 +1,106 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+@ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
+if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
+  @ nodes = $nodes + 1
+  @ ntasks = $nodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+#set qname = batch
+set tlimit = "24:00:00"
+
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#===============================================================================
+# USERDEFINED
+# This is where the batch submission is set.  The above code computes
+# the total number of tasks, nodes, and other things that can be useful
+# here.  Use PBS, BSUB, or whatever the local environment supports.
+#===============================================================================
+#SBATCH --job-name ${jobname}
+#SBATCH -N ${nodes}
+#SBATCH --account=FY140052
+#SBATCH --time=${tlimit}
+#SBATCH --partition=ec
+
+
+#limit coredumpsize 1000000
+#limit stacksize unlimited
+
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+
+set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+@ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
+if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
+  @ nodes = $nodes + 1
+  @ ntasks = $nodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+#sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+
+#===============================================================================
+# USERDEFINED
+# edit job launching
+#===============================================================================
+
+#mpiexec -n ${maxtasks} \$EXEROOT/cesm.exe >&! ccsm.log.\$LID
+#mpirun -np ${maxtasks} \$EXEROOT/cesm.exe >&! ccsm.log.\$LID
+mpiexec -np ${maxtasks} \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+   #This is a place holder for a long-term archiving script
+
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################
