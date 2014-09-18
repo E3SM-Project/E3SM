@@ -1,3 +1,4 @@
+! $Id$
 !
 ! Earth System Modeling Framework
 ! Copyright 2002-2003, University Corporation for Atmospheric Research,
@@ -5,7 +6,7 @@
 ! Laboratory, University of Michigan, National Centers for Environmental
 ! Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
 ! NASA Goddard Space Flight Center.
-! Licensed under the University of Illinois-NCSA license.
+! Licensed under the GPL.
 !
 !==============================================================================
 !
@@ -62,6 +63,8 @@
 ! !PUBLIC MEMBER FUNCTIONS:
 !
 ! overloaded operators
+      public seccmp
+      public normalize_basetime
       public operator(+)
       private ESMF_BaseTimeSum
       public operator(-)
@@ -122,6 +125,49 @@
 
 !==============================================================================
 
+SUBROUTINE normalize_basetime( basetime )
+  ! Factor so abs(Sn) < Sd and ensure that signs of S and Sn match.
+  ! Also, enforce consistency.
+  ! YR and MM fields are ignored.
+  IMPLICIT NONE
+  TYPE(ESMF_BaseTime), INTENT(INOUT) :: basetime
+
+  !PRINT *,'DEBUG:  BEGIN normalize_basetime()'
+  ! Consistency check...
+  IF ( basetime%Sd < 0 ) THEN
+    CALL wrf_error_fatal( &
+      'normalize_basetime:  denominator of seconds cannot be negative' )
+  ENDIF
+  IF ( ( basetime%Sd == 0 ) .AND. ( basetime%Sn .NE. 0 ) ) THEN
+    CALL wrf_error_fatal( &
+      'normalize_basetime:  denominator of seconds cannot be zero when numerator is non-zero' )
+  ENDIF
+  ! factor so abs(Sn) < Sd
+  IF ( basetime%Sd > 0 ) THEN
+    IF ( ABS( basetime%Sn ) .GE. basetime%Sd ) THEN
+      !PRINT *,'DEBUG:  normalize_basetime() A1:  S,Sn,Sd = ',basetime%S,basetime%Sn,basetime%Sd
+      basetime%S = basetime%S + ( basetime%Sn / basetime%Sd )
+      basetime%Sn = mod( basetime%Sn, basetime%Sd )
+      !PRINT *,'DEBUG:  normalize_basetime() A2:  S,Sn,Sd = ',basetime%S,basetime%Sn,basetime%Sd
+    ENDIF
+    ! change sign of Sn if it does not match S
+    IF ( ( basetime%S > 0 ) .AND. ( basetime%Sn < 0 ) ) THEN
+      !PRINT *,'DEBUG:  normalize_basetime() B1:  S,Sn,Sd = ',basetime%S,basetime%Sn,basetime%Sd
+      basetime%S = basetime%S - 1_ESMF_KIND_I8
+      basetime%Sn = basetime%Sn + basetime%Sd
+      !PRINT *,'DEBUG:  normalize_basetime() B2:  S,Sn,Sd = ',basetime%S,basetime%Sn,basetime%Sd
+    ENDIF
+    IF ( ( basetime%S < 0 ) .AND. ( basetime%Sn > 0 ) ) THEN
+      !PRINT *,'DEBUG:  normalize_basetime() C1:  S,Sn,Sd = ',basetime%S,basetime%Sn,basetime%Sd
+      basetime%S = basetime%S + 1_ESMF_KIND_I8
+      basetime%Sn = basetime%Sn - basetime%Sd
+      !PRINT *,'DEBUG:  normalize_basetime() C2:  S,Sn,Sd = ',basetime%S,basetime%Sn,basetime%Sd
+    ENDIF
+  ENDIF
+  !PRINT *,'DEBUG:  END normalize_basetime()'
+END SUBROUTINE normalize_basetime
+
+!==============================================================================
 
 ! Add two basetimes
       FUNCTION ESMF_BaseTimeSum( basetime1, basetime2 )
@@ -314,5 +360,102 @@
         ESMF_BaseTimeGE = ( retval .GE. 0 )
       END FUNCTION ESMF_BaseTimeGE
 
+!==============================================================================
+
+SUBROUTINE compute_lcd( e1, e2, lcd )
+      IMPLICIT NONE
+      INTEGER(ESMF_KIND_I8), INTENT(IN) :: e1, e2
+      INTEGER(ESMF_KIND_I8), INTENT(OUT) :: lcd
+      INTEGER, PARAMETER ::  nprimes = 9
+      INTEGER(ESMF_KIND_I8), DIMENSION(nprimes), PARAMETER :: primes = (/2,3,5,7,11,13,17,19,23/)
+      INTEGER i
+      INTEGER(ESMF_KIND_I8) d1, d2, p
+
+      d1 = e1 ; d2 = e2
+      IF ( d1 .EQ. 0 .AND. d2 .EQ. 0 ) THEN ; lcd = 1 ; RETURN ; ENDIF
+      IF ( d1 .EQ. 0 ) d1 = d2 
+      IF ( d2 .EQ. 0 ) d2 = d1 
+      IF ( d1 .EQ. d2 ) THEN ; lcd = d1 ; RETURN ; ENDIF
+      lcd = d1 * d2
+      DO i = 1, nprimes
+        p = primes(i)
+        DO WHILE (lcd/p .NE. 0 .AND. &
+          mod(lcd/p,d1) .EQ. 0 .AND. mod(lcd/p,d2) .EQ. 0) 
+          lcd = lcd / p 
+        END DO
+      ENDDO
+END SUBROUTINE compute_lcd
+
+!==============================================================================
+
+SUBROUTINE simplify( ni, di, no, do ) 
+    IMPLICIT NONE
+    INTEGER(ESMF_KIND_I8), INTENT(IN)  :: ni, di
+    INTEGER(ESMF_KIND_I8), INTENT(OUT) :: no, do
+    INTEGER, PARAMETER ::  nprimes = 9
+    INTEGER(ESMF_KIND_I8), DIMENSION(nprimes), PARAMETER :: primes = (/2,3,5,7,11,13,17,19,23/)
+    INTEGER(ESMF_KIND_I8) :: pr, d, n
+    INTEGER :: np
+    LOGICAL keepgoing
+    IF ( ni .EQ. 0 ) THEN
+      do = 1
+      no = 0
+      RETURN
+    ENDIF
+    IF ( mod( di , ni ) .EQ. 0 ) THEN
+      do = di / ni
+      no = 1
+      RETURN
+    ENDIF
+    d = di
+    n = ni
+    DO np = 1, nprimes
+      pr = primes(np)
+      keepgoing = .TRUE.
+      DO WHILE ( keepgoing )
+        keepgoing = .FALSE.
+        IF ( d/pr .NE. 0 .AND. n/pr .NE. 0 .AND. MOD(d,pr) .EQ. 0 .AND. MOD(n,pr) .EQ. 0 ) THEN
+          d = d / pr
+          n = n / pr
+          keepgoing = .TRUE.
+        ENDIF
+      ENDDO
+    ENDDO
+    do = d
+    no = n
+    RETURN
+END SUBROUTINE simplify
+
+!==============================================================================
+
+! spaceship operator for seconds + Sn/Sd
+SUBROUTINE seccmp(S1, Sn1, Sd1, S2, Sn2, Sd2, retval )
+  IMPLICIT NONE
+  INTEGER, INTENT(OUT) :: retval
+!
+! !ARGUMENTS:
+  INTEGER(ESMF_KIND_I8), INTENT(IN) :: S1, Sn1, Sd1
+  INTEGER(ESMF_KIND_I8), INTENT(IN) :: S2, Sn2, Sd2
+! local
+  INTEGER(ESMF_KIND_I8) :: lcd, n1, n2
+
+  n1 = Sn1
+  n2 = Sn2
+  if ( ( n1 .ne. 0 ) .or. ( n2 .ne. 0 ) ) then
+    CALL compute_lcd( Sd1, Sd2, lcd )
+    if ( Sd1 .ne. 0 ) n1 = n1 * ( lcd / Sd1 )
+    if ( Sd2 .ne. 0 ) n2 = n2 * ( lcd / Sd2 )
+  endif
+
+  if ( S1 .GT. S2 ) retval = 1
+  if ( S1 .LT. S2 ) retval = -1
+  IF ( S1 .EQ. S2 ) THEN
+    IF (n1 .GT. n2) retval = 1
+    IF (n1 .LT. n2) retval = -1
+    IF (n1 .EQ. n2) retval = 0
+  ENDIF
+END SUBROUTINE seccmp
+
+!==============================================================================
 
       end module ESMF_BaseTimeMod

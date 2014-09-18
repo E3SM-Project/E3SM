@@ -9,6 +9,7 @@ module mpas_timekeeping
 
    use mpas_kind_types
    use mpas_io_units
+   use ESMF
    use ESMF_BaseMod
    use ESMF_Stubs
    use ESMF_CalendarMod
@@ -127,13 +128,13 @@ module mpas_timekeeping
 #ifndef MPAS_CESM
       if (trim(calendar) == 'gregorian') then
          TheCalendar = MPAS_GREGORIAN
-         call ESMF_Initialize(defaultCalendar=ESMF_CAL_GREGORIAN)
+         call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_GREGORIAN)
       else if (trim(calendar) == 'gregorian_noleap') then
          TheCalendar = MPAS_GREGORIAN_NOLEAP
-         call ESMF_Initialize(defaultCalendar=ESMF_CAL_NOLEAP)
-      else if (trim(calendar) == '360day') then
-         TheCalendar = MPAS_360DAY
-         call ESMF_Initialize(defaultCalendar=ESMF_CAL_360DAY)
+         call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_NOLEAP)
+!     else if (trim(calendar) == '360day') then
+!        TheCalendar = MPAS_360DAY
+!        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
       else
          write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
       end if
@@ -988,11 +989,13 @@ module mpas_timekeeping
    end subroutine mpas_get_time
 
 
-   subroutine mpas_set_timeInterval(interval, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
+   subroutine mpas_set_timeInterval(interval, YY, MM, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
 
       implicit none
 
       type (MPAS_TimeInterval_type), intent(out) :: interval
+      integer, intent(in), optional :: YY
+      integer, intent(in), optional :: MM
       integer, intent(in), optional :: DD
       integer, intent(in), optional :: H
       integer, intent(in), optional :: M
@@ -1008,9 +1011,12 @@ module mpas_timekeeping
       integer :: numerator, denominator, denominatorPower
       type (MPAS_TimeInterval_type) :: zeroInterval
 
-      integer :: day, hour, min, sec
+      integer :: year, month, day, hour, min, sec
       character (len=StrKIND) :: timeString_
+      character (len=StrKIND) :: dateSubString
       character (len=StrKIND) :: daySubString
+      character (len=StrKIND) :: monthSubString
+      character (len=StrKIND) :: yearSubString
       character (len=StrKIND) :: timeSubString
       character (len=StrKIND) :: secDecSubString
       character(len=StrKIND), pointer, dimension(:) :: subStrings
@@ -1115,14 +1121,38 @@ module mpas_timekeeping
 
          call mpas_split_string(timeString_, "_", subStrings)
 
-         if(size(subStrings) == 2) then   ! contains a day and time
-            daySubString = subStrings(1)
+         if(size(subStrings) == 2) then   ! contains a date and time
+            dateSubString = subStrings(1)
             timeSubString = subStrings(2)
             deallocate(subStrings)
-            read(daySubString,*) day 
-         else if(size(subStrings) == 1) then   ! contains only a time- assume day is 0 
+
+            call mpas_split_string(dateSubString, "-", subStrings)
+
+            if(size(subStrings) == 3) then ! Contains year, month, and day
+               read(subStrings(1), *), year
+               read(subStrings(2), *), month
+               read(subStrings(3), *), day
+            else if(size(subStrings) == 2) then ! Contains month and day
+               year = 0
+               read(subStrings(1), *), month
+               read(subStrings(2), *), day
+            else if(size(subStrings) == 1) then ! Contains day
+               year = 0
+               month = 0
+               read(subStrings(1), *), day
+            else ! Error?
+               year = 0
+               month = 0
+               day = 0
+               !write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+            end if
+
+            deallocate(subStrings)
+         else if(size(subStrings) == 1) then   ! contains only a time- assume year, month, and day are 0
             timeSubString = subStrings(1)
             deallocate(subStrings)
+            year = 0
+            month = 0
             day = 0
          else
             deallocate(subStrings)
@@ -1145,25 +1175,25 @@ module mpas_timekeeping
             return
          end if
 
-         call ESMF_TimeIntervalSet(interval % ti, D=day, H=hour, M=min, S=sec, Sn=numerator, Sd=denominator, rc=ierr)
+         call ESMF_TimeIntervalSet(interval % ti, YY=year, MM=month, D=day, H=hour, M=min, S=sec, Sn=numerator, Sd=denominator, rc=ierr)
 
       else
 
-         call ESMF_TimeIntervalSet(interval % ti, D=DD, H=H, M=M, S=S, Sn=S_n, Sd=S_d, rc=ierr)
+         call ESMF_TimeIntervalSet(interval % ti, YY=YY, MM=MM, D=DD, H=H, M=M, S=S, Sn=S_n, Sd=S_d, rc=ierr)
       
       end if
 
-      ! verify that time interval is positive
-      call ESMF_TimeIntervalSet(zeroInterval % ti, D=0, H=0, M=0, S=0, rc=ierr)
+!     ! verify that time interval is positive
+!     call ESMF_TimeIntervalSet(zeroInterval % ti, D=0, H=0, M=0, S=0, rc=ierr)
 
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
-      end if
+!     if (present(ierr)) then
+!        if (ierr == ESMF_SUCCESS) ierr = 0
+!     end if
 
-      if (interval <= zeroInterval) then
-         if (present(ierr)) ierr = 1   
-         write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
-      end if
+!     if (interval <= zeroInterval) then
+!        if (present(ierr)) ierr = 1   
+!        write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
+!     end if
 
       
    end subroutine mpas_set_timeInterval

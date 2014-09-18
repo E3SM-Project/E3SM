@@ -1,3 +1,4 @@
+! $Id$
 !
 ! Earth System Modeling Framework
 ! Copyright 2002-2003, University Corporation for Atmospheric Research,
@@ -5,7 +6,7 @@
 ! Laboratory, University of Michigan, National Centers for Environmental
 ! Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
 ! NASA Goddard Space Flight Center.
-! Licensed under the University of Illinois-NCSA license.
+! Licensed under the GPL.
 !
 ! ESMF Base Module
 !
@@ -48,10 +49,10 @@
                             ESMF_MAXGRIDDIM=2
      
       integer, parameter :: ESMF_MAJOR_VERSION = 2
-      integer, parameter :: ESMF_MINOR_VERSION = 1
-      integer, parameter :: ESMF_REVISION      = 1
+      integer, parameter :: ESMF_MINOR_VERSION = 2
+      integer, parameter :: ESMF_REVISION      = 3
       integer, parameter :: ESMF_PATCHLEVEL    = 0
-      character(32), parameter :: ESMF_VERSION_STRING = "2.1.1"
+      character(32), parameter :: ESMF_VERSION_STRING = "2.2.3"
 
 !------------------------------------------------------------------------------
 !
@@ -280,6 +281,12 @@
 !
 !EOP
 
+!------------------------------------------------------------------------------
+! leave the following line as-is; it will insert the cvs ident string
+! into the object file for tracking purposes.
+      character(*), parameter, private :: version = &
+               '$Id$'
+!------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
 
 ! overload .eq. & .ne. with additional derived types so you can compare 

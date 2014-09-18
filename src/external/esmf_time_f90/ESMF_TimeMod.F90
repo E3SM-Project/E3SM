@@ -1,3 +1,4 @@
+! $Id$
 !
 ! Earth System Modeling Framework
 ! Copyright 2002-2003, University Corporation for Atmospheric Research,
@@ -5,7 +6,7 @@
 ! Laboratory, University of Michigan, National Centers for Environmental
 ! Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
 ! NASA Goddard Space Flight Center.
-! Licensed under the University of Illinois-NCSA license.
+! Licensed under the GPL.
 !
 !==============================================================================
 !
@@ -43,6 +44,8 @@
       ! associated derived types
       use ESMF_TimeIntervalMod
       use ESMF_CalendarMod
+      use ESMF_ShrTimeMod, only : ESMF_Time
+! added by Jhe
       use ESMF_Stubs
 
       implicit none
@@ -56,12 +59,15 @@
 !     ! F90 class type to match C++ Time class in size only;
 !     !  all dereferencing within class is performed by C++ implementation
 
-     type ESMF_Time
-       type(ESMF_BaseTime) :: basetime           ! inherit base class
-       ! time instant is expressed as year + basetime
-       integer :: YR
-       type(ESMF_Calendar), pointer :: calendar  ! associated calendar
-     end type
+! move to ESMF_ShrTimeMod
+!     type ESMF_Time
+!       type(ESMF_BaseTime) :: basetime           ! inherit base class
+!       ! time instant is expressed as year + basetime
+!       integer :: YR
+!       type(ESMF_Calendar), pointer :: calendar  ! associated calendar
+!     end type
+!------------------------------------------------------------------------------
+! !PUBLIC DATA:
 
 !------------------------------------------------------------------------------
 ! !PUBLIC TYPES:
@@ -71,6 +77,7 @@
 ! !PUBLIC MEMBER FUNCTIONS:
       public ESMF_TimeGet
       public ESMF_TimeSet
+      public ESMF_TimePrint
 
 ! Required inherited and overridden ESMF_Base class methods
 
@@ -83,18 +90,12 @@
 
 ! Inherited and overloaded from ESMF_BaseTime
 
-      ! NOTE:  ESMF_TimeInc, ESMF_TimeDec, ESMF_TimeDiff, ESMF_TimeEQ, 
-      !        ESMF_TimeNE, ESMF_TimeLT, ESMF_TimeGT, ESMF_TimeLE, and 
-      !        ESMF_TimeGE are PUBLIC only to work around bugs in the 
-      !        PGI 5.1-x compilers.  They should all be PRIVATE.  
-
       public operator(+)
       public ESMF_TimeInc
 
       public operator(-)
-      public ESMF_TimeDec
-      public ESMF_TimeDec2
-      public ESMF_TimeDiff
+      private ESMF_TimeDec
+      private ESMF_TimeDiff
 
       public operator(.EQ.)
       public ESMF_TimeEQ
@@ -115,6 +116,11 @@
       public ESMF_TimeGE
 
 !EOPI
+
+!------------------------------------------------------------------------------
+! The following line turns the CVS identifier string into a printable variable.
+      character(*), parameter, private :: version = &
+      '$Id$'
 
 !==============================================================================
 !
@@ -282,23 +288,25 @@
       contains
 
 !==============================================================================
-!
-! Generic Get/Set routines which use F90 optional arguments
-!
 !------------------------------------------------------------------------------
 !BOP
 ! !IROUTINE: ESMF_TimeGet - Get value in user-specified units
 
 ! !INTERFACE:
-      subroutine ESMF_TimeGet(time, YY, YRl, MM, DD, D, Dl, H, M, S, Sl, MS, &
-                              US, NS, d_, h_, m_, s_, ms_, us_, ns_, Sn, Sd, &
+!      subroutine ESMF_TimeGet(time, YY, YRl, MM, DD, D, Dl, H, M, S, Sl, MS, &
+!                              US, NS, d_, h_, m_, s_, ms_, us_, ns_, Sn, Sd, &
+!                              dayOfYear, dayOfYear_r8, dayOfYear_intvl,      &
+!                              timeString, rc)
+
+recursive subroutine ESMF_TimeGet(time, YY, MM, DD, D, Dl, H, M, S, MS, &
+                              Sn, Sd, &
                               dayOfYear, dayOfYear_r8, dayOfYear_intvl,      &
                               timeString, rc)
 
 ! !ARGUMENTS:
       type(ESMF_Time), intent(in) :: time
       integer, intent(out), optional :: YY
-      integer(ESMF_KIND_I8), intent(out), optional :: YRl
+!      integer(ESMF_KIND_I8), intent(out), optional :: YRl
       integer, intent(out), optional :: MM
       integer, intent(out), optional :: DD
       integer, intent(out), optional :: D
@@ -306,29 +314,25 @@
       integer, intent(out), optional :: H
       integer, intent(out), optional :: M
       integer, intent(out), optional :: S
-      integer(ESMF_KIND_I8), intent(out), optional :: Sl
+!      integer(ESMF_KIND_I8), intent(out), optional :: Sl
       integer, intent(out), optional :: MS
-      integer, intent(out), optional :: US
-      integer, intent(out), optional :: NS
-      double precision, intent(out), optional :: d_
-      double precision, intent(out), optional :: h_
-      double precision, intent(out), optional :: m_
-      double precision, intent(out), optional :: s_
-      double precision, intent(out), optional :: ms_
-      double precision, intent(out), optional :: us_
-      double precision, intent(out), optional :: ns_
+!      integer, intent(out), optional :: US
+!      integer, intent(out), optional :: NS
+!      double precision, intent(out), optional :: d_
+!      double precision, intent(out), optional :: h_
+!      double precision, intent(out), optional :: m_
+!      double precision, intent(out), optional :: s_
+!      double precision, intent(out), optional :: ms_
+!      double precision, intent(out), optional :: us_
+!      double precision, intent(out), optional :: ns_
       integer, intent(out), optional :: Sn
       integer, intent(out), optional :: Sd
       integer, intent(out), optional :: dayOfYear
-      ! dayOfYear_r8 = 1.0 at 0Z on 1 January, 1.5 at 12Z on
-      ! 1 January, etc.
       real(ESMF_KIND_R8), intent(out), optional :: dayOfYear_r8
       character (len=*), intent(out), optional :: timeString
       type(ESMF_TimeInterval), intent(out), optional :: dayOfYear_intvl
       integer, intent(out), optional :: rc
 
-      type(ESMF_TimeInterval) :: day_step
-      integer :: ierr
 
 ! !DESCRIPTION:
 !     Get the value of the {\tt ESMF\_Time} in units specified by the user
@@ -396,9 +400,13 @@
 ! !REQUIREMENTS:
 !     TMG2.1, TMG2.5.1, TMG2.5.6
 !EOP
+      type(ESMF_TimeInterval) :: day_step
+      integer :: ierr
       TYPE(ESMF_Time) :: begofyear
+      TYPE(ESMF_TimeInterval) :: difftobegofyear
       INTEGER :: year, month, dayofmonth, hour, minute, second
-      REAL(ESMF_KIND_R8) :: rsec
+      INTEGER :: i
+      INTEGER(ESMF_KIND_I8) :: cnt
 
       ierr = ESMF_SUCCESS
 
@@ -411,9 +419,30 @@
       IF ( PRESENT( DD ) ) THEN
         CALL timegetdayofmonth( time, DD )
       ENDIF
+
+      if (present(d) .or. present(dl)) then
+        cnt = 0
+        do i = 0,time%yr-1
+           cnt = cnt + ndaysinyear(i,time%calendar%type)
+        enddo
+        do i = time%yr,-1
+           cnt = cnt - ndaysinyear(i,time%calendar%type)
+        enddo
+        call timegetmonth(time,month)
+        do i = 1,month-1
+           cnt = cnt + ndaysinmonth(time%yr,i,time%calendar%type)
+        enddo
+        call timegetdayofmonth( time, dayofmonth)
+        cnt = cnt + dayofmonth
+        if (present(d)) then
+          d = cnt
+        endif
+        if (present(dl)) then
+          dl = cnt
+        endif
+      endif
 !
-!$$$ Push HMS down into ESMF_BaseTime from EVERYWHERE
-!$$$ and THEN add ESMF scaling behavior when other args are present...  
+!$$$ push HMS down into ESMF_BaseTime
       IF ( PRESENT( H ) ) THEN
         H = mod( time%basetime%S, SECONDS_PER_DAY ) / SECONDS_PER_HOUR
       ENDIF
@@ -423,8 +452,7 @@
       IF ( PRESENT( S ) ) THEN
         S = mod( time%basetime%S, SECONDS_PER_MINUTE )
       ENDIF
-      ! TBH:  HACK to allow DD and S to behave as in ESMF 2.1.0+ when 
-      ! TBH:  both are present and H and M are not.  
+
       IF ( PRESENT( S ) .AND. PRESENT( DD ) ) THEN
         IF ( ( .NOT. PRESENT( H ) ) .AND. ( .NOT. PRESENT( M ) ) ) THEN
           S = mod( time%basetime%S, SECONDS_PER_DAY )
@@ -443,18 +471,6 @@
       ENDIF
       IF ( PRESENT( dayOfYear ) ) THEN
         CALL ESMF_TimeGetDayOfYear( time, dayOfYear, rc=ierr )
-      ENDIF
-      IF ( PRESENT( dayOfYear_r8 ) ) THEN
-        ! 64-bit IEEE 754 has 52-bit mantisssa -- only need 25 bits to hold 
-        ! number of seconds in a year...  
-        rsec = REAL( time%basetime%S, ESMF_KIND_R8 )
-        IF ( time%basetime%Sd /= 0 ) THEN
-          rsec = rsec + ( REAL( time%basetime%Sn, ESMF_KIND_R8 ) / &
-                          REAL( time%basetime%Sd, ESMF_KIND_R8 ) )
-        ENDIF
-        dayOfYear_r8 = rsec / REAL( SECONDS_PER_DAY, ESMF_KIND_R8 )
-        ! start at 1
-        dayOfYear_r8 = dayOfYear_r8 + 1.0_ESMF_KIND_R8
       ENDIF
       IF ( PRESENT( timeString ) ) THEN
         ! This duplication for YMD is an optimization that avoids calling 
@@ -477,8 +493,27 @@
            rc = ierr
            RETURN
         END IF
+        dayOfYear_intvl = time - begofyear
+      ENDIF
+      IF ( PRESENT( dayOfYear_r8) ) THEN
+        year = time%YR
+        CALL ESMF_TimeSet( begofyear, yy=year, mm=1, dd=1, s=0, &
+                           calendar=time%calendar, rc=ierr )
+        IF ( ierr == ESMF_FAILURE)THEN
+           rc = ierr
+           RETURN
+        END IF
         CALL ESMF_TimeIntervalSet( day_step, d=1, s=0, rc=ierr )
-        dayOfYear_intvl = time - begofyear + day_step
+        IF ( ierr == ESMF_FAILURE)THEN
+           rc = ierr
+           RETURN
+        END IF
+        difftobegofyear = time - begofyear + day_step
+        CALL ESMF_TimeIntervalGet( difftobegofyear, d_r8=dayOfYear_r8, rc=ierr )
+        IF ( ierr == ESMF_FAILURE)THEN
+           rc = ierr
+           RETURN
+        END IF
       ENDIF
 
       IF ( PRESENT( rc ) ) THEN
@@ -492,14 +527,18 @@
 ! !IROUTINE: ESMF_TimeSet - Initialize via user-specified unit set
 
 ! !INTERFACE:
-      subroutine ESMF_TimeSet(time, YY, YRl, MM, DD, D, Dl, H, M, S, Sl, &
-                              MS, US, NS, d_, h_, m_, s_, ms_, us_, ns_, &
-                              Sn, Sd, calendar, rc)
+!      subroutine ESMF_TimeSet(time, YY, YRl, MM, DD, D, Dl, H, M, S, Sl, &
+!                              MS, US, NS, d_, h_, m_, s_, ms_, us_, ns_, &
+!                              Sn, Sd, calendar, calkindflag, rc)
+
+      subroutine ESMF_TimeSet(time, YY, MM, DD, D, Dl, H, M, S, &
+                              MS, &
+                              Sn, Sd, calendar, calkindflag, rc)
 
 ! !ARGUMENTS:
       type(ESMF_Time), intent(inout) :: time
       integer, intent(in), optional :: YY
-      integer(ESMF_KIND_I8), intent(in), optional :: YRl
+!      integer(ESMF_KIND_I8), intent(in), optional :: YRl
       integer, intent(in), optional :: MM
       integer, intent(in), optional :: DD
       integer, intent(in), optional :: D
@@ -507,23 +546,26 @@
       integer, intent(in), optional :: H
       integer, intent(in), optional :: M
       integer, intent(in), optional :: S
-      integer(ESMF_KIND_I8), intent(in), optional :: Sl
+!      integer(ESMF_KIND_I8), intent(in), optional :: Sl
       integer, intent(in), optional :: MS
-      integer, intent(in), optional :: US
-      integer, intent(in), optional :: NS
-      double precision, intent(in), optional :: d_
-      double precision, intent(in), optional :: h_
-      double precision, intent(in), optional :: m_
-      double precision, intent(in), optional :: s_
-      double precision, intent(in), optional :: ms_
-      double precision, intent(in), optional :: us_
-      double precision, intent(in), optional :: ns_
+!      integer, intent(in), optional :: US
+!      integer, intent(in), optional :: NS
+!      double precision, intent(in), optional :: d_
+!      double precision, intent(in), optional :: h_
+!      double precision, intent(in), optional :: m_
+!      double precision, intent(in), optional :: s_
+!      double precision, intent(in), optional :: ms_
+!      double precision, intent(in), optional :: us_
+!      double precision, intent(in), optional :: ns_
       integer, intent(in), optional :: Sn
       integer, intent(in), optional :: Sd
       type(ESMF_Calendar), intent(in), target, optional :: calendar
+      type(ESMF_CalKind_Flag), intent(in),  optional :: calkindflag
       integer, intent(out), optional :: rc
+
       ! locals
       INTEGER :: ierr
+      logical :: dset
 
 ! !DESCRIPTION:
 !     Initializes a {\tt ESMF\_Time} with a set of user-specified units
@@ -597,28 +639,89 @@
 !EOP
 !  PRINT *,'DEBUG:  BEGIN ESMF_TimeSet()'
 !$$$ push this down into ESMF_BaseTime constructor
+
+      IF ( PRESENT( rc ) ) then
+        rc = ESMF_FAILURE
+      ENDIF
+
+      time%YR = 0
       time%basetime%S  = 0
       time%basetime%Sn = 0
       time%basetime%Sd = 0
 
-      IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
-      time%YR = 0
+      IF ( PRESENT(calendar) )THEN
+!  PRINT *,'DEBUG:  ESMF_TimeSet():  using passed-in calendar'
+        IF ( .not. ESMF_CalendarInitialized( calendar ) )THEN
+           call wrf_error_fatal( "Error:: ESMF_CalendarCreate not "// &
+                                 "called on input Calendar")
+        END IF
+!        call flush(6)
+!        write(6,*) 'tcx1 ESMF_TimeSet point to calendar'
+!        call flush(6)
+        time%Calendar => calendar
+      ELSE
+!  PRINT *,'DEBUG:  ESMF_TimeSet():  using default calendar'
+! for the sake of WRF, check ESMF_IsInitialized, revised by Juanxiong He
+        IF ( .not. ESMF_IsInitialized() )THEN
+           call wrf_error_fatal( "Error:: ESMF_Initialize not called")
+        END IF
+!        IF ( .not. ESMF_CalendarInitialized( defaultCal ) )THEN
+!           call wrf_error_fatal( "Error:: ESMF_Initialize not called")
+!        END IF
+        if (present(calkindflag)) then
+!           write(6,*) 'tcx2 ESMF_TimeSet point to calendarkindflag',calkindflag%caltype
+!           call flush(6)
+           if (calkindflag%caltype == ESMF_CALKIND_GREGORIAN%caltype) then
+              time%Calendar => gregorianCal
+           elseif (calkindflag%caltype == ESMF_CALKIND_NOLEAP%caltype) then
+              time%Calendar => noleapCal
+           else
+              call wrf_error_fatal( "Error:: ESMF_TimeSet invalid calkindflag")
+           endif
+        else
+!           write(6,*) 'tcx3 ESMF_TimeSet point to defaultcal'
+!           call flush(6)
+           time%Calendar => defaultCal
+        endif
+      END IF
+!      write(6,*) 'tcxn ESMF_TimeSet ',ESMF_CALKIND_NOLEAP%caltype
+!      call flush(6)
+!      write(6,*) 'tcxg ESMF_TimeSet ',ESMF_CALKIND_GREGORIAN%caltype
+!      call flush(6)
+!      write(6,*) 'tcxt ESMF_TimeSet ',time%calendar%type%caltype
+!      call flush(6)
+
+      dset = .false.
+      if (present(D)) then
+         if (present(Dl)) CALL wrf_error_fatal( 'ESMF_TimeSet:  D and Dl not both valid')
+         time%basetime%s = SECONDS_PER_DAY * INT(D-1,ESMF_KIND_I8)
+         dset=.true.
+      elseif (present(Dl)) then
+         time%basetime%s = SECONDS_PER_DAY * Dl-1_ESMF_KIND_I8
+         dset=.true.
+      endif
+
       IF ( PRESENT( YY ) ) THEN
 !  PRINT *,'DEBUG:  ESMF_TimeSet():  YY = ',YY
+        if (dset) CALL wrf_error_fatal( 'ESMF_TimeSet:  D or DL and YY,MM,DD not both valid')
         time%YR = YY
       ENDIF
       IF ( PRESENT( MM ) ) THEN
+        if (dset) CALL wrf_error_fatal( 'ESMF_TimeSet:  D or DL and YY,MM,DD not both valid')
 !  PRINT *,'DEBUG:  ESMF_TimeSet():  MM = ',MM
         CALL timeaddmonths( time, MM, ierr )
         IF ( ierr == ESMF_FAILURE ) THEN
           IF ( PRESENT( rc ) ) THEN
             rc = ESMF_FAILURE
             RETURN
+          ELSE
+            CALL wrf_error_fatal( 'ESMF_TimeSet:  MM out of range' )
           ENDIF
         ENDIF
 !  PRINT *,'DEBUG:  ESMF_TimeSet():  back from timeaddmonths'
       ENDIF
       IF ( PRESENT( DD ) ) THEN
+        if (dset) CALL wrf_error_fatal( 'ESMF_TimeSet:  D or DL and YY,MM,DD not both valid')
 !$$$ no check for DD in range of days of month MM yet
 !$$$ Must separate D and DD for correct interface!
 !  PRINT *,'DEBUG:  ESMF_TimeSet():  DD = ',DD
@@ -663,26 +766,6 @@
           time%basetime%Sn = Sn
         ENDIF
       ENDIF
-      IF ( PRESENT(calendar) )THEN
-!  PRINT *,'DEBUG:  ESMF_TimeSet():  using passed-in calendar'
-! Note that the ugly hack of wrapping the call to ESMF_CalendarInitialized() 
-! inside this #ifdef is due to lack of support for compile-time initialization 
-! of components of Fortran derived types.  Some older compilers like PGI 5.1-x 
-! do not support this F95 feature.  In this case we only lose a safety check.  
-#ifndef NO_DT_COMPONENT_INIT
-        IF ( .not. ESMF_CalendarInitialized( calendar ) )THEN
-           call wrf_error_fatal( "Error:: ESMF_CalendarCreate not "// &
-                                 "called on input Calendar")
-        END IF
-#endif
-        time%Calendar => calendar
-      ELSE
-!  PRINT *,'DEBUG:  ESMF_TimeSet():  using default calendar'
-        IF ( .not. ESMF_IsInitialized() )THEN
-           call wrf_error_fatal( "Error:: ESMF_Initialize not called")
-        END IF
-        time%Calendar => defaultCal
-      END IF
 
 !  PRINT *,'DEBUG:  ESMF_TimeSet():  calling normalize_time()'
 !$$$DEBUG
@@ -748,13 +831,8 @@
 
 !$$$here...  add negative sign for YR<0
 !$$$here...  add Sn, Sd ??
-#ifdef PLANET
-      write(TimeString,FMT="(I4.4,'-',I5.5,'_',I2.2,':',I2.2,':',I2.2)") &
-             year,dayofmonth,hour,minute,second
-#else
       write(TimeString,FMT="(I4.4,'-',I2.2,'-',I2.2,'_',I2.2,':',I2.2,':',I2.2)") &
              year,month,dayofmonth,hour,minute,second
-#endif
 
       end subroutine ESMFold_TimeGetString
 
@@ -798,7 +876,7 @@
 ! !IROUTINE: ESMF_TimeInc - Increment time instant with a time interval
 !
 ! !INTERFACE:
-      function ESMF_TimeInc(time, timeinterval)
+   function ESMF_TimeInc(time, timeinterval)
 !
 ! !RETURN VALUE:
       type(ESMF_Time) :: ESMF_TimeInc
@@ -807,7 +885,7 @@
       type(ESMF_Time), intent(in) :: time
       type(ESMF_TimeInterval), intent(in) :: timeinterval
 ! !LOCAL:
-      integer   :: rc
+      INTEGER :: year,month,day,sec,nmon,nyr,mpyi4
 !
 ! !DESCRIPTION:
 !     Increment {\tt ESMF\_Time} instant with a {\tt ESMF\_TimeInterval},
@@ -828,30 +906,72 @@
 !     TMG1.5.4, TMG2.4.4, TMG2.4.5, TMG2.4.6, TMG5.1, TMG5.2, TMG7.2
 !EOP
 
+      mpyi4 = MONTHS_PER_YEAR
+
       ! copy ESMF_Time specific properties (e.g. calendar, timezone) 
+
       ESMF_TimeInc = time
+!      write(6,*) 'tcx timeinc1 ',ESMF_TimeInc%yr,ESMF_TimeInc%basetime%s
+      CALL normalize_time( ESMF_TimeInc )
 
-      ! call ESMC_BaseTime base class function
-      call c_ESMC_BaseTimeSum(time, timeinterval, ESMF_TimeInc)
+!      write(6,*) 'tcx timeint ',timeinterval%yr,timeinterval%mm,timeinterval%basetime%s
 
-      end function ESMF_TimeInc
-!
+      ! add years and months by manually forcing incremental years then adjusting the day of
+      ! the month at the end if it's greater than the number of days in the month
+      ! esmf seems to do exactly this based on testing
+
+      nmon = timeinterval%mm
+      nyr  = timeinterval%yr
+      if (abs(nmon) > 0 .or. abs(nyr) > 0) then
+         call ESMF_TimeGet(ESMF_TimeInc,yy=year,mm=month,dd=day,s=sec)
+!         write(6,*) 'tcx timeinc mon1 ',year,month,day,sec,nyr,nmon
+         year  = year  + nyr
+         month = month + nmon
+         do while (month > MONTHS_PER_YEAR)
+            month = month - mpyi4
+            year = year + 1
+         enddo
+         do while (month < 1)
+            month = month + mpyi4
+            year = year - 1
+         enddo
+!         write(6,*) 'tcx timeinc mon2 ',year,month,day,sec
+         day = min(day,ndaysinmonth(year,month,ESMF_TimeInc%calendar%type))
+         call ESMF_TimeSet(ESMF_TimeInc,yy=year,mm=month,dd=day,s=sec,calkindflag=time%calendar%type)
+         call ESMF_TimeGet(ESMF_TimeInc,yy=year,mm=month,dd=day,s=sec)
+!         write(6,*) 'tcx timeinc mon3 ',nmon,year,month,day,sec
+      endif
+
+      ! finally add seconds
+
+!      write(6,*) 'tcx timeinc sec ',ESMF_TimeInc%basetime%s,timeinterval%basetime%s
+      ESMF_TimeInc%basetime = ESMF_TimeInc%basetime + timeinterval%basetime
+
+      ! and normalize
+
+!      write(6,*) 'tcx timeinc2p ',ESMF_TimeInc%yr,ESMF_TimeInc%basetime%s
+
+      CALL normalize_time( ESMF_TimeInc )
+
+!      write(6,*) 'tcx timeinc2 ',ESMF_TimeInc%yr,ESMF_TimeInc%basetime%s
+
+   end function ESMF_TimeInc
+
 ! this is added for certain compilers that don't deal with commutativity
-!
-      function ESMF_TimeInc2(timeinterval, time)
+
+   function ESMF_TimeInc2(timeinterval, time)
       type(ESMF_Time) :: ESMF_TimeInc2
       type(ESMF_Time), intent(in) :: time
       type(ESMF_TimeInterval), intent(in) :: timeinterval
       ESMF_TimeInc2 = ESMF_TimeInc( time, timeinterval )
-      end function ESMF_TimeInc2
-!
+   end function ESMF_TimeInc2
 
 !------------------------------------------------------------------------------
 !BOP
 ! !IROUTINE: ESMF_TimeDec - Decrement time instant with a time interval
 !
 ! !INTERFACE:
-      function ESMF_TimeDec(time, timeinterval)
+   function ESMF_TimeDec(time, timeinterval)
 !
 ! !RETURN VALUE:
       type(ESMF_Time) :: ESMF_TimeDec
@@ -860,8 +980,8 @@
       type(ESMF_Time), intent(in) :: time
       type(ESMF_TimeInterval), intent(in) :: timeinterval
 ! !LOCAL:
-      integer   :: rc
-!
+      TYPE (ESMF_TimeInterval)  :: neginterval 
+
 ! !DESCRIPTION:
 !     Decrement {\tt ESMF\_Time} instant with a {\tt ESMF\_TimeInterval},
 !     return resulting {\tt ESMF\_Time} instant
@@ -882,30 +1002,34 @@
 !     TMG1.5.4, TMG2.4.4, TMG2.4.5, TMG2.4.6, TMG5.1, TMG5.2, TMG7.2
 !EOP
 
-      ! copy ESMF_Time specific properties (e.g. calendar, timezone) 
       ESMF_TimeDec = time
 
-      ! call ESMC_BaseTime base class function
-       call c_ESMC_BaseTimeDec(time, timeinterval, ESMF_TimeDec)
+      neginterval = timeinterval
+!$$$push this down into a unary negation operator on TimeInterval
+      neginterval%basetime%S = -neginterval%basetime%S
+      neginterval%basetime%Sn = -neginterval%basetime%Sn
+      neginterval%YR = -neginterval%YR
+      neginterval%MM = -neginterval%MM
+      ESMF_TimeDec = time + neginterval
 
-      end function ESMF_TimeDec
+   end function ESMF_TimeDec
 
 !
 ! this is added for certain compilers that don't deal with commutativity
 !
-      function ESMF_TimeDec2(timeinterval, time)
+   function ESMF_TimeDec2(timeinterval, time)
       type(ESMF_Time) :: ESMF_TimeDec2
       type(ESMF_Time), intent(in) :: time
       type(ESMF_TimeInterval), intent(in) :: timeinterval
       ESMF_TimeDec2 = ESMF_TimeDec( time, timeinterval )
-      end function ESMF_TimeDec2
+   end function ESMF_TimeDec2
 !
 !------------------------------------------------------------------------------
 !BOP
 ! !IROUTINE:  ESMF_TimeDiff - Return the difference between two time instants
 !
 ! !INTERFACE:
-      function ESMF_TimeDiff(time1, time2)
+   function ESMF_TimeDiff(time1, time2)
 !
 ! !RETURN VALUE:
       type(ESMF_TimeInterval) :: ESMF_TimeDiff
@@ -914,11 +1038,14 @@
       type(ESMF_Time), intent(in) :: time1
       type(ESMF_Time), intent(in) :: time2
 ! !LOCAL:
+      TYPE(ESMF_BaseTime) :: cmptime, zerotime
+      integer :: yr
+      integer :: y1,m1,d1,s1,y2,m2,d2,s2
       integer :: rc
 
 ! !DESCRIPTION:
 !     Return the {\tt ESMF\_TimeInterval} difference between two
-!     {\tt ESMF\_Time} instants
+!     {\tt ESMF\_Time} instants, time1 - time2
 !
 !     Maps overloaded (-) operator interface function to
 !     {\tt ESMF\_BaseTime} base class
@@ -935,11 +1062,53 @@
 !     TMG1.5.4, TMG2.4.4, TMG2.4.5, TMG2.4.6, TMG5.1, TMG5.2, TMG7.2
 !EOP
 
-      ! call ESMC_BaseTime base class function
       CALL ESMF_TimeIntervalSet( ESMF_TimeDiff, rc=rc )
-      call c_ESMC_BaseTimeDiff(time1, time2, ESMF_TimeDiff)
 
-      end function ESMF_TimeDiff
+      ESMF_TimeDiff%StartTime = time2
+      ESMF_TimeDiff%StartTime_set = .true.
+
+!      write(6,*) 'tcx timediff1 ',time2%yr,time2%basetime%s,time2%calendar%type%caltype
+!      write(6,*) 'tcx timediff2 ',time1%yr,time1%basetime%s,time1%calendar%type%caltype
+
+      call ESMF_TimeGet(time2,yy=y2,mm=m2,dd=d2,s=s2)
+      call ESMF_TimeGet(time1,yy=y1,mm=m1,dd=d1,s=s1)
+
+      ! Can either be yr/month based diff if diff is only in year and month
+      ! or absolute seconds if diff in day/seconds as well
+
+      if (d1 == d2 .and. s1 == s2) then
+!         write(6,*) 'tcx timedifft ym'
+         ESMF_TimeDiff%YR = y1 - y2
+         ESMF_TimeDiff%MM = m1 - m2
+         cmptime%S  = 0
+         cmptime%Sn = 0
+         cmptime%Sd = 0
+         ESMF_TimeDiff%basetime = cmptime
+      else
+!         write(6,*) 'tcx timedifft sec'
+         ESMF_TimeDiff%YR = 0
+         ESMF_TimeDiff%MM = 0
+         ESMF_TimeDiff%basetime = time1%basetime - time2%basetime
+         IF ( time1%YR > time2%YR ) THEN
+            DO yr = time2%YR, ( time1%YR - 1 )
+!              write(6,*) 'tcx timediff3 ',yr,nsecondsinyear(yr,time2%calendar%type)
+              ESMF_TimeDiff%basetime%S = ESMF_TimeDiff%basetime%S + nsecondsinyear(yr,time2%calendar%type)
+            ENDDO
+         ELSE IF ( time2%YR > time1%YR ) THEN
+            DO yr = time1%YR, ( time2%YR - 1 )
+!              write(6,*) 'tcx timediff4 ',yr,nsecondsinyear(yr,time2%calendar%type)
+              ESMF_TimeDiff%basetime%S = ESMF_TimeDiff%basetime%S - nsecondsinyear(yr,time2%calendar%type)
+            ENDDO
+         ENDIF
+      endif
+
+!      write(6,*) 'tcx timediff5 ',ESMF_TimeDiff%YR, ESMF_TimeDiff%MM, ESMF_TimeDiff%basetime%s
+
+      CALL normalize_timeint( ESMF_TimeDiff )
+
+!      write(6,*) 'tcx timediff6 ',ESMF_TimeDiff%YR, ESMF_TimeDiff%MM, ESMF_TimeDiff%basetime%s
+
+   end function ESMF_TimeDiff
 
 !------------------------------------------------------------------------------
 !BOP
@@ -972,8 +1141,10 @@
 !     TMG1.5.3, TMG2.4.3, TMG7.2
 !EOP
 
-      ! invoke C to C++ entry point for ESMF_BaseTime base class function
-      call c_ESMC_BaseTimeEQ(time1, time2, ESMF_TimeEQ)
+      integer :: res
+
+      call timecmp(time1,time2,res)
+      ESMF_TimeEQ = (res .EQ. 0)
 
       end function ESMF_TimeEQ
 
@@ -1008,8 +1179,10 @@
 !     TMG1.5.3, TMG2.4.3, TMG7.2
 !EOP
 
-      ! call ESMC_BaseTime base class function
-      call c_ESMC_BaseTimeNE(time1, time2, ESMF_TimeNE)
+      integer :: res
+
+      call timecmp(time1,time2,res)
+      ESMF_TimeNE = (res .NE. 0)
 
       end function ESMF_TimeNE
 
@@ -1044,8 +1217,10 @@
 !     TMG1.5.3, TMG2.4.3, TMG7.2
 !EOP
 
-      ! call ESMC_BaseTime base class function
-      call c_ESMC_BaseTimeLT(time1, time2, ESMF_TimeLT)
+      integer :: res
+
+      call timecmp(time1,time2,res)
+      ESMF_TimeLT = (res .LT. 0)
 
       end function ESMF_TimeLT
 
@@ -1080,8 +1255,10 @@
 !     TMG1.5.3, TMG2.4.3, TMG7.2
 !EOP
 
-      ! call ESMC_BaseTime base class function
-      call c_ESMC_BaseTimeGT(time1, time2, ESMF_TimeGT)
+      integer :: res
+
+      call timecmp(time1,time2,res)
+      ESMF_TimeGT = (res .GT. 0)
 
       end function ESMF_TimeGT
 
@@ -1116,8 +1293,10 @@
 !     TMG1.5.3, TMG2.4.3, TMG7.2
 !EOP
 
-      ! call ESMC_BaseTime base class function
-      call c_ESMC_BaseTimeLE(time1, time2, ESMF_TimeLE)
+      integer :: res
+
+      call timecmp(time1,time2,res)
+      ESMF_TimeLE = (res .LE. 0)
 
       end function ESMF_TimeLE
 
@@ -1152,8 +1331,10 @@
 !     TMG1.5.3, TMG2.4.3, TMG7.2
 !EOP
 
-      ! call ESMC_BaseTime base class function
-      call c_ESMC_BaseTimeGE(time1, time2, ESMF_TimeGE)
+      integer :: res
+
+      call timecmp(time1,time2,res)
+      ESMF_TimeGE = (res .GE. 0)
 
       end function ESMF_TimeGE
 
@@ -1182,7 +1363,189 @@
       timeout%basetime = timein%basetime
       timeout%YR       = timein%YR
       timeout%Calendar => timein%Calendar
+!tcx      timeout%Calendar = timein%Calendar
+!      write(6,*) 'tcxa ESMF_TimeCopy'
+!      call flush(6)
+!      write(6,*) 'tcxb ESMF_TimeCopy',timein%calendar%type%caltype
+!      call flush(6)
+      timeout%Calendar = ESMF_CalendarCreate(calkindflag=timein%calendar%type)
 
       end subroutine ESMF_TimeCopy
 
-      end module ESMF_TimeMod
+
+!------------------------------------------------------------------------------
+!BOP
+! !IROUTINE:  ESMF_TimePrint - Print out a time instant's properties
+
+
+! !INTERFACE:
+      subroutine ESMF_TimePrint(time, options, rc)
+
+! !ARGUMENTS:
+      type(ESMF_Time), intent(in) :: time
+      character (len=*), intent(in), optional :: options
+      integer, intent(out), optional :: rc
+      character (len=256) :: timestr
+
+! !DESCRIPTION:
+!     To support testing/debugging, print out a {\tt ESMF\_Time}'s
+!     properties.
+!
+!     The arguments are:
+!     \begin{description}
+!     \item[time]
+!          {\tt ESMF\_Time} instant to print out
+!     \item[{[options]}]
+!          Print options
+!     \item[{[rc]}]
+!          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
+!     \end{description}
+!
+! !REQUIREMENTS:
+!     TMGn.n.n
+!EOP
+
+      ! Quick hack to mimic ESMF 2.0.1
+      ! Really should check value of options...  
+      IF ( PRESENT( options ) ) THEN
+        CALL ESMF_TimeGet( time, timeString=timestr, rc=rc )
+        timestr(11:11) = 'T'     ! ISO 8601 compatibility hack for debugging
+        print *,' Time -----------------------------------'
+        print *,' ',TRIM(timestr)
+        print *,' end Time -------------------------------'
+        print *
+      ELSE
+        call print_a_time (time)
+      ENDIF
+
+      end subroutine ESMF_TimePrint
+
+!==============================================================================
+
+SUBROUTINE print_a_time( time )
+   IMPLICIT NONE
+   type(ESMF_Time) time
+   character*128 :: s
+   integer rc
+   CALL ESMF_TimeGet( time, timeString=s, rc=rc )
+   print *,'Print a time|',TRIM(s),'|'
+   write(0,*)'Print a time|',TRIM(s),'|'
+   return
+END SUBROUTINE print_a_time
+
+!==============================================================================
+
+SUBROUTINE timecmp(time1, time2, retval )
+  IMPLICIT NONE
+  INTEGER, INTENT(OUT) :: retval
+!
+! !ARGUMENTS:
+  TYPE(ESMF_Time), INTENT(IN) :: time1
+  TYPE(ESMF_Time), INTENT(IN) :: time2
+  IF ( time1%YR .GT. time2%YR ) THEN ; retval = 1  ; RETURN ; ENDIF
+  IF ( time1%YR .LT. time2%YR ) THEN ; retval = -1 ; RETURN ; ENDIF
+  CALL seccmp( time1%basetime%S, time1%basetime%Sn, time1%basetime%Sd, &
+               time2%basetime%S, time2%basetime%Sn, time2%basetime%Sd, &
+	       retval )
+END SUBROUTINE timecmp
+
+!==============================================================================
+
+SUBROUTINE normalize_time( time )
+  ! A normalized time has time%basetime >= 0, time%basetime less than the current
+  ! year expressed as a timeInterval, and time%YR can take any value
+  IMPLICIT NONE
+  TYPE(ESMF_Time), INTENT(INOUT) :: time
+!  INTEGER(ESMF_KIND_I8) :: nsecondsinyear
+  ! locals
+  TYPE(ESMF_BaseTime) :: cmptime, zerotime
+  INTEGER :: rc
+  LOGICAL :: done
+
+  ! first, normalize basetime
+  ! this will force abs(Sn) < Sd and ensure that signs of S and Sn match
+
+  CALL normalize_basetime( time%basetime )
+
+  ! next, underflow negative seconds into YEARS
+  ! time%basetime must end up non-negative
+
+  zerotime%S  = 0
+  zerotime%Sn = 0
+  zerotime%Sd = 0
+  DO WHILE ( time%basetime < zerotime )
+    time%YR = time%YR - 1
+    cmptime%S  = nsecondsinyear( time%YR, time%calendar%type )
+    cmptime%Sn = 0
+    cmptime%Sd = 0
+    time%basetime = time%basetime + cmptime
+  ENDDO
+
+  ! next, overflow seconds into YEARS
+  done = .FALSE.
+  DO WHILE ( .NOT. done )
+    cmptime%S  = nsecondsinyear( time%YR, time%calendar%type )
+    cmptime%Sn = 0
+    cmptime%Sd = 0
+    IF ( time%basetime >= cmptime ) THEN
+      time%basetime = time%basetime - cmptime
+      time%YR = time%YR + 1
+    ELSE
+      done = .TRUE.
+    ENDIF
+  ENDDO
+
+END SUBROUTINE normalize_time
+
+!==============================================================================
+
+SUBROUTINE timegetmonth( time, MM )
+  IMPLICIT NONE
+  TYPE(ESMF_Time), INTENT(IN) :: time
+  INTEGER, INTENT(OUT) :: MM
+  ! locals
+
+  mm = nmonthinyearsec(time%yr,time%basetime,time%calendar%type)
+
+END SUBROUTINE timegetmonth
+
+!==============================================================================
+SUBROUTINE timegetdayofmonth( time, DD )
+  IMPLICIT NONE
+  TYPE(ESMF_Time), INTENT(IN) :: time
+  INTEGER, INTENT(OUT) :: DD
+  ! locals
+
+  dd = ndayinyearsec(time%yr, time%basetime, time%calendar%type)
+
+END SUBROUTINE timegetdayofmonth
+
+!==============================================================================
+
+! Increment Time by number of seconds between start of year and start 
+! of month MM.  
+! 1 <= MM <= 12
+! Time is NOT normalized.  
+SUBROUTINE timeaddmonths( time, MM, ierr )
+  IMPLICIT NONE
+  TYPE(ESMF_Time), INTENT(INOUT) :: time
+  INTEGER, INTENT(IN) :: MM
+  INTEGER, INTENT(OUT) :: ierr
+  ! locals
+  INTEGER(ESMF_KIND_I8) :: isec
+
+  ierr = ESMF_SUCCESS
+  IF ( ( MM < 1 ) .OR. ( MM > MONTHS_PER_YEAR ) ) THEN
+    CALL wrf_message( 'ERROR timeaddmonths():  MM out of range' )
+    ierr = ESMF_FAILURE
+    return
+  ENDIF
+
+  isec = nsecondsinyearmonth(time%yr,MM,time%calendar%type)
+  time%basetime%s = time%basetime%s + isec
+
+END SUBROUTINE timeaddmonths
+
+!==============================================================================
+!==============================================================================
+end module ESMF_TimeMod
