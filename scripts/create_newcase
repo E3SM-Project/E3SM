@@ -87,7 +87,8 @@ sub usage {
 	-res <name>          Specify a CESM grid resolution (required).
 	-mach <name>         Specify a CESM machine (required).
 	-project <name>      Specify a project id for the case (optional)
-      default: user-specified environment variable PROJECT
+      default: user-specified environment variable PROJECT or ACCOUNT
+               or read from ~/.cesm_proj or ~/.ccsm_proj
 	-compiler <name>     Specify a compiler for the target machine (optional)
       default: default compiler for the target machine
       -mpilib <name>       Specify a mpi library for the target machine (optional)
@@ -245,25 +246,6 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
 	$compiler = $opts{'compiler'};
     }
 
-    # Set default and and then check if case project option is given
-    if (defined $ENV{'PROJECT'}){
-        $project = $ENV{'PROJECT'};
-    }
-
-    my $ccsm_proj_file = $ENV{'HOME'} . "/.ccsm_proj";
-    if (-f $ccsm_proj_file){
-        open my $ccsm_proj, '<', $ccsm_proj_file;
-        my $firstline = <$ccsm_proj>;
-        if ($firstline =~ /^\s*(\S*)/){
-            $project = $1;
-        }
-        close $ccsm_proj;
-    }
-
-    if ($opts{'project'}) {
-	$project = $opts{'project'};
-    }
-
     # Check if machine mpilib option is given
     $mpilib = 'unset';
     if ($opts{'mpilib'}) {
@@ -395,6 +377,7 @@ my @dirs = ($cfgdir, "$cfgdir/ccsm_utils/Case.template", "$cfgdir/ccsm_utils/Too
 unshift @INC, @dirs;
 require XML::Lite;
 require ConfigCase;
+require ProjectTools;
 
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
@@ -526,9 +509,17 @@ if (defined $opts{'confopts'}) {
 #-----------------------------------------------------------------------------------------------
 # (7) Set project id
 #-----------------------------------------------------------------------------------------------
-if (defined $project and length $project){
-    $cfg_ref->set('PROJECT' , "$project");
+
+# Check for optional project; if not given, see if we can find a project to use
+if ($opts{'project'}) {
+   $project = $opts{'project'};
 }
+else {
+   $project = ProjectTools::find_project();
+}
+
+ProjectTools::check_project_required_but_unset($project, $cfg_ref);
+ProjectTools::set_project($project, $cfg_ref);
 
 #-----------------------------------------------------------------------------------------------
 # (8) Determine pes for machine

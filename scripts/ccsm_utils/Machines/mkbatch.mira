@@ -5,14 +5,8 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
-if ($PROJECT == "") then
-  echo "  PROJECT must be set in env_case.xml on Mira."
-  echo "  This can be specified in create_newcase with the -project parameter"
-  echo "  or by setting a PROJECT environment variable before executing create_newcase."
-  exit -1
-endif
-set account_name = $PROJECT
-if !(-d /projects/${account_name}) then
+
+if !(-d /projects/${PROJECT}) then
   echo "  PROJECT in env_case.xml must be set to a valid project name."
   echo "  This can be specified in create_newcase with the -project parameter"
   echo "  or by setting a PROJECT environment variable before executing create_newcase."
@@ -198,7 +192,11 @@ runjob --label short -p \${procs} -n \${ntasks} \${LOCARGS} --envs BG_THREADLAYO
 else
                                     \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 endif
-if (\$syslog_id != 0) kill \$syslog_id
+if (\$syslog_id != 0) then
+  if { kill -0 \$syslog_id } then 
+    kill \$syslog_id
+  endif
+endif
 
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
 set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
