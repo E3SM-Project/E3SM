@@ -133,14 +133,14 @@ contains
         bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
-      integer :: index_nonLocalTemp
+      integer, pointer :: index_vertNonLocalFluxTemp
 
       integer, pointer :: config_cvmix_kpp_niterate
       logical, pointer :: config_use_cvmix_shear, config_use_cvmix_convection, config_use_cvmix_kpp
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, iCell, jCell, iNeighbor, iter, timeLevel
-      integer, pointer :: nVertLevels, nCells, index_vertNonLocalFluxTemp
+      integer, pointer :: nVertLevels, nCells
       real (kind=RKIND) :: r, layerSum
       real (kind=RKIND), dimension(:), allocatable :: sigma, Nsqr_iface, turbulentScalarVelocityScale, tmp
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
@@ -239,7 +239,7 @@ contains
       ! set pointers for nonlocal flux and intialize to zero
       !
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_nonLocalTemp', index_vertNonLocalFluxTemp)
+      call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
 
       vertNonLocalFlux = 0.0
 
@@ -325,7 +325,6 @@ contains
         do k=2,maxLevelCell(iCell)
           tmp(k) = (BVFSmoothed(k-1)+2*BVFSmoothed(k)+BVFSmoothed(k+1))/4.0
         enddo
-
         k=1
         tmp(k)=tmp(k+1)
         k=maxLevelCell(iCell)+1
@@ -447,7 +446,7 @@ contains
         ! these flux terms must be multiplied by the surfaceTracerFlux field
         ! the tracer tendency is then the vertical divergence of vertNonLocalFlux*surfaceTracerFlux
         ! both of these operations are done in ocn_tracer_nonlocalflux_tend routine
-        vertNonLocalFlux(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_Tnonlocal_iface(:)
+        vertNonLocalFlux(index_vertNonLocalFluxTemp,:,iCell) = cvmix_variables % kpp_Tnonlocal_iface(:)
 
         endif !if (config_use_cvmix_kpp)
 
