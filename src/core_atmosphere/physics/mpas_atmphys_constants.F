@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_constants
- use mpas_kind_types, only : RKIND
+ use mpas_kind_types
  use mpas_constants, only : pii, cp, gravity, R_d => rgas
 
  implicit none
@@ -25,6 +25,8 @@
 !> ----------------------------------------
 !>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * Removed the constraint of only using RKIND from mpas_kind_types.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
  
 !==================================================================================================

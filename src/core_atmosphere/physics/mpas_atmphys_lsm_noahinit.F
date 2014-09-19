@@ -14,6 +14,7 @@
 !==================================================================================================
  module mpas_atmphys_lsm_noahinit
  use mpas_dmpar
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants
@@ -41,9 +42,12 @@
 !> ----------------------------------------
 !>    * replaced the variable grav with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * added "use mpas_kind_types" at the top of the module.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
 
  contains
+
 
 !==================================================================================================
  subroutine noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
