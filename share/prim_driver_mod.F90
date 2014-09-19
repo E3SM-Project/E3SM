@@ -1006,13 +1006,11 @@ contains
           fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
-!phl      call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm) !boundary exchange now takes place in transport subroutine (cslam_runflux)
+      call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm) !boundary exchange
       do ie=nets,nete
-!	    do i=1-nhc,nc+nhc
-!	      do j=1-nhc,nc+nhc
+	    do i=1-nhc,nc+nhc
+	      do j=1-nhc,nc+nhc
 !phl is it necessary to compute psc here?
-	    do i=1,nc
-	      do j=1,nc
 	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,n0_fvm)) +  hvcoord%hyai(1)*hvcoord%ps0
 	      enddo
 	    enddo
@@ -1673,10 +1671,11 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
-    if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
+!phl    if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
+   if (qsize>0) &
       call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
            dt_q,tl,nets,nete)
-    else
+   if (ntrac>0) then
        !
        ! FVM transport
        !
