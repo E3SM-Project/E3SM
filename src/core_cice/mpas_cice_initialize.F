@@ -548,7 +548,7 @@ contains
           iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
           snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
           surfaceTemperature(1,:,iCell) = 1.0_RKIND
-          
+
        else
           
           ! no ice
@@ -560,7 +560,7 @@ contains
        endif
        
     enddo ! iCell
-    
+
   end subroutine init_ice_state_circle_of_ice!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

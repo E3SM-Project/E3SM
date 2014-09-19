@@ -553,6 +553,11 @@ contains
     real(kind=RKIND), parameter :: &
          densitySnow = 330.0_RKIND
     
+    if (snowfallRate < 0.0_RKIND) then
+       write(*,*) "Negative snowfall rate!",snowfallRate
+       stop
+    endif
+
     ! only accumulate if freezing surface
     if ((surfaceTemperature < snowMeltingTemperature .and. snowThickness > 0.0_RKIND) .or. &
         (surfaceTemperature < iceMeltingTemperature .and. snowThickness == 0.0_RKIND)) then

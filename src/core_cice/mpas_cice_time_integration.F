@@ -62,6 +62,9 @@ contains
     use cice_forcing, only: &
          cice_get_forcing
 
+    use cice_diagnostics, only: &
+         cice_run_diagnostics
+
     use cice_debug, only: &
          cice_prepare_output_variables, &
          cice_test_case_output
@@ -148,6 +151,9 @@ contains
 
     ! test case output
     call cice_test_case_output(block, itimestep)
+
+    ! diagnostics
+    call cice_run_diagnostics(block, clock)
 
   end subroutine cice_timestep!}}}
 

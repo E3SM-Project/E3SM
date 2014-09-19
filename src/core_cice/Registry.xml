@@ -16,6 +16,7 @@
 		<dim name="nCategories"        definition="1"/>
 		<dim name="nIceLayers"         definition="1"/>
 		<dim name="nSnowLayers"        definition="1"/>
+		<dim name="nHemispheres"       definition="3"/>
 		<dim name="nVertLevels"/>
 	  	<dim name="POP_nx"/>
 		<dim name="POP_ny"/>
@@ -85,6 +86,7 @@
 	  	<nml_option name="config_convert_volume_to_thickness"           type="logical"       default_value="true"/>
 	  	<nml_option name="config_limit_ice_concentration"               type="logical"       default_value="true"/>
 	  	<nml_option name="config_conservation_check"                    type="logical"       default_value="true"/>
+	  	<nml_option name="config_clean_tracers"                         type="logical"       default_value="true"/>
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"
@@ -307,6 +309,25 @@
 	    <var name="latentTransferCoefficient"/>
 	    <var name="uPOPAlongGridVector"/>
 	    <var name="vPOPAlongGridVector"/>
+	    <var name="iceAreaCategoryMin"/>
+	    <var name="iceAreaCategoryMax"/>
+	    <var name="iceVolumeCategoryMin"/>
+	    <var name="iceVolumeCategoryMax"/>
+	    <var name="snowVolumeCategoryMin"/>
+	    <var name="snowVolumeCategoryMax"/>
+	    <var name="surfaceTemperatureMin"/>
+	    <var name="surfaceTemperatureMax"/>
+	    <var name="iceThicknessCategoryMin"/>
+	    <var name="iceThicknessCategoryMax"/>
+	    <var name="snowThicknessCategoryMin"/>
+	    <var name="snowThicknessCategoryMax"/>
+	    <var name="snowThicknessCategoryLocMax"/>
+	    <var name="globalIceArea"/>
+	    <var name="globalIceExtent"/>
+	    <var name="globalIceVolume"/>
+	    <var name="globalIceThickness"/>
+	    <var name="globalSnowVolume"/>
+	    <var name="globalSnowThickness"/>
 	  </stream>
 	</streams>
 	
@@ -413,15 +434,6 @@
 		<var name="iceEnthalpyEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceEnthalpy"/>
 		<var name="iceSalinityEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceSalinity"/>
 		<var name="snowEnthalpyEdgeFlux"              type="real"     dimensions="nSnowLayers nCategories nEdges"  name_in_code="snowEnthalpy"/>
-	</var_struct>
-	<var_struct name="tracer_masks" time_levs="2">
-		<var name="iceAreaCategoryMask"               type="integer"  dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategoryMask"             type="integer"  dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategoryMask"            type="integer"  dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperatureMask"            type="integer"  dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpyMask"                   type="integer"  dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpy"/>
-		<var name="iceSalinityMask"                   type="integer"  dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinity"/>
-		<var name="snowEnthalpyMask"                  type="integer"  dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="icestate" time_levs="1">
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"              name_in_code="iceAreaCell"/>
@@ -561,6 +573,25 @@
 	<!-- Diagnostics -->
 	<var_struct name="diagnostics" time_levs="1">
 	        <var name="xtime"                             type="text"     dimensions="Time"/>
+		<var name="iceAreaCategoryMin"                type="real"     dimensions="nCategories Time"  name_in_code="iceAreaCategoryMin"/>
+		<var name="iceAreaCategoryMax"                type="real"     dimensions="nCategories Time"  name_in_code="iceAreaCategoryMax"/>
+		<var name="iceVolumeCategoryMin"              type="real"     dimensions="nCategories Time"  name_in_code="iceVolumeCategoryMin"/>
+		<var name="iceVolumeCategoryMax"              type="real"     dimensions="nCategories Time"  name_in_code="iceVolumeCategoryMax"/>
+		<var name="snowVolumeCategoryMin"             type="real"     dimensions="nCategories Time"  name_in_code="snowVolumeCategoryMin"/>
+		<var name="snowVolumeCategoryMax"             type="real"     dimensions="nCategories Time"  name_in_code="snowVolumeCategoryMax"/>
+		<var name="surfaceTemperatureMin"             type="real"     dimensions="nCategories Time"  name_in_code="surfaceTemperatureMin"/>
+		<var name="surfaceTemperatureMax"             type="real"     dimensions="nCategories Time"  name_in_code="surfaceTemperatureMax"/>
+		<var name="iceThicknessCategoryMin"           type="real"     dimensions="nCategories Time"  name_in_code="iceThicknessCategoryMin"/>
+		<var name="iceThicknessCategoryMax"           type="real"     dimensions="nCategories Time"  name_in_code="iceThicknessCategoryMax"/>
+		<var name="snowThicknessCategoryMin"          type="real"     dimensions="nCategories Time"  name_in_code="snowThicknessCategoryMin"/>
+		<var name="snowThicknessCategoryMax"          type="real"     dimensions="nCategories Time"  name_in_code="snowThicknessCategoryMax"/>
+		<var name="snowThicknessCategoryLocMax"       type="integer"  dimensions="nCategories Time"  name_in_code="snowThicknessCategoryLocMax"/>
+		<var name="globalIceArea"                     type="real"     dimensions="nHemispheres Time" name_in_code="globalIceArea"/>
+		<var name="globalIceExtent"                   type="real"     dimensions="nHemispheres Time" name_in_code="globalIceExtent"/>
+		<var name="globalIceVolume"                   type="real"     dimensions="nHemispheres Time" name_in_code="globalIceVolume"/>
+		<var name="globalIceThickness"                type="real"     dimensions="nHemispheres Time" name_in_code="globalIceThickness"/>
+		<var name="globalSnowVolume"                  type="real"     dimensions="nHemispheres Time" name_in_code="globalSnowVolume"/>
+		<var name="globalSnowThickness"               type="real"     dimensions="nHemispheres Time" name_in_code="globalSnowThickness"/>
 	</var_struct>
 
 </registry>
