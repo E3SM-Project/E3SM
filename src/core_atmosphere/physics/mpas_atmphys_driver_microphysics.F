@@ -12,7 +12,7 @@
  
  use mpas_atmphys_constants
  use mpas_atmphys_vars
- use mpas_atmphys_interface_nhyd
+ use mpas_atmphys_interface
 
 !wrf physics:
  use module_mp_kessler

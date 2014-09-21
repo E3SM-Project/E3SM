@@ -6,7 +6,7 @@
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 !==================================================================================================
- module mpas_atmphys_interface_nhyd
+ module mpas_atmphys_interface
  use mpas_kind_types
  use mpas_grid_types
 
@@ -59,6 +59,8 @@
 !>      the calculation of the surface pressure to avoid dividing by zero if the surface pressure
 !>      is not output in the init file.
 !>      Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
+!>    * Renamed module mpas_atmphys_interface_nhyd to mpas_atmphys_interface.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-19.
 
 
  contains
@@ -652,5 +654,5 @@
  end subroutine microphysics_to_MPAS
 
 !==================================================================================================
- end module mpas_atmphys_interface_nhyd
+ end module mpas_atmphys_interface
 !==================================================================================================

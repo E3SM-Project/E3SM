@@ -19,7 +19,7 @@
  use mpas_atmphys_driver_radiation_sw 
  use mpas_atmphys_driver_sfclayer
  use mpas_atmphys_constants
- use mpas_atmphys_interface_nhyd
+ use mpas_atmphys_interface
  use mpas_atmphys_update
  use mpas_atmphys_vars, only: l_camlw,l_conv,l_radtlw,l_radtsw
 
