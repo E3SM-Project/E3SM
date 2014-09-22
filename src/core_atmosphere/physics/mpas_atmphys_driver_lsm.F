@@ -58,10 +58,10 @@
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine lsm.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
-!>    * Moved the definition of isurban to subroutine landuse_init_forMPAS in mpas_atmphys_landuse.F.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * moved the definition of isurban to landuse_init_forMPAS in mpas_atmphys_landuse.F.
 !>      isurban is now defined as a function of the input landuse data file.
 !>      Dominikus Heinzeller (IMK) / 2014-07-24.
 

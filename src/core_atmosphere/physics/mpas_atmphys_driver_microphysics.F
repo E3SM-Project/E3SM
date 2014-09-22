@@ -55,19 +55,19 @@
 !> ----------------------------------------
 !>    * removed call to the Thompson cloud microphysics scheme until the scheme is updated to that
 !>      in WRF revision 3.5.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * added subroutine compute_relhum to calculate the relative humidity using the functions
 !>      rslf and rsif from the Thompson cloud microphysics scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-12. 
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-12. 
 !>    * removed the argument tend from the call to microphysics_from_MPAS (not needed).
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
 !>    * in call to subroutine wsm6, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains

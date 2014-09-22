@@ -54,9 +54,9 @@
 !>      subroutine oznini.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-07-08.
 !>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
 !local parameters:

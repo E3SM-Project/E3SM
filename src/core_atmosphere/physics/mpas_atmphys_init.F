@@ -40,23 +40,23 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-01.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
 !>    * added call to subroutine init_o3climatology. reads monthly-mean climatological ozone data
 !>      and interpolates ozone data to the MPAS grid.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
 !>    * added the calculation of the mean distance between cell centers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-22.
 !>    * added initialization of variable xicem.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * added initialization of the accumulated surface pressure. Added initialization of the 
 !>      tendency and accumulated tendency of the surface pressure.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains

@@ -40,9 +40,9 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * revised subroutine physics_update_sst.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains

@@ -84,19 +84,19 @@
 !> ----------------------------------------
 !>    * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
 !>      definition of sf_surface_physics in mpas_atmphys_vars.F
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-03-11.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * added call to subroutine o3climatology_from_MPAS to interpolate the climatological ozone
 !>      mixing ratios to the current julian day.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
 !>    * added domain%dminfo in call to subroutine physics_update_sst to print local and global
 !>      min and max values of the updated sea-surface temperatures and sea-ice fractions.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-24.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-24.
 !>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains

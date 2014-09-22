@@ -48,14 +48,14 @@
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine gwdo. 
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * changed the definition of dx_p to the mean distance between cell centers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
 !>    * in call to subroutine gwdo, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains

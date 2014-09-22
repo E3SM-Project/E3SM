@@ -41,9 +41,9 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * replaced the variable grav with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * added "use mpas_kind_types" at the top of the module.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains

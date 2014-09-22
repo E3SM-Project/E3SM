@@ -48,19 +48,19 @@
 !>      water vapor mixing ratio, we first update the total pressure and exner functions. Then, we
 !>      update the modified potential temperature and calculate the diabatic tendency due to cloud
 !>      microphysics processes.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
 !>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * Added calculation of the surface pressure tendency. Moved the calculation of znu_p below 
 !>      the calculation of the surface pressure to avoid dividing by zero if the surface pressure
 !>      is not output in the init file.
 !>      Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
 !>    * Renamed module mpas_atmphys_interface_nhyd to mpas_atmphys_interface.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-19.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-19.
 
 
  contains

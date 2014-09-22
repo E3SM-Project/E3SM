@@ -55,21 +55,21 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutine
 !>      sfclay.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * updated the definition of the horizontal resolution to the actual mean distance between
 !>      cell centers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
 !>    * in call to subroutine sfclay, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * in subroutine sfclayer_from_MPAS, added initialization of ustm, cd, cda, ck, and cka. in
 !>      subroutine sfclayer_to_MPAS, filled diag_physics%ustm with ustm_p after call to subroutine
 !>      sfclay.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-16. 
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-16. 
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains

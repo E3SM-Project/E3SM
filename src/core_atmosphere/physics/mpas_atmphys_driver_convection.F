@@ -57,21 +57,21 @@
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutines 
 !>      kf_eta_cps and tiedtke.
 !>    * removed call to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * added the mean distance between cell centers in the call to the Kain-Fritsch convection
 !>      parameterization of convection.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22. 
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-22. 
 !>    * in call to subroutine kf_eta_cps, replaced the variable g (that originally pointed to
 !>      gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
-!>    * In ./physics_wrf, updated the Tiedtke convection scheme to that in WRF version 3.6.1. The
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * in ./physics_wrf, updated the Tiedtke convection scheme to that in WRF version 3.6.1. The
 !>      call to subroutine cu_tiedtke has been updated accordingly to include the sensible heat
 !>      flux.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-11. 
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-11. 
 
 
  contains

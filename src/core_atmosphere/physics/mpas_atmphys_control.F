@@ -38,16 +38,16 @@
 !>    * removed the namelist option config_eddy_scheme and associated sourcecode.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>    * removed controls to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
 !>      core_init_atmosphere.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
 !>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains

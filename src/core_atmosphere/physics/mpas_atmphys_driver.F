@@ -79,11 +79,11 @@
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * added block%atm_input in calls to subroutines driver_radiation_lw amd driver_radiation_lw.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
 !>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains

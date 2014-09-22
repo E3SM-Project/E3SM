@@ -44,9 +44,9 @@
 !>      -> removed modifying snoalb (surface albedo over snow) over sea-ice points.
 !>      -> revised subroutine physics_init_sst.
 !>      -> revised subroutine physics_init_seaice.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-02.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-02.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * In subroutine physics_init_seaice, assign the sea-ice land use category as a function of
 !>      the land use category input file (MODIS OR USGS).
 !>      Dominikus Heinzeller (IMK) / 2014-07-24.
