@@ -2920,8 +2920,6 @@ end subroutine ALE_parametric_coords
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) )
   !
 
-  write(*,*) "phl: vertical remap np1,np1_qdp,np1_fvm: ",np1,np1_qdp,np1_fvm
-
   do ie=nets,nete
 !     ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
 !     elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
