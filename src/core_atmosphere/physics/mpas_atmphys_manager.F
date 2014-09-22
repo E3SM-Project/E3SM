@@ -93,8 +93,10 @@
 !>    * added domain%dminfo in call to subroutine physics_update_sst to print local and global
 !>      min and max values of the updated sea-surface temperatures and sea-ice fractions.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-24.
-!>    * Modified sourcecode to use pools.
+!>    * modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
 
  contains
@@ -121,8 +123,8 @@
                    config_sstdiurn_update,    &
                    config_deepsoiltemp_update
 
- character(len=StrKIND),pointer:: config_conv_deep_scheme, &
-                                  config_radt_lw_scheme,   &
+ character(len=StrKIND),pointer:: config_convection_scheme, &
+                                  config_radt_lw_scheme,    &
                                   config_radt_sw_scheme
 
  character(len=StrKIND),pointer:: config_conv_interval,    &
@@ -151,9 +153,9 @@
  write(0,*)
  write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
 
- call mpas_pool_get_config(domain%blocklist%configs,'config_conv_deep_scheme',config_conv_deep_scheme)
- call mpas_pool_get_config(domain%blocklist%configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
- call mpas_pool_get_config(domain%blocklist%configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(domain%blocklist%configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme  )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme  )
 
  call mpas_pool_get_config(domain%blocklist%configs,'config_conv_interval'   ,config_conv_interval   )
  call mpas_pool_get_config(domain%blocklist%configs,'config_radtlw_interval' ,config_radtlw_interval )
@@ -254,7 +256,7 @@
  endif
 
 !check to see if it is time to run the parameterization of convection:
- if(trim(config_conv_deep_scheme) /= "off") then
+ if(trim(config_convection_scheme) /= "off") then
     l_conv = .false.
 
     if(config_conv_interval /= "none") then
@@ -309,7 +311,7 @@
 
 !check to see if it is time to apply limit to the accumulated rain due to cloud microphysics
 !and convection:
- if(trim(config_conv_deep_scheme) /= "off") then
+ if(trim(config_convection_scheme) /= "off") then
     l_acrain = .false.
     if(mpas_is_alarm_ringing(clock,acrainAlarmID,acrainTimeStep,ierr=ierr)) then
        call mpas_reset_clock_alarm(clock,acrainAlarmID,acrainTimeStep,ierr=ierr)
@@ -353,7 +355,7 @@
  type(MPAS_Clock_type):: clock
 
 !local pointers:
- character(len=StrKIND),pointer:: config_conv_deep_scheme,       &
+ character(len=StrKIND),pointer:: config_convection_scheme,      &
                                   config_gwdo_scheme,            &
                                   config_lsm_scheme,             &
                                   config_microp_scheme,          &
@@ -395,15 +397,15 @@
  write(0,*)
  write(0,*) '--- enter subroutine physics_run_init:'
 
- call mpas_pool_get_config(configs,'config_conv_deep_scheme',config_conv_deep_scheme)
- call mpas_pool_get_config(configs,'config_gwdo_scheme'     ,config_gwdo_scheme     )
- call mpas_pool_get_config(configs,'config_lsm_scheme'      ,config_lsm_scheme      )
- call mpas_pool_get_config(configs,'config_microp_scheme'   ,config_microp_scheme   )
- call mpas_pool_get_config(configs,'config_pbl_scheme'      ,config_pbl_scheme      )
- call mpas_pool_get_config(configs,'config_radt_cld_scheme' ,config_radt_cld_scheme )
- call mpas_pool_get_config(configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
- call mpas_pool_get_config(configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
- call mpas_pool_get_config(configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
+ call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
+ call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
  call mpas_pool_get_config(configs,'config_conv_interval'         ,config_conv_interval         )
  call mpas_pool_get_config(configs,'config_pbl_interval'          ,config_pbl_interval          )
@@ -638,15 +640,15 @@
  num_months = nMonths
  num_soils  = nSoilLevels
 
- conv_deep_scheme    = trim(config_conv_deep_scheme)
- lsm_scheme          = trim(config_lsm_scheme)
- microp_scheme       = trim(config_microp_scheme)
- pbl_scheme          = trim(config_pbl_scheme)
- gwdo_scheme         = trim(config_gwdo_scheme)
- radt_cld_scheme     = trim(config_radt_cld_scheme)
- radt_lw_scheme      = trim(config_radt_lw_scheme)
- radt_sw_scheme      = trim(config_radt_sw_scheme)
- sfclayer_scheme     = trim(config_sfclayer_scheme)
+ convection_scheme = trim(config_convection_scheme)
+ lsm_scheme        = trim(config_lsm_scheme)
+ microp_scheme     = trim(config_microp_scheme)
+ pbl_scheme        = trim(config_pbl_scheme)
+ gwdo_scheme       = trim(config_gwdo_scheme)
+ radt_cld_scheme   = trim(config_radt_cld_scheme)
+ radt_lw_scheme    = trim(config_radt_lw_scheme)
+ radt_sw_scheme    = trim(config_radt_sw_scheme)
+ sfclayer_scheme   = trim(config_sfclayer_scheme)
 
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
 

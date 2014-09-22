@@ -33,6 +33,8 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-08.
 !>    * corrected definition of local variable dx_p.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+!>    * renamed local variable conv_deep_scheme to convection_scheme.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
 
 !==================================================================================================
@@ -40,7 +42,7 @@
 !==================================================================================================
 
  character(len=StrKIND),public:: microp_scheme
- character(len=StrKIND),public:: conv_deep_scheme
+ character(len=StrKIND),public:: convection_scheme
  character(len=StrKIND),public:: gwdo_scheme
  character(len=StrKIND),public:: lsm_scheme
  character(len=StrKIND),public:: pbl_scheme

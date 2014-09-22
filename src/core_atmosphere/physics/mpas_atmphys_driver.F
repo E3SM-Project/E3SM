@@ -11,7 +11,7 @@
  use mpas_grid_types
 
  use mpas_atmphys_driver_cloudiness
- use mpas_atmphys_driver_convection_deep
+ use mpas_atmphys_driver_convection
  use mpas_atmphys_driver_gwdo
  use mpas_atmphys_driver_lsm
  use mpas_atmphys_driver_pbl
@@ -40,7 +40,7 @@
 !> ------------------------------------------
 !> allocate_forall_physics     : allocate local arrays defining atmospheric soundings (pressure,..)
 !> allocate_cloudiness         : allocate all local arrays used in driver_cloudiness. 
-!> allocate_convection_deep    : allocate all local arrays used in driver_convection_deep.
+!> allocate_convection         : allocate all local arrays used in driver_convection.
 !> allocate_gwdo               : allocate all local arrays used in driver_gwdo.
 !> allocate_lsm                : allocate all local arrays used in driver_lsm.
 !> allocate_pbl                : allocate all local arrays used in driver_pbl.
@@ -50,7 +50,7 @@
 !>
 !> deallocate_forall_physics   : deallocate local arrays defining atmospheric soundings.
 !> deallocate_cloudiness       : dedeallocate all local arrays used in driver_cloudiness.
-!> deallocate_convection_deep  : deallocate all local arrays used in driver_convection_deep.
+!> deallocate_convection       : deallocate all local arrays used in driver_convection.
 !> deallocate_gwdo             : deallocate all local arrays used in driver_gwdo.
 !> deallocate_lsm              : deallocate all local arrays used in driver_lsm.
 !> deallocate_pbl              : deallocate all local arrays used in driver_pbl.
@@ -60,7 +60,7 @@
 !>
 !> MPAS_to_physics             :
 !> driver_cloudiness           : driver for parameterization of fractional cloudiness.
-!> driver_convection_deep      : driver for parameterization of convection.
+!> driver_convection           : driver for parameterization of convection.
 !> driver_gwdo                 : driver for parameterization of gravity wave drag over orography.
 !> driver_lsm                  : driver for land-surface scheme.
 !> driver_pbl                  : driver for planetary boundary layer scheme.
@@ -80,8 +80,10 @@
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * added block%atm_input in calls to subroutines driver_radiation_lw amd driver_radiation_lw.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
-!>    * Modified sourcecode to use pools.
+!>    * modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
 
  contains
@@ -110,13 +112,13 @@
 
  real(kind=RKIND),pointer:: config_bucket_radt
 
- character(len=StrKIND),pointer:: config_bucket_update,    &
-                                  config_conv_deep_scheme, &
-                                  config_gwdo_scheme,      &
-                                  config_lsm_scheme,       &
-                                  config_pbl_scheme,       &
-                                  config_radt_lw_scheme,   &
-                                  config_radt_sw_scheme,   &
+ character(len=StrKIND),pointer:: config_bucket_update,     &
+                                  config_convection_scheme, &
+                                  config_gwdo_scheme,       &
+                                  config_lsm_scheme,        &
+                                  config_pbl_scheme,        &
+                                  config_radt_lw_scheme,    &
+                                  config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
 
 !local variables:
@@ -126,22 +128,22 @@
 
 !==================================================================================================
 
- call mpas_pool_get_config(domain%configs,'config_conv_deep_scheme',config_conv_deep_scheme)
- call mpas_pool_get_config(domain%configs,'config_gwdo_scheme'     ,config_gwdo_scheme     )
- call mpas_pool_get_config(domain%configs,'config_lsm_scheme'      ,config_lsm_scheme      )
- call mpas_pool_get_config(domain%configs,'config_pbl_scheme'      ,config_pbl_scheme      )
- call mpas_pool_get_config(domain%configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
- call mpas_pool_get_config(domain%configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
- call mpas_pool_get_config(domain%configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
- call mpas_pool_get_config(domain%configs,'config_bucket_radt'     ,config_bucket_radt     )
- call mpas_pool_get_config(domain%configs,'config_bucket_update'   ,config_bucket_update   )
+ call mpas_pool_get_config(domain%configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(domain%configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
+ call mpas_pool_get_config(domain%configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(domain%configs,'config_pbl_scheme'       ,config_pbl_scheme       )
+ call mpas_pool_get_config(domain%configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(domain%configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
+ call mpas_pool_get_config(domain%configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
+ call mpas_pool_get_config(domain%configs,'config_bucket_radt'      ,config_bucket_radt      )
+ call mpas_pool_get_config(domain%configs,'config_bucket_update'    ,config_bucket_update    )
 
- if(config_conv_deep_scheme    .ne. 'off' .or. &
-    config_lsm_scheme          .ne. 'off' .or. &
-    config_pbl_scheme          .ne. 'off' .or. & 
-    config_radt_lw_scheme      .ne. 'off' .or. &
-    config_radt_sw_scheme      .ne. 'off' .or. &
-    config_sfclayer_scheme     .ne. 'off') then
+ if(config_convection_scheme .ne. 'off' .or. &
+    config_lsm_scheme        .ne. 'off' .or. &
+    config_pbl_scheme        .ne. 'off' .or. & 
+    config_radt_lw_scheme    .ne. 'off' .or. &
+    config_radt_sw_scheme    .ne. 'off' .or. &
+    config_sfclayer_scheme   .ne. 'off') then
 
  block => domain % blocklist
  do while(associated(block))
@@ -224,9 +226,9 @@
     !call to convection scheme:
     call update_convection_step1(mesh,diag_physics,tend_physics)
     if(l_conv) then
-       call allocate_convection_deep
-       call driver_convection_deep(itimestep,mesh,sfc_input,diag_physics,tend_physics)
-       call deallocate_convection_deep
+       call allocate_convection
+       call driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+       call deallocate_convection
     endif
     !update diagnostics:
     call update_convection_step2(block%configs,mesh,diag_physics)

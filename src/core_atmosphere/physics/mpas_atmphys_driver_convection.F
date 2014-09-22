@@ -6,7 +6,7 @@
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 !==================================================================================================
- module mpas_atmphys_driver_convection_deep
+ module mpas_atmphys_driver_convection
  use mpas_kind_types
  use mpas_grid_types
 
@@ -20,11 +20,11 @@
 
  implicit none
  private
- public:: allocate_convection_deep,   &
-          deallocate_convection_deep, &
-          init_convection_deep,       &
-          driver_convection_deep,     &
-          update_convection_step1,    &
+ public:: allocate_convection,     &
+          deallocate_convection,   &
+          init_convection,         &
+          driver_convection,       &
+          update_convection_step1, &
           update_convection_step2
 
  integer, private:: i,k,j
@@ -36,19 +36,19 @@
 !>
 !>\details
 !>
-!> subroutines in mpas_atmphys_driver_convection_deep:
-!> ---------------------------------------------------
-!> allocate_convection_deep  : allocate local arrays for parameterization of convection.
-!> deallocate_convection_deep: deallocate local arrays for parameterization of convection.
-!> init_convection_deep      : initialization of individual convection scheme.
-!> driver_convection_deep    : main driver (called from subroutine physics_driver).
-!> convection_from_MPAS      : initialize local arrays.
-!> convection_to_MPAS        : copy local arrays to MPAS arrays.
-!> update_convection_step1   : updates lifetime of deep convective clouds in Kain-Fritsch scheme.
-!> update_convection_step2   : updates accumulated precipitation output from convection schemes.
+!> subroutines in mpas_atmphys_driver_convection:
+!> ----------------------------------------------
+!> allocate_convection     : allocate local arrays for parameterization of convection.
+!> deallocate_convection   : deallocate local arrays for parameterization of convection.
+!> init_convection         : initialization of individual convection scheme.
+!> driver_convection       : main driver (called from subroutine physics_driver).
+!> convection_from_MPAS    : initialize local arrays.
+!> convection_to_MPAS      : copy local arrays to MPAS arrays.
+!> update_convection_step1 : updates lifetime of deep convective clouds in Kain-Fritsch scheme.
+!> update_convection_step2 : updates accumulated precipitation output from convection schemes.
 !>
-!> WRF physics called from driver_convection_deep:
-!> -----------------------------------------------
+!> WRF physics called from driver_convection:
+!> ------------------------------------------
 !>    * module_cu_kfeta      : Kain-Fritsch convection scheme.
 !>    * module_cu_tiedtke    : Tiedtke convection scheme.
 
@@ -78,7 +78,7 @@
 
 
 !==================================================================================================
- subroutine allocate_convection_deep
+ subroutine allocate_convection
 !==================================================================================================
 
  if(.not.allocated(cu_act_flag)) allocate(cu_act_flag(ims:ime,jms:jme)       )
@@ -107,7 +107,7 @@
  enddo
  enddo
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
        if(.not.allocated(dx_p)       ) allocate(dx_p(ims:ime,jms:jme)              )
@@ -167,10 +167,10 @@
 
  end select convection_select
 
- end subroutine allocate_convection_deep
+ end subroutine allocate_convection
 
 !==================================================================================================
- subroutine deallocate_convection_deep
+ subroutine deallocate_convection
 !==================================================================================================
 
  if(allocated(cu_act_flag)) deallocate(cu_act_flag)
@@ -181,7 +181,7 @@
  if(allocated(pratec_p)   ) deallocate(pratec_p   )
  if(allocated(raincv_p)   ) deallocate(raincv_p   )
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
        if(allocated(dx_p)         ) deallocate(dx_p         )
@@ -206,10 +206,10 @@
 
  end select convection_select
 
- end subroutine deallocate_convection_deep
+ end subroutine deallocate_convection
 
 !==================================================================================================
- subroutine init_convection_deep(mesh,configs,diag_physics)
+ subroutine init_convection(mesh,configs,diag_physics)
 !==================================================================================================
 
 !input arguments:
@@ -229,13 +229,13 @@
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
- write(0,*) '--- enter convection_deep initialization:'
+ write(0,*) '--- enter subroutine init_convection:'
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_array(diag_physics,'nca',nca)
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
        write(0,*) '    enter kain-fritsch initialization:'
@@ -257,12 +257,12 @@
 
  end select convection_select
 
- write(0,*) '--- end convection_deep initialization'
+ write(0,*) '--- end subroutine init_convection'
 
- end subroutine init_convection_deep
+ end subroutine init_convection
 
 !==================================================================================================
- subroutine driver_convection_deep(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+ subroutine driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics)
 !==================================================================================================
 
 !input and output arguments:
@@ -311,7 +311,7 @@
  enddo
  enddo
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
        if(itimestep == 1) then
@@ -387,7 +387,7 @@
 
  write(0,*) '--- end subroutine convection_driver'
 
- end subroutine driver_convection_deep
+ end subroutine driver_convection
 
 !==================================================================================================
  subroutine convection_from_MPAS(dt_dyn,mesh,sfc_input,diag_physics,tend_physics)
@@ -449,7 +449,7 @@
  enddo
  enddo
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
 
@@ -544,7 +544,7 @@
  enddo
  enddo
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
        do j = jts,jte
@@ -613,7 +613,7 @@
  call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
  call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
- convection_select: select case(conv_deep_scheme)
+ convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
 
@@ -693,5 +693,5 @@
  end subroutine update_convection_step2
 
 !==================================================================================================
- end module mpas_atmphys_driver_convection_deep
+ end module mpas_atmphys_driver_convection
 !==================================================================================================

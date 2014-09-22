@@ -11,7 +11,7 @@
  use mpas_grid_types
  use mpas_timekeeping
 
- use mpas_atmphys_driver_convection_deep, only: init_convection_deep
+ use mpas_atmphys_driver_convection, only: init_convection
  use mpas_atmphys_driver_lsm,only: init_lsm
  use mpas_atmphys_driver_microphysics
  use mpas_atmphys_driver_radiation_lw, only: init_radiation_lw
@@ -55,6 +55,8 @@
 !>    * added initialization of the accumulated surface pressure. Added initialization of the 
 !>      tendency and accumulated tendency of the surface pressure.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
 
  contains
@@ -85,12 +87,12 @@
  logical,pointer:: config_do_restart,       &
                    config_o3climatology
 
- character(len=StrKIND),pointer::           &
-                   config_lsm_scheme,       &
-                   config_microp_scheme,    &
-                   config_conv_deep_scheme, &
-                   config_sfclayer_scheme,  &
-                   config_radt_lw_scheme,   &
+ character(len=StrKIND),pointer::            &
+                   config_lsm_scheme,        &
+                   config_microp_scheme,     &
+                   config_convection_scheme, &
+                   config_sfclayer_scheme,   &
+                   config_radt_lw_scheme,    &
                    config_radt_sw_scheme
 
  integer,pointer:: nCellsSolve,nLags
@@ -124,14 +126,14 @@
  write(0,*)
  write(0,*) '--- enter subroutine physics_init:'
 
- call mpas_pool_get_config(configs,'config_do_restart'      ,config_do_restart      )
- call mpas_pool_get_config(configs,'config_o3climatology'   ,config_o3climatology   )
- call mpas_pool_get_config(configs,'config_lsm_scheme'      ,config_lsm_scheme      )
- call mpas_pool_get_config(configs,'config_microp_scheme'   ,config_microp_scheme   )
- call mpas_pool_get_config(configs,'config_conv_deep_scheme',config_conv_deep_scheme)
- call mpas_pool_get_config(configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
- call mpas_pool_get_config(configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
- call mpas_pool_get_config(configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
+ call mpas_pool_get_config(configs,'config_do_restart'       ,config_do_restart       )
+ call mpas_pool_get_config(configs,'config_o3climatology'    ,config_o3climatology    )
+ call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nLags'      ,nLags      )
@@ -305,9 +307,9 @@
 !manager is implemented:
  call landuse_init_forMPAS(dminfo,julday,mesh,configs,diag_physics,sfc_input)
 
-!initialization of parameterized deep convective processes:
- if(config_conv_deep_scheme .ne. 'off') &
-    call init_convection_deep(mesh,configs,diag_physics)
+!initialization of parameterized convective processes:
+ if(config_convection_scheme .ne. 'off') &
+    call init_convection(mesh,configs,diag_physics)
 
 !initialization of cloud microphysics processes:
  if(config_microp_scheme .ne. 'off') call microphysics_init

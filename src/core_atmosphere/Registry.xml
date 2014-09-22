@@ -1193,7 +1193,7 @@
                 <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
 
                 <nml_option name="config_microp_scheme"              type="character"     default_value="wsm6"/>
-                <nml_option name="config_conv_deep_scheme"           type="character"     default_value="kain_fritsch"/>
+                <nml_option name="config_convection_scheme"          type="character"     default_value="kain_fritsch"/>
                 <nml_option name="config_lsm_scheme"                 type="character"     default_value="noah"/>
                 <nml_option name="config_pbl_scheme"                 type="character"     default_value="ysu"/>
                 <nml_option name="config_gwdo_scheme"                type="character"     default_value="off"/>

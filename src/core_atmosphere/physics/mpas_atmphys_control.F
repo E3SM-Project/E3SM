@@ -46,6 +46,8 @@
 !>    * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
 !>      core_init_atmosphere.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-09-18.
 
 
  contains
@@ -60,32 +62,32 @@
  type(mpas_pool_type),intent(in):: configs
 
 !local pointers:
- character(len=StrKIND),pointer:: config_microp_scheme,    &
-                                  config_conv_deep_scheme, &
-                                  config_lsm_scheme,       &
-                                  config_pbl_scheme,       &
-                                  config_gwdo_scheme,      &
-                                  config_radt_cld_scheme,  &
-                                  config_radt_lw_scheme,   &
-                                  config_radt_sw_scheme,   &
+ character(len=StrKIND),pointer:: config_microp_scheme,     &
+                                  config_convection_scheme, &
+                                  config_lsm_scheme,        &
+                                  config_pbl_scheme,        &
+                                  config_gwdo_scheme,       &
+                                  config_radt_cld_scheme,   &
+                                  config_radt_lw_scheme,    &
+                                  config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
 
 !--------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'config_microp_scheme'   ,config_microp_scheme   )
- call mpas_pool_get_config(configs,'config_conv_deep_scheme',config_conv_deep_scheme)
- call mpas_pool_get_config(configs,'config_lsm_scheme'      ,config_lsm_scheme      )
- call mpas_pool_get_config(configs,'config_pbl_scheme'      ,config_pbl_scheme      )
- call mpas_pool_get_config(configs,'config_gwdo_scheme'     ,config_gwdo_scheme     )
- call mpas_pool_get_config(configs,'config_radt_cld_scheme' ,config_radt_cld_scheme )
- call mpas_pool_get_config(configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
- call mpas_pool_get_config(configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
- call mpas_pool_get_config(configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
+ call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
  write(0,*)
  write(0,*) '--- enter subroutine physics_namelist_check:'
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
- write(0,*) '    config_conv_deep_scheme    = ', trim(config_conv_deep_scheme)
+ write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
  write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
  write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
  write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
@@ -105,13 +107,13 @@
 
  endif
 
-!deep convection scheme:
- if(.not. (config_conv_deep_scheme .eq. 'off'                  .or. &
-           config_conv_deep_scheme .eq. 'kain_fritsch'         .or. &
-           config_conv_deep_scheme .eq. 'tiedtke'              )) then
+!convection scheme:
+ if(.not. (config_convection_scheme .eq. 'off'          .or. &
+           config_convection_scheme .eq. 'kain_fritsch' .or. &
+           config_convection_scheme .eq. 'tiedtke'      )) then
 
-    write(mpas_err_message,'(A,A10)') 'illegal value for config_deep_conv_scheme: ', &
-          trim(config_conv_deep_scheme)
+    write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
+          trim(config_convection_scheme)
     call physics_error_fatal(mpas_err_message)
 
  endif
@@ -217,13 +219,13 @@
 !checks if any physics process is called. if not, return:
  moist_physics = .true.
  
- if(config_microp_scheme       .eq. 'off' .and. &
-    config_conv_deep_scheme    .eq. 'off' .and. &
-    config_lsm_scheme          .eq. 'off' .and. & 
-    config_pbl_scheme          .eq. 'off' .and. & 
-    config_radt_lw_scheme      .eq. 'off' .and. &
-    config_radt_sw_scheme      .eq. 'off' .and. &
-    config_sfclayer_scheme     .eq. 'off') moist_physics = .false.
+ if(config_microp_scheme     .eq. 'off' .and. &
+    config_convection_scheme .eq. 'off' .and. &
+    config_lsm_scheme        .eq. 'off' .and. &
+    config_pbl_scheme        .eq. 'off' .and. &
+    config_radt_lw_scheme    .eq. 'off' .and. &
+    config_radt_sw_scheme    .eq. 'off' .and. &
+    config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
 
  write(0,*) '--- end subroutine physics_namelist_check:'
 
