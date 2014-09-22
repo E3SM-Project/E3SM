@@ -195,6 +195,7 @@
 	       tstart[i] = (size_t) start[i];
 	       tcount[i] = (size_t) count[i];
 	       buflen*=tcount[i];
+	       //               printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,tstart[i],tcount[i]);
 	     }
 	     //	     printf("%s %d %d %d %d %d %d %d %d %d\n",__FILE__,__LINE__,ios->io_rank,tstart[0],tstart[1],tcount[0],tcount[1],buflen,ndims,fndims);
 	     mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
@@ -353,7 +354,7 @@
      }
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
       //      printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
-
+      tmp_bufsize=1;
       if(region==NULL){
 	for(i=0;i<fndims;i++){
 	  start[i] = 0;
@@ -364,6 +365,9 @@
 	  bufptr = IOBUF;
 	else
 	  bufptr=(void *)((char *) IOBUF + tsize*region->loffset);
+
+	//	printf("%s %d %d %d %d\n",__FILE__,__LINE__,iodesc->llen - region->loffset, iodesc->llen, region->loffset);
+
 	if(vdesc->record >= 0 && fndims>1){
 	  start[0] = vdesc->record;
 	  count[0] = 1;
@@ -377,7 +381,7 @@
 	  for(i=0;i<ndims;i++){
 	    start[i] = region->start[i];
 	    count[i] = region->count[i];
-	    //	    printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,i,start[i],count[i]); 
+	    // printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,i,start[i],count[i]); 
 	  }
 	}
       }
@@ -415,6 +419,7 @@
 	  MPI_Send( tmp_count, ndims, MPI_OFFSET, 0, ios->io_rank, ios->io_comm);
 	  if(tmp_bufsize > 0){
 	    MPI_Send( tmp_start, ndims, MPI_OFFSET, 0, ios->io_rank, ios->io_comm);
+	    //	    printf("%s %d %d\n",__FILE__,__LINE__,tmp_bufsize);
 	    MPI_Recv( bufptr, tmp_bufsize, iodesc->basetype, 0, ios->io_rank, ios->io_comm, &status);
 	  }
 	  //	  printf("%s %d %d %d %d %d %d %d\n",__FILE__,__LINE__,regioncnt,tmp_start[1],tmp_start[2],tmp_count[1],tmp_count[2], ndims);
@@ -430,6 +435,7 @@
 	    for(int j=0;j<ndims; j++){
 	      tmp_bufsize *= tmp_count[j];
 	    }
+	    //	    printf("%s %d %d %d\n",__FILE__,__LINE__,i,tmp_bufsize);
 	    if(tmp_bufsize>0){
 	      if(i==0){
 		for(int k=0;k<ndims;k++)
@@ -437,7 +443,7 @@
 	      }else{
 		MPI_Recv(tmp_start, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	      }		
-	      //	      printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,regioncnt,tmp_start[1],tmp_start[2],tmp_count[1],tmp_count[2]);
+	      //	      printf("%s %d %ld %ld %ld %d %d %d \n",__FILE__,__LINE__,IOBUF,bufptr,(char *) bufptr - (char *) IOBUF,tmp_count[0],tmp_count[1],tmp_count[2]);
 
 	      if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 		ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, bufptr); 
@@ -457,6 +463,7 @@
 	      }
 	      */
 	      if(i>0){
+		//    printf("%s %d %d %d\n",__FILE__,__LINE__,i,tmp_bufsize);
 		MPI_Rsend(bufptr, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
 	      }
 	    }
@@ -467,10 +474,11 @@
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
 	  {
+	    tmp_bufsize=1;
 	    for(int j=0;j<ndims; j++){
 	      tmp_bufsize *= count[j];
 	    }
-	    //	    printf("%s %d %ld %d %d\n",__FILE__,__LINE__,tmp_bufsize,vid,iodesc->basetype); 
+	    printf("%s %d %ld %d\n",__FILE__,__LINE__,tmp_bufsize,vid); 
 	    	    
 	    ierr = ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
 	    /*
