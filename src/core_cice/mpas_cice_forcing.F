@@ -24,6 +24,9 @@ module cice_forcing
        cice_init_forcing, &
        cice_get_forcing, &
        cice_convert_pop_forcing_to_mpas
+
+  character(len=200), parameter :: &
+       forcingType = "480km"
          
   integer, parameter, private :: &
        epoch = 1900
@@ -122,10 +125,10 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
     call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
 
-    call POP_grid_basis(&
-         mesh, &
-         uPOPAlongGridVector, &
-         vPOPAlongGridVector)
+    !call POP_grid_basis(&
+    !     mesh, &
+    !     uPOPAlongGridVector, &
+    !     vPOPAlongGridVector)
 
   end subroutine cice_init_forcing!}}}
 
@@ -154,22 +157,19 @@ contains
     integer, pointer :: &
          nCellsSolve
 
-    character(len=200), parameter :: &
-         forcingType = "MPAS"
-
     ! global numner of cells
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call mpas_dmpar_sum_int(block % domain % dminfo, nCellsSolve, atmosForcingFields % nCellsGlobal)
 
-    ! set number of forcing fields
-    atmosForcingFields % nForcingFields = 8
-    allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
+    if (trim(forcingType) == "gx3_POP") then
 
-    ! set forcing directory
-    atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
-
-    if (trim(forcingType) == "POP") then
-
+       ! set number of forcing fields
+       atmosForcingFields % nForcingFields = 8
+       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
+       
+       ! set forcing directory
+       atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
+       
        ! air temperature
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
             "/NCEP/4XDAILY/STATES/", "t_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
@@ -202,7 +202,14 @@ contains
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(8), "monthly", &
             "/MXA/MONTHLY/PRECIP/", "prec.", ".dat", "binaryPOP", 12, 0.5_RKIND)
 
-    else if (trim(forcingType) == "MPAS") then
+    else if (trim(forcingType) == "gx3_MPAS") then
+
+       ! set number of forcing fields
+       atmosForcingFields % nForcingFields = 8
+       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
+       
+       ! set forcing directory
+       atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
 
        ! air temperature
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
@@ -235,6 +242,39 @@ contains
        ! precipitation
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(8), "monthly", &
             "/MXA/MONTHLY/PRECIP/", "prec_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+
+    else if (trim(forcingType) == "480km") then
+
+       ! set number of forcing fields
+       atmosForcingFields % nForcingFields = 6
+       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
+       
+       ! set forcing directory
+       atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/"
+
+       ! air temperature
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
+            "", "t_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! u air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
+            "", "u_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! v air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
+            "", "v_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! air humidity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
+            "", "q_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
+       ! cloudFraction
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "monthly", &
+            "", "cldf.omip.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+
+       ! precipitation
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
+            "", "prec.nmyr.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
 
     endif
 
@@ -278,7 +318,7 @@ contains
          forcingTime, &
          forcingTimeEpoch
 
-    real(kind=RKIND), dimension(:), pointer :: airTemperature
+    !real(kind=RKIND), dimension(:), pointer :: airTemperature
 
     configs => block % configs
 
@@ -297,6 +337,7 @@ contains
 
     call get_atmos_forcing(&
          mesh, &
+         clock, &
          configs, &
          atmos_forcing, &
          forcingTime, &
@@ -305,7 +346,7 @@ contains
          month, &
          dayOfMonth)
 
-    call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
+    !call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
 
     !call cice_time_output_variable_real(mesh, airTemperature, clock, "airTemperature")
 
@@ -325,6 +366,7 @@ contains
 
   subroutine get_atmos_forcing(&
        mesh, &
+       clock, &
        configs, &
        atmos_forcing, &
        forcingTime, &
@@ -339,6 +381,9 @@ contains
     type (MPAS_pool_type), pointer, intent(in) :: &
          mesh, & !< Input: 
          configs !< Input: 
+
+    type (MPAS_Clock_type), intent(in) :: &
+         clock
 
     type (MPAS_pool_type), pointer :: &
          atmos_forcing !< Input/Output: 
@@ -426,53 +471,95 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
 
     ! get the forcing fields
-    ! air temperature
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(1), &
-         airTemperature(1:nCellsSolve))
+    if (trim(forcingType) == "gx3_POP" .or. trim(forcingType) == "gx3_MPAS") then
 
-    ! u air velocity
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(2), &
-         uAirVelocityPOP(1:nCellsSolve))
+       ! air temperature
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(1), &
+            airTemperature(1:nCellsSolve))
 
-    ! v air velocity
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(3), &
-         vAirVelocityPOP(1:nCellsSolve))
+       ! u air velocity
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(2), &
+            uAirVelocityPOP(1:nCellsSolve))
 
-    ! air density
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(4), &
-         airDensity(1:nCellsSolve))
+       ! v air velocity
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(3), &
+            vAirVelocityPOP(1:nCellsSolve))
 
-    ! air humidity
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(5), &
-         airSpecificHumidity(1:nCellsSolve))
+       ! air density
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(4), &
+            airDensity(1:nCellsSolve))
 
-    ! shortwave down
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(6), &
-         shortwaveDown(1:nCellsSolve))
+       ! air humidity
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(5), &
+            airSpecificHumidity(1:nCellsSolve))
 
-    ! cloudFraction
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(7), &
-         cloudFraction(1:nCellsSolve))
+       ! shortwave down
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(6), &
+            shortwaveDown(1:nCellsSolve))
 
-    ! precipitation
-    call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-         atmosForcingFields % forcingDirectory, &
-         atmosForcingFields % forcingFieldsArray(8), &
-         precipitationRate(1:nCellsSolve))
+       ! cloudFraction
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(7), &
+            cloudFraction(1:nCellsSolve))
+
+       ! precipitation
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(8), &
+            precipitationRate(1:nCellsSolve))
+
+    else if (trim(forcingType) == "480km") then
+
+       ! air temperature
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(1), &
+            airTemperature(1:nCellsSolve))
+
+       ! u air velocity
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(2), &
+            uAirVelocityPOP(1:nCellsSolve))
+
+       ! v air velocity
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(3), &
+            vAirVelocityPOP(1:nCellsSolve))
+
+       ! air humidity
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(4), &
+            airSpecificHumidity(1:nCellsSolve))
+
+       ! cloudFraction
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(5), &
+            cloudFraction(1:nCellsSolve))
+
+       ! precipitation
+       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
+            atmosForcingFields % forcingDirectory, &
+            atmosForcingFields % forcingFieldsArray(6), &
+            precipitationRate(1:nCellsSolve))
+
+    endif
 
     ! calculate other quantities
     do iCell = 1, nCellsSolve
@@ -493,23 +580,62 @@ contains
        !uAirVelocity(iCell) = uAirVelocityPOP(iCell)
        !vAirVelocity(iCell) = vAirVelocityPOP(iCell)
 
-       call calculate_derived_forcing_variables(&
-            longWavedown(iCell), &
-            snowfallRate(iCell), &
-            airPotentialTemperature(iCell), &
-            windSpeed(iCell), &
-            sensibleTransferCoefficient(iCell), &
-            latentTransferCoefficient(iCell), &
-            uAirStress(iCell), &
-            vAirStress(iCell), &
-            airTemperature(iCell), &
-            cloudFraction(iCell), &
-            precipitationRate(iCell), &
-            uAirVelocity(iCell), &
-            vAirVelocity(iCell), &
-            airDensity(iCell))
-
     enddo ! iCell
+
+
+    if (trim(forcingType) == "gx3_POP" .or. trim(forcingType) == "gx3_MPAS") then
+
+       do iCell = 1, nCellsSolve
+
+          call calculate_derived_forcing_variables_gx3(&
+               longWavedown(iCell), &
+               snowfallRate(iCell), &
+               airPotentialTemperature(iCell), &
+               windSpeed(iCell), &
+               sensibleTransferCoefficient(iCell), &
+               latentTransferCoefficient(iCell), &
+               uAirStress(iCell), &
+               vAirStress(iCell), &
+               airTemperature(iCell), &
+               cloudFraction(iCell), &
+               precipitationRate(iCell), &
+               uAirVelocity(iCell), &
+               vAirVelocity(iCell), &
+               airDensity(iCell))
+          
+       enddo ! iCell
+
+    else if (trim(forcingType) == "480km") then
+
+       do iCell = 1, nCellsSolve
+
+          call calculate_derived_forcing_variables_gx1(&
+               longWavedown(iCell), &
+               snowfallRate(iCell), &
+               airPotentialTemperature(iCell), &
+               windSpeed(iCell), &
+               sensibleTransferCoefficient(iCell), &
+               latentTransferCoefficient(iCell), &
+               uAirStress(iCell), &
+               vAirStress(iCell), &
+               airTemperature(iCell), &
+               cloudFraction(iCell), &
+               precipitationRate(iCell), &
+               uAirVelocity(iCell), &
+               vAirVelocity(iCell), &
+               airDensity(iCell), &
+               shortwaveDown(iCell))
+
+       enddo ! iCell
+
+       call calculate_shortwave(&
+            mesh, &
+            clock, &
+            cloudFraction, &
+            airSpecificHumidity, &
+            shortwaveDown)
+
+    endif
 
   end subroutine get_atmos_forcing!}}}
 
@@ -529,7 +655,111 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine calculate_derived_forcing_variables(&
+  subroutine calculate_derived_forcing_variables_gx1(&
+       longWavedown, &
+       snowfallRate, &
+       airPotentialTemperature, &
+       windSpeed, &
+       sensibleTransferCoefficient, &
+       latentTransferCoefficient, &
+       uAirStress, &
+       vAirStress, &
+       airTemperature, &
+       cloudFraction, &
+       precipitationRate, &
+       uAirVelocity, &
+       vAirVelocity, &
+       airDensity, &
+       shortwaveDown)!{{{
+    
+    real(kind=RKIND), intent(out) :: &
+         longWavedown, &                !< Output: 
+         snowfallRate, &                !< Output: 
+         airPotentialTemperature, &     !< Output: 
+         windSpeed, &                   !< Output: 
+         sensibleTransferCoefficient, & !< Output: 
+         latentTransferCoefficient, &   !< Output: 
+         uAirStress, &                  !< Output: 
+         vAirStress, &                  !< Output: 
+         airDensity, &                  !< Output: 
+         shortwaveDown                  !< Output: 
+
+    real(kind=RKIND), intent(inout) :: &
+         precipitationRate !< Input/Output: 
+
+    real(kind=RKIND), intent(in) :: &
+         airTemperature, & !< Input: 
+         cloudFraction, &  !< Input: 
+         uAirVelocity, &   !< Input: 
+         vAirVelocity      !< Input: 
+
+
+    real(kind=RKIND), parameter :: &
+         stefanBoltzmann         = 5.79484e-8_RKIND , & ! J m-2 K-4 s-1
+         freshWaterFreezingPoint = 273.15_RKIND     , & ! freezing temp of fresh ice (K)
+         airSpecificHeat         = 1005.0_RKIND     , & ! specific heat of air (J/kg/K)
+         latentHeatSublimation   = 2.835e6_RKIND        ! latent heat, sublimation freshwater (J/kg)
+
+    real(kind=RKIND), parameter :: &
+         seconds_per_year        = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
+
+    real(kind=RKIND) :: &
+         airStressCoefficient
+
+    airDensity = 1.3_RKIND
+
+    ! Longwave down
+    ! Parkinson, C. L. and W. M. Washington (1979),
+    ! Large-scale numerical-model of sea ice,
+    ! JGR, 84, 311-337, doi:10.1029/JC084iC01p00311
+
+    longWavedown = stefanBoltzmann * airTemperature**4 * &
+                   (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (freshWaterFreezingPoint - airTemperature)**2)) * &
+                   (1.0_RKIND + 0.275_RKIND * cloudFraction)
+
+    ! snowfall rate
+    precipitationRate = precipitationRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
+
+    snowfallRate = 0.0_RKIND
+
+    if (airTemperature < freshWaterFreezingPoint) then
+
+       snowfallRate = precipitationRate
+       precipitationRate = 0.0_RKIND
+
+    endif
+
+    ! air potential temperature
+    airPotentialTemperature = airTemperature - freshWaterFreezingPoint
+
+    ! wind speed
+    windSpeed = sqrt(uAirVelocity**2 + vAirVelocity**2)
+
+    ! transfer coefficients
+    sensibleTransferCoefficient = 1.20e-3_RKIND * airSpecificHeat        * airDensity * windSpeed
+    latentTransferCoefficient   = 1.50e-3_RKIND * latentHeatSublimation  * airDensity * windSpeed
+
+    ! air stresses
+    airStressCoefficient = 0.0012_RKIND * airDensity * windSpeed
+
+    uAirStress = uAirVelocity * airStressCoefficient
+    vAirStress = vAirVelocity * airStressCoefficient
+
+  end subroutine calculate_derived_forcing_variables_gx1
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calculate_derived_forcing_variables_gx3
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine calculate_derived_forcing_variables_gx3(&
        longWavedown, &
        snowfallRate, &
        airPotentialTemperature, &
@@ -614,7 +844,121 @@ contains
     uAirStress = uAirVelocity * airStressCoefficient
     vAirStress = vAirVelocity * airStressCoefficient
 
-  end subroutine calculate_derived_forcing_variables!}}}
+  end subroutine calculate_derived_forcing_variables_gx3!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calculate_shortwave
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date September 19th 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine calculate_shortwave(&
+       mesh, &
+       clock, &
+       cloudFraction, &
+       airSpecificHumidity, &
+       shortwaveDown)
+
+    use mpas_timekeeping
+
+    use cice_constants, only: &
+         ciceDegreesToRadians
+
+    use mpas_constants, only: &
+         pii
+    
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    type(MPAS_Clock_type), intent(in) :: &
+         clock
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         cloudFraction, &
+         airSpecificHumidity
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         shortwaveDown
+
+    integer :: &
+         iCell
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         dayOfYear, H, M, S, S_d, S_n
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         lonCell, &
+         latCell
+
+    real(kind=RKIND) :: &
+         lonCell1, &
+         secondsToday, &
+         solarTime, &
+         hourAngle, &
+         declination, &
+         cosZ, &
+         e, &
+         d, &
+         sw0
+
+    type(MPAS_Time_type) :: &
+         currentTime
+
+    real(kind=RKIND), parameter :: &
+         secondsPerDay = 86400.0_RKIND
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    currentTime = mpas_get_clock_time(clock, MPAS_NOW)
+    call mpas_get_time(currentTime, DoY=dayOfYear, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
+
+    secondsToday = real(H,RKIND)*3600.0_RKIND + &
+                   real(M,RKIND)*60.0_RKIND + &
+                   real(S,RKIND) + &
+                   real(S_n,RKIND)/real(S_d,RKIND)
+
+    do iCell = 1, nCells
+
+       ! longitude needs to be [-pi,pi] not [0,2pi]
+       lonCell1 = lonCell(iCell)
+       if (lonCell1 > pii) lonCell1 = lonCell1 - 2.0_RKIND * pii
+
+       solarTime = mod(real(secondsToday,kind=RKIND),secondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*lonCell1)
+       
+       hourAngle = (12.0_RKIND - solarTime)*pii/12.0_RKIND
+       
+       ! solar declinatiom
+       declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*ciceDegreesToRadians
+       declination = 0.0_RKIND
+
+       ! solar zenith angle
+       cosZ = sin(latCell(iCell))*sin(declination) + cos(latCell(iCell))*cos(declination)*cos(hourAngle)
+       cosZ = max(cosZ,0.0_RKIND)
+       
+       e = 1.0e5_RKIND*airSpecificHumidity(iCell)/(0.622_RKIND + 0.378_RKIND*airSpecificHumidity(iCell))
+       
+       d = (cosZ + 2.7_RKIND)*e*1.0e-5_RKIND+1.085_RKIND*cosZ+0.1_RKIND
+       
+       sw0 = 1353.0_RKIND*cosZ**2/d
+       sw0 = max(sw0,0.0_RKIND)
+       
+       shortwaveDown(iCell) = sw0 * (1.0_RKIND - 0.6_RKIND * cloudFraction(iCell)**3) 
+
+    enddo
+        
+  end subroutine calculate_shortwave
 
 !-----------------------------------------------------------------------
 ! Generic forcing routines
@@ -1475,6 +1819,8 @@ contains
     logical :: &
          lexist
 
+integer :: i
+
     recordLength = forcingField % ndata * 8
 
     usedRecordNumber = desiredRecordNumber
@@ -1490,7 +1836,11 @@ contains
     open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
 
     read(55,rec=usedRecordNumber) forcingField % data(:,slot)
- 
+
+    !do i = 1, size(forcingField % data(:,slot),1)
+    !   write(*,*) i, forcingField % data(i,slot)
+    !enddo ! i
+! stop
     close(55)
 
   end subroutine read_data_binaryMPAS!}}}
