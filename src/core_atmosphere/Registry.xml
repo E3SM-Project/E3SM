@@ -1174,20 +1174,20 @@
                 <nml_option name="camdim1"                           type="integer"       default_value="4"          in_defaults="false"/>
 
                 <!-- NAMELIST VARIABLES ADDED FOR PHYSICS CONFIGURATION: -->
-                <nml_option name="config_frac_seaice"                type="logical"       default_value="false"/>
-                <nml_option name="config_sfc_albedo"                 type="logical"       default_value="true"/>
-                <nml_option name="config_sfc_snowalbedo"             type="logical"       default_value="true"/>
+                <nml_option name="config_frac_seaice"                type="logical"       default_value="false"      in_defaults="false"/>
+                <nml_option name="config_sfc_albedo"                 type="logical"       default_value="true"       in_defaults="false"/>
+                <nml_option name="config_sfc_snowalbedo"             type="logical"       default_value="true"       in_defaults="false"/>
                 <nml_option name="config_sst_update"                 type="logical"       default_value="false"/>
                 <nml_option name="config_sstdiurn_update"            type="logical"       default_value="false"/>
                 <nml_option name="config_deepsoiltemp_update"        type="logical"       default_value="false"/>
                 <nml_option name="config_o3climatology"              type="logical"       default_value="false"      in_defaults="false"/>
 
-                <nml_option name="config_n_microp"                   type="integer"       default_value="1"/>
+                <nml_option name="config_n_microp"                   type="integer"       default_value="1"          in_defaults="false"/>
 
                 <nml_option name="config_radtlw_interval"            type="character"     default_value="00:30:00"/>
                 <nml_option name="config_radtsw_interval"            type="character"     default_value="00:30:00"/>
-                <nml_option name="config_conv_interval"              type="character"     default_value="none"/>
-                <nml_option name="config_pbl_interval"               type="character"     default_value="none"/>
+                <nml_option name="config_conv_interval"              type="character"     default_value="none"       in_defaults="false"/>
+                <nml_option name="config_pbl_interval"               type="character"     default_value="none"       in_defaults="false"/>
                 <nml_option name="config_camrad_abs_update"          type="character"     default_value="06:00:00"   in_defaults="false"/>
                 <nml_option name="config_greeness_update"            type="character"     default_value="24:00:00"   in_defaults="false"/>
                 <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
@@ -1197,7 +1197,7 @@
                 <nml_option name="config_lsm_scheme"                 type="character"     default_value="noah"/>
                 <nml_option name="config_pbl_scheme"                 type="character"     default_value="ysu"/>
                 <nml_option name="config_gwdo_scheme"                type="character"     default_value="off"/>
-                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="cld_incidence"/>
+                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="cld_fraction"/>
                 <nml_option name="config_radt_lw_scheme"             type="character"     default_value="rrtmg_lw"/>
                 <nml_option name="config_radt_sw_scheme"             type="character"     default_value="rrtmg_sw"/>
                 <nml_option name="config_sfclayer_scheme"            type="character"     default_value="monin_obukhov"/>
