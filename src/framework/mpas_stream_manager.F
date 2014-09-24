@@ -58,6 +58,7 @@ module mpas_stream_manager
 
         type (MPAS_Clock_type), pointer :: streamClock
         type (MPAS_Pool_type), pointer :: allFields
+        type (MPAS_Pool_type), pointer :: allPackages
 
         type (MPAS_stream_list_type), pointer :: streams
         type (MPAS_stream_list_type), pointer :: alarms_in
@@ -102,7 +103,7 @@ module mpas_stream_manager
     !>  clock and a pool from which fields may be drawn and added to streams.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_init(manager, clock, allFields, ierr)!{{{
+    subroutine MPAS_stream_mgr_init(manager, clock, allFields, allPackages, ierr)!{{{
 
         implicit none
 
@@ -111,6 +112,7 @@ module mpas_stream_manager
         type (MPAS_streamManager_type), pointer :: manager
         type (MPAS_Clock_type), pointer :: clock
         type (MPAS_Pool_type), pointer :: allFields
+        type (MPAS_Pool_type), pointer :: allPackages
         integer, intent(out), optional :: ierr
 
         integer :: err_local
@@ -122,6 +124,7 @@ module mpas_stream_manager
 
         allocate(manager)
         manager % allFields => allFields
+        manager % allPackages => allPackages
         manager % streamClock => clock
         manager % numStreams = 0
         manager % errorLevel = MPAS_STREAM_ERR_SILENT
@@ -324,6 +327,7 @@ module mpas_stream_manager
         end if
         call mpas_pool_create_pool(new_stream % att_pool)
         call mpas_pool_create_pool(new_stream % field_pool)
+        call mpas_pool_create_pool(new_stream % pkg_pool)
         nullify(new_stream % next)
 
 
@@ -420,6 +424,7 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(stream % alarmList_out, ierr=err_local)
         call mpas_pool_destroy_pool(stream % att_pool)
         call mpas_pool_destroy_pool(stream % field_pool)
+        call mpas_pool_destroy_pool(stream % pkg_pool)
         if (associated(stream % referenceTime)) then
             deallocate(stream % referenceTime)
         end if
@@ -1366,8 +1371,6 @@ module mpas_stream_manager
     end subroutine MPAS_stream_mgr_get_property_logical !}}}
 
 
-
-
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_add_pkg
     !
@@ -1390,10 +1393,39 @@ module mpas_stream_manager
         character (len=*), intent(in) :: packageName
         integer, intent(out), optional :: ierr
 
+        logical, pointer :: package
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_pkg()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Query pointer to package in the manager-wide package pool
+        !
+        nullify(package)
+        call mpas_pool_get_package(manager % allPackages, packageName, package)
+        if (.not. associated(package)) then
+            STREAM_DEBUG_WRITE('-- Error: package '//trim(packageName)//' not found in call to MPAS_stream_mgr_add_pkg().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_pkg().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Add package to the packages pool for the stream
+        !
+        call mpas_pool_add_package(stream_cursor % pkg_pool, packageName, package)    
 
     end subroutine MPAS_stream_mgr_add_pkg!}}}
 
@@ -1420,10 +1452,28 @@ module mpas_stream_manager
         character (len=*), intent(in), target :: packageName
         integer, intent(out), optional :: ierr
 
+        logical, pointer :: package
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_remove_pkg()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Find requested stream
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_remove_pkg().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return 
+        end if
+
+        !
+        ! Remove package from the packages pool for the stream
+        !
+        call mpas_pool_remove_package(stream_cursor % pkg_pool, packageName)
 
     end subroutine MPAS_stream_mgr_remove_pkg!}}}
 
@@ -1702,6 +1752,15 @@ module mpas_stream_manager
         !
         if (.not. stream % active_stream) then
             STREAM_DEBUG_WRITE('-- Stream '//trim(stream % name)//' is not currently active and will not be written.')
+            return
+        end if
+
+        !
+        ! Check whether all packages for this stream are inactive
+        ! Note: if the stream has no packages, it is assumed to be active
+        !
+        if (.not. stream_active_pkg_check(stream)) then
+            STREAM_DEBUG_WRITE('-- Stream '//trim(stream % name)//' has only inactive packages and will not be written.')
             return
         end if
 
@@ -2042,6 +2101,15 @@ module mpas_stream_manager
         !
         if (.not. stream % active_stream) then
             STREAM_DEBUG_WRITE('-- Stream '//trim(stream % name)//' is not currently active and will not be read.')
+            return
+        end if
+
+        !
+        ! Check whether all packages for this stream are inactive
+        ! Note: if the stream has no packages, it is assumed to be active
+        !
+        if (.not. stream_active_pkg_check(stream)) then
+            STREAM_DEBUG_WRITE('-- Stream '//trim(stream % name)//' has only inactive packages and will not be read.')
             return
         end if
 
@@ -2592,6 +2660,55 @@ module mpas_stream_manager
 
     end subroutine update_stream !}}}
 
+
+    !-----------------------------------------------------------------------
+    !  routine stream_active_pkg_check
+    !
+    !> \brief Checks whether a stream has any active packages (or none at all)
+    !> \author Michael Duda
+    !> \date   23 September 2014
+    !> \details 
+    !>  This function determines whether a stream has any active packages
+    !>  associated with it. If the stream has at least one active package,
+    !>  or no packages at all, the function returns true; else, if all packages
+    !>  associated with the package are inactive, the function returns false.
+    !
+    !-----------------------------------------------------------------------
+    logical function stream_active_pkg_check(stream)
+
+        implicit none
+
+        type (MPAS_stream_list_type), intent(inout) :: stream
+
+        type (MPAS_Pool_iterator_type) :: itr
+        logical, pointer :: pkg_val
+        integer :: npkgs
+
+
+        stream_active_pkg_check = .false.
+        npkgs = 0
+        call mpas_pool_begin_iteration(stream % pkg_pool)
+
+        do while ( mpas_pool_get_next_member(stream % pkg_pool, itr) )
+            if (itr % memberType == MPAS_POOL_PACKAGE) then
+                nullify(pkg_val)
+                call mpas_pool_get_package(stream % pkg_pool, trim(itr % memberName), pkg_val)
+                if (associated(pkg_val)) then
+                    npkgs = npkgs + 1
+                    stream_active_pkg_check = stream_active_pkg_check .or. pkg_val
+                end if
+            else
+                ! This is unexpected...
+                STREAM_DEBUG_WRITE('... found non-package '//trim(itr % memberName)//' in package pool for stream '//trim(stream % name))
+            end if
+        end do
+
+        if (npkgs == 0) then
+            stream_active_pkg_check = .true.
+        end if
+
+    end function stream_active_pkg_check
+
    
 end module mpas_stream_manager
 
@@ -2783,3 +2900,43 @@ write(0,*) '   Interval: '//trim(alarmInterval)
     end if
 
 end subroutine stream_mgr_add_alarm_c
+
+
+subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c)
+
+    use mpas_c_interfacing, only : mpas_c_to_f_string
+    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
+    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_pkg
+    use mpas_kind_types, only : StrKIND
+
+    implicit none
+
+    type (c_ptr) :: manager_c
+    character(kind=c_char) :: streamID_c(*)
+    character(kind=c_char) :: package_c(*)
+    integer(kind=c_int) :: ierr_c
+
+    type (MPAS_streamManager_type), pointer :: manager
+    character(len=StrKIND) :: streamID, package
+    integer :: idirection
+    integer :: ierr
+
+
+    ierr = 0
+
+    call c_f_pointer(manager_c, manager)
+    call mpas_c_to_f_string(streamID_c, streamID)
+    call mpas_c_to_f_string(package_c, package)
+    write(package, '(a)') trim(package)//'Active'
+
+write(0,*) 'Adding package '//trim(package)//' to stream '//trim(streamID)
+
+    call MPAS_stream_mgr_add_pkg(manager, streamID, package, ierr=ierr)
+
+    if (ierr == MPAS_STREAM_MGR_NOERR) then
+        ierr_c = 0
+    else
+        ierr_c = 1
+    end if
+
+end subroutine stream_mgr_add_pkg_c

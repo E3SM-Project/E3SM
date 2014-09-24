@@ -23,6 +23,7 @@
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, char *, char *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
+void stream_mgr_add_pkg_c(void *, const char *, const char *, int *);
 
 
 /*
@@ -660,7 +661,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t varfile_xml;
 	ezxml_t var_xml;
 	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval;
-	const char *interval_in, *interval_out;
+	const char *interval_in, *interval_out, *packagelist;
+	char *packages, *package;
 	char ref_time_local[256];
 	char rec_intv_local[256];
 	char fieldname[256];
@@ -703,8 +705,10 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		interval_out = ezxml_attr(stream_xml, "output_interval");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
 		record_interval = ezxml_attr(stream_xml, "record_interval");
+		packagelist = ezxml_attr(stream_xml, "packages");
 
 		fprintf(stderr, "   found immutable stream %s\n", streamID);
+
 
 		irecs = atoi(records);
 
@@ -733,7 +737,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
-                                           &irecs, &immutable, &err);
+					&irecs, &immutable, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -755,6 +759,29 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				*status = 1;
 				return;
 			}
+		}
+
+		/* Possibly add packages */
+		if (packagelist != NULL) {
+
+			packages = strdup(packagelist);
+			package = strsep(&packages, ";");
+
+			stream_mgr_add_pkg_c(manager, streamID, package, &err);
+			if (err != 0) {
+				snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
+				fmt_warn(msgbuf);
+			}
+
+			while ((package = strsep(&packages, ";")) != NULL) {
+				stream_mgr_add_pkg_c(manager, streamID, package, &err);
+				if (err != 0) {
+					snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
+					fmt_warn(msgbuf);
+				}
+			}
+
+			free(packages);
 		}
 	}
 
@@ -769,8 +796,10 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		interval_out = ezxml_attr(stream_xml, "output_interval");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
 		record_interval = ezxml_attr(stream_xml, "record_interval");
+		packagelist = ezxml_attr(stream_xml, "packages");
 
 		fprintf(stderr, "   found mutable stream %s\n", streamID);
+
 
 		irecs = atoi(records);
 
@@ -800,7 +829,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
-                                           &irecs, &immutable, &err);
+						&irecs, &immutable, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -822,6 +851,29 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				*status = 1;
 				return;
 			}
+		}
+
+		/* Possibly add packages */
+		if (packagelist != NULL) {
+
+			packages = strdup(packagelist);
+			package = strsep(&packages, ";");
+
+			stream_mgr_add_pkg_c(manager, streamID, package, &err);
+			if (err != 0) {
+				snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
+				fmt_warn(msgbuf);
+			}
+
+			while ((package = strsep(&packages, ";")) != NULL) {
+				stream_mgr_add_pkg_c(manager, streamID, package, &err);
+				if (err != 0) {
+					snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
+					fmt_warn(msgbuf);
+				}
+			}
+
+			free(packages);
 		}
 
 		for (varfile_xml = ezxml_child(stream_xml, "file"); varfile_xml; varfile_xml = ezxml_next(varfile_xml)) {

@@ -122,7 +122,7 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       ! Set up run-time streams
       !
-      call MPAS_stream_mgr_init(stream_manager, domain % clock, domain % blocklist % allFields)
+      call MPAS_stream_mgr_init(stream_manager, domain % clock, domain % blocklist % allFields, domain % packages)
 
       call mpas_setup_immutable_streams(stream_manager)
 

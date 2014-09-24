@@ -564,7 +564,7 @@ void write_default_streams(ezxml_t registry)
 	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml;
 
 	const char *optstream, *optname, *optvarname, *opttype;
-	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optruntime;
+	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
 	FILE *fd, *fd2;
 	char filename[64], filename2[64];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
@@ -586,6 +586,7 @@ void write_default_streams(ezxml_t registry)
 			optinterval_out = ezxml_attr(opt_xml, "output_interval");
 			optimmutable = ezxml_attr(opt_xml, "immutable");
 			optruntime = ezxml_attr(opt_xml, "runtime_format");
+			optpackages = ezxml_attr(opt_xml, "packages");
 
 			/* Generate immutable default stream */
 			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
@@ -593,6 +594,9 @@ void write_default_streams(ezxml_t registry)
 				fprintf(fd, "                  type=\"%s\"\n", opttype);
 				fprintf(fd, "                  filename_template=\"%s\"\n", optfilename);
 				fprintf(fd, "                  records_per_file=\"%s\"\n", optrecords);
+				if (optpackages) {
+					fprintf(fd, "                  packages=\"%s\"\n",optpackages);
+				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "                  input_interval=\"%s\"", optinterval_in);
 				}
@@ -607,6 +611,9 @@ void write_default_streams(ezxml_t registry)
 				fprintf(fd, "        type=\"%s\"\n", opttype);
 				fprintf(fd, "        filename_template=\"%s\"\n", optfilename);
 				fprintf(fd, "        records_per_file=\"%s\"\n", optrecords);
+				if (optpackages) {
+					fprintf(fd, "                  packages=\"%s\"\n",optpackages);
+				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
 				}
