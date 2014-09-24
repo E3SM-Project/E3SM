@@ -6,8 +6,10 @@ test_case                    = "asp_baroclinic"
 rotate_grid                  = 0
 ne                           = 15
 qsize                        = 4
+ntrac                        = 4
+tracer_transport_method      = 'cslam_fvm'
 tstep_type                   = 1 
-ndays                        = 9
+ndays                        = 1
 statefreq                    = 576
 restartfreq                  = 43200
 restartfile                  = "./R0001"
@@ -48,8 +50,8 @@ kcut_fm       = 2
 
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "vcoord/camm-26.fbin.littleendian"
-vfile_int     = "vcoord/cami-26.fbin.littleendian"
+vfile_mid     = "vcoord/camm-26.fbin.ascii"
+vfile_int     = "vcoord/cami-26.fbin.ascii"
 /
 
 &prof_inparm
@@ -60,12 +62,13 @@ profile_single_file	= .true.
 &analysis_nl
 output_prefix     = "baro2d-"
 interp_gridtype   = 2
-output_timeunits  = 1,1
-output_frequency  = 9,9
-output_start_time = 0,0
-output_end_time   = 30,30
+output_timeunits  = 1,1,1
+output_frequency  = 9,9,9
+output_start_time = 0,0,0
+output_end_time   = 30,30,30
 output_varnames1  = 'u', 'v', 'ps', 'T', 'zeta'
-output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4','phys_lat','phys_lon'
+output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4'
+output_varnames3  = 'C', 'C2', 'C3', 'C4','phys_lat','phys_lon'
 io_stride         = 8
 output_type       = 'netcdf' 
 /
