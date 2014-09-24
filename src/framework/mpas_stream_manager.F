@@ -59,6 +59,7 @@ module mpas_stream_manager
         type (MPAS_Clock_type), pointer :: streamClock
         type (MPAS_Pool_type), pointer :: allFields
         type (MPAS_Pool_type), pointer :: allPackages
+        type (MPAS_Pool_type), pointer :: defaultAtts
 
         type (MPAS_stream_list_type), pointer :: streams
         type (MPAS_stream_list_type), pointer :: alarms_in
@@ -159,6 +160,11 @@ module mpas_stream_manager
             return 
         end if
 
+        !
+        ! Create a pool to hold default global attributes that every stream will have
+        !
+        call mpas_pool_create_pool(manager % defaultAtts)
+
     end subroutine MPAS_stream_mgr_init!}}}
 
 
@@ -227,6 +233,11 @@ module mpas_stream_manager
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             STREAM_DEBUG_WRITE(' -- ERROR: Problems while destroying output alarms list')
         end if
+
+        !
+        ! Free up default attribute pool
+        !
+        call mpas_pool_destroy_pool(manager % defaultAtts)
 
         deallocate(manager)
 
@@ -326,6 +337,7 @@ module mpas_stream_manager
             return 
         end if
         call mpas_pool_create_pool(new_stream % att_pool)
+        call mpas_pool_clone_pool(manager % defaultAtts, new_stream % att_pool)
         call mpas_pool_create_pool(new_stream % field_pool)
         call mpas_pool_create_pool(new_stream % pkg_pool)
         nullify(new_stream % next)
@@ -340,7 +352,7 @@ module mpas_stream_manager
             STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding stream to list')
             return
         end if
-
+        
         manager % numStreams = manager % numStreams + 1
 
     end subroutine MPAS_stream_mgr_create_stream!}}}
@@ -983,7 +995,7 @@ module mpas_stream_manager
             end do
         end if
 
-    end subroutine MPAS_stream_mgr_reset_alarms
+    end subroutine MPAS_stream_mgr_reset_alarms!}}}
 
 
     !-----------------------------------------------------------------------
@@ -1486,24 +1498,41 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Add a global integer attribute to the stream within an MPAS stream manager.
+    !>  If the optional streamID argument is not supplied, the attribute will be
+    !>  applied to every stream created after the call to add the attribute.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_att_int(manager, streamID, attName, attVal, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_att_int(manager, attName, attVal, streamID, ierr)!{{{
 
         implicit none
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_int'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
-        character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: attName
         integer, intent(in) :: attVal
+        character (len=*), intent(in), optional :: streamID
         integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        if (present(streamID)) then
+            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+    
+            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+        else
+            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+        end if
 
     end subroutine MPAS_stream_mgr_add_att_int!}}}
 
@@ -1516,24 +1545,41 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Add a global real attribute to the stream within an MPAS stream manager.
+    !>  If the optional streamID argument is not supplied, the attribute will be
+    !>  applied to every stream created after the call to add the attribute.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_att_real(manager, streamID, attName, attVal, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_att_real(manager, attName, attVal, streamID, ierr)!{{{
 
         implicit none
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_real'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
-        character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: attName
         real (kind=RKIND), intent(in) :: attVal
+        character (len=*), intent(in), optional :: streamID
         integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        if (present(streamID)) then
+            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+
+            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+        else
+            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+        end if
 
     end subroutine MPAS_stream_mgr_add_att_real!}}}
 
@@ -1546,27 +1592,43 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Add a global character attribute to the stream within an MPAS stream manager.
+    !>  If the optional streamID argument is not supplied, the attribute will be
+    !>  applied to every stream created after the call to add the attribute.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_att_char(manager, streamID, attName, attVal, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_att_char(manager, attName, attVal, streamID, ierr)!{{{
 
         implicit none
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_char'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
-        character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: attName
         character (len=*), intent(in) :: attVal
+        character (len=*), intent(in), optional :: streamID
         integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
-    end subroutine MPAS_stream_mgr_add_att_char!}}}
+        if (present(streamID)) then
+            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
 
+            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+        else
+            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+        end if
+
+    end subroutine MPAS_stream_mgr_add_att_char!}}}
 
 
     !-----------------------------------------------------------------------
@@ -1577,24 +1639,41 @@ module mpas_stream_manager
     !> \date   13 June 2014
     !> \details
     !>  Add a global logical attribute to the stream within an MPAS stream manager.
+    !>  If the optional streamID argument is not supplied, the attribute will be
+    !>  applied to every stream created after the call to add the attribute.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_att_logical(manager, streamID, attName, attVal, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_att_logical(manager, attName, attVal, streamID, ierr)!{{{
 
         implicit none
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_att_logical'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
-        character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: attName
         logical, intent(in) :: attVal
+        character (len=*), intent(in), optional :: streamID
         integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        if (present(streamID)) then
+            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+
+            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+        else
+            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+        end if
 
     end subroutine MPAS_stream_mgr_add_att_logical!}}}
 
@@ -1835,7 +1914,8 @@ module mpas_stream_manager
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
             end if
-            call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+
+            call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -1879,7 +1959,8 @@ module mpas_stream_manager
                         ierr = MPAS_STREAM_MGR_ERROR
                         return
                     end if
-                    call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+
+                    call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
                     if (local_ierr /= MPAS_STREAM_NOERR) then
                         ierr = MPAS_STREAM_MGR_ERROR
                         return
@@ -2191,7 +2272,7 @@ module mpas_stream_manager
                 return
             end if
 
-            call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+            call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2235,7 +2316,8 @@ module mpas_stream_manager
                         ierr = MPAS_STREAM_MGR_ERROR
                         return
                     end if
-                    call build_stream(stream, manager % allFields, timeLevel, mgLevel, local_ierr)
+
+                    call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
                     if (local_ierr /= MPAS_STREAM_NOERR) then
                         ierr = MPAS_STREAM_MGR_ERROR
                         return
@@ -2440,11 +2522,12 @@ module mpas_stream_manager
     !>  This routine will take as input a pool representing a stream.
     !>  It will then generate a stream type based on this pool, and return that.
     !-----------------------------------------------------------------------
-    subroutine build_stream(stream, allFields, timeLevelIn, mgLevelIn, ierr) !{{{
+    subroutine build_stream(stream, direction, allFields, timeLevelIn, mgLevelIn, ierr) !{{{
 
         implicit none
 
         type (MPAS_stream_list_type), intent(inout) :: stream
+        integer, intent(in) :: direction
         type (MPAS_Pool_type), intent(in) :: allFields
         integer, intent(in) :: timeLevelIn
         integer, intent(in) :: mgLevelIn
@@ -2468,6 +2551,63 @@ module mpas_stream_manager
 
         type (field1DChar), pointer :: char1d
         type (field0DChar), pointer :: char0d
+
+        integer, pointer :: intAtt
+        logical, pointer :: logAtt
+        character (len=StrKIND), pointer :: charAtt
+        real (kind=RKIND), pointer :: realAtt
+
+        integer :: local_ierr
+
+        integer, parameter :: idLength = 10
+        character (len=idLength) :: file_id
+
+
+        if (direction == MPAS_STREAM_OUTPUT) then
+
+            !
+            ! Write attributes to stream
+            !
+            call mpas_pool_begin_iteration(stream % att_pool)
+            do while (mpas_pool_get_next_member(stream % att_pool, itr))
+                if ( itr % memberType == MPAS_POOL_CONFIG) then
+                    if ( itr % dataType == MPAS_POOL_REAL ) then
+                        call mpas_pool_get_config(stream % att_pool, itr % memberName, realAtt)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, realAtt, local_ierr)
+                    else if ( itr % dataType == MPAS_POOL_INTEGER ) then
+                        call mpas_pool_get_config(stream % att_pool, itr % memberName, intAtt)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, intAtt, local_ierr)
+                    else if ( itr % dataType == MPAS_POOL_CHARACTER ) then
+                        call mpas_pool_get_config(stream % att_pool, itr % memberName, charAtt)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, local_ierr)
+                    else if ( itr % dataType == MPAS_POOL_LOGICAL ) then
+                        call mpas_pool_get_config(stream % att_pool, itr % memberName, logAtt)
+                        if (logAtt) then
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'YES', local_ierr)
+                        else
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'NO', local_ierr)
+                        end if
+                    end if
+
+                    if (local_ierr /= MPAS_STREAM_NOERR) then
+                        ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+                end if
+            end do
+
+            !
+            ! Generate file_id and write to stream
+            !
+            call gen_random(idLength, file_id)
+write(0,*) 'RANDOM ID '//file_id
+            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, local_ierr)
+            if (local_ierr /= MPAS_STREAM_NOERR) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+
+        end if
 
 
         ierr = MPAS_STREAM_MGR_NOERR

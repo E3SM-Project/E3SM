@@ -86,8 +86,8 @@ module mpas_subdriver
       call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
       call mpas_core_setup_clock(domain_ptr % clock, domain_ptr % configs, ierr)
 
-      call mpas_timer_start("total time")
-      call mpas_timer_start("initialize")
+      call mpas_timer_start('total time')
+      call mpas_timer_start('initialize')
 
       !
       ! Using information from the namelist, a graph.info file, and a file containing
@@ -124,6 +124,8 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       call MPAS_stream_mgr_init(stream_manager, domain % clock, domain % blocklist % allFields, domain % packages)
 
+      call add_stream_attributes(stream_manager, domain)
+
       call mpas_setup_immutable_streams(stream_manager)
 
       mgr_p = c_loc(stream_manager)
@@ -138,7 +140,7 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       call mpas_core_init(domain_ptr, stream_manager, timeStamp)
 
-      call mpas_timer_stop("initialize")
+      call mpas_timer_stop('initialize')
 
 
       !
@@ -149,9 +151,9 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       call mpas_pool_get_config(domain_ptr % configs, 'config_frames_per_outfile', config_frames_per_outfile)
 
       if(config_frames_per_outfile > 0) then
-         call mpas_output_state_init(output_obj, domain_ptr, "OUTPUT", trim(timeStamp))
+         call mpas_output_state_init(output_obj, domain_ptr, 'OUTPUT', trim(timeStamp))
       else
-         call mpas_output_state_init(output_obj, domain_ptr, "OUTPUT")         
+         call mpas_output_state_init(output_obj, domain_ptr, 'OUTPUT')         
       end if
 
    end subroutine mpas_init
@@ -183,7 +185,7 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       !
       call mpas_core_finalize(domain_ptr, stream_manager)
 
-      call mpas_timer_stop("total time")
+      call mpas_timer_stop('total time')
       call mpas_timer_write()
 
 
@@ -195,5 +197,64 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       call mpas_framework_finalize(dminfo, domain_ptr)
 
    end subroutine mpas_finalize
+
+
+   subroutine add_stream_attributes(stream_manager, domain)
+
+      use mpas_stream_manager, only : MPAS_stream_mgr_add_att
+
+      implicit none
+
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
+      type (domain_type), intent(inout) :: domain
+
+      type (MPAS_Pool_iterator_type) :: itr
+      integer, pointer :: intAtt
+      logical, pointer :: logAtt
+      character (len=StrKIND), pointer :: charAtt
+      real (kind=RKIND), pointer :: realAtt
+
+      integer :: local_ierr
+     
+
+      call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)
+      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius)
+      call MPAS_stream_mgr_add_att(stream_manager, 'model_name', domain % modelName)
+      call MPAS_stream_mgr_add_att(stream_manager, 'core_name', domain % coreName)
+      call MPAS_stream_mgr_add_att(stream_manager, 'history', domain % history)
+      call MPAS_stream_mgr_add_att(stream_manager, 'source', domain % source)
+      call MPAS_stream_mgr_add_att(stream_manager, 'Conventions', domain % Conventions)
+      call MPAS_stream_mgr_add_att(stream_manager, 'parent_id', domain % parent_id)
+      call MPAS_stream_mgr_add_att(stream_manager, 'mesh_spec', domain % mesh_spec)
+      call MPAS_stream_mgr_add_att(stream_manager, 'git_version', domain % git_version)
+
+      call mpas_pool_begin_iteration(domain % configs)
+
+      do while (mpas_pool_get_next_member(domain % configs, itr))
+
+         if ( itr % memberType == MPAS_POOL_CONFIG) then
+
+            if ( itr % dataType == MPAS_POOL_REAL ) then
+               call mpas_pool_get_config(domain % configs, itr % memberName, realAtt)
+               call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, realAtt, ierr=local_ierr)
+            else if ( itr % dataType == MPAS_POOL_INTEGER ) then
+               call mpas_pool_get_config(domain % configs, itr % memberName, intAtt)
+               call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, intAtt, ierr=local_ierr)
+            else if ( itr % dataType == MPAS_POOL_CHARACTER ) then
+               call mpas_pool_get_config(domain % configs, itr % memberName, charAtt)
+               call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, charAtt, ierr=local_ierr)
+            else if ( itr % dataType == MPAS_POOL_LOGICAL ) then
+               call mpas_pool_get_config(domain % configs, itr % memberName, logAtt)
+               if (logAtt) then
+                  call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, 'YES', ierr=local_ierr)
+               else
+                  call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, 'NO', ierr=local_ierr)
+               end if
+            end if
+
+          end if
+      end do
+
+   end subroutine add_stream_attributes
 
 end module mpas_subdriver
