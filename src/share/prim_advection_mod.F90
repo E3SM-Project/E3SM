@@ -1082,7 +1082,7 @@ contains
 
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
     real (kind=real_kind), dimension(np,np,nlev)    :: dp
-
+    real (kind=real_kind)                           :: eta_dot_dpdn(np,np,nlevp) 
     integer :: np1,ie,k
 
     real (kind=real_kind)  :: vstar(np,np,2)
@@ -1113,18 +1113,27 @@ contains
        ! interpolate t+1 velocity from reference levels to lagrangian levels
        ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
        ! which requires we first DSS mean vertical velocity from dynamics
+       ! note: we introduce a local eta_dot_dpdn() variable instead of DSSing elem%eta_dot_dpdn
+       ! so as to preserve BFB results in some HOMME regression tests
        do ie=nets,nete
-          do k=1,nlev
-             elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k)
+          do k=1,nlevp
+             eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%spheremp(:,:)
           enddo
-          call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          ! eta_dot_dpdn at nlevp is zero, so we dont boundary exchange it:
+          call edgeVpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
        call bndry_exchangeV(hybrid,edgeAdv1)
        do ie=nets,nete
-          call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
-          do k=1,nlev
-             elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
+          ! restor interior values.  we could avoid this if we created a global array for eta_dot_dpdn
+          do k=1,nlevp
+             eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%spheremp(:,:)
           enddo
+          ! unpack DSSed edge data
+          call edgeVunpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          do k=1,nlevp
+             eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
+          enddo
+
 
           ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
           !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
@@ -1134,8 +1143,7 @@ contains
           do k=1,nlev
              dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                   ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-             dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
-                  elem(ie)%derived%eta_dot_dpdn(:,:,k))
+             dp_star(:,:,k) = dp(:,:,k) + dt*(eta_dot_dpdn(:,:,k+1) -   eta_dot_dpdn(:,:,k))
              if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
                if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
                  elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(np1))

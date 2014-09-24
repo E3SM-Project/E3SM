@@ -372,6 +372,7 @@ contains
     !
     ! fvm diagnostics
     !
+    if (ntrac>0) then
     if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
         tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
        do q=1,ntrac
@@ -439,6 +440,7 @@ contains
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        dp_fvm_mass = global_shared_sum(1)/(4.0D0*DD_PI)
     end if
+    end if
 
 
     if(hybrid%masterthread) then
@@ -469,6 +471,7 @@ contains
        !
        ! fvm diagnostics
        !
+       if (ntrac>0) then
        if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
            tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
           write(iulog,'(A36)') "-----------------------------------"
@@ -484,6 +487,7 @@ contains
                   "   min(psC), max(psC), mass(psC) =  ",psc_min, psc_max, psC_mass          
           write(iulog,'(A36)') "                                   "
 
+       end if
        end if
     endif
  
