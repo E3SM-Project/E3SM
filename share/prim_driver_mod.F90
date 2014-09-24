@@ -1670,10 +1670,14 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
-    if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
+    ! Advect tracers if their count is > 0.  
+    ! special case in CAM: if CSLAM tracers are turned on , qsize=1 but this tracer should 
+    ! not be advected.  This will be cleaned up when the physgrid is merged into CAM trunk
+    if (qsize>0  .and. .not. (tracer_grid_type /= TRACER_GRIDTYPE_GLL .and. qsize==1) ) then
       call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
            dt_q,tl,nets,nete)
-    else
+    endif
+    if (ntrac>0) then
       ! FVM transport
 
       if ( n_Q /= tl%n0 ) then
