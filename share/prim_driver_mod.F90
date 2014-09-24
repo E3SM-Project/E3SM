@@ -570,8 +570,8 @@ contains
     use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
     use aquaplanet, only : aquaplanet_init_state
-    use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 #endif
+    use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 #if USE_CUDA_FORTRAN
     use cuda_mod, only: cuda_mod_init
 #endif
