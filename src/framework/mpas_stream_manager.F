@@ -2367,6 +2367,11 @@ module mpas_stream_manager
             end if
         end if
 
+        !
+        ! Exchange halos for all decomposed fields in this stream
+        !
+        call exch_all_halos(manager % allFields, stream % field_pool, stream % timeLevel, local_ierr)
+
     end subroutine read_stream
 
 
@@ -2848,6 +2853,191 @@ write(0,*) 'RANDOM ID '//file_id
         end if
 
     end function stream_active_pkg_check
+
+
+    !-----------------------------------------------------------------------
+    !  routine exch_all_halos
+    !
+    !> \brief Exchange halos of all fields in stream
+    !> \author Doug Jacobsen, Michael Duda
+    !> \date   09/12/2014
+    !> \details
+    !>  This routine performs a halo exchange of each decomposed field within a stream.
+    !
+    !-----------------------------------------------------------------------
+    subroutine exch_all_halos(allFields, streamFields, timeLevel, ierr) !{{{
+
+        implicit none
+
+        type (mpas_pool_type), pointer :: allFields
+        type (mpas_pool_type), pointer :: streamFields
+        integer, intent(in) :: timeLevel
+        integer, intent(out) :: ierr
+
+        logical :: found
+
+        type (mpas_pool_iterator_type) :: fieldItr
+        type (mpas_pool_field_info_type) :: fieldInfo
+
+        type (field1DReal), pointer :: real1DField
+        type (field2DReal), pointer :: real2DField
+        type (field3DReal), pointer :: real3DField
+        type (field4DReal), pointer :: real4DField
+        type (field5DReal), pointer :: real5DField
+        type (field1DInteger), pointer :: int1DField
+        type (field2DInteger), pointer :: int2DField
+        type (field3DInteger), pointer :: int3DField
+
+
+        ierr = MPAS_STREAM_MGR_NOERR
+
+        call mpas_pool_begin_iteration(streamFields)
+
+        do while ( mpas_pool_get_next_member(streamFields, fieldItr) )
+
+            ! Note: in a stream's field_pool, the names of fields are stored as configs
+            if ( fieldItr % memberType == MPAS_POOL_CONFIG ) then
+
+                call mpas_pool_get_field_info(allFields, fieldItr % memberName, fieldInfo)
+
+                if ( fieldInfo % nDims == 1) then
+                    if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real1DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real1DField, 1)
+                        end if
+
+                        if ( is_decomposed_dim(real1DField % dimNames(1))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(real1DField)
+                        end if
+                    else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                          call mpas_pool_get_field(allFields, fieldItr % memberName, int1DField, timeLevel)
+                        else
+                          call mpas_pool_get_field(allFields, fieldItr % memberName, int1DField, 1)
+                        end if
+                        if ( is_decomposed_dim(int1DField % dimNames(1))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(int1DField)
+                        end if
+                    end if
+
+                else if ( fieldInfo % nDims == 2) then
+                    if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real2DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real2DField, 1)
+                        end if
+                        if ( is_decomposed_dim(real2DField % dimNames(2))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(real2DField)
+                        end if
+                    else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, int2DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, int2DField, 1)
+                        end if
+                        if ( is_decomposed_dim(int2DField % dimNames(2))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(int2DField)
+                        end if
+                    end if
+
+                else if ( fieldInfo % nDims == 3) then
+                    if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real3DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real3DField, 1)
+                        end if
+                        if ( is_decomposed_dim(real3DField % dimNames(3))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(real3DField)
+                        end if
+                    else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, int3DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, int3DField, 1)
+                        end if
+                        if ( is_decomposed_dim(int3DField % dimNames(3))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(int3DField)
+                        end if
+                    end if
+
+                else if ( fieldInfo % nDims == 4) then
+                    if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real4DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real4DField, 1)
+                        end if
+                        if ( is_decomposed_dim(real4DField % dimNames(4))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(real4DField)
+                        end if
+                    end if
+
+                else if ( fieldInfo % nDims == 5) then
+                    if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+                        if ( timeLevel <= fieldInfo % nTimeLevels ) then
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real5DField, timeLevel)
+                        else
+                            call mpas_pool_get_field(allFields, fieldItr % memberName, real5DField, 1)
+                        end if
+                        if ( is_decomposed_dim(real5DField % dimNames(5))) then
+                            STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
+                            call mpas_dmpar_exch_halo_field(real5DField)
+                        end if
+                    end if
+                end if
+
+            end if
+
+        end do
+
+    end subroutine exch_all_halos !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine is_decomposed_dim
+    !
+    !> \brief Determines whether a dimension represents a decomposed dimension or not
+    !> \author Michael Duda
+    !> \date   24 September 2014
+    !> \details 
+    !>  This function determines whether the name of the input argument is 
+    !>  a decompsed dimension or not. Currently in MPAS, the only decomposed
+    !>  dimensions are:
+    !>      nCells
+    !>      nEdges
+    !>      nVertices
+    !
+    !-----------------------------------------------------------------------
+    logical function is_decomposed_dim(dimName)
+
+        implicit none
+
+        character(len=*), intent(in) :: dimName
+
+        if (trim(dimName) == 'nCells' .or. &
+            trim(dimName) == 'nEdges' .or. &
+            trim(dimName) == 'nVertices') then
+
+            is_decomposed_dim = .true.
+
+        else
+
+            is_decomposed_dim = .false.
+
+        end if
+
+    end function is_decomposed_dim
 
    
 end module mpas_stream_manager
