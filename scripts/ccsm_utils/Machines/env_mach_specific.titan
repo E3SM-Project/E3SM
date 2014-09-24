@@ -10,23 +10,51 @@
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
+  module rm PrgEnv-intel
+  module rm PrgEnv-pgi
+  module rm PrgEnv-cray 
+  module rm PrgEnv-gnu
+  module rm PrgEnv-pathscale
+  module rm intel
+  module rm pgi
+  module rm cray
+  module rm pathscale
+  module rm parallel-netcdf
+  module rm netcdf
+  module rm cmake
+  module rm cray-mpich
+  module rm cray-mpich2
+  module rm cray-libsci
+  module rm xt-libsci
+  module rm cray-netcdf
+  module rm cray-netcdf
+  module rm cray-netcdf-hdf5parallel
+  module rm cray-parallel-netcdf
+
+  
   if ($COMPILER == "pgicuda") then
     module add cudatoolkit
     setenv CRAY_CUDA_PROXY 1
   endif  
-
-  module switch pgi       pgi/14.2.0   
-  module rm cray-mpich2  
-  module rm cray-mpich
-  module rm cray-libsci
-  module rm xt-libsci
-  module rm cray-netcdf
-  module rm cray-netcdf-hdf5parallel
-  module rm cray-parallel-netcdf
   
-  module load cray-mpich/6.3.0
-  module load cray-libsci/12.1.3
-  module switch xt-asyncpe xt-asyncpe/5.24
+  if ( $COMPILER == "pgi" ) then
+      module load PrgEnv-pgi
+      module switch pgi       pgi/14.2.0 
+	  module load cray-mpich/6.3.0
+	  module load cray-libsci/12.1.3
+	  module switch xt-asyncpe xt-asyncpe/5.24
+	  module load esmf/5.2.0rp2
+  endif    
+  if ( $COMPILER == "intel" ) then
+      module load PrgEnv-intel 
+	  module load cray-mpich
+  endif
+  
+  if ( $COMPILER == "cray" ) then
+      module load PrgEnv-cray
+	  module load cce
+	  module load cray-mpich
+  endif
 
   if ( $MPILIB == "mpi-serial") then
     module load cray-netcdf/4.3.0
@@ -35,10 +63,10 @@ if (-e /opt/modules/default/init/csh) then
     module load cray-parallel-netcdf/1.3.1.1
   endif
 
-  module load esmf/5.2.0rp2
+  
   module load subversion
-  module load cmake/2.8.6
-# module list
+  module load cmake/2.8.11.2
+
 endif
 
 module list
@@ -53,6 +81,9 @@ limit stacksize unlimited
 # CICE to run threaded on this machine. 
 setenv MPSTKZ 64M
 setenv OMP_STACKSIZE 64M
+if ( $COMPILER == "intel" ) then
+	setenv XTPE_LINK_TYPE dynamic
+endif 
 #
 
 # Capture logical to physics PE assignment and active environment variable 
