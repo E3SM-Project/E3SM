@@ -485,7 +485,7 @@ module mpas_stream_manager
     !>  the stream manager via the MPAS_stream_mgr_add_alarm() routine.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_get_clock(manager, clock, ierr)
+    subroutine MPAS_stream_mgr_get_clock(manager, clock, ierr) !{{{
 
         implicit none
 
@@ -499,7 +499,7 @@ module mpas_stream_manager
 
         clock => manager % streamClock
 
-    end subroutine MPAS_stream_mgr_get_clock
+    end subroutine MPAS_stream_mgr_get_clock !}}}
 
 
     !-----------------------------------------------------------------------
@@ -1714,7 +1714,7 @@ module mpas_stream_manager
     !>  are ringing.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_write(manager, streamID, timeLevel, mgLevel, forceWriteNow, ierr)
+    subroutine MPAS_stream_mgr_write(manager, streamID, timeLevel, mgLevel, forceWriteNow, ierr) !{{{
 
         implicit none
 
@@ -1804,7 +1804,7 @@ module mpas_stream_manager
 
         if (present(ierr)) ierr = local_ierr
 
-    end subroutine MPAS_stream_mgr_write
+    end subroutine MPAS_stream_mgr_write !}}}
 
 
     !-----------------------------------------------------------------------
@@ -1817,7 +1817,7 @@ module mpas_stream_manager
     !>  Private subroutine to handle the details of actually writing a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, ierr)
+    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, ierr) !{{{
 
         implicit none
 
@@ -2018,7 +2018,7 @@ module mpas_stream_manager
             return
         end if
 
-    end subroutine write_stream
+    end subroutine write_stream !}}}
 
 
     !-----------------------------------------------------------------------
@@ -2050,7 +2050,7 @@ module mpas_stream_manager
     !>  and a nearby time is selected using the "whence" argument.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, actualWhen, ierr)
+    subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, actualWhen, ierr) !{{{
 
         implicit none
 
@@ -2164,7 +2164,7 @@ module mpas_stream_manager
 
         if (present(ierr)) ierr = local_ierr
 
-    end subroutine MPAS_stream_mgr_read
+    end subroutine MPAS_stream_mgr_read !}}}
 
 
     !-----------------------------------------------------------------------
@@ -2177,7 +2177,7 @@ module mpas_stream_manager
     !>  Private subroutine to handle the details of actually reading a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine read_stream(manager, stream, timeLevel, mgLevel, forceReadNow, when, whence, actualWhen, ierr)
+    subroutine read_stream(manager, stream, timeLevel, mgLevel, forceReadNow, when, whence, actualWhen, ierr) !{{{
 
         implicit none
 
@@ -2403,7 +2403,7 @@ module mpas_stream_manager
         !
         call postread_reindex(manager % allFields, stream % field_pool)
 
-    end subroutine read_stream
+    end subroutine read_stream !}}}
 
 
     !-----------------------------------------------------------------------
@@ -2455,7 +2455,7 @@ module mpas_stream_manager
     !>  0 no error
     !>  1 requested exact match for time but found remainder when calculating offset
     !-----------------------------------------------------------------------
-    subroutine build_filename(ref_time, when, whence, maxRecords, period, filename_template, filename, offset, ierr)
+    subroutine build_filename(ref_time, when, whence, maxRecords, period, filename_template, filename, offset, ierr) !{{{
 
         implicit none
 
@@ -2545,7 +2545,7 @@ module mpas_stream_manager
 
         call mpas_expand_string(when_string, filename_template, filename)
 
-    end subroutine build_filename
+    end subroutine build_filename !}}}
 
 
     !-----------------------------------------------------------------------
@@ -2850,7 +2850,7 @@ write(0,*) 'RANDOM ID '//file_id
     !>  associated with the package are inactive, the function returns false.
     !
     !-----------------------------------------------------------------------
-    logical function stream_active_pkg_check(stream)
+    logical function stream_active_pkg_check(stream) !{{{
 
         implicit none
 
@@ -2883,7 +2883,7 @@ write(0,*) 'RANDOM ID '//file_id
             stream_active_pkg_check = .true.
         end if
 
-    end function stream_active_pkg_check
+    end function stream_active_pkg_check !}}}
 
 
     !-----------------------------------------------------------------------
@@ -3048,7 +3048,7 @@ write(0,*) 'RANDOM ID '//file_id
     !>      nVertices
     !
     !-----------------------------------------------------------------------
-    logical function is_decomposed_dim(dimName)
+    logical function is_decomposed_dim(dimName) !{{{
 
         implicit none
 
@@ -3066,7 +3066,7 @@ write(0,*) 'RANDOM ID '//file_id
 
         end if
 
-    end function is_decomposed_dim
+    end function is_decomposed_dim !}}}
 
 
     !-----------------------------------------------------------------------
@@ -3083,7 +3083,7 @@ write(0,*) 'RANDOM ID '//file_id
     !>  This routine should be called immediately before a write of a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine prewrite_reindex(allFields, streamFields)
+    subroutine prewrite_reindex(allFields, streamFields) !{{{
 
         implicit none
 
@@ -3364,7 +3364,7 @@ write(0,*) 'RANDOM ID '//file_id
 
         end do
 
-    end subroutine prewrite_reindex
+    end subroutine prewrite_reindex !}}}
 
 
     !-----------------------------------------------------------------------
@@ -3383,7 +3383,7 @@ write(0,*) 'RANDOM ID '//file_id
     !>      this routine to reset the connectivity fields to contain local indices.
     !
     !-----------------------------------------------------------------------
-    subroutine postwrite_reindex(allFields, streamFields)
+    subroutine postwrite_reindex(allFields, streamFields) !{{{
 
         implicit none
 
@@ -3536,7 +3536,7 @@ write(0,*) 'RANDOM ID '//file_id
         nullify(cellsOnVertex_save)
         nullify(edgesOnVertex_save)
 
-    end subroutine postwrite_reindex
+    end subroutine postwrite_reindex !}}}
 
 
     !-----------------------------------------------------------------------
@@ -3552,7 +3552,7 @@ write(0,*) 'RANDOM ID '//file_id
     !>  This routine should be called immediately after a read of a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine postread_reindex(allFields, streamFields)
+    subroutine postread_reindex(allFields, streamFields) !{{{
 
         implicit none
 
@@ -3763,7 +3763,7 @@ write(0,*) 'RANDOM ID '//file_id
 
         end do
 
-    end subroutine postread_reindex
+    end subroutine postread_reindex !}}}
  
 
 end module mpas_stream_manager
@@ -3844,7 +3844,7 @@ write(0,*) 'For stream '//trim(streamID)//' found record interval '//trim(record
 end subroutine stream_mgr_create_stream_c !}}}
 
 
-subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bind(c)
+subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -3875,10 +3875,10 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
         ierr_c = 1
     end if
 
-end subroutine stream_mgr_add_field_c
+end subroutine stream_mgr_add_field_c !}}}
 
 
-subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_c, alarmInterval_c, ierr_c) bind(c)
+subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_c, alarmInterval_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -3955,10 +3955,10 @@ write(0,*) '   Interval: '//trim(alarmInterval)
         ierr_c = 1
     end if
 
-end subroutine stream_mgr_add_alarm_c
+end subroutine stream_mgr_add_alarm_c !}}}
 
 
-subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c)
+subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -3995,4 +3995,4 @@ write(0,*) 'Adding package '//trim(package)//' to stream '//trim(streamID)
         ierr_c = 1
     end if
 
-end subroutine stream_mgr_add_pkg_c
+end subroutine stream_mgr_add_pkg_c !}}}

@@ -303,7 +303,7 @@ module mpas_stream_list
     !>  Traverses a list, printing the 'name' component from each node.
     !
     !-----------------------------------------------------------------------
-    subroutine printlist(list)
+    subroutine printlist(list)!{{{
 
         implicit none
 
@@ -323,7 +323,7 @@ module mpas_stream_list
         end do
         write(stderrUnit,*) '----------------------------'
 
-    end subroutine printlist
+    end subroutine printlist!}}}
 
 
     !-----------------------------------------------------------------------
