@@ -102,11 +102,7 @@ typedef struct mapsort
   int ceil2(const int i);
   int pair(const int np, const int p, const int k);
   int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc);
-  int expand_region(const int maplen, const PIO_Offset map[], const int region_size,
-		    const int stride, const int max_size);
-  int find_first_region(const int ndims, const int gdims[],
-			const int maplen, const PIO_Offset map[],
-			PIO_Offset start[], PIO_Offset count[]);
+
   int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, 
 			   const PIO_Offset mindex[],const int mcount[],int *mfrom, MPI_Datatype mtype[]);
   int compare_offsets(const void *a,const void *b) ;

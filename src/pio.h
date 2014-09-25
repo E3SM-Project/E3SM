@@ -48,7 +48,8 @@ typedef long long MPI_Offset;
 
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
-#define PIO_MAX_VARS 2048
+#define PIO_MAX_VARS NC_MAX_VARS
+#define PIO_MAX_REQUESTS 100*PIO_MAX_VARS
 
 int PIOc_freedecomp(int iosysid, int ioid);
 
@@ -93,7 +94,6 @@ typedef struct io_desc_t
   int ioid;
   int async_id;
   int nrecvs;
-  int maxiobuflen;
   int ndof;
   int ndims;
   int num_aiotasks;
@@ -102,6 +102,7 @@ typedef struct io_desc_t
 
   MPI_Datatype basetype;
   PIO_Offset llen;
+  int maxiobuflen;
 
 
   int *rfrom;
@@ -167,7 +168,7 @@ typedef struct file_desc_t
   int fh;
   int iotype;
   struct var_desc_t varlist[PIO_MAX_VARS];
-  MPI_Request request[PIO_MAX_VARS];   // request associated with buffered data for pnetcdf
+  MPI_Request request[PIO_MAX_REQUESTS];   // request associated with buffered data for pnetcdf
   int nreq;   // next empty request slot to fill.
   struct file_desc_t *next;
 } file_desc_t;

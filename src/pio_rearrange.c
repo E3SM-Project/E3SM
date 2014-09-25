@@ -16,20 +16,103 @@
 
 int tmpioproc=-1;
 
-/// Convert a global array index to a global coordinate value
-void gindex_to_coord(const int ndims, const PIO_Offset gindex, const PIO_Offset gstride[], PIO_Offset *gcoord)
+// Convert an index into a list of dimensions. E.g., for index 4 into a
+// array defined as a[3][2], will return 1 1.
+void idx_to_dim_list(const int ndims, const int gdims[], const PIO_Offset idx,
+                     PIO_Offset dim_list[])
 {
-  PIO_Offset tempindex;
-  int i;
-
-  tempindex = gindex;
-  for(i=0;i<ndims-1;i++){
-    gcoord[i] = tempindex/gstride[i];
-    tempindex -= gcoord[i]*gstride[i];
+  int i, curr_idx, next_idx;
+  curr_idx = idx;
+  // Easiest to start from the right and move left.
+  for (i = ndims-1; i >= 0; --i) {
+    // This way of doing div/mod is slightly faster than using "/" and "%".
+    next_idx = curr_idx / gdims[i];
+    dim_list[i] = curr_idx - (next_idx*gdims[i]);
+    curr_idx = next_idx;
   }
-  gcoord[ndims-1] = tempindex;
+}
+
+// Expand a region along dimension dim, by incrementing count[i] as much as
+// possible, consistent with the map.
+//
+// Once max_size is reached, the map is exhausted, or the next entries fail
+// to match, expand_region updates the count and calls itself with the next
+// outermost dimension, until the region has been expanded as much as
+// possible along all dimensions.
+void expand_region(const int dim, const int gdims[], const int maplen,
+                   const PIO_Offset map[], const int region_size,
+                   const int region_stride, const int max_size[],
+                   PIO_Offset count[])
+{
+  int i, j, test_idx, expansion_done;
+  // Precondition: maplen >= region_size (thus loop runs at least once).
+
+  // Flag used to signal that we can no longer expand the region along
+  // dimension dim.
+  expansion_done = 0;
+
+  // Expand no greater than max_size along this dimension.
+  for (i = 1; i <= max_size[dim]; ++i) {
+    // Count so far is at least i.
+    count[dim] = i;
+
+    // Now see if we can expand to i+1 by checking that the next
+    // region_size elements are ahead by exactly region_stride.
+    // Assuming monotonicity in the map, we could skip this for the
+    // innermost dimension, but it's necessary past that because the
+    // region does not necessarily comprise contiguous values.
+    for (j = 0; j < region_size; ++j) {
+      test_idx = j + i*region_size;
+      // If we have exhausted the map, or the map no longer matches,
+      // we are done, break out of both loops.
+      if (test_idx >= maplen || map[test_idx] != map[j] + i*region_stride) {
+        expansion_done = 1;
+        break;
+      }
+    }
+    if (expansion_done) break;
+  }
+
+  // Move on to next outermost dimension if there are more left, else return.
+  if (dim > 0) {
+    expand_region(dim-1, gdims, maplen, map, region_size*count[dim],
+                  region_stride*gdims[dim], max_size, count);
+  }
+}
+
+// Set start and count so that they describe the first region in map.
+PIO_Offset find_region(const int ndims, const int gdims[],
+                       const int maplen, const PIO_Offset map[],
+                       PIO_Offset start[], PIO_Offset count[])
+{
+  int dim;
+  int max_size[ndims];
+  PIO_Offset regionlen=1;
+  // Preconditions (which might be useful to check/assert):
+  //   ndims is > 0
+  //   maplen is > 0
+  //   all elements of map are inside the bounds specified by gdims
+
+  idx_to_dim_list(ndims, gdims, map[0], start);
+
+  for (dim = 0; dim < ndims; ++dim) {
+    // Can't expand beyond the array edge.
+    max_size[dim] = gdims[dim] - start[dim];
+  }
+
+  // For each dimension, figure out how far we can expand in that dimension
+  // while staying contiguous in the input array.
+  //
+  // Start with the innermost dimension (ndims-1), and it will recurse
+  // through to the outermost dimensions.
+  expand_region(ndims-1, gdims, maplen, map, 1, 1, max_size, count);
+
+  for(dim=0;dim<ndims;dim++)
+    regionlen*=count[dim];
+  return(regionlen);
 
 }
+
 
 /// Convert a global coordinate value into a local array index
 PIO_Offset coord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PIO_Offset count[])
@@ -54,9 +137,9 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   //  compute the max io buffer size, for conveneance it is the combined size of all regions
   totiosize=0;
   region = iodesc->firstregion;
-  iosize=1;
   while(region != NULL){
     if(region->count[0]>0){
+      iosize=1;
       for(i=0;i<iodesc->ndims;i++)
 	iosize*=region->count[i];
       totiosize+=iosize;
@@ -65,67 +148,12 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   }
   // Share the max io buffer size with all io tasks
 #ifndef _MPISERIAL
+  //  printf("%s %d %ld\n",__FILE__,__LINE__,totiosize);
   CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
 #endif
   
   iodesc->maxiobuflen = totiosize;
 }
-
-/// Set start and count so that they describe the first region in map.
-int find_first_region(const int ndims, const int gdims[],
-		      const int maplen, const PIO_Offset map[],
-		      PIO_Offset start[], PIO_Offset count[])
-{
-  int i, j, region_size, max_size;
-  PIO_Offset stride[ndims];
-  // Preconditions (which might be useful to check/assert):
-  //   ndims is > 0
-  //   maplen is > 0
-  //   all elements of map are inside the bounds specified by gdims
-
-  stride[ndims-1] = 1;
-  for(i=ndims-2;i>=0; --i){
-    stride[i] = stride[i+1]*gdims[i+1];
-  }
-
-  /*
-    printf("%d %d \n",stride[0],stride[1]);
-    for(i=0;i<maplen;i++)
-      printf("%d ",map[i]);
-  printf("\n%s %d %d\n",__FILE__,__LINE__,tmpioproc);
-  */
-  gindex_to_coord(ndims, map[0], stride, start);
-  j=1;
-  region_size = 1;
-  for(i=ndims-1;i>=0; --i){
-    count[i]=1;
-    /*    
-     if(tmpioproc==0)
-     	printf("%d %d %d %d %d %d %d %d \n",__LINE__,i,j,region_size,stride[i],map[j],map[j-region_size],(map[j]%gdims[i]) );
-    */
-    while(j<maplen && (map[j]==(map[j- region_size ]+stride[i])) && start[i]+count[i]<gdims[i])   {
-      count[i]++;
-      j+=region_size;
-      /*
-      if(tmpioproc==0)
-       	printf("%d %d %d %d %d %d %d %d \n",__LINE__,i,j,region_size,stride[i],map[j],map[j-region_size],(map[j]%gdims[i]) );
-      */
-    }   
-    if(j>maplen && count[i]>1){  // Need to back up if we went off the end.
-	count[i]--;
-	j-=region_size;
-    }
-    region_size*=count[i];
-  }
-  if(ndims==3)
-    printf("%s %d %d %d %d %d %d %d\n",__FILE__,__LINE__,start[0],start[1],start[2],count[0],count[1],count[2]);
-  
-
-  return region_size;
-}
-
-
-
 
 int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, const PIO_Offset mindex[],const int mcount[],
 			 int *mfrom, MPI_Datatype mtype[])
@@ -670,11 +698,10 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
-
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
-  
+
   free(sendcounts);
   free(recvcounts); 
   free(sdispls);
@@ -778,7 +805,10 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       for(k=0;k<maplen;k++){
 	PIO_Offset gcoord[ndims], lcoord[ndims];
 	bool found=true;
-	gindex_to_coord(ndims, compmap[k], gstride, gcoord);
+	//	gindex_to_coord(ndims, compmap[k], gstride, gcoord);
+	idx_to_dim_list(ndims, gsize, compmap[k], gcoord);
+
+
 	for(j=0;j<ndims;j++){
 	  if(gcoord[j] >= start[j] && gcoord[j] < start[j]+count[j]){
 	    lcoord[j] = gcoord[j] - start[j];
@@ -829,7 +859,6 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
   io_region *region, *prevregion;
   int ndims=iodesc->ndims;
 
-
   nmaplen = 0;
   region = iodesc->firstregion;
   while(map[nmaplen++]<0);
@@ -843,45 +872,21 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
     // Here we find the largest region from the current offset into the iomap
     // regionlen is the size of that region and we step to that point in the map array
     // until we reach the end 
+    for(i=0;i<ndims;i++){
+      region->count[i]=1;
+    }
+    //    gindex_to_coord(ndims, map[nmaplen], gstride, region->start);
+    
 
-    regionlen = find_first_region(ndims, gdims, iodesc->llen-nmaplen, 
-					map+nmaplen, region->start, region->count);
+    regionlen = find_region(ndims, gdims, iodesc->llen-nmaplen, 
+				  map+nmaplen, region->start, region->count);
 
     pioassert(region->start[0]>=0,"failed to find region",__FILE__,__LINE__);
     /*
-    if(prevregion != NULL){
-      bool combine;
-      for(i=0;i<ndims;i++){
-	if(region->start[i] == prevregion->start[i] ||
-	   prevregion->start[i]+prevregion->count[i]==region->start[i]){
-	  combine=true;
-	}else{
-          combine=false;	
-	  break;
-	}
-
-      }
-      if(combine){
-	printf("%s %d combine:\n",__FILE__,__LINE__);
-	for(i=0;i<ndims;i++){
-	  printf("%d %d %d %d %d\n",i,prevregion->start[i],prevregion->count[i],region->start[i],region->count[i]);
-	  if(region->start[i] > prevregion->start[i])
-	    prevregion->count[i]+=region->count[i];
-	  // reuse current region
-          region->start[i]=0;
-	  region->count[i]=0;
-	  
-	}
-	region->loffset+=regionlen;
-	printf("\n");
-	
-      }
-      
-    }else{
-      prevregion=region;
+    for(i=0;i<ndims;i++){
+      printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,i,region->start[i],region->count[i], regionlen);
     }
     */
-    
     nmaplen = nmaplen+regionlen;
     if(region->next==NULL && nmaplen<iodesc->llen){
       region->next = alloc_region(iodesc->ndims);
@@ -893,17 +898,6 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
       iodesc->maxregions++;
     }
   }
-  i=0;
-  /*  if(iodesc->maxregions>1){
-    region=iodesc->firstregion;
-    while(region != NULL){
-      printf("%d %d %d %d %d %d\n",__LINE__,i++,region->start[0],region->count[0],region->start[1],region->count[1]);
-      region = region->next;
-    }
-    } */
-
-
-
 
   // pad maxregions on all tasks to the maximum and use this to assure that collective io calls are made.
 #ifndef _MPISERIAL  
@@ -1058,11 +1052,15 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   if(ios.ioproc){
     int pos=0;
     int k=0;
+    mapsort *mptr;
     for(i=0;i<ntasks;i++){
       for(j=0;j<iodesc->rcount[i];j++){
-	(map+k)->rfrom = i;
-	(map+k)->soffset = srcindex[pos+j];
-	(map+k++)->iomap = iomap[pos+j];
+	mptr = map+k;
+	mptr->rfrom = i;
+	mptr->soffset = srcindex[pos+j];
+	mptr->iomap = iomap[pos+j];
+
+	k++;
       }
       pos += iodesc->rcount[i];
     }
@@ -1086,11 +1084,14 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     dtypes[i]=PIO_OFFSET;
   }
   sndlths[0]=iodesc->scount[0];
+  mapsort *mptr;
   for(i=0;i<iodesc->llen;i++){
-    iodesc->rfrom[i] = (map+i)->rfrom;
+    mptr = map+i;
+    iodesc->rfrom[i] = mptr->rfrom;
     iodesc->rindex[i]=i;
-    iomap[i] = (map+i)->iomap;
-    srcindex[ (cnt[iodesc->rfrom[i]])++   ]=(map+i)->soffset;
+    iomap[i] = mptr->iomap;
+    srcindex[ (cnt[iodesc->rfrom[i]])++   ]=mptr->soffset;
+
   }
 
   CheckMPIReturn(MPI_Scatterv((void *) srcindex, recvlths, rdispls, PIO_OFFSET, 
@@ -1104,6 +1105,13 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 	    iodesc->subset_comm, hs, isend, maxreq);
   */
   if(ios.ioproc){
+
+    /*
+    printf("%s %d %d\n",__FILE__,__LINE__,ios.io_rank);
+    for(i=0;i<iodesc->llen;i++)
+      printf("%d ",iomap[i]);
+    printf("\n");
+    */
     get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
   
     if(iomap != NULL)

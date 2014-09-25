@@ -49,6 +49,8 @@ void pio_add_to_file_list(file_desc_t *file)
 void pio_push_request(file_desc_t *file, MPI_Request request)
 {
   file->request[file->nreq++] = request;
+  if(file->nreq== PIO_MAX_REQUESTS)
+    piodie("Request count exceeds max: increase PIO_MAX_REQUESTS in pio.h",__FILE__,__LINE__);
 }
 
 
