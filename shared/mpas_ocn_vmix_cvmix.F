@@ -630,7 +630,7 @@ contains
       !
       ! initialize background mixing
       !
-      if (config_use_cvmix_background) then
+      if (config_use_cvmix_background .or. config_use_cvmix_shear) then
         call cvmix_init_bkgnd( &
                bkgnd_diff = config_cvmix_background_diffusion, &
                bkgnd_visc = config_cvmix_background_viscosity, &
@@ -641,6 +641,12 @@ contains
       ! initialize shear-based mixing
       !
       if (config_use_cvmix_shear) then
+        if (.not. config_use_cvmix_background .and. trim(config_cvmix_shear_mixing_scheme) == 'PP') then
+            write(stderrUnit, *) "ERROR: config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'"
+            write(stderrUnit, *) "       without config_use_cvmix_background = .true."
+            err = 1
+            return
+        end if
         call cvmix_init_shear( &
                cvmix_shear_params, &
                mix_scheme = config_cvmix_shear_mixing_scheme, &
