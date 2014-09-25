@@ -70,7 +70,13 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      size_t start[fndims];
      size_t count[fndims];
      int buflen, j;
- #ifdef _MPISERIAL
+#ifdef USE_PNETCDF_VARN
+     size_t startlist[iodesc->maxregions][fndims];
+     size_t countlist[iodesc->maxregions][fndims];
+     void *buflist[iodesc->maxregions];
+#endif
+
+#ifdef _MPISERIAL
      tsize = iodesc->basetype;
 #else
      MPI_Type_size(iodesc->basetype, &tsize);
@@ -210,10 +216,17 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 for( i=0,dsize=1;i<ndims;i++)
 	   dsize*=count[i];
 	 //	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
+#ifdef USE_PNETCDF_VARN
+	 if(regioncnt<iodesc->maxregions-1){
+	 }else{
+	   ierr = ncmpi_put_varn_all(ncid, vid, (PIO_Offset **) startlist, (PIO_Offset **) countlist,blah
+				     }
+				     
+#else
 	 ierr = ncmpi_bput_vara(ncid, vid,  (PIO_Offset *) start,(PIO_Offset *) count, bufptr,
 				dsize, iodesc->basetype, &request);
 	 pio_push_request(file,request);
-
+#endif
 	 break;
  #endif
        default:
@@ -420,11 +433,12 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	    if(i==0){
 	      for(int k=0;k<ndims;k++)
 		tmp_count[k] = count[k];
-	      if(regioncnt>=0)
+	      if(regioncnt==0)
+		bufptr = IOBUF;
+	      else
 		bufptr=(void *)((char *) IOBUF + tsize*region->loffset);
 	    }else{
 	      MPI_Recv(tmp_count, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
-	      bufptr = IOBUF;
 	    }
 	    tmp_bufsize=1;
 	    for(int j=0;j<ndims; j++){
@@ -439,10 +453,16 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 		MPI_Recv(tmp_start, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	      }		
 	      if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+		if(i>0)
+		  bufptr = malloc(tmp_bufsize *sizeof(double));
 		ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, bufptr); 
 	      }else if(iodesc->basetype == MPI_INTEGER){
+		if(i>0)
+		  bufptr = malloc(tmp_bufsize *sizeof(int));
 		ierr = nc_get_vara_int (file->fh, vid, tmp_start, tmp_count,  bufptr); 	     
 	      }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+		if(i>0)
+		  bufptr = malloc(tmp_bufsize *sizeof(float));
 		ierr = nc_get_vara_float (file->fh, vid, tmp_start, tmp_count,  bufptr); 
 	      }else{
 		fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
@@ -458,6 +478,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	      if(i>0){
 		//    printf("%s %d %d %d\n",__FILE__,__LINE__,i,tmp_bufsize);
 		MPI_Rsend(bufptr, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
+		free(bufptr);
 	      }
 	    }
 	  }
