@@ -105,7 +105,7 @@ module fvm_control_volume_mod
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
 
   integer, public :: n0_fvm, np1_fvm !fvm time-levels
-  
+  integer, parameter, public :: fvm_supercycling = 3
 contains
 
 ! ----------------------------------------------------------------------------------!
