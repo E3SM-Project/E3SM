@@ -1270,7 +1270,7 @@ contains
 
        ! bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
        ! incorrectly diagnosing OBL to be within surface layer
-       bulkRichardsonNumberBuoy(1:indexSurfaceLayerDepth(iCell),iCell) = -1.0
+       bulkRichardsonNumberBuoy(1:int(indexSurfaceLayerDepth(iCell)),iCell) = -1.0
 
       enddo
 
