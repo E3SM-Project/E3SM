@@ -791,9 +791,10 @@ contains
   ! initialize global buffers shared by all threads
   subroutine fvm_init1(par)
     use parallel_mod, only : parallel_t, haltmp
-    use control_mod, only : tracer_transport_type, tracer_grid_type
+    use control_mod, only : tracer_transport_type, tracer_grid_type, rsplit
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACER_GRIDTYPE_FVM
-    use fvm_control_volume_mod     , only: n0_fvm, np1_fvm
+    use fvm_control_volume_mod, only: n0_fvm, np1_fvm, fvm_supercycling
+    use dimensions_mod, only: qsize
     type (parallel_t) :: par
 
     !
@@ -911,6 +912,22 @@ contains
        if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
        call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
     endif
+
+    if (qsize>0) then
+       if (par%masterproc) then
+          print *, 'FYI: running both SE and fvm tracers!'
+       end if
+    end if
+
+    if (qsize>0.and.mod(rsplit,fvm_supercycling).ne.0) then
+       if (par%masterproc) then
+          print *,'cannot supercycle fvm tracers with respect to se tracers'
+          print *,'with this choice of rsplit =',rsplit
+          print *,'rsplit must be a multiple of fvm_supercycling=',fvm_supercycling
+          call haltmp("PARAMTER ERROR for fvm: mod(rsplit,fvm_supercycling<>0")
+       end if
+    endif
+
 
     if (par%masterproc) then 
        print *, "                                            "
@@ -1037,10 +1054,10 @@ contains
   !        fvm   ...  structure                                                       !
   ! INPUT: nstep   ... actual step                                                    !
   !-----------------------------------------------------------------------------------!
-  subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
+  subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl,klev)
     use coordinate_systems_mod, only : cartesian2D_t
     use element_mod, only : element_t
-    use fvm_control_volume_mod, only: fvm_struct
+    use fvm_control_volume_mod, only: fvm_struct, fvm_supercycling
     use time_mod, only : timelevel_t, time_at
     use parallel_mod, only : haltmp
     use control_mod, only : test_cfldep
@@ -1063,13 +1080,16 @@ contains
 !phl    ! for the benchmark test, use more accurate departure point creation
     if (fvm_ideal_test == IDEAL_TEST_OFF) then
   ! for given velocities in the element structure
-      call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
+      call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt*fvm_supercycling,tl,klev)    
     else
 !phl    !CE: define new mesh for fvm fvm on an equal angular grid
 !phl    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
       do j = 1, nc+1
         do i = 1, nc+1               
           if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
+             !
+             ! broken
+             ! 
             call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
           else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
             call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))

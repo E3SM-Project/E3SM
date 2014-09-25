@@ -549,6 +549,7 @@ contains
          hypervis_subcycle_q, use_semi_lagrange_transport
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
+    use fvm_control_volume_mod, only : fvm_supercycling
 #ifndef CAM
     use control_mod, only : pertlim                     !used for homme temperature perturbations
 #endif
@@ -1055,9 +1056,10 @@ contains
 
        if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
            tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-          write(iulog,'(a,2f9.2)') "dt_tracer (fvm)          ",tstep*qsplit
-       else if (tracer_transport_type == TRACERTRANSPORT_SE_GLL) then
-          write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
+          write(iulog,'(a,2f9.2)') "dt_tracer (fvm)          ",tstep*qsplit*fvm_supercycling
+       end if
+       if (qsize>0) then
+          write(iulog,'(a,2f9.2)') "dt_tracer (SE), per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
        end if
        write(iulog,'(a,2f9.2)')    "dt_dyn:                  ",tstep
        write(iulog,'(a,2f9.2)')    "dt_dyn (viscosity):      ",dt_dyn_vis
@@ -1435,10 +1437,10 @@ contains
 #endif
 
     ! loop over rsplit vertically lagrangian timesteps
-    call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics)
+    call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
-       call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,.false.)
+       call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
     enddo
     ! defer final timelevel update until after remap and diagnostics
 
@@ -1528,7 +1530,7 @@ contains
 
 
 
-  subroutine prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics)
+  subroutine prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics,rstep)
 !
 !   Take qsplit dynamics steps and one tracer step
 !   for vertically lagrangian option, this subroutine does only the horizontal step
@@ -1563,6 +1565,7 @@ contains
     use reduction_mod, only : parallelmax
     use derivative_mod, only : interpolate_gll2spelt_points
     use time_mod,    only : time_at
+    use fvm_control_volume_mod, only : fvm_supercycling
 
     type (element_t) , intent(inout)        :: elem(:)
 
@@ -1579,8 +1582,10 @@ contains
     integer, intent(in)                     :: nete  ! ending thread element number   (private)
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
+    integer, intent(in)                     :: rstep ! vertical remap subcycling step
+
     real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n
+    integer :: ie, t, q,k,i,j,n, n_fvm
 
     real (kind=real_kind)                          :: maxcflx, maxcfly
 
@@ -1588,7 +1593,15 @@ contains
     logical :: compute_diagnostics
 
     dt_q = dt*qsplit
-
+    if (ntrac>0.and.rstep==1) then
+       !
+       ! save velocity at time t for fvm trajectory algorithm
+       !       
+       do ie=nets,nete
+          fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
+       end do
+    end if
+ 
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
@@ -1601,18 +1614,19 @@ contains
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
       endif
-      if (ntrac>0) then
-        ! save velocity at time t for fvm
-        fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
-      end if
-
       ! save velocity at time t for seme-legrangian transport
+      !
+      ! this code is broken!
+      !
       if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
+         stop
         do k = 1, nlev
           if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
             elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%n0))
+            stop
           else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
             elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%n0))
+            stop
           else
             call abortmp('Bad fvm_test_type in prim_step')
           end if
@@ -1671,45 +1685,61 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
-!phl    if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
-   if (qsize>0) &
-      call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-           dt_q,tl,nets,nete)
-   if (ntrac>0) then
+    if (qsize>0) &
+         call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
+         dt_q,tl,nets,nete)
+    !
+    ! only run fvm transport every fvm_supercycling rstep
+    !
+    if (ntrac>0.and.mod(rstep,fvm_supercycling)==0) then
        !
        ! FVM transport
        !
+       !
+       !
 #if defined(_SPELT)
        !
-      call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
-           dt_q,tl,nets,nete)
-        do ie=nets,nete
-!           do k=1, nlev
-!             fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-!           end do
-	    do i=1-nipm,nep+nipm
-	      do j=1-nipm,nep+nipm
+       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
+            dt_q,tl,nets,nete)
+       do ie=nets,nete
+          !           do k=1, nlev
+          !             fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          !           end do
+          do i=1-nipm,nep+nipm
+             do j=1-nipm,nep+nipm
 	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
-	      enddo
-	    enddo
-        enddo
-        if (test_cfldep) then
+             enddo
+          enddo
+       enddo
+       if (test_cfldep) then
           maxcflx=0.0D0
           maxcfly=0.0D0
           do k=1, nlev
-            maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
-            maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
+             maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
+             maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
           end do
-
+          
           if  (hybrid%masterthread) then
-            write(*,*) "nstep",tl%nstep,"dt_q=", dt_q, "maximum over all Level"
-            write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly
-            print *
-         endif
+             write(*,*) "nstep",tl%nstep,"dt_q=", dt_q, "maximum over all Level"
+             write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly
+             print *
+          endif
        endif
 #else
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
+       if (rstep.ne.rsplit) then
+          !
+          ! save velocity for fvm trajecotry algorithm for next fvm time-level update
+          !
+          do ie=nets,nete
+             fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%np1)
+          end do
+       end if
+
+
+
+
 
        if(test_cfldep) then
          maxcflx=0.0D0
@@ -1723,7 +1753,7 @@ contains
           end do
 
            if(hybrid%masterthread) then
-             write(*,*) "nstep",tl%nstep,"dt_q=", dt_q, "maximum over all Level"
+             write(*,*) "nstep",tl%nstep,"dt_fvm=", dt_q*fvm_supercycling, "maximum over all Level"
              write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly
              print *
            endif

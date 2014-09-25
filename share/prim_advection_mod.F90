@@ -1063,6 +1063,7 @@ contains
     use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_bsp_mod, only: get_boomerang_velocities_gll, get_solidbody_velocities_gll
+    use fvm_control_volume_mod, only : n0_fvm,np1_fvm,fvm_supercycling
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
     use control_mod, only : use_semi_lagrange_transport
@@ -1162,8 +1163,9 @@ contains
 !------------------------------------------------------------------------------------
 !     call t_startf('fvm_depalg')
 
-!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
-    call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
+!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt*fvm_supercycling, 3)
+    call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt*fvm_supercycling, 3)
+    write(*,*) "fvm_rkdss dt ",dt*fvm_supercycling
 !     call t_stopf('fvm_depalg')
 
 !------------------------------------------------------------------------------------
