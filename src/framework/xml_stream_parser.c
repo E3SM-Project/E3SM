@@ -660,7 +660,12 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t stream_xml;
 	ezxml_t varfile_xml;
 	ezxml_t var_xml;
-	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval;
+	ezxml_t vararray_xml;
+	ezxml_t varstruct_xml;
+	ezxml_t substream_xml;
+	ezxml_t streamsmatch_xml, streammatch_xml;
+	const char *compstreamname_const;
+	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const;
 	const char *interval_in, *interval_out, *packagelist;
 	char *packages, *package;
 	char ref_time_local[256];
@@ -897,6 +902,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 		}
+
 		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
 			fieldname_const = ezxml_attr(var_xml, "name");
 			stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
@@ -905,6 +911,46 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				return;
 			}
 		}
+
+		for (vararray_xml = ezxml_child(stream_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+			fieldname_const = ezxml_attr(vararray_xml, "name");
+			stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
+
+		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+			streamname_const = ezxml_attr(substream_xml, "name");
+
+			for(streammatch_xml = ezxml_child(streams, "stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
+				compstreamname_const = ezxml_attr(streammatch_xml, "name");
+
+				if (strcmp(streamname_const, compstreamname_const) == 0) {
+					for (var_xml = ezxml_child(streammatch_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+						fieldname_const = ezxml_attr(var_xml, "name");
+						stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
+						if (err != 0) {
+							*status = 1;
+							return;
+						}
+					}
+
+
+					for (vararray_xml = ezxml_child(streammatch_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+						fieldname_const = ezxml_attr(vararray_xml, "name");
+						stream_mgr_add_field_c(manager, streamID, fieldname_const, &err);
+						if (err != 0) {
+							*status = 1;
+							return;
+						}
+					}
+				}
+			}
+		}
+
+
 	}
 
 	free(xml_buf);

@@ -152,7 +152,7 @@ int add_package_to_list(const char * package, const char * package_list){/*{{{*/
 
 	while( (token = strsep(&string, ";")) != NULL){
 		if(strcmp(package, token) == 0){
-			
+
 			return 0;
 		}
 	}
@@ -377,8 +377,8 @@ int get_field_information(const char *vartype, const char *varval, char *default
 		} else {
 			snprintf(default_value, 1024, "%s", varval);
 		}
-	} 
-	
+	}
+
 	return 0;
 }/*}}}*/
 
@@ -537,17 +537,17 @@ void write_default_namelist(ezxml_t registry) /*{{{*/
 
 				if(print_option){
 					if (strcmp(opttype, "real") == 0){
-						fprintf(fd, "    %s = %s\n", optname, optdefault); 
+						fprintf(fd, "    %s = %s\n", optname, optdefault);
 					} else if (strcmp(opttype, "integer") == 0){
-						fprintf(fd, "    %s = %s\n", optname, optdefault); 
+						fprintf(fd, "    %s = %s\n", optname, optdefault);
 					} else if (strcmp(opttype, "logical") == 0){
 						if (strcmp(optdefault, "true") == 0 || strcmp(optdefault, ".true.") == 0){
-							fprintf(fd, "    %s = .true.\n", optname); 
+							fprintf(fd, "    %s = .true.\n", optname);
 						} else {
-							fprintf(fd, "    %s = .false.\n", optname); 
+							fprintf(fd, "    %s = .false.\n", optname);
 						}
 					} else if (strcmp(opttype, "character") == 0){
-						fprintf(fd, "    %s = '%s'\n", optname, optdefault); 
+						fprintf(fd, "    %s = '%s'\n", optname, optdefault);
 					}
 				}
 			}
@@ -561,7 +561,7 @@ void write_default_namelist(ezxml_t registry) /*{{{*/
 
 void write_default_streams(ezxml_t registry)
 {
-	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml;
+	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml, vararray_xml, stream_xml;
 
 	const char *optstream, *optname, *optvarname, *opttype;
 	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
@@ -622,12 +622,12 @@ void write_default_streams(ezxml_t registry)
 					fprintf(fd, "        output_interval=\"%s\"", optinterval_out);
 				}
 				fprintf(fd, ">\n\n");
-	
-				/* 
+
+				/*
 				 * Depending on the runtime format, we either generate a separate list of fields for
 				 *   each stream, or we list the fields directly in the main stream control file
 				 */
-				
+
 				if (strcmp(optruntime,"single_file") == 0) {
 
 					/* Loop over fields listed within the stream */
@@ -635,7 +635,13 @@ void write_default_streams(ezxml_t registry)
 						optname = ezxml_attr(var_xml, "name");
 						fprintf(fd, "    <var name=\"%s\"/>\n", optname);
 					}
-	
+
+					/* Loop over var_arrays listed within the stream */
+					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
+						optname = ezxml_attr(vararray_xml, "name");
+						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
+					}
+
 					/* Loop over fields looking for any that belong to the stream */
 					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
 						for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
@@ -643,8 +649,14 @@ void write_default_streams(ezxml_t registry)
 							if (optstream != NULL && strstr(optstream, optname) != NULL) {
 								optvarname = ezxml_attr(var_xml, "name");
 								fprintf(fd, "    <var name=\"%s\"/>\n", optvarname);
-							}	
+							}
 						}
+					}
+
+					/* Loop over streams listed within the stream */
+					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+						optname = ezxml_attr(stream_xml, "name");
+						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
 					}
 
 				}
@@ -661,7 +673,14 @@ void write_default_streams(ezxml_t registry)
 						optname = ezxml_attr(var_xml, "name");
 						fprintf(fd2, "%s\n", optname);
 					}
-	
+
+					/* Loop over var_arrays listed within the stream */
+					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
+						optname = ezxml_attr(vararray_xml, "name");
+						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
+					}
+
+
 					/* Loop over fields looking for any that belong to the stream */
 					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
 						for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
@@ -669,10 +688,16 @@ void write_default_streams(ezxml_t registry)
 							if (optstream != NULL && strstr(optstream, optname) != NULL) {
 								optvarname = ezxml_attr(var_xml, "name");
 								fprintf(fd2, "%s\n", optvarname);
-							}	
+							}
 						}
 					}
-	
+
+					/* Loop over streams listed within the stream */
+					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+						optname = ezxml_attr(stream_xml, "name");
+						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
+					}
+
 					fclose(fd2);
 
 				}
@@ -710,7 +735,7 @@ int parse_packages_from_registry(ezxml_t registry)/*{{{*/
 
 	// For now, don't include core name in subroutines
 	sprintf(core_string, "_");
-	
+
 
 	fortprintf(fd, "   subroutine mpas_generate%spackages(packagePool)\n", core_string);
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: packagePool !< Input: MPAS Pool for containing package logicals.\n\n");
@@ -940,7 +965,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
 			dimname = ezxml_attr(dim_xml, "name");
-			dimdef = ezxml_attr(dim_xml, "definition");	
+			dimdef = ezxml_attr(dim_xml, "definition");
 
 			// Only dimensions that don't have a definition
 			if(dimdef == NULL){
@@ -962,8 +987,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd5, "      integer :: %s\n", dimname);
 				fortprintf(fd6, "      integer, intent(inout) :: %s\n", dimname);
 
-			} 
-		}   
+			}
+		}
 	}
 
 	fortprintf(fd2, "%s &\n", dim_args);
@@ -1018,7 +1043,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 					}
 				}
 			}
-		}   
+		}
 	}
 
 	fortprintf(fd,"\n");
@@ -1135,7 +1160,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	vararrpackages = ezxml_attr(var_arr_xml, "packages");
 	vararrtimelevs = ezxml_attr(var_arr_xml, "time_levs");
 	vararrname_in_code = ezxml_attr(var_arr_xml, "name_in_code");
-	
+
 	if(!vararrtimelevs){
 		vararrtimelevs = ezxml_attr(superStruct, "time_levs");
 	}
@@ -1558,7 +1583,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	if(!vartimelevs){
 		vartimelevs = ezxml_attr(superStruct, "time_levs");
-	} 
+	}
 
 	if(vartimelevs){
 		time_levs = atoi(vartimelevs);
@@ -1659,11 +1684,11 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", package_spacing, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", 
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
 							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",  
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
 							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 4:
@@ -1690,7 +1715,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, "%s%s(%d) %% block => block\n", package_spacing, pointer_name, time_lev);
 
 		// Handle Streams (LEGACY)
-		iostreams = 0x00000000;	
+		iostreams = 0x00000000;
 		for(streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
 			for(stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
 				streamname = ezxml_attr(stream_xml, "name");
@@ -2736,9 +2761,9 @@ int generate_field_outputs(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
  *
  *  Generates the Fortran include file 'setup_immutable_streams.inc' that contains
  *  the subroutine mpas_generate_immutable_streams() responsible for making calls
- *  to the stream manager to define all immutable streams. 
+ *  to the stream manager to define all immutable streams.
  *  The mpas_generate_immutable_streams() routine should be called after blocks
- *  have been allocated in the framework and after the stream manager has been 
+ *  have been allocated in the framework and after the stream manager has been
  *  initialized, but before any calls to generate mutable streams are made.
  *
  *********************************************************************************/
@@ -2775,7 +2800,7 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 				optrecords = ezxml_attr(stream_xml, "records_per_file");
 
 				/* create the stream */
-				if (strstr(opttype, "input") != NULL && strstr(opttype, "output") != NULL) 
+				if (strstr(opttype, "input") != NULL && strstr(opttype, "output") != NULL)
 					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
 				else if (strstr(opttype, "input") != NULL)
 					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
@@ -2789,7 +2814,7 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 					optvarname = ezxml_attr(var_xml, "name");
 					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
 				}
-	
+
 				/* Loop over fields looking for any that belong to the stream */
 				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
 					for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
@@ -2797,7 +2822,7 @@ int generate_immutable_streams(char *core_string, ezxml_t registry)
 						if (optstream != NULL && strstr(optstream, optname) != NULL) {
 							optvarname = ezxml_attr(var_xml, "name");
 							fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
-						}	
+						}
 					}
 				}
 
