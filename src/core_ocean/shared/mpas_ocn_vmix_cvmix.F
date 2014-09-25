@@ -257,6 +257,7 @@ contains
       cvmix_variables % max_nlev = nVertLevels
       allocate(cvmix_variables % Mdiff_iface(nVertLevels+1))
       allocate(cvmix_variables % Tdiff_iface(nVertLevels+1))
+      allocate(cvmix_variables % Sdiff_iface(nVertLevels+1))
       allocate(cvmix_variables % zw_iface(nVertLevels+1))
       allocate(cvmix_variables % dzw(nVertLevels+1))
       allocate(cvmix_variables % zt_cntr(nVertLevels))
