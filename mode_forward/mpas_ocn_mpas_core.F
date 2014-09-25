@@ -415,7 +415,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell
       integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
-      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: areaCell, boundaryLayerDepth
       real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, uTransport
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uBolusGM, edgeTangentVectors
@@ -427,7 +427,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, pointer :: config_horiz_tracer_adv_order
-      logical, pointer :: config_hmix_scaleWithMesh
+      logical, pointer :: config_hmix_scaleWithMesh, config_do_restart
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -463,6 +463,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -471,6 +472,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
+      call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
    
       call ocn_setup_sign_and_index_fields(meshPool)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
@@ -482,6 +484,13 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       err = ior(err, err1)
 
       call ocn_time_average_init(averagePool)
+
+      if (.not. config_do_restart) then
+         do iCell=1,nCells
+            boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5
+         end do
+      end if
+
    
       call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool)
