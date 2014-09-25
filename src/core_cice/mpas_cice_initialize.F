@@ -12,6 +12,7 @@
 
 module cice_initialize
 
+  use mpas_dmpar
   use mpas_grid_types
   use mpas_timekeeping
 
@@ -317,15 +318,16 @@ contains
          tracers
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     real(kind=RKIND), dimension(:), pointer :: &
          latCell
     
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
+    type(field3DReal), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
-         snowVolumeCategory
+         snowVolumeCategory, &
+         surfaceTemperature
 
     real(kind=RKIND), pointer :: &
          config_initial_ice_area, &
@@ -346,34 +348,43 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
 
     call MPAS_pool_get_array(mesh, "latCell", latCell)
 
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_field(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_field(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_field(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_field(tracers, "surfaceTemperature", surfaceTemperature, 1)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        if (latCell(iCell) >= config_initial_latitude_north * ciceDegreesToRadians .or. &
            latCell(iCell) <= config_initial_latitude_south * ciceDegreesToRadians) then
 
           ! has ice
-          iceAreaCategory(1,:,iCell)    = config_initial_ice_area
-          iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
-          snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
+          iceAreaCategory % array(1,:,iCell)    = config_initial_ice_area
+          iceVolumeCategory % array(1,:,iCell)  = config_initial_ice_volume
+          snowVolumeCategory % array(1,:,iCell) = config_initial_snow_volume
+          surfaceTemperature % array(1,:,iCell) = -1.0_RKIND
           
        else
 
           ! no ice
-          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
-          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
-          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+          iceAreaCategory % array(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory % array(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory % array(1,:,iCell) = 0.0_RKIND
+          surfaceTemperature % array(1,:,iCell) = 0.0_RKIND
 
        endif
 
     enddo ! iCell
+
+    ! halo exchanges
+    call mpas_dmpar_exch_halo_field(iceAreaCategory)
+    call mpas_dmpar_exch_halo_field(iceVolumeCategory)
+    call mpas_dmpar_exch_halo_field(snowVolumeCategory)
+    call mpas_dmpar_exch_halo_field(surfaceTemperature)
 
   end subroutine init_ice_state_uniform_ice!}}}
 

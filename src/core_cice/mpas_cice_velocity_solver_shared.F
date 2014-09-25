@@ -104,51 +104,45 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ice_strength(&
-       mesh, &
+       nPoints, &
        icePressure, &
-       iceAreaCell, &
-       iceVolumeCell, &
+       iceArea, &
+       iceVolume, &
        solveStress)
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+    integer, intent(in) :: &
+         nPoints !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          icePressure !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         iceAreaCell, & !< Input:
-         iceVolumeCell  !< Input:
+         iceArea, & !< Input:
+         iceVolume  !< Input:
 
     integer, dimension(:), intent(in) :: &
          solveStress !< Input:
 
     integer :: &
-         iCell
+         iPoint
 
     real(kind=RKIND), parameter :: &
          Pstar = 2.75e4_RKIND, & ! constant in Hibler strength formula 
          Cstar = 20.0_RKIND      ! constant in Hibler strength formula 
 
-    integer, pointer :: &
-         nCells
+    do iPoint = 1, nPoints
 
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+       if (solveStress(iPoint) == 1) then
 
-    do iCell = 1, nCells
-
-       if (solveStress(iCell) == 1) then
-
-          icePressure(iCell) = Pstar * iceVolumeCell(iCell) * exp(-Cstar*(1.0_RKIND-iceAreaCell(iCell)))
+          icePressure(iPoint) = Pstar * iceVolume(iPoint) * exp(-Cstar*(1.0_RKIND-iceArea(iPoint)))
 
        else
 
-          icePressure(iCell) = 0.0_RKIND
+          icePressure(iPoint) = 0.0_RKIND
 
        endif ! solveStress
 
-    enddo ! iCell
+    enddo ! iPoint
 
   end subroutine cice_ice_strength
 
@@ -403,7 +397,17 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_air_stress(airStressU, airStressV, uAirVelocity, vAirVelocity, airDensity, iceArea)
+  subroutine cice_air_stress(&
+       nPoints, &
+       airStressU, &
+       airStressV, &
+       uAirVelocity, &
+       vAirVelocity, &
+       airDensity, &
+       iceArea)
+
+    integer, intent(in) :: &
+         nPoints !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          airStressU, & !< Output: 
@@ -419,13 +423,10 @@ contains
          windSpeed
 
     integer :: &
-         nPoints, &
          iPoint
 
     real(kind=RKIND), parameter :: &
          airStressCoeff = 0.0012_RKIND 
-    
-    nPoints = size(airStressU,1)
 
     do iPoint = 1, nPoints
 
@@ -451,12 +452,16 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ocean_stress(&
+       nPoints, &
        oceanStressU, &
        oceanStressV, &
        uOceanVelocity, &
        vOceanVelocity, &
        coriolisParameter, &
        solvePoints)
+
+    integer, intent(in) :: &
+         nPoints
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          oceanStressU, & !< Output: 
@@ -471,10 +476,7 @@ contains
          solvePoints !< Input:
 
     integer :: &
-         nPoints, &
          iPoint
-
-    nPoints = size(oceanStressU,1)
 
     do iPoint = 1, nPoints
 
@@ -509,6 +511,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ocean_stress_coefficient(&
+       nPoints, &
        oceanStressCoeff, &
        uOceanVelocity, &
        vOceanVelocity, &
@@ -516,6 +519,9 @@ contains
        vVelocity, &
        iceArea, &
        solvePoints) 
+
+    integer, intent(in) :: &
+         nPoints !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          oceanStressCoeff !< Output: 
@@ -535,10 +541,7 @@ contains
          iceOceanDragCoeff = 0.00536_RKIND
 
     integer :: &
-         nPoints, &
          iPoint
-
-    nPoints = size(oceanStressCoeff,1)
 
     do iPoint = 1, nPoints
 
@@ -570,6 +573,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ocean_stress_final(&
+       nPoints, &
        iceArea, &
        coriolisParameter, &
        uVelocity, &
@@ -580,6 +584,9 @@ contains
        oceanStressV, &
        oceanStressCoeff, &
        solvePoints)
+
+    integer, intent(in) :: &
+         nPoints
 
     real(kind=RKIND), dimension(:), intent(in) :: &    
          iceArea, &           !< Input:
@@ -601,19 +608,17 @@ contains
          oceanIceRelativeVelocity
 
     integer :: &
-         nPoints, &
          iPoint
 
     call cice_ocean_stress_coefficient(&
+         nPoints, &
          oceanStressCoeff, &
          uOceanVelocity, &
          vOceanVelocity, &
          uVelocity, &
          vVelocity, &
          iceArea, &
-         solvePoints) 
-    
-    nPoints = size(oceanStressCoeff,1)
+         solvePoints)
 
     do iPoint = 1, nPoints
 
@@ -648,6 +653,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_surface_tilt(&
+       nPoints, &
        surfaceTiltForceU, &
        surfaceTiltForceV, &
        uOceanVelocity, &
@@ -655,6 +661,9 @@ contains
        totalMass, &
        coriolisParameter, &
        solvePoints)
+
+    integer, intent(in) :: &
+         nPoints
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          surfaceTiltForceU, & !< Output: 
@@ -670,10 +679,7 @@ contains
          solvePoints !< Input:
 
     integer :: &
-         nPoints, &
          iPoint
-
-    nPoints = size(surfaceTiltForceU,1)
 
     do iPoint = 1, nPoints
 
@@ -706,9 +712,13 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_coriolis_force_coefficient(&
-         totalMassCoriolisParameter, &
-         totalMass, &
-         coriolisParameter)
+       nPoints, &
+       totalMassCoriolisParameter, &
+       totalMass, &
+       coriolisParameter)
+
+    integer, intent(in) :: &
+         nPoints
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          totalMassCoriolisParameter !< Output: 
@@ -720,7 +730,7 @@ contains
     integer :: &
          iPoint
 
-    do iPoint = 1, size(totalMassCoriolisParameter)
+    do iPoint = 1, nPoints
 
        totalMassCoriolisParameter(iPoint) = totalMass(iPoint) * coriolisParameter(iPoint)
 
@@ -741,12 +751,16 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_principal_stresses(&
+       nPoints, &
        principalStress1, &
        principalStress2, &
        stress11, &
        stress22, &
        stress12, &
        replacementPressure)
+
+    integer, intent(in) :: &
+         nPoints
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          principalStress1, & !< Output: 
@@ -762,10 +776,7 @@ contains
          sqrtContents
 
     integer :: &
-         iPoint, &
-         nPoints
-
-    nPoints = size(principalStress1)
+         iPoint
 
     !open(48,file='principal.txt')
 

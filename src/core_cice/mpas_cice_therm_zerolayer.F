@@ -187,7 +187,7 @@ contains
          iCategory
 
     integer, pointer :: &
-         nCells, &
+         nCellsSolve, &
          nCategories
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
@@ -222,7 +222,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
     call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
@@ -249,9 +249,9 @@ contains
     ! testing
 #endif
 
-    do iCategory = 1, nCategories
-
-       do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
+       
+       do iCategory = 1, nCategories
 
 #if test_1d == 1
           ! testing
@@ -266,7 +266,13 @@ contains
                 write(stderrUnit,*) "iCell: ", iCell, " iCategory: ", iCategory
                 write(stderrUnit,*) "iceAreaCategory:   ", iceAreaCategory(1,iCategory,iCell)
                 write(stderrUnit,*) "iceVolumeCategory: ", iceVolumeCategory(1,iCategory,iCell)
-                stop
+
+                iceAreaCategory(1,iCategory,iCell) = 0.0_RKIND
+                iceVolumeCategory(1,iCategory,iCell) = 0.0_RKIND
+                snowVolumeCategory(1,iCategory,iCell) = 0.0_RKIND
+                surfaceTemperature(1,iCategory,iCell) = 0.0_RKIND
+
+                !stop
              endif
              
              call therm_zerolayer_column( &
@@ -311,9 +317,9 @@ contains
        endif ! testing 
 #endif
 
-       enddo ! iCell
+       enddo ! iCategory
 
-    enddo ! iCategory
+    enddo ! iCell
 
     !call cice_time_output_variable_real(mesh, iceAreaCategory(1,1,:), clock, "iceAreaCategory")
     !call cice_time_output_variable_real(mesh, iceVolumeCategory(1,1,:), clock, "iceVolumeCategory")

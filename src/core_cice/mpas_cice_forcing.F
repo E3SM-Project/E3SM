@@ -250,7 +250,7 @@ contains
        allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
        
        ! set forcing directory
-       atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/"
+       atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/240km/"
 
        ! air temperature
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &

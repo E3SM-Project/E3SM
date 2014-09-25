@@ -14,6 +14,7 @@ module cice_velocity_solver
 
   use mpas_grid_types
   use mpas_timekeeping
+  use mpas_dmpar
 
   implicit none
 
@@ -190,21 +191,29 @@ contains
          velocity_pwl
 
     integer, pointer :: &
-         nCells
+         nCells, &
+         nCellsSolve, &
+         nVertices, &
+         nVerticesSolve
 
     integer, dimension(:), pointer :: &
          solveStress, &
          solveVelocity, &
          interiorVertex
 
+    type(field3DReal), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
     real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         totalMassCell, &
          iceVolumeCell, &
          snowVolumeCell, &
          iceAreaVertex, &
          totalMassVertex, &
          icePressure, &
-         airStressCellU, &
-         airStressCellV, &
          airStressVertexU, &
          airStressVertexV, &
          oceanStressU, &
@@ -216,8 +225,6 @@ contains
          principalStress1, &
          principalStress2, &
          replacementPressure, &
-         uOceanVelocity, &
-         vOceanVelocity, &
          uOceanVelocityVertex, &
          vOceanVelocityVertex, &
          airDensity, &
@@ -227,13 +234,10 @@ contains
          vVelocity, &
          fVertex, &
          latCell, &
-         iceAreaCell, &
-         totalMassCell
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         iceAreaCategory, &
-         iceVolumeCategory, &
-         snowVolumeCategory
+         airStressCellU, &
+         airStressCellV, &
+         uOceanVelocity, &
+         vOceanVelocity
 
     configs => block % configs
 
@@ -250,9 +254,14 @@ contains
     call MPAS_pool_get_subpool(block % structs, "velocity_pwl", velocity_pwl)
 
     ! init variables
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
+    call MPAS_pool_get_field(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_field(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_field(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
     call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
@@ -296,12 +305,17 @@ contains
 
     !call cice_time_output_variable_real(mesh, uVelocity, clock, "uVelocity0")
 
+    ! halo updates
+    call mpas_dmpar_exch_halo_field(iceAreaCategory)
+    call mpas_dmpar_exch_halo_field(iceVolumeCategory)
+    call mpas_dmpar_exch_halo_field(snowVolumeCategory)
+
     ! aggregate categories for area and volume
     call aggregate_mass_and_area(&
-         mesh, &
-         iceAreaCategory, &
-         iceVolumeCategory, &
-         snowVolumeCategory, &
+         nCells, &
+         iceAreaCategory % array, &
+         iceVolumeCategory % array, &
+         snowVolumeCategory % array, &
          iceAreaCell, &
          iceVolumeCell, &
          snowVolumeCell, &
@@ -320,12 +334,14 @@ contains
 
     ! calculate computational masks
     call stress_calculation_mask(&
+         nCells, &
          mesh, &
          solveStress, &
          iceAreaCell, &
          totalMassCell)
 
     call velocity_calculation_mask(&
+         nVerticesSolve, &
          mesh, &
          solveVelocity,   &
          iceAreaVertex,   &
@@ -334,7 +350,7 @@ contains
 
     ! calculate the ice strength
     call cice_ice_strength(&
-         mesh, &     
+         nCells, &     
          icePressure, &
          iceAreaCell, &
          iceVolumeCell, &
@@ -342,6 +358,7 @@ contains
 
     ! calculate the air stress
     call cice_air_stress(&
+         nCells, &
          airStressCellU, &
          airStressCellV, &
          uAirVelocity, & 
@@ -371,12 +388,14 @@ contains
 
     ! calculate the coriolis force coefficient
     call cice_coriolis_force_coefficient(&
+         nVerticesSolve, &
          totalMassVertexfVertex, &
          totalMassVertex, &
          fVertex)
 
     ! calculate the ocean stress
     call cice_ocean_stress(& 
+         nVerticesSolve, &
          oceanStressU, &
          oceanStressV, &
          uOceanVelocityVertex, & 
@@ -386,6 +405,7 @@ contains
 
     ! calculate the surface tilt force
     call cice_surface_tilt(&
+         nVerticesSolve, &
          surfaceTiltForceU, &
          surfaceTiltForceV, &
          uOceanVelocityVertex, & 
@@ -410,6 +430,7 @@ contains
          configs)
 
     call principal_stresses_driver(&
+         mesh, &
          velocity_weak, &
          velocity_variational, &
          replacementPressure, &
@@ -418,6 +439,7 @@ contains
          principalStress2)
 
     call cice_ocean_stress_final(&
+         nVerticesSolve, &
          iceAreaVertex, &
          fVertex, &
          uVelocity, &
@@ -454,6 +476,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine principal_stresses_driver(&
+       mesh, &
        velocity_weak, &
        velocity_variational, &
        replacementPressure, &
@@ -465,9 +488,10 @@ contains
          cice_principal_stresses         
 
     type (MPAS_pool_type), pointer, intent(in) :: &
-         velocity_weak, & !< Input: 
-         velocity_variational, &  !< Input: 
-         configs    !< Input: 
+         mesh, &                 !< Input: 
+         velocity_weak, &        !< Input: 
+         velocity_variational, & !< Input: 
+         configs                 !< Input: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          replacementPressure !< Input: 
@@ -486,10 +510,15 @@ contains
          stress22Var, &
          stress12Var
 
+    integer, pointer :: &
+         nCellsSolve
+
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
     call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
     ! calculate the principal stresses
     if (trim(config_stress_divergence_scheme) == "weak") then
@@ -499,11 +528,12 @@ contains
        call MPAS_pool_get_array(velocity_weak, "stress12", stress12Weak) 
 
        call cice_principal_stresses(&
+            nCellsSolve, &
             principalStress1, &
             principalStress2, &
-            stress11Weak,     &
-            stress22Weak,     &
-            stress12Weak,     &
+            stress11Weak, &
+            stress22Weak, &
+            stress12Weak, &
             replacementPressure)
 
     else if (trim(config_stress_divergence_scheme) == "variational") then
@@ -513,6 +543,7 @@ contains
        call MPAS_pool_get_array(velocity_variational, "stress12", stress12Var)
 
        call cice_principal_stresses(&
+            nCellsSolve, &
             principalStress1, &
             principalStress2, &
             stress11Var(1,:), &
@@ -650,13 +681,13 @@ contains
          clock
 
     type(MPAS_pool_type), pointer :: &
-         icestate, & !< Input/Output: 
-         boundary, & !< Input/Output: 
-         velocity_solver, &   !< Input/Output: 
-         velocity_weak, &  !< Input/Output: 
-         velocity_variational, &   !< Input/Output: 
+         icestate, &             !< Input/Output: 
+         boundary, &             !< Input/Output: 
+         velocity_solver, &      !< Input/Output: 
+         velocity_weak, &        !< Input/Output: 
+         velocity_variational, & !< Input/Output: 
          velocity_wachspress, &  !< Input/Output: 
-         velocity_pwl      !< Input/Output: 
+         velocity_pwl            !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
          dtDynamics, & !< Input: 
@@ -676,18 +707,20 @@ contains
          config_evp_damping
 
     integer, pointer :: &
-         nVertices
+         nVerticesSolve
 
     integer, dimension(:), pointer :: &
          solveVelocity, &
          solveStress
 
+    type(field1DReal), pointer :: &
+         uVelocity, &
+         vVelocity
+
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaVertex, &
          totalMassVertex, &
          fVertex, &
-         uVelocity, &
-         vVelocity, &
          icePressure, &
          replacementPressure, &
          stressDivergenceU, &
@@ -710,12 +743,12 @@ contains
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
 
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
 
     call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
     call MPAS_pool_get_array(velocity_solver, "solveStress", solveStress)
-    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
-    call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
+    call MPAS_pool_get_field(velocity_solver, "uVelocity", uVelocity)
+    call MPAS_pool_get_field(velocity_solver, "vVelocity", vVelocity)
     call MPAS_pool_get_array(velocity_solver, "icePressure", icePressure)
     call MPAS_pool_get_array(velocity_solver, "replacementPressure", replacementPressure)
     call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
@@ -736,8 +769,8 @@ contains
        call cice_internal_stress_weak(&
             mesh, &
             velocity_weak, &
-            uVelocity, &
-            vVelocity, &
+            uVelocity % array, &
+            vVelocity % array, &
             icePressure, &
             replacementPressure, &
             dtElastic, &
@@ -754,8 +787,8 @@ contains
             mesh, &
             velocity_variational, &
             velocity_wachspress, &
-            uVelocity, &
-            vVelocity, &
+            uVelocity % array, &
+            vVelocity % array, &
             icePressure, &
             replacementPressure, &
             dtElastic, &
@@ -772,8 +805,8 @@ contains
             mesh, &
             velocity_variational, &
             velocity_pwl, &
-            uVelocity, &
-            vVelocity, &
+            uVelocity % array, &
+            vVelocity % array, &
             icePressure, &
             replacementPressure, &
             dtElastic, &
@@ -789,19 +822,20 @@ contains
     !stressDivergenceV = 0.0_RKIND
 
     call cice_ocean_stress_coefficient(& 
+         nVerticesSolve, &
          oceanStressCoeff, &
          uOceanVelocityVertex, & 
          vOceanVelocityVertex, &
-         uVelocity, &   
-         vVelocity, &
+         uVelocity % array, &   
+         vVelocity % array, &
          iceAreaVertex, &
          solveVelocity)
 
     call cice_solve_velocity(&
-         nVertices, &
+         nVerticesSolve, &
          solveVelocity, &
-         uVelocity, &   
-         vVelocity, &
+         uVelocity % array, &   
+         vVelocity % array, &
          totalMassVertex, & 
          totalMassVertexfVertex, &
          stressDivergenceU, & 
@@ -818,6 +852,10 @@ contains
 
     !call cice_time_output_variable_real(mesh, stressDivergenceU, clock, "stressDivergenceU")
 
+    ! halo exchange
+    call mpas_dmpar_exch_halo_field(uVelocity)
+    call mpas_dmpar_exch_halo_field(vVelocity)
+
   end subroutine single_subcycle_velocity_solver!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -833,7 +871,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine aggregate_mass_and_area(&
-       mesh, &
+       nPoints, &
        iceAreaCategory, &
        iceVolumeCategory, &
        snowVolumeCategory, &
@@ -846,8 +884,8 @@ contains
          ciceDensityIce, &
          ciceDensitySnow
 
-    type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh  !< Input: 
+    integer, intent(in) :: &
+         nPoints
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          iceAreaCategory, &   !< Input: 
@@ -861,36 +899,18 @@ contains
          snowVolumeCell   !< Output: 
 
     integer :: &
-         iCell, &
-         iCategory
+         iPoint
 
-    integer, pointer :: &
-         nCellsSolve, &
-         nCategories
+    do iPoint = 1, nPoints
 
-    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
-    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       iceAreaCell(iPoint)    = sum(iceAreaCategory(1,:,iPoint))
+       iceVolumeCell(iPoint)  = sum(iceVolumeCategory(1,:,iPoint))
+       snowVolumeCell(iPoint) = sum(snowVolumeCategory(1,:,iPoint))
 
-    do iCell = 1, nCellsSolve
+       totalMassCell(iPoint)  = iceVolumeCell(iPoint)  * ciceDensityIce + &
+                                snowVolumeCell(iPoint) * ciceDensitySnow
 
-       totalMassCell(iCell)  = 0.0_RKIND
-       iceAreaCell(iCell)    = 0.0_RKIND
-       iceVolumeCell(iCell)  = 0.0_RKIND
-       snowVolumeCell(iCell) = 0.0_RKIND
-
-       do iCategory = 1, nCategories
-
-          iceAreaCell(iCell)    = iceAreaCell(iCell) + iceAreaCategory(1,iCategory,iCell)
-          iceVolumeCell(iCell)  = iceVolumeCell(iCell) + iceVolumeCategory(1,iCategory,iCell)
-          snowVolumeCell(iCell) = snowVolumeCell(iCell) + snowVolumeCategory(1,iCategory,iCell)
-
-          totalMassCell(iCell)  = totalMassCell(iCell) + &
-               iceVolumeCell(iCell)  * ciceDensityIce + &
-               snowVolumeCell(iCell) * ciceDensitySnow
-
-       enddo ! iCategory
-
-    enddo ! iCell
+    enddo ! nPoints
 
   end subroutine aggregate_mass_and_area!}}}
 
@@ -907,6 +927,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine stress_calculation_mask(&
+       nPoints, &
        mesh, &
        solveStress, &
        areaCell, &
@@ -915,6 +936,9 @@ contains
     use cice_velocity_solver_shared, only: &
          ciceAreaMinimum, &
          ciceMassMinimum
+
+    integer, intent(in) :: &
+         nPoints !< Input: 
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -945,7 +969,7 @@ contains
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
 
-    do iCell = 1, nCells
+    do iCell = 1, nPoints
 
        solveStress(iCell) = 0
 
@@ -976,6 +1000,12 @@ contains
 
     enddo ! iCell
 
+    do iCell = nPoints+1, nCells
+
+       solveStress(iCell) = 0
+
+    enddo ! iCell
+
   end subroutine stress_calculation_mask!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -991,6 +1021,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine velocity_calculation_mask(&
+       nPoints, &
        mesh, &
        solveVelocity, &
        areaVertex, &
@@ -1000,6 +1031,9 @@ contains
     use cice_velocity_solver_shared, only: &
          ciceAreaMinimum, &
          ciceMassMinimum
+
+    integer, intent(in) :: &
+         nPoints
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -1022,7 +1056,7 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
-    do iVertex = 1, nVertices
+    do iVertex = 1, nPoints
 
        solveVelocity(iVertex) = 0
 
@@ -1034,6 +1068,12 @@ contains
           solveVelocity(iVertex) = 1
 
        endif
+
+    enddo ! iVertex
+
+    do iVertex = nPoints+1, nVertices
+
+       solveVelocity(iVertex) = 0
 
     enddo ! iVertex
 

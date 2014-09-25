@@ -63,21 +63,21 @@ contains
     logical, intent(in) :: &
          rotateCartesianGrid !< Input: 
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
+    type(field3DReal), pointer :: &
          normalVectorPolygon, &
          normalVectorTriangle
 
-    real(kind=RKIND), dimension(:), pointer :: &
+    type(field1DReal), pointer :: &
          latCellRotated, &
          latVertexRotated
 
     integer, dimension(:), pointer :: &
          interiorVertex
 
-    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
+    call MPAS_pool_get_field(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_field(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_field(velocity_weak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_field(velocity_weak, "latVertexRotated", latVertexRotated)
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     call cice_normal_vectors(&
@@ -527,7 +527,7 @@ contains
          iCell
 
     integer, pointer :: &
-         nVertices, &
+         nVerticesSolve, &
          vertexDegree
 
     integer, dimension(:), pointer :: &
@@ -547,7 +547,7 @@ contains
          dcEdge
 
     ! init variables
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVerticesSolve)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
@@ -559,7 +559,7 @@ contains
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
     call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
 
-    do iVertex = 1, nVertices
+    do iVertex = 1, nVerticesSolve
 
        stressDivergenceU(iVertex) = 0.0_RKIND
        stressDivergenceV(iVertex) = 0.0_RKIND
