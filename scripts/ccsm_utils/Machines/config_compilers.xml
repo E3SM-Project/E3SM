@@ -288,6 +288,13 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
+<compiler COMPILER="intel" MACH="redsky">
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH></PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nc-config --flibs) </ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+</compiler>
+
 <compiler COMPILER="intel14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
