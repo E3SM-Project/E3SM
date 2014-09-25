@@ -90,6 +90,21 @@ module mpas_stream_manager
     end interface
 
 
+    !
+    ! Used for reindexing connectivity arrays during stream writes by the routines prewrite_reindex() and postwrite_reindex().
+    ! Before a stream is written, we set the pointers here to be the heads of linked lists of locally-indexed connectivity fields.
+    ! After a stream is written, we reset the arrays for connectivity fields in the stream to these pointers.
+    !
+    type (field2DInteger), pointer :: cellsOnCell_save
+    type (field2DInteger), pointer :: edgesOnCell_save
+    type (field2DInteger), pointer :: verticesOnCell_save
+    type (field2DInteger), pointer :: cellsOnEdge_save
+    type (field2DInteger), pointer :: verticesOnEdge_save
+    type (field2DInteger), pointer :: edgesOnEdge_save
+    type (field2DInteger), pointer :: cellsOnVertex_save
+    type (field2DInteger), pointer :: edgesOnVertex_save
+
+
     contains
 
 
@@ -1983,10 +1998,21 @@ module mpas_stream_manager
             stream % timeLevel = timeLevel
         end if
 
+        !
+        ! For any connectivity arrays in the stream, temporarily convert local indices to global indices
+        !
+        call prewrite_reindex(manager % allFields, stream % field_pool)
+
         ! 
         ! Write the stream
         ! 
         call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
+
+        !
+        ! Regardless of the error code from MPAS_writeStream, we need to reset global indices in the stream back to local indices
+        !
+        call postwrite_reindex(manager % allFields, stream % field_pool)
+
         if (local_ierr /= MPAS_STREAM_NOERR) then
             ierr = MPAS_STREAM_MGR_ERROR
             return
@@ -2371,6 +2397,11 @@ module mpas_stream_manager
         ! Exchange halos for all decomposed fields in this stream
         !
         call exch_all_halos(manager % allFields, stream % field_pool, stream % timeLevel, local_ierr)
+
+        !
+        ! For any connectivity arrays in this stream, convert global indices to local indices
+        !
+        call postread_reindex(manager % allFields, stream % field_pool)
 
     end subroutine read_stream
 
@@ -2874,8 +2905,6 @@ write(0,*) 'RANDOM ID '//file_id
         integer, intent(in) :: timeLevel
         integer, intent(out) :: ierr
 
-        logical :: found
-
         type (mpas_pool_iterator_type) :: fieldItr
         type (mpas_pool_field_info_type) :: fieldInfo
 
@@ -3039,7 +3068,704 @@ write(0,*) 'RANDOM ID '//file_id
 
     end function is_decomposed_dim
 
-   
+
+    !-----------------------------------------------------------------------
+    !  routine prewrite_reindex
+    !
+    !> \brief Reindex connectivity fields from local to global index space.
+    !> \author Doug Jacobsen, Michael Duda
+    !> \date   24 September 2014
+    !> \details 
+    !>  For any connectivity fields contained in the stream to be written, 
+    !>  whose fields include those in the streamFields pool, save the locally
+    !>  indexed fields in module variables *_save, and allocate new arrays for
+    !>  the fields, which are set to contain global indices.
+    !>  This routine should be called immediately before a write of a stream.
+    !
+    !-----------------------------------------------------------------------
+    subroutine prewrite_reindex(allFields, streamFields)
+
+        implicit none
+
+        type (mpas_pool_type), pointer :: allFields
+        type (mpas_pool_type), pointer :: streamFields
+
+        type (mpas_pool_iterator_type) :: fieldItr
+        type (mpas_pool_field_info_type) :: fieldInfo
+
+        integer, pointer :: nCells, nEdges, nVertices, vertexDegree
+        integer, pointer :: maxEdges, maxEdges2, nEdgesSolve, nCellsSolve, nVerticesSolve
+
+        type (field1dInteger), pointer :: nEdgesOnCell, nEdgesOnEdge, indexToCellID, indexToEdgeID, indexToVertexID
+
+        type (field2dInteger), pointer :: cellsOnCell_ptr, edgesOnCell_ptr, verticesOnCell_ptr, &
+                                 cellsOnEdge_ptr, verticesOnEdge_ptr, edgesOnEdge_ptr, &
+                                 cellsOnVertex_ptr, edgesOnVertex_ptr
+
+        type (field2dInteger), pointer :: cellsOnCell, edgesOnCell, verticesOnCell, &
+                                 cellsOnEdge, verticesOnEdge, edgesOnEdge, &
+                                 cellsOnVertex, edgesOnVertex
+
+        logical :: handle_cellsOnCell, handle_edgesOnCell, handle_verticesOnCell, handle_cellsOnEdge, handle_verticesOnEdge, &
+                   handle_edgesOnEdge, handle_cellsOnVertex, handle_edgesOnVertex
+
+        integer :: i, j
+
+
+        nullify(cellsOnCell_save)
+        nullify(edgesOnCell_save)
+        nullify(verticesOnCell_save)
+        nullify(cellsOnEdge_save)
+        nullify(verticesOnEdge_save)
+        nullify(edgesOnEdge_save)
+        nullify(cellsOnVertex_save)
+        nullify(edgesOnVertex_save)
+
+        nullify(cellsOnCell)
+        nullify(edgesOnCell)
+        nullify(verticesOnCell)
+        nullify(cellsOnEdge)
+        nullify(verticesOnEdge)
+        nullify(edgesOnEdge)
+        nullify(cellsOnVertex)
+        nullify(edgesOnVertex)
+
+        !
+        ! Determine which connectivity fields exist in this stream
+        !
+        call mpas_pool_begin_iteration(streamFields)
+        do while ( mpas_pool_get_next_member(streamFields, fieldItr) )
+
+            ! Note: in a stream's field_pool, the names of fields are stored as configs
+            if ( fieldItr % memberType == MPAS_POOL_CONFIG ) then
+                call mpas_pool_get_field_info(allFields, fieldItr % memberName, fieldInfo)
+
+                if (trim(fieldItr % memberName) == 'cellsOnCell') then
+                    allocate(cellsOnCell_save)
+                    cellsOnCell_ptr => cellsOnCell_save
+                    call mpas_pool_get_field(allFields, 'cellsOnCell', cellsOnCell)
+                else if (trim(fieldItr % memberName) == 'edgesOnCell') then
+                    allocate(edgesOnCell_save)
+                    edgesOnCell_ptr => edgesOnCell_save
+                    call mpas_pool_get_field(allFields, 'edgesOnCell', edgesOnCell)
+                else if (trim(fieldItr % memberName) == 'verticesOnCell') then
+                    allocate(verticesOnCell_save)
+                    verticesOnCell_ptr => verticesOnCell_save
+                    call mpas_pool_get_field(allFields, 'verticesOnCell', verticesOnCell)
+                else if (trim(fieldItr % memberName) == 'cellsOnEdge') then
+                    allocate(cellsOnEdge_save)
+                    cellsOnEdge_ptr => cellsOnEdge_save
+                    call mpas_pool_get_field(allFields, 'cellsOnEdge', cellsOnEdge)
+                else if (trim(fieldItr % memberName) == 'verticesOnEdge') then
+                    allocate(verticesOnEdge_save)
+                    verticesOnEdge_ptr => verticesOnEdge_save
+                    call mpas_pool_get_field(allFields, 'verticesOnEdge', verticesOnEdge)
+                else if (trim(fieldItr % memberName) == 'edgesOnEdge') then
+                    allocate(edgesOnEdge_save)
+                    edgesOnEdge_ptr => edgesOnEdge_save
+                    call mpas_pool_get_field(allFields, 'edgesOnEdge', edgesOnEdge)
+                else if (trim(fieldItr % memberName) == 'cellsOnVertex') then
+                    allocate(cellsOnVertex_save)
+                    cellsOnVertex_ptr => cellsOnVertex_save
+                    call mpas_pool_get_field(allFields, 'cellsOnVertex', cellsOnVertex)
+                else if (trim(fieldItr % memberName) == 'edgesOnVertex') then
+                    allocate(edgesOnVertex_save)
+                    edgesOnVertex_ptr => edgesOnVertex_save
+                    call mpas_pool_get_field(allFields, 'edgesOnVertex', edgesOnVertex)
+                end if
+            end if
+
+        end do
+
+        !
+        ! Reindex connectivity from local to global index space
+        !
+        call mpas_pool_get_field(allFields, 'nEdgesOnCell', nEdgesOnCell)
+        call mpas_pool_get_field(allFields, 'nEdgesOnEdge', nEdgesOnEdge)
+        call mpas_pool_get_field(allFields, 'indexToCellID', indexToCellID)
+        call mpas_pool_get_field(allFields, 'indexToEdgeID', indexToEdgeID)
+        call mpas_pool_get_field(allFields, 'indexToVertexID', indexToVertexID)
+
+        do while (associated(indexToCellID))
+
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'nCells', nCells)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'nEdges', nEdges)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'nVertices', nVertices)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'nEdgesSolve', nEdgesSolve)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'nVerticesSolve', nVerticesSolve)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'maxEdges', maxEdges)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'maxEdges2', maxEdges2)
+            call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'vertexDegree', vertexDegree)
+
+            if (associated(cellsOnCell)) then
+                nullify(cellsOnCell_ptr % ioinfo)
+                cellsOnCell_ptr % array => cellsOnCell % array
+                allocate(cellsOnCell % array(maxEdges, nCells+1))
+
+                do i = 1, nCellsSolve
+                    do j = 1, nEdgesOnCell % array(i)
+                        cellsOnCell % array(j,i) = indexToCellID % array(cellsOnCell_ptr % array(j,i))
+                    end do
+
+                    cellsOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nCells+1
+                end do
+
+                cellsOnCell => cellsOnCell % next
+                if (associated(cellsOnCell)) then
+                    allocate(cellsOnCell_ptr % next)
+                    cellsOnCell_ptr => cellsOnCell_ptr % next
+                end if
+                nullify(cellsOnCell_ptr % next)
+            end if
+
+            if (associated(edgesOnCell)) then
+                nullify(edgesOnCell_ptr % ioinfo)
+                edgesOnCell_ptr % array => edgesOnCell % array
+                allocate(edgesOnCell % array(maxEdges, nCells+1))
+
+                do i = 1, nCellsSolve
+                    do j = 1, nEdgesOnCell % array(i)
+                        edgesOnCell % array(j,i) = indexToEdgeID % array(edgesOnCell_ptr % array(j,i))
+                    end do
+
+                    edgesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nEdges+1
+                end do
+
+                edgesOnCell => edgesOnCell % next
+                if (associated(edgesOnCell)) then
+                    allocate(edgesOnCell_ptr % next)
+                    edgesOnCell_ptr => edgesOnCell_ptr % next
+                end if
+                nullify(edgesOnCell_ptr % next)
+            end if
+
+            if (associated(verticesOnCell)) then
+                nullify(verticesOnCell_ptr % ioinfo)
+                verticesOnCell_ptr % array => verticesOnCell % array
+                allocate(verticesOnCell % array(maxEdges, nCells+1))
+
+                do i = 1, nCellsSolve
+                    do j = 1, nEdgesOnCell % array(i)
+                        verticesOnCell % array(j,i) = indexToVertexID % array(verticesOnCell_ptr % array(j,i))
+                    end do
+
+                    verticesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nVertices+1
+                end do
+
+                verticesOnCell => verticesOnCell % next
+                if (associated(verticesOnCell)) then
+                    allocate(verticesOnCell_ptr % next)
+                    verticesOnCell_ptr => verticesOnCell_ptr % next
+                end if
+                nullify(verticesOnCell_ptr % next)
+            end if
+
+            if (associated(cellsOnEdge)) then
+                nullify(cellsOnEdge_ptr % ioinfo)
+                cellsOnEdge_ptr % array => cellsOnEdge % array
+                allocate(cellsOnEdge % array(2, nEdges+1))
+
+                do i = 1, nEdgesSolve
+                    cellsOnEdge % array(1,i) = indexToCellID % array(cellsOnEdge_ptr % array(1,i))
+                    cellsOnEdge % array(2,i) = indexToCellID % array(cellsOnEdge_ptr % array(2,i))
+                end do
+
+                cellsOnEdge => cellsOnEdge % next
+                if (associated(cellsOnEdge)) then
+                    allocate(cellsOnEdge_ptr % next)
+                    cellsOnEdge_ptr => cellsOnEdge_ptr % next
+                end if
+                nullify(cellsOnEdge_ptr % next)
+            end if
+
+            if (associated(verticesOnEdge)) then
+                nullify(verticesOnEdge_ptr % ioinfo)
+                verticesOnEdge_ptr % array => verticesOnEdge % array
+                allocate(verticesOnEdge % array(2, nEdges+1))
+
+                do i = 1, nEdgesSolve
+                    verticesOnEdge % array(1,i) = indexToVertexID % array(verticesOnEdge_ptr % array(1,i))
+                    verticesOnEdge % array(2,i) = indexToVertexID % array(verticesOnEdge_ptr % array(2,i))
+                end do
+
+                verticesOnEdge => verticesOnEdge % next
+                if (associated(verticesOnEdge)) then
+                    allocate(verticesOnEdge_ptr % next)
+                    verticesOnEdge_ptr => verticesOnEdge_ptr % next
+                end if
+                nullify(verticesOnEdge_ptr % next)
+            end if
+
+            if (associated(edgesOnEdge)) then
+                nullify(edgesOnEdge_ptr % ioinfo)
+                edgesOnEdge_ptr % array => edgesOnEdge % array
+                allocate(edgesOnEdge % array(maxEdges2, nEdges+1))
+
+                do i = 1, nEdgesSolve
+                    do j = 1, nEdgesOnEdge % array(i)
+                        edgesOnEdge % array(j,i) = indexToEdgeID % array(edgesOnEdge_ptr % array(j,i))
+                    end do
+
+                    edgesOnEdge % array(nEdgesOnEdge%array(i)+1:maxEdges2,i) = nEdges+1
+                end do
+
+                edgesOnEdge => edgesOnEdge % next
+                if (associated(edgesOnEdge)) then
+                    allocate(edgesOnEdge_ptr % next)
+                    edgesOnEdge_ptr => edgesOnEdge_ptr % next
+                end if
+                nullify(edgesOnEdge_ptr % next)
+            end if
+
+            if (associated(cellsOnVertex)) then
+                nullify(cellsOnVertex_ptr % ioinfo)
+                cellsOnVertex_ptr % array => cellsOnVertex % array
+                allocate(cellsOnVertex % array(vertexDegree, nVertices+1))
+
+                do i = 1, nVerticesSolve
+                    do j = 1, vertexDegree
+                        cellsOnVertex % array(j,i) = indexToCellID % array(cellsOnVertex_ptr % array(j,i))
+                    end do
+                end do
+
+                cellsOnVertex => cellsOnVertex % next
+                if (associated(cellsOnVertex)) then
+                    allocate(cellsOnVertex_ptr % next)
+                    cellsOnVertex_ptr => cellsOnVertex_ptr % next
+                end if
+                nullify(cellsOnVertex_ptr % next)
+            end if
+
+            if (associated(edgesOnVertex)) then
+                nullify(edgesOnVertex_ptr % ioinfo)
+                edgesOnVertex_ptr % array => edgesOnVertex % array
+                allocate(edgesOnVertex % array(vertexDegree, nVertices+1))
+
+                do i = 1, nVerticesSolve
+                    do j = 1, vertexDegree
+                        edgesOnVertex % array(j,i) = indexToEdgeID % array(edgesOnVertex_ptr % array(j,i))
+                    end do
+                end do
+
+                edgesOnVertex => edgesOnVertex % next
+                if (associated(edgesOnVertex)) then
+                    allocate(edgesOnVertex_ptr % next)
+                    edgesOnVertex_ptr => edgesOnVertex_ptr % next
+                end if
+                nullify(edgesOnVertex_ptr % next)
+            end if
+
+            nEdgesOnCell => nEdgesOnCell % next
+            nEdgesOnEdge => nEdgesOnEdge % next
+            indexToCellID => indexToCellID % next
+            indexToEdgeID => indexToEdgeID % next
+            indexToVertexID => indexToVertexID % next
+
+        end do
+
+    end subroutine prewrite_reindex
+
+
+    !-----------------------------------------------------------------------
+    !  routine postwrite_reindex
+    !
+    !> \brief Reindex connectivity fields from global to local index space.
+    !> \author Doug Jacobsen, Michael Duda
+    !> \date   24 September 2014
+    !> \details 
+    !>  For any connectivity fields contained in the stream to be written, 
+    !>  whose fields include those in the streamFields pool, restore the locally
+    !>  indexed fields from module variables *_save.
+    !>  This routine should be called immediately after a write of a stream.
+    !> 
+    !>  NB: Even if the write of a stream fails, it is important to stil call
+    !>      this routine to reset the connectivity fields to contain local indices.
+    !
+    !-----------------------------------------------------------------------
+    subroutine postwrite_reindex(allFields, streamFields)
+
+        implicit none
+
+        type (mpas_pool_type), pointer :: allFields
+        type (mpas_pool_type), pointer :: streamFields
+
+        type (field1dInteger), pointer :: indexToCellID
+
+        type (field2dInteger), pointer :: cellsOnCell_ptr, edgesOnCell_ptr, verticesOnCell_ptr, &
+                                 cellsOnEdge_ptr, verticesOnEdge_ptr, edgesOnEdge_ptr, &
+                                 cellsOnVertex_ptr, edgesOnVertex_ptr
+
+        type (field2dInteger), pointer :: cellsOnCell, edgesOnCell, verticesOnCell, &
+                                 cellsOnEdge, verticesOnEdge, edgesOnEdge, &
+                                 cellsOnVertex, edgesOnVertex
+
+        integer :: i, j
+
+
+        nullify(cellsOnCell)
+        nullify(edgesOnCell)
+        nullify(verticesOnCell)
+        nullify(cellsOnEdge)
+        nullify(verticesOnEdge)
+        nullify(edgesOnEdge)
+        nullify(cellsOnVertex)
+        nullify(edgesOnVertex)
+
+        if (associated(cellsOnCell_save)) then
+            cellsOnCell_ptr => cellsOnCell_save
+            call mpas_pool_get_field(allFields, 'cellsOnCell', cellsOnCell)
+        end if 
+        if (associated(edgesOnCell_save)) then
+            edgesOnCell_ptr => edgesOnCell_save
+            call mpas_pool_get_field(allFields, 'edgesOnCell', edgesOnCell)
+        end if 
+        if (associated(verticesOnCell_save)) then
+            verticesOnCell_ptr => verticesOnCell_save
+            call mpas_pool_get_field(allFields, 'verticesOnCell', verticesOnCell)
+        end if 
+        if (associated(cellsOnEdge_save)) then
+            cellsOnEdge_ptr => cellsOnEdge_save
+            call mpas_pool_get_field(allFields, 'cellsOnEdge', cellsOnEdge)
+        end if 
+        if (associated(verticesOnEdge_save)) then
+            verticesOnEdge_ptr => verticesOnEdge_save
+            call mpas_pool_get_field(allFields, 'verticesOnEdge', verticesOnEdge)
+        end if 
+        if (associated(edgesOnEdge_save)) then
+            edgesOnEdge_ptr => edgesOnEdge_save
+            call mpas_pool_get_field(allFields, 'edgesOnEdge', edgesOnEdge)
+        end if 
+        if (associated(cellsOnVertex_save)) then
+            cellsOnVertex_ptr => cellsOnVertex_save
+            call mpas_pool_get_field(allFields, 'cellsOnVertex', cellsOnVertex)
+        end if 
+        if (associated(edgesOnVertex_save)) then
+            edgesOnVertex_ptr => edgesOnVertex_save
+            call mpas_pool_get_field(allFields, 'edgesOnVertex', edgesOnVertex)
+        end if 
+
+        !
+        ! Reset indices for  connectivity arrays from global to local index space
+        !
+        call mpas_pool_get_field(allFields, 'indexToCellID', indexToCellID)
+        do while (associated(indexToCellID))
+
+            if (associated(cellsOnCell)) then
+                deallocate(cellsOnCell % array)
+                cellsOnCell % array => cellsOnCell_ptr % array
+                nullify(cellsOnCell_ptr % array)
+                cellsOnCell_ptr => cellsOnCell_ptr % next
+                cellsOnCell => cellsOnCell % next
+            end if
+
+            if (associated(edgesOnCell)) then
+                deallocate(edgesOnCell % array)
+                edgesOnCell % array => edgesOnCell_ptr % array
+                nullify(edgesOnCell_ptr % array)
+                edgesOnCell_ptr => edgesOnCell_ptr % next
+                edgesOnCell => edgesOnCell % next
+            end if
+
+            if (associated(verticesOnCell)) then
+                deallocate(verticesOnCell % array)
+                verticesOnCell % array => verticesOnCell_ptr % array
+                nullify(verticesOnCell_ptr % array)
+                verticesOnCell_ptr => verticesOnCell_ptr % next
+                verticesOnCell => verticesOnCell % next
+            end if
+
+            if (associated(cellsOnEdge)) then
+                deallocate(cellsOnEdge % array)
+                cellsOnEdge % array => cellsOnEdge_ptr % array
+                nullify(cellsOnEdge_ptr % array)
+                cellsOnEdge_ptr => cellsOnEdge_ptr % next
+                cellsOnEdge => cellsOnEdge % next
+            end if
+
+            if (associated(verticesOnEdge)) then
+                deallocate(verticesOnEdge % array)
+                verticesOnEdge % array => verticesOnEdge_ptr % array
+                nullify(verticesOnEdge_ptr % array)
+                verticesOnEdge_ptr => verticesOnEdge_ptr % next
+                verticesOnEdge => verticesOnEdge % next
+            end if
+
+            if (associated(edgesOnEdge)) then
+                deallocate(edgesOnEdge % array)
+                edgesOnEdge % array => edgesOnEdge_ptr % array
+                nullify(edgesOnEdge_ptr % array)
+                edgesOnEdge_ptr => edgesOnEdge_ptr % next
+                edgesOnEdge => edgesOnEdge % next
+            end if
+
+            if (associated(cellsOnVertex)) then
+                deallocate(cellsOnVertex % array)
+                cellsOnVertex % array => cellsOnVertex_ptr % array
+                nullify(cellsOnVertex_ptr % array)
+                cellsOnVertex_ptr => cellsOnVertex_ptr % next
+                cellsOnVertex => cellsOnVertex % next
+            end if
+
+            if (associated(edgesOnVertex)) then
+                deallocate(edgesOnVertex % array)
+                edgesOnVertex % array => edgesOnVertex_ptr % array
+                nullify(edgesOnVertex_ptr % array)
+                edgesOnVertex_ptr => edgesOnVertex_ptr % next
+                edgesOnVertex => edgesOnVertex % next
+            end if
+
+            indexToCellID => indexToCellID % next
+        end do
+
+        if (associated(cellsOnCell_save))    call mpas_deallocate_field(cellsOnCell_save)
+        if (associated(edgesOnCell_save))    call mpas_deallocate_field(edgesOnCell_save)
+        if (associated(verticesOnCell_save)) call mpas_deallocate_field(verticesOnCell_save)
+        if (associated(cellsOnEdge_save))    call mpas_deallocate_field(cellsOnEdge_save)
+        if (associated(verticesOnEdge_save)) call mpas_deallocate_field(verticesOnEdge_save)
+        if (associated(edgesOnEdge_save))    call mpas_deallocate_field(edgesOnEdge_save)
+        if (associated(cellsOnVertex_save))  call mpas_deallocate_field(cellsOnVertex_save)
+        if (associated(edgesOnVertex_save))  call mpas_deallocate_field(edgesOnVertex_save)
+
+        nullify(cellsOnCell_save)
+        nullify(edgesOnCell_save)
+        nullify(verticesOnCell_save)
+        nullify(cellsOnEdge_save)
+        nullify(verticesOnEdge_save)
+        nullify(edgesOnEdge_save)
+        nullify(cellsOnVertex_save)
+        nullify(edgesOnVertex_save)
+
+    end subroutine postwrite_reindex
+
+
+    !-----------------------------------------------------------------------
+    !  routine postread_reindex
+    !
+    !> \brief Reindex connectivity fields from global to local index space.
+    !> \author Doug Jacobsen, Michael Duda
+    !> \date   24 September 2014
+    !> \details 
+    !>  For any connectivity fields contained in the stream that was read, 
+    !>  whose fields include those in the streamFields pool, convert the
+    !>  globally indexed connectivity fields in the stream to local index space.
+    !>  This routine should be called immediately after a read of a stream.
+    !
+    !-----------------------------------------------------------------------
+    subroutine postread_reindex(allFields, streamFields)
+
+        implicit none
+
+        type (mpas_pool_type), pointer :: allFields
+        type (mpas_pool_type), pointer :: streamFields
+
+        type (mpas_pool_iterator_type) :: fieldItr
+        type (mpas_pool_field_info_type) :: fieldInfo
+
+        type (field1DInteger), pointer :: indexToCellID, indexToVertexID, indexToEdgeID, nEdgesOnCell, cursor
+        type (field2DInteger), pointer :: int2DField
+!TODO: Use a short string kind here?
+        character(len=32) :: outDimName, indexSpaceName
+        integer, dimension(:,:), pointer :: sortedID
+        integer :: innerDim
+        integer, pointer :: outerDim, indexSpaceDim
+        logical :: skip_field
+        integer :: i, j, k
+
+
+        call mpas_pool_get_field(allFields, 'indexToCellID', indexToCellID)
+        call mpas_pool_get_field(allFields, 'indexToEdgeID', indexToEdgeID)
+        call mpas_pool_get_field(allFields, 'indexToVertexID', indexToVertexID)
+
+        call mpas_pool_begin_iteration(streamFields)
+
+        do while ( mpas_pool_get_next_member(streamFields, fieldItr) )
+
+            ! Note: in a stream's field_pool, the names of fields are stored as configs
+            if ( fieldItr % memberType == MPAS_POOL_CONFIG ) then
+
+                call mpas_pool_get_field_info(allFields, fieldItr % memberName, fieldInfo)
+
+                skip_field = .false.
+                if (trim(fieldItr % memberName) == 'cellsOnCell') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing cellsOnCell')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'cellsOnCell', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nCells'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nCells'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToCellID
+
+                else if (trim(fieldItr % memberName) == 'edgesOnCell') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing edgesOnCell')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'edgesOnCell', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nCells'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nEdges'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToEdgeID
+
+                else if (trim(fieldItr % memberName) == 'verticesOnCell') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing verticesOnCell')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'verticesOnCell', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nCells'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nVertices'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToVertexID
+
+                else if (trim(fieldItr % memberName) == 'cellsOnEdge') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing cellsOnEdge')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'cellsOnEdge', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nEdges'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nCells'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToCellID
+
+                else if (trim(fieldItr % memberName) == 'verticesOnEdge') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing verticesOnEdge')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'verticesOnEdge', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nEdges'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nVertices'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToVertexID
+
+                else if (trim(fieldItr % memberName) == 'edgesOnEdge') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing edgesOnEdge')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'edgesOnEdge', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nEdges'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nEdges'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToEdgeID
+
+                else if (trim(fieldItr % memberName) == 'cellsOnVertex') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing cellsOnVertex')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'cellsOnVertex', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nVertices'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nCells'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToCellID
+
+                else if (trim(fieldItr % memberName) == 'edgesOnVertex') then
+
+                    STREAM_DEBUG_WRITE('-- Reindexing edgesOnVertex')
+
+                    ! Get pointer to the field to be reindexed
+                    call mpas_pool_get_field(allFields, 'edgesOnVertex', int2DField)
+
+                    ! Set the name of the outer dimension
+                    outDimName = 'nVertices'
+
+                    ! Set the name of the dimension of the space within which we are indexing dimension
+                    indexSpaceName = 'nEdges'
+
+                    ! Get pointer to appropriate global index field
+                    cursor => indexToEdgeID
+
+                else
+                    skip_field = .true.
+                end if
+
+                if (.not. skip_field) then
+
+                    ! Get inner dimension of field to be reindexed (assumed to be block invariant)
+                    innerDim = int2DField % dimSizes(1)
+
+                    ! Reindex all blocks for the field
+                    do while (associated(int2DField))
+
+                        ! Get outer dimension of field for this block
+                        call mpas_pool_get_dimension(cursor % block % dimensions, trim(outDimName), outerDim)
+                        call mpas_pool_get_dimension(cursor % block % dimensions, trim(indexSpaceName), indexSpaceDim)
+
+                        ! Set-up reindexing map
+                        allocate(sortedID(2,indexSpaceDim))
+                        do i = 1, indexSpaceDim
+                            sortedID(1,i) = cursor % array(i)
+                            sortedID(2,i) = i
+                        end do
+                        call mpas_quicksort(indexSpaceDim, sortedID)
+
+                        ! Reindex the field
+                        do i = 1, outerDim
+                            do j = 1, innerDim
+                                k = mpas_binary_search(sortedID, 2, 1, indexSpaceDim, int2DField % array(j,i))
+                                if (k <= indexSpaceDim) then
+                                    int2DField % array(j,i) = sortedID(2,k)
+                                else
+                                    int2DField % array(j,i) = indexSpaceDim + 1
+                                end if
+                            end do
+                        end do
+
+                        deallocate(sortedID)
+                        int2DField => int2DField % next
+                        cursor => cursor % next
+
+                    end do
+
+                end if
+
+            end if
+
+        end do
+
+    end subroutine postread_reindex
+ 
+
 end module mpas_stream_manager
 
 
