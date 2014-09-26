@@ -2875,6 +2875,9 @@
       <test name="SMS_Ln48_D">
         <machine compiler="nag" testtype="aux_clm45" testmods="clm/oldhyd">goldbach</machine>
       </test>
+      <test name="SMS_D">
+        <machine compiler="gnu" testtype="aux_clm45_np4" testmods="clm/default">mac</machine>
+      </test>
     </grid>
     <grid name="f19_g16">
       <test name="ERI">
