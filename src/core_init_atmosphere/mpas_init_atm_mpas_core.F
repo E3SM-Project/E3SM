@@ -29,6 +29,8 @@ module mpas_core
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_start_time
       real (kind=RKIND), pointer :: sphere_radius
+      integer :: ierr
+
 
       block => domain % blocklist
       do while (associated(block))
@@ -46,6 +48,9 @@ module mpas_core
          block => block % next
       end do 
 
+      call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
    end subroutine mpas_core_init
    
    
@@ -61,8 +66,9 @@ module mpas_core
       type (domain_type), intent(inout) :: domain
       type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
+      integer :: ierr
       
-      call init_atm_setup_case(domain)
+      call init_atm_setup_case(domain, stream_manager)
    
    !
    ! Note: The following initialization calls have been moved to the mpas_init_atm_case_*() subroutines,
@@ -71,7 +77,8 @@ module mpas_core
    !   call atm_initialize_advection_rk(mesh)
    !   call atm_initialize_deformation_weights(mesh)
   
-      call mpas_output_state_for_domain(output_obj, domain, output_frame)
+      call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
    
    end subroutine mpas_core_run
    
@@ -100,7 +107,37 @@ module mpas_core
       type (mpas_pool_type), intent(inout) :: packages
       integer, intent(out) :: ierr
 
+      logical, pointer :: initial_conds, sfc_update
+      integer, pointer :: config_init_case
+
       ierr = 0
+
+      nullify(config_init_case)
+      call mpas_pool_get_config(configs, 'config_init_case', config_init_case)
+
+      nullify(initial_conds)
+      call mpas_pool_get_package(packages, 'initial_condsActive', initial_conds)
+
+      nullify(sfc_update)
+      call mpas_pool_get_package(packages, 'sfc_updateActive', sfc_update)
+
+      if (.not. associated(config_init_case) .or. &
+          .not. associated(initial_conds) .or. &
+          .not. associated(sfc_update)) then
+         write(stderrUnit,*) '********************************************************************************'
+         write(stderrUnit,*) '* Error while setting up packages for init_atmosphere core.'
+         write(stderrUnit,*) '********************************************************************************'
+         ierr = 1
+         return
+      end if
+
+      if (config_init_case == 8) then
+         initial_conds = .false.
+         sfc_update = .true.
+      else
+         initial_conds = .true.
+         sfc_update = .false.
+      end if
 
    end subroutine mpas_core_setup_packages
 
@@ -179,19 +216,10 @@ module mpas_core
       character(len=*), intent(out) :: stream
       integer, intent(out) :: ierr
 
-      logical, pointer :: config_do_restart
 
       ierr = 0
 
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         ierr = 1
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
+      write(stream,'(a)') 'input'
 
    end subroutine mpas_core_get_mesh_stream
    

@@ -28,7 +28,7 @@ module init_atm_cases
    contains
 
 
-   subroutine init_atm_setup_case(domain)
+   subroutine init_atm_setup_case(domain, stream_manager)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Configure grid metadata and model state for the hydrostatic test case
    !   specified in the namelist
@@ -37,9 +37,12 @@ module init_atm_cases
    !                 initialized
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      use mpas_stream_manager
+
       implicit none
 
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
 
 
       integer :: i
@@ -214,7 +217,7 @@ module init_atm_cases
             call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
 
             ! Defined in mpas_init_atm_surface.F
-            call init_atm_case_sfc(domain, domain % dminfo, mesh, fg, state, block_ptr % dimensions, block_ptr % configs)
+            call init_atm_case_sfc(domain, domain % dminfo, stream_manager, mesh, fg, state, block_ptr % dimensions, block_ptr % configs)
             block_ptr => block_ptr % next
          end do
 

@@ -9,7 +9,6 @@
  module mpas_init_atm_surface
 ! use mpas_configure
  use mpas_grid_types
- use mpas_io_output
  use mpas_timekeeping
  use mpas_timer
  
@@ -21,17 +20,22 @@
  private
  public :: init_atm_case_sfc, interp_sfc_to_MPAS
 
- integer, parameter :: R4KIND = selected_real_kind(6)
 
  contains
 
+
 !==================================================================================================
- subroutine init_atm_case_sfc(domain, dminfo, mesh, fg, state, dims, configs)
+ subroutine init_atm_case_sfc(domain, dminfo, stream_manager, mesh, fg, state, dims, configs)
 !==================================================================================================
+
+ use mpas_stream_manager
+
+ implicit none
 
 !input arguments:
  type (domain_type), intent(inout) :: domain
  type (dm_info), intent(in)        :: dminfo
+ type (MPAS_streamManager_type), intent(inout) :: stream_manager
  type (mpas_pool_type), intent(inout) :: mesh
  type (mpas_pool_type), intent(inout) :: fg
  type (mpas_pool_type), intent(inout) :: state
@@ -39,49 +43,29 @@
  type (mpas_pool_type), intent(in)    :: configs
 
 !local variables:
- type (MPAS_Clock_type)        :: fg_clock
- type (MPAS_Time_type)         :: start_time,stop_time,curr_time
- type (MPAS_TimeInterval_type) :: fg_interval
+ type (MPAS_Time_type)  :: curr_time, stop_time
+ character(len=StrKIND) :: timeString
 
- type (io_output_object) :: sfc_update_obj
-
- character(len=StrKIND)  :: timeString
-
- character(len=StrKIND), pointer :: config_start_time, config_stop_time
- character(len=StrKIND), pointer :: config_sfc_update_name
  character(len=StrKIND), pointer :: config_sfc_prefix
  character(len=StrKIND), pointer :: xtime
- integer, pointer :: config_fg_interval
+ integer :: ierr
  
 
 !==================================================================================================
 
 
- call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
- call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
- call mpas_pool_get_config(configs, 'config_fg_interval', config_fg_interval)
- call mpas_pool_get_config(configs, 'config_sfc_update_name', config_sfc_update_name)
  call mpas_pool_get_config(configs, 'config_sfc_prefix', config_sfc_prefix)
 
  call mpas_pool_get_array(state, 'xtime', xtime)
 
-!set up clock to step through all intermediate file dates to be processed:
- call mpas_set_time(start_time, dateTimeString=trim(config_start_time))
- call mpas_set_time(stop_time, dateTimeString=trim(config_stop_time))
- call mpas_set_timeInterval(fg_interval, S=config_fg_interval)
- call mpas_create_clock(fg_clock, start_time, fg_interval, stopTime=stop_time) 
-
-!initialize the output file
- sfc_update_obj % time = 1
- sfc_update_obj % filename = trim(config_sfc_update_name)
-
- call mpas_output_state_init(sfc_update_obj, domain, "SFC")
-
 !loop over all times:
- curr_time = mpas_get_clock_time(fg_clock, MPAS_NOW) 
+ curr_time = mpas_get_clock_time(domain % clock, MPAS_NOW) 
+ stop_time = mpas_get_clock_time(domain % clock, MPAS_STOP_TIME) 
 
  do while (curr_time <= stop_time)
     call mpas_get_time(curr_time, dateTimeString=timeString)
+    xtime = timeString
+
 !   write(0,*) 'Processing ',trim(config_sfc_prefix)//':'//timeString(1:13)
 
     !read the sea-surface temperature and sea-ice data from the surface file, and interpolate the
@@ -89,24 +73,23 @@
     call interp_sfc_to_MPAS(timeString(1:13), mesh, fg, dims, dminfo, config_sfc_prefix)
 
     !write the interpolated SST/SKINTEMP field as a new time slice in the MPAS output file:
-    call mpas_output_state_for_domain(sfc_update_obj, domain, sfc_update_obj % time)
-    sfc_update_obj % time = sfc_update_obj % time + 1
+    call mpas_stream_mgr_write(stream_manager, streamID='surface', ierr=ierr)
+    call mpas_stream_mgr_reset_alarms(stream_manager, streamID='surface', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-    call mpas_advance_clock(fg_clock)
-    curr_time = mpas_get_clock_time(fg_clock, MPAS_NOW) 
-
-    call mpas_get_time(curr_time, dateTimeString=timeString)
-    xtime = timeString
+    call mpas_advance_clock(domain % clock)
+    curr_time = mpas_get_clock_time(domain % clock, MPAS_NOW) 
 
  end do
 
- call mpas_output_state_finalize(sfc_update_obj, dminfo)
-      
  end subroutine init_atm_case_sfc
 
 !==================================================================================================
  subroutine interp_sfc_to_MPAS(timeString, mesh, fg, dims, dminfo, config_sfc_prefix)
 !==================================================================================================
+
+ use mpas_dmpar 
+
+ implicit none
 
 !input arguments:
  character(len=*), intent(in) :: timeString
