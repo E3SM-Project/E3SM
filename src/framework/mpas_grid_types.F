@@ -528,6 +528,7 @@ module mpas_grid_types
       integer :: fieldType
       integer :: nDims
       integer :: nTimeLevels
+      logical :: isActive
    end type mpas_pool_field_info_type
    !!! END TYPES FOR MPAS POOL
 

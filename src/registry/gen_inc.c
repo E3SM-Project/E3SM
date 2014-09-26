@@ -1077,21 +1077,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	fortprintf(fd, "! Define var array %s\n", vararrname);
 	snprintf(spacing, 1024, "      ");
 
-	// Parse packages if they are defined
-	if(vararrpackages != NULL){
-		fortprintf(fd, "      if (");
-		string = strdup(vararrpackages);
-		tofree = string;
-		token = strsep(&string, ";");
-		fortprintf(fd, "%sActive", token);
-
-		while( (token = strsep(&string, ";")) != NULL){
-			fortprintf(fd, " .or. %sActive", token);
-		}
-
-		fortprintf(fd, ") then\n");
-		snprintf(spacing, 1024, "         ");
-	}
 
 	// Determine field type and default value.
 	get_field_information(vararrtype, vararrdefaultval, default_value, &type);
@@ -1102,12 +1087,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 	// Determine name of pointer for this field.
 	set_pointer_name(type, ndims, pointer_name);
-	fortprintf(fd, "%sallocate(%s(%d))\n", spacing, pointer_name, time_levs);
+	fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
 
-	fortprintf(fd, "%sindex_counter = 0\n", spacing);
-	fortprintf(fd, "%sgroup_counter = -1\n", spacing);
-	fortprintf(fd, "%sgroup_start = -1\n", spacing);
-	fortprintf(fd, "%sgroup_started = .false.\n", spacing);
+	fortprintf(fd, "      index_counter = 0\n", spacing);
+	fortprintf(fd, "      group_counter = -1\n", spacing);
+	fortprintf(fd, "      group_start = -1\n", spacing);
+	fortprintf(fd, "      group_started = .false.\n", spacing);
 	fortprintf(fd, "\n");
 
 	// Write index values and group counter values.
@@ -1136,6 +1121,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 			fortprintf(fd, "! Starting group %s\n", vararrgroup);
 			fortprintf(fd, "! Define constituent var %s\n", varname);
+			fortprintf(fd, "! My Packages are %s\n", varpackages);
 
 			// If no packages are defined, default to var_arr packages.
 			if(varpackages == NULL){
@@ -1147,7 +1133,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			// Parse packages if they are defined
 			sub_spacing[0] = '\0';
 			if(varpackages){
-				fortprintf(fd, "%sif (", spacing);
+				fortprintf(fd, "      if (");
 				string = strdup(varpackages);
 				tofree = string;
 				token = strsep(&string, ";");
@@ -1161,20 +1147,26 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				snprintf(sub_spacing, 1024, "   ");
 			}
 
-			fortprintf(fd, "%s%sindex_counter = index_counter + 1\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%scall mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", spacing, sub_spacing, varname_in_code);
-			fortprintf(fd, "%s%sgroup_counter = group_counter + 1\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%sif (.not. group_started) then\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%s   group_start = index_counter\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%s   call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", spacing, sub_spacing, vararrgroup);
-			fortprintf(fd, "%s%s   group_started = .true.\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%send if\n", spacing, sub_spacing);
+			fortprintf(fd, "      %sindex_counter = index_counter + 1\n", sub_spacing);
+			fortprintf(fd, "      %sif (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s   call mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", sub_spacing, varname_in_code);
+			fortprintf(fd, "      %send if\n", sub_spacing);
+			fortprintf(fd, "      %sgroup_counter = group_counter + 1\n", sub_spacing);
+			fortprintf(fd, "      %sif (.not. group_started) then\n", sub_spacing);
+			fortprintf(fd, "      %s   group_start = index_counter\n", sub_spacing);
+			fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s   end if\n", sub_spacing);
+			fortprintf(fd, "      %s   group_started = .true.\n", sub_spacing);
+			fortprintf(fd, "      %send if\n", sub_spacing);
 
 			// If Packages are defined, write else clause
 			if(varpackages){
-				fortprintf(fd, "%selse\n", spacing);
-				fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", spacing, varname_in_code);
-				fortprintf(fd, "%send if\n", spacing);
+				fortprintf(fd, "   %selse\n", sub_spacing);
+				fortprintf(fd, "      %s  if (associated(newSubPool)) then\n", sub_spacing);
+				fortprintf(fd, "      %s     call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", sub_spacing, varname_in_code);
+				fortprintf(fd, "      %s  end if\n", sub_spacing);
+				fortprintf(fd, "   %send if\n", sub_spacing);
 			}
 
 			// Add the rest of the variables from the current group.
@@ -1192,7 +1184,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 							varname_in_code = ezxml_attr(var_xml2, "name");
 						}
 
-						fortprintf(fd, "! Define constituent var %s\n", varname);
 
 						// If no packages are defined, default to var_arr packages.
 						if(varpackages == NULL){
@@ -1200,6 +1191,9 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 								varpackages = ezxml_attr(var_arr_xml, "packages");
 							}
 						}
+
+						fortprintf(fd, "! Define constituent var %s\n", varname);
+						fortprintf(fd, "! My packages are %s\n", varpackages);
 
 						// Parse packages if they are defined
 						sub_spacing[0] = '\0';
@@ -1218,60 +1212,72 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 							snprintf(sub_spacing, 1024, "   ");
 						}
 
-						fortprintf(fd, "%s%sindex_counter = index_counter + 1\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%scall mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", spacing, sub_spacing, varname_in_code);
-						fortprintf(fd, "%s%sgroup_counter = group_counter + 1\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%sif (.not. group_started) then\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%s   group_start = index_counter\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%s   call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", spacing, sub_spacing, vararrgroup);
-						fortprintf(fd, "%s%s   group_started = .true.\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%send if\n", spacing, sub_spacing);
+						fortprintf(fd, "      %sindex_counter = index_counter + 1\n", sub_spacing);
+						fortprintf(fd, "      %sif (associated(newSubPool)) then\n", sub_spacing);
+						fortprintf(fd, "      %s   call mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", sub_spacing, varname_in_code);
+						fortprintf(fd, "      %send if\n", sub_spacing);
+						fortprintf(fd, "      %sgroup_counter = group_counter + 1\n", sub_spacing);
+						fortprintf(fd, "      %sif (.not. group_started) then\n", sub_spacing);
+						fortprintf(fd, "      %s   group_start = index_counter\n", sub_spacing);
+						fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+						fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", sub_spacing, vararrgroup);
+						fortprintf(fd, "      %s   end if\n", sub_spacing);
+						fortprintf(fd, "      %s   group_started = .true.\n", sub_spacing);
+						fortprintf(fd, "      %send if\n", sub_spacing);
 
 						// If Packages are defined, write else clause
 						if(varpackages != NULL){
-							fortprintf(fd, "%selse\n", spacing);
-							fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", spacing, varname_in_code);
-							fortprintf(fd, "%send if\n", spacing);
+							fortprintf(fd, "   %selse\n", sub_spacing);
+							fortprintf(fd, "   %s   if (associated(newSubPool)) then\n", sub_spacing);
+							fortprintf(fd, "   %s      call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", sub_spacing, varname_in_code);
+							fortprintf(fd, "   %s   end if\n", sub_spacing);
+							fortprintf(fd, "   %send if\n", sub_spacing);
 						}
 					}
 				}
 			}
 
-			fortprintf(fd, "%sif (.not. group_started) then\n", spacing);
-			fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, '%s_start', -1)\n", spacing, vararrgroup);
-			fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, '%s_end', -1)\n", spacing, vararrgroup);
-			fortprintf(fd, "%selse\n", spacing);
-			fortprintf(fd, "%s   group_started = .false.\n", spacing);
-			fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, '%s_end', index_counter)\n", spacing, vararrgroup);
-			fortprintf(fd, "%send if\n", spacing);
-			fortprintf(fd, "! End of group %s\n", spacing, vararrgroup);
+			fortprintf(fd, "      %sif (.not. group_started) then\n", sub_spacing);
+			fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_start', -1)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_end', -1)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s   end if\n", sub_spacing);
+			fortprintf(fd, "      %selse\n", sub_spacing);
+			fortprintf(fd, "      %s   group_started = .false.\n", sub_spacing);
+			fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_end', index_counter)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s   end if\n", sub_spacing);
+			fortprintf(fd, "      %send if\n", sub_spacing);
+			fortprintf(fd, "! End of group       \n", vararrgroup);
 		}
 	}
 
 	fortprintf(fd, "\n");
 
 	// Setup constituent names
-	fortprintf(fd, "%snumConstituents = index_counter\n", spacing);
-	fortprintf(fd, "%scall mpas_pool_add_dimension(newSubPool, 'num_%s', numConstituents)\n", spacing, vararrname);
+	fortprintf(fd, "      numConstituents = index_counter\n");
+	fortprintf(fd, "      if (associated(newSubPool)) then\n");
+	fortprintf(fd, "         call mpas_pool_add_dimension(newSubPool, 'num_%s', numConstituents)\n", vararrname);
+	fortprintf(fd, "      end if\n");
 
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "! Defining time level %d\n", time_lev);
-		fortprintf(fd, "%sallocate( %s(%d) %% constituentNames(numConstituents) )\n",spacing, pointer_name, time_lev);
-		fortprintf(fd, "%sallocate(%s(%d) %% ioinfo)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% fieldName = '%s'\n", spacing, pointer_name, time_lev, vararrname);
+		fortprintf(fd, "      allocate( %s(%d) %% constituentNames(numConstituents) )\n", pointer_name, time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, vararrname);
 		if (hasTime) {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .true.\n", spacing, pointer_name, time_lev);
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .true.\n", pointer_name, time_lev);
 		} else {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .false.\n", spacing, pointer_name, time_lev);
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .false.\n", pointer_name, time_lev);
 		}
-		fortprintf(fd, "%s%s(%d) %% isVarArray = .true.\n", spacing, pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% isVarArray = .true.\n", pointer_name, time_lev);
 		if(ndims > 0){
 			if(persistence == SCRATCH){
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .false.\n", spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .false.\n", spacing, pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isPersistent = .false.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
 			} else {
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .true.\n", spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isPersistent = .true.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
 			}
 		}
 		fortprintf(fd, "\n");
@@ -1283,19 +1289,21 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				varname_in_code = ezxml_attr(var_xml, "name");
 			}
 
-			fortprintf(fd, "%scall mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", spacing, varname_in_code);
-			fortprintf(fd, "%sif (index_counter > 0) then\n", spacing);
-			fortprintf(fd, "%s   %s(%d) %% constituentNames(const_index) = '%s'\n", spacing, pointer_name, time_lev, varname);
-			fortprintf(fd, "%send if\n", spacing);
+			fortprintf(fd, "      if (associated(newSubPool)) then\n");
+			fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
+			fortprintf(fd, "      end if\n");
+			fortprintf(fd, "      if (index_counter > 0) then\n", spacing);
+			fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
+			fortprintf(fd, "      end if\n", spacing);
 		}
 
 		fortprintf(fd, "\n");
 
 		// Setup dimensions
-		fortprintf(fd, "! Setup dimensions for %s\n", vararrname);
+		fortprintf(fd, "! Setup dimensions for       \n", vararrname);
 		i = 1;
-		fortprintf(fd, "%s%s(%d) %% dimNames(%d) = 'num_%s'\n", spacing, pointer_name, time_lev, i, vararrname);
-		fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = numConstituents\n", spacing, pointer_name, time_lev, i);
+		fortprintf(fd, "      %s(%d) %% dimNames(%d) = 'num_%s'\n", pointer_name, time_lev, i, vararrname);
+		fortprintf(fd, "      %s(%d) %% dimSizes(%d) = numConstituents\n", pointer_name, time_lev, i);
 
 		string = strdup(vararrdims);
 		tofree = string;
@@ -1304,22 +1312,22 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		if(strncmp(token, "Time", 1024) != 0){
 			i++;
 			if(strncmp(token, "nCells", 1024) == 0 || strncmp(token, "nEdges", 1024) == 0 || strncmp(token, "nVertices", 1024) == 0){
-				fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-				fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s+1\n", spacing, pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s+1\n", pointer_name, time_lev, i, token);
 			} else {
-				fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-				fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", spacing, pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
 			}
 		}
 		while( (token = strsep(&string, " ")) != NULL){
 			if(strncmp(token, "Time", 1024) != 0){
 				i++;
 				if(strncmp(token, "nCells", 1024) == 0 || strncmp(token, "nEdges", 1024) == 0 || strncmp(token, "nVertices", 1024) == 0){
-					fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s+1\n", spacing, pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s+1\n", pointer_name, time_lev, i, token);
 				} else {
-					fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", spacing, pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
 				}
 			}
 		}
@@ -1334,96 +1342,70 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				default:
 					break;
 				case 1:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 4:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 5:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 			}
 
-			fortprintf(fd, "%s%s(%d) %% array = %s\n", spacing, pointer_name, time_lev, default_value);
+			fortprintf(fd, "      %s(%d) %% array = %s\n", pointer_name, time_lev, default_value);
 
 		} else {
 			if(ndims > 0){
-				fortprintf(fd, "%snullify(%s(%d) %% array)\n", spacing, pointer_name, time_lev);
+				fortprintf(fd, "      nullify(%s(%d) %% array)\n", pointer_name, time_lev);
 			}
 		}
 
-		fortprintf(fd, "%snullify(%s(%d) %% next)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% prev)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% sendList)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% recvList)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% copyList)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% block => block\n", spacing, pointer_name, time_lev);
-
-		// Handle Streams (LEGACY)
-		iostreams = 0;
-		for(streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
-			for(stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-				streamname = ezxml_attr(stream_xml, "name");
-
-				for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
-					varname = ezxml_attr(var_xml, "name");
-
-					for(var_xml2 = ezxml_child(stream_xml, "var"); var_xml2; var_xml2 = var_xml2->next){
-						varname2 = ezxml_attr(var_xml2, "name");
-
-						if(strcmp(varname, varname2) == 0){
-							if(strcmp(streamname, "output") == 0){
-								iostreams |= OUTPUT0;
-							} else if(strcmp(streamname, "surface") == 0){
-								iostreams |= SFC0;
-							} else if(strcmp(streamname, "input") == 0){
-								iostreams |= INPUT0;
-							} else if(strcmp(streamname, "restart") == 0){
-								iostreams |= RESTART0;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if(iostreams & OUTPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .false.\n", spacing, pointer_name, time_lev);
-		}
-		if(iostreams & SFC0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .false.\n", spacing, pointer_name, time_lev);
-		}
-		if(iostreams & RESTART0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .false.\n", spacing, pointer_name, time_lev);
-		}
-		if(iostreams & INPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .false.\n", spacing, pointer_name, time_lev);
-		}
+		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% recvList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% copyList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
 	}
+
+	// Parse packages if they are defined
+	fortprintf(fd, "\n");
+	spacing[0] = '\0';
+	if(vararrpackages != NULL){
+		fortprintf(fd, "      if (");
+		string = strdup(vararrpackages);
+		tofree = string;
+		token = strsep(&string, ";");
+		fortprintf(fd, "%sActive", token);
+
+		while( (token = strsep(&string, ";")) != NULL){
+			fortprintf(fd, " .or. %sActive", token);
+		}
+
+		fortprintf(fd, ") then\n");
+		snprintf(spacing, 1024, "         ");
+	}
+
 
 	// Add field to pool
 	fortprintf(fd, "! Add field to pool\n");
+	for(time_lev = 1; time_lev <= time_levs; time_lev++){
+		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
+	}
 	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
-	fortprintf(fd, "%scall mpas_pool_add_field(block %% allFields, '%s', %s)\n", spacing, vararrname, pointer_name);
-	fortprintf(fd, "\n");
 
 	if(vararrpackages != NULL) {
 		fortprintf(fd, "      end if\n");
 	}
+
+	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", vararrname, pointer_name);
+	fortprintf(fd, "\n");
 
 	return 0;
 }/*}}}*/
@@ -1492,7 +1474,109 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	fortprintf(fd, "! Define variable %s\n", varname);
 
+
+	// Determine field type and default value.
+	get_field_information(vartype, vardefaultval, default_value, &type);
+
+	// Determine ndims, hasTime, and decomp type
+	get_dimension_information(vardims, &ndims, &hasTime, &decomp);
+
+	// Determine name of pointer for this field.
+	set_pointer_name(type, ndims, pointer_name);
+	fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
+
+	for(time_lev = 1; time_lev <= time_levs; time_lev++){
+		fortprintf(fd, "\n");
+		fortprintf(fd, "! Setting up time level %d\n", time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n",  pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, varname);
+		fortprintf(fd, "      %s(%d) %% isVarArray = .false.\n", pointer_name, time_lev);
+		if(hasTime) {
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .true.\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .false.\n", pointer_name, time_lev);
+		}
+
+		if(ndims > 0){
+			if(persistence == SCRATCH){
+				fortprintf(fd, "      %s(%d) %% isPersistent = .false.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
+			} else {
+				fortprintf(fd, "      %s(%d) %% isPersistent = .true.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
+			}
+
+			// Setup dimensions
+			fortprintf(fd, "! Setting up dimensions\n");
+			string = strdup(vardims);
+			tofree = string;
+			i = 1;
+			token = strsep(&string, " ");
+			if(strncmp(token, "Time", 1024) != 0){
+				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+				if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s + 1\n", pointer_name, time_lev, i, token);
+				} else {
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
+				}
+				i++;
+			}
+			while( (token = strsep(&string, " ")) != NULL){
+				if(strncmp(token, "Time", 1024) != 0){
+					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+					if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
+						fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s + 1\n", pointer_name, time_lev, i, token);
+					} else {
+						fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
+					}
+					i++;
+				}
+			}
+			free(tofree);
+
+
+
+			fortprintf(fd, "! Allocate space for data\n");
+			switch(ndims){
+				default:
+					break;
+				case 1:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 2:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 3:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 4:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 5:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+			}
+
+			fortprintf(fd, "      %s(%d) %% array = %s\n", pointer_name, time_lev, default_value);
+		} else if(ndims == 0){
+			fortprintf(fd, "      %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+		}
+
+
+		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% recvList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% copyList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
+	}
+
 	// Parse packages if they are defined
+	fortprintf(fd, "\n");
 	snprintf(package_spacing, 1024, "      ");
 	if(varpackages != NULL){
 		fortprintf(fd, "      if (");
@@ -1509,162 +1593,16 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		snprintf(package_spacing, 1024, "         ");
 	}
 
-	// Determine field type and default value.
-	get_field_information(vartype, vardefaultval, default_value, &type);
-
-	// Determine ndims, hasTime, and decomp type
-	get_dimension_information(vardims, &ndims, &hasTime, &decomp);
-
-	// Determine name of pointer for this field.
-	set_pointer_name(type, ndims, pointer_name);
-	fortprintf(fd, "%sallocate(%s(%d))\n", package_spacing, pointer_name, time_levs);
-
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
-		fortprintf(fd, "\n");
-		fortprintf(fd, "! Setting up time level %d\n", time_lev);
-		fortprintf(fd, "%sallocate(%s(%d) %% ioinfo)\n", package_spacing,  pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% fieldName = '%s'\n", package_spacing, pointer_name, time_lev, varname);
-		fortprintf(fd, "%s%s(%d) %% isVarArray = .false.\n", package_spacing, pointer_name, time_lev);
-		if(hasTime) {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(ndims > 0){
-			if(persistence == SCRATCH){
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .false.\n", package_spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .false.\n", package_spacing, pointer_name, time_lev);
-			} else {
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .true.\n", package_spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
-			}
-
-			// Setup dimensions
-			fortprintf(fd, "! Setting up dimensions\n");
-			string = strdup(vardims);
-			tofree = string;
-			i = 1;
-			token = strsep(&string, " ");
-			if(strncmp(token, "Time", 1024) != 0){
-				fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", package_spacing, pointer_name, time_lev, i, token);
-				if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s + 1\n", package_spacing, pointer_name, time_lev, i, token);
-				} else {
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", package_spacing, pointer_name, time_lev, i, token);
-				}
-				i++;
-			}
-			while( (token = strsep(&string, " ")) != NULL){
-				if(strncmp(token, "Time", 1024) != 0){
-					fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", package_spacing, pointer_name, time_lev, i, token);
-					if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
-						fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s + 1\n", package_spacing, pointer_name, time_lev, i, token);
-					} else {
-						fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", package_spacing, pointer_name, time_lev, i, token);
-					}
-					i++;
-				}
-			}
-			free(tofree);
-
-
-
-			fortprintf(fd, "! Allocate space for data\n");
-			switch(ndims){
-				default:
-					break;
-				case 1:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", package_spacing, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 4:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 5:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-			}
-
-			fortprintf(fd, "%s%s(%d) %% array = %s\n", package_spacing, pointer_name, time_lev, default_value);
-		} else if(ndims == 0){
-			fortprintf(fd, "%s%s(%d) %% scalar = %s\n", package_spacing, pointer_name, time_lev, default_value);
-		}
-
-
-		fortprintf(fd, "%snullify(%s(%d) %% next)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% prev)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% sendList)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% recvList)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% copyList)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% block => block\n", package_spacing, pointer_name, time_lev);
-
-		// Handle Streams (LEGACY)
-		iostreams = 0x00000000;
-		for(streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
-			for(stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-				streamname = ezxml_attr(stream_xml, "name");
-
-				for(var_xml2 = ezxml_child(stream_xml, "var"); var_xml2; var_xml2 = var_xml2->next){
-					varname2 = ezxml_attr(var_xml2, "name");
-
-					if(strcmp(varname, varname2) == 0){
-						if(strcmp(streamname, "output") == 0){
-							iostreams |= OUTPUT0;
-						} else if(strcmp(streamname, "input") == 0){
-							iostreams |= INPUT0;
-						} else if(strcmp(streamname, "surface") == 0){
-							iostreams |= SFC0;
-						} else if(strcmp(streamname, "restart") == 0){
-							iostreams |= RESTART0;
-						}
-					}
-				}
-			}
-		}
-
-		if(iostreams & OUTPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(iostreams & INPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(iostreams & RESTART0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(iostreams & SFC0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .false.\n", package_spacing, pointer_name, time_lev);
-		}
+		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
 	}
-
-	fortprintf(fd, "\n");
 	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing , varname_in_code, pointer_name);
-	fortprintf(fd, "%scall mpas_pool_add_field(block %% allFields, '%s', %s)\n", package_spacing , varname, pointer_name);
-	fortprintf(fd, "\n");
 
 	if(varpackages != NULL){
 		fortprintf(fd, "      end if\n");
 	}
+	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", varname, pointer_name);
+	fortprintf(fd, "\n");
 
 	return 0;
 }/*}}}*/
@@ -1760,17 +1698,11 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      integer :: numConstituents\n");
 	fortprintf(fd, "\n");
 
+	fortprintf(fd, "      nullify(newSubPool)\n");
+
 	fortprintf(fd, "      group_counter = -1\n");
 	fortprintf(fd, "      group_started = .false.\n");
 	fortprintf(fd, "      group_start = -1\n");
-
-
-	// Setup new pool to be added into structPool
-	fortprintf(fd, "      allocate(newSubPool)\n");
-	fortprintf(fd, "      call mpas_pool_create_pool(newSubPool)\n");
-	fortprintf(fd, "      call mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", structnameincode);
-	fortprintf(fd, "      call mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", structname);
-	fortprintf(fd, "\n");
 
 	// Need to get value of package flags
 	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
@@ -1782,6 +1714,36 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	}
 
 	fortprintf(fd, "\n");
+
+	// Parse packages if they are defined
+	package_list[0] = '\0';
+	no_packages = build_struct_package_lists(superStruct, package_list);
+
+	spacing[0] = '\0';
+	if(!no_packages){
+		fortprintf(fd, "      if (");
+		string = strdup(package_list);
+		tofree = string;
+		token = strsep(&string, ";");
+		fortprintf(fd, "%sActive", token);
+
+		while( (token = strsep(&string, ";")) != NULL){
+			fortprintf(fd, " .or. %sActive", token);
+		}
+
+		fortprintf(fd, ") then\n");
+		sprintf(spacing, "   ");
+	}
+
+	// Setup new pool to be added into structPool
+	fortprintf(fd, "      %sallocate(newSubPool)\n", spacing);
+	fortprintf(fd, "      %scall mpas_pool_create_pool(newSubPool)\n", spacing);
+	fortprintf(fd, "      %scall mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", spacing, structnameincode);
+	fortprintf(fd, "      %scall mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", spacing, structname);
+
+	if(!no_packages){
+		fortprintf(fd, "      end if\n");
+	}
 
 	// Need to get value of dimensions
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
@@ -1810,54 +1772,26 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 
 	// Extract all sub structs
 	for (struct_xml = ezxml_child(superStruct, "var_struct"); struct_xml; struct_xml = struct_xml->next){
-		substructname = ezxml_attr(struct_xml, "name");
-		structpackages = ezxml_attr(struct_xml, "packages");
-
-		package_list[0] = '\0';
-		no_packages = build_struct_package_lists(struct_xml, package_list);
-
-		structpackages = ezxml_attr(superStruct, "packages");
-
-		// Parse packages if they are defined
-		spacing[0] = '\0';
-		if(!no_packages){
-			fortprintf(fd, "      if (");
-			string = strdup(package_list);
-			tofree = string;
-			token = strsep(&string, ";");
-			fortprintf(fd, "%sActive", token);
-
-			while( (token = strsep(&string, ";")) != NULL){
-				fortprintf(fd, " .or. %sActive", token);
-			}
-
-			fortprintf(fd, ") then\n");
-			sprintf(spacing, "   ");
-		}
-
-		fortprintf(fd, "      %scall mpas_generate%s%s_subpool_%s(block, newSubPool, dimensionPool, packagePool)\n", spacing, core_string, structname, substructname);
-		if(!no_packages){
-			fortprintf(fd, "      end if\n");
-		}
-
-
+		fortprintf(fd, "      call mpas_generate%s%s_subpool_%s(block, newSubPool, dimensionPool, packagePool)\n", core_string, structname, substructname);
 	}
 
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      call mpas_pool_add_config(newSubPool, 'on_a_sphere', block %% domain %% on_a_sphere)\n");
-	fortprintf(fd, "      call mpas_pool_add_config(newSubPool, 'sphere_radius', block %% domain %% sphere_radius)\n");
-	fortprintf(fd, "      call mpas_pool_begin_iteration(dimensionPool)\n");
-	fortprintf(fd, "      do while( mpas_pool_get_next_member(dimensionPool, dimItr) )\n");
-	fortprintf(fd, "         if (dimItr %% memberType == MPAS_POOL_DIMENSION) then\n");
-	fortprintf(fd, "            if (dimItr %% nDims == 0) then\n");
-	fortprintf(fd, "               call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim0d)\n");
-	fortprintf(fd, "               call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim0d)\n");
-	fortprintf(fd, "            else if (dimItr %% nDims == 1) then\n");
-	fortprintf(fd, "               call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim1d)\n");
-	fortprintf(fd, "               call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim1d)\n");
+	fortprintf(fd, "      if (associated(newSubPool)) then\n");
+	fortprintf(fd, "         call mpas_pool_add_config(newSubPool, 'on_a_sphere', block %% domain %% on_a_sphere)\n");
+	fortprintf(fd, "         call mpas_pool_add_config(newSubPool, 'sphere_radius', block %% domain %% sphere_radius)\n");
+	fortprintf(fd, "         call mpas_pool_begin_iteration(dimensionPool)\n");
+	fortprintf(fd, "         do while( mpas_pool_get_next_member(dimensionPool, dimItr) )\n");
+	fortprintf(fd, "            if (dimItr %% memberType == MPAS_POOL_DIMENSION) then\n");
+	fortprintf(fd, "               if (dimItr %% nDims == 0) then\n");
+	fortprintf(fd, "                  call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim0d)\n");
+	fortprintf(fd, "                  call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim0d)\n");
+	fortprintf(fd, "               else if (dimItr %% nDims == 1) then\n");
+	fortprintf(fd, "                  call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim1d)\n");
+	fortprintf(fd, "                  call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim1d)\n");
+	fortprintf(fd, "               end if\n");
 	fortprintf(fd, "            end if\n");
-	fortprintf(fd, "         end if\n");
-	fortprintf(fd, "      end do\n");
+	fortprintf(fd, "         end do\n");
+	fortprintf(fd, "      end if\n");
 	fortprintf(fd, "\n");
 
 	fortprintf(fd, "   end subroutine mpas_generate%s%s_%s\n", core_string, pool_name, structname);
@@ -2557,56 +2491,12 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(in) :: packagePool\n");
 
-	// Need to define logicals for all packages
-	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
-		for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
-			packagename = ezxml_attr(package_xml, "name");
-
-			fortprintf(fd, "      logical, pointer :: %sActive\n", packagename);
-		}
-	}
-
-	fortprintf(fd, "\n");
-
-	// Need to get value of package flags
-	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
-		for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
-			packagename = ezxml_attr(package_xml, "name");
-
-			fortprintf(fd, "      call mpas_pool_get_package(packagePool, '%sActive', %sActive)\n", packagename, packagename);
-		}
-	}
-
 	fortprintf(fd, "\n");
 
 	for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
 		structname = ezxml_attr(structs_xml, "name");
-		structpackages = ezxml_attr(structs_xml, "packages");
 
-		package_list[0] = '\0';
-		no_packages = build_struct_package_lists(structs_xml, package_list);
-
-		spacing[0] = '\0';
-		if(!no_packages){
-			fortprintf(fd, "      if (");
-			string = strdup(package_list);
-			tofree = string;
-			token = strsep(&string, ";");
-			fortprintf(fd, "%sActive", token);
-
-			while( (token = strsep(&string, ";")) != NULL){
-				fortprintf(fd, " .or. %sActive", token);
-			}
-
-			fortprintf(fd, ") then\n");
-			sprintf(spacing, "   ");
-		}
-
-		fortprintf(fd, "      %scall mpas_generate%spool_%s(block, structPool, dimensionPool, packagePool)\n", spacing, core_string, structname);
-
-		if(!no_packages){
-			fortprintf(fd, "      end if\n");
-		}
+		fortprintf(fd, "      call mpas_generate%spool_%s(block, structPool, dimensionPool, packagePool)\n", core_string, structname);
 
 		fortprintf(fd, "\n");
 	}

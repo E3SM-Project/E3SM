@@ -717,9 +717,13 @@ module mpas_stream_manager
         end if
 
         !
-        ! Add field to field pool in stream
+        ! Add field to field pool in stream if the field is activated
         !
-        call mpas_pool_add_config(stream % field_pool, fieldName, 1)
+        if (info % isActive) then
+            call mpas_pool_add_config(stream % field_pool, fieldName, 1)
+        else
+            write(stderrUnit, *) ' * Requested field '//trim(fieldName)//' is deactivated due to packages, or is a scratch variable.'
+        end if
 
     end subroutine MPAS_stream_mgr_add_field!}}}
 
