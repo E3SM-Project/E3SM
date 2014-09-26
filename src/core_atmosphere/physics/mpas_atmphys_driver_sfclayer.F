@@ -70,6 +70,9 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * modified sourcecode to use pools.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * added initialization of local logical "allowed_to read" in subroutine init_sfclayer. This
+!>      logical is actually not used in subroutine sfclayinit.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-25. 
 
 
  contains
@@ -356,7 +359,7 @@
 !==================================================================================================
 
 !local variables:
- logical:: allowed_to_read
+ logical, parameter:: allowed_to_read = .false. !actually not used in subroutine sfclayinit.
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
