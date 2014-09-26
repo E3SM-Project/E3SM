@@ -71,9 +71,8 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      size_t count[fndims];
      int buflen, j;
 #ifdef USE_PNETCDF_VARN
-     size_t startlist[iodesc->maxregions][fndims];
-     size_t countlist[iodesc->maxregions][fndims];
-     void *buflist[iodesc->maxregions];
+     PIO_Offset startlist[iodesc->maxregions][fndims];
+     PIO_Offset countlist[iodesc->maxregions][fndims];
 #endif
 
 #ifdef _MPISERIAL
@@ -213,15 +212,19 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
  #endif
  #ifdef _PNETCDF
        case PIO_IOTYPE_PNETCDF:
-	 for( i=0,dsize=1;i<ndims;i++)
+	 for( i=0,dsize=1;i<ndims;i++){
 	   dsize*=count[i];
 	 //	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
 #ifdef USE_PNETCDF_VARN
-	 if(regioncnt<iodesc->maxregions-1){
-	 }else{
-	   ierr = ncmpi_put_varn_all(ncid, vid, (PIO_Offset **) startlist, (PIO_Offset **) countlist,blah
-				     }
-				     
+	   startlist[regioncnt][i]=start[i];
+	   countlist[regioncnt][i]=count[i];
+#endif
+	 }
+#ifdef USE_PNETCDF_VARN
+	 if(regioncnt==iodesc->maxregions-1){
+	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, (PIO_Offset **) startlist,  (PIO_Offset **) countlist, 
+				     IOBUF, iodesc->llen, iodesc->basetype);
+	 }
 #else
 	 ierr = ncmpi_bput_vara(ncid, vid,  (PIO_Offset *) start,(PIO_Offset *) count, bufptr,
 				dsize, iodesc->basetype, &request);
@@ -317,6 +320,8 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
    int ndims, fndims;
    MPI_Status status;
    int i;
+
+
    ios = file->iosystem;
    if(ios == NULL)
      return PIO_EBADID;
@@ -341,6 +346,10 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      int regioncnt;
      void *bufptr;
      int tsize;
+#ifdef USE_PNETCDF_VARN
+     PIO_Offset startlist[iodesc->maxregions][fndims];
+     PIO_Offset countlist[iodesc->maxregions][fndims];
+#endif
      // buffer is incremented by byte and loffset is in terms of the iodessc->basetype
      // so we need to multiply by the size of the basetype
      // We can potentially allow for one iodesc to have multiple datatypes by allowing the
@@ -491,10 +500,19 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	    tmp_bufsize=1;
 	    for(int j=0;j<ndims; j++){
 	      tmp_bufsize *= count[j];
+#ifdef USE_PNETCDF_VARN
+	      startlist[regioncnt][j] = start[j];
+	      countlist[regioncnt][j] = count[j];
+#endif
 	    }
 	    	    
+#ifdef USE_PNETCDF_VARN
+	 if(regioncnt==iodesc->maxregions-1){
+	   ierr = ncmpi_get_varn_all(file->fh, vid, iodesc->maxregions, (PIO_Offset **) startlist, (PIO_Offset **) countlist, IOBUF, iodesc->llen, iodesc->basetype);
+	 }
+#else
 	    ierr = ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
-
+#endif
 	  }
 	  break;
 #endif
