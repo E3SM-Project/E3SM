@@ -28,6 +28,9 @@
  of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment
  variable of the same name if it exists.
 
+ NOTE: The variable CESMSCRATCHROOT must be fully resolved before a case is built so cannot
+            contain other variables defined in cesm.
+
  ===============================================================
  PROJECT_REQUIRED
  ===============================================================
