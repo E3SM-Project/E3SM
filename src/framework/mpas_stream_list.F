@@ -1,7 +1,11 @@
 module mpas_stream_list
 
 #define COMMA ,
+#ifdef MPAS_DEBUG
 #define LIST_DEBUG_WRITE(M) write(stderrUnit,*) M
+#else
+#define LIST_DEBUG_WRITE(M) ! M
+#endif
 
     use mpas_kind_types, only : StrKIND
     use mpas_io_units, only : stderrUnit

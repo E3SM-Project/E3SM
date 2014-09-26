@@ -1,7 +1,11 @@
 module mpas_stream_manager
 
 #define COMMA ,
+#ifdef MPAS_DEBUG
 #define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) M
+#else
+#define STREAM_DEBUG_WRITE(M) ! M
+#endif
 
     use mpas_kind_types
     use mpas_grid_types
@@ -2636,7 +2640,6 @@ module mpas_stream_manager
             ! Generate file_id and write to stream
             !
             call gen_random(idLength, file_id)
-write(0,*) 'RANDOM ID '//file_id
             call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
