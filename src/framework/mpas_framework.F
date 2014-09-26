@@ -19,15 +19,15 @@ module mpas_framework
 
    use mpas_dmpar
    use mpas_grid_types
-   use mpas_io_input
-   use mpas_io_output
    use mpas_timer
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
+   use mpas_configure
 
 
    contains
+
 
 !-----------------------------------------------------------------------
 !  routine mpas_framework_init

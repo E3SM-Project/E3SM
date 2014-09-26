@@ -19,8 +19,6 @@ module mpas_subdriver
    type (dm_info), pointer :: dminfo
    type (domain_type), save, target :: domain
    type (domain_type), pointer :: domain_ptr
-   type (io_output_object), save :: output_obj
-   integer :: output_frame
 
    ! TODO: This should be moved inside the domain type?
    !       Unless we re-arrange modules, doing so would create a circular dependence
@@ -37,12 +35,12 @@ module mpas_subdriver
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : MPAS_Time_type, mpas_get_clock_time, mpas_get_time
+      use mpas_bootstrapping, only : mpas_bootstrap_framework, mpas_setup_immutable_streams
  
       implicit none
 
       character(len=StrKIND) :: timeStamp
       integer :: ierr
-      integer, pointer :: config_frames_per_outfile
 
       character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
       integer(kind=c_int) :: c_comm
@@ -97,7 +95,6 @@ module mpas_subdriver
       if (ierr /= 0) then
          call mpas_dmpar_abort(dminfo)
       end if
-write(0,*) 'MGD DEBUG mesh stream is '//trim(mesh_stream)
       call mpas_f_to_c_string(domain % streams_filename, c_filename)
       call mpas_f_to_c_string(mesh_stream, c_mesh_stream)
       c_comm = dminfo % comm
@@ -106,17 +103,10 @@ write(0,*) 'MGD DEBUG mesh stream is '//trim(mesh_stream)
          call mpas_dmpar_abort(dminfo)
       end if
       call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
-write(0,*) 'MGD DEBUG mesh filename template is '//trim(mesh_filename_temp)
       start_time = mpas_get_clock_time(domain_ptr % clock, MPAS_START_TIME, ierr)
       call mpas_get_time(start_time, dateTimeString=start_timestamp, ierr=ierr)
       call mpas_expand_string(start_timestamp, mesh_filename_temp, mesh_filename)
-write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       call mpas_bootstrap_framework(domain_ptr, mesh_filename)
-
-      !
-      ! Read initial fields into blocks
-      !
-      call mpas_input_state_for_domain(domain_ptr)
 
 
       !
@@ -142,20 +132,6 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
 
       call mpas_timer_stop('initialize')
 
-
-      !
-      ! Set up output streams to be written to by the MPAS core
-      !
-      output_frame = 1
-
-      call mpas_pool_get_config(domain_ptr % configs, 'config_frames_per_outfile', config_frames_per_outfile)
-
-      if(config_frames_per_outfile > 0) then
-         call mpas_output_state_init(output_obj, domain_ptr, 'OUTPUT', trim(timeStamp))
-      else
-         call mpas_output_state_init(output_obj, domain_ptr, 'OUTPUT')         
-      end if
-
    end subroutine mpas_init
 
 
@@ -163,7 +139,7 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
 
       implicit none
 
-      call mpas_core_run(domain_ptr, stream_manager, output_obj, output_frame)
+      call mpas_core_run(domain_ptr, stream_manager)
 
    end subroutine mpas_run
 
@@ -173,11 +149,6 @@ write(0,*) 'MGD DEBUG mesh filename is '//trim(mesh_filename)
       use mpas_stream_manager, only : MPAS_stream_mgr_finalize
    
       implicit none
-
-      !
-      ! Finalize output streams
-      !
-      call mpas_output_state_finalize(output_obj, domain_ptr % dminfo)
 
 
       !

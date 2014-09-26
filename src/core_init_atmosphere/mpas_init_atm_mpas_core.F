@@ -49,11 +49,10 @@ module mpas_core
    end subroutine mpas_core_init
    
    
-   subroutine mpas_core_run(domain, stream_manager, output_obj, output_frame)
+   subroutine mpas_core_run(domain, stream_manager)
    
       use mpas_grid_types
       use mpas_stream_manager
-      use mpas_io_output
       use mpas_timer
       use init_atm_cases
    
@@ -61,8 +60,6 @@ module mpas_core
    
       type (domain_type), intent(inout) :: domain
       type (MPAS_streamManager_type), intent(inout) :: stream_manager
-      type (io_output_object), intent(inout) :: output_obj
-      integer, intent(inout) :: output_frame
    
       
       call init_atm_setup_case(domain)

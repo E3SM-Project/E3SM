@@ -667,9 +667,6 @@ int parse_reg_xml(ezxml_t registry)/*{{{*/
 	// Generate routines to link fields for multiple blocks
 	err = generate_field_links(registry);
 
-	// Generate halo exchange and copy routine
-	err = generate_field_halo_exchanges_and_copies(registry);
-
 	// Generate code to read and write fields
 	err = generate_field_reads_and_writes(registry);
 
