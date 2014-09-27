@@ -7,6 +7,9 @@ module mpas_stream_manager
 #define STREAM_DEBUG_WRITE(M) ! M
 #endif
 
+#define STREAM_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
+#define STREAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+
     use mpas_kind_types
     use mpas_grid_types
     use mpas_timekeeping
@@ -159,7 +162,7 @@ module mpas_stream_manager
         call MPAS_stream_list_create(manager % streams, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating stream list')
+            STREAM_ERROR_WRITE('Problems while creating stream list')
             return 
         end if
 
@@ -169,7 +172,7 @@ module mpas_stream_manager
         call MPAS_stream_list_create(manager % alarms_in, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating input alarm list')
+            STREAM_ERROR_WRITE('Problems while creating input alarm list')
             return 
         end if
 
@@ -179,7 +182,7 @@ module mpas_stream_manager
         call MPAS_stream_list_create(manager % alarms_out, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating output alarm list')
+            STREAM_ERROR_WRITE('Problems while creating output alarm list')
             return 
         end if
 
@@ -236,7 +239,7 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(manager % streams, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while destroying stream list')
+            STREAM_ERROR_WRITE('Problems while destroying stream list')
         end if
 
         !
@@ -245,7 +248,7 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(manager % alarms_in, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while destroying input alarms list')
+            STREAM_ERROR_WRITE('Problems while destroying input alarms list')
         end if
 
         !
@@ -254,7 +257,7 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(manager % alarms_out, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while destroying output alarms list')
+            STREAM_ERROR_WRITE('Problems while destroying output alarms list')
         end if
 
         !
@@ -348,14 +351,14 @@ module mpas_stream_manager
         call MPAS_stream_list_create(new_stream % alarmList_in, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating input alarm list')
+            STREAM_ERROR_WRITE('Problems while creating input alarm list')
             deallocate(new_stream)
             return 
         end if
         call MPAS_stream_list_create(new_stream % alarmList_out, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating output alarm list')
+            STREAM_ERROR_WRITE('Problems while creating output alarm list')
             deallocate(new_stream)
             return 
         end if
@@ -372,7 +375,7 @@ module mpas_stream_manager
         call MPAS_stream_list_insert(manager % streams, new_stream, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding stream to list')
+            STREAM_ERROR_WRITE('Problems while adding stream to list')
             return
         end if
         
@@ -416,7 +419,7 @@ module mpas_stream_manager
         call MPAS_stream_list_remove(manager % streams, streamID, stream, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE(' -- ERROR: Problems while removing stream from list')
+            STREAM_ERROR_WRITE('Problems while removing stream from list')
             return
         end if
 
@@ -430,7 +433,7 @@ module mpas_stream_manager
                 deallocate(delete_me)
             else
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while removing stream from list of input alarm')
+                STREAM_ERROR_WRITE('Problems while removing stream from list of input alarm')
                 return
             end if
             alarm_cursor => alarm_cursor % next
@@ -446,7 +449,7 @@ module mpas_stream_manager
                 deallocate(delete_me)
             else
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while removing stream from list of output alarm')
+                STREAM_ERROR_WRITE('Problems while removing stream from list of output alarm')
                 return
             end if
             alarm_cursor => alarm_cursor % next
@@ -470,7 +473,7 @@ module mpas_stream_manager
             call MPAS_closeStream(stream % stream, ierr=err_local)
             if (err_local /= MPAS_STREAM_NOERR) then
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while closing stream '//trim(stream % name))
+                STREAM_ERROR_WRITE('Problems while closing stream '//trim(stream % name))
             end if
             deallocate(stream % stream)
         end if
@@ -563,7 +566,7 @@ module mpas_stream_manager
         ! Check that stream exists
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -572,7 +575,7 @@ module mpas_stream_manager
         ! Don't modify an immutable stream
         !
         if (stream % immutable) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' is immutable.')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' is immutable.')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -582,7 +585,7 @@ module mpas_stream_manager
         !
         call mpas_pool_get_subpool(manager % allStructs, poolName, fieldPool)
         if (.not. associated(fieldPool) ) then
-            STREAM_DEBUG_WRITE('-- Requested pool '//trim(poolName)//' does not exist.')
+            STREAM_ERROR_WRITE('Requested pool '//trim(poolName)//' does not exist.')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -680,7 +683,7 @@ module mpas_stream_manager
         ! Check that stream exists
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -689,7 +692,7 @@ module mpas_stream_manager
         ! Don't modify an immutable stream
         !
         if (stream % immutable) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' is immutable.')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' is immutable.')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -700,7 +703,7 @@ module mpas_stream_manager
         info % nDims = -1
         call mpas_pool_get_field_info(manager % allFields, fieldName, info)
         if (info % nDims == -1) then
-            STREAM_DEBUG_WRITE('-- Requested field '//trim(fieldName)//' not available')
+            STREAM_ERROR_WRITE('Requested field '//trim(fieldName)//' not available')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -711,7 +714,7 @@ module mpas_stream_manager
         nullify(test_ptr)
         call mpas_pool_get_config(stream % field_pool, fieldName, value=test_ptr)
         if (associated(test_ptr)) then
-            STREAM_DEBUG_WRITE('-- Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
+            STREAM_ERROR_WRITE('Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -762,7 +765,7 @@ module mpas_stream_manager
         ! Check that stream exists
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -771,7 +774,7 @@ module mpas_stream_manager
         ! Don't modify an immutable stream
         !
         if (stream % immutable) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' is immutable.')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' is immutable.')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -782,7 +785,7 @@ module mpas_stream_manager
         nullify(test_ptr)
         call mpas_pool_get_config(stream % field_pool, fieldName, value=test_ptr)
         if (.not. associated(test_ptr)) then
-            STREAM_DEBUG_WRITE('-- Requested field '//trim(fieldName)//' not in stream '//trim(streamID))
+            STREAM_ERROR_WRITE('Requested field '//trim(fieldName)//' not in stream '//trim(streamID))
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -837,7 +840,7 @@ module mpas_stream_manager
         ! Check that stream exists
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -851,7 +854,7 @@ module mpas_stream_manager
             stream % direction == MPAS_STREAM_INPUT .and. direction == MPAS_STREAM_INPUT_OUTPUT .or. &
             stream % direction == MPAS_STREAM_NONE) then
 
-            STREAM_DEBUG_WRITE('-- Attempting to add an alarm '//trim(alarmID)//' to invalid direction for stream '//trim(streamID))
+            STREAM_ERROR_WRITE('Attempting to add an alarm '//trim(alarmID)//' to invalid direction for stream '//trim(streamID))
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -860,7 +863,7 @@ module mpas_stream_manager
         ! Check that alarm exists on clock
         !
         if (.not. mpas_is_alarm_defined(manager % streamClock, alarmID, err_local)) then
-            STREAM_DEBUG_WRITE('-- Attempting to add an alarm '//trim(alarmID)//' that does not exist on clock')
+            STREAM_ERROR_WRITE('Attempting to add an alarm '//trim(alarmID)//' that does not exist on clock')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -870,14 +873,14 @@ module mpas_stream_manager
         !
         if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
             if (MPAS_stream_list_query(stream % alarmList_in, alarmID, new_alarm, ierr=err_local)) then
-                STREAM_DEBUG_WRITE('-- Requested input alarm '//trim(alarmID)//' already on stream '//trim(streamID))
+                STREAM_ERROR_WRITE('Requested input alarm '//trim(alarmID)//' already on stream '//trim(streamID))
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return
             end if
         end if
         if (direction == MPAS_STREAM_OUTPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
             if (MPAS_stream_list_query(stream % alarmList_out, alarmID, new_alarm, ierr=err_local)) then
-                STREAM_DEBUG_WRITE('-- Requested output alarm '//trim(alarmID)//' already on stream '//trim(streamID))
+                STREAM_ERROR_WRITE('Requested output alarm '//trim(alarmID)//' already on stream '//trim(streamID))
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return
             end if
@@ -897,7 +900,7 @@ module mpas_stream_manager
                 call MPAS_stream_list_create(new_alarm % streamList, ierr=err_local)
                 if (err_local /= MPAS_STREAM_LIST_NOERR) then
                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                    STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating stream list for alarm')
+                    STREAM_ERROR_WRITE('Problems while creating stream list for alarm')
                     return 
                 end if
                 nullify(new_alarm % next)
@@ -905,7 +908,7 @@ module mpas_stream_manager
                 call MPAS_stream_list_insert(manager % alarms_in, new_alarm, ierr=err_local)
                 if (err_local /= MPAS_STREAM_LIST_NOERR) then
                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                    STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding input alarm to list')
+                    STREAM_ERROR_WRITE('Problems while adding input alarm to list')
                     return
                 end if
             end if
@@ -917,7 +920,7 @@ module mpas_stream_manager
             call MPAS_stream_list_insert(new_alarm % streamList, new_xref, ierr=err_local)
             if (err_local /= MPAS_STREAM_LIST_NOERR) then
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding stream to alarm stream list')
+                STREAM_ERROR_WRITE('Problems while adding stream to alarm stream list')
                 return
             end if
 
@@ -928,7 +931,7 @@ module mpas_stream_manager
             call MPAS_stream_list_insert(stream % alarmList_in, new_xref, ierr=err_local)
             if (err_local /= MPAS_STREAM_LIST_NOERR) then
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding alarm to stream input alarm list')
+                STREAM_ERROR_WRITE('Problems while adding alarm to stream input alarm list')
                 return
             end if
         end if
@@ -942,7 +945,7 @@ module mpas_stream_manager
                 call MPAS_stream_list_create(new_alarm % streamList, ierr=err_local)
                 if (err_local /= MPAS_STREAM_LIST_NOERR) then
                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                    STREAM_DEBUG_WRITE(' -- ERROR: Problems while creating stream list for alarm')
+                    STREAM_ERROR_WRITE('Problems while creating stream list for alarm')
                     return 
                 end if
                 nullify(new_alarm % next)
@@ -950,7 +953,7 @@ module mpas_stream_manager
                 call MPAS_stream_list_insert(manager % alarms_out, new_alarm, ierr=err_local)
                 if (err_local /= MPAS_STREAM_LIST_NOERR) then
                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                    STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding output alarm to list')
+                    STREAM_ERROR_WRITE('Problems while adding output alarm to list')
                     return
                 end if
             end if
@@ -962,7 +965,7 @@ module mpas_stream_manager
             call MPAS_stream_list_insert(new_alarm % streamList, new_xref, ierr=err_local)
             if (err_local /= MPAS_STREAM_LIST_NOERR) then
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding stream to alarm stream list')
+                STREAM_ERROR_WRITE('Problems while adding stream to alarm stream list')
                 return
             end if
 
@@ -973,7 +976,7 @@ module mpas_stream_manager
             call MPAS_stream_list_insert(stream % alarmList_out, new_xref, ierr=err_local)
             if (err_local /= MPAS_STREAM_LIST_NOERR) then
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-                STREAM_DEBUG_WRITE(' -- ERROR: Problems while adding alarm to stream output alarm list')
+                STREAM_ERROR_WRITE('Problems while adding alarm to stream output alarm list')
                 return
             end if
         end if
@@ -1018,7 +1021,7 @@ module mpas_stream_manager
         ! Check that stream exists
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Requested stream '//trim(streamID)//' does not exist in stream manager')
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -1033,7 +1036,7 @@ module mpas_stream_manager
             call MPAS_stream_list_remove(stream % alarmList_out, alarmID, alarmNode, ierr=ierr)
         else
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE('-- Requested to remove alarm from invalid direction from stream '//trim(streamID))
+            STREAM_ERROR_WRITE('Requested to remove alarm from invalid direction from stream '//trim(streamID))
             return
         end if
 
@@ -1044,15 +1047,15 @@ module mpas_stream_manager
             call MPAS_stream_list_remove(alarmNode % xref % streamList, streamID, streamNode, ierr=ierr)
         else
             if (direction == MPAS_STREAM_INPUT) then
-                STREAM_DEBUG_WRITE('-- Input alarm '//trim(alarmID)//' does not exist on stream '//trim(streamID))
+                STREAM_ERROR_WRITE('Input alarm '//trim(alarmID)//' does not exist on stream '//trim(streamID))
             else
-                STREAM_DEBUG_WRITE('-- Output alarm '//trim(alarmID)//' does not exist on stream '//trim(streamID))
+                STREAM_ERROR_WRITE('Output alarm '//trim(alarmID)//' does not exist on stream '//trim(streamID))
             end if
             return
         end if 
         if (.not. associated(streamNode)) then
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
-            STREAM_DEBUG_WRITE('-- Alarm '//trim(alarmID)//' does not have stream '//trim(streamID)//' on its stream list.')
+            STREAM_ERROR_WRITE('Alarm '//trim(alarmID)//' does not have stream '//trim(streamID)//' on its stream list.')
             return
         end if
 
@@ -1061,10 +1064,10 @@ module mpas_stream_manager
         !
         if (MPAS_stream_list_length(alarmNode % xref % streamList) == 0) then
             if (direction == MPAS_STREAM_INPUT) then
-                STREAM_DEBUG_WRITE('-- Input alarm '//trim(alarmID)//' has no associated streams and will be deleted.')
+                STREAM_ERROR_WRITE('Input alarm '//trim(alarmID)//' has no associated streams and will be deleted.')
                 call MPAS_stream_list_remove(manager % alarms_in, alarmID, alarmNode, ierr=ierr)
             else
-                STREAM_DEBUG_WRITE('-- Output alarm '//trim(alarmID)//' has no associated streams and will be deleted.')
+                STREAM_ERROR_WRITE('Output alarm '//trim(alarmID)//' has no associated streams and will be deleted.')
                 call MPAS_stream_list_remove(manager % alarms_out, alarmID, alarmNode, ierr=ierr)
             end if
         end if
@@ -1121,7 +1124,7 @@ module mpas_stream_manager
         nullify(stream)
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=local_ierr)) then
-                STREAM_DEBUG_WRITE('-- Stream '//trim(streamID)//' does not exist in stream manager.')
+                STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in stream manager.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return
             end if
@@ -1193,7 +1196,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1207,8 +1210,8 @@ module mpas_stream_manager
                 stream_cursor % maxRecords = propertyValue
 
             case default
-                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
-                STREAM_DEBUG_WRITE('          or specified property is not of type integer.')
+                STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('    or specified property is not of type integer.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
 
@@ -1248,7 +1251,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1275,8 +1278,8 @@ module mpas_stream_manager
                 call mpas_set_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
 
             case default
-                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
-                STREAM_DEBUG_WRITE('          or specified property is not of type character.')
+                STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('    or specified property is not of type character.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
 
@@ -1316,7 +1319,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_set_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1333,8 +1336,8 @@ module mpas_stream_manager
                 stream_cursor % immutable = propertyValue
 
             case default
-                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
-                STREAM_DEBUG_WRITE('          or specified property is not of type logical.')
+                STREAM_ERROR_WRITE('  MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('      or specified property is not of type logical.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
 
@@ -1374,7 +1377,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1388,8 +1391,8 @@ module mpas_stream_manager
                 propertyValue = stream_cursor % maxRecords
 
             case default
-                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
-                STREAM_DEBUG_WRITE('          or specified property is not of type integer.')
+                STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('    or specified property is not of type integer.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
 
@@ -1432,7 +1435,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1479,8 +1482,8 @@ module mpas_stream_manager
                 end if
 
             case default
-                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
-                STREAM_DEBUG_WRITE('          or specified property is not of type character.')
+                STREAM_ERROR_WRITE(' MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('   or specified property is not of type character.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
 
@@ -1520,7 +1523,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_get_property().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1537,8 +1540,8 @@ module mpas_stream_manager
                 propertyValue = stream_cursor % immutable
 
             case default
-                STREAM_DEBUG_WRITE('-- Error: MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
-                STREAM_DEBUG_WRITE('          or specified property is not of type logical.')
+                STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
+                STREAM_ERROR_WRITE('    or specified property is not of type logical.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
         end select
 
@@ -1582,7 +1585,7 @@ module mpas_stream_manager
         nullify(package)
         call mpas_pool_get_package(manager % allPackages, packageName, package)
         if (.not. associated(package)) then
-            STREAM_DEBUG_WRITE('-- Error: package '//trim(packageName)//' not found in call to MPAS_stream_mgr_add_pkg().')
+            STREAM_ERROR_WRITE('Package '//trim(packageName)//' not found in call to MPAS_stream_mgr_add_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return
         end if
@@ -1591,7 +1594,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_pkg().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1639,7 +1642,7 @@ module mpas_stream_manager
         ! Find requested stream
         !
         if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-            STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_remove_pkg().')
+            STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_remove_pkg().')
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
             return 
         end if
@@ -1686,7 +1689,7 @@ module mpas_stream_manager
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
@@ -1733,7 +1736,7 @@ module mpas_stream_manager
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
@@ -1780,7 +1783,7 @@ module mpas_stream_manager
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
@@ -1827,7 +1830,7 @@ module mpas_stream_manager
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
-                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
+                STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_add_att().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
@@ -1918,14 +1921,14 @@ module mpas_stream_manager
                 ! Verify that the stream is an output stream
                 if (stream_cursor % direction /= MPAS_STREAM_OUTPUT .and. &
                     stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
-                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an output stream.')
+                    STREAM_ERROR_WRITE('Stream '//streamID//' is not an output stream.')
                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                     return 
                 end if
 
                 call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_ierr)
             else
-                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_write().')
+                STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_write().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
@@ -2059,8 +2062,8 @@ module mpas_stream_manager
             end if
             if (local_ierr /= 0) then
                 if (local_ierr == 1) then
-                    STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
-                    STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                    STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
+                    STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
                 end if
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2092,8 +2095,8 @@ module mpas_stream_manager
                                     stream % filename_template, temp_filename, stream % nRecords, local_ierr)
                 if (local_ierr /= 0) then
                     if (local_ierr == 1) then
-                        STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
-                        STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                        STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
+                        STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
                     end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
@@ -2273,7 +2276,7 @@ module mpas_stream_manager
 
                 ! Verify that the stream is an input stream
                 if (stream_cursor % direction /= MPAS_STREAM_INPUT .and. stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
-                    STREAM_DEBUG_WRITE('-- Stream '//streamID//' is not an input stream.')
+                    STREAM_ERROR_WRITE('Stream '//streamID//' is not an input stream.')
                     if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                     return 
                 end if
@@ -2281,7 +2284,7 @@ module mpas_stream_manager
                 call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, local_whence, &
                                  actualWhen, local_ierr)
             else
-                STREAM_DEBUG_WRITE('-- Stream '//streamID//' does not exist in call to MPAS_stream_mgr_read().')
+                STREAM_ERROR_WRITE('Stream '//streamID//' does not exist in call to MPAS_stream_mgr_read().')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
@@ -2426,8 +2429,8 @@ module mpas_stream_manager
                                     stream % filename_template, stream % filename, stream % nRecords, local_ierr)
                 if (local_ierr /= 0) then
                     if (local_ierr == 1) then
-                        STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
-                        STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                        STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
+                        STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
                     end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
@@ -2460,8 +2463,8 @@ module mpas_stream_manager
                                     stream % filename_template, temp_filename, stream % nRecords, local_ierr)
                 if (local_ierr /= 0) then
                     if (local_ierr == 1) then
-                        STREAM_DEBUG_WRITE('-- Error: Could not find a file offset that exactly matches')
-                        STREAM_DEBUG_WRITE('--        combination of reference time, current time, and interval.')
+                        STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
+                        STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
                     end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return

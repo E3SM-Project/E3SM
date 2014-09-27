@@ -7,6 +7,9 @@ module mpas_stream_list
 #define LIST_DEBUG_WRITE(M) ! M
 #endif
 
+#define LIST_WARN_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
+#define LIST_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+
     use mpas_kind_types, only : StrKIND
     use mpas_io_units, only : stderrUnit
     use mpas_grid_types, only : mpas_pool_type
@@ -166,7 +169,7 @@ module mpas_stream_list
             do while (associated(node % next))
                 if (node % name == stream % name) then
                     if (present(ierr)) ierr = MPAS_STREAM_LIST_DUPLICATE
-                    LIST_DEBUG_WRITE(' -- Found duplicate item '//trim(stream % name)//' in list.')
+                    LIST_ERROR_WRITE('Found duplicate item '//trim(stream % name)//' in list.')
                     return
                 end if
                 node => node % next
@@ -208,7 +211,7 @@ module mpas_stream_list
         ! Return if no streams exist in stream list
         if ( list % nItems == 0 ) then
             if (present(ierr)) ierr = MPAS_STREAM_LIST_NOT_FOUND
-            LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+            LIST_ERROR_WRITE('Item '//trim(streamName)//' not found in list.')
             nullify(stream)
             return
         end if
@@ -241,7 +244,7 @@ module mpas_stream_list
 
         ! If the routine hasn't returned yet, the stream was not found. Return an error.
         if (present(ierr)) ierr = MPAS_STREAM_LIST_NOT_FOUND
-        LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+        LIST_ERROR_WRITE('Item '//trim(streamName)//' not found in list.')
         nullify(stream)
 
     end subroutine MPAS_stream_list_remove !}}}
