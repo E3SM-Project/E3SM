@@ -12,7 +12,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include "ezxml/ezxml.h"
+
+#ifdef _MPI
+#include "mpi.h"
+#endif
 
 #define MSGSIZE 256
 
@@ -55,7 +60,7 @@ static char *global_file;
 void fmt_err(const char *mesg)
 {
 	fprintf(stderr,"********************************************************************************\n");
-	fprintf(stderr,"Error: In file %s, %s\n", global_file, mesg);
+	fprintf(stderr,"* Error: In file %s, %s\n", global_file, mesg);
 	fprintf(stderr,"********************************************************************************\n");
 }
 
@@ -70,8 +75,22 @@ void fmt_err(const char *mesg)
 void fmt_warn(const char *mesg)
 {
 	fprintf(stderr,"********************************************************************************\n");
-	fprintf(stderr,"Warning: In file %s, %s\n", global_file, mesg);
+	fprintf(stderr,"* Warning: In file %s, %s\n", global_file, mesg);
 	fprintf(stderr,"********************************************************************************\n");
+}
+
+/*********************************************************************************
+ *
+ *  Function: fmt_info
+ *
+ *  Prints an informational message in a standard format.
+ *
+ *********************************************************************************/
+void fmt_info(const char *mesg)
+{
+	fprintf(stderr,"\n");
+	fprintf(stderr," Information: In file %s, %s\n", global_file, mesg);
+	fprintf(stderr,"\n");
 }
 
 
@@ -232,8 +251,6 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 	int err;
 
 #ifdef _MPI
-#include "mpi.h"
-	
 	MPI_Comm comm;
 
 	comm = MPI_Comm_f2c((MPI_Fint)(*mpi_comm));
@@ -573,7 +590,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 			line++;
 		}
 	}
-	if (nleft != nright) {                                  /* Probably only triggered if no final '>' character? */
+	if (nleft != nright) {				  /* Probably only triggered if no final '>' character? */
 		fmt_err("unbalanced angle brackets in XML. Is the file missing a final \'>\'?");
 		return 1;
 	}
@@ -682,6 +699,123 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 
 /*********************************************************************************
  *
+ *  Function: build_stream_path
+ *
+ *  Takes as input a string defining the filename template for a stream, and, for
+ *  each directory in the template, ensures that the directory exists. If a directory
+ *  in the template already exists but is not writable, a non-zero error is returned.
+ *
+ *********************************************************************************/
+int build_stream_path(const char *stream, const char *template, int *mpi_comm)
+{
+	char *filename_path;
+	char *directory;
+	int create_dir;
+	int i, len;
+	char msgbuf[MSGSIZE];
+	int err, retval;
+	int rank;
+
+
+#ifdef _MPI
+	MPI_Comm comm;
+
+	comm = MPI_Comm_f2c((MPI_Fint)(*mpi_comm));
+	err = MPI_Comm_rank(comm, &rank);
+#else
+	rank = 0;
+#endif
+
+	if (rank == 0) {
+		/*
+		 * Check that paths in a filename template exist for output streams.
+		 * Create them if they don't.
+		 *
+		 * Parse immutable steams first
+		 */
+		create_dir = 0;
+		filename_path = strdup(template);
+
+		len = strlen(filename_path);
+		directory = (char *)malloc(sizeof(char) * (size_t)len);
+
+		for (i=(len-1); i>=0; i--) {
+			if (filename_path[i] == '/') {
+				filename_path[i] = '\0';
+				create_dir = 1;
+				break;
+			}
+		}
+
+		if (create_dir) {
+			for(i=0; i < len; i++) {
+				if (filename_path[i] == '/') {
+					directory[i] = '\0';
+					err = mkdir(directory, S_IRWXU | S_IRWXG | S_IRWXO);
+					if ( errno == EEXIST ) {
+						/* directory exists, need to check permissions */
+						if (access(directory, W_OK) != 0) {
+							snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references directory %s without write permission.", stream, directory);
+							fmt_err(msgbuf);
+							free(filename_path);
+							free(directory);
+	
+							retval = 1;
+#ifdef _MPI
+							err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
+#endif
+							return retval;
+						}
+					} 
+				}
+				directory[i] = filename_path[i];
+			}
+			err = mkdir(filename_path, S_IRWXU | S_IRWXG | S_IRWXO);
+			if ( ! err ) {
+				snprintf(msgbuf, MSGSIZE, "created directory %s for stream \"%s\".", filename_path, stream);
+				fmt_info(msgbuf);
+			} else if ( errno == EEXIST ) {
+				/* directory exists, need to check permissions */
+				if (access(filename_path, W_OK) != 0) {
+					snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references directory %s without write permission.", stream, filename_path);
+					fmt_err(msgbuf);
+					free(filename_path);
+					free(directory);
+	
+					retval = 1;
+#ifdef _MPI
+					err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
+#endif
+					return retval;
+				}
+			}
+		}
+
+		free(filename_path);
+		free(directory);
+
+		retval = 0;
+#ifdef _MPI
+		err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
+#endif
+	}
+#ifdef _MPI
+	else {
+		err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
+		if (retval != 0) {
+			fprintf(stderr, "********************************************************************************\n");
+			fprintf(stderr, "* Please check the standard error log from task 0 for error messages.\n");
+			fprintf(stderr, "********************************************************************************\n");
+		}
+	}
+#endif
+
+	return retval;
+}
+
+
+/*********************************************************************************
+ *
  *  Function: xml_stream_parser
  *
  *  Parses an XML file and builds streams using the MPAS_stream_manager module
@@ -781,6 +915,16 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			snprintf(rec_intv_local, 256, "none");
 		}
 
+
+		/* For output streams, build the directory structure where files will be written */
+		if (itype == 2 || itype == 3) {
+			err = build_stream_path(streamID, filename_template, mpi_comm);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
+
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
 					&irecs, &immutable, &err);
 		if (err != 0) {
@@ -872,6 +1016,15 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			snprintf(rec_intv_local, 256, "none");
 		}
 
+
+		/* For output streams, build the directory structure where files will be written */
+		if (itype == 2 || itype == 3) {
+			err = build_stream_path(streamID, filename_template, mpi_comm);
+			if (err != 0) {
+				*status = 1;
+				return;
+			}
+		}
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
 						&irecs, &immutable, &err);
