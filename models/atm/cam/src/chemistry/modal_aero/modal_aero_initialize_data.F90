@@ -13,6 +13,7 @@ module modal_aero_initialize_data
   public :: modal_aero_initialize
   public :: modal_aero_initialize_q
 
+  logical :: convproc_do_gas, convproc_do_aer !BSINGH(09/16/2014): Added for unified convective transport
 contains
 
   subroutine modal_aero_register
@@ -132,6 +133,11 @@ contains
        xname_massptrcw(:nspec_amode(7),7) = (/ 'dst_c7  ', 'so4_c7  ', 'nh4_c7  ' /)
        xname_spectype(:nspec_amode(7),7)  = (/ 'dust      ', 'sulfate   ', 'ammonium  ' /)
 #endif
+
+    !BSINGH (09/17/2014): Added for unified convective transport
+    if(convproc_do_aer .or. convproc_do_gas) then !BSINGH - added for unified convective transport
+       species_class(:pcnst) = spec_class_undefined  !RCE
+    endif
 
     do m = 1, ntot_amode
 
@@ -257,7 +263,7 @@ contains
 
 
   !==============================================================
-  subroutine modal_aero_initialize(pbuf2d)
+  subroutine modal_aero_initialize(pbuf2d, imozart) !BSINGH (09/17/2014): Added 'imozart' for unified convective transport
 
        use constituents,          only: pcnst
        use physconst,             only: rhoh2o, mwh2o
@@ -267,12 +273,18 @@ contains
        use modal_aero_gasaerexch, only: modal_aero_gasaerexch_init
        use modal_aero_newnuc,     only: modal_aero_newnuc_init
        use modal_aero_rename,     only: modal_aero_rename_init
+       !RCE !BSINGH (09/17/2014): Added for unified convective transport
+       use modal_aero_convproc,   only: ma_convproc_init  
+       use chem_mods,             only: gas_pcnst  
+       use phys_control,          only: phys_getopts
+       !BSINGH -ENDS
        use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_aer_props, &
                                         rad_cnst_get_mode_props
        use aerodep_flx,           only: aerodep_flx_prescribed
        use physics_buffer,        only: physics_buffer_desc, pbuf_get_chunk
 
        type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+       integer, intent(in) :: imozart  !RCE !BSINGH (09/17/2014): Added 'imozart' for unified convective transport
 
        !--------------------------------------------------------------
        ! ... local variables
@@ -293,6 +305,9 @@ contains
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
+       call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
+            convproc_do_aer_out = convproc_do_aer) !BSINGH (09/17/2014): Added for unified convective transport
+       
 
        ! Mode specific properties.
        do m = 1, ntot_amode
@@ -390,7 +405,30 @@ contains
 
 
 
-
+       !BSINGH(09/17/2014): The do-loop in the 'else' of the following if condition is wrong
+       if (convproc_do_aer .or. convproc_do_gas) then !BSINGH - added for unified convective transport
+          ! At this point, species_class is either undefined or aerosol.
+          ! For the "chemistry species" (imozart <= i <= imozart+gas_pcnst-1),
+          ! set the undefined ones to gas, and leave the aerosol ones as is
+          if (imozart <= 0) then
+             call endrun( '*** modal_aero_initialize_data -- bad imozart' )
+          else if (imozart+gas_pcnst-1 > pcnst) then
+             call endrun( '*** modal_aero_initialize_data -- bad imozart+gas_pcnst-1' )
+          end if
+          do i = imozart, imozart+gas_pcnst-1
+             if (species_class(i) == spec_class_undefined) then
+                species_class(i) = spec_class_gas
+             end if
+          end do
+       else
+          
+          ! The following is incorrect because it overwrites values set in modal_aero_register, 
+          ! which is called before modal_aero_init
+          ! BSINGH: It is not commented out as of now to maintain original code b4b status
+          do i = 1, pcnst
+             species_class(i) = spec_class_undefined
+          end do
+       endif
 
        do i = 1, pcnst
           species_class(i) = spec_class_undefined
@@ -475,6 +513,10 @@ contains
              end do
           end do
        end if
+
+       if(convproc_do_aer .or. convproc_do_gas) then!BSINGH(09/17/2014): Added for unified convective transport
+          call ma_convproc_init
+       endif
 
        return
      end subroutine modal_aero_initialize

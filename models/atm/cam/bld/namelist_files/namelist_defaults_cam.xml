@@ -702,6 +702,10 @@
 <micro_mg_sub_version microphys="mg1.5">5</micro_mg_sub_version>
 
 <microp_uniform>.false.</microp_uniform>
+<!-- BSINGH - Added flags for regenration and liq cld frac bug fixes    -->
+<regen_fix             >.false.</regen_fix>
+<liqcf_fix             >.false.</liqcf_fix>
+<!-- BSINGH - Ends    -->
 
 <!-- Macrophysics scheme -->
 <macrop_scheme                       >none</macrop_scheme>
@@ -753,9 +757,26 @@
 <dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
 <dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
 
+
+<!-- BSINGH - Sea Salt tuning option for scavenging mods by PNNL -->
+<ssalt_tuning>.false.</ssalt_tuning>
+
+<!-- BSINGH - convective transport scheme options by PNNL -->
+<convproc_do_aer         >.false.</convproc_do_aer>
+<convproc_method_activate>2</convproc_method_activate>
+<convproc_do_gas         >.false.</convproc_do_gas>
+
+<!-- BSINGH - wet deposition option by PNNL -->
+<resus_fix>.false.</resus_fix>
+<!-- BSINGH - Ends -->
+
+
 <!-- in-cloud scav for cloud-borne aerosol tuning factor -->
 <sol_facti_cloud_borne                 >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1"   >0.6D0</sol_facti_cloud_borne>
+<!-- BSINGH - wet scavenging tuning option by PNNL -->
+<sscav_tuning>.false.</sscav_tuning>
+
 
 <!-- sub-column switches for physics packages -->
 <use_subcol_microp>.false.</use_subcol_microp>
