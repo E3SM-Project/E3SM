@@ -78,7 +78,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml, stream_var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
-	ezxml_t streams_xml, stream_xml;
+	ezxml_t streams_xml, stream_xml, substream_xml;
 	ezxml_t streams_xml2, stream_xml2;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
@@ -92,6 +92,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
 	const char *streamimmutable, *streamformat;
 	const char *streamname2, *streamfilename2;
+	const char *substreamname, *streamimmutable2;
 	const char *time_levs;
 
 	char *string, *err_string;
@@ -547,6 +548,29 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				return 1;
 			}
 			else {
+				/* Check that each stream added to an immutable stream is immutable */
+				if (streamimmutable != NULL && strcmp(streamimmutable, "true") == 0) {
+					for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = substream_xml->next){
+						substreamname = ezxml_attr(substream_xml, "name");
+						found = 0;
+
+						for (streams_xml2 = ezxml_child(registry, "streams"); streams_xml2; streams_xml2 = streams_xml2->next){
+							for (stream_xml2 = ezxml_child(streams_xml2, "stream"); stream_xml2; stream_xml2 = stream_xml2->next){
+								streamname2 = ezxml_attr(stream_xml2, "name");
+
+								if (substreamname != NULL && streamname2 != NULL && strcmp(substreamname, streamname2) == 0){
+									streamimmutable2 = ezxml_attr(stream_xml2, "immutable");
+									found = 1;
+
+									if (streamimmutable2 == NULL || strcmp(streamimmutable2, "true") != 0){
+										fprintf(stderr, "ERROR: Immutable stream %s cannot contain mutable streams (e.g. %s).\n", streamname, substreamname);
+										return 1;
+									}
+								}
+							}
+						}
+					}
+				}
 				for (stream_var_xml = ezxml_child(stream_xml, "var"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
 					varname_in_stream = ezxml_attr(stream_var_xml, "name");
 					if (varname_in_stream == NULL) {

@@ -524,16 +524,10 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 
 				if (strcmp(optruntime,"single_file") == 0) {
 
-					/* Loop over fields listed within the stream */
-					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
-						optname = ezxml_attr(var_xml, "name");
-						fprintf(fd, "    <var name=\"%s\"/>\n", optname);
-					}
-
-					/* Loop over var_arrays listed within the stream */
-					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
-						optname = ezxml_attr(vararray_xml, "name");
-						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
+					/* Loop over streams listed within the stream */
+					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+						optname = ezxml_attr(stream_xml, "name");
+						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
 					}
 
 					/* Loop over fields looking for any that belong to the stream */
@@ -547,12 +541,17 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 						}
 					}
 
-					/* Loop over streams listed within the stream */
-					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-						optname = ezxml_attr(stream_xml, "name");
-						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
+					/* Loop over var_arrays listed within the stream */
+					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
+						optname = ezxml_attr(vararray_xml, "name");
+						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
 					}
 
+					/* Loop over fields listed within the stream */
+					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optname = ezxml_attr(var_xml, "name");
+						fprintf(fd, "    <var name=\"%s\"/>\n", optname);
+					}
 				}
 				else if (strcmp(optruntime,"separate_file") == 0) {
 
@@ -562,18 +561,11 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 
 					fd2 = fopen(filename2, "w+");
 
-					/* Loop over fields listed within the stream */
-					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
-						optname = ezxml_attr(var_xml, "name");
-						fprintf(fd2, "%s\n", optname);
+					/* Loop over streams listed within the stream */
+					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+						optname = ezxml_attr(stream_xml, "name");
+						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
 					}
-
-					/* Loop over var_arrays listed within the stream */
-					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
-						optname = ezxml_attr(vararray_xml, "name");
-						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
-					}
-
 
 					/* Loop over fields looking for any that belong to the stream */
 					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
@@ -586,10 +578,16 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 						}
 					}
 
-					/* Loop over streams listed within the stream */
-					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-						optname = ezxml_attr(stream_xml, "name");
-						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
+					/* Loop over var_arrays listed within the stream */
+					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
+						optname = ezxml_attr(vararray_xml, "name");
+						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
+					}
+
+					/* Loop over fields listed within the stream */
+					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optname = ezxml_attr(var_xml, "name");
+						fprintf(fd2, "%s\n", optname);
 					}
 
 					fclose(fd2);
@@ -2083,6 +2081,36 @@ int generate_field_links(ezxml_t registry){/*{{{*/
 }/*}}}*/
 
 
+int generate_immutable_struct_contents(FILE *fd, const char *streamname, ezxml_t varstruct_xml){/*{{{*/
+	ezxml_t var_xml, vararr_xml, substruct_xml;
+
+	const char *optname, *optstream;
+
+	/* Loop over fields looking for any that belong to the stream */
+	for (vararr_xml = ezxml_child(varstruct_xml, "var"); vararr_xml; vararr_xml = vararr_xml->next) {
+		optstream = ezxml_attr(vararr_xml, "streams");
+		if (optstream != NULL && strstr(optstream, streamname) != NULL) {
+			optname = ezxml_attr(vararr_xml, "name");
+			fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", streamname, optname);
+		}
+	}
+
+	for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+		optstream = ezxml_attr(var_xml, "streams");
+		if (optstream != NULL && strstr(optstream, streamname) != NULL) {
+			optname = ezxml_attr(var_xml, "name");
+			fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", streamname, optname);
+		}
+	}
+
+	for (substruct_xml = ezxml_child(varstruct_xml, "var_struct"); substruct_xml; substruct_xml = substruct_xml->next){
+		generate_immutable_struct_contents(fd, streamname, substruct_xml);
+	}
+
+	return 0;
+}/*}}}*/
+
+
 /*********************************************************************************
  *
  *  Function: generate_immutable_streams
@@ -2096,9 +2124,11 @@ int generate_field_links(ezxml_t registry){/*{{{*/
  *
  *********************************************************************************/
 int generate_immutable_streams(ezxml_t registry){/*{{{*/
-	ezxml_t streams_xml, stream_xml, var_xml, varstruct_xml;
+	ezxml_t streams_xml, stream_xml, var_xml, vararr_xml, varstruct_xml;
+	ezxml_t substream_xml, matchstreams_xml, matchstream_xml;
 
 	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optimmutable;
+	const char *optstructname, *optsubstreamname, *optmatchstreamname, *optmatchimmutable;
 	const char *corename;
 	FILE *fd;
 
@@ -2145,21 +2175,68 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 				else
 					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_NONE, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
 
+				/* Loop over streams listed within the stream (only use immutable streams) */
+				for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+					optsubstreamname = ezxml_attr(substream_xml, "name");
+
+					/* Find stream definition with matching name */
+					for (matchstreams_xml = ezxml_child(registry, "streams"); matchstreams_xml; matchstreams_xml = matchstreams_xml->next){
+						for (matchstream_xml = ezxml_child(matchstreams_xml, "stream"); matchstream_xml; matchstream_xml = matchstream_xml->next){
+							optmatchstreamname = ezxml_attr(matchstream_xml, "name");
+							optmatchimmutable = ezxml_attr(matchstream_xml, "immutable");
+
+							if (optmatchstreamname != NULL && strcmp(optmatchstreamname, optsubstreamname) == 0){
+								if (optmatchimmutable != NULL && strcmp(optmatchimmutable, "true") == 0) {
+									/* Loop over fields listed within the stream */
+									for (var_xml = ezxml_child(matchstream_xml, "var"); var_xml; var_xml = var_xml->next) {
+										optvarname = ezxml_attr(var_xml, "name");
+										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+									}
+
+									/* Loop over arrays of fields listed within the stream */
+									for (vararr_xml = ezxml_child(matchstream_xml, "var_array"); vararr_xml; vararr_xml = vararr_xml->next) {
+										optvarname = ezxml_attr(vararr_xml, "name");
+										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+									}
+
+									/* Loop over var structs listed within the stream */
+									for (varstruct_xml = ezxml_child(matchstream_xml, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+										optstructname = ezxml_attr(varstruct_xml, "name");
+										fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+									}
+
+								} else {
+									printf("ERROR: Immutable streams cannot contain mutable streams within them.\n");	
+									printf("ERROR:     Immutable stream \'%s\' contains a mutable stream \'%s\'.\n", optname, optsubstreamname);
+									return 1;
+								}
+							}
+						}
+					}
+				}
+
+				/* Loop over var structs listed within the stream */
+				for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+					optstructname = ezxml_attr(varstruct_xml, "name");
+					fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+				}
+
+
+				/* Loop over arrays of fields listed within the stream */
+				for (vararr_xml = ezxml_child(stream_xml, "var_array"); vararr_xml; vararr_xml = ezxml_next(vararr_xml)) {
+					optvarname = ezxml_attr(vararr_xml, "name");
+					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+				}
+
 				/* Loop over fields listed within the stream */
-				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = var_xml->next) {
+				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
 					optvarname = ezxml_attr(var_xml, "name");
 					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
 				}
 
 				/* Loop over fields looking for any that belong to the stream */
-				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
-					for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
-						optstream = ezxml_attr(var_xml, "streams");
-						if (optstream != NULL && strstr(optstream, optname) != NULL) {
-							optvarname = ezxml_attr(var_xml, "name");
-							fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
-						}
-					}
+				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+					generate_immutable_struct_contents(fd, optname, varstruct_xml);
 				}
 
 				fortprintf(fd, "   call MPAS_stream_mgr_set_property(manager, \'%s\', MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)\n\n", optname);
@@ -2417,35 +2494,48 @@ int merge_streams(ezxml_t registry){/*{{{*/
 
 						old_child = tmp_child;
 					}
+
+					for(old_child = ezxml_child(childStream2, "var_array"); old_child; old_child){
+						if(old_child->next){
+							tmp_child = old_child->next;
+						} else {
+							tmp_child = NULL;
+						}
+						new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
+
+						old_child = tmp_child;
+					}
+
+					for(old_child = ezxml_child(childStream2, "var_struct"); old_child; old_child){
+						if(old_child->next){
+							tmp_child = old_child->next;
+						} else {
+							tmp_child = NULL;
+						}
+						new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
+
+						old_child = tmp_child;
+					}
+
+					for(old_child = ezxml_child(childStream2, "stream"); old_child; old_child){
+						if(old_child->next){
+							tmp_child = old_child->next;
+						} else {
+							tmp_child = NULL;
+						}
+						new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
+
+						old_child = tmp_child;
+					}
+
+
+
+
 					lastStream->next = childStream2->next;
 					free(childStream2);
 					childStream2 = lastStream;
 				} else {
 					lastStream = childStream2;
-				}
-			}
-		}
-	}
-
-	// Parse a stream for a stream, and add all var's from within the nested
-	// stream to the outer stream.
-	streamsBlock = ezxml_child(registry, "streams");
-	for(childStream1 = ezxml_child(streamsBlock, "stream"); childStream1; childStream1 = childStream1->next){
-		name = ezxml_attr(childStream1, "name");
-		// Nested streams
-		for(childStream2 = ezxml_child(childStream1, "stream"); childStream2; childStream2 = childStream2->next){
-			name2 = ezxml_attr(childStream2, "name");
-
-			if(strcmp(name, name2) != 0){
-				for(includeStream =	ezxml_child(streamsBlock, "stream"); includeStream; includeStream = includeStream->next){
-					name = ezxml_attr(includeStream, "name");
-
-					if(strcmp(name, name2) == 0){
-						// "copy" var's from nested streams
-						for(old_child = ezxml_child(includeStream, "var"); old_child; old_child = old_child->next){
-							new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
-						}
-					}
 				}
 			}
 		}
