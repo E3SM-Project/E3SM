@@ -252,7 +252,8 @@ end subroutine uwshcu_readnl
                                  qrten_inv, qsten_inv  , precip        , snow      , evapc_inv,  &
                                  cufrc_inv, qcu_inv    , qlu_inv       , qiu_inv   ,             &   
                                  cbmf     , qc_inv     , rliq          ,                         &
-                                 cnt_inv  , cnb_inv    , lchnk         , dpdry0_inv )
+                                 cnt_inv  , cnb_inv    , lchnk         , dpdry0_inv,             &
+                                 fer_out  , fdr_out                                              )  !RCE!BSINGH(09/22/2014): Added fer_out and fdr_out for unified convective transport
 
     implicit none
     integer , intent(in)    :: lchnk     
@@ -310,6 +311,12 @@ end subroutine uwshcu_readnl
     real(r8), intent(out)   :: cbmf(mix)                !  Cumulus base mass flux [ kg/m2/s ]
     real(r8), intent(out)   :: cnt_inv(mix)             !  Cumulus top  interface index, cnt = kpen [ no ]
     real(r8), intent(out)   :: cnb_inv(mix)             !  Cumulus base interface index, cnb = krel - 1 [ no ]
+
+    !BSINGH(09/22/2014): Added for unified convective transport
+    real(r8), intent(out)   :: fer_out(mix,mkx)         !  Fractional lateral entrainment rate [ 1/Pa ]  !RCE
+    real(r8), intent(out)   :: fdr_out(mix,mkx)         !  Fractional lateral detrainment rate [ 1/Pa ]  !RCE
+    !BSINGH -Ends
+
 
     real(r8)                :: ps0(mix,0:mkx)           !  Environmental pressure at the interfaces [ Pa ]
     real(r8)                :: zs0(mix,0:mkx)           !  Environmental height at the interfaces   [ m ]
@@ -399,7 +406,8 @@ end subroutine uwshcu_readnl
                          qrten, qsten  , precip    , snow  , evapc, &
                          cufrc, qcu    , qlu       , qiu   ,        &
                          cbmf , qc     , rliq      ,                &
-                         cnt  , cnb    , lchnk     , dpdry0 )
+                         cnt  , cnb    , lchnk     , dpdry0,        &
+                         fer_out, fdr_out                           )  !RCE !BSINGH(09/22/2014): Added fer_out, fdr_out for unified convective transport
 
     ! Reverse cloud top/base interface indices
 
@@ -451,7 +459,8 @@ end subroutine uwshcu_readnl
                              qrten_out, qsten_out , precip_out   , snow_out , evapc_out , &
                              cufrc_out, qcu_out   , qlu_out      , qiu_out  ,             &
                              cbmf_out , qc_out    , rliq_out     ,                        &
-                             cnt_out  , cnb_out   , lchnk        , dpdry0_in )
+                             cnt_out  , cnb_out   , lchnk        , dpdry0_in ,            &
+                             fer_out  , fdr_out                                           )  !RCE !BSINGH(09/22/2014): Added fer_out  , fdr_out for unified convective transport
 
     ! ------------------------------------------------------------ !
     !                                                              !  
@@ -538,6 +547,10 @@ end subroutine uwshcu_readnl
     real(r8), intent(out)   :: rliq_out(mix)                  !  Vertical integral of qc_out [ m/s ]
     real(r8), intent(out)   :: cnt_out(mix)                   !  Cumulus top  interface index, cnt = kpen [ no ]
     real(r8), intent(out)   :: cnb_out(mix)                   !  Cumulus base interface index, cnb = krel - 1 [ no ] 
+    !BSINGH(09/22/2014): Moved from local variables to argument intent outs for unified convective transport
+    real(r8), intent(out)   :: fer_out(mix,mkx)               !  Fractional lateral entrainment rate [ 1/Pa ] 
+    real(r8), intent(out)   :: fdr_out(mix,mkx)               !  Fractional lateral detrainment rate [ 1/Pa ]
+    !BSINGH - Ends
 
     !
     ! Internal Output Variables
@@ -548,8 +561,6 @@ end subroutine uwshcu_readnl
     real(r8)                   ufrc_out(mix,0:mkx)            !  Updraft fractional area at the interfaces [ fraction ]
     real(r8)                   uflx_out(mix,0:mkx)            !  Updraft/pen.entrainment zonal momentum flux [ m/s/m2/s ]
     real(r8)                   vflx_out(mix,0:mkx)            !  Updraft/pen.entrainment meridional momentum flux [ m/s/m2/s ]
-    real(r8)                   fer_out(mix,mkx)               !  Fractional lateral entrainment rate [ 1/Pa ]
-    real(r8)                   fdr_out(mix,mkx)               !  Fractional lateral detrainment rate [ 1/Pa ]
     real(r8)                   cinh_out(mix)                  !  Convective INhibition upto LFC (CIN) [ J/kg ]
     real(r8)                   trflx_out(mix,0:mkx,ncnst)     !  Updraft/pen.entrainment tracer flux [ #/m2/s, kg/kg/m2/s ] 
    

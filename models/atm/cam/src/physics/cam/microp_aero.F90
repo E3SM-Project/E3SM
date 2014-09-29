@@ -74,6 +74,11 @@ integer :: kvh_idx = -1
 integer :: tke_idx = -1
 integer :: wp2_idx = -1
 integer :: ast_idx = -1
+!BSINGH(09/22/2014): Added for liq cld frac bug fix
+integer :: alst_idx = -1
+integer :: aist_idx = -1
+!BSINGH -Ends
+
 integer :: cldo_idx = -1
 integer :: dgnum_idx    = -1
 integer :: dgnumwet_idx = -1
@@ -106,7 +111,7 @@ integer :: naai_idx, naai_hom_idx, npccn_idx, rndst_idx, nacon_idx
 
 real(r8) :: sigmag_aitken
 logical  :: separate_dust = .false.
-
+logical  :: liqcf_fix!BSINGH(09/22/2014): Added for liq cld frac bug fix
 !===============================================================================
 contains
 !===============================================================================
@@ -153,7 +158,8 @@ subroutine microp_aero_init
 
    ! Query the PBL eddy scheme
    call phys_getopts(eddy_scheme_out          = eddy_scheme, &
-                     history_amwg_out = history_amwg)
+                     history_amwg_out = history_amwg, &
+                     liqcf_fix_out    = liqcf_fix)!BSINGH(09/22/2014): Added for liq cld frac bug fix
 
    ! Access the physical properties of the aerosols that are affecting the climate
    ! by using routines from the rad_constituents module.
@@ -182,6 +188,13 @@ subroutine microp_aero_init
    clim_modal_aero = (nmodes > 0)
 
    ast_idx      = pbuf_get_index('AST')
+   !BSINGH(09/22/2014): Added for liq cld frac bug fix
+   if(liqcf_fix) then
+      alst_idx      = pbuf_get_index('ALST')
+      aist_idx      = pbuf_get_index('AIST')
+   endif
+   !BSINGh -ENDS
+
 
    if (clim_modal_aero) then
 
@@ -343,12 +356,13 @@ end subroutine microp_aero_readnl
 !===============================================================================
 
 subroutine microp_aero_run ( &
-   state, ptend, deltatin, pbuf)
+   state, ptend, deltatin, pbuf, liqcldfo )!BSINGH(09/22/2014): Added for liq cld frac bug fix
 
    ! input arguments
    type(physics_state), target, intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: deltatin     ! time step (s)
+   real(r8),                    intent(in)    :: liqcldfo(pcols,pver)  ! old liquid cloud fraction, added by HW !BSINGH(09/22/2014): Added for liq cld frac bug fix
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
 
@@ -365,6 +379,11 @@ subroutine microp_aero_run ( &
    integer :: nucboast
 
    real(r8), pointer :: ast(:,:)        
+   !BSINGH(09/22/2014): Added for liq cld frac bug fix
+   real(r8), pointer :: alst(:,:)        
+   real(r8), pointer :: aist(:,:)        
+   !BSINGh -Ends
+
 
    real(r8)          :: icecldf(pcols,pver)    ! ice cloud fraction   
    real(r8)          :: liqcldf(pcols,pver)    ! liquid cloud fraction
@@ -462,9 +481,20 @@ subroutine microp_aero_run ( &
 
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   !BSINGH(09/22/2014): Added for liq cld frac bug fix
+   if(liqcf_fix) then
+      call pbuf_get_field(pbuf, alst_idx,     alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+      call pbuf_get_field(pbuf, aist_idx,     aist, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   endif
 
-   liqcldf(:ncol,:pver) = ast(:ncol,:pver)
-   icecldf(:ncol,:pver) = ast(:ncol,:pver)
+   if(liqcf_fix) then !BSINGH(09/22/2014): It mimics compl treatment
+      liqcldf(:ncol,:pver) = alst(:ncol,:pver) 
+      icecldf(:ncol,:pver) = aist(:ncol,:pver)
+   else
+      !BSINGH -Ends
+      liqcldf(:ncol,:pver) = ast(:ncol,:pver)
+      icecldf(:ncol,:pver) = ast(:ncol,:pver)
+   endif!BSINGH(09/22/2014): Added 'endif' for liq cld frac bug fix if condition
 
    call pbuf_get_field(pbuf, naai_idx, naai)
    call pbuf_get_field(pbuf, naai_hom_idx, naai_hom)
@@ -737,8 +767,15 @@ subroutine microp_aero_run ( &
          do i = 1, ncol
             qcld = qc(i,k) + qi(i,k)
             if (qcld > qsmall) then
-               lcldn(i,k) = cldn(i,k)*qc(i,k)/qcld
-               lcldo(i,k) = cldo(i,k)*qc(i,k)/qcld
+               !BSINGH(09/22/2014): Added for liq cld frac bug fix
+               if(liqcf_fix) then!BSINGH for liq cld fraction fix calc.
+                  lcldn(i,k)=liqcldf(i,k)
+                  lcldo(i,k)=liqcldfo(i,k)
+               else
+                  !BSINGH -ENDS
+                  lcldn(i,k) = cldn(i,k)*qc(i,k)/qcld
+                  lcldo(i,k) = cldo(i,k)*qc(i,k)/qcld
+               endif!BSINGH(09/22/2014): Added 'endif' for liq cld frac bug fix if condition
             end if
          end do
       end do

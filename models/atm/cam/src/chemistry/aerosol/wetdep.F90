@@ -279,9 +279,9 @@ subroutine wetdepa_v2( t, p, q, pdel, &
                        evaps, cwat, tracer, deltat, &
                        scavt, iscavt, cldv, cldvcu, cldvst, dlf, fracis, sol_fact, ncol, &
                        scavcoef, is_strat_cloudborne, rate1ord_cw2pr_st, qqcw, f_act_conv, &
-                       icscavt, isscavt, bcscavt, bsscavt, &
+                       icscavt, isscavt, bcscavt, bsscavt, rcscavt, rsscavt, &  !RCE !BSINGH - Added rcscavt and rsscavt as optional for resuspension bug fix
                        sol_facti_in, sol_factbi_in, sol_factii_in, &
-                       sol_factic_in, sol_factiic_in )
+                       sol_factic_in, sol_factiic_in,resus_fix ) !BSINGH - Added resus_fix
 
       !----------------------------------------------------------------------- 
       ! Purpose: 
@@ -332,6 +332,7 @@ subroutine wetdepa_v2( t, p, q, pdel, &
               scavt(pcols,pver),    &! scavenging tend 
               iscavt(pcols,pver),   &! incloud scavenging tends
               fracis(pcols,pver)     ! fraction of species not scavenged
+         logical, intent(in),optional :: resus_fix
          ! rce 2010/05/01
          ! is_strat_cloudborne = .true. if tracer is stratiform-cloudborne aerosol; else .false. 
          logical, intent(in), optional :: is_strat_cloudborne   
@@ -354,6 +355,9 @@ subroutine wetdepa_v2( t, p, q, pdel, &
       real(r8), intent(out), optional ::    isscavt(pcols,pver)     ! incloud, stratiform
       real(r8), intent(out), optional ::    bcscavt(pcols,pver)     ! below cloud, convective
       real(r8), intent(out), optional ::    bsscavt(pcols,pver)     ! below cloud, stratiform
+
+      real(r8), intent(out), optional ::    rcscavt(pcols,pver)     ! resuspension, convective - RCE !BSINGH - Added for resuspension bug fix as optional
+      real(r8), intent(out), optional ::    rsscavt(pcols,pver)     ! resuspension, stratiform - RCE !BSINGH - Added for resuspension bug fix as optional
 
       ! local variables
 
@@ -695,10 +699,40 @@ subroutine wetdepa_v2( t, p, q, pdel, &
 
             if ( present(icscavt) ) icscavt(i,k) = -(srcc*finc) * omsm
             if ( present(isscavt) ) isscavt(i,k) = -(srcs*fins) * omsm
-            if ( present(bcscavt) ) bcscavt(i,k) = -(srcc * (1-finc)) * omsm +  &
-                 fracev_cu(i)*scavabc(i)*gravit/pdel(i,k)
-            if ( present(bsscavt) ) bsscavt(i,k) = -(srcs * (1-fins)) * omsm +  &
-                 fracev(i)*scavab(i)*gravit/pdel(i,k)
+
+            if(.not.present(resus_fix)) then! BSINGH - For resuspension bug fix
+               if ( present(bcscavt) ) bcscavt(i,k) = -(srcc * (1-finc)) * omsm +  &
+                    fracev_cu(i)*scavabc(i)*gravit/pdel(i,k)
+               if ( present(bsscavt) ) bsscavt(i,k) = -(srcs * (1-fins)) * omsm +  &
+                    fracev(i)*scavab(i)*gravit/pdel(i,k)
+            endif
+            if(present(resus_fix)) then
+               if(.not.resus_fix) then! BSINGH - For resuspension bug fix
+                  if ( present(bcscavt) ) bcscavt(i,k) = -(srcc * (1-finc)) * omsm +  &
+                       fracev_cu(i)*scavabc(i)*gravit/pdel(i,k)
+                  if ( present(bsscavt) ) bsscavt(i,k) = -(srcs * (1-fins)) * omsm +  &
+                       fracev(i)*scavab(i)*gravit/pdel(i,k)
+               else
+                  if ( present(bcscavt) ) then
+                     if ( present(rcscavt) ) then
+                        bcscavt(i,k) = -(srcc * (1-finc)) * omsm                 !RCE
+                        rcscavt(i,k) = fracev_cu(i)*scavabc(i)*gravit/pdel(i,k)  !RCE
+                     else
+                        bcscavt(i,k) = -(srcc * (1-finc)) * omsm  &
+                             + fracev_cu(i)*scavabc(i)*gravit/pdel(i,k)
+                     end if
+                  end if
+                  if ( present(bsscavt) ) then
+                     if ( present(rsscavt) ) then
+                        bsscavt(i,k) = -(srcs * (1-fins)) * omsm               !RCE
+                        rsscavt(i,k) = + fracev(i)*scavab(i)*gravit/pdel(i,k)  !RCE
+                     else
+                        bsscavt(i,k) = -(srcs * (1-fins)) * omsm  &
+                             + fracev(i)*scavab(i)*gravit/pdel(i,k)
+                     end if
+                  end if
+               endif
+            endif
 
             dblchek(i) = tracer(i,k) + deltat*scavt(i,k)
 

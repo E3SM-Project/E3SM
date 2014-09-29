@@ -12,7 +12,7 @@ module convect_deep
 !
 !---------------------------------------------------------------------------------
    use shr_kind_mod, only: r8=>shr_kind_r8
-   use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
+   use ppgrid,       only: pver, pcols, pverp
    use cam_logfile,  only: iulog
 
    implicit none
@@ -157,7 +157,9 @@ subroutine convect_deep_tend( &
      dlf     ,pflx    ,zdu      , &
      rliq    , &
      ztodt   , &
-     state   ,ptend   ,landfrac ,pbuf)
+     state   ,ptend   ,landfrac ,pbuf, mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath ) !BSINGH - Added 11 new args (mu to lengath) for unified convective transport
+
 
 
    use physics_types, only: physics_state, physics_ptend, physics_tend, physics_ptend_init
@@ -186,6 +188,31 @@ subroutine convect_deep_tend( &
    real(r8), intent(out) :: zdu(pcols,pver)    ! detraining mass flux
 
    real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
+   !BSINGH(09/17/2014): Added for unified convective transport
+   !BSINGH -  Following variables are intent out
+   real(r8), intent(out):: mu(pcols,pver)
+   real(r8), intent(out):: eu(pcols,pver) 
+   real(r8), intent(out):: du(pcols,pver) 
+   real(r8), intent(out):: md(pcols,pver) 
+   real(r8), intent(out):: ed(pcols,pver) 
+   real(r8), intent(out):: dp(pcols,pver) 
+   
+   ! wg layer thickness in mbs (between upper/lower interface).
+   real(r8), intent(out):: dsubcld(pcols) 
+   
+   ! wg layer thickness in mbs between lcl and maxi.    
+   integer, intent(out) :: jt(pcols)   
+   
+   ! wg top  level index of deep cumulus convection.
+   integer, intent(out) :: maxg(pcols) 
+   
+   ! wg gathered values of maxi.
+   integer, intent(out) :: ideep(pcols)
+   
+   ! w holds position of gathered points vs longitude index   
+   integer, intent(out) :: lengath
+   !BSINGH- ENDS
+   
 
    real(r8), pointer :: prec(:)   ! total precipitation
    real(r8), pointer :: snow(:)   ! snow from ZM convection 
@@ -255,7 +282,9 @@ subroutine convect_deep_tend( &
           rliq    , &
           ztodt   , &
           jctop, jcbot , &
-          state   ,ptend   ,landfrac, pbuf)
+          state   ,ptend   ,landfrac, pbuf, mu, eu, &
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)!BSINGH(09/17/2014):Added 11 new args (mu to lengath) for unified convective transport
+
 
   end select
 
@@ -272,7 +301,9 @@ end subroutine convect_deep_tend
 !=========================================================================================
 
 
-subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf)
+subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)!BSINGH(09/17/2014):Added 11 new args (mu to lengath) for unified convective transport
+
 
    use physics_types, only: physics_state, physics_ptend
    
@@ -288,8 +319,34 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf)
 
    real(r8), intent(in) :: ztodt                          ! 2 delta t (model time increment)
 
+   !BSINGH(09/17/2014):Added for unified convective transport
+   !BSINGH -  Following variables are intent in here
+   real(r8), intent(in):: mu(pcols,pver) 
+   real(r8), intent(in):: eu(pcols,pver) 
+   real(r8), intent(in):: du(pcols,pver) 
+   real(r8), intent(in):: md(pcols,pver) 
+   real(r8), intent(in):: ed(pcols,pver) 
+   real(r8), intent(in):: dp(pcols,pver) 
+   
+   ! wg layer thickness in mbs (between upper/lower interface).
+   real(r8), intent(in):: dsubcld(pcols) 
+   
+   ! wg layer thickness in mbs between lcl and maxi.    
+   integer, intent(in) :: jt(pcols)   
+   
+   ! wg top  level index of deep cumulus convection.
+   integer, intent(in) :: maxg(pcols) 
+   
+   ! wg gathered values of maxi.
+   integer, intent(in) :: ideep(pcols)
+   
+   ! w holds position of gathered points vs longitude index   
+   integer, intent(in) :: lengath
+   !BSINGH - ENDS
+
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
-      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf) 
+      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) !BSINGH - Added 11 new args ('mu' to 'lengath') for unified convective transport mods 
    end if
 
 

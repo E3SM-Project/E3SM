@@ -389,7 +389,7 @@ end function chem_is
     endif
     
     ! add fields to pbuf needed by aerosol models
-    call aero_model_register()
+    call aero_model_register(imozart) !BSINGH(09/17/2014): Send imozart for unified convective transport
 
   end subroutine chem_register
 

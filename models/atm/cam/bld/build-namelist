@@ -2590,6 +2590,18 @@ $eddy_scheme =~ s/['"]//g;                                           #"'
 add_default($nl, 'shallow_scheme', 'eddy_scheme'=>$eddy_scheme);
 add_default($nl, 'srf_flux_avg', 'eddy_scheme'=>$eddy_scheme);
 
+#BSINGH - Flag splitting for code modifications by PNNL under polar project
+add_default($nl, 'resus_fix');
+add_default($nl, 'convproc_do_aer');
+add_default($nl, 'convproc_method_activate');
+add_default($nl, 'regen_fix');
+add_default($nl, 'liqcf_fix');
+add_default($nl, 'ssalt_tuning');
+add_default($nl, 'sscav_tuning');
+add_default($nl, 'convproc_do_gas');
+#BSINGH - ENDS
+
+
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');
 add_default($nl, 'microp_scheme');

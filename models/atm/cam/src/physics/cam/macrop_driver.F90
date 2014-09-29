@@ -79,6 +79,7 @@
     cmeliq_idx,   &  
     shfrc_idx       
     
+  logical :: liqcf_fix!BSINGH(09/22/2014): Added for liq cld frac bug fix
 
   contains
 
@@ -200,7 +201,8 @@ end subroutine macrop_driver_readnl
 
     call phys_getopts( history_aerosol_out        = history_aerosol      , &
                        history_budget_out         = history_budget       , &
-                       history_budget_histfile_num_out = history_budget_histfile_num)
+                       history_budget_histfile_num_out = history_budget_histfile_num, &
+                       liqcf_fix_out             = liqcf_fix )!BSINGH(09/22/2014): Added for liq cld frac bug fix
 
   ! Initialization routine for cloud macrophysics
 
@@ -241,6 +243,7 @@ end subroutine macrop_driver_readnl
 
     call addfld ('AST',       '1',        pver, 'A', 'Stratus cloud fraction',                                  phys_decomp)
     call addfld ('LIQCLDF',   '1',        pver, 'A', 'Stratus Liquid cloud fraction',                           phys_decomp)
+    call add_default('LIQCLDF', 1, ' ')!BSINGH (09/22/2014)- added for default output
     call addfld ('ICECLDF',   '1',        pver, 'A', 'Stratus ICE cloud fraction',                              phys_decomp)
 
     call addfld ('CLDST    ', 'fraction', pver, 'A', 'Stratus cloud fraction'                                  ,phys_decomp)
@@ -310,7 +313,7 @@ end subroutine macrop_driver_readnl
              dlf, dlf2, cmfmc, cmfmc2, ts,          &
              sst, zdu,       &
              pbuf, &
-	     det_s, det_ice)
+	     det_s, det_ice, alst_o)!BSINGH(09/22/2014): Added alst_o for liq cld frac bug fix
 
   !-------------------------------------------------------- !  
   !                                                         ! 
@@ -335,7 +338,7 @@ end subroutine macrop_driver_readnl
   use constituents,     only: cnst_get_ind, pcnst
   use cldwat2m_macro,   only: mmacro_pcond
   use physconst,        only: cpair, tmelt, gravit
-  use time_manager,     only: get_nstep
+  use time_manager,     only: get_nstep, is_first_step !BSINGH(09/22/2014): Added is_first_step for liq cld frac bug fix 
 
   use ref_pres,         only: top_lev => trop_cloud_top_lev
 
@@ -366,6 +369,8 @@ end subroutine macrop_driver_readnl
   ! These two variables are needed for energy check    
   real(r8), intent(out) :: det_s(pcols)             ! Integral of detrained static energy from ice
   real(r8), intent(out) :: det_ice(pcols)           ! Integral of detrained ice for energy check
+
+  real(r8), intent(out) :: alst_o(pcols,pver)  ! HW: for old liquid status fraction !BSINGH(09/22/2014): Added for liq cld frac bug fix
 
   !
   ! Local variables
@@ -817,6 +822,12 @@ end subroutine macrop_driver_readnl
    endif
    lmitend(:ncol,top_lev:pver) = ltend(:ncol,top_lev:pver) - itend(:ncol,top_lev:pver)
 
+   if(liqcf_fix) then !BSINGH(09/22/2014): Added for liq cld frac bug fix
+      !HW: set alst to alst_o before getting updated from macro
+      if(.not.is_first_step())alst_o(:ncol,:pver) = alst(:ncol,:pver)
+      !HW
+   endif
+
    t_inout(:ncol,top_lev:pver)  =  tcwat(:ncol,top_lev:pver) 
    qv_inout(:ncol,top_lev:pver) =  qcwat(:ncol,top_lev:pver)
    ql_inout(:ncol,top_lev:pver) =  lcwat(:ncol,top_lev:pver) - iccwat(:ncol,top_lev:pver)
@@ -840,6 +851,11 @@ end subroutine macrop_driver_readnl
                       tlat, qvlat, qcten, qiten, ncten, niten,                   &
                       cmeliq, qvadj, qladj, qiadj, qllim, qilim,                 &
                       cld, alst, aist, qlst, qist, do_cldice ) 
+
+   if(liqcf_fix) then !BSINGH(09/22/2014): Added for liq cld frac bug fix
+      if(is_first_step())alst_o(:ncol,:pver) = alst(:ncol,:pver)
+   endif
+
 
  ! Copy of concld/fice to put in physics buffer
  ! Below are used only for convective cloud.

@@ -96,7 +96,7 @@ integer  ::      snow_pcw_idx = 0
 
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
-
+logical :: prog_modal_aero !BSINGH(09/22/2014):To avoid extra diagnostics in case of prescribed aerosol run 
 contains
 
 ! ===============================================================================
@@ -165,6 +165,8 @@ subroutine diag_init()
    integer :: ixcldice, ixcldliq ! constituent indices for cloud liquid and ice water.
    integer :: ierr
 
+   call phys_getopts(prog_modal_aero_out = prog_modal_aero )!BSINGH -  To avoid extra diagnostics in case of prescribed aerosol run 
+
    ! outfld calls in diag_phys_writeout
 
    call addfld ('NSTEP   ','timestep',1,    'A','Model timestep',phys_decomp)
@@ -208,6 +210,36 @@ subroutine diag_init()
    call addfld ('VT      ','K m/s   ',pver, 'A','Meridional heat transport',phys_decomp)
    call addfld ('VU      ','m2/s2   ',pver, 'A','Meridional flux of zonal momentum' ,phys_decomp)
    call addfld ('VV      ','m2/s2   ',pver, 'A','Meridional velocity squared' ,phys_decomp)
+
+!Addition by bsingh(Po-Lun)
+   if(prog_modal_aero) then !Only for prognostic aerosols
+      call addfld ('bc_a1_2 ','kg2/kg2 ',pver, 'A','bc_a1 squared',phys_decomp)
+      call addfld ('dst_a1_2','kg2/kg2 ',pver, 'A','dst_a1 squared',phys_decomp)
+      call addfld ('dst_a3_2','kg2/kg2 ',pver, 'A','dst_a3 squared',phys_decomp)
+      call addfld ('ncl_a1_2','kg2/kg2 ',pver, 'A','ncl_a1 squared',phys_decomp)
+      call addfld ('ncl_a2_2','kg2/kg2 ',pver, 'A','ncl_a2 squared',phys_decomp)
+      call addfld ('ncl_a3_2','kg2/kg2 ',pver, 'A','ncl_a3 squared',phys_decomp)
+      call addfld ('so4_a1_2','kg2/kg2 ',pver, 'A','so4_a1 squared',phys_decomp)
+      call addfld ('so4_a2_2','kg2/kg2 ',pver, 'A','so4_a2 squared',phys_decomp)
+      call addfld ('so4_a3_2','kg2/kg2 ',pver, 'A','so4_a3 squared',phys_decomp)
+      call addfld ('soa_a1_2','kg2/kg2 ',pver, 'A','soa_a1 squared',phys_decomp)
+      call addfld ('soa_a2_2','kg2/kg2 ',pver, 'A','soa_a2 squared',phys_decomp)
+      call addfld ('pom_a1_2','kg2/kg2 ',pver, 'A','pom_a1 squared',phys_decomp)
+      call addfld ('Vbc_a1  ','m/skg/kg',pver, 'A','Meridional bc_a1 transport',phys_decomp)
+      call addfld ('Vdst_a1 ','m/skg/kg',pver, 'A','Meridional dst_a1 transport',phys_decomp)
+      call addfld ('Vdst_a3 ','m/skg/kg',pver, 'A','Meridional dst_a3 transport',phys_decomp)
+      call addfld ('Vncl_a1 ','m/skg/kg',pver, 'A','Meridional ncl_a1 transport',phys_decomp)
+      call addfld ('Vncl_a2 ','m/skg/kg',pver, 'A','Meridional ncl_a2 transport',phys_decomp)
+      call addfld ('Vncl_a3 ','m/skg/kg',pver, 'A','Meridional ncl_a3 transport',phys_decomp)
+      call addfld ('Vso4_a1 ','m/skg/kg',pver, 'A','Meridional so4_a1 transport',phys_decomp)
+      call addfld ('Vso4_a2 ','m/skg/kg',pver, 'A','Meridional so4_a2 transport',phys_decomp)
+      call addfld ('Vso4_a3 ','m/skg/kg',pver, 'A','Meridional so4_a3 transport',phys_decomp)
+      call addfld ('Vsoa_a1 ','m/skg/kg',pver, 'A','Meridional soa_a1 transport',phys_decomp)
+      call addfld ('Vsoa_a2 ','m/skg/kg',pver, 'A','Meridional soa_a2 transport',phys_decomp)
+      call addfld ('Vpom_a1 ','m/skg/kg',pver, 'A','Meridional pom_a1 transport',phys_decomp)
+   endif
+      !Addition by bsingh -ENDS
+
    call addfld ('VQ      ','m/skg/kg',pver, 'A','Meridional water transport',phys_decomp)
    call addfld ('QQ      ','kg2/kg2 ',pver, 'A','Eddy moisture variance',phys_decomp)
    call addfld ('OMEGAV  ','m Pa/s2 ',pver ,'A','Vertical flux of meridional momentum' ,phys_decomp)
@@ -301,8 +333,42 @@ subroutine diag_init()
       call add_default ('VU      ', 1, ' ')
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
+
+      !Addition by bsingh(Po-Lun)
+      if(prog_modal_aero) then !Only for prognostic aerosols
+         call add_default ('Vbc_a1  ', 1, ' ')
+         call add_default ('Vdst_a1 ', 1, ' ')
+         call add_default ('Vdst_a3 ', 1, ' ')
+         call add_default ('Vncl_a1 ', 1, ' ')
+         call add_default ('Vncl_a2 ', 1, ' ')
+         call add_default ('Vncl_a3 ', 1, ' ')
+         call add_default ('Vso4_a1 ', 1, ' ')
+         call add_default ('Vso4_a2 ', 1, ' ')
+         call add_default ('Vso4_a3 ', 1, ' ')
+         call add_default ('Vsoa_a1 ', 1, ' ')
+         call add_default ('Vsoa_a2 ', 1, ' ')
+         call add_default ('Vpom_a1 ', 1, ' ')
+      endif
+         !Addition by bsingh ENDS         
       call add_default ('UU      ', 1, ' ')
       call add_default ('OMEGAT  ', 1, ' ')
+      !Addition by bsingh(Po-Lun)
+      if(prog_modal_aero) then !Only for prognostic aerosols
+         call add_default ('bc_a1_2 ', 1, ' ')
+         call add_default ('dst_a1_2', 1, ' ')
+         call add_default ('dst_a3_2', 1, ' ')
+         call add_default ('ncl_a1_2', 1, ' ')
+         call add_default ('ncl_a2_2', 1, ' ')
+         call add_default ('ncl_a3_2', 1, ' ')
+         call add_default ('so4_a1_2', 1, ' ')
+         call add_default ('so4_a2_2', 1, ' ')
+         call add_default ('so4_a3_2', 1, ' ')
+         call add_default ('soa_a1_2', 1, ' ')
+         call add_default ('soa_a2_2', 1, ' ')
+         call add_default ('pom_a1_2', 1, ' ')
+      endif
+         !addition by bsingh ENDS
+
       call add_default ('TMQ     ', 1, ' ')
       call add_default ('PSL     ', 1, ' ')
       if (moist_physics) then
@@ -888,9 +954,90 @@ end subroutine diag_conv_tend_ini
 
     ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)
     call outfld ('VQ      ',ftem    ,pcols   ,lchnk     )
+!Addition by bsingh(Po-Lun)
+    if(prog_modal_aero) then !Only for prognostic aerosols
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,14)
+       call outfld ('Vbc_a1  ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,15)
+       call outfld ('Vdst_a1 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,22)
+       call outfld ('Vdst_a3 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,16)
+       call outfld ('Vncl_a1 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,20)
+       call outfld ('Vncl_a2 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,23)
+       call outfld ('Vncl_a3 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,11)
+       call outfld ('Vso4_a1 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,18)
+       call outfld ('Vso4_a2 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,24)
+       call outfld ('Vso4_a3 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,13)
+       call outfld ('Vsoa_a1 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,19)
+       call outfld ('Vsoa_a2 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,12)
+       call outfld ('Vpom_a1 ',ftem    ,pcols   ,lchnk     )
+    endif
+!addition by bsingh Ends
+
 
     ftem(:ncol,:) = state%q(:ncol,:,1)*state%q(:ncol,:,1)
     call outfld ('QQ      ',ftem    ,pcols   ,lchnk     )
+
+!addition by bsingh (Po-Lun)
+    if(prog_modal_aero) then !Only for prognostic aerosols
+       ftem(:ncol,:) = state%q(:ncol,:,14)*state%q(:ncol,:,14)
+       call outfld ('bc_a1_2 ',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,15)*state%q(:ncol,:,15)
+       call outfld ('dst_a1_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,22)*state%q(:ncol,:,22)
+       call outfld ('dst_a3_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,16)*state%q(:ncol,:,16)
+       call outfld ('ncl_a1_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,20)*state%q(:ncol,:,20)
+       call outfld ('ncl_a2_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,23)*state%q(:ncol,:,23)
+       call outfld ('ncl_a3_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,11)*state%q(:ncol,:,11)
+       call outfld ('so4_a1_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,18)*state%q(:ncol,:,18)
+       call outfld ('so4_a2_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,24)*state%q(:ncol,:,24)
+       call outfld ('so4_a3_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,13)*state%q(:ncol,:,13)
+       call outfld ('soa_a1_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,19)*state%q(:ncol,:,19)
+       call outfld ('soa_a2_2',ftem    ,pcols   ,lchnk     )
+       
+       ftem(:ncol,:) = state%q(:ncol,:,12)*state%q(:ncol,:,12)
+       call outfld ('pom_a1_2',ftem    ,pcols   ,lchnk     )
+    endif
+!addition by bsingh Ends 
+
 
     ftem(:ncol,:) = state%v(:ncol,:)**2
     call outfld ('VV      ',ftem    ,pcols   ,lchnk     )

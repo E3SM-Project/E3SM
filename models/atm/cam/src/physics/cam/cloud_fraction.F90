@@ -191,7 +191,9 @@ subroutine cldfrc_init
 
    use cam_history,   only:  phys_decomp, addfld
    use dycore,        only:  dycore_is, get_resolution
-   use chemistry,     only:  chem_is
+   !BSINGH - "use chemistry" is commented out to get rid of a circular dependency in unified convective trasport scheme
+   ! The dependency was: chemistry->aerosol_intr->zm_conv_intr->zm_conv->cloud_fraction->chemistry 
+   !use chemistry,     only:  chem_is
    use phys_control,  only:  phys_getopts
    
    ! horizontal grid specifier

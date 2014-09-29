@@ -1987,6 +1987,23 @@ diffusion solver routine.
 Default: set by build-namelist
 </entry>
 
+<!-- BSINGH  - Added flags for regeneration and liq cld fraction bug fixes-->
+<entry id="regen_fix" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+This is part of PNNL bug fixes under Polar project.It fixes the
+aerosol regeration bug in ndrop.F90
+Default: .false.
+</entry>
+
+<entry id="liqcf_fix" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+This is part of PNNL bug fixes under Polar project.It fixes the
+liq cloud fraction bug in macro and micro physics
+Default: .false.
+</entry>
+<!-- BSINGH - Ends -->
+
+
 <!-- CARMA Sectional Microphysics -->
 
 <entry id="carma_model" type="char*32" category="carma"
@@ -2654,6 +2671,36 @@ Bretherton; 'HBR' for Rasch modified version of 'HB'.
 Default: 'HB'
 </entry>
 
+
+<!-- BSINGH - Flags for implementing code modifications under polar project -->
+
+<!-- Scavenging mods-->
+
+<entry id="convproc_do_aer" type="logical"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+Switch to use new unified convective transport for aerosols
+Default: .false.
+</entry>
+
+<entry id="convproc_method_activate" type="integer"  category="scavenging" 
+       group="phys_ctl_nl" valid_values="0,1,2" >
+Switch to choose activation method for unified convective transport of aerosols
+Default: 2
+</entry>
+<entry id="convproc_do_gas" type="logical"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+Switch to use new unified convective transport scheme for gas
+Default: .false.
+</entry>
+
+<entry id="resus_fix" type="logical"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+resuspension bug fix in wetdep.F90
+Default: .false.
+</entry>
+<!-- BSINGH - Ends-->
+
+
 <!-- Diagnostics -->
 
 <entry id="history_amwg" type="logical"  category="diagnostics"
@@ -3132,6 +3179,13 @@ Default: set by build-namelist.
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
+<!-- BSINGH - Flags for implementing code modifications under polar project -->
+<entry id="sscav_tuning" type="logical"  category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Flag for wet scavenging tuning 
+Default: .false.
+</entry>
+<!-- BSINGH - ENDS-->
 
 <entry id="airpl_emis_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
@@ -3172,6 +3226,14 @@ Default: set by build-namelist.
 Tuning parameter for dust emissions.
 Default: set by build-namelist.
 </entry>
+
+<!-- BSINGH - sea salt tuning flag for polar project -->
+<entry id="ssalt_tuning"  type="logical" category="cam_chem"
+       group="phys_ctl_nl" valid_values="" >
+Tuning flag for seasalt introduced to accompany unified convective transport scheme by PNNL
+Default: .false.
+</entry>
+<!-- BSINGH - Ends -->
 
 <entry id="efield_hflux_file" type="char*256" input_pathname="abs" category="waccm_phys"
        group="iondrag_nl" valid_values="" >
