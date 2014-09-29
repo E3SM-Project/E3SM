@@ -32,6 +32,7 @@ module aero_model
   public :: aero_model_gasaerexch ! create, grow, change, and shrink aerosols.
   public :: aero_model_drydep     ! aerosol dry deposition and sediment
   public :: aero_model_wetdep     ! aerosol wet removal
+  public :: convproc_aero_model_wetdep     ! aerosol wet removal
   public :: aero_model_emissions  ! aerosol emissions
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
 
@@ -53,6 +54,8 @@ module aero_model
   integer :: rprddp_idx          = 0 
   integer :: rprdsh_idx          = 0 
 
+  integer :: imozart             = -1 !BSINGH(09/17/2014):For unified convective transport
+
   ! variables for table lookup of aerosol impaction/interception scavenging rates
   integer, parameter :: nimptblgrow_mind=-7, nimptblgrow_maxd=12
   real(r8) :: dlndg_nimptblgrow
@@ -69,6 +72,7 @@ module aero_model
   character(len=fieldname_len) :: dgnum_name(ntot_amode)
 
   ! Namelist variables
+  logical :: sscav_tuning, convproc_do_aer, resus_fix  !BSINGH(09/15/2014) - Added for applying scavenging tuning, unified convection and resuspension bug fix
   character(len=16) :: wetdep_list(pcnst) = ' '
   character(len=16) :: drydep_list(pcnst) = ' '
   real(r8)          :: sol_facti_cloud_borne = 1._r8
@@ -101,7 +105,7 @@ contains
     character(len=16) :: aer_wetdep_list(pcnst) = ' '
     character(len=16) :: aer_drydep_list(pcnst) = ' '
 
-    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne
+    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne, sscav_tuning !BSINGH(09/15/2014):Added scavenging tuning
 
     !-----------------------------------------------------------------------------
 
@@ -125,6 +129,7 @@ contains
     call mpibcast(aer_wetdep_list,   len(aer_wetdep_list(1))*pcnst, mpichar, 0, mpicom)
     call mpibcast(aer_drydep_list,   len(aer_drydep_list(1))*pcnst, mpichar, 0, mpicom)
     call mpibcast(sol_facti_cloud_borne, 1,                         mpir8,   0, mpicom)
+    call mpibcast(sscav_tuning,          1,                         mpilog,  0, mpicom) !BSINGH(09/16/2014): Added for scavenging tuning
 #endif
 
     wetdep_list = aer_wetdep_list
@@ -134,9 +139,11 @@ contains
 
   !=============================================================================
   !=============================================================================
-  subroutine aero_model_register
+  subroutine aero_model_register(imozart_in)
     use modal_aero_initialize_data, only : modal_aero_register
+    integer, intent(in) :: imozart_in
 
+    imozart = imozart_in
     call modal_aero_register()
 
   end subroutine aero_model_register
@@ -149,13 +156,16 @@ contains
     use cam_history,     only: addfld, add_default, phys_decomp
     use phys_control,    only: phys_getopts
     use mo_chem_utls,    only: get_rxt_ndx, get_spc_ndx
-    use modal_aero_data, only: cnst_name_cw
+    use modal_aero_data, only: cnst_name_cw, species_class, spec_class_gas  !RCE !BSINGH(09/17/2014):For unified convective transport
     use modal_aero_initialize_data, only: modal_aero_initialize
     use rad_constituents,           only: rad_cnst_get_info
     use dust_model,      only: dust_init, dust_names, dust_active, dust_nbin, dust_nnum
     use seasalt_model,   only: seasalt_init, seasalt_names, seasalt_active,seasalt_nbin
     use drydep_mod,      only: inidrydep
     use wetdep,          only: wetdep_init
+    !BSINGH(09/17/2014): Added for unified convective transport
+    use mo_chem_utls,    only: get_het_ndx
+    !BSINGH -ENDS
 
     ! args
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -168,6 +178,11 @@ contains
     logical  :: history_aerosol ! Output MAM or SECT aerosol tendencies
 
     integer :: l
+    !BSINGH(09/17/2014): For unified convective transport
+    logical :: convproc_do_gas 
+    integer :: nspc
+    character(len=fieldname_len) :: wetdep_name, depflx_name
+    !BSINGH -ENDS
     character(len=6) :: test_name
     character(len=64) :: errmes
 
@@ -176,11 +191,16 @@ contains
     dgnum_idx      = pbuf_get_index('DGNUM')
     dgnumwet_idx   = pbuf_get_index('DGNUMWET')
     
-    call phys_getopts( history_aerosol_out=history_aerosol )
+    call phys_getopts( history_aerosol_out=history_aerosol, &
+         !BSINGH(09/17/2014): For unified convective transport
+         convproc_do_aer_out = convproc_do_aer, & 
+         convproc_do_gas_out = convproc_do_gas, &
+         resus_fix_out       = resus_fix        )
+         !BSINGH -ENDS
 
     call rad_cnst_get_info(0, nmodes=nmodes)
 
-    call modal_aero_initialize(pbuf2d)
+    call modal_aero_initialize(pbuf2d, imozart) !BSINGH(09/17/2014): Added 'imozart' for unified convective transport
     call modal_aero_bcscavcoef_init()
 
     call dust_init()
@@ -364,6 +384,20 @@ contains
             1,  'A','Wet deposition flux (belowcloud, convective) at surface',phys_decomp)
        call addfld (trim(wetdep_list(m))//'SFSBS',unit_basename//'/m2/s ', &
             1,  'A','Wet deposition flux (belowcloud, stratiform) at surface',phys_decomp)
+       !BSINGH (09/23/2014) - Added for unified unified convective transport
+       if(convproc_do_aer) then
+          call addfld (trim(wetdep_list(m))//'SFSEC','kg/m2/s ', &
+               1,  'A','Wet deposition flux (precip evap, convective) at surface',phys_decomp)  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSES','kg/m2/s ', &
+               1,  'A','Wet deposition flux (precip evap, stratiform) at surface',phys_decomp)  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSID','kg/m2/s ', &
+               1,  'A','Wet deposition flux (incloud, deep convective) at surface',phys_decomp)  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSBD','kg/m2/s ', &
+               1,  'A','Wet deposition flux (belowcloud, deep convective) at surface',phys_decomp)  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSED','kg/m2/s ', &
+               1,  'A','Wet deposition flux (precip evap, deep convective) at surface',phys_decomp)  !RCE
+       endif
+
        call addfld (trim(wetdep_list(m))//'WET',unit_basename//'/kg/s ',pver, 'A','wet deposition tendency',phys_decomp)
        call addfld (trim(wetdep_list(m))//'SIC',unit_basename//'/kg/s ',pver, 'A', &
             trim(wetdep_list(m))//' ic wet deposition',phys_decomp)
@@ -400,6 +434,48 @@ contains
           call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
           call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
        endif
+       
+       !BSINGH(09/17/2014): For unified convective transport of gases
+       wetdep_name = 'WD_'//trim(solsym(m))
+       depflx_name = 'DF_'//trim(solsym(m)) 
+       
+       if(convproc_do_gas) then 
+          if ( history_aerosol ) then 
+             nspc = get_het_ndx(solsym(m)) 
+             if (nspc > 0) then
+                call cnst_get_ind( solsym(m), nspc, abort=.false. )
+                if (nspc > 0) then
+                   if (species_class(nspc) == spec_class_gas) &  !RCE - only output WD_xxx for gases
+                        call add_default( wetdep_name, 1, ' ' )
+                endif
+             endif
+          endif
+       endif
+
+       call cnst_get_ind(trim(solsym(m)), nspc, abort=.false. )
+       if(convproc_do_gas) then !BSINGH - For unified convective transport of gasses
+          if ( history_aerosol .and. (nspc > 0) ) then
+             if (species_class(nspc) == spec_class_gas) &  !RCE - only output DF_xxx for gases
+                  call add_default( depflx_name, 1, ' ' )
+          endif
+       endif
+
+       if(nspc > 0 .and. .not.cnst_name_cw(nspc) == ' ') then
+          if(convproc_do_aer) then !BSINGH- for unified convective transport of aerosols
+             call addfld (trim(cnst_name_cw(nspc))//'SFSEC','kg/m2/s ',1,  'A', &
+                  trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, convective) at surface',phys_decomp)  !RCE
+             call addfld (trim(cnst_name_cw(nspc))//'SFSES','kg/m2/s ',1,  'A', &
+                  trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, stratiform) at surface',phys_decomp)  !RCE             
+             if(history_aerosol) then
+                call add_default (trim(cnst_name_cw(nspc))//'SFSEC', 1, ' ')  !RCE
+                call add_default (trim(cnst_name_cw(nspc))//'SFSES', 1, ' ')  !RCE
+             endif
+          endif
+       endif
+       !BSINGH-Ends
+
+
+
     enddo
     do n = 1,pcnst
        if( .not. (cnst_name_cw(n) == ' ') ) then
@@ -1317,6 +1393,648 @@ contains
     endif
 
   endsubroutine aero_model_wetdep
+
+
+  !=============================================================================
+  !=============================================================================
+  subroutine convproc_aero_model_wetdep( state, dt, dlf, rprddpsum, rprdshsum,  &
+       evapcdpsum, evapcshsum, nsrflx_mzaer2cnvpr, cam_out, qsrflx_mzaer2cnvpr, &
+       aerdepwetis, aerdepwetcw, ptend, pbuf )
+
+    use modal_aero_deposition, only: set_srf_wetdep
+    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, wetdep_inputs_t
+    use modal_aero_data
+    use modal_aero_calcsize,   only: modal_aero_calcsize_sub
+    use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
+    !---------------------------------------------------------------------------
+    ! BSINGH(09/12/2014) - Added this subroutine for the unified convective 
+    ! transport
+    ! This subroutine is the direct copy of the "aero_model_wetdep" subroutine 
+    ! above. Following changes are made to this subroutine for implementing 
+    ! unified convective transport
+    !
+    !1. 
+    !
+    !---------------------------------------------------------------------------
+
+    ! args
+
+    type(physics_state), intent(in)    :: state       ! Physics state variables
+    real(r8),            intent(in)    :: dt          ! time step
+    real(r8),            intent(in)    :: dlf(:,:)    ! shallow+deep convective detrainment [kg/kg/s]
+    real(r8),            intent(in)    :: rprddpsum(pcols),  rprdshsum(pcols)   ! RCE 2012/01/12
+    real(r8),            intent(in)    :: evapcdpsum(pcols), evapcshsum(pcols)  ! RCE 2012/01/12
+    integer,             intent(in)    :: nsrflx_mzaer2cnvpr  !RCE 2012/01/12 bgn
+    type(cam_out_t),     intent(inout) :: cam_out     ! export state
+    real(r8),            intent(out)   :: qsrflx_mzaer2cnvpr(pcols,pcnst,nsrflx_mzaer2cnvpr)
+    real(r8),            intent(out)   :: aerdepwetis(pcols,pcnst) ! aerosol wet deposition (interstitial) !BSINGH(09/22/2014): Moved from local vars to args for unified convective transport
+    real(r8),            intent(out)   :: aerdepwetcw(pcols,pcnst) ! aerosol wet deposition (cloud water)  !BSINGH(09/22/2014): Moved from local vars to args for unified convective transport
+    type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
+    type(physics_buffer_desc), pointer :: pbuf(:)
+
+    ! local vars
+
+    integer :: m ! tracer index
+
+    integer :: lchnk ! chunk identifier
+    integer :: ncol ! number of atmospheric columns
+
+    real(r8) :: iscavt(pcols, pver)
+
+    integer :: mm
+    integer :: i,k
+
+    real(r8) :: icscavt(pcols, pver)
+    real(r8) :: isscavt(pcols, pver)
+    real(r8) :: bcscavt(pcols, pver)
+    real(r8) :: bsscavt(pcols, pver)
+    real(r8) :: sol_factb, sol_facti
+    real(r8) :: sol_factic(pcols,pver)
+    real(r8) :: sol_factbi, sol_factii, sol_factiic
+
+    real(r8) :: sflx(pcols) ! deposition flux
+
+    integer :: jnv ! index for scavcoefnv 3rd dimension
+    integer :: lphase ! index for interstitial / cloudborne aerosol
+    integer :: lspec ! index for aerosol number / chem-mass / water-mass
+    integer :: lcoardust, lcoarnacl ! indices for coarse mode dust and seasalt masses
+    real(r8) :: dqdt_tmp(pcols,pver) ! temporary array to hold tendency for 1 species
+    real(r8) :: f_act_conv(pcols,pver) ! prescribed aerosol activation fraction for convective cloud ! rce 2010/05/01
+    real(r8) :: f_act_conv_coarse(pcols,pver) ! similar but for coarse mode ! rce 2010/05/02
+    real(r8) :: f_act_conv_coarse_dust, f_act_conv_coarse_nacl ! rce 2010/05/02
+    real(r8) :: fracis_cw(pcols,pver)
+    real(r8) :: hygro_sum_old(pcols,pver) ! before removal [sum of (mass*hydro/dens)]
+    real(r8) :: hygro_sum_del(pcols,pver) ! removal change to [sum of (mass*hydro/dens)]
+    real(r8) :: hygro_sum_old_ik, hygro_sum_new_ik
+    real(r8) :: prec(pcols) ! precipitation rate
+    real(r8) :: q_tmp(pcols,pver) ! temporary array to hold "most current" mixing ratio for 1 species
+    real(r8) :: qqcw_tmp(pcols,pver) ! temporary array to hold qqcw ! rce 2010/05/01
+    real(r8) :: scavcoefnv(pcols,pver,0:2) ! Dana and Hales coefficient (/mm) for
+                                           ! cloud-borne num & vol (0),
+                                           ! interstitial num (1), interstitial vol (2)
+    real(r8) :: tmpa, tmpb
+    real(r8) :: tmpdust, tmpnacl
+    real(r8) :: water_old, water_new ! temporary old/new aerosol water mix-rat
+    logical  :: isprx(pcols,pver) ! true if precipation
+    !BSINGH(09/15/2014): Added for unified convection scheme
+    logical, parameter :: do_aero_water_removal = .false. ! True if aerosol water reduction by wet removal is to be calculated
+                                                          ! (this has not been fully tested, so best to leave it off)
+    character(len=16)  :: tmp_name  !RCE
+    real(r8) :: tmp_evapdp, tmp_evapsh  !RCE
+    real(r8) :: tmp_precdp, tmp_precsh  !RCE
+    real(r8) :: tmp_resudp, tmp_resush  !RCE
+    real(r8) :: sflxec(pcols), sflxecdp(pcols)  ! deposition flux  !RCE
+    real(r8) :: sflxic(pcols), sflxicdp(pcols)  ! deposition flux  !RCE
+    real(r8) :: sflxbc(pcols), sflxbcdp(pcols)  ! deposition flux  !RCE
+    real(r8) :: rcscavt(pcols, pver)  !RCE
+    real(r8) :: rsscavt(pcols, pver)  !RCE
+    real(r8) :: qqcw_sav(pcols,pver,0:maxd_aspectype)       ! temporary array to hold qqcw for the current mode  !RCE
+    real(r8) :: rtscavt(pcols, pver, 0:maxd_aspectype)  !RCE
+    !BSINGH -Ends
+
+    real(r8), pointer :: dgnumwet(:,:,:)
+    real(r8), pointer :: qaerwat(:,:,:)  ! aerosol water
+    real(r8), pointer :: rate1ord_cw2pr_st(:,:)
+
+    real(r8), pointer :: fracis(:,:,:)   ! fraction of transported species that are insoluble
+
+    real(r8), pointer :: fldcw(:,:)
+    type(wetdep_inputs_t) :: dep_inputs
+
+    lchnk = state%lchnk
+    ncol  = state%ncol
+
+    call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep', lq=wetdep_lq)
+    
+    ! Do calculations of mode radius and water uptake if:
+    ! 1) modal aerosols are affecting the climate, or
+    ! 2) prognostic modal aerosols are enabled
+    
+    call t_startf('calcsize')
+    ! for prognostic modal aerosols the transfer of mass between aitken and accumulation
+    ! modes is done in conjunction with the dry radius calculation
+    call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
+    call t_stopf('calcsize')
+
+    call t_startf('wateruptake')
+    call modal_aero_wateruptake_dr(state, pbuf)
+    call t_stopf('wateruptake')
+
+    if (nwetdep<1) return
+
+    call wetdep_inputs_set( state, pbuf, dep_inputs )
+
+    call pbuf_get_field(pbuf, dgnumwet_idx,       dgnumwet, start=(/1,1,1/), kount=(/pcols,pver,nmodes/) )
+    call pbuf_get_field(pbuf, qaerwat_idx,        qaerwat,  start=(/1,1,1/), kount=(/pcols,pver,nmodes/) )
+    call pbuf_get_field(pbuf, rate1_cw2pr_st_idx, rate1ord_cw2pr_st)
+    call pbuf_get_field(pbuf, fracis_idx,         fracis, start=(/1,1,1/), kount=(/pcols, pver, pcnst/) )
+
+    prec(:ncol)=0._r8
+    do k=1,pver
+       where (prec(:ncol) >= 1.e-7_r8)
+          isprx(:ncol,k) = .true.
+       elsewhere
+          isprx(:ncol,k) = .false.
+       endwhere
+       prec(:ncol) = prec(:ncol) + (dep_inputs%prain(:ncol,k) + dep_inputs%cmfdqr(:ncol,k) - dep_inputs%evapr(:ncol,k)) &
+            *state%pdel(:ncol,k)/gravit
+    end do
+    
+    !BSINGH(09/12/2014): Added for unified convection scheme
+    qsrflx_mzaer2cnvpr(:,:,:) = 0.0_r8  !RCE
+    aerdepwetis(:,:)          = 0.0_r8  !RCE
+    aerdepwetcw(:,:)          = 0.0_r8  !RCE
+    qqcw_tmp(:,:)             = 0.0_r8  !RCE
+
+    ! calculate the mass-weighted sol_factic for coarse mode species
+    ! sol_factic_coarse(:,:) = 0.30_r8 ! tuned 1/4
+    f_act_conv_coarse(:,:) = 0.60_r8 ! rce 2010/05/02
+    f_act_conv_coarse_dust = 0.40_r8 ! rce 2010/05/02
+    f_act_conv_coarse_nacl = 0.80_r8 ! rce 2010/05/02
+    if (modeptr_coarse > 0) then
+       lcoardust = lptr_dust_a_amode(modeptr_coarse)
+       lcoarnacl = lptr_nacl_a_amode(modeptr_coarse)
+       if ((lcoardust > 0) .and. (lcoarnacl > 0)) then
+          do k = 1, pver
+             do i = 1, ncol
+                tmpdust = max( 0.0_r8, state%q(i,k,lcoardust) + ptend%q(i,k,lcoardust)*dt )
+                tmpnacl = max( 0.0_r8, state%q(i,k,lcoarnacl) + ptend%q(i,k,lcoarnacl)*dt )
+                if ((tmpdust+tmpnacl) > 1.0e-30_r8) then
+                   ! sol_factic_coarse(i,k) = (0.2_r8*tmpdust + 0.4_r8*tmpnacl)/(tmpdust+tmpnacl) ! tuned 1/6
+                   f_act_conv_coarse(i,k) = (f_act_conv_coarse_dust*tmpdust &
+                        + f_act_conv_coarse_nacl*tmpnacl)/(tmpdust+tmpnacl) ! rce 2010/05/02
+                end if
+             end do
+          end do
+       end if
+    end if
+
+    scavcoefnv(:,:,0) = 0.0_r8 ! below-cloud scavcoef = 0.0 for cloud-borne species
+
+    do m = 1, ntot_amode ! main loop over aerosol modes
+       !BSINGH (09/12/2014):Do cloudborne first so that the resuspension of cloudborne 
+       !can be saved then applied to interstitial (RCE)
+       do lphase = 2, 1, -1  ! loop over interstitial (1) and cloud-borne (2) forms
+
+          ! sol_factb and sol_facti values
+          ! sol_factb - currently this is basically a tuning factor
+          ! sol_facti & sol_factic - currently has a physical basis, and reflects activation fraction
+          !
+          ! 2008-mar-07 rce - sol_factb (interstitial) changed from 0.3 to 0.1
+          ! - sol_factic (interstitial, dust modes) changed from 1.0 to 0.5
+          ! - sol_factic (cloud-borne, pcarb modes) no need to set it to 0.0
+          ! because the cloud-borne pcarbon == 0 (no activation)
+          !
+          ! rce 2010/05/02
+          ! prior to this date, sol_factic was used for convective in-cloud wet removal,
+          ! and its value reflected a combination of an activation fraction (which varied between modes)
+          ! and a tuning factor
+          ! from this date forward, two parameters are used for convective in-cloud wet removal
+          ! f_act_conv is the activation fraction
+          ! note that "non-activation" of aerosol in air entrained into updrafts should
+          ! be included here
+          ! eventually we might use the activate routine (with w ~= 1 m/s) to calculate
+          ! this, but there is still the entrainment issue
+          ! sol_factic is strictly a tuning factor
+          !
+          if (lphase == 1) then ! interstial aerosol
+             hygro_sum_old(:,:) = 0.0_r8
+             hygro_sum_del(:,:) = 0.0_r8
+             call modal_aero_bcscavcoef_get( m, ncol, isprx, dgnumwet, &
+                  scavcoefnv(:,:,1), scavcoefnv(:,:,2) )
+
+             !BSINGH(09/12/2014) - Apply scavenging tuning
+             if (sscav_tuning) then
+                sol_factb  = 0.03_r8   ! all below-cloud scav ON (0.1 "tuning factor")  ! tuned 1/6
+             else
+                sol_factb  = 0.1_r8    ! all below-cloud scav ON (0.1 "tuning factor")
+             endif
+
+             sol_facti = 0.0_r8 ! strat in-cloud scav totally OFF for institial
+
+             sol_factic = 0.4_r8 ! xl 2010/05/20 !BSINGH(09/12/2014) - Not controlling this with sscav_tuning if cond. as it is for convective scavenging
+
+             if (m == modeptr_pcarbon) then
+                ! sol_factic = 0.0_r8 ! conv in-cloud scav OFF (0.0 activation fraction)
+                f_act_conv = 0.0_r8 ! rce 2010/05/02
+             else if ((m == modeptr_finedust) .or. (m == modeptr_coardust)) then
+                ! sol_factic = 0.2_r8 ! conv in-cloud scav ON (0.5 activation fraction) ! tuned 1/4
+                f_act_conv = 0.4_r8 ! rce 2010/05/02
+             else
+                !BSINGH(09/12/2014) - Apply scavenging tuning
+                if (sscav_tuning) then
+                   f_act_conv = 0.4_r8   ! rce 2010/05/02
+                else
+                   f_act_conv = 0.8_r8   ! rce 2010/05/02
+                endif
+                      
+             end if
+
+          else ! cloud-borne aerosol (borne by stratiform cloud drops)
+
+             sol_factb  = 0.0_r8   ! all below-cloud scav OFF (anything cloud-borne is located "in-cloud")
+             if (sscav_tuning) then !BSINGH(09/12/2014) - Apply scavenging tuning
+                sol_facti  = min(0.6_r8, sol_facti_cloud_borne)  ! strat  in-cloud scav totally ON for cloud-borne  ! tuned 1/6 !BSINGH - for scavenging tuning
+             else
+                sol_facti  = sol_facti_cloud_borne  ! strat  in-cloud scav totally ON for cloud-borne
+             endif
+             sol_factic = 0.0_r8   ! conv   in-cloud scav OFF (having this on would mean
+                                   !        that conv precip collects strat droplets)
+             f_act_conv = 0.0_r8   ! conv   in-cloud scav OFF (having this on would mean
+
+          end if
+          
+          !BSINGH (09/12/2014) : Added for unified convective transport
+          ! RCE 2012/01/12
+          ! if modal aero convproc is turned on for aerosols, then
+          !    turn off the convective in-cloud removal for interstitial aerosols
+          !    (but leave the below-cloud on, as convproc only does in-cloud)
+          !    and turn off the outfld SFWET, SFSIC, SFSID, SFSEC, and SFSED calls 
+          ! for (stratiform)-cloudborne aerosols, convective wet removal
+          !    (all forms) is zero, so no action is needed
+          if (lphase == 1 .and. convproc_do_aer) then
+             sol_factic = 0.0_r8
+          end if
+          !BSINGH - ENDs
+          !
+          ! rce 2010/05/03
+          ! wetdepa has 6 "sol_fact" parameters:
+          ! sol_facti, sol_factic, sol_factb for liquid cloud
+          ! sol_factii, sol_factiic, sol_factbi for ice cloud
+          ! the ice cloud parameters are optional, and if not provided, they default to
+          ! one of the other sol_fact parameters (see subr. wetdepa about this)
+          ! for now, we set the ice cloud parameters equal
+          ! to their liquid cloud counterparts
+          ! currently the ice parameters are not used in wetdepa as
+          ! wetdepa sets "weight" (the ice cloud fraction) to 0.0
+          ! if this changes, we will have to give more thought to
+          ! the ice cloud parameter values
+          !
+          sol_factbi = sol_factb
+          sol_factii = sol_facti
+          sol_factiic = sol_factic(1,1)
+
+
+          do lspec = 0, nspec_amode(m)+1 ! loop over number + chem constituents + water
+
+             if (lspec == 0) then ! number
+                if (lphase == 1) then
+                   mm = numptr_amode(m)
+                   jnv = 1
+                else
+                   mm = numptrcw_amode(m)
+                   jnv = 0
+                endif
+             else if (lspec <= nspec_amode(m)) then ! non-water mass
+                if (lphase == 1) then
+                   mm = lmassptr_amode(lspec,m)
+                   jnv = 2
+                else
+                   mm = lmassptrcw_amode(lspec,m)
+                   jnv = 0
+                endif
+             else ! water mass
+                ! bypass wet removal of aerosol water
+                if ( .not. do_aero_water_removal ) cycle  !RCE 2012/01/12  !BSINGH(09/12/2014) : Added for unified convective transport
+                if (lphase == 1) then
+                   mm = 0
+                   ! mm = lwaterptr_amode(m)
+                   jnv = 2
+                else
+                   mm = 0
+                   jnv = 0
+                endif
+             endif
+
+             if (mm <= 0) cycle
+
+
+             ! set f_act_conv for interstitial (lphase=1) coarse mode species
+             ! for the convective in-cloud, we conceptually treat the coarse dust and seasalt
+             ! as being externally mixed, and apply f_act_conv = f_act_conv_coarse_dust/nacl to dust/seasalt
+             ! number and sulfate are conceptually partitioned to the dust and seasalt
+             ! on a mass basis, so the f_act_conv for number and sulfate are
+             ! mass-weighted averages of the values used for dust/seasalt
+             if ((lphase == 1) .and. (m == modeptr_coarse)) then
+                ! sol_factic = sol_factic_coarse
+                f_act_conv = f_act_conv_coarse ! rce 2010/05/02
+                if (lspec > 0) then
+                   if (lmassptr_amode(lspec,m) == lptr_dust_a_amode(m)) then
+                      ! sol_factic = 0.2_r8 ! tuned 1/4
+                      f_act_conv = f_act_conv_coarse_dust ! rce 2010/05/02
+                   else if (lmassptr_amode(lspec,m) == lptr_nacl_a_amode(m)) then
+                      ! sol_factic = 0.4_r8 ! tuned 1/6
+                      f_act_conv = f_act_conv_coarse_nacl ! rce 2010/05/02
+                   end if
+                end if
+             end if
+
+
+             if ((lphase == 1) .and. (lspec <= nspec_amode(m))) then
+                ptend%lq(mm) = .TRUE.
+                dqdt_tmp(:,:) = 0.0_r8
+                ! q_tmp reflects changes from modal_aero_calcsize and is the "most current" q
+                q_tmp(1:ncol,:) = state%q(1:ncol,:,mm) + ptend%q(1:ncol,:,mm)*dt
+                !BSINGH(09/12/2014): deleted fldcw pointer assignment
+                call wetdepa_v2( state%t, state%pmid, state%q(:,:,1), state%pdel, &
+                     dep_inputs%cldt, dep_inputs%cldcu, dep_inputs%cmfdqr, &
+                     dep_inputs%evapc, dep_inputs%conicw, dep_inputs%prain, dep_inputs%qme, &
+                     dep_inputs%evapr, dep_inputs%totcond, q_tmp, dt, &
+                     dqdt_tmp, iscavt, dep_inputs%cldv, dep_inputs%cldvcu, dep_inputs%cldvst, &
+                     dlf, fracis(:,:,mm), sol_factb, ncol, &
+                     scavcoefnv(:,:,jnv), &
+                     is_strat_cloudborne=.false.,  &
+                     rate1ord_cw2pr_st=rate1ord_cw2pr_st,  &
+                     qqcw=qqcw_sav(:,:,lspec),  & !BSINGH(09/12/2014):replaced fldcw with qqcw_sav(:,:,lspec) 
+                     f_act_conv=f_act_conv, &
+                     icscavt=icscavt, isscavt=isscavt, bcscavt=bcscavt, bsscavt=bsscavt, &
+                     rcscavt=rcscavt, rsscavt=rsscavt,                                   & !BSINGH(09/12/2014):Added for unified convective treatment! RCE 2012/01/12
+                     sol_facti_in=sol_facti, sol_factbi_in=sol_factbi, sol_factii_in=sol_factii, &   ! rce 2010/05/03
+                     sol_factic_in=sol_factic, sol_factiic_in=sol_factiic, resus_fix = resus_fix  ) ! rce 2010/05/03 !BSINGH(09/12/2014):Added resus_fix for resuspension fix
+
+                !BSINGH(09/15/2014):Added for unified convective treatment
+                ! add resuspension of cloudborne species to dqdt of interstitial species
+                dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) + rtscavt(1:ncol,:,lspec)  ! RCE 2012/01/12
+                !BSINGH -Ends
+
+                ptend%q(1:ncol,:,mm) = ptend%q(1:ncol,:,mm) + dqdt_tmp(1:ncol,:)
+
+                !BSINGH(09/15/2014):Added for unified convective treatment              
+                if ( (lspec > 0) .and. do_aero_water_removal ) then  !RCE 2012/01/12
+                   tmpa = spechygro(lspectype_amode(lspec,m))/ &
+                        specdens_amode(lspectype_amode(lspec,m))
+                   tmpb = tmpa*dt
+                   hygro_sum_old(1:ncol,:) = hygro_sum_old(1:ncol,:) &
+                        + tmpa*q_tmp(1:ncol,:)
+                   hygro_sum_del(1:ncol,:) = hygro_sum_del(1:ncol,:) &
+                        + tmpb*dqdt_tmp(1:ncol,:)
+                end if
+                
+                tmp_name = cnst_name(mm)  !RCE
+                
+                ! *** eventually need modify these for when convproc_do_aer is .true., !**BALLI- ask dick about this comment
+                !     but we rarely use these 3D tendency fields
+                !BSINGH -Ends
+                
+                !BSINGH(09/15/2014):Changed "cnst_name" with "tmp_name" in the following outfld calls 
+                call outfld( trim(tmp_name)//'WET', dqdt_tmp(:,:), pcols, lchnk)
+                call outfld( trim(tmp_name)//'SIC', icscavt, pcols, lchnk)
+                call outfld( trim(tmp_name)//'SIS', isscavt, pcols, lchnk)
+                call outfld( trim(tmp_name)//'SBC', bcscavt, pcols, lchnk)
+                call outfld( trim(tmp_name)//'SBS', bsscavt, pcols, lchnk)
+
+                !BSINGH(09/15/2014):In the following outfld calls,cnst_name is replaced by tmp_name
+                !**BALLI: Ask dick if we need to forgo do i = 1, ncol loops below...
+                sflx(:)=0._r8
+                do k=1,pver
+                   do i=1,ncol
+                      sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
+                   enddo
+                enddo
+                if (.not.convproc_do_aer) call outfld( trim(tmp_name)//'SFWET', sflx, pcols, lchnk)
+                aerdepwetis(:ncol,mm) = sflx(:ncol)
+
+                sflx(:)=0._r8
+                do k=1,pver
+                   do i=1,ncol
+                      sflx(i)=sflx(i)+icscavt(i,k)*state%pdel(i,k)/gravit
+                   enddo
+                enddo
+                if (.not.convproc_do_aer)call outfld( trim(tmp_name)//'SFSIC', sflx, pcols, lchnk)
+                sflxic = sflx 
+
+                sflx(:)=0._r8
+                do k=1,pver
+                   do i=1,ncol
+                      sflx(i)=sflx(i)+isscavt(i,k)*state%pdel(i,k)/gravit
+                   enddo
+                enddo
+                call outfld( trim(tmp_name)//'SFSIS', sflx, pcols, lchnk)
+                sflx(:)=0._r8
+                do k=1,pver
+                   do i=1,ncol
+                      sflx(i)=sflx(i)+bcscavt(i,k)*state%pdel(i,k)/gravit
+                   enddo
+                enddo
+                call outfld( trim(tmp_name)//'SFSBC', sflx, pcols, lchnk)
+                sflxbc = sflx
+                sflx(:)=0._r8
+                do k=1,pver
+                   do i=1,ncol
+                      sflx(i)=sflx(i)+bsscavt(i,k)*state%pdel(i,k)/gravit
+                   enddo
+                enddo
+                call outfld( trim(tmp_name)//'SFSBS', sflx, pcols, lchnk)
+                
+                !BSINGH(09/15/2014):Following two nested do-loops are new additions for unified convection 
+                !BSINGH(09/15/2014):After these do-loops, code was added by RCE, the comments by RCE are kept as it is
+                sflx(:)=0._r8
+                do k=1,pver
+                   do i=1,ncol
+                      sflx(i)=sflx(i)+rcscavt(i,k)*state%pdel(i,k)/gravit
+                   enddo
+                enddo
+                if (.not.convproc_do_aer) call outfld( trim(tmp_name)//'SFSEC', sflx, pcols, lchnk)
+                sflxec = sflx
+       
+                sflx(:)=0._r8
+                do k=1,pver
+                    do i=1,ncol
+                       sflx(i)=sflx(i)+rsscavt(i,k)*state%pdel(i,k)/gravit
+                    enddo
+                 enddo
+                 call outfld( trim(tmp_name)//'SFSES', sflx, pcols, lchnk)
+                 !RCE 2012/01/12 end - prev ~40 lines are modified
+                 
+                 !RCE 2012/01/12 bgn - next ~40 lines are new
+                 ! apportion convective surface fluxes to deep and shallow conv
+                 ! this could be done more accurately in subr wetdepa
+                 ! since deep and shallow rarely occur simultaneously, and these
+                 !    fields are just diagnostics, this approximate method is adequate
+                 ! only do this for interstitial aerosol, because conv clouds to not
+                 !    affect the stratiform-cloudborne aerosol
+                 if ( deepconv_wetdep_history ) then
+                    do i = 1, ncol
+                       tmp_precdp = max( rprddpsum(i),  1.0e-35_r8 )
+                       tmp_precsh = max( rprdshsum(i),  1.0e-35_r8 )
+                       tmp_evapdp = max( evapcdpsum(i), 0.1e-35_r8 )
+                       tmp_evapsh = max( evapcshsum(i), 0.1e-35_r8 )
+                       
+                       ! assume that in- and below-cloud removal are proportional to column precip production
+                       tmpa = tmp_precdp / (tmp_precdp + tmp_precsh)
+                       tmpa = max( 0.0_r8, min( 1.0_r8, tmpa ) )
+                       sflxicdp(i) = sflxic(i)*tmpa
+                       sflxbcdp(i) = sflxbc(i)*tmpa
+                       
+                       ! assume that resuspension is proportional to (wet removal)*[(precip evap)/(precip production)]
+                       tmp_resudp =           tmpa  * min( (tmp_evapdp/tmp_precdp), 1.0_r8 )
+                       tmp_resush = (1.0_r8 - tmpa) * min( (tmp_evapsh/tmp_precsh), 1.0_r8 )
+                       tmpb = max( tmp_resudp, 1.0e-35_r8 ) / max( (tmp_resudp+tmp_resush), 1.0e-35_r8 )
+                       tmpb = max( 0.0_r8, min( 1.0_r8, tmpb ) )
+                       sflxecdp(i) = sflxec(i)*tmpb
+                    end do
+                    call outfld( trim(tmp_name)//'SFSBD', sflxbcdp, pcols, lchnk)
+                    if (.not.convproc_do_aer ) then
+                       call outfld( trim(tmp_name)//'SFSID', sflxicdp, pcols, lchnk)
+                       call outfld( trim(tmp_name)//'SFSED', sflxecdp, pcols, lchnk)
+                    end if
+                 else
+                    sflxecdp(1:ncol) = 0.0_r8
+                 end if
+                 
+                 ! when ma_convproc_intr is used, convective in-cloud wet removal is done there
+                 ! the convective (total and deep) precip-evap-resuspension includes in- and below-cloud
+                 ! contributions
+                 ! so pass the below-cloud contribution to ma_convproc_intr
+                 qsrflx_mzaer2cnvpr(1:ncol,mm,1) = sflxec(  1:ncol)
+                 qsrflx_mzaer2cnvpr(1:ncol,mm,2) = sflxecdp(1:ncol)
+                 !RCE 2012/01/12 end - prev ~40 lines are new
+                 !BSINGH -ENDS
+                 !BSINGH(09/15/2014):Following if condition for lphase 2 is introduced before lphase 1.
+                 !In original code, if condition for lphase 2 comes after lphase 1
+              else if ((lphase == 2) .and. (lspec <= nspec_amode(m))) then 
+                 dqdt_tmp(:,:) = 0.0_r8
+                 fldcw => qqcw_get_field(pbuf,mm,lchnk)
+                 qqcw_sav(1:ncol,:,lspec) = fldcw(1:ncol,:)  !RCE 2012/01/12
+
+                call wetdepa_v2(state%t, state%pmid, state%q(:,:,1), state%pdel, &
+                     dep_inputs%cldt, dep_inputs%cldcu, dep_inputs%cmfdqr, &
+                     dep_inputs%evapc, dep_inputs%conicw, dep_inputs%prain, dep_inputs%qme, &
+                     dep_inputs%evapr, dep_inputs%totcond, fldcw, dt, &
+                     dqdt_tmp, iscavt, dep_inputs%cldv, dep_inputs%cldvcu, dep_inputs%cldvst, &
+                     dlf, fracis_cw, sol_factb, ncol, &
+                     scavcoefnv(:,:,jnv), &
+                     is_strat_cloudborne=.true.,  &
+                     rate1ord_cw2pr_st=rate1ord_cw2pr_st,  &
+                     qqcw=qqcw_tmp,  &
+                     f_act_conv=f_act_conv, &
+                     icscavt=icscavt, isscavt=isscavt, bcscavt=bcscavt, bsscavt=bsscavt, &
+                     rcscavt=rcscavt, rsscavt=rsscavt,                                   &           !BSINGH(09/15/2014):Added for unified convection
+                     sol_facti_in=sol_facti, sol_factbi_in=sol_factbi, sol_factii_in=sol_factii, &   ! rce 2010/05/03
+                     sol_factic_in=sol_factic, sol_factiic_in=sol_factiic, resus_fix = resus_fix  )  ! rce 2010/05/03!BSINGH(09/15/2014):Added resus_fix for fixing resuspension  bug
+                     !BSINGH(09/15/2014):Added for unified convection
+                     ! save resuspension of cloudborne species
+                     rtscavt(1:ncol,:,lspec) = rcscavt(1:ncol,:) + rsscavt(1:ncol,:)  ! RCE 2012/01/12
+                     
+                     ! wetdepa_v2 adds the resuspension of cloudborne to the dqdt of cloudborne (as a source)
+                     ! undo this, so the resuspension of cloudborne can be added to the dqdt of interstitial (above)
+                     dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - rtscavt(1:ncol,:,lspec)  ! RCE 2012/01/12
+                     !BSINGH-Ends
+       
+                     fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
+
+                     !BSINGH(09/15/2014):Added for unified convection
+                     !RCE 2012/01/12 bgn - next ~45 lines are changed
+                     tmp_name = cnst_name_cw(mm)
+                     !BSINGH - Ends
+
+
+                     sflx(:)=0._r8
+                     do k=1,pver
+                        do i=1,ncol
+                           sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
+                        enddo
+                     enddo
+                     call outfld( trim(tmp_name)//'SFWET', sflx, pcols, lchnk)
+                     aerdepwetcw(:ncol,mm) = sflx(:ncol)
+                     
+                     sflx(:)=0._r8
+                     do k=1,pver
+                        do i=1,ncol
+                           sflx(i)=sflx(i)+icscavt(i,k)*state%pdel(i,k)/gravit
+                        enddo
+                     enddo
+                     call outfld( trim(tmp_name)//'SFSIC', sflx, pcols, lchnk)
+
+                     sflx(:)=0._r8
+                     do k=1,pver
+                        do i=1,ncol
+                           sflx(i)=sflx(i)+isscavt(i,k)*state%pdel(i,k)/gravit
+                        enddo
+                     enddo
+                     call outfld( trim(tmp_name)//'SFSIS', sflx, pcols, lchnk)
+
+                     sflx(:)=0._r8
+                     do k=1,pver
+                        do i=1,ncol
+                           sflx(i)=sflx(i)+bcscavt(i,k)*state%pdel(i,k)/gravit
+                        enddo
+                     enddo
+                     call outfld( trim(tmp_name)//'SFSBC', sflx, pcols, lchnk)
+
+                     sflx(:)=0._r8
+                     do k=1,pver
+                        do i=1,ncol
+                           sflx(i)=sflx(i)+bsscavt(i,k)*state%pdel(i,k)/gravit
+                        enddo
+                     enddo
+                     call outfld( trim(tmp_name)//'SFSBS', sflx, pcols, lchnk)
+                                    
+                     !BSINGH(09/15/2014):Following two nested do-loops are new additions for unified convection 
+                     sflx(:)=0.0_r8
+                     do k=1,pver
+                        sflx(1:ncol)=sflx(1:ncol)+rcscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
+                     enddo                     
+                     call outfld( trim(tmp_name)//'SFSEC', sflx, pcols, lchnk)
+                     
+                     sflx(:)=0.0_r8
+                     do k=1,pver
+                        sflx(1:ncol)=sflx(1:ncol)+rsscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
+                     enddo
+                     call outfld( trim(tmp_name)//'SFSES', sflx, pcols, lchnk)
+                     !RCE 2012/01/12 end - prev ~40 lines are changed
+
+
+             else if ((lphase == 1) .and. (lspec == nspec_amode(m)+1) .and. do_aero_water_removal ) then  !RCE 2012/01/12
+                ! aerosol water -- because of how wetdepa treats evaporation of stratiform
+                ! precip, it is not appropriate to apply wetdepa to aerosol water
+                ! instead, "hygro_sum" = [sum of (mass*hygro/dens)] is calculated before and
+                ! after wet removal, and new water is calculated using
+                ! new_water = old_water*min(10,(hygro_sum_new/hygro_sum_old))
+                ! the "min(10,...)" is to avoid potential problems when hygro_sum_old ~= 0
+                ! also, individual wet removal terms (ic,is,bc,bs) are not output to history
+                ! ptend%lq(mm) = .TRUE.
+                ! dqdt_tmp(:,:) = 0.0_r8
+                do k = 1, pver
+                   do i = 1, ncol
+                      ! water_old = max( 0.0_r8, state%q(i,k,mm)+ptend%q(i,k,mm)*dt )
+                      water_old = max( 0.0_r8, qaerwat(i,k,mm) )
+                      hygro_sum_old_ik = max( 0.0_r8, hygro_sum_old(i,k) )
+                      hygro_sum_new_ik = max( 0.0_r8, hygro_sum_old_ik+hygro_sum_del(i,k) )
+                      if (hygro_sum_new_ik >= 10.0_r8*hygro_sum_old_ik) then
+                         water_new = 10.0_r8*water_old
+                      else
+                         water_new = water_old*(hygro_sum_new_ik/hygro_sum_old_ik)
+                      end if
+                      ! dqdt_tmp(i,k) = (water_new - water_old)/dt
+                      qaerwat(i,k,mm) = water_new
+                   end do
+                end do
+
+                ! ptend%q(1:ncol,:,mm) = ptend%q(1:ncol,:,mm) + dqdt_tmp(1:ncol,:)
+
+                ! call outfld( trim(cnst_name(mm))
+
+                ! sflx(:)=0._r8
+                ! do k=1,pver
+                ! do i=1,ncol
+                ! sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
+                ! enddo
+                ! enddo
+                ! call outfld( trim(cnst_name(mm))
+             endif
+
+          enddo ! lspec = 0, nspec_amode(m)+1
+       enddo ! lphase = 1, 2
+    enddo ! m = 1, ntot_amode
+
+    ! if the user has specified prescribed aerosol dep fluxes then
+    ! do not set cam_out dep fluxes according to the prognostic aerosols
+    if (.not.aerodep_flx_prescribed()) then
+       call set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
+    endif
+
+  end subroutine convproc_aero_model_wetdep
 
   !-------------------------------------------------------------------------
   ! provides aerosol surface area info for modal aerosols
