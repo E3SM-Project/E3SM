@@ -1,0 +1,30 @@
+#! /bin/csh -f
+
+#--- set modules
+source /etc/profile.d/modules.csh
+if ( $COMPILER == "intel" ) then
+    #MODULES UNLOAD    
+    module purge
+    unsetenv LD_LIBRARY_PATH
+    #Module load
+    module load intel/13.0.1
+    module load mvapich2/1.9
+    module load netcdf/4.3.0
+endif
+if ( $COMPILER == "nag" ) then
+    #MODULES UNLOAD    
+    module purge
+    unsetenv LD_LIBRARY_PATH
+    #Module load
+    module load nag/5.3.1
+    setenv COMPILER nag
+    setenv COMPILER_PATH /msc/apps/compilers/nag/5.3.1/
+    #NOTE: FIRST load mvapich. Loading netcdf before mvapich loads openmpi automatically and causes compilation problems
+    module load mvapich2/1.9
+    module load netcdf/4.3.0
+    
+endif
+limit coredumpsize 1000000
+limit stacksize unlimited
+
+
