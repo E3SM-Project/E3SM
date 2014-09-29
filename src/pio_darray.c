@@ -9,6 +9,8 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      for(int _i=0; _i<n; _i++)			\
        ((type *) arr)[_i] = *((type *) fill)
 
+
+
  // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
  PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
  {
@@ -71,8 +73,9 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      size_t count[fndims];
      int buflen, j;
 #ifdef USE_PNETCDF_VARN
-     PIO_Offset startlist[iodesc->maxregions][fndims];
-     PIO_Offset countlist[iodesc->maxregions][fndims];
+     PIO_Offset *startlist[iodesc->maxregions];
+     PIO_Offset *countlist[iodesc->maxregions];
+     int realregioncnt=0;
 #endif
 
 #ifdef _MPISERIAL
@@ -107,11 +110,12 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 // this is a time dependent multidimensional array
 	 if(vdesc->record >= 0){
 	   start[0] = vdesc->record;
-	   count[0] = 1;
 	   for(i=1;i<ndims;i++){
 	     start[i] = region->start[i-1];
 	     count[i] = region->count[i-1];
 	   }
+	  if(count[1]>0)
+	    count[0] = 1;
 	 // Non-time dependent array
 	 }else{
 	   for( i=0;i<ndims;i++){
@@ -214,16 +218,40 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
        case PIO_IOTYPE_PNETCDF:
 	 for( i=0,dsize=1;i<ndims;i++){
 	   dsize*=count[i];
+	 }
+	 //	 if(dsize==1 && ndims==2)
+	 //  printf("%s %d %ld %ld %ld %ld\n",__FILE__,__LINE__,start[0],start[1],count[0],count[1]);
 	 //	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
 #ifdef USE_PNETCDF_VARN
-	   startlist[regioncnt][i]=start[i];
-	   countlist[regioncnt][i]=count[i];
-#endif
+	 if(regioncnt==0){
+	   for(i=0;i<iodesc->maxregions;i++){
+	     startlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+	     countlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+	   }
+	     /*
+	   startlist = (PIO_Offset **) malloc(iodesc->maxregions * sizeof(PIO_Offset *));
+	   countlist = (PIO_Offset **) malloc(iodesc->maxregions * sizeof(PIO_Offset *));
+	   startlist[0] = (PIO_Offset *) calloc(iodesc->maxregions * fndims,sizeof(PIO_Offset));
+	   countlist[0] = (PIO_Offset *) calloc(iodesc->maxregions*fndims,sizeof(PIO_Offset));
+	     */
 	 }
-#ifdef USE_PNETCDF_VARN
+	 if(dsize>0){
+	   for( i=0; i<fndims;i++){
+	     startlist[realregioncnt][i]=start[i];
+	     countlist[realregioncnt][i]=count[i];
+	   }
+	   realregioncnt++;
+	 }
 	 if(regioncnt==iodesc->maxregions-1){
-	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, (PIO_Offset **) startlist,  (PIO_Offset **) countlist, 
+	   //    printf("%s %d %ld %d\n",__FILE__,__LINE__,iodesc,iodesc->llen);
+	   ierr = ncmpi_put_varn_all(ncid, vid, realregioncnt, startlist, countlist, 
 				     IOBUF, iodesc->llen, iodesc->basetype);
+	   //	   free(startlist[0]);
+	   // free(countlist[0]);
+	   for(i=0;i<iodesc->maxregions;i++){
+	     free(startlist[i]);
+	     free(countlist[i]);
+	   }
 	 }
 #else
 	 ierr = ncmpi_bput_vara(ncid, vid,  (PIO_Offset *) start,(PIO_Offset *) count, bufptr,
@@ -235,8 +263,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
        default:
 	 ierr = iotype_error(file->iotype,__FILE__,__LINE__);
        }
-
-       if(region->next != NULL)
+       if(region != NULL)
 	 region = region->next;
      } //    for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
    } // if(ios->ioproc)
@@ -347,8 +374,9 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      void *bufptr;
      int tsize;
 #ifdef USE_PNETCDF_VARN
-     PIO_Offset startlist[iodesc->maxregions][fndims];
-     PIO_Offset countlist[iodesc->maxregions][fndims];
+     PIO_Offset *startlist[iodesc->maxregions];
+     PIO_Offset *countlist[iodesc->maxregions];
+     int realregioncnt=0; 
 #endif
      // buffer is incremented by byte and loffset is in terms of the iodessc->basetype
      // so we need to multiply by the size of the basetype
@@ -384,12 +412,13 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 	if(vdesc->record >= 0 && fndims>1){
 	  start[0] = vdesc->record;
-	  count[0] = 1;
 	  for(i=1;i<ndims;i++){
 	    start[i] = region->start[i-1];
 	    count[i] = region->count[i-1];
 	    //	    printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,i,start[i],count[i]); 
 	  } 
+	  if(count[1]>0)
+	    count[0] = 1;
 	}else{
 	  // Non-time dependent array
 	  for(i=0;i<ndims;i++){
@@ -500,16 +529,30 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	    tmp_bufsize=1;
 	    for(int j=0;j<ndims; j++){
 	      tmp_bufsize *= count[j];
-#ifdef USE_PNETCDF_VARN
-	      startlist[regioncnt][j] = start[j];
-	      countlist[regioncnt][j] = count[j];
-#endif
 	    }
-	    	    
 #ifdef USE_PNETCDF_VARN
-	 if(regioncnt==iodesc->maxregions-1){
-	   ierr = ncmpi_get_varn_all(file->fh, vid, iodesc->maxregions, (PIO_Offset **) startlist, (PIO_Offset **) countlist, IOBUF, iodesc->llen, iodesc->basetype);
-	 }
+	   if(regioncnt==0){
+	     for(i=0;i<iodesc->maxregions;i++){
+	       startlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+	       countlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+	     }
+	   }
+
+	    if(tmp_bufsize>0){
+	      for(int j=0;j<fndims; j++){
+		startlist[realregioncnt][j] = start[j];
+		countlist[realregioncnt][j] = count[j];
+	      }
+	      realregioncnt++;
+	    }
+	    if(regioncnt==iodesc->maxregions-1){
+	      ierr = ncmpi_get_varn_all(file->fh, vid, realregioncnt, startlist, 
+					countlist, IOBUF, iodesc->llen, iodesc->basetype);
+	      for(i=0;i<iodesc->maxregions;i++){
+		free(startlist[i]);
+		free(countlist[i]);
+	      }
+	    }
 #else
 	    ierr = ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
 #endif
@@ -520,7 +563,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	  ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	  
 	}
-      if(region->next != NULL)
+      if(region != NULL)
 	region = region->next;
     } // for(regioncnt=0;...)
   }

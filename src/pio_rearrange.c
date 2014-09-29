@@ -882,7 +882,7 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
 				  map+nmaplen, region->start, region->count);
 
     pioassert(region->start[0]>=0,"failed to find region",__FILE__,__LINE__);
-    /*
+    /*    if(iodesc->llen==15)
     for(i=0;i<ndims;i++){
       printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,i,region->start[i],region->count[i], regionlen);
     }
@@ -1009,6 +1009,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       if(i>0)
 	rdispls[i] = rdispls[i-1]+ iodesc->rcount[ i-1 ];
     }
+    //    printf("%s %d %ld %d %d\n",__FILE__,__LINE__,iodesc,iodesc->llen,maplen);
+
+      
     if(iodesc->llen>0){
       srcindex = (PIO_Offset *) calloc(iodesc->llen,pio_offset_size);
     }
@@ -1045,6 +1048,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   pio_fc_gatherv((void *) shrtmap, iodesc->scount[0], PIO_OFFSET,
 		 (void *) iomap, recvlths, rdispls, PIO_OFFSET,  
 		 0, iodesc->subset_comm, maxreq);
+
 
   if(shrtmap != compmap)
     free(shrtmap);
