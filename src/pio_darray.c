@@ -403,7 +403,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	}
 	bufptr=NULL;
       }else{       
-	if(regioncnt==0)
+	if(regioncnt==0 || region==NULL)
 	  bufptr = IOBUF;
 	else
 	  bufptr=(void *)((char *) IOBUF + tsize*region->loffset);
@@ -471,7 +471,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	    if(i==0){
 	      for(int k=0;k<ndims;k++)
 		tmp_count[k] = count[k];
-	      if(regioncnt==0)
+	      if(regioncnt==0 || region==NULL)
 		bufptr = IOBUF;
 	      else
 		bufptr=(void *)((char *) IOBUF + tsize*region->loffset);
