@@ -1084,6 +1084,19 @@ module mpas_io
             end do
 
             ! Type and dimensions match... what about indices?
+            if (size(decomp_cursor % decomphandle % indices) /= size(indices)) then
+!write(stderrUnit,*) 'We do not have the same number of indices in this decomposition...'
+               decomp_cursor => decomp_cursor % next
+               cycle DECOMP_LOOP
+            end if
+
+            do i=1,size(decomp_cursor % decomphandle % indices)
+               if (indices(i) /= decomp_cursor % decomphandle % indices(i)) then
+!write(stderrUnit,*) 'One of the indices does not match... ', i
+                  decomp_cursor => decomp_cursor % next
+                  cycle DECOMP_LOOP
+               end if
+            end do 
             
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
