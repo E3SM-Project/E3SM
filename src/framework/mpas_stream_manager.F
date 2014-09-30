@@ -2347,6 +2347,7 @@ module mpas_stream_manager
         type (MPAS_TimeInterval_type) :: temp_interval
         type (MPAS_TimeInterval_type) :: read_interval
         character (len=StrKIND) :: temp_filename
+        character (len=StrKIND) :: temp_actualWhen
         logical :: ringing_alarm
         integer :: nAlarms
         integer :: local_ierr
@@ -2456,6 +2457,18 @@ module mpas_stream_manager
             end if
             stream % timeLevel = timeLevel
 
+            !
+            ! With multiple times per file, we either get the record number from
+            ! build_filename(), when maxRecords > 0, or we need to compute it here.
+            !
+            if (stream % maxRecords == 0) then
+                stream % nRecords = MPAS_seekStream(stream % stream, when, whence, temp_actualWhen, local_ierr)
+                if (local_ierr /= MPAS_STREAM_NOERR) then
+                    ierr = MPAS_STREAM_MGR_ERROR
+                    return
+                end if
+            end if
+
             stream % valid = .true.
         else
             if (stream % maxRecords /= 0 .and. nAlarms /= 0) then
@@ -2508,6 +2521,8 @@ module mpas_stream_manager
                 ! TODO: Here, perhaps we should call build_filename just to ensure we read from the proper record,
                 !       rather than assuming the records are at the same interval as calls to read the stream
                 !
+                ! Update: We could consider calling MPAS_seekStream(), but doing  so should only be required 
+                !         if we are not making reads from sequential records in the file
 
                 stream % nRecords = stream % nRecords + 1
             end if
