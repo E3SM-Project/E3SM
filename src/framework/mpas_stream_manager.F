@@ -53,6 +53,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_add_alarm, &
               MPAS_stream_mgr_remove_alarm, &
               MPAS_stream_mgr_reset_alarms, &
+              MPAS_stream_mgr_ringing_alarms, &
               MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
               MPAS_stream_mgr_read
@@ -1162,6 +1163,99 @@ module mpas_stream_manager
         end if
 
     end subroutine MPAS_stream_mgr_reset_alarms!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_ringing_alarms
+    !
+    !> \brief Test whether any I/O alarms in a stream manager are ringing
+    !> \author Michael Duda
+    !> \date   30 September 2014
+    !> \details
+    !>  Tests whether any I/O alarms in a stream manager are ringing; if the optional 
+    !>  'streamID' argument is given, only alarms for that stream are tested; if 
+    !>  the optional argument 'direction' is given, only alarms for the specified 
+    !>  direction are tested. If any of the tested alarms is ringing, the function 
+    !>  returns .true.; otherwise, it returns .false..
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_ringing_alarms(manager, streamID, direction, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in), optional :: streamID
+        integer, intent(in), optional :: direction
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream
+        type (MPAS_stream_list_type), pointer :: alarm_cursor
+        integer :: local_direction
+        integer :: local_ierr
+
+        
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_ringing_alarms()')
+
+        MPAS_stream_mgr_ringing_alarms = .false.
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+
+        !
+        ! Check for optional direction argument; default direction is both input and output.
+        !
+        if (present(direction)) then
+            local_direction = direction
+        else
+            local_direction = MPAS_STREAM_INPUT_OUTPUT
+        end if
+
+
+        !
+        ! Check for optional streamID argument; default is to handle all alarms in the manager.
+        !
+        nullify(stream)
+        if (present(streamID)) then
+            if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=local_ierr)) then
+                STREAM_DEBUG_WRITE('-- Stream '//trim(streamID)//' does not exist in stream manager.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return
+            end if
+        end if
+
+        
+        if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+            if (associated(stream)) then
+                alarm_cursor => stream % alarmList_in % head
+            else
+                alarm_cursor => manager % alarms_in % head
+            end if
+            do while (associated(alarm_cursor))
+                if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                    MPAS_stream_mgr_ringing_alarms = .true.
+                    return
+                end if
+                alarm_cursor => alarm_cursor % next
+            end do
+        end if
+
+
+        if (local_direction == MPAS_STREAM_OUTPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
+            if (associated(stream)) then
+                alarm_cursor => stream % alarmList_out % head
+            else
+                alarm_cursor => manager % alarms_out % head
+            end if
+            do while (associated(alarm_cursor))
+                if (mpas_is_alarm_ringing(manager % streamClock, alarm_cursor % name, ierr=local_ierr)) then
+                    MPAS_stream_mgr_ringing_alarms = .true.
+                    return
+                end if
+                alarm_cursor => alarm_cursor % next
+            end do
+        end if
+
+    end function MPAS_stream_mgr_ringing_alarms !}}}
 
 
     !-----------------------------------------------------------------------
