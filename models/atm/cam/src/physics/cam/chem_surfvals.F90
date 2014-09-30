@@ -258,7 +258,8 @@ subroutine chem_surfvals_init()
       call flbc_inti( flbc_file, flbc_list, flbc_timing, co2vmr, ch4vmr, n2ovmr, f11vmr, f12vmr )
       call chem_surfvals_set()
    else
-      call endrun ('chem_surfvals_init: input namelist SCENARIO_GHG must be set to either FIXED, RAMPED, RAMP_CO2_ONLY,or CHEM_LBC_FILE')
+      call endrun ('chem_surfvals_init: input namelist SCENARIO_GHG must be set to either FIXED,'  // &
+            'RAMPED, RAMP_CO2_ONLY,or CHEM_LBC_FILE')
    endif
 
    if (masterproc) then
