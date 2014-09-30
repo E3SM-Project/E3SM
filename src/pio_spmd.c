@@ -120,6 +120,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       }
     }
   }else{
+    printf("%s %d %ld %d %ld %d %d\n",__FILE__,__LINE__,sendbuf,sendcnt,recvbuf,recvcnt,root);
     CheckMPIReturn(MPI_Gather ( sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm), __FILE__,__LINE__);
   }
 

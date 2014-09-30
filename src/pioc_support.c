@@ -38,7 +38,7 @@ void piodie(const char *msg,const char *fname, const int line){
 
 void pioassert(_Bool expression, const char *msg, const char *fname, const int line)
 {
-#ifdef DEBUG
+#ifndef NDEBUG
   if(! expression){
     piodie(msg,fname,line);
   }

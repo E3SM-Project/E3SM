@@ -914,11 +914,18 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
   /* Create a new comm for each subset group with the io task in rank 0 and
      only 1 io task per group */
 
-  if(ios.ioproc)
+  if(ios.ioproc){
     key=0;
-  else
+  }else{
     key=ios.comp_rank%taskratio+1;
+  }
   color = ios.comp_rank/taskratio;
+
+  // If the io tasks are not an even divisor of the compute tasks put the remainder in the last group
+  if(color==ios.num_iotasks){
+    color--;
+    key=key+taskratio-1;
+  }
 
   MPI_Comm_split(ios.comp_comm, color, key, &(iodesc->subset_comm));
 
@@ -954,6 +961,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   /* subset partitions each have exactly 1 io task which is task 0 of that subset_comm */ 
   /* TODO: introduce a mechanism for users to define partitions */
   default_subset_partition(ios, iodesc);
+  iodesc->rearranger = PIO_REARR_SUBSET;
 
   MPI_Comm_rank(iodesc->subset_comm, &rank);
   MPI_Comm_size(iodesc->subset_comm, &ntasks);
@@ -961,14 +969,16 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   if(ios.ioproc)
     pioassert(rank==0,"Bad io rank in subset create",__FILE__,__LINE__);
   else
-    pioassert(rank>=0 && rank<ntasks,"Bad comp rank in subset create",__FILE__,__LINE__);
+    pioassert(rank>0 && rank<ntasks,"Bad comp rank in subset create",__FILE__,__LINE__);
   totalgridsize=1;
   for(i=0;i<ndims;i++)
     totalgridsize*=gsize[i];
 
   
   iodesc->ndof = maplen;
-  iodesc->scount = (int *) calloc(1,sizeof(int));
+  if(ios.ioproc){
+    iodesc->rcount = (int *) malloc(ntasks *sizeof(int));
+  }  iodesc->scount = (int *) calloc(1,sizeof(int));
 
   for(i=0;i<maplen;i++){
     pioassert(compmap[i]>=-1 && compmap[i]<totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
@@ -977,7 +987,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     }
   }
 
-  iodesc->rearranger = PIO_REARR_SUBSET;
   iodesc->sindex = (PIO_Offset *) calloc(iodesc->scount[0],pio_offset_size); 
   j=0;
   for(i=0;i<maplen;i++){
@@ -986,10 +995,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     }
   }
 
-  if(ios.ioproc){
-    iodesc->rcount = (int *) malloc(ntasks *sizeof(int));
-  }
-  
   // Pass the reduced maplen (without holes) from each compute task to its associated IO task
 
   pio_fc_gather( (void *) iodesc->scount, 1, MPI_INT,
