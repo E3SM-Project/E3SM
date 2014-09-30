@@ -562,7 +562,7 @@
 
 <machine MACH="titan">
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi,pgicuda</COMPILERS>
+	 <COMPILERS>pgi,pgicuda,intel,cray</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{MEMBERWORK}/$PROJECT</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>

@@ -165,6 +165,9 @@ for mct, etc.
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
   <FFLAGS>  -i4 -gopt -Mlist -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
 
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="datm"> -Mnovect </ADD_FFLAGS>
@@ -232,6 +235,10 @@ for mct, etc.
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
   <FFLAGS>  -i4 -Mlist -time -Mextend -byteswapio -Mflushz -Kieee </FFLAGS>
+  <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
+  
   <ADD_FFLAGS MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35 </ADD_FFLAGS>
 
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
@@ -268,6 +275,7 @@ for mct, etc.
   <FFLAGS> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </FFLAGS>
   <CFLAGS> -O2 -fp-model precise </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
@@ -420,8 +428,9 @@ for mct, etc.
   <ADD_LDFLAGS compile_threaded="false"> -h noomp </ADD_LDFLAGS>
   <ADD_CPPDEFS MODEL="moby"> -DDIR=NOOP </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -trapuv -Wuninitialized </ADD_FFLAGS>
-  <FFLAGS> -O2 -h byteswapio -f free -N 255 -em  </FFLAGS>
+  <FFLAGS> -O2 -h byteswapio -f free -N 255 -em </FFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> -h noomp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -S real64 </FC_AUTO_R8>
   <LDFLAGS> -Wl,--allow-multiple-definition -h byteswapio </LDFLAGS>  
 </compiler>
@@ -565,8 +574,16 @@ for mct, etc.
   <SFC>mpif90</SFC>
 </compiler>
  
+<compiler COMPILER="intel" MACH="titan">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>  
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
 
-<compiler MACH="titan">
+<compiler COMPILER="pgi" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
