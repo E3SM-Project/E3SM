@@ -31,7 +31,7 @@ echo "setenv BASELINE_ROOT       $BASELINE_ROOT"       >> $CASE.test || exit -1
 # generate baseline test flag
 if ( "$GENERATE_BASELINE" == "TRUE" ) then
   echo "setenv GENERATE_BASELINE"                        >> $CASE.test || exit -1
-  echo "setenv BASEGEN_NAME        $baseline_name_gen"   >> $CASE.test || exit -1
+  echo "setenv BASEGEN_NAME        $BASELINE_NAME_GEN"   >> $CASE.test || exit -1
   echo "setenv BASEGEN_DIR         $BASELINE_ROOT/$BASEGEN_CASE"           >> $CASE.test || exit -1
   echo "setenv BASEGEN_CPLHISTFILE $BASELINE_ROOT/$BASEGEN_CASE/cpl.hi.nc" >> $CASE.test || exit -1
   echo "setenv BASEGEN_CPLPROFFILE $BASELINE_ROOT/$BASEGEN_CASE/timing_summary" >> $CASE.test || exit -1
@@ -60,7 +60,7 @@ echo "unsetenv BASEGEN_FILE12"         >> $CASE.test || exit -1
 # regression test comparison flag
 if ( "$COMPARE_BASELINE" == "TRUE" ) then
   echo "setenv COMPARE_BASELINE"                                         >> $CASE.test || exit -1
-  echo "setenv BASECMP_NAME        $baseline_name_cmp"                   >> $CASE.test || exit -1
+  echo "setenv BASECMP_NAME        $BASELINE_NAME_CMP"                   >> $CASE.test || exit -1
   echo "setenv BASECMP_DIR         $BASELINE_ROOT/$BASECMP_CASE"         >> $CASE.test || exit -1
   echo "setenv BASECMP_CPLHISTFILE $BASELINE_ROOT/$BASECMP_CASE/cpl.hi.nc" >> $CASE.test || exit -1
 else
