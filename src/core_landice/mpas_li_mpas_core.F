@@ -97,10 +97,14 @@ module mpas_core
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
 
+      logical, pointer :: config_do_restart
+
 
       err = 0
       err_tmp = 0
       globalErr = 0
+
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -114,9 +118,14 @@ module mpas_core
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
       err = ior(err, err_tmp)
 
-      call MPAS_stream_mgr_read(stream_manager, ierr=err_tmp)
+      if (config_do_restart) then
+         call mpas_stream_mgr_read(stream_manager, streamID='restart', ierr=err_tmp)
+      else
+         call mpas_stream_mgr_read(stream_manager, streamID='input', ierr=err_tmp)
+      end if
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err_tmp)
       err = ior(err, err_tmp)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err_tmp)
       err = ior(err, err_tmp)
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
