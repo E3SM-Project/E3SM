@@ -1174,7 +1174,7 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_set_property_int(manager, streamID, propertyName, propertyValue, ierr) !{{{
+    subroutine MPAS_stream_mgr_set_property_int(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
 
         implicit none
 
@@ -1184,6 +1184,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         integer, intent(in) :: propertyValue
+        integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -1229,7 +1230,7 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_set_property_char(manager, streamID, propertyName, propertyValue, ierr) !{{{
+    subroutine MPAS_stream_mgr_set_property_char(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
 
         implicit none
 
@@ -1239,6 +1240,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         character (len=*), intent(in) :: propertyValue
+        integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -1297,7 +1299,7 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_set_property_logical(manager, streamID, propertyName, propertyValue, ierr) !{{{
+    subroutine MPAS_stream_mgr_set_property_logical(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
 
         implicit none
 
@@ -1307,6 +1309,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         logical, intent(in) :: propertyValue
+        integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -1355,7 +1358,7 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_get_property_int(manager, streamID, propertyName, propertyValue, ierr) !{{{
+    subroutine MPAS_stream_mgr_get_property_int(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
 
         implicit none
 
@@ -1365,6 +1368,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         integer, intent(out) :: propertyValue
+        integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -1410,7 +1414,7 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_get_property_char(manager, streamID, propertyName, propertyValue, ierr) !{{{
+    subroutine MPAS_stream_mgr_get_property_char(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
 
         implicit none
 
@@ -1420,11 +1424,12 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         character (len=*), intent(out) :: propertyValue
+        integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
         type (MPAS_stream_list_type), pointer :: alarm_cursor
-        type (MPAS_timeInterval_type) :: temp_interval, read_interval
+        type (MPAS_timeInterval_type) :: temp_interval, interval
         integer :: nAlarms
         integer :: err_local
 
@@ -1459,24 +1464,37 @@ module mpas_stream_manager
                 !    assume that the interval is the shortest interval between alarms on the stream; since
                 !    recordInterval is only used for reading, use the input alarm list in this check.
                 if (.not. associated(stream_cursor % recordInterval)) then
-                    alarm_cursor => stream_cursor % alarmList_in % head
+            
+                    !
+                    ! If no direction is specified, return the read interval, since this was the only historic 
+                    !    use of the recordInterval for a stream.
+                    !
+                    if (present(direction)) then
+                        if (direction == MPAS_STREAM_OUTPUT) then
+                            alarm_cursor => stream_cursor % alarmList_out % head
+                        else
+                            alarm_cursor => stream_cursor % alarmList_in % head
+                        end if
+                    else
+                        alarm_cursor => stream_cursor % alarmList_in % head
+                    end if
                     nAlarms = 0
                     do while (associated(alarm_cursor))
                         temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, err_local)
                         if (err_local == 0) then
                             if (nAlarms == 0) then
-                                read_interval = temp_interval
-                            else if (temp_interval < read_interval) then
-                                read_interval = temp_interval
+                                interval = temp_interval
+                            else if (temp_interval < interval) then
+                                interval = temp_interval
                             end if
                             nAlarms = nAlarms + 1
                         end if
                         alarm_cursor => alarm_cursor % next
                     end do
                     if (nAlarms > 0) then
-                        call mpas_get_timeInterval(read_interval, timeString=propertyValue)
+                        call mpas_get_timeInterval(interval, timeString=propertyValue)
                     else
-                        propertyValue = '00:00:00'
+                        propertyValue = 'none'
                     end if
                 else
                     call mpas_get_timeInterval(stream_cursor % recordInterval, timeString=propertyValue)
@@ -1501,7 +1519,7 @@ module mpas_stream_manager
     !>  Sets the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_get_property_logical(manager, streamID, propertyName, propertyValue, ierr) !{{{
+    subroutine MPAS_stream_mgr_get_property_logical(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
 
         implicit none
 
@@ -1511,6 +1529,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: propertyName
         logical, intent(out) :: propertyValue
+        integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
