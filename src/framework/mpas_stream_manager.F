@@ -1,12 +1,7 @@
 module mpas_stream_manager
 
 #define COMMA ,
-#ifdef MPAS_DEBUG
-#define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) M
-#else
-#define STREAM_DEBUG_WRITE(M) ! M
-#endif
-
+#define STREAM_DEBUG_WRITE(M) ! write(stderrUnit,*) M
 #define STREAM_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
 #define STREAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
 

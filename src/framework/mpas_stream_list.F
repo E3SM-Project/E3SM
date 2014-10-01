@@ -1,12 +1,7 @@
 module mpas_stream_list
 
 #define COMMA ,
-#ifdef MPAS_DEBUG
-#define LIST_DEBUG_WRITE(M) write(stderrUnit,*) M
-#else
-#define LIST_DEBUG_WRITE(M) ! M
-#endif
-
+#define LIST_DEBUG_WRITE(M) ! write(stderrUnit,*) M
 #define LIST_WARN_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
 #define LIST_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
 
