@@ -506,7 +506,7 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 				fprintf(fd, "        filename_template=\"%s\"\n", optfilename);
 				fprintf(fd, "        records_per_file=\"%s\"\n", optrecords);
 				if (optpackages) {
-					fprintf(fd, "                  packages=\"%s\"\n",optpackages);
+					fprintf(fd, "        packages=\"%s\"\n",optpackages);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
@@ -581,7 +581,7 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 					/* Loop over var_arrays listed within the stream */
 					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
 						optname = ezxml_attr(vararray_xml, "name");
-						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
+						fprintf(fd2, "%s\n", optname);
 					}
 
 					/* Loop over fields listed within the stream */
