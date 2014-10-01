@@ -669,6 +669,7 @@ module mpas_stream_manager
         type (MPAS_stream_list_type), pointer :: stream
         type (mpas_pool_field_info_type) :: info
         integer, pointer :: test_ptr
+        integer :: err_level
         integer :: err_local
 
 
@@ -709,7 +710,10 @@ module mpas_stream_manager
         ! Check that the field does not already exist in the stream
         !
         nullify(test_ptr)
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
         call mpas_pool_get_config(stream % field_pool, fieldName, value=test_ptr)
+        call mpas_pool_set_error_level(err_level)
         if (associated(test_ptr)) then
             STREAM_ERROR_WRITE('Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
             if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
