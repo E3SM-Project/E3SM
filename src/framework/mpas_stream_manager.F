@@ -143,6 +143,7 @@ module mpas_stream_manager
 
         integer :: err_local
 
+        call seed_random()
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_init()')
 
