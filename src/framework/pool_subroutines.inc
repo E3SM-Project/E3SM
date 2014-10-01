@@ -13,7 +13,7 @@
 !>  This routine sets the internal error level for pools.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_pool_set_error_level(newErrorLevel)!{{{
+   subroutine mpas_pool_set_error_level(newErrorLevel) !{{{
 
       implicit none
 
@@ -21,7 +21,26 @@
 
       currentErrorLevel = newErrorLevel
 
-   end subroutine!}}}
+   end subroutine mpas_pool_set_error_level !}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_pool_get_error_level
+!
+!> \brief MPAS Pool Error level get function
+!> \author Michael Duda, Doug Jacobsen
+!> \date   03/27/2014
+!> \details
+!>  This routine returns the internal error level for pools.
+!
+!-----------------------------------------------------------------------
+   integer function mpas_pool_get_error_level() !{{{
+
+      implicit none
+
+      mpas_pool_get_error_level = currentErrorLevel
+
+   end function mpas_pool_get_error_level !}}}
 
 
 !-----------------------------------------------------------------------
