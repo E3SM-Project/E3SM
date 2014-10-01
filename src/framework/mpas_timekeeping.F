@@ -1276,6 +1276,9 @@ module mpas_timekeeping
       end if
 
       if (present(S_d)) then
+         if (sd == 0) then   ! may only occur if (sn == 0)?
+            sd = 1
+         end if
          S_d = sd
       end if
 
