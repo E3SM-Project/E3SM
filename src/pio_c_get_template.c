@@ -1,6 +1,3 @@
-#ifdef BGQ
-#define READ_AND_BCAST 1
-#endif
 int PIO_function()
 {
   int ierr;
@@ -38,14 +35,23 @@ int PIO_function()
 #endif
     case PIO_IOTYPE_NETCDF:
       bcast = true;
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_function();
       }
       break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_function();
+#ifdef PNET_READ_AND_BCAST
+      bcast = true;
+      ncmpi_begin_indep_data(file->fh);
+      if(ios->iomaster){
+	ierr = ncmpi_function();
+      }
+      ncmpi_end_indep_data(file->fh);
+#else
+      ierr = ncmpi_function_all();
+#endif
       break;
 #endif
     default:

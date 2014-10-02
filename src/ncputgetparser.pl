@@ -215,27 +215,12 @@ foreach my $func (keys %{$functions}){
 		      print F "  ibufcnt = $bufcount;\n";
 		  }elsif($func =~ /vara/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
-		      print F "#ifdef READ_AND_BCAST\n";
-                      print F "      if(ios->io_rank>0){\n";
-                      print F "	   for(int idim=0;idim<ndims;idim++)\n";
-                      print F "     	  count[idim]=0;\n";
-                      print F "      }\n";
-                      print F "      bcast=true;\n";
-                      print F "#endif\n";
-
 		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
 		      print F "    ibufcnt *= count[i];\n";
 		      print F "  }\n";
 		  }elsif($func =~ /vars/ or $func =~ /varm/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
-		      print F "#ifdef READ_AND_BCAST\n";
-                      print F "      if(ios->io_rank>0){\n";
-                      print F "	   for(int idim=0;idim<ndims;idim++)\n";
-                      print F "     	  count[idim]=0;\n";
-                      print F "      }\n";
-                      print F "      bcast=true;\n";
-                      print F "#endif\n";
 		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
 		      print F "    ibufcnt *= count[i]/stride[i];\n";
@@ -274,16 +259,16 @@ foreach my $func (keys %{$functions}){
 		  my $args;
 		  my $tall = $func."_all";
 		  if(defined($functions->{$tall}{pnetcdf})){
-		      if($line =~ s/ncmpi_function/ncmpi_$tall/){
+		      if($line =~ s/ncmpi_function_all/ncmpi_$tall/){
 			  $args = $functions->{$tall}{pnetcdf};
 		      }
-		  }else{
-		      if($line =~ s/ncmpi_function/ncmpi_$func/){
-			  $preline = "        ncmpi_begin_indep_data(file->fh);\n        if(ios->iomaster){\n";
-			  $args = $functions->{$func}{pnetcdf} ;
-                          $postline = "        };\n         ncmpi_end_indep_data(file->fh);\n        bcast=true;\n";
-		      }
 		  }
+		  if($line =~ s/ncmpi_function/ncmpi_$func/){
+#    		          $preline = "        ncmpi_begin_indep_data(file->fh);\n        if(ios->iomaster){\n";
+		      $args = $functions->{$func}{pnetcdf} ;
+#                        $postline = "        };\n         ncmpi_end_indep_data(file->fh);\n        bcast=true;\n";
+		  }
+		  
 		  if($line =~ s/nc_function/nc_$func/){
 		      $args = $functions->{$func}{netcdf}  ; 
 		  }
