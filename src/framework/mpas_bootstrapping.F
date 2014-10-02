@@ -140,6 +140,10 @@ module mpas_bootstrapping
 
       inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr)
       if (ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit,*) ' '
+         write(stderrUnit,*) '************************************************************************************'
+         write(stderrUnit,*) 'Error: Could not open input file '''//trim(mesh_filename)//''' to read mesh fields'
+         write(stderrUnit,*) '************************************************************************************'
          call mpas_dmpar_abort(domain % dminfo)
       end if
 
