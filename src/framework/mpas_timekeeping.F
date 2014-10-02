@@ -1454,8 +1454,49 @@ module mpas_timekeeping
 
    end function div_ti_n
 
+   !-----------------------------------------------------------------------
+   !  routine mpas_interval_division
+   !
+   !> \brief This routine computes the number intervals that fit into another interval.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   10/02/2014
+   !> \details This routine is a wrapper to two different methods of computing
+   !> the number of intervals that fit into another interval.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_interval_division(ref_time, num, den, n, rem)
 
-   subroutine interval_division(num, den, n, rem)
+      implicit none
+
+      type (MPAS_Time_type), intent(in) :: ref_time
+      type (MPAS_TimeInterval_type), intent(in) :: num
+      type (MPAS_TimeInterval_type), intent(in) :: den
+      integer, intent(out) :: n
+      type (MPAS_TimeInterval_type), intent(out) :: rem
+
+      ! If either time interval contains years or months, need to use slower linear interval computation
+      ! Otherwise, we can use faster log interval computation
+      if ( num % ti % YR /= 0 .or. num % ti % MM /= 0 .or. den % ti % YR /= 0 .or. den % ti % MM /= 0 ) then
+         call mpas_interval_division_linear(ref_time, num, den, n, rem)
+      else
+         call mpas_interval_division_log(num, den, n, rem)
+      end if
+
+   end subroutine mpas_interval_division
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_interval_division_log
+   !
+   !> \brief This routine computes the number intervals that fit into another interval using a log search.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   10/02/2014
+   !> \details This routine computes the number of intervals that fit into
+   !>   another time interval using a log search. It is preferred over the
+   !>   _linear alternative, but only works when the intervals are in terms of days
+   !>   or smaller.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_interval_division_log(num, den, n, rem)
 
       implicit none
 
@@ -1467,7 +1508,6 @@ module mpas_timekeeping
       type (MPAS_TimeInterval_type) :: temp
       type (MPAS_TimeInterval_type) :: zero
       integer :: nn
-
 
       call mpas_set_timeInterval(zero, S=0)
 
@@ -1522,7 +1562,69 @@ module mpas_timekeeping
          temp = temp / 2
       end do
 
-   end subroutine interval_division
+   end subroutine mpas_interval_division_log
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_interval_division_linear
+   !
+   !> \brief This routine computes the number intervals that fit into another interval using a linear search.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   10/02/2014
+   !> \details This routine computes the number of intervals that fit into
+   !>   another time interval using a linear search. It is slower than the _log
+   !>   alternative, but works when intervals contain months or longer interval
+   !>   sections.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_interval_division_linear(ref_time, num, den, n, rem)
+
+      implicit none
+
+      type (MPAS_Time_type), intent(in) :: ref_time
+      type (MPAS_TimeInterval_type), intent(in) :: num
+      type (MPAS_TimeInterval_type), intent(in) :: den
+      integer, intent(out) :: n
+      type (MPAS_TimeInterval_type), intent(out) :: rem
+
+      type (MPAS_Time_type) :: target_time
+      type (MPAS_Time_type) :: updated_time
+
+      type (MPAS_TimeInterval_type) :: temp
+      type (MPAS_TimeInterval_type) :: zero
+
+      target_time = ref_time + num
+
+      updated_time = ref_time + den
+
+      n = 0
+
+      ! If the denominator is larger than the numerator, return 0 intervals,
+      ! and the numerator as the remainder
+      if ( target_time < updated_time ) then
+         rem = num
+         return
+      end if
+
+      ! One interval of den already fits into num
+      n = n + 1
+
+      do while (target_time > updated_time)
+         updated_time = updated_time + den
+         n = n + 1
+      end do
+
+      ! Here, if updated_time is larger than target time. Need to subtract den once, and compute remainder
+      if ( updated_time > target_time ) then
+         updated_time = updated_time - den
+         n = n - 1
+         rem = target_time - updated_time
+      else
+         call mpas_set_timeInterval(rem, S=0)
+      end if
+
+      return
+   end subroutine mpas_interval_division_linear
 
 
    logical function eq_t_t(t1, t2)

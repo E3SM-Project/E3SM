@@ -2768,7 +2768,7 @@ module mpas_stream_manager
             in_future = .false.
         end if
 
-        call interval_division(intv, period, nrecs, rem) 
+        call mpas_interval_division( ref_time, intv, period, nrecs, rem)
 
         call mpas_set_timeInterval(zero, S=0)
 
