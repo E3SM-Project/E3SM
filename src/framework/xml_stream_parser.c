@@ -157,6 +157,9 @@ void parse_xml_tag_name(char *tag_buf, char *tag_name)
  *  were copied into the tag buffer. If no complete XML tag is found in the input 
  *  buffer, the tag_len argument will be set to 0.
  *
+ *  The return value is the index in xml_buf representing the end of the tag,
+ *  realtive to the starting position.
+ *
  *********************************************************************************/
 size_t parse_xml_tag(char *xml_buf, size_t buf_len, char *tag, size_t *tag_len, int *line, int *start_line)
 {
@@ -616,7 +619,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 
 	line = 1;
 	do {
-		i += parse_xml_tag(&xml_buf[i], bufsize, tag_buf, &len, &line, &start_line);
+		i += parse_xml_tag(&xml_buf[i], (bufsize - i), tag_buf, &len, &line, &start_line);
 
 		if (len > 0) {
 
