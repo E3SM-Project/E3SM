@@ -48,6 +48,7 @@ module mpas_io_streams
       integer :: ioFormat
       integer :: ioDirection
       integer :: framesPerFile
+      integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
       type (MPAS_IO_Handle_type) :: fileHandle
       type (att_list_type), pointer :: attList => null()
       type (field_list_type), pointer :: fieldList => null()
@@ -131,7 +132,7 @@ module mpas_io_streams
 contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, framesPerFile, ierr)
+   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, framesPerFile, precision, ierr)
 
       implicit none
 
@@ -140,11 +141,13 @@ contains
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
       integer, intent(in) :: framesPerFile
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
 
       stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, io_err) 
       call MPAS_io_err_mesg(io_err, .false.)
@@ -156,6 +159,7 @@ contains
       stream % ioDirection = ioDirection
       stream % ioFormat = ioFormat
       stream % framesPerFile = framesPerFile
+      if (present(precision)) stream % defaultPrecision = precision
 
       stream % isInitialized = .true.
 
@@ -377,7 +381,7 @@ contains
       totalDimSize = 0
 
       call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, dimNames, dimSizes, &
-                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
 
       deallocate(indices)
       deallocate(dimSizes)
@@ -468,7 +472,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, dimNames0, &
                                              dimSizes0, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -477,7 +481,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -576,7 +580,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -585,7 +589,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -683,7 +687,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -692,7 +696,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -729,12 +733,13 @@ contains
    end subroutine MPAS_streamAddField_3dInteger
 
 
-   subroutine MPAS_streamAddField_0dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_0dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field0DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -749,6 +754,7 @@ contains
       integer, dimension(:), pointer :: dimSizes
       type (field_list_type), pointer :: field_list_cursor
       type (field_list_type), pointer :: new_field_list_node
+      integer :: local_precision
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -758,6 +764,13 @@ contains
       if (.not. stream % isInitialized) then
          if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
          return
+      end if
+
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
       end if
 
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
@@ -779,7 +792,7 @@ contains
       totalDimSize = 0
 
       call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , dimNames, dimSizes, &
-                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
 
       deallocate(indices)
       deallocate(dimSizes)
@@ -807,12 +820,13 @@ contains
    end subroutine MPAS_streamAddField_0dReal
 
 
-   subroutine MPAS_streamAddField_1dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_1dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field1DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -831,6 +845,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -847,7 +862,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -871,7 +893,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , dimNames0, &
                                              dimSizes0, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -880,7 +902,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -917,12 +939,13 @@ contains
    end subroutine MPAS_streamAddField_1dReal
 
 
-   subroutine MPAS_streamAddField_2dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_2dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field2DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -939,6 +962,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -955,7 +979,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -979,7 +1010,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -988,7 +1019,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1025,12 +1056,13 @@ contains
    end subroutine MPAS_streamAddField_2dReal
 
 
-   subroutine MPAS_streamAddField_3dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_3dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field3DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1047,6 +1079,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -1063,7 +1096,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -1088,7 +1128,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -1097,7 +1137,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1135,12 +1175,13 @@ contains
    end subroutine MPAS_streamAddField_3dReal
 
 
-   subroutine MPAS_streamAddField_4dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_4dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field4DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1157,6 +1198,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -1173,7 +1215,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -1198,7 +1247,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -1207,7 +1256,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1245,12 +1294,13 @@ contains
    end subroutine MPAS_streamAddField_4dReal
 
 
-   subroutine MPAS_streamAddField_5dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_5dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field5DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1267,6 +1317,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -1283,7 +1334,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -1308,7 +1366,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -1317,7 +1375,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1411,11 +1469,11 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames(1:1), &
                                              dimSizes, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
          end do
       else
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_CHAR, dimNames(1:1), dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
       end if
 
       deallocate(indices)
@@ -1450,7 +1508,7 @@ contains
 
 
    subroutine MPAS_streamAddField_generic(stream, fieldName, fieldType, dimNames, dimSizes, hasTimeDimension, isDecomposed, &
-                                          totalDimSize, globalDimSize, indices, ierr)
+                                          totalDimSize, globalDimSize, indices, precision, ierr)
 
       implicit none
 
@@ -1464,6 +1522,7 @@ contains
       integer, intent(in) :: totalDimSize
       integer, intent(in) :: globalDimSize
       integer, dimension(:), intent(in) :: indices
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1550,7 +1609,7 @@ contains
          !
 !write(stderrUnit,*) '... defining var to low-level interface with ndims ', ndims
 
-         call MPAS_io_def_var(stream % fileHandle, trim(fieldName), fieldType, dimNamesLocal(1:ndims), io_err)
+         call MPAS_io_def_var(stream % fileHandle, trim(fieldName), fieldType, dimNamesLocal(1:ndims), precision=precision, ierr=io_err)
          call MPAS_io_err_mesg(io_err, .false.)
          if (io_err /= MPAS_IO_NOERR) then
             if (present(ierr)) ierr = MPAS_IO_ERR

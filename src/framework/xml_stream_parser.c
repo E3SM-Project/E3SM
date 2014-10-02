@@ -25,7 +25,7 @@
 /* 
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
-void stream_mgr_create_stream_c(void *, const char *, int *, const char *, char *, char *, int *, int *, int *);
+void stream_mgr_create_stream_c(void *, const char *, int *, const char *, char *, char *, int *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
@@ -838,7 +838,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t substream_xml;
 	ezxml_t streamsmatch_xml, streammatch_xml;
 	const char *compstreamname_const, *structname_const;
-	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const;
+	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const, *precision;
 	const char *interval_in, *interval_out, *packagelist;
 	char *packages, *package;
 	char ref_time_local[256];
@@ -848,6 +848,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	char msgbuf[MSGSIZE];
 	int itype;
 	int irecs;
+	int iprec;
 	int immutable;
 	int err;
 
@@ -883,6 +884,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		interval_out = ezxml_attr(stream_xml, "output_interval");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
 		record_interval = ezxml_attr(stream_xml, "record_interval");
+		precision = ezxml_attr(stream_xml, "precision");
 		packagelist = ezxml_attr(stream_xml, "packages");
 
 		fprintf(stderr, "\n");
@@ -930,6 +932,21 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			fprintf(stderr, "        %-20s%s\n", "record interval:", "-");
 		}
 
+		if (precision != NULL && strstr(precision, "single") != NULL) {
+			iprec = 4;
+		}
+		else if (precision != NULL && strstr(precision, "double") != NULL) {
+			iprec = 8;
+		}
+		else {
+			iprec = 0;
+			if (precision != NULL)
+				fprintf(stderr, "        *** unrecognized precision specification; reverting to native precision\n");
+		}
+		if (iprec != 0) {
+			fprintf(stderr, "        %-20s%i %s\n", "real precision:", iprec, "bytes");
+		}
+
 
 		/* For output streams, build the directory structure where files will be written */
 		if (itype == 2 || itype == 3) {
@@ -941,7 +958,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
-					&irecs, &immutable, &err);
+					&irecs, &immutable, &iprec, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -1008,6 +1025,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		interval_out = ezxml_attr(stream_xml, "output_interval");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
 		record_interval = ezxml_attr(stream_xml, "record_interval");
+		precision = ezxml_attr(stream_xml, "precision");
 		packagelist = ezxml_attr(stream_xml, "packages");
 
 		fprintf(stderr, "\n");
@@ -1054,6 +1072,21 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			fprintf(stderr, "        %-20s%s\n", "record interval:", "-");
 		}
 
+		if (precision != NULL && strstr(precision, "single") != NULL) {
+			iprec = 4;
+		}
+		else if (precision != NULL && strstr(precision, "double") != NULL) {
+			iprec = 8;
+		}
+		else {
+			iprec = 0;
+			if (precision != NULL)
+				fprintf(stderr, "        *** unrecognized precision specification; reverting to native precision\n");
+		}
+		if (iprec != 0) {
+			fprintf(stderr, "        %-20s%i %s\n", "real precision:", iprec, "bytes");
+		}
+
 
 		/* For output streams, build the directory structure where files will be written */
 		if (itype == 2 || itype == 3) {
@@ -1065,7 +1098,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
-						&irecs, &immutable, &err);
+						&irecs, &immutable, &iprec, &err);
 		if (err != 0) {
 			*status = 1;
 			return;

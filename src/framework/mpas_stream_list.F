@@ -9,6 +9,7 @@ module mpas_stream_list
     use mpas_io_units, only : stderrUnit
     use mpas_grid_types, only : mpas_pool_type
     use mpas_io_streams, only : MPAS_Stream_type
+    use mpas_io, only : MPAS_IO_NATIVE_PRECISION
     use mpas_timekeeping, only : MPAS_Time_type, MPAS_TimeInterval_type
 
 
@@ -34,6 +35,7 @@ module mpas_stream_list
         integer :: timeLevel = 0
         integer :: maxRecords
         integer :: nRecords
+        integer :: precision = MPAS_IO_NATIVE_PRECISION
         type (MPAS_TimeInterval_type), pointer :: recordInterval => null()
         type (MPAS_stream_list_type), pointer :: alarmList_in => null()
         type (MPAS_stream_list_type), pointer :: alarmList_out => null()

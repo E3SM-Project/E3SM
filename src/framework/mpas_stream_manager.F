@@ -30,7 +30,8 @@ module mpas_stream_manager
                                   MPAS_STREAM_PROPERTY_FILENAME    =  7, &
                                   MPAS_STREAM_PROPERTY_MAX_RECORDS =  8, &
                                   MPAS_STREAM_PROPERTY_REF_TIME    =  9, &
-                                  MPAS_STREAM_PROPERTY_RECORD_INTV = 10
+                                  MPAS_STREAM_PROPERTY_RECORD_INTV = 10, &
+                                  MPAS_STREAM_PROPERTY_PRECISION   = 11
 
     public :: MPAS_streamManager_type, &
               MPAS_stream_mgr_init, &
@@ -289,10 +290,18 @@ module mpas_stream_manager
     !>  specified using the optional "recordInterval" argument; if this argument
     !>  is not supplied, the stream manager will assume that this interval is
     !>  equal to the shortest period of any periodic alarm attached to the stream.
+    !>  The optional argument 'realPrecision' specifies the precision of
+    !>  real-valued fields in the files associated with the stream; this
+    !>  argument may take on values MPAS_IO_SINGLE_PRECISION,
+    !>  MPAS_IO_DOUBLE_PRECISION, or MPAS_IO_NATIVE_PRECISION; if this argument is
+    !>  not supplied, native precision is assumed.
+    !>  Note: Setting the precision of real fields is only supported at present
+    !>  for converting double-precision to single-precision on output; input is
+    !>  automatically converted from single- do double-precision if necessary.
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, &
-                                             referenceTime, recordInterval, ierr) !{{{
+                                             referenceTime, recordInterval, realPrecision, ierr) !{{{
 
         implicit none
 
@@ -305,6 +314,7 @@ module mpas_stream_manager
         integer, intent(in) :: maxRecords
         type (MPAS_Time_type), intent(in), optional :: referenceTime
         type (MPAS_TimeInterval_type), intent(in), optional :: recordInterval
+        integer, intent(in), optional :: realPrecision
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: new_stream
@@ -344,6 +354,9 @@ module mpas_stream_manager
         if (present(recordInterval)) then
             allocate(new_stream % recordInterval)
             new_stream % recordInterval = recordInterval
+        end if
+        if (present(realPrecision)) then
+            new_stream % precision = realPrecision
         end if
         call MPAS_stream_list_create(new_stream % alarmList_in, ierr=err_local)
         if (err_local /= MPAS_STREAM_LIST_NOERR) then
@@ -1304,6 +1317,9 @@ module mpas_stream_manager
             case (MPAS_STREAM_PROPERTY_MAX_RECORDS)
                 stream_cursor % maxRecords = propertyValue
 
+            case (MPAS_STREAM_PROPERTY_PRECISION)
+                stream_cursor % precision = propertyValue
+
             case default
                 STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
                 STREAM_ERROR_WRITE('    or specified property is not of type integer.')
@@ -1487,6 +1503,9 @@ module mpas_stream_manager
 
             case (MPAS_STREAM_PROPERTY_MAX_RECORDS)
                 propertyValue = stream_cursor % maxRecords
+
+            case (MPAS_STREAM_PROPERTY_PRECISION)
+                propertyValue = stream_cursor % precision
 
             case default
                 STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
@@ -2187,7 +2206,7 @@ module mpas_stream_manager
             !
             allocate(stream % stream)
             call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, stream % maxRecords, &
-                                   ierr=local_ierr)
+                                   precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2232,7 +2251,7 @@ module mpas_stream_manager
                     ! Build new stream from pools of fields and attributes
                     !
                     call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, &
-                                           stream % maxRecords, ierr=local_ierr)
+                                           stream % maxRecords, precision=stream % precision, ierr=local_ierr)
                     if (local_ierr /= MPAS_STREAM_NOERR) then
                         ierr = MPAS_STREAM_MGR_ERROR
                         return
@@ -2556,7 +2575,7 @@ module mpas_stream_manager
             !
             allocate(stream % stream)
             call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, stream % maxRecords, &
-                                   ierr=local_ierr)
+                                   precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2613,7 +2632,7 @@ module mpas_stream_manager
                     ! Build new stream from pools of fields and attributes
                     !
                     call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
-                                           stream % maxRecords, ierr=local_ierr)
+                                           stream % maxRecords, precision=stream % precision, ierr=local_ierr)
                     if (local_ierr /= MPAS_STREAM_NOERR) then
                         ierr = MPAS_STREAM_MGR_ERROR
                         return
@@ -4054,14 +4073,16 @@ end module mpas_stream_manager
 
 
 subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, ref_time_c, rec_intv_c, &
-                                      maxRecords_c, immutable_c, ierr_c) bind(c) !{{{
+                                      maxRecords_c, immutable_c, precision_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
                                     MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_STREAM_PROPERTY_REF_TIME, &
-                                    MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
+                                    MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
+                                    MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
+    use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION
     use mpas_io_units, only : stderrUnit
 
     implicit none
@@ -4074,11 +4095,12 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     character(kind=c_char) :: rec_intv_c(*)
     integer(kind=c_int) :: maxRecords_c
     integer(kind=c_int) :: immutable_c
+    integer(kind=c_int) :: precision_c
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, filename, reference_time, record_interval
-    integer :: direction, maxRecords, immutable, ierr
+    integer :: direction, maxRecords, immutable, prec, ierr
 
 
     call c_f_pointer(manager_c, manager)
@@ -4089,6 +4111,14 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     call mpas_c_to_f_string(rec_intv_c, record_interval)
     immutable = immutable_c
     maxRecords = maxRecords_c
+    if (precision_c == 4) then
+        prec = MPAS_IO_SINGLE_PRECISION
+    else if (precision_c == 8) then
+        prec = MPAS_IO_DOUBLE_PRECISION
+    else
+        prec = MPAS_IO_NATIVE_PRECISION
+    end if
+
     
     !
     ! For immutable streams, the stream should have already been defined at this point, and
@@ -4110,8 +4140,9 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
             return
         end if
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords, ierr=ierr)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_PRECISION, prec, ierr=ierr)
     else
-        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
+        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, realPrecision=prec, ierr=ierr)
     end if
 
     if (reference_time /= 'none') then
