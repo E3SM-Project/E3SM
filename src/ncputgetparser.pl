@@ -262,8 +262,8 @@ foreach my $func (keys %{$functions}){
 		  if(defined($functions->{$tall}{pnetcdf})){
 		      if($line =~ s/ncmpi_function_all/ncmpi_$tall/){
 			  $args = $functions->{$tall}{pnetcdf};
+			  $postline = "#endif\n";
 		      }
-		      $postline = "#endif\n";
 		      $allfunc=1;
 		  }elsif($line =~ /ncmpi_function_all/){
 		      $line = " ";
