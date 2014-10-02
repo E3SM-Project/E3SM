@@ -184,15 +184,33 @@ module mpas_subdriver
       logical, pointer :: logAtt
       character (len=StrKIND), pointer :: charAtt
       real (kind=RKIND), pointer :: realAtt
+      character (len=StrKIND) :: histAtt
 
       integer :: local_ierr
+
+      if (domain % dminfo % nProcs < 10) then
+          write(histAtt, '(A,I1,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+      else if (domain % dminfo % nProcs < 100) then
+          write(histAtt, '(A,I2,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+      else if (domain % dminfo % nProcs < 1000) then
+          write(histAtt, '(A,I3,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+      else if (domain % dminfo % nProcs < 10000) then
+          write(histAtt, '(A,I4,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+      else if (domain % dminfo % nProcs < 100000) then
+          write(histAtt, '(A,I5,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+      else
+          write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+      end if
      
 
       call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius)
       call MPAS_stream_mgr_add_att(stream_manager, 'model_name', domain % modelName)
       call MPAS_stream_mgr_add_att(stream_manager, 'core_name', domain % coreName)
-      call MPAS_stream_mgr_add_att(stream_manager, 'history', domain % history)
+      ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
+      ! add a shortened version.
+!     call MPAS_stream_mgr_add_att(stream_manager, 'history', domain % history)
+      call MPAS_stream_mgr_add_att(stream_manager, 'history', histAtt)
       call MPAS_stream_mgr_add_att(stream_manager, 'source', domain % source)
       call MPAS_stream_mgr_add_att(stream_manager, 'Conventions', domain % Conventions)
       call MPAS_stream_mgr_add_att(stream_manager, 'parent_id', domain % parent_id)
