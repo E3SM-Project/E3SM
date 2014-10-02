@@ -22,6 +22,7 @@
         <machine compiler="intel" testtype="aux_rasm">evergreen</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="aux_rasm">olympus</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
@@ -69,6 +70,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -115,6 +117,7 @@
         <machine compiler="pgi" testtype="prealpha">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
       </test>
@@ -123,6 +126,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -172,6 +176,7 @@
     <grid name="ne30_g16_rx1">
       <test name="ERS">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
       <test name="ERS_D">
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
@@ -230,6 +235,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -284,6 +290,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -343,6 +350,7 @@
     <grid name="ne30_g16">
       <test name="ERI">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
       <test name="ERS">
@@ -441,6 +449,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -499,6 +508,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -570,6 +580,7 @@
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_science">yellowstone</machine>
@@ -650,6 +661,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_science">yellowstone</machine>
@@ -661,6 +673,7 @@
       <test name="CME">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
       <test name="ERS">
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
@@ -688,6 +701,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -710,6 +724,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -748,12 +763,14 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
       <test name="SMS_D">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
     <grid name="f19_g16">
@@ -779,6 +796,7 @@
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
   </compset>
@@ -797,6 +815,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
@@ -805,6 +824,7 @@
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
   </compset>
@@ -938,6 +958,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1001,6 +1022,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1068,6 +1090,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1096,6 +1119,7 @@
       <test name="ERS_PT">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
   </compset>
@@ -1128,6 +1152,7 @@
       <test name="ERT">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="intel" testtype="aux_pop2">yellowstone</machine>
       </test>
       <test name="PET_PT">
@@ -1144,6 +1169,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1174,6 +1200,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1222,6 +1249,7 @@
       <test name="ERS_PT">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
       <test name="PET_PT">
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
@@ -1308,6 +1336,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1340,6 +1369,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
@@ -1372,6 +1402,7 @@
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1416,6 +1447,7 @@
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1446,6 +1478,7 @@
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1456,6 +1489,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1563,12 +1597,14 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
       <test name="ERS_PT">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
     <grid name="f19_f19">
@@ -1624,6 +1660,7 @@
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1800,6 +1837,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
@@ -1813,6 +1851,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
@@ -1826,6 +1865,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="intel" testtype="aux_waccm">yellowstone</machine>
@@ -1854,6 +1894,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -1997,6 +2038,7 @@
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
@@ -2051,6 +2093,7 @@
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -2082,6 +2125,7 @@
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
   </compset>
@@ -2382,6 +2426,7 @@
       <test name="ERS_Ld3">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
   </compset>
@@ -2617,6 +2662,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -3024,6 +3070,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -3083,6 +3130,7 @@
       <test name="SMS">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
     <grid name="hcru_hcru">
@@ -3198,6 +3246,7 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
@@ -3591,6 +3640,7 @@
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
       <test name="ERS">
         <machine compiler="pgi" testtype="aux_rasm">eastwind</machine>
@@ -3605,6 +3655,7 @@
     <grid name="f45_f45">
       <test name="SMS">
         <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLB">janus</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="clm/ptsROA">lawrencium-lr1</machine>
         <machine compiler="gnu" testtype="prebeta" testmods="clm/ptsRLB">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="clm/ptsRLB">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta" testmods="clm/ptsRLB">yellowstone</machine>
@@ -3758,12 +3809,14 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
       <test name="SEQ_PFC">
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="pgi" testtype="prebeta">lawrencium-lr1</machine>
       </test>
     </grid>
     <grid name="f19_g16">
