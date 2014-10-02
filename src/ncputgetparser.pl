@@ -256,17 +256,29 @@ foreach my $func (keys %{$functions}){
 		  $line =~ s/\;//;
 		  $line =~ s/\*ip/\*buf/;
 	      }else{
+		  my $allfunc=0;
 		  my $args;
 		  my $tall = $func."_all";
 		  if(defined($functions->{$tall}{pnetcdf})){
 		      if($line =~ s/ncmpi_function_all/ncmpi_$tall/){
 			  $args = $functions->{$tall}{pnetcdf};
 		      }
+		      $postline = "#endif\n";
+		      $allfunc=1;
+		  }elsif($line =~ /ncmpi_function_all/){
+		      $line = " ";
 		  }
-		  if($line =~ s/ncmpi_function/ncmpi_$func/){
-#    		          $preline = "        ncmpi_begin_indep_data(file->fh);\n        if(ios->iomaster){\n";
+		  
+		  if($line =~ s/ncmpi_function\(/ncmpi_$func\(/){
+		      if($allfunc==1){
+			  $preline = "#ifdef PNET_READ_AND_BCAST\n";
+		      }
+		      $preline .= "        ncmpi_begin_indep_data(file->fh);\n        if(ios->iomaster){\n";
 		      $args = $functions->{$func}{pnetcdf} ;
-#                        $postline = "        };\n         ncmpi_end_indep_data(file->fh);\n        bcast=true;\n";
+		      $postline = "        };\n         ncmpi_end_indep_data(file->fh);\n        bcast=true;\n";
+		      if($allfunc==1){
+			  $postline.="#else\n";
+		      }
 		  }
 		  
 		  if($line =~ s/nc_function/nc_$func/){

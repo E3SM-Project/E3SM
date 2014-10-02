@@ -42,16 +42,8 @@ int PIO_function()
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-#ifdef PNET_READ_AND_BCAST
-      bcast = true;
-      ncmpi_begin_indep_data(file->fh);
-      if(ios->iomaster){
-	ierr = ncmpi_function();
-      }
-      ncmpi_end_indep_data(file->fh);
-#else
+      ierr = ncmpi_function();
       ierr = ncmpi_function_all();
-#endif
       break;
 #endif
     default:
