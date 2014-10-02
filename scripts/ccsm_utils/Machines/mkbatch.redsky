@@ -36,7 +36,7 @@ cat >! $file << EOF1
 #===============================================================================
 #SBATCH --job-name ${jobname}
 #SBATCH -N ${nodes}
-#SBATCH --account=FY140052
+#SBATCH --account=${PROJECT}
 #SBATCH --time=${tlimit}
 #SBATCH --partition=ec
 
