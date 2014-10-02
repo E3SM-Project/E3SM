@@ -62,9 +62,9 @@
 					description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
 					possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_calendar_type" type="character" default_value="360day" units="unitless"
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 					description="Selection of the type of calendar that should be used in the simulation."
-					possible_values="'gregorian', 'gregorian_noleap', or '360day'"
+					possible_values="'gregorian', 'gregorian_noleap'"
 		/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
