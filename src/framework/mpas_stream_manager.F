@@ -4116,12 +4116,10 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     if (reference_time /= 'none') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, reference_time, ierr=ierr)
-write(0,*) 'For stream '//trim(streamID)//' found reference time '//trim(reference_time)
     end if
 
     if (record_interval /= 'none') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_RECORD_INTV, record_interval, ierr=ierr)
-write(0,*) 'For stream '//trim(streamID)//' found record interval '//trim(record_interval)
     end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
@@ -4240,7 +4238,6 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     ! Nothing to do for this stream
     if (trim(alarmInterval) == 'none') then
-write(0,*) 'No need to add an alarm to stream '//trim(streamID)//' direction '//trim(direction)
         return
     end if
 
@@ -4249,11 +4246,6 @@ write(0,*) 'No need to add an alarm to stream '//trim(streamID)//' direction '//
     else if (trim(direction) == 'output') then
         idirection = MPAS_STREAM_OUTPUT
     end if
-
-write(0,*) 'Adding alarm to stream '//trim(streamID)//' direction '//trim(direction)
-write(0,*) '   ID:       '//trim(alarmID)
-write(0,*) '   Time:     '//trim(alarmTime)
-write(0,*) '   Interval: '//trim(alarmInterval)
 
     call MPAS_stream_mgr_get_clock(manager, clock)
 
@@ -4307,8 +4299,6 @@ subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(package_c, package)
     write(package, '(a)') trim(package)//'Active'
-
-write(0,*) 'Adding package '//trim(package)//' to stream '//trim(streamID)
 
     call MPAS_stream_mgr_add_pkg(manager, streamID, package, ierr=ierr)
 

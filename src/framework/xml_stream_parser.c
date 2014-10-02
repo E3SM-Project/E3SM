@@ -772,8 +772,7 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 			}
 			err = mkdir(filename_path, S_IRWXU | S_IRWXG | S_IRWXO);
 			if ( ! err ) {
-				snprintf(msgbuf, MSGSIZE, "created directory %s for stream \"%s\".", filename_path, stream);
-				fmt_info(msgbuf);
+				fprintf(stderr, "        *** created directory %s for stream \"%s\"\n", filename_path, stream);
 			} else if ( errno == EEXIST ) {
 				/* directory exists, need to check permissions */
 				if (access(filename_path, W_OK) != 0) {
@@ -886,33 +885,49 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		record_interval = ezxml_attr(stream_xml, "record_interval");
 		packagelist = ezxml_attr(stream_xml, "packages");
 
-		fprintf(stderr, "   found immutable stream %s\n", streamID);
+		fprintf(stderr, "\n");
+		fprintf(stderr, " -----  found immutable stream \"%s\" in %s  -----\n", streamID, fname);
+		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
+		fprintf(stderr, "        %-20s%s\n", "records per file:", records);
 
 
 		irecs = atoi(records);
 
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
-		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL)
+		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
 			itype = 3;
-		else if (strstr(direction, "input") != NULL)
+			fprintf(stderr, "        direction:          input, output\n");
+			fprintf(stderr, "        %-20s%s\n", "direction:", "input, output");
+		}
+		else if (strstr(direction, "input") != NULL) {
 			itype = 1;
-		else if (strstr(direction, "output") != NULL) 
+			fprintf(stderr, "        %-20s%s\n", "direction:", "input");
+		}
+		else if (strstr(direction, "output") != NULL)  {
 			itype = 2;
-		else 
+			fprintf(stderr, "        %-20s%s\n", "direction:", "output");
+		}
+		else  {
 			itype = 4;
+			fprintf(stderr, "        %-20s%s\n", "direction:", "none");
+		}
 
 		if (reference_time != NULL) {
 			snprintf(ref_time_local, 256, "%s", reference_time);
+			fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
 		}
 		else {
 			snprintf(ref_time_local, 256, "none");
+			fprintf(stderr, "        %-20s%s\n", "reference time:", "-");
 		}
 
 		if (record_interval != NULL) {
 			snprintf(rec_intv_local, 256, "%s", record_interval);
+			fprintf(stderr, "        %-20s%s\n", "record interval:", rec_intv_local);
 		}
 		else {
 			snprintf(rec_intv_local, 256, "none");
+			fprintf(stderr, "        %-20s%s\n", "record interval:", "-");
 		}
 
 
@@ -939,6 +954,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				*status = 1;
 				return;
 			}
+			fprintf(stderr, "        %-20s%s\n", "input alarm:", interval_in);
 		}
 
 		/* Possibly add an output alarm for this stream */
@@ -948,6 +964,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				*status = 1;
 				return;
 			}
+			fprintf(stderr, "        %-20s%s\n", "output alarm:", interval_out);
 		}
 
 		/* Possibly add packages */
@@ -961,12 +978,18 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
 				fmt_warn(msgbuf);
 			}
+			else {
+				fprintf(stderr, "        %-20s%s\n", "package:", package);
+			}
 
 			while ((package = strsep(&packages, ";")) != NULL) {
 				stream_mgr_add_pkg_c(manager, streamID, package, &err);
 				if (err != 0) {
 					snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
 					fmt_warn(msgbuf);
+				}
+				else {
+					fprintf(stderr, "        %-20s%s\n", "package:", package);
 				}
 			}
 
@@ -987,33 +1010,48 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		record_interval = ezxml_attr(stream_xml, "record_interval");
 		packagelist = ezxml_attr(stream_xml, "packages");
 
-		fprintf(stderr, "   found mutable stream %s\n", streamID);
+		fprintf(stderr, "\n");
+		fprintf(stderr, " -----  found stream \"%s\" in %s  -----\n", streamID, fname);
+		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
+		fprintf(stderr, "        %-20s%s\n", "records per file:", records);
 
 
 		irecs = atoi(records);
 
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
-		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL)
+		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
 			itype = 3;
-		else if (strstr(direction, "input") != NULL)
+			fprintf(stderr, "        %-20s%s\n", "direction:", "input, output");
+		}
+		else if (strstr(direction, "input") != NULL) {
 			itype = 1;
-		else if (strstr(direction, "output") != NULL) 
+			fprintf(stderr, "        %-20s%s\n", "direction:", "input");
+		}
+		else if (strstr(direction, "output") != NULL)  {
 			itype = 2;
-		else 
+			fprintf(stderr, "        %-20s%s\n", "direction:", "output");
+		}
+		else  {
 			itype = 4;
+			fprintf(stderr, "        %-20s%s\n", "direction:", "none");
+		}
 
 		if (reference_time != NULL) {
 			snprintf(ref_time_local, 256, "%s", reference_time);
+			fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
 		}
 		else {
 			snprintf(ref_time_local, 256, "none");
+			fprintf(stderr, "        %-20s%s\n", "reference time:", "-");
 		}
 
 		if (record_interval != NULL) {
 			snprintf(rec_intv_local, 256, "%s", record_interval);
+			fprintf(stderr, "        %-20s%s\n", "record interval:", rec_intv_local);
 		}
 		else {
 			snprintf(rec_intv_local, 256, "none");
+			fprintf(stderr, "        %-20s%s\n", "record interval:", "-");
 		}
 
 
@@ -1040,6 +1078,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				*status = 1;
 				return;
 			}
+			fprintf(stderr, "        %-20s%s\n", "input alarm:", interval_in);
 		}
 
 		/* Possibly add an output alarm for this stream */
@@ -1049,6 +1088,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				*status = 1;
 				return;
 			}
+			fprintf(stderr, "        %-20s%s\n", "output alarm:", interval_out);
 		}
 
 		/* Possibly add packages */
@@ -1062,12 +1102,18 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
 				fmt_warn(msgbuf);
 			}
+			else {
+				fprintf(stderr, "        %-20s%s\n", "package:", package);
+			}
 
 			while ((package = strsep(&packages, ";")) != NULL) {
 				stream_mgr_add_pkg_c(manager, streamID, package, &err);
 				if (err != 0) {
 					snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references unrecognized package \"%s\".", streamID, package);
 					fmt_warn(msgbuf);
+				}
+				else {
+					fprintf(stderr, "        %-20s%s\n", "package:", package);
 				}
 			}
 
@@ -1164,7 +1210,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 	free(xml_buf);
 
-	fprintf(stderr, "... done parsing run-time I/O\n\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, " ----- done parsing run-time I/O from %s -----\n\n", fname);
 }
 
 
