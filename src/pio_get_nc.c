@@ -102,6 +102,13 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   msg = PIO_MSG_GET_VARS_ULONGLONG;
   ibuftype = MPI_UNSIGNED_LONG_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -180,6 +187,13 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARM_UCHAR;
   ibuftype = MPI_UNSIGNED_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -258,6 +272,13 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARM_SCHAR;
   ibuftype = MPI_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -336,6 +357,13 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARS_SHORT;
   ibuftype = MPI_SHORT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -496,6 +524,13 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_GET_VARA_DOUBLE;
   ibuftype = MPI_DOUBLE;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -738,6 +773,13 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARA_TEXT;
   ibuftype = MPI_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -816,6 +858,13 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   msg = PIO_MSG_GET_VARA_INT;
   ibuftype = MPI_INT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -1052,6 +1101,13 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   msg = PIO_MSG_GET_VARS_INT;
   ibuftype = MPI_INT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -1212,6 +1268,13 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_GET_VARM_DOUBLE;
   ibuftype = MPI_DOUBLE;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -1290,6 +1353,13 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARS_SCHAR;
   ibuftype = MPI_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -1368,6 +1438,13 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_GET_VARA_USHORT;
   ibuftype = MPI_UNSIGNED_SHORT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -1607,6 +1684,13 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARS_UCHAR;
   ibuftype = MPI_UNSIGNED_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -1838,6 +1922,13 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_GET_VARS_USHORT;
   ibuftype = MPI_UNSIGNED_SHORT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -2077,6 +2168,13 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARA_UINT;
   ibuftype = MPI_UNSIGNED;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -2155,6 +2253,13 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   msg = PIO_MSG_GET_VARS_LONGLONG;
   ibuftype = MPI_LONG_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -2315,6 +2420,13 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARA_SHORT;
   ibuftype = MPI_SHORT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -2393,6 +2505,13 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARA_LONG;
   ibuftype = MPI_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -2711,6 +2830,13 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARA_UCHAR;
   ibuftype = MPI_UNSIGNED_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -2789,6 +2915,13 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARS_FLOAT;
   ibuftype = MPI_FLOAT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -2867,6 +3000,13 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARS_LONG;
   ibuftype = MPI_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -3180,6 +3320,13 @@ int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARA_SCHAR;
   ibuftype = MPI_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -3337,6 +3484,13 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARS_UINT;
   ibuftype = MPI_UNSIGNED;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -3415,6 +3569,13 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARA_FLOAT;
   ibuftype = MPI_FLOAT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -3493,6 +3654,13 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARM_TEXT;
   ibuftype = MPI_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -3650,6 +3818,13 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   msg = PIO_MSG_GET_VARM_INT;
   ibuftype = MPI_INT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -3728,6 +3903,13 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARM_UINT;
   ibuftype = MPI_UNSIGNED;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -3880,6 +4062,13 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_GET_VARS_DOUBLE;
   ibuftype = MPI_DOUBLE;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -3958,6 +4147,13 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   msg = PIO_MSG_GET_VARA_LONGLONG;
   ibuftype = MPI_LONG_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -4118,6 +4314,13 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   msg = PIO_MSG_GET_VARA_ULONGLONG;
   ibuftype = MPI_UNSIGNED_LONG_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i];
@@ -4278,6 +4481,13 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARM_FLOAT;
   ibuftype = MPI_FLOAT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -4435,6 +4645,13 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARM_LONG;
   ibuftype = MPI_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -4513,6 +4730,13 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   msg = PIO_MSG_GET_VARM_USHORT;
   ibuftype = MPI_UNSIGNED_SHORT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -4591,6 +4815,13 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   msg = PIO_MSG_GET_VARM_LONGLONG;
   ibuftype = MPI_LONG_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -4669,6 +4900,13 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   msg = PIO_MSG_GET_VARS_TEXT;
   ibuftype = MPI_CHAR;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -4900,6 +5138,13 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   msg = PIO_MSG_GET_VARM_SHORT;
   ibuftype = MPI_SHORT;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];
@@ -4978,6 +5223,13 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   msg = PIO_MSG_GET_VARM_ULONGLONG;
   ibuftype = MPI_UNSIGNED_LONG_LONG;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	   for(i=0;i<ndims;i++)
+     	  count[i]=0;
+      }
+      bcast=true;
+#endif
   ibufcnt = 1;
   for(int i=0;i<ndims;i++){
     ibufcnt *= count[i]/stride[i];

@@ -1,3 +1,6 @@
+#ifdef BGQ
+#define READ_AND_BCAST 1
+#endif
 int PIO_function()
 {
   int ierr;
@@ -42,20 +45,25 @@ int PIO_function()
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef READ_AND_BCAST
+      if(ios->io_rank>0){
+	for(i=0;i<ndims;i++)
+	  count[i]=0;
+      }
+      bcast=true;
+#endif
       ierr = ncmpi_function();
       break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
-    // send to all io tasks
-    if(bcast)
-      MPI_Bcast(buf, ibufcnt, ibuftype, 0, ios->io_comm);
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface ||  (ios->num_iotasks < ios->num_comptasks)){
+  if(ios->async_interface || bcast ||  
+     (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
 

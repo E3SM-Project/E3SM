@@ -215,12 +215,27 @@ foreach my $func (keys %{$functions}){
 		      print F "  ibufcnt = $bufcount;\n";
 		  }elsif($func =~ /vara/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
+		      print F "#ifdef READ_AND_BCAST\n";
+                      print F "      if(ios->io_rank>0){\n";
+                      print F "	   for(i=0;i<ndims;i++)\n";
+                      print F "     	  count[i]=0;\n";
+                      print F "      }\n";
+                      print F "      bcast=true;\n";
+                      print F "#endif\n";
+
 		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
 		      print F "    ibufcnt *= count[i];\n";
 		      print F "  }\n";
 		  }elsif($func =~ /vars/ or $func =~ /varm/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
+		      print F "#ifdef READ_AND_BCAST\n";
+                      print F "      if(ios->io_rank>0){\n";
+                      print F "	   for(i=0;i<ndims;i++)\n";
+                      print F "     	  count[i]=0;\n";
+                      print F "      }\n";
+                      print F "      bcast=true;\n";
+                      print F "#endif\n";
 		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
 		      print F "    ibufcnt *= count[i]/stride[i];\n";
