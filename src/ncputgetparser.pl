@@ -217,8 +217,8 @@ foreach my $func (keys %{$functions}){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
 		      print F "#ifdef READ_AND_BCAST\n";
                       print F "      if(ios->io_rank>0){\n";
-                      print F "	   for(i=0;i<ndims;i++)\n";
-                      print F "     	  count[i]=0;\n";
+                      print F "	   for(int idim=0;idim<ndims;idim++)\n";
+                      print F "     	  count[idim]=0;\n";
                       print F "      }\n";
                       print F "      bcast=true;\n";
                       print F "#endif\n";
@@ -231,8 +231,8 @@ foreach my $func (keys %{$functions}){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
 		      print F "#ifdef READ_AND_BCAST\n";
                       print F "      if(ios->io_rank>0){\n";
-                      print F "	   for(i=0;i<ndims;i++)\n";
-                      print F "     	  count[i]=0;\n";
+                      print F "	   for(int idim=0;idim<ndims;idim++)\n";
+                      print F "     	  count[idim]=0;\n";
                       print F "      }\n";
                       print F "      bcast=true;\n";
                       print F "#endif\n";

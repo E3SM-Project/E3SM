@@ -97,8 +97,8 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -175,8 +175,8 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -253,8 +253,8 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -331,8 +331,8 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -484,8 +484,8 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -712,8 +712,8 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -790,8 +790,8 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1012,8 +1012,8 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1165,8 +1165,8 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1243,8 +1243,8 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1321,8 +1321,8 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1546,8 +1546,8 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1763,8 +1763,8 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -1988,8 +1988,8 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -2066,8 +2066,8 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -2219,8 +2219,8 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -2297,8 +2297,8 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -2594,8 +2594,8 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -2672,8 +2672,8 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -2750,8 +2750,8 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3042,8 +3042,8 @@ int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3192,8 +3192,8 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3270,8 +3270,8 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3348,8 +3348,8 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3498,8 +3498,8 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3576,8 +3576,8 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3721,8 +3721,8 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3799,8 +3799,8 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -3952,8 +3952,8 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4105,8 +4105,8 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4255,8 +4255,8 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4333,8 +4333,8 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4411,8 +4411,8 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4489,8 +4489,8 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4706,8 +4706,8 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
@@ -4784,8 +4784,8 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
 #ifdef READ_AND_BCAST
       if(ios->io_rank>0){
-	   for(i=0;i<ndims;i++)
-     	  count[i]=0;
+	   for(int idim=0;idim<ndims;idim++)
+     	  count[idim]=0;
       }
       bcast=true;
 #endif
