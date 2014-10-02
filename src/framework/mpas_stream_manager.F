@@ -4062,6 +4062,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
                                     MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_STREAM_PROPERTY_REF_TIME, &
                                     MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
+    use mpas_io_units, only : stderrUnit
 
     implicit none
 
@@ -4097,6 +4098,17 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     ierr = 0
     if (immutable == 1) then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_FILENAME, filename, ierr=ierr)
+
+        ! If we can't set a property on this immutable stream, most likely the stream wasn't defined in the core's Registry.xml file
+        if (ierr /= MPAS_STREAM_MGR_NOERR) then
+            write(stderrUnit,*) '********************************************************************************'
+            write(stderrUnit,*) ' Error: Stream '''//trim(streamID)//''' was not defined in the Registry.xml file as '
+            write(stderrUnit,*) '        an immutable stream. Immutable streams may only be defined in the Registry.xml'
+            write(stderrUnit,*) '        file for a core.'
+            write(stderrUnit,*) '********************************************************************************'
+            ierr_c = 1
+            return
+        end if
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords, ierr=ierr)
     else
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, ierr=ierr)
