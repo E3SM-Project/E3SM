@@ -45,13 +45,6 @@ int PIO_function()
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-#ifdef READ_AND_BCAST
-      if(ios->io_rank>0){
-	for(i=0;i<ndims;i++)
-	  count[i]=0;
-      }
-      bcast=true;
-#endif
       ierr = ncmpi_function();
       break;
 #endif
