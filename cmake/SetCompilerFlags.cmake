@@ -184,6 +184,17 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
       MESSAGE(FATAL_ERROR "Unable to find OpenMP")
     ENDIF()
   ENDIF()
+ IF (${ENABLE_HORIZ_OPENMP})
+   # Set this as global so it can be picked up by all executables
+   SET(HORIZ_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+   MESSAGE(STATUS "  Using HORIZ_OPENMP")
+ ENDIF ()
+ 
+ IF (${ENABLE_COLUMN_OPENMP})
+   # Set this as global so it can be picked up by all executables
+   SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+   MESSAGE(STATUS "  Using COLUMN_OPENMP")
+ ENDIF ()
 ENDIF ()
 ##############################################################################
 

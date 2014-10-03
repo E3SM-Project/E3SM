@@ -40,3 +40,10 @@
 
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
+
+/* Horizontal OpenMP (over elements) */
+#cmakedefine HORIZ_OPENMP
+
+/* Vertical OpenMP (within elements) */
+#cmakedefine COLUMN_OPENMP
+

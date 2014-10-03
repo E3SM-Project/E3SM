@@ -140,7 +140,7 @@ program prim_main
   ! Note: The OMP Critical is required for threading since the Fortran 
   !   standard prohibits multiple I/O operations on the same unit.
   ! ================================================
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP CRITICAL
 #endif
   if (par%rank<100) then 
