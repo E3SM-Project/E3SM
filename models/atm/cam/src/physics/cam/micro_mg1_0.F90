@@ -265,7 +265,7 @@ f2r = 0.32_r8
 
 ! autoconversion size threshold for cloud ice to snow (m)
 
-Dcs = 400.e-6_r8
+Dcs = 600.e-6_r8
 
 ! smallest mixing ratio considered in microphysics
 
