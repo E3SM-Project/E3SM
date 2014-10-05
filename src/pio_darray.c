@@ -396,7 +396,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
       //      printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
       tmp_bufsize=1;
-      if(region==NULL){
+      if(region==NULL || iodesc->llen==0){
 	for(i=0;i<fndims;i++){
 	  start[i] = 0;
 	  count[i] = 0;
@@ -555,6 +555,12 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	    }
 #else
 	    ierr = ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
+
+	    if(ierr != PIO_NOERR){
+	      for(i=0;i<fndims;i++)
+		printf("%s %d %1d %3.3ld %3.3ld %d %d\n",__FILE__,__LINE__,i,start[i],count[i], vid,regioncnt);
+	    }
+
 #endif
 	  }
 	  break;

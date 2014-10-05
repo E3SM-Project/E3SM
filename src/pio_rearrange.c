@@ -604,10 +604,10 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   }      
 
   // Data in sbuf on the compute nodes is sent to rbuf on the ionodes
-
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake, isend, maxreq);
+  
 
   free(sendcounts);
   free(recvcounts); 
@@ -698,6 +698,7 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
+
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
@@ -978,7 +979,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   iodesc->ndof = maplen;
   if(ios.ioproc){
     iodesc->rcount = (int *) malloc(ntasks *sizeof(int));
-  }  iodesc->scount = (int *) calloc(1,sizeof(int));
+  } 
+  iodesc->scount = (int *) calloc(1,sizeof(int));
 
   for(i=0;i<maplen;i++){
     pioassert(compmap[i]>=-1 && compmap[i]<totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
@@ -986,8 +988,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       (iodesc->scount[0])++;
     }
   }
+  if(iodesc->scount[0]>0)
+    iodesc->sindex = (PIO_Offset *) calloc(iodesc->scount[0],pio_offset_size); 
 
-  iodesc->sindex = (PIO_Offset *) calloc(iodesc->scount[0],pio_offset_size); 
   j=0;
   for(i=0;i<maplen;i++){
     if(compmap[i]>=0){
