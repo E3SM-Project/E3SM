@@ -76,7 +76,7 @@ if sys.version_info < (2, 4):
     error( "The version of Python being used is too old for PTCLMmkdata" )
 
 
-svnurl="$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140204/PTCLMmkdata $"
+svnurl="$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140521/PTCLMmkdata $"
 if   ( svnurl.split('/')[4] == "trunk"       ):
    svnvers="scripts_trunk"
 elif ( svnurl.split('/')[4] == "trunk_tags"  ):
@@ -85,6 +85,8 @@ elif ( svnurl.split('/')[4] == "branches"    ):
    svnvers="scripts_branch_"+svnurl.split('/')[5]
 elif ( svnurl.split('/')[4] == "branch_tags" ):
    svnvers="scripts_brnchtag_"+svnurl.split('/')[6]
+elif ( svnurl.split('/')[4] == "release_tags" ):
+   svnvers="scripts_releasetag_"+svnurl.split('/')[6]
 else:
    print( "Error getting version from: "+svnurl)
    os.abort()
@@ -111,6 +113,9 @@ options.add_option("--cesm_root", dest="base_cesm", \
                   "Root CESM directory (top level directory with models and scripts subdirs)")
 options.add_option("--debug", dest="debug", action="store_true", default=False, \
                   help="Flag to turn on debug mode so won't run, but display what would happen")
+options.add_option("--sdate", dest="sdate", default=sdate, \
+                  help="Use entered date string in all files"+\
+                       " (use the given date string in place of the current date:"+sdate+")" )
 options.add_option("--clmnmlusecase", dest="clmnmlusecase", default=clmnmlusecase, \
                   help="CLM namelist use case to use (default:"+clmnmlusecase+")" )
 options.add_option("--phys", dest="clmphysvers", default=clmphysvers, \
@@ -145,12 +150,12 @@ indatgengroup.add_option("--soilgrid", dest="soilgrid", help = \
                   "Use soil information from global gridded file (rather than site data)",\
                    action="store_true", default=False)
 indatgengroup.add_option("--map_gdate", dest="map_gdate", default=sdate, \
-                  help="Use existing mapping files with the given date string"+\
+                  help="Use existing mapping files with the given date string rather than create new ones with current date"+\
                        " (if mapping files do NOT exist with this date, the script will abort)" )
 indatgengroup.add_option("--mksurfdata_opts", dest="mksurfdata_opts", help = \
                   "Options to send directly to mksurfdata_map",\
                    default="")
-versiongroup  = OptionGroup( parser, "Main Script Version Id: $Id: PTCLMmkdata 57135 2014-02-04 22:36:33Z erik $ Scripts URL: "+svnurl )
+versiongroup  = OptionGroup( parser, "Main Script Version Id: $Id: PTCLMmkdata 60504 2014-05-21 21:25:06Z sacks $ Scripts URL: "+svnurl )
 parser.add_option_group(versiongroup)
 
 (options, args) = parser.parse_args()
@@ -277,7 +282,7 @@ def find_filename_created( wildcard, desc ):
         if ( not os.path.exists( filename) ): error( "filename does NOT exist" )
      else:
         # For debug mode, create a file with current date replacing any wildcards
-        filename = wildcard.replace( "*", sdate )
+        filename = wildcard.replace( "*", options.sdate )
         os.system( "touch "+filename )
 
      print desc+" = "+filename
@@ -381,8 +386,8 @@ mkmapdat_dir= clm_tools+'/shared/mkmapdata'
 clm_input   = cesm_input+'/lnd/clm2'
 datm_input  = cesm_input+'/atm/datm7'
 
-data_dir    = os.path.abspath( options.mydatadir )
-data_dir    = data_dir+"/"+clmusrdatname
+mydata_dir  = os.path.abspath( options.mydatadir )
+data_dir    = mydata_dir+"/"+clmusrdatname
 if ( not os.path.exists( data_dir ) ): os.system( "/bin/mkdir -p "+data_dir )
 
 if plev>0: print "----------------------------------------------------------------\n"
@@ -436,9 +441,9 @@ else:
      error( "Can not parse use-case name:, does not follow conventions: "+clmnmlusecase )
 
 if ( rcp == histrcp ):
-   pftdyntype = "hist"
+   landuse_timeseries_type = "hist"
 else:
-   pftdyntype = "rcp"+rcp
+   landuse_timeseries_type = "rcp"+rcp
 
 qoptionsbase   = " -options mask="+mask+",rcp="+rcp
    
@@ -519,10 +524,10 @@ else:
 #make mapping files needed for mksurfdata_map #######################################
 
 mapdir = data_dir
-if ( options.map_gdate == sdate ):
+if ( options.map_gdate == options.sdate ):
   # mkmapdata.sh remembers where it is (although it starts over for a new date)
   if plev>0: print "\n\nRe-create mapping files for surface dataset:"
-  cmd = mkmapdat_dir+"/mkmapdata.sh --gridfile "+scripgridfile+" --res "+clmres+" --gridtype regional --phys "+options.clmphysvers+" > "+mapdir+"/mkmapdata.log";
+  cmd = mkmapdat_dir+"/mkmapdata.sh --gridfile "+scripgridfile+" --res "+clmres+" --gridtype regional -v --phys "+options.clmphysvers+" > "+mapdir+"/mkmapdata.log";
   system(cmd);
 else:
   mksrfmapfile  = find_filename_created( mapdir+"/map_*"+"_c"+options.map_gdate+".nc", "mksrfmapfile" )
@@ -595,19 +600,19 @@ if (options.pftgrid == False) and (sim_year_range != "constant"):
 
     if plev>0: print "Creating site-specific dynamics PFTs and harvesting"
 
-    pftdyn_site_filename = siteDir + \
+    landuse_timeseries_site_filename = siteDir + \
                            mysite + "_dynpftdata.txt"
 
     # only set dynpft file if the file exists
-    if ( os.path.exists( pftdyn_site_filename ) ):
+    if ( os.path.exists( landuse_timeseries_site_filename ) ):
        if plev>0: print "Transition PFT file exists, so using it for changes in PFT"
-           # Convert the file from transition years format to mksurfdata_map pftdyn format
+           # Convert the file from transition years format to mksurfdata_map landuse_timeseries_ format
        cnv = siteDir + \
-             "/cnvrt_trnsyrs2_pftdyntxtfile.pl " + \
-             pftdyn_site_filename+" "+sim_year_range
-       pftdynoutfile = data_dir+"/pftdyn_"+mysite+".txt"
-       system( cnv+" > "+pftdynoutfile )
-       dynpftopts = " -dynpft "+pftdynoutfile
+             "/cnvrt_trnsyrs2_landuse_timeseries_txtfile.pl " + \
+             landuse_timeseries_site_filename+" "+sim_year_range
+       landuse_timeseries_outfile = data_dir+"/landuse_timeseries_"+mysite+".txt"
+       system( cnv+" > "+landuse_timeseries_outfile )
+       dynpftopts = " -dynpft "+landuse_timeseries_outfile
     else:
        error( "Transition PFT file does NOT exist for this site, create one, use --pftgrid, or choose a non transient use-case" )
            
@@ -623,21 +628,21 @@ system(clm_tools+"/"+options.clmphysvers+"/mksurfdata_map/mksurfdata.pl "+mksurf
 surffile  = find_filename_created( data_dir+"/surfdata_"+clmres+"_simyr"+sim_year+"_*.nc",  "surface file"     )
 logfile   = find_filename_created( data_dir+"/surfdata_"+clmres+"_simyr"+sim_year+"_*.log", "surface log file" )
 if ( sim_year_range != "constant" ):
-   pftdynfile = find_filename_created( data_dir+"/surfdata.pftdyn_"+clmres+"_"+pftdyntype+"_simyr"+actual_sim_year_range+"_*.nc", "pftdynfile" )
+   landuse_timeseries_file = find_filename_created( data_dir+"/landuse.timeseries_"+clmres+"_"+landuse_timeseries_type+"_simyr"+actual_sim_year_range+"_*.nc", "landuse_timeseries_file" )
 # rename files with clm version in the filename
 mkopts = ""
 if (options.pftgrid         == True):  mkopts += "_pftgrd"
 if (options.soilgrid        == True):  mkopts += "_soigrd"
 if (options.mksurfdata_opts != ""  ):  mkopts += "_"+options.mksurfdata_opts.replace(" ","+")
-newsurffile = "surfdata_"+clmres+"_simyr"+sim_year+"_"+options.clmphysvers+mkopts+"_c"+sdate+".nc"
-newlogfile  = "surfdata_"+clmres+"_simyr"+sim_year+"_"+options.clmphysvers+mkopts+"_c"+sdate+".log"
+newsurffile = "surfdata_"+clmres+"_simyr"+sim_year+"_"+options.clmphysvers+mkopts+"_c"+options.sdate+".nc"
+newlogfile  = "surfdata_"+clmres+"_simyr"+sim_year+"_"+options.clmphysvers+mkopts+"_c"+options.sdate+".log"
 system("/bin/mv -f "+surffile+" "+newsurffile )
 system("/bin/mv -f "+logfile+" "+newlogfile   )
 surffile    = data_dir+"/"+newsurffile
 if (sim_year_range != "constant"):
-    newpftdynfile = "surfdata.pftdyn"+clmres+"_"+pftdyntype+"_simyr"+actual_sim_year_range+"_"+options.clmphysvers+mkopts+"_c"+sdate+".nc"
-    system("/bin/mv -f "+pftdynfile+" "+newpftdynfile )
-    pftdynfile = data_dir+"/"+newpftdynfile
+    new_landuse_timeseries_file = "landuse.timeseries"+clmres+"_"+landuse_timeseries_type+"_simyr"+actual_sim_year_range+"_"+options.clmphysvers+mkopts+"_c"+options.sdate+".nc"
+    system("/bin/mv -f "+landuse_timeseries_file+" "+new_landuse_timeseries_file )
+    landuse_timeseries_file = data_dir+"/"+new_landuse_timeseries_file
 
 
 
@@ -664,8 +669,8 @@ if(options.use_tower_yrs):
    xmlchange_env_value( filex, "RUN_STARTDATE", str(alignyear)+"-01-01" )
    xmlchange_env_value( filex, "DATM_CLMNCEP_YR_ALIGN", str(alignyear) )
 
-xmlchange_env_value( filex, "DIN_LOC_ROOT", cesm_input   )
-
+xmlchange_env_value( filex, "DIN_LOC_ROOT",         cesm_input )
+xmlchange_env_value( filex, "DIN_LOC_ROOT_CLMFORC", mydata_dir )
 
 ####  NAMELIST DEFAULTS FILE MODIFICATIONS ##############################################
 datm_dir = data_dir+"/CLM1PT_data"
@@ -676,7 +681,7 @@ if ( os.path.isdir(datm_dir) ):
 output = open(usernlclm,'a')
 output.write(   " fsurdat = '"+surffile+"'\n" )
 if (sim_year_range != "constant"):
-   output.write(   " fpftdyn = "+pftdynfile+"\n" )
+   output.write(   " flanduse_timeseries = "+landuse_timeseries_file+"\n" )
 output.write(   " hist_nhtfrq = "+str(hist_nhtfrq)+"\n" )
 output.write(   " hist_mfilt  = "+str(hist_mfilt)+"\n" )
 output.close()

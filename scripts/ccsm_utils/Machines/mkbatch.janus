@@ -19,19 +19,9 @@ endif
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
 
-if ( $mppnodes < 21 ) then
-  set queue=janus-small
-else
-  if ( $mppnodes < 81 ) then
-    set queue=janus-normal
-  else
-    if ( $mppnodes < 481 ) then
-      set queue=janus-wide
-    else
-      set queue=janus-jumbo
-    endif
-  endif
-endif
+# Janus has simplified their queueing, we will now run
+# # everything out of the normal queue by default. 
+# # https://www.rc.colorado.edu/support/examples/slurmfaqs 
 
 set time_limit = "0:50:00"
 if ($CCSM_ESTCOST > 0) set time_limit = "1:50:00"
@@ -46,14 +36,11 @@ endif
 cat >! $file << EOF1
 #!/bin/csh -f
 # See https://www.rc.colorado.edu/crcdocs/queues for alternative queues
-#PBS -N ${jobname}
-#PBS -q ${queue}
-#PBS -l walltime=${time_limit} 
-#PBS -l nodes=${mppnodes}:ppn=${MAX_TASKS_PER_NODE}
-#PBS -r n
-#PBS -j oe
-#PBS -S /bin/csh -V
-
+#SBATCH -J ${jobname}
+#SBATCH --time=${time_limit}
+#SBATCH --nodes=${mppnodes}
+#SBATCH --ntasks-per-node=${MAX_TASKS_PER_NODE}
+#SBATCH --qos=normal
 EOF1
 
 #################################################################################
@@ -102,10 +89,10 @@ set jobname = ${jobname}_la
 
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f
-#PBS -N ${jobname}
-#PBS -q janus-short
-#PBS -l nodes=1:ppn=1
-#PBS -j oe
+#SBATCH -J ${jobname}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --qos=normal
 
 cd $CASEROOT 
 source ./Tools/ccsm_getenv || exit -1

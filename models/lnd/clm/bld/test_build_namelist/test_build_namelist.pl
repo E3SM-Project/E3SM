@@ -46,6 +46,7 @@ require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
+require config_files::clm_phys_vers;
 require Streams::TemplateGeneric;
 
 # local perl modules

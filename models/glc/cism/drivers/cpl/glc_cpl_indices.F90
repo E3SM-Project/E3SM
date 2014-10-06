@@ -29,6 +29,7 @@ module glc_cpl_indices
   integer, public :: index_g2x_Sg_topo(0:glc_nec_max)   = 0
   integer, public :: index_g2x_Flgg_hflx(0:glc_nec_max) = 0
   integer, public :: index_g2x_Sg_icemask = 0
+  integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0
 
 contains
 
@@ -76,6 +77,7 @@ contains
     end if
 
     index_g2x_Sg_icemask = mct_avect_indexra(g2x,'Sg_icemask',perrwith='quiet')
+    index_g2x_Sg_icemask_coupled_fluxes = mct_avect_indexra(g2x,'Sg_icemask_coupled_fluxes',perrwith='quiet')
 
     ! drv -> glc
 

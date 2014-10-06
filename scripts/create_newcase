@@ -14,6 +14,7 @@ use English;
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
+use Data::Dumper;
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
 # If not found, print a warning message then exit. 
@@ -86,6 +87,9 @@ sub usage {
 	-compset <name>      Specify a CESM compset (required).
 	-res <name>          Specify a CESM grid resolution (required).
 	-mach <name>         Specify a CESM machine (required).
+	-project <name>      Specify a project id for the case (optional)
+      default: user-specified environment variable PROJECT or ACCOUNT
+               or read from ~/.cesm_proj or ~/.ccsm_proj
 	-compiler <name>     Specify a compiler for the target machine (optional)
       default: default compiler for the target machine
       -mpilib <name>       Specify a mpi library for the target machine (optional)
@@ -107,7 +111,7 @@ sub usage {
  _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
                           _M*  = set the mpilib where * is default, mpi-serial, mpich, etc
                           _N*  = set NINST_ env value to * where * is an integer
-                          _P*  = set pecount to specific values include T,S,M,L,X,1,1x1,16,16x1,4x4, etc
+                          _P*  = set pecount to specific values include T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
 			  -pecount <name>      Value of S,M,L,X1,X2 (optional). 
 			default: M, partially redundant with confopts _P
 			-pes_file <name>     Full pathname of pes file to use (will overwrite default settings) (optional).
@@ -153,6 +157,7 @@ GetOptions(
     "case=s"                    => \$opts{'case'},
     "compset=s"                 => \$opts{'compset'},
     "confopts=s"                => \$opts{'confopts'},
+    "project=s"                 => \$opts{'project'},  
     "compiler=s"                => \$opts{'compiler'},  
     "mpilib=s"                  => \$opts{'mpilib'},  
     "res=s"                     => \$opts{'res'},
@@ -170,9 +175,9 @@ GetOptions(
     "testlist"                  => \$opts{'testlist'},
     "v|verbose"                 => \$opts{'verbose'},
     "xmlmode=s"                 => \$opts{'xmlmode'},
-    "nowarning"         => \$opts{'nowarning'},
+    "nowarning"                 => \$opts{'nowarning'},
     "user_compset=s"            => \$opts{'user_compset'},
-    "sharedlibroot=s"   => \$opts{'sharedlibroot'},
+    "sharedlibroot=s"           => \$opts{'sharedlibroot'},
     )  or usage();
 
 # Give usage message.
@@ -196,6 +201,7 @@ my $mach;
 my $testname;
 my $pecount;
 my $xmlmode;
+my $project;
 my $compiler;
 my $mpilib;
 if (!$opts{'list'} && !$opts{'testlist'}) {
@@ -228,6 +234,7 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     } else {
 	die "ERROR: create_newcase must include the input argument, -res\n";
     }
+
 
     # Check for manditory machine input
     if ($opts{'mach'}) {
@@ -372,6 +379,10 @@ my @dirs = ($cfgdir, "$cfgdir/ccsm_utils/Case.template", "$cfgdir/ccsm_utils/Too
 unshift @INC, @dirs;
 require XML::Lite;
 require ConfigCase;
+require ProjectTools;
+require Testing::CESMTest;
+require Testing::TestLists; 
+
 
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
@@ -381,12 +392,15 @@ if ($opts{'testlist'}) {
 if ($opts{'list'}) {
     if ($opts{'list'} eq "compsets") {
 	list_compsets($compset_file);
-    }
-    if ($opts{'list'} eq "grids") {
+    } elsif ($opts{'list'} eq "grids") {
 	list_grids($grid_file);
-    }
-    if ($opts{'list'} eq "machines") {
+    } elsif ($opts{'list'} eq "machines") {
 	ConfigCase::print_machines("$machdir/$machine_file");
+    } else {
+        die <<"EOF";
+** Bad argument to the list option: $opts{'list'}
+   Valid options: compsets, grids or machines **
+EOF
     }
     &check_known_problems();
     if ($print>=2) { print "finished listing valid values, now exiting $eol"; }
@@ -418,14 +432,14 @@ my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
 print $fh "$commandline\n\n\n";
 $fh->close;
 
-my ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname); 
+my ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname, $support_level); 
 if ($opts{'user_compset'}) {
     my $user_compset = $opts{'user_compset'};
-    ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname) = 
+    ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname, $support_level) = 
 	set_compset($compset_file, $user_compset, $grid_file, $grid, $cfg_ref, $caseroot,
 		    $user_compset);
 } else {
-    ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname) = 
+    ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname, $support_level) = 
 	set_compset($compset_file, $compset, $grid_file, $grid, $cfg_ref, $caseroot);
 }
 if ($print>=2) { print "Compset specifier: $compset.$eol"; }
@@ -440,6 +454,29 @@ check_grid("$cfgdir/ccsm_utils/Case.template/config_compsets.xml", $grid, $comps
 
 if ($print>=2) { print "Grid is valid for input compset. $eol"; }
 
+#-----------------------------------------------------------------------------------------------
+# Inform the user of the current support level for the compset they are attempting to run.
+#-----------------------------------------------------------------------------------------------
+my $testsforcase;
+if ( $opts{'compset'} ) {
+   my %case;
+   $case{'compset'} = $opts{'compset'};
+   $case{'grid'} = $opts{'res'};
+   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir);
+   $testsforcase = $testlistobj->findTestsForCase(\%case);
+} else {
+   $testsforcase = "WARNING!:: User compset names are NOT tested by the standard CESM process.\n" .
+                   "           Thus you may likely find that this configuration will NOT work.\n" .
+                   "           And you are completely on your own to figure out how to get it working.";
+}
+my $banner = '-' x 80;
+print "$banner\n";
+if ( defined($support_level) ) {
+   print "Compset and grid support levels for this case are:\n";
+   print "$support_level\n";
+}
+print "$testsforcase\n";
+print "$banner";
 #-----------------------------------------------------------------------------------------------
 # (4) Machine parameters
 
@@ -501,6 +538,21 @@ if (defined $opts{'confopts'}) {
 }
 
 #-----------------------------------------------------------------------------------------------
+# (7) Set project id
+#-----------------------------------------------------------------------------------------------
+
+# Check for optional project; if not given, see if we can find a project to use
+if ($opts{'project'}) {
+   $project = $opts{'project'};
+}
+else {
+   $project = ProjectTools::find_project();
+}
+
+ProjectTools::check_project_required_but_unset($project, $cfg_ref);
+ProjectTools::set_project($project, $cfg_ref);
+
+#-----------------------------------------------------------------------------------------------
 # (8) Determine pes for machine
 #-----------------------------------------------------------------------------------------------
 
@@ -532,9 +584,10 @@ if (defined $opts{'pes_file'}) {
     $cfg_ref->reset_setup("$pes_file");    
 } else {
 
-    if ($pecount =~ m!^([0-9]+)$!) {
+    if ($pecount =~ m!^([0-9]+)D?$!) {
 	my $ntasks = $1;
 	my $nthrds = 1;
+        my $root = 0;
 	$decomp{NTASKS_ATM} = $ntasks; $decomp{NTHRDS_ATM} = $nthrds;
 	$decomp{NTASKS_LND} = $ntasks; $decomp{NTHRDS_LND} = $nthrds;
 	$decomp{NTASKS_OCN} = $ntasks; $decomp{NTHRDS_OCN} = $nthrds;
@@ -543,9 +596,20 @@ if (defined $opts{'pes_file'}) {
 	$decomp{NTASKS_ROF} = $ntasks; $decomp{NTHRDS_ROF} = $nthrds;
 	$decomp{NTASKS_WAV} = $ntasks; $decomp{NTHRDS_WAV} = $nthrds;
 	$decomp{NTASKS_CPL} = $ntasks; $decomp{NTHRDS_CPL} = $nthrds;
-    } elsif ($pecount =~ m!^([0-9]+)x([0-9]+)$!) {
+        if ($pecount =~ m!^([0-9]+)D$!) {
+            $root = 0          ; $decomp{ROOTPE_ATM} = $root;
+            $root = 1 * $ntasks; $decomp{ROOTPE_LND} = $root;
+            $root = 2 * $ntasks; $decomp{ROOTPE_OCN} = $root;
+            $root = 3 * $ntasks; $decomp{ROOTPE_ICE} = $root;
+            $root = 4 * $ntasks; $decomp{ROOTPE_GLC} = $root;
+            $root = 5 * $ntasks; $decomp{ROOTPE_WAV} = $root;
+            $root = 6 * $ntasks; $decomp{ROOTPE_ROF} = $root;
+            $root = 7 * $ntasks; $decomp{ROOTPE_CPL} = $root;
+	}
+    } elsif ($pecount =~ m!^([0-9]+)x([0-9]+)D?$!) {
 	my $ntasks = $1;
 	my $nthrds = $2;
+        my $root = 0;
 	$decomp{NTASKS_ATM} = $ntasks; $decomp{NTHRDS_ATM} = $nthrds;
 	$decomp{NTASKS_LND} = $ntasks; $decomp{NTHRDS_LND} = $nthrds;
 	$decomp{NTASKS_OCN} = $ntasks; $decomp{NTHRDS_OCN} = $nthrds;
@@ -554,6 +618,16 @@ if (defined $opts{'pes_file'}) {
 	$decomp{NTASKS_WAV} = $ntasks; $decomp{NTHRDS_WAV} = $nthrds;
 	$decomp{NTASKS_ROF} = $ntasks; $decomp{NTHRDS_ROF} = $nthrds;
 	$decomp{NTASKS_CPL} = $ntasks; $decomp{NTHRDS_CPL} = $nthrds;
+        if ($pecount =~ m!^([0-9]+)x([0-9]+)D$!) {
+            $root = 0          ; $decomp{ROOTPE_ATM} = $root;
+            $root = 1 * $ntasks; $decomp{ROOTPE_LND} = $root;
+            $root = 2 * $ntasks; $decomp{ROOTPE_OCN} = $root;
+            $root = 3 * $ntasks; $decomp{ROOTPE_ICE} = $root;
+            $root = 4 * $ntasks; $decomp{ROOTPE_GLC} = $root;
+            $root = 5 * $ntasks; $decomp{ROOTPE_WAV} = $root;
+            $root = 6 * $ntasks; $decomp{ROOTPE_ROF} = $root;
+            $root = 7 * $ntasks; $decomp{ROOTPE_CPL} = $root;
+	}
     } else {
 	# Need the test name with the options passed to ConfigCase->set_pes
 	# so that if we want to exclude or include a PE layout for a test, we 
@@ -776,7 +850,7 @@ my $scriptsroot = "$ccsmroot/scripts";
 print "Creating $caseroot $eol";
 
 # Create relevant directories in $caseroot
-my @mkdirs = qw(. SourceMods LockedFiles Buildconf Tools/XML/Lite);
+my @mkdirs = qw(. SourceMods LockedFiles Buildconf Tools/XML/Lite Tools/pythonlib);
 foreach my $mkdir ( @mkdirs ) {
     $sysmod = "mkdir -p $caseroot/$mkdir"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -792,6 +866,9 @@ my @files = (
     "$scriptsroot/ccsm_utils/Tools/xmlchange",
     "$scriptsroot/ccsm_utils/Tools/xmlquery",
     "$scriptsroot/ccsm_utils/Tools/st_archive", 
+    "$scriptsroot/ccsm_utils/Tools/tseries_generate.submit", 
+    "$scriptsroot/ccsm_utils/Tools/tseries_generate.run", 
+    "$scriptsroot/ccsm_utils/Tools/README.post_process", 
     ); 
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot"; 
@@ -824,6 +901,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$scriptsroot/ccsm_utils/Case.template/ConfigCase.pm",
 	  "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
 	  "$scriptsroot/ccsm_utils/Tools/compare_namelists.pl",
+	  "$scriptsroot/ccsm_utils/Tools/cesm_tseries_generator.py",
 	  "$machdir/taskmaker.pl", 
 	  "$machdir/Makefile",
 	  "$machdir/mkSrcfiles", 
@@ -831,6 +909,13 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$machdir/mkbatch.$mach");
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot/Tools/."; 
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# Copy relevant files into $caseroot/Tools/pythonlib
+@files = ("$scriptsroot/ccsm_utils/Tools/pythonlib/cesmEnvLib.py");
+foreach my $file (@files) {
+    $sysmod = "cp -p $file $caseroot/Tools/pythonlib/."; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
@@ -856,7 +941,7 @@ $sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.l_archive
-my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot env PHASE=set_larch ${machdir}/mkbatch.$mach";
+my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch ${machdir}/mkbatch.$mach";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create preview_namelist file
@@ -1061,7 +1146,20 @@ if ( defined($user_mods_dir) ) {
 }
 
 #-----------------------------------------------------------------------------------------------
-# (11) Create $caseroot run setup scripts (other than batch)
+# (11) check that the pyreshaper tool is installed in the inputdata location on the machine
+#-----------------------------------------------------------------------------------------------
+
+#my $cmd = "module load python";
+#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
+#$cmd = "module load all-python-libs";
+#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
+#$cmd = "pushd $ccsmroot/tools/pyReshaper";
+#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
+#$cmd = "python setup.py install -- 
+
+
+#-----------------------------------------------------------------------------------------------
+# (12) Create $caseroot run setup scripts (other than batch)
 #-----------------------------------------------------------------------------------------------
 
 print "Successfully created the case for $mach \n";
@@ -1237,6 +1335,7 @@ sub set_compset
     my $compset_shortname= $compset; 
     my $compset_aliasname= $compset;
 
+    my $support_level = undef;
     my $desc_comp = "";
     my $desc_grid = "";
     my $temp; 
@@ -1257,12 +1356,13 @@ sub set_compset
 NAME:
 	while ( my $e = shift @e ) {
 	    $found = 0;
-	    my $sname, my $alias; my $lname;
+	    my $sname, my $alias; my $lname; my $support;
 	    $lname = clean($e->get_text());
 	    %attr = $e->get_attributes();
 	    if ($attr{'sname'}) {
 		$sname = clean($attr{'sname'}); 
 		if ($attr{'alias'}) {$alias = clean($attr{'alias'})}; 
+		if ($attr{'support_level'}) {$support = clean($attr{'support_level'})}; 
 	    } else {       
 		die "set_compset: config_compsets.xml must have COMPSET element and SNAME attribute \n";
 	    }
@@ -1270,6 +1370,9 @@ NAME:
 		$compset_longname  = $lname;
 		$compset_shortname = $sname;
 		$compset_aliasname = $alias;
+                if ( $support ) {
+                   $support_level .= "Compset ($sname): $support\n";
+                }
 		$temp = $lname . $sname; 
 		$cfg_ref->set('CCSM_COMPSET' , "$lname");
 		$cfg_ref->set('CCSM_LCOMPSET', "$lname");
@@ -1300,14 +1403,18 @@ NAME:
 NAME:
     @e = $xml_grid->elements_by_name( "GRID" );
     while ( my $e = shift @e ) {
-	my $sname, my $alias;
+	my $sname, my $alias; my $support;
 	my $lname = clean($e->get_text());
 	my %attr = $e->get_attributes();
 	$sname = clean($attr{'sname'}); 
 	$alias = clean($attr{'alias'});
+	$support = clean($attr{'support_level'});
 	if ($grid =~ /$lname/ || $grid eq $sname || $grid eq $alias)  {
 	    if ($attr{'compset'}) { 
 		if ($compset_longname =~ /$attr{'compset'}/) {
+                    if ( $support ) {
+                       $support_level .= "Grid ($sname): $support\n";
+                    }
 		    $grid_longname  = $lname;
 		    $grid_shortname = $sname;
 		    $grid_aliasname = $alias;
@@ -1322,16 +1429,20 @@ NAME:
     if ($found == 0) {
 	@e = $xml_grid->elements_by_name( "GRID" );
 	while ( my $e = shift @e ) {
-	    my $sname, my $alias;
+	    my $sname, my $alias; my $support;
 	    my $lname = clean($e->get_text());
 	    my %attr = $e->get_attributes();
 	    $sname = clean($attr{'sname'}); 
 	    $alias = clean($attr{'alias'});
+	    $support = clean($attr{'support_level'});
 	    if ($grid =~ /$lname/ || $grid eq $sname || $grid eq $alias)  {
 		if ($attr{'compset'}) { 
 # do nothing
 		} else {
 		    print " grid longname is $grid_longname \n";
+                    if ( $support ) {
+                       $support_level .= "Grid ($sname): $support\n";
+                    }
 		    $grid_longname  = $lname;
 		    $grid_shortname = $sname;
 		    $grid_aliasname = $alias;
@@ -1391,7 +1502,7 @@ NAME:
 
     @e = $xml_grid->elements_by_name( "gridhorz" );
     while ( my $e = shift @e ) {
-	my $nx, my $ny;
+	my $nx, my $ny; my $support;
 	my %attr = $e->get_attributes();
 	my $hgrid = clean($attr{'name'});
 	my $alias = clean($attr{'alias'});
@@ -1401,8 +1512,14 @@ NAME:
 	    my $name = clean($child->get_name());
 	    if ($name eq 'nx') {$nx = $val;}
 	    if ($name eq 'ny') {$ny = $val;}
+	    if ($name eq 'support_level') {$support = $val;}
+            # WARNING!!!:: THE LOGIC HERE IS DEPENDENT ON THE ORDER OF THE FIELDS WITHIN
+            #              EACH gridhorz FIELD desc MUST BE LAST!
 	    if ($name eq 'desc') {
 		if ($grid_longname =~ /$hgrid/) {
+                    if ( $support ) {
+                       $support_level .= "Grid ($hgrid): $support\n";
+                    }
 		    if ($desc_grid =~ m/$val/) {
 # do nothing
 		    } else {
@@ -1614,7 +1731,7 @@ NAME:
 		    my $newval = $val;
 
 		    # For OCN_TRACER_MODULES want to merge, not replace, options.
-		    if ($name =~ m/OCN_TRACER_MODULES/) {
+		    if ($name eq "OCN_TRACER_MODULES") {
 			my $curval = $cfg_ref->get($id);
 			if ($val =~ /$curval/) {
 			    #do nothing
@@ -1819,7 +1936,7 @@ NAME:
 	print $fh "  $id: $newout{$id} \n";
     } 
 
-    return ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname); 
+    return ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname, $support_level); 
 }
 
 #-------------------------------------------------------------------------------
@@ -2033,61 +2150,61 @@ sub list_grids
     $name eq "config_compset" or die
 	"file $grid_file is not a horizontal grid parameters file\n";
 
-    # Naming convention
-    my @e = $xml->elements_by_name( "help" );
-    while ( my $e = shift @e ) {
-	my $text = clean($e->get_text());
-	print "$text \n\n";
+  # Naming convention
+  my @e = $xml->elements_by_name( "help" );
+  while ( my $e = shift @e ) {
+    my $text = clean($e->get_text());
+    print "$text \n\n";
+  }
+  print "\n";
+  # Component grids
+  print "======================================================\n";
+  print ("Component Grids:  name\t(alias)\t(desc)\t(nx)\t(ny) \n");
+  print "======================================================\n";
+  my @e = $xml->elements_by_name( "gridhorz" );
+  my %a = ();
+  while ( my $e = shift @e ) {
+    my %attr = $e->get_attributes();
+    my $hgrid = clean($attr{'name'});
+    my $alias = clean($attr{'alias'});
+    my $gridname;
+    printf "    %-20s ", $hgrid;
+    foreach my $item ( "alias" ) {
+       if ($attr{$item}) {
+         print " ($item: $attr{$item})";
+       }
+    }
+    my @children = $e->get_children();
+    my %elements = undef;
+    foreach my $child (@children) {
+       my $name = clean($child->get_name());
+       $elements{$name} = clean($child->get_text());
+    }
+    foreach my $item ( "desc", "nx", "ny", "support_level" ) {
+       if ($elements{$item}) {
+         print " ($item: $elements{$item})";
+       }
+    }
+    print " \n";
+  }
+  print ("  \n");
+  # Model grids
+  print "======================================================\n";
+  print ("Model Grids:  name\t(alias)\t(compset) \n");
+  print "======================================================\n";
+  my @e = $xml->elements_by_name( "GRID" );
+  while ( my $e = shift @e ) {
+    my %attr = $e->get_attributes();
+    my $text = clean($e->get_text());
+    printf "%s %-87s ", "model grid: ", $text;
+    foreach my $item ( "alias", "compset", "support_level" ) {
+       if ($attr{$item}) {
+         print " ($item: $attr{$item})";
+       }
     }
     print "\n";
-    # Component grids
-    print "======================================================\n";
-    print ("Component Grids:  name\t(alias)\t(desc)\t(nx)\t(ny) \n");
-    print "======================================================\n";
-    my @e = $xml->elements_by_name( "gridhorz" );
-    my %a = ();
-    while ( my $e = shift @e ) {
-	my %attr = $e->get_attributes();
-	my $hgrid = clean($attr{'name'});
-	my $alias = clean($attr{'alias'});
-	my $gridname;
-	printf "    %-20s ", $hgrid;
-	foreach my $item ( "alias" ) {
-	    if ($attr{$item}) {
-		print " ($item: $attr{$item})";
-	    }
-	}
-	my @children = $e->get_children();
-	my %elements = undef;
-	foreach my $child (@children) {
-	    my $name = clean($child->get_name());
-	    $elements{$name} = clean($child->get_text());
-	}
-	foreach my $item ( "desc", "nx", "ny" ) {
-	    if ($elements{$item}) {
-		print " ($item: $elements{$item})";
-	    }
-	}
-	print " \n";
-    }
-    print ("  \n");
-    # Model grids
-    print "======================================================\n";
-    print ("Model Grids:  name\t(alias)\t(compset) \n");
-    print "======================================================\n";
-    my @e = $xml->elements_by_name( "GRID" );
-    while ( my $e = shift @e ) {
-	my %attr = $e->get_attributes();
-	my $text = clean($e->get_text());
-	printf "%s %-87s ", "model grid: ", $text;
-	foreach my $item ( "alias", "compset" ) {
-	    if ($attr{$item}) {
-		print " ($item: $attr{$item})";
-	    }
-	}
-	print "\n";
-    }    
-    print " \n";
+  }    
+  print " \n";
 
 
 }
@@ -2120,8 +2237,10 @@ sub list_compsets
 	my $text = clean($e->get_text());
 	printf("alias: %-25s shortname: %-50s \n",
 	       clean($attr{'alias'}),clean($attr{'sname'}));
-	printf("                                 longname: %-96s \n",
-	       clean($text));
+	printf("                                 longname: %-96s \n", clean($text) );
+        if ( $attr{'support_level'} ) {
+	   printf("                                 support_level:  %-96s \n", clean($attr{'support_level'}) );
+        }
     }    
     print " \n";
     my @e = $xml_comp->elements_by_name( "help" );

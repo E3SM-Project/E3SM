@@ -17,6 +17,9 @@ if ( defined($ENV{'CASEROOT'})) {
     die "$ProgName - ERROR: env variable CASEROOT is not defined \n";
 }	
 
+my @dirs = ("$caseroot/Tools");
+unshift @INC, @dirs;
+require SetupTools;
 
 my %opts = ( user_nl_file => undef);
 GetOptions( "user_nl_file=s" => \$opts{'user_nl_file'}) or die "need to specify user_nl_file as input";
@@ -28,8 +31,13 @@ $fh->open("<$user_nl_file") or die "** can't open file: $user_nl_file\n";
 while (my $line = <$fh>) {
     if ($line =~ /^[\&\/\!]/ ) {
 	# do nothing
-    } else {
-	print "$line";
+	next;
+    }elsif ($line =~ /\$([\w\_]+)/){
+	my $var = $1;
+	my $xmlhash;
+	SetupTools::getxmlvars($caseroot,$xmlhash);
+	$line = SetupTools::expand_env_var($line,$xmlhash);
     }
+    print "$line";
 }
 $fh->close()

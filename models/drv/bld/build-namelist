@@ -388,7 +388,7 @@ add_default($nl, 'glc_gnam',      'val'=>"$xmlvars{'GLC_GRID'}",     'xml'=>'GLC
 add_default($nl, 'wav_gnam',      'val'=>"$xmlvars{'WAV_GRID'}",     'xml'=>'WAV_GRID');
 
 add_default($nl, 'brnch_retain_casename', 'BRNCH_RETAIN_CASENAME'=>"$xmlvars{'BRNCH_RETAIN_CASENAME'}");
-add_default($nl, 'ocean_tight_coupling',  'OCN_TIGHT_COUPLING'=>"$xmlvars{'OCN_TIGHT_COUPLING'}");
+add_default($nl, 'cpl_seq_option', 'val'=>"$xmlvars{'CPL_SEQ_OPTION'}");
 add_default($nl, 'drv_threading', 'DRV_THREADING'=>"$xmlvars{'DRV_THREADING'}");
 
 add_default($nl, 'run_barriers', 'COMP_RUN_BARRIERS'=>"$xmlvars{'COMP_RUN_BARRIERS'}");

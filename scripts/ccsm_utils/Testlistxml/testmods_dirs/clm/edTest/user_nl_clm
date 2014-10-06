@@ -1,4 +1,3 @@
-paramfile ='/glade/p/cesmdata/cseg/inputdata/lnd/clm2/edParams/CLMPARAMS_ED_011514.nc'
 finidat = ''
 hist_mfilt             = 365
 hist_nhtfrq            = -24

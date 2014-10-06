@@ -282,10 +282,10 @@ option relative to the others.
 "-clm_demand" asks the &buildnml; step to require that the list of variables
 entered be set. Typically, this is used to require that optional filenames be used and ensure
 they are set before continuing. For example, you may want to require that
-<varname>fpftdyn</varname> be set to get dynamically changing vegetation types. To do this
+<varname>flanduse_timeseries</varname> be set to get dynamically changing vegetation types. To do this
 you would do the following.
 <screen width="99">
-> ./xmlchange -file env_conf.xml -id &CLMBLDNML; -val "-clm_demand fpftdyn"
+> ./xmlchange -file env_conf.xml -id &CLMBLDNML; -val "-clm_demand flanduse_timeseries"
 </screen>
 To see a list of valid variables that you could set do this:
 <screen width="99">

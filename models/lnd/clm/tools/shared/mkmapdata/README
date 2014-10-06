@@ -1,4 +1,4 @@
-models/lnd/clm/tools/mkmapdata/README		Jan/17/2012
+models/lnd/clm/tools/mkmapdata/README		Feb/28/2014
 
 The routines in this directory create a mapping dataset from
 SCRIP grid files to map from one grid to another. These mapping files
@@ -7,9 +7,12 @@ to another.
 
 The script uses ESMF and requires that ESMF be built and the path
 for ESMF binary files (using the program ESMF_RegridWeightGen) 
-be given as input to the script.
+be given as input to the script. You need to build at least
+two versions, one with mpiuni and one with mpi. Both versions
+also need to be built with NetCDF rather than the default
+IO version.
 
-Currently uses: ESMF5.2.0
+Currently uses: ESMF6.2.0
 
 Do the following for help with the different options to the script...
 
@@ -29,12 +32,24 @@ and generate the grid map dataset:
   Supported machines also have a copy on the CESM DIN_LOC_ROOT location
   for that machine.
 
- b.) Obtain and build a version of ESMF compatible with this script
+ b.) Obtain and build the versions of ESMF required for this script
 
 The version needs to support ESMF_RegridWeightGen and support the
-options passed to it in the mkmapdata.sh script.
+options passed to it in the mkmapdata.sh script. As such it needs
+to be built with NetCDF. You also need to build at least one
+version with mpiuni and one with an mpi library. You also need
+a version that supports the options: --netcdf4, --64bit_offset
+and --src_type UGRID.
 
    http://www.earthsystemmodeling.org/
+
+You may need more than one version to do everything above. On yellowstone
+we use ESMF6.1.1 for the normal operations and ESMF6.2.0-bs18 for
+the operations that need --netcdf4 and/or -src_type UGRID.
+
+The version of NetCDF used with ESMF needs to be version 4.1 or higher
+and compiled with the NetCDF4 file format enabled (with HDF5 compression).
+That will enable the --netcdf4 and --64bit_offset options to be used.
 
 1) cd to this directory 
 
@@ -42,7 +57,7 @@ options passed to it in the mkmapdata.sh script.
    Option A.)  Use mkmapdata.sh directly
    run script(e.g.): (see header of mkmapdata.sh for other environment that can be set)
 
-   Example for standard reslutions
+   Example for standard resolutions
         ./mkmapdata.sh -r 10x15
    Example for non-standard resolutions where you provide an input SCRIP grid file.
         ./mkmapdata.sh -f <SCRIP_gridfile>

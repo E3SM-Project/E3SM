@@ -13,6 +13,9 @@ else
   rm    -f $EXEROOT/cesm.exe     >& /dev/null
   rm    -f $EXEROOT/config.cache >& /dev/null
   rm   -rf $SHAREDLIBROOT/$COMP_INTERFACE/$NINST_VALUE
+
+# need to remove the whole glc directory, to get rid of CMake-related stuff
+  rm -r -f $EXEROOT/glc          >& /dev/null
 endif
 
 rm -f LockedFiles/env_build*  >& /dev/null

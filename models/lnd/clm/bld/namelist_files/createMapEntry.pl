@@ -23,7 +23,7 @@ use Getopt::Long;
    my $scriptName;
    ($scriptName = $0) =~ s!(.*)/!!; # get name of script
    my $cwd = getcwd();
-   my $CSMDATA = "/glade/proj3/cseg/inputdata";
+   my $CSMDATA = "/glade/p/cesm/cseg/inputdata";
 
    if ($#ARGV != 0 ) {
       usage();
@@ -46,7 +46,7 @@ EOF
    my $fullPath = "$CSMDATA/$partialPath";
 
    #~# open and read directory
-   opendir DIR, $fullPath or die "Cannot read dir!";
+   opendir DIR, $fullPath or die "Cannot read dir! $fullPath";
    my @list = readdir DIR;
 
    #~# print a unique start string in the XML comments 

@@ -1,1 +1,1 @@
-../PTCLMmkdata --verbose --cesm_root ../../../../../../.. -s IT-Col -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/std_file_creation 
+../PTCLMmkdata --verbose --cesm_root ../../../../../../.. -s IT-Col -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/std_file_creation 

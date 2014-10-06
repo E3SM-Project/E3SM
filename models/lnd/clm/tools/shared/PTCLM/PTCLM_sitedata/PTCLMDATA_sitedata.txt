@@ -1,4 +1,5 @@
 site_code,name,state,lon,lat,elev,startyear,endyear,alignyear,timestep,campaign
+US-Blo,"Blodgett Forest",CA,-120.6327,38.8952,1315,1997,2007,1997,30,AmeriFlux
 US-CHATS,"Cilker Chandler walnut orchard",CA,-121.85,38.49,21,2007,2007,2007,30,CHATS
 US-FPe,"Fort Peck",MT,-105.1019,48.3077,634,2000,2007,2001,30,AmeriFlux
 CA-Let,"Lethbridge",CAN,-112.9402,49.7093,960,1998,2007,1998,30,Fluxnet-Canada
@@ -37,3 +38,6 @@ US-WCr,"Willow Creek",WI,-90.0799,45.8059,520,1998,2006,1998,30,AmeriFlux
 TS-Ts1,"Test short yrs",TEST,-105.5464,40.0329,3050,1998,2001,1998,30,PTCLMTestSite
 TS-Ts2,"Test short yrs start on leap-year",TEST,-105.5464,40.0329,3050,2004,2007,2005,30,PTCLMTestSite
 TS-Ts3,"Test long yrs",TEST,-105.5464,40.0329,3050,2004,2008,2005,30,PTCLMTestSite
+LTER-Sev,"Sevilleta Long Term Ecological Research (LTER) project (Meteorology from LTER Cerro Montoso #42)",NM,-106.529444,34.386389,1911,1996,1999,1996,30,LTER
+RF-Bra,"Brasillia arbitrary site, no met-data",BR,-50.0,-15.0,-999,-999,-999,-999,60,RFisher
+LBA-Cax,"Caxiauna Rainforest 'throughfall exclusion’ (TFE) experiment",BR,-51.46,1.717639,-999,1996,1999,1996,30,LBA

@@ -13,7 +13,7 @@ use parent qw(Test::Class);
 # Common test fixture for all tests:
 #
 #-------------------------------------------------------------------------------
-sub startup : Test(startup => 3) {
+sub startup : Test(startup => 4) {
   my $self = shift;
   # provide common fixture for all tests, only created once at the
   # start of the tests.
@@ -25,6 +25,9 @@ sub startup : Test(startup => 3) {
 
   $self->{defaults} = Build::NamelistDefaults->new("t/input/namelist_defaults_clm4_5_test.xml");
   isnt($self->{defaults}, undef,  (caller(0))[3] . " : namelist_defaults object created.");
+
+  $self->{physv} = config_files::clm_phys_vers->new( $self->{cfg}->get('phys') );
+  isnt($self->{physv}, undef,  (caller(0))[3] . " : phys_vers object created.");
 }
 
 sub shutdown : Test(shutdown) {
@@ -57,10 +60,10 @@ sub test_setup_cmdl_vichydro__clm4_0 : Tests {
   use CLMBuildNamelist qw(setup_cmdl_vichydro);
 
   my $opts = { vichydro => 1, };
-  my $nl_flags = { phys => "clm4_0",
-                 };
+  my $physv40 = config_files::clm_phys_vers->new( "clm4_0" );
 
-  dies_ok(sub { CLMBuildNamelist::setup_cmdl_vichydro($opts, $nl_flags, $self->{definition}, $self->{defaults}, $self->{nl}) }) || diag($msg);
+  dies_ok(sub { CLMBuildNamelist::setup_cmdl_vichydro($opts, $nl_flags, $self->{definition}, $self->{defaults}, $self->{nl}),
+                $self->{physv} }) || diag($msg);
 }
 
 #-------------------------------------------------------------------------------
@@ -73,14 +76,15 @@ sub test_setup_cmdl_vichydro__nl_contradicts_cmdl : Tests {
   use CLMBuildNamelist qw(setup_cmdl_vichydro);
 
   my $opts = { vichydro => 1, };
-  my $nl_flags = { phys => "clm4_5",
+  my $nl_flags = { 
                    vichydro => ".false.",
                  };
 
   my $group = $self->{definition}->get_group_name("use_vichydro");
   $self->{nl}->set_variable_value($group, "use_vichydro", '.false.' );
 
-  dies_ok(sub { CLMBuildNamelist::setup_cmdl_vichydro($opts, $nl_flags, $self->{definition}, $self->{defaults}, $self->{nl}) }) || diag($msg);
+  dies_ok(sub { CLMBuildNamelist::setup_cmdl_vichydro($opts, $nl_flags, $self->{definition}, $self->{defaults}, $self->{nl},
+                $self->{physv}) }) || diag($msg);
 }
 
 #-------------------------------------------------------------------------------
@@ -94,10 +98,10 @@ sub test_setup_cmdl_vichydro__set_use_vichydro : Tests {
   use CLMBuildNamelist qw(setup_cmdl_vichydro);
 
   my $opts = { vichydro => 1, };
-  my $nl_flags = { phys => "clm4_5",
+  my $nl_flags = { 
                  };
 
-  CLMBuildNamelist::setup_cmdl_vichydro($opts, $nl_flags, $self->{definition}, $self->{defaults}, $self->{nl});
+  CLMBuildNamelist::setup_cmdl_vichydro($opts, $nl_flags, $self->{definition}, $self->{defaults}, $self->{nl}, $self->{physv});
   my $group = $self->{definition}->get_group_name("use_vichydro");
   my $result = $self->{nl}->get_variable_value($group, "use_vichydro");
   is($result, '.true.') || diag($msg);

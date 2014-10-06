@@ -5,11 +5,12 @@
 #   MODEL=<model>  ~ a standard macro definition, often found in the included 
 #                    MACFILE, used to trigger special compilation flags
 # Supported compilers
-# ibm, bgl, bgp, pgi, intel, pathscale, gnu, lahey
+# ibm, bgl, bgp, pgi, intel, pathscale, gnu, nag
 #===============================================================================
 
 # Set up special characters
 null  :=
+comma := ,
 
 # Load dependency search path.
 dirs := . $(shell cat Filepath)
@@ -133,6 +134,18 @@ ifeq ($(USE_CXX), true)
   endif
 endif
 
+# Not clear how to escape commas for libraries with their own configure
+# script, and they don't need this defined anyway.
+ifneq ($(MODEL),mct)
+ifneq ($(MODEL),pio)
+  ifeq ($(HAS_F2008_CONTIGUOUS),TRUE)
+    CPPDEFS += -DUSE_CONTIGUOUS=contiguous,
+  else
+    CPPDEFS += -DUSE_CONTIGUOUS=
+  endif
+endif
+endif
+
 ifndef AR
    AR := ar
 endif
@@ -183,7 +196,8 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
 endif
 
 ifdef CPRE
-  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS)) 
+  FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
+  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS)) 
 else
   FPPDEFS := $(CPPDEFS)
 endif
@@ -282,6 +296,10 @@ else
   endif
 endif
 
+ifeq ($(COMP_OCN), pop2)
+  INCLDIR += -I$(EXEROOT)/ocn/cvmix
+endif
+
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(SHAREDPATH)/mct
 endif
@@ -333,19 +351,9 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
-ifeq ($(strip $(COMPILER)),lahey)
-binary_io.o: binary_io.F90
-	$(FC) -c $(FPPDEFS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-wrap_nf.o: wrap_nf.F90
-	$(FC) -c $(FPPDEFS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-wrap_mpi.o: wrap_mpi.F90
-	$(FC) -c $(FPPDEFS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-apex_subs.o: apex_subs.F90
-	$(FC) -c $(FPPDEFS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-endif
 ifdef COSP_LIBDIR
 INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
-$(COSP_LIBDIR)/libcosp.a: abortutils.o
+$(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
 	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
 	F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
@@ -571,6 +579,9 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libice.a
      ULIBDEP += $(LIBROOT)/liblnd.a
      ULIBDEP += $(LIBROOT)/libocn.a
+     ifeq ($(COMP_OCN), pop2)
+       ULIBDEP += $(LIBROOT)/libcvmix.a
+     endif
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
@@ -601,7 +612,8 @@ endif
 
 # libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
 # so this needs to be added after creating CLIBS above
-ULIBDEP += $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/libcsm_share.a
+CSMSHARELIB = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/libcsm_share.a
+ULIBDEP += $(CSMSHARELIB)
 
 #-------------------------------------------------------------------------------
 # build rules: 
@@ -619,13 +631,19 @@ $(MCTLIBS)  : $(MPISERIAL)
 
 $(PIOLIB) : $(MPISERIAL) $(GPTLLIB)
 
-$(OBJS):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
+$(CSMSHARELIB):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB) 
+ifneq ($(MODEL),csm_share)
+  $(OBJS):  $(CSMSHARELIB)
+endif
 
-$(EXEC_SE): $(OBJS) $(ULIBDEP)
+$(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS)
+$(COMPLIB): $(OBJS) 
 	$(AR) -r $(COMPLIB) $(OBJS)
+
+$(LIBROOT)/libcvmix.a:
+	$(MAKE) -f $(CODEROOT)/ocn/pop2/source/cvmix/Makefile SRC_DIR=$(CODEROOT)/ocn/pop2/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

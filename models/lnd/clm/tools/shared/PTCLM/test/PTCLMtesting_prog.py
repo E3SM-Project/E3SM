@@ -43,8 +43,8 @@ class PTCLMtesting_prog:
       options.add_option("--redo_compare_files", dest="redo_compare", action="store_true", default=self.redo_compare, \
                         help="Redo the compare files")
       parser.add_option_group(options)
-      svnurl          = '$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140204/test/PTCLMtesting_prog.py $'
-      versiongroup    = OptionGroup( parser, "Version Id: $Id: PTCLMtesting_prog.py 57131 2014-02-04 21:25:52Z erik $ URL: "+svnurl )
+      svnurl          = '$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140521/test/PTCLMtesting_prog.py $'
+      versiongroup    = OptionGroup( parser, "Version Id: $Id: PTCLMtesting_prog.py 58600 2014-03-28 23:08:40Z erik $ URL: "+svnurl )
       parser.add_option_group(versiongroup)
       (options, args) = parser.parse_args()
       if len(args) != 0:
@@ -75,11 +75,12 @@ class PTCLMtesting_prog:
       self.testlist.Read()
 
 
-      self.n_tests['PASS']                = 0;
-      self.n_tests['Fail']                = 0;
-      self.n_tests['compare.Fail']        = 0;
-      self.n_tests['compare.PASS']        = 0;
-      self.n_tests['no-comparisons-done'] = 0;
+      self.n_tests['PASS']          = 0;
+      self.n_tests['FAIL']          = 0;
+
+      self.n_tests['PASS-COMP']     = 0;
+      self.n_tests['FAIL-COMP']     = 0;
+      self.n_tests['NO-COMPS-DONE'] = 0;
       self.itest = 0
       self.setup = True
 
@@ -91,15 +92,17 @@ class PTCLMtesting_prog:
          self.itest += 1
          (stat,comp) = self.testlist.run_PTCLMtest( test, self.redo_compare_files() )
          self.n_tests[stat] += 1
-         if ( comp != "PASS" ): self.n_tests[comp]            += 1
-         else:                  self.n_tests['compare.'+comp] += 1
+         if   ( comp == "PASS" ):          self.n_tests['PASS-COMP']  += 1
+         elif ( comp == "NO-COMPS-DONE" ): self.n_tests[comp]         += 1
+         else:                             self.n_tests['FAIL-COMP']  += 1
 
       for test in self.testlist.get_failtestlist():
          self.itest += 1
          (stat,comp) = self.testlist.run_PTCLMtest( test, self.redo_compare_files() )
          self.n_tests[stat] += 1
-         if ( comp != "PASS" ): self.n_tests[comp]            += 1
-         else:                  self.n_tests['compare.'+comp] += 1
+         if   ( comp == "PASS" ):          self.n_tests['PASS-COMP']  += 1
+         elif ( comp == "NO-COMPS-DONE" ): self.n_tests[comp]         += 1
+         else:                             self.n_tests['FAIL-COMP']  += 1
 
 
    def Finalize( self ):
@@ -108,10 +111,10 @@ class PTCLMtesting_prog:
          self.error( "Initialize was NOT run first" )
       print "Total number of tests             = "+str(self.itest)
       print "Number of tests that PASS         = "+str(self.n_tests['PASS'])
-      print "Number of tests that Fail         = "+str(self.n_tests['Fail'])
-      print "Number of compare tests that Fail = "+str(self.n_tests['compare.Fail'])
-      print "Number of compare tests that PASS = "+str(self.n_tests['compare.PASS'])
-      print "Number of tests without compare   = "+str(self.n_tests['no-comparisons-done'])
+      print "Number of tests that Fail         = "+str(self.n_tests['FAIL'])
+      print "Number of compare tests that PASS = "+str(self.n_tests['PASS-COMP'])
+      print "Number of compare tests that Fail = "+str(self.n_tests['FAIL-COMP'])
+      print "Number of tests without compare   = "+str(self.n_tests['NO-COMPS-DONE'])
 
 
 #

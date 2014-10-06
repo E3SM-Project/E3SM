@@ -192,7 +192,7 @@ contains
 
   !================================================================================================
   
-  subroutine prep_glc_mrg(infodata, timer_mrg, timer_diag) 
+  subroutine prep_glc_mrg(infodata, timer_mrg) 
 
     !---------------------------------------------------------------
     ! Description
@@ -201,7 +201,6 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     character(len=*)        , intent(in)    :: timer_mrg
-    character(len=*)        , intent(in)    :: timer_diag
     !
     ! Local Variables
     integer :: egi, eli

@@ -16,6 +16,7 @@ use English;
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
+use File::Copy;
 #-----------------------------------------------------------------------------------------------
 
 sub usage {
@@ -205,7 +206,7 @@ require ConfigCase;
 # Modify the relevant xml file
 
 # Check that file is supported 
-my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml env_archive.xml);
+my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml);
 
 # If NOT settings list option, check that file is valid
 # tcraig, add the input file set by the user for things like env_build.xml.001 in tests
@@ -218,7 +219,9 @@ if ( ! defined($settinglist) ) {
    if ($status != 1) {
        die <<"EOF";
 ** $opts{'file'} is not an acceptable file to modify ***
-*** acceptable files are @filenames***
+*** acceptable files are @filenames ***
+*** Note: env_archive.xml can be modified manually and checked with xmllint. ***
+*** See st_archive --help for details ***
 EOF
    }
 }
@@ -297,14 +300,23 @@ foreach my $id ( keys(%idlist) ) {
 }
 # End loop over id's
 
+# Before overwriting the files, make backup copies in case 
+# there are file system problems, this way the original xml files don't get corrupted.
+my @backupfiles = ();
+foreach my $originalfile(keys(%myfiles)){
+	my $backupfile = "$originalfile.bak";
+	push(@backupfiles, $backupfile);
+	copy($originalfile, $backupfile) or die "A problem occurred copying $originalfile to $backupfile, reason was $!";
+}
+
 # Overwrite the file(s)
 foreach my $filename ( keys(%myfiles) ) {
-    if( $filename eq 'env_archive.xml') {
-        $cfg_ref->write_file($filename, "xml", "$dir");
-    }
-    else {
         $cfg_ref->write_file($filename);
-    }
+}
+
+# Before finishing, remove the backup files.  
+foreach my $backupfile(@backupfiles) {
+	unlink($backupfile) or warn "unable to link $backupfile, $!";
 }
 if ($print>=2) { print "xmlchange done.\n"; }
 exit;

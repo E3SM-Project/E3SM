@@ -71,6 +71,7 @@ if (@ARGV) {
 $opts{'check'} ? ($checkopt = 1) : ($checkopt = 0);
 $opts{'export'} ? ($exportopt = 1) : ($exportopt = 0);
 $opts{'prestage'} ? ($prestageopt = 1) : ($prestageopt = 0);
+$opts{'verbose'} ? ($verboseopt = 1) : ($verboseopt = 0);
 
 ##print "opts $checkopt $exportopt $prestageopt \n";
 
@@ -121,7 +122,7 @@ EOF
 # Find .input_data_list files
 @filelocations = `find "$opts{'datalistdir'}" -name '*.input_data_list'`;
 
-if (defined($opts{'verbose'})) {
+if ($verboseopt) {
     print "Input Data List Files Found:\n";
     print @filelocations;
 }

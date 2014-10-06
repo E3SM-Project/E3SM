@@ -36,7 +36,7 @@ module seq_drydep_mod
   ! !PRIVATE ARRAY SIZES
 
   integer, private, parameter :: maxspc = 100              ! Maximum number of species
-  integer, public,  parameter :: n_species_table = 55      ! Number of species to work with
+  integer, public,  parameter :: n_species_table = 56      ! Number of species to work with
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
@@ -279,7 +279,8 @@ module seq_drydep_mod
              ,1.e-36_r8 &
              ,1.e-36_r8 & ! HCN
              ,1.e-36_r8 & ! CH3CN
-            /)
+             ,1.e-36_r8 & ! SO2
+            /) 
 !EOP
 
 ! PRIVATE DATA:
@@ -352,6 +353,7 @@ module seq_drydep_mod
                            ,'HYDRALD '                       &
                            ,'HCN     '                       &
                            ,'CH3CN   '                       &
+                           ,'SO2     '                       &
                            /)
 
   !--- data for effective Henry's Law coefficient ---
@@ -411,6 +413,7 @@ module seq_drydep_mod
              ,7.00e+01_r8, 6000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.20e+01_r8, 5000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,5.00e+01_r8, 4000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.23e+00_r8, 3120._r8,1.23e-02_r8,1960._r8,0._r8     ,    0._r8  &
             /)
 
   real(r8), private, parameter :: wh2o = SHR_CONST_MWWV
@@ -425,7 +428,8 @@ module seq_drydep_mod
           72.0614014_r8, 60.0503998_r8, 75.0423965_r8, 44.0922012_r8, 75.0836029_r8, &
           58.0768013_r8, 76.0910034_r8, 31.9988003_r8, 33.0061989_r8, 222.000000_r8, &
           68.1141968_r8, 70.0877991_r8, 70.0877991_r8, 46.0657997_r8, 147.125946_r8, &
-          119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8  /)
+          119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8   , &
+          64.064800_r8 /)
 
 !===============================================================================
 CONTAINS
@@ -612,7 +616,7 @@ CONTAINS
              test_name = 'HNO3'
           case( 'ALKOOH', 'MEKOOH', 'TOLOOH', 'BENOOH', 'XYLOOH', 'TERPOOH','SOGM','SOGI','SOGT','SOGB','SOGX' )
                 test_name = 'CH3OOH'
-          case( 'SOA', 'SO2', 'SO4', 'CB1', 'CB2', 'OC1', 'OC2', 'NH3', 'NH4', 'SA1', 'SA2', 'SA3', 'SA4','HCN','CH3CN','HCOOH' )
+          case( 'SOA', 'SO4', 'CB1', 'CB2', 'OC1', 'OC2', 'NH3', 'NH4', 'SA1', 'SA2', 'SA3', 'SA4','HCN','CH3CN','HCOOH' )
              test_name = 'OX'  ! this is just a place holder. values are explicitly set below
           case( 'SOAM', 'SOAI', 'SOAT', 'SOAB', 'SOAX' )
              test_name = 'OX'  ! this is just a place holder. values are explicitly set below

@@ -411,7 +411,11 @@ for testcase in $tests; do
     # testcase will look like: SMS.T31_g37.IG4804.yellowstone_intel.134426
     # optionally with .C or .G or .GC before the testid
     # Form testcase_base by stripping off the trailing testid and the optional .C, .G or .GC:
-    testcase_base=`echo $testcase | perl -p -e "s/(\.G?C?)?\.$testid\$//"`
+    testcase_base=`echo $testcase | perl -p -e "s/(\.G?C?)?\.\Q$testid\E\$//"`
+
+    if [ "$testcase_base" == "sharedlibroot" ]; then
+	continue
+    fi
 
     rundir=${runloc}/${testcase}/run
 

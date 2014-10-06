@@ -26,15 +26,13 @@ endif
 # Generate new baseline for regression testing
 #======================================================================
 set genstatus = "UNDEF"
-if ( "$GENERATE_BASELINE" == "TRUE" ) then
-  set CplHistDir = $RUNDIR
+set CplHistDir = $RUNDIR
+set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
+if (${CplHistFileName} == '') then
+  set CplHistDir = $DOUT_S_ROOT/cpl/hist
   set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
-  if (${CplHistFileName} == '') then
-    set CplHistDir = $DOUT_S_ROOT/cpl/hist
-    set CplHistFileName = `cd $CplHistDir; ls -1t $CASE.cpl.hi*.nc | head -1 `
-  endif
-  set CplHistFile = $CplHistDir/$CplHistFileName
 endif
+set CplHistFile = $CplHistDir/$CplHistFileName
 echo " xyz " >! grep_a_test_file
 set grepa = "-a"
 grep -a xyz grep_a_test_file >& /dev/null
@@ -189,7 +187,7 @@ if ( "$COMPARE_BASELINE" == "TRUE" ) then
       echo "hist file comparison is $compstatus" >>& $TESTSTATUS_LOG
       echo "$compstatus ${CASEBASEID}.compare_hist.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
       if ($basestatus == "PASS") then
-        if( "$COMPARE_MEMORY" == "TRUE" ) then 
+        if( $?COMPARE_MEMORY ) then 
           echo "Comparing pes max memory value with baseline pes max memory value" >>& $TESTSTATUS_LOG 
           set baseline_CplLogFile = ` grep $grepa startup $BASECMP_DIR/cpl.log* | awk -F ":" '{ print $1 }'`
           echo "Comparing log files $CPLLOG_INIT and $baseline_CplLogFile" >>& $TESTSTATUS_LOG 
@@ -204,7 +202,7 @@ if ( "$COMPARE_BASELINE" == "TRUE" ) then
             echo "$compstatus ${CASEBASEID}.memcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
           endif
         endif  
-        if ( "$COMPARE_THROUGHPUT" == "TRUE" ) then
+        if ( $?COMPARE_THROUGHPUT ) then
           echo "Comparing throughput value with baseline throughput value" >>& $TESTSTATUS_LOG
           set baseline_CplLogFile = ` grep $grepa startup $BASECMP_DIR/cpl.log* | awk -F ":" '{ print $1 }'`
           echo "Comparing log files $CplLogFile and $baseline_CplLogFile" >>& $TESTSTATUS_LOG
@@ -229,7 +227,6 @@ endif
 # (Currently only recognizes cism, clm2 and could be used for cpl as well)
 # (Could be easily extended to recognize other components with the history extension list)
 #======================================================================
-set extension_list = ""
 if ( $MODEL_GEN_COMP != "UNSET" ) then
    if      ( "$MODEL_GEN_COMP" == "cism" ) then
       set extension_list = "h"
@@ -272,7 +269,7 @@ if ( $?CPLLOG_INIT) then
    if (-e $CPLLOG_INIT) then
       echo " " >>& $TESTSTATUS_LOG
       echo "=======================" >>& $TESTSTATUS_LOG
-      if( "$CPLLOG_INIT" =~ /.gz/ ) then
+      if( "$CPLLOG_INIT" =~ *gz ) then
         zcat $CPLLOG_INIT | tail -15  >>& $TESTSTATUS_LOG
       else
         tail -15 $CPLLOG_INIT  >>& $TESTSTATUS_LOG
@@ -365,7 +362,8 @@ endif
 
 if ( -e $TESTSTATUS_OUT_NLCOMP ) then
   cat $TESTSTATUS_OUT_NLCOMP >>& $TESTSTATUS_OUT
-  rm $TESTSTATUS_OUT_NLCOMP
+  # Do NOT delete the nlcomp file, so that the test can be "rerun" ##
+  ###rm $TESTSTATUS_OUT_NLCOMP  #####################################
 endif
 
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`

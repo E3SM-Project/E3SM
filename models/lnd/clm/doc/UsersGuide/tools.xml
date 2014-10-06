@@ -1118,9 +1118,9 @@ machine using the <command>check_input_data</command> script</title>
 # Run the script with -export and give the location of your inputdata with $CSMDATA
 > ../../../../../scripts/ccsm_utils/Tools/check_input_data -datalistdir . \
 -inputdata $CSMDATA -check -export
-# You must then do the same with the fdynuse file referred to in the namelist
+# You must then do the same with the flanduse_timeseries file referred to in the namelist
 # in this case we add a file = to the beginning of each line
-> awk '{print "file = "$1}' pftdyn_hist_simyr2000-2000.txt > clm.input_data_list
+> awk '{print "file = "$1}' landuse_timeseries_hist_simyr2000-2000.txt > clm.input_data_list
 # Run the script with -export and give the location of your inputdata with $CSMDATA
 > ../../../../../scripts/ccsm_utils/Tools/check_input_data -datalistdir . \
 -inputdata $CSMDATA -check -export
@@ -1170,10 +1170,10 @@ is set to <literal>.true.</literal>). The next is that we always use the procedu
 for creating transient datasets (using <varname>mksrf_fdynuse</varname>) even when 
 creating datasets for a fixed simulation year. This is to ensure that the fixed year
 datasets will be consistent with the transient datasets. When this is done a 
-"surfdata.pftdyn" dataset will be created -- but will NOT be used in &clm;. If you look
+"landuse_timeseries" dataset will be created -- but will NOT be used in &clm;. If you look
 at the sample namelist <filename>mksurfdata.namelist</filename> you note that it
 sets <varname>mksrf_fdynuse</varname> to the file
-<filename>pftdyn_hist_simyr2000.txt</filename>, where the single file entered is
+<filename>landuse_timeseries_hist_simyr2000.txt</filename>, where the single file entered is
 the same PFT file used in the rest of the namelist (as <varname>mksrf_fvegtyp</varname>).
 The last practice that we always do is to always set <varname>mksrf_ftopo</varname>,
 even if glacier elevation classes are NOT active. This is

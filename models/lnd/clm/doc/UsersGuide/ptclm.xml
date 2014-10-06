@@ -823,7 +823,7 @@ PFT index, and only up to five vegetation types are allowed to co-exist. The las
 eight columns have to do with harvesting and grazing. The last two columns are whether
 to hold harvesting and/or grazing constant until the next transition year and will 
 just be either 1 or 0. This file will be converted by the
-<command>PTCLM_sitedata/cnvrt_trnsyrs2_pftdyntxtfile.pl</command> script in the &ptclm;
+<command>PTCLM_sitedata/cnvrt_trnsyrs2_landuse_timeseries_txtfile.pl</command> script in the &ptclm;
 directory to a format that <command>mksurfdata</command> can read that has an entry
 for each year for the range of years valid for the compset in question.
 </para>
@@ -890,7 +890,7 @@ global dataset.
 > cd scripts/ccsm_utils/Tools/lnd/clm/PTCLM
 # We are going to use forcing data over 1991 to 2006, but we need to start with
 # a transient compset to do so, so we use the 20th Century transient: 1850-2000
-# Note: When creating the fpftdyn dataset for this site it will use the 
+# Note: When creating the flanduse_timeseries dataset for this site it will use the 
 #     PTCLM_sitedata/US-Ha1_dynpftdata.txt
 # file for land-use change and harvesting
 > ./PTCLM.py -m bluefire -s US-Ha1 -d $MYCSMDATA --sitegroupname AmeriFlux \

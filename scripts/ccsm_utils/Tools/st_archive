@@ -55,7 +55,6 @@ CESM OUTPUT FILE NAMING CONVENTIONS
     The st_archive script adheres to the CESM model file naming conventions defined in
         http://www.cesm.ucar.edu/models/cesm1.2/filename_conventions_cesm.html
 
-
 ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
 
     The st_archive script depends on the env_archive.xml file in the \$CASEROOT directory created by create_newcase. The env_archive.xml
@@ -63,115 +62,106 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
 
     You can view the env_archive.xml file and check the XML validity after editing by running "\$CASEROOT/st_archive -input".
 
-    The XML markup tag defintions in < >, data type definitions denoted in [ ], and comma separated valid options in ( ) for the 
+    The attributes in the <comp_archive_spec> XML tag definitions are used to define how the files in the \$RUNDIR are distributed into corresponding
+    subdirectories in the \$DOUT_S_ROOT archive locations and whether or not copies of files with specified suffices are preserved
+    in the RUNDIR in addition to being copied to the DOUT_S_ROOT archive locations.
+
+    There are multiple <comp_archive_spec> markup tags defined with nested <file_extension> elements included as
+    part of a well formed XML <comp_archive_spec> markup tag defintion.
+
+    The <tseries_create>, <tseries_output_format>, <tseries_output_subdir>, <tseries_tper>, and <tseries_filecat_years> markup tags 
+    define the rules for creating the variable time series files from the time slice history files.
+    
+    When making changes to the env_archive.xml file in a \$CASEROOT, it is recommended that the XML be varified against the xml schema 
+    defintion document in the \$CASEROOT/Tools/config_archive.xsd. For systems that have the xmllint utility installed, execute the following:
+
+    > cd \$CASEROOT
+    > xmllint -schema ./Tools/config_archive.xsd env_archive.xml
+
+    If the env_archive.xml file contains valid XML code, then output from this command should be a complete listing of the env_archive.xml 
+    file followed by the line:
+
+    env_archive.xml validates
+    
+    Any errors in the XML will be reported by the xmllint command and should be resolved before running the st_archive script in either
+    the case run script or as a stand-alone script.
+
+    The XML markup tag defintions in < >, data type definitions denoted in [ ], and "|" separated valid options in ( ) for the 
     env_archive.xml file are defined as follows:
 
     <\?xml version="1.0"\?>
 
     <config_definition>
     <components>
-      <comp_archive_spec name="[string] (cpl,dart,cam\*,datm,clm\?,dlnd,rtm,cice,dice,pop,docn,cism,ww3,dwav)">
-        <rootdir>[string] (rest,cpl,dart,atm,lnd,rof,ice,ocn,glc,wav)</rootdir>
-        <multi_instance>[string] (y,n)</multi_instance>
+      <comp_archive_spec name="[regular expression string] (cpl|dart|cam\\*|datm|clm\\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+      NOTE: model component name (note: cam\\* and clm\\? are historical for CAM and CLM model components).
+
+        <rootdir>[string] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
+        NOTE: component root directory name to be created under the $\DOUT_S_ROOT location. These may not correspond to the model component name.
+
+        <multi_instance>[string] (y|n)</multi_instance>
+        NOTE: wildcard regular expression specification for "globbing" filenames for matching. Run the command
+        "\$CASEROOT/st_archive -input" command to see the list of valid suffices. If the suffix begins
+        with a "." then all files matching *.(suffix) are included in the globbing. If the suffix begins
+        with a character other than "." then all files matching exactly the (suffix) are included in the 
+        globbing.
+
         <files>
-          <file_extension suffix="[string] (wildcard suffix used for file name matching, examples .h0.*, .r1.*, cpl.log.*)"
-            <subdir>[string] (logs,rest,hist,init,diag)</subdir> 
-	    <dispose>[string] (y,n)</dispose> 
-	    <keepLast>[string] (y,n)</keepLast> 
-            <tseries_create>[string] (TRUE,FALSE)</tseries_create>
+          <file_extension suffix="[regular expression string]">
+          NOTE: regular expression wildcard suffix used for file name matching, examples .h0\\+, .r1\\+, cpl.log.\\*
+
+            <subdir>[string] (logs|rest|hist|init|diag)</subdir> 
+	    NOTE: subdirectory name to be created under the \$DOUT_S_ROOT/rootdir location
+
+	    <dispose>[string] (y|n)</dispose> 
+            NOTE: option to specify whether or not to save a copy of the files in the RUNDIR in addition to 
+            copying them to the \$DOUT_S_ROOT/rootdir/subdir location.
+
+	    <keepLast>[string] (y|n)</keepLast> 
+            NOTE: option to specify whether or not to keep the most recent copy of the file with matching 
+            suffix in the RUNDIR in addition to copying it to the \$DOUT_S_ROOT/rootdir/subdir location.
+
+            <tseries_create>[string] (TRUE|FALSE)</tseries_create>
+            NOTE: (Optional) Create variable time series files from the time slice history files specified by the 
+            <file_extension suffix="[string]">. For example, if TRUE and suffix=".h0.*", then create 
+            all the variable time series files for each variable contained in the \$CASE.[compname].h0.*
+            netcdf time slice history files and archive them in locations specified by the 
+            <tseries_output_subdir> location.
+
+            <tseries_output_format>[string] (netcdf|netcdf4|netcdf4c)</tseries_output_format>
+	    NOTE: (Optional) Netcdf file type for time slice history files. This value must be specifed
+            if tseries_create element is TRUE. The options are:
+	    netcdf (netcdf3)
+	    netcdf4
+	    netcdf4c (netcdf4 with level-1 compresssion)
+
+	    <tseries_output_subdir>[string] <tseries_output_subdir>
+	    NOTE: (Optional) \$DOUT_S_ROOT is the presumed prefix followed by this subdir exmaple: proc/tseries/monthly
+
+            <tseries_tper>[string] (monthly|weekly|daily|hourly6|hourly3|hourly1|min30)</tseries_tper>
+	    NOTE: (Optional) Time periodicity for time slice history files corresponding to this data strean suffix.
+
+	    <tseries_filecat_years>[integer]</tseries_filecat_years>
+	    NOTE: (Optional) how many years to concatenate time-series data *CURRENTLY NOT IMPLEMENTED*
+
           </file_extension>
         </files>
+
+	<tseries_time_variant_variables>
+        NOTE: a list of time variant variables that need to be included as metadata in each variable time series file.
+	  <variable>[string] </variable>
+	</tseries_time_variant_variables>
+
       </comp_archive_spec>
     </components>
 
-    <tseries_specs>
-        <tseries_archive_spec tper="[string] (monthly,weekly,daily,hourly6,hourly1,min30)"> 
-          <subdir>[string] proc/tseries/(monthly,weekly,daily,hourly6,hourly1,min30)</subdir>
-          <in_time_formats>
-            <in_time_format>[string] (yyyy-mm)</in_time_format>
-            <in_time_format>[string] (yyyy-mm-dd)</in_time_format>
-            <in_time_format>[string] (yyyy-mm-dd-sssss)</in_time_format> 
-          </in_time_formats>
-	  <out_time_format>[string] (yyyymm_cat_yyyymm,yyyymmdd_cat_yyyymmdd)</out_time_format> 
-	  <filecat_years>[integer] (1,5,10)<filecat_years>
-        </tseries_archive_spec>
-    </tseries_specs>
-
     <entry id="[string]" value="[string]"  />
     </config_definition>
-
-    There are multiple <comp_archive_spec> markup tags defined with nested <file_extension> elements included as
-    part of a well formed XML <comp_archive_spec> markup tag defintion.
-
-    The <tseries_archive_spec> markup tags define the rules for creating the variable time series files from the time slice history files.
-    The rules define the subdirectory, input and output filename date formats, and the final concatenation period for a 
-    given variable time series file. The tper value is detemined by the time series generator script by looking at the time
-    variables of the output data file stream. For example, the convention for h0 output stream data is that it contains monthly averages for
-    the variables included in the time slice history output file. The tseries genration scripts checks the time bounds information 
-    contained in the time slice history netcdf file to verify that it is indeed monthly averages and then follows rules 
-    defined in the <tseries_archive_spec tper="monthly"> to parse the file names and place them in the correct subdirectories of the
-    DOUT_S_ROOT locations.
-
-COMP_ARCHIVE_SPEC XML MARKUP TAG VALUE AND ATTRIBUTE DEFINITIONS SPECIFIC TO THE ENV_ARCHIVE.XML FILE
-
-    The attributes in the COMP_ARCHIVE_SPEC XML tag definitions are used to define how the files in the RUNDIR are distributed into corresponding
-    subdirectories in the DOUT_S_ROOT archive locations and whether or not copies of files with specified suffices are preserved
-    in the RUNDIR in addition to being copied to the DOUT_S_ROOT archive locations.
-
-    <comp_archive_spec name="[string]">     model component name (note: cam\* and clm\? are historical for CAM and CLM model components).
-
-    <rootdir>[string]</rootdir>             component root directory name to be created under the DOUT_S_ROOT location. These may not correspond to
-                                            to the model component name.
-
-    <multi_instance>(y,n)</multi_instance>  option to specify whether or not to accommodate multiple instances of the component model
-                                            running for a given case.
-
-    <files>
-        <file_extension suffix="[string]">  wildcard regular expression specification for "globbing" filenames for matching. Run the command
-                                            "\$CASEROOT/st_archive -input" command to see the list of valid suffices. If the suffix begins
-                                            with a "." then all files matching *.(suffix) are included in the globbing. If the suffix begins
-                                            with a character other than "." then all files matching exactly the (suffix) are included in the 
-                                            globbing.
-
-           <subdir>[string]</subdir>        subdirectory name to be created under the DOUT_S_ROOT/rootdir location.
-
-           <dispose>[string]</dispose>      option to specify whether or not to save a copy of the files in the RUNDIR in addition to 
-                                            copying them to the DOUT_S_ROOT/rootdir/subdir location.
-
-           <keepLast>(y,n)</keepLast>       option to specify whether or not to keep the most recent copy of the file with matching 
-                                            suffix in the RUNDIR in addition to copying it to the DOUT_S_ROOT/rootdir/subdir location.
-
-           <tseries_create>(TRUE,FALSE)     (Optional) Create variable time series files from these time slice history files specified by the 
-            </tseries_create>               <file_extension suffix="[string]">. For example, if TRUE and suffix=".h0.*", then create 
-                                            all the variable time series files for each variable contained in the \$CASE.[compname].h0.*
-                                            netcdf time slice history files and archive them in locations specified by the 
-                                            <tseries_archive_spec> associated with the h0 stream output data frequency.
-        </file_extension>
-    </files>
-
-TSERIES_ARCHIVE_SPEC XML MARKUP TAG VALUE AND ATTRIBUTE DEFINITIONS SPECIFIC TO THE ENV_ARCHIVE.XML FILE
-
-    If the env_run.xml variable GENERATE_TSERIES=TRUE, then the time series reshaper script reads the rules specified by the <tseries_archive_spec>
-    to create archive directories in DOUT_S_ROOT archive locations and copy the variable time series files to the specified subdirectory.
-
-    <tseries_archive_spec tper=[string]>            model data output frequency for a given history file. 
-
-       <subdir>[string]</subdir>                    subdirectory location relative to DOUT_S_ROOT to move variable time-series files 
-   
-       <in_time_formats>
-          <in_time_format>[string]</in_time_format> date mask to be used for input history time slice file names
-       </in_time_formats>                           Note that each date mask must be enclosed in its own <in_time_format> markup tag.
-
-       <out_time_format>[string]</out_time_format>  date mask to be used for output variable time series file names
-
-       <filecat>[string]</filecat>                  length of concatencated time series files
-
-    </tseries_archive_spec>
-
 				   
-ADDITIONAL XML / ENVIRONMENT VARIABLES INCLUDED IN THE ENV_ARCHIVE.XML FILE
+ADDITIONAL XML / ENVIRONMENT VARIABLES USED BY THE SHORT TERM ARCHIVER THAT ARE INCLUDED IN THE ENV_RUN.XML FILE
 
-    The following xml <entry> markup tag variables can be queried using the xmlquery script and modified using the xmlchange script. 
+    The following xml <entry> markup tag variables are used to control the behavior of the short term archiver. 
+    They can be queried using the xmlquery script and modified using the xmlchange script. 
 
     DOUT_S                                  [boolean] - Checked in \$CASE.run script. If TRUE (default), then st_archive script called at the 
                                                         end of a job.
@@ -180,28 +170,46 @@ ADDITIONAL XML / ENVIRONMENT VARIABLES INCLUDED IN THE ENV_ARCHIVE.XML FILE
                                                         archive locked directory (ARCHIVE_DIR_LOCKED) using the basename of the DOUT_S_ROOT location. 
 
     DOUT_S_SAVE_ALL_ON_DISK                 [boolean] - If set to TRUE (default), then the st_archive creates an archive linked 
-                                                        directory (ARCHIVE_DIR_LINKED) using the basename of the DOUT_S_ROOT location. 
-                                                        The ARCHIVE_DIR_LOCKED and ARCHIVE_DIR_LINKED 
+                                                        directory (\$ARCHIVE_DIR_LINKED) using the basename of the \$DOUT_S_ROOT location. 
+                                                        The \$ARCHIVE_DIR_LOCKED and \$ARCHIVE_DIR_LINKED 
                                                         directories reside on the same disk volume because hard links are used 
 					                to minimize disk space during a run. Each directory contains a README file with details 
 						        about how to best use these directories. The permissions on the archive directories are 
 						        set using the umask settings of the user running the CESM run script.
 						        This option is also used by the long term archiver script to save all short term 
-						        archived output files on disk rather than deleting them after archival to tape.
+						        archived output files on disk rather than deleting them after archival to HPSS.
 
     DOUT_S_SAVE_INTERIM_RESTART_FILES       [boolean] - If TRUE (default FALSE), perform short term archiving on all interim restart files,
 							not just those at the end of the run. By default, this value is FALSE.
-							The restart files are saved under the specific component directory of DOUT_S_ROOT
-							(ARCHIVE_DIR_L*/\$CASE/[comp_archive_spec rootdir]/rest rather than the 
-							 top-level ARCHIVE_DIR_L*/\$CASE/rest directory).
-							Interim restart files are created using the REST_N and REST_OPTION variables.
+							The restart files are saved under the specific component directory of \$DOUT_S_ROOT
+							(\$ARCHIVE_DIR_L*/\$CASE/[comp_archive_spec rootdir]/rest rather than the 
+							top-level \$ARCHIVE_DIR_L*/\$CASE/rest directory).
+							Interim restart files are created using the \$REST_N and \$REST_OPTION variables.
 							The associated rpointer files are not saved with the interim restart files
 							and need to be manually generated in order for these restart files to be used to 
 							restart a run.	This is for expert users ONLY and requires expert knowledge. We will
 							not document this further in this guide. 
 
     DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET  [integer] - If value is greater than 0 (default), then only save the nth restart set 
-                                                        in the DOUT_S_ROOT/rest location. Always preserve the most recent restart set regardless.
+                                                        in the \$DOUT_S_ROOT/rest location. Always preserve the most recent restart set regardless.
+
+    DOUT_S_GENERATE_TSERIES	            [boolean] - If TRUE (default FALSE), then variable time-series files are created as part of the 
+                                                        run script. The history time-slice files are deleted from the short term archive locations
+                                                        upon successful creation of the vvariable time-series files. This option requires 
+                                                        the pyreshaper tool which is included with the CESM release distribution and installed
+							on all supported platforms in the \$CESMDATAROOT/tools/pyReshaper directory. 
+							The pyreshaper tool uses the python scripting language. The \$CASEDIR/env_mach_specific
+							file contains the necessary python module dependencies for supported machines.
+							The variable time-series output files are written according to the rules defined 
+							in the env_archive.xml file for a given component and data stream. 
+							The <tseries_create>, <tseries_output_format>, <tseries_output_subdir>, <tseries_tper>, 
+							and <tseries_filecat_years> markup tags define the rules for creating the variable 
+							time series files from the time slice history files.
+
+    DOUT_S_SAVE_HISTORY_FILES               [boolean] - If FALSE (default TRUE), then all component history time slice files are deleted from the
+                                                        DOUT_S_ROOT location. This option is used in conjunction with the DOUT_S_GENERATE_TSERIES
+                                                        option to eliminate the possibility of duplicating run history data in both component 
+							history time slice files and variable time series files.
 
 USAGE
     st_archive [options]
@@ -210,11 +218,12 @@ OPTIONS
     -help [or -h]        Print usage to STDOUT.
     -input               List out the contents of the env_archive.xml datafile in a friendly format and check the env_archive.xml file for validity.
     -output              List out the contents of the archive directory.
-    -clean               Create / update hardlinks in both the ARCHIVE_DIR_LOCKED and ARCHIVE_DIR_LINKED for duplicate files.
-    -link                Create / update the hardlinks from the ARCHIVE_DIR_LINKED to the ARCHIVE_DIR_LOCKED.
+    -clean               Create / update hardlinks in both the \$ARCHIVE_DIR_LOCKED and \$ARCHIVE_DIR_LINKED for duplicate files.
+    -link                Create / update the hardlinks from the \$ARCHIVE_DIR_LINKED to the \$ARCHIVE_DIR_LOCKED.
     -debug               Turn on script debugging messages.
 
 EOF
+#" added per for emacs perl mode parsing
 
     print $usgstatement;
     exit(1);
@@ -246,7 +255,7 @@ sub checkRun
     my $statusFile = shift;
     my $runComplete = 0;
 
-    if( defined $opts{'debug'} ) { print "In checkRun...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In checkRun...\n); }
 #
 # check if DOUT_S_ROOT is defined
 #
@@ -330,7 +339,7 @@ EOD
 sub readXMLin
 {
     my $filename = shift;
-    if( defined $opts{'debug'} ) { print "In readXMLin...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In readXMLin...\n); }
     my $parser = XML::LibXML->new();
     my $xml = $parser->parse_file($filename);
     return $xml;
@@ -342,11 +351,40 @@ sub readXMLin
 sub listXMLin
 {
     my ($xml) = shift;
-    if( defined $opts{'debug'} ) { print "In listXMLin...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In listXMLin...\n); }
     my $rootel = $xml->getDocumentElement();
 
+    my $schema = <<EOF;
+
+The env_archive.xml brief XML tag schema:
+
+    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+	<rootdir>[string:root directory name after DOUT_S_ROOT.locked] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
+        <multi_instance>[string: multi-instance support] (y|n)</multi_instance>
+        <files>
+            <file_extension suffix="[string: regular expression for matching file suffix patterns"]>
+	    <dispose>[string: specify whether or not to save a copy of the matching files in the RUNDIR in addition to archive] (y|n)</dispose> 
+	    <keepLast>[string: specify if the most recent copy of the matching file should be saved in the RUNDIR] (y|n)</keepLast> 
+            <tseries_create>[*OPTIONAL* string: create variable time series files] (TRUE|FALSE)</tseries_create>
+            <tseries_output_format>[*OPTIONAL* string: variable time series file output format] (netcdf|netcdf4|netcdf4c)</tseries_output_format>
+	    <tseries_output_subdir>[*OPTIONAL* string: example: proc/tseries/monthly <tseries_output_subdir>
+            <tseries_tper>[*OPTIONAL* string] (monthly|weekly|daily|hourly6|hourly3|hourly1|min30)</tseries_tper>
+	    <tseries_filecat_years>[*OPTIONAL* integer] number of years to concatenate into a variable time series file</tseries_filecat_years>
+        </files>
+	<tseries_time_variant_variables> 
+	  <variable>[*OPTIONAL* string] a list of time variant variables included as metadata in each variable time series file.</variable>
+	</tseries_time_variant_variables>
+    </comp_archive_spec>
+			
+Run st_archive --help for complete tag schema descriptions.	   
+
+EOF
+#" added per for emacs perl mode parsing
+
+    print $schema;
+
     my $elname = $rootel->getName();
-    print "Root element is a $elname and it contains ...\n";
+    print qq(Root element is a $elname and it contains ...\n);
 #
 # list out the components nodes
 #
@@ -357,8 +395,10 @@ sub listXMLin
 	my $rootdir = $comp->findvalue('./rootdir');
 	my $multi = $comp->findvalue('./multi_instance');
 
-	print "\n============================================================================\n";
-	print "Component name: $compname  rootdir: $rootdir  multiple-instance support: $multi\n";
+	print qq(\n============================================================================\n);
+	print qq(Component name = $compname\n);
+	print qq(rootdir = $rootdir\n);
+	print qq(multiple-instance support = $multi\n);
 
 	my @files = $comp->findnodes('./files/file_extension');
         foreach my $file (@files) 
@@ -368,53 +408,54 @@ sub listXMLin
 	    my $dispose = $file->findvalue('./dispose');
 	    my $keepLast = $file->findvalue('./keepLast');
 	    my $tseries = $file->findvalue('./tseries_create');
-	    if( length($tseries) == 0 ) { $tseries = 'FALSE'; } 
+	    my $netcdf = $file->findvalue('./tseries_output_format');
+	    my $tseries_subdir = $file->findvalue('./tseries_output_subdir');
+	    my $tper = $file->findvalue('./tseries_tper');
+	    my $tseries_filecat_years = $file->findvalue('./tseries_filecat_years');
 
-	    print "\n***** File extension specification\n";
-	    print "  suffix: $suffix  subdir: $subdir  dispose: $dispose  keepLast: $keepLast create tseries: $tseries\n";
-	}
-	print "\n";
-    }
-#
-# list the tseries_archive_spec nodes
-#
-    my @tseries_specs = ($xml->findnodes('//tseries_specs/tseries_archive_spec'));
-    foreach my $tspec (@tseries_specs) 
-    {
-	my $tper = $tspec->getAttribute('tper');
-	my $subdir = $tspec->findvalue('./subdir');
-	my $out_time_format = $tspec->findvalue('./out_time_format');
-	my $filecat = $tspec->findvalue('./filecat_years');
 
-	print "\n*****************************************************************************\n";
-	print "Time Series Archive Specification:\n";
-	print "Data Output Frequency: $tper\n";
-        print "Subdirectory: $subdir\n";
-        print "Output Time series Filename Date Format: $out_time_format\n";
-	print "Time Series Concatenation Period: $filecat\n";
+	    print qq(\n***** File extension specification\n);
+	    print qq(  suffix = $suffix\n);  
+	    print qq(  subdir = $config{'ARCHIVE_DIR_LOCKED'}/$config{'CASENAME'}$rootdir/$subdir\n);
+	    print qq(  dispose = $dispose\n);
+	    print qq(  keepLast = $keepLast\n);
+	    if( length($tseries) > 0 ) { 
+		print qq(  create tseries = $tseries\n);  
+		print qq(  tseries output file format = $netcdf\n);  
+		print qq(  tseries output time period = $tper\n);
+		print qq(  tseries subdir = $config{'DOUT_S_ROOT'}/$config{'CASENAME'}$tseries_subdir\n);  
+		print qq(  tseries filecat years = $tseries_filecat_years\n);
+	    }
+	}
+	print qq(\n);
 
-	my @itfs = $tspec->findnodes('./in_time_formats/in_time_format'); 
-	foreach my $itf (@itfs) {
-	    my $itf_mask = $itf->textContent;
-	    print "Input History Filename Date Format: $itf_mask\n";
+	my @tseries_variables = $comp->findnodes('./tseries_time_variant_variables/variable');
+	if ($#tseries_variables > 0) {
+	    print qq(\n***** $compname Time variant variables\n);
+	}
+	foreach my $tseries_variable (@tseries_variables) {
+	    my $variable = $tseries_variable->textContent;
+	    print qq( $variable\n);
 	}
     }
-    print "\n";
-#
-# next list the entry values
-#
-    my @entries = ($xml->findnodes('//entry'));
-    foreach my $entry (@entries) {
-        $elname = $entry->getName();
-        my @atts = $entry->getAttributes();
-        print "$elname ( ";
-        foreach my $at (@atts) {
-	    my $na = $at->getName();
-	    my $va = $at->getValue();
-	    print " ${na} = $va ";
-	}
-        print ")\n";
-    }
+    print qq(\n);
+}
+
+
+#-----------------------------------------------------------------------------------------------
+# load the runfiles array with all the files in the RUNDIR  
+#-----------------------------------------------------------------------------------------------
+sub readRunDir
+{
+    if( defined $opts{'debug'} ) { print qq(In readRunDir...\n); }
+
+    my $DIR = $config{'RUNDIR'};
+    opendir( my $dh, $DIR ) or die qq(st_archive: Error - cannot open directory $DIR. Exiting...\n);
+
+    my @runfiles = grep { $_ ne '.' && $_ ne '..' } readdir $dh;
+    closedir $dh;
+
+    return @runfiles;
 }
 
 
@@ -423,7 +464,7 @@ sub listXMLin
 #-----------------------------------------------------------------------------------------------
 sub getDname
 {
-    if( defined $opts{'debug'} ) { print "In getDname...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In getDname...\n); }
 
     my $DIR = $config{'RUNDIR'};
     opendir( my $dh, $DIR ) or die qq(st_archive: Error - cannot open directory $DIR. Exiting...\n);
@@ -437,25 +478,8 @@ sub getDname
     $name =~ s/\.nc//;
     $name =~ s/^.*\.r\.//;
 
-    if( defined $opts{'debug'} ) { print "Cpl dName: $name\n"; }
+    if( defined $opts{'debug'} ) { print qq(Cpl dName: $name\n); }
     return $name;
-}
-
-#-----------------------------------------------------------------------------------------------
-# getInstances - return the number of instances running for a given componnent
-#-----------------------------------------------------------------------------------------------
-sub getInstances
-{
-    my ($comp) = shift;
-    my $numinst = '';
-    if( defined $opts{'debug'} ) { print "In getInstances...\n"; }
-
-    my $compuc = uc( $comp->{'compname'} );
-    my $value = qq(NINST_$compuc);
-    if( defined $config{'$value'}) {
-	$numinst = $config{'$value'}
-    };
-    return $numinst;
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -464,7 +488,7 @@ sub getInstances
 sub listArchive
 {
     my ($thing) = @_;
-    if( defined $opts{'debug'} ) { print "In listArchive: $thing ...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In listArchive: $thing ...\n); }
 
     print qq($thing \n);
     return if not -d $thing;
@@ -484,30 +508,34 @@ sub listArchive
 sub traverse
 {
     my ($thing) = @_;
-    if( defined $opts{'debug'} ) { print "In traverse: $thing ...\n"; }
-    if( not -d $thing ) 
+    if( defined $opts{'debug'} ) { print qq(In traverse: $thing ...\n); }
+# need to check for -f 
+    if( -f $thing ) 
     {
 # this is a file so create the hardlink
 	my $lockfile = my $linkfile = $thing;
 	$linkfile =~ s/^\./$config{'ARCHIVE_DIR_LINKED'}/;
-	link ($lockfile, $linkfile) unless ( -e $linkfile );
+	$lockfile =~ s/^\./$config{'ARCHIVE_DIR_LOCKED'}/;
+	unlink ($linkfile);
+	link ($lockfile, $linkfile);
 	return;
     }
-    else 
+    elsif ( -d $thing )
     {
 # this is a directory so make sure it exists
 	my $linkdir = $thing;
 	$linkdir =~  s/^\./$config{'ARCHIVE_DIR_LINKED'}/;
 	mkpath( $linkdir, {verbose => 1, error => \my $err_list} )  unless ( -d $linkdir );	
-    }
 
 # return if $thing isn't a directory
-    opendir my $dh, $thing or die qq(st_archive: Error - in traverse cannot open directory $thing. Exiting...\n);;
-    while (my $sub = readdir $dh) {
-	next if $sub eq '.' or $sub eq '..';
- 	traverse("$thing/$sub");
+	opendir my $dh, $thing or die qq(st_archive: Error - in traverse cannot open directory $thing. Exiting...\n);
+	while (my $sub = readdir $dh) {
+	    next if $sub eq '.' or $sub eq '..';
+ 	    traverse("$thing/$sub");
+        }
+        closedir $dh;
     }
-    closedir $dh;
+
     return;
 }
 
@@ -563,19 +591,25 @@ sub moveFiles
 {
     my $dispose = shift;
     my $keepLast = shift;
-    my $source = shift;
+    my $suffix = shift;
     my $dest = shift;
     my $restdir = shift;
     my $dname = shift;
+    my $runfilesref = shift;
+
+    my @runfiles = @{$runfilesref};
 
     my %time = '';
-    if( defined $opts{'debug'} ) { print "In moveFiles...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In moveFiles...\n); }
 #
 # make sure operating from within the RUNDIR
 #
     chdir( $config{'RUNDIR'} );
 
-    my @files = glob $source;
+#
+# filter the file list in the rundir to match the suffix value from the xml
+#
+    my @files = grep(/${suffix}/, @runfiles);
 #
 # get the name of the most recent file in the $source list 
 # using the last modification time
@@ -584,8 +618,16 @@ sub moveFiles
     if( $numfiles > 0 ) 
     {
 	foreach my $file (@files) {
-	    my $sb = stat($file);
-	    $time{$file} = $sb->mtime();
+	    if ( -f $file ) {
+		my $sb = stat($file);
+		$time{$file} = $sb->mtime();
+#
+# splice the filename out of the runfiles array so it's not revisited
+# should only match on one filename since they must be unique filenames in the rundir
+#
+		my @index = grep { $runfiles[$_] eq $file } 0..$#runfiles;
+		splice @runfiles, $index[0], 1;
+	    }
 	}
 #
 # get the most recent copy to keep in the RUNDIR
@@ -600,7 +642,7 @@ sub moveFiles
 #
 	    if( $keepLast eq 'y' ) {
 #
-# copy the last file into the destination dir and the restart dir
+# copy the last file into the destination dir 
 #
 		copy( $keepFile, $dest );
 #
@@ -610,7 +652,7 @@ sub moveFiles
 
 		if( $numfiles > 1 ) {
 		    foreach my $file (@files) {
-			if( $file ne $keepFile ) {
+			if( $file ne $keepFile && -f $file ) {
 #
 # delete all the files except the last file in the RUNDIR
 #
@@ -624,7 +666,7 @@ sub moveFiles
 # delete all the source files in the RUNDIR 
 # only happens if dispose is set 'yes' and keepLast is set to 'no'
 #
-		unlink glob $source;
+		unlink grep /${suffix}/, @runfiles;
 	    }
 	}
 #
@@ -634,9 +676,12 @@ sub moveFiles
 	elsif( $dispose eq 'n' || uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'TRUE' ) {
 	    if( $keepLast eq 'y' ) {
 #
-# copy the last file into the destination dir
+# copy the last file into the destination dir as long as it's not the component/rest directory
+# the last file is copied into the restdir as part of the complete restart set
 #
-		copy( $keepFile, $dest );
+		if( $dest !~ m/\/rest$/ ) {
+		    copy( $keepFile, $dest );
+		}
 #
 # copy the keepFile to the restart dir set as well
 #
@@ -644,23 +689,23 @@ sub moveFiles
 	    }
 	    else {
 #
-# move the last file into the destination dir
+# move the last file into the destination dir as long as it's not the component/rest directory
 #
 		move( $keepFile, $dest );
 	    }
 	    if( $numfiles > 1 ) {
 		foreach my $file (@files) {
-		    if( $file ne $keepFile ) {
+		    if( $file ne $keepFile && -f $file ) {
 #
 # move all the files except the last file into the destination dir
 #
-			move ($file, $dest );
+			move( $file, $dest );
 		    }
 		}
 	    }
 	}
     }
-    return $numfiles;
+    return $numfiles, \@runfiles;
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -670,8 +715,11 @@ sub archiveProcess
 {
     my ($XMLin) = shift;
     my $dname = shift;
+    my $runfilesref = shift;
 
-    if( defined $opts{'debug'} ) { print "In archiveProcess...\n"; }
+    my @runfiles = @{$runfilesref};
+
+    if( defined $opts{'debug'} ) { print qq(In archiveProcess...\n); }
     my %fExt = ();
     my %comp = ();
     my ($source, $destdir, $linkdir, $outfile) = '';
@@ -729,7 +777,7 @@ sub archiveProcess
 	    mkpath( $destdir, {verbose => 1, error => \my $err_list} )  unless ( -d $destdir );
 	    chdir( $destdir ) or die qq(st_archive: Error - cannot access directory $destdir with error $err_list. Exiting...\n);
 #
-# MAIN LOOP TO MOVE FILES 
+# main loop to move files
 # 
 	    for( my $i = 1; $i <= $ninst; $i++ ) {
 		my $ninst_suffix = '';
@@ -738,22 +786,25 @@ sub archiveProcess
 		    $ninst_suffix = qq(_$ninst_suffix);
 		}
 #
-# build up the source files based on whether the suffix starts with a "."
+# build up the new suffix based on whether the XML suffix starts with a "."
 #
-		$source = qq($config{'RUNDIR'}/$suffix);
+		my $newSuffix = qq($suffix);
 		if( substr($suffix, 0, 1) eq '.' ) {
-		    $source = qq($config{'RUNDIR'}/$config{'CASE'}.$compname$ninst_suffix$suffix);
 		    if( $subdir eq 'logs' ) {
 #
 # component logs are handled a little differently
 #
-			$source = qq($config{'RUNDIR'}/$rootdir$ninst_suffix$suffix);
+			$newSuffix = qq($rootdir$ninst_suffix$suffix);
+		    }
+		    else {
+			$newSuffix = qq($config{'CASE'}.$compname$ninst_suffix$suffix);
 		    }
 		}
 #
 # move the Files to the ARCHIVE_DIR_LOCKED directory
 #
-		my $numfiles = moveFiles( lc($dispose), lc($keepLast), $source, $destdir, $restdir, $dname );
+		my ($numfiles, $runfilesref) = moveFiles( lc($dispose), lc($keepLast), $newSuffix, $destdir, $restdir, $dname, \@runfiles );
+		@runfiles = @{$runfilesref};
 	    }
 	}
     }
@@ -768,7 +819,7 @@ sub getRestartDirs
     my @subdirs;
     my @sorteddirs;
 
-    if( defined $opts{'debug'} ) { print "In getRestartDirs...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In getRestartDirs...\n); }
 
     opendir my $dh, "$config{'ARCHIVE_DIR_LOCKED'}/rest" or die qq(st_archive: Error - in getRestartDirs cannot open directory $config{'ARCHIVE_DIR_LOCKED'}/rest. Exiting...\n);;
     while ( my $sub = readdir $dh ) {
@@ -801,7 +852,7 @@ sub getRestartDirs
 #-----------------------------------------------------------------------------------------------
 sub pruneArchive
 {
-    if( defined $opts{'debug'} ) { print "In pruneArchive...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In pruneArchive...\n); }
 
     my @sorteddirs = getRestartDirs();
     my $numsubdirs = @sorteddirs;
@@ -818,7 +869,7 @@ sub cleanArchive
     my @indeces;
     my $linkeddir;
 
-    if( defined $opts{'debug'} ) { print "In cleanArchive...\n"; }
+    if( defined $opts{'debug'} ) { print qq(In cleanArchive...\n); }
 
     my @sorteddirs = getRestartDirs();
     my $numsubdirs = @sorteddirs;
@@ -902,9 +953,14 @@ sub main
     }
     elsif ( $runComplete )
     {
+# load the runfiles global array with all the files in the RUNDIR 
+	my @runfiles = readRunDir();
+
+# get the date name from the most current coupler log file
 	$dname  = getDname();
+
 # run the short term archive process
-	archiveProcess( $XMLin, $dname );
+	archiveProcess( $XMLin, $dname, \@runfiles );
 #
 # clean up the archive directory and check if need to delete
 # the nth occurance of restart sets
@@ -917,11 +973,13 @@ sub main
 #
 	    processHardlinks();
 	}
-	print "st_archive process complete...\n";
+	print qq(st_archive process complete...\n);
+	exit 0;
     }
-    else 
+    else
     {
-	print "st_archive: run is not yet complete or was not successful. Unable to perform option...\n";
+	print qq(st_archive: run is not yet complete or was not successful. Unable to perform option...\n);
+	exit 1;
     }
 }
 

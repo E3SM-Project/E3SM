@@ -73,6 +73,9 @@ OPTIONS
      -clone <cloneroot>   Specify the case to be cloned.
      -mach_dir            Optional location of Machines directory
                           Default: $cfgdir/ccsm_utils/Machines
+     -project <name>      Specify a project id for the case (optional)
+      default: user-specified environment variable PROJECT or ACCOUNT
+               or read from ~/.cesm_proj or ~/.ccsm_proj
      -silent [or -s]      Turns on silent mode - only fatal messages issued.
      -verbose [or -v]     Turn on verbose echoing of settings.
 EOF
@@ -87,6 +90,7 @@ GetOptions(
     "case=s"                    => \$opts{'case'},
     "clone=s"                   => \$opts{'clone'},
     "mach_dir=s"                => \$opts{'mach_dir'},
+    "project=s"                 => \$opts{'project'},
     "s|silent"                  => \$opts{'silent'},
     "testname=s"                => \$opts{'testname'},
     "v|verbose"                 => \$opts{'verbose'},
@@ -108,6 +112,7 @@ my $clone;
 my $caseroot;
 my $cloneroot;
 my $testname;
+my $project;
 
 # Check for manditory case input
 if ($opts{'case'}) {
@@ -186,11 +191,12 @@ if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $caseroot Tools to the list of paths that Perl searches for modules
-my @dirs = ("$cloneroot/Tools");
+my @dirs = ("$cloneroot/Tools", "$cfgdir/ccsm_utils/Tools");
 unshift @INC, @dirs;
 require XML::Lite;
 require ConfigCase;
 require SetupTools;
+require ProjectTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create new config object if not just listing valid values and 
@@ -200,6 +206,24 @@ $cfg_ref->reset_setup("$cloneroot/env_case.xml");
 $cfg_ref->reset_setup("$cloneroot/env_run.xml");
 $cfg_ref->reset_setup("$cloneroot/env_build.xml");
 $cfg_ref->reset_setup("$cloneroot/env_mach_pes.xml");
+
+# --- Set project id 
+#
+# Note: we do not just copy this from the clone because it seems likely that
+# users will want to change this sometimes, especially when cloning another
+# user's case. However, note that, if a project is not given, the fallback will
+# be to copy it from the clone, just like other xml variables are copied. For
+# that reason, we do not call check_project_required_but_unset.
+
+# Check for optional project; if not given, see if we can find a project to use
+if ($opts{'project'}) {
+   $project = $opts{'project'};
+}
+else {
+   $project = ProjectTools::find_project();
+}
+ProjectTools::set_project($project, $cfg_ref);
+
 
 # Set env_run variables 
 $cfg_ref->set('CCSMUSER'    , "$ENV{'LOGNAME'}");
@@ -302,6 +326,7 @@ my $scriptsroot = $xmlvars{SCRIPTSROOT};
 my $machdir     = $xmlvars{CCSM_MACHDIR};
 my $ccsmuser    = $xmlvars{CCSMUSER};
 my $mach        = $xmlvars{MACH};
+$project        = $xmlvars{PROJECT};
 
 # --- env_archive.xml doesn't use the id / value pairs do needs to be read from
 # --- config_archive.xml file in the scriptsroot/ccsm_utils/Case.template directory
@@ -329,7 +354,7 @@ $sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.l_archive
-my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot env PHASE=set_larch ${machdir}/mkbatch.$mach";
+my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch ${machdir}/mkbatch.$mach";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create preview_namelist file

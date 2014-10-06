@@ -1,1 +1,1 @@
-../PTCLMmkdata --verbose --pftgrid --mksurfdata_opts=-crop -hirespft --cesm_root ../../../../../../.. -s US-IB1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/croppft_file_creation 
+../PTCLMmkdata --verbose --pftgrid --mksurfdata_opts=-crop -hirespft --cesm_root ../../../../../../.. -s US-IB1 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/croppft_file_creation 

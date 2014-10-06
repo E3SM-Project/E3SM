@@ -1,17 +1,7 @@
 # xmlchange commands written by PTCLMmkdata:
-# ./PTCLMmkdata -s US-UMB -d /glade/p/cesmdata/cseg/inputdata --map_gdate 140121 --mydatadir /glade/p/cesmdata/cseg/inputdata/lnd/clm2/PTCLMmydatafiles/
+# ../PTCLMmkdata -d /glade/p/cesmdata/cseg/inputdata -s US-UMB --clmnmlusecase=20thC_transient --debug --cesm_root ../../../../../../.. 
 ./xmlchange CLM_USRDAT_NAME=1x1pt_US-UMB
 ./xmlchange DATM_CLMNCEP_YR_START=1999
 ./xmlchange DATM_CLMNCEP_YR_END=2006
 ./xmlchange CLM_BLDNML_OPTS='-mask navy'
 ./xmlchange MPILIB=mpi-serial
-./xmlchange ATM_DOMAIN_PATH=/glade/p/cesmdata/cseg/inputdata/lnd/clm2/PTCLMmydatafiles//1x1pt_US-UMB
-./xmlchange LND_DOMAIN_PATH=/glade/p/cesmdata/cseg/inputdata/lnd/clm2/PTCLMmydatafiles//1x1pt_US-UMB
-./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_US-UMB_navy.131122.nc
-./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_US-UMB_navy.131122.nc
-./xmlchange CALENDAR=GREGORIAN
-./xmlchange DOUT_S=FALSE
-./xmlchange ATM_NCPL=24
-./xmlchange RUN_STARTDATE=1851-01-01
-./xmlchange DATM_CLMNCEP_YR_ALIGN=1851
-./xmlchange DIN_LOC_ROOT=/glade/p/cesmdata/cseg/inputdata

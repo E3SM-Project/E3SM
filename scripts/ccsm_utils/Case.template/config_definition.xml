@@ -72,6 +72,22 @@
  sdesc="case user name"
 ></entry> 
 
+<entry id="PROJECT" 
+ type="char"
+ valid_values=""  
+ value="PROJECT_UNSET" 
+ group="case_desc"
+ sdesc="project for project-sensitive build and run paths, and job scripts"
+></entry> 
+
+<entry id="PROJECT_REQUIRED"
+ type="logical"
+ valid_values="TRUE,FALSE"
+ value="FALSE"
+ group="case_desc"
+ sdesc="whether the PROJECT value is required on this machine"
+></entry>
+
 <entry id="COMP_ATM" 
  type="char"
  valid_values="cam,wrf,datm,xatm,satm" 
@@ -1133,6 +1149,22 @@ diagnostic and prognostic co2 from the atm component to the lnd component."
 Used by both CLM and CISM (even if CISM is not running, and only SGLC is used)"
 ></entry>
 
+<entry id="GLC_TWO_WAY_COUPLING" 
+ type="logical"
+ valid_values="TRUE,FALSE"
+ value="FALSE" 
+ group="run_cesm"
+ sdesc="Whether the glacier component feeds back to the rest of the system"
+ ldesc="
+This affects:
+(1) Whether CLM updates its areas based on glacier areas sent from GLC
+(2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
+
+Note that this is set to TRUE by default for TG compsets - even though there are
+no feedbacks for TG compsets, this enables extra coupler diagnostics for these
+compsets."
+></entry>
+
 <entry id="CCSM_CO2_PPMV" 
  type="real"
  valid_values=""
@@ -1298,14 +1330,6 @@ in Buildconf/clm.buildnml.csh to build-namelist -clm_usr_name. An example of
 such a dataset would be 1x1pt_boulderCO_c090722. The default value is UNSET.
 This is an advanced flag and should only be used by expert users."
 ></entry> 
-
-<entry id="CLM_UPDATE_GLC_AREAS" 
- type="logical"
- valid_values="TRUE,FALSE"
- value="FALSE" 
- group="run_component_clm"
- sdesc="Whether CLM should update its areas based on glacier areas sent from GLC"
-></entry>
 
 <!-- ======================================================================= -->
 <!-- VIC                                                                     -->
@@ -1634,6 +1658,22 @@ Users should NOT EDIT this setting."
  sdesc="tavg output control for high-frequency output"
 ></entry>
 
+<entry id="OCN_ONEDIM" 
+ type="char"
+ valid_values="TRUE,FALSE"  
+ value="FALSE" 
+ group="run_component_pop2"
+ sdesc="TRUE turns off all horizontal motion in POP2"
+></entry> 
+
+<entry id="POP_TAVG_R8"
+ type="char"
+ valid_values="TRUE,FALSE"
+ value="FALSE"
+ group="build_component_pop2"
+ sdesc="If TRUE then time-averaged history files from POP2 will contain double precision output"
+></entry>
+
 <entry id="POP_AUTO_DECOMP"
  type="logical"
  valid_values="true,false"
@@ -1744,7 +1784,7 @@ runs; for branch runs, it MUST BE FALSE."
 
 <entry id="DATM_MODE" 
  type="char"
- valid_values="CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3"  
+ valid_values="CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3"  
  value="CORE2_NYF" 
  group="run_component_datm"
  sdesc="DATM mode"
@@ -3026,12 +3066,23 @@ RUNDIR allows you to keep the run directory separate from the build directory."
  sdesc="number of wav coupling intervals per NCPL_BASE_PERIOD (integer)"
 ></entry>
 
-<entry id="OCN_TIGHT_COUPLING" 
- type="logical"
- valid_values="TRUE,FALSE" 
- value="FALSE" 
+<entry id="CPL_SEQ_OPTION"
+ type="char"
+ valid_values="CESM1_ORIG,CESM!_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2"
+ value="CESM1_MOD"
  group="run_coupling"
- sdesc="if TRUE, treats ocean model like lnd/ice in coupling"
+ sdesc="coupler sequencing option"
+ ldesc=
+"coupler sequencing option. CESM1_ORIG is the cesm1.1 implementation.  
+CESM!_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux 
+computation.  RASM_OPTION1 runs prep ocean before the ocean coupling reducing 
+most of the lags and field inconsistency but still allowing the ocean to run 
+concurrently with the ice and atmosphere.  RASM_OPTION2 is similar to RASM_OPTION1 
+but sequences the ice model, prep ocean and ocean model in that order.  The 
+ocean model loses some of the concurrency with the ice model.  CESM1_ORIG_TIGHT
+and CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true
+in the driver.  That namelist is gone and the cpl_seq_option flags take it's place.
+TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags."
 ></entry>
 
 <entry id="LOGDIR" 
@@ -3145,8 +3196,7 @@ Always preserve the most recent restart set regardless."
  sdesc="logical to save contents of the short term archive on disk"
  ldesc="
 If TRUE, create hardlinks from the short term archive DOUT_S_ROOT.locked
-directory to the DOUT_S_ROOT directory. This also keeps the output data 
-in DOUT_S_ROOT on disk after the long term (lt_archive.sh) archiver is run."
+directory to the DOUT_S_ROOT directory."
 ></entry> 
 
 <entry id="DOUT_S_GENERATE_TSERIES" 
@@ -3159,6 +3209,18 @@ in DOUT_S_ROOT on disk after the long term (lt_archive.sh) archiver is run."
 If TRUE, create the single variable time series files using the history time slice files.
 All the time invariant metadata is included in each variable time series file header. 
 Rules for how the tseries files are created are specified in the env_archive.xml file."
+></entry> 
+
+<entry id="DOUT_S_SAVE_HISTORY_FILES" 
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="TRUE" 
+ group="run_dout"
+ sdesc="logical to save history time slice files after the variable time series have been generated"
+ ldesc="
+If TRUE, none of the history time slice files will be deleted from the DOUT_S_ROOT location after the
+variable time series files are successfully generated. *WARNING* setting this option to TRUE can
+more than double the disk space used by the output data for a given job."
 ></entry> 
 
 <entry id="DOUT_L_MS" 
@@ -3199,6 +3261,19 @@ Root directory on long term archiving store system for long-term data archives."
 If true, DOUT_L_HTAR the long-term archiver will store history data in annual tar files. 
 Default is FALSE. Not currently implemented."
 ></entry> 
+
+<entry id="DOUT_L_SAVE_ALL_ON_DISK" 
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="TRUE" 
+ group="run_dout"
+ sdesc="logical to save contents of the short term archive on disk after
+the long term archiver has successfully completed."
+ ldesc="
+If TRUE, this keeps the output data 
+in DOUT_S_ROOT on disk after the long term (lt_archive.sh) archiver is run."
+></entry> 
+
 
 <entry id="CPL_DECOMP" 
  type="integer"

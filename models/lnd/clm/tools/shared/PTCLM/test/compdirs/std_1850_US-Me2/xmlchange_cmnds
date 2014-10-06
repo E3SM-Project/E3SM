@@ -1,12 +1,12 @@
 # xmlchange commands written by PTCLMmkdata:
-# ../PTCLMmkdata --verbose --clmnmlusecase=1850_control --cesm_root ../../../../../../.. -s US-Me2 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/std1850_file_creation 
+# ../PTCLMmkdata --verbose --clmnmlusecase=1850_control --cesm_root ../../../../../../.. -s US-Me2 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/std1850_file_creation 
 ./xmlchange CLM_USRDAT_NAME=1x1pt_US-Me2
 ./xmlchange DATM_CLMNCEP_YR_START=2002
 ./xmlchange DATM_CLMNCEP_YR_END=2010
 ./xmlchange CLM_BLDNML_OPTS='-mask navy'
 ./xmlchange MPILIB=mpi-serial
-./xmlchange ATM_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/std1850_file_creation/1x1pt_US-Me2
-./xmlchange LND_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/std1850_file_creation/1x1pt_US-Me2
+./xmlchange ATM_DOMAIN_PATH=/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/std1850_file_creation/1x1pt_US-Me2
+./xmlchange LND_DOMAIN_PATH=/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/std1850_file_creation/1x1pt_US-Me2
 ./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_US-Me2_navy.140204.nc
 ./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_US-Me2_navy.140204.nc
 ./xmlchange CALENDAR=GREGORIAN
@@ -15,3 +15,4 @@
 ./xmlchange RUN_STARTDATE=2002-01-01
 ./xmlchange DATM_CLMNCEP_YR_ALIGN=2002
 ./xmlchange DIN_LOC_ROOT=/glade/p/cesmdata/cseg/inputdata
+./xmlchange DIN_LOC_ROOT_CLMFORC=/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/std1850_file_creation

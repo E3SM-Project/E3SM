@@ -39,9 +39,9 @@
   
 -->
 
-<!-------------------------------------------------------------------------------
+<!-- -----------------------------------------------------------------------------
  tasks/thread setup - default
- ------------------------------------------------------------------------------->
+ ----------------------------------------------------------------------------- -->
 
 <pes>
     <NTASKS_ATM>16</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM>   <ROOTPE_ATM>0</ROOTPE_ATM>      <NINST_ATM>1</NINST_ATM>
@@ -61,6 +61,12 @@
     <NTASKS_ATM>15</NTASKS_ATM>
 </pes>
 
+<!-- Default settings for dead atm or CLM with DATM use one full node -->
+<pes CCSM_LCOMPSET="XATM|DATM.+CLM" >
+    <NTASKS_ATM>$MAX_TASKS_PER_NODE</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+    <PES_LEVEL>2cm</PES_LEVEL>
+</pes>
+
 <!-- Default settings for edison, one full node using SMT -->
 <pes MACH="edison">
   <NTASKS_ATM>12</NTASKS_ATM> <NTHRDS_ATM>4</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM><NINST_ATM>1</NINST_ATM>
@@ -70,6 +76,8 @@
 <pes MACH="eos">
   <NTASKS_ATM>8</NTASKS_ATM> <NTHRDS_ATM>4</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM><NINST_ATM>1</NINST_ATM>
 </pes>
+
+<!-- Default settings based on grids -->
 
 <pes MACH="yellowstone" GRID="a%ne16np4">
   <NTASKS_ATM>630</NTASKS_ATM> <NTHRDS_ATM>2</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM><NINST_ATM>1</NINST_ATM>
@@ -729,14 +737,14 @@
 
 <!-------------------------------------------------------------------------------
   tasks/thread setup - GRID: low-res atm grid
- ------------------------------------------------------------------------------->
+ ----------------------------------------------------------------------------- -->
 
-<pes GRID="a%4x5.+oi%gx3" MACH="hera|sierra"
+<pes GRID="a%4x5.+oi%gx3" MACH="hera|sierra">
     <NTASKS_ATM>40</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <PES_LEVEL>2rm</PES_LEVEL>
 </pes>
 
-<pes GRID="a%4x5.+oi%gx3" MACH="lynx"
+<pes GRID="a%4x5.+oi%gx3" MACH="lynx">
     <NTASKS_ATM>20</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <PES_LEVEL>2rm</PES_LEVEL>
 </pes>
@@ -1030,7 +1038,7 @@
     <PES_LEVEL>1c</PES_LEVEL>
 </pes>
 
-<pes CCSM_LCOMPSET="WRF.+CLM.+CICE%PRES.+DOCN"> MACH="eastwind|evergreen|olympus">
+<pes CCSM_LCOMPSET="WRF.+CLM.+CICE%PRES.+DOCN" MACH="eastwind|evergreen|olympus">
     <NTASKS_ATM>35</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <NTASKS_LND>35</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
     <NTASKS_ICE>35</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE>0</ROOTPE_ICE>
@@ -1389,7 +1397,6 @@
     <NTASKS_OCN>900</NTASKS_OCN> <NTHRDS_OCN>2</NTHRDS_OCN> <ROOTPE_OCN>0</ROOTPE_OCN>
 </pes>
 
-
 <pes GRID="a%0.9x1.25_l%0.9x1.25_oi%gx1" MACH="yellowstone" CCSM_LCOMPSET="DATM.+CLM45.+">
     <NTASKS_ATM>30</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>600</ROOTPE_ATM>
     <NTASKS_LND>600</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
@@ -1400,6 +1407,28 @@
     <NTASKS_WAV>600</NTASKS_WAV> <NTHRDS_WAV>1</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV>
 </pes>
 
+<!-- JS 08 Aug 2014 Modifications for CSL Timing runs -->
+<pes GRID="a%ne30np4" MACH="yellowstone|pronghorn" CCSM_LCOMPSET="DATM.+CLM45.+BGC.+SICE.+SOCN">
+    <NTASKS_ATM>600</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+    <NTASKS_LND>30</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
+    <NTASKS_ICE>30</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE>0</ROOTPE_ICE>
+    <NTASKS_CPL>30</NTASKS_CPL> <NTHRDS_CPL>1</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
+    <NTASKS_OCN>30</NTASKS_OCN> <NTHRDS_OCN>1</NTHRDS_OCN> <ROOTPE_OCN>0</ROOTPE_OCN>
+    <NTASKS_GLC>30</NTASKS_GLC> <NTHRDS_GLC>1</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC>
+    <NTASKS_WAV>30</NTASKS_WAV> <NTHRDS_WAV>1</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV>
+</pes>
+
+<!-- JS 08 Aug 2014 Modifications for CSL Timing runs -->
+<pes GRID="a%0.9x1.25_l%0.9x1.25_oi%gx1" MACH="yellowstone|pronghorn" CCSM_LCOMPSET="1850_CAM5_CLM45%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BPRP"> 
+    <NTASKS_ATM>600</NTASKS_ATM> <NTHRDS_ATM>2</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+    <NTASKS_LND>210</NTASKS_LND> <NTHRDS_LND>2</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
+    <NTASKS_ICE>390</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE>210</ROOTPE_ICE>
+    <NTASKS_CPL>600</NTASKS_CPL> <NTHRDS_CPL>2</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
+    <NTASKS_OCN>120</NTASKS_OCN> <NTHRDS_OCN>2</NTHRDS_OCN> <ROOTPE_OCN>600</ROOTPE_OCN>
+    <NTASKS_GLC>600</NTASKS_GLC> <NTHRDS_GLC>2</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC>
+    <NTASKS_ROF>600</NTASKS_ROF> <NTHRDS_ROF>2</NTHRDS_ROF> <ROOTPE_ROF>0</ROOTPE_ROF>
+    <NTASKS_WAV>600</NTASKS_WAV> <NTHRDS_WAV>2</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV>
+</pes>
 
 
 
@@ -1510,6 +1539,12 @@
     <NTHRDS_GLC>1</NTHRDS_GLC>
 </pes>
 
+<!-- Moby is not thread-safe, so using the "darwin" ocean tracer module
+     option requires using a single ocean thread -->
+<pes CCSM_LCOMPSET="POP2%DAR">
+    <NTHRDS_OCN>1</NTHRDS_OCN>
+</pes>
+
 <!-- Threading I compsets generally leads to worse performance, so
      force a single thread for I compsets -->
 <pes CCSM_LCOMPSET="DATM.+CLM">
@@ -1522,41 +1557,6 @@
     <NTHRDS_GLC>1</NTHRDS_GLC>
 </pes>
 
-<!-- -----------------------------------------------------------------------------
-  tasks/thread setup - GRID for CLM single-point regional grids
- ------------------------------------------------------------------------------ -->
-
-<pes GRID="a%CLM_USRDAT" >
-    <NTASKS_ATM>1</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
-    <PES_LEVEL>1r</PES_LEVEL>
-</pes>
-
-<pes GRID="a%1x1_" >
-    <NTASKS_ATM>1</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
-    <NTASKS_LND>1</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
-    <NTASKS_ROF>1</NTASKS_ROF> <NTHRDS_ROF>1</NTHRDS_ROF> <ROOTPE_ROF>0</ROOTPE_ROF>
-    <NTASKS_ICE>1</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE>0</ROOTPE_ICE>
-    <NTASKS_OCN>1</NTASKS_OCN> <NTHRDS_OCN>1</NTHRDS_OCN> <ROOTPE_OCN>0</ROOTPE_OCN>
-    <NTASKS_CPL>1</NTASKS_CPL> <NTHRDS_CPL>1</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
-    <NTASKS_GLC>1</NTASKS_GLC> <NTHRDS_GLC>1</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC>
-    <PES_LEVEL>1r</PES_LEVEL>
-</pes>
-
-<pes GRID="a%5x5_" >
-    <NTASKS_ATM>5</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
-    <PES_LEVEL>1r</PES_LEVEL>
-</pes>
-
-<pes GRID="pt1_pt1" >
-    <NTASKS_ATM>1</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
-    <NTASKS_LND>1</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
-    <NTASKS_ROF>1</NTASKS_ROF> <NTHRDS_ROF>1</NTHRDS_ROF> <ROOTPE_ROF>0</ROOTPE_ROF>
-    <NTASKS_ICE>1</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE>0</ROOTPE_ICE>
-    <NTASKS_OCN>1</NTASKS_OCN> <NTHRDS_OCN>1</NTHRDS_OCN> <ROOTPE_OCN>0</ROOTPE_OCN>
-    <NTASKS_CPL>1</NTASKS_CPL> <NTHRDS_CPL>1</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
-    <NTASKS_GLC>1</NTASKS_GLC> <NTHRDS_GLC>1</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC>
-    <PES_LEVEL>1m</PES_LEVEL>
-</pes>
 
 <!--- fully concurrent for testing --->
 <pes PECOUNT="FC" >
@@ -1657,9 +1657,31 @@
     <PES_LEVEL>2cmp</PES_LEVEL>
 </pes>
 
-<pes CCSM_LCOMPSET="XATM|DATM.+CLM" >
-    <NTASKS_ATM>$MAX_TASKS_PER_NODE</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
-    <PES_LEVEL>2cm</PES_LEVEL>
+<!-- -----------------------------------------------------------------------------
+  tasks/thread setup - special case - GRID for CLM single-point regional grids
+  These ONLY can be used for I compsets CCSM_LCOMPSET=DATM.+CLM
+ ----------------------------------------------------------------------------- -->
+
+<pes GRID="a%CLM_USRDAT" >
+    <NTASKS_ATM>1</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+    <PES_LEVEL>1r</PES_LEVEL>
+</pes>
+
+<pes GRID="a%1x1_" >
+    <NTASKS_ATM>1</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+    <NTASKS_LND>1</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
+    <NTASKS_ROF>1</NTASKS_ROF> <NTHRDS_ROF>1</NTHRDS_ROF> <ROOTPE_ROF>0</ROOTPE_ROF>
+    <NTASKS_ICE>1</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE>0</ROOTPE_ICE>
+    <NTASKS_OCN>1</NTASKS_OCN> <NTHRDS_OCN>1</NTHRDS_OCN> <ROOTPE_OCN>0</ROOTPE_OCN>
+    <NTASKS_CPL>1</NTASKS_CPL> <NTHRDS_CPL>1</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
+    <NTASKS_GLC>1</NTASKS_GLC> <NTHRDS_GLC>1</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC>
+    <NTASKS_WAV>1</NTASKS_WAV> <NTHRDS_WAV>1</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV>
+    <PES_LEVEL>1r</PES_LEVEL>
+</pes>
+
+<pes GRID="a%5x5_" >
+    <NTASKS_ATM>5</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+    <PES_LEVEL>1r</PES_LEVEL>
 </pes>
 
 </pesinfo>

@@ -1,4 +1,4 @@
-fpftdyn = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/surfdata_map/surfdata.pftdyn_1x1_tropicAtl_TEST_simyr1939-1943_c140108.nc'
+flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata.pftdyn_1x1_tropicAtl_TEST_simyr1939-1943_c140108.nc'
 
-! Need to set this to false because the pftdyn file starts in 1939, disagreeing with the 1850 surface dataset
+! Need to set this to false because the landuse_timeseries file starts in 1939, disagreeing with the 1850 surface dataset
 check_dynpft_consistency = .false.

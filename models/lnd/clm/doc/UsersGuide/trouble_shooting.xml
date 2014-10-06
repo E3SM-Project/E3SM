@@ -42,7 +42,7 @@ with the guidelines given there. Here we will restrict ourselves to problems fro
 <screen width="99">
 Generating resolved namelist, prestage, and build scripts
 configure done.
-adding use_case 1850-2100_rcp6_transient defaults for var clm_demand with val fpftdyn 
+adding use_case 1850-2100_rcp6_transient defaults for var clm_demand with val flanduse_timeseries 
 adding use_case 1850-2100_rcp6_transient defaults for var clm_start_type with val startup 
 adding use_case 1850-2100_rcp6_transient defaults for var model_year_align_ndep with val
 1850 
@@ -58,7 +58,7 @@ adding use_case 1850-2100_rcp6_transient defaults for var use_case_desc with val
 transient land-use, aerosol and Nitrogen deposition changes with historical data from
 1850 to 2005 and then with the RCP6 scenario from AIM
  
-build-namelist - No default value found for fpftdyn.
+build-namelist - No default value found for flanduse_timeseries.
             Are defaults provided for this resolution and land mask?
 ERROR: generate_resolved.csh error for lnd template
 configure error: configure generated error in attempting to created resolved scripts
@@ -86,7 +86,7 @@ set echo
 </para>
 <para>
 In the example, the error is that the &clm; XML database does NOT have a
-<filename>fpftdyn</filename> for the given resolution, rcp scenario and ocean mask. 
+<filename>flanduse_timeseries</filename> for the given resolution, rcp scenario and ocean mask. 
 That means you will need to create the file and then supply the file into your case. See
 <xref linkend="tools"></xref> for more information on creating files, and see
 <xref linkend="adding_files"></xref> for more information on adding files to the 

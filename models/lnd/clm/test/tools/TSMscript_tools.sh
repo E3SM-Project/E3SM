@@ -100,7 +100,9 @@ if [ $rc -eq 0 ] && grep -ci "success" test.log > /dev/null; then
     echo "TSMscript_tools.sh: smoke test passed" 
     echo "$status" > TestStatus
     # Copy files from subdirectories up...
-    cp */*/*.nc .
+    # (use hard links rather than symbolic links because 'ln -s' does funny
+    # things when there are no matching files)
+    ln */*.nc */*/*.nc .
 else
     echo "TSMscript_tools.sh: error running $3, error= $rc" 
     echo "TSMscript_tools.sh: see ${CLM_TESTDIR}/${test_name}/test.log for details"

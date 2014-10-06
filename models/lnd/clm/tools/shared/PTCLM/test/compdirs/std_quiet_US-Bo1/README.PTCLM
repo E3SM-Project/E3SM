@@ -1,1 +1,1 @@
-../PTCLMmkdata --quiet --cesm_root ../../../../../../.. -s US-Bo1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/stdquiet_file_creation 
+../PTCLMmkdata --quiet --cesm_root ../../../../../../.. -s US-Bo1 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/stdquiet_file_creation 

@@ -169,6 +169,8 @@ contains
 
     !*FD Interpolates a global wind field 
     !*FD (or any vector field) onto a given projected grid.
+    !
+    !*FD Currently doesn't work with multiple tasks
 
     use glimmer_utils
     use glimmer_coordinates
@@ -242,7 +244,7 @@ contains
     use glimmer_utils
     use glimmer_coordinates
     use glimmer_log
-    use parallel, only : main_task, distributed_scatter_var
+    use parallel, only : main_task, distributed_scatter_var, parallel_halo
 
     ! Argument declarations
 
@@ -438,14 +440,82 @@ contains
     end if  ! main_task
 
     ! Main task scatters interpolated data from the full domain to the task owning each point
+    ! Note that distributed_scatter_var doesn't set halo values, so we need to do a halo
+    ! update if it's important to have correct values in the halo cells.
 
-    if (present(localsp)) call distributed_scatter_var(localsp, localsp_fulldomain)
-    if (present(localdp)) call distributed_scatter_var(localdp, localdp_fulldomain)
+    if (present(localsp)) then
+       call distributed_scatter_var(localsp, localsp_fulldomain)
+       call parallel_halo(localsp)
+    end if
+    if (present(localdp)) then
+       call distributed_scatter_var(localdp, localdp_fulldomain)
+       call parallel_halo(localdp)
+    end if
 
     ! We do NOT deallocate the local*_fulldomain variables here, because the
     ! distributed_scatter_var routines do this deallocation
 
   end subroutine interp_to_local
+
+  !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  subroutine copy_to_local (lgrid_fulldomain, global, downs, local)
+
+    !*FD Do a simple copy of a global scalar field onto a projected grid.
+    !*FD 
+    !*FD This copies the value from each global cell into all local cells contained
+    !*FD within it.
+    !*FD
+    !*FD Note that, in contrast to interp_to_local, this routine does not support a gmask.
+    !*FD
+    !*FD Variables referring to the global domain (global, downs) only need to be valid
+    !*FD on the main task.
+
+    use glimmer_coordinates
+    use parallel, only : main_task, distributed_scatter_var, parallel_halo
+
+    ! Argument declarations
+
+    type(coordsystem_type),  intent(in)  :: lgrid_fulldomain !*FD Local grid, spanning the full domain (across all tasks)
+    real(dp), dimension(:,:),intent(in)  :: global           !*FD Global field (input)
+    type(downscale),         intent(in)  :: downs            !*FD Downscaling parameters
+    real(dp),dimension(:,:), intent(out) :: local            !*FD Local field on projected grid (output)
+    
+    ! Local variable declarations
+
+    real(dp), dimension(:,:), allocatable :: local_fulldomain  ! local spanning full domain (all tasks)
+    integer :: i,j    ! local indices
+    integer :: ig,jg  ! global indices
+
+    if (main_task) then
+       allocate(local_fulldomain(lgrid_fulldomain%size%pt(1), lgrid_fulldomain%size%pt(2)))
+    else
+       allocate(local_fulldomain(0,0))
+    end if
+
+    ! Do main copying work, just on main task
+
+    if (main_task) then
+       do j=1,lgrid_fulldomain%size%pt(2)
+          do i=1,lgrid_fulldomain%size%pt(1)
+             ig = downs%xin(i,j)
+             jg = downs%yin(i,j)
+             local_fulldomain(i,j) = global(ig,jg)
+          end do
+       end do
+    end if
+
+    ! Main task scatters interpolated data from the full domain to the task owning each point
+    ! Note that distributed_scatter_var doesn't set halo values, so we need to do a halo
+    ! update if it's important to have correct values in the halo cells.
+
+    call distributed_scatter_var(local, local_fulldomain)
+    call parallel_halo(local)
+
+    ! We do NOT deallocate local_fulldomain here, because the distributed_scatter_var
+    ! routine does this deallocation
+
+  end subroutine copy_to_local
 
   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -455,6 +525,8 @@ contains
     !*FD This assumes that the global field is sufficiently high-resolution 
     !*FD compared with the local grid - it just averages the points contained 
     !*FD in each local grid-box.
+    !*FD
+    !*FD This may not work properly with multiple tasks.
 
     use glimmer_map_types
     use glimmer_map_trans
@@ -547,6 +619,8 @@ contains
     !*FD
     !*FD Note that this is the mathematically inverse process of the 
     !*FD \texttt{interp\_to\_local} routine.
+    !*FD
+    !*FD Note that this probably doesn't work right with multiple tasks
 
     use glimmer_coordinates
     use glimmer_map_trans

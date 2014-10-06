@@ -516,17 +516,14 @@ cpl decomp option (0=default, 1=comp decomp, 2=rearr comp decomp, 3=new single 1
 default: 0
 </entry>
 
-<entry 
-id="ocean_tight_coupling"
-type="logical"
-category="expdef" 
-group="seq_infodata_inparm">
-turns on ocean tight coupling flag which forces the ocean to coupling
-at the same time as the other surface models.  by default, there is a
-lag of one coupler timestep in addition to any difference in coupling
-frequency to accomodate the ability to run the ocean concurrently with
-the rest of the system for performance reasons.  
-default: .false.
+<entry
+id="cpl_seq_option"
+type="char*64"
+category="expdef"
+group="seq_infodata_inparm"
+valid_values="CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2"
+Set the coupler sequencing.  See CPL_SEQ_OPTION in env_run.
+default: CESM1_MOD
 </entry>
 
 <entry 

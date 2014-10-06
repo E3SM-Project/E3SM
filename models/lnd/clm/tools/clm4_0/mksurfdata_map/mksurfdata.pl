@@ -359,7 +359,7 @@ sub trim($)
 
    my @ncfiles;
    my @lfiles;
-   my @pfiles;
+   my @tsfiles;
    my $cfile = "clm.input_data_files";
    if ( -f "$cfile" ) {
       `/bin/mv -f $cfile ${cfile}.previous`;
@@ -590,13 +590,13 @@ EOF
                $options = "-options $mkcrop";
                $crpdes  = "mp20_";
             }
-            my $pftdyntext_file;
+            my $landuse_timeseries_text_file;
 	    if ( $sim_year ne $sim_yr0 ) {
 		if ( ! defined($opts{'dynpft'}) && ! $opts{'pft_override'} ) {
-		    $pftdyntext_file = "pftdyn_$desc.txt";
-		    my $fhpftdyn = IO::File->new;
-		    $fhpftdyn->open( ">$pftdyntext_file" ) or die "** can't open file: $pftdyntext_file\n";
-		    print "Writing out pftdyn text file: $pftdyntext_file\n";
+		    $landuse_timeseries_text_file = "landuse_timeseries_$desc.txt";
+		    my $fh_landuse_timeseries = IO::File->new;
+		    $fh_landuse_timeseries->open( ">$landuse_timeseries_text_file" ) or die "** can't open file: $landuse_timeseries_text_file\n";
+		    print "Writing out landuse_timeseries text file: $landuse_timeseries_text_file\n";
 
                     # use new good wood harvest by default:
                     my $ngwh = ",ngwh=on";
@@ -607,28 +607,28 @@ EOF
 		    for( my $yr = $sim_yr0; $yr <= $sim_yrn; $yr++ ) {
                         my $vegtypyr = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=$yr,rcp=${rcp}${mkcrop}${ngwh} -var mksrf_fvegtyp -namelist clmexp`;
 			chomp( $vegtypyr );
-			printf $fhpftdyn $dynpft_format, $vegtypyr, $yr;
+			printf $fh_landuse_timeseries $dynpft_format, $vegtypyr, $yr;
 			if ( $yr % 100 == 0 ) {
 			    print "year: $yr\n";
 			}
 		    }
-		    $fhpftdyn->close;
+		    $fh_landuse_timeseries->close;
 		    print "Done writing file\n";
 		} elsif ( $opts{'pft_override'} && defined($opts{'dynpft'}) ) {
-		    $pftdyntext_file = $opts{'dynpft'};
+		    $landuse_timeseries_text_file = $opts{'dynpft'};
 		} else {
-		    $pftdyntext_file = "pftdyn_override_$desc.txt";
-		    my $fhpftdyn = IO::File->new;
-		    $fhpftdyn->open( ">$pftdyntext_file" ) or die "** can't open file: $pftdyntext_file\n";
+		    $landuse_timeseries_text_file = "landuse_timeseries_override_$desc.txt";
+		    my $fh_landuse_timeseries = IO::File->new;
+		    $fh_landuse_timeseries->open( ">$landuse_timeseries_text_file" ) or die "** can't open file: $landuse_timeseries_text_file\n";
 		    my $frstpft = "<pft_f>$opts{'pft_frc'}</pft_f>" . 
 			"<pft_i>$opts{'pft_idx'}</pft_i>" .
 			"<harv>0,0,0,0,0</harv><graz>0</graz>";
-		    print "Writing out pftdyn text file: $pftdyntext_file\n";
+		    print "Writing out landuse_timeseries text file: $landuse_timeseries_text_file\n";
 		    if ( (my $len = length($frstpft)) > $strlen ) {
 			die "ERROR PFT line is too long ($len): $frstpft\n";
 		    }
-		    printf $fhpftdyn $dynpft_format, $frstpft, $sim_yr0;
-		    $fhpftdyn->close;
+		    printf $fh_landuse_timeseries $dynpft_format, $frstpft, $sim_yr0;
+		    $fh_landuse_timeseries->close;
 		    print "Done writing file\n";
 		}
 	    }
@@ -657,11 +657,11 @@ EOF
  fsurlog        = '$ofile.log'     
 EOF
 
-	    my $ofile_dyn = "surfdata.pftdyn_${res}_${desc}_${sdate}";
+	    my $ofile_ts = "landuse.timeseries_${res}_${desc}_${sdate}";
 	    if ( $sim_year ne $sim_yr0 ) {
 	        print $fh <<"EOF";
- mksrf_fdynuse  = '$pftdyntext_file'
- fdyndat        = '$ofile_dyn.nc'
+ mksrf_fdynuse  = '$landuse_timeseries_text_file'
+ fdyndat        = '$ofile_ts.nc'
 EOF
             } else {
 		print $fh <<"EOF";
@@ -696,15 +696,15 @@ EOF
             }
             print "$exedir/mksurfdata_map < $nl\n";
             my $filehead;
-            my $pfilehead;
+            my $tsfilehead;
             if ( ! $opts{'debug'} ) {
                system( "$exedir/mksurfdata_map < $nl" );
                if ( $? ) { die "ERROR in mksurfdata_map: $?\n"; }
             } else {
                $filehead  = "surfdata_$res";
-               $pfilehead = "surfdata.pftdyn_testfile";
+               $tsfilehead = "landuse.timeseries_testfile";
                system( "touch $filehead.nc" );
-               system( "touch $pfilehead.nc" );
+               system( "touch $tsfilehead.nc" );
                system( "touch $filehead.log" );
             }
 	    print "\n===========================================\n\n";
@@ -718,10 +718,10 @@ EOF
             chomp( $ncfiles[0] );
             @lfiles = glob( "$ofile.log" );
             chomp( $lfiles[0] );
-            @pfiles = glob( "$ofile_dyn.nc" );
-            chomp( $pfiles[0] );
-            if ( $#pfiles != 0 ) {
-              die "ERROR surfdata pftdyn netcdf file was NOT created!\n";
+            @tsfiles = glob( "$ofile_ts.nc" );
+            chomp( $tsfiles[0] );
+            if ( $#tsfiles != 0 ) {
+              die "ERROR surfdata landuse_timeseries netcdf file was NOT created!\n";
             }
             #
             # If urban point, append grid and frac file on top of surface dataset
@@ -768,8 +768,8 @@ EOF
                }
                # If running a transient case
                if ( $sim_year ne $sim_yr0 ) {
-                  $ofile = "surfdata.pftdyn_${res}_${desc}_${sdate}";
-                  $mvcmd = "/bin/mv -f $pfiles[0] $outdir/$ofile.nc";
+                  $ofile = "landuse.timeseries_${res}_${desc}_${sdate}";
+                  $mvcmd = "/bin/mv -f $tsfiles[0] $outdir/$ofile.nc";
                   if ( ! $opts{'debug'} && $opts{'mv'} ) {
                      print "$mvcmd\n";
                      system( "$mvcmd" );
@@ -789,7 +789,7 @@ EOF
               die "ERROR files were NOT moved: nc=$ncfiles[0] log=$lfiles[0]\n";
             }
             if ( ! $opts{'debug'} ) {
-               system( "/bin/rm -f $filehead.nc $filehead.log $pfilehead.nc" );
+               system( "/bin/rm -f $filehead.nc $filehead.log $tsfilehead.nc" );
             }
          } # End of sim_year loop
       }    # End of rcp loop

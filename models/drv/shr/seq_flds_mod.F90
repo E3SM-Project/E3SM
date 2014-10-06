@@ -1520,6 +1520,15 @@ module seq_flds_mod
      attname  = 'Sg_icemask'
      call metadata_set(attname, longname, stdname, units)     
 
+     name = 'Sg_icemask_coupled_fluxes'
+     call seq_flds_add(g2x_states,trim(name))     
+     call seq_flds_add(x2l_states,trim(name))
+     longname = 'Ice sheet mask where we are potentially sending non-zero fluxes'
+     stdname  = 'icemask_coupled_fluxes'
+     units    = 'unitless'
+     attname  = 'Sg_icemask_coupled_fluxes'
+     call metadata_set(attname, longname, stdname, units)     
+
      ! If glc_nec > 0, then create coupling fields for all glc elevation classes
      ! (1:glc_nec) plus bare land (index 0). Note that, if glc_nec = 0, then we don't
      ! even need the bare land (0) index.

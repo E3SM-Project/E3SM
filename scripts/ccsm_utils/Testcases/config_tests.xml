@@ -132,6 +132,16 @@
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
           
+<ccsmtest NAME="OEM"
+          DESC="pop/atm task/thread count BFB test "
+          INFO_DBUG="2"
+          STOP_OPTION="ndays"
+          STOP_N="10"
+          REST_OPTION="none"
+          TIMER_LEVEL="12"
+          CCSM_TCOST="4"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="SMS"
           DESC="smoke startup test (default length)"
           INFO_DBUG="2"
@@ -155,6 +165,12 @@
 
 <ccsmtest NAME="NCK"
           DESC="multi-instance validation vs single instance (default length)"
+          INFO_DBUG="2"
+          CCSM_TCOST="-1"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="NCR"
+          DESC="multi-instance validation sequential vs concurrent (default length)"
           INFO_DBUG="2"
           CCSM_TCOST="-1"
           DOUT_S="FALSE" />
@@ -190,5 +206,11 @@
           INFO_DBUG="2"
           CCSM_TCOST="1"
           DOUT_S="FALSE" />
+
+<ccsmtest NAME="STA"
+DESC="Short-term archiving restart test"
+INFO_DBUG="2"
+CCSM_TCOST="-1"
+DOUT_S="TRUE" />
 
 </config_ccsmtest>

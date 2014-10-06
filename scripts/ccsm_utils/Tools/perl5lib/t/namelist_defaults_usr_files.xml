@@ -19,7 +19,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <fsurdat >usrfiles/surfdata_${clm_usr_name}_simyr${sim_year}.nc</fsurdat>
 
 <!-- Dynamic PFT surface dataset (relative to ${csmdata}) -->
-<fpftdyn >usrfiles/surfdata.pftdyn_${clm_usr_name}_simyr${sim_year_range}.nc</fpftdyn>
+<flanduse_timeseries >usrfiles/landuse.timeseries_${clm_usr_name}_simyr${sim_year_range}.nc</flanduse_timeseries>
 
 <!-- Grid dataset (relative to ${csmdata}) -->
 <fatmgrid >usrfiles/griddata_${clm_usr_name}.nc</fatmgrid>

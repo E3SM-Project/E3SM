@@ -365,6 +365,7 @@ my $RUN_REFDATE            = $xmlvars{'RUN_REFDATE'};
 my $CONTINUE_RUN           = $xmlvars{'CONTINUE_RUN'};
 my $NCPL_BASE_PERIOD       = $xmlvars{'NCPL_BASE_PERIOD'};
 my $GLC_NCPL               = $xmlvars{'GLC_NCPL'};
+my $GLC_TWO_WAY_COUPLING   = $xmlvars{'GLC_TWO_WAY_COUPLING'};
 my $CISM_USE_TRILINOS      = $xmlvars{'CISM_USE_TRILINOS'};
 my $CISM_OBSERVED_IC       = $xmlvars{'CISM_OBSERVED_IC'};
 
@@ -491,6 +492,7 @@ add_default($nl, 'evolve_ice');
 add_default($nl, 'precip_mode');
 add_default($nl, 'acab_mode');
 add_default($nl, 'test_coupling');
+add_default($nl, 'zero_gcm_fluxes', 'glc_two_way_coupling'=>"$GLC_TWO_WAY_COUPLING");
 $nl->write_cism_config($fh, "cism_config_climate");
 
 print $fh "\n[projection]\n";
@@ -1012,6 +1014,21 @@ sub check_consistency {
     my $num_errors = 0;
 
     $num_errors += check_cism_dt($nl->get_value('dt'));
+
+# ----------------------------------------------------------------------
+# Requirements for evolve_ice = .false.
+# ----------------------------------------------------------------------
+
+    if ($nl->get_value('evolve_ice') == 0) {
+       if ($nl->get_value('zero_gcm_fluxes') == 0) {
+          print "$ProgName: ERROR: for evolve_ice = 0, you must also set zero_gcm_fluxes = 1\n";
+          print "(This is because evolve_ice = 0 implies that there will be no fluxes,\n";
+          print "and you must explicitly set zero_gcm_fluxes = 1 for the sake of logic\n";
+          print "that depends on whether these fluxes will be zero - particularly, the creation\n";
+          print "of icemask_coupled_fluxes used by CLM).\n";
+          $num_errors += 1;
+       }
+    }
 
 # ----------------------------------------------------------------------
 # Requirements for use of trilinos solver

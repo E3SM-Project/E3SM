@@ -27,10 +27,10 @@ provided they are in the valid list expressed above.
 <fsurdat phys="clm4_5">lnd/clm2/surfdata_map/surfdata_${clm_usr_name}_simyr${sim_year}.nc</fsurdat>
 
 <!-- Dynamic PFT surface dataset (relative to ${csmdata}) -->
-<fpftdyn sim_year_range="constant"  rcp="-999.9">null</fpftdyn>
-<fpftdyn                            rcp="-999.9">lnd/clm2/surfdata/surfdata.pftdyn_${clm_usr_name}_simyr${sim_year_range}.nc</fpftdyn>
-<fpftdyn sim_year_range="1850-2000" rcp="-999.9">lnd/clm2/surfdata/surfdata.pftdyn_${clm_usr_name}_simyr1849-2006.nc</fpftdyn>
-<fpftdyn                                        >lnd/clm2/surfdata/surfdata.pftdyn_rcp${rcp}_${clm_usr_name}_simyr${sim_year_range}.nc</fpftdyn>
-<fpftdyn sim_year_range="1850-2000"             >lnd/clm2/surfdata/surfdata.pftdyn_rcp${rcp}_${clm_usr_name}_simyr1849-2006.nc</fpftdyn>
+<flanduse_timeseries sim_year_range="constant"  rcp="-999.9">null</flanduse_timeseries>
+<flanduse_timeseries                            rcp="-999.9">lnd/clm2/surfdata/landuse.timeseries_${clm_usr_name}_simyr${sim_year_range}.nc</flanduse_timeseries>
+<flanduse_timeseries sim_year_range="1850-2000" rcp="-999.9">lnd/clm2/surfdata/landuse.timeseries_${clm_usr_name}_simyr1849-2006.nc</flanduse_timeseries>
+<flanduse_timeseries                                        >lnd/clm2/surfdata/landuse.timeseries_rcp${rcp}_${clm_usr_name}_simyr${sim_year_range}.nc</flanduse_timeseries>
+<flanduse_timeseries sim_year_range="1850-2000"             >lnd/clm2/surfdata/landuse.timeseries_rcp${rcp}_${clm_usr_name}_simyr1849-2006.nc</flanduse_timeseries>
 
 </namelist_defaults>

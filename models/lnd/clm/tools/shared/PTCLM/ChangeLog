@@ -3,6 +3,84 @@ This file describes changes made to the PTCLM tool
 ================================================================================        
 
 ================================================================================        
+Originator: sacks
+Date: May/21/2014
+Tag: PTCLM2_140521
+One-line: rename fpftdyn to flanduse_timeseries, and do some other related variable renames
+Testing:  Standard PTCLM test script on yellowstone, and test_driver.sh in
+          dynlu_crops_n03_addclm50bld_n06_clm4_5_72
+Known Bugs: RF-Bra will work even without --donot_use_tower_yrs since it doesn't
+            check for valid values
+
+This is meant to go with an upcoming CLM tag, currently slated for clm4_5_74
+
+A  +    PTCLM_sitedata/cnvrt_trnsyrs2_landuse_timeseries_txtfile.pl
+D       PTCLM_sitedata/cnvrt_trnsyrs2_pftdyntxtfile.pl
+M       PTCLMmkdata
+M       README
+M       test/compdirs/global_US-UMB/user_nl_clm
+M       test/compdirs/rcp26_US-Dk2/user_nl_clm
+M       test/compdirs/rcp45_US-Dk3/user_nl_clm
+M       test/compdirs/rcp6_US-IB1/user_nl_clm
+M       test/compdirs/rcp85_US-Me4/user_nl_clm
+M       test/compdirs/trans_20th_US-Ne3/user_nl_clm
+M       test/compdirs/trans_clm45_US-Ha1/user_nl_clm
+
+================================================================================        
+Originator: erik
+Date: Apr/23/2014
+Tag: PTCLM2_140423
+One-line: Fix documentation, set DIN_LOC_ROOT_CLMFORC, correct call to mkmapdata.sh
+          allow release_tags in version, add hopper/edison to machine list.
+Testing:  Standard PTCLM test script on yellowstone, and test_driver.sh in clm4_5_71
+Known Bugs: RF-Bra will work even without --donot_use_tower_yrs since it doesn't
+            check for valid values
+
+A       PTCLMsublist --------- Script to submit a list of sites to the batch queue
+A       PTCLMsublist_prog.py - Python code to handle the submision list
+A       batchque.py ---------- Python code to handle batch command submission for single processor
+
+M       PTCLMmkdata -- Set DIN_LOC_ROOT_CLMFORC, Correct call to mkmapdata.sh
+                       Also allow release_tags in version find.
+M       README ------- Correct compset used.
+M       buildtools --- Add edison/hopper to list of machines will work for
+                       change frankfurt to goldbach, update netcdf version for yellowstone
+M       test/compdirs/* -------- Update the comparison files
+M       test/listings/sitelist - Update sitelist
+M       test/listings/help ----- Update help
+M       test/listings/list ----- Update list
+
+M       test/PTCLMtestlist.py ----- Change result codes to be more consistent with
+                 other testing mechanisms
+M       test/PTCLMtesting_prog.py - Change result codes, and set sdate/map_gdate so sdate won't
+                 change with the day testing was run.
+M       test/PTCLMtestlist.xml ---- Add new tests for new sites
+
+------> Add new sites for Rosie, RF-Bra,LBA-Cax,LTER-Sev
+------> And Jinyun US-Bol
+M       PTCLM_sitedata/PTCLMDATA_pftdata.txt
+M       PTCLM_sitedata/PTCLMDATA_sitedata.txt
+M       PTCLM_sitedata/PTCLMDATA_soildata.txt
+
+
+------> Add new comparison files for testing
+A       test/compdirs/std_RF-Bra
+A       test/compdirs/std_RF-Bra/user_nl_clm
+A       test/compdirs/std_RF-Bra/run.log
+A       test/compdirs/std_RF-Bra/xmlchange_cmnds
+A       test/compdirs/std_RF-Bra/README.PTCLM
+A       test/compdirs/std_LBA-Cax
+A       test/compdirs/std_LBA-Cax/user_nl_clm
+A       test/compdirs/std_LBA-Cax/run.log
+A       test/compdirs/std_LBA-Cax/xmlchange_cmnds
+A       test/compdirs/std_LBA-Cax/README.PTCLM
+A       test/compdirs/std_LTER-Sev
+A       test/compdirs/std_LTER-Sev/user_nl_clm
+A       test/compdirs/std_LTER-Sev/run.log
+A       test/compdirs/std_LTER-Sev/xmlchange_cmnds
+A       test/compdirs/std_LTER-Sev/README.PTCLM
+
+================================================================================        
 Originator: erik
 Date: Feb/04/2014
 Tag: PTCLM2_140204

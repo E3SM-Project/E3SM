@@ -23,6 +23,15 @@
 #BSUB -W 24:00
 #BSUB -q geyser          # queue
 
+# hopper/edison specific batch commands:
+#PBS -N regrid
+#PBS -q regular
+#PBS -l mppwidth=8
+#PBS -l walltime=24:00:00
+#PBS -j oe
+#PBS -V
+#PBS -S /bin/bash
+
 #----------------------------------------------------------------------
 # Set parameters
 #----------------------------------------------------------------------
@@ -60,7 +69,9 @@ for res in $resols; do
 
    cmdargs="$cmdargs -t $res_type"
 
-   if [ $res_type = "regional" ]; then
+   echo "$res_type"
+   if [ "$res_type" = "regional" ]; then
+       echo "regional"
        # For regional and (especially) single-point grids, we can get
        # errors when trying to use multiple processors - so just use 1.
        # We also do NOT set batch mode in this case, because some
@@ -69,11 +80,19 @@ for res in $resols; do
        # interactive mode.
        regrid_num_proc=1
    else
+       echo "global"
        regrid_num_proc=8
-       if [ ! -z $LSF_PJL_TYPE ]; then
+       if [ ! -z "$LSFUSER" ]; then
+           echo "batch"
+	   cmdargs="$cmdargs -b"
+       fi
+       if [ ! -z "$PBS_O_WORKDIR" ]; then
+           cd $PBS_O_WORKDIR
 	   cmdargs="$cmdargs -b"
        fi
    fi
 
+   echo "args: $cmdargs"
+   echo "time env REGRID_PROC=$regrid_num_proc ./mkmapdata.sh $cmdargs\n"
    time env REGRID_PROC=$regrid_num_proc ./mkmapdata.sh $cmdargs
 done

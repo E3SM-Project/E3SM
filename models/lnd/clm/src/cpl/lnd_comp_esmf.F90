@@ -11,14 +11,13 @@ module lnd_comp_esmf
   ! !USES:
   use esmf
   use esmfshr_util_mod
-  use shr_kind_mod   , only : r8 => shr_kind_r8, SHR_KIND_CL
-  use shr_string_mod , only : shr_string_listGetNum
-  use abortutils     , only : endrun
-  use domainMod      , only : ldomain
-  use decompMod      , only : ldecomp, bounds_type, get_proc_bounds
-  use clm_varctl     , only : iulog
-  use clm_atmlnd     , only : atm2lnd_type, lnd2atm_type
-  use clm_glclnd     , only : glc2lnd_type, lnd2glc_type
+  use shr_kind_mod      , only : r8 => shr_kind_r8, SHR_KIND_CL
+  use shr_string_mod    , only : shr_string_listGetNum
+  use abortutils        , only : endrun
+  use domainMod         , only : ldomain
+  use decompMod         , only : ldecomp, bounds_type, get_proc_bounds
+  use clm_varctl        , only : iulog
+  use clm_initializeMod , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
   use clm_cpl_indices
   use lnd_import_export
   !
@@ -74,18 +73,16 @@ contains
     ! back from (i.e. albedos, surface temperature and snow cover over land).
     !
     ! !USES:
-    use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_atmlnd       , only : clm_l2a
-    use clm_glclnd       , only : clm_s2x
-    use clm_initializeMod, only : initialize1, initialize2
-    use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
-    use clm_varctl       , only : inst_index, inst_suffix, inst_name
-    use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
-    use controlMod       , only : control_setNL
-    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
+    use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
+    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_vars, lnd2glc_vars
+    use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
+    use clm_varctl       , only : inst_index, inst_suffix, inst_name
+    use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
+    use controlMod       , only : control_setNL
     use spmdMod          , only : masterproc, spmd_init
     use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
     use seq_infodata_mod , only : seq_infodata_start_type_cont
@@ -388,7 +385,7 @@ contains
     call ESMF_ArrayGet(l2x, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call lnd_export(bounds, clm_l2a, clm_s2x, fptr)
+    call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, fptr)
 
     ! Set land modes
 
@@ -456,20 +453,18 @@ contains
     ! Run clm model
     !
     ! !USES:
-    use clm_atmlnd      ,only : clm_l2a, clm_a2l, a2l_not_downscaled_gcell
-    use clm_glclnd      ,only : clm_s2x, clm_x2s
-    use clm_driver      ,only : clm_drv
-    use clm_varorb      ,only : eccen, obliqr, lambm0, mvelpp
-    use clm_time_manager,only : get_curr_date, get_nstep, get_curr_calday, get_step_size, &
-         advance_timestep, set_nextsw_cday,update_rad_dtime
-    use shr_file_mod    ,only : shr_file_setLogUnit, shr_file_setLogLevel, &
-         shr_file_getLogUnit, shr_file_getLogLevel
-    use seq_timemgr_mod ,only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn, &
-         seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
-    use spmdMod         ,only : masterproc, mpicom
-    use perf_mod        ,only : t_startf, t_stopf, t_barrierf
-    use shr_orb_mod     ,only : shr_orb_decl
-    use clm_varorb      ,only : eccen, mvelpp, lambm0, obliqr
+    use shr_file_mod      , only : shr_file_setLogUnit, shr_file_setLogLevel
+    use shr_file_mod      , only : shr_file_getLogUnit, shr_file_getLogLevel
+    use shr_orb_mod       , only : shr_orb_decl
+    use clm_initializeMod , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use clm_driver        , only : clm_drv
+    use clm_varorb        , only : eccen, obliqr, lambm0, mvelpp
+    use clm_time_manager  , only : get_curr_date, get_nstep, get_curr_calday, get_step_size
+    use clm_time_manager  , only : advance_timestep, set_nextsw_cday,update_rad_dtime
+    use seq_timemgr_mod   , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
+    use seq_timemgr_mod   , only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
+    use spmdMod           , only : masterproc, mpicom
+    use perf_mod          , only : t_startf, t_stopf, t_barrierf
     !
     ! !ARGUMENTS:
     type(ESMF_GridComp)  :: comp            ! CLM gridded component
@@ -561,7 +556,7 @@ contains
     call ESMF_ArrayGet(x2l, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call lnd_import( bounds, fptr, clm_a2l, a2l_not_downscaled_gcell, clm_x2s )
+    call lnd_import( bounds, fptr, atm2lnd_vars, glc2lnd_vars )
 
     call t_stopf ('lc_lnd_import')
 
@@ -636,7 +631,7 @@ contains
        call ESMF_ArrayGet(l2x, localDe=0, farrayPtr=fptr, rc=rc)
        if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-       call lnd_export( bounds, clm_l2a, clm_s2x, fptr )
+       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, fptr)
        call t_stopf ('lc_lnd_export')
 
        ! Advance clm time step

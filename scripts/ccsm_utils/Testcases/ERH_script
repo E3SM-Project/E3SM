@@ -122,6 +122,8 @@ source ./Tools/ccsm_getenv
 set refdate2   = `ls -1dt ${DOUTSR1}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" `
 echo "ref2: doing a ${stopn2} ${STOP_OPTION} hybrid startup from $start2 using ref1 ${refdate2}" >>& $TESTSTATUS_LOG 
 
+cp -f env_run.xml env_run.xml.base # save the original settings
+
 #--- setup ref2 case 
 ./xmlchange -file env_run.xml -id RUN_TYPE      -val hybrid
 ./xmlchange -file env_run.xml -id RUN_STARTDATE -val ${start2}

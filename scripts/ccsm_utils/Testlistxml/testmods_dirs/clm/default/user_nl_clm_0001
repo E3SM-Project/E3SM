@@ -6,7 +6,7 @@
  hist_fincl1    = 'TRAFFICFLUX', 'SNOWLIQ:A','SNOWICE:A'
  hist_fincl2    = 'TG','TBOT','FIRE','FIRA','FLDS','FSDS',
                   'FSR','FSA','FGEV','FSH','FGR','TSOI',
-                  'ERRSOI','BUILDHEAT','SABV','SABG',
+                  'ERRSOI','SABV','SABG',
                   'FSDSVD','FSDSND','FSDSVI','FSDSNI',
                   'FSRVD','FSRND','FSRVI','FSRNI',
                   'TSA','FCTR','FCEV','QBOT','RH2M','H2OSOI',
@@ -18,4 +18,4 @@
                   'RH2M_U', 'RH2M_R',
                   'QRUNOFF_U', 'QRUNOFF_R',
                   'SoilAlpha_U',
-                  'Qanth', 'SWup', 'LWup', 'URBAN_AC', 'URBAN_HEAT'
+                  'SWup', 'LWup', 'URBAN_AC', 'URBAN_HEAT'

@@ -35,7 +35,7 @@
 <machine MACH="userdefined">
         <DESC>User Defined Machine</DESC>                                 <!-- can be anything -->
         <OS>USERDEFINED_required_macros</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
-        <COMPILERS>intel,ibm,pgi,pathscale,gnu,cray,lahey</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
+        <COMPILERS>intel,ibm,pgi,pathscale,gnu,cray,nag</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,nag -->
         <MPILIBS>openmpi,mpich,mpt,mpt,ibm,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
         <CESMSCRATCHROOT>USERDEFINED_required_build</CESMSCRATCHROOT>                     <!-- complete path to the 'scratch' directory -->
         <RUNDIR>USERDEFINED_required_build</RUNDIR>                       <!-- complete path to the run directory -->
@@ -226,6 +226,27 @@
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
+<machine MACH="logan">
+         <DESC>"NCAR CGD General compute server"</DESC>
+         <COMPILERS>pgi,intel</COMPILERS>
+         <MPILIBS>openmpi,mpi-serial</MPILIBS>
+         <RUNDIR>/scratch/$CCSMUSER/$CASE/run</RUNDIR>
+         <EXEROOT>/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/scratch/$USER</CESMSCRATCHROOT>
+         <OBJROOT>$EXEROOT</OBJROOT>
+         <INCROOT>$EXEROOT/lib/include</INCROOT>
+         <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_64/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>qstat</BATCHQUERY>
+         <BATCHSUBMIT>qsub </BATCHSUBMIT>
+         <GMAKE_J>4</GMAKE_J>
+         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+</machine>
 
 <machine MACH="gaea">
          <DESC>NOAA XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
@@ -247,6 +268,8 @@
          <GMAKE_J> 8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
+
+
 
 <machine MACH="hera">
          <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Moab</DESC>
@@ -486,7 +509,7 @@
 	 <COMPILERS>pgi,pgicuda</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
-         <EXEROOT>$CASEROOT/bld</EXEROOT>
+         <EXEROOT>$MEMBERWORK/$PROJECT/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>$MEMBERWORK/$PROJECT</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>

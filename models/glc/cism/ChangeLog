@@ -3,6 +3,231 @@ This file describes what main-trunk tags were created and why
 ================================================================================
 
 ================================================================================
+Originator: sacks
+Date: Sept 16, 2014
+Model: cism
+Version: cism1_140916
+One-line summary: Fix ChangeLog entry for cism1_140914
+
+Purpose of changes:
+
+  I realized that I incorrectly described the reason for answer changes in the
+  IG CLM40 test. I'm fixing that here.
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       ChangeLog
+
+
+Summary of testing: NONE
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Sept 14, 2014
+Model: cism
+Version: cism1_140914
+One-line summary: Add zero_gcm_fluxes option; send icemask_coupled_fluxes field to coupler
+
+Purpose of changes:
+
+In talking with Dave Lawrence, Bill Lipscomb and Jeremy Fyke, I realized that we
+need to introduce more logic to distinguish between active icesheets and
+diagnostic-only icesheets. 
+
+One aspect of this is the ability to zero out the fluxes CISM sends to the
+coupler (currently runoff fluxes; later also the heat flux). That way, by
+zeroing out these fluxes and turning off the connection to CLM, we can continue
+to run with an evolving ice sheet in diagnostic-only mode (i.e., 1-way
+coupling). This is achieved via the new zero_gcm_fluxes option. The default for
+zero_gcm_fluxes is based on the GLC_TWO_WAY_COUPLING xml variable. The current
+logic in scripts sets GLC_TWO_WAY_COUPLING to true for CLM45 (or later) compsets
+with CISM, and for TG compsets; otherwise (for CLM40, or for compsets without
+CISM) this is set to false.
+
+In addition, I realized the need to distinguish between areas of active
+icesheets and areas of either no icesheet or diagnostic-only icesheets in
+applying CLM's glc_dyn_runoff_routing switch. In particular, we should only use
+the new runoff routing scheme over areas of icesheet that are generating calving
+fluxes. From the perspective of CISM, this is achieved by computing and sending
+a new icemask_coupled_fluxes field to the coupler (which is then passed to
+CLM). icemask_coupled_fluxes is similar to the existing icemask field, but is
+zero over icesheet instances for which zero_gcm_fluxes is true - which will be
+the case for icesheets that are not generating calving fluxes (e.g.,
+diagnostic-only icesheets).
+
+Changes answers relative to previous tag: YES
+
+   Changes icemask at the roundoff-level, for some resolutions and compilers
+
+   Also, in combination with the new scripts, zeroes out runoff fluxes sent to
+   coupler (g2x_Fogg_rofl and g2x_Fogg_rofi).
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update to r63495: glint changes needed to support the above changes
+M       SVN_EXTERNAL_DIRECTORIES
+
+*** add zero_gcm_fluxes namelist option
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+*** send icemask_coupled_fluxes field to the coupler
+M       drivers/cpl/glc_cpl_indices.F90
+M       drivers/cpl/glc_import_export.F90
+M       source_glc/glc_InitMod.F90
+M       source_glc/glc_RunMod.F90
+M       source_glc/glc_global_fields.F90
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+   All IS2 tests fail (as usual)
+
+   compare_hist failures:
+
+   FAIL  CME_Ly5.T31_g37.IG.yellowstone_intel.clm-reduceOutput.compare_hist.cism1_140602_beta12 
+   FAIL  ERS_Ly5.T31_g37.IGCLM45.yellowstone_intel.clm-glcMEC_long.compare_hist.cism1_140602_beta12 
+   FAIL  SMS_D.T31_g37.BG1850CN.yellowstone_intel.compare_hist.cism1_140602_beta12 
+
+   These show roundoff-level changes in icemask. In addition, the CME test has
+   large diffs in g2x_Fogg_rofl and g2x_Fogg_rofi: These fields are identically
+   0 in the new run. This makes sense, since zero_gcm_fluxes is set to true for
+   this CLM40 run (which arises in combination with the new scripts version,
+   which sets GLC_TWO_WAY_COUPLING to FALSE for this run).
+
+
+Externals used for testing: cesm1_3_beta12, with these diffs:
+
+   Index: SVN_EXTERNAL_DIRECTORIES
+   ===================================================================
+   --- SVN_EXTERNAL_DIRECTORIES	(revision 63201)
+   +++ SVN_EXTERNAL_DIRECTORIES	(working copy)
+   @@ -1,8 +1,8 @@
+   -scripts                            https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_140813
+   +scripts                            https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/glc_runoff_routing_tags/glc_runoff_routing_n01_scripts4_140814a
+    scripts/ccsm_utils/Machines        https://svn-ccsm-models.cgd.ucar.edu/Machines/branch_tags/bluewatersfix_Machines_140811_tags/bluewatersfix02_Machines_140811
+    tools/cprnc                        https://svn-ccsm-models.cgd.ucar.edu/tools/cprnc/trunk_tags/cprnc_140625
+    tools/mapping                      https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_140702b
+   -models/drv                         https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_15
+   +models/drv                         https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/branch_tags/glc_runoff_routing_tags/glc_runoff_routing_n01_drvseq5_0_15
+    models/csm_share                   https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140723
+    scripts/validation_testing         https://svn-ccsm-models.cgd.ucar.edu/validation_testing/trunk_tags/validation_20140708/run_CESM/
+    models/atm/cam                     https://svn-ccsm-models.cgd.ucar.edu/cam1/trunk_tags/cam5_3_45/models/atm/cam/
+   @@ -10,7 +10,7 @@
+    models/atm/satm                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/satm
+    models/atm/xatm                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_8_00/xatm
+    models/dead_share                  https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_8_00/dead_share
+   -models/glc/cism                    https://svn-ccsm-models.cgd.ucar.edu/glc/trunk_tags/cism1_140602
+   +models/glc/cism                    https://svn-ccsm-models.cgd.ucar.edu/glc/branches/glc_runoff_routing
+    models/glc/sglc                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/sglc
+    models/glc/xglc                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_8_00/xglc
+    models/ice/cice                    https://svn-ccsm-models.cgd.ucar.edu/cice/trunk_tags/cice4_0_20140711
+   @@ -17,7 +17,7 @@
+    models/ice/dice                    https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_131201
+    models/ice/sice                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/sice
+    models/ice/xice                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_8_00/xice
+   -models/lnd/clm                     https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_1_r079//models/lnd/clm
+   +models/lnd/clm                     https://svn-ccsm-models.cgd.ucar.edu/clm2/branch_tags/glc_runoff_routing_tags/glc_runoff_routing_n02_clm4_5_1_r081
+    models/lnd/dlnd                    https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_131201
+    models/lnd/slnd                    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_04/slnd
+    models/lnd/xlnd                    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_8_00/xlnd
+
+However, for the PEA test, I merged the changes from scripts4_140903b into the sandbox.
+
+
+cism tag used for baseline comparisons: cism1_140602
+
+Any other externals that differed in baseline: Baseline used cesm1_3_beta12 with
+updated scripts (scripts4_140905???)
+
+================================================================================
+Originator: sacks
+Date: June 2, 2014
+Model: cism
+Version: cism1_140602
+One-line summary: Update glimmer-cism external with some fixes for CISM2
+
+Purpose of changes:
+
+   Update glimmer-cism external with the following fixes:
+
+   (1) update CMakeLists.txt to fix the yellowstone build when building with trilinos
+
+   (2) fix downscaling of fields in elevation class 0 when running with multiple processors
+
+   (3) set halo values in glint downscaling using parallel_halo calls
+
+Changes answers relative to previous tag: NO (at least not for CISM1 [SIA] runs)
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Update to r60744
+M       SVN_EXTERNAL_DIRECTORIES
+
+
+Summary of testing:
+
+   Yellowstone intel & pgi test lists. All PASS except the following expected
+   failures:
+
+   CFAIL ERS_Ly20_E.f09_g16.TG20TR.yellowstone_pgi.GC.140530-154133
+   FAIL  ERI_Ly15.f09_g16_gl10.TG20TRIS2.yellowstone_intel.GC.140530-154116 
+   FAIL  NCK_Ly3.f09_g16_gl10.TGRCP85IS2.yellowstone_intel.clm-reduceOutput.GC.140530-154116 
+   FAIL  PEA_P1_M_Ly2.f09_g16_gl10.TGIS2S.yellowstone_intel.GC.140530-154116 
+   FAIL  SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel.GC.140530-154116 
+   FAIL  SMS_Ly3.T31_g37_gl10.IGIS2.yellowstone_intel.clm-reduceOutput.GC.140530-154116 
+
+   Note: The IS2 runs now get further than before, because of problems that have
+   been fixed in this tag. e.g., SMS_D_Ly1.f09_g16_gl10.TGIS2.yellowstone_intel
+   gets up to a conservation error before stopping (in contrast to dying due to
+   a floating point problem or some other problem previously).
+
+   However, the IGIS2 test fails with:
+
+   0:NOXSolve called
+   0:
+   0:************************************************************************
+   0:-- Nonlinear Solver Step 0 -- 
+   0:||F|| =       inf  step = 0.000e+00  dx = 0.000e+00
+   0:************************************************************************
+   0:
+  35:
+  35:p=35: *** Caught standard std::exception of type 'Belos::StatusTestError' :
+  35:
+  35: /glade/u/home/rory/trilinos-11.0.3-Source/packages/belos/src/BelosStatusTestGenResNorm.hpp:574:
+  35: 
+  35: Throw number = 1
+  35: 
+  35: Throw test that evaluated to true: true
+  35: 
+  35: StatusTestGenResNorm::checkStatus(): NaN has been detected.
+  35:INFO: 0031-306  pm_atexit: pm_exit_value is 1.
+
+
+Externals used for testing: cesm1_3_beta07, with many diffs - as in cism1_140501
+
+cism tag used for baseline comparisons: cism1_140501
+
+Any other externals that differed in baseline: none
+
+================================================================================
 Originator: jfyke, sacks
 Date: May 1, 2014
 Model: cism

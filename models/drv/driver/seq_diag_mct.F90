@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: seq_diag_mct.F90 59750 2014-05-01 15:17:20Z sacks $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_12/driver/seq_diag_mct.F90 $
+! SVN $Id: seq_diag_mct.F90 61512 2014-06-26 21:59:35Z tcraig $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_17/driver/seq_diag_mct.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -1555,8 +1555,7 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 
       do n = 1,npts
       do k = 1,kflds
-         if (AV%rAttr(k,n) > 1.01_r8*shr_const_spval .or. &
-             AV%rAttr(k,n) < 0.99_r8*shr_const_spval) then
+         if (.not. shr_const_isspval(AV%rAttr(k,n))) then
              maxbuf(k) = max(maxbuf(k),abs(AV%rAttr(k,n)*weight(n)))
          endif
       enddo
@@ -1580,8 +1579,7 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 
       do n = 1,npts
       do k = 1,kflds
-         if (AV%rAttr(k,n) > 1.01_r8*shr_const_spval .or. &
-             AV%rAttr(k,n) < 0.99_r8*shr_const_spval) then
+         if (.not. shr_const_isspval(AV%rAttr(k,n))) then
              if (abs(maxbufg(k)) > 1000.0_r8 * TINY(maxbufg)) then
                 isumbuf(k) = isumbuf(k) + int((AV%rAttr(k,n)*weight(n)/maxbufg(k))*ihuge,i8)
              endif
@@ -1614,8 +1612,7 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 
       do n = 1,npts
       do k = 1,kflds
-         if (AV%rAttr(k,n) > 1.01_r8*shr_const_spval .or. &
-             AV%rAttr(k,n) < 0.99_r8*shr_const_spval) then
+         if (.not. shr_const_isspval(AV%rAttr(k,n))) then
              sumbuf(k) = sumbuf(k) + AV%rAttr(k,n)*weight(n)
          endif
       enddo

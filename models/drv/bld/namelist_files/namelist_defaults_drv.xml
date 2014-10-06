@@ -96,9 +96,6 @@
 <drv_threading DRV_THREADING="TRUE">.true.</drv_threading> 
 <drv_threading DRV_THREADING="FALSE">.false.</drv_threading> 
 
-<ocean_tight_coupling OCN_TIGHT_COUPLING="TRUE">.true.</ocean_tight_coupling> 
-<ocean_tight_coupling OCN_TIGHT_COUPLING="FALSE">.false.</ocean_tight_coupling> 
-
 <do_budgets BUDGETS="TRUE" >.true.</do_budgets> 
 <do_budgets BUDGETS="FALSE">.false.</do_budgets> 
 

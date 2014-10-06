@@ -87,7 +87,6 @@ usage() {
   echo ""
   echo " You can also set the following env variables:"
   echo "  ESMFBIN_PATH - Path to ESMF binaries "
-  echo "                 (default is /contrib/esmf-5.3.0-64-O/bin)"
   echo "  CSMDATA ------ Path to CESM input data"
   echo "                 (default is /glade/p/cesm/cseg/inputdata)"
   echo "  MPIEXEC ------ Name of mpirun executable"
@@ -342,6 +341,9 @@ done
 #----------------------------------------------------------------------
 
 hostname=`hostname`
+if [ -n "$NERSC_HOST" ]; then
+   hostname=$NERSC_HOST
+fi
 case $hostname in
   ##yellowstone
   ys* | caldera* | geyser* )
@@ -358,25 +360,58 @@ case $hostname in
         mpi=uni
         mpitype="mpiuni"
      fi
-     ESMFBIN_PATH=/glade/apps/opt/esmf/6.1.1-ncdfio/intel/12.1.5/bin/binO/Linux.intel.64.${mpitype}.default
+     ESMFBIN_PATH=/glade/apps/opt/esmf/6.3.0-ncdfio/intel/12.1.5/bin/binO/Linux.intel.64.${mpitype}.default
   fi
   if [ -z "$MPIEXEC" ]; then
      MPIEXEC="mpirun.lsf"
   fi
   ;;
 
-  ##jaguarpf
-  ## NOTE that for jaguarpf there is no batch script for now
-  jaguarpf* )
+  ## hopper
+  hopper* )
+  .  /opt/modules/default/init/bash
+  module load ncl/6.1.2
+  module load nco
   if [ -z "$ESMFBIN_PATH" ]; then
-     module load esmf/5.2.0-p1_with-netcdf_g
-     ESMFBIN_PATH=$ESMF_BINDIR
+     module use -a /project/projectdirs/ccsm1/modulefiles/hopper
+     if [ "$type" = "global" ]; then
+        mpi=mpi
+        mpitype="mpi"
+     else
+        mpi=uni
+        mpitype="mpiuni"
+     fi
+     module load esmf/6.3.0r-ncdfio-${mpitype}-O
+     ESMFBIN_PATH=$ESMF_LIBDIR/../bin
   fi
   if [ -z "$MPIEXEC" ]; then
     MPIEXEC="aprun -n $REGRID_PROC"
   fi
+
   ;;
 
+  ## edison
+  edison* )
+  .  /opt/modules/default/init/bash
+  module load ncl/6.1.1
+  module load nco
+  if [ -z "$ESMFBIN_PATH" ]; then
+     module use -a /project/projectdirs/ccsm1/modulefiles/edison
+     if [ "$type" = "global" ]; then
+        mpi=mpi
+        mpitype="mpi"
+     else
+        mpi=uni
+        mpitype="mpiuni"
+     fi
+     module load esmf/6.3.0r-ncdfio-${mpitype}-O
+     ESMFBIN_PATH=$ESMF_LIBDIR/../bin
+  fi
+  if [ -z "$MPIEXEC" ]; then
+    MPIEXEC="aprun -n $REGRID_PROC"
+  fi
+
+  ;;
   ##no other machine currently supported    
   *)
   echo "Machine $hostname NOT recognized"
@@ -470,33 +505,12 @@ until ((nfile>${#INGRID[*]})); do
        exit 4
    fi
 
-   # WJS (4-11-13): The current release version of the ESMF regridding
-   # tool doesn't handle netcdf4 output, and doesn't (properly?)
-   # handle UGRID format. Thus, for now we need this kludge to use a
-   # different version if we need either of those features.
-   MY_ESMF_REGRID=$ESMF_REGRID
-   if [ "$lrgfil" = "--netcdf4" ] || [ ${SRC_TYPE[nfile]} = "UGRID" ] || [ $DST_TYPE = "UGRID" ]; then
-       case $hostname in
-	   ys* | caldera* | geyser* )
-	       if [ $mpitype = "mpiuni" ]; then
-		   MY_ESMF_REGRID=/glade/p/work/svasquez/ESMF620bs18-mpiuni/bin/ESMF_RegridWeightGen
-	       else
-		   MY_ESMF_REGRID=/glade/p/work/svasquez/ESMF620bs18/bin/ESMF_RegridWeightGen
-	       fi
-	       ;;
-	   *)
-	       echo "No support for --netcdf4 or UGRID on machines other than yellowstone/caldera/geyser"
-	       exit 5
-	       ;;
-       esac
-   fi
-
    # Skip if file already exists
    if [ -f "${OUTFILE[nfile]}" ]; then
       echo "Skipping creation of ${OUTFILE[nfile]} as already exists"
    else
 
-      cmd="$mpirun $MY_ESMF_REGRID --ignore_unmapped -s ${INGRID[nfile]} "
+      cmd="$mpirun $ESMF_REGRID --ignore_unmapped -s ${INGRID[nfile]} "
       cmd="$cmd -d $GRIDFILE -m conserve -w ${OUTFILE[nfile]}"
       if [ $type = "regional" ]; then
         cmd="$cmd --dst_regional"
@@ -513,7 +527,7 @@ until ((nfile>${#INGRID[*]})); do
       fi
       # add some metadata to the file
       HOST=`hostname`
-      history="$MY_ESMF_REGRID"
+      history="$ESMF_REGRID"
       runcmd "ncatted -a history,global,a,c,"$history"  ${OUTFILE[nfile]}"
       runcmd "ncatted -a hostname,global,a,c,$HOST   -h ${OUTFILE[nfile]}"
       runcmd "ncatted -a logname,global,a,c,$LOGNAME -h ${OUTFILE[nfile]}"

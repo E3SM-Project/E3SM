@@ -314,7 +314,7 @@ contains
     character(len=32) :: subname = 'write_domain'
     character(len=32) :: str
     character(len=256) :: version = &
-    "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_71/models/lnd/clm/tools/shared/mkmapgrids/src/mkmapgrids.F90 $"
+    "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_1_r085/models/lnd/clm/tools/shared/mkmapgrids/src/mkmapgrids.F90 $"
     character(len=256) :: revision_id = &
     "$Id: mkmapgrids.F90 46863 2013-05-08 03:25:21Z sacks $"
     character(len=1500) :: hist

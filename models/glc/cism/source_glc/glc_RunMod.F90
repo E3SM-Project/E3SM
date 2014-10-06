@@ -154,7 +154,8 @@
                          gfrac = gfrac,    gtopo = gtopo,   &
                          grofi = grofi,    grofl = grofl,   &
                          ghflx = ghflx,                     &
-                         ice_sheet_grid_mask=ice_sheet_grid_mask)
+                         ice_sheet_grid_mask=ice_sheet_grid_mask, &
+                         icemask_coupled_fluxes=icemask_coupled_fluxes)
 
          if (verbose .and. my_task==master_task) then
 !            write(stdout,*) ' '

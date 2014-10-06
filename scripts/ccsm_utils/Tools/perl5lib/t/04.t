@@ -82,7 +82,7 @@ my %expected_usr_files = (
                            'fatmlndfrc' => "\$PWD/usrfiles/fracdata_1x1_boulderCO_c090804_USGS.nc",
                            'fatmtopo'   => "\$PWD/usrfiles/topodata_1x1_boulderCO_c090804.nc",
                            'flndtopo'   => "\$PWD/usrfiles/topodata_1x1_boulderCO_c090804.nc",
-                           'fpftdyn'    => "\$PWD/usrfiles/surfdata.pftdyn_1x1_boulderCO_c090804_simyr1850-2000.nc",
+                           'flanduse_timeseries'    => "\$PWD/usrfiles/landuse.timeseries_1x1_boulderCO_c090804_simyr1850-2000.nc",
                            'fsurdat'    => "\$PWD/usrfiles/surfdata_1x1_boulderCO_c090804_simyr1850.nc",
                           );
 is_deeply( \%usr_files, \%expected_usr_files, "Make sure return expected user default files" );

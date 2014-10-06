@@ -134,7 +134,7 @@ land-ice model is active.
 Full pathname datafile with plant function type (PFT) constants
 </entry>
 
-<entry id="fpftdyn" type="char*256" category="datasets"
+<entry id="flanduse_timeseries" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
 Full pathname of time varying PFT data file. This causes the land-use types of
 the initial surface dataset to vary over time.

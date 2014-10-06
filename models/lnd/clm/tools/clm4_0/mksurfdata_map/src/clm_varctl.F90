@@ -59,7 +59,7 @@ module clm_varctl
   character(len=256), public :: fatmlndfrc = ' '        ! lnd frac file on atm grid
   character(len=256), public :: fatmtopo   = ' '        ! topography on atm grid
   character(len=256), public :: flndtopo   = ' '        ! topography on lnd grid
-  character(len=256), public :: fpftdyn    = ' '        ! dynamic landuse dataset
+  character(len=256), public :: flanduse_timeseries    = ' '        ! dynamic landuse dataset
   character(len=256), public :: fpftcon    = ' '        ! ASCII data file with PFT physiological constants
   character(len=256), public :: nrevsn     = ' '        ! restart data file name for branch run
   character(len=256), public :: fsnowoptics  = ' '      ! snow optical properties file name
@@ -248,11 +248,11 @@ contains
 
        ! Consistency settings for dynamic land use, etc.
 
-       if (fpftdyn /= ' ' .and. create_crop_landunit) &
+       if (flanduse_timeseries /= ' ' .and. create_crop_landunit) &
           call shr_sys_abort( subname//' ERROR:: dynamic landuse is currently not supported with create_crop_landunit option' )
        if (create_crop_landunit .and. .not.allocate_all_vegpfts) &
           call shr_sys_abort( subname//' ERROR:: maxpft<numpft+1 is currently not supported with create_crop_landunit option' )
-       if (fpftdyn /= ' ') then
+       if (flanduse_timeseries /= ' ') then
 #if (defined CNDV)
           call shr_sys_abort( subname//' ERROR:: dynamic landuse is currently not supported with CNDV option' )
 #endif

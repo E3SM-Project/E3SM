@@ -24,20 +24,26 @@ General Directory structure:
   models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata  - Site data files of 
         static information latitude, longitude, soil info., and PFT information 
         for each site Also different "groups" of site-data lists, and the script to
-        convert the transient years pftdyn files into pftdyn text files that
+        convert the transient years landuse_timeseries files into landuse_timeseries text files that
         mksurfdata can use.
   models/lnd/clm/tools/shared/PTCLM/mydatafiles ----- Default location of
         data files that will be created by PTCLMmkdata. Sites will be built
         in their own subdirectories under here. Optionally you can give your
         own location you'd like to use for your data.
-  models/lnd/clm/tools/shared/PTCLM/buildtools ------ Script to build the CLM
+
+  models/lnd/clm/tools/shared/PTCLM/PTCLMsublist --------- Script to submit a list of PTCLM
+        sites to the batch que (only setup for a few machines).
+  models/lnd/clm/tools/shared/PTCLM/PTCLMsublist_prog.py - Python module to support submit
+        list script. Handles command line arguments and such.
+  models/lnd/clm/tools/shared/PTCLM/batchque.py ---------- Python module for batch submital.
+  models/lnd/clm/tools/shared/PTCLM/buildtools ----------- Script to build the CLM
         tools needed to run PTCLMmkdata (mksurfdata_map both clm4_0 and clm4_5
         versions and gen_domain). Works on yellowstone.
 
 Quickstart:
 
 # ASSUMPTIONS:
-# For this example I'm running a ICLM451PT case on yellowstone using  
+# For this example I'm running a I1PTCLM45 case on yellowstone using  
 # CSMDATA in the standard location
 # Finally we use the 6-digit AmeriFlux site code for the University of Mich. Biological
 # Station US-UMB (data for this station is checked into the inputdata repository).
@@ -53,7 +59,7 @@ setenv MYDATAFILES `pwd`/mydatafiles
 # The following script assumes yellowstone_intel, for other machines
 # you'll need to build each tool by hand
 ./buildtools
-# next run PTCLMmkdata (NOTE -- MAKE SURE python AND NCL IS IN YOUR PATH)
+# next run PTCLMmkdata (NOTE -- MAKE SURE python, NCO AND NCL IS IN YOUR PATH)
 # NOTE: Every day you run PTCLMmkdata it will remake the map called
 #       renamemapfiles to rename files with todays creation date.
 #       This makes running PTCLMmkdata a reasonable amount of time.
@@ -70,15 +76,28 @@ mkdir $MYDATAFILES/1x1pt_$SITE/CLM1PT_data
 # The variables assumed to be on the files are: 
 #     ZBOT, TBOT, RH, WIND, PRECTmms, FSDS, PSRF, FLDS
 # (if other fields are available or with different names this can be changed by
-#  editing the streams file in your case)
+#  adding a user_nl_datm.streams.txt file as we outline below)
+# Make sure your data has time with the attribute: calendar="gregorian"
+
+# Make sure the forcing directory points to the location of your data
+# (PTCLMmkdata should already do this)
+./xmlchange DIN_LOC_ROOT_CLMFORC=$MYDATAFILES/1x1pt_$SITE
 
 # Then create a case using the data you just created
 setenv MYCASE "testPTCLM"
 cd ../../../../../../scripts
-./create_newcase -user_mods_dir $MYDATAFILES/1x1pt_$SITE -case $MYCASE -res CLM_USRDAT -compset ICLM451PT -mach yellowstone_intel
+./create_newcase -user_mods_dir $MYDATAFILES/1x1pt_$SITE -case $MYCASE -res CLM_USRDAT -compset I1PTCLM45 -mach yellowstone_intel
 
-# Finally configure, build, and run the case as normal
+# Next setup as normal
 cd $MYCASE
 ./cesm_setup
+
+# If you need to customize your list of fields uncomment and do the following...
+# cp CaseDocs/datm.streams.txt.CLM1PT.CLM_USRDAT user_datm.streams.txt.CLM1PT.CLM_USRDAT
+# chmod u+w user_datm.streams.txt.CLM1PT.CLM_USRDAT
+# $EDITOR user_datm.streams.txt.CLM1PT.CLM_USRDAT
+# ./preview_namelists
+
+# Finally build, and run the case as normal
 ./$MYCASE.build
 ./$MYCASE.submit

@@ -20,6 +20,6 @@
 ! Set glc_grid           with CISM_GRID                          option
 ! Set glc_smb            with GLC_SMB                            option
 ! Set maxpatch_glcmec    with GLC_NEC                            option
-! Set glc_do_dynglacier  with CLM_UPDATE_GLC_AREAS               env variable
+! Set glc_do_dynglacier  with GLC_TWO_WAY_COUPLING               env variable
 !----------------------------------------------------------------------------------
 

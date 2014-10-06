@@ -87,6 +87,16 @@ fi
 all_comparisons_good="TRUE"
 for compare_file in ${files_to_compare}; do
 
+    # For PTCLM, skip comparisons of mapping files, since these aren't really
+    # necessary, take a lot of time, and cprnc.pl can crash if there are mapping
+    # files with 0 overlaps
+    if [[ "$2" == "PTCLM" ]]; then
+	if [[ "$compare_file" == map* ]]; then
+	    echo "SKIPPING: $compare_file"
+	    continue
+	fi
+    fi
+
     env CPRNC_EXE=${CLM_SCRIPTDIR}/../../tools/shared/ncl_scripts/cprnc.pl \
         ${CLM_SCRIPTDIR}/CLM_compare.sh \
         ${BL_TESTDIR}/TSMscript_tools.$1.$2.$3.$4/${compare_file} \

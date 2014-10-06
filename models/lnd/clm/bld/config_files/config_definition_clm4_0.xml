@@ -5,17 +5,17 @@
 <config_definition>
 
 <entry id="phys" 
-       valid_values="clm4_0,clm4_5"
+       valid_values="clm4_0,clm4_5,clm5_0"
        value="clm4_0"
        category="physics">
-Specifies either clm4_0 or clm4_5 physics
+Specifies either clm4_0, clm4_5, or clm5_0 physics
 </entry>
 
 <entry id="spinup" 
        valid_values="AD,exit,normal" 
        value="normal" 
        category="bgc">
-CLM 4.0 Only. For CLM 4.5, spinup is controlled from build-namelist.
+CLM 4.0 Only. For CLM 4.5/5.0, spinup is controlled from build-namelist.
 Spinup mode for the CN Carbon Nitrogen BGC model
    AD            turn on accelerated decomposition spinup for CN biogeochemistry model
    exit          jump from AD spinup mode to normal mode
@@ -46,9 +46,9 @@ settings that are set for a particular site.
 CLM Biogeochemistry mode
    none = Satellite Phenology (SP)
    cn   = Carbon Nitrogen model (CN) 
-          (or CLM45BGC if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+          (or CLM45BGC if phys=clm4_5/clm5_0, vsoilc_centbgc='on', and clm4me='on')
    cndv = Carbon Nitrogen with Dynamic Global Vegetation Model (CNDV)
-          (or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+          (or CLM45BGCDV if phys=clm4_5/clm5_0, vsoilc_centbgc='on', and clm4me='on')
 </entry>
 <entry id="crop" 
        valid_values="on,off" 
@@ -91,11 +91,11 @@ than defining them here.
        valid_values="17,21,25" 
        category="physics">
 Maximum number of plant function types (PFT)  per gridcell
-(Setting maxpft to anything other than 17 (or 25 for clm4_5 CROP or 21 for clm4_0 CROP) 
+(Setting maxpft to anything other than 17 (or 25 for clm4_5/clm5_0 CROP or 21 for clm4_0 CROP) 
 is EXPERIMENTAL AND NOT SUPPORTED!)
 (Either 17 for a standard vegetated case or 
 21 for prognostic clm4_0 CROP or 25 
-for prognostic clm4_5 CROP)
+for prognostic clm4_5/clm5_0 CROP)
 </entry>
 
 <entry id="nofire" 

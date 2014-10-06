@@ -103,6 +103,8 @@ class PTCLMtestlist:
         opts = opts + " -s " + test['site']
         opts = opts + " -d "+self.inputdatadir
         opts = opts + " --debug"
+        opts = opts + " --sdate 140204"
+        opts = opts + " --map_gdate 140204"
         if ( test['type'] == "RUN" ):
            opts = opts + " --mydatadir "+self.testing_dir+"/"+test['id']
 
@@ -127,21 +129,26 @@ class PTCLMtestlist:
      if ( stat == self.IsNOTFailTest( test ) ):
         teststatus = "PASS"
      else:
-        teststatus = "Fail"
+        teststatus = "FAIL"
 
      print teststatus+" "+tid
 
-     overallcompstatus = "no-comparisons-done"
+     overallcompstatus = "NO-COMPS-DONE"
      if ( test['resultfile'] != "" ):
         dstat = os.system( "diff "+tlog+" "+test['resultfile']  )
         if ( dstat == 0 ):
            compstatus = "PASS"
            desc       = " compare to result file"
         else:
-           compstatus = "compare.Fail"
+           compstatus = "FAIL-COMP"
            desc       = " different from result file: "+test['resultfile']
 
         if ( redo_comp_files ):
+           if ( not os.path.exists( test['resultfile'] ) ):
+              cmd = "mkdir "+os.path.dirname(test['resultfile'])
+              print "Create new file directory that does NOT exist\n"
+              print cmd+"\n";
+              os.system( cmd )
            os.system( "cp "+tlog+" "+test['resultfile']  )
         overallcompstatus = compstatus
 
@@ -157,10 +164,10 @@ class PTCLMtestlist:
            srcfile = testdir+"/"+file
            cmpfile = "compdirs/"+test['compdir']+"/"+file
            if ( not os.path.exists( srcfile ) ):
-                 compstatus = "compare.Fail"
+                 compstatus = "FAIL-DNE"
                  desc       = "source compare file does NOT exist: "+srcfile
            elif ( not os.path.exists( cmpfile ) ):
-                 compstatus = "compare.Fail"
+                 compstatus = "BFAIL"
                  desc       = "compare file does NOT exist: "+cmpfile
            else:
               dstat = os.system( "diff "+srcfile+" "+cmpfile )
@@ -169,13 +176,18 @@ class PTCLMtestlist:
                  compstatus = "PASS"
                  desc       = "same as comp directory file: "+cmpfile
               else:
-                 compstatus = "compare.Fail"
+                 compstatus = "FAIL-COMP"
                  desc       = "different from comp directory file: "+cmpfile
 
            if ( redo_comp_files ):
+              if ( not os.path.exists( cmpfile ) ):
+                 cmd = "mkdir "+os.path.dirname(cmpfile)
+                 print "Create new file directory that does NOT exist\n"
+                 print cmd+"\n";
+                 os.system( cmd )
               os.system( "cp "+srcfile+" "+cmpfile )
                  
-           if ( overallcompstatus != "compare.Fail" ): overallcompstatus = compstatus
+           if ( overallcompstatus == "PASS" or overallcompstatus == "NO-COMPS-DONE" ): overallcompstatus = compstatus
 
            print compstatus+" "+tid+" "+desc+" "+file
 
@@ -193,6 +205,10 @@ class test_PTCLMtestlist(unittest.TestCase):
    def setUp( self ):
      self.test = PTCLMtestlist()
      cesmdir = os.getenv("CESM_ROOT", "../../../../../../.." )
+     if ( not os.path.exists( cesmdir+"/ChangeLog" ) ):
+         print "CESM_ROOT NOT input\n"
+         sys.exit( 200 )
+
      self.test.Setup(cesmdir)
 
    def test_read( self ):

@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: seq_infodata_mod.F90 59750 2014-05-01 15:17:20Z sacks $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_12/shr/seq_infodata_mod.F90 $
+! SVN $Id: seq_infodata_mod.F90 61512 2014-06-26 21:59:35Z tcraig $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_17/shr/seq_infodata_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -114,7 +114,7 @@ MODULE seq_infodata_mod
       character(SHR_KIND_CL)  :: vect_map        ! vector mapping option, none, cart3d, cart3d_diag, cart3d_uvw, cart3d_uvw_diag
       character(SHR_KIND_CS)  :: aoflux_grid     ! grid for atm ocn flux calc
       integer                 :: cpl_decomp      ! coupler decomp
-      logical                 :: ocean_tight_coupling  ! are we doing tight ocean coupling
+      character(SHR_KIND_CL)  :: cpl_seq_option  ! coupler sequencing option
       logical                 :: cpl_cdf64       ! use netcdf 64 bit offset, large file support
       logical                 :: do_budgets      ! do heat/water budgets diagnostics
       logical                 :: do_histinit     ! write out initial history file
@@ -306,7 +306,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID)
     character(SHR_KIND_CL) :: vect_map           ! vector mapping option
     character(SHR_KIND_CS) :: aoflux_grid        ! grid for atm ocn flux calc
     integer                :: cpl_decomp         ! coupler decomp
-    logical                :: ocean_tight_coupling  ! are we doing tight ocean coupling
+    character(SHR_KIND_CL) :: cpl_seq_option     ! coupler sequencing option
     logical                :: cpl_cdf64          ! use netcdf 64 bit offset, large file support
     logical                :: do_budgets         ! do heat/water budgets diagnostics
     logical                :: do_histinit        ! write out initial history file
@@ -352,12 +352,12 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID)
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
-         ocean_tight_coupling, do_budgets, drv_threading,  &
+         do_budgets, drv_threading,                        &
          budget_inst, budget_daily, budget_month,          &
          budget_ann, budget_ltann, budget_ltend,           &
          histaux_a2x    ,histaux_a2x3hr,histaux_a2x3hrp,   &
          histaux_a2x24hr,histaux_l2x   ,histaux_r2x,       &
-         histaux_l2x1yr,                                   &
+         histaux_l2x1yr, cpl_seq_option,                   &
          cpl_cdf64, eps_frac, eps_amask,                   &
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
          eps_oarea, esmf_map_flag,                         &
@@ -423,7 +423,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID)
        vect_map              = 'cart3d'
        aoflux_grid           = 'ocn'
        cpl_decomp            = 0
-       ocean_tight_coupling  = .false.
+       cpl_seq_option        = 'CESM1_MOD'
        cpl_cdf64             = .true.
        do_budgets            = .false.
        do_histinit           = .false.
@@ -512,7 +512,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID)
        infodata%vect_map              = vect_map
        infodata%aoflux_grid           = aoflux_grid
        infodata%cpl_decomp            = cpl_decomp
-       infodata%ocean_tight_coupling  = ocean_tight_coupling
+       infodata%cpl_seq_option        = cpl_seq_option
        infodata%cpl_cdf64             = cpl_cdf64
        infodata%do_budgets            = do_budgets
        infodata%do_histinit           = do_histinit
@@ -758,13 +758,13 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
            ice_present, ice_prognostic, glc_present, glc_prognostic,          &
            flood_present, wav_present, wav_prognostic, rofice_present,        &
            glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
-           bfbflag, lnd_gnam, cpl_decomp,                                     &
+           bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
            ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
            atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
            shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
            nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
            glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
-           ocean_tight_coupling, do_budgets, do_histinit, drv_threading,      &
+           do_budgets, do_histinit, drv_threading,                            &
            budget_inst, budget_daily, budget_month, wall_time_limit,          &
            budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
@@ -834,7 +834,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
    character(len=*)    ,optional, intent(OUT) :: vect_map      ! vector mapping option
    character(len=*)    ,optional, intent(OUT) :: aoflux_grid   ! grid for atm ocn flux calc
    integer             ,optional, intent(OUT) :: cpl_decomp    ! coupler decomp
-   logical             ,optional, intent(OUT) :: ocean_tight_coupling  ! tight vs loose ocean coupling
+   character(len=*)    ,optional, intent(OUT) :: cpl_seq_option! coupler sequencing option
    logical             ,optional, intent(OUT) :: cpl_cdf64     ! netcdf large file setting
    logical             ,optional, intent(OUT) :: do_budgets    ! heat/water budgets
    logical             ,optional, intent(OUT) :: do_histinit   ! initial history file
@@ -977,7 +977,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(vect_map)       ) vect_map       = infodata%vect_map
     if ( present(aoflux_grid)    ) aoflux_grid    = infodata%aoflux_grid
     if ( present(cpl_decomp)     ) cpl_decomp     = infodata%cpl_decomp
-    if ( present(ocean_tight_coupling)) ocean_tight_coupling = infodata%ocean_tight_coupling
+    if ( present(cpl_seq_option) ) cpl_seq_option = infodata%cpl_seq_option
     if ( present(cpl_cdf64)      ) cpl_cdf64      = infodata%cpl_cdf64
     if ( present(do_budgets)     ) do_budgets     = infodata%do_budgets
     if ( present(do_histinit)    ) do_histinit    = infodata%do_histinit
@@ -1096,13 +1096,13 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
            ice_present, ice_prognostic, glc_present, glc_prognostic,          &
            flood_present, wav_present, wav_prognostic, rofice_present,        &
            glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
-           bfbflag, lnd_gnam, cpl_decomp,                                     &
+           bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
            ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
            atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
            shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
            nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
            glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
-           ocean_tight_coupling, do_budgets, do_histinit, drv_threading,      &
+           do_budgets, do_histinit, drv_threading,                            &
            budget_inst, budget_daily, budget_month, force_stop_at,            &
            budget_ann, budget_ltann, budget_ltend ,                           &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
@@ -1172,7 +1172,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
    character(len=*)    ,optional, intent(IN) :: vect_map      ! vector mapping option
    character(len=*)    ,optional, intent(IN) :: aoflux_grid   ! grid for atm ocn flux calc
    integer             ,optional, intent(IN) :: cpl_decomp    ! coupler decomp
-   logical             ,optional, intent(IN) :: ocean_tight_coupling  ! tight vs loose ocean coupling
+   character(len=*)    ,optional, intent(IN) :: cpl_seq_option! coupler sequencing option
    logical             ,optional, intent(IN) :: cpl_cdf64     ! netcdf large file setting
    logical             ,optional, intent(IN) :: do_budgets    ! heat/water budgets
    logical             ,optional, intent(IN) :: do_histinit   ! initial history file
@@ -1313,7 +1313,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(vect_map)       ) infodata%vect_map       = vect_map
     if ( present(aoflux_grid)    ) infodata%aoflux_grid    = aoflux_grid
     if ( present(cpl_decomp)     ) infodata%cpl_decomp     = cpl_decomp
-    if ( present(ocean_tight_coupling)) infodata%ocean_tight_coupling = ocean_tight_coupling
+    if ( present(cpl_seq_option) ) infodata%cpl_seq_option = cpl_seq_option
     if ( present(cpl_cdf64)      ) infodata%cpl_cdf64      = cpl_cdf64
     if ( present(do_budgets)     ) infodata%do_budgets     = do_budgets
     if ( present(do_histinit)    ) infodata%do_histinit    = do_histinit
@@ -1478,7 +1478,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%vect_map,              mpicom)
     call shr_mpi_bcast(infodata%aoflux_grid,           mpicom)
     call shr_mpi_bcast(infodata%cpl_decomp,            mpicom)
-    call shr_mpi_bcast(infodata%ocean_tight_coupling,  mpicom)
+    call shr_mpi_bcast(infodata%cpl_seq_option,        mpicom)
     call shr_mpi_bcast(infodata%cpl_cdf64,             mpicom)
     call shr_mpi_bcast(infodata%do_budgets,            mpicom)
     call shr_mpi_bcast(infodata%do_histinit,           mpicom)
@@ -2074,8 +2074,8 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'shr_map_dopole           = ', infodata%shr_map_dopole
        write(logunit,F0A) subname,'vect_map                 = ', trim(infodata%vect_map)
        write(logunit,F0A) subname,'aoflux_grid              = ', trim(infodata%aoflux_grid)
+       write(logunit,F0A) subname,'cpl_seq_option           = ', trim(infodata%cpl_seq_option)
        write(logunit,F0S) subname,'cpl_decomp               = ', infodata%cpl_decomp
-       write(logunit,F0L) subname,'ocean_tight_coupling     = ', infodata%ocean_tight_coupling
        write(logunit,F0L) subname,'cpl_cdf64                = ', infodata%cpl_cdf64
        write(logunit,F0L) subname,'do_budgets               = ', infodata%do_budgets
        write(logunit,F0L) subname,'do_histinit              = ', infodata%do_histinit

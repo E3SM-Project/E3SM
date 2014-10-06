@@ -1,1 +1,1 @@
-../PTCLMmkdata --verbose --phys clm4_5 --cesm_root ../../../../../../.. -s US-Ha1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/stdclm45_file_creation 
+../PTCLMmkdata --verbose --phys clm4_5 --cesm_root ../../../../../../.. -s US-Ha1 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/stdclm45_file_creation 

@@ -99,7 +99,7 @@ contains
     use glimmer_paramets, only: thk0, GLC_DEBUG
     use glint_constants, only: lapse
     use glint_type
-    use glint_interp, only: interp_to_local
+    use glint_interp, only: interp_to_local, copy_to_local
     use parallel, only: tasks
 
     ! Downscale global input fields from the global grid (with multiple elevation classes)
@@ -118,7 +118,7 @@ contains
 
     integer :: nxl, nyl, nec             ! local grid dimensions
 
-    integer :: i, j, n, ig, jg
+    integer :: i, j, n
  
     real(dp), dimension(:,:,:), allocatable ::   &
        qsmb_l,    &! interpolation of global mass balance to local grid
@@ -157,6 +157,17 @@ contains
 
     endif
 
+    ! For elevation class 0 (bare land), simply set the values to the values of the
+    ! global parent cell. No vertical/horizontal interpolation is used, since these
+    ! elevation-dependent values are not constrained to a discrete elevation band. Also
+    ! note that we do not consider gmask here.
+
+    call copy_to_local(instance%lgrid_fulldomain, qsmb_g(:,:,0), instance%downs, qsmb_l(:,:,0))
+    call copy_to_local(instance%lgrid_fulldomain, tsfc_g(:,:,0), instance%downs, tsfc_l(:,:,0))
+
+    ! topo_l(:,:,0) isn't used right now, but compute it anyway for consistency
+    call copy_to_local(instance%lgrid_fulldomain, topo_g(:,:,0), instance%downs, topo_l(:,:,0))
+
 !   Interpolate tsfc and qsmb to local topography using values in the neighboring 
 !    elevation classes (vertical interpolation).
 
@@ -171,13 +182,9 @@ contains
 
           if (thck <= min_thck) then !if ice-free...
              if (usrf > 0.) then !and on land (not ocean)...
-                ig=instance%downs%xin(i,j)
-                jg=instance%downs%yin(i,j)
-                !set these values to the values of global parent cell.
-                !No vertical/horizontal interpolation is used, since these elevation-
-                !dependent values are not constrained to a discrete elevation band.
-                instance%acab(i,j) = qsmb_g(ig,jg,0)
-                instance%artm(i,j) = tsfc_g(ig,jg,0)
+                ! As noted above, no vertical interpolation is done for ice-free land
+                instance%acab(i,j) = qsmb_l(i,j,0)
+                instance%artm(i,j) = tsfc_l(i,j,0)
                 if (instance%acab(i,j) < 0.d0) then
                    write (stdout,*)'ERROR: SMB is negative over bare land point'
                    write (stdout,*)'instance%acab(i,j) = ',instance%acab(i,j)

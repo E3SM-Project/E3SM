@@ -5,8 +5,10 @@
       <yellowstone>
          <INTEL>
             <compare>
+               <entry testId="153"   failType="FAIL" >No 0.125x0.125 surface dataset</entry>
             </compare>
             <generate>
+               <entry testId="214"   failType="FAIL" >No 0.125x0.125 surface dataset</entry>
             </generate>
          </INTEL>
       </yellowstone>
@@ -24,20 +26,26 @@
       <auxShortTests>
          <yellowstone>
             <INTEL>
-               <entry testId="PET_P15x2_Ly3.f10_f10.ICLM45BGCCROP.yellowstone_intel.clm-irrigOn_reduceOutput.140210-001104"
-failType="FAIL" >Negative conc. in ch4tran. c,j,deficit (mol):        6175           1</entry>
             </INTEL>
             <PGI>
-               <entry testId="SMS_Ly1.f19_g16.ICLM45BGCCROP.yellowstone_pgi" failType="FAIL" >Water balance errors followed by (negative conc. in ch4tran), then tries (-10^-12 .lt. smin_nh4 .lt. 0. resetting to zero.), then it exits at approximately 9 months.  This same test passes with yellowstone_intel and frankfurt_intel</entry>
             </PGI>
          </yellowstone>
          <goldbach>
             <INTEL>
+               <entry testId="PET_P16x2_D.f10_f10.I1850CLM45BGC.goldbach_intel.clm-ciso" failType="FAIL" bugz="2027" >Balance check error/problem</entry>
             </INTEL>
             <NAG>
+               <entry testId="PET_P16x2_D.f10_f10.I1850CLM45BGC.goldbach_nag.clm-ciso" failType="CFAIL" bugz="2027" >Problem building mct</entry>
+               <entry testId="ERI.f19_g16.ICLM45BGC.goldbach_nag.clm-reduceOutput"
+failType="FAIL"  >multi-node nag issues</entry>
+               <entry testId="ERS.f10_f10.I20TRCLM45BGC.goldbach_nag.clm-reduceOutput"
+failType="RUN"  >multi-node nag issues</entry>
+               <entry testId="SMS.f09_g16.ICRUCLM45.goldbach_nag.clm-af_bias_v5"
+failType="FAIL"  >multi-node nag issues</entry>
             </NAG>
             <PGI>
-               <entry testId="SMS_Ly1.f19_g16.ICLM45BGCCROP.frankfurt_pgi" failType="FAIL" >Water balance errors followed by (negative conc. in ch4tran), then tries (-10^-12 .lt. smin_nh4 .lt. 0. resetting to zero.), then it exits at approximately 9 months.  This same test passes with yellowstone_intel and frankfurt_intel</entry>
+               <entry testId="PET_P16x2_D.f10_f10.I1850CLM45BGC.goldbach_pgi.clm-ciso"
+failType="FAIL" bugz="2027" >get_clump_bounds ERROR: Calling from inside a non-threaded region</entry>
             </PGI>
          </goldbach>
       </auxShortTests>
@@ -51,8 +59,9 @@ failType="FAIL" >Negative conc. in ch4tran. c,j,deficit (mol):        6175      
          </edison>
          <yellowstone>
             <INTEL>
-               <entry testId="ERI_D.ne30_g16.ICLM45BGC.yellowstone_intel.clm-vrtlay"      failType="FAIL" >Seg fault while writing h1 file. This used to pass on yellowstone, but it failed on edison; now it is failing on yellowstone, too (it fails in clm4_5_37, too).</entry>
-               <entry testId="ERS_D.f09_g16.ICLM45VIC.yellowstone_intel.clm-vrtlay"       failType="RUN" >core dump when writing h1 history file.  fort: (7): Attempt to use pointer PTR when it is not associated with a target</entry>
+               <entry testId="ERI_D.ne30_g16.ICLM45BGC.yellowstone_intel.clm-vrtlay"         failType="FAIL" >Seg fault while writing h1 file. This used to pass on yellowstone, but it failed on edison; now it is failing on yellowstone, too (it fails in clm4_5_37, too).</entry>
+               <entry testId="ERS_D.f09_g16.ICLM45VIC.yellowstone_intel.clm-vrtlay"          failType="RUN" >core dump when writing h1 history file.  fort: (7): Attempt to use pointer PTR when it is not associated with a target</entry>
+               <entry testId="ERI_D.ne30_g16.ICLM45BGC.yellowstone_intel"                    failType="RUN" bugz="2042" >potentially bad pe layout, introduced between r079 and r080</entry>
             </INTEL>
             <PGI>
                <entry testId="ERH_D.f19_g16.I1850CLM45CN.yellowstone_pgi.clm-default"     failType="RUN" > </entry>
@@ -63,9 +72,7 @@ failType="FAIL" >Negative conc. in ch4tran. c,j,deficit (mol):        6175      
             <INTEL>
             </INTEL>
             <NAG>
-               <!-- Following test just seems to run out of wallclock for me sometimes (clm4_5_25), my final version actually passed -->
-               <entry testId="ERI_D_Mmpich.f19_g16.ICLM45BGC.frankfurt_nag" failType="RUN" >Sometimes runs out of wallclock time</entry>
-               <entry testId="SMS_RLA_Mmpich.f45_f45.ICLM45.frankfurt_nag.clm-default" failType="FAIL" >Sometimes passes, sometimes fails. MPI error with > 1 pe.  works with mpi-serial which is the normal use case for this setup.</entry>
+               <entry testId="SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest"   failType="FAIL" bugz="2013" >fails history comparison.  introduced in first ED tag</entry>
             </NAG>
             <PGI>
             </PGI>
@@ -90,6 +97,8 @@ failType="FAIL" >Negative conc. in ch4tran. c,j,deficit (mol):        6175      
    <PTCLM>
          <yellowstone>
             <INTEL>
+               <entry testId="no_towerdata.-d+/glade/p/cesmdata/cseg/inputdata++-s+RF-Bra+--debug+--pftgrid+--soilgrid."
+                      failType="FAIL">Doesn't check for valid values</entry>
             </INTEL>
          </yellowstone>
          <goldbach>

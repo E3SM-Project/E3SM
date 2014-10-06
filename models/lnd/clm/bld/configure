@@ -69,7 +69,7 @@ OPTIONS
      -nofire                Turn off wildfires for BGC setting of CN 
                             (default includes fire for CN)
      -noio                  Turn history output completely off (typically for testing).
-     -phys <name>           Value of clm4_0 or clm4_5 (default is clm4_0)   
+     -phys <name>           Value of clm4_0, clm4_5, or clm5_0 (default is clm4_0)   
      -silent [or -s]        Turns on silent mode - only fatal messages issued.
      -sitespf_pt <name>     Setup for the given site specific single-point resolution.
      -snicar_frc <name>     Turn on SNICAR radiative forcing calculation. [on | off] 
@@ -177,31 +177,6 @@ my %cfg = ();           # build configuration
 # Make sure we can find required perl modules and configuration files.
 # Look for them in the directory that contains the configure script.
 
-# Check for the physics specific configuration definition file.
-my $config_def_file = "config_definition_$opts{'phys'}.xml";
-(-f "$cfgdir/config_files/$config_def_file")  or  die <<"EOF";
-** Cannot find configuration definition file \"$config_def_file\" in directory 
-    \"$cfgdir/config_files\" **
-EOF
-
-# The configuration defaults file modifies the generic defaults in the configuration
-# definition file.  Note that the -defaults option has precedence over all other options.
-my $config_defaults_file;
-my $std_config_defaults_file = "$cfgdir/config_files/config_defaults.xml";
-if    ($opts{'defaults'})           {
-    $config_defaults_file = $opts{'defaults'};
-} elsif (defined($opts{'sitespf_pt'}) and $opts{'phys'} eq "clm4_0") {
-    $config_defaults_file = "$cfgdir/config_files/config_defaults_$opts{'sitespf_pt'}.xml";
-    if ( ! -f $config_defaults_file ) {
-       $config_defaults_file = "$std_config_defaults_file";
-    }
-} else {
-    $config_defaults_file = "$std_config_defaults_file";
-}
-(-f "$config_defaults_file")  or  die <<"EOF";
-** Cannot find configuration defaults file \"$config_defaults_file\" **
-EOF
-
 # The XML::Lite module is required to parse the XML configuration files.
 (-f "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib/XML/Lite.pm")  or  die <<"EOF";
 ** Cannot find perl module \"XML/Lite.pm\" in directory 
@@ -213,10 +188,6 @@ EOF
 ** Cannot find perl module \"Build/Config.pm\" in directory 
     \"$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib\" **
 EOF
-
-if ($print>=2) { print "Setting CLM configuration script directory to $cfgdir$eol"; }
-if ($print>=2) { print "Using configuration defaults file $config_defaults_file$eol"; }
-
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
 my $casecfgdir = "$cfgdir/../../../../scripts/ccsm_utils/Case.template";
@@ -224,6 +195,40 @@ my @dirs = (  $cfgdir, "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib", 
 unshift @INC, @dirs;
 require XML::Lite;
 require Build::Config;
+require config_files::clm_phys_vers;
+
+# Get the physics version
+my $phys = config_files::clm_phys_vers->new($opts{'phys'});
+
+# Check for the physics specific configuration definition file.
+my $phys_string = $phys->as_filename();
+
+my $config_def_file = "config_definition_$phys_string.xml";
+(-f "$cfgdir/config_files/$config_def_file")  or  die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory 
+    \"$cfgdir/config_files\" **
+EOF
+
+# The configuration defaults file modifies the generic defaults in the configuration
+# definition file.  Note that the -defaults option has precedence over all other options.
+my $config_defaults_file;
+my $std_config_defaults_file = "$cfgdir/config_files/config_defaults.xml";
+if    ($opts{'defaults'})           {
+    $config_defaults_file = $opts{'defaults'};
+} elsif (defined($opts{'sitespf_pt'}) and $phys->as_long() == $phys->as_long( "clm4_0" ) ) {
+    $config_defaults_file = "$cfgdir/config_files/config_defaults_$opts{'sitespf_pt'}.xml";
+    if ( ! -f $config_defaults_file ) {
+       $config_defaults_file = "$std_config_defaults_file";
+    }
+} else {
+    $config_defaults_file = "$std_config_defaults_file";
+}
+(-f "$config_defaults_file")  or  die <<"EOF";
+** Cannot find configuration defaults file \"$config_defaults_file\" **
+EOF
+
+if ($print>=2) { print "Setting CLM configuration script directory to $cfgdir$eol"; }
+if ($print>=2) { print "Using configuration defaults file $config_defaults_file$eol"; }
 
 # Initialize the configuration.  The $config_def_file provides the definition of a CLM
 # configuration, and the $config_defaults_file provides default values for a specific CLM
@@ -313,20 +318,18 @@ if ($print>=2) { print "The configuration cache file will be created in $config_
 #-----------------------------------------------------------------------------------------------
 # physics
 
-if( defined($opts{'phys'}) ) {
-  $cfg_ref->set('phys', $opts{'phys'});
-}
-my $phys = $cfg_ref->get('phys');
+$cfg_ref->set('phys', $opts{'phys'});
+my $phys_string = $phys->as_string();
 if ($print>=2) { 
    if( defined($opts{'phys'}) ) { 
-      print "Using version $phys physics.$eol"; 
+      print "Using version $phys_string physics.$eol"; 
    }
 }
 
 #-----------------------------------------------------------------------------------------------
 # supported single point configurations
 my $sitespf_pt = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if( defined($opts{'sitespf_pt'}) ) {
     $cfg_ref->set('sitespf_pt', $opts{'sitespf_pt'});
   }
@@ -341,7 +344,7 @@ if ($phys eq "clm4_0") {
 #-----------------------------------------------------------------------------------------------
 # NOIO option
 my $noio = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if (defined $opts{'noio'}) {
     $cfg_ref->set('noio', "on" );
   }
@@ -353,7 +356,7 @@ if ($phys eq "clm4_0") {
 #-----------------------------------------------------------------------------------------------
 # BGC option
 my $bgc_mode = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if (defined $opts{'bgc'}) {
     $cfg_ref->set('bgc', $opts{'bgc'});
   }
@@ -366,7 +369,7 @@ if ($phys eq "clm4_0") {
 
 # NOFIRE option -- currently only in bgc=CN
 my $nofire = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if (defined $opts{'nofire'}) {
     $cfg_ref->set('nofire', "on" );
   }
@@ -385,7 +388,7 @@ EOF
 #-----------------------------------------------------------------------------------------------
 # SPINUP option for BGC/CN mode only
 my $spinup = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if (defined $opts{'spinup'}) {
     $cfg_ref->set('spinup', $opts{'spinup'});
   }
@@ -422,7 +425,7 @@ if ($print>=2) { print "Using $comp_intf for comp_intf.$eol"; }
 # CROP option
 my $crpmode = undef;
 my $crop = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if (defined $opts{'crop'}) {
     $cfg_ref->set('crop', $opts{'crop'});
   }
@@ -447,7 +450,7 @@ EOF
 
 my %maxpatchpft;
 my $maxpft = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   $maxpatchpft{'crop'}   = 21;
   $maxpatchpft{'nocrop'} = 17;
 
@@ -483,7 +486,7 @@ EOF
 #-----------------------------------------------------------------------------------------------
 # SNICAR_FRC option
 my $snicar_frc = undef;
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if (defined $opts{'snicar_frc'}) {
     $cfg_ref->set('snicar_frc', $opts{'snicar_frc'});
   }
@@ -519,7 +522,7 @@ if ($usr_cppdefs and $print>=2) { print "Default and user CPP definitions: \'$us
 # determined by the configuration parameters that have been set above.  They will be appended to
 # the CPP definitions that were explicitly set in the defaults file or by the user on the commandline.
 my $cfg_cppdefs = '';
-if ($phys eq "clm4_0") {
+if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   $cfg_cppdefs .= " -DMAXPATCH_PFT=$maxpft";
 
   if ($bgc_mode eq 'cn') { 
@@ -545,8 +548,25 @@ if ($phys eq "clm4_0") {
   if ( $snicar_frc eq 'on' ) {
     $cfg_cppdefs .= " -DSNICAR_FRC";
   }
+} elsif ($phys->as_long() == $phys->as_long("clm4_5") ) {
+  # clm4_5 cppdefs -- SHOULD NOT BE ANY!
+  if ( $cfg_cppdefs ne '' ) {
+    die <<"EOF";
+** CPP definitions should be empty for clm5_0 and is NOT **
+EOF
+  }
+} elsif ($phys->as_long() == $phys->as_long("clm5_0") ) {
+  # clm5_0 cppdefs -- SHOULD NOT BE ANY!
+  if ( $cfg_cppdefs ne '' ) {
+    die <<"EOF";
+** CPP definitions should be empty for clm5_0 and is NOT **
+EOF
+  }
 } else {
-  # clm4_5 cppdefs
+  # this should NOT happen
+  die <<"EOF";
+** Bad CLM physics version **
+EOF
 }
 # CPP defines to put on Makefile
 my $make_cppdefs = "$usr_cppdefs $cfg_cppdefs";
@@ -561,7 +581,7 @@ my $fp_filename      = 'Filepath';             # name of output filepath file
 my $cpp_filename     = 'CESM_cppdefs';         # name of output file for clm's cppdefs in cesm
 
 # Write the filepath file for cesm.
-write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, allowEnv=>1 );
+write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>1 );
 if ($print>=2) { print "creating $clm_bld/$fp_filename\n"; }
 
 # Write the file for clm's cppdefs needed in cesm.
@@ -589,7 +609,7 @@ exit;
 
 sub write_filepath_cesmbld
 {
-    my ($file, $cfg_ref, %opts) = @_;
+    my ($file, $cfg_ref, $phys, %opts) = @_;
     my  $fh = new IO::File;
 
     $fh->open(">$file") or die "** can't open filepath file: $file\n";
@@ -597,11 +617,7 @@ sub write_filepath_cesmbld
     # configuration parameters used to determine paths
     my $usr_src       = $cfg_ref->get('usr_src');
     my $clm_root      = $cfg_ref->get('clm_root');
-    my $phys          = $cfg_ref->get('phys'); 
-
-    # Source root
-    my $srcdir = "$clm_root/src";
-    if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
+    my $phys_name     = $phys->as_filename();
 
     # User specified source directories.
     if ($usr_src  =~ /\S+/) {
@@ -613,17 +629,36 @@ sub write_filepath_cesmbld
          print $fh "../SourceMods/src.clm\n";
     }
 
-    my @dirs = ( "cpl", "util_share", "$phys/main", "$phys/biogeophys", "$phys/biogeochem");
-    if ($phys eq "clm4_5") {
-       push (@dirs, "$phys/dyn_subgrid");
+    if ($phys->as_long() == $phys->as_long("clm4_0") ) {
+	# source root
+	my $srcdir = "$clm_root/src_clm40";
+	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
+
+	# source directories under root
+	my @dirs = ( "main", "biogeophys", "biogeochem");
+	foreach my $dir ( @dirs ) {
+	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
+		print $fh "$srcdir/$dir\n";
+	    } else {
+		die "** source directory does not exist: $srcdir/$dir\n";
+	    }
+	}
+    } else {
+	# source root
+	my $srcdir = "$clm_root/src";
+	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
+
+	# source directories under root
+	my @dirs = ( "main", "biogeophys", "biogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem", "ED/fire", "utils", "cpl" );
+	foreach my $dir ( @dirs ) {
+	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
+		print $fh "$srcdir/$dir\n";
+	    } else {
+		die "** source directory does not exist: $srcdir/$dir\n";
+	    }
+	}
     }
-    foreach my $dir ( @dirs ) {
-       if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
-          print $fh "$srcdir/$dir\n";
-       } else {
-          die "** source directory does not exist: $srcdir/$dir\n";
-       }
-    }
+
 
     $fh->close;
 }
