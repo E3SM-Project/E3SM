@@ -127,7 +127,7 @@
 		/>
 		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 		            description="Selection of the type of calendar that should be used in the simulation."
-		            possible_values="'gregorian', 'gregorian_noleap', or '360day'"
+		            possible_values="'gregorian', 'gregorian_noleap'"
 		/>
 	</nml_record>
 
