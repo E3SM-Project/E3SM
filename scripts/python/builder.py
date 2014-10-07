@@ -100,8 +100,8 @@ class yellowstone(platformBuilder):
     MAKE_CMD = 'make all'
     TEST_CMD = 'ctest'
     
-    MODULE_PRE  = '['/bin/bash', '-i', '-c', '
-    MODULE_POST = ']'
+    MODULE_PRE  = '[\'/bin/bash\', \'-i\', \'-c\', \''
+    MODULE_POST = '\']'
 
     FC = 'mpif90'
     CC = 'mpicc'
@@ -128,10 +128,8 @@ class yellowstone(platformBuilder):
         """ run module cmds
         """
         for cmd in self.moduleList:
-            cmdFull = MODULE_PRE+cmd+MODULE_POST
-            print cmdFull
-            p = subprocess.Popen(cmdFull,
-                                 shell=True, env=self.envMod)
+            print cmd
+            p = subprocess.Popen(['/bin/bash', '-i', '-c', cmd])
             p.wait()
 
 
