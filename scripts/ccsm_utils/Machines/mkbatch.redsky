@@ -6,6 +6,25 @@ if ($PHASE == set_batch) then
 
 source ./Tools/ccsm_getenv || exit -1
 
+set project_ok = 0
+if $?PROJECT then
+    sacctmgr show account user=${USER} withassoc format=account | grep $PROJECT >& /dev/null
+    if ($status == 0) then
+        set project_ok = 1
+    else
+        echo " " PROJECT "'"$PROJECT"'" not valid
+    endif
+else
+    echo "  PROJECT not defined"
+endif
+
+if ($project_ok == 0) then
+   echo "  PROJECT in env_case.xml must be set to a valid project name."
+   echo "  This can be specified in create_newcase with the -project parameter"
+   echo "  or by setting a PROJECT environment variable before executing create_newcase."
+   exit -1
+endif
+
 set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
 set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
 @ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
@@ -36,7 +55,7 @@ cat >! $file << EOF1
 #===============================================================================
 #SBATCH --job-name ${jobname}
 #SBATCH -N ${nodes}
-#SBATCH --account=FY140052
+#SBATCH --account=${PROJECT}
 #SBATCH --time=${tlimit}
 #SBATCH --partition=ec
 
