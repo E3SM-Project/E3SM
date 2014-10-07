@@ -85,10 +85,53 @@ class darwin(platformBuilder):
 
 
 class yellowstone(platformBuilder):
+
+    moduleList = [ 'module load intel/14.0.2',
+                   'module load netcdf-mpi/4.3.0',
+                   'module load pnetcdf/1.4.1',
+                   'module load ncarenv/1.0',
+                   'module load ncarbinlibs/1.1',
+                   'module load cmake',
+                   'module list']
+
+    CMAKE_EXE = 'make'
+    BUILD_DIR = 'build'
+    MAKE_CMD = 'make all'
+    TEST_CMD = 'ctest'
+
+    FC = 'mpif90'
+    CC = 'mpicc'
+    LDFLAGS = ''
+
+    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O -fconvert=big-endian '
+              '-ffree-line-length-none -ffixed-line-length-none '
+              '-fno-range-check '
+              '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 -DNO_MPIMOD '
+              '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+              '-DCPRGNU -I. " ')
+    CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
+              '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+              '-DCPRGNU -I. " ')
+    OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON -D '
+              'NETCDF_DIR:STRING=/opt/local '
+              '-D WITH_PNETCDF:LOGICAL=FALSE -D '
+              'PIO_BUILD_TESTS:LOGICAL=TRUE ')
+    MPIEXEC = ' -D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 '
+
+    envMod = {}
+
+
     def cmakeCmd(self):
         """ cmake command to run
         """
         print("yellostone cmake")
+        # ~# make build directory and move to it.
+        if not os.path.exists(self.BUILD_DIR):
+            os.makedirs(self.BUILD_DIR)
+        
+        os.chdir(self.BUILD_DIR)
+        # ~#
+        self.runModuleCmd()
 
     def buildCmd(self):
         """ run build
@@ -99,4 +142,13 @@ class yellowstone(platformBuilder):
         """ run tests
         """
         print("yellowstone ctest")
+
+    def runModuleCmd(self):
+        """ run module cmds 
+        """
+        for cmd in self.moduleList:
+            print cmd
+            p = subprocess.Popen(cmd,
+                                shell=True, env=self.envMod)
+            p.wait()
 
