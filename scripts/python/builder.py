@@ -2,6 +2,7 @@ from __future__ import generators
 import os
 import subprocess
 
+module = 'eval `/glade/apps/opt/lmod/lmod/libexec/lmod tcsh !*`'
 
 class platformBuilder(object):
     """ class that implements a factory pattern.  creates a relevant
@@ -98,6 +99,9 @@ class yellowstone(platformBuilder):
     BUILD_DIR = 'build'
     MAKE_CMD = 'make all'
     TEST_CMD = 'ctest'
+    
+    MODULE_PRE  = '['/bin/bash', '-i', '-c', '
+    MODULE_POST = ']'
 
     FC = 'mpif90'
     CC = 'mpicc'
@@ -119,6 +123,16 @@ class yellowstone(platformBuilder):
     MPIEXEC = ' -D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 '
 
     envMod = {}
+
+    def runModuleCmd(self):
+        """ run module cmds
+        """
+        for cmd in self.moduleList:
+            cmdFull = MODULE_PRE+cmd+MODULE_POST
+            print cmdFull
+            p = subprocess.Popen(cmdFull,
+                                 shell=True, env=self.envMod)
+            p.wait()
 
 
     def cmakeCmd(self):
@@ -143,12 +157,4 @@ class yellowstone(platformBuilder):
         """
         print("yellowstone ctest")
 
-    def runModuleCmd(self):
-        """ run module cmds 
-        """
-        for cmd in self.moduleList:
-            print cmd
-            p = subprocess.Popen(cmd,
-                                shell=True, env=self.envMod)
-            p.wait()
 
