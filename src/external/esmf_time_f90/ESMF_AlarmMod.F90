@@ -1,3 +1,4 @@
+! $Id$
 !
 ! Earth System Modeling Framework
 ! Copyright 2002-2003, University Corporation for Atmospheric Research,
@@ -5,7 +6,7 @@
 ! Laboratory, University of Michigan, National Centers for Environmental
 ! Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
 ! NASA Goddard Space Flight Center.
-! Licensed under the University of Illinois-NCSA license.
+! Licensed under the GPL.
 !
 !==============================================================================
 !
@@ -40,9 +41,8 @@
       use ESMF_BaseMod
 
       ! associated derived types
-      use ESMF_TimeIntervalMod, only : ESMF_TimeInterval, &
-                                       ESMF_TimeIntervalAbsValue
-      use ESMF_TimeMod,         only : ESMF_Time
+      use ESMF_TimeIntervalMod
+      use ESMF_TimeMod
 
       implicit none
 
@@ -57,6 +57,7 @@
 
 ! internals for ESMF_Alarm
       type ESMF_AlarmInt
+        character(len=256) :: name = " "
         type(ESMF_TimeInterval) :: RingInterval
         type(ESMF_Time)  :: RingTime
         type(ESMF_Time)  :: PrevRingTime
@@ -76,7 +77,7 @@
 ! NOTE:  DO NOT ADD NON-POINTER STATE TO THIS DATA TYPE.  It emulates ESMF 
 !        shallow-copy-masquerading-as-reference-copy insanity.  
       type ESMF_Alarm
-        type(ESMF_AlarmInt), pointer :: alarmint
+        type(ESMF_AlarmInt), pointer :: alarmint => null()
       end type
 
 !------------------------------------------------------------------------------
@@ -93,8 +94,8 @@
 !      public ESMF_AlarmSetRingInterval
 !      public ESMF_AlarmGetRingTime
 !      public ESMF_AlarmSetRingTime
-      public ESMF_AlarmGetPrevRingTime
-      public ESMF_AlarmSetPrevRingTime
+!      public ESMF_AlarmGetPrevRingTime
+!      public ESMF_AlarmSetPrevRingTime
 !      public ESMF_AlarmGetStopTime
 !      public ESMF_AlarmSetStopTime
       public ESMF_AlarmEnable
@@ -115,6 +116,11 @@
 ! !PRIVATE MEMBER FUNCTIONS:
       private ESMF_AlarmEQ
 !EOPI
+
+!------------------------------------------------------------------------------
+! The following line turns the CVS identifier string into a printable variable.
+      character(*), parameter, private :: version = &
+      '$Id$'
 
 !==============================================================================
 !
@@ -151,12 +157,13 @@
 ! !IROUTINE: ESMF_AlarmSet - Initializes an alarm
 
 ! !INTERFACE:
-      subroutine ESMF_AlarmSet(alarm, RingTime, RingInterval, PrevRingTime, &
+      subroutine ESMF_AlarmSet(alarm, name, RingTime, RingInterval, &
                                StopTime, Enabled, rc)
 
 ! !ARGUMENTS:
-      type(ESMF_Alarm), intent(inout) :: alarm  ! really INTENT(OUT)
-      type(ESMF_Time), intent(in), optional :: RingTime, PrevRingTime
+      type(ESMF_Alarm), intent(inout) :: alarm
+      character(len=*), intent(in), optional :: name
+      type(ESMF_Time), intent(in), optional :: RingTime
       type(ESMF_TimeInterval), intent(in), optional :: RingInterval
       type(ESMF_Time), intent(in), optional :: StopTime
       logical, intent(in), optional :: Enabled
@@ -188,14 +195,12 @@
         alarm%alarmint%RingTimeSet = .FALSE.
         alarm%alarmint%RingIntervalSet = .FALSE.
         alarm%alarmint%StopTimeSet = .FALSE.
+        IF ( PRESENT( name ) ) THEN
+          alarm%alarmint%name = name
+        END IF
         IF ( PRESENT( RingInterval ) ) THEN
-          ! force RingInterval to be positive
-          alarm%alarmint%RingInterval = &
-            ESMF_TimeIntervalAbsValue( RingInterval )
+          alarm%alarmint%RingInterval = RingInterval
           alarm%alarmint%RingIntervalSet = .TRUE.
-        ENDIF
-        IF ( PRESENT( PrevRingTime ) ) THEN
-          alarm%alarmint%PrevRingTime = PrevRingTime
         ENDIF
         IF ( PRESENT( RingTime ) ) THEN
           alarm%alarmint%RingTime = RingTime
@@ -263,8 +268,16 @@
 ! !REQUIREMENTS:
 !     TMG4.7
 !EOP
-      RingInterval = alarm%alarmint%RingInterval
-
+      IF ( ASSOCIATED( alarm%alarmint ) ) THEN
+        IF ( alarm%alarmint%RingIntervalSet )THEN
+           RingInterval= alarm%alarmint%RingInterval
+           IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
+        ELSE
+           IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
+        END IF
+      ELSE
+        IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
+      ENDIF
       end subroutine ESMF_AlarmGetRingInterval
  
 !------------------------------------------------------------------------------
@@ -326,7 +339,29 @@
 ! !REQUIREMENTS:
 !     TMG4.7, TMG4.8
 !EOP
-      CALL wrf_error_fatal( 'ESMF_AlarmGetRingTime not supported' )
+      type(ESMF_Time) :: PrevRingTime
+      type(ESMF_TimeInterval) :: RingInterval
+      integer :: ierr
+
+      IF ( ASSOCIATED( alarm%alarmint ) ) THEN
+        IF ( alarm%alarmint%RingIntervalSet )THEN
+           PrevRingTime = alarm%alarmint%PrevRingTime
+           call ESMF_AlarmGetRingInterval( alarm, RingInterval, ierr)
+           IF ( PRESENT( rc ) .AND. (ierr /= ESMF_SUCCESS) )THEN
+              rc = ierr
+              return
+           END IF
+           RingTime = PrevRingTime + RingInterval
+           IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
+        ELSE IF ( alarm%alarmint%RingTimeSet )THEN
+           RingTime = alarm%alarmint%RingTime
+           IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
+        ELSE
+           IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
+        END IF
+      ELSE
+        IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
+      ENDIF
       end subroutine ESMF_AlarmGetRingTime
 
 !------------------------------------------------------------------------------
@@ -365,10 +400,12 @@
 ! !IROUTINE:  ESMF_AlarmGet - Get an alarm's parameters -- compatibility with ESMF 2.0.1
 !
 ! !INTERFACE:
-      subroutine ESMF_AlarmGet(alarm, PrevRingTime, RingInterval, rc)
+      subroutine ESMF_AlarmGet(alarm, name, RingTime, PrevRingTime, RingInterval, rc)
 
 ! !ARGUMENTS:
       type(ESMF_Alarm), intent(in) :: alarm
+      character(len=*), intent(out), optional :: name
+      type(ESMF_Time), intent(out), optional :: RingTime
       type(ESMF_Time), intent(out), optional :: PrevRingTime
       type(ESMF_TimeInterval), intent(out), optional :: RingInterval
       integer, intent(out), optional :: rc
@@ -380,7 +417,11 @@
 !     The arguments are:
 !     \begin{description}
 !     \item[alarm]
-!          The object instance to get the previous ring time
+!          The object instance to get
+!     \item[ringTime]
+!          The ring time for a one-shot alarm or the next repeating alarm.
+!     \item[ringInterval]
+!          The ring interval for repeating (interval) alarms.
 !     \item[PrevRingTime]
 !          The {\tt ESMF\_Alarm}'s previous ring time
 !     \item[{[rc]}]
@@ -393,8 +434,18 @@
 
       ierr = ESMF_SUCCESS
 
+      IF ( PRESENT(name) ) THEN
+         IF ( ASSOCIATED( alarm%alarmint ) ) THEN
+           name = alarm%alarmint%name
+         ELSE
+           ierr = ESMF_FAILURE
+         END IF
+      ENDIF
       IF ( PRESENT(PrevRingTime) ) THEN
         CALL ESMF_AlarmGetPrevRingTime(alarm, PrevRingTime, rc=ierr)
+      ENDIF
+      IF ( PRESENT(RingTime) ) THEN
+        CALL ESMF_AlarmGetRingTime(alarm, RingTime, rc=ierr)
       ENDIF
       IF ( PRESENT(RingInterval) ) THEN
         CALL ESMF_AlarmGetRingInterval(alarm, RingInterval, rc=ierr)
@@ -454,13 +505,23 @@
       type(ESMF_Time), intent(in) :: PrevRingTime
       integer, intent(out), optional :: rc
    
-      IF ( ASSOCIATED( alarm%alarmint ) ) THEN
-        alarm%alarmint%PrevRingTime = PrevRingTime 
-        IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
-      ELSE
-        IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
-      ENDIF
-   
+! !DESCRIPTION:
+!     Set an {\tt ESMF\_Alarm}'s previous ring time
+!
+!     The arguments are:
+!     \begin{description}
+!     \item[alarm]
+!          The object instance to set the previous ring time
+!     \item[PrevRingTime]
+!          The {\tt ESMF\_Alarm}'s previous ring time to set
+!     \item[{[rc]}]
+!          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
+!     \end{description}
+!
+! !REQUIREMENTS:
+!     TMG4.7, TMG4.8
+!EOP
+      CALL wrf_error_fatal( 'ESMF_AlarmSetPrevRingTime not supported' )
       end subroutine ESMF_AlarmSetPrevRingTime
 
 !------------------------------------------------------------------------------
@@ -533,7 +594,7 @@
       subroutine ESMF_AlarmEnable(alarm, rc)
 
 ! !ARGUMENTS:
-      type(ESMF_Alarm), intent(inout) :: alarm  ! really INTENT(OUT)
+      type(ESMF_Alarm), intent(inout) :: alarm
       integer, intent(out), optional :: rc
 
 ! !DESCRIPTION:
@@ -566,7 +627,7 @@
       subroutine ESMF_AlarmDisable(alarm, rc)
 
 ! !ARGUMENTS:
-      type(ESMF_Alarm), intent(inout) :: alarm  ! really INTENT(OUT)
+      type(ESMF_Alarm), intent(inout) :: alarm
       integer, intent(out), optional :: rc
 
 ! !DESCRIPTION:
@@ -600,7 +661,7 @@
       subroutine ESMF_AlarmRingerOn(alarm, rc)
 
 ! !ARGUMENTS:
-      type(ESMF_Alarm), intent(inout) :: alarm  ! really INTENT(OUT)
+      type(ESMF_Alarm), intent(inout) :: alarm
       integer, intent(out), optional :: rc
     
 ! !DESCRIPTION:
@@ -639,7 +700,7 @@
       subroutine ESMF_AlarmRingerOff(alarm, rc)
 
 ! !ARGUMENTS:
-      type(ESMF_Alarm), intent(inout) :: alarm  ! really INTENT(OUT)
+      type(ESMF_Alarm), intent(inout) :: alarm
       integer, intent(out), optional :: rc
     
 ! !DESCRIPTION:
@@ -945,7 +1006,35 @@
 ! !REQUIREMENTS:
 !     TMGn.n.n
 !EOP
-      CALL wrf_error_fatal( 'ESMF_AlarmPrint not supported' )
+      integer :: ierr
+      type(ESMF_Time) :: ringtime
+      type(ESMF_Time) :: prevringtime
+      type(ESMF_TimeInterval) :: ringinterval
+      character(len=256) :: name
+
+      IF ( ASSOCIATED( alarm%alarmint ) ) THEN
+        IF ( alarm%alarmint%RingTimeSet )THEN
+          call ESMF_AlarmGet( alarm, name=name, ringtime=ringtime, &
+                              prevringtime=prevringtime, rc=ierr )
+          IF ( PRESENT(rc) .AND. (ierr /= ESMF_SUCCESS) )THEN
+             rc = ierr
+          END IF 
+          print *, 'Alarm name: ', trim(name)
+          print *, 'Next ring time'
+          call ESMF_TimePrint( ringtime )
+          print *, 'Previous ring time'
+          call ESMF_TimePrint( prevringtime )
+        END IF
+        IF ( alarm%alarmint%RingIntervalSet )THEN
+          call ESMF_AlarmGet( alarm, ringinterval=ringinterval, rc=ierr )
+          IF ( PRESENT(rc) .AND. (ierr /= ESMF_SUCCESS) )THEN
+             rc = ierr
+          END IF 
+          print *, 'Ring Interval'
+          call ESMF_TimeIntervalPrint( ringinterval )
+        END IF
+      END IF
+
       end subroutine ESMF_AlarmPrint
 
 !------------------------------------------------------------------------------
