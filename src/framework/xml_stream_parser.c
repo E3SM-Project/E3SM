@@ -25,7 +25,7 @@
 /* 
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
-void stream_mgr_create_stream_c(void *, const char *, int *, const char *, char *, char *, int *, int *, int *, int *);
+void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, char *, char *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
@@ -306,15 +306,14 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
  *********************************************************************************/
 int attribute_check(ezxml_t stream)
 {
-	const char *s_name, *s_type, *s_filename, *s_records, *s_input, *s_output;
+	const char *s_name, *s_type, *s_filename, *s_filename_intv, *s_input, *s_output;
 	char msgbuf[MSGSIZE];
 	int i, len, nextchar;
-
 
 	s_name = ezxml_attr(stream, "name");
 	s_type = ezxml_attr(stream, "type");
 	s_filename = ezxml_attr(stream, "filename_template");
-	s_records = ezxml_attr(stream, "records_per_file");
+	s_filename_intv = ezxml_attr(stream, "filename_interval");
 	s_input = ezxml_attr(stream, "input_interval");
 	s_output = ezxml_attr(stream, "output_interval");
 
@@ -333,11 +332,6 @@ int attribute_check(ezxml_t stream)
 	}
 	else if (s_filename == NULL) {
 		snprintf(msgbuf, MSGSIZE, "stream \"%s\" must have the \"filename_template\" attribute.", s_name);
-		fmt_err(msgbuf);
-		return 1;
-	}
-	else if (s_records == NULL) {
-		snprintf(msgbuf, MSGSIZE, "stream \"%s\" must have the \"records_per_file\" attribute.", s_name);
 		fmt_err(msgbuf);
 		return 1;
 	}
@@ -363,6 +357,32 @@ int attribute_check(ezxml_t stream)
 	if (strstr(s_type, "output") != NULL && strstr(s_type, "input") == NULL && s_input != NULL) {
 		snprintf(msgbuf, MSGSIZE, "output-only stream \"%s\" has the \"input_interval\" attribute.", s_name);
 		fmt_warn(msgbuf);
+	}
+
+	/*
+	 *  Check that filename_interval is given an acceptable value.
+	 */
+	if ( s_filename_intv != NULL ) {
+		if ( strstr(s_filename_intv, "input_interval") != NULL && s_input == NULL) {
+			snprintf(msgbuf, MSGSIZE, "stream \"%s\" has a value of \"input_interval\" for the \"filename_interval\" attribute, without defining the \"input_interval\" attribute.", s_name);
+			fmt_err(msgbuf);
+			return 1;
+		}
+		if ( strstr(s_filename_intv, "output_interval") != NULL && s_output == NULL) {
+			snprintf(msgbuf, MSGSIZE, "stream \"%s\" has a value of \"output_interval\" for the \"filename_interval\" attribute, without defining the \"output_interval\" attribute.", s_name);
+			fmt_err(msgbuf);
+			return 1;
+		}
+		if ( strstr(s_filename_intv, "input_interval") != NULL && strstr(s_input, "initial_only") != NULL) {
+			snprintf(msgbuf, MSGSIZE, "stream \"%s\" cannot have a value of \"input_interval\" for the \"filename_interval\" attribute, when \"input_interval\" is set to \"initial_only\".", s_name);
+			fmt_err(msgbuf);
+			return 1;
+		}
+		if ( strstr(s_filename_intv, "output_interval") != NULL && strstr(s_output, "initial_only") != NULL) {
+			snprintf(msgbuf, MSGSIZE, "stream \"%s\" cannot have a value of \"output_interval\" for the \"filename_interval\" attribute, when \"output_interval\" is set to \"initial_only\".", s_name);
+			fmt_err(msgbuf);
+			return 1;
+		}
 	}
 
 
@@ -838,16 +858,16 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t substream_xml;
 	ezxml_t streamsmatch_xml, streammatch_xml;
 	const char *compstreamname_const, *structname_const;
-	const char *streamID, *filename_template, *direction, *records, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const, *precision;
+	const char *streamID, *filename_template, *filename_interval, *direction, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const, *precision;
 	const char *interval_in, *interval_out, *packagelist;
 	char *packages, *package;
+	char filename_interval_string[256];
 	char ref_time_local[256];
 	char rec_intv_local[256];
 	char fieldname[256];
 	FILE *fd;
 	char msgbuf[MSGSIZE];
 	int itype;
-	int irecs;
 	int iprec;
 	int immutable;
 	int err;
@@ -879,7 +899,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		streamID = ezxml_attr(stream_xml, "name");
 		direction = ezxml_attr(stream_xml, "type");
 		filename_template = ezxml_attr(stream_xml, "filename_template");
-		records = ezxml_attr(stream_xml, "records_per_file");
+		filename_interval = ezxml_attr(stream_xml, "filename_interval");
 		interval_in = ezxml_attr(stream_xml, "input_interval");
 		interval_out = ezxml_attr(stream_xml, "output_interval");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
@@ -887,13 +907,72 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		precision = ezxml_attr(stream_xml, "precision");
 		packagelist = ezxml_attr(stream_xml, "packages");
 
+		/* Setup filename_interval correctly.
+		 *
+		 * If filename_interval is not explicitly set...
+		 *  - Default to input interval if it is set and an interval (for input, and input;output streams)
+		 *  - Default to output interval if it is set and an interval (for output streams)
+		 *  - Default to none for all other cases
+		 *
+		 * After this check is complete, if filename_interval still has a value of NULL, it will be replaced with 'none'
+		 */
+		if ( filename_interval == NULL){
+			/* Check for an input;output stream. Handle first as this is the most complicated case. */
+			if ( strstr(direction, "input") != NULL && strstr(direction, "output") != NULL ) {
+
+				/* If input interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "input_interval");
+
+				/* If output interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
+				} else if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "output_interval");
+				}
+			/* Check for an input stream. */
+			} else if ( strstr(direction, "input") != NULL ) {
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "input_interval");
+				}
+
+			/* Check for an output stream. */
+			} else if ( strstr(direction, "output") != NULL ) {
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "output_interval");
+				}
+			}
+		} else {
+			/* Handle the case where filename_interval has a value of either:
+			 * output_interval -- Overwrite filename_interval with the interval provided in output_interval
+			 * input_interval -- Overwrite filename_interval with the interval provided in input_interval
+			 *
+			 * In either of these cases, if the intervals are set to be initial_only or none, nullify filename_interval
+			 * to force it's value to be none as well.
+			 */
+			if ( strstr(filename_interval, "input_interval") != NULL ) {
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ) {
+					filename_interval = ezxml_attr(stream_xml, "input_interval");
+				} else {
+					filename_interval = NULL;
+				}
+			} else if ( strstr(filename_interval, "output_interval") != NULL ) {
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ) {
+					filename_interval = ezxml_attr(stream_xml, "output_interval");
+				} else {
+					filename_interval = NULL;
+				}
+			}
+		}
+
+		if ( filename_interval == NULL ) {
+			sprintf(filename_interval_string, "none");
+		} else {
+			sprintf(filename_interval_string, "%s", filename_interval);
+		}
+
 		fprintf(stderr, "\n");
 		fprintf(stderr, " -----  found immutable stream \"%s\" in %s  -----\n", streamID, fname);
 		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
-		fprintf(stderr, "        %-20s%s\n", "records per file:", records);
-
-
-		irecs = atoi(records);
+		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
 
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
 		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
@@ -957,8 +1036,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			}
 		}
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
-					&irecs, &immutable, &iprec, &err);
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local, 
+					&immutable, &iprec, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -1020,7 +1099,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		streamID = ezxml_attr(stream_xml, "name");
 		direction = ezxml_attr(stream_xml, "type");
 		filename_template = ezxml_attr(stream_xml, "filename_template");
-		records = ezxml_attr(stream_xml, "records_per_file");
+		filename_interval = ezxml_attr(stream_xml, "filename_interval");
 		interval_in = ezxml_attr(stream_xml, "input_interval");
 		interval_out = ezxml_attr(stream_xml, "output_interval");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
@@ -1028,13 +1107,72 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		precision = ezxml_attr(stream_xml, "precision");
 		packagelist = ezxml_attr(stream_xml, "packages");
 
+		/* Setup filename_interval correctly.
+		 *
+		 * If filename_interval is not explicitly set...
+		 *  - Default to input interval if it is set and an interval (for input, and input;output streams)
+		 *  - Default to output interval if it is set and an interval (for output streams)
+		 *  - Default to none for all other cases
+		 *
+		 * After this check is complete, if filename_interval still has a value of NULL, it will be replaced with 'none'
+		 */
+		if ( filename_interval == NULL){
+			/* Check for an input;output stream. Handle first as this is the most complicated case. */
+			if ( strstr(direction, "input") != NULL && strstr(direction, "output") != NULL ) {
+
+				/* If input interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "input_interval");
+
+				/* If output interval is an interval (i.e. not initial_only or none) set filename_interval to the interval. */
+				} else if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "output_interval");
+				}
+			/* Check for an input stream. */
+			} else if ( strstr(direction, "input") != NULL ) {
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "input_interval");
+				}
+
+			/* Check for an output stream. */
+			} else if ( strstr(direction, "output") != NULL ) {
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ){
+					filename_interval = ezxml_attr(stream_xml, "output_interval");
+				}
+			}
+		} else {
+			/* Handle the case where filename_interval has a value of either:
+			 * output_interval -- Overwrite filename_interval with the interval provided in output_interval
+			 * input_interval -- Overwrite filename_interval with the interval provided in input_interval
+			 *
+			 * In either of these cases, if the intervals are set to be initial_only or none, nullify filename_interval
+			 * to force it's value to be none as well.
+			 */
+			if ( strstr(filename_interval, "input_interval") != NULL ) {
+				if ( strstr(interval_in, "initial_only") == NULL && strstr(interval_in, "none") == NULL ) {
+					filename_interval = ezxml_attr(stream_xml, "input_interval");
+				} else {
+					filename_interval = NULL;
+				}
+			} else if ( strstr(filename_interval, "output_interval") != NULL ) {
+				if ( strstr(interval_out, "initial_only") == NULL && strstr(interval_out, "none") == NULL ) {
+					filename_interval = ezxml_attr(stream_xml, "output_interval");
+				} else {
+					filename_interval = NULL;
+				}
+			}
+		}
+
+		if ( filename_interval == NULL ) {
+			sprintf(filename_interval_string, "none");
+		} else {
+			sprintf(filename_interval_string, "%s", filename_interval);
+		}
+
 		fprintf(stderr, "\n");
 		fprintf(stderr, " -----  found stream \"%s\" in %s  -----\n", streamID, fname);
 		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
-		fprintf(stderr, "        %-20s%s\n", "records per file:", records);
-
-
-		irecs = atoi(records);
+		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
 
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
 		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
@@ -1097,8 +1235,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			}
 		}
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, ref_time_local, rec_intv_local, 
-						&irecs, &immutable, &iprec, &err);
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local, 
+						&immutable, &iprec, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -1268,7 +1406,6 @@ void xml_stream_get_filename(char *fname, char *streamname, int *mpi_comm, char 
 	ezxml_t stream_xml;
 	const char *streamID, *filename_template;
 	int found;
-
 
 	*status = 0;
 

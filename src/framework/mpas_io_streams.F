@@ -47,7 +47,6 @@ module mpas_io_streams
       logical :: isInitialized = .false.
       integer :: ioFormat
       integer :: ioDirection
-      integer :: framesPerFile
       integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
       type (MPAS_IO_Handle_type) :: fileHandle
       type (att_list_type), pointer :: attList => null()
@@ -132,7 +131,7 @@ module mpas_io_streams
 contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, framesPerFile, precision, ierr)
+   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, ierr)
 
       implicit none
 
@@ -140,7 +139,6 @@ contains
       character (len=*), intent(in) :: fileName
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
-      integer, intent(in) :: framesPerFile
       integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
@@ -158,7 +156,6 @@ contains
 
       stream % ioDirection = ioDirection
       stream % ioFormat = ioFormat
-      stream % framesPerFile = framesPerFile
       if (present(precision)) stream % defaultPrecision = precision
 
       stream % isInitialized = .true.
@@ -166,7 +163,7 @@ contains
    end subroutine MPAS_createStream
 
 
-   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, ierr)
+   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, maxRecords, ierr)
 
       implicit none
 
@@ -174,6 +171,7 @@ contains
       character (len=*), intent(in) :: seekTime
       integer, intent(in) :: seekPosition
       character (len=*), intent(out) :: actualTime
+      integer, intent(out), optional :: maxRecords
       integer, intent(out), optional :: ierr
       
       integer :: io_err
@@ -192,6 +190,7 @@ contains
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
       MPAS_seekStream = 0
 
+      if (present(maxRecords)) maxRecords = 0
 
       !
       ! Sanity checks
@@ -206,6 +205,8 @@ contains
          if (present(ierr)) ierr = MPAS_IO_ERR
          return
       end if
+
+      if (present(maxRecords)) maxRecords = timeDim
 
 !write(stderrUnit,*) 'Found ', timeDim, ' times in file' 
 
@@ -258,6 +259,22 @@ contains
             end if
          else if (seekPosition == MPAS_STREAM_EARLIEST_AFTER) then
             if (sliceTime >= startTime) then
+               timeDiff = abs(sliceTime - startTime)
+               if (timeDiff < minTimeDiff) then
+                  minTimeDiff = timeDiff
+                  MPAS_seekStream = i
+               end if
+            end if
+         else if (seekPosition == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
+            if (sliceTime < startTime) then
+               timeDiff = abs(sliceTime - startTime)
+               if (timeDiff < minTimeDiff) then
+                  minTimeDiff = timeDiff
+                  MPAS_seekStream = i
+               end if
+            end if
+         else if (seekPosition == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
+            if (sliceTime > startTime) then
                timeDiff = abs(sliceTime - startTime)
                if (timeDiff < minTimeDiff) then
                   minTimeDiff = timeDiff
