@@ -88,6 +88,8 @@ class darwin(platformBuilder):
 class yellowstone(platformBuilder):
 
     moduleList = [ 'module load intel/14.0.2',
+                   'module load ncarcompilers/1.0',
+                   'module unload netcdf',
                    'module load netcdf-mpi/4.3.0',
                    'module load pnetcdf/1.4.1',
                    'module load ncarenv/1.0',
@@ -100,7 +102,7 @@ class yellowstone(platformBuilder):
     MAKE_CMD = 'make all'
     TEST_CMD = 'ctest'
     
-    MODULE_PRE  = '[\'/bin/bash\', \'-i\', \'-c\', \''
+    MODULE_PRE  = '[\'/bin/tcsh\', \'-i\', \'-c\', \''
     MODULE_POST = '\']'
 
     FC = 'mpif90'
@@ -129,7 +131,7 @@ class yellowstone(platformBuilder):
         """
         for cmd in self.moduleList:
             print cmd
-            p = subprocess.Popen(['/bin/bash', '-i', '-c', cmd])
+            p = subprocess.Popen(['/bin/tcsh', '-i', '-c', cmd])
             p.wait()
 
 
@@ -145,10 +147,12 @@ class yellowstone(platformBuilder):
         # ~#
         self.runModuleCmd()
 
+
     def buildCmd(self):
         """ run build
         """
         print("yellowstone build")
+
 
     def testCmd(self):
         """ run tests
