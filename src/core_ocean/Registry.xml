@@ -949,10 +949,10 @@
 			<var name="temperatureSurfaceValue"/>
 			<var name="salinitySurfaceValue"/>
 			<var name="tracer1SurfaceValue"/>
-			<var name="zonalSurfaceVelocity"/>
-			<var name="meridionalSurfaceVelocity"/>
-			<var name="zonalSSHGradient"/>
-			<var name="meridionalSSHGradient"/>
+			<var name="surfaceVelocityZonal"/>
+			<var name="surfaceVelocityMeridional"/>
+			<var name="SSHGradientZonal"/>
+			<var name="SSHGradientMeridional"/>
 			<var name="xtime"/>
 			<var name="zMid"/>
 			<var name="zTop"/>
@@ -967,8 +967,8 @@
 			<var name="viscosity"/>
 			<var name="divergence"/>
 			<var name="relativeVorticityCell"/>
-			<var name="normalVelocityZonal"/>
-			<var name="normalVelocityMeridional"/>
+			<var name="velocityZonal"/>
+			<var name="velocityMeridional"/>
 			<var name="RiTopOfCell"/>
 			<var name="vertViscTopOfEdge"/>
 			<var name="vertViscTopOfCell"/>
@@ -987,32 +987,32 @@
 			<var name="volumeEdgeGlobal"/>
 			<var name="CFLNumberGlobal"/>
 			<var name="nAverage"/>
-			<var name="avgSsh"/>
-			<var name="varSsh"/>
+			<var name="avgSSH"/>
+			<var name="varSSH"/>
 			<var name="avgNormalVelocity"/>
-			<var name="avgZonalVelocity"/>
-			<var name="avgMeridionalVelocity"/>
+			<var name="avgVelocityZonal"/>
+			<var name="avgVelocityMeridional"/>
 			<var name="avgVertVelocityTop"/>
 			<var name="varNormalVelocity"/>
-			<var name="varZonalVelocity"/>
-			<var name="varMeridionalVelocity"/>
+			<var name="varVelocityZonal"/>
+			<var name="varVelocityMeridional"/>
 			<var name="avgNormalTransportVelocity"/>
-			<var name="avgZonalTransportVelocity"/>
-			<var name="avgMeridionalTransportVelocity"/>
+			<var name="avgTransportVelocityZonal"/>
+			<var name="avgTransportVelocityMeridional"/>
 			<var name="avgVertTransportVelocityTop"/>
 			<var name="avgNormalGMBolusVelocity"/>
-			<var name="avgZonalGMBolusVelocity"/>
-			<var name="avgMeridionalGMBolusVelocity"/>
+			<var name="avgGMBolusVelocityZonal"/>
+			<var name="avgGMBolusVelocityMeridional"/>
 			<var name="avgVertGMBolusVelocityTop"/>
 			<var name="surfaceTemperatureFlux"/>
 			<var name="surfaceSalinityFlux"/>
 			<var name="surfaceTracer1Flux"/>
 			<var name="avgTemperatureSurfaceValue"/>
 			<var name="avgSalinitySurfaceValue"/>
-			<var name="avgZonalSurfaceVelocity"/>
-			<var name="avgMeridionalSurfaceVelocity"/>
-			<var name="avgZonalSSHGradient"/>
-			<var name="avgMeridionalSSHGradient"/>
+			<var name="avgSurfaceVelocityZonal"/>
+			<var name="avgSurfaceVelocityMeridional"/>
+			<var name="avgSSHGradientZonal"/>
+			<var name="avgSSHGradientMeridional"/>
 			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceMassFlux"/>
 			<var name="seaSurfacePressure"/>
@@ -1045,21 +1045,21 @@
 			<var name="salineContractionCoeff"/>
 			<var name="relativeSlopeTopOfCell"/>
                         <var name="relativeSlopeTaperingCell"/>
-			<var name="xRelativeSlopeTopOfCell"/>
-			<var name="yRelativeSlopeTopOfCell"/>
-			<var name="zRelativeSlopeTopOfCell"/>
-			<var name="zonalRelativeSlopeTopOfCell"/>
-			<var name="meridionalRelativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTopOfCellX"/>
+			<var name="relativeSlopeTopOfCellY"/>
+			<var name="relativeSlopeTopOfCellZ"/>
+			<var name="relativeSlopeTopOfCellZonal"/>
+			<var name="relativeSlopeTopOfCellMeridional"/>
                         <var name="k33"/>
-			<var name="xGMBolusVelocity"/>
-			<var name="yGMBolusVelocity"/>
-			<var name="zonalGMBolusVelocity"/>
-			<var name="meridionalGMBolusVelocity"/>
+			<var name="GMBolusVelocityX"/>
+			<var name="GMBolusVelocityY"/>
+			<var name="GMBolusVelocityZonal"/>
+			<var name="GMBolusVelocityMeridional"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>
-			<var name="xGMStreamFunc"/>
-			<var name="yGMStreamFunc"/>
+			<var name="GMStreamFuncX"/>
+			<var name="GMStreamFuncY"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1364,7 +1364,7 @@
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
 			 description="time tendency of layer thickness"
 		/>
-		<var name="tendSsh" type="real" dimensions="nCells Time" units="m s^{-1}" name_in_code="ssh"
+		<var name="tendSSH" type="real" dimensions="nCells Time" units="m s^{-1}" name_in_code="ssh"
 			 description="time tendency of sea-surface height"
 		/>
 		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="highFreqThickness"
@@ -1392,20 +1392,20 @@
 			/>
 		</var_array>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
-			<var name="zonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
+			<var name="surfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
 				 description="Zonal surface velocity reconstructed at cell centers"
 				
 			/>
-			<var name="meridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
+			<var name="surfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
 				 description="Meridional surface velocity reconstructed at cell centers"
 				
 			/>
 		</var_array>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
-			<var name="zonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
+			<var name="SSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
 			/>
-			<var name="meridionalSSHGradient" array_group="ssh_meridional" units="m m^{-1}"
+			<var name="SSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
 				 description="Meridional gradient of SSH reconstructed at cell centers"
 			/>
 		</var_array>
@@ -1519,34 +1519,34 @@
 			 description="Barotropic thickness flux at each edge, used to advance sea surface height in each subcycle of stage 2 of the split-explicit algorithm."
 		/>
 
-		<var name="normalVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the x-direction (cartesian)"
 		/>
-		<var name="normalVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the y-direction (cartesian)"
 		/>
-		<var name="normalVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the z-direction (cartesian)"
 		/>
-		<var name="normalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the eastward direction"
 		/>
-		<var name="normalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the northward direction"
 		/>
-		<var name="xTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="transportVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity used to transport mass and tracers in the x-direction (cartesian)"
 		/>
-		<var name="yTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="transportVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity used to transport mass and tracers in the y-direction (cartesian)"
 		/>
-		<var name="zTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="transportVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity used to transport mass and tracers in the z-direction (cartesian)"
 		/>
-		<var name="zonalTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="transportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity used to transport mass and tracers in the eastward direction"
 		/>
-		<var name="meridionalTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="transportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
 		/>
 
@@ -1572,19 +1572,19 @@
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 		/>
-		<var name="xGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 		/>
-		<var name="yGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="GMBolusVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
 		/>
-		<var name="zGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="GMBolusVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
 		/>
-		<var name="zonalGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
 		/>
-		<var name="meridionalGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
 		/>
 
@@ -1684,19 +1684,19 @@
                 <var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
                          description="averaging of relativeSlopeTapering function to cell centers"
                 />
-		<var name="xRelativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+		<var name="relativeSlopeTopOfCellX" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 		/>
-		<var name="yRelativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+		<var name="relativeSlopeTopOfCellY" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 		/>
-		<var name="zRelativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+		<var name="relativeSlopeTopOfCellZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 		/>
-		<var name="zonalRelativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+		<var name="relativeSlopeTopOfCellZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 		/>
-		<var name="meridionalRelativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+		<var name="relativeSlopeTopOfCellMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 		/>
 		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
@@ -1708,19 +1708,19 @@
 		<var name="gmStreamFuncTopOfCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function reconstructed to the cell centers"
 		/>
-		<var name="xGMStreamFunc" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+		<var name="GMStreamFuncX" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 		/>
-		<var name="yGMStreamFunc" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+		<var name="GMStreamFuncY" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 		/>
-		<var name="zGMStreamFunc" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+		<var name="GMStreamFuncZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 		/>
-		<var name="zonalGMStreamFunc" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+		<var name="GMStreamFuncZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 		/>
-		<var name="meridionalGMStreamFunc" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+		<var name="GMStreamFuncMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 		/>
 	</var_struct>
@@ -1728,37 +1728,37 @@
 		<var name="nAverage" type="real" dimensions="Time" units="unitless"
 			 description="number of timesteps in time-averaged variables"
 		/>
-		<var name="avgSsh" type="real" dimensions="nCells Time" units="m"
+		<var name="avgSSH" type="real" dimensions="nCells Time" units="m"
 			 description="time-averaged sea surface height"
 		/>
-		<var name="varSsh" type="real" dimensions="nCells Time" units="m"
+		<var name="varSSH" type="real" dimensions="nCells Time" units="m"
 			 description="variance of sea surface height"
 		/>
 		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="time-averaged velocity, normal to cell edge"
 		/>
-		<var name="avgZonalVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged velocity in the eastward direction"
 		/>
-		<var name="avgMeridionalVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged velocity in the northward direction"
 		/>
 		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="variance of velocity, normal to cell edge"
 		/>
-		<var name="varZonalVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="variance of velocity in the eastward direction"
 		/>
-		<var name="varMeridionalVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="variance of velocity in the northward direction"
 		/>
 		<var name="avgNormalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="time-averaged total tracer-transport velocity, normal to cell edge"
 		/>
-		<var name="avgZonalTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="avgTransportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged total tracer-transport velocity in the eastward direction"
 		/>
-		<var name="avgMeridionalTransportVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="avgTransportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged total tracer-transport velocity in the northward direction"
 		/>
 		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
@@ -1770,10 +1770,10 @@
 		<var name="avgNormalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="time-averaged GM Bolus velocity, normal to cell edge"
 		/>
-		<var name="avgZonalGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="avgGMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged GM Bolus velocity in the eastward direction"
 		/>
-		<var name="avgMeridionalGMBolusVelocity" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="avgGMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged GM Bolus velocity in the northward direction"
 		/>
 		<var name="avgVertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
@@ -1925,18 +1925,18 @@
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time">
-		<var name="avgZonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
+		<var name="avgSurfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
 			 description="Time averaged zonal surface velocity"
 		/>
-		<var name="avgMeridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
+		<var name="avgSurfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
 			 description="Time averaged meridional surface velocity"
 		/>
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time">
-			<var name="avgZonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
+			<var name="avgSSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Time averaged zonal gradient of SSH"
 			/>
-			<var name="avgMeridionalSSHGradient" array_group="ssh_meridional" units="m m^{-1}"
+			<var name="avgSSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
