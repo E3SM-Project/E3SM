@@ -22,28 +22,28 @@ module ocn_time_average
 
         real (kind=RKIND), dimension(:), pointer :: avgSSH, varSSH
         real (kind=RKIND), dimension(:,:), pointer :: &
-           avgNormalVelocity, avgZonalVelocity, avgMeridionalVelocity, avgVertVelocityTop, &
-           varNormalVelocity, varZonalVelocity, varMeridionalVelocity, &
-           avgNormalTransportVelocity, avgZonalTransportVelocity, avgMeridionalTransportVelocity, avgVertTransportVelocityTop, &
-           avgNormalGMBolusVelocity, avgZonalGMBolusVelocity, avgMeridionalGMBolusVelocity, avgVertGMBolusVelocityTop
+           avgNormalVelocity, avgVelocityZonal, avgVelocityMeridional, avgVertVelocityTop, &
+           varNormalVelocity, varVelocityZonal, varVelocityMeridional, &
+           avgNormalTransportVelocity, avgTransportVelocityZonal, avgTransportVelocityMeridional, avgVertTransportVelocityTop, &
+           avgNormalGMBolusVelocity, avgGMBolusVelocityZonal, avgGMBolusVelocityMeridional, avgVertGMBolusVelocityTop
 
         call mpas_pool_get_array(averagePool, 'nAverage', nAverage)
-        call mpas_pool_get_array(averagePool, 'avgSsh', avgSSH)
-        call mpas_pool_get_array(averagePool, 'varSsh', varSSH)
+        call mpas_pool_get_array(averagePool, 'avgSSH', avgSSH)
+        call mpas_pool_get_array(averagePool, 'varSSH', varSSH)
         call mpas_pool_get_array(averagePool, 'avgNormalVelocity', avgNormalVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalVelocity', avgZonalVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalVelocity', avgMeridionalVelocity)
+        call mpas_pool_get_array(averagePool, 'avgVelocityZonal', avgVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgVelocityMeridional', avgVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertVelocityTop', avgVertVelocityTop)
         call mpas_pool_get_array(averagePool, 'varNormalVelocity', varNormalVelocity)
-        call mpas_pool_get_array(averagePool, 'varZonalVelocity', varZonalVelocity)
-        call mpas_pool_get_array(averagePool, 'varMeridionalVelocity', varMeridionalVelocity)
+        call mpas_pool_get_array(averagePool, 'varVelocityZonal', varVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'varVelocityMeridional', varVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgNormalTransportVelocity', avgNormalTransportVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalTransportVelocity', avgZonalTransportVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalTransportVelocity', avgMeridionalTransportVelocity)
+        call mpas_pool_get_array(averagePool, 'avgTransportVelocityZonal', avgTransportVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgTransportVelocityMeridional', avgTransportVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertTransportVelocityTop', avgVertTransportVelocityTop)
         call mpas_pool_get_array(averagePool, 'avgNormalGMBolusVelocity', avgNormalGMBolusVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalGMBolusVelocity', avgZonalGMBolusVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalGMBolusVelocity', avgMeridionalGMBolusVelocity)
+        call mpas_pool_get_array(averagePool, 'avgGMBolusVelocityZonal', avgGMBolusVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgGMBolusVelocityMeridional', avgGMBolusVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertGMBolusVelocityTop', avgVertGMBolusVelocityTop)
 
         nAverage = 0
@@ -51,19 +51,19 @@ module ocn_time_average
         avgSSH = 0.0
         varSSH = 0.0
         avgNormalVelocity = 0.0
-        avgZonalVelocity = 0.0
-        avgMeridionalVelocity = 0.0
+        avgVelocityZonal = 0.0
+        avgVelocityMeridional = 0.0
         avgVertVelocityTop = 0.0
         varNormalVelocity = 0.0
-        varZonalVelocity = 0.0
-        varMeridionalVelocity = 0.0
+        varVelocityZonal = 0.0
+        varVelocityMeridional = 0.0
         avgNormalTransportVelocity = 0.0
-        avgZonalTransportVelocity = 0.0
-        avgMeridionalTransportVelocity = 0.0
+        avgTransportVelocityZonal = 0.0
+        avgTransportVelocityMeridional = 0.0
         avgVertTransportVelocityTop = 0.0
         avgNormalGMBolusVelocity = 0.0
-        avgZonalGMBolusVelocity = 0.0
-        avgMeridionalGMBolusVelocity = 0.0
+        avgGMBolusVelocityZonal = 0.0
+        avgGMBolusVelocityMeridional = 0.0
         avgVertGMBolusVelocityTop = 0.0
 
     end subroutine ocn_time_average_init!}}}
@@ -78,23 +78,23 @@ module ocn_time_average
 
         real (kind=RKIND), dimension(:), pointer :: ssh
         real (kind=RKIND), dimension(:,:), pointer :: &
-           normalVelocityZonal, normalVelocityMeridional, normalVelocity, vertVelocityTop, &
-           zonalTransportVelocity, meridionalTransportVelocity, normalTransportVelocity, vertTransportVelocityTop, &
-           zonalGMBolusVelocity, meridionalGMBolusVelocity, normalGMBolusVelocity, vertGMBolusVelocityTop
+           velocityZonal, velocityMeridional, normalVelocity, vertVelocityTop, &
+           transportVelocityZonal, transportVelocityMeridional, normalTransportVelocity, vertTransportVelocityTop, &
+           GMBolusVelocityZonal, GMBolusVelocityMeridional, normalGMBolusVelocity, vertGMBolusVelocityTop
 
         real (kind=RKIND), dimension(:), pointer :: avgSSH, varSSH
         real (kind=RKIND), dimension(:,:), pointer :: &
-           avgNormalVelocity, avgZonalVelocity, avgMeridionalVelocity, avgVertVelocityTop, &
-           varNormalVelocity, varZonalVelocity, varMeridionalVelocity, &
-           avgNormalTransportVelocity, avgZonalTransportVelocity, avgMeridionalTransportVelocity, avgVertTransportVelocityTop, &
-           avgNormalGMBolusVelocity, avgZonalGMBolusVelocity, avgMeridionalGMBolusVelocity, avgVertGMBolusVelocityTop
+           avgNormalVelocity, avgVelocityZonal, avgVelocityMeridional, avgVertVelocityTop, &
+           varNormalVelocity, varVelocityZonal, varVelocityMeridional, &
+           avgNormalTransportVelocity, avgTransportVelocityZonal, avgTransportVelocityMeridional, avgVertTransportVelocityTop, &
+           avgNormalGMBolusVelocity, avgGMBolusVelocityZonal, avgGMBolusVelocityMeridional, avgVertGMBolusVelocityTop
 
         real (kind=RKIND), dimension(:), pointer :: old_avgSSH, old_varSSH
         real (kind=RKIND), dimension(:,:), pointer :: &
-           old_avgNormalVelocity, old_avgZonalVelocity, old_avgMeridionalVelocity, old_avgVertVelocityTop, &
-           old_varNormalVelocity, old_varZonalVelocity, old_varMeridionalVelocity, &
-           old_avgNormalTransportVelocity, old_avgZonalTransportVelocity, old_avgMeridionalTransportVelocity, old_avgVertTransportVelocityTop, &
-           old_avgNormalGMBolusVelocity, old_avgZonalGMBolusVelocity, old_avgMeridionalGMBolusVelocity, old_avgVertGMBolusVelocityTop
+           old_avgNormalVelocity, old_avgVelocityZonal, old_avgVelocityMeridional, old_avgVertVelocityTop, &
+           old_varNormalVelocity, old_varVelocityZonal, old_varVelocityMeridional, &
+           old_avgNormalTransportVelocity, old_avgTransportVelocityZonal, old_avgTransportVelocityMeridional, old_avgVertTransportVelocityTop, &
+           old_avgNormalGMBolusVelocity, old_avgGMBolusVelocityZonal, old_avgGMBolusVelocityMeridional, old_avgVertGMBolusVelocityTop
 
         integer :: timeLevel
 
@@ -107,53 +107,53 @@ module ocn_time_average
         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
         call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
-        call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-        call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+        call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+        call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity ', normalTransportVelocity)
-        call mpas_pool_get_array(diagnosticsPool, 'zonalTransportVelocity', zonalTransportVelocity)
-        call mpas_pool_get_array(diagnosticsPool, 'meridionalTransportVelocity', meridionalTransportVelocity)
+        call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZonal', transportVelocityZonal)
+        call mpas_pool_get_array(diagnosticsPool, 'transportVelocityMeridional', transportVelocityMeridional)
         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-        call mpas_pool_get_array(diagnosticsPool, 'zonalGMBolusVelocity', zonalGMBolusVelocity)
-        call mpas_pool_get_array(diagnosticsPool, 'meridionalGMBolusVelocity', meridionalGMBolusVelocity)
+        call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', GMBolusVelocityZonal)
+        call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
         call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertGMBolusVelocityTop)
 
         call mpas_pool_get_array(averagePool, 'nAverage', nAverage)
-        call mpas_pool_get_array(averagePool, 'avgSsh', avgSSH)
-        call mpas_pool_get_array(averagePool, 'varSsh', varSSH)
+        call mpas_pool_get_array(averagePool, 'avgSSH', avgSSH)
+        call mpas_pool_get_array(averagePool, 'varSSH', varSSH)
         call mpas_pool_get_array(averagePool, 'avgNormalVelocity', avgNormalVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalVelocity', avgZonalVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalVelocity', avgMeridionalVelocity)
+        call mpas_pool_get_array(averagePool, 'avgVelocityZonal', avgVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgVelocityMeridional', avgVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertVelocityTop', avgVertVelocityTop)
         call mpas_pool_get_array(averagePool, 'varNormalVelocity', varNormalVelocity)
-        call mpas_pool_get_array(averagePool, 'varZonalVelocity', varZonalVelocity)
-        call mpas_pool_get_array(averagePool, 'varMeridionalVelocity', varMeridionalVelocity)
+        call mpas_pool_get_array(averagePool, 'varVelocityZonal', varVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'varVelocityMeridional', varVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgNormalTransportVelocity', avgNormalTransportVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalTransportVelocity', avgZonalTransportVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalTransportVelocity', avgMeridionalTransportVelocity)
+        call mpas_pool_get_array(averagePool, 'avgTransportVelocityZonal', avgTransportVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgTransportVelocityMeridional', avgTransportVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertTransportVelocityTop', avgVertTransportVelocityTop)
         call mpas_pool_get_array(averagePool, 'avgNormalGMBolusVelocity', avgNormalGMBolusVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalGMBolusVelocity', avgZonalGMBolusVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalGMBolusVelocity', avgMeridionalGMBolusVelocity)
+        call mpas_pool_get_array(averagePool, 'avgGMBolusVelocityZonal', avgGMBolusVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgGMBolusVelocityMeridional', avgGMBolusVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertGMBolusVelocityTop', avgVertGMBolusVelocityTop)
 
         avgSSH = avgSSH + ssh
         varSSH = varSSH + ssh**2
         avgNormalVelocity = avgNormalVelocity + normalVelocity
-        avgZonalVelocity = avgZonalVelocity + normalVelocityZonal
-        avgMeridionalVelocity = avgMeridionalVelocity + normalVelocityMeridional
+        avgVelocityZonal = avgVelocityZonal + velocityZonal
+        avgVelocityMeridional = avgVelocityMeridional + velocityMeridional
         avgVertVelocityTop = avgVertVelocityTop + vertVelocityTop
         varNormalVelocity = varNormalVelocity + normalVelocity**2
-        varZonalVelocity = varZonalVelocity + normalVelocityZonal**2
-        varMeridionalVelocity = varMeridionalVelocity + normalVelocityMeridional**2
+        varVelocityZonal = varVelocityZonal + velocityZonal**2
+        varVelocityMeridional = varVelocityMeridional + velocityMeridional**2
         avgNormalTransportVelocity = avgNormalTransportVelocity + normalTransportVelocity
-        avgZonalTransportVelocity = avgZonalTransportVelocity + zonalTransportVelocity
-        avgMeridionalTransportVelocity = avgMeridionalTransportVelocity + meridionalTransportVelocity
+        avgTransportVelocityZonal = avgTransportVelocityZonal + transportVelocityZonal
+        avgTransportVelocityMeridional = avgTransportVelocityMeridional + transportVelocityMeridional
         avgVertTransportVelocityTop = avgVertTransportVelocityTop + vertTransportVelocityTop
         avgNormalGMBolusVelocity = avgNormalGMBolusVelocity + normalGMBolusVelocity
-        avgZonalGMBolusVelocity = avgZonalGMBolusVelocity + zonalGMBolusVelocity
-        avgMeridionalGMBolusVelocity = avgMeridionalGMBolusVelocity + meridionalGMBolusVelocity
+        avgGMBolusVelocityZonal = avgGMBolusVelocityZonal + GMBolusVelocityZonal
+        avgGMBolusVelocityMeridional = avgGMBolusVelocityMeridional + GMBolusVelocityMeridional
         avgVertGMBolusVelocityTop = avgVertGMBolusVelocityTop + vertGMBolusVelocityTop
 
         nAverage = nAverage + 1
@@ -166,47 +166,47 @@ module ocn_time_average
 
         real (kind=RKIND), dimension(:), pointer :: avgSSH, varSSH
         real (kind=RKIND), dimension(:,:), pointer :: &
-           avgNormalVelocity, avgZonalVelocity, avgMeridionalVelocity, avgVertVelocityTop, &
-           varNormalVelocity, varZonalVelocity, varMeridionalVelocity, &
-           avgNormalTransportVelocity, avgZonalTransportVelocity, avgMeridionalTransportVelocity, avgVertTransportVelocityTop, &
-           avgNormalGMBolusVelocity, avgZonalGMBolusVelocity, avgMeridionalGMBolusVelocity, avgVertGMBolusVelocityTop
+           avgNormalVelocity, avgVelocityZonal, avgVelocityMeridional, avgVertVelocityTop, &
+           varNormalVelocity, varVelocityZonal, varVelocityMeridional, &
+           avgNormalTransportVelocity, avgTransportVelocityZonal, avgTransportVelocityMeridional, avgVertTransportVelocityTop, &
+           avgNormalGMBolusVelocity, avgGMBolusVelocityZonal, avgGMBolusVelocityMeridional, avgVertGMBolusVelocityTop
 
         call mpas_pool_get_array(averagePool, 'nAverage', nAverage)
-        call mpas_pool_get_array(averagePool, 'avgSsh', avgSSH)
-        call mpas_pool_get_array(averagePool, 'varSsh', varSSH)
+        call mpas_pool_get_array(averagePool, 'avgSSH', avgSSH)
+        call mpas_pool_get_array(averagePool, 'varSSH', varSSH)
         call mpas_pool_get_array(averagePool, 'avgNormalVelocity', avgNormalVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalVelocity', avgZonalVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalVelocity', avgMeridionalVelocity)
+        call mpas_pool_get_array(averagePool, 'avgVelocityZonal', avgVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgVelocityMeridional', avgVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertVelocityTop', avgVertVelocityTop)
         call mpas_pool_get_array(averagePool, 'varNormalVelocity', varNormalVelocity)
-        call mpas_pool_get_array(averagePool, 'varZonalVelocity', varZonalVelocity)
-        call mpas_pool_get_array(averagePool, 'varMeridionalVelocity', varMeridionalVelocity)
+        call mpas_pool_get_array(averagePool, 'varVelocityZonal', varVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'varVelocityMeridional', varVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgNormalTransportVelocity', avgNormalTransportVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalTransportVelocity', avgZonalTransportVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalTransportVelocity', avgMeridionalTransportVelocity)
+        call mpas_pool_get_array(averagePool, 'avgTransportVelocityZonal', avgTransportVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgTransportVelocityMeridional', avgTransportVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertTransportVelocityTop', avgVertTransportVelocityTop)
         call mpas_pool_get_array(averagePool, 'avgNormalGMBolusVelocity', avgNormalGMBolusVelocity)
-        call mpas_pool_get_array(averagePool, 'avgZonalGMBolusVelocity', avgZonalGMBolusVelocity)
-        call mpas_pool_get_array(averagePool, 'avgMeridionalGMBolusVelocity', avgMeridionalGMBolusVelocity)
+        call mpas_pool_get_array(averagePool, 'avgGMBolusVelocityZonal', avgGMBolusVelocityZonal)
+        call mpas_pool_get_array(averagePool, 'avgGMBolusVelocityMeridional', avgGMBolusVelocityMeridional)
         call mpas_pool_get_array(averagePool, 'avgVertGMBolusVelocityTop', avgVertGMBolusVelocityTop)
 
         if(nAverage > 0) then
           avgSSH = avgSSH / nAverage
           varSSH = varSSH / nAverage
           avgNormalVelocity = avgNormalVelocity / nAverage
-          avgZonalVelocity = avgZonalVelocity / nAverage
-          avgMeridionalVelocity = avgMeridionalVelocity / nAverage
+          avgVelocityZonal = avgVelocityZonal / nAverage
+          avgVelocityMeridional = avgVelocityMeridional / nAverage
           avgVertVelocityTop = avgVertVelocityTop / nAverage
           varNormalVelocity = varNormalVelocity / nAverage
-          varZonalVelocity = varZonalVelocity / nAverage
-          varMeridionalVelocity = varMeridionalVelocity / nAverage
+          varVelocityZonal = varVelocityZonal / nAverage
+          varVelocityMeridional = varVelocityMeridional / nAverage
           avgNormalTransportVelocity = avgNormalTransportVelocity / nAverage
-          avgZonalTransportVelocity = avgZonalTransportVelocity / nAverage
-          avgMeridionalTransportVelocity = avgMeridionalTransportVelocity / nAverage
+          avgTransportVelocityZonal = avgTransportVelocityZonal / nAverage
+          avgTransportVelocityMeridional = avgTransportVelocityMeridional / nAverage
           avgVertTransportVelocityTop = avgVertTransportVelocityTop / nAverage
           avgNormalGMBolusVelocity = avgNormalGMBolusVelocity / nAverage
-          avgZonalGMBolusVelocity = avgZonalGMBolusVelocity / nAverage
-          avgMeridionalGMBolusVelocity = avgMeridionalGMBolusVelocity / nAverage
+          avgGMBolusVelocityZonal = avgGMBolusVelocityZonal / nAverage
+          avgGMBolusVelocityMeridional = avgGMBolusVelocityMeridional / nAverage
           avgVertGMBolusVelocityTop = avgVertGMBolusVelocityTop / nAverage
         end if
     end subroutine ocn_time_average_normalize!}}}

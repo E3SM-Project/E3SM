@@ -124,8 +124,8 @@ module ocn_time_integration_rk4
       integer, pointer :: indexSalinity
 
       ! Diagnostics Indices
-      integer, pointer :: indexZonalSurfaceVelocity, indexMeridionalSurfaceVelocity
-      integer, pointer:: indexZonalSSHGradient, indexMeridionalSSHGradient
+      integer, pointer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
+      integer, pointer :: indexSSHGradientZonal, indexSSHGradientMeridional
 
       ! Mesh array pointers
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
@@ -144,8 +144,8 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge
       real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
       real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity, normalGMBolusVelocity
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:), pointer :: gradSSH
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHX, gradSSHY, gradSSHZ
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
@@ -680,18 +680,18 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
 
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_zonalSurfaceVelocity', indexZonalSurfaceVelocity)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_meridionalSurfaceVelocity', indexMeridionalSurfaceVelocity)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_zonalSSHGradient', indexZonalSSHGradient)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_meridionalSSHGradient', indexMeridionalSSHGradient)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityZonal', indexSurfaceVelocityZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityMeridional', indexSurfaceVelocityMeridional)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientZonal', indexSSHGradientZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
 
          call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHX', gradSSHX)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHY', gradSSHY)
@@ -729,8 +729,8 @@ module ocn_time_integration_rk4
          ! ------------------------------------------------------------------
 
          call mpas_reconstruct(meshPool,  normalVelocityNew,                 &
-                          normalVelocityX, normalVelocityY, normalVelocityZ, &
-                          normalVelocityZonal, normalVelocityMeridional      &
+                          velocityX, velocityY, velocityZ, &
+                          velocityZonal, velocityMeridional      &
                          )
 
          call mpas_reconstruct(meshPool, gradSSH,         &
@@ -738,11 +738,11 @@ module ocn_time_integration_rk4
                           gradSSHZonal, gradSSHMeridional &
                          )
 
-         surfaceVelocity(indexZonalSurfaceVelocity, :) = normalVelocityZonal(1, :)
-         surfaceVelocity(indexMeridionalSurfaceVelocity, :) = normalVelocityMeridional(1, :)
+         surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
+         surfaceVelocity(indexSurfaceVelocityMeridional, :) = velocityMeridional(1, :)
 
-         SSHGradient(indexZonalSSHGradient, :) = gradSSHZonal(1, :)
-         SSHGradient(indexMeridionalSSHGradient, :) = gradSSHMeridional(1, :)
+         SSHGradient(indexSSHGradientZonal, :) = gradSSHZonal(1, :)
+         SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
 
          call ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, 2)
          call ocn_time_average_coupled_accumulate(diagnosticsPool, forcingPool)

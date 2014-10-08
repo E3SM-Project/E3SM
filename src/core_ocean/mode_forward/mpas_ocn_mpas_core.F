@@ -411,8 +411,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalGMBolusVelocity, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -451,11 +451,11 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -520,11 +520,11 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_init_reconstruct(meshPool)
 
       call mpas_reconstruct(meshPool, normalVelocity,        &
-                       normalVelocityX,            &
-                       normalVelocityY,            &
-                       normalVelocityZ,            &
-                       normalVelocityZonal,        &
-                       normalVelocityMeridional    &
+                       velocityX,            &
+                       velocityY,            &
+                       velocityZ,            &
+                       velocityZonal,        &
+                       velocityMeridional    &
                       )
 
       if (config_use_standardGM) then
