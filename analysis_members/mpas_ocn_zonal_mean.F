@@ -388,8 +388,8 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: zonalVelocityZonalMean, meridionalVelocityZonalMean
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonalZonalMean, velocityMeridionalZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersZonalMean
@@ -441,8 +441,8 @@ contains
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
          call mpas_pool_get_array(statePool, 'tracers', tracers,timeLevel)         
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
@@ -470,9 +470,9 @@ contains
                      enddo
 
                      iField = num_tracers+2
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + normalVelocityZonal(k,iCell)*areaCell(iCell)
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*areaCell(iCell)
                      iField = iField+1
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + normalVelocityMeridional(k,iCell)*areaCell(iCell)
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*areaCell(iCell)
 
                   end do
                   exit
@@ -517,8 +517,8 @@ contains
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
          call mpas_pool_get_array(amZonalMeanPool, 'tracersZonalMean', tracersZonalMean)
-         call mpas_pool_get_array(amZonalMeanPool, 'zonalVelocityZonalMean', zonalVelocityZonalMean)
-         call mpas_pool_get_array(amZonalMeanPool, 'meridionalVelocityZonalMean', meridionalVelocityZonalMean)
+         call mpas_pool_get_array(amZonalMeanPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
+         call mpas_pool_get_array(amZonalMeanPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
 
          do iBin = 1, nZonalMeanBins
             do k = 1, nVertLevels
@@ -528,9 +528,9 @@ contains
                enddo
 
                iField = num_tracers + 2
-               zonalVelocityZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+               velocityZonalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
                iField = iField+1
-               meridionalVelocityZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+               velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
 
             end do
          end do

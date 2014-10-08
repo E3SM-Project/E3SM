@@ -41,7 +41,7 @@ module ocn_gm
    private :: tridiagonal_solve
 
    ! Config options
-   real (kind=RKIND), pointer :: config_diapycnal_diff, config_gravWaveSpeed_trunc, config_standardGM_tracer_kappa, config_density0, &
+   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc, config_standardGM_tracer_kappa, config_density0, &
      config_max_relative_slope, config_Redi_kappa
    logical, pointer :: config_use_standardGM
    logical, pointer :: config_disable_redi_k33
@@ -547,7 +547,6 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_diapycnal_diff',config_diapycnal_diff)
       call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
       call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_max_relative_slope',config_max_relative_slope)

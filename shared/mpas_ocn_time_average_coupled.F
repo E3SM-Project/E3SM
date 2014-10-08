@@ -80,7 +80,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
-        integer, pointer :: index_temperature, index_zonalSSH, index_meridionalSSH, nAccumulatedCoupled
+        integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled
 
         call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
         call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
@@ -92,8 +92,8 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
 
         call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceValue', index_temperature)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgZonalSSHGradient', index_zonalSSH)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgMeridionalSSHGradient', index_meridionalSSH)
+        call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_SSHzonal)
+        call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_SSHmeridional)
 
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
@@ -103,8 +103,8 @@ module ocn_time_average_coupled
 
         avgSurfaceVelocity(:,:)     = ( avgSurfaceVelocity(:,:)     * nAccumulatedCoupled + surfaceVelocity(:,:)     ) / ( nAccumulatedCoupled + 1 )
 
-        avgSSHGradient(index_zonalSSH,:)      = ( avgSSHGradient(index_zonalSSH,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) / ( nAccumulatedCoupled + 1 )
-        avgSSHGradient(index_meridionalSSH,:) = ( avgSSHGradient(index_meridionalSSH,:) * nAccumulatedCoupled + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
+        avgSSHGradient(index_SSHzonal,:)      = ( avgSSHGradient(index_SSHzonal,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) / ( nAccumulatedCoupled + 1 )
+        avgSSHGradient(index_SSHmeridional,:) = ( avgSSHGradient(index_SSHmeridional,:) * nAccumulatedCoupled + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
 
         nAccumulatedCoupled = nAccumulatedCoupled + 1
 

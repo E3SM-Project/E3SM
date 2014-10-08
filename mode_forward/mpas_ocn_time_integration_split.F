@@ -134,8 +134,8 @@ module ocn_time_integration_split
       ! Dimensions
       integer, pointer :: nCells, nEdges, nVertLevels, num_tracers, startIndex, endIndex
       integer, pointer :: indexTemperature, indexSalinity
-      integer, pointer :: indexZonalSurfaceVelocity, indexMeridionalSurfaceVelocity
-      integer, pointer :: indexZonalSSHGradient, indexMeridionalSSHGradient
+      integer, pointer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
+      integer, pointer :: indexSSHGradientZonal, indexSSHGradientMeridional
 
       ! Mesh array pointers
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nEdgesOnEdge, nEdgesOnCell
@@ -169,8 +169,8 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), pointer :: barotropicForcing, barotropicThicknessFlux
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, normalTransportVelocity, normalGMBolusVelocity
       real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:), pointer :: gradSSH
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHX, gradSSHY, gradSSHZ
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
@@ -1457,11 +1457,11 @@ module ocn_time_integration_split
 
          call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHX', gradSSHX)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHY', gradSSHY)
@@ -1472,10 +1472,10 @@ module ocn_time_integration_split
          call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'SSHGradient', SSHGradient)
 
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_zonalSurfaceVelocity', indexZonalSurfaceVelocity)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_meridionalSurfaceVelocity', indexMeridionalSurfaceVelocity)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_zonalSSHGradient', indexZonalSSHGradient)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_meridionalSSHGradient', indexMeridionalSSHGradient)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityZonal', indexSurfaceVelocityZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityMeridional', indexSurfaceVelocityMeridional)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientZonal', indexSSHGradientZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
 
          if (config_prescribe_velocity) then
             normalVelocityNew(:,:) = normalVelocityCur(:,:)
@@ -1493,8 +1493,8 @@ module ocn_time_integration_split
          end if
 
          call mpas_reconstruct(meshPool, normalVelocityNew,                  &
-                          normalVelocityX, normalVelocityY, normalVelocityZ, &
-                          normalVelocityZonal, normalVelocityMeridional      &
+                          velocityX, velocityY, velocityZ, &
+                          velocityZonal, velocityMeridional      &
                          )
 
          call mpas_reconstruct(meshPool, gradSSH,         &
@@ -1502,11 +1502,11 @@ module ocn_time_integration_split
                           gradSSHZonal, gradSSHMeridional &
                          )
 
-         surfaceVelocity(indexZonalSurfaceVelocity, :) = normalVelocityZonal(1, :)
-         surfaceVelocity(indexMeridionalSurfaceVelocity, :) = normalVelocityMeridional(1, :)
+         surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
+         surfaceVelocity(indexSurfaceVelocityMeridional, :) = velocityMeridional(1, :)
 
-         SSHGradient(indexZonalSSHGradient, :) = gradSSHZonal(1, :)
-         SSHGradient(indexMeridionalSSHGradient, :) = gradSSHMeridional(1, :)
+         SSHGradient(indexSSHGradientZonal, :) = gradSSHZonal(1, :)
+         SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
 
          call ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, 2)
          call ocn_time_average_coupled_accumulate(diagnosticsPool, forcingPool)
