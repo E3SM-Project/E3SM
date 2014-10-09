@@ -92,15 +92,14 @@ class yellowstone(platformBuilder):
                   'netcdf-mpi/4.3.0',
                   'pnetcdf/1.4.1',
                   'ncarenv/1.0',
+                  'cmake',
                   'ncarbinlibs/1.1']
 
-    CMAKE_EXE = '/glade/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake'
+    CMAKE_EXE = 'cmake'
     BUILD_DIR = 'build'
     MAKE_CMD = 'make all'
     TEST_CMD = 'ctest'
 
-    # FC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpif90'
-    # CC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpicc'
     FC = 'mpif90'
     CC = 'mpicc'
     LDFLAGS = ''
