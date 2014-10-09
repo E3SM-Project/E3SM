@@ -148,41 +148,47 @@ class darwin_gnu(platformBuilder):
 
 class yellowstone_intel(platformBuilder):
 
-    moduleList = ['intel/14.0.2',
-                  'ncarcompilers/1.0',
-                  'netcdf-mpi/4.3.0',
-                  'pnetcdf/1.4.1',
-                  'ncarenv/1.0',
-                  'cmake',
-                  'ncarbinlibs/1.1']
+    def __init__(self):
+        """ user defined ctor so we can put stuff in a class instead of as
+        class attributes
+        """
+        self.setInvariantClassAttr()
 
-    CMAKE_EXE = 'cmake'
+        self.moduleList = ['intel/14.0.2',
+                           'ncarcompilers/1.0',
+                           'netcdf-mpi/4.3.0',
+                           'pnetcdf/1.4.1',
+                           'ncarenv/1.0',
+                           'cmake',
+                           'ncarbinlibs/1.1']
+
+        self.CMAKE_EXE = 'cmake'
     
-    FC = 'mpif90'
-    CC = 'mpicc'
-    LDFLAGS = ''
+        self.FC = 'mpif90'
+        self.CC = 'mpicc'
+        self.LDFLAGS = ''
 
-    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
-              '-convert '
-              'big_endian -assume byterecl -ftz -traceback -assume '
-              'realloc_lhs '
-              '-xHost  -O2   -DLINUX  -DNDEBUG -DMCT_INTERFACE '
-              '-DHAVE_MPI '
-              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
-              '-DCPRINTEL '
-              '-DHAVE_SLASHPROC -I. " ')
-    CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise -xHost '
-              '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
-              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
-              '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
-    OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-              '-D NETCDF_DIR:STRING='
-              '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
-              '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-              '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
+                       '-convert '
+                       'big_endian -assume byterecl -ftz -traceback -assume '
+                       'realloc_lhs '
+                       '-xHost  -O2   -DLINUX  -DNDEBUG -DMCT_INTERFACE '
+                       '-DHAVE_MPI '
+                       '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
+                       '-DCPRINTEL '
+                       '-DHAVE_SLASHPROC -I. " ')
+        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise -xHost '
+                       '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
+                       '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
+                       '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
+        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+                       '-D NETCDF_DIR:STRING='
+                       '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
+                       '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
-    QUEUE = ('-D QUEUE:FILEPATH=execca ')
-    MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
+        self.QUEUE = ('-D QUEUE:FILEPATH=execca ')
+        self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
 
     def runModuleCmd(self):
         """ run module cmds
