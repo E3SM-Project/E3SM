@@ -350,15 +350,15 @@
          <OS>LINUX</OS>
          <COMPILERS>pgi</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
-         <RUNDIR>/global/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/global/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/global/scratch/$CCSMUSER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/global/scratch/$CCSMUSER/inputdata/</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$CCSMUSER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/global/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/inputdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$ENV{CASE}</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/pic/scratch/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/pic/scratch/$CCSMUSER/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_BASELINE>$CESMSCRATCHROOT/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/$CESMSCRATCHROOT/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>squeue</BATCHQUERY>
          <BATCHSUBMIT>sbatch</BATCHSUBMIT>
          <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
@@ -371,15 +371,15 @@
          <OS>LINUX</OS>
          <COMPILERS>pgi</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
-         <RUNDIR>/global/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/global/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/global/scratch/$CCSMUSER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/global/scratch/$CCSMUSER/inputdata/</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$CCSMUSER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/global/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/inputdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$ENV{CASE}</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/pic/scratch/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/pic/scratch/$CCSMUSER/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_BASELINE>$CESMSCRATCHROOT/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/$CESMSCRATCHROOT/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>squeue</BATCHQUERY>
          <BATCHSUBMIT>sbatch</BATCHSUBMIT>
          <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
@@ -392,15 +392,15 @@
          <OS>LINUX</OS>
          <COMPILERS>pgi</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
-         <RUNDIR>/global/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/global/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/global/scratch/$CCSMUSER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/global/scratch/$CCSMUSER/inputdata/</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$CCSMUSER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/global/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/inputdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$ENV{CASE}</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/pic/scratch/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/pic/scratch/$CCSMUSER/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_BASELINE>$CESMSCRATCHROOT/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/$CESMSCRATCHROOT/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>squeue</BATCHQUERY>
          <BATCHSUBMIT>sbatch</BATCHSUBMIT>
          <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
