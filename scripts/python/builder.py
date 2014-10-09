@@ -1,8 +1,7 @@
 from __future__ import generators
 import os
 import subprocess
-
-module = 'eval `/glade/apps/opt/lmod/lmod/libexec/lmod tcsh !*`'
+import environment as env
 
 class platformBuilder(object):
     """ class that implements a factory pattern.  creates a relevant
@@ -87,58 +86,56 @@ class darwin(platformBuilder):
 
 class yellowstone(platformBuilder):
 
-    moduleList = [ 'module load intel/14.0.2',
-                   'module load ncarcompilers/1.0',
-                   'module unload netcdf',
-                   'module load netcdf-mpi/4.3.0',
-                   'module load pnetcdf/1.4.1',
-                   'module load ncarenv/1.0',
-                   'module load ncarbinlibs/1.1',
-                   'module load cmake',
-                   'module list']
-
-    CMAKE_EXE = 'make'
+    moduleList = [ 'intel/14.0.2',
+                   'ncarcompilers/1.0',
+                   'netcdf-mpi/4.3.0',
+                   'pnetcdf/1.4.1',
+                   'ncarenv/1.0',
+                   'ncarbinlibs/1.1' ]
+                   
+    CMAKE_EXE = '/glade/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake'
     BUILD_DIR = 'build'
     MAKE_CMD = 'make all'
     TEST_CMD = 'ctest'
-    
-    MODULE_PRE  = '[\'/bin/tcsh\', \'-i\', \'-c\', \''
-    MODULE_POST = '\']'
 
-    FC = 'mpif90'
-    CC = 'mpicc'
+    FC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpif90'
+    CC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpicc'
+    #FC = 'mpif90'
+    #CC = 'mpicc'
     LDFLAGS = ''
 
-    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O -fconvert=big-endian '
-              '-ffree-line-length-none -ffixed-line-length-none '
-              '-fno-range-check '
-              '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 -DNO_MPIMOD '
-              '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-              '-DCPRGNU -I. " ')
-    CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
-              '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-              '-DCPRGNU -I. " ')
-    OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON -D '
-              'NETCDF_DIR:STRING=/opt/local '
-              '-D WITH_PNETCDF:LOGICAL=FALSE -D '
-              'PIO_BUILD_TESTS:LOGICAL=TRUE ')
-    MPIEXEC = ' -D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 '
+    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source -convert '
+              'big_endian -assume byterecl -ftz -traceback -assume realloc_lhs '
+              '-xHost  -O2   -DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
+              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX -DCPRINTEL '
+              '-DHAVE_SLASHPROC -I. " ' )
+    CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise -xHost '
+              '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
+              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
+              '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
+    OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+              '-D NETCDF_DIR:STRING=/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
+              '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+              '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+              
+    MPIEXEC = ' -D  MPIEXEC:FILEPATH=/ncar/opt/lsf/9.1/linux2.6-glibc2.3-x86_64/bin/mpirun.lsf '
 
     envMod = {}
 
     def runModuleCmd(self):
         """ run module cmds
         """
+        self.mod = env.ModuleInterface()
+        self.mod.python_init("/glade/apps/opt/lmod/lmod/init/env_modules_python.py")
+        self.mod.purge()
+        
         for cmd in self.moduleList:
-            print cmd
-            p = subprocess.Popen(['/bin/tcsh', '-i', '-c', cmd])
-            p.wait()
-
+            self.mod.load(cmd)
+    
 
     def cmakeCmd(self):
         """ cmake command to run
         """
-        print("yellostone cmake")
         # ~# make build directory and move to it.
         if not os.path.exists(self.BUILD_DIR):
             os.makedirs(self.BUILD_DIR)
@@ -147,16 +144,35 @@ class yellowstone(platformBuilder):
         # ~#
         self.runModuleCmd()
 
+        # ~# change environemnt, first get existing env
+        self.envMod = dict(os.environ)
+        # ~# add to env
+        self.envMod['FC'] = self.FC
+        self.envMod['CC'] = self.CC
+        self.envMod['LDFLAGS'] = self.LDFLAGS
+
+        cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
+                       self.OFLAGS + self.MPIEXEC + ' ..')
+
+        print cmakeString
+        p = subprocess.Popen(cmakeString,
+                             shell=True, env=self.envMod)
+        p.wait()
+
 
     def buildCmd(self):
         """ run build
         """
-        print("yellowstone build")
+        p = subprocess.Popen(self.MAKE_CMD,
+                             shell=True, env=self.envMod)
+        p.wait()
 
 
     def testCmd(self):
         """ run tests
         """
-        print("yellowstone ctest")
+        p = subprocess.Popen(self.TEST_CMD,
+                             shell=True, env=self.envMod)
+        p.wait()
 
 
