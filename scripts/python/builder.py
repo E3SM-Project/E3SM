@@ -123,7 +123,8 @@ class yellowstone(platformBuilder):
               '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
               '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
-    CTEST_EXE = (' -D  MPIEXEC:FILEPATH=execca mpirun.lsf ')
+    QUEUE = ('-D QUEUE:FILEPATH=execca ')
+    MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
 
     envMod = {}
 
@@ -157,7 +158,7 @@ class yellowstone(platformBuilder):
         self.envMod['LDFLAGS'] = self.LDFLAGS
 
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
-                       self.OFLAGS + self.CTEST_EXE + ' ..')
+                       self.OFLAGS + self.QUEUE + self.MPIEXEC + ' ..')
 
         print cmakeString
         p = subprocess.Popen(cmakeString,
