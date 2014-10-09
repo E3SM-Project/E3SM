@@ -3,7 +3,7 @@
 source /etc/profile.d/modules.csh
 module purge
 module load cmake
-module load perl xml-libxml
+module load perl xml-libxml switch
 if ( $COMPILER == "pgi" ) then
     module load pgi
 endif
