@@ -916,11 +916,14 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
      only 1 io task per group */
 
   if(ios.ioproc){
-    key=0;
+    key = 0;
+    color= ios.io_rank;
   }else{
     key=ios.comp_rank%taskratio+1;
+    color = ios.comp_rank/taskratio;
   }
-  color = ios.comp_rank/taskratio;
+  
+  printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
 
   // If the io tasks are not an even divisor of the compute tasks put the remainder in the last group
   if(color==ios.num_iotasks){

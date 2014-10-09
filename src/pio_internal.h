@@ -111,6 +111,16 @@ typedef struct mapsort
   int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset compmap[], 
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
 
+#ifdef BGQ
+  //  void identity(MPI_Fint *comm, int *iotask);
+void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, int *rearr, 
+		      int *iamIOtask);
+
+
+#endif
+
+
+
 #if defined(__cplusplus)
 }
 #endif

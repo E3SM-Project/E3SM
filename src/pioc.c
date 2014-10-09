@@ -211,6 +211,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosystem_desc_t *iosys;
   int ierr;
   MPI_Group compgroup, iogroup;
+  int lbase;
   iosys = (iosystem_desc_t *) malloc(sizeof(iosystem_desc_t));
 
   iosys->union_comm = comp_comm;
@@ -228,16 +229,15 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
+  if(iosys->comp_rank==0)
+    iosys->compmaster = true;
+#ifdef BGQ
+  lbase = base;
+  determineiotasks(comp_comm, stride, rearr, &(iosys->num_iotasks), &lbase, stride, rearr, &(iosys->ioproc));
+#else
   if((num_iotasks < 1) || ((num_iotasks*stride) > iosys->num_comptasks)){
     return PIO_EBADID;
   }
-  if(iosys->comp_rank==0)
-    iosys->compmaster = true;
-
-#ifndef _MPISERIAL
-  CheckMPIReturn(MPI_Info_create(&(iosys->info)),__FILE__,__LINE__);
-  iosys->info = MPI_INFO_NULL;
-#endif
   iosys->ioranks = (int *) calloc(sizeof(int), iosys->num_iotasks);
   for(int i=0;i< num_iotasks; i++){
     iosys->ioranks[i] = (base + i*stride) % iosys->num_comptasks;
@@ -245,6 +245,13 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
       iosys->ioproc = true;
   }
   iosys->ioroot = iosys->ioranks[0];
+#endif
+
+#ifndef _MPISERIAL
+  CheckMPIReturn(MPI_Info_create(&(iosys->info)),__FILE__,__LINE__);
+  iosys->info = MPI_INFO_NULL;
+#endif
+
 
   if(iosys->comp_rank == iosys->ioranks[0])
     iosys->iomaster = true;
