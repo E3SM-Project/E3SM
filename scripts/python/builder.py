@@ -3,6 +3,7 @@ import os
 import subprocess
 import environment as env
 
+
 class platformBuilder(object):
     """ class that implements a factory pattern.  creates a relevant
         platform class (darwin, yellowstone, goldbach, edison, etc... that
@@ -86,13 +87,13 @@ class darwin(platformBuilder):
 
 class yellowstone(platformBuilder):
 
-    moduleList = [ 'intel/14.0.2',
-                   'ncarcompilers/1.0',
-                   'netcdf-mpi/4.3.0',
-                   'pnetcdf/1.4.1',
-                   'ncarenv/1.0',
-                   'ncarbinlibs/1.1' ]
-                   
+    moduleList = ['intel/14.0.2',
+                  'ncarcompilers/1.0',
+                  'netcdf-mpi/4.3.0',
+                  'pnetcdf/1.4.1',
+                  'ncarenv/1.0',
+                  'ncarbinlibs/1.1']
+
     CMAKE_EXE = '/glade/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake'
     BUILD_DIR = 'build'
     MAKE_CMD = 'make all'
@@ -100,25 +101,31 @@ class yellowstone(platformBuilder):
 
     FC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpif90'
     CC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpicc'
-    #FC = 'mpif90'
-    #CC = 'mpicc'
+    # FC = 'mpif90'
+    # CC = 'mpicc'
     LDFLAGS = ''
 
-    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source -convert '
-              'big_endian -assume byterecl -ftz -traceback -assume realloc_lhs '
-              '-xHost  -O2   -DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
-              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX -DCPRINTEL '
-              '-DHAVE_SLASHPROC -I. " ' )
+    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
+              '-convert '
+              'big_endian -assume byterecl -ftz -traceback -assume '
+              'realloc_lhs '
+              '-xHost  -O2   -DLINUX  -DNDEBUG -DMCT_INTERFACE '
+              '-DHAVE_MPI '
+              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
+              '-DCPRINTEL '
+              '-DHAVE_SLASHPROC -I. " ')
     CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise -xHost '
               '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
               '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
               '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
     OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-              '-D NETCDF_DIR:STRING=/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
+              '-D NETCDF_DIR:STRING='
+              '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
               '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
               '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-              
-    MPIEXEC = ' -D  MPIEXEC:FILEPATH=/ncar/opt/lsf/9.1/linux2.6-glibc2.3-x86_64/bin/mpirun.lsf '
+
+    MPIEXEC = (' -D  MPIEXEC:FILEPATH='
+               '/ncar/opt/lsf/9.1/linux2.6-glibc2.3-x86_64/bin/mpirun.lsf ')
 
     envMod = {}
 
@@ -126,12 +133,12 @@ class yellowstone(platformBuilder):
         """ run module cmds
         """
         self.mod = env.ModuleInterface()
-        self.mod.python_init("/glade/apps/opt/lmod/lmod/init/env_modules_python.py")
+        self.mod.python_init("/glade/apps/opt/lmod/lmod/init/"
+                             "env_modules_python.py")
         self.mod.purge()
-        
+
         for cmd in self.moduleList:
             self.mod.load(cmd)
-    
 
     def cmakeCmd(self):
         """ cmake command to run
@@ -139,7 +146,7 @@ class yellowstone(platformBuilder):
         # ~# make build directory and move to it.
         if not os.path.exists(self.BUILD_DIR):
             os.makedirs(self.BUILD_DIR)
-        
+
         os.chdir(self.BUILD_DIR)
         # ~#
         self.runModuleCmd()
@@ -159,7 +166,6 @@ class yellowstone(platformBuilder):
                              shell=True, env=self.envMod)
         p.wait()
 
-
     def buildCmd(self):
         """ run build
         """
@@ -167,12 +173,9 @@ class yellowstone(platformBuilder):
                              shell=True, env=self.envMod)
         p.wait()
 
-
     def testCmd(self):
         """ run tests
         """
         p = subprocess.Popen(self.TEST_CMD,
                              shell=True, env=self.envMod)
         p.wait()
-
-
