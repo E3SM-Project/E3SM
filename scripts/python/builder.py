@@ -99,10 +99,10 @@ class yellowstone(platformBuilder):
     MAKE_CMD = 'make all'
     TEST_CMD = 'ctest'
 
-    FC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpif90'
-    CC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpicc'
-    # FC = 'mpif90'
-    # CC = 'mpicc'
+    # FC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpif90'
+    # CC = '/glade/apps/opt/modulefiles/ys/cmpwrappers/mpicc'
+    FC = 'mpif90'
+    CC = 'mpicc'
     LDFLAGS = ''
 
     FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
