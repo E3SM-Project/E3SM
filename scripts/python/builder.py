@@ -5,28 +5,12 @@ import environment as lmod
 import abc
 
 class platformBuilder(object):
-    """ abstract base class that implements interfaces and 
+    __metaclass__  = abc.ABCMeta
+    """ abstract base class that implements interfaces and
         a factory pattern.  creates a relevant
         platform class (darwin_gnu, yellowstone_intel, goldbach_nag, etc... that
         configures cmake, builds pio and tests, and runs the unit tests
     """
-    __metaclass__  = abc.ABCMeta
-    
-    TEST_CMD = 'ctest'
-    MAKE_CMD = 'make all'
-    
-    CMAKE_EXE = ''
-    BUILD_DIR = ''
-    
-    FC = ''
-    CC = ''
-    LDFLAGS = ''
-    
-    FFLAGS = ''
-    CFLAGS = ''
-    OFLAGS = ''
-    QUEUE = ''
-    MPIEXEC = ''
     
     @classmethod
     def _raise_not_implemented(cls, method_name):
@@ -47,12 +31,40 @@ class platformBuilder(object):
         self.buildCmd()
         self.testCmd()
     
+    def setInvariantClassAttr(self):
+        """ figure out some things that shouldn't change in subclasses
+        """
+        self.className = self.__class__.__name__
+        self.BUILD_DIR = "build_" + self.className
+        self.TEST_CMD = 'ctest'
+        self.MAKE_CMD = 'make all'
+    
     def buildCmd(self):
         """ run build
         """
         p = subprocess.Popen(self.MAKE_CMD,
                              shell=True, env=self.envMod)
         p.wait()
+    
+    def __init__(self):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes.  Override this in platform specific classes
+        """
+        self.setInvariantClassAttr()
+
+        self.CMAKE_EXE = ''
+    
+        self.FC = ''
+        self.CC = ''
+        self.LDFLAGS = ''
+    
+        self.FFLAGS = ''
+        self.CFLAGS = ''
+        self.OFLAGS = ''
+        self.QUEUE = ' '
+        self.MPIEXEC = ''
+        
+        self.envMod = {}
     
     def testCmd(self):
         """ run tests
@@ -79,7 +91,7 @@ class platformBuilder(object):
     
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.OFLAGS + self.QUEUE + self.MPIEXEC + ' ..')
-                   
+        print cmakeString
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()
@@ -97,30 +109,34 @@ class platformBuilder(object):
 
 class darwin_gnu(platformBuilder):
 
-    CMAKE_EXE = '/opt/local/bin/cmake'
-    BUILD_DIR = 'build'
+    def __init__(self):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+        """
+        self.setInvariantClassAttr()
+
+        self.CMAKE_EXE = '/opt/local/bin/cmake'
     
-
-    FC = '/opt/local/bin/mpifort-mpich-gcc48'
-    CC = '/opt/local/bin/mpicc-mpich-mp'
-    LDFLAGS = '-lcurl'
-
-    FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O -fconvert=big-endian '
-              '-ffree-line-length-none -ffixed-line-length-none '
-              '-fno-range-check '
-              '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 -DNO_MPIMOD '
-              '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-              '-DCPRGNU -I. " ')
-    CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
-              '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-              '-DCPRGNU -I. " ')
-    OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON -D '
-              'NETCDF_DIR:STRING=/opt/local '
-              '-D WITH_PNETCDF:LOGICAL=FALSE -D '
-              'PIO_BUILD_TESTS:LOGICAL=TRUE ')
-    CTEST_EXE = ' -D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 '
-
-    envMod = {}
+        self.FC = '/opt/local/bin/mpifort-mpich-gcc48'
+        self.CC = '/opt/local/bin/mpicc-mpich-mp'
+        self.LDFLAGS = '-lcurl'
+    
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O -fconvert=big-endian '
+                       '-ffree-line-length-none -ffixed-line-length-none '
+                       '-fno-range-check '
+                       '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 -DNO_MPIMOD '
+                       '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+                       '-DCPRGNU -I. " ')
+        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
+                        '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+                        '-DCPRGNU -I. " ')
+        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON -D '
+                        'NETCDF_DIR:STRING=/opt/local '
+                        '-D WITH_PNETCDF:LOGICAL=FALSE -D '
+                        'PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                                  
+        self.QUEUE = (' ')
+        self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
 
     def runModuleCmd(self):
         """ run module cmds
@@ -141,9 +157,7 @@ class yellowstone_intel(platformBuilder):
                   'ncarbinlibs/1.1']
 
     CMAKE_EXE = 'cmake'
-    BUILD_DIR = 'build'
     
-
     FC = 'mpif90'
     CC = 'mpicc'
     LDFLAGS = ''
@@ -170,8 +184,6 @@ class yellowstone_intel(platformBuilder):
     QUEUE = ('-D QUEUE:FILEPATH=execca ')
     MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
 
-    envMod = {}
-
     def runModuleCmd(self):
         """ run module cmds
         """
@@ -182,9 +194,3 @@ class yellowstone_intel(platformBuilder):
 
         for cmd in self.moduleList:
             self.lmod.load(cmd)
-
-
-
-
-
-
