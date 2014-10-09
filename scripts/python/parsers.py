@@ -8,9 +8,9 @@ class cliParser():
         """
         parser = argparse.ArgumentParser(description=useMsg)
 
-        parser.add_argument('platformName', metavar='platform', type=str,
+        parser.add_argument('compilerName', metavar='compiler', type=str,
                             help='enter the name of a '
-                            'platform for your pio build')
+                            'compiler for your pio build and ctests')
 
         args = parser.parse_args()
 
