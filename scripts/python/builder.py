@@ -123,8 +123,7 @@ class yellowstone(platformBuilder):
               '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
               '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
-    MPIEXEC = (' -D  MPIEXEC:FILEPATH='
-               '/ncar/opt/lsf/9.1/linux2.6-glibc2.3-x86_64/bin/mpirun.lsf ')
+    MPIEXEC = (' -D  MPIEXEC:FILEPATH='execca mpirun.lsf ')
 
     envMod = {}
 

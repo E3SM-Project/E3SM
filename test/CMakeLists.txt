@@ -30,13 +30,22 @@ if(${PIO_BUILD_TIMING} MATCHES "ON")
   SET(TIMING_LINK_LIB timing)
 endif()
 
+###
+# For ctest to work with mpirun.lsf and on geyser (for yellowstone testing),
+# we need -np at the end of the mpiexec command.  We also need backticks when
+# there is more than one option to the specific test in question.
+# See:
+#
+#ADD_TEST(pio_decomp_tests_4p_2iop_2str ${MPIEXEC} ./pio_decomp_tests `--pio-tf-num-io-tasks=2 --pio-tf-stride=2` {MPIEXEC_NUMPROC_FLAG} 4)
+#
+###
 
 ADD_EXECUTABLE(pio_init_finalize pio_init_finalize.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(init_finalize_1_proc ${MPIEXEC} ./pio_init_finalize ${MPIEXEC_NUMPROC_FLAG} 1)
 ADD_TEST(init_finalize_2_proc ${MPIEXEC} ./pio_init_finalize ${MPIEXEC_NUMPROC_FLAG} 2)
-ADD_TEST(init_finalize_2_proc_with_args ${MPIEXEC} ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2 ${MPIEXEC_NUMPROC_FLAG} 2)
+ADD_TEST(init_finalize_2_proc_with_args ${MPIEXEC} ./pio_init_finalize `--pio-tf-stride=2 --pio-tf-num-aggregators=2` ${MPIEXEC_NUMPROC_FLAG} 2)
 
 ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
@@ -76,5 +85,5 @@ ADD_TEST(pio_decomp_tests_4p_3agg ${MPIEXEC} ./pio_decomp_tests --pio-tf-num-agg
 ADD_TEST(pio_decomp_tests_4p_1iop ${MPIEXEC} ./pio_decomp_tests --pio-tf-num-io-tasks=1 {MPIEXEC_NUMPROC_FLAG} 4)
 ADD_TEST(pio_decomp_tests_4p_2iop ${MPIEXEC} ./pio_decomp_tests --pio-tf-num-io-tasks=2 ${MPIEXEC_NUMPROC_FLAG} 4)
 ADD_TEST(pio_decomp_tests_4p_3iop ${MPIEXEC} ./pio_decomp_tests --pio-tf-num-io-tasks=3 ${MPIEXEC_NUMPROC_FLAG} 4)
-ADD_TEST(pio_decomp_tests_4p_2iop_2str ${MPIEXEC} ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2 ${MPIEXEC_NUMPROC_FLAG} 4)
-ADD_TEST(pio_decomp_tests_4p_2iop_1agg ${MPIEXEC} ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1 ${MPIEXEC_NUMPROC_FLAG} 4 )
+ADD_TEST(pio_decomp_tests_4p_2iop_2str ${MPIEXEC} ./pio_decomp_tests `--pio-tf-num-io-tasks=2 --pio-tf-stride=2` ${MPIEXEC_NUMPROC_FLAG} 4)
+ADD_TEST(pio_decomp_tests_4p_2iop_1agg ${MPIEXEC} ./pio_decomp_tests `--pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1` ${MPIEXEC_NUMPROC_FLAG} 4 )
