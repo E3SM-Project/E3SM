@@ -11,23 +11,33 @@ class platformBuilder(object):
         configures cmake, builds pio and tests, and runs the unit tests
     """
     __metaclass__  = abc.ABCMeta
+    
     TEST_CMD = 'ctest'
     MAKE_CMD = 'make all'
+    
+    CMAKE_EXE = ''
+    BUILD_DIR = ''
+    
+    FC = ''
+    CC = ''
+    LDFLAGS = ''
+    
+    FFLAGS = ''
+    CFLAGS = ''
+    OFLAGS = ''
+    QUEUE = ''
+    MPIEXEC = ''
     
     @classmethod
     def _raise_not_implemented(cls, method_name):
         raise NotImplementedError(
-                                  cls.__name__ +" does not implement method "+method_name+".")
+                                  cls.__name__ +" does not implement method " +
+                                  method_name+".")
     
     @abc.abstractmethod
     def runModuleCmd(self, modname):
         """Method not implemented."""
         self._raise_not_implemented("runModuleCmd")
-    
-    @abc.abstractmethod
-    def cmakeCmd(self):
-        """Method not implemented."""
-        self._raise_not_implemented("cmakeCmd")
     
     def metaBuild(self):
         """ routine where everything gets kicked off from
@@ -51,6 +61,29 @@ class platformBuilder(object):
                              shell=True, env=self.envMod)
         p.wait()
     
+    def cmakeCmd(self):
+        """ cmake command to run
+        """
+        # ~# make build directory and move to it.
+        if not os.path.exists(self.BUILD_DIR):
+            os.makedirs(self.BUILD_DIR)
+    
+        os.chdir(self.BUILD_DIR)
+    
+        # ~# change environemnt, first get existing env
+        self.envMod = dict(os.environ)
+        # ~# add to env
+        self.envMod['FC'] = self.FC
+        self.envMod['CC'] = self.CC
+        self.envMod['LDFLAGS'] = self.LDFLAGS
+    
+        cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
+                       self.OFLAGS + self.QUEUE + self.MPIEXEC + ' ..')
+                   
+        p = subprocess.Popen(cmakeString,
+                             shell=True, env=self.envMod)
+        p.wait()
+
     def factory(type):
         """ factory method for instantiating the appropriate class
         """
@@ -95,35 +128,6 @@ class darwin_gnu(platformBuilder):
         # ~# not implemented for a system without lmod (or
         # ~# somthing similar)
         pass
-
-    def cmakeCmd(self):
-        """ cmake command to run
-        """
-        # ~# make build directory and move to it.
-        if not os.path.exists(self.BUILD_DIR):
-            os.makedirs(self.BUILD_DIR)
-
-        os.chdir(self.BUILD_DIR)
-
-        # ~# change environemnt, first get existing env
-        self.envMod = dict(os.environ)
-        # ~# add to env
-        self.envMod['FC'] = self.FC
-        self.envMod['CC'] = self.CC
-        self.envMod['LDFLAGS'] = self.LDFLAGS
-
-        cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
-                       self.OFLAGS + self.CTEST_EXE + ' ..')
-        p = subprocess.Popen(cmakeString,
-                             shell=True, env=self.envMod)
-        p.wait()
-
-    def buildCmd(self):
-        """ run build
-        """
-        p = subprocess.Popen(self.MAKE_CMD,
-                             shell=True, env=self.envMod)
-        p.wait()
 
 
 class yellowstone_intel(platformBuilder):
@@ -179,31 +183,7 @@ class yellowstone_intel(platformBuilder):
         for cmd in self.moduleList:
             self.lmod.load(cmd)
 
-    def cmakeCmd(self):
-        """ cmake command to run
-        """
-        # ~# make build directory and move to it.
-        if not os.path.exists(self.BUILD_DIR):
-            os.makedirs(self.BUILD_DIR)
 
-        os.chdir(self.BUILD_DIR)
-        # ~#
-        ### self.runModuleCmd()
-
-        # ~# change environemnt, first get existing env
-        self.envMod = dict(os.environ)
-        # ~# add to env
-        self.envMod['FC'] = self.FC
-        self.envMod['CC'] = self.CC
-        self.envMod['LDFLAGS'] = self.LDFLAGS
-
-        cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
-                       self.OFLAGS + self.QUEUE + self.MPIEXEC + ' ..')
-
-        print cmakeString
-        p = subprocess.Popen(cmakeString,
-                             shell=True, env=self.envMod)
-        p.wait()
 
 
 
