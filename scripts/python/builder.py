@@ -187,9 +187,10 @@ class yellowstone_intel(platformBuilder):
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+                       '-D MPIEXEC_NUMPROC_FLAG:STRING="-n" '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
-        self.QUEUE = ('-D QUEUE:FILEPATH=execca ')
+        self.QUEUE = ('-D QUEUE:STRING="bsub -Is -q caldera -W 00:02 " ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
 
     def runModuleCmd(self):

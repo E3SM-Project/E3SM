@@ -52,7 +52,8 @@ endif()
 ###-------------------------------------------------------------------------###
 
 ###-------------------------------------------------------------------------###
-# set -np <proc number> only once
+# set -np <proc number> only once need -n<proc number> for yellowstone, so no
+# space
 ###-------------------------------------------------------------------------###
 set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
 set(MPIEXEC_NPF2 ${MPIEXEC_NUMPROC_FLAG} 2)
