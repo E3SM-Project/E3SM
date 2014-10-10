@@ -2016,6 +2016,7 @@ module mpas_stream_manager
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_write()')
+        local_ierr = MPAS_STREAM_MGR_NOERR
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
