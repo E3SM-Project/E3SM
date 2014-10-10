@@ -27,6 +27,8 @@ endif
 cat >! $file << EOF1
 #!/bin/csh -f
 #SBATCH --job-name=${CASE}
+#SBATCH --partition=lr3
+#SBATCH --account=${ACCOUNT}
 #SBATCH --time=$tlimit
 #SBATCH --nodes=$nodes
 #SBATCH --ntasks=$ntasks
