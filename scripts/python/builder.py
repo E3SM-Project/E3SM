@@ -12,6 +12,26 @@ class platformBuilder(object):
         configures cmake, builds pio and tests, and runs the unit tests
     """
     
+    def __init__(self):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes.  Override this in platform specific classes
+        """
+        self.setInvariantClassAttr()
+    
+        self.CMAKE_EXE = ''
+    
+        self.FC = ''
+        self.CC = ''
+        self.LDFLAGS = ''
+    
+        self.FFLAGS = ''
+        self.CFLAGS = ''
+        self.OFLAGS = ''
+        self.QUEUE = ' '
+        self.MPIEXEC = ''
+    
+        self.envMod = {}
+    
     @classmethod
     def _raise_not_implemented(cls, method_name):
         raise NotImplementedError(
@@ -45,26 +65,6 @@ class platformBuilder(object):
         p = subprocess.Popen(self.MAKE_CMD,
                              shell=True, env=self.envMod)
         p.wait()
-    
-    def __init__(self):
-        """ user defined ctor so we can put stuff in a class instead of as
-            class attributes.  Override this in platform specific classes
-        """
-        self.setInvariantClassAttr()
-
-        self.CMAKE_EXE = ''
-    
-        self.FC = ''
-        self.CC = ''
-        self.LDFLAGS = ''
-    
-        self.FFLAGS = ''
-        self.CFLAGS = ''
-        self.OFLAGS = ''
-        self.QUEUE = ' '
-        self.MPIEXEC = ''
-        
-        self.envMod = {}
     
     def testCmd(self):
         """ run tests
@@ -128,12 +128,14 @@ class darwin_gnu(platformBuilder):
                        '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
                        '-DCPRGNU -I. " ')
         self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
-                        '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-                        '-DCPRGNU -I. " ')
-        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON -D '
-                        'NETCDF_DIR:STRING=/opt/local '
-                        '-D WITH_PNETCDF:LOGICAL=FALSE -D '
-                        'PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+                       '-DCPRGNU -I. " ')
+        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+                       '-D NETCDF_DIR:STRING=/opt/local '
+                       '-D PNETCDF_DIR:STRING=/opt/local '
+                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                        
+                        ### '-D WITH_PNETCDF:LOGICAL=FALSE
                                   
         self.QUEUE = (' ')
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
@@ -150,7 +152,7 @@ class yellowstone_intel(platformBuilder):
 
     def __init__(self):
         """ user defined ctor so we can put stuff in a class instead of as
-        class attributes
+            class attributes
         """
         self.setInvariantClassAttr()
 

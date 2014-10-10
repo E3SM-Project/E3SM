@@ -156,6 +156,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
  #endif
 	   size_t tstart[ndims], tcount[ndims];
 	   if(ios->io_rank==0){
+         // FIX(SPM, 100714)  don't use i, use something like myrank and iam
 	     for(i=0;i<iodesc->num_aiotasks;i++){
 	       if(i==0){	    
 		 buflen=1;
