@@ -125,7 +125,7 @@ contains
     type(surfalb_type)     , intent(in)     :: surfalb_vars
     type(temperature_type) , intent(in)     :: temperature_vars
     type(frictionvel_type) , intent(in)     :: frictionvel_vars
-    type(waterstate_type)  , intent(in)     :: waterstate_vars
+    type(waterstate_type)  , intent(inout)  :: waterstate_vars
     type(waterflux_type)   , intent(in)     :: waterflux_vars
     type(energyflux_type)  , intent(in)     :: energyflux_vars
     type(solarabs_type)    , intent(in)     :: solarabs_vars
