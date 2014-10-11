@@ -74,6 +74,7 @@ module mpas_io
 
    type MPAS_IO_Handle_type
       logical :: initialized = .false.
+      logical :: preexisting_file = .false.
       logical :: data_mode = .false.
       type (file_desc_t) :: pio_file
       character (len=StrKIND) :: filename
@@ -307,6 +308,7 @@ module mpas_io
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr, pio_iotype
+      logical :: exists
 
 !      write(stderrUnit,*) 'Called MPAS_io_open()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -344,7 +346,13 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_64BIT_OFFSET)
+         inquire(file=trim(filename), exist=exists)
+         if (exists) then
+            pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
+            MPAS_io_open % preexisting_file = .true.
+         else
+            pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_64BIT_OFFSET)
+         end if
       else
 !write(stderrUnit,*) 'MGD PIO_openfile'
          pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
@@ -354,7 +362,7 @@ module mpas_io
          return
       end if
 
-      if (mode == MPAS_IO_READ) then
+      if (mode == MPAS_IO_READ .or. MPAS_io_open % preexisting_file) then
 !MPAS_io_open % pio_unlimited_dimid = 44
          pio_ierr = PIO_inquire(MPAS_io_open % pio_file, unlimitedDimID=MPAS_io_open % pio_unlimited_dimid)
 !write(stderrUnit,*) 'Found unlimited dim ', MPAS_io_open % pio_unlimited_dimid
@@ -496,6 +504,7 @@ module mpas_io
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
+      integer :: inq_dimsize
       type (dimlist_type), pointer :: new_dimlist_node
       type (dimlist_type), pointer :: dim_cursor
 
@@ -523,7 +532,12 @@ module mpas_io
       dim_cursor => handle % dimlist_head
       do while (associated(dim_cursor))
          if (trim(dimname) == trim(dim_cursor % dimhandle % dimname)) then
-            if (dimsize /= dim_cursor % dimhandle % dimsize) then
+
+            ! The second half of the test below avoids raising errors in the case where 
+            !    we are writing to an already existing file, in which case the dimlen for the
+            !    unlimited dimension in the file will generally not be MPAS_IO_UNLIMITED_DIM
+            if ((dimsize /= dim_cursor % dimhandle % dimsize) .and. &
+               .not. (dimsize == MPAS_IO_UNLIMITED_DIM .and. dim_cursor % dimhandle % is_unlimited_dim)) then
                if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
             end if
             return
@@ -536,6 +550,26 @@ module mpas_io
          end if
          dim_cursor => dim_cursor % next
       end do
+
+
+      !
+      ! If we're working with a preexisting file, see whether this dimension isn't already
+      !    defined in the file; if it is, the dimension should match the dimsize specified in
+      !    this call to define the dimension, at which point we can add it to our local cache
+      !
+      if (handle % preexisting_file) then
+         call MPAS_io_inq_dim(handle, dimname, inq_dimsize, ierr=pio_ierr)
+         if (pio_ierr /= MPAS_IO_ERR_PIO) then
+
+            ! Verify that the dimsize matches...
+            if (dimsize /= inq_dimsize .and. dimsize /= MPAS_IO_UNLIMITED_DIM) then
+               if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+               return
+            end if
+
+         end if
+         return
+      end if
 
 
       !
@@ -816,6 +850,9 @@ module mpas_io
       integer :: pio_ierr
       integer :: pio_type
       integer :: ndims
+      integer :: inq_fieldtype
+      integer :: inq_ndims
+      character (len=StrKIND), dimension(:), pointer :: inq_dimnames
       type (fieldlist_type), pointer :: new_fieldlist_node
       type (fieldlist_type), pointer :: field_cursor
       type (dimlist_type), pointer :: dim_cursor
@@ -873,6 +910,54 @@ module mpas_io
          end if
          field_cursor => field_cursor % next
       end do
+
+
+      !
+      ! If we're working with a preexisting file, see whether this variable isn't already
+      !    defined in the file; if it is, the type and dimensions should match the type and dimensions
+      !     specified in this call to define the variable, at which point we can add it to our local cache
+      !
+      if (handle % preexisting_file) then
+         call MPAS_io_inq_var(handle, fieldname, inq_fieldtype, inq_ndims, inq_dimnames, ierr=pio_ierr)
+         if (pio_ierr /= MPAS_IO_ERR_PIO) then
+
+            ! Verify that the type and dimensions matche...
+            if (fieldtype == MPAS_IO_DOUBLE) then
+               if (local_precision == MPAS_IO_SINGLE_PRECISION) then
+                  pio_type = MPAS_IO_REAL
+               else
+                  pio_type = MPAS_IO_DOUBLE
+               end if
+            else
+               pio_type = fieldtype
+            end if
+            if (pio_type /= inq_fieldtype) then
+               if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+               deallocate(inq_dimnames)
+               return
+            end if
+
+            if (ndims /= inq_ndims) then
+               if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+               deallocate(inq_dimnames)
+               return
+            end if
+
+            do i=1,ndims
+               if (trim(dimnames(i)) /= trim(inq_dimnames(i))) then
+                  if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+                  deallocate(inq_dimnames)
+                  return
+               end if
+            end do
+   
+            ! TODO: Can we get the dimension sizes to see whether they match those from the file?
+   
+         end if
+
+         return
+      end if
+
 
       !
       ! Otherwise, define it
@@ -1982,7 +2067,11 @@ module mpas_io
          handle % data_mode = .true.
 
          pio_ierr = PIO_enddef(handle % pio_file)
-         if (pio_ierr /= PIO_noerr) then
+         ! If we are working with a preexisting file, we likely didn't define
+         ! new dimensions or variables, in which case PIO_enddef() will return
+         ! an error under harmless circumstances; so, don't return only for
+         ! pre-existing files.
+         if (pio_ierr /= PIO_noerr .and. (.not. handle % preexisting_file)) then
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
          end if
@@ -3994,7 +4083,35 @@ module mpas_io
 
       pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
       if (pio_ierr /= PIO_noerr) then
+
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+
+         !
+         ! If we are working with a pre-existing file and the text attribute is larger than in the file, we need 
+         ! to enter define mode before writing the attribute. Note the PIO_redef documentation:
+         !     'Entering and leaving netcdf define mode causes a file sync operation to occur, 
+         !      these operations can be very expensive in parallel systems.'
+         !
+         if (handle % preexisting_file .and. .not. handle % data_mode) then
+            pio_ierr = PIO_redef(handle % pio_file)
+            if (pio_ierr /= PIO_noerr) then
+               return
+            end if
+
+            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+            if (pio_ierr /= PIO_noerr) then
+               return
+            end if
+
+            pio_ierr = PIO_enddef(handle % pio_file)
+            if (pio_ierr /= PIO_noerr) then
+               return
+            end if
+
+            if (present(ierr)) ierr = MPAS_IO_NOERR
+
+         end if
+
          return
       end if
 
