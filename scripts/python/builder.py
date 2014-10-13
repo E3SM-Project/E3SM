@@ -134,9 +134,7 @@ class darwin_gnu(platformBuilder):
                        '-D NETCDF_DIR:STRING=/opt/local '
                        '-D PNETCDF_DIR:STRING=/opt/local '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-                        
-                        ### '-D WITH_PNETCDF:LOGICAL=FALSE
-                                  
+                       
         self.QUEUE = (' ')
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
 
@@ -190,8 +188,19 @@ class yellowstone_intel(platformBuilder):
                        '-D MPIEXEC_NUMPROC_FLAG:STRING="-n" '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
-        self.QUEUE = ('-D QUEUE:STRING="bsub -Is -q caldera -W 00:02 " ')
+        # ~#self.QUEUE = ('-D QUEUE:STRING="bsub -Is -q caldera -W 00:02 " ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
+
+    def testCmd(self):
+        """ override testCmd s.t. on yellowstone we open a caldera interactive
+            node, run the tests (same as the base class) and then exit the queue.
+        """
+            # ~# p = subprocess.Popen(execca,
+                             # ~#shell=True, env=self.envMod)
+        # ~#p = subprocess.Popen(self.TEST_CMD,
+                         # ~#shell=True, env=self.envMod)
+        # ~#p.wait()
+
 
     def runModuleCmd(self):
         """ run module cmds

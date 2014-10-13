@@ -46,14 +46,16 @@ endif()
 #
 #
 # ADD_TEST(pio_decomp_tests_4p_2iop_2str
-#          ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
+#          ${MPIEXEC_ARG1} ${MPIEXEC_ARG2}
 #          ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2)
 #
 ###-------------------------------------------------------------------------###
 
 ###-------------------------------------------------------------------------###
-# set -np <proc number> only once need -n<proc number> for yellowstone, so no
-# space
+# set -np <numProcs> for darwin and set -n <numProcs> for yellowstone.
+# so this once for selected pe counts.  mpirun.lsf on yellowstone wants the 
+# -n <proc number> at the end of the command so we provide mpirunLsfReorderArgs.py
+# as a wrapper that does this reordering so we can keep this file relatively simple.
 ###-------------------------------------------------------------------------###
 set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
 set(MPIEXEC_NPF2 ${MPIEXEC_NUMPROC_FLAG} 2)
@@ -73,15 +75,15 @@ TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./pio_init_finalize)
 ADD_TEST(init_finalize_1_proc 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF1}
+         ${MPIEXEC} ${MPIEXEC_NPF1}
          ${test_exe} )
 ADD_TEST(init_finalize_2_proc 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
          
 set (test_exe ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
 ADD_TEST(init_finalize_2_proc_with_args 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
 
 ###-------------------------------------------------------------------------###
@@ -93,7 +95,7 @@ TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./pio_file_simple_tests)
 ADD_TEST(pio_file_simple_tests 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
 
 ###-------------------------------------------------------------------------###
@@ -105,7 +107,7 @@ TARGET_LINK_LIBRARIES(pio_file_fail  piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./pio_file_fail)
 ADD_TEST(pio_file_fail 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
 
 ###-------------------------------------------------------------------------###
@@ -117,7 +119,7 @@ TARGET_LINK_LIBRARIES(ncdf_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./ncdf_simple_tests)
 ADD_TEST(ncdf_simple_tests 
-        ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+        ${MPIEXEC} ${MPIEXEC_NPF2}
         ${test_exe} )
 
 ###-------------------------------------------------------------------------###
@@ -129,11 +131,11 @@ TARGET_LINK_LIBRARIES(ncdf_get_put  piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./ncdf_get_put)
 ADD_TEST(ncdf_get_put_1proc 
-         ${QUEUE}${MPIEXEC} ${MPIEXEC_NPF1}
+         ${MPIEXEC} ${MPIEXEC_NPF1}
          ${test_exe} )
 
 ADD_TEST(ncdf_get_put_2proc
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
 
 ###-------------------------------------------------------------------------###
@@ -145,7 +147,7 @@ TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./ncdf_fail)
 ADD_TEST(ncdf_fail 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2}
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
 
 ###-------------------------------------------------------------------------###
@@ -157,51 +159,51 @@ TARGET_LINK_LIBRARIES(pio_decomp_tests  piof pioc ${TIMING_LINK_LIB} )
 
 set (test_exe ./pio_decomp_tests)
 ADD_TEST(pio_decomp_tests_1p 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF1} 
+         ${MPIEXEC} ${MPIEXEC_NPF1}
          ${test_exe} )
 ADD_TEST(pio_decomp_tests_2p 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF2} 
+         ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe} )
 ADD_TEST(pio_decomp_tests_3p 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF3} 
+         ${MPIEXEC} ${MPIEXEC_NPF3}
          ${test_exe} )
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=1)
 ADD_TEST(pio_decomp_tests_4p_1agg 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=1)
 ADD_TEST(pio_decomp_tests_4p_2agg 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=1)
 ADD_TEST(pio_decomp_tests_4p_3agg 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=1)
 ADD_TEST(pio_decomp_tests_4p_1iop 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2)
 ADD_TEST(pio_decomp_tests_4p_2iop 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4} 
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=3)
 ADD_TEST(pio_decomp_tests_4p_3iop 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4} 
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2)
 ADD_TEST(pio_decomp_tests_4p_2iop_2str 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
-        ${test_exe})
+         ${MPIEXEC} ${MPIEXEC_NPF4}
+         ${test_exe})
 
 set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1)
 ADD_TEST(pio_decomp_tests_4p_2iop_1agg 
-         ${QUEUE} ${MPIEXEC} ${MPIEXEC_NPF4}
+         ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
