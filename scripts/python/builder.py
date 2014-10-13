@@ -188,8 +188,7 @@ class yellowstone_intel(platformBuilder):
                        '-D MPIEXEC_NUMPROC_FLAG:STRING="-n" '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
-        # ~#self.QUEUE = ('-D QUEUE:STRING="bsub -Is -q caldera -W 00:02 " ')
-        self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirun.lsf ')
+        self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirunLsfReorderArgs.py ')
 
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive
