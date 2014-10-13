@@ -11,7 +11,7 @@ def runBuild(compiler):
     """
     platform=resolveName()
     
-    print ("Try to configure and build for:: %s \n" % (platform+"_"+compiler) )
+    print ("Configure, build and test for :: %s \n" % (platform+"_"+compiler) )
     
     bld = builder.platformBuilder.factory(platform+"_"+compiler)
     

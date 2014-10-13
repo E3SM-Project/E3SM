@@ -27,7 +27,6 @@ class platformBuilder(object):
         self.FFLAGS = ''
         self.CFLAGS = ''
         self.OFLAGS = ''
-        self.QUEUE = ' '
         self.MPIEXEC = ''
     
         self.envMod = {}
@@ -56,7 +55,7 @@ class platformBuilder(object):
         """
         self.className = self.__class__.__name__
         self.BUILD_DIR = "build_" + self.className
-        self.TEST_CMD = 'ctest'
+        self.TEST_CMD = 'ctest --verbose'
         self.MAKE_CMD = 'make all'
     
     def buildCmd(self):
@@ -90,7 +89,7 @@ class platformBuilder(object):
         self.envMod['LDFLAGS'] = self.LDFLAGS
     
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
-                       self.OFLAGS + self.QUEUE + self.MPIEXEC + ' ..')
+                       self.OFLAGS + self.MPIEXEC + ' ..')
         print cmakeString
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
@@ -135,8 +134,8 @@ class darwin_gnu(platformBuilder):
                        '-D PNETCDF_DIR:STRING=/opt/local '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
                        
-        self.QUEUE = (' ')
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
+
 
     def runModuleCmd(self):
         """ run module cmds
@@ -160,9 +159,11 @@ class yellowstone_intel(platformBuilder):
                            'pnetcdf/1.4.1',
                            'ncarenv/1.0',
                            'cmake',
+                           'python',
                            'ncarbinlibs/1.1']
 
-        self.CMAKE_EXE = 'cmake'
+        self.CMAKE_EXE  = 'cmake'
+        self.EXECCA_CMD = 'execca'
     
         self.FC = 'mpif90'
         self.CC = 'mpicc'
@@ -185,20 +186,22 @@ class yellowstone_intel(platformBuilder):
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-                       '-D MPIEXEC_NUMPROC_FLAG:STRING="-n" '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirunLsfReorderArgs.py ')
-
+        self.NUMPE = '4'
+    
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive
             node, run the tests (same as the base class) and then exit the queue.
         """
-            # ~# p = subprocess.Popen(execca,
-                             # ~#shell=True, env=self.envMod)
-        # ~#p = subprocess.Popen(self.TEST_CMD,
-                         # ~#shell=True, env=self.envMod)
-        # ~#p.wait()
+        self.envMod['DAV_CORES'] = self.NUMPE
+
+        ### execca '/glade/u/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python /glade/u/home/muszala/svn/pio/pio20_spm/scripts/python/mpirunLsfReorderArgs.py -np 2 "./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2"'
+
+        p = subprocess.Popen(self.TEST_CMD,
+                             shell=True, env=self.envMod)
+        p.wait()
 
 
     def runModuleCmd(self):
