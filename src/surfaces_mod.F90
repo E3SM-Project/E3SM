@@ -24,6 +24,10 @@ module surfaces_mod
   use bndry_mod,    only : ghost_exchangevfull
   use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
   use global_norms_mod, only: wrap_repro_sum
+  use reduction_mod, only : red_sum, parallelmin, parallelmax
+  use physical_constants,      only : dd_pi
+
+
 #if defined (_AIX) || defined (_BGL) || defined (_BGP) 
   use ieee_arithmetic, only: isnan => ieee_is_nan ! _EXTERNAL
 #endif
@@ -117,7 +121,6 @@ contains
 
     use element_mod,        only : element_t
     use hybrid_mod,         only : hybrid_t
-    use reduction_mod, only : parallelmax
 
     integer,              intent(in)          :: nets,nete
     type (element_t),     intent(in), target  :: elem(:)
@@ -189,7 +192,7 @@ contains
     real (kind=real_kind)            :: rvert
     real (kind=real_kind)            :: test(np,np,1)
 
-    integer                          :: i, j, ie, k, kmax
+    integer                          :: i, j, ie, k, kmax,kmax2, kk
     logical                          :: Debug=.FALSE.,keep
 
     gll_pts = gausslobatto(np)
@@ -259,22 +262,34 @@ contains
     ! compute output needed for SCRIP:  lat/lon coordinates, and for the
     ! control volume with only 3 corners, repeat the last point to make a
     ! degenerate quad.
-    kmax=0
+    kmax2=0
     do ie=nets,nete
-       kmax = MAX(kmax,MAXVAL(cvlist(ie)%nvert))
+       kmax2 = MAX(kmax2,MAXVAL(cvlist(ie)%nvert))
     enddo
+    kmax = ParallelMax(kmax2,hybrid)
     do ie=nets,nete
        do j=1,np
           do i=1,np
              cvlist(ie)%vert_latlon(:,i,j)%lat=0
              cvlist(ie)%vert_latlon(:,i,j)%lon=0
              k = cvlist(ie)%nvert(i,j)
-             cvlist(ie)%vert        (k+1:kmax, i, j) = cvlist(ie)%vert(k,i,j)
-             do k=1,kmax
-               cvlist(ie)%vert_latlon(k, i, j) = change_coordinates(cvlist(ie)%vert(k, i, j))
-               cvlist(ie)%face_no(k, i, j) = cube_face_number_from_sphere(cvlist(ie)%vert_latlon(k, i, j))
+             do kk=k+1,kmax
+                !print *,'padding out cv  ie,k,kmax=',ie,k,kmax 
+                cvlist(ie)%vert(kk, i, j) = cvlist(ie)%vert(k,i,j)
+             enddo
+             do kk=1,kmax
+               cvlist(ie)%vert_latlon(kk, i, j) = change_coordinates(cvlist(ie)%vert(kk, i, j))
+               cvlist(ie)%face_no(kk, i, j) = cube_face_number_from_sphere(cvlist(ie)%vert_latlon(kk, i, j))
             enddo
-          enddo
+
+            ! print point at pole for debug/sanity check
+            !if ( abs( dd_pi/2 - abs(elem(ie)%spherep(i,j)%lat)) <= 1d-9 ) then
+            !   do kk=1,kmax
+            !      !print *,'padding out cv  ie,k,kmax=',ie,k,kmax 
+            !      print *,'pole point vert list: ',kk,cvlist(ie)%vert_latlon(kk, i, j) 
+            !   enddo
+            !endif
+         enddo
        enddo
     enddo
     ! Release memory
@@ -309,7 +324,6 @@ function  average(t, n) result(a)
 end function  average
 
 function  make_unique(a, n) result(m)
-    use physical_constants,      only : dd_pi
     integer             , intent(in)       :: n
     real (kind=real_kind),intent(inout)    :: a(n) 
     integer                                :: m
@@ -339,7 +353,6 @@ end function  make_unique
 
 function SortNodes(t3, n) result(m)
     use coordinate_systems_mod,  only : cube_face_number_from_cart, cart2cubedsphere, change_coordinates
-    use physical_constants,      only : dd_pi
 
 
     integer             , intent(in)       :: n
@@ -593,6 +606,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
              vert(4) = cv(i-1, j  )
              cvlist(ie)%vert(1:4,i,j) = vert(1:4)
              cvlist(ie)%nvert(i,j) = 4
+             m=4
           end do
        enddo
 
@@ -608,6 +622,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
              if (p.eq.0) p=1
              cvlist(ie)%vert(1:6,i,p) = vert(1:6)
              cvlist(ie)%nvert(i,p) = 6
+             m=6
           enddo
        enddo
 
@@ -623,6 +638,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
              if (o.eq.0) o=1
              cvlist(ie)%vert(1:6,o,j) = vert(1:6)
              cvlist(ie)%nvert(o,j) = 6
+             m=6
           enddo
        enddo
        do j=0,np,np
@@ -782,7 +798,6 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
   ! (x,y) ---->dx
   function  SurfArea_dxdy(dx,dy,corner) result(integral)
     use quadrature_mod, only : quadrature_t
-    use physical_constants, only : dd_pi
 
     type (cartesian2d_t)  :: corner
     real (kind=real_kind) :: dx,dy,da,integral,x,y
@@ -973,9 +988,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
 
     use quadrature_mod, only : quadrature_t, gausslobatto
     use dimensions_mod, only : nlev
-    use physical_constants, only : dd_pi
     use cube_mod, only : convert_gbl_index
-    use reduction_mod, only : parallelmax
 
     integer,              intent(in)    :: nets,nete
     type (element_t),     intent(in), target    :: elem(:)
@@ -1966,9 +1979,7 @@ end subroutine  construct_cv_gll
 
 
   subroutine VerifVolumes(elem, hybrid,nets,nete)
-    use reduction_mod, only : red_sum, parallelmin, parallelmax
     use hybrid_mod, only : hybrid_t
-    use physical_constants, only : DD_PI
     use element_mod, only : element_t
     type(element_t), intent(in) :: elem(:)
     integer,              intent(in) :: nets,nete

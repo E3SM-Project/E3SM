@@ -115,6 +115,7 @@ contains
     use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem, iodesct, pio_subsystem 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use fvm_control_volume_mod, only : fvm_mesh_ari
+    use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
     type (parallel_t), intent(in)     :: par
     type (hvcoord_t), intent(in) :: hvcoord
@@ -125,7 +126,7 @@ contains
     real (kind=real_kind),allocatable, dimension(:) :: latp,lonp
     integer :: ie, v1(4), i, ios, istartP
     integer,dimension(maxdims) :: dimsize
-    integer :: st, en, icnt, kmax
+    integer :: st, en, icnt, kmax,kmax2
     integer :: j,jj,cc,ii,k, iorank,base, global_nc, global_nsub
     integer(kind=nfsizekind) :: start(2), count(2)
     integer, allocatable :: compDOF(:)
@@ -348,9 +349,11 @@ contains
           if(nf_selectedvar('cv_lon',output_varnames).or. &
                nf_selectedvar('cv_lat',output_varnames).or. &
                nf_selectedvar('faceno',output_varnames)) then
+             kmax2=0
              do ie=1,nelemd
-                kmax = MAX(kmax,MAXVAL(cvlist(ie)%nvert))
+                kmax2 = MAX(kmax2,MAXVAL(cvlist(ie)%nvert))
              enddo
+             kmax = ParallelMax(kmax2,hybrid)
              if ( nlev < kmax ) call abortmp('cv output requires nlev >= max number of vertex')
           endif
           
