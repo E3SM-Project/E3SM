@@ -20,7 +20,7 @@ module prim_driver_mod
   use solver_mod, only : blkjac_t
   use filter_mod, only : filter_t
   use derivative_mod, only : derivative_t
-  use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
+  use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
 
   use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3
@@ -354,6 +354,7 @@ contains
     call InitReductionBuffer(red_sum,5)
     call InitReductionBuffer(red_sum_int,1)
     call InitReductionBuffer(red_max,1)
+    call InitReductionBuffer(red_max_int,1)
     call InitReductionBuffer(red_min,1)
     call initReductionBuffer(red_flops,1)
 
