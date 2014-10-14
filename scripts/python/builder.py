@@ -197,7 +197,7 @@ class goldbach_nag(platformBuilder):
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
                                                      
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
-                        '/cluster/bin/mpiexec ')
+                        '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/mpirun ')
     
     def runModuleCmd(self):
         """ implement ABC...give pass in this case...run module cmds
