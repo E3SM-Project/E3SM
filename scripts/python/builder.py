@@ -135,12 +135,12 @@ class darwin_gnu(platformBuilder):
                        '-DNO_MPIMOD '
                        '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
                        '-DCPRGNU -I. " ')
-        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin -DMCT_INTERFACE '
+        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING=" -DDarwin -DMCT_INTERFACE '
                        '-DNO_MPI2 '
                        '-DNO_MPIMOD -DFORTRANUNDERSCORE '
-                       '-DNO_R16 -DSYSDARWIN  -DDarwin '
+                       '-DNO_R16 -DSYSDARWIN -DDarwin '
                        '-DCPRGNU -I. " ')
-        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/opt/local '
                        '-D PNETCDF_DIR:STRING=/opt/local '
                        '-D PLATFORM:STRING=darwin '
@@ -171,7 +171,7 @@ class goldbach_nag(platformBuilder):
         self.CC = self.COMPILE_PATH + 'mpicc'
         self.LDFLAGS = '-lcurl'
         
-        self.FFLAGS = ('-D CMAKE_Fortran_FLAGS:STRING="-Wp,-macro=no_com '
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-Wp,-macro=no_com '
                        '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
                        'mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,'
                        'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,'
@@ -182,12 +182,12 @@ class goldbach_nag(platformBuilder):
                        '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF  '
                        '-DLINUX -DCPRNAG -DHAVE_SLASHPROC -I. " ')
-        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
+        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
                        '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
                        '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
                        '-DHAVE_SLASHPROC -I. " ')
-        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
                        '-D PLATFORM:STRING=darwin '
@@ -244,7 +244,7 @@ class yellowstone_intel(platformBuilder):
                        '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
                        '-DLINUX '
                        '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
-        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
