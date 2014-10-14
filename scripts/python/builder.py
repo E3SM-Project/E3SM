@@ -50,9 +50,9 @@ class platformBuilder(object):
         """ routine where everything gets kicked off from
         """
         self.runModuleCmd()
-        #self.cmakeCmd()
-        #self.buildCmd()
-        #self.testCmd()
+        self.cmakeCmd()
+        self.buildCmd()
+        self.testCmd()
 
     def setInvariantClassAttr(self):
         """ figure out some things that shouldn't change in subclasses
@@ -93,10 +93,8 @@ class platformBuilder(object):
         self.envMod['CC'] = self.CC
         self.envMod['LDFLAGS'] = self.LDFLAGS
 
-
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.OFLAGS + self.MPIEXEC + ' ..')
-        print cmakeString
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()
@@ -146,7 +144,6 @@ class darwin_gnu(platformBuilder):
                        '-D PNETCDF_DIR:STRING=/opt/local '
                        '-D PLATFORM:STRING=darwin '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
                         '/opt/local/bin/mpiexec-mpich-gcc48 ')
 
@@ -159,33 +156,38 @@ class darwin_gnu(platformBuilder):
 
 
 class goldbach_nag(platformBuilder):
-    
+
     def __init__(self):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
         self.setInvariantClassAttr()
- 
+
         self.moduleList = ['compiler/nag/5.3.1-907']
-     
+
         self.CMAKE_EXE = '/usr/bin/cmake'
-        self.COMPILE_PATH = '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/'
+        self.COMPILE_PATH = ('/usr/local/'
+                             'openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907'
+                             '/bin/')
         self.FC = self.COMPILE_PATH + 'mpif90'
         self.CC = self.COMPILE_PATH + 'mpicc'
         self.LDFLAGS = '-lcurl'
-        
+
         self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-Wp,-macro=no_com '
                        '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
                        'mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,'
-                       'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,'
+                       'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,'
+                       'mpi_scatterv,'
                        'mpi_allgather,mpi_alltoallv,mpi_file_read_all,'
-                       'mpi_file_write_all,mpibcast,mpiscatterv -convert=BIG_ENDIAN '
+                       'mpi_file_write_all,mpibcast,mpiscatterv '
+                       '-convert=BIG_ENDIAN '
                        '-gline  -C=all -g -time -f2003 -ieee=stop -DLINUX '
                        '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
-                       '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX '
-                       '-DCPRNAG -DHAVE_SLASHPROC -I. -I/usr/local/netcdf-gcc-nag/include '
+                       '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF '
+                       '-DLINUX '
+                       '-DCPRNAG -DHAVE_SLASHPROC -I. '
+                       '-I/usr/local/netcdf-gcc-nag/include '
                        '-I/usr/local/openmpi-gcc-nag/include " ')
-        
         self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
                        '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
@@ -197,10 +199,11 @@ class goldbach_nag(platformBuilder):
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
                        '-D PLATFORM:STRING=goldbach '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-                                                     
-        self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
-                        '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/mpirun ')
-    
+        self.MPIEXEC = ('-D MPIEXEC:FILEPATH='
+                        '/usr/local/'
+                        'openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907'
+                        '/bin/mpirun ')
+
     def runModuleCmd(self):
         """ implement ABC...run module cmds
         """
@@ -210,7 +213,7 @@ class goldbach_nag(platformBuilder):
         self.lmod.python_init("scripts/python/contrib/standAlone/"
                               "env_modules_python_goldbach.py")
         self.lmod.purge()
-                              
+
         for cmd in self.moduleList:
             self.lmod.load(cmd)
 
@@ -238,6 +241,7 @@ class yellowstone_intel(platformBuilder):
         self.FC = 'mpif90'
         self.CC = 'mpicc'
         self.LDFLAGS = ''
+        self.NUMPE = '4'
 
         self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
                        '-convert '
@@ -260,9 +264,7 @@ class yellowstone_intel(platformBuilder):
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
                        '-D PLATFORM:STRING=yellowstone '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirunLsfReorderArgs.py ')
-        self.NUMPE = '4'
 
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive
