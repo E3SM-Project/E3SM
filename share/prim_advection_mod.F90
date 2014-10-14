@@ -1258,6 +1258,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   integer                                       :: num_neighbors
   logical,save :: firstcall = .true.
 
+  call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
+  call t_startf('Prim_Advec_Tracers_remap_ALE')
+
   if (firstcall) then
 !OMP BARRIER
 !OMP MASTER
@@ -1277,6 +1280,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 !  run ghost exchange to get global ID of all neighbors
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
+  call t_startf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
   do ie=nets,nete
      kptr=0
      do k=1,nlev
@@ -1294,35 +1298,46 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
      num_neighbors = elem(ie)%desc%actual_neigh_edges+1
      do k=1,nlev
 
+        call t_startf('Prim_Advec_Tracers_remap_ALE_departure_from_gll')
         ! find departure points
         call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+        call t_stopf('Prim_Advec_Tracers_remap_ALE_departure_from_gll')
 
+        call t_startf('Prim_Advec_Tracers_remap_ALE_elems_with_dep_points')
         ! find element containing departure point
         call ALE_elems_with_dep_points  (elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
+        call t_stopf('Prim_Advec_Tracers_remap_ALE_elems_with_dep_points')
 
+        call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords')
         ! compute the parametric points
         call ALE_parametric_coords      (para_coords, elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
+        call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords')
 
+        call t_startf('Prim_Advec_Tracers_remap_ALE_ghostVunpack_unoriented')
         ! for each level k, unpack all tracer neighbor data on that level
         kptr=(k-1)*qsize
         neigh_q=0
         u(:,:,:) = elem(ie)%state%Q(:,:,k,:)
         call ghostVunpack_unoriented (ghostbuf_tr, neigh_q, np, qsize, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
+        call t_stopf('Prim_Advec_Tracers_remap_ALE_ghostVunpack_unoriented')
 
+        call t_startf('Prim_Advec_Tracers_remap_ALE_interpolate_tracers_minmax')
         do i=1,np
         do j=1,np
           ! interpolate tracers to deperature grid
           call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
-          elem(ie)%state%Q(i,j,k,:) = f;
+          elem(ie)%state%Q(i,j,k,:) = f 
 
           call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
-          minq(i,j,k,:,ie) = f;
-          maxq(i,j,k,:,ie) = g;
+          minq(i,j,k,:,ie) = f 
+          maxq(i,j,k,:,ie) = g 
         enddo
         enddo
+        call t_stopf('Prim_Advec_Tracers_remap_ALE_interpolate_tracers_minmax')
      end do
   end do
 
+  call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
   ! compute original mass, at tl_1%n0
   ! NOTE: global_shared_buf was allocated outside threaded region probably assuming n<=10.
   do ie=nets,nete
@@ -1356,7 +1371,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
     Que_t(:,:,:,:,ie) = elem(ie)%state%Q(:,:,:,:)
   end do
 
+  call t_startf('Prim_Advec_Tracers_remap_ALE_Cobra')
   call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
+  call t_stopf('Prim_Advec_Tracers_remap_ALE_Cobra')
 
   do ie=nets,nete
     elem(ie)%state%Q(:,:,:,:) =  Que(:,:,:,:,ie)
@@ -1391,6 +1408,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 ! enddo
 
 
+  call t_stopf('Prim_Advec_Tracers_remap_ALE')
 
 
 end subroutine Prim_Advec_Tracers_remap_ALE
@@ -1449,9 +1467,9 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
 
-  integer,                            parameter :: max_clip = 100
-  real(kind=real_kind),               parameter :: eta = 1D-12           
-  real(kind=real_kind),               parameter :: hfd = 1D-12             
+  integer,                            parameter :: max_clip = 10
+  real(kind=real_kind),               parameter :: eta = 1D-08           
+  real(kind=real_kind),               parameter :: hfd = 1D-10             
   real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
   real(kind=real_kind)                          :: lambda_c          (nlev,qsize)
   real(kind=real_kind)                          :: rp                (nlev,qsize)
@@ -1653,7 +1671,7 @@ subroutine ALE_departure_from_gll(acart, vstar, elem, dt)
   ! crude, 1st order accurate approximation.  to be improved
   do i=1,np
      do j=1,np
-        acart(i,j) = change_coordinates(elem%spherep(i,j));
+        acart(i,j) = change_coordinates(elem%spherep(i,j)) 
         acart(i,j)%x = acart(i,j)%x - dt*uxyz(i,j,1)/rearth
         acart(i,j)%y = acart(i,j)%y - dt*uxyz(i,j,2)/rearth
         acart(i,j)%z = acart(i,j)%z - dt*uxyz(i,j,3)/rearth
@@ -1720,9 +1738,147 @@ subroutine ALE_elems_with_dep_points (elem_indexes, dep_points, num_neighbors, n
   end if
 end subroutine ALE_elems_with_dep_points
 
+subroutine  shape_fcn_deriv(dNds, pc)
+  real (kind=real_kind), intent(out) :: dNds(4,2)
+  real (kind=real_kind), intent(in)  ::  pc(2)
+ 
+  dNds(1, 1) = - 0.25 * (1.0 - pc(2))
+  dNds(1, 2) = - 0.25 * (1.0 - pc(1))
+
+  dNds(2, 1) =   0.25 * (1.0 - pc(2))
+  dNds(2, 2) = - 0.25 * (1.0 + pc(1))
+
+  dNds(3, 1) =   0.25 * (1.0 + pc(2))
+  dNds(3, 2) =   0.25 * (1.0 + pc(1))
+
+  dNds(4, 1) = - 0.25 * (1.0 + pc(2))
+  dNds(4, 2) =   0.25 * (1.0 - pc(1))
+end subroutine 
+
+subroutine inv_2x2(A_inv, A)
+  real (kind=real_kind), intent(out) :: A_inv(2,2)
+  real (kind=real_kind), intent(in)  :: A    (2,2)
+  real (kind=real_kind) :: det, denom
+
+  det = A(1,1) * A(2,2) - A(2,1) * A(1,2)
+  denom = 1/det
+  ! inverse:
+  A_inv(1,1) =  denom * A(2,2)  !  dxidx
+  A_inv(2,1) = -denom * A(2,1)  !  detadx
+  A_inv(1,2) = -denom * A(1,2)  !  dxidy
+  A_inv(2,2) =  denom * A(1,1)  !  detady
+end subroutine
+
+subroutine formDSDX(dsdx, coord, dNds)
+
+  real (kind=real_kind), intent(out) :: dsdx(2,3)
+  real (kind=real_kind), intent(in)  :: coord(4,3), dNds(4,2)
+
+  real (kind=real_kind)  ::     dxds(3,2)
+  real (kind=real_kind)  ::      ata(2,2)
+  real (kind=real_kind)  ::  ata_inv(2,2)
+
+  dxds = MATMUL(TRANSPOSE(coord), dNds)
+
+  !     dxds = | dxdxi   dxdeta |
+  !            | dydxi   dydeta |
+  !            | dzdxi   dzdeta |
+  ata  = MATMUL(TRANSPOSE(dxds), dxds)
+  call inv_2x2(ata_inv, ata)
+  dsdx = MATMUL(ata_inv, TRANSPOSE(dxds))
+  !     dsdx = |  dxidx   dxidy   dxidz |
+  !            | detadx  detady  detadz |
+
+end subroutine
+
+subroutine shape_fcn(N, pc)
+  real (kind=real_kind), intent(out) :: N(4)
+  real (kind=real_kind), intent(in)  :: pc(2)
+
+  ! shape function for each node evaluated at param_coords
+  N(1) = 0.25 * (1.0 - pc(1)) * (1.0 - pc(2)) 
+  N(2) = 0.25 * (1.0 + pc(1)) * (1.0 - pc(2)) 
+  N(3) = 0.25 * (1.0 + pc(1)) * (1.0 + pc(2)) 
+  N(4) = 0.25 * (1.0 - pc(1)) * (1.0 + pc(2)) 
+end subroutine
+
+
+function fcn(pc, coords) result(g)
+  real (kind=real_kind), intent(in) :: pc(2), coords(4,3)
+
+  real (kind=real_kind)            :: N(4), g(3)
+  N = 0
+  g = 0
+  call shape_fcn(N,pc)
+  g = MATMUL(TRANSPOSE(coords), N)
+end function
+
+
+function cartesian_parametric_coordinates(sphere, corners3D) result (ref)
+  use coordinate_systems_mod, only : cartesian2d_t, cartesian3D_t, spherical_polar_t, spherical_to_cart
+  implicit none
+  type (spherical_polar_t), intent(in) :: sphere
+  type (cartesian3D_t)    , intent(in) :: corners3D(4)  !x,y,z coords of element corners
+
+  type (cartesian2D_t)                 :: ref
+
+  integer,               parameter :: MAXIT = 20
+  real (kind=real_kind), parameter :: TOL   = 1.0E-9
+  integer,               parameter :: n     = 3
+
+  type (cartesian3D_t)             :: cart
+  real (kind=real_kind)            :: coords(4,3), dNds(4,2), dsdx(2,3)
+  real (kind=real_kind)            :: p(3), pc(2), dx(3), g(3), ds(2)
+  real (kind=real_kind)            :: dist, step                          
+  
+  integer                          :: i,j,k,iter
+  do i=1,4                               
+    coords(i,1) = corners3D(i)%x 
+    coords(i,2) = corners3D(i)%y 
+    coords(i,3) = corners3D(i)%z 
+  end do
+
+  pc = 0
+  p  = 0
+  cart = spherical_to_cart(sphere)
+
+  p(1) = cart%x
+  p(2) = cart%y
+  p(3) = cart%z 
+
+  dx   = 0
+  ds   = 0
+  dNds = 0
+  dsdx = 0
+
+  /*-------------------------------------------------------------------------*/
+
+  ! Initial guess, center of element
+  dist = 9999999.                         
+  step = 9999999.                         
+  iter = 0 
+
+  do while  (TOL*TOL.lt.dist .and. iter.lt.MAXIT .and. TOL*TOL.lt.step)
+    iter = iter + 1
+
+    call shape_fcn_deriv  (dNds, pc)
+    call formDSDX         (dsdx, coords, dNds)
+    g = fcn(pc, coords)
+
+    dx = g - p
+    dist = DOT_PRODUCT(dx,dx)
+    ds = MATMUL(dsdx, dx)
+    pc = pc - ds
+    step = DOT_PRODUCT(ds,ds)
+  enddo
+
+  ref%x = pc(1)
+  ref%y = pc(2)
+end function
+
 
 subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, num_neighbors, ngh_corners)
-  use coordinate_systems_mod, only : cartesian2d_t, cartesian3D_t, spherical_polar_t, change_coordinates
+  use coordinate_systems_mod, only : cartesian2d_t, cartesian3D_t, spherical_polar_t, change_coordinates, distance
   use interpolate_mod,        only : parametric_coordinates
   use dimensions_mod,         only : np
 
@@ -1734,15 +1890,21 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
   integer                   , intent(in)        :: num_neighbors
   type(cartesian3D_t)       , intent(in)        :: ngh_corners(4,num_neighbors)
 
-  type (spherical_polar_t)                      :: sphere
+  type (spherical_polar_t)                      :: sphere(np,np)
   integer                                       :: i,j,n
+! type(cartesian2D_t)                           :: parametric_test
+  real(kind=real_kind)                          :: d
+
+  do j=1,np
+    sphere(:,j) = change_coordinates(dep_points(:,j))
+  end do
 
   do i=1,np
     do j=1,np
       n = elem_indexes(i,j)
-      sphere = change_coordinates(dep_points(i,j))
       ! Mark will fill in  parametric_coordinates for corners.
-      parametric_coord(i,j) = parametric_coordinates(sphere,ngh_corners(:,n))
+      parametric_coord(i,j) = cartesian_parametric_coordinates(sphere(i,j),ngh_corners(:,n))
+!     parametric_test       = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
     end do
   end do
 end subroutine ALE_parametric_coords
@@ -2457,8 +2619,8 @@ end subroutine ALE_parametric_coords
       endif
 
       addmass = 0.0d0
-      pos_counter = 0;
-      neg_counter = 0;
+      pos_counter = 0
+      neg_counter = 0
 
       ! apply constraints, compute change in mass caused by constraints
       do k1 = 1 , np*np
@@ -2467,16 +2629,16 @@ end subroutine ALE_parametric_coords
           x(k1) = maxp(k)
           whois_pos(k1) = -1
         else
-          pos_counter = pos_counter+1;
-          whois_pos(pos_counter) = k1;
+          pos_counter = pos_counter+1
+          whois_pos(pos_counter) = k1
         endif
         if ( ( x(k1) <= minp(k) ) ) then
           addmass = addmass - ( minp(k) - x(k1) ) * c(k1)
           x(k1) = minp(k)
           whois_neg(k1) = -1
         else
-          neg_counter = neg_counter+1;
-          whois_neg(neg_counter) = k1;
+          neg_counter = neg_counter+1
+          whois_neg(neg_counter) = k1
         endif
       enddo
 
