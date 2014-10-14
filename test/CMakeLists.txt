@@ -54,7 +54,7 @@ endif()
 ###-------------------------------------------------------------------------###
 # set -np <numProcs> for darwin and set -n <numProcs> for yellowstone.
 # so this once for selected pe counts.  mpirun.lsf on yellowstone wants the 
-# -n <proc number> at the end of the command so we provide mpirunLsfReorderArgs.py
+# -n <proc number> at the end of the command and we provide mpirunLsfReorderArgs.py
 # as a wrapper that does this reordering so we can keep this file relatively simple.
 ###-------------------------------------------------------------------------###
 if (${PLATFORM} STREQUAL "yellowstone" )

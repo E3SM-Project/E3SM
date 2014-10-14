@@ -1,7 +1,7 @@
 import os
 import platform
 import sys
-# imports of NCAR written scripts
+# imports of NCAR scripts
 import builder
 import parsers
 lib_path = os.path.join('scripts/python/contrib/unit_testing')

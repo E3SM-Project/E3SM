@@ -2,7 +2,7 @@ from __future__ import generators
 import abc
 import os
 import sys
-# imports of NCAR written scripts
+# imports of NCAR scripts
 lib_path = os.path.join('scripts/python/contrib/unit_testing')
 sys.path.append(lib_path)
 import environment as lmod
