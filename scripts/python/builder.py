@@ -155,6 +155,49 @@ class darwin_gnu(platformBuilder):
         # ~# somthing similar)
         pass
 
+class goldbach_nag(platformBuilder):
+    
+    def __init__(self):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+            """
+        self.setInvariantClassAttr()
+        
+        self.CMAKE_EXE = '/opt/local/bin/cmake'
+        
+        self.FC = '/opt/local/bin/mpifort-mpich-gcc48'
+        self.CC = '/opt/local/bin/mpicc-mpich-mp'
+        self.LDFLAGS = '-lcurl'
+        
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O '
+                       '-fconvert=big-endian '
+                       '-ffree-line-length-none -ffixed-line-length-none '
+                       '-fno-range-check '
+                       '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
+                       '-DNO_MPIMOD '
+                       '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+                       '-DCPRGNU -I. " ')
+        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin -DMCT_INTERFACE '
+                       '-DNO_MPI2 '
+                       '-DNO_MPIMOD -DFORTRANUNDERSCORE '
+                       '-DNO_R16 -DSYSDARWIN  -DDarwin '
+                       '-DCPRGNU -I. " ')
+        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+                       '-D NETCDF_DIR:STRING=/opt/local '
+                       '-D PNETCDF_DIR:STRING=/opt/local '
+                       '-D PLATFORM:STRING=darwin '
+                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                                                     
+        self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
+                        '/opt/local/bin/mpiexec-mpich-gcc48 ')
+    
+    def runModuleCmd(self):
+        """ implement ABC...give pass in this case...run module cmds
+            """
+        # ~# not implemented for a system without lmod (or
+        # ~# somthing similar)
+        pass
+
 
 class yellowstone_intel(platformBuilder):
 
