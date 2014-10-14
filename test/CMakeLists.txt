@@ -58,7 +58,8 @@ endif()
 # as a wrapper that does this reordering so we can keep this file relatively simple.
 ###-------------------------------------------------------------------------###
 if (${PLATFORM} STREQUAL "yellowstone" )
-    set(MPIEXEC python ${CMAKE_HOME_DIRECTORY}/scripts/python/${MPIEXEC})
+    set(MPIEXEC python ${CMAKE_HOME_DIRECTORY}
+        /scripts/python/contrib/standAlone${MPIEXEC})
 endif()
 
 set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
