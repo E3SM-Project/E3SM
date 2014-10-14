@@ -59,6 +59,7 @@ endif()
 ###-------------------------------------------------------------------------###
 if (${MPIEXEC} STREQUAL "mpirunLsfReorderArgs.py" )
     set(MPIEXEC python ${CMAKE_HOME_DIRECTORY}/scripts/python/${MPIEXEC})
+    set(PAREN ")
 endif()
 
 set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
@@ -85,7 +86,7 @@ ADD_TEST(init_finalize_2_proc
          ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe}  )
          
-set (test_exe "./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2")
+set (test_exe ${PAREN}./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2 ${PAREN})
 ADD_TEST(init_finalize_2_proc_with_args 
          ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe}  )
@@ -172,42 +173,42 @@ ADD_TEST(pio_decomp_tests_3p
          ${MPIEXEC} ${MPIEXEC_NPF3}
          ${test_exe} )
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=1")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-aggregators=1 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_1agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=1")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-aggregators=1 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_2agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=1")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-aggregators=1 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_3agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=1")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=1 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_1iop 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=2 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_2iop 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=3")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=3 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_3iop 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_2iop_2str 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
-set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1")
+set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1 ${PAREN})
 ADD_TEST(pio_decomp_tests_4p_2iop_1agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
