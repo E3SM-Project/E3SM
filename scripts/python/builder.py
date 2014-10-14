@@ -106,10 +106,12 @@ class platformBuilder(object):
         """
         if type == "darwin_gnu":
             return darwin_gnu()
+        if type == "goldbach_nag":
+            return goldbach_nag()
         if type == "yellowstone_intel":
             return yellowstone_intel()
+
         assert 0, "build platform not supported: " + type
-        # factory = staticmethod(factory)
 
 
 class darwin_gnu(platformBuilder):
