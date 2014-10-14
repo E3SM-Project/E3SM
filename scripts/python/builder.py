@@ -122,8 +122,7 @@ class darwin_gnu(platformBuilder):
         """
         self.setInvariantClassAttr()
 
-        self.CMAKE_EXE = '/usr/bin/cmake'
-
+        self.CMAKE_EXE = '/opt/local/bin/cmake'
         self.FC = '/opt/local/bin/mpifort-mpich-gcc48'
         self.CC = '/opt/local/bin/mpicc-mpich-mp'
         self.LDFLAGS = '-lcurl'
@@ -163,11 +162,10 @@ class goldbach_nag(platformBuilder):
     def __init__(self):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
-            """
+        """
         self.setInvariantClassAttr()
-        
-        self.CMAKE_EXE = '/opt/local/bin/cmake'
-        
+    
+        self.CMAKE_EXE = '/usr/bin/cmake'
         self.COMPILE_PATH = '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/'
         self.FC = self.COMPILE_PATH + 'mpif90'
         self.CC = self.COMPILE_PATH + 'mpicc'
