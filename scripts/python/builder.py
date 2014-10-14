@@ -186,6 +186,7 @@ class yellowstone_intel(platformBuilder):
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+                       '-D PLATFORM:STRING=yellowstone '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
 
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirunLsfReorderArgs.py ')
@@ -196,8 +197,6 @@ class yellowstone_intel(platformBuilder):
             node, run the tests (same as the base class) and then exit the queue.
         """
         self.envMod['DAV_CORES'] = self.NUMPE
-
-        ### execca '/glade/u/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python /glade/u/home/muszala/svn/pio/pio20_spm/scripts/python/mpirunLsfReorderArgs.py -np 2 "./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2"'
 
         p = subprocess.Popen(self.TEST_CMD,
                              shell=True, env=self.envMod)

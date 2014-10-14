@@ -57,9 +57,8 @@ endif()
 # -n <proc number> at the end of the command so we provide mpirunLsfReorderArgs.py
 # as a wrapper that does this reordering so we can keep this file relatively simple.
 ###-------------------------------------------------------------------------###
-if (${MPIEXEC} STREQUAL "mpirunLsfReorderArgs.py" )
+if (${PLATFORM} STREQUAL "yellowstone" )
     set(MPIEXEC python ${CMAKE_HOME_DIRECTORY}/scripts/python/${MPIEXEC})
-    set(PAREN "\"")
 endif()
 
 set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
@@ -86,7 +85,11 @@ ADD_TEST(init_finalize_2_proc
          ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe}  )
          
-set (test_exe ${PAREN}./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2")
+else()
+   set (test_exe ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
+endif()
 ADD_TEST(init_finalize_2_proc_with_args 
          ${MPIEXEC} ${MPIEXEC_NPF2}
          ${test_exe}  )
@@ -173,42 +176,74 @@ ADD_TEST(pio_decomp_tests_3p
          ${MPIEXEC} ${MPIEXEC_NPF3}
          ${test_exe} )
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-aggregators=1 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=1")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=1)
+endif()
 ADD_TEST(pio_decomp_tests_4p_1agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-aggregators=1 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=2")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=2)
+endif()
 ADD_TEST(pio_decomp_tests_4p_2agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-aggregators=1 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=3")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=3)
+endif()
 ADD_TEST(pio_decomp_tests_4p_3agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=1 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=1")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=1)
+endif()
 ADD_TEST(pio_decomp_tests_4p_1iop 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe} )
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=2 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2)
+endif()
 ADD_TEST(pio_decomp_tests_4p_2iop 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=3 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=3")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=3)
+endif()
 ADD_TEST(pio_decomp_tests_4p_3iop 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2)
+endif()
 ADD_TEST(pio_decomp_tests_4p_2iop_2str 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
 
-set (test_exe ${PAREN}./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1 ${PAREN})
+if (${PLATFORM} STREQUAL "yellowstone" )
+   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1")
+else()
+   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1)
+endif()
 ADD_TEST(pio_decomp_tests_4p_2iop_1agg 
          ${MPIEXEC} ${MPIEXEC_NPF4}
          ${test_exe})
