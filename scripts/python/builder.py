@@ -93,6 +93,7 @@ class platformBuilder(object):
         self.envMod['CC'] = self.CC
         self.envMod['LDFLAGS'] = self.LDFLAGS
 
+        print cmakeString
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.OFLAGS + self.MPIEXEC + ' ..')
 
@@ -174,14 +175,15 @@ class goldbach_nag(platformBuilder):
         self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-Wp,-macro=no_com '
                        '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
                        'mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,'
-                       'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,'
-                       'mpi_scatterv,mpi_allgather,mpi_alltoallv,'
-                       'mpi_file_read_all,mpi_file_write_all,mpibcast,'
-                       'mpiscatterv -convert=BIG_ENDIAN  -gline '
-                       '-C=all -g -time -f2003 -ieee=stop -DLINUX  '
+                       'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,'
+                       'mpi_allgather,mpi_alltoallv,mpi_file_read_all,'
+                       'mpi_file_write_all,mpibcast,mpiscatterv -convert=BIG_ENDIAN '
+                       '-gline  -C=all -g -time -f2003 -ieee=stop -DLINUX '
                        '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
-                       '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF  '
-                       '-DLINUX -DCPRNAG -DHAVE_SLASHPROC -I.  -I/usr/local/openmpi-gcc-nag/include " ')
+                       '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX '
+                       '-DCPRNAG -DHAVE_SLASHPROC -I. -I/usr/local/netcdf-gcc-nag/include '
+                       '-I/usr/local/openmpi-gcc-nag/include " ')
+        
         self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
                        '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
