@@ -132,6 +132,7 @@ class darwin_gnu(platformBuilder):
         self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/opt/local '
                        '-D PNETCDF_DIR:STRING=/opt/local '
+                       '-D PLATFORM:STRING=darwin '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
                        
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
