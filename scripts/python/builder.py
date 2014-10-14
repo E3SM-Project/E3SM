@@ -186,7 +186,7 @@ class goldbach_nag(platformBuilder):
                        '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
                        '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
-                       '-DHAVE_SLASHPROC -I. 
+                       '-DHAVE_SLASHPROC -I. '
                        '-I/usr/local/openmpi-gcc-nag/include " ')
         self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
