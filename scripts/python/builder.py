@@ -169,7 +169,7 @@ class goldbach_nag(platformBuilder):
         self.COMPILE_PATH = '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/'
         self.FC = self.COMPILE_PATH + 'mpif90'
         self.CC = self.COMPILE_PATH + 'mpicc'
-        self.LDFLAGS = '-lcurl'
+        self.LDFLAGS = ''
         
         self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-Wp,-macro=no_com '
                        '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
