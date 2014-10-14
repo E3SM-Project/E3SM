@@ -93,10 +93,10 @@ class platformBuilder(object):
         self.envMod['CC'] = self.CC
         self.envMod['LDFLAGS'] = self.LDFLAGS
 
-        print cmakeString
+
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.OFLAGS + self.MPIEXEC + ' ..')
-
+        print cmakeString
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()
