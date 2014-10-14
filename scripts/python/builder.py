@@ -157,6 +157,7 @@ class darwin_gnu(platformBuilder):
         # ~# somthing similar)
         pass
 
+
 class goldbach_nag(platformBuilder):
     
     def __init__(self):
@@ -198,8 +199,8 @@ class goldbach_nag(platformBuilder):
                         '/cluster/bin/mpiexec ')
     
     def runModuleCmd(self):
-            """ implement ABC...give pass in this case...run module cmds
-            """
+        """ implement ABC...give pass in this case...run module cmds
+        """
         # ~# not implemented for a system without lmod (or
         # ~# somthing similar...on goldbach we could do look
         # ~# into using the modules)
