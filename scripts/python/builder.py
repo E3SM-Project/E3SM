@@ -50,9 +50,9 @@ class platformBuilder(object):
         """ routine where everything gets kicked off from
         """
         self.runModuleCmd()
-        self.cmakeCmd()
-        self.buildCmd()
-        self.testCmd()
+        #self.cmakeCmd()
+        #self.buildCmd()
+        #self.testCmd()
 
     def setInvariantClassAttr(self):
         """ figure out some things that shouldn't change in subclasses
@@ -166,6 +166,8 @@ class goldbach_nag(platformBuilder):
         """
         self.setInvariantClassAttr()
  
+        self.moduleList = ['compiler/nag/5.3.1-907']
+     
         self.CMAKE_EXE = '/usr/bin/cmake'
         self.COMPILE_PATH = '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/'
         self.FC = self.COMPILE_PATH + 'mpif90'
@@ -200,14 +202,17 @@ class goldbach_nag(platformBuilder):
                         '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/mpirun ')
     
     def runModuleCmd(self):
-        """ implement ABC...give pass in this case...run module cmds
+        """ implement ABC...run module cmds
         """
         # ~# not implemented for a system without lmod (or
-        # ~# somthing similar...on goldbach we could do look
-        # ~# into using the modules)
-        p = subprocess.Popen('/bin/tcsh -f -c "module load compiler/nag/5.3.1-907"',
-                             shell=True, env=self.envMod)
-        p.wait()
+        # ~# somthing similar)
+        self.lmod = lmod.ModuleInterface()
+        self.lmod.python_init("scripts/python/contrib/standAlone/"
+                              "env_modules_python_goldbach.py")
+        self.lmod.purge()
+                              
+        for cmd in self.moduleList:
+            self.lmod.load(cmd)
 
 
 class yellowstone_intel(platformBuilder):
