@@ -205,7 +205,7 @@ class goldbach_nag(platformBuilder):
         # ~# not implemented for a system without lmod (or
         # ~# somthing similar...on goldbach we could do look
         # ~# into using the modules)
-        p = subprocess.Popen(['module load compiler/nag/5.3.1-907'],
+        p = subprocess.Popen('/bin/tcsh -f -c "module load compiler/nag/5.3.1-907"',
                              shell=True, env=self.envMod)
         p.wait()
 
