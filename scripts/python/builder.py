@@ -164,7 +164,7 @@ class goldbach_nag(platformBuilder):
             class attributes
         """
         self.setInvariantClassAttr()
-    
+ 
         self.CMAKE_EXE = '/usr/bin/cmake'
         self.COMPILE_PATH = '/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/'
         self.FC = self.COMPILE_PATH + 'mpif90'
@@ -181,12 +181,13 @@ class goldbach_nag(platformBuilder):
                        '-C=all -g -time -f2003 -ieee=stop -DLINUX  '
                        '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF  '
-                       '-DLINUX -DCPRNAG -DHAVE_SLASHPROC -I. " ')
+                       '-DLINUX -DCPRNAG -DHAVE_SLASHPROC -I.  -I/usr/local/openmpi-gcc-nag/include " ')
         self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
                        '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
                        '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
-                       '-DHAVE_SLASHPROC -I. " ')
+                       '-DHAVE_SLASHPROC -I. 
+                       '-I/usr/local/openmpi-gcc-nag/include " ')
         self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
