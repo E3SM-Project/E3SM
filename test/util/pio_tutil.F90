@@ -716,7 +716,9 @@ CONTAINS
       CALL MPI_GATHER(lfail_info, 3, MPI_DOUBLE, gfail_info, 3, MPI_DOUBLE, 0, pio_tf_comm_, ierr)
       DO i=1,pio_tf_world_sz_
         IF(INT(gfail_info(i) % idx) /= -1) THEN
-          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", &
+                INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, &
+                ", Expected = ", gfail_info(i) % exp_val
         END IF
       END DO
     END IF
