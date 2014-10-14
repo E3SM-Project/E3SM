@@ -59,7 +59,7 @@ endif()
 ###-------------------------------------------------------------------------###
 if (${MPIEXEC} STREQUAL "mpirunLsfReorderArgs.py" )
     set(MPIEXEC python ${CMAKE_HOME_DIRECTORY}/scripts/python/${MPIEXEC})
-    set(PAREN ")
+    set(PAREN "\"")
 endif()
 
 set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
