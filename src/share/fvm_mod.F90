@@ -903,14 +903,14 @@ contains
 
     if (nhe .ne. 1) then
        if (par%masterproc) then
-          print *, "PARAMTER ERROR for fvm: Number of halo zone for the extended"
+          print *, "PARAMETER ERROR for fvm: Number of halo zone for the extended"
           print *,"element nhe has to be 1, only this is available now! STOP!"
        endif
        call haltmp("stopping")
     end if
     if (ntrac>ntrac_d) then
        if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
-       call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
+       call haltmp("PARAMETER ERROR for fvm: ntrac > ntrac_d")
     endif
 
     if (qsize>0) then
@@ -924,7 +924,7 @@ contains
           print *,'cannot supercycle fvm tracers with respect to se tracers'
           print *,'with this choice of rsplit =',rsplit
           print *,'rsplit must be a multiple of fvm_supercycling=',fvm_supercycling
-          call haltmp("PARAMTER ERROR for fvm: mod(rsplit,fvm_supercycling<>0")
+          call haltmp("PARAMETER ERROR for fvm: mod(rsplit,fvm_supercycling<>0")
        end if
     endif
 
