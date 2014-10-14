@@ -1,44 +1,51 @@
 from __future__ import generators
-import os
-import subprocess
-import environment as lmod
 import abc
+import os
+import sys
+# imports of NCAR written scripts
+lib_path = os.path.join('scripts/python/contrib/unit_testing')
+sys.path.append(lib_path)
+import environment as lmod
+import subprocess
+
 
 class platformBuilder(object):
-    __metaclass__  = abc.ABCMeta
-    """ class to extend for building on various platforms. implements interfaces and
-        a factory pattern.  creates a relevant platform class (darwin_gnu, 
-        yellowstone_intel, goldbach_nag, etc... that configures cmake, builds 
-        pio and tests, and runs the unit tests
+    __metaclass__ = abc.ABCMeta
+    """ class to extend for building on various platforms. implements
+        interfaces and a factory pattern.  creates a relevant platform
+        class (darwin_gnu, yellowstone_intel, goldbach_nag, etc...
+        that configures cmake, builds pio and tests, and runs the unit
+        tests.
     """
-    
+
     def __init__(self):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes.  Override this in platform specific classes
         """
         self.setInvariantClassAttr()
-    
+
         self.CMAKE_EXE = ''
-    
+
         self.FC = ''
         self.CC = ''
         self.LDFLAGS = ''
-    
+
         self.FFLAGS = ''
         self.CFLAGS = ''
         self.OFLAGS = ''
         self.MPIEXEC = ''
-    
+
     @classmethod
     def _raise_not_implemented(cls, method_name):
-        raise NotImplementedError(cls.__name__ +" does not implement method " +
+        raise NotImplementedError(cls.__name__ +
+                                  " does not implement method " +
                                   method_name+".")
-    
+
     @abc.abstractmethod
     def runModuleCmd(self, modname):
         """Method not implemented."""
         self._raise_not_implemented("runModuleCmd")
-    
+
     def metaBuild(self):
         """ routine where everything gets kicked off from
         """
@@ -46,7 +53,7 @@ class platformBuilder(object):
         self.cmakeCmd()
         self.buildCmd()
         self.testCmd()
-    
+
     def setInvariantClassAttr(self):
         """ figure out some things that shouldn't change in subclasses
         """
@@ -55,37 +62,37 @@ class platformBuilder(object):
         self.TEST_CMD = 'ctest --verbose'
         self.MAKE_CMD = 'make all'
         self.envMod = {}
-    
+
     def buildCmd(self):
         """ run build
         """
         p = subprocess.Popen(self.MAKE_CMD,
                              shell=True, env=self.envMod)
         p.wait()
-    
+
     def testCmd(self):
         """ run tests
         """
         p = subprocess.Popen(self.TEST_CMD,
                              shell=True, env=self.envMod)
         p.wait()
-    
+
     def cmakeCmd(self):
         """ cmake command to run
         """
         # ~# make build directory and move to it.
         if not os.path.exists(self.BUILD_DIR):
             os.makedirs(self.BUILD_DIR)
-    
+
         os.chdir(self.BUILD_DIR)
-    
+
         # ~# change environemnt, first get existing env
         self.envMod = dict(os.environ)
         # ~# add to env
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
         self.envMod['LDFLAGS'] = self.LDFLAGS
-    
+
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.OFLAGS + self.MPIEXEC + ' ..')
 
@@ -93,6 +100,7 @@ class platformBuilder(object):
                              shell=True, env=self.envMod)
         p.wait()
 
+    @staticmethod
     def factory(type):
         """ factory method for instantiating the appropriate class
         """
@@ -101,7 +109,7 @@ class platformBuilder(object):
         if type == "yellowstone_intel":
             return yellowstone_intel()
         assert 0, "build platform not supported: " + type
-    factory = staticmethod(factory)
+        # factory = staticmethod(factory)
 
 
 class darwin_gnu(platformBuilder):
@@ -113,27 +121,32 @@ class darwin_gnu(platformBuilder):
         self.setInvariantClassAttr()
 
         self.CMAKE_EXE = '/opt/local/bin/cmake'
-    
+
         self.FC = '/opt/local/bin/mpifort-mpich-gcc48'
         self.CC = '/opt/local/bin/mpicc-mpich-mp'
         self.LDFLAGS = '-lcurl'
-    
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O -fconvert=big-endian '
+
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O '
+                       '-fconvert=big-endian '
                        '-ffree-line-length-none -ffixed-line-length-none '
                        '-fno-range-check '
-                       '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 -DNO_MPIMOD '
+                       '-g -Wall  -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
+                       '-DNO_MPIMOD '
                        '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
                        '-DCPRGNU -I. " ')
-        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin  -DMCT_INTERFACE -DNO_MPI2 '
-                       '-DNO_MPIMOD -DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
+        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DDarwin -DMCT_INTERFACE '
+                       '-DNO_MPI2 '
+                       '-DNO_MPIMOD -DFORTRANUNDERSCORE '
+                       '-DNO_R16 -DSYSDARWIN  -DDarwin '
                        '-DCPRGNU -I. " ')
         self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/opt/local '
                        '-D PNETCDF_DIR:STRING=/opt/local '
                        '-D PLATFORM:STRING=darwin '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-                       
-        self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
+
+        self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
+                        '/opt/local/bin/mpiexec-mpich-gcc48 ')
 
     def runModuleCmd(self):
         """ implement ABC...give pass in this case...run module cmds
@@ -160,9 +173,9 @@ class yellowstone_intel(platformBuilder):
                            'python',
                            'ncarbinlibs/1.1']
 
-        self.CMAKE_EXE  = 'cmake'
+        self.CMAKE_EXE = 'cmake'
         self.EXECCA_CMD = 'execca'
-    
+
         self.FC = 'mpif90'
         self.CC = 'mpicc'
         self.LDFLAGS = ''
@@ -176,9 +189,11 @@ class yellowstone_intel(platformBuilder):
                        '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
                        '-DCPRINTEL '
                        '-DHAVE_SLASHPROC -I. " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise -xHost '
+        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise '
+                       '-xHost '
                        '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
-                       '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
+                       '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
+                       '-DLINUX '
                        '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
         self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
@@ -189,10 +204,11 @@ class yellowstone_intel(platformBuilder):
 
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirunLsfReorderArgs.py ')
         self.NUMPE = '4'
-    
+
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive
-            node, run the tests (same as the base class) and then exit the queue.
+            node, run the tests (same as the base class)
+            and then exit the queue.
         """
         self.envMod['DAV_CORES'] = self.NUMPE
 

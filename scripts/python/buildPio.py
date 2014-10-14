@@ -1,25 +1,30 @@
-import sys
+import os
 import platform
-
-from machine_setup import get_machine_name
-import parsers
+import sys
+# imports of NCAR written scripts
 import builder
+import parsers
+lib_path = os.path.join('scripts/python/contrib/unit_testing')
+sys.path.append(lib_path)
+from machine_setup import get_machine_name
+
 
 def runBuild(compiler):
     """ run the build and configure.  Call a factory class to
         kick off the appropriate build.
     """
-    platform=resolveName()
-    
-    print ("Configure, build and test for :: %s \n" % (platform+"_"+compiler) )
-    
+    platform = resolveName()
+
+    print ("Configure, build and test for :: %s \n" %
+           (platform + "_" + compiler))
+
     bld = builder.platformBuilder.factory(platform+"_"+compiler)
-    
     bld.metaBuild()
 
+
 def resolveName():
-    """ osx requires a Darwin build (for laptops, desktops).  
-        bigger platforms will usually have a name (yellowstone, 
+    """ osx requires a Darwin build (for laptops, desktops).
+        bigger platforms will usually have a name (yellowstone,
         edison, etc...)
     """
     if platform.system() == "Darwin":
@@ -27,6 +32,7 @@ def resolveName():
     else:
         name = get_machine_name()
     return name
+
 
 def main(argv):
     """ everything starts here
