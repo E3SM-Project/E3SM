@@ -203,7 +203,9 @@ class goldbach_nag(platformBuilder):
         # ~# not implemented for a system without lmod (or
         # ~# somthing similar...on goldbach we could do look
         # ~# into using the modules)
-        pass
+        p = subprocess.Popen(['module load compiler/nag/5.3.1-907'],
+                             shell=True, env=self.envMod)
+        p.wait()
 
 
 class yellowstone_intel(platformBuilder):
