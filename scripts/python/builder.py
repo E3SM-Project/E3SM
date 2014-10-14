@@ -193,6 +193,7 @@ class goldbach_nag(platformBuilder):
         self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
+                       '-D PLATFORM:STRING=goldbach '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
                                                      
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
