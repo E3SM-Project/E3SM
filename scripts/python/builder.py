@@ -6,10 +6,10 @@ import abc
 
 class platformBuilder(object):
     __metaclass__  = abc.ABCMeta
-    """ abstract base class that implements interfaces and
-        a factory pattern.  creates a relevant
-        platform class (darwin_gnu, yellowstone_intel, goldbach_nag, etc... that
-        configures cmake, builds pio and tests, and runs the unit tests
+    """ class to extend for building on various platforms. implements interfaces and
+        a factory pattern.  creates a relevant platform class (darwin_gnu, 
+        yellowstone_intel, goldbach_nag, etc... that configures cmake, builds 
+        pio and tests, and runs the unit tests
     """
     
     def __init__(self):
@@ -29,12 +29,9 @@ class platformBuilder(object):
         self.OFLAGS = ''
         self.MPIEXEC = ''
     
-        self.envMod = {}
-    
     @classmethod
     def _raise_not_implemented(cls, method_name):
-        raise NotImplementedError(
-                                  cls.__name__ +" does not implement method " +
+        raise NotImplementedError(cls.__name__ +" does not implement method " +
                                   method_name+".")
     
     @abc.abstractmethod
@@ -57,6 +54,7 @@ class platformBuilder(object):
         self.BUILD_DIR = "build_" + self.className
         self.TEST_CMD = 'ctest --verbose'
         self.MAKE_CMD = 'make all'
+        self.envMod = {}
     
     def buildCmd(self):
         """ run build
@@ -90,7 +88,7 @@ class platformBuilder(object):
     
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.OFLAGS + self.MPIEXEC + ' ..')
-        print cmakeString
+
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()
@@ -137,9 +135,8 @@ class darwin_gnu(platformBuilder):
                        
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH=/opt/local/bin/mpiexec-mpich-gcc48 ')
 
-
     def runModuleCmd(self):
-        """ run module cmds
+        """ implement ABC...give pass in this case...run module cmds
         """
         # ~# not implemented for a system without lmod (or
         # ~# somthing similar)
@@ -203,9 +200,8 @@ class yellowstone_intel(platformBuilder):
                              shell=True, env=self.envMod)
         p.wait()
 
-
     def runModuleCmd(self):
-        """ run module cmds
+        """ implement ABC...add the lmod commands for yellowstone
         """
         self.lmod = lmod.ModuleInterface()
         self.lmod.python_init("/glade/apps/opt/lmod/lmod/init/"
