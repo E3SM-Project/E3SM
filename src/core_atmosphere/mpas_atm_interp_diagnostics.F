@@ -176,25 +176,25 @@
  if(.not.allocated(pressure_v)  ) allocate(pressure_v(nVertLevels,nVertices) )
  if(.not.allocated(temperature) ) allocate(temperature(nVertLevels,nCells)   )
 
- t_iso_levels(1) = 50000.0
- t_iso_levels(2) = 45000.0
+ t_iso_levels(1) = 30000.0
+ t_iso_levels(2) = 35000.0
  t_iso_levels(3) = 40000.0
- t_iso_levels(4) = 35000.0
- t_iso_levels(5) = 30000.0
+ t_iso_levels(4) = 45000.0
+ t_iso_levels(5) = 50000.0
 
- z_iso_levels(1)  = 90000.0
- z_iso_levels(2)  = 85000.0
- z_iso_levels(3)  = 80000.0
- z_iso_levels(4)  = 75000.0
- z_iso_levels(5)  = 70000.0
- z_iso_levels(6)  = 65000.0
+ z_iso_levels(1)  = 30000.0
+ z_iso_levels(2)  = 35000.0
+ z_iso_levels(3)  = 40000.0
+ z_iso_levels(4)  = 45000.0
+ z_iso_levels(5)  = 50000.0
+ z_iso_levels(6)  = 55000.0
  z_iso_levels(7)  = 60000.0
- z_iso_levels(8)  = 55000.0
- z_iso_levels(9)  = 50000.0
- z_iso_levels(10) = 45000.0
- z_iso_levels(11) = 40000.0
- z_iso_levels(12) = 35000.0
- z_iso_levels(13) = 30000.0
+ z_iso_levels(8)  = 65000.0
+ z_iso_levels(9)  = 70000.0
+ z_iso_levels(10) = 75000.0
+ z_iso_levels(11) = 80000.0
+ z_iso_levels(12) = 85000.0
+ z_iso_levels(13) = 90000.0
 
 !calculation of total pressure at cell centers (at mass points):
  do iCell = 1, nCells
