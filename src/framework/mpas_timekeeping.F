@@ -1305,12 +1305,15 @@ module mpas_timekeeping
    end subroutine mpas_set_timeInterval
 
 
-   subroutine mpas_get_timeInterval(interval, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
+   subroutine mpas_get_timeInterval(interval, StartTimeIn, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
 ! TODO: add double-precision seconds
 
       implicit none
 
       type (MPAS_TimeInterval_type), intent(in) :: interval
+      type (MPAS_Time_type), intent(in), optional :: StartTimeIn
+      ! For time intervals that require months and/or years, ESMF needs to know the start
+      ! time to get a time interval in any format besides the string format.
       integer, intent(out), optional :: DD
       integer, intent(out), optional :: H
       integer, intent(out), optional :: M
@@ -1323,7 +1326,18 @@ module mpas_timekeeping
 
       integer :: days, seconds, sn, sd
 
-      call ESMF_TimeIntervalGet(interval % ti, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+
+
+      if (present(StartTimeIn)) then
+         call ESMF_TimeIntervalGet(interval % ti, StartTimeIn=StartTimeIn%t, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+      else
+          if ( interval % ti % YR /= 0 .or. interval % ti % MM /= 0 ) then
+             if (present(ierr)) ierr = 1
+             write(stderrUnit,*) 'ERROR: mpas_get_timeInterval cannnot return time interval information for an interval containing months and years without a startTimeIn argument.'
+             return
+          end if
+          call ESMF_TimeIntervalGet(interval % ti, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+      endif
 
       if (present(dt)) then
          dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
