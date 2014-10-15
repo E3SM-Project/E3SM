@@ -61,6 +61,10 @@
 !>      Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
 !>    * Renamed module mpas_atmphys_interface_nhyd to mpas_atmphys_interface.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-09-19.
+!>    * In subroutine microphysics_to_MPAS, reverted the calculation of cloud microphysics tendency
+!>      rt_diabatic_tend, and update of the state variables to git hash identifier 7a66f273e182f4.
+!>      This change reflects the fact that we want to compute rt_diabatic_tend at constant volume.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-1-015. 
 
 
  contains
@@ -534,7 +538,7 @@
 !local variables:
  integer:: icount
  integer:: i,k,j
- real(kind=RKIND):: acoef,rho1,rho2,tem1,tem2
+ real(kind=RKIND):: rho1,rho2,tem1,tem2
 
 !--------------------------------------------------------------------------------------------------
 
@@ -577,8 +581,6 @@
  call mpas_pool_get_array(tend,'rt_diabatic_tend',rt_diabatic_tend)
 
 !update variables needed in the dynamical core:
- if(.not.allocated(t_p)) allocate(t_p(ims:ime,kms:kme,jms:jme))
- acoef = (cp-R_d)/cp
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
@@ -586,29 +588,24 @@
     qc(k,i) = qc_p(i,k,j)
     qr(k,i) = qr_p(i,k,j)
 
-    !perturbation pressure and exner function using the equation of state:
-    t_p(i,k,j)    = th_p(i,k,j)*pi_p(i,k,j)
-    rho_p(i,k,j)  = zz(k,i)*rho_zz(k,i)*(1._RKIND+R_v/R_d*qv_p(i,k,j))
-
-    pres_p(i,k,j) = R_d*rho_p(i,k,j)*t_p(i,k,j)
-    pressure_p(k,i) = pres_p(i,k,j)-pressure_b(k,i)
-    exner(k,i) = (pres_p(i,k,j)/P0)**rcp
-
-    !perturbation modified potential temperature and tendency of modified
-    !potential temperature due to cloud microphysics processes:
+    !potential temperature and diabatic forcing:
     rt_diabatic_tend(k,i) = theta_m(k,i)
-    theta_m(k,i) = (pres_p(i,k,j)/P0)**acoef
-    theta_m(k,i) = theta_m(k,i)*P0/(R_d*zz(k,i)*rho_zz(k,i))
-    rt_diabatic_tend(k,i) = (theta_m(k,i)-rt_diabatic_tend(k,i)) / dt_dyn
-    rtheta_p(k,i) = rho_zz(k,i)*theta_m(k,i)-rtheta_b(k,i)
+    theta_m(k,i) = th_p(i,k,j) * (1. + R_v/R_d * qv_p(i,k,j))
+    rt_diabatic_tend(k,i) = (theta_m(k,i) - rt_diabatic_tend(k,i)) / dt_dyn
 
-    !updated potential temperature and recalculate the dry air density:
-    th_p(i,k,j)  = t_p(i,k,j)/exner(k,i)
-    rho_p(i,k,j) = zz(k,i)*rho_zz(k,i) 
+    !density-weighted perturbation potential temperature:
+    rtheta_p(k,i) = rho_zz(k,i) * theta_m(k,i) - rtheta_b(k,i)
+
+    !exner function:
+    exner(k,i) = (zz(k,i)*(R_d/P0)*(rtheta_p(k,i)+rtheta_b(k,i)))**rcv
+
+    !pertubation pressure:
+    pressure_p(k,i) = zz(k,i)*R_d*(exner(k,i)*rtheta_p(k,i) &
+                    + (exner(k,i)-exner_b(k,i))*rtheta_b(k,i))
+
  enddo
  enddo
  enddo
- if(allocated(t_p)) deallocate(t_p)
 
 !updates the surface pressure and calculates the surface pressure tendency:
  do j = jts,jte
