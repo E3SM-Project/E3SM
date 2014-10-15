@@ -1278,6 +1278,16 @@ module mpas_timekeeping
             read(subStrings(2),*) min 
             read(subStrings(3),*) sec 
             deallocate(subStrings)
+         else if (size(subStrings) == 2) then
+            hour = 0
+            read(subStrings(1),*) min 
+            read(subStrings(2),*) sec 
+            deallocate(subStrings)
+         else if (size(subStrings) == 1) then
+            hour = 0
+            min = 0
+            read(subStrings(1),*) sec 
+            deallocate(subStrings)
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
