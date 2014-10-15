@@ -104,6 +104,10 @@
                 <nml_option name="config_do_DAcycling"               type="logical"       default_value="false"              in_defaults="false"/>
         </nml_record>
 
+        <nml_record name="printout" in_defaults="true">
+                <nml_option name="config_print_global_minmax_vel"    type="logical"       default_value="true"/>
+                <nml_option name="config_print_global_minmax_sca"    type="logical"       default_value="false"              in_defaults="false"/>
+        </nml_record>
 
 <!-- **************************************************************************************** -->
 <!-- *************************************** Streams **************************************** -->
