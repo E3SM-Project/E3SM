@@ -1738,9 +1738,9 @@ subroutine ALE_elems_with_dep_points (elem_indexes, dep_points, num_neighbors, n
   end if
 end subroutine ALE_elems_with_dep_points
 
-subroutine  shape_fcn_deriv(dNds, pc)
-  real (kind=real_kind), intent(out) :: dNds(4,2)
+function  shape_fcn_deriv(pc) result(dNds)
   real (kind=real_kind), intent(in)  ::  pc(2)
+  real (kind=real_kind)              :: dNds(4,2)
  
   dNds(1, 1) = - 0.25 * (1.0 - pc(2))
   dNds(1, 2) = - 0.25 * (1.0 - pc(1))
@@ -1753,11 +1753,11 @@ subroutine  shape_fcn_deriv(dNds, pc)
 
   dNds(4, 1) = - 0.25 * (1.0 + pc(2))
   dNds(4, 2) =   0.25 * (1.0 - pc(1))
-end subroutine 
+end function   
 
-subroutine inv_2x2(A_inv, A)
-  real (kind=real_kind), intent(out) :: A_inv(2,2)
+function inv_2x2(A) result(A_inv)
   real (kind=real_kind), intent(in)  :: A    (2,2)
+  real (kind=real_kind)              :: A_inv(2,2)
   real (kind=real_kind) :: det, denom
 
   det = A(1,1) * A(2,2) - A(2,1) * A(1,2)
@@ -1767,29 +1767,27 @@ subroutine inv_2x2(A_inv, A)
   A_inv(2,1) = -denom * A(2,1)  !  detadx
   A_inv(1,2) = -denom * A(1,2)  !  dxidy
   A_inv(2,2) =  denom * A(1,1)  !  detady
-end subroutine
+end function
 
-subroutine formDSDX(dsdx, coord, dNds)
+function INV(dxds) result(dsdx)
 
-  real (kind=real_kind), intent(out) :: dsdx(2,3)
-  real (kind=real_kind), intent(in)  :: coord(4,3), dNds(4,2)
+  real (kind=real_kind), intent(in)  :: dxds(3,2)
 
-  real (kind=real_kind)  ::     dxds(3,2)
+  real (kind=real_kind)  ::     dsdx(2,3)
   real (kind=real_kind)  ::      ata(2,2)
   real (kind=real_kind)  ::  ata_inv(2,2)
 
-  dxds = MATMUL(TRANSPOSE(coord), dNds)
 
   !     dxds = | dxdxi   dxdeta |
   !            | dydxi   dydeta |
   !            | dzdxi   dzdeta |
   ata  = MATMUL(TRANSPOSE(dxds), dxds)
-  call inv_2x2(ata_inv, ata)
+  ata_inv = inv_2x2(ata)
   dsdx = MATMUL(ata_inv, TRANSPOSE(dxds))
   !     dsdx = |  dxidx   dxidy   dxidz |
   !            | detadx  detady  detadz |
 
-end subroutine
+end function
 
 subroutine shape_fcn(N, pc)
   real (kind=real_kind), intent(out) :: N(4)
@@ -1803,15 +1801,43 @@ subroutine shape_fcn(N, pc)
 end subroutine
 
 
-function fcn(pc, coords) result(g)
+function F(coords, pc) result(x)
   real (kind=real_kind), intent(in) :: pc(2), coords(4,3)
 
-  real (kind=real_kind)            :: N(4), g(3)
-  N = 0
-  g = 0
+  real (kind=real_kind)            :: N(4), x(3)
   call shape_fcn(N,pc)
-  g = MATMUL(TRANSPOSE(coords), N)
+  x = MATMUL(TRANSPOSE(coords), N)
+  x = x/NORM2(x)
 end function
+
+function  DF(coords, pc) result(dxds)
+  real (kind=real_kind), intent(in)  :: coords(4,3)
+  real (kind=real_kind), intent(in)  :: pc(2)
+ 
+  real (kind=real_kind)              :: dxds(3,2)
+  real (kind=real_kind)              :: dNds(4,2)
+  real (kind=real_kind)              ::  dds(3,2)
+  real (kind=real_kind)              ::    c(2)
+  real (kind=real_kind)              ::    x(3)
+  real (kind=real_kind)              ::   xc(3,2)
+  real (kind=real_kind)              :: nx, nx2 
+  integer                            :: i,j
+
+  dNds = shape_fcn_deriv  (pc)
+  dds  = MATMUL(TRANSPOSE(coords), dNds)
+
+  x    = F(coords, pc)
+  nx   = NORM2(x)
+  nx2  = DOT_PRODUCT(x,x)
+  c    = MATMUL(TRANSPOSE(dds), x)
+  do j=1,2
+    do i=1,3
+      xc(i,j) = x(i)*c(j)
+    end do
+  end do
+  dxds = nx2*dds - xc
+  dxds = dxds/(nx*nx2)
+end function   
 
 
 function cartesian_parametric_coordinates(sphere, corners3D) result (ref)
@@ -1823,12 +1849,12 @@ function cartesian_parametric_coordinates(sphere, corners3D) result (ref)
   type (cartesian2D_t)                 :: ref
 
   integer,               parameter :: MAXIT = 20
-  real (kind=real_kind), parameter :: TOL   = 1.0E-9
+  real (kind=real_kind), parameter :: TOL   = 1.0E-13
   integer,               parameter :: n     = 3
 
   type (cartesian3D_t)             :: cart
-  real (kind=real_kind)            :: coords(4,3), dNds(4,2), dsdx(2,3)
-  real (kind=real_kind)            :: p(3), pc(2), dx(3), g(3), ds(2)
+  real (kind=real_kind)            :: coords(4,3), dxds(3,2), dsdx(2,3)
+  real (kind=real_kind)            :: p(3), pc(2), dx(3), x(3), ds(2)
   real (kind=real_kind)            :: dist, step                          
   
   integer                          :: i,j,k,iter
@@ -1848,8 +1874,8 @@ function cartesian_parametric_coordinates(sphere, corners3D) result (ref)
 
   dx   = 0
   ds   = 0
-  dNds = 0
   dsdx = 0
+  dxds = 0
 
   /*-------------------------------------------------------------------------*/
 
@@ -1861,14 +1887,14 @@ function cartesian_parametric_coordinates(sphere, corners3D) result (ref)
   do while  (TOL*TOL.lt.dist .and. iter.lt.MAXIT .and. TOL*TOL.lt.step)
     iter = iter + 1
 
-    call shape_fcn_deriv  (dNds, pc)
-    call formDSDX         (dsdx, coords, dNds)
-    g = fcn(pc, coords)
+    dxds =  DF (coords, pc)
+    x    =   F (coords, pc)
+    dsdx = INV (dxds)
 
-    dx = g - p
+    dx   = x - p
     dist = DOT_PRODUCT(dx,dx)
-    ds = MATMUL(dsdx, dx)
-    pc = pc - ds
+    ds   = MATMUL(dsdx, dx)
+    pc   = pc - ds
     step = DOT_PRODUCT(ds,ds)
   enddo
 
@@ -1892,21 +1918,36 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
 
   type (spherical_polar_t)                      :: sphere(np,np)
   integer                                       :: i,j,n
-! type(cartesian2D_t)                           :: parametric_test
-  real(kind=real_kind)                          :: d
+! type(cartesian2D_t)                           :: parametric_test(np,np)
+! real(kind=real_kind)                          :: d
 
   do j=1,np
     sphere(:,j) = change_coordinates(dep_points(:,j))
   end do
 
+! call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
   do i=1,np
     do j=1,np
       n = elem_indexes(i,j)
       ! Mark will fill in  parametric_coordinates for corners.
       parametric_coord(i,j) = cartesian_parametric_coordinates(sphere(i,j),ngh_corners(:,n))
-!     parametric_test       = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
     end do
   end do
+! call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
+! call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
+! do i=1,np
+!   do j=1,np
+!     n = elem_indexes(i,j)
+!     parametric_test(i,j)  = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
+!   end do
+! end do
+! call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
+! do i=1,np
+!   do j=1,np
+!     d = distance(parametric_coord(i,j),parametric_test(i,j))
+!     print *,__LINE__,parametric_coord(i,j), parametric_test(i,j), d
+!   end do
+! end do
 end subroutine ALE_parametric_coords
 
 
