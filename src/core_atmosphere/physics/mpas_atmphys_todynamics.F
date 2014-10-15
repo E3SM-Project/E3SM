@@ -238,18 +238,18 @@
  deallocate(tend_th)
 
  if(rk_step .eq. 3) then
-    write(0,*)
-    write(0,*) '--- enter subroutine physics_addtend:'
-    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
-    write(0,*) 'min rthblten   = ',minval(rthblten(:,1:nCellsSolve))
-    write(0,*) 'max rthcuten   = ',maxval(rthcuten(:,1:nCellsSolve))
-    write(0,*) 'min rthcuten   = ',minval(rthcuten(:,1:nCellsSolve))
-    write(0,*) 'max rthratenlw = ',maxval(rthratenlw(:,1:nCellsSolve))
-    write(0,*) 'min rthratenlw = ',minval(rthratenlw(:,1:nCellsSolve))
-    write(0,*) 'max rthratensw = ',maxval(rthratensw(:,1:nCellsSolve))
-    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
-    write(0,*) '--- end subroutine physics_addtend'
-    write(0,*)
+!    write(0,*)
+!    write(0,*) '--- enter subroutine physics_addtend:'
+!    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
+!    write(0,*) 'min rthblten   = ',minval(rthblten(:,1:nCellsSolve))
+!    write(0,*) 'max rthcuten   = ',maxval(rthcuten(:,1:nCellsSolve))
+!    write(0,*) 'min rthcuten   = ',minval(rthcuten(:,1:nCellsSolve))
+!    write(0,*) 'max rthratenlw = ',maxval(rthratenlw(:,1:nCellsSolve))
+!    write(0,*) 'min rthratenlw = ',minval(rthratenlw(:,1:nCellsSolve))
+!    write(0,*) 'max rthratensw = ',maxval(rthratensw(:,1:nCellsSolve))
+!    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
+!    write(0,*) '--- end subroutine physics_addtend'
+!    write(0,*)
  endif
 
 !formats:

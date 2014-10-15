@@ -402,6 +402,8 @@ module mpas_core
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
+
+         write(0,*) ' '
          write(0,*) 'Begin timestep ', trim(timeStamp)
 
          ! Input external updates (i.e. surface)

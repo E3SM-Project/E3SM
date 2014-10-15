@@ -160,21 +160,21 @@
 !==================================================================================================
  subroutine microphysics_init
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter cloud microphysics initialization:'
+! write(0,*)
+! write(0,*) '--- enter cloud microphysics initialization:'
 
  microp_select: select case(microp_scheme)
 
     case("wsm6")
-       write(0,*) '--- enter subroutine wsm6init:'
+!       write(0,*) '--- enter subroutine wsm6init:'
        call wsm6init(rho_a,rho_r,rho_s,cliq,cpv,.false.)
-       write(0,*) '--- end subroutine wsm6init'
+!       write(0,*) '--- end subroutine wsm6init'
 
     case default
 
  end select microp_select
 
- write(0,*) '--- end cloud microphysics initialization'
+! write(0,*) '--- end cloud microphysics initialization'
 
  end subroutine microphysics_init
 
@@ -200,23 +200,23 @@
  integer:: i,icell,icount,istep,j,k,kk
 
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter subroutine microphysics_driver: itimestep=', itimestep
- write(0,*) '    dt_microp=',dt_microp
- write(0,*) '    n_microp =',n_microp
+! write(0,*)
+! write(0,*) '--- enter subroutine microphysics_driver: itimestep=', itimestep
+! write(0,*) '    dt_microp=',dt_microp
+! write(0,*) '    n_microp =',n_microp
  
 !initialization:
- write(0,*) '    ims= ',ims,' ime=',ime
- write(0,*) '    jms= ',jms,' jme=',jme
- write(0,*) '    kms= ',kms,' kme=',kme
- write(0,*)
- write(0,*) '    ids= ',ids,' ide=',ide
- write(0,*) '    jds= ',jds,' jde=',jde
- write(0,*) '    kds= ',kds,' kde=',kde
- write(0,*)
- write(0,*) '    its= ',its,' ite=',ite
- write(0,*) '    jts= ',jts,' jte=',jte
- write(0,*) '    kts= ',kts,' kte=',kte
+! write(0,*) '    ims= ',ims,' ime=',ime
+! write(0,*) '    jms= ',jms,' jme=',jme
+! write(0,*) '    kms= ',kms,' kme=',kme
+! write(0,*)
+! write(0,*) '    ids= ',ids,' ide=',ide
+! write(0,*) '    jds= ',jds,' jde=',jde
+! write(0,*) '    kds= ',kds,' kde=',kde
+! write(0,*)
+! write(0,*) '    its= ',its,' ite=',ite
+! write(0,*) '    jts= ',jts,' jte=',jte
+! write(0,*) '    kts= ',kts,' kte=',kte
 
 !... allocation of microphysics arrays:
  call allocate_microphysics
@@ -253,7 +253,7 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                    )
-          write(0,*) '--- end kessler:',istep
+!          write(0,*) '--- end kessler:',istep
 
        case ("wsm6")
           call wsm6( &
@@ -273,7 +273,7 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                    )
-          write(0,*) '--- end wsm6:',istep
+!          write(0,*) '--- end wsm6:',istep
 
        case default
        

@@ -194,15 +194,15 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter subroutine MPAS_to_phys:'
- write(0,*) 'ims=',ims,' ime=',ime
- write(0,*) 'jms=',jms,' jme=',jme
- write(0,*) 'kms=',kms,' kme=',kme
- write(0,*)
- write(0,*) 'its=',its,' ite=',ite
- write(0,*) 'jts=',jts,' jte=',jte
- write(0,*) 'kts=',kts,' kte=',kte
+! write(0,*)
+! write(0,*) '--- enter subroutine MPAS_to_phys:'
+! write(0,*) 'ims=',ims,' ime=',ime
+! write(0,*) 'jms=',jms,' jme=',jme
+! write(0,*) 'kms=',kms,' kme=',kme
+! write(0,*)
+! write(0,*) 'its=',its,' ite=',ite
+! write(0,*) 'jts=',jts,' jte=',jte
+! write(0,*) 'kts=',kts,' kte=',kte
 
 !initialization:
  call mpas_pool_get_array(mesh,'latCell',latCell)
@@ -435,8 +435,8 @@
 !--------------------------------------------------------------------------------------------------
 
 !initialization:
- write(0,*)
- write(0,*) '--- enter subroutine microphysics_from_MPAS:'
+! write(0,*)
+! write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -503,7 +503,7 @@
 
  end select microp_select_init
 
- write(0,*) '--- end subroutine microphysics_from_MPAS.'
+! write(0,*) '--- end subroutine microphysics_from_MPAS.'
 
 !formats:
  201 format(2i6,10(1x,e15.8))
@@ -542,8 +542,8 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter subroutine microphysics_to_MPAS:'
+! write(0,*)
+! write(0,*) '--- enter subroutine microphysics_to_MPAS:'
 
 !initialization:
  call mpas_pool_get_array(mesh,'rdzw' ,rdzw )
@@ -646,7 +646,7 @@
 !formats:
  201 format(2i6,10(1x,e15.8))
 
- write(0,*) '--- end subroutine microphysics_to_MPAS'
+! write(0,*) '--- end subroutine microphysics_to_MPAS'
 
  end subroutine microphysics_to_MPAS
 

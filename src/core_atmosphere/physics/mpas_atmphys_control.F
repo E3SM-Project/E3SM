@@ -84,8 +84,8 @@
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
- write(0,*)
- write(0,*) '--- enter subroutine physics_namelist_check:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_namelist_check:'
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
  write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
  write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
@@ -227,7 +227,7 @@
     config_radt_sw_scheme    .eq. 'off' .and. &
     config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
 
- write(0,*) '--- end subroutine physics_namelist_check:'
+! write(0,*) '--- end subroutine physics_namelist_check:'
 
  end subroutine physics_namelist_check
 

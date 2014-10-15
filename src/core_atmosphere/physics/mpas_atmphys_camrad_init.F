@@ -135,19 +135,19 @@
 
 !initialization of some constants:
  call radini(dminfo,gravity,cp,ep_2,stbolt,pstd*10.0)
- write(0,*) '    end subroutine radini'
+! write(0,*) '    end subroutine radini'
 
 !initialization of saturation vapor pressures:
  call esinti(epsqs,latvap,latice,rh2o,cpair,tmelt)
- write(0,*) '    end subroutine esinti'
+! write(0,*) '    end subroutine esinti'
  
 !initialization of ozone mixing ratios:
  call oznini(mesh,atm_input)
- write(0,*) '    end subroutine oznini'
+! write(0,*) '    end subroutine oznini'
 
 !initialization of aerosol concentrations:
  call aerosol_init(dminfo,mesh,diag,state,time_lev)
- write(0,*) '    end subroutine aerosol_init'
+! write(0,*) '    end subroutine aerosol_init'
 
  end subroutine camradinit
 
@@ -738,7 +738,7 @@
     enddo
  enddo
 
- write(0,*) '    end subroutine aer_optics_initialize:'
+! write(0,*) '    end subroutine aer_optics_initialize:'
 
  end subroutine aer_optics_initialize
 

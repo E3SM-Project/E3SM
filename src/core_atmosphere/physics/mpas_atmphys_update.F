@@ -57,8 +57,8 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- begin physics_update:'
+! write(0,*)
+! write(0,*) '--- begin physics_update:'
  block => domain % blocklist
  do while(associated(block))
 
@@ -67,7 +67,7 @@
 
     block => block % next
  end do
- write(0,*) '--- end physics_update:'
+! write(0,*) '--- end physics_update:'
 
  end subroutine physics_update
 

@@ -152,7 +152,7 @@
  call mpas_pool_get_array(diag_physics,'znt'       , znt       )
  
  write(0,*)
- write(0,*) '--- enter subroutine landuse_init_forMPAS: julian day=', julday
+! write(0,*) '--- enter subroutine landuse_init_forMPAS: julian day=', julday
  write(0,*) '--- config_frac_seaice = ',config_frac_seaice
  write(0,*) '--- xice_threshold     = ',xice_threshold
 
@@ -299,7 +299,7 @@
 
  enddo
 
- write(0,*) '--- end subroutine landuse_init_forMPAS'
+! write(0,*) '--- end subroutine landuse_init_forMPAS'
 
 !formats:
  101 format(i6,8(1x,e15.8))

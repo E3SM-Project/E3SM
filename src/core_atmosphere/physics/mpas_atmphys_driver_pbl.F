@@ -277,8 +277,8 @@
  type(mpas_pool_type),intent(inout):: tend_physics
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_pbl: dt_pbl=',dt_pbl
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_pbl: dt_pbl=',dt_pbl
 
 !copy MPAS arrays to local arrays:
  call pbl_from_MPAS(sfc_input,diag_physics)
@@ -315,7 +315,7 @@
 
 !copy local arrays to MPAS grid:
  call pbl_to_MPAS(diag_physics,tend_physics)
- write(0,*) '--- end subroutine driver_pbl'
+! write(0,*) '--- end subroutine driver_pbl'
 
  end subroutine driver_pbl
 

@@ -150,8 +150,8 @@
  real(kind=RKIND):: xtime_m
 
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
 
  call mpas_pool_get_config(domain%blocklist%configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(domain%blocklist%configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme  )
@@ -187,7 +187,7 @@
  julday = DoY
  curr_julday = real(julday-1) + utc_h / 24.0
  LeapYear = isLeapYear(year)
- write(0,100) year,julday,gmt,utc_h,curr_julday,LeapYear,timeStamp
+! write(0,100) year,julday,gmt,utc_h,curr_julday,LeapYear,timeStamp
 
  block => domain % blocklist
  do while(associated(block))
@@ -394,8 +394,8 @@
  integer:: ierr
 
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter subroutine physics_run_init:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_run_init:'
 
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
@@ -465,7 +465,7 @@
  gmt    = utc_h
  julday = DoY
  curr_julday = real(julday-1)
- write(0,101) year,julday,gmt,utc_h,curr_julday
+! write(0,101) year,julday,gmt,utc_h,curr_julday
 
 !set alarms for calling the longwave and shortwave radiation schemes, the convection schemes,
 !and the PBL schemes at intervals different (greater) than the dynamical time-step:

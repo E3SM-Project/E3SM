@@ -362,19 +362,19 @@
  logical, parameter:: allowed_to_read = .false. !actually not used in subroutine sfclayinit.
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter sfclayer_initialization:'
+! write(0,*)
+! write(0,*) '--- enter sfclayer_initialization:'
  sfclayer_select: select case (trim(sfclayer_scheme))
 
     case("monin_obukhov")
-       write(0,*) '    enter monin_obukhov initialization:'
+!       write(0,*) '    enter monin_obukhov initialization:'
        call sfclayinit(allowed_to_read)
-       write(0,*) '    end monin_obukhov initialization'
+!       write(0,*) '    end monin_obukhov initialization'
 
     case default
 
  end select sfclayer_select
- write(0,*) '--- end sfclayer_initialization'
+! write(0,*) '--- end sfclayer_initialization'
 
  end subroutine init_sfclayer
 
@@ -394,8 +394,8 @@
  real(kind=RKIND):: dx
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_sfclayer:'
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_sfclayer:'
 
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
@@ -442,7 +442,7 @@
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(diag_physics)
 
- write(0,*) '--- end subroutine driver_sfclayer'
+! write(0,*) '--- end subroutine driver_sfclayer'
 
  end subroutine driver_sfclayer
 

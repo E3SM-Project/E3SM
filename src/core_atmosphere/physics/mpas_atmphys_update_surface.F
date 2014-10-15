@@ -169,12 +169,12 @@
  call mpas_pool_get_array(diag_physics,'sfc_emibck',sfc_emibck)
  call mpas_pool_get_array(diag_physics,'xicem'     ,xicem     )
 
- write(0,*)
- write(0,*) '--- enter subroutine physics_update_sst:'
- write(0,*) '--- config_frac_seaice =', config_frac_seaice
- write(0,*) '--- xice_threshold     =', xice_threshold
- write(0,*) '--- isice  =', isice
- write(0,*) '--- iswater=', iswater
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_update_sst:'
+! write(0,*) '--- config_frac_seaice =', config_frac_seaice
+! write(0,*) '--- xice_threshold     =', xice_threshold
+! write(0,*) '--- isice  =', isice
+! write(0,*) '--- iswater=', iswater
 
  if(config_frac_seaice) then
     do iCell = 1,nCellsSolve
@@ -268,10 +268,10 @@
        tslb(1,iCell) = sst(iCell)
     endif
  enddo
- write(0,*)
- write(0,*) '--- nb of seaice points converted to land points  = ',nb_to_land
- write(0,*) '--- nb of seaice points converted to ocean points = ',nb_to_ocean
- write(0,*) '--- nb of seaice points less than xice threshold  = ',nb_removed
+! write(0,*)
+! write(0,*) '--- nb of seaice points converted to land points  = ',nb_to_land
+! write(0,*) '--- nb of seaice points converted to ocean points = ',nb_to_ocean
+! write(0,*) '--- nb of seaice points less than xice threshold  = ',nb_removed
 
 !finally, update the sea-ice flag. save xice prior to next update:
  do iCell = 1, nCellsSolve
@@ -283,38 +283,38 @@
  enddo
 
 !local and global max and min sea-surface temperatures and fractional sea-ice:
- local_min =  999._RKIND
- local_max = -999._RKIND
- do iCell = 1,nCellsSolve
-    if(xland(iCell) == 2._RKIND .and. sst(iCell) <= local_min) local_min = sst(iCell)
-    if(xland(iCell) == 2._RKIND .and. sst(iCell) >= local_max) local_max = sst(iCell)
- enddo
- call mpas_dmpar_min_real(dminfo,local_min,global_sst_min)
- call mpas_dmpar_max_real(dminfo,local_max,global_sst_max)
- write(0,*)
- write(0,*) '--- min local SST   = ',local_min
- write(0,*) '--- max local SST   = ',local_max
- write(0,*) '--- min global SST  = ',global_sst_min
- write(0,*) '--- max global SST  = ',global_sst_max
+! local_min =  999._RKIND
+! local_max = -999._RKIND
+! do iCell = 1,nCellsSolve
+!    if(xland(iCell) == 2._RKIND .and. sst(iCell) <= local_min) local_min = sst(iCell)
+!    if(xland(iCell) == 2._RKIND .and. sst(iCell) >= local_max) local_max = sst(iCell)
+! enddo
+! call mpas_dmpar_min_real(dminfo,local_min,global_sst_min)
+! call mpas_dmpar_max_real(dminfo,local_max,global_sst_max)
+! write(0,*)
+! write(0,*) '--- min local SST   = ',local_min
+! write(0,*) '--- max local SST   = ',local_max
+! write(0,*) '--- min global SST  = ',global_sst_min
+! write(0,*) '--- max global SST  = ',global_sst_max
 
- local_min =  999._RKIND
- local_max = -999._RKIND 
- do iCell = 1,nCellsSolve
-    if(xland(iCell) == 1._RKIND .and. xice(iCell) <= local_min) local_min = xice(iCell)
-    if(xland(iCell) == 1._RKIND .and. xice(iCell) >= local_max) local_max = xice(iCell) 
- enddo
- call mpas_dmpar_min_real(dminfo,local_min,global_xice_min)
- call mpas_dmpar_max_real(dminfo,local_max,global_xice_max)
- if(local_min .eq.  999._RKIND) local_min = 0._RKIND
- if(local_max .eq. -999._RKIND) local_max = 0._RKIND
- write(0,*)
- write(0,*) '--- min local XICE  = ',local_min
- write(0,*) '--- max local XICE  = ',local_max
- write(0,*) '--- min global XICE = ',global_xice_min
- write(0,*) '--- max global XICE = ',global_xice_max
+! local_min =  999._RKIND
+! local_max = -999._RKIND 
+! do iCell = 1,nCellsSolve
+!    if(xland(iCell) == 1._RKIND .and. xice(iCell) <= local_min) local_min = xice(iCell)
+!    if(xland(iCell) == 1._RKIND .and. xice(iCell) >= local_max) local_max = xice(iCell) 
+! enddo
+! call mpas_dmpar_min_real(dminfo,local_min,global_xice_min)
+! call mpas_dmpar_max_real(dminfo,local_max,global_xice_max)
+! if(local_min .eq.  999._RKIND) local_min = 0._RKIND
+! if(local_max .eq. -999._RKIND) local_max = 0._RKIND
+! write(0,*)
+! write(0,*) '--- min local XICE  = ',local_min
+! write(0,*) '--- max local XICE  = ',local_max
+! write(0,*) '--- min global XICE = ',global_xice_min
+! write(0,*) '--- max global XICE = ',global_xice_max
 
- write(0,*) '--- end subroutine physics_update_sst'
- write(0,*)
+! write(0,*) '--- end subroutine physics_update_sst'
+! write(0,*)
 
  end subroutine physics_update_sst
 
@@ -352,8 +352,8 @@
  real(kind=RKIND):: usw, qo, swo, us, tb, dtc, dtw, alw, dtwo, delt, f1
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine physics_update_sstskin:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_update_sstskin:'
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 

@@ -90,8 +90,8 @@
  real(kind=RKIND),dimension(:,:,:,:),allocatable:: ozmixin
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine physics_init_o3:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_init_o3:'
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_dimension(mesh,'nMonths',num_months)
@@ -187,7 +187,7 @@
  enddo
  deallocate(ozmixin)
 
- write(0,*) '--- end subroutine physics_init_o3.'
+! write(0,*) '--- end subroutine physics_init_o3.'
 
 !formats:
  101 format(i3,12(1x,e15.8))
@@ -216,8 +216,8 @@
  integer:: iCell,iLev
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine physics_update_o3:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_update_o3:'
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nOznLevels',nOznLevels)
@@ -228,7 +228,7 @@
  do iLev = 1,nOznLevels 
     call monthly_interp_to_date(nCellsSolve,current_date,ozmixm(:,iLev,:),o3clim(iLev,:))
  enddo
- write(0,*) '--- end subroutine physics_update_o3:'
+! write(0,*) '--- end subroutine physics_update_o3:'
 
  end subroutine update_o3climatology
 

@@ -240,9 +240,9 @@
  end do 
 
  endif
- write(0,*)
- write(0,*) '--- end physics_driver:'
- write(0,*)
+! write(0,*)
+! write(0,*) '--- end physics_driver:'
+! write(0,*)
 
  end subroutine physics_driver
 

@@ -228,8 +228,8 @@
  integer:: iCell
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine init_convection:'
+! write(0,*)
+! write(0,*) '--- enter subroutine init_convection:'
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
@@ -238,17 +238,17 @@
  convection_select: select case(convection_scheme)
 
     case ("kain_fritsch")
-       write(0,*) '    enter kain-fritsch initialization:'
+!       write(0,*) '    enter kain-fritsch initialization:'
        if(.not. config_do_restart) then
           do iCell = 1, nCells
              nca(iCell) = -100._RKIND
           enddo
        endif
        call kf_lutab(svp1,svp2,svp3,svpt0)
-       write(0,*) '    end kain-kritsch initialization'
+!       write(0,*) '    end kain-kritsch initialization'
 
     case ("tiedtke")
-       write(0,*) '    enter tiedtke initialization:'
+!       write(0,*) '    enter tiedtke initialization:'
 !      write(mpas_err_message,'(A,A10)') &
 !        'Tiedtke is being tested. Do not use right now. Thanks '
 !      call physics_error_fatal(mpas_err_message)
@@ -257,7 +257,7 @@
 
  end select convection_select
 
- write(0,*) '--- end subroutine init_convection'
+! write(0,*) '--- end subroutine init_convection'
 
  end subroutine init_convection
 
@@ -291,8 +291,8 @@
  real(kind=RKIND):: min_rthcuten
 
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
+! write(0,*)
+! write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
 
 !initialize instantaneous precipitation, and copy convective tendencies from the dynamics to
 !the physics grid:
@@ -352,7 +352,7 @@
                         )
 
     case("tiedtke")
-       write(0,*) '--- enter subroutine cu_tiedtke:'
+!       write(0,*) '--- enter subroutine cu_tiedtke:'
        call cu_tiedtke ( &
              pcps        = pres_hyd_p    , p8w             = pres2_hyd_p ,           &
              znu         = znu_hyd_p     , t3d             = t_p         ,           &              
@@ -385,7 +385,7 @@
 !specific to convection parameterization back to the dynamics grid:
  call convection_to_MPAS(diag_physics,tend_physics)
 
- write(0,*) '--- end subroutine convection_driver'
+! write(0,*) '--- end subroutine convection_driver'
 
  end subroutine driver_convection
 
@@ -408,8 +408,8 @@
  real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten 
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine convection_from_MPAS:'
+! write(0,*)
+! write(0,*) '--- enter subroutine convection_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 

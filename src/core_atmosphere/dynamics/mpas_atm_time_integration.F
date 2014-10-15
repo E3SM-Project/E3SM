@@ -505,6 +505,7 @@ module atm_time_integration
 #endif
 
       102 format(' global min, max scalar',i4,2(1x,e17.10))
+if (debug) then
       write(0,*)
       block => domain % blocklist
       do while (associated(block))
@@ -559,6 +560,7 @@ module atm_time_integration
 
          block => block % next
       end do
+end if
 
    end subroutine atm_srk3
 
@@ -1837,7 +1839,7 @@ module atm_time_integration
       ! do one scalar at a time
 
       do iScalar = 1, num_scalars
-         write(0,*) ' mono transport for scalar ',iScalar
+!         write(0,*) ' mono transport for scalar ',iScalar
 
          do iCell = 1, nCells
          do k = 1, nVertLevels
@@ -2353,7 +2355,7 @@ module atm_time_integration
 
       prandtl_inv = 1.0_RKIND/prandtl
 
-      write(0,*) ' rk_step in compute_dyn_tend ',rk_step
+!      write(0,*) ' rk_step in compute_dyn_tend ',rk_step
 
 
       delsq_horiz_mixing = .false.
@@ -2384,9 +2386,9 @@ module atm_time_integration
          h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
          h_theta_eddy_visc4 = h_mom_eddy_visc4
          delsq_horiz_mixing = .true.
-         write(0,*) '... config_visc4_2dsmag = ', config_visc4_2dsmag
-         write(0,*) '... h_mom_eddy_visc4    = ', h_mom_eddy_visc4
-         write(0,*) '... h_theta_eddy_visc4  = ', h_theta_eddy_visc4
+!         write(0,*) '... config_visc4_2dsmag = ', config_visc4_2dsmag
+!         write(0,*) '... h_mom_eddy_visc4    = ', h_mom_eddy_visc4
+!         write(0,*) '... h_theta_eddy_visc4  = ', h_theta_eddy_visc4
       else if ( config_horiz_mixing == "2d_fixed") then
          h_mom_eddy_visc4   = config_h_mom_eddy_visc4
          h_theta_eddy_visc4 = config_h_theta_eddy_visc4
