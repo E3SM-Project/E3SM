@@ -154,6 +154,10 @@
 		            description="Integer specifying the stride of each IO task."
 		            possible_values="Any positive integer value greater than 0."
 		/>
+		<nml_option name="config_year_digits" type="integer" default_value="4" units="unitless"
+		            description="Integer specifying the number of digits used to represent the year in time strings."
+		            possible_values="Any positive integer value greater than 0."
+		/>
 	</nml_record>
 
 	<nml_record name="decomposition" in_defaults="true">

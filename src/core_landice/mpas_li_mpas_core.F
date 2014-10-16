@@ -105,6 +105,11 @@ module mpas_core
       globalErr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      !
+      ! Initialize config option settings as needed
+      !
+      call li_setup_config_options( domain, err_tmp )
+      err = ior(err, err_tmp)
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -130,11 +135,6 @@ module mpas_core
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
 
-      !
-      ! Initialize core
-      !
-      call li_setup_config_options( domain, err_tmp )
-      err = ior(err, err_tmp)
 
       ! ===
       ! === Initialize modules ===
@@ -148,6 +148,7 @@ module mpas_core
 !!!      call mpas_tracer_advection_init(err_tmp)  ! Calling signature may be incorrect here.
 !!!      err = ior(err,err_tmp)
 
+
       ! ===
       ! === Initialize blocks ===
       ! ===
@@ -157,6 +158,7 @@ module mpas_core
 
          block => block % next
       end do
+
 
       ! check for errors and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
