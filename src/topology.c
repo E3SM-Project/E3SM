@@ -21,40 +21,38 @@ void identity(const MPI_Comm comm, int *iotask)
 {
   MPIX_Hardware_t hw;
   char message[100];
-
-  /* Number of MPI tasks per Pset */
-  int coreId;
-  int *TasksPerPset;
-  int *tmp;
-  int i,ierr;
-  Personality_t pers;
-  int numIONodes,numPsets,numNodesInPset,rankInPset;
-  int numpsets, psetID, psetsize, psetrank;
-  
+   /* Number of MPI tasks per Pset */
+   int coreId;
+   int *TasksPerPset;
+   int *tmp;
+   int i,ierr;
+  Personality_t personality;
 
   MPI_Comm_rank(comm,&rank);
   MPI_Comm_size(comm,&np);
   MPI_Get_processor_name(my_name, &my_name_len);
 
+
   MPIX_Hardware(&hw);
-  
+
   Kernel_GetPersonality(&pers, sizeof(pers));
+
+   int numIONodes,numPsets,numNodesInPset,rankInPset;
+   int numpsets, psetID, psetsize, psetrank;
 
   bgq_pset_info (comm, &numpsets, &psetID, &psetsize, &psetrank);
  
   numIONodes = numpsets; 
   numNodesInPset = psetsize; 
   rankInPset = rank; 
-
   numPsets = numpsets; 
     
   if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
   if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
   if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
 
-  int psetNum;
-
-  psetNum = psetID;
+   int psetNum;
+   psetNum = psetID;
 
 #ifdef DEBUG
    if((*iotask)>0) {
@@ -71,7 +69,7 @@ void identity(const MPI_Comm comm, int *iotask)
    tmp = malloc(numPsets*sizeof(int));
    for(i=0;i<numPsets;i++) tmp[i]=0;
    if(coreId == 0) {tmp[psetNum]=1;}
-   ierr = MPI_Allreduce(tmp,TasksPerPset,numPsets,MPI_INT,MPI_SUM,comm2);
+   ierr = MPI_Allreduce(tmp,TasksPerPset,numPsets,MPI_INT,MPI_SUM,comm);
    if(rank == 0) {
      for(i=0;i<numPsets;i++) {printf("Pset: %3i has %3i nodes \n",i,TasksPerPset[i]);}
    }
@@ -102,6 +100,7 @@ void determineiotasks(const MPI_comm comm, int *numiotasks,int *base, int *strid
    int coreId;
    int iam;
    int task_count;
+
    MPIX_Hardware_t hw;
    /*  Get the personality  */
    Personality_t pers;

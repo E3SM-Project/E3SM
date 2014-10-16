@@ -112,14 +112,11 @@ typedef struct mapsort
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
 
 #ifdef BGQ
-  //  void identity(MPI_Fint *comm, int *iotask);
-void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, int *rearr, 
-		      int *iamIOtask);
-
+  void identity(MPI_Comm comm, int *iotask);
+  void determineiotasks(MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
+			int *iamIOtask);
 
 #endif
-
-
 
 #if defined(__cplusplus)
 }
