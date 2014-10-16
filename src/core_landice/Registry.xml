@@ -134,30 +134,6 @@
 
 
 	<nml_record name="io" in_defaults="true">
-		<nml_option name="config_input_name" type="character" default_value="landice_grid.nc" units="unitless"
-		            description="The path to the input file for the simulation."
-		            possible_values="path/to/grid.nc"
-		/>
-		<nml_option name="config_output_name" type="character" default_value="output.nc" units="unitless"
-		            description="The template path and name to the output file from the simulation. A time stamp is prepended to the extension of the file (.nc)."
-		            possible_values="path/to/output.nc"
-		/>
-		<nml_option name="config_restart_name" type="character" default_value="restart.nc" units="unitless"
-		            description="The template path and name to the restart file for the simulation. A time stamp is prepended to the extension of the file (.nc) both for input and output."
-		            possible_values="path/to/restart.nc"
-		/>
-		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
-		            description="The name of the file to which the timestamp of the latest restart file is written. This file is subsequently used to set the start time when config_start_time is set to 'file' and config_do_restart is set to .true."
-		            possible_values="path/to/restart_timestamp"
-		/>
-		<nml_option name="config_restart_interval" type="character" default_value="3650_00:00:00" units="unitless"
-		            description="Timestamp determining how often a restart file should be written.  Currently years and months are not supported, so you have to specify the restart interval in units of days! **  We could eventually propose a change to framework to fix this in subroutine mpas_set_timeInterval in mpas_timekeeping module."
-		            possible_values="'DDDD_HH:MM:SS'"
-		/>
-		<nml_option name="config_output_interval" type="character" default_value="0001_00:00:00" units="unitless"
-		            description="Timestamp determining how often an output file should be written."
-		            possible_values="'DDDD_HH:MM:SS'"
-		/>
 		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
 		            description="Timestamp determining how often a global statistics files should be written."
 		            possible_values="'DDDD_HH:MM:SS'"
@@ -169,10 +145,6 @@
 		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
 		            description="Logical flag determining if an output file should be written prior to the first time step."
 		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_frames_per_outfile" type="integer" default_value="0" units="unitless"
-		            description="Integer specifying how many time frames should be included in an output file. Once the maximum is reached, a new output file is created.  If 0 (or less) is specified then all time frames are included in a single file called 'output.nc'."
-		            possible_values="Any integer value"
 		/>
 		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
 		            description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are required to write contiguous blocks of data to a file."
