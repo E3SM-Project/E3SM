@@ -135,17 +135,18 @@ def wait_for_tests(test_paths, no_wait):
     while threading.active_count() > 1:
         time.sleep(1)
 
-    tests_with_results = set()
-    all_pass = True
-    try:
-        for _ in test_paths:
-            test_status, test_path = results.get(timeout=1)
-            print "Test '%s' finished with status '%s'" % (test_path, test_status)
-            tests_with_results.add(test_path)
-            all_pass &= test_status == TEST_PASSED_STATUS
+    tests_with_results = dict()
+    while (not results.empty()):
+        test_status, test_path = results.get()
+        tests_with_results[test_path] = test_status
 
-    except Queue.Empty:
-        expect(False, "Missing results for tests: %s" % (set(test_paths) - tests_with_results) )
+    expect(set(test_paths) == set(tests_with_results),
+           "Missing results for tests: %s" % (set(test_paths) - set(tests_with_results)) )
+
+    all_pass = True
+    for test_status, test_path in sorted(tests_with_results.iteritems()):
+        print "Test '%s' finished with status '%s'" % (test_path, test_status)
+        all_pass &= test_status == TEST_PASSED_STATUS
 
     return all_pass
 
