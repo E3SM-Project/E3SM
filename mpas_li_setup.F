@@ -76,6 +76,8 @@ contains
 
    subroutine li_setup_config_options( domain, err )
 
+      use mpas_timekeeping
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -93,14 +95,20 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-
+      integer, pointer :: config_year_digits
 
       err = 0
 
       ! Make config pool publicly available in this module
       liConfigs => domain % configs
 
-      ! <Any config setup can occur here>
+      ! ---
+      ! Config-specific setup occurs below
+      ! ---
+
+      ! Adjust number of digits representing the year
+      call mpas_pool_get_config(liConfigs, 'config_year_digits', config_year_digits)
+      call mpas_timekeeping_set_year_width(config_year_digits)
 
    !--------------------------------------------------------------------
    end subroutine li_setup_config_options
