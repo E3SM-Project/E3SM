@@ -2671,6 +2671,16 @@ endif
        laplace(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
     end do 
 
+#undef UNDAMPRRCART
+#ifdef UNDAMPRRCART
+    do n=1,np
+       do m=1,np
+          ! add in correction so we dont damp rigid rotation
+          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(rrearth**2)
+          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(rrearth**2)
+       enddo
+    enddo
+#endif
   end function vlaplace_sphere_wk_cartesian
 
 
