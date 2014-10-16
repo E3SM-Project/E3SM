@@ -121,6 +121,10 @@ contains
     allocate(LSchedule%SendCycle(nedges))
     allocate(LSchedule%RecvCycle(nedges))
     allocate(LSchedule%MoveCycle(1))
+
+    ! Initialize the schedules...
+    LSchedule%MoveCycle(1)%ptrP = 0
+    LSchedule%MoveCycle(1)%lengthP = 0
     if(Debug) write(iulog,*)'genEdgeSched: point #6'
 
     !==================================================================
