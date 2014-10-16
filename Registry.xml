@@ -33,12 +33,14 @@
 		/>
 	</dims>
 
+
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
 		            description="Selection of the method for solving ice velocity."
 		            possible_values="'sia'"
 		/>
 	</nml_record>
+
 
 	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
@@ -56,6 +58,7 @@
 		/>
 -->
 	</nml_record>
+
 
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
@@ -93,20 +96,18 @@
 	</nml_record>
 -->
 
+
 	<nml_record name="time_integration" in_defaults="true">
-		<nml_option name="config_dt_years" type="real" default_value="0.5" units="yr"
-		            description="Length of model time-step in years.  Will be used instead of config_dt_seconds if greater than zero.  Currently the model assumes there are 365.0 * 24.0 * 3600.0 seconds in a year and the calendar type is not considered for this conversion."
-		            possible_values="Any positive real value, but limited by CFL condition."
-		/>
-		<nml_option name="config_dt_seconds" type="real" default_value="0.0" units="s"
-		            description="Length of model time-step in seconds.  This value will only be used if config_dt_years is less than or equal to zero."
-		            possible_values="Any positive real value, but limited by CFL condition."
+		<nml_option name="config_dt" type="character" default_value="0001-00-00_00:00:00" units="unitless"
+		            description="Length of model time step defined as a time interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed), but limited by CFL condition."
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
 		            description="Time integration method."
 		            possible_values="'forward_euler'"
 		/>
 	</nml_record>
+
 
 	<nml_record name="time_management" in_defaults="true">
 		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
@@ -123,13 +124,14 @@
 		/>
 		<nml_option name="config_run_duration" type="character" default_value="none" units="unitless"
 		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time. If a time value is specified for config_run_duration, it must be greater than 0."
-		            possible_values="'DDDD_HH:MM:SS' or 'none'"
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed) or 'none'"
 		/>
 		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 		            description="Selection of the type of calendar that should be used in the simulation."
 		            possible_values="'gregorian', 'gregorian_noleap'"
 		/>
 	</nml_record>
+
 
 	<nml_record name="io" in_defaults="true">
 		<nml_option name="config_input_name" type="character" default_value="landice_grid.nc" units="unitless"
@@ -205,12 +207,14 @@
 		/>
 	</nml_record>
 
+
 	<nml_record name="debug" in_defaults="true">
 		<nml_option name="config_print_thickness_advection_info" type="logical" default_value=".false." units="unitless"
 		            description="Prints additional information about thickness advection."
 		            possible_values=".true. or .false."
 		/>
 	</nml_record>
+
 
 	<streams>
 		<stream name="input" 
@@ -376,6 +380,7 @@
 			<var name="kiteAreasOnVertex"/>
 		</stream>
 	</streams>
+
 
 	<var_struct name="state" time_levs="2">
 		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
