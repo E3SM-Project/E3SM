@@ -1807,7 +1807,7 @@ function F(coords, pc) result(x)
   real (kind=real_kind)            :: N(4), x(3)
   call shape_fcn(N,pc)
   x = MATMUL(TRANSPOSE(coords), N)
-  x = x/NORM2(x)
+  x = x/SQRT(DOT_PRODUCT(x,x))
 end function
 
 function  DF(coords, pc) result(dxds)
@@ -1827,8 +1827,8 @@ function  DF(coords, pc) result(dxds)
   dds  = MATMUL(TRANSPOSE(coords), dNds)
 
   x    = F(coords, pc)
-  nx   = NORM2(x)
   nx2  = DOT_PRODUCT(x,x)
+  nx   = SQRT(nx2)
   c    = MATMUL(TRANSPOSE(dds), x)
   do j=1,2
     do i=1,3
@@ -1918,14 +1918,14 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
 
   type (spherical_polar_t)                      :: sphere(np,np)
   integer                                       :: i,j,n
-! type(cartesian2D_t)                           :: parametric_test(np,np)
-! real(kind=real_kind)                          :: d
+  type(cartesian2D_t)                           :: parametric_test(np,np)
+  real(kind=real_kind)                          :: d
 
   do j=1,np
     sphere(:,j) = change_coordinates(dep_points(:,j))
   end do
 
-! call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
+  call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
   do i=1,np
     do j=1,np
       n = elem_indexes(i,j)
@@ -1933,15 +1933,15 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
       parametric_coord(i,j) = cartesian_parametric_coordinates(sphere(i,j),ngh_corners(:,n))
     end do
   end do
-! call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
-! call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
-! do i=1,np
-!   do j=1,np
-!     n = elem_indexes(i,j)
-!     parametric_test(i,j)  = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
-!   end do
-! end do
-! call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
+  call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
+  call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
+  do i=1,np
+    do j=1,np
+      n = elem_indexes(i,j)
+      parametric_test(i,j)  = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
+    end do
+  end do
+  call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
 ! do i=1,np
 !   do j=1,np
 !     d = distance(parametric_coord(i,j),parametric_test(i,j))
