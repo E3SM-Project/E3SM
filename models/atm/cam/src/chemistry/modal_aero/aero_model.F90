@@ -196,7 +196,14 @@ contains
          convproc_do_aer_out = convproc_do_aer, & 
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix        )
-         !BSINGH -ENDS
+         !BSINGH(10/15/2014): resus_fix flag warning
+    if(masterproc) then
+       if(convproc_do_aer .or. convproc_do_gas) then
+          if(.not. resus_fix)write(iulog,*)'WARNING: resus_fix=.false. and convproc_do_aer (or convproc_do_gas)=.true.' //&
+               ' is not a well tested configuration,  may produce incorrect results!!'        
+       endif
+    endif
+    !BSINGH -ENDS
 
     call rad_cnst_get_info(0, nmodes=nmodes)
 
@@ -1102,8 +1109,13 @@ contains
              hygro_sum_del(:,:) = 0.0_r8
              call modal_aero_bcscavcoef_get( m, ncol, isprx, dgnumwet, &
                   scavcoefnv(:,:,1), scavcoefnv(:,:,2) )
+             !BSINGH(09/12/2014) - Apply scavenging tuning
+             if (sscav_tuning) then
+                sol_factb  = 0.03_r8   ! all below-cloud scav ON (0.1 "tuning factor")  ! tuned 1/6
+             else
+                sol_factb = 0.1_r8 ! all below-cloud scav ON (0.1 "tuning factor")
+             endif
 
-             sol_factb = 0.1_r8 ! all below-cloud scav ON (0.1 "tuning factor")
              ! sol_factb = 0.03_r8 ! all below-cloud scav ON (0.1 "tuning factor") ! tuned 1/6
 
              sol_facti = 0.0_r8 ! strat in-cloud scav totally OFF for institial
@@ -1118,13 +1130,22 @@ contains
                 f_act_conv = 0.4_r8 ! rce 2010/05/02
              else
                 ! sol_factic = 0.4_r8 ! conv in-cloud scav ON (1.0 activation fraction) ! tuned 1/4
-                f_act_conv = 0.8_r8 ! rce 2010/05/02
+                !BSINGH(09/12/2014) - Apply scavenging tuning
+                if (sscav_tuning) then
+                   f_act_conv = 0.4_r8   ! rce 2010/05/02
+                else
+                   f_act_conv = 0.8_r8 ! rce 2010/05/02
+                endif
              end if
 
           else ! cloud-borne aerosol (borne by stratiform cloud drops)
 
              sol_factb  = 0.0_r8   ! all below-cloud scav OFF (anything cloud-borne is located "in-cloud")
-             sol_facti  = sol_facti_cloud_borne   ! strat  in-cloud scav cloud-borne tuning factor
+             if (sscav_tuning) then !BSINGH(09/12/2014) - Apply scavenging tuning
+                sol_facti  = min(0.6_r8, sol_facti_cloud_borne)  ! strat  in-cloud scav totally ON for cloud-borne  ! tuned 1/6 !BSINGH - for scavenging tuning
+             else
+                sol_facti  = sol_facti_cloud_borne   ! strat  in-cloud scav cloud-borne tuning factor
+             endif
              sol_factic = 0.0_r8   ! conv   in-cloud scav OFF (having this on would mean
                                    !        that conv precip collects strat droplets)
              f_act_conv = 0.0_r8   ! conv   in-cloud scav OFF (having this on would mean
@@ -1754,7 +1775,7 @@ contains
 
                 !BSINGH(09/15/2014):Added for unified convective treatment
                 ! add resuspension of cloudborne species to dqdt of interstitial species
-                dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) + rtscavt(1:ncol,:,lspec)  ! RCE 2012/01/12
+                if(resus_fix)dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) + rtscavt(1:ncol,:,lspec)  ! RCE 2012/01/12
                 !BSINGH -Ends
 
                 ptend%q(1:ncol,:,mm) = ptend%q(1:ncol,:,mm) + dqdt_tmp(1:ncol,:)
@@ -1826,25 +1847,27 @@ contains
                 enddo
                 call outfld( trim(tmp_name)//'SFSBS', sflx, pcols, lchnk)
                 
-                !BSINGH(09/15/2014):Following two nested do-loops are new additions for unified convection 
-                !BSINGH(09/15/2014):After these do-loops, code was added by RCE, the comments by RCE are kept as it is
-                sflx(:)=0._r8
-                do k=1,pver
-                   do i=1,ncol
-                      sflx(i)=sflx(i)+rcscavt(i,k)*state%pdel(i,k)/gravit
+                if(resus_fix) then
+                   !BSINGH(09/15/2014):Following two nested do-loops are new additions for unified convection 
+                   !BSINGH(09/15/2014):After these do-loops, code was added by RCE, the comments by RCE are kept as it is
+                   sflx(:)=0._r8
+                   do k=1,pver
+                      do i=1,ncol
+                         sflx(i)=sflx(i)+rcscavt(i,k)*state%pdel(i,k)/gravit
+                      enddo
                    enddo
-                enddo
-                if (.not.convproc_do_aer) call outfld( trim(tmp_name)//'SFSEC', sflx, pcols, lchnk)
-                sflxec = sflx
-       
-                sflx(:)=0._r8
-                do k=1,pver
-                    do i=1,ncol
-                       sflx(i)=sflx(i)+rsscavt(i,k)*state%pdel(i,k)/gravit
-                    enddo
-                 enddo
-                 call outfld( trim(tmp_name)//'SFSES', sflx, pcols, lchnk)
-                 !RCE 2012/01/12 end - prev ~40 lines are modified
+                   if (.not.convproc_do_aer) call outfld( trim(tmp_name)//'SFSEC', sflx, pcols, lchnk)
+                   sflxec = sflx
+                   
+                   sflx(:)=0._r8
+                   do k=1,pver
+                      do i=1,ncol
+                         sflx(i)=sflx(i)+rsscavt(i,k)*state%pdel(i,k)/gravit
+                      enddo
+                   enddo
+                   call outfld( trim(tmp_name)//'SFSES', sflx, pcols, lchnk)                   
+                   !RCE 2012/01/12 end - prev ~40 lines are modified
+                endif
                  
                  !RCE 2012/01/12 bgn - next ~40 lines are new
                  ! apportion convective surface fluxes to deep and shallow conv
@@ -1853,7 +1876,7 @@ contains
                  !    fields are just diagnostics, this approximate method is adequate
                  ! only do this for interstitial aerosol, because conv clouds to not
                  !    affect the stratiform-cloudborne aerosol
-                 if ( deepconv_wetdep_history ) then
+                 if ( deepconv_wetdep_history .and. resus_fix) then
                     do i = 1, ncol
                        tmp_precdp = max( rprddpsum(i),  1.0e-35_r8 )
                        tmp_precsh = max( rprdshsum(i),  1.0e-35_r8 )
@@ -1879,6 +1902,7 @@ contains
                        call outfld( trim(tmp_name)//'SFSED', sflxecdp, pcols, lchnk)
                     end if
                  else
+                    sflxec(1:ncol)   = 0.0_r8 !BALLI- ask dick about it!!!
                     sflxecdp(1:ncol) = 0.0_r8
                  end if
                  
@@ -1914,12 +1938,14 @@ contains
                      sol_factic_in=sol_factic, sol_factiic_in=sol_factiic, resus_fix = resus_fix  )  ! rce 2010/05/03!BSINGH(09/15/2014):Added resus_fix for fixing resuspension  bug
                      !BSINGH(09/15/2014):Added for unified convection
                      ! save resuspension of cloudborne species
-                     rtscavt(1:ncol,:,lspec) = rcscavt(1:ncol,:) + rsscavt(1:ncol,:)  ! RCE 2012/01/12
-                     
-                     ! wetdepa_v2 adds the resuspension of cloudborne to the dqdt of cloudborne (as a source)
-                     ! undo this, so the resuspension of cloudborne can be added to the dqdt of interstitial (above)
-                     dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - rtscavt(1:ncol,:,lspec)  ! RCE 2012/01/12
-                     !BSINGH-Ends
+                     if(resus_fix) then
+                        rtscavt(1:ncol,:,lspec) = rcscavt(1:ncol,:) + rsscavt(1:ncol,:)  ! RCE 2012/01/12
+
+                        ! wetdepa_v2 adds the resuspension of cloudborne to the dqdt of cloudborne (as a source)
+                        ! undo this, so the resuspension of cloudborne can be added to the dqdt of interstitial (above)
+                        dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - rtscavt(1:ncol,:,lspec)  ! RCE 2012/01/12
+                     endif
+                        !BSINGH-Ends
        
                      fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
 
@@ -1971,18 +1997,20 @@ contains
                      call outfld( trim(tmp_name)//'SFSBS', sflx, pcols, lchnk)
                                     
                      !BSINGH(09/15/2014):Following two nested do-loops are new additions for unified convection 
-                     sflx(:)=0.0_r8
-                     do k=1,pver
-                        sflx(1:ncol)=sflx(1:ncol)+rcscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
-                     enddo                     
-                     call outfld( trim(tmp_name)//'SFSEC', sflx, pcols, lchnk)
-                     
-                     sflx(:)=0.0_r8
-                     do k=1,pver
-                        sflx(1:ncol)=sflx(1:ncol)+rsscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
-                     enddo
-                     call outfld( trim(tmp_name)//'SFSES', sflx, pcols, lchnk)
-                     !RCE 2012/01/12 end - prev ~40 lines are changed
+                     if(resus_fix) then
+                        sflx(:)=0.0_r8
+                        do k=1,pver
+                           sflx(1:ncol)=sflx(1:ncol)+rcscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
+                        enddo
+                        call outfld( trim(tmp_name)//'SFSEC', sflx, pcols, lchnk)
+                        
+                        sflx(:)=0.0_r8
+                        do k=1,pver
+                           sflx(1:ncol)=sflx(1:ncol)+rsscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
+                        enddo
+                        call outfld( trim(tmp_name)//'SFSES', sflx, pcols, lchnk)
+                        !RCE 2012/01/12 end - prev ~40 lines are changed
+                     endif
 
 
              else if ((lphase == 1) .and. (lspec == nspec_amode(m)+1) .and. do_aero_water_removal ) then  !RCE 2012/01/12
