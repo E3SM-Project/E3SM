@@ -55,15 +55,18 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
                         help="Print shell commands as they are executed")
 
+    parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
+                        help="Do not wait for tests to finish")
+
     args = parser.parse_args(args[1:])
 
     global VERBOSE
     VERBOSE = args.verbose
 
-    return args.paths
+    return args.paths, args.no_wait
 
 ###############################################################################
-def parse_test_status_file(file_contents):
+def parse_test_status_file(file_contents, test_path):
 ###############################################################################
     r"""
     >>> parse_test_status_file('PASS testname')
@@ -75,20 +78,24 @@ def parse_test_status_file(file_contents):
     """
     real_test_name = None
     for line in file_contents.splitlines():
-        expect(len(line.split()) == 2, "Line '%s' not in expected format" % line)
-        status, test_name = line.split()
-        if (real_test_name is None):
-            real_test_name = test_name # just take the first one
+        if (len(line.split()) == 2):
+            status, test_name = line.split()
+            if (real_test_name is None):
+                real_test_name = test_name # just take the first one
 
-        verbose_print("Test: '%s' has status '%s'" % (test_name, status))
-        if (status != TEST_PASSED_STATUS):
-            return real_test_name, status
+            verbose_print("Test: '%s' has status '%s'" % (test_name, status))
+            if (status != TEST_PASSED_STATUS):
+                return real_test_name, status
+        else:
+            print "WARNING: For '%s', line '%s' not in expected format" % (test_path, line)
 
-    expect(real_test_name is not None, "Empty status file!")
+    if (real_test_name is None):
+        print "WARNING: Empty status file for test", test_path
+
     return real_test_name, TEST_PASSED_STATUS
 
 ###############################################################################
-def wait_for_test(test_path, results):
+def wait_for_test(test_path, results, no_wait):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -100,35 +107,45 @@ def wait_for_test(test_path, results):
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_name, test_status = parse_test_status_file(test_status_contents)
-            if (test_status in TEST_NOT_FINISHED_STATUS):
+            test_name, test_status = parse_test_status_file(test_status_contents, test_path)
+            if (test_status in TEST_NOT_FINISHED_STATUS and not no_wait):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 verbose_print("Waiting for test to finish")
             else:
-                print ("Test '%s' finished with status '%s'" % (test_name, test_status))
-                results.put(test_status)
-                return test_status
+                results.put( (test_status, test_path) )
+                break
         else:
-            verbose_print("File '%s' does not yet exist" % test_status_filepath)
-            time.sleep(SLEEP_INTERVAL_SEC)
+            if (no_wait):
+                results.put( ("File '%s' doesn't exist" % test_status_filepath, test_path) )
+                break
+            else:
+                verbose_print("File '%s' does not yet exist" % test_status_filepath)
+                time.sleep(SLEEP_INTERVAL_SEC)
 
 ###############################################################################
-def wait_for_tests(test_paths):
+def wait_for_tests(test_paths, no_wait):
 ###############################################################################
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, no_wait))
         t.daemon = True
         t.start()
 
-    while threading.active_count() > 0:
-        time.sleep(0.1)
+    while threading.active_count() > 1:
+        time.sleep(1)
 
+    tests_with_results = set()
     all_pass = True
-    for _ in xrange(len(test_paths)):
-        test_status = results.get()
-        all_pass &= test_status == TEST_PASSED_STATUS
+    try:
+        for _ in test_paths:
+            test_status, test_path = results.get(timeout=1)
+            print "Test '%s' finished with status '%s'" % (test_path, test_status)
+            tests_with_results.add(test_path)
+            all_pass &= test_status == TEST_PASSED_STATUS
+
+    except Queue.Empty:
+        expect(False, "Missing results for tests: %s" % (set(test_paths) - tests_with_results) )
 
     return all_pass
 
@@ -139,9 +156,9 @@ def _main_func(description):
         doctest.testmod()
         return
 
-    test_paths = parse_command_line(sys.argv, description)
+    test_paths, no_wait = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests(test_paths) else 1)
+    sys.exit(0 if wait_for_tests(test_paths, no_wait) else 1)
 
 ###############################################################################
 
