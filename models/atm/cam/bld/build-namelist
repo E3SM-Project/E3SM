@@ -2599,6 +2599,7 @@ add_default($nl, 'liqcf_fix');
 add_default($nl, 'ssalt_tuning');
 add_default($nl, 'sscav_tuning');
 add_default($nl, 'convproc_do_gas');
+add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
 
 

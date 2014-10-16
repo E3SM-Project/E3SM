@@ -9,6 +9,7 @@ module nucleate_ice
 use shr_kind_mod,   only: r8=>shr_kind_r8
 use wv_saturation,  only: svp_water, svp_ice
 use cam_logfile,    only: iulog
+use phys_control,   only: cam_chempkg_is !BSINGH(09/29/2014):For Demott ice nucleation scheme
 
 implicit none
 private
@@ -23,6 +24,8 @@ contains
 subroutine nucleati(  &
    wbar, tair, relhum, cldn, qc,              &
    nfice, rhoair, so4_num, dst_num, soot_num, &
+   dst1_num,dst2_num,dst3_num,dst4_num,       & !BSINGH(09/29/2014):Added for demott ice nucleation scheme
+   organic_num, pmid, dem_in, clim_modal_aero,& !BSINGH(09/29/2014):Added for demott ice nucleation scheme
    nuci, onihf, oniimm, onidep, onimey) 
 
    !---------------------------------------------------------------
@@ -49,6 +52,17 @@ subroutine nucleati(  &
    real(r8), intent(in) :: dst_num     ! total dust aerosol number (#/cm^3)
    real(r8), intent(in) :: soot_num    ! soot (hydrophilic) aerosol number (#/cm^3)
 
+   !BSINGH(09/29/2014):Added for demott ice nucleation scheme
+   real(r8), intent(in) :: pmid         ! model midpoint pressure (Pa)
+   real(r8), intent(in) :: dst1_num     ! dust aerosol number (#/cm^3)
+   real(r8), intent(in) :: dst2_num     ! dust aerosol number (#/cm^3)
+   real(r8), intent(in) :: dst3_num     ! dust aerosol number (#/cm^3)
+   real(r8), intent(in) :: dst4_num     ! dust aerosol number (#/cm^3)
+   real(r8), intent(in) :: organic_num  !organic aerosol number (primary carbon) (#/cm^3)
+   logical,  intent(in) :: dem_in       ! use DeMott ice nucleation !BSINGH
+   logical,  intent(in) :: clim_modal_aero !whether MAM is used or not
+   !BSINGH - Ends
+
    ! Output Arguments
    real(r8), intent(out) :: nuci       ! ice number nucleated (#/kg)
    real(r8), intent(out) :: onihf      ! nucleated number from homogeneous freezing of so4
@@ -65,6 +79,13 @@ subroutine nucleati(  &
    real(r8) :: tc, A, B, C, regm, RHw    ! work variable
    real(r8) :: esl, esi, deles           ! work variable
    real(r8) :: subgrid
+
+   !(09/29/2014)DeMott for mixed-phase cloud ice nucleation (Implemented by BSINGH following Xiaohong Liu)
+   real(r8)  :: na500, na500_1                            ! aerosol number with D>500 nm (#/cm^3)
+   real(r8)  :: na500stp                                  ! aerosol number with D>500 nm (#/cm^3) at STP
+   real(r8)  :: nimeystp                                  ! nucleated number from ice nucleation (meyers) at STP
+   real(r8)  :: ad, bd   
+   !BSINGH -ENDS
    !-------------------------------------------------------------------------------
 
    ni = 0._r8
@@ -131,13 +152,46 @@ subroutine nucleati(  &
 
       endif
    endif
+   !BSINGH(09/29/2014):Additions for demott ice nucleation scheme
+   if (dem_in) then      ! DeMott, use particles number with D>0.5 um
+      !++iceMP
+      
+      if(clim_modal_aero) then
+         if(cam_chempkg_is('trop_mam7')) then
+           na500_1  = dst1_num*0.566_r8 
+         elseif(cam_chempkg_is('trop_mam3') .or. cam_chempkg_is('trop_mam4')) then !ASK Hailong about trop_mam4
+            na500_1 = dst1_num*0.488_r8   
+         else
+            na500_1 = dst1_num*0.488_r8 + dst2_num + dst3_num + dst4_num   ! scaled for D>0.5-1 um from 0.1-1 um
+         endif
+      endif
+
+      ! prepare aerosol number and surface data for ice nucleation in mixed-phase clouds      
+      na500    = ( soot_num + organic_num ) * 0.0256_r8 + na500_1  ! scaled for D>0.5 um using Clarke et al., 1997; 2004; 2007: rg=0.1um, sig=1.6
+
+      na500stp = na500 * 101325._r8 * tair/( 273.15_r8 * pmid ) ! at STP      
+      ad       = 1.968e-5_r8
+      bd       = -0.0167_r8 * tc + 0.2877_r8
+      
+   !--iceMP   
+   endif
+   !BSINGH -ENDS
 
    ! deposition/condensation nucleation in mixed clouds (-40<T<0C) (Meyers, 1992)
    if(tc.lt.0._r8 .and. tc.gt.-37._r8 .and. qc.gt.1.e-12_r8) then
-      esl = svp_water(tair)     ! over water in mixed clouds
-      esi = svp_ice(tair)     ! over ice
-      deles = (esl - esi)
-      nimey=1.e-3_r8*exp(12.96_r8*deles/esi - 0.639_r8) 
+      !BSINGH(09/29/2014):Additions for demott ice nucleation scheme
+      if (dem_in) then          ! use DeMott et al.         
+         !++iceMP
+         nimeystp=1.e-3_r8 *ad* ((tc*(-1.0_r8))**3.6434_r8) * (na500stp)**bd   ! cm^-3
+         nimey=nimeystp*273.15_r8*pmid/(101325_r8*tair)
+      else
+         !--iceMP
+         !BSINGH - ENDS
+         esl = svp_water(tair)     ! over water in mixed clouds
+         esi = svp_ice(tair)     ! over ice
+         deles = (esl - esi)
+         nimey=1.e-3_r8*exp(12.96_r8*deles/esi - 0.639_r8) 
+      endif !BSINGH(09/29/2014): for Demott ice nucleation scheme
    else
       nimey=0._r8
    endif

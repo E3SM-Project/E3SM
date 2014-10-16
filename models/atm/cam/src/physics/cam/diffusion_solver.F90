@@ -305,6 +305,7 @@
     real(r8) :: ttemp(pcols,pver)			 ! temporary temperature array
     real(r8) :: ttemp0(pcols,pver)			 ! temporary temperature array
 
+    dtk(:ncol,:pver) = 0.0_r8 !Bsingh(10/15/2014):Initialized to zero;This variable was uninitialized when we diffuse anything except than 'u' and 'v'
     ! ------------------------------------------------ !
     ! Parameters for implicit surface stress treatment !
     ! ------------------------------------------------ !

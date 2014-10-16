@@ -722,6 +722,13 @@ for mct, etc.
  <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
  <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
  <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
+ <!--  -C=Undefined flag doesn't work as it requires MPI and NETCDF to be 
+      compiled with this flag, which is not available now. NAG has the following debug flags
+      <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
+      "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model. 
+ -->
+ <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
  <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff</ADD_SLIBS>
 </compiler> 
 

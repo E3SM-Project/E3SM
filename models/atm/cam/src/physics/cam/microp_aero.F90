@@ -26,7 +26,7 @@ use physconst,        only: rair, tmelt
 use constituents,     only: cnst_get_ind, pcnst
 use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
-use phys_control,     only: phys_getopts
+use phys_control,     only: phys_getopts, cam_chempkg_is !BSINGH(09/29/2014): For Demott ice nucleation scheme
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_num, rad_cnst_get_mode_props
 use shr_spfn_mod,     only: erf => shr_spfn_erf, &
@@ -106,6 +106,13 @@ integer :: mode_coarse_dst_idx = -1  ! index of coarse dust mode
 integer :: mode_coarse_slt_idx = -1  ! index of coarse sea salt mode
 integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
+!BSINGH(09/29/2014): Added for demott ice nucleation scheme
+integer :: mode_fine_dst_idx = -1   ! index of dust in fine dust mode
+integer :: mode_pcarbon_idx  = -1  ! index of dust in accum mode
+integer :: accum_dust_idx    = -1  ! index of dust in accum mode
+logical :: dem_in            = .false.           ! use DeMott IN !BSINGH
+!BSINGH - Ends
+
 
 integer :: naai_idx, naai_hom_idx, npccn_idx, rndst_idx, nacon_idx
 
@@ -158,8 +165,11 @@ subroutine microp_aero_init
 
    ! Query the PBL eddy scheme
    call phys_getopts(eddy_scheme_out          = eddy_scheme, &
-                     history_amwg_out = history_amwg, &
-                     liqcf_fix_out    = liqcf_fix)!BSINGH(09/22/2014): Added for liq cld frac bug fix
+        history_amwg_out = history_amwg, &
+        liqcf_fix_out    = liqcf_fix,    & !BSINGH(09/22/2014): Added for liq cld frac bug fix
+        demott_ice_nuc_out = dem_in      ) !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+   
+   if(masterproc)write(iulog,*)'DEMOTT is:', dem_in !BSINGH - For Demott
 
    ! Access the physical properties of the aerosols that are affecting the climate
    ! by using routines from the rad_constituents module.
@@ -220,6 +230,12 @@ subroutine microp_aero_init
             mode_coarse_dst_idx = m
          case ('coarse_seasalt')
             mode_coarse_slt_idx = m
+            !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+         case ('fine_dust')
+            mode_fine_dst_idx = m
+         case ('primary_carbon')
+            mode_pcarbon_idx  = m            
+            !BSINGH - ENDS
          end select
       end do
 
@@ -256,6 +272,19 @@ subroutine microp_aero_init
             coarse_nacl_idx = n
          end select
       end do
+      
+      !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+      if(dem_in) then
+         call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
+         do n = 1, nspec
+            call rad_cnst_get_info(0, mode_accum_idx, n, spec_type=str32)
+            select case (trim(str32))
+            case ('dust')
+               accum_dust_idx = n
+            end select
+         end do
+      endif
+      !BSINGH - ENDS
 
       ! Check that required mode specie types were found
       if ( coarse_dust_idx == -1 .or. coarse_nacl_idx == -1) then
@@ -377,6 +406,7 @@ subroutine microp_aero_run ( &
    integer :: ncol
    integer :: nmodes
    integer :: nucboast
+   real(r8):: dst1_num_to_mass !BSINGH(09/29/2014): Added for demott ice nucleation scheme
 
    real(r8), pointer :: ast(:,:)        
    !BSINGH(09/22/2014): Added for liq cld frac bug fix
@@ -413,6 +443,13 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: coarse_dust(:,:) ! mass m.r. of coarse dust
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
 
+   !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+   real(r8), pointer :: accum_dust(:,:) ! mass m.r. of accum dust
+   real(r8), pointer :: num_fine(:,:)   ! number m.r. of fine dust
+   real(r8), pointer :: num_pcarbon(:,:)! number m.r. of primary carbon
+   !BSINGH -ENDS
+
+
    real(r8), pointer :: kvh(:,:)        ! vertical eddy diff coef (m2 s-1)
    real(r8), pointer :: tke(:,:)        ! TKE from the UW PBL scheme (m2 s-2)
    real(r8), pointer :: wp2(:,:)        ! CLUBB vertical velocity variance
@@ -441,6 +478,7 @@ subroutine microp_aero_run ( &
    real(r8) :: so4_num                               ! so4 aerosol number (#/cm^3)
    real(r8) :: soot_num                              ! soot (hydrophilic) aerosol number (#/cm^3)
    real(r8) :: dst1_num,dst2_num,dst3_num,dst4_num   ! dust aerosol number (#/cm^3)
+   real(r8) :: organic_num                           !BSINGH(09/29/2014): Added for demott ice nucleation scheme
    real(r8) :: dst_num                               ! total dust aerosol number (#/cm^3)
 
    real(r8) :: qs(pcols)            ! liquid-ice weighted sat mixing rat (kg/kg)
@@ -543,10 +581,18 @@ subroutine microp_aero_run ( &
       call rad_cnst_get_mode_num(0, mode_accum_idx,  'a', state, pbuf, num_accum)
       call rad_cnst_get_mode_num(0, mode_aitken_idx, 'a', state, pbuf, num_aitken)
       call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
+      !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+      if(dem_in)then
+         if(mode_fine_dst_idx > 0)call rad_cnst_get_mode_num(0, mode_fine_dst_idx, 'a', state, pbuf, num_fine)
+         if(mode_pcarbon_idx  > 0)call rad_cnst_get_mode_num(0, mode_pcarbon_idx, 'a', state, pbuf, num_pcarbon)      
+      endif
+      !BSINGH - ENDS
+
 
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
+      if(dem_in)call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_dust_idx, 'a', state, pbuf, accum_dust) !BSINGH(09/29/2014): Added for demott ice nucleation scheme
 
    else
       ! init number/mass arrays for bulk aerosols
@@ -696,6 +742,26 @@ subroutine microp_aero_run ( &
                   dst_num = 0.0_r8
                end if
 
+               
+               !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+               if(dem_in)  then
+                  dst3_num = dst_num
+                  if(cam_chempkg_is('trop_mam7')) then
+                     dst1_num    = num_fine(i,k)*rho(i,k)*1.0e-6_r8 !#/cm^3
+                  else 
+                     dst1_num_to_mass = 3.484e+15_r8                                         ! #/kg, for dust in accumulation mode
+                     dst1_num         = accum_dust(i,k)*rho(i,k)* dst1_num_to_mass*1.0e-6_r8 ! #/cm^3, dust # in accumulation mode
+                  endif
+                  !BSINGH - If primary carbon mode exists (4mode and 7mode simulation)
+                  if(mode_pcarbon_idx  > 0) then !BSINGH - Ask Hailong or Xiaohong about it
+                     organic_num = num_pcarbon(i,k)*rho(i,k)*1.0e-6_r8
+                  else
+                     organic_num = 0.0
+                  endif
+               endif
+               !BSINGH - ENDS
+
+
                if (dgnum(i,k,mode_aitken_idx) > 0._r8) then
                   ! only allow so4 with D>0.1 um in ice nucleation
                   so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8 &
@@ -736,6 +802,8 @@ subroutine microp_aero_run ( &
             call nucleati( &
                wsubi(i,k), t(i,k), relhum(i,k), icldm(i,k), qc(i,k), &
                nfice(i,k), rho(i,k), so4_num, dst_num, soot_num,     &
+               dst1_num,dst2_num,dst3_num,dst4_num,organic_num,pmid(i,k), & !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+               dem_in, clim_modal_aero,                              &      !BSINGH(09/29/2014): Added for demott ice nucleation scheme
                naai(i,k), nihf(i,k), niimm(i,k), nidep(i,k), nimey(i,k))
 
             naai_hom(i,k) = nihf(i,k)

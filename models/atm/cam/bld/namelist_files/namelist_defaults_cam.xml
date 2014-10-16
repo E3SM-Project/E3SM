@@ -777,6 +777,9 @@
 <!-- BSINGH - wet scavenging tuning option by PNNL -->
 <sscav_tuning>.false.</sscav_tuning>
 
+<!-- BSINGH - ice nucleation option by PNNL -->
+<demott_ice_nuc>.false.</demott_ice_nuc>
+
 
 <!-- sub-column switches for physics packages -->
 <use_subcol_microp>.false.</use_subcol_microp>
