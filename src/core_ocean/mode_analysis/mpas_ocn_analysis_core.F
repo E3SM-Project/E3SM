@@ -260,6 +260,7 @@ module mpas_core
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, pointer :: config_horiz_tracer_adv_order
       logical, pointer :: config_hmix_scaleWithMesh
+      logical, pointer :: config_use_standardGM
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -303,6 +304,7 @@ module mpas_core
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
+      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
       call ocn_setup_sign_and_index_fields(meshPool)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
       call mpas_tracer_advection_coefficients(meshPool, &
