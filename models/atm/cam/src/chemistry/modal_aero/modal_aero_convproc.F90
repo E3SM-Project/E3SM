@@ -1987,6 +1987,7 @@ k_loop_main_bb: &
 ! mu_p_eudp(k) = updraft massflux at k, without detrainment between kp1,k
          mu_p_eudp(k) = mu_i(kp1) + eudp(k)
 
+         fa_u(k) = 0.0_r8 !BSINGH(10/15/2014): Initialized so that it has a value if the following "if" check yeilds .false.
          if (mu_p_eudp(k) > mbsth) then
 ! if (mu_p_eudp(k) <= mbsth) the updraft mass flux is negligible at base and top
 !    of current layer, 
