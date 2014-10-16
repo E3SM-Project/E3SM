@@ -245,7 +245,7 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography, timeLevel=timeLevel)
+      call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
 
       call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)

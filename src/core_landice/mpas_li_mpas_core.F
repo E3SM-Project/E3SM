@@ -227,7 +227,8 @@ module mpas_core
       character(len=StrKIND) :: timeStamp
       integer :: err, err_tmp, globalErr
       logical :: solveVelo
-      ! Note: li_deltat is a module variable in li_setup   
+      type (MPAS_TimeInterval_type) :: timeStepInterval  !< time step as an interval
+      real (kind=RKIND) :: dtSeconds  !< time step in seconds
 
 
       err = 0
@@ -297,13 +298,26 @@ module mpas_core
       do while (.not. mpas_is_clock_stop_time(clock))
 
          itimestep = itimestep + 1
+
+         ! Get the interval at this point in time - currently this does not change during the simulation, but re-calculating it explicitly for generality
+         timeStepInterval = mpas_get_clock_timestep(clock, ierr=err_tmp)
+         err = ior(err,err_tmp)
+         ! Convert the clock's time interval into a dt in seconds to be used by the time stepper, using the currTime as the start time for this interval.
+         ! (We want to do this conversion before advancing the clock because the dt in seconds may change
+         !  as the base time changes, and we want the old time as the base time.
+         !  For example, the number of seconds in a year will be longer in a leap year.)
+         call mpas_get_timeInterval(timeStepInterval, StartTimeIn=currTime, dt=dtSeconds, ierr=err_tmp)
+         err = ior(err,err_tmp)
+
          call mpas_advance_clock(clock)
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)         
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
          err = ior(err, err_tmp)
          write(0,*) 'Doing timestep ', trim(timeStamp)
          write(6,*) 'Doing timestep ', trim(timeStamp)
+
+         !write(6,*) '  dt (s) = ', dtSeconds
 
 !!! These lines were used previously to assign annual forcing fields.  We may want to reassess how to do that.
 !!!         call mpas_timer_start("assign forcing fields")
@@ -319,7 +333,8 @@ module mpas_core
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-         call landice_timestep(domain, itimestep, li_deltat, timeStamp, err_tmp)
+
+         call landice_timestep(domain, itimestep, dtSeconds, timeStamp, err_tmp)
          err = ior(err,err_tmp)
 
          ! Move time level 2 fields back into time level 1 for next time step
@@ -674,7 +689,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       !
       !-----------------------------------------------------------------
       integer, intent(in) :: itimestep              !< Input: time step number 
-      real (kind=RKIND), intent(in) :: dt           !< Input: time step 
+      real (kind=RKIND), intent(in) :: dt           !< Input: time step, in seconds
       character(len=*), intent(in) :: timeStamp     !< Input: time stamp of current time step
 
       !-----------------------------------------------------------------
@@ -795,17 +810,15 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       !-----------------------------------------------------------------
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
-      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval
-      real(kind=RKIND), pointer :: config_dt_seconds, config_dt_years
-      real(kind=RKIND) :: li_deltat
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval ! MPAS standard configs
+      character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       integer :: err_tmp
 
 
       ierr = 0
       err_tmp = 0
 
-      call mpas_pool_get_config(configs, 'config_dt_seconds', config_dt_seconds)
-      call mpas_pool_get_config(configs, 'config_dt_years', config_dt_years)
+      call mpas_pool_get_config(configs, 'config_dt', config_dt)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
@@ -813,21 +826,13 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call mpas_pool_get_config(configs, 'config_restart_interval', config_restart_interval)
 
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!! Duplicated code from the li_setup module !!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (config_dt_years == 0.0_RKIND) then
-         li_deltat = config_dt_seconds
-      else
-         li_deltat = config_dt_years * (365.0 * 24.0 * 3600.0)
-         ! TODO Should seconds in a year be dependent on calendar used?
-         ! TODO Should seconds in a year be a parameter/module variable somewhere
-      endif
-
+      ! Set time to the user-specified start time
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
-      call mpas_set_timeInterval(timeStep, dt=li_deltat, ierr=err_tmp)
+      ! Set interval to the user-specified time interval string
+      call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
+
 
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
