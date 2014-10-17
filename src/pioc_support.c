@@ -2,7 +2,7 @@
 #include <pio_internal.h>
 
 #include <execinfo.h>
-#define versno 2000
+#define versno 2001
      
 /* Obtain a backtrace and print it to stderr. */
 void print_trace (void)
@@ -252,6 +252,8 @@ int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], cons
     if(rnpes < 1 || rnpes > npes)
       piodie("Incompatable pe count in map file ",__FILE__,__LINE__);
 
+    MPI_Bcast(&rnpes, 1, MPI_INT, 0, comm);
+
     for(int i=0; i< rnpes; i++){
       fscanf(fp,"%d %ld",&j,&maplen);
       if( j != i)  // Not sure how this could be possible
@@ -272,10 +274,16 @@ int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], cons
     }
     fclose(fp);
   }else{
-    MPI_Recv(&maplen, 1, PIO_OFFSET, 0, myrank+npes, comm, &status);
-    tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
-    MPI_Recv(tmap, maplen, PIO_OFFSET, 0, myrank, comm, &status);
-    *map = tmap;
+    MPI_Bcast(&rnpes, 1, MPI_INT, 0, comm);
+    if(myrank<rnpes){
+      MPI_Recv(&maplen, 1, PIO_OFFSET, 0, myrank+npes, comm, &status);
+      tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
+      MPI_Recv(tmap, maplen, PIO_OFFSET, 0, myrank, comm, &status);
+      *map = tmap;
+    }else{
+      tmap=NULL;
+      maplen=0;
+    }
     *fmaplen = maplen;
   }      
   return PIO_NOERR;
@@ -291,7 +299,7 @@ int PIOc_readmap_from_f90(const char file[],PIO_Offset *maplen, PIO_Offset *map[
 }
 
 
-int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const MPI_Comm comm)
+int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Offset maplen, PIO_Offset map[], const MPI_Comm comm)
 {
   int npes, myrank;
   PIO_Offset *nmaplen;
@@ -320,8 +328,11 @@ int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const 
       fprintf(stderr,"Failed to open file %s to write\n",file);
       return PIO_EIO;
     }
-    fprintf(fp,"version %d npes %d\n",versno, npes);
-    fprintf(fp,"0 %ld\n",nmaplen[0]);
+    fprintf(fp,"version %d npes %d ndims %d \n",versno, npes,ndims);
+    for(i=0;i<ndims;i++){
+      fprintf(fp,"%d ",gdims[i]);
+    }
+    fprintf(fp,"\n0 %ld\n",nmaplen[0]);
     for( i=0;i<nmaplen[0];i++)
       fprintf(fp,"%ld ",map[i]);
     
@@ -347,8 +358,9 @@ int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const 
   return PIO_NOERR;
 }
 
-int PIOc_writemap_from_f90(const char file[], const PIO_Offset maplen, const PIO_Offset map[], const int f90_comm)
+int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[], 
+			   const PIO_Offset maplen, const PIO_Offset map[], const int f90_comm)
 {
   // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
-  return(PIOc_writemap(file, maplen, map, MPI_Comm_f2c(f90_comm)));
+  return(PIOc_writemap(file, ndims, gdims, maplen, map, MPI_Comm_f2c(f90_comm)));
 }

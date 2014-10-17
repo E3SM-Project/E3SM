@@ -158,7 +158,7 @@ contains
      end if
   end subroutine CheckMPIreturn
 
-  subroutine pio_writedof (file, DOF, comm, punit)
+  subroutine pio_writedof (file, gdims, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
     !
@@ -174,22 +174,26 @@ contains
     ! Arguments
     !
     character(len=*),intent(in) :: file
+    integer, intent(in) :: gdims(:)
     integer(PIO_OFFSET_KIND)  ,intent(in) :: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
     integer :: err
+    integer :: ndims
     interface
-       integer(c_int) function PIOc_writemap_from_f90(file, maplen, map, f90_comm) &
+       integer(c_int) function PIOc_writemap_from_f90(file, ndims, gdims, maplen, map, f90_comm) &
             bind(C,name="PIOc_writemap_from_f90")
          use iso_c_binding
          character(C_CHAR), intent(in) :: file
+         integer(C_INT), value, intent(in) :: ndims
+         integer(C_INT), intent(in) :: gdims(*)
          integer(C_SIZE_T), value, intent(in) :: maplen 
          integer(C_SIZE_T), intent(in) :: map(*)
          integer(C_INT), value, intent(in) :: f90_comm
        end function PIOc_writemap_from_f90
     end interface
-
-    err = PIOc_writemap_from_f90(trim(file)//C_NULL_CHAR, int(size(dof),C_SIZE_T), dof, comm)
+    ndims = size(gdims)
+    err = PIOc_writemap_from_f90(trim(file)//C_NULL_CHAR, ndims, gdims, int(size(dof),C_SIZE_T), dof, comm)
 
   end subroutine pio_writedof
 

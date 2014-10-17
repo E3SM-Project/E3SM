@@ -118,22 +118,15 @@ ENDIF()
 SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NOUSEMCT)
 
 
-OPTION(PIO_USE_MPIMOD "Use Fortran MPI module (default auto detect)" ON)
-IF (PIO_USE_MPIMOD)
-  TRY_COMPILE(MPIMOD_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIMod
+TRY_COMPILE(MPIMOD_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIMod
                              ${TESTFILEPATH}/TryMPIMod.f90)
-  IF (${MPIMOD_SUCCESS})
+IF (${MPIMOD_SUCCESS})
     MESSAGE(STATUS "MPI Fortran module detected and enabled.")
-  ELSE()
+ELSE()
     MESSAGE(STATUS "MPI Fortran module not detected and therefore disabled.")
     SET(PIO_USE_MPIMOD FALSE)
-  ENDIF()
+    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -DNO_MPIMOD)
 ENDIF()
-
-IF (NOT ${PIO_USE_MPIMOD})
-  SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -DNO_MPIMOD)
-ENDIF()
-
 
 OPTION(PIO_BUILD_TIMING  "" OFF)
 OPTION(PIO_BUILD_TESTS   "" OFF)
@@ -160,5 +153,8 @@ if(${PIO_BUILD_TESTS})
   ADD_SUBDIRECTORY(test)
   ADD_SUBDIRECTORY(unittests)
   ADD_SUBDIRECTORY(testpio)
+  if(${PIO_BUILD_TIMING})
+  ADD_SUBDIRECTORY(performancetest)
+  endif()
 endif()
 

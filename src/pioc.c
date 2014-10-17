@@ -14,6 +14,10 @@
 #include <pio.h>
 #include <pio_internal.h>
 
+
+static int counter=0;
+static bool PIO_Save_Decomps=false;
+
 int PIOc_iosystem_is_active(const int iosysid, bool *active)
 {
   iosystem_desc_t *ios;
@@ -137,6 +141,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   int iosize;
   int ndisp;
 
+
+
   for(int i=0;i<ndims;i++){
     if(dims[i]<=0){
       piodie("Invalid dims argument",__FILE__,__LINE__);
@@ -146,6 +152,15 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   if(ios == NULL)
     return PIO_EBADID;
   
+
+  if(PIO_Save_Decomps){
+    char filename[30];
+    sprintf(filename, "piodecomp%4.4dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
+    PIOc_writemap(filename,ndims,dims,maplen,compmap,ios->comp_comm);
+    counter++;
+  }
+
+
   iodesc = malloc_iodesc(basetype, ndims);
   if(rearranger == NULL)
     iodesc->rearranger = ios->default_rearranger;
@@ -267,10 +282,13 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
     iosys->io_rank = -1;
 
   iosys->union_rank = iosys->comp_rank;
-
-
   
   *iosysidp = pio_add_to_iosystem_list(iosys);
+  char *envptr = getenv("PIO_Save_Decomps");
+  //  printf("%s %d %s\n",__FILE__,__LINE__,envptr);
+  if(envptr != NULL && (strcmp(envptr,"true")==0)){
+    PIO_Save_Decomps=true;
+  }
 
   return PIO_NOERR;
 }

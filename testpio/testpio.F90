@@ -424,7 +424,7 @@ program testpio
   startCOMP(1:3) = start(1:3)
   countCOMP(1:3) = count(1:3)
   if (trim(compdof_output) /= 'none') then
-     call pio_writedof(trim(compdof_output),compDOF,MPI_COMM_COMPUTE,75)
+     call pio_writedof(trim(compdof_output),gdims3d, compDOF,MPI_COMM_COMPUTE,75)
   endif
 
 #ifdef MEMCHK	
