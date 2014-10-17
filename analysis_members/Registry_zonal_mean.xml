@@ -13,7 +13,7 @@
 		/>
 		<nml_option name="config_number_zonal_mean_bins" type="integer" default_value="180" units="unitless"
 			description="Number of bins used for zonal mean.  Must be less than or equal to the dimension nZonalMeanBins (set in Registry)."
-			possible_values="Any positive integer value <= nZonalMeanBins."
+			possible_values="Any positive integer value less than or equal to nZonalMeanBins."
 		/>
 		<nml_option name="config_min_zonal_mean_bin" type="real" default_value="-1.0e34" units="varies"
 			description="minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found."
