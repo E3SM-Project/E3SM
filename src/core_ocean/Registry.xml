@@ -180,7 +180,7 @@
 		/>
 		<nml_option name="config_number_of_blocks" type="integer" default_value="0" units="unitless"
 					description="Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time."
-					possible_values="Any integer $>=$ 0."
+					possible_values="Any integer greater than or equal to 0."
 		/>
 		<nml_option name="config_explicit_proc_decomp" type="logical" default_value=".false." units="unitless"
 					description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
@@ -277,7 +277,7 @@
 					possible_values="Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes"
 		/>
 		<nml_option name="config_max_relative_slope" type="real" default_value="0.01" units="non-dimensional"
-					description="Tapering of Redi diffusion coeffient occurs when relativeSlopeTopOfEdge > config_max_relative_slope"
+					description="Tapering of Redi diffusion coeffient occurs when relativeSlopeTopOfEdge is greater than config_max_relative_slope"
 					possible_values="Positive real numbers"
 		/>
 	</nml_record>
@@ -1734,7 +1734,7 @@
 			 description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
 		/>
 		<var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
-			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell > config_gm_max_slope"
+			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell is greater than config_gm_max_slope"
 		/>
 		<var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
 			 description="averaging of relativeSlopeTapering function to cell centers"
@@ -2212,7 +2212,7 @@
 		<var name="yGMBolusVelocitySolution" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
 		/>
-    </var_struct>
+	</var_struct>
 
 #include "analysis_members/Registry_analysis_members.xml"
 </registry>

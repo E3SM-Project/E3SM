@@ -27,7 +27,7 @@
 			<var name="rmsGlobalStats"/>
 			<var name="avgGlobalStats"/>
 			<var name="vertSumMinGlobalStats"/>
-			<var name="vertSumMaxGlobalStats"/> 
+			<var name="vertSumMaxGlobalStats"/>
 		</stream>
 	</streams>
 	<var_struct name="amGlobalStats" time_levs="1" packages="amGlobalStats">
