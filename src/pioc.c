@@ -155,7 +155,13 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 
   if(PIO_Save_Decomps){
     char filename[30];
-    sprintf(filename, "piodecomp%4.4dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
+    if(ios->num_comptasks < 100) {
+      sprintf(filename, "piodecomp%2.2dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
+    }else if(ios->num_comptasks < 10000) {
+      sprintf(filename, "piodecomp%4.4dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
+    }else{
+      sprintf(filename, "piodecomp%6.6dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
+    }
     PIOc_writemap(filename,ndims,dims,maplen,compmap,ios->comp_comm);
     counter++;
   }

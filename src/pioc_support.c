@@ -332,10 +332,11 @@ int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Off
     for(i=0;i<ndims;i++){
       fprintf(fp,"%d ",gdims[i]);
     }
-    fprintf(fp,"\n0 %ld\n",nmaplen[0]);
+    fprintf(fp,"\n");    
+    fprintf(fp,"0 %ld\n",nmaplen[0]);
     for( i=0;i<nmaplen[0];i++)
       fprintf(fp,"%ld ",map[i]);
-    
+    fprintf(fp,"\n");    
     for( i=1; i<npes;i++){
       nmap = (PIO_Offset *) malloc(nmaplen[i] * sizeof(PIO_Offset));
 

@@ -923,7 +923,7 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
     color = ios.comp_rank/taskratio;
   }
   
-  printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
+  //  printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
 
   // If the io tasks are not an even divisor of the compute tasks put the remainder in the last group
   if(color==ios.num_iotasks){
