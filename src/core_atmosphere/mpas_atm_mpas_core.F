@@ -555,6 +555,7 @@ module mpas_core
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels, index_qv
       real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz
+      real (kind=RKIND), dimension(:,:), pointer :: pressure_base, pressure_p, pressure
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -567,6 +568,9 @@ module mpas_core
 
       call mpas_pool_get_array(diag, 'theta', theta)
       call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_base', pressure_base)
+      call mpas_pool_get_array(diag, 'pressure', pressure)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
 
@@ -574,6 +578,7 @@ module mpas_core
          do k=1,nVertLevels
             theta(k,iCell) = theta_m(k,iCell) / (1._RKIND + rvord * scalars(index_qv,k,iCell))
             rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            pressure(k,iCell) = pressure_base(k,iCell) + pressure_p(k,iCell)
          end do
       end do
 
