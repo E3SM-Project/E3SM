@@ -565,6 +565,8 @@ module li_tendency
 !-----------------------------------------------------------------------
    subroutine tend_layerThickness_fo_upwind(meshPool, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)!{{{
 
+      use mpas_timekeeping
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -616,6 +618,9 @@ module li_tendency
       logical, pointer :: config_print_thickness_advection_info
       real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt
       integer :: iEdge, iCell, i, k
+      type (MPAS_TimeInterval_type) :: allowableDtMinStringInterval
+      character (len=StrKIND) :: allowableDtMinString
+      integer :: err_tmp
 
       ! Only needed for optional check for mass conservation
       !real (kind=RKIND) :: tendVolSum
@@ -657,13 +662,20 @@ module li_tendency
         end do
       end do
 
+      ! Build a time string of the maximum allowable dt calculated 
+      ! (We only need this if a CFL violation occurred or config_print_thickness_advection_info is true)
+      call mpas_set_timeInterval(allowableDtMinStringInterval, dt=MinOfMaxAllowableDt, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
+      err = ior(err,err_tmp)
+
       if (err > 0) then
-         write(0,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is ', MinOfMaxAllowableDt
+         write(0,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
          err = 1
       endif
 
       if (config_print_thickness_advection_info) then
-         write(6,*) '  Maximum allowable time step (yr) on this processor is ', MinOfMaxAllowableDt/li_secondsInYear
+         write(6,*) '  Maximum allowable time step (s) on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
       endif
 
       ! Optional check for mass conservation
