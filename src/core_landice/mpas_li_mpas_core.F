@@ -13,10 +13,7 @@ module mpas_core
    implicit none
    private
 
-   type (io_output_object), save :: restart_obj
-   integer :: current_outfile_frames
-
-   type (MPAS_Clock_type) :: clock
+   type (MPAS_Clock_type), pointer :: clock
 
    !--------------------------------------------------------------------
    !
@@ -27,7 +24,9 @@ module mpas_core
    public :: mpas_core_init, &
              mpas_core_run, &
              mpas_core_finalize, &
-             mpas_core_setup_packages
+             mpas_core_setup_packages, &
+             mpas_core_setup_clock, &
+             mpas_core_get_mesh_stream
 
    !--------------------------------------------------------------------
    !
@@ -35,9 +34,6 @@ module mpas_core
    !
    !--------------------------------------------------------------------
 
-   integer, parameter :: outputAlarmID = 1
-   integer, parameter :: restartAlarmID = 2
-   !integer, parameter :: statsAlarmID = 3
 
 !***********************************************************************
 
@@ -59,10 +55,11 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, startTimeStamp)
+   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
    
       use mpas_configure
       use mpas_grid_types
+      use mpas_stream_manager
       use li_velocity
       use li_setup
 !!!      use mpas_tracer_advection
@@ -82,6 +79,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/output: Domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -96,25 +94,51 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
+      type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
+
+      logical, pointer :: config_do_restart
 
 
       err = 0
       err_tmp = 0
       globalErr = 0
 
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       !
-      ! Initialize core
+      ! Initialize config option settings as needed
       !
       call li_setup_config_options( domain, err_tmp )
       err = ior(err, err_tmp)
 
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
+
+      !
+      ! Set startTimeStamp based on the start time of the simulation clock
+      !
+      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, err_tmp)
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+      err = ior(err, err_tmp)
+
+      if (config_do_restart) then
+         call mpas_stream_mgr_read(stream_manager, streamID='restart', ierr=err_tmp)
+      else
+         call mpas_stream_mgr_read(stream_manager, streamID='input', ierr=err_tmp)
+      end if
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+      err = ior(err, err_tmp)
+
+
       ! ===
       ! === Initialize modules ===
       ! ===
-
-      call simulation_clock_init(domain, li_deltat, startTimeStamp, err_tmp)
-      err = ior(err, err_tmp)
 
       call mpas_timer_init(domain)
 
@@ -123,6 +147,7 @@ module mpas_core
 
 !!!      call mpas_tracer_advection_init(err_tmp)  ! Calling signature may be incorrect here.
 !!!      err = ior(err,err_tmp)
+
 
       ! ===
       ! === Initialize blocks ===
@@ -134,7 +159,6 @@ module mpas_core
          block => block % next
       end do
 
-      current_outfile_frames = 0
 
       ! check for errors and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -159,11 +183,11 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, output_obj, output_frame)
+   subroutine mpas_core_run(domain, stream_manager)
    
       use mpas_grid_types
       use mpas_kind_types
-      use mpas_io_output
+      use mpas_stream_manager
       use mpas_timer
       use li_diagnostic_vars
       use li_setup
@@ -183,8 +207,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
-      type (io_output_object), intent(inout) :: output_obj   !< Input/output: i/o output object
-      integer, intent(inout) :: output_frame   !< Input/output: output frame number
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -200,13 +223,14 @@ module mpas_core
       integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
-      logical, pointer :: config_do_restart
+      logical, pointer :: config_do_restart, config_write_output_on_startup
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: err, err_tmp, globalErr
       logical :: solveVelo
-      ! Note: li_deltat is a module variable in li_setup   
+      type (MPAS_TimeInterval_type) :: timeStepInterval  !< time step as an interval
+      real (kind=RKIND) :: dtSeconds  !< time step in seconds
 
 
       err = 0
@@ -215,7 +239,7 @@ module mpas_core
 
       ! Get Pool stuff that will be needed
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
-
+      call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -253,24 +277,18 @@ module mpas_core
       ! ===
       ! === Write Initial Output
       ! ===
-      call write_output_frame(output_obj, output_frame, domain)
-
-!!! These lines were used previously instead of the one above - but we may need to reassess how we want output to work.
-!!!      if (config_write_output_on_startup) then
-!!!         call mpas_timer_start("write output frame")
-!!!         call write_output_frame(output_obj, output_frame, domain)
-!!!         call mpas_timer_stop("write output frame")
-!!!      elseif (config_frames_per_outfile /= 0) then
-!!!         ! if we are not writing on startup then close the already open file since it will have a confusing time stamp (the time stamp would be the inital time, but the intial time is not present in the file!)
-!!!         call mpas_output_state_finalize(output_obj, domain % dminfo)
-!!!      endif
-
+      call mpas_timer_start("write output")
+      if (config_write_output_on_startup) then
+         call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=err_tmp)
+      endif
+      call mpas_timer_stop("write output")
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
           call mpas_dmpar_global_abort("An error has occurred in mpas_core_run before time-stepping. Aborting...")
       endif
+
 
 
       ! During integration, time level 1 stores the model state at the beginning of the
@@ -282,13 +300,26 @@ module mpas_core
       do while (.not. mpas_is_clock_stop_time(clock))
 
          itimestep = itimestep + 1
+
+         ! Get the interval at this point in time - currently this does not change during the simulation, but re-calculating it explicitly for generality
+         timeStepInterval = mpas_get_clock_timestep(clock, ierr=err_tmp)
+         err = ior(err,err_tmp)
+         ! Convert the clock's time interval into a dt in seconds to be used by the time stepper, using the currTime as the start time for this interval.
+         ! (We want to do this conversion before advancing the clock because the dt in seconds may change
+         !  as the base time changes, and we want the old time as the base time.
+         !  For example, the number of seconds in a year will be longer in a leap year.)
+         call mpas_get_timeInterval(timeStepInterval, StartTimeIn=currTime, dt=dtSeconds, ierr=err_tmp)
+         err = ior(err,err_tmp)
+
          call mpas_advance_clock(clock)
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)         
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
          err = ior(err, err_tmp)
          write(0,*) 'Doing timestep ', trim(timeStamp)
          write(6,*) 'Doing timestep ', trim(timeStamp)
+
+         !write(6,*) '  dt (s) = ', dtSeconds
 
 !!! These lines were used previously to assign annual forcing fields.  We may want to reassess how to do that.
 !!!         call mpas_timer_start("assign forcing fields")
@@ -304,7 +335,8 @@ module mpas_core
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-         call landice_timestep(domain, itimestep, li_deltat, timeStamp, err_tmp)
+
+         call landice_timestep(domain, itimestep, dtSeconds, timeStamp, err_tmp)
          err = ior(err,err_tmp)
 
          ! Move time level 2 fields back into time level 1 for next time step
@@ -320,36 +352,16 @@ module mpas_core
          !TODO: mpas_get_clock_ringing_alarms is probably faster than multiple mpas_is_alarm_ringing...
 
          ! ===
-         ! === Write Output, if needed
+         ! === Write Output and/or Restart, if needed
          ! ===
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=err_tmp)) then
-            call mpas_timer_start("write output")
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=err_tmp)
-            ! output_frame will always be > 1 here unless it was reset after the maximum number of frames per outfile was reached
-            ! MJH: See old code for adjustments made here to deal with some obscure, specific use-cases
-            if(output_frame == 1) then
-               call mpas_output_state_finalize(output_obj, domain % dminfo)
-               call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
-            end if
-            call write_output_frame(output_obj, output_frame, domain)
-            call mpas_timer_stop("write output")
-         end if
-         err = ior(err, err_tmp)
 
-         ! ===
-         ! === Write Restart, if needed
-         ! ===
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=err_tmp)) then
-            call mpas_timer_start("write restart")
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=err_tmp)
-
-            ! Write one restart time per file
-            call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
-            call mpas_output_state_for_domain(restart_obj, domain, 1)
-            call mpas_output_state_finalize(restart_obj, domain % dminfo)
-            call mpas_timer_stop("write restart")
-         end if
+         call mpas_timer_start("write output")
+         call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
          err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_timer_stop("write output")
+
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -376,9 +388,10 @@ module mpas_core
 !>  This routine finalizes the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_finalize(domain)
+   subroutine mpas_core_finalize(domain, stream_manager)
    
       use mpas_grid_types
+      use mpas_stream_manager
       use li_velocity, only: li_velocity_finalize
    
       implicit none
@@ -395,6 +408,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain    !< Input/output: Domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -454,6 +468,76 @@ module mpas_core
       ierr = 0
 
    end subroutine mpas_core_setup_packages
+
+
+
+!***********************************************************************
+!
+!  routine mpas_core_setup_clock
+!
+!> \brief   Pacakge setup routine
+!> \author  Michael Duda
+!> \date    6 August 2014
+!> \details 
+!>  The purpose of this routine is to allow the core to set up a simulation
+!>  clock that will be used by the I/O subsystem for timing reads and writes
+!>  of I/O streams.
+!>  This routine is called from the superstructure after the framework 
+!>  has been initialized but before any fields have been allocated and 
+!>  initial fields have been read from input files. However, all namelist
+!>  options are available.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
+
+      call simulation_clock_init(core_clock, configs, ierr)
+
+   end subroutine mpas_core_setup_clock
+
+
+!***********************************************************************
+!
+!  routine mpas_core_get_mesh_stream
+!
+!> \brief   Returns the name of the stream containing mesh information
+!> \author  Michael Duda
+!> \date    8 August 2014
+!> \details 
+!>  This routine returns the name of the I/O stream containing dimensions,
+!>  attributes, and mesh fields needed by the framework bootstrapping 
+!>  routine. At the time this routine is called, only namelist options 
+!>  are available.
+!
+!-----------------------------------------------------------------------
+subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: configs
+      character(len=*), intent(out) :: stream
+      integer, intent(out) :: ierr
+
+      logical, pointer :: config_do_restart
+
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
+
+      if (.not. associated(config_do_restart)) then
+         ierr = 1
+      else if (config_do_restart) then
+         write(stream,'(a)') 'restart'
+      else
+         write(stream,'(a)') 'input'
+      end if
+
+   end subroutine mpas_core_get_mesh_stream
 
 
 
@@ -607,7 +691,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       integer, intent(in) :: itimestep              !< Input: time step number 
-      real (kind=RKIND), intent(in) :: dt           !< Input: time step 
+      real (kind=RKIND), intent(in) :: dt           !< Input: time step, in seconds
       character(len=*), intent(in) :: timeStamp     !< Input: time stamp of current time step
 
       !-----------------------------------------------------------------
@@ -695,7 +779,7 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine simulation_clock_init(domain, dt, startTimeStamp, ierr)
+   subroutine simulation_clock_init(core_clock, configs, ierr)
 
       implicit none
 
@@ -704,21 +788,21 @@ module mpas_core
       ! input variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: dt   !< Input: time step
+      
 
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
+      type (MPAS_Clock_type), intent(inout) :: core_clock  !< Input/output: core_clock
+      type (mpas_pool_type), intent(inout) :: configs      !< Input/output: configs
 
       !-----------------------------------------------------------------
       !
       ! output variables
       !
       !-----------------------------------------------------------------
-      character(len=*), intent(out) :: startTimeStamp   !< Output: time stamp at start 
       integer, intent(out) :: ierr !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -728,28 +812,34 @@ module mpas_core
       !-----------------------------------------------------------------
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
-      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval ! MPAS standard configs
+      character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       integer :: err_tmp
 
 
       ierr = 0
       err_tmp = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-      call mpas_pool_get_config(domain % configs, 'config_run_duration', config_run_duration)
-      call mpas_pool_get_config(domain % configs, 'config_stop_time', config_stop_time)
-      call mpas_pool_get_config(domain % configs, 'config_output_interval', config_output_interval)
-      call mpas_pool_get_config(domain % configs, 'config_restart_interval', config_restart_interval)
+      call mpas_pool_get_config(configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(configs, 'config_restart_interval', config_restart_interval)
 
+
+      ! Set time to the user-specified start time
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
-      call mpas_set_timeInterval(timeStep, dt=dt, ierr=err_tmp)
+      ! Set interval to the user-specified time interval string
+      call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
+
 
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
 
          if (trim(config_stop_time) /= "none") then
@@ -762,40 +852,13 @@ module mpas_core
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
       else
           write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-          call mpas_dmpar_abort(domain % dminfo)
+          ierr = 1
       end if
 
-      ! set output alarm
-      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
-
-      ! set restart alarm, if necessary
-      if (trim(config_restart_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=err_tmp)
-         ierr = ior(ierr,err_tmp)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
-         ierr = ior(ierr,err_tmp)
-      end if
-
-      !TODO: use this code if we desire to convert config_stats_interval to alarms 
-      !(must also change config_stats_interval type to character) 
-      ! set stats alarm, if necessary
-      !if (trim(config_stats_interval) /= "none") then      
-      !   call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=err_tmp)
-      !   alarmStartTime = startTime + alarmTimeStep
-      !   call mpas_add_clock_alarm(clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
-      !end if
-
-      call mpas_get_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
 
       ! === error check
       if (ierr > 0) then
@@ -805,56 +868,6 @@ module mpas_core
    !--------------------------------------------------------------------
    end subroutine simulation_clock_init
 
-
-
-!***********************************************************************
-!
-!  routine write_output_frame
-!
-!> \brief   Writes an output frame
-!> \author  ??
-!> \date    ??
-!> \details
-!>  This routine writes an output frame.
-!
-!-----------------------------------------------------------------------
-   subroutine write_output_frame(output_obj, output_frame, domain)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain and write model state to output file
-   !
-   ! Input/Output: domain - contains model state; diagnostic field are computed
-   !                        before returning
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-      use mpas_io_output
-
-      implicit none
-
-      type (io_output_object), intent(inout) :: output_obj
-      integer, intent(inout) :: output_frame
-      type (domain_type), intent(inout) :: domain
-      integer, pointer :: config_frames_per_outfile
-
-      integer :: i, j, k
-      integer :: eoe
-
-      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
-
-      call mpas_output_state_for_domain(output_obj, domain, output_frame)
-      output_frame = output_frame + 1
-
-      ! reset frame if the maximum number of frames per outfile has been reached
-      if (config_frames_per_outfile > 0) then
-         current_outfile_frames = current_outfile_frames + 1            
-         if(current_outfile_frames >= config_frames_per_outfile) then
-! MJH: My old version did things a bit differently here.
-            current_outfile_frames = 0
-            output_frame = 1
-         end if
-      end if
-
-   end subroutine write_output_frame
 
 
 end module mpas_core

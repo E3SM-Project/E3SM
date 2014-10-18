@@ -70,11 +70,6 @@
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
-                <nml_option name="config_input_name"            type="character"     default_value="x1.40962.grid.nc"/>
-                <nml_option name="config_sfc_update_name"       type="character"     default_value="x1.40962.sfc_update.nc"/>
-                <nml_option name="config_output_name"           type="character"     default_value="x1.40962.init.nc"/>
-                <nml_option name="config_restart_name"          type="character"     default_value="restart.nc"           in_defaults="false"/>
-                <nml_option name="config_restart_timestamp_name" type="character"     default_value="restart_timestamp"   in_defaults="false"/>
                 <nml_option name="config_frames_per_outfile"    type="integer"       default_value="0"                    in_defaults="false"/>
                 <nml_option name="config_pio_num_iotasks"       type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"            type="integer"       default_value="1"/>
@@ -87,11 +82,14 @@
                 <nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part." in_defaults="false"/>
         </nml_record>
 
-        <nml_record name="restart" in_defaults="true">
-                <nml_option name="config_restart_interval"      type="integer"       default_value="0"         in_defaults="false"/>
-                <nml_option name="config_do_restart"            type="logical"       default_value="false"     in_defaults="false"/>
-                <nml_option name="config_restart_time"          type="real"          default_value="172800.0"  in_defaults="false"/>
-        </nml_record>
+
+<!-- **************************************************************************************** -->
+<!-- **************************************  Packages  ************************************** -->
+<!-- **************************************************************************************** -->
+        <packages>
+                <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
+                <package name="sfc_update" description="Used by test cases that produce surface updates."/>
+        </packages
 
 
 <!-- **************************************************************************************** -->
@@ -99,7 +97,13 @@
 <!-- **************************************************************************************** -->
 
 	<streams>
-		<stream name="input" type="input">
+		<stream name="input" 
+                        type="input" 
+                        filename_template="x1.40962.grid.nc"
+                        records_per_file="1"
+                        input_interval="initial_only" 
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -217,11 +221,14 @@
 			<var name="surface_pressure"/>
 		</stream>
 
-		<stream name="restart" type="restart">
-			<var name="meshDensity"/>
-		</stream>
+		<stream name="output" 
+                        type="output" 
+                        filename_template="x1.40962.init.nc"
+                        records_per_file="1"
+                        output_interval="initial_only"
+                        packages="initial_conds"
+                        runtime_format="separate_file">
 
-		<stream name="output" type="output">
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -308,9 +315,7 @@
 			<var name="defc_a"/>
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
-			<var name="qv"/>
-			<var name="qc"/>
-			<var name="qr"/>
+			<var_array name="scalars"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -360,11 +365,20 @@
 			<var name="surface_pressure"/>
 			<var name="precipw"/>
 		</stream>
-		<stream name="surface" type="input;output">
+
+		<stream name="surface" 
+                        type="output" 
+                        filename_template="x1.40962.sfc_update.nc"
+                        records_per_file="0"
+                        output_interval="none" 
+                        packages="sfc_update"
+                        immutable="true">
+
 			<var name="xtime"/>
 			<var name="sst"/>
 			<var name="xice"/>
 		</stream>
+
 	</streams>
 
 

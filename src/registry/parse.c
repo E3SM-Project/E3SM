@@ -16,7 +16,8 @@
 
 
 int is_unique_field(ezxml_t registry, ezxml_t field, const char *check_name);
-int check_for_unique_names(ezxml_t registry);
+int is_unique_struct(ezxml_t registry, ezxml_t check_struct, const char *check_name);
+int check_for_unique_names(ezxml_t registry, ezxml_t current_position);
 int is_integer_constant(char *);
 int parse_reg_xml(ezxml_t registry);
 int validate_reg_xml(ezxml_t registry);
@@ -64,8 +65,9 @@ int main(int argc, char ** argv)/*{{{*/
 		return 1;
 	}
 
-	//write_default_namelist(nls, corename);
 	write_default_namelist(registry);
+
+	write_default_streams(registry);
 
 	return 0;
 }/*}}}*/
@@ -76,18 +78,21 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml, stream_var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
-	ezxml_t streams_xml, stream_xml;
+	ezxml_t streams_xml, stream_xml, substream_xml;
+	ezxml_t streams_xml2, stream_xml2;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmlrecindef;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
-	const char *structname, *structpackages;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages;
+	const char *structname, *structpackages, *structstreams;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages, *vararrstreams;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
-	const char *streamname;
-	const char *streamtype;
+	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
+	const char *streamimmutable, *streamformat;
+	const char *streamname2, *streamfilename2;
+	const char *substreamname, *streamimmutable2;
 	const char *time_levs;
 
 	char *string, *err_string;
@@ -211,6 +216,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 		structname = ezxml_attr(structs_xml, "name");
 		time_levs = ezxml_attr(structs_xml, "time_levs");
 		structpackages = ezxml_attr(structs_xml, "packages");
+		structstreams = ezxml_attr(structs_xml, "streams");
 
 		if (structname == NULL){
 			fprintf(stderr,"ERROR: Name missing for var_struct.\n");
@@ -240,6 +246,17 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			}
 		}
 
+		if (structstreams != NULL) {
+			string = strdup(structstreams);
+			err_string = check_streams(registry, string);
+			free(string);
+
+			if (err_string != NULL) {
+				fprintf(stderr, "ERROR: Stream %s attached to var_struct %s is not defined.\n", err_string, structname);
+				return 1;
+			}
+		}
+
 		// Validate variable arrays
 		for(var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
 			vararrname = ezxml_attr(var_arr_xml, "name");
@@ -247,6 +264,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
 			vararrpackages = ezxml_attr(var_arr_xml, "packages");
+			vararrstreams = ezxml_attr(var_arr_xml, "streams");
 			time_levs = ezxml_attr(var_arr_xml, "time_levs");
 
 			if (vararrname == NULL){
@@ -313,6 +331,25 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				}
 			}
 
+			if (persistence == SCRATCH && vararrstreams != NULL){
+				fprintf(stderr, "ERROR: Streams attribute not allowed on scratch var_array %s in var_struct %s.\n", vararrname, structname);
+				return -1;
+			} 
+			else if (persistence == SCRATCH && vararrstreams == NULL && structstreams != NULL) {
+				fprintf(stderr, "ERROR: Streams attribute inherited from var_struct %s not allowed on scratch var_array %s in var_struct %s.\n", structname, vararrname, structname);
+				return -1;
+			} 
+			else if (persistence == PERSISTENT && vararrstreams != NULL) {
+				string = strdup(vararrstreams);
+				err_string = check_streams(registry, string);
+				free(string);
+
+				if (err_string != NULL) {
+					fprintf(stderr, "ERROR: Stream %s attached to var_array %s in var_struct %s is not defined.\n", err_string, vararrname, structname);
+					return 1;
+				}
+			}
+
 
 			// Validate variables in variable arrays
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
@@ -322,6 +359,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
 				varpackages = ezxml_attr(var_xml, "packages");
+				varstreams = ezxml_attr(var_xml, "streams");
 
 				if (varname == NULL) {
 					fprintf(stderr,"ERROR: Name missing for constituent variable in var_array %s in var_struct %s.\n", vararrname, structname);
@@ -338,6 +376,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					return 1;
 				}
 
+				if (persistence == SCRATCH && vararrstreams != NULL) {
+					fprintf(stderr, "ERROR: Streams attribute not allowed on constituent variable %s within scratch var_srray %s in var_struct %s.\n", varname, vararrname, structname);
+					return 1;
+				}
+
 				if(varpackages != NULL){
 					string = strdup(varpackages);
 					err_string = check_packages(registry, string);
@@ -345,6 +388,17 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 
 					if (err_string != NULL){
 						fprintf(stderr, "ERROR: Package %s used on constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
+						return 1;
+					}
+				}
+
+				if(varstreams != NULL){
+					string = strdup(varstreams);
+					err_string = check_streams(registry, string);
+					free(string);
+
+					if (err_string != NULL){
+						fprintf(stderr, "ERROR: Stream %s attached to constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
 						return 1;
 					}
 				}
@@ -361,6 +415,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vardesc = ezxml_attr(var_xml, "description");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			varpackages = ezxml_attr(var_xml, "packages");
+			varstreams = ezxml_attr(var_xml, "streams");
 			time_levs = ezxml_attr(var_xml, "time_levs");
 
 			if (varname == NULL) {
@@ -429,6 +484,25 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				return -1;
 			}
 
+			if (varstreams != NULL && persistence == PERSISTENT) {
+				string = strdup(varstreams);
+				err_string = check_streams(registry, string);
+				free(string);
+
+				if (err_string != NULL) {
+					fprintf(stderr, "ERROR: Stream %s attached to variable %s in var_struct %s is not defined.\n", err_string, varname, structname);
+					return 1;
+				}
+			} 
+			else if ( persistence == SCRATCH && varstreams != NULL ) {
+				fprintf(stderr, "ERROR: Streams attribute not allowed on scratch variable %s in var_struct %s.\n", varname, structname);
+				return -1;
+			} 
+			else if ( persistence == SCRATCH && varstreams == NULL && structstreams != NULL) {
+				fprintf(stderr, "ERROR: Streams attribute inherited from var_struct %s not allowed on scratch var %s in var_struct %s.\n", structname, varname, structname);
+				return -1;
+			}
+
 		}
 	}
 
@@ -437,15 +511,66 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
 			streamname = ezxml_attr(stream_xml, "name");
 			streamtype = ezxml_attr(stream_xml, "type");
+			streamfilename = ezxml_attr(stream_xml, "filename_template");
+			streamrecords = ezxml_attr(stream_xml, "records_per_file");
+			streaminterval_in = ezxml_attr(stream_xml, "input_interval");
+			streaminterval_out = ezxml_attr(stream_xml, "output_interval");
+			streampackages = ezxml_attr(stream_xml, "packages");
+			streamimmutable = ezxml_attr(stream_xml, "immutable");
+			streamformat = ezxml_attr(stream_xml, "runtime_format");
+
 			if (streamname == NULL) {
 				fprintf(stderr, "ERROR: Stream specification missing \"name\" attribute.\n");
 				return 1;
 			}
 			else if (streamtype == NULL) {
-				fprintf(stderr, "ERROR: Stream specification missing \"type\" attribute.\n");
+				fprintf(stderr, "ERROR: Stream specification for %s missing \"type\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (streamfilename == NULL) {
+				fprintf(stderr, "ERROR: Stream specification for %s missing \"filename_template\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (streamrecords == NULL) {
+				fprintf(stderr, "ERROR: Stream specification for %s missing \"records_per_file\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (strstr(streamtype, "input") != NULL && streaminterval_in == NULL) {
+				fprintf(stderr, "ERROR: Stream %s is marked as input but is missing \"input_interval\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (strstr(streamtype, "output") != NULL && streaminterval_out == NULL) {
+				fprintf(stderr, "ERROR: Stream %s is marked as output but is missing \"output_interval\" attribute.\n", streamname);
+				return 1;
+			}
+			else if (streamformat == NULL && (streamimmutable == NULL || (streamimmutable != NULL && strcmp(streamimmutable,"true") != 0))) {
+				fprintf(stderr, "ERROR: Mutable stream %s must have the \"runtime_format\" attribute.\n", streamname);
 				return 1;
 			}
 			else {
+				/* Check that each stream added to an immutable stream is immutable */
+				if (streamimmutable != NULL && strcmp(streamimmutable, "true") == 0) {
+					for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = substream_xml->next){
+						substreamname = ezxml_attr(substream_xml, "name");
+						found = 0;
+
+						for (streams_xml2 = ezxml_child(registry, "streams"); streams_xml2; streams_xml2 = streams_xml2->next){
+							for (stream_xml2 = ezxml_child(streams_xml2, "stream"); stream_xml2; stream_xml2 = stream_xml2->next){
+								streamname2 = ezxml_attr(stream_xml2, "name");
+
+								if (substreamname != NULL && streamname2 != NULL && strcmp(substreamname, streamname2) == 0){
+									streamimmutable2 = ezxml_attr(stream_xml2, "immutable");
+									found = 1;
+
+									if (streamimmutable2 == NULL || strcmp(streamimmutable2, "true") != 0){
+										fprintf(stderr, "ERROR: Immutable stream %s cannot contain mutable streams (e.g. %s).\n", streamname, substreamname);
+										return 1;
+									}
+								}
+							}
+						}
+					}
+				}
 				for (stream_var_xml = ezxml_child(stream_xml, "var"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
 					varname_in_stream = ezxml_attr(stream_var_xml, "name");
 					if (varname_in_stream == NULL) {
@@ -453,8 +578,16 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 						return 1;
 					}
 
+					/* Check that runtime_format is a valid option for mutable streams */
+					if (streamimmutable == NULL || (streamimmutable != NULL && strcmp(streamimmutable,"true") != 0)) {
+						if (strcmp(streamformat, "single_file") != 0 && strcmp(streamformat, "separate_file") != 0) {
+							fprintf(stderr, "ERROR: Runtime_format specification for stream \"%s\" must be either \"single_file\" or \"separate_file\".\n", streamname);
+							return 1;
+						}
+					}
 
-					// Check that the variable being added to the stream has been defined
+
+					/* Check that the variable being added to the stream has been defined */
 					for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next) {
 						for (var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next) {
 							for (var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next) {
@@ -474,7 +607,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 
 done_searching:
 
-					// did we find what we were looking for?
+					/* did we find what we were looking for? */
 					if (var_xml == NULL) {
 						fprintf(stderr, "ERROR: Trying to add undefined variable %s to stream %s.\n", varname_in_stream, streamname);
 						return 1;
@@ -483,12 +616,51 @@ done_searching:
 
 				}
 			}
+
+			if (streamformat != NULL && streamimmutable != NULL && strcmp(streamimmutable,"true") == 0) {
+				fprintf(stderr, "Warning: runtime_format attribute has no effect for immutable stream \"%s\".\n", streamname);
+			}
+
+			if (streampackages != NULL) {
+				string = strdup(streampackages);
+				err_string = check_packages(registry, string);
+				free(string);
+
+				if (err_string != NULL){
+					fprintf(stderr, "ERROR: Package %s used on stream %s is not defined.\n", err_string, streamname);
+					return 1;
+				}
+			}
+
+		}
+	}
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+			streamname = ezxml_attr(stream_xml, "name");
+			streamfilename = ezxml_attr(stream_xml, "filename_template");
+			
+			/* Check that this stream's filename template is unique among all streams */
+			for (streams_xml2 = ezxml_child(registry, "streams"); streams_xml2; streams_xml2 = streams_xml2->next) {
+				for (stream_xml2 = ezxml_child(streams_xml2, "stream"); stream_xml2; stream_xml2 = stream_xml2->next) {
+					streamname2 = ezxml_attr(stream_xml2, "name");
+					streamfilename2 = ezxml_attr(stream_xml2, "filename_template");
+
+					if (stream_xml != stream_xml2) {
+						if (strcmp(streamfilename, streamfilename2) == 0) {
+							fprintf(stderr, "ERROR: Streams %s and %s have a conflicting filename template of %s.\n", streamname, streamname2, streamfilename);
+							return 1;
+						}
+					}
+				}
+			}
 		}
 	}
 
-	if(check_for_unique_names(registry)){
-		fprintf(stderr, "ERROR: Fields are required to have unique names for I/O reasons.\n");
+	if(check_for_unique_names(registry, registry)){
+		fprintf(stderr, "ERROR: Structures and Fields are required to have unique names for I/O reasons.\n");
 		fprintf(stderr, "       Please fix duplicates in the Registry.xml file.\n");
+		fprintf(stderr, "       You may use the name_in_code attribute to give them the same name inside the model,\n");
+		fprintf(stderr, "       but the name attribute is required to be unique.\n");
 		return 1;
 	}
 
@@ -522,11 +694,8 @@ int parse_reg_xml(ezxml_t registry)/*{{{*/
 	// Generate routines to link fields for multiple blocks
 	err = generate_field_links(registry);
 
-	// Generate halo exchange and copy routine
-	err = generate_field_halo_exchanges_and_copies(registry);
-
-	// Generate halo exchange and copy routine
-	err = generate_field_reads_and_writes(registry);
+	// Generate code to read and write fields
+	err = generate_immutable_streams(registry);
 
 	return 0;
 }/*}}}*/
@@ -560,12 +729,46 @@ int is_unique_field(ezxml_t registry, ezxml_t field, const char *check_name){/*{
 }/*}}}*/
 
 
-int check_for_unique_names(ezxml_t registry){/*{{{*/
+int is_unique_struct(ezxml_t current_position, ezxml_t check_struct, const char *check_name){/*{{{*/
+	ezxml_t struct_xml;
+
+	const char *name;
+
+	int test;
+
+
+	test = 1;
+
+	for(struct_xml = ezxml_child(current_position, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+		name = ezxml_attr(struct_xml, "name");
+
+		if(strcmp(name, check_name) == 0 && struct_xml != check_struct){
+			return 0;
+		} else {
+			test = is_unique_struct(struct_xml, check_struct, check_name);
+			if ( !test ) {
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}/*}}}*/
+
+
+int check_for_unique_names(ezxml_t registry, ezxml_t current_position){/*{{{*/
 	ezxml_t struct_xml, var_arr_xml, var_xml;
 
 	const char *name;
 
-	for(struct_xml = ezxml_child(registry, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+	for(struct_xml = ezxml_child(current_position, "var_struct"); struct_xml; struct_xml = struct_xml->next){
+		name = ezxml_attr(struct_xml, "name");
+
+		if(!is_unique_struct(registry, struct_xml, name)){
+			fprintf(stderr, "ERROR: Struct %s is not uniqe.\n", name);
+			return 1;
+		}
+
 		for(var_arr_xml = ezxml_child(struct_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
 				name = ezxml_attr(var_xml, "name");
@@ -583,6 +786,8 @@ int check_for_unique_names(ezxml_t registry){/*{{{*/
 				return 1;
 			}
 		}
+
+		check_for_unique_names(registry, struct_xml);
 	}
 
 	return 0;

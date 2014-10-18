@@ -19,6 +19,7 @@
 
 module mpas_kind_types
 
+   integer, parameter :: R4KIND = selected_real_kind(6)
 #ifdef SINGLE_PRECISION
    integer, parameter :: RKIND  = selected_real_kind(6)
 #else
@@ -26,6 +27,7 @@ module mpas_kind_types
 #endif
 
    integer, parameter :: StrKIND = 512
+   integer, parameter :: ShortStrKIND = 32
 
    contains
 

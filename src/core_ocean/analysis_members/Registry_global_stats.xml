@@ -5,7 +5,7 @@
 		/>
 		<nml_option name="config_global_stats_compute_interval" type="character" default_value="same_as_output" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
-			possible_values="'DDDD_HH:MM:SS', 'same_as_output'"
+			possible_values="'DDDD_HH:MM:SS'"
 		/>
 		<nml_option name="config_global_stats_compute_startup" type="logical" default_value=".true." units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
@@ -16,7 +16,12 @@
 		<package name="amGlobalStats" description="This package includes variables required for the global statistics analysis member."/>
 	</packages>
 	<streams>
-		<stream name="output" type="output">
+		<stream name="globalStatsOutput" type="output"
+				filename_template="analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc"
+				records_per_file="1"
+				output_interval="0000_12:00:00"
+				runtime_format="single_file">
+
 			<var name="minGlobalStats"/>
 			<var name="maxGlobalStats"/>
 			<var name="sumGlobalStats"/>

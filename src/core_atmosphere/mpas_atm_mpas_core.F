@@ -9,29 +9,22 @@ module mpas_core
 
    use mpas_framework
 
-   type (io_output_object), save :: restart_obj
-   type (io_input_object), save :: sfc_update_obj
-   integer :: current_outfile_frames
-   
-   type (MPAS_Clock_type) :: clock
+   type (MPAS_Clock_type), pointer :: clock
 
-   integer, parameter :: outputAlarmID = 1 
-   integer, parameter :: restartAlarmID = 2 
-   integer, parameter :: sfcAlarmID = 3 
-   integer, parameter :: hifreqAlarmID = 4
 
    contains
 
 
-   subroutine mpas_core_init(domain, startTimeStamp)
+   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
 
-!      use mpas_configure
       use mpas_kind_types
+      use mpas_stream_manager
       use mpas_grid_types
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       real (kind=RKIND), pointer :: dt
@@ -47,13 +40,41 @@ module mpas_core
       type (mpas_pool_type), pointer :: diag
       type (field2DReal), pointer :: u_field, pv_edge_field, ru_field, rw_field
       character (len=StrKIND), pointer :: xtime
-      character (len=StrKIND), pointer :: config_sfc_update_interval, config_sfc_update_name
+      type (MPAS_Time_Type) :: startTime
+
+
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
 
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_interval', config_sfc_update_interval)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_name', config_sfc_update_name)
+
+      
+      !
+      ! If this is a restart run, read the restart stream, else read the input
+      ! stream.
+      ! Regardless of which stream we read for initial conditions, reset the
+      ! input alarms for both input and restart before reading any remaining
+      ! input streams.
+      !
+      if (config_do_restart) then
+         call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=ierr)
+      else
+         call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=ierr)
+      end if
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+      !
+      ! Read all other inputs
+      ! For now we don't do this here to match results with previous code; to match requires 
+      ! that we read in SST and seaice fields after the call to atm_mpas_init_block()
+      !
+!      call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
+!      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr) 
 
       if (.not. config_do_restart) then
          block => domain % blocklist
@@ -66,9 +87,11 @@ module mpas_core
 
 
       !
-      ! Initialize core
+      ! Set startTimeStamp based on the start time of the simulation clock
       !
-      call atm_simulation_clock_init(domain, dt, startTimeStamp)
+      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
       call mpas_pool_get_field(state, 'u', u_field, 1)
@@ -79,7 +102,7 @@ module mpas_core
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
          call mpas_pool_get_subpool(block % structs, 'state', state)
 
-         call atm_mpas_init_block(domain % dminfo, block, mesh, dt)
+         call atm_mpas_init_block(domain % dminfo, stream_manager, block, mesh, dt)
 
          call mpas_pool_get_array(state, 'xtime', xtime, 1)
          xtime = startTimeStamp
@@ -97,60 +120,35 @@ module mpas_core
       call mpas_pool_get_field(diag, 'rw', rw_field)
       call mpas_dmpar_exch_halo_field(rw_field)
 
-      current_outfile_frames = 0
-
-      if (config_sfc_update_interval /= "none") then
-
-         sfc_update_obj % filename = trim(config_sfc_update_name)
-         sfc_update_obj % stream = STREAM_SFC
-
-         call mpas_io_input_init(sfc_update_obj, domain % dminfo)
-
-         !     
-         ! We need to decide which time slice to read from the surface file - read the most recent time slice that falls before or on the start time
-         !
-         sfc_update_obj % time = MPAS_seekStream(sfc_update_obj % io_stream, trim(startTimeStamp), MPAS_STREAM_LATEST_BEFORE, timeStamp, ierr)
-         if (ierr == MPAS_IO_ERR) then
-            write(0,*) 'Error: surface update file '//trim(sfc_update_obj % filename)//' did not contain any times at or before '//trim(startTimeStamp)
-            call mpas_dmpar_abort(domain % dminfo)
-         end if
-
-         write(0,*) 'Starting model with surface time ', trim(timeStamp)
-
-      end if
-
    end subroutine mpas_core_init
 
 
-   subroutine atm_simulation_clock_init(domain, dt, startTimeStamp)
+   subroutine atm_simulation_clock_init(core_clock, configs, ierr)
 
       implicit none
 
-      type (domain_type), intent(inout) :: domain
-      real (kind=RKIND), intent(in) :: dt
-      character(len=*), intent(out) :: startTimeStamp
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
 
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
-      integer :: ierr
+      integer :: local_err
+      real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: config_start_time
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       character (len=StrKIND), pointer :: config_run_duration
       character (len=StrKIND), pointer :: config_stop_time
-      character (len=StrKIND), pointer :: config_output_interval
-      character (len=StrKIND), pointer :: config_restart_interval
-      character (len=StrKIND), pointer :: config_hifreq_output_interval
-      character (len=StrKIND), pointer :: config_sfc_update_interval
+      character (len=StrKIND) :: startTimeStamp
 
 
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_start_time', config_start_time)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_run_duration', config_run_duration)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_stop_time', config_stop_time)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_output_interval', config_output_interval)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_restart_interval', config_restart_interval)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_hifreq_output_interval', config_hifreq_output_interval)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_interval', config_sfc_update_interval)
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
 
       if(trim(config_start_time) == 'file') then
          open(22,file=trim(config_restart_timestamp_name),form='formatted',status='old')
@@ -159,71 +157,41 @@ module mpas_core
       else
         startTimeStamp = config_start_time
       end if
-      call mpas_set_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=ierr)
-      call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)
+      call mpas_set_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=local_err)
+      call mpas_set_timeInterval(timeStep, dt=config_dt, ierr=local_err)
 
       if (trim(config_run_duration) /= "none") then
-         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=ierr)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=ierr)
+         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=local_err)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=local_err)
 
          if (trim(config_stop_time) /= "none") then
-            call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=ierr)
+            call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
                write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
-         call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=ierr)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=ierr)
+         call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
-          write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-          call mpas_dmpar_abort(domain % dminfo)
+          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          ierr = 1
       end if
 
-      ! set output alarm
-      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-
-      ! set restart alarm, if necessary
-      if (trim(config_restart_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=ierr)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-      end if
-
-      ! set high-frequency history alarm, if necessary
-      if (trim(config_hifreq_output_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_hifreq_output_interval, ierr=ierr)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(clock, hifreqAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-      end if
-
-      ! set sfc alarm, if necessary
-      if (trim(config_sfc_update_interval) /= "none") then      
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_sfc_update_interval, ierr=ierr)
-         alarmStartTime = startTime
-         call mpas_add_clock_alarm(clock, sfcAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-      end if
-      
       !TODO: set phyics alarms here...
       !....
       !....
 
-      call mpas_get_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=ierr)
-
-
    end subroutine atm_simulation_clock_init
 
 
-   subroutine atm_mpas_init_block(dminfo, block, mesh, dt)
+   subroutine atm_mpas_init_block(dminfo, stream_manager, block, mesh, dt)
    
       use mpas_grid_types
-   !   use atm_advection
       use atm_time_integration
-!      use mpas_configure
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
+      use mpas_stream_manager
 #ifdef DO_PHYSICS
 !     use mpas_atmphys_aquaplanet
       use mpas_atmphys_control
@@ -234,6 +202,7 @@ module mpas_core
       implicit none
    
       type (dm_info), intent(in) :: dminfo
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       type (block_type), intent(inout) :: block
       type (mpas_pool_type), intent(inout) :: mesh     !MGD does this need to be a pointer?
       real (kind=RKIND), intent(in) :: dt
@@ -292,7 +261,7 @@ module mpas_core
          call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
          call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
          call physics_registry_init(mesh, block % configs, sfc_input)
-         call physics_run_init(block % configs, mesh, state, clock)
+         call physics_run_init(block % configs, mesh, state, clock, stream_manager)
 
          !initialization of all physics:
          call physics_init(dminfo, clock, block % configs, mesh, diag, state, 1, diag_physics, &
@@ -317,25 +286,23 @@ module mpas_core
 
       call atm_adv_coef_compression(mesh)
 
-   
    end subroutine atm_mpas_init_block
    
    
-   subroutine mpas_core_run(domain, output_obj, output_frame)
+   subroutine mpas_core_run(domain, stream_manager)
    
       use mpas_grid_types
       use mpas_kind_types
-      use mpas_io_output
-      use mpas_io_input, only: insert_string_suffix => mpas_insert_string_suffix
+      use mpas_stream_manager
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (io_output_object), intent(inout) :: output_obj
-      integer, intent(inout) :: output_frame
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       real (kind=RKIND), pointer :: dt
+      logical, pointer :: config_do_restart
       type (block_type), pointer :: block_ptr
 
       type (MPAS_Time_Type) :: currTime
@@ -348,35 +315,34 @@ module mpas_core
       ! For high-frequency diagnostics output
       character (len=StrKIND) :: tempfilename
 
-      character (len=StrKIND), pointer :: config_hifreq_output_interval
-      integer, pointer :: config_frames_per_outfile
-
-
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_hifreq_output_interval', config_hifreq_output_interval)
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_frames_per_outfile', config_frames_per_outfile)
 
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
 
+      ! Avoid writing a restart file at the initial time
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      call atm_write_output_frame(output_obj, output_frame, domain)
-
-
-      if (trim(config_hifreq_output_interval) /= 'none') then
-         block_ptr => domain % blocklist
-
-         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-         call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
-
-         currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-
-         call insert_string_suffix('diagnostics.nc', trim(timeStamp), tempfilename)
-         call write_hifreq_output(block_ptr, tempfilename)
+      ! Also, for restart runs, avoid writing the initial history fields to avoid overwriting those from the preceding run
+      if (config_do_restart) then
+         call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='output', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end if
+
+      if (MPAS_stream_mgr_ringing_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         block_ptr => domain % blocklist
+         do while (associated(block_ptr))
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+
+            block_ptr => block_ptr % next
+         end do
+      end if
+      call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -387,13 +353,11 @@ module mpas_core
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
          write(0,*) 'Begin timestep ', trim(timeStamp)
 
-         ! Input external updates (i.e. surface)
-         if (mpas_is_alarm_ringing(clock, sfcAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, sfcAlarmID, ierr=ierr)
-
-            call mpas_read_and_distribute_fields(sfc_update_obj)
-            sfc_update_obj % time = sfc_update_obj % time + 1
-         end if
+         !
+         ! Read external field updates
+         !
+         call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
+         call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
          call mpas_timer_start("time integration")
          call atm_do_timestep(domain, dt, itimestep)
@@ -403,112 +367,47 @@ module mpas_core
          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
          call mpas_pool_shift_time_levels(state)
          
-
          ! Advance clock before writing output
          itimestep = itimestep + 1
          call mpas_advance_clock(clock)
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+
+         !
+         ! Write any output streams that have alarms ringing, after computing diagnostics fields
+         !
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
-
-         !TODO: MPAS_getClockRingingAlarms is probably faster than multiple MPAS_isAlarmRinging...
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=ierr)
-            ! output_frame will always be > 1 here unless it was reset after the maximum number of frames per outfile was reached
-            if(output_frame == 1) then
-               call mpas_output_state_finalize(output_obj, domain % dminfo)
-               call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
-            end if
-            call atm_write_output_frame(output_obj, output_frame, domain)
-         end if
-
-         if (mpas_is_alarm_ringing(clock, hifreqAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, hifreqAlarmID, ierr=ierr)
-
-            block_ptr => domain % blocklist
-            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-            call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
-
-            call insert_string_suffix('diagnostics.nc', trim(timeStamp), tempfilename)
-            call write_hifreq_output(block_ptr, tempfilename)
-         end if
-
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=ierr)
-
+         if (MPAS_stream_mgr_ringing_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
+
                call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
                call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
                call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-               call atm_compute_restart_diagnostics(state, 1, diag, mesh)
+               call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+
                block_ptr => block_ptr % next
             end do
-
-            ! Write one restart time per file
-            call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
-            call mpas_output_state_for_domain(restart_obj, domain, 1)
-            call mpas_output_state_finalize(restart_obj, domain % dminfo)
          end if
+         if (MPAS_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+            block_ptr => domain % blocklist
+            do while (associated(block_ptr))
+
+               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+               call atm_compute_restart_diagnostics(state, 1, diag, mesh)
+
+               block_ptr => block_ptr % next
+            end do
+         end if
+         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       end do
    
    end subroutine mpas_core_run
-   
-   
-   subroutine atm_write_output_frame(output_obj, output_frame, domain)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain and write model state to output file
-   !
-   ! Input/Output: domain - contains model state; diagnostic field are computed
-   !                        before returning
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-      use mpas_io_output
-   
-      implicit none
-   
-      integer, intent(inout) :: output_frame
-      type (domain_type), intent(inout) :: domain
-      type (io_output_object), intent(inout) :: output_obj
-   
-      type (block_type), pointer :: block_ptr
-
-      type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
-      integer, pointer :: config_frames_per_outfile
-
-
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_frames_per_outfile', config_frames_per_outfile)
-   
-      block_ptr => domain % blocklist
-      do while (associated(block_ptr))
-
-         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-
-         call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
-
-         block_ptr => block_ptr % next
-      end do
-   
-      call mpas_output_state_for_domain(output_obj, domain, output_frame)
-      output_frame = output_frame + 1
-   
-      ! reset frame if the maximum number of frames per outfile has been reached
-      if (config_frames_per_outfile > 0) then
-         current_outfile_frames = current_outfile_frames + 1            
-         if(current_outfile_frames >= config_frames_per_outfile) then
-            current_outfile_frames = 0
-            output_frame = 1
-         end if
-      end if
-
-   end subroutine atm_write_output_frame
    
    
    subroutine atm_compute_output_diagnostics(state, time_lev, diag, diag_physics, mesh)
@@ -611,119 +510,6 @@ module mpas_core
    end subroutine atm_compute_restart_diagnostics
 
 
-   subroutine write_hifreq_output(block_ptr, fname)
-
-      implicit none
-
-      type (block_type), pointer :: block_ptr
-      character (len=*), intent(in) :: fname
-
-      integer :: ierr
-      type (MPAS_Stream_type) :: hifreq_stream
-
-      type (mpas_pool_type), pointer :: mesh
-      type (mpas_pool_type), pointer :: state
-      type (mpas_pool_type), pointer :: diag
-      type (mpas_pool_type), pointer :: diag_physics
-      logical, pointer :: on_a_sphere
-      type (field0DChar), pointer :: xtime
-      type (field1DReal), pointer :: olrtoa, rainc, rainnc, refl10cm_max, precipw
-      type (field1DReal), pointer :: temperature_200hPa
-      type (field1DReal), pointer :: temperature_500hPa
-      type (field1DReal), pointer :: temperature_850hPa
-      type (field1DReal), pointer :: height_200hPa
-      type (field1DReal), pointer :: height_500hPa
-      type (field1DReal), pointer :: height_850hPa
-      type (field1DReal), pointer :: uzonal_200hPa
-      type (field1DReal), pointer :: uzonal_500hPa
-      type (field1DReal), pointer :: uzonal_850hPa
-      type (field1DReal), pointer :: umeridional_200hPa
-      type (field1DReal), pointer :: umeridional_500hPa
-      type (field1DReal), pointer :: umeridional_850hPa
-      type (field1DReal), pointer :: w_200hPa
-      type (field1DReal), pointer :: w_500hPa
-      type (field1DReal), pointer :: w_850hPa
-      type (field1DReal), pointer :: vorticity_200hPa
-      type (field1DReal), pointer :: vorticity_500hPa
-      type (field1DReal), pointer :: vorticity_850hPa
-
-
-      call MPAS_createStream(hifreq_stream, trim(fname), MPAS_IO_PNETCDF, MPAS_IO_WRITE, 1, ierr)
-
-      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-      call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
-      if (on_a_sphere) then
-         call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'YES             ', ierr)
-      else
-         call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'NO              ', ierr)
-      end if
-
-      call MPAS_writeStreamAtt(hifreq_stream, 'sphere_radius', block_ptr % domain % sphere_radius, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'model_name', block_ptr % domain % modelName, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'core_name', block_ptr % domain % coreName, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'model_version', block_ptr % domain % modelVersion, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'source', 'MPAS', ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'Conventions', 'MPAS', ierr)
-
-      call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-      call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-      call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-
-      call mpas_pool_get_field(state, 'xtime', xtime, 1)
-      call mpas_pool_get_field(diag_physics, 'olrtoa', olrtoa)
-      call mpas_pool_get_field(diag_physics, 'rainc', rainc)
-      call mpas_pool_get_field(diag_physics, 'rainnc', rainnc)
-      call mpas_pool_get_field(diag_physics, 'refl10cm_max', refl10cm_max)
-      call mpas_pool_get_field(diag_physics, 'precipw', precipw)
-      call mpas_pool_get_field(diag, 'temperature_200hPa', temperature_200hPa)
-      call mpas_pool_get_field(diag, 'temperature_500hPa', temperature_500hPa)
-      call mpas_pool_get_field(diag, 'temperature_850hPa', temperature_850hPa)
-      call mpas_pool_get_field(diag, 'height_200hPa', height_200hPa)
-      call mpas_pool_get_field(diag, 'height_500hPa', height_500hPa)
-      call mpas_pool_get_field(diag, 'height_850hPa', height_850hPa)
-      call mpas_pool_get_field(diag, 'uzonal_200hPa', uzonal_200hPa)
-      call mpas_pool_get_field(diag, 'uzonal_500hPa', uzonal_500hPa)
-      call mpas_pool_get_field(diag, 'uzonal_850hPa', uzonal_850hPa)
-      call mpas_pool_get_field(diag, 'umeridional_200hPa', umeridional_200hPa)
-      call mpas_pool_get_field(diag, 'umeridional_500hPa', umeridional_500hPa)
-      call mpas_pool_get_field(diag, 'umeridional_850hPa', umeridional_850hPa)
-      call mpas_pool_get_field(diag, 'w_200hPa', w_200hPa)
-      call mpas_pool_get_field(diag, 'w_500hPa', w_500hPa)
-      call mpas_pool_get_field(diag, 'w_850hPa', w_850hPa)
-      call mpas_pool_get_field(diag, 'vorticity_200hPa', vorticity_200hPa)
-      call mpas_pool_get_field(diag, 'vorticity_500hPa', vorticity_500hPa)
-      call mpas_pool_get_field(diag, 'vorticity_850hPa', vorticity_850hPa)
-
-      call MPAS_streamAddField(hifreq_stream, xtime, ierr)
-      call MPAS_streamAddField(hifreq_stream, olrtoa, ierr)
-      call MPAS_streamAddField(hifreq_stream, rainc, ierr)
-      call MPAS_streamAddField(hifreq_stream, rainnc, ierr)
-      call MPAS_streamAddField(hifreq_stream, refl10cm_max, ierr)
-      call MPAS_streamAddField(hifreq_stream, precipw, ierr)
-      call MPAS_streamAddField(hifreq_stream, temperature_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, temperature_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, temperature_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, height_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, height_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, height_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, uzonal_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, uzonal_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, uzonal_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, umeridional_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, umeridional_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, umeridional_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, w_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, w_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, w_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, vorticity_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, vorticity_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, vorticity_850hPa, ierr)
-      call MPAS_writeStream(hifreq_stream, 1, ierr)
-      call MPAS_closeStream(hifreq_stream, ierr)
-
-   end subroutine write_hifreq_output
-   
-   
    subroutine atm_do_timestep(domain, dt, itimestep)
    
       use mpas_grid_types
@@ -772,19 +558,16 @@ module mpas_core
    end subroutine atm_do_timestep
    
    
-   subroutine mpas_core_finalize(domain)
+   subroutine mpas_core_finalize(domain, stream_manager)
    
       use mpas_grid_types
+      use mpas_stream_manager
    
       implicit none
    
       type (domain_type), intent(inout) :: domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
-      character (len=StrKIND), pointer :: config_sfc_update_interval
-
-      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_interval', config_sfc_update_interval)
-
-      if (config_sfc_update_interval /= "none") call mpas_io_input_finalize(sfc_update_obj, domain % dminfo)
 
       call mpas_destroy_clock(clock, ierr)
    
@@ -1141,20 +924,21 @@ module mpas_core
 
    end subroutine atm_adv_coef_compression
 
-!***********************************************************************
-!
-!  routine mpas_core_setup_packages
-!
-!> \brief   Pacakge setup routine
-!> \author  Doug Jacobsen
-!> \date    September 2011
-!> \details 
-!>  This routine is intended to correctly configure the packages for this MPAS
-!>   core. It can use any Fortran logic to properly configure packages, and it
-!>   can also make use of any namelist options. All variables in the model are
-!>   *not* allocated until after this routine is called.
-!
-!-----------------------------------------------------------------------
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_packages
+   !
+   !> \brief   Pacakge setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details 
+   !>  This routine is intended to correctly configure the packages for this MPAS
+   !>   core. It can use any Fortran logic to properly configure packages, and it
+   !>   can also make use of any namelist options. All variables in the model are
+   !>   *not* allocated until after this routine is called.
+   !
+   !-----------------------------------------------------------------------
    subroutine mpas_core_setup_packages(configs, packages, ierr)!{{{
 
       use mpas_packages
@@ -1168,5 +952,74 @@ module mpas_core
       ierr = 0
 
    end subroutine mpas_core_setup_packages!}}}
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_clock
+   !
+   !> \brief   Pacakge setup routine
+   !> \author  Michael Duda
+   !> \date    6 August 2014
+   !> \details 
+   !>  The purpose of this routine is to allow the core to set up a simulation
+   !>  clock that will be used by the I/O subsystem for timing reads and writes
+   !>  of I/O streams.
+   !>  This routine is called from the superstructure after the framework 
+   !>  has been initialized but before any fields have been allocated and 
+   !>  initial fields have been read from input files. However, all namelist
+   !>  options are available.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
+
+      call atm_simulation_clock_init(core_clock, configs, ierr)
+
+   end subroutine mpas_core_setup_clock
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_get_mesh_stream
+   !
+   !> \brief   Returns the name of the stream containing mesh information
+   !> \author  Michael Duda
+   !> \date    8 August 2014
+   !> \details 
+   !>  This routine returns the name of the I/O stream containing dimensions,
+   !>  attributes, and mesh fields needed by the framework bootstrapping 
+   !>  routine. At the time this routine is called, only namelist options 
+   !>  are available.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: configs
+      character(len=*), intent(out) :: stream
+      integer, intent(out) :: ierr
+
+      logical, pointer :: config_do_restart
+
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
+
+      if (.not. associated(config_do_restart)) then
+         ierr = 1
+      else if (config_do_restart) then
+         write(stream,'(a)') 'restart'
+      else
+         write(stream,'(a)') 'input'
+      end if
+
+   end subroutine mpas_core_get_mesh_stream
 
 end module mpas_core

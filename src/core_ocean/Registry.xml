@@ -62,36 +62,12 @@
 					description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
 					possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_calendar_type" type="character" default_value="360day" units="unitless"
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 					description="Selection of the type of calendar that should be used in the simulation."
-					possible_values="'gregorian', 'gregorian_noleap', or '360day'"
+					possible_values="'gregorian', 'gregorian_noleap'"
 		/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
-		<nml_option name="config_input_name" type="character" default_value="grid.nc" units="unitless"
-					description="The path to the input file for the simulation."
-					possible_values="path/to/grid.nc"
-		/>
-		<nml_option name="config_output_name" type="character" default_value="output.nc" units="unitless"
-					description="The template path and name to the output file from the simulation. A time stamp is prepended to the extension of the file (.nc)."
-					possible_values="path/to/output.nc"
-		/>
-		<nml_option name="config_restart_name" type="character" default_value="restart.nc" units="unitless"
-					description="The template path and name to the restart file for the simulation. A time stamp is prepended to the extension of the file (.nc) both for input and output."
-					possible_values="path/to/restart.nc"
-		/>
-		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
-					description="The name of the file timestamps for latest restart files are written to. This file is also read when config_start_time is set to 'file' and config_do_restart is set to .true."
-					possible_values="path/to/restart_timestamp"
-		/>
-		<nml_option name="config_restart_interval" type="character" default_value="0001_00:00:00" units="unitless"
-					description="Timestamp determining how often a restart file should be written."
-					possible_values="'DDDD_HH:MM:SS'"
-		/>
-		<nml_option name="config_output_interval" type="character" default_value="0001_00:00:00" units="unitless"
-					description="Timestamp determining how often an output file should be written."
-					possible_values="'DDDD_HH:MM:SS'"
-		/>
 		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
 					description="Timestamp determining how often a global statistics files should be written."
 					possible_values="'DDDD_HH:MM:SS'"
@@ -103,10 +79,6 @@
 		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
 					description="Logical flag determining if an output file should be written prior to the first time step."
 					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_frames_per_outfile" type="integer" default_value="1000" units="unitless"
-					description="Integer specifying how many time frames should be included in an output file. Once the maximum is reached, a new output file is created."
-					possible_values="Any positive integer value greater than 0"
 		/>
 		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
 					description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file."
@@ -732,10 +704,14 @@
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 	</packages>
 	<streams>
-		<stream name="input" type="input">
-			<var name="temperature"/>
-			<var name="salinity"/>
-			<var name="tracer1"/>
+		<stream name="input" 
+				type="input"
+				filename_template="grid.nc"
+				records_per_file="1"
+				input_interval="initial_only"
+				immutable="true">
+
+			<var_array name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -787,10 +763,14 @@
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
 		</stream>
-		<stream name="restart" type="restart">
-			<var name="temperature"/>
-			<var name="salinity"/>
-			<var name="tracer1"/>
+		<stream name="modelRestart" 
+				type="input"
+				filename_template="restart.nc"
+				records_per_file="1"
+				input_interval="initial_only"
+				immutable="true">
+
+			<var_array name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -849,10 +829,32 @@
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
-		<stream name="output" type="output">
-			<var name="temperature"/>
-			<var name="salinity"/>
-			<var name="tracer1"/>
+
+		<stream name="modelCheckpoint" 
+				type="output"
+				filename_template="checkpoints/restart.$Y-$M-$D_$h.$m.$s.nc"
+				records_per_file="1"
+				output_interval="0001_00:00:00"
+				immutable="true">
+
+			<stream name="modelRestart"/>
+		</stream>
+
+		<stream name="output" 
+				type="output"
+				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
+				records_per_file="365"
+				output_interval="0001_00:00:00"
+				runtime_format="single_file">
+
+			<var_array name="tracers"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="surfaceTracerFlux"/>
+			<var_array name="avgTracersSurfaceValue"/>
+			<var_array name="avgSurfaceVelocity"/>
+			<var_array name="avgSSHGradient"/>
 			<var name="layerThickness"/>
 			<var name="ssh"/>
 			<var name="latCell"/>
@@ -910,13 +912,6 @@
 			<var name="cellMask"/>
 			<var name="refZMid"/>
 			<var name="refLayerThickness"/>
-			<var name="temperatureSurfaceValue"/>
-			<var name="salinitySurfaceValue"/>
-			<var name="tracer1SurfaceValue"/>
-			<var name="zonalSurfaceVelocity"/>
-			<var name="meridionalSurfaceVelocity"/>
-			<var name="zonalSSHGradient"/>
-			<var name="meridionalSSHGradient"/>
 			<var name="xtime"/>
 			<var name="zMid"/>
 			<var name="zTop"/>
@@ -960,16 +955,6 @@
 			<var name="avgNormalVelocity"/>
 			<var name="varNormalVelocity"/>
 			<var name="avgVertVelocityTop"/>
-			<var name="surfaceTemperatureFlux"/>
-			<var name="surfaceSalinityFlux"/>
-			<var name="surfaceTracer1Flux"/>
-			<var name="avgTemperatureSurfaceValue"/>
-			<var name="avgSalinitySurfaceValue"/>
-			<var name="avgZonalSurfaceVelocity"/>
-			<var name="avgMeridionalSurfaceVelocity"/>
-			<var name="avgZonalSSHGradient"/>
-			<var name="avgMeridionalSSHGradient"/>
-			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceMassFlux"/>
 			<var name="seaSurfacePressure"/>
 			<var name="seaIceEnergy"/>
@@ -1741,12 +1726,12 @@
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time">
-		<var name="avgZonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
-			 description="Time averaged zonal surface velocity"
-		/>
-		<var name="avgMeridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
-			 description="Time averaged meridional surface velocity"
-		/>
+			<var name="avgZonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
+				 description="Time averaged zonal surface velocity"
+			 />
+			 <var name="avgMeridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
+				  description="Time averaged meridional surface velocity"
+			 />
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time">
 			<var name="avgZonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
@@ -1808,79 +1793,79 @@
 
 		<!-- FIELDS FOR TENSOR OPERATIONS -->
 		<var name="normalVelocityTest" 
-                     persistence="scratch" 
-                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-		     description="horizonal velocity, normal component to an edge, for testing"
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="horizonal velocity, normal component to an edge, for testing"
 		/>
 		<var name="tangentialVelocityTest"
-                     persistence="scratch" 
-                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-		     description="horizonal velocity, tangential component to an edge, for testing"
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="horizonal velocity, tangential component to an edge, for testing"
 		/>
 		<var name="strainRateR3Cell" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
-		     description="strain rate tensor at cell center, R3, in symmetric 6-index form"
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate tensor at cell center, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateR3CellSolution" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
-		     description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateR3Edge" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
-		     description="strain rate tensor at edge, R3, in symmetric 6-index form"
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
+			 description="strain rate tensor at edge, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateLonLatRCell" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="strainRateLonLatRCellSolution" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
+			 description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="strainRateLonLatREdge" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
-		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
+			 description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="divTensorR3Cell" 
-                     persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
-		     description="divergence of the tensor at cell center, as an R3 vector"
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor at cell center, as an R3 vector"
 		/>
 		<var name="divTensorR3CellSolution" 
-                     persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
-		     description="divergence of the tensor solution at cell center, as an R3 vector"
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor solution at cell center, as an R3 vector"
 		/>
 		<var name="divTensorLonLatRCell" 
-                     persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
-		     description="divergence of the tensor at cell center, as a lon-lat-r vector"
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor at cell center, as a lon-lat-r vector"
 		/>
 		<var name="divTensorLonLatRCellSolution" 
-                     persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
-		     description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
+			 persistence="scratch" 
+			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
+			 description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
 		/>
 		<var name="outerProductEdge" 
-                     persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
-		     description="Outer product, $u_e \otimes n_e$, at each edge."
+			 persistence="scratch" 
+			 type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
+			 description="Outer product, $u_e \otimes n_e$, at each edge."
 		/>
 		<var name="normalVectorEdge" 
-                     persistence="scratch" 
-                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 		     description="Vector component normal to an edge."
 		/>
 		<var name="tangentialVectorEdge" 
-                     persistence="scratch" 
-                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-		     description="Vector component tangent to an edge."
+			 persistence="scratch" 
+			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+			 description="Vector component tangent to an edge."
 		/>
 		<var name="windStressFullScratch" type="real" dimensions="nVertLevels nEdges Time" units="N m^{-2}"
 			 persistence="scratch"

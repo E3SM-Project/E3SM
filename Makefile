@@ -358,6 +358,12 @@ else
 	NAMELIST_MESSAGE="A default namelist file (namelist.$(NAMELIST_SUFFIX).defaults) has been generated and copied to namelist.$(NAMELIST_SUFFIX)."
 endif
 
+ifneq ($(wildcard streams.$(NAMELIST_SUFFIX)), ) # Check for generated streams file.
+	STREAM_MESSAGE="A default streams file (streams.$(NAMELIST_SUFFIX).defaults) has been generated, but streams.$(NAMELIST_SUFFIX) has not been modified."
+else
+	STREAM_MESSAGE="A default streams file (streams.$(NAMELIST_SUFFIX).defaults) has been generated and copied to streams.$(NAMELIST_SUFFIX)."
+endif
+
 
 ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
 	override AUTOCLEAN=false
@@ -432,6 +438,9 @@ endif
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
 	if [ -e src/inc/namelist.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/namelist.$(NAMELIST_SUFFIX).defaults .; fi
 	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
+	if [ -e src/inc/streams.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/streams.$(NAMELIST_SUFFIX).defaults .; fi
+	if [ ! -e streams.$(NAMELIST_SUFFIX) ]; then cp streams.$(NAMELIST_SUFFIX).defaults streams.$(NAMELIST_SUFFIX); fi
+	for f in `find src/inc -name "stream_list.*"`; do mv $$f .; done
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -442,12 +451,14 @@ ifeq "$(AUTOCLEAN)" "true"
 endif
 	@echo $(GEN_F90_MESSAGE)
 	@echo $(NAMELIST_MESSAGE)
+	@echo $(STREAM_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) .mpas_core_*
 	$(RM) $(EXE_NAME)
 	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
+	$(RM) streams.$(NAMELIST_SUFFIX).defaults
 core_error:
 	@echo ""
 	@echo "*******************************************************************************"

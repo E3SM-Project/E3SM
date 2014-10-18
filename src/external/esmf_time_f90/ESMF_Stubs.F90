@@ -25,6 +25,14 @@ MODULE ESMF_Stubs
       INTEGER :: dummy
    END TYPE
 
+   TYPE ESMF_END_FLAG
+      INTEGER :: dummy
+   END TYPE
+   TYPE(ESMF_END_FLAG), PARAMETER ::  &
+      ESMF_END_ABORT   = ESMF_END_FLAG(1), &
+      ESMF_END_NORMAL  = ESMF_END_FLAG(2), &
+      ESMF_END_KEEPMPI = ESMF_END_FLAG(3)
+
    TYPE ESMF_MsgType
       INTEGER :: mtype
    END TYPE
@@ -41,21 +49,23 @@ MODULE ESMF_Stubs
 
    PUBLIC ESMF_Grid, ESMF_GridComp, ESMF_State, ESMF_VM
    PUBLIC ESMF_Initialize, ESMF_Finalize, ESMF_IsInitialized
-   PUBLIC ESMF_LogWrite, ESMF_LOG, ESMF_MsgType
+   PUBLIC ESMF_LogWrite, ESMF_LOG, ESMF_MsgType, ESMF_END_FLAG
    PUBLIC ESMF_LOG_INFO, ESMF_LOG_WARNING, ESMF_LOG_ERROR
+   PUBLIC ESMF_END_ABORT, ESMF_END_NORMAL, ESMF_END_KEEPMPI
 
 CONTAINS
 
 
 ! NOOP
    SUBROUTINE ESMF_Initialize( vm, defaultCalendar, rc )
-      USE esmf_basemod
-      USE esmf_calendarmod
+      USE ESMF_BaseMod
+      USE ESMF_CalendarMod
+!     USE ESMF_TimeMod,     only: defaultCal
       TYPE(ESMF_VM),           INTENT(IN   ), OPTIONAL :: vm
-      TYPE(ESMF_CalendarType), INTENT(IN   ), OPTIONAL :: defaultCalendar
+      TYPE(ESMF_CalKind_Flag), INTENT(IN   ), OPTIONAL :: defaultCalendar
       INTEGER,                 INTENT(  OUT), OPTIONAL :: rc
 
-      TYPE(ESMF_CalendarType) :: defaultCalType
+      TYPE(ESMF_CalKind_Flag) :: defaultCalType
       INTEGER :: status
 
       IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
@@ -63,11 +73,29 @@ CONTAINS
       IF ( PRESENT(defaultCalendar) )THEN
          defaultCalType = defaultCalendar
       ELSE
-         defaultCalType = ESMF_CAL_NOLEAP
+         defaultCalType = ESMF_CALKIND_NOLEAP
       END IF
       allocate( defaultCal )
-      defaultCal = ESMF_CalendarCreate( calendarType=defaultCalType, &
+!      write(6,*) 'tcx1 ESMF_Stubs defcal ',defaultcaltype%caltype
+!      call flush(6)
+      defaultCal = ESMF_CalendarCreate( calkindflag=defaultCalType, &
                         rc=status)
+!      write(6,*) 'tcx2 ESMF_Stubs defcal ',defaultcal%type%caltype
+!      call flush(6)
+      allocate( gregorianCal )
+!      write(6,*) 'tcx1 ESMF_Stubs grcal ',esmf_calkind_gregorian%caltype
+!      call flush(6)
+      gregorianCal = ESMF_CalendarCreate( calkindflag=ESMF_CALKIND_GREGORIAN, &
+                        rc=status)
+!      write(6,*) 'tcx2 ESMF_Stubs grcal ',gregoriancal%type%caltype
+!      call flush(6)
+      allocate( noleapCal )
+!      write(6,*) 'tcx1 ESMF_Stubs nlcal ',esmf_calkind_noleap%caltype
+!      call flush(6)
+      noleapCal = ESMF_CalendarCreate( calkindflag=ESMF_CALKIND_NOLEAP, &
+                        rc=status)
+!      write(6,*) 'tcx2 ESMF_Stubs nlcal ',noleapcal%type%caltype
+!      call flush(6)
 
       ! initialize tables in time manager
       CALL initdaym
@@ -89,37 +117,27 @@ CONTAINS
 
 
 ! NOOP
-   SUBROUTINE ESMF_Finalize( rc )
-      USE esmf_basemod
-      USE esmf_calendarmod
-
+   SUBROUTINE ESMF_Finalize( endflag, rc )
+      USE ESMF_BaseMod
+      type(ESMF_END_FLAG), intent(in), optional  :: endflag
       INTEGER, INTENT(  OUT), OPTIONAL :: rc
-#if (defined SPMD) || (defined COUP_CSM)
+#ifndef HIDE_MPI
 #include <mpif.h>
 #endif
-      LOGICAL :: flag
       INTEGER :: ier
 
-      CALL ESMF_CalendarDestroy()
-
       IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
-#if (defined SPMD) || (defined COUP_CSM)
-      CALL MPI_Finalized( flag, ier )
+#ifndef HIDE_MPI
+      CALL MPI_Finalize( ier ) 
       IF ( ier .ne. mpi_success )THEN
         IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
-      END IF
-      IF ( .NOT. flag ) THEN
-        CALL MPI_Finalize( ier ) 
-        IF ( ier .ne. mpi_success )THEN
-          IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
-        END IF
       END IF
 #endif
    END SUBROUTINE ESMF_Finalize
 
 ! NOOP
    SUBROUTINE ESMF_LogWrite( msg, MsgType, line, file, method, log, rc )
-      USE esmf_basemod
+      USE ESMF_BaseMod
       CHARACTER(LEN=*), INTENT(IN) :: msg
       TYPE(ESMF_MsgType), INTENT(IN) :: msgtype
       INTEGER, INTENT(IN), OPTIONAL :: line

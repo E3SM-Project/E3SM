@@ -24,6 +24,7 @@ module mpas_grid_types
    use mpas_attlist
    use mpas_packages
    use mpas_io_units, only : stderrUnit
+   use mpas_timekeeping, only : MPAS_Clock_type
 
    integer, parameter :: nTimeLevs = 2
 
@@ -527,6 +528,7 @@ module mpas_grid_types
       integer :: fieldType
       integer :: nDims
       integer :: nTimeLevels
+      logical :: isActive
    end type mpas_pool_field_info_type
    !!! END TYPES FOR MPAS POOL
 
@@ -561,7 +563,7 @@ module mpas_grid_types
       type (block_type), pointer :: next => null()
 
       type (mpas_pool_type), pointer :: structs, dimensions, configs, packages
-      type (mpas_pool_type), pointer :: allFields
+      type (mpas_pool_type), pointer :: allFields, allStructs
    end type block_type
 
 
@@ -569,6 +571,8 @@ module mpas_grid_types
    type domain_type
       type (block_type), pointer :: blocklist
       type (mpas_pool_type), pointer :: configs, packages
+
+      type (MPAS_Clock_type), pointer :: clock
    
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo
@@ -777,6 +781,7 @@ module mpas_grid_types
 
       allocate(dom % configs)
       allocate(dom % packages)
+      allocate(dom % clock)
 
       call mpas_pool_create_pool(dom % configs)
       call mpas_pool_create_pool(dom % packages)
@@ -821,6 +826,7 @@ module mpas_grid_types
       call mpas_pool_create_pool(b % structs)
       call mpas_pool_create_pool(b % dimensions)
       call mpas_pool_create_pool(b % allFields)
+      call mpas_pool_create_pool(b % allStructs)
 
       b % configs => dom % configs
       b % packages => dom % packages
@@ -855,6 +861,7 @@ module mpas_grid_types
 
       call mpas_pool_destroy_pool(dom % configs)
       call mpas_pool_destroy_pool(dom % packages)
+      deallocate(dom % clock)
 
    end subroutine mpas_deallocate_domain!}}}
 

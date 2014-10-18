@@ -77,16 +77,7 @@
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
-                <nml_option name="config_input_name"                 type="character"     default_value="x1.40962.init.nc"/>
-                <nml_option name="config_output_name"                type="character"     default_value="x1.40962.output.nc"/>
-                <nml_option name="config_output_interval"            type="character"     default_value="06:00:00"/>
-                <nml_option name="config_restart_name"               type="character"     default_value="x1.40962.restart.nc"/>
-                <nml_option name="config_restart_interval"           type="character"     default_value="1_00:00:00"/>
                 <nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"  in_defaults="false"/>
-                <nml_option name="config_sfc_update_name"            type="character"     default_value="x1.40962.sfc_update.nc"/>
-                <nml_option name="config_sfc_update_interval"        type="character"     default_value="none"/>
-                <nml_option name="config_hifreq_output_interval"     type="character"     default_value="none"/>
-                <nml_option name="config_frames_per_outfile"         type="integer"       default_value="1"/>
                 <nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
                 <nml_option name="config_pio_format"                 type="character"     default_value="pnetcdf"            in_defaults="false"/>
@@ -110,7 +101,13 @@
 <!-- **************************************************************************************** -->
 
 	<streams>
-		<stream name="input" type="input">
+		<stream name="input" 
+                        type="input" 
+                        filename_template="x1.40962.init.nc" 
+                        records_per_file="1" 
+                        input_interval="initial_only"
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -175,12 +172,7 @@
 			<var name="defc_a"/>
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
-			<var name="qv"/>
-			<var name="qc"/>
-			<var name="qr"/>
-			<var name="qi"/>
-			<var name="qs"/>
-			<var name="qg"/>
+			<var_array name="scalars"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -228,7 +220,14 @@
 			<var name="ol4"/>
 		</stream>
 
-		<stream name="restart" type="restart">
+		<stream name="restart" 
+                        type="input;output" 
+                        filename_template="restart.$Y-$M-$D_$h.$m.$s.nc" 
+                        records_per_file="1" 
+                        input_interval="initial_only" 
+                        output_interval="1_00:00:00" 
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -301,12 +300,7 @@
 			<var name="coeffs_reconstruct"/>
 			<var name="east"/>
 			<var name="north"/>
-			<var name="qv"/>
-			<var name="qc"/>
-			<var name="qr"/>
-			<var name="qi"/>
-			<var name="qs"/>
-			<var name="qg"/>
+			<var_array name="scalars"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -515,7 +509,13 @@
 			<var name="ol4"/>
 		</stream>
 
-		<stream name="output" type="output">
+		<stream name="output" 
+                        type="output" 
+                        filename_template="history.$Y-$M-$D_$h.$m.$s.nc" 
+                        records_per_file="1" 
+                        output_interval="6:00:00"
+                        runtime_format="separate_file">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -582,12 +582,7 @@
 			<var name="defc_a"/>
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
-			<var name="qv"/>
-			<var name="qc"/>
-			<var name="qr"/>
-			<var name="qi"/>
-			<var name="qs"/>
-			<var name="qg"/>
+			<var_array name="scalars"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -644,12 +639,7 @@
 			<var name="vorticity_500hPa"/>
 			<var name="vorticity_700hPa"/>
 			<var name="vorticity_850hPa"/>
-			<var name="tend_qv"/>
-			<var name="tend_qc"/>
-			<var name="tend_qr"/>
-			<var name="tend_qi"/>
-			<var name="tend_qs"/>
-			<var name="tend_qg"/>
+			<var_array name="scalars_tend"/>
 			<var name="tend_u"/>
 			<var name="tend_w"/>
 			<var name="tend_rho"/>
@@ -865,7 +855,46 @@
 			<var name="ol4"/>
 		</stream>
 
-		<stream name="surface" type="input;output">
+		<stream name="diagnostics" 
+                        type="output" 
+                        filename_template="diag.$Y-$M-$D_$h.$m.$s.nc" 
+                        records_per_file="1" 
+                        output_interval="3:00:00"
+                        runtime_format="separate_file">
+
+			<var name="xtime"/>
+			<var name="olrtoa"/>
+			<var name="rainc"/>
+			<var name="rainnc"/>
+			<var name="refl10cm_max"/>
+			<var name="precipw"/>
+			<var name="temperature_200hPa"/>
+			<var name="temperature_500hPa"/>
+			<var name="temperature_850hPa"/>
+			<var name="height_200hPa"/>
+			<var name="height_500hPa"/>
+			<var name="height_850hPa"/>
+			<var name="uzonal_200hPa"/>
+			<var name="uzonal_500hPa"/>
+			<var name="uzonal_850hPa"/>
+			<var name="umeridional_200hPa"/>
+			<var name="umeridional_500hPa"/>
+			<var name="umeridional_850hPa"/>
+			<var name="w_200hPa"/>
+			<var name="w_500hPa"/>
+			<var name="w_850hPa"/>
+			<var name="vorticity_200hPa"/>
+			<var name="vorticity_500hPa"/>
+			<var name="vorticity_850hPa"/>
+		</stream>
+
+		<stream name="surface" 
+                        type="input" 
+                        filename_template="x1.40962.sfc_update.nc" 
+                        records_per_file="0" 
+                        input_interval="none"
+                        runtime_format="separate_file">
+
 			<var name="sst"/>
 			<var name="xice"/>
 		</stream>

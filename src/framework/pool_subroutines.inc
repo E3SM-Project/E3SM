@@ -13,7 +13,7 @@
 !>  This routine sets the internal error level for pools.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_pool_set_error_level(newErrorLevel)!{{{
+   subroutine mpas_pool_set_error_level(newErrorLevel) !{{{
 
       implicit none
 
@@ -21,7 +21,26 @@
 
       currentErrorLevel = newErrorLevel
 
-   end subroutine!}}}
+   end subroutine mpas_pool_set_error_level !}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_pool_get_error_level
+!
+!> \brief MPAS Pool Error level get function
+!> \author Michael Duda, Doug Jacobsen
+!> \date   03/27/2014
+!> \details
+!>  This routine returns the internal error level for pools.
+!
+!-----------------------------------------------------------------------
+   integer function mpas_pool_get_error_level() !{{{
+
+      implicit none
+
+      mpas_pool_get_error_level = currentErrorLevel
+
+   end function mpas_pool_get_error_level !}}}
 
 
 !-----------------------------------------------------------------------
@@ -3137,6 +3156,93 @@
                   info % nDims = ptr % data % contentsDims
                   info % nTimeLevels = ptr % data % contentsTimeLevs
 
+				  if ( info % fieldType == MPAS_POOL_REAL ) then
+					 if ( info % nDims == 0 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % r0a(1) % isActive
+						else
+					       info % isActive = ptr % data % r0 % isActive
+						end if
+					 else if ( info % nDims == 1 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % r1a(1) % isActive
+						else
+					       info % isActive = ptr % data % r1 % isActive
+						end if
+					 else if ( info % nDims == 2 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % r2a(1) % isActive
+						else
+					       info % isActive = ptr % data % r2 % isActive
+						end if
+					 else if ( info % nDims == 3 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % r3a(1) % isActive
+						else
+					       info % isActive = ptr % data % r3 % isActive
+						end if
+					 else if ( info % nDims == 4 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % r4a(1) % isActive
+						else
+					       info % isActive = ptr % data % r4 % isActive
+						end if
+					 else if ( info % nDims == 5 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % r5a(1) % isActive
+						else
+					       info % isActive = ptr % data % r5 % isActive
+						end if
+					 end if
+				  else if (info % fieldType == MPAS_POOL_INTEGER ) then
+					 if ( info % nDims == 0 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % i0a(1) % isActive
+						else
+					       info % isActive = ptr % data % i0 % isActive
+						end if
+					 else if ( info % nDims == 1 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % i1a(1) % isActive
+						else
+					       info % isActive = ptr % data % i1 % isActive
+						end if
+					 else if ( info % nDims == 2 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % i2a(1) % isActive
+						else
+					       info % isActive = ptr % data % i2 % isActive
+						end if
+					 else if ( info % nDims == 3 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % i3a(1) % isActive
+						else
+					       info % isActive = ptr % data % i3 % isActive
+						end if
+					 end if
+				  else if (info % fieldType == MPAS_POOL_CHARACTER ) then
+					 if ( info % nDims == 0 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % c0a(1) % isActive
+						else
+					       info % isActive = ptr % data % c0 % isActive
+						end if
+					 else if ( info % nDims == 1 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % c1a(1) % isActive
+						else
+					       info % isActive = ptr % data % c1 % isActive
+						end if
+					 end if
+				  else if (info % fieldType == MPAS_POOL_LOGICAL ) then
+					 if ( info % nDims == 0 ) then
+					    if ( info % nTimeLevels > 1 ) then 
+					       info % isActive = ptr % data % l0a(1) % isActive
+						else
+					       info % isActive = ptr % data % l0 % isActive
+						end if
+					 end if
+				  end if
                   exit
                end if
             end if
@@ -4445,16 +4551,16 @@
       character (len=*), intent(in) :: key
       real (kind=RKIND), pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
-	  if ( present(record) ) then
+      if ( present(record) ) then
          call mpas_pool_get_subpool(inPool, record, recordPool)
          mem => pool_get_member(recordPool, key, MPAS_POOL_CONFIG)
       else
          mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
-	  end if
+      end if
 
       if (associated(mem)) then
          if (mem % contentsType /= MPAS_POOL_REAL) then
@@ -4487,7 +4593,7 @@
       character (len=*), intent(in) :: key
       integer, pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
@@ -4529,7 +4635,7 @@
       character (len=*), intent(in) :: key
       character (len=StrKIND), pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
@@ -4572,7 +4678,7 @@
       character (len=*), intent(in) :: key
       logical, pointer :: value
       character (len=*), intent(in), optional :: record
-	  type (mpas_pool_type), pointer :: recordPool
+      type (mpas_pool_type), pointer :: recordPool
 
       type (mpas_pool_data_type), pointer :: mem
 
@@ -4945,7 +5051,12 @@
       type (mpas_pool_data_type), pointer :: mem
 
       !todo: if configs are pointers when being added, don't deallocate when removing.
-      mem = pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+      mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+
+      if (.not. associated(mem)) then
+         call pool_mesg('Error: Config '//trim(key)//' not found in pool.')
+         return
+      end if
 
       if (mem % contentsType == MPAS_POOL_REAL) then
          deallocate(mem % simple_real)
@@ -4984,7 +5095,12 @@
       type (mpas_pool_data_type), pointer :: mem
 
       !todo: if dimensions are pointers when being added, don't deallocate when removing.
-      mem = pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
+      mem => pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
+
+      if (.not. associated(mem)) then
+         call pool_mesg('Error: Dimension '//trim(key)//' not found in pool.')
+         return
+      end if
 
       if (mem % contentsDims == 0) then
          deallocate(mem % simple_int)

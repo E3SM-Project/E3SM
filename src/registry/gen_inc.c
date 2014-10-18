@@ -36,6 +36,7 @@ void write_model_variables(ezxml_t registry){/*{{{*/
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
 	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", suffix);
+	fortprintf(fd, "       character (len=StrKIND) :: streams_filename = 'streams.%s' !< Constant: Name of stream configuration file\n", suffix);
 	fortprintf(fd, "       character (len=StrKIND) :: executableName = '%s' !< Constant: Name of executable generated at build time.\n", exe_name);
 	fortprintf(fd, "       character (len=StrKIND) :: git_version = '%s' !< Constant: Version string from git-describe.\n", git_ver);
 
@@ -151,7 +152,7 @@ int add_package_to_list(const char * package, const char * package_list){/*{{{*/
 
 	while( (token = strsep(&string, ";")) != NULL){
 		if(strcmp(package, token) == 0){
-			
+
 			return 0;
 		}
 	}
@@ -168,10 +169,12 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 
 	char *token, *string, *tofree;
 	int empty_packages;
+	int empty_struct;
 
 	package_list = ezxml_attr(currentPosition, "packages");
 
 	empty_packages = 0;
+	empty_struct = 1;
 
 	// Check for vars that don't have packages.
 	for(child_xml1 = ezxml_child(currentPosition, "var"); child_xml1 && !empty_packages; child_xml1 = child_xml1->next){
@@ -180,6 +183,7 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 		if(!package_list){
 			empty_packages = 1;
 		}
+		empty_struct = 0;
 	}
 
 	// Check for vararrays and constituents that don't have packages.
@@ -193,12 +197,13 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 				if(!package_list){
 					empty_packages = 1;
 				}
+				empty_struct = 0;
 			}
 		}
 	}
 
 	// If any var/var_array doesn't have packages on it, the struct doesn't have packages on it.
-	if(empty_packages){
+	if(empty_packages || empty_struct){
 		return 1;
 	} else {
 		// Build unique list of packages from nested vars and var arrays.
@@ -376,122 +381,14 @@ int get_field_information(const char *vartype, const char *varval, char *default
 		} else {
 			snprintf(default_value, 1024, "%s", varval);
 		}
-	} 
-	
-	return 0;
-}/*}}}*/
-
-
-int write_set_field_pointer(FILE *fd, const char *spacing, const char *iterator_name, const char *pool_name){/*{{{*/
-	fortprintf(fd, "%sif (%s %% fieldType == MPAS_POOL_REAL) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s   if (%s %% nDims == 0) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), r0Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (r0Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r0Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r0Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, r0Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 1) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), r1Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (r1Ptr %% isPersistent .and. ( (r1Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r1Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r1Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, r1Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 2) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), r2Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (r2Ptr %% isPersistent .and. ( (r2Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r2Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r2Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, r2Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 3) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), r3Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (r3Ptr %% isPersistent .and. ( (r3Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r3Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r3Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, r3Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 4) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), r4Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (r4Ptr %% isPersistent .and. ( (r4Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r4Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r4Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, r4Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 5) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), r5Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (r5Ptr %% isPersistent .and. ( (r5Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r5Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (r5Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, r5Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   end if\n", spacing);
-	fortprintf(fd, "%selse if (%s %% fieldType == MPAS_POOL_INTEGER) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s   if (%s %% nDims == 0) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), i0Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if ((i0Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i0Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i0Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, i0Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 1) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), i1Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (i1Ptr %% isPersistent .and. ( (i1Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i1Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i1Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, i1Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 2) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), i2Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (i2Ptr %% isPersistent .and. ( (i2Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i2Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i2Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, i2Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 3) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), i3Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (i3Ptr %% isPersistent .and. ( (i3Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i3Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (i3Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, i3Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   end if\n", spacing);
-	fortprintf(fd, "%selse if (%s %% fieldType == MPAS_POOL_CHARACTER) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s   if (%s %% nDims == 0) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), c0Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if ((c0Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (c0Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (c0Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, c0Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   else if (%s %% nDims == 1) then\n", spacing, iterator_name);
-	fortprintf(fd, "%s      call mpas_pool_get_field(%s, trim(%s %% memberName), c1Ptr)\n", spacing, pool_name, iterator_name);
-	fortprintf(fd, "%s      if (c1Ptr %% isPersistent .and. ( (c1Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", spacing);
-	fortprintf(fd, "%s           .or. (c1Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", spacing);
-	fortprintf(fd, "%s           .or. (c1Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", spacing);
-	fortprintf(fd, "%s           ) ) then\n", spacing);
-	fortprintf(fd, "%s         call mpas_streamAddField(input_obj %% io_stream, c1Ptr, nferr)\n", spacing);
-	fortprintf(fd, "%s      end if\n", spacing);
-	fortprintf(fd, "%s   end if\n", spacing);
-	fortprintf(fd, "%send if\n", spacing);
+	}
 
 	return 0;
 }/*}}}*/
 
 
-void write_default_namelist(ezxml_t registry){/*{{{*/
+void write_default_namelist(ezxml_t registry) /*{{{*/
+{
 	ezxml_t rec_xml, opt_xml;
 
 	const char *recname, *optname, *opttype, *optdefault;
@@ -500,6 +397,7 @@ void write_default_namelist(ezxml_t registry){/*{{{*/
 	char filename[1024];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
 	int print_record, print_option;
+
 
 	sprintf(filename, "namelist.%s.defaults", suffix);
 	fd = fopen(filename, "w+");
@@ -534,23 +432,180 @@ void write_default_namelist(ezxml_t registry){/*{{{*/
 
 				if(print_option){
 					if (strcmp(opttype, "real") == 0){
-						fprintf(fd, "\t%s = %s\n", optname, optdefault); 
+						fprintf(fd, "    %s = %s\n", optname, optdefault);
 					} else if (strcmp(opttype, "integer") == 0){
-						fprintf(fd, "\t%s = %s\n", optname, optdefault); 
+						fprintf(fd, "    %s = %s\n", optname, optdefault);
 					} else if (strcmp(opttype, "logical") == 0){
 						if (strcmp(optdefault, "true") == 0 || strcmp(optdefault, ".true.") == 0){
-							fprintf(fd, "\t%s = .true.\n", optname); 
+							fprintf(fd, "    %s = .true.\n", optname);
 						} else {
-							fprintf(fd, "\t%s = .false.\n", optname); 
+							fprintf(fd, "    %s = .false.\n", optname);
 						}
 					} else if (strcmp(opttype, "character") == 0){
-						fprintf(fd, "\t%s = '%s'\n", optname, optdefault); 
+						fprintf(fd, "    %s = '%s'\n", optname, optdefault);
 					}
 				}
 			}
-			fprintf(fd, "/\n");
+			fprintf(fd, "/\n\n");
 		}
 	}
+
+	fclose(fd);
+}/*}}}*/
+
+
+void write_default_streams(ezxml_t registry){/*{{{*/
+	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml, vararray_xml, stream_xml;
+
+	const char *optstream, *optname, *optvarname, *opttype;
+	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
+	FILE *fd, *fd2;
+	char filename[64], filename2[64];
+	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
+
+
+	sprintf(filename, "streams.%s.defaults", suffix);
+	fd = fopen(filename, "w");
+
+	fprintf(stderr, "Generating run-time stream definitions\n");
+
+	fprintf(fd, "<streams>\n\n");
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (opt_xml = ezxml_child(streams_xml, "stream"); opt_xml; opt_xml = opt_xml->next) {
+			optname = ezxml_attr(opt_xml, "name");
+			opttype = ezxml_attr(opt_xml, "type");
+			optfilename = ezxml_attr(opt_xml, "filename_template");
+			optrecords = ezxml_attr(opt_xml, "records_per_file");
+			optinterval_in = ezxml_attr(opt_xml, "input_interval");
+			optinterval_out = ezxml_attr(opt_xml, "output_interval");
+			optimmutable = ezxml_attr(opt_xml, "immutable");
+			optruntime = ezxml_attr(opt_xml, "runtime_format");
+			optpackages = ezxml_attr(opt_xml, "packages");
+
+			/* Generate immutable default stream */
+			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
+				fprintf(fd, "<immutable_stream name=\"%s\"\n", optname);
+				fprintf(fd, "                  type=\"%s\"\n", opttype);
+				fprintf(fd, "                  filename_template=\"%s\"\n", optfilename);
+				fprintf(fd, "                  records_per_file=\"%s\"\n", optrecords);
+				if (optpackages) {
+					fprintf(fd, "                  packages=\"%s\"\n",optpackages);
+				}
+				if (strstr(opttype, "input") != NULL) {
+					fprintf(fd, "                  input_interval=\"%s\"", optinterval_in);
+				}
+				if (strstr(opttype, "output") != NULL) {
+					if (strstr(opttype, "input") != NULL) fprintf(fd, "\n");
+					fprintf(fd, "                  output_interval=\"%s\"", optinterval_out);
+				}
+				fprintf(fd, "/>\n\n");
+			}
+			else {
+				fprintf(fd, "<stream name=\"%s\"\n", optname);
+				fprintf(fd, "        type=\"%s\"\n", opttype);
+				fprintf(fd, "        filename_template=\"%s\"\n", optfilename);
+				fprintf(fd, "        records_per_file=\"%s\"\n", optrecords);
+				if (optpackages) {
+					fprintf(fd, "        packages=\"%s\"\n",optpackages);
+				}
+				if (strstr(opttype, "input") != NULL) {
+					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
+				}
+				if (strstr(opttype, "output") != NULL) {
+					if (strstr(opttype, "input") != NULL) fprintf(fd, "\n");
+					fprintf(fd, "        output_interval=\"%s\"", optinterval_out);
+				}
+				fprintf(fd, ">\n\n");
+
+				/*
+				 * Depending on the runtime format, we either generate a separate list of fields for
+				 *   each stream, or we list the fields directly in the main stream control file
+				 */
+
+				if (strcmp(optruntime,"single_file") == 0) {
+
+					/* Loop over streams listed within the stream */
+					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+						optname = ezxml_attr(stream_xml, "name");
+						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
+					}
+
+					/* Loop over fields looking for any that belong to the stream */
+					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+						for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+							optstream = ezxml_attr(var_xml, "streams");
+							if (optstream != NULL && strstr(optstream, optname) != NULL) {
+								optvarname = ezxml_attr(var_xml, "name");
+								fprintf(fd, "    <var name=\"%s\"/>\n", optvarname);
+							}
+						}
+					}
+
+					/* Loop over var_arrays listed within the stream */
+					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
+						optname = ezxml_attr(vararray_xml, "name");
+						fprintf(fd, "    <var_array name=\"%s\"/>\n", optname);
+					}
+
+					/* Loop over fields listed within the stream */
+					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optname = ezxml_attr(var_xml, "name");
+						fprintf(fd, "    <var name=\"%s\"/>\n", optname);
+					}
+				}
+				else if (strcmp(optruntime,"separate_file") == 0) {
+
+					sprintf(filename2, "stream_list.%s.%s", suffix, optname);
+
+					fprintf(fd, "    <file name=\"%s\"/>\n", filename2);
+
+					fd2 = fopen(filename2, "w+");
+
+					/* Loop over streams listed within the stream */
+					for (stream_xml = ezxml_child(opt_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+						optname = ezxml_attr(stream_xml, "name");
+						fprintf(fd, "    <stream name=\"%s\"/>\n", optname);
+					}
+
+					/* Loop over fields looking for any that belong to the stream */
+					for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+						for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+							optstream = ezxml_attr(var_xml, "streams");
+							if (optstream != NULL && strstr(optstream, optname) != NULL) {
+								optvarname = ezxml_attr(var_xml, "name");
+								fprintf(fd2, "%s\n", optvarname);
+							}
+						}
+					}
+
+					/* Loop over var_arrays listed within the stream */
+					for (vararray_xml = ezxml_child(opt_xml, "var_array"); vararray_xml; vararray_xml = vararray_xml->next){
+						optname = ezxml_attr(vararray_xml, "name");
+						fprintf(fd2, "%s\n", optname);
+					}
+
+					/* Loop over fields listed within the stream */
+					for (var_xml = ezxml_child(opt_xml, "var"); var_xml; var_xml = var_xml->next) {
+						optname = ezxml_attr(var_xml, "name");
+						fprintf(fd2, "%s\n", optname);
+					}
+
+					fclose(fd2);
+
+				}
+				else {
+					fprintf(stderr, "******************************************************\n");
+					fprintf(stderr, "Error in specification of stream_format; this probably \n");
+					fprintf(stderr, "should have been caught during validation...\n");
+					fprintf(stderr, "******************************************************\n");
+				}
+
+				fprintf(fd, "\n");
+				fprintf(fd, "</stream>\n\n");
+			}
+		}
+	}
+	fprintf(fd, "</streams>\n");
 
 	fclose(fd);
 }/*}}}*/
@@ -572,7 +627,7 @@ int parse_packages_from_registry(ezxml_t registry)/*{{{*/
 
 	// For now, don't include core name in subroutines
 	sprintf(core_string, "_");
-	
+
 
 	fortprintf(fd, "   subroutine mpas_generate%spackages(packagePool)\n", core_string);
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: packagePool !< Input: MPAS Pool for containing package logicals.\n\n");
@@ -802,7 +857,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
 			dimname = ezxml_attr(dim_xml, "name");
-			dimdef = ezxml_attr(dim_xml, "definition");	
+			dimdef = ezxml_attr(dim_xml, "definition");
 
 			// Only dimensions that don't have a definition
 			if(dimdef == NULL){
@@ -824,8 +879,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd5, "      integer :: %s\n", dimname);
 				fortprintf(fd6, "      integer, intent(inout) :: %s\n", dimname);
 
-			} 
-		}   
+			}
+		}
 	}
 
 	fortprintf(fd2, "%s &\n", dim_args);
@@ -880,7 +935,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 					}
 				}
 			}
-		}   
+		}
 	}
 
 	fortprintf(fd,"\n");
@@ -997,7 +1052,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	vararrpackages = ezxml_attr(var_arr_xml, "packages");
 	vararrtimelevs = ezxml_attr(var_arr_xml, "time_levs");
 	vararrname_in_code = ezxml_attr(var_arr_xml, "name_in_code");
-	
+
 	if(!vararrtimelevs){
 		vararrtimelevs = ezxml_attr(superStruct, "time_levs");
 	}
@@ -1020,21 +1075,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	fortprintf(fd, "! Define var array %s\n", vararrname);
 	snprintf(spacing, 1024, "      ");
 
-	// Parse packages if they are defined
-	if(vararrpackages != NULL){
-		fortprintf(fd, "      if (");
-		string = strdup(vararrpackages);
-		tofree = string;
-		token = strsep(&string, ";");
-		fortprintf(fd, "%sActive", token);
-
-		while( (token = strsep(&string, ";")) != NULL){
-			fortprintf(fd, " .or. %sActive", token);
-		}
-
-		fortprintf(fd, ") then\n");
-		snprintf(spacing, 1024, "         ");
-	}
 
 	// Determine field type and default value.
 	get_field_information(vararrtype, vararrdefaultval, default_value, &type);
@@ -1045,12 +1085,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 	// Determine name of pointer for this field.
 	set_pointer_name(type, ndims, pointer_name);
-	fortprintf(fd, "%sallocate(%s(%d))\n", spacing, pointer_name, time_levs);
+	fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
 
-	fortprintf(fd, "%sindex_counter = 0\n", spacing);
-	fortprintf(fd, "%sgroup_counter = -1\n", spacing);
-	fortprintf(fd, "%sgroup_start = -1\n", spacing);
-	fortprintf(fd, "%sgroup_started = .false.\n", spacing);
+	fortprintf(fd, "      index_counter = 0\n", spacing);
+	fortprintf(fd, "      group_counter = -1\n", spacing);
+	fortprintf(fd, "      group_start = -1\n", spacing);
+	fortprintf(fd, "      group_started = .false.\n", spacing);
 	fortprintf(fd, "\n");
 
 	// Write index values and group counter values.
@@ -1079,6 +1119,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 			fortprintf(fd, "! Starting group %s\n", vararrgroup);
 			fortprintf(fd, "! Define constituent var %s\n", varname);
+			fortprintf(fd, "! My Packages are %s\n", varpackages);
 
 			// If no packages are defined, default to var_arr packages.
 			if(varpackages == NULL){
@@ -1090,7 +1131,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			// Parse packages if they are defined
 			sub_spacing[0] = '\0';
 			if(varpackages){
-				fortprintf(fd, "%sif (", spacing);
+				fortprintf(fd, "      if (");
 				string = strdup(varpackages);
 				tofree = string;
 				token = strsep(&string, ";");
@@ -1104,20 +1145,26 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				snprintf(sub_spacing, 1024, "   ");
 			}
 
-			fortprintf(fd, "%s%sindex_counter = index_counter + 1\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%scall mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", spacing, sub_spacing, varname_in_code);
-			fortprintf(fd, "%s%sgroup_counter = group_counter + 1\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%sif (.not. group_started) then\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%s   group_start = index_counter\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%s   call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", spacing, sub_spacing, vararrgroup);
-			fortprintf(fd, "%s%s   group_started = .true.\n", spacing, sub_spacing);
-			fortprintf(fd, "%s%send if\n", spacing, sub_spacing);
+			fortprintf(fd, "      %sindex_counter = index_counter + 1\n", sub_spacing);
+			fortprintf(fd, "      %sif (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s   call mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", sub_spacing, varname_in_code);
+			fortprintf(fd, "      %send if\n", sub_spacing);
+			fortprintf(fd, "      %sgroup_counter = group_counter + 1\n", sub_spacing);
+			fortprintf(fd, "      %sif (.not. group_started) then\n", sub_spacing);
+			fortprintf(fd, "      %s   group_start = index_counter\n", sub_spacing);
+			fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s   end if\n", sub_spacing);
+			fortprintf(fd, "      %s   group_started = .true.\n", sub_spacing);
+			fortprintf(fd, "      %send if\n", sub_spacing);
 
 			// If Packages are defined, write else clause
 			if(varpackages){
-				fortprintf(fd, "%selse\n", spacing);
-				fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", spacing, varname_in_code);
-				fortprintf(fd, "%send if\n", spacing);
+				fortprintf(fd, "   %selse\n", sub_spacing);
+				fortprintf(fd, "      %s  if (associated(newSubPool)) then\n", sub_spacing);
+				fortprintf(fd, "      %s     call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", sub_spacing, varname_in_code);
+				fortprintf(fd, "      %s  end if\n", sub_spacing);
+				fortprintf(fd, "   %send if\n", sub_spacing);
 			}
 
 			// Add the rest of the variables from the current group.
@@ -1135,7 +1182,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 							varname_in_code = ezxml_attr(var_xml2, "name");
 						}
 
-						fortprintf(fd, "! Define constituent var %s\n", varname);
 
 						// If no packages are defined, default to var_arr packages.
 						if(varpackages == NULL){
@@ -1143,6 +1189,9 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 								varpackages = ezxml_attr(var_arr_xml, "packages");
 							}
 						}
+
+						fortprintf(fd, "! Define constituent var %s\n", varname);
+						fortprintf(fd, "! My packages are %s\n", varpackages);
 
 						// Parse packages if they are defined
 						sub_spacing[0] = '\0';
@@ -1161,60 +1210,72 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 							snprintf(sub_spacing, 1024, "   ");
 						}
 
-						fortprintf(fd, "%s%sindex_counter = index_counter + 1\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%scall mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", spacing, sub_spacing, varname_in_code);
-						fortprintf(fd, "%s%sgroup_counter = group_counter + 1\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%sif (.not. group_started) then\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%s   group_start = index_counter\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%s   call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", spacing, sub_spacing, vararrgroup);
-						fortprintf(fd, "%s%s   group_started = .true.\n", spacing, sub_spacing);
-						fortprintf(fd, "%s%send if\n", spacing, sub_spacing);
+						fortprintf(fd, "      %sindex_counter = index_counter + 1\n", sub_spacing);
+						fortprintf(fd, "      %sif (associated(newSubPool)) then\n", sub_spacing);
+						fortprintf(fd, "      %s   call mpas_pool_add_dimension(newSubPool, 'index_%s', index_counter)\n", sub_spacing, varname_in_code);
+						fortprintf(fd, "      %send if\n", sub_spacing);
+						fortprintf(fd, "      %sgroup_counter = group_counter + 1\n", sub_spacing);
+						fortprintf(fd, "      %sif (.not. group_started) then\n", sub_spacing);
+						fortprintf(fd, "      %s   group_start = index_counter\n", sub_spacing);
+						fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+						fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_start', group_start)\n", sub_spacing, vararrgroup);
+						fortprintf(fd, "      %s   end if\n", sub_spacing);
+						fortprintf(fd, "      %s   group_started = .true.\n", sub_spacing);
+						fortprintf(fd, "      %send if\n", sub_spacing);
 
 						// If Packages are defined, write else clause
 						if(varpackages != NULL){
-							fortprintf(fd, "%selse\n", spacing);
-							fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", spacing, varname_in_code);
-							fortprintf(fd, "%send if\n", spacing);
+							fortprintf(fd, "   %selse\n", sub_spacing);
+							fortprintf(fd, "   %s   if (associated(newSubPool)) then\n", sub_spacing);
+							fortprintf(fd, "   %s      call mpas_pool_add_dimension(newSubPool, 'index_%s', -1)\n", sub_spacing, varname_in_code);
+							fortprintf(fd, "   %s   end if\n", sub_spacing);
+							fortprintf(fd, "   %send if\n", sub_spacing);
 						}
 					}
 				}
 			}
 
-			fortprintf(fd, "%sif (.not. group_started) then\n", spacing);
-			fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, '%s_start', -1)\n", spacing, vararrgroup);
-			fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, '%s_end', -1)\n", spacing, vararrgroup);
-			fortprintf(fd, "%selse\n", spacing);
-			fortprintf(fd, "%s   group_started = .false.\n", spacing);
-			fortprintf(fd, "%s   call mpas_pool_add_dimension(newSubPool, '%s_end', index_counter)\n", spacing, vararrgroup);
-			fortprintf(fd, "%send if\n", spacing);
-			fortprintf(fd, "! End of group %s\n", spacing, vararrgroup);
+			fortprintf(fd, "      %sif (.not. group_started) then\n", sub_spacing);
+			fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_start', -1)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_end', -1)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s   end if\n", sub_spacing);
+			fortprintf(fd, "      %selse\n", sub_spacing);
+			fortprintf(fd, "      %s   group_started = .false.\n", sub_spacing);
+			fortprintf(fd, "      %s   if (associated(newSubPool)) then\n", sub_spacing);
+			fortprintf(fd, "      %s      call mpas_pool_add_dimension(newSubPool, '%s_end', index_counter)\n", sub_spacing, vararrgroup);
+			fortprintf(fd, "      %s   end if\n", sub_spacing);
+			fortprintf(fd, "      %send if\n", sub_spacing);
+			fortprintf(fd, "! End of group       \n", vararrgroup);
 		}
 	}
 
 	fortprintf(fd, "\n");
 
 	// Setup constituent names
-	fortprintf(fd, "%snumConstituents = index_counter\n", spacing);
-	fortprintf(fd, "%scall mpas_pool_add_dimension(newSubPool, 'num_%s', numConstituents)\n", spacing, vararrname);
+	fortprintf(fd, "      numConstituents = index_counter\n");
+	fortprintf(fd, "      if (associated(newSubPool)) then\n");
+	fortprintf(fd, "         call mpas_pool_add_dimension(newSubPool, 'num_%s', numConstituents)\n", vararrname);
+	fortprintf(fd, "      end if\n");
 
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "! Defining time level %d\n", time_lev);
-		fortprintf(fd, "%sallocate( %s(%d) %% constituentNames(numConstituents) )\n",spacing, pointer_name, time_lev);
-		fortprintf(fd, "%sallocate(%s(%d) %% ioinfo)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% fieldName = '%s'\n", spacing, pointer_name, time_lev, vararrname);
+		fortprintf(fd, "      allocate( %s(%d) %% constituentNames(numConstituents) )\n", pointer_name, time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, vararrname);
 		if (hasTime) {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .true.\n", spacing, pointer_name, time_lev);
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .true.\n", pointer_name, time_lev);
 		} else {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .false.\n", spacing, pointer_name, time_lev);
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .false.\n", pointer_name, time_lev);
 		}
-		fortprintf(fd, "%s%s(%d) %% isVarArray = .true.\n", spacing, pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% isVarArray = .true.\n", pointer_name, time_lev);
 		if(ndims > 0){
 			if(persistence == SCRATCH){
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .false.\n", spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .false.\n", spacing, pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isPersistent = .false.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
 			} else {
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .true.\n", spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isPersistent = .true.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
 			}
 		}
 		fortprintf(fd, "\n");
@@ -1226,19 +1287,21 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				varname_in_code = ezxml_attr(var_xml, "name");
 			}
 
-			fortprintf(fd, "%scall mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", spacing, varname_in_code);
-			fortprintf(fd, "%sif (index_counter > 0) then\n", spacing);
-			fortprintf(fd, "%s   %s(%d) %% constituentNames(const_index) = '%s'\n", spacing, pointer_name, time_lev, varname);
-			fortprintf(fd, "%send if\n", spacing);
+			fortprintf(fd, "      if (associated(newSubPool)) then\n");
+			fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
+			fortprintf(fd, "      end if\n");
+			fortprintf(fd, "      if (index_counter > 0) then\n", spacing);
+			fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
+			fortprintf(fd, "      end if\n", spacing);
 		}
 
 		fortprintf(fd, "\n");
 
 		// Setup dimensions
-		fortprintf(fd, "! Setup dimensions for %s\n", vararrname);
+		fortprintf(fd, "! Setup dimensions for       \n", vararrname);
 		i = 1;
-		fortprintf(fd, "%s%s(%d) %% dimNames(%d) = 'num_%s'\n", spacing, pointer_name, time_lev, i, vararrname);
-		fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = numConstituents\n", spacing, pointer_name, time_lev, i);
+		fortprintf(fd, "      %s(%d) %% dimNames(%d) = 'num_%s'\n", pointer_name, time_lev, i, vararrname);
+		fortprintf(fd, "      %s(%d) %% dimSizes(%d) = numConstituents\n", pointer_name, time_lev, i);
 
 		string = strdup(vararrdims);
 		tofree = string;
@@ -1247,22 +1310,22 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		if(strncmp(token, "Time", 1024) != 0){
 			i++;
 			if(strncmp(token, "nCells", 1024) == 0 || strncmp(token, "nEdges", 1024) == 0 || strncmp(token, "nVertices", 1024) == 0){
-				fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-				fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s+1\n", spacing, pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s+1\n", pointer_name, time_lev, i, token);
 			} else {
-				fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-				fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", spacing, pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+				fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
 			}
 		}
 		while( (token = strsep(&string, " ")) != NULL){
 			if(strncmp(token, "Time", 1024) != 0){
 				i++;
 				if(strncmp(token, "nCells", 1024) == 0 || strncmp(token, "nEdges", 1024) == 0 || strncmp(token, "nVertices", 1024) == 0){
-					fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s+1\n", spacing, pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s+1\n", pointer_name, time_lev, i, token);
 				} else {
-					fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", spacing, pointer_name, time_lev, i, token);
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", spacing, pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
 				}
 			}
 		}
@@ -1277,96 +1340,70 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				default:
 					break;
 				case 1:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 4:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 				case 5:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
 					break;
 			}
 
-			fortprintf(fd, "%s%s(%d) %% array = %s\n", spacing, pointer_name, time_lev, default_value);
+			fortprintf(fd, "      %s(%d) %% array = %s\n", pointer_name, time_lev, default_value);
 
 		} else {
 			if(ndims > 0){
-				fortprintf(fd, "%snullify(%s(%d) %% array)\n", spacing, pointer_name, time_lev);
+				fortprintf(fd, "      nullify(%s(%d) %% array)\n", pointer_name, time_lev);
 			}
 		}
 
-		fortprintf(fd, "%snullify(%s(%d) %% next)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% prev)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% sendList)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% recvList)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% copyList)\n", spacing, pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% block => block\n", spacing, pointer_name, time_lev);
-
-		// Handle Streams (LEGACY)
-		iostreams = 0;
-		for(streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
-			for(stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-				streamname = ezxml_attr(stream_xml, "name");
-
-				for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
-					varname = ezxml_attr(var_xml, "name");
-
-					for(var_xml2 = ezxml_child(stream_xml, "var"); var_xml2; var_xml2 = var_xml2->next){
-						varname2 = ezxml_attr(var_xml2, "name");
-
-						if(strcmp(varname, varname2) == 0){
-							if(strcmp(streamname, "output") == 0){
-								iostreams |= OUTPUT0;
-							} else if(strcmp(streamname, "surface") == 0){
-								iostreams |= SFC0;
-							} else if(strcmp(streamname, "input") == 0){
-								iostreams |= INPUT0;
-							} else if(strcmp(streamname, "restart") == 0){
-								iostreams |= RESTART0;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if(iostreams & OUTPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .false.\n", spacing, pointer_name, time_lev);
-		}
-		if(iostreams & SFC0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .false.\n", spacing, pointer_name, time_lev);
-		}
-		if(iostreams & RESTART0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .false.\n", spacing, pointer_name, time_lev);
-		}
-		if(iostreams & INPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .true.\n", spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .false.\n", spacing, pointer_name, time_lev);
-		}
+		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% recvList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% copyList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
 	}
+
+	// Parse packages if they are defined
+	fortprintf(fd, "\n");
+	spacing[0] = '\0';
+	if(vararrpackages != NULL){
+		fortprintf(fd, "      if (");
+		string = strdup(vararrpackages);
+		tofree = string;
+		token = strsep(&string, ";");
+		fortprintf(fd, "%sActive", token);
+
+		while( (token = strsep(&string, ";")) != NULL){
+			fortprintf(fd, " .or. %sActive", token);
+		}
+
+		fortprintf(fd, ") then\n");
+		snprintf(spacing, 1024, "         ");
+	}
+
 
 	// Add field to pool
 	fortprintf(fd, "! Add field to pool\n");
+	for(time_lev = 1; time_lev <= time_levs; time_lev++){
+		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
+	}
 	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
-	fortprintf(fd, "%scall mpas_pool_add_field(block %% allFields, '%s', %s)\n", spacing, vararrname, pointer_name);
-	fortprintf(fd, "\n");
 
 	if(vararrpackages != NULL) {
 		fortprintf(fd, "      end if\n");
 	}
+
+	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", vararrname, pointer_name);
+	fortprintf(fd, "\n");
 
 	return 0;
 }/*}}}*/
@@ -1420,7 +1457,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	if(!vartimelevs){
 		vartimelevs = ezxml_attr(superStruct, "time_levs");
-	} 
+	}
 
 	if(vartimelevs){
 		time_levs = atoi(vartimelevs);
@@ -1435,7 +1472,109 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	fortprintf(fd, "! Define variable %s\n", varname);
 
+
+	// Determine field type and default value.
+	get_field_information(vartype, vardefaultval, default_value, &type);
+
+	// Determine ndims, hasTime, and decomp type
+	get_dimension_information(vardims, &ndims, &hasTime, &decomp);
+
+	// Determine name of pointer for this field.
+	set_pointer_name(type, ndims, pointer_name);
+	fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
+
+	for(time_lev = 1; time_lev <= time_levs; time_lev++){
+		fortprintf(fd, "\n");
+		fortprintf(fd, "! Setting up time level %d\n", time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n",  pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, varname);
+		fortprintf(fd, "      %s(%d) %% isVarArray = .false.\n", pointer_name, time_lev);
+		if(hasTime) {
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .true.\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .false.\n", pointer_name, time_lev);
+		}
+
+		if(ndims > 0){
+			if(persistence == SCRATCH){
+				fortprintf(fd, "      %s(%d) %% isPersistent = .false.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
+			} else {
+				fortprintf(fd, "      %s(%d) %% isPersistent = .true.\n", pointer_name, time_lev);
+				fortprintf(fd, "      %s(%d) %% isActive = .false.\n", pointer_name, time_lev);
+			}
+
+			// Setup dimensions
+			fortprintf(fd, "! Setting up dimensions\n");
+			string = strdup(vardims);
+			tofree = string;
+			i = 1;
+			token = strsep(&string, " ");
+			if(strncmp(token, "Time", 1024) != 0){
+				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+				if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s + 1\n", pointer_name, time_lev, i, token);
+				} else {
+					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
+				}
+				i++;
+			}
+			while( (token = strsep(&string, " ")) != NULL){
+				if(strncmp(token, "Time", 1024) != 0){
+					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
+					if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
+						fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s + 1\n", pointer_name, time_lev, i, token);
+					} else {
+						fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
+					}
+					i++;
+				}
+			}
+			free(tofree);
+
+
+
+			fortprintf(fd, "! Allocate space for data\n");
+			switch(ndims){
+				default:
+					break;
+				case 1:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 2:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 3:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 4:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 5:
+					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
+							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+			}
+
+			fortprintf(fd, "      %s(%d) %% array = %s\n", pointer_name, time_lev, default_value);
+		} else if(ndims == 0){
+			fortprintf(fd, "      %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+		}
+
+
+		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% recvList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      nullify(%s(%d) %% copyList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
+	}
+
 	// Parse packages if they are defined
+	fortprintf(fd, "\n");
 	snprintf(package_spacing, 1024, "      ");
 	if(varpackages != NULL){
 		fortprintf(fd, "      if (");
@@ -1452,162 +1591,16 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		snprintf(package_spacing, 1024, "         ");
 	}
 
-	// Determine field type and default value.
-	get_field_information(vartype, vardefaultval, default_value, &type);
-
-	// Determine ndims, hasTime, and decomp type
-	get_dimension_information(vardims, &ndims, &hasTime, &decomp);
-
-	// Determine name of pointer for this field.
-	set_pointer_name(type, ndims, pointer_name);
-	fortprintf(fd, "%sallocate(%s(%d))\n", package_spacing, pointer_name, time_levs);
-
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
-		fortprintf(fd, "\n");
-		fortprintf(fd, "! Setting up time level %d\n", time_lev);
-		fortprintf(fd, "%sallocate(%s(%d) %% ioinfo)\n", package_spacing,  pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% fieldName = '%s'\n", package_spacing, pointer_name, time_lev, varname);
-		fortprintf(fd, "%s%s(%d) %% isVarArray = .false.\n", package_spacing, pointer_name, time_lev);
-		if(hasTime) {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% hasTimeDimension = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(ndims > 0){
-			if(persistence == SCRATCH){
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .false.\n", package_spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .false.\n", package_spacing, pointer_name, time_lev);
-			} else {
-				fortprintf(fd, "%s%s(%d) %% isPersistent = .true.\n", package_spacing, pointer_name, time_lev);
-				fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
-			}
-
-			// Setup dimensions
-			fortprintf(fd, "! Setting up dimensions\n");
-			string = strdup(vardims);
-			tofree = string;
-			i = 1;
-			token = strsep(&string, " ");
-			if(strncmp(token, "Time", 1024) != 0){
-				fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", package_spacing, pointer_name, time_lev, i, token);
-				if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s + 1\n", package_spacing, pointer_name, time_lev, i, token);
-				} else {
-					fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", package_spacing, pointer_name, time_lev, i, token);
-				}
-				i++;
-			}
-			while( (token = strsep(&string, " ")) != NULL){
-				if(strncmp(token, "Time", 1024) != 0){
-					fortprintf(fd, "%s%s(%d) %% dimNames(%d) = '%s'\n", package_spacing, pointer_name, time_lev, i, token);
-					if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
-						fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s + 1\n", package_spacing, pointer_name, time_lev, i, token);
-					} else {
-						fortprintf(fd, "%s%s(%d) %% dimSizes(%d) = %s\n", package_spacing, pointer_name, time_lev, i, token);
-					}
-					i++;
-				}
-			}
-			free(tofree);
-
-
-
-			fortprintf(fd, "! Allocate space for data\n");
-			switch(ndims){
-				default:
-					break;
-				case 1:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", package_spacing, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", 
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",  
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 4:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 5:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-			}
-
-			fortprintf(fd, "%s%s(%d) %% array = %s\n", package_spacing, pointer_name, time_lev, default_value);
-		} else if(ndims == 0){
-			fortprintf(fd, "%s%s(%d) %% scalar = %s\n", package_spacing, pointer_name, time_lev, default_value);
-		}
-
-
-		fortprintf(fd, "%snullify(%s(%d) %% next)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% prev)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% sendList)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% recvList)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%snullify(%s(%d) %% copyList)\n", package_spacing, pointer_name, time_lev);
-		fortprintf(fd, "%s%s(%d) %% block => block\n", package_spacing, pointer_name, time_lev);
-
-		// Handle Streams (LEGACY)
-		iostreams = 0x00000000;	
-		for(streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
-			for(stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-				streamname = ezxml_attr(stream_xml, "name");
-
-				for(var_xml2 = ezxml_child(stream_xml, "var"); var_xml2; var_xml2 = var_xml2->next){
-					varname2 = ezxml_attr(var_xml2, "name");
-
-					if(strcmp(varname, varname2) == 0){
-						if(strcmp(streamname, "output") == 0){
-							iostreams |= OUTPUT0;
-						} else if(strcmp(streamname, "input") == 0){
-							iostreams |= INPUT0;
-						} else if(strcmp(streamname, "surface") == 0){
-							iostreams |= SFC0;
-						} else if(strcmp(streamname, "restart") == 0){
-							iostreams |= RESTART0;
-						}
-					}
-				}
-			}
-		}
-
-		if(iostreams & OUTPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% output = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(iostreams & INPUT0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% input = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(iostreams & RESTART0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% restart = .false.\n", package_spacing, pointer_name, time_lev);
-		}
-
-		if(iostreams & SFC0){
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .true.\n", package_spacing, pointer_name, time_lev);
-		} else {
-			fortprintf(fd, "%s%s(%d) %% ioinfo %% sfc = .false.\n", package_spacing, pointer_name, time_lev);
-		}
+		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
 	}
-
-	fortprintf(fd, "\n");
 	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing , varname_in_code, pointer_name);
-	fortprintf(fd, "%scall mpas_pool_add_field(block %% allFields, '%s', %s)\n", package_spacing , varname, pointer_name);
-	fortprintf(fd, "\n");
 
 	if(varpackages != NULL){
 		fortprintf(fd, "      end if\n");
 	}
+	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", varname, pointer_name);
+	fortprintf(fd, "\n");
 
 	return 0;
 }/*}}}*/
@@ -1626,6 +1619,7 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	const char *substructname;
 	const char *streamname, *streamname2;
 	const char *packagename;
+	const char *structnameincode;
 
 	char *string, *tofree, *token;
 	char spacing[1024];
@@ -1648,6 +1642,12 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	}
 
 	structname = ezxml_attr(superStruct, "name");
+	structnameincode = ezxml_attr(superStruct, "name_in_code");
+	
+	if(!structnameincode){
+		structnameincode = ezxml_attr(superStruct, "name");
+	}
+
 	structpackages = ezxml_attr(superStruct, "packages");
 
 	// Extract all sub structs
@@ -1696,16 +1696,11 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      integer :: numConstituents\n");
 	fortprintf(fd, "\n");
 
+	fortprintf(fd, "      nullify(newSubPool)\n");
+
 	fortprintf(fd, "      group_counter = -1\n");
 	fortprintf(fd, "      group_started = .false.\n");
 	fortprintf(fd, "      group_start = -1\n");
-
-
-	// Setup new pool to be added into structPool
-	fortprintf(fd, "      allocate(newSubPool)\n");
-	fortprintf(fd, "      call mpas_pool_create_pool(newSubPool)\n");
-	fortprintf(fd, "      call mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", structname);
-	fortprintf(fd, "\n");
 
 	// Need to get value of package flags
 	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
@@ -1717,6 +1712,36 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	}
 
 	fortprintf(fd, "\n");
+
+	// Parse packages if they are defined
+	package_list[0] = '\0';
+	no_packages = build_struct_package_lists(superStruct, package_list);
+
+	spacing[0] = '\0';
+	if(!no_packages){
+		fortprintf(fd, "      if (");
+		string = strdup(package_list);
+		tofree = string;
+		token = strsep(&string, ";");
+		fortprintf(fd, "%sActive", token);
+
+		while( (token = strsep(&string, ";")) != NULL){
+			fortprintf(fd, " .or. %sActive", token);
+		}
+
+		fortprintf(fd, ") then\n");
+		sprintf(spacing, "   ");
+	}
+
+	// Setup new pool to be added into structPool
+	fortprintf(fd, "      %sallocate(newSubPool)\n", spacing);
+	fortprintf(fd, "      %scall mpas_pool_create_pool(newSubPool)\n", spacing);
+	fortprintf(fd, "      %scall mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", spacing, structnameincode);
+	fortprintf(fd, "      %scall mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", spacing, structname);
+
+	if(!no_packages){
+		fortprintf(fd, "      end if\n");
+	}
 
 	// Need to get value of dimensions
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
@@ -1745,54 +1770,26 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 
 	// Extract all sub structs
 	for (struct_xml = ezxml_child(superStruct, "var_struct"); struct_xml; struct_xml = struct_xml->next){
-		substructname = ezxml_attr(struct_xml, "name");
-		structpackages = ezxml_attr(struct_xml, "packages");
-
-		package_list[0] = '\0';
-		no_packages = build_struct_package_lists(struct_xml, package_list);
-
-		structpackages = ezxml_attr(superStruct, "packages");
-
-		// Parse packages if they are defined
-		spacing[0] = '\0';
-		if(!no_packages){
-			fortprintf(fd, "      if (");
-			string = strdup(package_list);
-			tofree = string;
-			token = strsep(&string, ";");
-			fortprintf(fd, "%sActive", token);
-
-			while( (token = strsep(&string, ";")) != NULL){
-				fortprintf(fd, " .or. %sActive", token);
-			}
-
-			fortprintf(fd, ") then\n");
-			sprintf(spacing, "   ");
-		}
-
-		fortprintf(fd, "      %scall mpas_generate%s%s_subpool_%s(block, newSubPool, dimensionPool, packagePool)\n", spacing, core_string, structname, substructname);
-		if(!no_packages){
-			fortprintf(fd, "      end if\n");
-		}
-
-
+		fortprintf(fd, "      call mpas_generate%s%s_subpool_%s(block, newSubPool, dimensionPool, packagePool)\n", core_string, structname, substructname);
 	}
 
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      call mpas_pool_add_config(newSubPool, 'on_a_sphere', block %% domain %% on_a_sphere)\n");
-	fortprintf(fd, "      call mpas_pool_add_config(newSubPool, 'sphere_radius', block %% domain %% sphere_radius)\n");
-	fortprintf(fd, "      call mpas_pool_begin_iteration(dimensionPool)\n");
-	fortprintf(fd, "      do while( mpas_pool_get_next_member(dimensionPool, dimItr) )\n");
-	fortprintf(fd, "         if (dimItr %% memberType == MPAS_POOL_DIMENSION) then\n");
-	fortprintf(fd, "            if (dimItr %% nDims == 0) then\n");
-	fortprintf(fd, "               call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim0d)\n");
-	fortprintf(fd, "               call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim0d)\n");
-	fortprintf(fd, "            else if (dimItr %% nDims == 1) then\n");
-	fortprintf(fd, "               call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim1d)\n");
-	fortprintf(fd, "               call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim1d)\n");
+	fortprintf(fd, "      if (associated(newSubPool)) then\n");
+	fortprintf(fd, "         call mpas_pool_add_config(newSubPool, 'on_a_sphere', block %% domain %% on_a_sphere)\n");
+	fortprintf(fd, "         call mpas_pool_add_config(newSubPool, 'sphere_radius', block %% domain %% sphere_radius)\n");
+	fortprintf(fd, "         call mpas_pool_begin_iteration(dimensionPool)\n");
+	fortprintf(fd, "         do while( mpas_pool_get_next_member(dimensionPool, dimItr) )\n");
+	fortprintf(fd, "            if (dimItr %% memberType == MPAS_POOL_DIMENSION) then\n");
+	fortprintf(fd, "               if (dimItr %% nDims == 0) then\n");
+	fortprintf(fd, "                  call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim0d)\n");
+	fortprintf(fd, "                  call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim0d)\n");
+	fortprintf(fd, "               else if (dimItr %% nDims == 1) then\n");
+	fortprintf(fd, "                  call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim1d)\n");
+	fortprintf(fd, "                  call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim1d)\n");
+	fortprintf(fd, "               end if\n");
 	fortprintf(fd, "            end if\n");
-	fortprintf(fd, "         end if\n");
-	fortprintf(fd, "      end do\n");
+	fortprintf(fd, "         end do\n");
+	fortprintf(fd, "      end if\n");
 	fortprintf(fd, "\n");
 
 	fortprintf(fd, "   end subroutine mpas_generate%s%s_%s\n", core_string, pool_name, structname);
@@ -2084,174 +2081,58 @@ int generate_field_links(ezxml_t registry){/*{{{*/
 }/*}}}*/
 
 
-int generate_field_exchanges(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
-	ezxml_t subStruct;
-	ezxml_t var_arr_xml, var_xml;
-	const char *structname;
-	const char *vartimelevs;
-	const char *varname, *vardims, *vartype;
-	const char *vardefaultval;
-	const char *varname_in_code;
-	int depth;
-	int err;
-	int has_time;
-	int time_lev, time_levs;
-	int ndims, type;
-	int decomp;
-	char *string, *tofree, *token;
-	char pointer_name[1024];
-	char default_value[1024];
+int generate_immutable_struct_contents(FILE *fd, const char *streamname, ezxml_t varstruct_xml){/*{{{*/
+	ezxml_t var_xml, vararr_xml, substruct_xml;
 
-	depth = curLevel + 1;
+	const char *optname, *optstream;
 
-	for(subStruct = ezxml_child(superStruct, "var_struct"); subStruct; subStruct = subStruct->next){
-		structname = ezxml_attr(subStruct, "name");
-		fortprintf(fd, "! ----------- NEW STRUCT ---------\n");
-		fortprintf(fd, "! Halo exchanges for struct %s\n", structname);
-		fortprintf(fd, "! --------------------------------\n");
-		if(curLevel == 0){
-			fortprintf(fd, "      call mpas_pool_get_subpool(domain %% blocklist %% structs, '%s', poolLevel%d)\n", structname, curLevel+1);
-		} else {
-			fortprintf(fd, "      call mpas_pool_get_subpool(poolLevel%d, '%s', poolLevel%d)\n", curLevel, structname, curLevel+1);
+	/* Loop over fields looking for any that belong to the stream */
+	for (vararr_xml = ezxml_child(varstruct_xml, "var"); vararr_xml; vararr_xml = vararr_xml->next) {
+		optstream = ezxml_attr(vararr_xml, "streams");
+		if (optstream != NULL && strstr(optstream, streamname) != NULL) {
+			optname = ezxml_attr(vararr_xml, "name");
+			fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", streamname, optname);
 		}
+	}
 
-		fortprintf(fd, "\n");
-		// Link var arrays
-		for(var_arr_xml = ezxml_child(subStruct, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){/*{{{*/
-			varname = ezxml_attr(var_arr_xml, "name");
-			vardims = ezxml_attr(var_arr_xml, "dimensions");
-			vartimelevs = ezxml_attr(var_arr_xml, "time_levs");
-			vartype = ezxml_attr(var_arr_xml, "type");
-			vardefaultval = ezxml_attr(var_arr_xml, "default_value");
+	for (var_xml = ezxml_child(varstruct_xml, "var"); var_xml; var_xml = var_xml->next) {
+		optstream = ezxml_attr(var_xml, "streams");
+		if (optstream != NULL && strstr(optstream, streamname) != NULL) {
+			optname = ezxml_attr(var_xml, "name");
+			fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", streamname, optname);
+		}
+	}
 
-			if(!vartimelevs){
-				vartimelevs = ezxml_attr(subStruct, "time_levs");
-			}
-
-			if(vartimelevs){
-				time_levs = atoi(vartimelevs);
-				if(time_levs < 1){
-					time_levs = 1;
-				}
-			} else {
-				time_levs = 1;
-			}
-
-			// Determine field type and default value.
-			get_field_information(vartype, vardefaultval, default_value, &type);
-
-			// Determine number of dimensions
-			// and decomp type
-			get_dimension_information(vardims, &ndims, &has_time, &decomp);
-			ndims++; // Add a dimension for var_arrays
-
-			// Using type and ndims, determine name of pointer for field.
-			set_pointer_name(type, ndims, pointer_name);
-
-			if(ndims > 0 && type != CHARACTER){
-				for(time_lev = 1; time_lev <= time_levs; time_lev++){
-					fortprintf(fd, "! Performing exchange of time level %d of field %s\n", time_lev, varname);
-					fortprintf(fd, "#ifdef MPAS_DEBUG\n");
-					fortprintf(fd, "      write(stderrUnit,*) 'Exchanging %s'\n", varname);
-					fortprintf(fd, "#endif\n");
-					fortprintf(fd, "      call mpas_pool_get_field(poolLevel%d, '%s', %s, %d)\n", curLevel+1, varname, pointer_name, time_lev);
-					fortprintf(fd, "      if(associated(%s)) then\n", pointer_name);
-					fortprintf(fd, "         if(%s %% isPersistent .and. ((%s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "            .or. (%s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "            .or. (%s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "            .or. (%s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "           )) then\n", pointer_name);
-					if(decomp != -1){
-							fortprintf(fd, "            call mpas_dmpar_exch_halo_field(%s)\n", pointer_name);
-					} else {
-							fortprintf(fd, "            call mpas_dmpar_copy_field(%s)\n", pointer_name);
-					}
-					fortprintf(fd, "         end if\n");
-					fortprintf(fd, "      end if\n");
-				}
-
-				fortprintf(fd, "\n");
-			}
-		}/*}}}*/
-
-		// Link independent vars
-		for(var_xml = ezxml_child(subStruct, "var"); var_xml; var_xml = var_xml->next){/*{{{*/
-			varname = ezxml_attr(var_xml, "name");
-			vardims = ezxml_attr(var_xml, "dimensions");
-			vartimelevs = ezxml_attr(var_xml, "time_levs");
-			vartype = ezxml_attr(var_xml, "type");
-			vardefaultval = ezxml_attr(var_xml, "default_value");
-			varname_in_code = ezxml_attr(var_xml, "name_in_code");
-
-			if(!vartimelevs){
-				vartimelevs = ezxml_attr(subStruct, "time_levs");
-			}
-
-			if(vartimelevs){
-				time_levs = atoi(vartimelevs);
-				if(time_levs < 1){
-					time_levs = 1;
-				}
-			} else {
-				time_levs = 1;
-			}
-
-			if(!varname_in_code){
-				varname_in_code = ezxml_attr(var_xml, "name");
-			}
-
-			// Determine field type and default value.
-			get_field_information(vartype, vardefaultval, default_value, &type);
-
-			// Determine number of dimensions
-			// and decomp type
-			get_dimension_information(vardims, &ndims, &has_time, &decomp);
-
-			// Using type and ndims, determine name of pointer for field.
-			set_pointer_name(type, ndims, pointer_name);
-
-			if(ndims > 0 && type != CHARACTER){
-				for(time_lev = 1; time_lev <= time_levs; time_lev++){
-					fortprintf(fd, "! Performing exchange of time level %d of field %s with name %s\n", time_lev, varname, varname_in_code);
-					fortprintf(fd, "#ifdef MPAS_DEBUG\n");
-					fortprintf(fd, "      write(stderrUnit,*) 'Exchanging %s'\n", varname);
-					fortprintf(fd, "#endif\n");
-					fortprintf(fd, "      call mpas_pool_get_field(poolLevel%d, '%s', %s, %d)\n", curLevel+1, varname_in_code, pointer_name, time_lev);
-					fortprintf(fd, "      if(associated(%s)) then\n", pointer_name);
-					fortprintf(fd, "         if(%s %% isPersistent .and. ((%s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "            .or. (%s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "            .or. (%s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "            .or. (%s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n", pointer_name, pointer_name);
-					fortprintf(fd, "           )) then\n", pointer_name);
-					if(decomp != -1){
-						fortprintf(fd, "            call mpas_dmpar_exch_halo_field(%s)\n", pointer_name);
-					} else {
-						fortprintf(fd, "            call mpas_dmpar_copy_field(%s)\n", pointer_name);
-					}
-					fortprintf(fd, "         end if\n");
-					fortprintf(fd, "      end if\n");
-				}
-
-				fortprintf(fd, "\n");
-			}
-		}/*}}}*/
-
-		err = generate_field_exchanges(fd, curLevel+1, subStruct);
+	for (substruct_xml = ezxml_child(varstruct_xml, "var_struct"); substruct_xml; substruct_xml = substruct_xml->next){
+		generate_immutable_struct_contents(fd, streamname, substruct_xml);
 	}
 
 	return 0;
 }/*}}}*/
 
 
-int generate_field_halo_exchanges_and_copies(ezxml_t registry){/*{{{*/
-	ezxml_t struct_xml;
+/*********************************************************************************
+ *
+ *  Function: generate_immutable_streams
+ *
+ *  Generates the Fortran include file 'setup_immutable_streams.inc' that contains
+ *  the subroutine mpas_generate_immutable_streams() responsible for making calls
+ *  to the stream manager to define all immutable streams.
+ *  The mpas_generate_immutable_streams() routine should be called after blocks
+ *  have been allocated in the framework and after the stream manager has been
+ *  initialized, but before any calls to generate mutable streams are made.
+ *
+ *********************************************************************************/
+int generate_immutable_streams(ezxml_t registry){/*{{{*/
+	ezxml_t streams_xml, stream_xml, var_xml, vararr_xml, varstruct_xml;
+	ezxml_t substream_xml, matchstreams_xml, matchstream_xml;
+
+	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optimmutable;
+	const char *optstructname, *optsubstreamname, *optmatchstreamname, *optmatchimmutable;
 	const char *corename;
 	FILE *fd;
-	int i, structDepth, err;
 
 	char core_string[1024];
-
-	structDepth = determine_struct_depth(0, registry);
 
 	corename = ezxml_attr(registry, "core");
 
@@ -2260,460 +2141,113 @@ int generate_field_halo_exchanges_and_copies(ezxml_t registry){/*{{{*/
 	// For now, don't include core name in subroutines
 	sprintf(core_string, "_");
 
-	fd = fopen("exchange_fields.inc", "w+");
+	fd = fopen("setup_immutable_streams.inc", "w+");
 
-	fortprintf(fd, "   subroutine mpas%sexchange_fields(domain, input_obj)\n", core_string);
-	fortprintf(fd, "      type (domain_type), intent(in) :: domain\n");
-	fortprintf(fd, "      type (io_input_object), intent(inout) :: input_obj\n");
-	fortprintf(fd, "\n");
-	write_field_pointers(fd);
-	for(i = 1; i <= structDepth; i++){
-		fortprintf(fd, "      type (mpas_pool_type), pointer :: poolLevel%d\n", i);
-	}
-	fortprintf(fd, "\n");
+	fprintf(stderr, "---- GENERATING IMMUTABLE STREAMS ----\n");
 
-	err = generate_field_exchanges(fd, 0, registry);
+	fortprintf(fd, "subroutine mpas%ssetup_immutable_streams(manager)\n\n", core_string);
+	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
+	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_PROPERTY_IMMUTABLE, &\n");
+	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_add_field, MPAS_stream_mgr_set_property\n\n");
+	fortprintf(fd, "   implicit none\n\n");
+	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
+	fortprintf(fd, "   integer :: ierr\n\n");
 
-	fortprintf(fd, "   end subroutine mpas%sexchange_fields\n", core_string);
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
 
-	fclose(fd);
+			optimmutable = ezxml_attr(stream_xml, "immutable");
 
-	return 0;
-}/*}}}*/
+			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
+
+				optname = ezxml_attr(stream_xml, "name");
+				opttype = ezxml_attr(stream_xml, "type");
+				optfilename = ezxml_attr(stream_xml, "filename_template");
+				optrecords = ezxml_attr(stream_xml, "records_per_file");
+
+				/* create the stream */
+				if (strstr(opttype, "input") != NULL && strstr(opttype, "output") != NULL)
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+				else if (strstr(opttype, "input") != NULL)
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+				else if (strstr(opttype, "output") != NULL)
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+				else
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_NONE, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+
+				/* Loop over streams listed within the stream (only use immutable streams) */
+				for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+					optsubstreamname = ezxml_attr(substream_xml, "name");
+
+					/* Find stream definition with matching name */
+					for (matchstreams_xml = ezxml_child(registry, "streams"); matchstreams_xml; matchstreams_xml = matchstreams_xml->next){
+						for (matchstream_xml = ezxml_child(matchstreams_xml, "stream"); matchstream_xml; matchstream_xml = matchstream_xml->next){
+							optmatchstreamname = ezxml_attr(matchstream_xml, "name");
+							optmatchimmutable = ezxml_attr(matchstream_xml, "immutable");
+
+							if (optmatchstreamname != NULL && strcmp(optmatchstreamname, optsubstreamname) == 0){
+								if (optmatchimmutable != NULL && strcmp(optmatchimmutable, "true") == 0) {
+									/* Loop over fields listed within the stream */
+									for (var_xml = ezxml_child(matchstream_xml, "var"); var_xml; var_xml = var_xml->next) {
+										optvarname = ezxml_attr(var_xml, "name");
+										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+									}
+
+									/* Loop over arrays of fields listed within the stream */
+									for (vararr_xml = ezxml_child(matchstream_xml, "var_array"); vararr_xml; vararr_xml = vararr_xml->next) {
+										optvarname = ezxml_attr(vararr_xml, "name");
+										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+									}
+
+									/* Loop over var structs listed within the stream */
+									for (varstruct_xml = ezxml_child(matchstream_xml, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
+										optstructname = ezxml_attr(varstruct_xml, "name");
+										fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+									}
+
+								} else {
+									printf("ERROR: Immutable streams cannot contain mutable streams within them.\n");	
+									printf("ERROR:     Immutable stream \'%s\' contains a mutable stream \'%s\'.\n", optname, optsubstreamname);
+									return 1;
+								}
+							}
+						}
+					}
+				}
+
+				/* Loop over var structs listed within the stream */
+				for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+					optstructname = ezxml_attr(varstruct_xml, "name");
+					fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+				}
 
 
-int generate_field_inputs(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
-	ezxml_t subStruct;
-	ezxml_t var_arr_xml, var_xml;
-	const char *structname;
-	const char *vartimelevs;
-	const char *varname, *vardims, *vartype;
-	const char *vardefaultval;
-	int depth;
-	int err;
-	int has_time;
-	int time_lev, time_levs;
-	int ndims, type;
-	int decomp;
-	char *string, *tofree, *token;
-	char pool_name[1024], iterator_name[1024];
+				/* Loop over arrays of fields listed within the stream */
+				for (vararr_xml = ezxml_child(stream_xml, "var_array"); vararr_xml; vararr_xml = ezxml_next(vararr_xml)) {
+					optvarname = ezxml_attr(vararr_xml, "name");
+					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+				}
 
-	depth = curLevel + 1;
+				/* Loop over fields listed within the stream */
+				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+					optvarname = ezxml_attr(var_xml, "name");
+					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+				}
 
-	for(subStruct = ezxml_child(superStruct, "var_struct"); subStruct; subStruct = subStruct->next){
-		structname = ezxml_attr(subStruct, "name");
-		fortprintf(fd, "! ----------- NEW STRUCT ---------\n");
-		fortprintf(fd, "! Input streams for struct %s\n", structname);
-		fortprintf(fd, "! --------------------------------\n");
-		if(curLevel == 0){
-			fortprintf(fd, "      call mpas_pool_get_subpool(domain %% blocklist %% structs, '%s', poolLevel%d)\n", structname, curLevel+1);
-		} else {
-			fortprintf(fd, "      call mpas_pool_get_subpool(poolLevel%d, '%s', poolLevel%d)\n", curLevel, structname, curLevel+1);
+				/* Loop over fields looking for any that belong to the stream */
+				for (varstruct_xml = ezxml_child(registry, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+					generate_immutable_struct_contents(fd, optname, varstruct_xml);
+				}
+
+				fortprintf(fd, "   call MPAS_stream_mgr_set_property(manager, \'%s\', MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)\n\n", optname);
+			}
+
 		}
-
-		sprintf(iterator_name, "fieldItr");
-		sprintf(pool_name, "poolLevel%d", curLevel+1);
-
-		fortprintf(fd, "\n");
-		fortprintf(fd, "! Iterate over all fields in struct %s\n", structname);
-		fortprintf(fd, "      call mpas_pool_begin_iteration(poolLevel%d)\n", curLevel+1);
-		fortprintf(fd, "      do while( mpas_pool_get_next_member(poolLevel%d, fieldItr) )\n", curLevel+1);
-		fortprintf(fd, "         if (%s %% memberType == MPAS_POOL_FIELD) then\n", iterator_name);
-		fortprintf(fd, "#ifdef MPAS_DEBUG\n");
-		fortprintf(fd, "            write(stderrUnit,*) 'Checking input streams on ' // trim(%s %% memberName)\n", iterator_name);
-		fortprintf(fd, "#endif\n");
-		fortprintf(fd, "            if (%s %% dataType == MPAS_POOL_REAL) then\n", iterator_name);
-		fortprintf(fd, "               if (%s %% nDims == 0) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r0Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if ((r0Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (r0Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (r0Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, r0Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 1) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r1Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r1Ptr %% isPersistent .and. ( (r1Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (r1Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (r1Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, r1Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 2) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r2Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r2Ptr %% isPersistent .and. ( (r2Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (r2Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (r2Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, r2Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 3) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r3Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r3Ptr %% isPersistent .and. ( (r3Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (r3Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (r3Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, r3Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 4) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r4Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r4Ptr %% isPersistent .and. ( (r4Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (r4Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (r4Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, r4Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 5) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r5Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r5Ptr %% isPersistent .and. ( (r5Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (r5Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (r5Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, r5Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               end if\n");
-		fortprintf(fd, "            else if (%s %% dataType == MPAS_POOL_INTEGER) then\n", iterator_name);
-		fortprintf(fd, "               if (%s %% nDims == 0) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i0Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if ((i0Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (i0Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (i0Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, i0Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 1) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i1Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (i1Ptr %% isPersistent .and. ( (i1Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (i1Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (i1Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, i1Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 2) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i2Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (i2Ptr %% isPersistent .and. ( (i2Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (i2Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (i2Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, i2Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 3) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i3Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (i3Ptr %% isPersistent .and. ( (i3Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (i3Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (i3Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, i3Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               end if\n");
-		fortprintf(fd, "            else if (%s %% dataType == MPAS_POOL_CHARACTER) then\n", iterator_name);
-		fortprintf(fd, "               if (%s %% nDims == 0) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), c0Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if ((c0Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-		fortprintf(fd, "                       .or. (c0Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-		fortprintf(fd, "                       .or. (c0Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-		fortprintf(fd, "                       ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, c0Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-	// There isn't a routine for adding a 1D Char field to a stream.
-//		fortprintf(fd, "               else if (%s %% nDims == 1) then\n", iterator_name);
-//		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), c1Ptr)\n", pool_name, iterator_name);
-//		fortprintf(fd, "                  if (c1Ptr %% isPersistent .and. ( (c1Ptr %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) &\n");
-//		fortprintf(fd, "                       .or. (c1Ptr %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) &\n");
-//		fortprintf(fd, "                       .or. (c1Ptr %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC) &\n");
-//		fortprintf(fd, "                       ) ) then\n");
-//		fortprintf(fd, "                     call mpas_streamAddField(input_obj %% io_stream, c1Ptr, nferr)\n");
-//		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               end if\n");
-		fortprintf(fd, "            end if\n");
-		fortprintf(fd, "         end if\n");
-		fortprintf(fd, "      end do\n");
-		fortprintf(fd, "\n");
-
-		err = generate_field_inputs(fd, curLevel+1, subStruct);
 	}
 
-	return 0;
-}/*}}}*/
-
-
-int generate_field_outputs(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
-	ezxml_t subStruct;
-	ezxml_t var_arr_xml, var_xml;
-	const char *structname;
-	const char *vartimelevs;
-	const char *varname, *vardims, *vartype;
-	const char *vardefaultval;
-	int depth;
-	int err;
-	int has_time;
-	int time_lev, time_levs;
-	int ndims, type;
-	int decomp;
-	char *string, *tofree, *token;
-	char pool_name[1024], iterator_name[1024];
-
-	depth = curLevel + 1;
-
-	for(subStruct = ezxml_child(superStruct, "var_struct"); subStruct; subStruct = subStruct->next){
-		structname = ezxml_attr(subStruct, "name");
-		fortprintf(fd, "! ----------- NEW STRUCT ---------\n");
-		fortprintf(fd, "! Output streams for struct %s\n", structname);
-		fortprintf(fd, "! --------------------------------\n");
-		if(curLevel == 0){
-			fortprintf(fd, "      call mpas_pool_get_subpool(domain %% blocklist %% structs, '%s', poolLevel%d)\n", structname, curLevel+1);
-		} else {
-			fortprintf(fd, "      call mpas_pool_get_subpool(poolLevel%d, '%s', poolLevel%d)\n", curLevel, structname, curLevel+1);
-		}
-
-		sprintf(iterator_name, "fieldItr");
-		sprintf(pool_name, "poolLevel%d", curLevel+1);
-
-		fortprintf(fd, "\n");
-		fortprintf(fd, "! Iterate over all fields in struct %s\n", structname);
-		fortprintf(fd, "      call mpas_pool_begin_iteration(poolLevel%d)\n", curLevel+1);
-		fortprintf(fd, "      do while( mpas_pool_get_next_member(poolLevel%d, fieldItr) )\n", curLevel+1);
-		fortprintf(fd, "         if (%s %% memberType == MPAS_POOL_FIELD) then\n", iterator_name);
-		fortprintf(fd, "#ifdef MPAS_DEBUG\n");
-		fortprintf(fd, "            write(stderrUnit,*) 'Checking output streams on ' // trim(%s %% memberName)\n", iterator_name);
-		fortprintf(fd, "#endif\n");
-		fortprintf(fd, "            if (%s %% dataType == MPAS_POOL_REAL) then\n", iterator_name);
-		fortprintf(fd, "               if (%s %% nDims == 0) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r0Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if ((r0Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (r0Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (r0Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, r0Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 1) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r1Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r1Ptr %% isPersistent .and. ( (r1Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (r1Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (r1Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, r1Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 2) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r2Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r2Ptr %% isPersistent .and. ( (r2Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (r2Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (r2Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, r2Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 3) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r3Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r3Ptr %% isPersistent .and. ( (r3Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (r3Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (r3Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, r3Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 4) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r4Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r4Ptr %% isPersistent .and. ( (r4Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (r4Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (r4Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, r4Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 5) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), r5Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (r5Ptr %% isPersistent .and. ( (r5Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (r5Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (r5Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, r5Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               end if\n");
-		fortprintf(fd, "            else if (%s %% dataType == MPAS_POOL_INTEGER) then\n", iterator_name);
-		fortprintf(fd, "               if (%s %% nDims == 0) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i0Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if ((i0Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (i0Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (i0Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, i0Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 1) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i1Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (i1Ptr %% isPersistent .and. ( (i1Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (i1Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (i1Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, i1Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 2) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i2Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (i2Ptr %% isPersistent .and. ( (i2Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (i2Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (i2Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, i2Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               else if (%s %% nDims == 3) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), i3Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if (i3Ptr %% isPersistent .and. ( (i3Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (i3Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (i3Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, i3Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               end if\n");
-		fortprintf(fd, "            else if (%s %% dataType == MPAS_POOL_CHARACTER) then\n", iterator_name);
-		fortprintf(fd, "               if (%s %% nDims == 0) then\n", iterator_name);
-		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), c0Ptr, 1)\n", pool_name, iterator_name);
-		fortprintf(fd, "                  if ((c0Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-		fortprintf(fd, "                       .or. (c0Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-		fortprintf(fd, "                       .or. (c0Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-		fortprintf(fd, "                       ) then\n");
-		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, c0Ptr, nferr)\n");
-		fortprintf(fd, "                  end if\n");
-	// There isn't a routine for adding a 1D Char field to a stream.
-//		fortprintf(fd, "               else if (%s %% nDims == 1) then\n", iterator_name);
-//		fortprintf(fd, "                  call mpas_pool_get_field(%s, trim(%s %% memberName), c1Ptr, 1)\n", pool_name, iterator_name);
-//		fortprintf(fd, "                  if (c1Ptr %% isPersistent .and. ( (c1Ptr %% ioinfo %% output .and. output_obj %% stream == OUTPUT) &\n");
-//		fortprintf(fd, "                       .or. (c1Ptr %% ioinfo %% restart .and. output_obj %% stream == RESTART) &\n");
-//		fortprintf(fd, "                       .or. (c1Ptr %% ioinfo %% sfc .and. output_obj %% stream == SFC) &\n");
-//		fortprintf(fd, "                       ) ) then\n");
-//		fortprintf(fd, "                     call mpas_streamAddField(output_obj %% io_stream, c1Ptr, nferr)\n");
-//		fortprintf(fd, "                  end if\n");
-		fortprintf(fd, "               end if\n");
-		fortprintf(fd, "            end if\n");
-		fortprintf(fd, "         end if\n");
-		fortprintf(fd, "      end do\n");
-		fortprintf(fd, "\n");
-
-		err = generate_field_inputs(fd, curLevel+1, subStruct);
-	}
-
-	return 0;
-}/*}}}*/
-
-
-int generate_field_reads_and_writes(ezxml_t registry){/*{{{*/
-	ezxml_t struct_xml;
-	const char *corename;
-	FILE *fd;
-	int i, structDepth, err;
-
-	char core_string[1024];
-
-	structDepth = determine_struct_depth(0, registry);
-
-	corename = ezxml_attr(registry, "core");
-
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
-
-	// Input fields routine
-	fd = fopen("add_input_fields.inc", "w+");
-	fortprintf(fd, "   subroutine mpas%sadd_input_fields(domain, input_obj)\n", core_string);
-	fortprintf(fd, "      type (domain_type), intent(in) :: domain\n");
-	fortprintf(fd, "      type (io_input_object), intent(inout) :: input_obj\n");
-	fortprintf(fd, "\n");
-	write_field_pointers(fd);
-	for(i = 1; i <= structDepth; i++){
-		fortprintf(fd, "      type (mpas_pool_type), pointer :: poolLevel%d\n", i);
-	}
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      type (mpas_pool_iterator_type) :: fieldItr\n");
-	fortprintf(fd, "      integer :: nferr\n");
-	fortprintf(fd, "\n");
-
-	err = generate_field_inputs(fd, 0, registry);
-
-	fortprintf(fd, "   end subroutine mpas%sadd_input_fields\n", core_string);
+	fortprintf(fd, "end subroutine mpas%ssetup_immutable_streams\n", core_string);
 
 	fclose(fd);
-
-
-	// Output fields routine
-	fd = fopen("add_output_fields.inc", "w+");
-	fortprintf(fd, "   subroutine mpas%sadd_output_fields(domain, output_obj)\n", core_string);
-	fortprintf(fd, "      type (domain_type), intent(in) :: domain\n");
-	fortprintf(fd, "      type (io_output_object), intent(inout) :: output_obj\n");
-	fortprintf(fd, "\n");
-	write_field_pointers(fd);
-	for(i = 1; i <= structDepth; i++){
-		fortprintf(fd, "      type (mpas_pool_type), pointer :: poolLevel%d\n", i);
-	}
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      type (mpas_pool_iterator_type) :: fieldItr\n");
-	fortprintf(fd, "      integer :: nferr\n");
-	fortprintf(fd, "\n");
-
-	err = generate_field_outputs(fd, 0, registry);
-
-	fortprintf(fd, "   end subroutine mpas%sadd_output_fields\n", core_string);
-	fclose(fd);
-
-	fd = fopen("add_output_atts.inc", "w+");
-	fortprintf(fd, "   subroutine mpas%sadd_output_atts(configPool, output_obj)\n", core_string);
-	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
-	fortprintf(fd, "      type (io_output_object), intent(inout) :: output_obj\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      type (mpas_pool_type), pointer :: subPool\n");
-	fortprintf(fd, "      type (mpas_pool_iterator_type) :: poolItr\n");
-	fortprintf(fd, "      type (mpas_pool_iterator_type) :: subPoolItr\n");
-	fortprintf(fd, "      real (kind=RKIND), pointer :: realPtr\n");
-	fortprintf(fd, "      integer, pointer :: integerPtr\n");
-	fortprintf(fd, "      character (len=StrKIND), pointer :: characterPtr\n");
-	fortprintf(fd, "      logical, pointer :: logicalPtr\n");
-	fortprintf(fd, "      character (len=StrKIND) :: attName\n");
-	fortprintf(fd, "      integer :: ierr\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      call mpas_pool_begin_iteration(configPool)\n");
-	fortprintf(fd, "      do while( mpas_pool_get_next_member(configPool, poolItr) )\n");
-	fortprintf(fd, "         if (poolItr %% memberType == MPAS_POOL_SUBPOOL) then\n");
-	fortprintf(fd, "            call mpas_pool_get_subpool(configPool, trim(poolItr %% memberName), subPool)\n");
-	fortprintf(fd, "            call mpas_pool_begin_iteration(subPool)\n");
-	fortprintf(fd, "            do while( mpas_pool_get_next_member(subPool, subPoolItr) )\n");
-	fortprintf(fd, "               if (subPoolItr %% memberType == MPAS_POOL_CONFIG) then\n");
-	fortprintf(fd, "                  if (subPoolItr %% dataType == MPAS_POOL_REAL) then\n");
-	fortprintf(fd, "                     call mpas_pool_get_config(subPool, trim(subPoolItr %% memberName), realPtr)\n");
-	fortprintf(fd, "                     call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName) // '_' // trim(subPoolItr %% memberName), realPtr, ierr)\n");
-	fortprintf(fd, "                  else if (subPoolItr %% dataType == MPAS_POOL_INTEGER) then\n");
-	fortprintf(fd, "                     call mpas_pool_get_config(subPool, trim(subPoolItr %% memberName), integerPtr)\n");
-	fortprintf(fd, "                     call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName) // '_' // trim(subPoolItr %% memberName), integerPtr, ierr)\n");
-	fortprintf(fd, "                  else if (subPoolItr %% dataType == MPAS_POOL_CHARACTER) then\n");
-	fortprintf(fd, "                     call mpas_pool_get_config(subPool, trim(subPoolItr %% memberName), characterPtr)\n");
-	fortprintf(fd, "                     call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName) // '_' // trim(subPoolItr %% memberName), characterPtr, ierr)\n");
-	fortprintf(fd, "                  else if (subPoolItr %% dataType == MPAS_POOL_LOGICAL) then\n");
-	fortprintf(fd, "                     call mpas_pool_get_config(subPool, trim(subPoolItr %% memberName), logicalPtr)\n");
-	fortprintf(fd, "                     if(logicalPtr) then\n");
-	fortprintf(fd, "                        call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName) // '_' // trim(subPoolItr %% memberName), 'T', ierr)\n");
-	fortprintf(fd, "                     else\n");
-	fortprintf(fd, "                        call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName) // '_' // trim(subPoolItr %% memberName), 'F', ierr)\n");
-	fortprintf(fd, "                     end if\n");
-	fortprintf(fd, "                  end if\n");
-	fortprintf(fd, "               end if\n");
-	fortprintf(fd, "            end do\n");
-	fortprintf(fd, "         else if (poolItr %% memberType == MPAS_POOL_CONFIG) then\n");
-	fortprintf(fd, "            if (poolItr %% dataType == MPAS_POOL_REAL) then\n");
-	fortprintf(fd, "               call mpas_pool_get_config(configPool, trim(poolItr %% memberName), realPtr)\n");
-	fortprintf(fd, "               call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName), realPtr, ierr)\n");
-	fortprintf(fd, "            else if (poolItr %% dataType == MPAS_POOL_INTEGER) then\n");
-	fortprintf(fd, "               call mpas_pool_get_config(configPool, trim(poolItr %% memberName), integerPtr)\n");
-	fortprintf(fd, "               call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName), integerPtr, ierr)\n");
-	fortprintf(fd, "            else if (poolItr %% dataType == MPAS_POOL_CHARACTER) then\n");
-	fortprintf(fd, "               call mpas_pool_get_config(configPool, trim(poolItr %% memberName), characterPtr)\n");
-	fortprintf(fd, "               call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName), characterPtr, ierr)\n");
-	fortprintf(fd, "            else if (poolItr %% dataType == MPAS_POOL_LOGICAL) then\n");
-	fortprintf(fd, "               call mpas_pool_get_config(configPool, trim(poolItr %% memberName), logicalPtr)\n");
-	fortprintf(fd, "               if (logicalPtr) then\n");
-	fortprintf(fd, "                  call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName), 'T', ierr)\n");
-	fortprintf(fd, "               else\n");
-	fortprintf(fd, "                  call mpas_writeStreamAtt(output_obj %% io_stream, trim(poolItr %% memberName), 'F', ierr)\n");
-	fortprintf(fd, "               end if\n");
-	fortprintf(fd, "            end if\n");
-	fortprintf(fd, "         end if\n");
-	fortprintf(fd, "      end do\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "   end subroutine mpas%sadd_output_atts\n", core_string);
 
 	return 0;
 }/*}}}*/
@@ -2960,35 +2494,48 @@ int merge_streams(ezxml_t registry){/*{{{*/
 
 						old_child = tmp_child;
 					}
+
+					for(old_child = ezxml_child(childStream2, "var_array"); old_child; old_child){
+						if(old_child->next){
+							tmp_child = old_child->next;
+						} else {
+							tmp_child = NULL;
+						}
+						new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
+
+						old_child = tmp_child;
+					}
+
+					for(old_child = ezxml_child(childStream2, "var_struct"); old_child; old_child){
+						if(old_child->next){
+							tmp_child = old_child->next;
+						} else {
+							tmp_child = NULL;
+						}
+						new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
+
+						old_child = tmp_child;
+					}
+
+					for(old_child = ezxml_child(childStream2, "stream"); old_child; old_child){
+						if(old_child->next){
+							tmp_child = old_child->next;
+						} else {
+							tmp_child = NULL;
+						}
+						new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
+
+						old_child = tmp_child;
+					}
+
+
+
+
 					lastStream->next = childStream2->next;
 					free(childStream2);
 					childStream2 = lastStream;
 				} else {
 					lastStream = childStream2;
-				}
-			}
-		}
-	}
-
-	// Parse a stream for a stream, and add all var's from within the nested
-	// stream to the outer stream.
-	streamsBlock = ezxml_child(registry, "streams");
-	for(childStream1 = ezxml_child(streamsBlock, "stream"); childStream1; childStream1 = childStream1->next){
-		name = ezxml_attr(childStream1, "name");
-		// Nested streams
-		for(childStream2 = ezxml_child(childStream1, "stream"); childStream2; childStream2 = childStream2->next){
-			name2 = ezxml_attr(childStream2, "name");
-
-			if(strcmp(name, name2) != 0){
-				for(includeStream =	ezxml_child(streamsBlock, "stream"); includeStream; includeStream = includeStream->next){
-					name = ezxml_attr(includeStream, "name");
-
-					if(strcmp(name, name2) == 0){
-						// "copy" var's from nested streams
-						for(old_child = ezxml_child(includeStream, "var"); old_child; old_child = old_child->next){
-							new_child = ezxml_insert(old_child, childStream1, strlen(childStream1->txt));
-						}
-					}
 				}
 			}
 		}
@@ -3034,56 +2581,12 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(in) :: packagePool\n");
 
-	// Need to define logicals for all packages
-	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
-		for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
-			packagename = ezxml_attr(package_xml, "name");
-
-			fortprintf(fd, "      logical, pointer :: %sActive\n", packagename);
-		}
-	}
-
-	fortprintf(fd, "\n");
-
-	// Need to get value of package flags
-	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
-		for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
-			packagename = ezxml_attr(package_xml, "name");
-
-			fortprintf(fd, "      call mpas_pool_get_package(packagePool, '%sActive', %sActive)\n", packagename, packagename);
-		}
-	}
-
 	fortprintf(fd, "\n");
 
 	for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
 		structname = ezxml_attr(structs_xml, "name");
-		structpackages = ezxml_attr(structs_xml, "packages");
 
-		package_list[0] = '\0';
-		no_packages = build_struct_package_lists(structs_xml, package_list);
-
-		spacing[0] = '\0';
-		if(!no_packages){
-			fortprintf(fd, "      if (");
-			string = strdup(package_list);
-			tofree = string;
-			token = strsep(&string, ";");
-			fortprintf(fd, "%sActive", token);
-
-			while( (token = strsep(&string, ";")) != NULL){
-				fortprintf(fd, " .or. %sActive", token);
-			}
-
-			fortprintf(fd, ") then\n");
-			sprintf(spacing, "   ");
-		}
-
-		fortprintf(fd, "      %scall mpas_generate%spool_%s(block, structPool, dimensionPool, packagePool)\n", spacing, core_string, structname);
-
-		if(!no_packages){
-			fortprintf(fd, "      end if\n");
-		}
+		fortprintf(fd, "      call mpas_generate%spool_%s(block, structPool, dimensionPool, packagePool)\n", core_string, structname);
 
 		fortprintf(fd, "\n");
 	}

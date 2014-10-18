@@ -46,8 +46,10 @@ src/registry/parse
 # Ignore MPAS core build files.
 .mpas_core_*
 
-# Ignore all namelist files.
+# Ignore all runtime config files
 namelist.*
+streams.*
+stream_list.*
 
 # Intermediate files that may be produced by Intel compilers
 *.i

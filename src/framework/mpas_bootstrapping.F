@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_io_input
+module mpas_bootstrapping
 
    use mpas_grid_types
    use mpas_dmpar
@@ -17,45 +17,73 @@ module mpas_io_input
    use mpas_io_streams
    use mpas_io_units
 
-   integer, parameter :: STREAM_INPUT=1, STREAM_SFC=2, STREAM_RESTART=3
-   integer, parameter :: idLength = 10
-
-   type io_input_object
-      character (len=StrKIND) :: filename
-      integer :: rd_ncid
-      integer :: stream
-
-      integer :: time
-
-      type (MPAS_Stream_type) :: io_stream
-
-   end type io_input_object
 
    integer :: readCellStart, readCellEnd, nReadCells
    integer :: readEdgeStart, readEdgeEnd, nReadEdges
    integer :: readVertexStart, readVertexEnd, nReadVertices
 
+
    contains
 
-   subroutine mpas_input_state_for_domain(domain)!{{{
+
+   !***********************************************************************
+   !
+   !  routine mpas_bootstrap_framework
+   !
+   !> \brief   Obtains mesh partition, builds halos, and allocates blocks.
+   !> \author  Michael Duda
+   !> \date    7 September 2014
+   !> \details
+   !>  This routine is responsible for reading basic decomposed field dimensions,
+   !>  determining a block decomposition of the mesh, building halos for fields,
+   !>  and, finally, allocating blocklist for a domain.
+   !>
+   !>  Dimensions required to be present in the grid file:
+   !>      nCells
+   !>      nEdges
+   !>      nVertices
+   !>      vertexDegree
+   !>      maxEdges
+   !>      ***** and, at present, all other dimensions so we can allocate all fields
+   !>
+   !>  Fields required to be present in the grid file:
+   !>      indexToCellID
+   !>      indexToEdgeID
+   !>      indexToVertexID
+   !>      {x,y,z}Cell
+   !>      {x,y,z}Edge
+   !>      {x,y,z}Vertex
+   !>      nEdgesOnCell
+   !>      cellsOnCell
+   !>      edgesOnCell
+   !>      verticesOnCell
+   !>      cellsOnEdge
+   !>      cellsOnVertex
+   !>
+   !>  Attributes required to be present in the grid file:
+   !>      on_a_sphere
+   !>      sphere_radius
+   !>      ***** these are needed by mpas_block_creator_finalize_block_init()
+   !>            so they can be set in the mesh pool and queried by, e.g., 
+   !>            mpas_initialize_vectors()
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_bootstrap_framework(domain, mesh_filename) !{{{
 
       implicit none
    
       type (domain_type), pointer :: domain
+      character(len=*), intent(in) :: mesh_filename
 
-      type (block_type), pointer :: block_ptr
       type (block_type), pointer :: readingBlock
    
-      integer :: i, j, k
-      type (io_input_object) :: input_obj
 #include "dim_dummy_defines_noinput.inc"
+
+      integer :: ierr
+      type (MPAS_IO_Handle_type) :: inputHandle
 
       character (len=StrKIND) :: c_on_a_sphere
       real (kind=RKIND) :: r_sphere_radius
-
-      integer :: ierr
-      integer, dimension(:), pointer :: readIndices
-      type (MPAS_IO_Handle_type) :: inputHandle
    
       type (field1dInteger), pointer :: indexToCellIDField
       type (field1dInteger), pointer :: indexToEdgeIDField
@@ -70,8 +98,6 @@ module mpas_io_input
       type (field1dReal), pointer :: xCellField,   yCellField,   zCellField
       type (field1dReal), pointer :: xEdgeField,   yEdgeField,   zEdgeField
       type (field1dReal), pointer :: xVertexField, yVertexField, zVertexField
-
-      type (field1DChar) :: xtime
 
       type (field1dInteger), pointer :: nCellsSolveField
       type (field1dInteger), pointer :: nVerticesSolveField
@@ -89,10 +115,6 @@ module mpas_io_input
       type (field1DInteger), pointer :: indexToEdgeID_Block
       type (field2DInteger), pointer :: cellsOnEdge_Block
 
-      type (field1DReal), pointer :: xCell, yCell, zCell
-      type (field1DReal), pointer :: xEdge, yEdge, zEdge
-      type (field1DReal), pointer :: xVertex, yVertex, zVertex
-   
       integer, dimension(:), pointer :: local_cell_list
       integer, dimension(:), pointer :: block_id, block_start, block_count
       type (graph) :: partial_global_graph_info
@@ -102,17 +124,12 @@ module mpas_io_input
       character(len=StrKIND) :: filename
 
       integer, pointer :: config_num_halos, config_number_of_blocks
-      logical, pointer :: config_do_restart, config_explicit_proc_decomp
-      character (len=StrKIND), pointer :: config_restart_timestamp_name, config_start_time, config_restart_name, config_input_name
+      logical, pointer :: config_explicit_proc_decomp
       character (len=StrKIND), pointer :: config_block_decomp_file_prefix, config_proc_decomp_file_prefix
       integer :: nHalos
 
+
       call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-      call mpas_pool_get_config(domain % configs, 'config_restart_name', config_restart_name)
-      call mpas_pool_get_config(domain % configs, 'config_input_name', config_input_name)
       call mpas_pool_get_config(domain % configs, 'config_number_of_blocks', config_number_of_blocks)
       call mpas_pool_get_config(domain % configs, 'config_explicit_proc_decomp', config_explicit_proc_decomp)
       call mpas_pool_get_config(domain % configs, 'config_block_decomp_file_prefix', config_block_decomp_file_prefix)
@@ -120,133 +137,22 @@ module mpas_io_input
 
       nHalos = config_num_halos
 
-      if (config_do_restart) then
-        ! this get followed by set is to ensure that the time is in standard format
-        if(trim(config_start_time) == 'file') then
-          open(22,file=trim(config_restart_timestamp_name),form='formatted',status='old')
-          read(22,*) restartTimeStamp
-          close(22)
 
-        else
-          restartTimeStamp = config_start_time
-        end if
-
-        write(stderrUnit,*) 'RestartTimeStamp ', trim(restartTimeStamp)
-        call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp)
-        call mpas_get_time(curr_time=startTime, dateTimeString=timeStamp)
-        call mpas_insert_string_suffix(trim(config_restart_name), timeStamp, filename)
-
-        input_obj % filename = trim(filename)
-        input_obj % stream = STREAM_RESTART
-      else
-        input_obj % filename = trim(config_input_name)
-        input_obj % stream = STREAM_INPUT
-      end if
-      inputHandle = MPAS_io_open(trim(input_obj % filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr)
       if (ierr /= MPAS_IO_NOERR) then
-        write(stderrUnit,*) ' '
-        if (input_obj % stream == STREAM_RESTART) then
-          write(stderrUnit,*) 'Error opening restart file ''', trim(input_obj % filename), ''''
-        else if (input_obj % stream == STREAM_INPUT) then
-          write(stderrUnit,*) 'Error opening input file ''', trim(input_obj % filename), ''''
-        else if (input_obj % stream == STREAM_SFC) then
-          write(stderrUnit,*) 'Error opening sfc file ''', trim(input_obj % filename), ''''
-        end if
-        write(stderrUnit,*) ' '
-        call mpas_dmpar_abort(domain % dminfo)
-      end if
-
-      call mpas_io_input_init(input_obj, domain % dminfo)
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'sphere_radius', r_sphere_radius, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-        write(stderrUnit,*) 'Warning: Attribute sphere_radius not found in '//trim(input_obj % filename)
-        write(stderrUnit,*) '   Setting sphere_radius to 1.0'
-        domain % sphere_radius = 1.0
-      else
-        domain % sphere_radius = r_sphere_radius
-      end if
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'on_a_sphere', c_on_a_sphere, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-        write(stderrUnit,*) 'Warning: Attribute on_a_sphere not found in '//trim(input_obj % filename)
-        write(stderrUnit,*) '   Setting on_a_sphere to ''YES'''
-        domain % on_a_sphere = .true.
-      else
-        if (index(c_on_a_sphere, 'YES') /= 0) then
-          domain % on_a_sphere = .true.
-        else
-          domain % on_a_sphere = .false.
-        end if
-      end if
-
-#ifndef MPAS_CESM
-      call MPAS_readStreamAtt(input_obj % io_stream, 'history', domain % history, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-        write(stderrUnit,*) 'Warning: Attribute History not found in '//trim(input_obj % filename)
-        write(stderrUnit,*) '   Setting History to '''''
-        domain % history = ""
-      else
-        ! Remove C String NULL characters, replace C String newlines with semicolons
-        do i = 1, len(domain % history)
-          if(iachar(domain % history(i:i)) == 0) then
-            domain % history(i:i) = " "
-          else if(iachar(domain % history(i:i)) == 10) then
-            domain % history(i:i) = new_line('A')
-          end if
-        end do
-      end if
-#else
-      domain % history = "cesm_run"
-#endif
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'parent_id', domain % parent_id, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-         domain % parent_id = 'Unknown'
-      end if
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'mesh_id', domain % mesh_id, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-         domain % mesh_id = 'Unknown'
-      end if
-
-      if ( trim(domain % mesh_id) /= 'Unknown') then
-         if ( trim(domain % parent_id) /= 'Unknown' ) then
-            domain % parent_id = trim(domain % mesh_id) // new_line('A') // trim(domain % parent_id)
-         else
-            domain % parent_id = trim(domain % mesh_id)
-         end if
-      else
-         domain % parent_id = 'Unknown'
-      end if
-
-      call gen_random(idLength, domain % mesh_id)
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'Conventions', domain % Conventions, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-        write(stderrUnit,*) 'Warning: Attribute Conventions not found in '//trim(input_obj % filename)
-        write(stderrUnit,*) '   Setting Conventions to ''MPAS'''
-        domain % Conventions = "MPAS"
-      end if
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'source', domain % source, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-        write(stderrUnit,*) 'Warning: Attribute source not found in '//trim(input_obj % filename)
-        write(stderrUnit,*) '   Setting source to ''MPAS'''
-        domain % source = "MPAS"
-      end if
-
-      call MPAS_readStreamAtt(input_obj % io_stream, 'mesh_spec', domain % mesh_spec, ierr)
-      if (ierr /= MPAS_STREAM_NOERR) then
-        write(stderrUnit,*) 'Warning: Attribute mesh_spec not found in '//trim(input_obj % filename)
-        write(stderrUnit,*) '   Setting mesh_spec to ''Unknown'''
-        domain % mesh_spec = "Unknown"
+         write(stderrUnit,*) ' '
+         write(stderrUnit,*) '************************************************************************************'
+         write(stderrUnit,*) 'Error: Could not open input file '''//trim(mesh_filename)//''' to read mesh fields'
+         write(stderrUnit,*) '************************************************************************************'
+         call mpas_dmpar_abort(domain % dminfo)
       end if
 
 
       !
       ! Read global number of cells/edges/vertices
       !
+!MGD for bootstrapping, we really only need a small, fixed set of dimensions
+!    HOWEVER: in order to allocate all fields, we need all non-derived dimensions...
 #include "read_dimensions.inc"
    
       !
@@ -272,13 +178,16 @@ module mpas_io_input
       !   which cells/edges/vertices are owned by each block, and which are ghost
       !
 
-      call mpas_io_setup_cell_block_fields(inputHandle, nreadCells, readCellStart, readingBlock, maxEdges, indexTocellIDField, xCellField, &
-                                           yCellField, zCellField, nEdgesOnCellField, cellsOnCellField, edgesOnCellField, verticesOnCellField, nHalos)
+      call mpas_io_setup_cell_block_fields(inputHandle, nreadCells, readCellStart, readingBlock, maxEdges, &
+                                           indexTocellIDField, xCellField, yCellField, zCellField, nEdgesOnCellField, &
+                                           cellsOnCellField, edgesOnCellField, verticesOnCellField, nHalos)
 
-      call mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeIDField, xEdgeField, yEdgeField, zEdgeField, cellsOnEdgeField, nHalos)
+      call mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeIDField, &
+                                           xEdgeField, yEdgeField, zEdgeField, cellsOnEdgeField, nHalos)
 
-      call mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, indexToVertexIDField, &
-                                             xVertexField, yVertexField, zVertexField, cellsOnVertexField, nHalos)
+      call mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, &
+                                             indexToVertexIDField, xVertexField, yVertexField, zVertexField, cellsOnVertexField, &
+                                             nHalos)
       !
       ! Set up a graph derived data type describing the connectivity for the cells 
       !   that were read by this process
@@ -301,81 +210,78 @@ module mpas_io_input
       ! TODO: Ensure (by renaming or exchanging) that initial cell range on each proc is contiguous
       !       This situation may occur when reading a restart file with cells/edges/vertices written
       !       in a scrambled order
-   
 
+      !
       ! Determine which cells are owned by this process
-      call mpas_block_decomp_cells_for_proc(domain % dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count, &
-                                            config_number_of_blocks, config_explicit_proc_decomp, config_block_decomp_file_prefix, config_proc_decomp_file_prefix)
+      !
+      call mpas_block_decomp_cells_for_proc(domain % dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, &
+                                            block_count, config_number_of_blocks, config_explicit_proc_decomp, &
+                                            config_block_decomp_file_prefix, config_proc_decomp_file_prefix)
 
       deallocate(partial_global_graph_info % vertexID)
       deallocate(partial_global_graph_info % nAdjacent)
       deallocate(partial_global_graph_info % adjacencyList)
 
-      call mpas_block_creator_setup_blocks_and_0halo_cells(nHalos, domain, indexToCellID_Block, local_cell_list, block_id, block_start, block_count)
-      call mpas_block_creator_build_0halo_cell_fields(nHalos, indexToCellIDField, nEdgesOnCellField, cellsOnCellField, verticesOnCellField, edgesOnCellField, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, edgesOnCell_Block)
+      call mpas_block_creator_setup_blocks_and_0halo_cells(nHalos, domain, indexToCellID_Block, local_cell_list, block_id, &
+                                                           block_start, block_count)
+      call mpas_block_creator_build_0halo_cell_fields(nHalos, indexToCellIDField, nEdgesOnCellField, cellsOnCellField, &
+                                                      verticesOnCellField, edgesOnCellField, indexToCellID_Block, &
+                                                      nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, &
+                                                      edgesOnCell_Block)
 
-      call mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToEdgeIDField, cellsOnEdgeField, indexToCellID_Block, nEdgesOnCell_Block, edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
-      call mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToVertexIDField, cellsOnVertexField, indexToCellID_Block, nEdgesOnCell_Block, verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, nVerticesSolveField)
+      call mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToEdgeIDField, cellsOnEdgeField, indexToCellID_Block, &
+                                                            nEdgesOnCell_Block, edgesOnCell_Block, indexToEdgeID_Block, &
+                                                            cellsOnEdge_Block, nEdgesSolveField)
+      call mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToVertexIDField, cellsOnVertexField, indexToCellID_Block, &
+                                                            nEdgesOnCell_Block, verticesOnCell_Block, indexToVertexID_Block, &
+                                                            cellsOnVertex_Block, nVerticesSolveField)
 
-      call mpas_block_creator_build_cell_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, edgesOnCell_Block, nCellsSolveField)
+      call mpas_block_creator_build_cell_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, &
+                                               verticesOnCell_Block, edgesOnCell_Block, nCellsSolveField)
 
-      call mpas_block_creator_build_edge_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
-      call mpas_block_creator_build_edge_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, nVerticesSolveField)
+      call mpas_block_creator_build_edge_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, &
+                                               edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
+      call mpas_block_creator_build_edge_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, &
+                                               verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, &
+                                               nVerticesSolveField)
+
+      !
+      ! Before we can allocate blocks, we need the attributes on_a_sphere and sphere_radius so
+      !    they can be propagated as configs to subpools
+      !
+      call MPAS_io_get_att(inputHandle, 'on_a_sphere', c_on_a_sphere, ierr=ierr)
+      if (ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit,*) 'Warning: Attribute on_a_sphere not found in '//trim(mesh_filename)
+         write(stderrUnit,*) '   Setting on_a_sphere to ''YES'''
+         domain % on_a_sphere = .true.
+      else
+         if (index(c_on_a_sphere, 'YES') /= 0) then
+            domain % on_a_sphere = .true.
+         else
+            domain % on_a_sphere = .false.
+         end if
+      end if
+
+      call MPAS_io_get_att(inputHandle, 'sphere_radius', r_sphere_radius, ierr=ierr)
+      if (ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit,*) 'Warning: Attribute sphere_radius not found in '//trim(mesh_filename)
+         write(stderrUnit,*) '   Setting sphere_radius to 1.0'
+         domain % sphere_radius = 1.0
+      else
+         domain % sphere_radius = r_sphere_radius
+      end if
 
 
      ! Allocate blocks, and copy indexTo arrays into blocks
      call mpas_block_creator_finalize_block_init(nHalos, domain % blocklist, &
 #include "dim_dummy_args.inc"         
-                             , nCellsSolveField, nEdgesSolveField, nVerticesSolveField, indexToCellID_Block, indexToEdgeID_Block, indexToVertexID_Block)
+                             , nCellsSolveField, nEdgesSolveField, nVerticesSolveField, indexToCellID_Block, indexToEdgeID_Block, &
+                             indexToVertexID_Block)
 
       call mpas_link_fields(domain)
 
-      call mpas_add_input_fields(domain, input_obj)
-
-      if (.not. config_do_restart) then
-        input_obj % time = 1
-      else
-        !
-        ! If doing a restart, we need to decide which time slice to read from the 
-        !   restart file
-        !
-        input_obj % time = MPAS_seekStream(input_obj % io_stream, restartTimeStamp, MPAS_STREAM_EXACT_TIME, timeStamp, ierr)
-        if (ierr == MPAS_IO_ERR) then
-          write(stderrUnit,*) 'Error: restart file '//trim(filename)//' did not contain time '//trim(restartTimeStamp)
-          call mpas_dmpar_abort(domain % dminfo)
-        end if
-
-!       input_obj % time = MPAS_seekStream(input_obj % io_stream, config_start_time, MPAS_STREAM_EXACT_TIME, timeStamp, ierr)
-!       if (ierr == MPAS_IO_ERR) then
-!         write(stderrUnit,*) 'Error: restart file '//trim(filename)//' did not contain time '//trim(config_start_time)
-!         call mpas_dmpar_abort(domain % dminfo)
-!       end if
-!write(stderrUnit,*) 'MGD DEBUGGING time = ', input_obj % time
-        write(stderrUnit,*) 'Restarting model from time ', trim(timeStamp)
-      end if
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-      ! Do the actual work of reading all fields in from the input or restart file
-      ! For each field:
-      !   1) Each process reads a contiguous range of cell/edge/vertex indices, which
-      !      may not correspond with the cells/edges/vertices that are owned by the
-      !      process
-      !   2) All processes then send the global indices that were read to the 
-      !      processes that own those indices based on 
-      !      {send,recv}{Cell,Edge,Vertex}List
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-      call mpas_read_and_distribute_fields(input_obj)
-
-      call mpas_io_input_finalize(input_obj, domain % dminfo)
-
       call MPAS_io_close(inputHandle, ierr)
 
-      !
-      ! Exchange halos for all of the fields that were read from the input file
-      !
-      call mpas_exch_input_field_halos(domain, input_obj)
-
-      call mpas_block_creator_reindex_block_fields(domain % blocklist)
 
       call mpas_dmpar_destroy_mulithalo_exchange_list(indexToCellIDField % sendList)
       call mpas_dmpar_destroy_mulithalo_exchange_list(indexToCellIDField % recvList)
@@ -419,98 +325,14 @@ module mpas_io_input
       deallocate(block_count)
       deallocate(readingBlock)
 
-   end subroutine mpas_input_state_for_domain!}}}
-
-   !CR:TODO: an identical subroutine is found in module_io_output - merge
-   subroutine mpas_insert_string_suffix(stream, suffix, filename)!{{{
-
-      implicit none
-
-      character (len=*), intent(in) :: stream
-      character (len=*), intent(in) :: suffix
-      character (len=*), intent(out) :: filename
-      integer :: length, i
-
-      filename = trim(stream) // '.' // trim(suffix)
-
-      length = len_trim(stream)
-      do i=length-1,1,-1
-         if(stream(i:i) == '.') then
-            filename = trim(stream(:i)) // trim(suffix) // trim(stream(i:))
-            exit
-         end if
-      end do
-
-      do i=1,len_trim(filename)
-         if (filename(i:i) == ':') filename(i:i) = '.'
-      end do
-
-   end subroutine mpas_insert_string_suffix!}}}
-
-   subroutine mpas_read_and_distribute_fields(input_obj)!{{{
-      
-      implicit none
-
-      type (io_input_object), intent(inout) :: input_obj
-
-      integer :: ierr
+   end subroutine mpas_bootstrap_framework !}}}
 
 
-      call MPAS_readStream(input_obj % io_stream, input_obj % time, ierr)
+   subroutine mpas_io_setup_cell_block_fields(inputHandle, nReadCells, readCellStart, readingBlock, maxEdges, indexToCellID, &
+                                              xCell, yCell, zCell, nEdgesOnCell, cellsOnCell, edgesOnCell, verticesOnCell, nHalos) !{{{
 
+     implicit none
 
-   end subroutine mpas_read_and_distribute_fields!}}}
-
-   subroutine mpas_io_input_init(input_obj, dminfo)!{{{
- 
-      implicit none
-
-      type (io_input_object), intent(inout) :: input_obj
-      type (dm_info), intent(in) :: dminfo
- 
-      integer :: nferr
- 
-      call MPAS_createStream(input_obj % io_stream, trim(input_obj % filename), MPAS_IO_PNETCDF, MPAS_IO_READ, 1, nferr)
-      if (nferr /= MPAS_STREAM_NOERR) then
-         write(stderrUnit,*) ' '
-         if (input_obj % stream == STREAM_RESTART) then
-            write(stderrUnit,*) 'Error opening restart file ''', trim(input_obj % filename), ''''
-         else if (input_obj % stream == STREAM_INPUT) then
-            write(stderrUnit,*) 'Error opening input file ''', trim(input_obj % filename), ''''
-         else if (input_obj % stream == STREAM_SFC) then
-            write(stderrUnit,*) 'Error opening sfc file ''', trim(input_obj % filename), ''''
-         end if
-         write(stderrUnit,*) ' '
-         call mpas_dmpar_abort(dminfo)
-      end if
-
-   end subroutine mpas_io_input_init!}}}
-
-   subroutine mpas_exch_input_field_halos(domain, input_obj)!{{{
-
-      implicit none
-
-      type (domain_type), intent(inout) :: domain
-      type (io_input_object), intent(inout) :: input_obj
-
-      call mpas_exchange_fields(domain, input_obj)
-
-   end subroutine mpas_exch_input_field_halos!}}}
-
-   subroutine mpas_io_input_finalize(input_obj, dminfo)!{{{
- 
-      implicit none
- 
-      type (io_input_object), intent(inout) :: input_obj
-      type (dm_info), intent(in) :: dminfo
-
-      integer :: nferr
- 
-      call MPAS_closeStream(input_obj % io_stream, nferr)
- 
-   end subroutine mpas_io_input_finalize!}}}
-
-   subroutine mpas_io_setup_cell_block_fields(inputHandle, nReadCells, readCellStart, readingBlock, maxEdges, indexToCellID, xCell, yCell, zCell, nEdgesOnCell, cellsOnCell, edgesOnCell, verticesOnCell, nHalos)!{{{
      type (MPAS_IO_Handle_type) :: inputHandle
      integer, intent(in) :: nReadCells
      integer, intent(in) :: readCellStart
@@ -526,7 +348,7 @@ module mpas_io_input
      type (field2dInteger), pointer :: verticesOnCell
      integer, intent(in) :: nHalos
 
-     integer :: i
+     integer :: i, ierr
      integer, dimension(:), pointer :: readIndices
 
      !
@@ -635,9 +457,14 @@ module mpas_io_input
 
      deallocate(readIndices)
    
-   end subroutine mpas_io_setup_cell_block_fields!}}}
+   end subroutine mpas_io_setup_cell_block_fields !}}}
 
-   subroutine mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeID, xEdge, yEdge, zEdge, cellsOnEdge, nHalos)!{{{
+
+   subroutine mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeID, &
+                                              xEdge, yEdge, zEdge, cellsOnEdge, nHalos) !{{{
+
+     implicit none
+
      type (MPAS_IO_Handle_type) :: inputHandle
      integer, intent(in) :: nReadEdges
      integer, intent(in) :: readEdgeStart
@@ -649,7 +476,7 @@ module mpas_io_input
      type (field2dInteger), pointer :: cellsOnEdge
      integer, intent(in) :: nHalos
 
-     integer :: i
+     integer :: i, ierr
      integer, dimension(:), pointer :: readIndices
 
      !
@@ -705,9 +532,14 @@ module mpas_io_input
 
      deallocate(readIndices)
    
-   end subroutine mpas_io_setup_edge_block_fields!}}}
+   end subroutine mpas_io_setup_edge_block_fields !}}}
 
-   subroutine mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, indexToVertexID, xVertex, yVertex, zVertex, cellsOnVertex, nHalos)!{{{
+
+   subroutine mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, &
+                                                indexToVertexID, xVertex, yVertex, zVertex, cellsOnVertex, nHalos) !{{{
+
+     implicit none
+
      type (MPAS_IO_Handle_type) :: inputHandle
      integer, intent(in) :: nReadVertices
      integer, intent(in) :: readVertexStart
@@ -720,7 +552,7 @@ module mpas_io_input
      type (field2dInteger), pointer :: cellsOnVertex
      integer, intent(in) :: nHalos
 
-     integer :: i
+     integer :: i, ierr
      integer, dimension(:), pointer :: readIndices
 
      ! Global vertex indices
@@ -769,9 +601,8 @@ module mpas_io_input
 
      deallocate(readIndices)
 
-   end subroutine mpas_io_setup_vertex_block_fields!}}}
+   end subroutine mpas_io_setup_vertex_block_fields !}}}
 
-#include "add_input_fields.inc"
-#include "exchange_fields.inc"
- 
-end module mpas_io_input
+#include "setup_immutable_streams.inc"
+
+end module mpas_bootstrapping

@@ -9,6 +9,7 @@ module mpas_timekeeping
 
    use mpas_kind_types
    use mpas_io_units
+   use ESMF
    use ESMF_BaseMod
    use ESMF_Stubs
    use ESMF_CalendarMod
@@ -30,10 +31,10 @@ module mpas_timekeeping
                          MPAS_360DAY = 2
 
    integer :: TheCalendar 
+   integer :: yearWidth
 
    integer, dimension(12), parameter :: daysInMonth     = (/31,28,31,30,31,30,31,31,30,31,30,31/)
    integer, dimension(12), parameter :: daysInMonthLeap = (/31,29,31,30,31,30,31,31,30,31,30,31/)
-
 
    type MPAS_Time_type
       type (ESMF_Time) :: t
@@ -44,7 +45,7 @@ module mpas_timekeeping
    end type
 
    type MPAS_Alarm_type
-      integer :: alarmID
+      character (len=ShortStrKIND) :: alarmID
       logical :: isRecurring
       logical :: isSet
       type (MPAS_Time_type) :: ringTime
@@ -127,13 +128,13 @@ module mpas_timekeeping
 #ifndef MPAS_CESM
       if (trim(calendar) == 'gregorian') then
          TheCalendar = MPAS_GREGORIAN
-         call ESMF_Initialize(defaultCalendar=ESMF_CAL_GREGORIAN)
+         call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_GREGORIAN)
       else if (trim(calendar) == 'gregorian_noleap') then
          TheCalendar = MPAS_GREGORIAN_NOLEAP
-         call ESMF_Initialize(defaultCalendar=ESMF_CAL_NOLEAP)
-      else if (trim(calendar) == '360day') then
-         TheCalendar = MPAS_360DAY
-         call ESMF_Initialize(defaultCalendar=ESMF_CAL_360DAY)
+         call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_NOLEAP)
+!     else if (trim(calendar) == '360day') then
+!        TheCalendar = MPAS_360DAY
+!        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
       else
          write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
       end if
@@ -146,6 +147,8 @@ module mpas_timekeeping
          write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
       end if
 #endif
+
+      yearWidth = 4
 
    end subroutine mpas_timekeeping_init
 
@@ -160,6 +163,33 @@ module mpas_timekeeping
 
    end subroutine mpas_timekeeping_finalize
 
+   !-----------------------------------------------------------------------
+   !  routine mpas_timekeeping_set_year_width
+   !
+   !> \brief This routine sets the width of the year portion of timestamps.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   07/23/2014
+   !> \details This routine sets the width of the year portion of timestamps.
+   !>   It can be used to make the year portion of a time stamp or an expanded
+   !>   string more than 4 digits, to support years larger than 9999.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_timekeeping_set_year_width(yearWidthIn)!{{{
+      integer, intent(in) :: yearWidthIn
+
+      yearWidth = yearWidthIn
+
+      if (yearWidthIn <= 0) then
+          write(stderrUnit,*) 'ERROR: mpas_set_year_width: yearWidth cannot be less than or equal to zero.' 
+          ierr = 1
+          return
+      end if
+
+      yearWidth = yearWidthIn
+
+      call ESMF_setYearWidth(yearWidthIn)
+
+   end subroutine mpas_timekeeping_set_year_width!}}}
 
    subroutine mpas_create_clock(clock, startTime, timeStep, stopTime, runDuration, ierr)
 
@@ -439,7 +469,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(inout) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       type (MPAS_Time_type), intent(in) :: alarmTime
       type (MPAS_TimeInterval_type), intent(in), optional :: alarmTimeInterval
       integer, intent(out), optional :: ierr
@@ -454,15 +484,15 @@ module mpas_timekeeping
       else
          alarmPtr => clock % alarmListHead
          do while (associated(alarmPtr % next))
-            if (alarmPtr % alarmID == alarmID) then
-               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', alarmID
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
                if (present(ierr)) ierr = 1
                return
             end if
             alarmPtr => alarmPtr % next
          end do
-            if (alarmPtr % alarmID == alarmID) then
-               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', alarmID
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
                if (present(ierr)) ierr = 1
                return
             end if
@@ -471,7 +501,7 @@ module mpas_timekeeping
          nullify(alarmPtr % next)
       end if
 
-      alarmPtr % alarmID = alarmID
+      alarmPtr % alarmID = trim(alarmID)
 
       clock % nAlarms = clock % nAlarms + 1
 
@@ -503,7 +533,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(inout) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       integer, intent(out), optional :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
@@ -512,19 +542,97 @@ module mpas_timekeeping
       if (present(ierr)) ierr = 0
 
       alarmPtr => clock % alarmListHead
-      alarmParentPtr = alarmPtr
+      alarmParentPtr => alarmPtr
       do while (associated(alarmPtr))
-         if (alarmPtr % alarmID == alarmID) then
-            alarmParentPtr % next => alarmPtr % next
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            if (trim(alarmPtr % alarmID) == trim(clock % alarmListHead % alarmID)) then
+               clock % alarmListHead => alarmPtr % next
+            else
+               alarmParentPtr % next => alarmPtr % next
+            end if
             deallocate(alarmPtr)
             exit
          end if
-         alarmParentPtr = alarmPtr
+         alarmParentPtr => alarmPtr
          alarmPtr => alarmPtr % next
       end do
 
    end subroutine mpas_remove_clock_alarm
 
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_is_alarm_defined
+   !
+   !> \brief Check whether an alarm has been defined on a clock
+   !> \author Michael Duda
+   !> \date   26 August 2014
+   !> \details
+   !>  For a specified clock and alarm ID, checks whether that alarm ID has
+   !>  been defined on the clock and returns the result.
+   !
+   !-----------------------------------------------------------------------
+   logical function mpas_is_alarm_defined(clock, alarmID, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      integer, intent(out) :: ierr
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      ierr = 0
+      mpas_is_alarm_defined = .false.
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            mpas_is_alarm_defined = .true.
+            return
+         end if
+         alarmPtr => alarmPtr % next 
+      end do
+
+   end function mpas_is_alarm_defined
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_alarm_interval
+   !
+   !> \brief Retrieve the interval for an alarm
+   !> \author Michael Duda
+   !> \date   4 September 2014
+   !> \details
+   !>  For a specified clock and alarm ID, returns the time interval
+   !>  associated with the alarm.
+   !
+   !-----------------------------------------------------------------------
+   type (MPAS_TimeInterval_type) function mpas_alarm_interval(clock, alarmID, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      integer, intent(out) :: ierr
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      ierr = 1
+      call mpas_set_timeInterval(mpas_alarm_interval, S=0)
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            if (alarmPtr % isSet .and. alarmPtr % isRecurring) then
+               ierr = 0
+               mpas_alarm_interval = alarmPtr % ringTimeInterval
+            end if
+            return
+         end if
+         alarmPtr => alarmPtr % next 
+      end do
+
+   end function mpas_alarm_interval
 
 
    subroutine mpas_print_alarm(clock, alarmID, ierr)
@@ -532,7 +640,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(in) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       integer, intent(out) :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
@@ -543,8 +651,8 @@ module mpas_timekeeping
 
       alarmPtr => clock % alarmListHead
       do while (associated(alarmPtr))
-         if (alarmPtr % alarmID == alarmID) then
-            write(stderrUnit,*) 'ALARM ', alarmID
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            write(stderrUnit,*) 'ALARM ', trim(alarmID)
 
             write(stderrUnit,*) 'isRecurring', alarmPtr % isRecurring
             
@@ -573,7 +681,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(in) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       type (MPAS_TimeInterval_type), intent(in), optional :: interval
       integer, intent(out), optional :: ierr
 
@@ -585,7 +693,7 @@ module mpas_timekeeping
       
       alarmPtr => clock % alarmListHead
       do while (associated(alarmPtr))
-         if (alarmPtr % alarmID == alarmID) then
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
             if (alarmPtr % isSet) then
                if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
                   mpas_is_alarm_ringing = .true.
@@ -606,7 +714,7 @@ module mpas_timekeeping
 
       type (MPAS_Clock_type), intent(in) :: clock
       integer, intent(out) :: nAlarms
-      integer, dimension(MPAS_MAX_ALARMS), intent(out) :: alarmList
+      character (len=ShortStrKIND), dimension(MPAS_MAX_ALARMS), intent(out) :: alarmList
       type (MPAS_TimeInterval_type), intent(in), optional :: interval
       integer, intent(out), optional :: ierr
 
@@ -621,7 +729,7 @@ module mpas_timekeeping
          if (alarmPtr % isSet) then
             if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
                nAlarms = nAlarms + 1
-               alarmList(nAlarms) = alarmPtr % alarmID
+               alarmList(nAlarms) = trim(alarmPtr % alarmID)
             end if
          end if
          alarmPtr => alarmPtr % next
@@ -684,7 +792,7 @@ module mpas_timekeeping
       implicit none
 
       type (MPAS_Clock_type), intent(inout) :: clock
-      integer, intent(in) :: alarmID
+      character (len=*), intent(in) :: alarmID
       type (MPAS_TimeInterval_type), intent(in), optional :: interval
       integer, intent(out), optional :: ierr
 
@@ -696,7 +804,7 @@ module mpas_timekeeping
       alarmPtr => clock % alarmListHead
       do while (associated(alarmPtr))
       
-         if (alarmPtr % alarmID == alarmID) then
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
 
             if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
 
@@ -988,11 +1096,13 @@ module mpas_timekeeping
    end subroutine mpas_get_time
 
 
-   subroutine mpas_set_timeInterval(interval, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
+   subroutine mpas_set_timeInterval(interval, YY, MM, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
 
       implicit none
 
       type (MPAS_TimeInterval_type), intent(out) :: interval
+      integer, intent(in), optional :: YY
+      integer, intent(in), optional :: MM
       integer, intent(in), optional :: DD
       integer, intent(in), optional :: H
       integer, intent(in), optional :: M
@@ -1008,9 +1118,12 @@ module mpas_timekeeping
       integer :: numerator, denominator, denominatorPower
       type (MPAS_TimeInterval_type) :: zeroInterval
 
-      integer :: day, hour, min, sec
+      integer :: year, month, day, hour, min, sec
       character (len=StrKIND) :: timeString_
+      character (len=StrKIND) :: dateSubString
       character (len=StrKIND) :: daySubString
+      character (len=StrKIND) :: monthSubString
+      character (len=StrKIND) :: yearSubString
       character (len=StrKIND) :: timeSubString
       character (len=StrKIND) :: secDecSubString
       character(len=StrKIND), pointer, dimension(:) :: subStrings
@@ -1115,14 +1228,38 @@ module mpas_timekeeping
 
          call mpas_split_string(timeString_, "_", subStrings)
 
-         if(size(subStrings) == 2) then   ! contains a day and time
-            daySubString = subStrings(1)
+         if(size(subStrings) == 2) then   ! contains a date and time
+            dateSubString = subStrings(1)
             timeSubString = subStrings(2)
             deallocate(subStrings)
-            read(daySubString,*) day 
-         else if(size(subStrings) == 1) then   ! contains only a time- assume day is 0 
+
+            call mpas_split_string(dateSubString, "-", subStrings)
+
+            if(size(subStrings) == 3) then ! Contains year, month, and day
+               read(subStrings(1), *), year
+               read(subStrings(2), *), month
+               read(subStrings(3), *), day
+            else if(size(subStrings) == 2) then ! Contains month and day
+               year = 0
+               read(subStrings(1), *), month
+               read(subStrings(2), *), day
+            else if(size(subStrings) == 1) then ! Contains day
+               year = 0
+               month = 0
+               read(subStrings(1), *), day
+            else ! Error?
+               year = 0
+               month = 0
+               day = 0
+               !write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+            end if
+
+            deallocate(subStrings)
+         else if(size(subStrings) == 1) then   ! contains only a time- assume year, month, and day are 0
             timeSubString = subStrings(1)
             deallocate(subStrings)
+            year = 0
+            month = 0
             day = 0
          else
             deallocate(subStrings)
@@ -1145,36 +1282,38 @@ module mpas_timekeeping
             return
          end if
 
-         call ESMF_TimeIntervalSet(interval % ti, D=day, H=hour, M=min, S=sec, Sn=numerator, Sd=denominator, rc=ierr)
+         call ESMF_TimeIntervalSet(interval % ti, YY=year, MM=month, D=day, H=hour, M=min, S=sec, Sn=numerator, Sd=denominator, rc=ierr)
 
       else
 
-         call ESMF_TimeIntervalSet(interval % ti, D=DD, H=H, M=M, S=S, Sn=S_n, Sd=S_d, rc=ierr)
+         call ESMF_TimeIntervalSet(interval % ti, YY=YY, MM=MM, D=DD, H=H, M=M, S=S, Sn=S_n, Sd=S_d, rc=ierr)
       
       end if
 
-      ! verify that time interval is positive
-      call ESMF_TimeIntervalSet(zeroInterval % ti, D=0, H=0, M=0, S=0, rc=ierr)
+!     ! verify that time interval is positive
+!     call ESMF_TimeIntervalSet(zeroInterval % ti, D=0, H=0, M=0, S=0, rc=ierr)
 
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
-      end if
+!     if (present(ierr)) then
+!        if (ierr == ESMF_SUCCESS) ierr = 0
+!     end if
 
-      if (interval <= zeroInterval) then
-         if (present(ierr)) ierr = 1   
-         write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
-      end if
-
+!     if (interval <= zeroInterval) then
+!        if (present(ierr)) ierr = 1   
+!        write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
+!     end if
       
    end subroutine mpas_set_timeInterval
 
 
-   subroutine mpas_get_timeInterval(interval, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
+   subroutine mpas_get_timeInterval(interval, StartTimeIn, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
 ! TODO: add double-precision seconds
 
       implicit none
 
       type (MPAS_TimeInterval_type), intent(in) :: interval
+      type (MPAS_Time_type), intent(in), optional :: StartTimeIn
+      ! For time intervals that require months and/or years, ESMF needs to know the start
+      ! time to get a time interval in any format besides the string format.
       integer, intent(out), optional :: DD
       integer, intent(out), optional :: H
       integer, intent(out), optional :: M
@@ -1187,7 +1326,18 @@ module mpas_timekeeping
 
       integer :: days, seconds, sn, sd
 
-      call ESMF_TimeIntervalGet(interval % ti, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+
+
+      if (present(StartTimeIn)) then
+         call ESMF_TimeIntervalGet(interval % ti, StartTimeIn=StartTimeIn%t, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+      else
+          if ( interval % ti % YR /= 0 .or. interval % ti % MM /= 0 ) then
+             if (present(ierr)) ierr = 1
+             write(stderrUnit,*) 'ERROR: mpas_get_timeInterval cannnot return time interval information for an interval containing months and years without a startTimeIn argument.'
+             return
+          end if
+          call ESMF_TimeIntervalGet(interval % ti, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+      endif
 
       if (present(dt)) then
          dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
@@ -1221,6 +1371,9 @@ module mpas_timekeeping
       end if
 
       if (present(S_d)) then
+         if (sd == 0) then   ! may only occur if (sn == 0)?
+            sd = 1
+         end if
          S_d = sd
       end if
 
@@ -1314,6 +1467,178 @@ module mpas_timekeeping
       div_ti_n % ti = ti % ti / n
 
    end function div_ti_n
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_interval_division
+   !
+   !> \brief This routine computes the number intervals that fit into another interval.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   10/02/2014
+   !> \details This routine is a wrapper to two different methods of computing
+   !> the number of intervals that fit into another interval.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_interval_division(ref_time, num, den, n, rem)
+
+      implicit none
+
+      type (MPAS_Time_type), intent(in) :: ref_time
+      type (MPAS_TimeInterval_type), intent(in) :: num
+      type (MPAS_TimeInterval_type), intent(in) :: den
+      integer, intent(out) :: n
+      type (MPAS_TimeInterval_type), intent(out) :: rem
+
+      ! If either time interval contains years or months, need to use slower linear interval computation
+      ! Otherwise, we can use faster log interval computation
+      if ( num % ti % YR /= 0 .or. num % ti % MM /= 0 .or. den % ti % YR /= 0 .or. den % ti % MM /= 0 ) then
+         call mpas_interval_division_linear(ref_time, num, den, n, rem)
+      else
+         call mpas_interval_division_log(num, den, n, rem)
+      end if
+
+   end subroutine mpas_interval_division
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_interval_division_log
+   !
+   !> \brief This routine computes the number intervals that fit into another interval using a log search.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   10/02/2014
+   !> \details This routine computes the number of intervals that fit into
+   !>   another time interval using a log search. It is preferred over the
+   !>   _linear alternative, but only works when the intervals are in terms of days
+   !>   or smaller.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_interval_division_log(num, den, n, rem)
+
+      implicit none
+
+      type (MPAS_TimeInterval_type), intent(in) :: num
+      type (MPAS_TimeInterval_type), intent(in) :: den
+      integer, intent(out) :: n
+      type (MPAS_TimeInterval_type), intent(out) :: rem
+
+      type (MPAS_TimeInterval_type) :: temp
+      type (MPAS_TimeInterval_type) :: zero
+      integer :: nn
+
+      call mpas_set_timeInterval(zero, S=0)
+
+      !
+      ! If the numerator is smaller than the denominator, just return the numerator as the remainder
+      !
+      if (num < den) then
+         n = 0
+         rem = num
+         return
+      end if
+
+
+      !
+      ! Avoid division by zero
+      !
+      if (den == zero) then
+         write(stderrUnit,*) 'Error: Attempting to divide by zero.\n'
+         n = 0
+         rem = zero
+         return
+      end if
+
+
+      !
+      ! Begin by finding the smallest multiple of the denominator that is at least as large as the numerator and is also a power of two
+      !
+      temp = den
+      nn = 1
+      do while (temp <= num)
+         temp = temp * 2
+         nn = nn * 2
+      end do
+
+      !
+      ! Dividing by two, we're guaranteed that temp is at most the value of the numerator
+      !
+      temp = temp / 2
+      nn = nn / 2
+
+      !
+      ! Work backwards to zero
+      !
+      n = 0
+      rem = num
+      do while (nn > 0)
+         if (temp <= rem) then
+            rem = rem - temp
+            n = n + nn
+         end if
+         nn = nn / 2
+         temp = temp / 2
+      end do
+
+   end subroutine mpas_interval_division_log
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_interval_division_linear
+   !
+   !> \brief This routine computes the number intervals that fit into another interval using a linear search.
+   !> \author Michael Duda, Doug Jacobsen
+   !> \date   10/02/2014
+   !> \details This routine computes the number of intervals that fit into
+   !>   another time interval using a linear search. It is slower than the _log
+   !>   alternative, but works when intervals contain months or longer interval
+   !>   sections.
+   !>
+   !-----------------------------------------------------------------------
+   subroutine mpas_interval_division_linear(ref_time, num, den, n, rem)
+
+      implicit none
+
+      type (MPAS_Time_type), intent(in) :: ref_time
+      type (MPAS_TimeInterval_type), intent(in) :: num
+      type (MPAS_TimeInterval_type), intent(in) :: den
+      integer, intent(out) :: n
+      type (MPAS_TimeInterval_type), intent(out) :: rem
+
+      type (MPAS_Time_type) :: target_time
+      type (MPAS_Time_type) :: updated_time
+
+      type (MPAS_TimeInterval_type) :: temp
+      type (MPAS_TimeInterval_type) :: zero
+
+      target_time = ref_time + num
+
+      updated_time = ref_time + den
+
+      n = 0
+
+      ! If the denominator is larger than the numerator, return 0 intervals,
+      ! and the numerator as the remainder
+      if ( target_time < updated_time ) then
+         rem = num
+         return
+      end if
+
+      ! One interval of den already fits into num
+      n = n + 1
+
+      do while (target_time > updated_time)
+         updated_time = updated_time + den
+         n = n + 1
+      end do
+
+      ! Here, if updated_time is larger than target time. Need to subtract den once, and compute remainder
+      if ( updated_time > target_time ) then
+         updated_time = updated_time - den
+         n = n - 1
+         rem = target_time - updated_time
+      else
+         call mpas_set_timeInterval(rem, S=0)
+      end if
+
+      return
+   end subroutine mpas_interval_division_linear
 
 
    logical function eq_t_t(t1, t2)
@@ -1622,7 +1947,104 @@ module mpas_timekeeping
 
     end function isLeapYear
 
+    !-----------------------------------------------------------------------
+    !  routine mpas_expand_string
+    !
+    !> \brief This is a utility routine that expands a string with a timestamp.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   07/23/2014
+    !> \details This routine will take a time stamp, and a string as
+    !>   input, and expand the string according to the time stamp provided.
+    !>   $Y -> year
+    !>   $M -> month
+    !>   $D -> day
+    !>   $d -> day of year
+    !>   $h -> hour
+    !>   $m -> minute
+    !>   $s -> second
+    !>   $g -> multi-grid level
+    !-----------------------------------------------------------------------
+    subroutine mpas_expand_string(timeStamp, inString, outString)!{{{
 
+        implicit none
+
+        character (len=*), intent(in) :: timeStamp
+        character (len=*), intent(in) :: inString
+        character (len=StrKIND), intent(out) :: outString
+
+        type (MPAS_Time_type) :: curTime
+
+        integer :: i, curLen
+        integer :: year, month, day, hour, minute, second, DoY
+
+        character (len=ShortStrKIND) :: timePart
+        character (len=ShortStrKIND) :: yearFormat
+        logical :: charExpand
+
+        call mpas_set_time(curTime, dateTimeString=timeStamp)
+
+        call mpas_get_time(curTime, YYYY=year)
+
+        write(yearFormat, '(a,i10,a)') '(i0.',yearWidth,')'
+
+        write(outString,*) ''
+        write(timePart,*) ''
+
+        curLen = 0
+        charExpand = .false.
+        do i = 1, len_trim(inString)
+           if (inString(i:i) == '$' ) then
+               charExpand = .true.
+           else if (inString(i:i) /= '$') then
+               if (charExpand) then
+                  select case (inString(i:i))
+                     case ('Y')
+                         call mpas_get_time(curTime, YYYY=year)
+                         write(timePart, yearFormat) year
+                         outString = trim(outString) // trim(timePart)
+                     case ('M')
+                         call mpas_get_time(curTime, MM=month)
+                         write(timePart, '(i0.2)') month
+                         outString = trim(outString) // trim(timePart)
+                     case ('D')
+                         call mpas_get_time(curTime, DD=day)
+                         write(timePart, '(i0.2)') day
+                         outString = trim(outString) // trim(timePart)
+                     case ('d')
+                         call mpas_get_time(curTime, DoY=DoY)
+                         write(timePart, '(i0.3)') DoY
+                         outString = trim(outString) // trim(timePart)
+                     case ('h')
+                         call mpas_get_time(curTime, H=hour)
+                         write(timePart, '(i0.2)') hour
+                         outString = trim(outString) // trim(timePart)
+                     case ('m')
+                         call mpas_get_time(curTime, M=minute)
+                         write(timePart, '(i0.2)') minute
+                         outString = trim(outString) // trim(timePart)
+                     case ('s')
+                         call mpas_get_time(curTime, S=second)
+                         write(timePart, '(i0.2)') second
+                         outString = trim(outString) // trim(timePart)
+!                    case ('G')
+                        ! Expands to multi-grid level
+                     case default
+                        write(stderrUnit, *) 'ERROR: mpas_expand_string option $', inString(i:i), ' is not a valid expansion character.'
+                        call mpas_dmpar_global_abort('ERROR: mpas_timekeeping')
+                  end select
+
+                  curLen = len_trim(outString)
+                  charExpand = .false.
+               else
+                  outString(curLen+1:curLen+1) = inString(i:i)
+                  curLen = curLen+1
+               end if
+           else
+           end if
+        end do
+
+    end subroutine mpas_expand_string!}}}
+ 
 
 
 

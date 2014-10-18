@@ -10,6 +10,7 @@
  use mpas_kind_types
  use mpas_grid_types
  use mpas_timekeeping
+ use mpas_stream_manager
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -30,40 +31,40 @@
 
 !defines alarms for calling the long- and short-wave radiation codes, for calling the convec-
 !tion scheme:
- integer, parameter:: radtlwAlarmID = 11
- integer, parameter:: radtswAlarmID = 12
- integer, parameter:: convAlarmID   = 13
- integer, parameter:: pblAlarmID    = 14
+ character(len=*), parameter:: radtlwAlarmID = 'radtlw'
+ character(len=*), parameter:: radtswAlarmID = 'radtsw'
+ character(len=*), parameter:: convAlarmID   = 'conv'
+ character(len=*), parameter:: pblAlarmID    = 'pbl'
 
 !defines alarm to update the surface boundary conditions:
- integer, parameter:: sfcbdyAlarmID = 15
+ character(len=*), parameter:: sfcbdyAlarmID = 'sfcbdy'
 
 !defines alarm to update the background surface albedo and the greeness fraction:
- integer, parameter:: greenAlarmID  = 16
+ character(len=*), parameter:: greenAlarmID  = 'green'
 
 !defines alarm to update the ozone path length,the trace gas path length,the total emissivity,
 !and the total absorptivity in the "CAM" long-wave radiation codes. The default time interval
 !between updates is 6 hours and is set with config_camrad_abs_update (00:30:00).
- integer, parameter:: camAlarmID    = 17
+ character(len=*), parameter:: camAlarmID    = 'cam'
 
 !defines alarm to save the CAM arrays absnst, absnxt, and emstot to restart files. When the
 !alarm rings, the local arrays absnt_p, absnxt_p, and emstot_p are copied to the MPAS arrays
 !for writing to restart files at the bottom of the time-step:
- integer, parameter:: camlwAlarmID  = 18
+ character(len=*), parameter:: camlwAlarmID  = 'camlw'
  type(MPAS_TimeInterval_Type):: camlwTimeStep
 
 !defines alarm to check if the accumulated rain due to cloud microphysics and convection is
 !greater than its maximum allowed value:
- integer, parameter:: acrainAlarmID   = 19
+ character(len=*), parameter:: acrainAlarmID   = 'acrain'
  type(MPAS_TimeInterval_Type):: acrainTimeStep
 
 !defines alarm to check if the accumulated radiation diagnostics due to long- and short-wave
 !radiation is greater than its maximum allowed value:
- integer, parameter:: acradtAlarmID   = 20
+ character(len=*), parameter:: acradtAlarmID   = 'acradt'
  type(MPAS_TimeInterval_Type):: acradtTimeStep
 
 !defines alarm to compute some physics diagnostics, such as radar reflectivity:
- integer, parameter:: diagAlarmID     = 21
+ character(len=*), parameter:: diagAlarmID     = 'diag'
 
  integer :: h, m, s, s_n, s_d, DoY, yr
  real(kind=RKIND) :: utc_h
@@ -343,7 +344,7 @@
  end subroutine physics_timetracker
 
 !==================================================================================================
- subroutine physics_run_init(configs,mesh,state,clock)
+ subroutine physics_run_init(configs,mesh,state,clock,stream_manager)
 !==================================================================================================
 
 !input arguments:
@@ -351,6 +352,7 @@
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: state
  type(MPAS_Clock_type):: clock
+ type (MPAS_streamManager_type), intent(inout) :: stream_manager
 
 !local pointers:
  character(len=StrKIND),pointer:: config_conv_deep_scheme,       &
@@ -367,14 +369,9 @@
                                   config_pbl_interval,           &
                                   config_radtlw_interval,        &
                                   config_radtsw_interval,        &
-                                  config_hifreq_output_interval, &
-                                  config_sfc_update_interval,    &
                                   config_bucket_update,          &
                                   config_camrad_abs_update,      &
                                   config_greeness_update
-
- character(len=StrKIND),pointer:: config_output_interval,        &
-                                  config_restart_interval
 
  logical,pointer:: config_frac_seaice
 
@@ -389,6 +386,7 @@
 !local variables:
  type(MPAS_Time_Type):: startTime,alarmStartTime
  type(MPAS_TimeInterval_Type):: alarmTimeStep, alarmTimeStepHi
+ character(len=StrKIND) :: stream_interval
  integer:: ierr
 
 !==================================================================================================
@@ -409,16 +407,11 @@
  call mpas_pool_get_config(configs,'config_pbl_interval'          ,config_pbl_interval          )
  call mpas_pool_get_config(configs,'config_radtlw_interval'       ,config_radtlw_interval       )
  call mpas_pool_get_config(configs,'config_radtsw_interval'       ,config_radtsw_interval       )
- call mpas_pool_get_config(configs,'config_hifreq_output_interval',config_hifreq_output_interval)
- call mpas_pool_get_config(configs,'config_sfc_update_interval'   ,config_sfc_update_interval   )
  call mpas_pool_get_config(configs,'config_bucket_update'         ,config_bucket_update         )
  call mpas_pool_get_config(configs,'config_camrad_abs_update'     ,config_camrad_abs_update     )
  call mpas_pool_get_config(configs,'config_greeness_update'       ,config_greeness_update       )
  call mpas_pool_get_config(configs,'config_frac_seaice'           ,config_frac_seaice           )
  call mpas_pool_get_config(configs,'config_n_microp'              ,config_n_microp              )
-
- call mpas_pool_get_config(configs,'config_output_interval'       ,config_output_interval       )
- call mpas_pool_get_config(configs,'config_restart_interval'      ,config_restart_interval      )
 
  call mpas_pool_get_config(configs,'config_dt',config_dt)
 
@@ -552,8 +545,10 @@
        call physics_error_fatal('subroutine physics_init: error creating alarm greeness')
 
 !set alarm for updating the surface boundary conditions:
- if(trim(config_sfc_update_interval) /= "none") then
-    call mpas_set_timeInterval(alarmTimeStep,timeString=config_sfc_update_interval,ierr=ierr)
+ call MPAS_stream_mgr_get_property(stream_manager, 'surface', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                   direction=MPAS_STREAM_INPUT, ierr=ierr)
+ if(trim(stream_interval) /= 'none') then
+    call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
     alarmStartTime = startTime
     call mpas_add_clock_alarm(clock,sfcbdyAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
     if(ierr /= 0) &
@@ -575,11 +570,15 @@
 !for writing to the restart file at the bottom of the time-step:
  if(trim(config_radt_lw_scheme) .eq. "cam_lw" ) then
     call mpas_set_timeInterval(camlwTimeStep,dt=config_dt,ierr=ierr)
-    call mpas_set_timeInterval(alarmTimeStep,timeString=config_restart_interval,ierr=ierr)
-    alarmStartTime = startTime + alarmTimeStep
-    call mpas_add_clock_alarm(clock,camlwAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
-    if(ierr /= 0) &
-       call physics_error_fatal('subroutine physics_init: error creating alarm CAMLW')
+    call MPAS_stream_mgr_get_property(stream_manager, 'restart', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    if(trim(stream_interval) /= 'none') then
+       call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
+       alarmStartTime = startTime + alarmTimeStep
+       call mpas_add_clock_alarm(clock,camlwAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+       if(ierr /= 0) &
+          call physics_error_fatal('subroutine physics_init: error creating alarm CAMLW')
+    endif
  endif
 
 !set alarm to check if the accumulated rain due to cloud microphysics and convection is
@@ -605,15 +604,35 @@
  endif
 
 !set alarm to calculate physics diagnostics on IO outpt only:
- call mpas_set_timeInterval(alarmTimeStep,timeString=config_output_interval,ierr=ierr)
- if (trim(config_hifreq_output_interval) /= 'none') then
-    call mpas_set_timeInterval(alarmTimeStepHi,timeString=config_hifreq_output_interval,ierr=ierr)
-    if (alarmTimeStepHi < alarmTimeStep) then
-       alarmTimeStep = alarmTimeStepHi
+ call MPAS_stream_mgr_get_property(stream_manager, 'output', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                   direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+ if(trim(stream_interval) /= 'none') then
+    call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
+    
+    ! If the diagnostic interval is higher in resolution, use it instead
+    call MPAS_stream_mgr_get_property(stream_manager, 'diagnostics', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    if(trim(stream_interval) /= 'none') then
+       call mpas_set_timeInterval(alarmTimeStepHi,timeString=stream_interval,ierr=ierr)
+       if (alarmTimeStepHi < alarmTimeStep) then
+          alarmTimeStep = alarmTimeStepHi
+       end if
     end if
- end if
- alarmStartTime = startTime
- call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+    alarmStartTime = startTime
+    call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+    if(ierr /= 0) &
+       call physics_error_fatal('subroutine physics_init: error creating alarm diag')
+ else
+    call MPAS_stream_mgr_get_property(stream_manager, 'diagnostics', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    if(trim(stream_interval) /= 'none') then
+       call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
+       alarmStartTime = startTime
+       call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+       if(ierr /= 0) &
+          call physics_error_fatal('subroutine physics_init: error creating alarm diag')
+    end if
+ endif
 
  write(0,102) dt_radtlw,dt_radtsw,dt_cu,dt_pbl
 

@@ -16,6 +16,7 @@ module mpas_io
    use pionfatt_mod
    use pio_types
 
+   
 #ifdef SINGLE_PRECISION
    integer, parameter :: PIO_REALKIND = PIO_REAL
 #else
@@ -36,6 +37,15 @@ module mpas_io
                          MPAS_IO_INT      = 7,  &
                          MPAS_IO_LOGICAL  = 8,  &
                          MPAS_IO_CHAR     = 9
+
+   ! Field precision
+   integer, parameter :: MPAS_IO_SINGLE_PRECISION = 10, &
+                         MPAS_IO_DOUBLE_PRECISION = 11, &
+#ifdef SINGLE_PRECISION
+                         MPAS_IO_NATIVE_PRECISION = MPAS_IO_SINGLE_PRECISION
+#else
+                         MPAS_IO_NATIVE_PRECISION = MPAS_IO_DOUBLE_PRECISION
+#endif
 
    ! Unlimited / record dimension
    integer, parameter :: MPAS_IO_UNLIMITED_DIM = -123456
@@ -166,6 +176,7 @@ module mpas_io
       integer :: field_type
       logical :: has_unlimited_dim = .false.
       integer :: ndims
+      integer :: precision
       type (dimhandle_type), pointer, dimension(:) :: dims
       type (attlist_type), pointer :: attlist_head => null()
       type (attlist_type), pointer :: attlist_tail => null()
@@ -587,6 +598,7 @@ module mpas_io
       logical :: found
       integer :: pio_ierr
 
+
 !      write(stderrUnit,*) 'Called MPAS_io_inq_var()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -645,10 +657,13 @@ module mpas_io
 !write(stderrUnit,*) 'Inquired about variable type', new_fieldlist_node % fieldhandle % field_type
 
          ! Convert to MPAS type
+         new_fieldlist_node % fieldhandle % precision = MPAS_IO_NATIVE_PRECISION
          if (new_fieldlist_node % fieldhandle % field_type == PIO_double) then
             new_fieldlist_node % fieldhandle % field_type = MPAS_IO_DOUBLE
+            new_fieldlist_node % fieldhandle % precision = MPAS_IO_DOUBLE_PRECISION
          else if (new_fieldlist_node % fieldhandle % field_type == PIO_real) then
             new_fieldlist_node % fieldhandle % field_type = MPAS_IO_REAL
+            new_fieldlist_node % fieldhandle % precision = MPAS_IO_SINGLE_PRECISION
          else if (new_fieldlist_node % fieldhandle % field_type == PIO_int) then
             new_fieldlist_node % fieldhandle % field_type = MPAS_IO_INT
          else if (new_fieldlist_node % fieldhandle % field_type == PIO_char) then
@@ -786,7 +801,7 @@ module mpas_io
    end subroutine MPAS_io_inq_var
 
 
-   subroutine MPAS_io_def_var(handle, fieldname, fieldtype, dimnames, ierr)
+   subroutine MPAS_io_def_var(handle, fieldname, fieldtype, dimnames, precision, ierr)
 
       implicit none
 
@@ -794,6 +809,7 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       integer, intent(in) :: fieldtype
       character (len=StrKIND), dimension(:), intent(in) :: dimnames
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: i
@@ -804,6 +820,8 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       type (dimlist_type), pointer :: dim_cursor
       integer, dimension(:), pointer :: dimids
+      integer :: local_precision
+
 
 !      write(stderrUnit,*) 'Called MPAS_io_def_var()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -820,6 +838,16 @@ module mpas_io
       if (handle % iomode /= MPAS_IO_WRITE) then
          if (present(ierr)) ierr = MPAS_IO_ERR_NOWRITE
          return 
+      end if
+
+
+      !
+      ! Set precision to be use for reading/writing
+      !
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = MPAS_IO_NATIVE_PRECISION
       end if
 
 
@@ -856,6 +884,7 @@ module mpas_io
       new_fieldlist_node % fieldhandle % fieldname = fieldname
       new_fieldlist_node % fieldhandle % field_type = fieldtype
       new_fieldlist_node % fieldhandle % ndims = ndims
+      new_fieldlist_node % fieldhandle % precision = local_precision
 
       allocate(dimids(ndims))
       allocate(new_fieldlist_node % fieldhandle % dims(ndims))
@@ -885,8 +914,14 @@ module mpas_io
 
       ! Convert from MPAS type
       if (new_fieldlist_node % fieldhandle % field_type == MPAS_IO_DOUBLE) then
-         pio_type = PIO_double
+         if (local_precision == MPAS_IO_SINGLE_PRECISION) then
+            pio_type = PIO_real
+            new_fieldlist_node % fieldhandle % field_type = MPAS_IO_REAL
+         else
+            pio_type = PIO_double
+         end if
       else if (new_fieldlist_node % fieldhandle % field_type == MPAS_IO_REAL) then
+         !TODO: handle up-conversion from single-precision to double-precision in file?
          pio_type = PIO_real
       else if (new_fieldlist_node % fieldhandle % field_type == MPAS_IO_INT) then
          pio_type = PIO_int
@@ -1084,6 +1119,19 @@ module mpas_io
             end do
 
             ! Type and dimensions match... what about indices?
+            if (size(decomp_cursor % decomphandle % indices) /= size(indices)) then
+!write(stderrUnit,*) 'We do not have the same number of indices in this decomposition...'
+               decomp_cursor => decomp_cursor % next
+               cycle DECOMP_LOOP
+            end if
+
+            do i=1,size(decomp_cursor % decomphandle % indices)
+               if (indices(i) /= decomp_cursor % decomphandle % indices(i)) then
+!write(stderrUnit,*) 'One of the indices does not match... ', i
+                  decomp_cursor => decomp_cursor % next
+                  cycle DECOMP_LOOP
+               end if
+            end do 
             
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
@@ -1255,6 +1303,13 @@ module mpas_io
       character (len=StrKIND), dimension(1) :: tempchar
       type (fieldlist_type), pointer :: field_cursor
 
+      real (kind=R4KIND) :: singleVal
+      real (kind=R4KIND), dimension(:), allocatable :: singleArray1d
+      real (kind=R4KIND), dimension(:,:), allocatable :: singleArray2d
+      real (kind=R4KIND), dimension(:,:,:), allocatable :: singleArray3d
+      real (kind=R4KIND), dimension(:,:,:,:), allocatable :: singleArray4d
+      real (kind=R4KIND), dimension(:,:,:,:,:), allocatable :: singleArray5d
+
       ! Sanity checks
       if (.not. handle % initialized) then
          if (present(ierr)) ierr = MPAS_IO_ERR_UNINIT_HANDLE
@@ -1295,10 +1350,20 @@ module mpas_io
 !      write(stderrUnit,*) 'Checking for real, int, char, etc'
       if (present(realVal)) then
 !         write (0,*) '  value is real'
-         if (field_cursor % fieldhandle % has_unlimited_dim) then
-            pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, realVal)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            if (field_cursor % fieldhandle % has_unlimited_dim) then
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, singleVal)
+            else
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, singleVal)
+            end if
+            realVal = real(singleVal,RKIND)
          else
-            pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, realVal)
+            if (field_cursor % fieldhandle % has_unlimited_dim) then
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, realVal)
+            else
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, realVal)
+            end if
          end if
       else if (present(intVal)) then
 !         write (0,*) '  value is int'
@@ -1321,112 +1386,247 @@ module mpas_io
          end if
       else if (present(realArray1d)) then
 !         write (0,*) '  value is real1'
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                 realArray1d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start2(1) = 1
-               start2(2) = handle % frame_number
-               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count2(2) = 1
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, realArray1d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray1d(size(realArray1d,1)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    singleArray1d, pio_ierr)
             else
-               start1(:) = 1
-               count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, realArray1d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start2(1) = 1
+                  start2(2) = handle % frame_number
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, singleArray1d)
+               else
+                  start1(:) = 1
+                  count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, singleArray1d)
+               end if
+            end if
+            realArray1d(:) = real(singleArray1d(:),RKIND)
+            deallocate(singleArray1d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    realArray1d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start2(1) = 1
+                  start2(2) = handle % frame_number
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, realArray1d)
+               else
+                  start1(:) = 1
+                  count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, realArray1d)
+               end if
             end if
          end if
       else if (present(realArray2d)) then
 !         write (0,*) '  value is real2'
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                 realArray2d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start3(:) = 1
-               start3(3) = handle % frame_number
-               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count3(3) = 1
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, realArray2d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray2d(size(realArray2d,1), size(realArray2d,2)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    singleArray2d, pio_ierr)
             else
-               start2(:) = 1
-               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, realArray2d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start3(:) = 1
+                  start3(3) = handle % frame_number
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, singleArray2d)
+               else
+                  start2(:) = 1
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, singleArray2d)
+               end if
+            end if
+            realArray2d(:,:) = real(singleArray2d(:,:),RKIND)
+            deallocate(singleArray2d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    realArray2d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start3(:) = 1
+                  start3(3) = handle % frame_number
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, realArray2d)
+               else
+                  start2(:) = 1
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, realArray2d)
+               end if
             end if
          end if
       else if (present(realArray3d)) then
 !         write (0,*) '  value is real3'
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                 realArray3d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start4(:) = 1
-               start4(4) = handle % frame_number
-               count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count4(4) = 1
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, realArray3d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray3d(size(realArray3d,1),size(realArray3d,2),size(realArray3d,3)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    singleArray3d, pio_ierr)
             else
-               start3(:) = 1
-               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, realArray3d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start4(:) = 1
+                  start4(4) = handle % frame_number
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, singleArray3d)
+               else
+                  start3(:) = 1
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, singleArray3d)
+               end if
+            end if
+            realArray3d(:,:,:) = real(singleArray3d(:,:,:),RKIND)
+            deallocate(singleArray3d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    realArray3d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start4(:) = 1
+                  start4(4) = handle % frame_number
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, realArray3d)
+               else
+                  start3(:) = 1
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, realArray3d)
+               end if
             end if
          end if
       else if (present(realArray4d)) then
 !         write (0,*) '  value is real4'
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                 realArray4d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start5(:) = 1
-               start5(5) = handle % frame_number
-               count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               count5(5) = 1
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, realArray4d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray4d(size(realArray4d,1),size(realArray4d,2),size(realArray4d,3),size(realArray4d,4)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    singleArray4d, pio_ierr)
             else
-               start4(:) = 1
-               count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, realArray4d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start5(:) = 1
+                  start5(5) = handle % frame_number
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, singleArray4d)
+               else
+                  start4(:) = 1
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, singleArray4d)
+               end if
+            end if
+            realArray4d(:,:,:,:) = real(singleArray4d(:,:,:,:),RKIND)
+            deallocate(singleArray4d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    realArray4d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start5(:) = 1
+                  start5(5) = handle % frame_number
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, realArray4d)
+               else
+                  start4(:) = 1
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, realArray4d)
+               end if
             end if
          end if
       else if (present(realArray5d)) then
 !         write (0,*) '  value is real5'
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                realArray5d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start6(:) = 1
-               start6(6) = handle % frame_number
-               count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
-               count6(6) = 1
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start6, count6, realArray5d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray5d(size(realArray5d,1),size(realArray5d,2),size(realArray5d,3),size(realArray5d,4),size(realArray5d,5)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                   singleArray5d, pio_ierr)
             else
-               start5(:) = 1
-               count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
-               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, realArray5d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start6(:) = 1
+                  start6(6) = handle % frame_number
+                  count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  count6(6) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start6, count6, singleArray5d)
+               else
+                  start5(:) = 1
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, singleArray5d)
+               end if
+            end if
+            realArray5d(:,:,:,:,:) = real(singleArray5d(:,:,:,:,:),RKIND)
+            deallocate(singleArray5d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                   realArray5d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start6(:) = 1
+                  start6(6) = handle % frame_number
+                  count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  count6(6) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start6, count6, realArray5d)
+               else
+                  start5(:) = 1
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, realArray5d)
+               end if
             end if
          end if
       else if (present(intArray1d)) then
@@ -1765,6 +1965,13 @@ module mpas_io
       integer, dimension(6) :: count6
       type (fieldlist_type), pointer :: field_cursor
 
+      real (kind=R4KIND) :: singleVal
+      real (kind=R4KIND), dimension(:), allocatable :: singleArray1d
+      real (kind=R4KIND), dimension(:,:), allocatable :: singleArray2d
+      real (kind=R4KIND), dimension(:,:,:), allocatable :: singleArray3d
+      real (kind=R4KIND), dimension(:,:,:,:), allocatable :: singleArray4d
+      real (kind=R4KIND), dimension(:,:,:,:,:), allocatable :: singleArray5d
+
       ! Sanity checks
       if (.not. handle % initialized) then
          if (present(ierr)) ierr = MPAS_IO_ERR_UNINIT_HANDLE
@@ -1812,10 +2019,20 @@ module mpas_io
       end if
 
       if (present(realVal)) then
-         if (field_cursor % fieldhandle % has_unlimited_dim) then
-            pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, realVal)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            singleVal = real(realVal,R4KIND)
+            if (field_cursor % fieldhandle % has_unlimited_dim) then
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, singleVal)
+            else
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, singleVal)
+            end if
          else
-            pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, realVal)
+            if (field_cursor % fieldhandle % has_unlimited_dim) then
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, realVal)
+            else
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, realVal)
+            end if
          end if
       else if (present(intVal)) then
          if (field_cursor % fieldhandle % has_unlimited_dim) then
@@ -1833,118 +2050,263 @@ module mpas_io
             pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, (/charVal/))
          end if
       else if (present(realArray1d)) then
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                  realArray1d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start2(1) = 1
-               start2(2) = handle % frame_number
-               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count2(2) = 1
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, realArray1d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray1d(size(realArray1d)))
+            singleArray1d(:) = real(realArray1d(:),R4KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     singleArray1d, pio_ierr)
             else
-               start1(1) = 1
-               count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, count1, realArray1d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start2(1) = 1
+                  start2(2) = handle % frame_number
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, singleArray1d)
+               else
+                  start1(1) = 1
+                  count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, count1, singleArray1d)
+               end if
+            end if
+            deallocate(singleArray1d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     realArray1d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start2(1) = 1
+                  start2(2) = handle % frame_number
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, realArray1d)
+               else
+                  start1(1) = 1
+                  count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, count1, realArray1d)
+               end if
             end if
          end if
       else if (present(realArray2d)) then
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                  realArray2d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start3(1) = 1
-               start3(2) = 1
-               start3(3) = handle % frame_number
-               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count3(3) = 1
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, realArray2d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray2d(size(realArray2d,1), size(realArray2d,2)))
+            singleArray2d(:,:) = real(realArray2d(:,:),R4KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     singleArray2d, pio_ierr)
             else
-               start2(:) = 1
-               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, realArray2d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start3(1) = 1
+                  start3(2) = 1
+                  start3(3) = handle % frame_number
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, singleArray2d)
+               else
+                  start2(:) = 1
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, singleArray2d)
+               end if
+            end if
+            deallocate(singleArray2d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     realArray2d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start3(1) = 1
+                  start3(2) = 1
+                  start3(3) = handle % frame_number
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, realArray2d)
+               else
+                  start2(:) = 1
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, realArray2d)
+               end if
             end if
          end if
       else if (present(realArray3d)) then
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                  realArray3d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start4(1) = 1
-               start4(2) = 1
-               start4(3) = 1
-               start4(4) = handle % frame_number
-               count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count4(4) = 1
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, realArray3d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray3d(size(realArray3d,1), size(realArray3d,2), size(realArray3d,3)))
+            singleArray3d(:,:,:) = real(realArray3d(:,:,:),R4KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     singleArray3d, pio_ierr)
             else
-               start3(:) = 1
-               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, realArray3d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start4(1) = 1
+                  start4(2) = 1
+                  start4(3) = 1
+                  start4(4) = handle % frame_number
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, singleArray3d)
+               else
+                  start3(:) = 1
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, singleArray3d)
+               end if
+            end if
+            deallocate(singleArray3d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     realArray3d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start4(1) = 1
+                  start4(2) = 1
+                  start4(3) = 1
+                  start4(4) = handle % frame_number
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, realArray3d)
+               else
+                  start3(:) = 1
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, realArray3d)
+               end if
             end if
          end if
       else if (present(realArray4d)) then
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                  realArray4d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start5(1) = 1
-               start5(2) = 1
-               start5(3) = 1
-               start5(4) = 1
-               start5(5) = handle % frame_number
-               count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               count5(5) = 1
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, realArray4d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray4d(size(realArray4d,1), size(realArray4d,2), size(realArray4d,3), size(realArray4d,4)))
+            singleArray4d(:,:,:,:) = real(realArray4d(:,:,:,:),R4KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     singleArray4d, pio_ierr)
             else
-               start4(:) = 1
-               count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, realArray4d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start5(1) = 1
+                  start5(2) = 1
+                  start5(3) = 1
+                  start5(4) = 1
+                  start5(5) = handle % frame_number
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, singleArray4d)
+               else
+                  start4(:) = 1
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, singleArray4d)
+               end if
+            end if
+            deallocate(singleArray4d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     realArray4d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start5(1) = 1
+                  start5(2) = 1
+                  start5(3) = 1
+                  start5(4) = 1
+                  start5(5) = handle % frame_number
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, realArray4d)
+               else
+                  start4(:) = 1
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, realArray4d)
+               end if
             end if
          end if
       else if (present(realArray5d)) then
-         if (associated(field_cursor % fieldhandle % decomp)) then
-            call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
-                                  realArray5d, pio_ierr)
-         else
-            if (field_cursor % fieldhandle % has_unlimited_dim) then
-               start6(1) = 1
-               start6(2) = 1
-               start6(3) = 1
-               start6(4) = 1
-               start6(5) = 1
-               start6(6) = handle % frame_number
-               count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
-               count6(6) = 1
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start6, count6, realArray5d)
+         if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+            allocate(singleArray5d(size(realArray5d,1), size(realArray5d,2), size(realArray5d,3), size(realArray5d,4), size(realArray5d,5)))
+            singleArray5d(:,:,:,:,:) = real(realArray5d(:,:,:,:,:),R4KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     singleArray5d, pio_ierr)
             else
-               start5(:) = 1
-               count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
-               count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
-               count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
-               count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
-               count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
-               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, realArray5d)
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start6(1) = 1
+                  start6(2) = 1
+                  start6(3) = 1
+                  start6(4) = 1
+                  start6(5) = 1
+                  start6(6) = handle % frame_number
+                  count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  count6(6) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start6, count6, singleArray5d)
+               else
+                  start5(:) = 1
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, singleArray5d)
+               end if
+            end if
+            deallocate(singleArray5d)
+         else
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     realArray5d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start6(1) = 1
+                  start6(2) = 1
+                  start6(3) = 1
+                  start6(4) = 1
+                  start6(5) = 1
+                  start6(6) = handle % frame_number
+                  count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  count6(6) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start6, count6, realArray5d)
+               else
+                  start5(:) = 1
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, realArray5d)
+               end if
             end if
          end if
       else if (present(intArray1d)) then
