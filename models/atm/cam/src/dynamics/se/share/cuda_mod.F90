@@ -7,22 +7,9 @@
 !deifned), and therefore, we enforce BARRIERS, MASTERS, and SINGLES from within these routines rather than outside them.
 !This is to minimize the visible code impacts on the existing CPU code.
 
-! Please pay attention to this all caps passive aggresive banner.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!                     !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!  STATUS INCOMPLETE  !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!  DO NOT USE YET     !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!  UNTIL THIS BANNER  !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!  IS REMOVED         !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!                     !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
 
 !#define CUDA_DEBUG
 
@@ -62,6 +49,9 @@ module cuda_mod
   public :: copy_qdp_d2h
   public :: copy_qdp_h2d
   public :: cudaThreadSynchronize_wrap
+
+  integer,parameter :: numk_eul = 8
+  integer,parameter :: numk_hyp = 4
 
   !This is from prim_advection_mod.F90
   type(EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
@@ -610,8 +600,8 @@ contains
 !$OMP MASTER
   ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
   ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
-  blockdim = dim3( np      , np     , nlev )
-  griddim  = dim3( qsize_d , nelemd , 1    )
+  blockdim = dim3( np*np*numk_eul , 1 , 1 )
+  griddim  = dim3( int(ceiling(dble(nlev)/numk_eul))*qsize_d*nelemd , 1 , 1 )
   call euler_step_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
                                                               dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
                                                               n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd ); _CHECK(__LINE__)
@@ -735,20 +725,20 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     ierr = cudaMemcpyAsync( dpdiss_ave_d , dpdiss_ave_h , size( dpdiss_ave_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     ierr = cudaMemcpyAsync( dp_d         , dp_h         , size( dp_h )         , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     !KERNEL 1
-    blockdim = dim3( np     , np , nlev )
-    griddim  = dim3( nelemd , 1  , 1    )
+    blockdim = dim3( np*np*numk_hyp , 1 , 1 )
+    griddim  = dim3( int(ceiling(dble(nlev)/numk_hyp))*qsize_d*nelemd , 1 , 1 )
     call hypervis_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , dpdiss_ave_d , spheremp_d , &
-                                                              deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nets , nete , dt , nt_qdp , nu_p ); _CHECK(__LINE__)
+                                                              deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , 1 , nelemd , dt , nt_qdp , nu_p ); _CHECK(__LINE__)
     ierr = cudaThreadSynchronize()
 
     call pack_exchange_unpack_stage(1,hybrid,qtens_d,1)
     ierr = cudaThreadSynchronize()
 
     !KERNEL 2
-    blockdim = dim3( np     , np , nlev )
-    griddim  = dim3( nelemd , 1  , 1    )
+    blockdim = dim3( np*np*numk_hyp , 1 , 1 )
+    griddim  = dim3( int(ceiling(dble(nlev)/numk_hyp))*qsize_d*nelemd , 1 , 1 )
     call hypervis_kernel2<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , &
-                                                              nu_q , nets , nete , dt , nt_qdp ); _CHECK(__LINE__)
+                                                              nu_q , 1 , nelemd , dt , nt_qdp ); _CHECK(__LINE__)
     blockdim = dim3( np, np, nlev )
     griddim  = dim3( qsize_d, nelemd , 1 )
     call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>(qdp_d,nets,nete,nt_qdp); _CHECK(__LINE__)
@@ -844,38 +834,35 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   real(kind=real_kind), dimension(np,np                                  ), intent(in   ) :: deriv_dvv
   real(kind=real_kind), value                                             , intent(in   ) :: dt, nu_q, nu_p
   integer, value                                                          , intent(in   ) :: n0_qdp, np1_qdp, rhs_viss, limiter_option, nets, nete
-  integer :: i , j , k , q , ie , ij , ijk
-  real(kind=real_kind), dimension(np*np+1,nlev,2), shared :: vstar_s
-  real(kind=real_kind), dimension(np*np+1,nlev  ), shared :: qtens_s
-  real(kind=real_kind), dimension(np*np+1       ), shared :: spheremp_s
-  real(kind=real_kind), dimension(np*np+1       ), shared :: deriv_dvv_s
-  real(kind=real_kind), dimension(np*np+1       ), shared :: metdet_s
-  real(kind=real_kind), dimension(np*np+1       ), shared :: rmetdet_s
-  real(kind=real_kind), dimension(        nlev  ), shared :: qmin_s
-  real(kind=real_kind), dimension(        nlev  ), shared :: qmax_s
-  real(kind=real_kind), dimension(np*np+1,nlev  ), shared :: dp_star_s
-  real(kind=real_kind), dimension(        nlev+1), shared :: hybi_s
+  integer :: ks
+  integer :: i , j , k , kk , q , ie , ij , ijk , ijkk
+  real(kind=real_kind), shared :: vstar_s    (np*np+1,numk_eul,2)
+  real(kind=real_kind), shared :: qtens_s    (np*np+1,numk_eul  )
+  real(kind=real_kind), shared :: spheremp_s (np*np+1           )
+  real(kind=real_kind), shared :: deriv_dvv_s(np*np+1           )
+  real(kind=real_kind), shared :: metdet_s   (np*np+1           )
+  real(kind=real_kind), shared :: rmetdet_s  (np*np+1           )
+  real(kind=real_kind), shared :: dp_star_s  (np*np+1,numk_eul  )
   real(kind=real_kind) :: qtmp
 
+  ks = int(ceiling(dble(nlev)/numk_eul))
+
   !Define the indices
-  i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
-  q  = blockidx%x
-  ie = blockidx%y
-  ij  =             (j-1)*np+i
-  ijk = (k-1)*np*np+(j-1)*np+i
+  i  = modulo( threadidx%x-1    ,np)+1
+  j  = modulo((threadidx%x-1)/np,np)+1
+  kk = (threadidx%x-1)/(np*np)+1
+  k  = modulo(blockidx%x-1,ks)*numk_eul + kk
+  q  = modulo((blockidx%x-1)/ks,qsize_d)+1
+  ie =       ((blockidx%x-1)/ks)/qsize_d+1
+  ij   =              (j-1)*np+i
+
+  if (k  > nlev   ) return
+  if (q  > qsize_d) return
+  if (ie > nete   ) return
 
   !Pre-load shared variables
-  vstar_s(ij,k,:) = vstar(i,j,k,:,ie)
-  if (ijk <= nlev) then
-    qmin_s(ijk) = qmin(ijk,q,ie)
-    qmax_s(ijk) = qmax(ijk,q,ie)
-  endif
-  if (ijk <= nlev+1) then
-    hybi_s(ijk) = hybi(ijk)
-  endif
-  if (k == 1) then
+  vstar_s(ij,kk,:) = vstar(i,j,k,:,ie)
+  if (kk == 1) then
     spheremp_s(ij) = spheremp(i,j,ie)
     metdet_s(ij) = metdet(i,j,ie)
     rmetdet_s(ij) = rmetdet(i,j,ie)
@@ -885,10 +872,10 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
 
   !Begin the kernel
   qtmp = Qdp(i,j,k,q,n0_qdp,ie)
-  qtens_s(ij,k) = qtmp - dt * divergence_sphere( i , j , ie , k , ij , vstar_s , qtmp , metdet_s , rmetdet_s , dinv , deriv_dvv_s , nets , nete )
-  if ( rhs_viss /= 0 ) qtens_s(ij,k) = qtens_s(ij,k) + qtens_biharmonic(i,j,k,q,ie)
+  qtens_s(ij,kk) = qtmp - dt * divergence_sphere( i , j , ie , kk , ij , vstar_s , qtmp , metdet_s , rmetdet_s , dinv , deriv_dvv_s , nets , nete )
+  if ( rhs_viss /= 0 ) qtens_s(ij,kk) = qtens_s(ij,kk) + qtens_biharmonic(i,j,k,q,ie)
   call syncthreads()
-  Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(ij) * Qtens_s(ij,k)
+  Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(ij) * Qtens_s(ij,kk)
 end subroutine euler_step_kernel1
 
 
@@ -900,10 +887,10 @@ attributes(device) function divergence_sphere(i,j,ie,k,ij,Vstar,qtmp,metdet,rmet
   real(kind=real_kind), intent(in) :: metdet   (np*np+1)
   real(kind=real_kind), intent(in) :: rmetdet  (np*np+1)
   real(kind=real_kind), intent(in) :: deriv_dvv(np*np+1)
-  real(kind=real_kind), intent(in) :: Vstar    (np*np+1,nlev,2)
+  real(kind=real_kind), intent(in) :: Vstar    (np*np+1,numk_eul,2)
   real(kind=real_kind), intent(in), value :: qtmp
   real(kind=real_kind)             :: dp_star
-  real(kind=real_kind), shared :: gv(np*np,nlev,2)
+  real(kind=real_kind), shared :: gv(np*np,numk_eul,2)
   integer :: s
   real(kind=real_kind) :: vvtemp, divtemp
   gv(ij,k,1) = metdet(ij) * ( dinv(ij,1,1,ie) * Vstar(ij,k,1) * qtmp + dinv(ij,1,2,ie) * Vstar(ij,k,2) * qtmp )
@@ -1363,32 +1350,40 @@ attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variab
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
   real(kind=real_kind), value                                             , intent(in   ) :: dt , ps0 , nu_p
   integer, value                                                          , intent(in   ) :: nets , nete , nt
-  real(kind=real_kind), dimension(np,np,2,nlev), shared :: s
+  real(kind=real_kind), dimension(np*np+1,2,numk_hyp), shared :: s
   real(kind=real_kind), dimension(np,np,4  ), shared :: dinv_s
   real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
   real(kind=real_kind), dimension(np,np), shared :: spheremp_s
   real(kind=real_kind) :: dp0
-  integer :: i, j, k, q, ie, iz
-  i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
-  ie = blockidx%x
-  iz = threadidx%z
-  if (k <= 4) dinv_s(i,j,k) = dinv(i,j,k,ie)
-  if (k == 1) then
+  integer :: i, j, k, q, ie, kk, ks, ij
+
+  ks = int(ceiling(dble(nlev)/numk_hyp))
+
+  i  = modulo( threadidx%x-1    ,np)+1
+  j  = modulo((threadidx%x-1)/np,np)+1
+  kk = (threadidx%x-1)/(np*np)+1
+  k  = modulo(blockidx%x-1,ks)*numk_hyp + kk
+  q  = modulo((blockidx%x-1)/ks,qsize_d)+1
+  ie =       ((blockidx%x-1)/ks)/qsize_d+1
+  ij = (j-1)*np+i
+
+  if (k  > nlev   ) return
+  if (q  > qsize_d) return
+  if (ie > nete   ) return
+
+  if (kk == 1) then
+    dinv_s(i,j,:) = dinv(i,j,:,ie)
     variable_hyperviscosity_s(i,j) = variable_hyperviscosity(i,j,ie)
     spheremp_s(i,j) = spheremp(i,j,ie)
   endif
-  do q = 1 , qsize_d
-    if (nu_p>0) then
-      s(i,j,1,iz) = dpdiss_ave(i,j,k,ie) * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
-    else
-      dp0 = ( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
-      s(i,j,1,iz) = dp0 * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
-    endif
-    call syncthreads()
-    qtens(i,j,k,q,ie) = laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
-  enddo
+  if (nu_p>0) then
+    s(ij,1,kk) = dpdiss_ave(i,j,k,ie) * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+  else
+    dp0 = ( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
+    s(ij,1,kk) = dp0 * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+  endif
+  call syncthreads()
+  qtens(i,j,k,q,ie) = laplace_sphere_wk(i,j,ie,kk,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
 end subroutine hypervis_kernel1
 
 
@@ -1405,37 +1400,45 @@ attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variab
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: rspheremp
   real(kind=real_kind), value                                             , intent(in   ) :: dt, nu_q
   integer, value                                                          , intent(in   ) :: nets , nete , nt
-  real(kind=real_kind), dimension(np,np,2,nlev), shared :: s
+  real(kind=real_kind), dimension(np*np+1,2,numk_hyp), shared :: s
   real(kind=real_kind), dimension(np,np,4  ), shared :: dinv_s
   real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
   real(kind=real_kind), dimension(np,np), shared :: spheremp_s
   real(kind=real_kind), dimension(np,np), shared :: rspheremp_s
-  integer :: i, j, k, q, ie, iz
-  i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
-  ie = blockidx%x
-  iz = threadidx%z
-  if (k == 1) then
+  integer :: i, j, k, q, ie, kk, ks, ij
+
+  ks = int(ceiling(dble(nlev)/numk_hyp))
+
+  i  = modulo( threadidx%x-1    ,np)+1
+  j  = modulo((threadidx%x-1)/np,np)+1
+  kk = (threadidx%x-1)/(np*np)+1
+  k  = modulo(blockidx%x-1,ks)*numk_hyp + kk
+  q  = modulo((blockidx%x-1)/ks,qsize_d)+1
+  ie =       ((blockidx%x-1)/ks)/qsize_d+1
+  ij = (j-1)*np+i
+
+  if (k  > nlev   ) return
+  if (q  > qsize_d) return
+  if (ie > nete   ) return
+
+  if (kk == 1) then
     dinv_s(i,j,:) = dinv(i,j,:,ie)
     variable_hyperviscosity_s(i,j) = variable_hyperviscosity(i,j,ie)
     spheremp_s(i,j) = spheremp(i,j,ie)
     rspheremp_s(i,j) = rspheremp(i,j,ie)
   endif
   call syncthreads()
-  do q = 1 , qsize_d
-    s(i,j,1,iz) = rspheremp_s(i,j)*qtens(i,j,k,q,ie)
-    call syncthreads()
-    Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dt*nu_q*laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
-  enddo
+  s(ij,1,kk) = rspheremp_s(i,j)*qtens(i,j,k,q,ie)
+  call syncthreads()
+  Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dt*nu_q*laplace_sphere_wk(i,j,ie,kk,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
 end subroutine hypervis_kernel2
 
 
 
-attributes(device) function laplace_sphere_wk(i,j,ie,iz,s,dinv,spheremp,variable_hyperviscosity,deriv_dvv,nets,nete) result(lapl)
+attributes(device) function laplace_sphere_wk(i,j,ie,k,s,dinv,spheremp,variable_hyperviscosity,deriv_dvv,nets,nete) result(lapl)
   implicit none
-  integer,                                              intent(in) :: nets, nete, i, j, ie, iz
-  real(kind=real_kind), dimension(np,np,2,nlev)       , intent(inout) :: s
+  integer,                                              intent(in) :: nets, nete, i, j, ie, k
+  real(kind=real_kind), dimension(np*np+1,2,numk_hyp)   , intent(inout) :: s
   real(kind=real_kind), dimension(np,np,2,2          ), intent(in) :: dinv
   real(kind=real_kind), dimension(np,np              ), intent(in) :: deriv_dvv
   real(kind=real_kind), dimension(np,np              ), intent(in) :: variable_hyperviscosity
@@ -1444,16 +1447,16 @@ attributes(device) function laplace_sphere_wk(i,j,ie,iz,s,dinv,spheremp,variable
   integer :: l
   real(kind=real_kind) :: dsdx00 , dsdy00, tmp1, tmp2
   real(kind=real_kind), dimension(2) :: ds
-  ds = gradient_sphere(i,j,ie,iz,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete)
-  lapl = divergence_sphere_wk(i,j,ie,iz,ds,s,dinv,spheremp,deriv_dvv,nets,nete)
+  ds = gradient_sphere(i,j,ie,k,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete)
+  lapl = divergence_sphere_wk(i,j,ie,k,ds,s,dinv,spheremp,deriv_dvv,nets,nete)
 end function laplace_sphere_wk
 
 
 
-attributes(device) function gradient_sphere(i,j,ie,iz,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete) result(ds)
+attributes(device) function gradient_sphere(i,j,ie,k,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete) result(ds)
   implicit none
-  integer,                                              intent(in) :: nets, nete, i, j, ie, iz
-  real(kind=real_kind), dimension(np,np,2,nlev)       , intent(in) :: s
+  integer,                                              intent(in) :: nets, nete, i, j, ie, k
+  real(kind=real_kind), dimension(np*np+1,2,numk_hyp)   , intent(in) :: s
   real(kind=real_kind), dimension(np,np,2,2          ), intent(in) :: dinv
   real(kind=real_kind), dimension(np,np              ), intent(in) :: deriv_dvv
   real(kind=real_kind), dimension(np,np              ), intent(in) :: variable_hyperviscosity
@@ -1463,8 +1466,8 @@ attributes(device) function gradient_sphere(i,j,ie,iz,s,dinv,variable_hypervisco
   dsdx00 = 0.0d0
   dsdy00 = 0.0d0
   do l = 1 , np
-    dsdx00 = dsdx00 + deriv_dvv(l,i)*s(l,j,1,iz)
-    dsdy00 = dsdy00 + deriv_dvv(l,j)*s(i,l,1,iz)
+    dsdx00 = dsdx00 + deriv_dvv(l,i)*s((j-1)*np+l,1,k)
+    dsdy00 = dsdy00 + deriv_dvv(l,j)*s((l-1)*np+i,1,k)
   enddo
   ds(1) = ( dinv(i,j,1,1)*dsdx00 + dinv(i,j,2,1)*dsdy00 ) * rrearth * variable_hyperviscosity(i,j)
   ds(2) = ( dinv(i,j,1,2)*dsdx00 + dinv(i,j,2,2)*dsdy00 ) * rrearth * variable_hyperviscosity(i,j)
@@ -1472,22 +1475,23 @@ end function gradient_sphere
 
 
 
-attributes(device) function divergence_sphere_wk(i,j,ie,iz,tmp,s,dinv,spheremp,deriv_dvv,nets,nete) result(lapl)
+attributes(device) function divergence_sphere_wk(i,j,ie,k,tmp,s,dinv,spheremp,deriv_dvv,nets,nete) result(lapl)
   implicit none
-  integer,                                              intent(in   ) :: nets, nete, i, j, ie, iz
+  integer,                                              intent(in   ) :: nets, nete, i, j, ie, k
   real(kind=real_kind), dimension(2),                   intent(in   ) :: tmp
-  real(kind=real_kind), dimension(np,np,2,nlev)       , intent(inout) :: s
+  real(kind=real_kind), dimension(np*np+1,2,numk_hyp)   , intent(inout) :: s
   real(kind=real_kind), dimension(np,np,2,2          ), intent(in   ) :: dinv
   real(kind=real_kind), dimension(np,np              ), intent(in   ) :: deriv_dvv
   real(kind=real_kind), dimension(np,np              ), intent(in   ) :: spheremp
   real(kind=real_kind)                                                :: lapl
-  integer :: l
-  s(i,j,1,iz) = ( dinv(i,j,1,1)*tmp(1) + dinv(i,j,1,2)*tmp(2) )
-  s(i,j,2,iz) = ( dinv(i,j,2,1)*tmp(1) + dinv(i,j,2,2)*tmp(2) )
+  integer :: l, ij
+  ij = (j-1)*np+i
+  s(ij,1,k) = ( dinv(i,j,1,1)*tmp(1) + dinv(i,j,1,2)*tmp(2) )
+  s(ij,2,k) = ( dinv(i,j,2,1)*tmp(1) + dinv(i,j,2,2)*tmp(2) )
   call syncthreads()
   lapl = 0.0d0
   do l = 1 , np
-    lapl = lapl - (spheremp(l,j)*s(l,j,1,iz)*deriv_dvv(i,l)+spheremp(i,l)*s(i,l,2,iz)*deriv_dvv(j,l)) * rrearth
+    lapl = lapl - (spheremp(l,j)*s((j-1)*np+l,1,k)*deriv_dvv(i,l)+spheremp(i,l)*s((l-1)*np+i,2,k)*deriv_dvv(j,l)) * rrearth
   enddo
 end function divergence_sphere_wk
 
