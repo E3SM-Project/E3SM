@@ -799,6 +799,9 @@ module mpas_timekeeping
       type (MPAS_Time_type) :: alarmNow
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
+      type (MPAS_TimeInterval_type) :: nowInterval, nowRemainder
+      integer :: nDivs
+
       if (present(ierr)) ierr = 0
 
       alarmPtr => clock % alarmListHead
@@ -818,19 +821,17 @@ module mpas_timekeeping
                         alarmNow = alarmNow + interval
                      end if
 
-                     do while(alarmPtr % prevRingTime <= alarmNow)
-                        alarmPtr % prevRingTime = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
-                     end do
-                     alarmPtr % prevRingTime =  alarmPtr % prevRingTime - alarmPtr % ringTimeInterval
+                     nowInterval = alarmNow - alarmPtr % prevRingTime
+                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     alarmPtr % prevRingTime = alarmNow - nowRemainder
                   else
                      if (present(interval)) then
                         alarmNow = alarmNow - interval
                      end if
 
-                     do while(alarmPtr % prevRingTime >= alarmNow)
-                        alarmPtr % prevRingTime = alarmPtr % prevRingTime - alarmPtr % ringTimeInterval
-                     end do
-                     alarmPtr % prevRingTime = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
+                     nowInterval = alarmPtr % prevRingTime - alarmNow
+                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     alarmPtr % prevRingTime = alarmNow + nowRemainder
                   end if
                end if
             end if
@@ -1488,13 +1489,16 @@ module mpas_timekeeping
       integer, intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      ! If either time interval contains years or months, need to use slower linear interval computation
-      ! Otherwise, we can use faster log interval computation
-      if ( num % ti % YR /= 0 .or. num % ti % MM /= 0 .or. den % ti % YR /= 0 .or. den % ti % MM /= 0 ) then
-         call mpas_interval_division_linear(ref_time, num, den, n, rem)
-      else
-         call mpas_interval_division_log(num, den, n, rem)
-      end if
+      type (MPAS_TimeInterval_type) :: newNum, newDen
+      integer :: days, seconds, secondsNum, secondsDen
+
+      call mpas_get_timeInterval(num, startTimeIn=ref_time, DD=days, S=seconds, S_n=secondsNum, S_d=secondsDen)
+      call mpas_set_timeInterval(newNum, DD=days, S=seconds, S_n=secondsNum, S_d=secondsDen)
+
+      call mpas_get_timeInterval(den, startTimeIn=ref_time, DD=days, S=seconds, S_n=secondsNum, S_d=secondsDen)
+      call mpas_set_timeInterval(newDen, DD=days, S=seconds, S_n=secondsNum, S_d=secondsDen)
+
+      call mpas_interval_division_log(newNum, newDen, n, rem)
 
    end subroutine mpas_interval_division
 
