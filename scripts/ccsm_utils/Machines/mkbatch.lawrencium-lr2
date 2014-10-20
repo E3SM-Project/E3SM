@@ -6,6 +6,19 @@ if ($PHASE == set_batch) then
 
 source ./Tools/ccsm_getenv || exit -1
 
+if ($?ACCOUNT) then
+  set account_name = $ACCOUNT
+else
+  if (-e ~/.cesm_proj) then
+     set account_name = `head -1 ~/.cesm_proj`
+  else
+     echo "WARNING: invalid account number P00000000 used by default"
+     echo "WARNING: please use the ACCOUNT environment variable or ~/.cesm_proj to set this in the future"
+     set account_name = P00000000
+  endif
+endif
+
+
 set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
 set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
 @ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
@@ -28,7 +41,7 @@ cat >! $file << EOF1
 #!/bin/csh -f
 #SBATCH --job-name=${CASE}
 #SBATCH --partition=lr2
-#SBATCH --account=${ACCOUNT}
+#SBATCH --account=$account_name
 #SBATCH --time=$tlimit
 #SBATCH --nodes=$nodes
 #SBATCH --ntasks=$ntasks
