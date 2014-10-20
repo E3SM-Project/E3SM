@@ -1014,14 +1014,16 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     call MPI_Irecv(recvbuf_h(1,1,icycle),length,MPIreal_t,source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
   enddo
   if ( recv_external_nelem > 0 ) then
-    blockdim6 = dim3( np      , np     , nlev )
+    blockdim6 = dim3( max(np,max_neigh_edges)     , nlev , 1 )
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
-    call edgeVpack_kernel_stage<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
+    call edgeVpack_qdp_kernel_new<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
   endif
   if ( recv_internal_nelem > 0 ) then
+    blockdim6 = dim3( max(np,max_neigh_edges)     , nlev , 1 )
+    griddim6  = dim3( qsize_d , recv_internal_nelem , 1    )
+    call edgeVpack_qdp_kernel_new<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
     blockdim6 = dim3( np      , np     , nlev )
     griddim6  = dim3( qsize_d , recv_internal_nelem , 1    )
-    call edgeVpack_kernel_stage<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
     call edgeVunpack_kernel_stage<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
   endif
   do icycle = 1 , nSendCycles
@@ -1124,6 +1126,60 @@ attributes(global) subroutine edgeVpack_kernel_stage(edgebuf,v,putmapP,reverse,n
     enddo
   endif
 end subroutine edgeVpack_kernel_stage
+
+
+
+attributes(global) subroutine edgeVpack_qdp_kernel_new(edgebuf,v,putmapP,reverse,nbuf,kptr,nets,nete,nt,indices,tl_in)
+  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+  implicit none
+  real(kind=real_kind)   ,intent(in   ) :: v(np,np,nlev,qsize_d,tl_in,nets:nete)
+  real(kind=real_kind)   ,intent(  out) :: edgebuf(nlev*qsize_d,nbuf)
+  integer, value         ,intent(in   ) :: nbuf
+  integer, value         ,intent(in   ) :: kptr
+  integer, value         ,intent(in   ) :: nt
+  integer                ,intent(in   ) :: putmapP(max_neigh_edges_d,nets:nete)
+  logical                ,intent(in   ) :: reverse(max_neigh_edges_d,nets:nete)
+  integer                ,intent(in   ) :: indices(nets:nete)
+  integer, value         ,intent(in   ) :: tl_in
+  integer, value         ,intent(in   ) :: nets
+  integer, value         ,intent(in   ) :: nete
+  integer :: i,k,ir,ll,kq,ie,q,el
+  i  = threadidx%x
+  k  = threadidx%y
+  q  = blockidx%x
+  el = blockidx%y
+  if (i <= np) then
+    ie = indices(el)
+    kq = (q-1)*nlev+k
+    edgebuf(kptr+kq,putmapP(south,ie)+i) = v(i ,1 ,k,q,nt,ie)
+    edgebuf(kptr+kq,putmapP(east ,ie)+i) = v(np,i ,k,q,nt,ie)
+    edgebuf(kptr+kq,putmapP(north,ie)+i) = v(i ,np,k,q,nt,ie)
+    edgebuf(kptr+kq,putmapP(west ,ie)+i) = v(1 ,i ,k,q,nt,ie)
+  endif
+  call syncthreads()
+  if (i <= np) then
+    ie = indices(el)
+    kq = (q-1)*nlev+k
+    ir = np-i+1
+    if(reverse(south,ie)) edgebuf(kptr+kq,putmapP(south,ie)+ir) = v(i ,1 ,k,q,nt,ie)
+    if(reverse(east ,ie)) edgebuf(kptr+kq,putmapP(east ,ie)+ir) = v(np,i ,k,q,nt,ie)
+    if(reverse(north,ie)) edgebuf(kptr+kq,putmapP(north,ie)+ir) = v(i ,np,k,q,nt,ie)
+    if(reverse(west ,ie)) edgebuf(kptr+kq,putmapP(west ,ie)+ir) = v(1 ,i ,k,q,nt,ie)
+  endif
+  call syncthreads()
+  if (i <= max_corner_elem_d) then
+    ie = indices(el)
+    kq = (q-1)*nlev+k
+    ll = swest+0*max_corner_elem_d+i-1
+    if (putmapP(ll,ie) /= -1) edgebuf(kptr+kq,putmapP(ll,ie)+1) = v(1 ,1 ,k,q,nt,ie)    ! SWEST
+    ll = swest+1*max_corner_elem_d+i-1
+    if (putmapP(ll,ie) /= -1) edgebuf(kptr+kq,putmapP(ll,ie)+1) = v(np,1 ,k,q,nt,ie)    ! SEAST
+    ll = swest+2*max_corner_elem_d+i-1
+    if (putmapP(ll,ie) /= -1) edgebuf(kptr+kq,putmapP(ll,ie)+1) = v(1 ,np,k,q,nt,ie)    ! NWEST
+    ll = swest+3*max_corner_elem_d+i-1
+    if (putmapP(ll,ie) /= -1) edgebuf(kptr+kq,putmapP(ll,ie)+1) = v(np,np,k,q,nt,ie)    ! NEAST
+  endif
+end subroutine edgeVpack_qdp_kernel_new
 
 
 
