@@ -1,0 +1,100 @@
+#! /bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+if ($?ACCOUNT) then
+  set account_name = $ACCOUNT
+else
+  if (-e ~/.cesm_proj) then
+     set account_name = `head -1 ~/.cesm_proj`
+  else
+     echo "WARNING: invalid account number P00000000 used by default"
+     echo "WARNING: please use the ACCOUNT environment variable or ~/.cesm_proj to set this in the future"
+     set account_name = P00000000
+  endif
+endif
+
+
+set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+@ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
+if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
+  @ nodes = $nodes + 1
+  @ ntasks = $nodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+set qname = batch
+set tlimit = "00:59:00"
+if ($CCSM_ESTCOST > 2) set tlimit = "08:59:00"
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#SBATCH --job-name=${CASE}
+#SBATCH --partition=lr3
+#SBATCH --account=$account_name
+#SBATCH --time=$tlimit
+#SBATCH --nodes=$nodes
+#SBATCH --ntasks=$ntasks
+#SBATCH --cpus-per-task=$maxthrds
+#SBATCH --exclusive
+###SBATCH --mail-type=END
+###SBATCH --mail-user=xyz@abc.com
+#SBATCH --output=slurm.out
+#SBATCH --error=slurm.err
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+# for mvapich
+#srun --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+# for mvapich2
+srun --mpi=none --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+
+#setenv MV2_ENABLE_AFFINITY 1
+#setenv MV2_CPU_MAPPING 31:29:27:25:23:21:19:17:15:13:11:9:7:5:3:1
+#srun --mpi=none -n=${maxtasks} --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+   #This is a place holder for a long-term archiving script
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################
