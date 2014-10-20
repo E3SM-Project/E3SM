@@ -159,7 +159,6 @@
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
-			<var name="hx"/>
 			<var name="zgrid"/>
 			<var name="rdzw"/>
 			<var name="dzu"/>
@@ -282,7 +281,6 @@
 			<var name="cf3"/>
 			<var name="cpr"/>
 			<var name="cpl"/>
-			<var name="hx"/>
 			<var name="zgrid"/>
 			<var name="rdzw"/>
 			<var name="dzu"/>
@@ -690,7 +688,6 @@
                 <var name="cpl"                       type="real"     dimensions="THREE nEdges"/>
 
                 <!-- description of the vertical grid structure -->
-                <var name="hx"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="rdzw"                      type="real"     dimensions="nVertLevels"/>
                 <var name="dzu"                       type="real"     dimensions="nVertLevels"/>
