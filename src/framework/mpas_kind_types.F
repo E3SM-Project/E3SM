@@ -26,6 +26,8 @@ module mpas_kind_types
    integer, parameter :: RKIND  = selected_real_kind(12)
 #endif
 
+   integer, parameter :: I8KIND = selected_int_kind(18)
+
    integer, parameter :: StrKIND = 512
    integer, parameter :: ShortStrKIND = 32
 
