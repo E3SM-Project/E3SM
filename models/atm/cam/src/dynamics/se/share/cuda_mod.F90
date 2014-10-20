@@ -51,7 +51,8 @@ module cuda_mod
   public :: cudaThreadSynchronize_wrap
 
   integer,parameter :: numk_eul = 8
-  integer,parameter :: numk_hyp = nlev
+  integer,parameter :: numk_hyp = 6
+  integer,parameter :: numk_lim2d = 15
 
   !This is from prim_advection_mod.F90
   type(EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
@@ -588,13 +589,11 @@ contains
   !   2D Advection step
   do ie = nets , nete
     ! Compute velocity used to advance Qdp 
-    do k = 1 , nlev    !  Loop index added (AAM)
-      ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
-      ! but that's ok because rhs_multiplier=0 on the first stage:
-      dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
-      vstar_h(:,:,k,1,ie) = elem(ie)%derived%vn0(:,:,1,k) / dp_h(:,:,k,ie)
-      vstar_h(:,:,k,2,ie) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
-    enddo
+    ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
+    ! but that's ok because rhs_multiplier=0 on the first stage:
+    dp_h(:,:,:,ie) = elem(ie)%derived%dp(:,:,:) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,:) 
+    vstar_h(:,:,:,1,ie) = elem(ie)%derived%vn0(:,:,1,:) / dp_h(:,:,:,ie)
+    vstar_h(:,:,:,2,ie) = elem(ie)%derived%vn0(:,:,2,:) / dp_h(:,:,:,ie)
   enddo
 !$OMP BARRIER
 !$OMP MASTER
@@ -606,8 +605,8 @@ contains
                                                               dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
                                                               n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd ); _CHECK(__LINE__)
   if ( limiter_option == 4 ) then
-    blockdim = dim3( np      , np     , nlev )
-    griddim  = dim3( qsize_d , nelemd , 1    )
+  blockdim = dim3( np*np*numk_lim2d , 1 , 1 )
+  griddim  = dim3( int(ceiling(dble(nlev)/numk_lim2d))*qsize_d*nelemd , 1 , 1 )
     call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>( qdp_d , 1 , nelemd , np1_qdp ); _CHECK(__LINE__)
   endif
 !$OMP END MASTER
@@ -636,7 +635,7 @@ contains
   endif
 !$OMP MASTER
   call pack_exchange_unpack_stage(np1_qdp,hybrid,qdp_d,timelevels)
-  blockdim = dim3( np*np   , nlev   , 1 )
+  blockdim = dim3( np*np   * nlev  , 1 , 1 )
   griddim  = dim3( qsize_d , nelemd , 1 )
   call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , 1 , nelemd , np1_qdp ); _CHECK(__LINE__)
   ierr = cudaThreadSynchronize()
@@ -739,8 +738,8 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     griddim  = dim3( int(ceiling(dble(nlev)/numk_hyp))*qsize_d*nelemd , 1 , 1 )
     call hypervis_kernel2<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , &
                                                               nu_q , 1 , nelemd , dt , nt_qdp ); _CHECK(__LINE__)
-    blockdim = dim3( np, np, nlev )
-    griddim  = dim3( qsize_d, nelemd , 1 )
+    blockdim = dim3( np*np*numk_lim2d , 1 , 1 )
+    griddim  = dim3( int(ceiling(dble(nlev)/numk_lim2d))*qsize_d*nelemd , 1 , 1 )
     call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>(qdp_d,nets,nete,nt_qdp); _CHECK(__LINE__)
     ierr = cudaThreadSynchronize()
 
@@ -748,7 +747,7 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     ierr = cudaThreadSynchronize()
 
     !KERNEL 3
-    blockdim = dim3( np * np , nlev   , 1 )
+    blockdim = dim3( np * np * nlev , 1 , 1 )
     griddim  = dim3( qsize_d , nelemd , 1 )
     call euler_hypervis_kernel_last<<<griddim,blockdim,0,streams(1)>>>( qdp_d , rspheremp_d , nets , nete , nt_qdp ); _CHECK(__LINE__)
     blockdim = dim3( np , np , nlev )
@@ -913,65 +912,67 @@ attributes(global) subroutine limiter2d_zero_kernel(Qdp,nets,nete,np1)
   implicit none
   real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev,qsize_d,timelevels,nets:nete)
   integer, value       , intent(in   ) :: nets,nete,np1
-  integer :: i, j, k, q, ie, jj, tid, ind
+  integer :: i, j, k, kk, q, ie, jj, ij, ijk, ks
   real (kind=real_kind) :: mass,mass_new
-  real (kind=real_kind), shared :: Qdp_shared((np*np+PAD)*nlev)
+  real (kind=real_kind), shared :: Qdp_shared(np*np+PAD,nlev)
   real (kind=real_kind), shared :: mass_shared(nlev)
   real (kind=real_kind), shared :: mass_new_shared(nlev)
 
-  i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
-  q  = blockidx%x
-  ie = blockidx%y
+  ks = int(ceiling(dble(nlev)/numk_lim2d))
 
-  tid = (threadidx%z-1)*(np*np    ) + (threadidx%y-1)*(np) + threadidx%x
-  ind = (threadidx%z-1)*(np*np+PAD) + (threadidx%y-1)*(np) + threadidx%x
+  i  = modulo( threadidx%x-1    ,np)+1
+  j  = modulo((threadidx%x-1)/np,np)+1
+  kk = (threadidx%x-1)/(np*np)+1
+  k  = modulo(blockidx%x-1,ks)*numk_lim2d + kk
+  q  = modulo((blockidx%x-1)/ks,qsize_d)+1
+  ie =       ((blockidx%x-1)/ks)/qsize_d+1
+  ij  = (j-1)*np+i
+  ijk = (kk-1)*np*np+ij
 
-  Qdp_shared(ind) = Qdp(i,j,k,q,np1,ie)
+  Qdp_shared(ij,kk) = Qdp(i,j,k,q,np1,ie)
   call syncthreads()
 
-  if ( tid <= nlev ) then
+  if ( ijk <= numk_lim2d ) then
     mass = 0.
     do jj = 1 , np*np
-      mass = mass + Qdp_shared((tid-1)*(np*np+PAD)+jj)
+      mass = mass + Qdp_shared(jj,ijk)
     enddo
-    mass_shared(tid) = mass
+    mass_shared(ijk) = mass
   endif
   call syncthreads()
 
-  if ( mass_shared(k)  < 0 ) Qdp_shared(ind) = -Qdp_shared(ind)
-  if ( Qdp_shared(ind) < 0 ) Qdp_shared(ind) = 0
+  if ( mass_shared(kk)   < 0 ) Qdp_shared(ij,kk) = -Qdp_shared(ij,kk)
+  if ( Qdp_shared(ij,kk) < 0 ) Qdp_shared(ij,kk) = 0
   call syncthreads()
 
-  if ( tid <= nlev ) then
+  if ( ijk <= numk_lim2d ) then
     mass = 0.
     do jj = 1 , np*np
-      mass = mass + Qdp_shared((tid-1)*(np*np+PAD)+jj)
+      mass = mass + Qdp_shared(jj,ijk)
     enddo
-    mass_new_shared(tid) = mass
+    mass_new_shared(ijk) = mass
   endif
   call syncthreads()
 
   ! now scale the all positive values to restore mass
-  if ( mass_new_shared(k) > 0 ) Qdp_shared(ind) =  Qdp_shared(ind) * abs(mass_shared(k)) / mass_new_shared(k)
-  if ( mass_shared    (k) < 0 ) Qdp_shared(ind) = -Qdp_shared(ind)
-  Qdp(i,j,k,q,np1,ie) = Qdp_shared(ind)
+  if ( mass_new_shared(kk) > 0 ) Qdp_shared(ij,kk) =  Qdp_shared(ij,kk) * abs(mass_shared(kk)) / mass_new_shared(kk)
+  if ( mass_shared    (kk) < 0 ) Qdp_shared(ij,kk) = -Qdp_shared(ij,kk)
+  Qdp(i,j,k,q,np1,ie) = Qdp_shared(ij,kk)
 end subroutine limiter2d_zero_kernel
 
 
 
 attributes(global) subroutine euler_hypervis_kernel_last( Qdp , rspheremp , nets , nete , np1 )
   implicit none
-  real(kind=real_kind), dimension(np*np,nlev,qsize_d,timelevels,nets:nete), intent(inout) :: Qdp
+  real(kind=real_kind), dimension(np*np*nlev,qsize_d,timelevels,nets:nete), intent(inout) :: Qdp
   real(kind=real_kind), dimension(np*np                        ,nets:nete), intent(in   ) :: rspheremp
   integer, value                                                          , intent(in   ) :: nets , nete , np1
-  integer :: i, k, q, ie
-  i  = threadidx%x
-  k  = threadidx%y
+  integer :: ijk, ij, q, ie
+  ijk  = threadidx%x
+  ij   = modulo(threadidx%x-1,np*np)+1
   q  = blockidx%x
   ie = blockidx%y
-  Qdp(i,k,q,np1,ie) = rspheremp(i,ie) * Qdp(i,k,q,np1,ie)
+  Qdp(ijk,q,np1,ie) = rspheremp(ij,ie) * Qdp(ijk,q,np1,ie)
 end subroutine euler_hypervis_kernel_last
 
 
@@ -1028,7 +1029,7 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     iptr   =  pCycle%ptrP
     ierr = cudaMemcpyAsync(sendbuf_h(1,1,icycle),edgebuf_d(1,iptr),size(sendbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyDeviceToHost,streams(1)); _CHECK(__LINE__)
   enddo
-  ierr = cudaThreadSynchronize()
+  ierr = cudaStreamSynchronize(streams(1))
   do icycle = 1 , nSendCycles
     pCycle => pSchedule%SendCycle(icycle)
     dest   =  pCycle%dest - 1
@@ -1038,13 +1039,13 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     call MPI_Isend(sendbuf_h(1,1,icycle),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
   enddo
   call MPI_WaitAll(nRecvCycles,Rrequest,status,ierr)
-  call MPI_WaitAll(nSendCycles,Srequest,status,ierr)
   !When this cycle's MPI transfer is compliete, then call the D2H memcopy asynchronously
   do icycle = 1 , nRecvCycles
     pCycle => pSchedule%RecvCycle(icycle)
     iptr   =  pCycle%ptrP
     ierr = cudaMemcpyAsync(edgebuf_d(1,iptr),recvbuf_h(1,1,icycle),size(recvbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyHostToDevice,streams(1)); _CHECK(__LINE__)
   enddo
+  call MPI_WaitAll(nSendCycles,Srequest,status,ierr)
   if ( recv_external_nelem > 0 ) then
     blockdim6 = dim3( np      , np                  , nlev )
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )

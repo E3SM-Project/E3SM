@@ -1424,14 +1424,14 @@ contains
     !  always for tracers  
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !compute timelevels for tracers (no longer the same as dynamics)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
-    call vertical_remap(elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
 
 #if USE_CUDA_FORTRAN
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
     call copy_qdp_d2h( elem , np1_qdp )
 #endif
+    !compute timelevels for tracers (no longer the same as dynamics)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
+    call vertical_remap(elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:

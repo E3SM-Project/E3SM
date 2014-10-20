@@ -79,7 +79,7 @@ module vertremap_mod
   use spelt_mod, only              : spelt_struct 
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp
-  use control_mod, only : vert_remap_q_alg
+  use control_mod, only            : vert_remap_q_alg
 
   public remap1                  ! remap any field, splines, monotone
   public remap1_nofilter         ! remap any field, splines, no filter
@@ -2243,9 +2243,9 @@ contains
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
-#if USE_CUDA_FORTRAN
-  use cuda_mod, only: vertical_remap_cuda
-#endif
+!#if USE_CUDA_FORTRAN
+!  use cuda_mod, only: vertical_remap_cuda
+!#endif
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2266,10 +2266,10 @@ contains
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
 
-#if USE_CUDA_FORTRAN
-  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
-  return
-#endif
+!#if USE_CUDA_FORTRAN
+!  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+!  return
+!#endif
 
   call t_startf('vertical_remap')
   
