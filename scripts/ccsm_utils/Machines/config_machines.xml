@@ -371,6 +371,47 @@
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="lawrencium-lr2">
+         <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (pgi), batch system is SLURM</DESC>
+         <OS>LINUX</OS>
+         <COMPILERS>pgi</COMPILERS>
+         <MPILIBS>openmpi</MPILIBS>
+         <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/inputdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$ENV{CASE}</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>$CESMSCRATCHROOT/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/$CESMSCRATCHROOT/tools/cprnc/cprnc</CCSM_CPRNC>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+         <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
+         <GMAKE_J>12</GMAKE_J>
+         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+</machine>
+
+<machine MACH="lawrencium-lr3">
+         <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (pgi), batch system is SLURM</DESC>
+         <OS>LINUX</OS>
+         <COMPILERS>pgi</COMPILERS>
+         <MPILIBS>openmpi</MPILIBS>
+         <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/inputdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$ENV{CASE}</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>$CESMSCRATCHROOT/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/$CESMSCRATCHROOT/tools/cprnc/cprnc</CCSM_CPRNC>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+         <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
+         <GMAKE_J>16</GMAKE_J>
+         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+</machine>
 
 <machine MACH="mac">
     <DESC>Mac OS/X workstation or laptop</DESC>
