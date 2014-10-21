@@ -302,7 +302,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
    if(iodesc->rearranger>0){
      if(rlen>0){
        vtype = (MPI_Datatype) iodesc->basetype;
-       //    printf("rlen = %ld\n",rlen);
+       //       printf("rlen = %ld\n",rlen);
        if(vtype == MPI_INTEGER){
 	 MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
        }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
@@ -318,6 +318,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
      //  }
+
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
    }else{
      iobuf = array;

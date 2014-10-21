@@ -367,7 +367,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip);
 int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) ;
 int PIOc_set_blocksize(const int newblocksize);
-  int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], const MPI_Comm comm);
+  int PIOc_readmap(const char file[], int *ndims, int *gdims[], PIO_Offset *fmaplen, PIO_Offset *map[], const MPI_Comm comm);
   int PIOc_readmap_from_f90(const char file[],PIO_Offset *maplen, PIO_Offset *map[], const int f90_comm);
   int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Offset maplen, PIO_Offset map[], const MPI_Comm comm);
   int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[], const PIO_Offset maplen, const PIO_Offset map[], const int f90_comm);

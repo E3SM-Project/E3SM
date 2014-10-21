@@ -197,7 +197,7 @@ contains
 
   end subroutine pio_writedof
 
-  subroutine pio_readdof (file, DOF, comm, punit)
+  subroutine pio_readdof (file, ndims, gdims, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
     !
@@ -220,22 +220,27 @@ contains
     integer(PIO_OFFSET_KIND),pointer:: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
+    integer, intent(out) :: ndims
+    integer, pointer :: gdims(:)
     integer(PIO_OFFSET_KIND) :: maplen
     integer :: ierr
-    type(C_PTR) :: tmap
+    type(C_PTR) :: tgdims, tmap
     interface
-       integer(C_INT) function PIOc_readmap_from_f90(file, maplen, map, f90_comm) &
+       integer(C_INT) function PIOc_readmap_from_f90(file, ndims, gdims, maplen, map, f90_comm) &
             bind(C,name="PIOc_readmap_from_f90") 
          use iso_c_binding
          character(C_CHAR), intent(in) :: file
+         integer(C_INT), intent(out) :: ndims
+         type(C_PTR), intent(out) :: gdims
          integer(C_SIZE_T), intent(out) :: maplen
          type(C_PTR) :: map
          integer(C_INT), value, intent(in) :: f90_comm
        end function PIOc_readmap_from_f90
     end interface
 
-    ierr = PIOc_readmap_from_f90(trim(file)//C_NULL_CHAR, maplen, tmap, comm);
+    ierr = PIOc_readmap_from_f90(trim(file)//C_NULL_CHAR, ndims, tgdims, maplen, tmap, comm);
 
+    call c_f_pointer(tgdims, gdims, (/ndims/))
     call c_f_pointer(tmap, DOF, (/maplen/))
 
   end subroutine pio_readdof

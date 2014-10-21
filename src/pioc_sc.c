@@ -34,8 +34,8 @@ typedef long long PIO_Offset;
 #include <pio_internal.h>
 #endif
 
-#define default_blocksize 884736;
-//#define default_blocksize 1024
+//#define default_blocksize 884736;
+#define default_blocksize 1024
 int blocksize = default_blocksize;
 
 

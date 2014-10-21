@@ -21,7 +21,7 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
-#define MAX_GATHER_BLOCK_SIZE 32
+#define MAX_GATHER_BLOCK_SIZE -1
 
 extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
 

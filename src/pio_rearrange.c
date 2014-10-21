@@ -12,7 +12,6 @@
 #include <pio.h>
 #include <pio_internal.h>
 #include <limits.h>
-#define DEF_P2P_MAXREQ 64
 
 int tmpioproc=-1;
 
@@ -317,7 +316,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   int recv_displs[ntasks];
   int *recv_buf=NULL;
   int nrecvs;
-  int maxreq = DEF_P2P_MAXREQ;
+  int maxreq = MAX_GATHER_BLOCK_SIZE;
   int ierr;
   int io_comprank;
   int ioindex;
@@ -514,7 +513,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options)
 {
 
-  bool handshake=true;
+  bool handshake=false;
   bool isend = false;
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int ntasks;
@@ -608,6 +607,16 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake, isend, maxreq);
   
+  if(ios.ioproc && iodesc->nrecvs>0){
+    for( i=0;i<iodesc->nrecvs;i++){
+      MPI_Type_free(iodesc->rtype+i);
+    }
+  }
+  for( i=0;i<niotasks; i++){
+    if(scount[i]>0){
+      MPI_Type_free(iodesc->stype+i);
+    }
+  }
 
   free(sendcounts);
   free(recvcounts); 
@@ -702,6 +711,19 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
+
+
+  if(ios.ioproc && iodesc->nrecvs>0){
+    for( i=0;i<iodesc->nrecvs;i++){
+      MPI_Type_free(iodesc->rtype+i);
+    }
+  }
+  for( i=0;i<niotasks; i++){
+    if(scount[i]>0){
+      MPI_Type_free(iodesc->stype+i);
+    }
+  }
+
 
   free(sendcounts);
   free(recvcounts); 
@@ -926,8 +948,8 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
   //  printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
 
   // If the io tasks are not an even divisor of the compute tasks put the remainder in the last group
-  if(color==ios.num_iotasks){
-    color--;
+  if(color>=ios.num_iotasks){
+    color=ios.num_iotasks;
     key=key+taskratio-1;
   }
 
@@ -970,10 +992,11 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   MPI_Comm_rank(iodesc->subset_comm, &rank);
   MPI_Comm_size(iodesc->subset_comm, &ntasks);
 
-  if(ios.ioproc)
+  if(ios.ioproc){
     pioassert(rank==0,"Bad io rank in subset create",__FILE__,__LINE__);
-  else
+  }else{
     pioassert(rank>0 && rank<ntasks,"Bad comp rank in subset create",__FILE__,__LINE__);
+  }
   totalgridsize=1;
   for(i=0;i<ndims;i++)
     totalgridsize*=gsize[i];

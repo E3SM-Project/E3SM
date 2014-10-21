@@ -702,7 +702,7 @@ contains
     integer(c_int) :: ndims
     integer(c_int), dimension(:), allocatable, target :: cdims
     integer(PIO_OFFSET_KIND), dimension(:), allocatable, target :: cstart, ccount
-    integer(PIO_OFFSET_KIND), allocatable :: ccompmap(:)
+
     type(C_PTR) :: crearr
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
@@ -714,7 +714,7 @@ contains
          integer(C_INT), value :: ndims
          integer(C_INT) :: dims(*)
          integer(C_INT), value :: maplen
-         integer(C_SIZE_T) :: compmap(*)
+         type(C_PTR), value :: compmap
          integer(C_INT) :: ioidp
          type(C_PTR), value :: rearr
          type(C_PTR), value :: iostart
@@ -732,15 +732,13 @@ contains
        cdims(i) = dims(ndims-i+1)
     end do
     maplen = size(compdof)
-    allocate(ccompmap(maplen))
-    ccompmap = compdof - 1
+!    allocate(ccompmap(maplen))
     
     if(present(rearr)) then
        crearr = C_LOC(rearr)
     else
        crearr = C_NULL_PTR
     endif
-
 
     if(present(iostart) .and. present(iocount)) then
        allocate(cstart(ndims), ccount(ndims))
@@ -749,14 +747,14 @@ contains
           ccount(i) = iocount(ndims-i+1)
        end do
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, ccompmap, iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
        deallocate(cstart, ccount)
     else
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, ccompmap, iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
     end if
     deallocate(cdims)
-    deallocate(ccompmap)
+!    deallocate(ccompmap)
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
