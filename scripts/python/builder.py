@@ -96,7 +96,7 @@ class platformBuilder(object):
         self.envMod['LDFLAGS'] = self.LDFLAGS
 
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
-                       self.CXXFLAGS + self.OFLAGS + self.MPIEXEC + ' ..')
+                       self.CXXFLAGS + self.OFLAGS + self.EXECCA + self.MPIEXEC + ' ..')
         print cmakeString
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
@@ -287,6 +287,7 @@ class yellowstone_intel(platformBuilder):
                        '-D PLATFORM:STRING=yellowstone '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
+        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
 
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive

@@ -58,26 +58,44 @@ endif()
 # as a wrapper that does this reordering so we can keep this file relatively simple.
 ###-------------------------------------------------------------------------###
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-    set(MPIEXEC_NPF1 -n1 )
-    set(MPIEXEC_NPF2 -n2 )
-    set(MPIEXEC_NPF3 -n3 )
-    set(MPIEXEC_NPF4 -n4 )
-    set (EXECCA "execca")
-else()
-    set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
-    set(MPIEXEC_NPF2 ${MPIEXEC_NUMPROC_FLAG} 2)
-    set(MPIEXEC_NPF3 ${MPIEXEC_NUMPROC_FLAG} 3)
-    set(MPIEXEC_NPF4 ${MPIEXEC_NUMPROC_FLAG} 4)
-endif()
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#    set(MPIEXEC_NPF1 -n1 )
+#    set(MPIEXEC_NPF2 -n2 )
+#    set(MPIEXEC_NPF3 -n3 )
+#    set(MPIEXEC_NPF4 -n4 )
+#    set (EXECCA "execca")
+#else()
+#    set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
+#    set(MPIEXEC_NPF2 ${MPIEXEC_NUMPROC_FLAG} 2)
+#    set(MPIEXEC_NPF3 ${MPIEXEC_NUMPROC_FLAG} 3)
+#    set(MPIEXEC_NPF4 ${MPIEXEC_NUMPROC_FLAG} 4)
+#endif()
 
 ###-------------------------------------------------------------------------###
 #  arguments to binarys should be a CMake list not as a CMake string
 ###-------------------------------------------------------------------------###
 
+
+function( add_mpi_test test_name test_exe num_proc )
+
+    if (${PLATFORM} STREQUAL "yellowstone" )
+        ###
+        ### note: no space between -n and num_proc
+        ###
+        set(MPIEXEC_NPF -n${num_proc})
+        set(EXE_CMD ${EXECCA} ${MPIEXEC} ${test_exe} ${MPIEXEC_NPF})
+    else()
+        set(MPIEXEC_NPF ${MPIEXEC_NUMPROC_FLAG} ${num_proc})
+        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${test_exe})
+    endif()
+    add_test(NAME ${test_name} COMMAND ${EXE_CMD} )
+
+endfunction(add_mpi_test)
+
 ###-------------------------------------------------------------------------###
 # test pio_init_finalize
 ###-------------------------------------------------------------------------###
+
 
 ADD_EXECUTABLE(pio_init_finalize pio_init_finalize.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
@@ -94,14 +112,15 @@ TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 
 
 
-set (test_exe "./pio_init_finalize")
 
+add_mpi_test("init_finialize_1_proc_func" "./pio_init_finalize" 1)
+
+set (test_exe "./pio_init_finalize")
 if (${PLATFORM} STREQUAL "yellowstone" )
     set(EXE_CMD ${EXECCA} ${MPIEXEC} ${test_exe} ${MPIEXEC_NPF1})
 else()
     set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF1} ${test_exe})
 endif()
-
 add_test(NAME init_finalize_1_proc COMMAND ${EXE_CMD} )
 
 
