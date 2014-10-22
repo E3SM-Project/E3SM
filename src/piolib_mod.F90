@@ -695,7 +695,7 @@ contains
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
-    integer (PIO_OFFSET_KIND), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer (PIO_OFFSET_KIND), intent(in), target :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer, optional, target :: rearr
     integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
