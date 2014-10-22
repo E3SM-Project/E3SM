@@ -17,13 +17,15 @@ module mpas_stream_manager
                                   MPAS_STREAM_ERR_WARN   = 1001, &
                                   MPAS_STREAM_ERR_SILENT = 1002
 
-    integer, public, parameter :: MPAS_STREAM_MGR_NOERR =  0, &
-                                  MPAS_STREAM_MGR_ERROR = -1
+    integer, public, parameter :: MPAS_STREAM_MGR_NOERR            =  0, &
+                                  MPAS_STREAM_MGR_ERR_CLOBBER_FILE = -1, &
+                                  MPAS_STREAM_MGR_ERR_CLOBBER_REC  = -2, &
+                                  MPAS_STREAM_MGR_ERROR            = -3
 
-    integer, public, parameter :: MPAS_STREAM_INPUT = 1, &
-                                  MPAS_STREAM_OUTPUT = 2, &
+    integer, public, parameter :: MPAS_STREAM_INPUT        = 1, &
+                                  MPAS_STREAM_OUTPUT       = 2, &
                                   MPAS_STREAM_INPUT_OUTPUT = 3, &
-                                  MPAS_STREAM_NONE = 4
+                                  MPAS_STREAM_NONE         = 4
 
     integer, public, parameter :: MPAS_STREAM_PROPERTY_ACTIVE      =  5, &
                                   MPAS_STREAM_PROPERTY_IMMUTABLE   =  6, &
@@ -31,7 +33,13 @@ module mpas_stream_manager
                                   MPAS_STREAM_PROPERTY_MAX_RECORDS =  8, &
                                   MPAS_STREAM_PROPERTY_REF_TIME    =  9, &
                                   MPAS_STREAM_PROPERTY_RECORD_INTV = 10, &
-                                  MPAS_STREAM_PROPERTY_PRECISION   = 11
+                                  MPAS_STREAM_PROPERTY_PRECISION   = 11, &
+                                  MPAS_STREAM_PROPERTY_CLOBBER     = 12
+
+    integer, public, parameter :: MPAS_STREAM_CLOBBER_NEVER     = 100, &
+                                  MPAS_STREAM_CLOBBER_APPEND    = 101, &
+                                  MPAS_STREAM_CLOBBER_TRUNCATE  = 102, &
+                                  MPAS_STREAM_CLOBBER_OVERWRITE = 103
 
     public :: MPAS_streamManager_type, &
               MPAS_stream_mgr_init, &
@@ -298,10 +306,15 @@ module mpas_stream_manager
     !>  Note: Setting the precision of real fields is only supported at present
     !>  for converting double-precision to single-precision on output; input is
     !>  automatically converted from single- do double-precision if necessary.
+    !>  The optional argument clobberMode determines how the stream manager will
+    !>  deal with existing files; possible options include MPAS_STREAM_CLOBBER_NEVER, 
+    !>  MPAS_STREAM_CLOBBER_APPEND, MPAS_STREAM_CLOBBER_TRUNCATE, 
+    !>  and MPAS_STREAM_CLOBBER_OVERWRITE. The default behavior is to never modify
+    !>  existing files (MPAS_STREAM_CLOBBER_NEVER).
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, &
-                                             referenceTime, recordInterval, realPrecision, ierr) !{{{
+                                             referenceTime, recordInterval, realPrecision, clobberMode, ierr) !{{{
 
         implicit none
 
@@ -315,6 +328,7 @@ module mpas_stream_manager
         type (MPAS_Time_type), intent(in), optional :: referenceTime
         type (MPAS_TimeInterval_type), intent(in), optional :: recordInterval
         integer, intent(in), optional :: realPrecision
+        integer, intent(in), optional :: clobberMode
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: new_stream
@@ -345,6 +359,11 @@ module mpas_stream_manager
         new_stream % filename_template = filename
         new_stream % maxRecords = maxRecords
         new_stream % nRecords = 0
+        if (present(clobberMode)) then
+            new_stream % clobber_mode = clobberMode
+        else
+            new_stream % clobber_mode = MPAS_STREAM_CLOBBER_NEVER
+        end if
         allocate(new_stream % referenceTime)
         if (present(referenceTime)) then
             new_stream % referenceTime = referenceTime
@@ -1320,6 +1339,9 @@ module mpas_stream_manager
             case (MPAS_STREAM_PROPERTY_PRECISION)
                 stream_cursor % precision = propertyValue
 
+            case (MPAS_STREAM_PROPERTY_CLOBBER)
+                stream_cursor % clobber_mode = propertyValue
+
             case default
                 STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
                 STREAM_ERROR_WRITE('    or specified property is not of type integer.')
@@ -1464,7 +1486,7 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Sets the value of a stream property within an MPAS stream manager.
+    !>  Retrieves the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_get_property_int(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
@@ -1507,6 +1529,9 @@ module mpas_stream_manager
             case (MPAS_STREAM_PROPERTY_PRECISION)
                 propertyValue = stream_cursor % precision
 
+            case (MPAS_STREAM_PROPERTY_CLOBBER)
+                propertyValue = stream_cursor % clobber_mode
+
             case default
                 STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
                 STREAM_ERROR_WRITE('    or specified property is not of type integer.')
@@ -1523,7 +1548,7 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Sets the value of a stream property within an MPAS stream manager.
+    !>  Retrieves the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_get_property_char(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
@@ -1628,7 +1653,7 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Sets the value of a stream property within an MPAS stream manager.
+    !>  Retrieves the value of a stream property within an MPAS stream manager.
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_get_property_logical(manager, streamID, propertyName, propertyValue, direction, ierr) !{{{
@@ -2077,7 +2102,7 @@ module mpas_stream_manager
 
                     call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, temp_ierr)
                     if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
-                        local_ierr = MPAS_STREAM_MGR_ERROR
+                        local_ierr = temp_ierr
                     end if
 
                 end if
@@ -2117,7 +2142,9 @@ module mpas_stream_manager
         type (MPAS_TimeInterval_type) :: write_interval
         character (len=StrKIND) :: now_string
         character (len=StrKIND) :: temp_filename
+        character (len=StrKIND) :: err_string
         logical :: ringing_alarm
+        logical :: clobberRecords, clobberFiles, truncateFiles
         integer :: nAlarms
         integer :: local_ierr
 
@@ -2180,16 +2207,41 @@ module mpas_stream_manager
 
 
         !
+        ! Work out file clobbering options
+        !
+        if (stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE) then
+            clobberRecords = .true.
+        else
+            clobberRecords = .false.
+        end if
+
+        if (stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. &
+            stream % clobber_mode == MPAS_STREAM_CLOBBER_TRUNCATE .or. &
+            stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND) then
+            clobberFiles = .true.
+        else
+            clobberFiles = .false.
+        end if
+
+        if (stream % clobber_mode == MPAS_STREAM_CLOBBER_TRUNCATE) then
+            truncateFiles = .true.
+        else
+            truncateFiles = .false.
+        end if
+
+
+        !
         ! If the stream is not valid, assume that we have not yet written this
         ! stream, in which case we create the stream from scratch
         !
         if (.not. stream % valid) then
-            now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
-            call mpas_get_time(now_time, dateTimeString=now_string, ierr=local_ierr)
             if (stream % maxRecords == 0 .or. nAlarms == 0) then
+                call mpas_get_time(stream % referenceTime, dateTimeString=now_string, ierr=local_ierr)
                 call mpas_expand_string(now_string, stream % filename_template, stream % filename)
                 stream % nRecords = 1
             else
+                now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                call mpas_get_time(now_time, dateTimeString=now_string, ierr=local_ierr)
                 call build_filename(stream % referenceTime, now_time, MPAS_STREAM_EXACT_TIME, stream % maxRecords, write_interval, &
                                     stream % filename_template, stream % filename, stream % nRecords, local_ierr)
             end if
@@ -2207,9 +2259,17 @@ module mpas_stream_manager
             !
             allocate(stream % stream)
             call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, stream % maxRecords, &
-                                   precision=stream % precision, ierr=local_ierr)
+                                   precision=stream % precision, clobberRecords=clobberRecords, clobberFiles=clobberFiles, &
+                                   truncateFiles=truncateFiles, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
-                ierr = MPAS_STREAM_MGR_ERROR
+                if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
+                    write(err_string,'(a)') 'Writing to stream '''//trim(stream % name)//''' would clobber file '''//&
+                                            trim(stream % filename)//''''
+                    STREAM_ERROR_WRITE(trim(err_string))
+                    ierr = MPAS_STREAM_MGR_ERR_CLOBBER_FILE
+                else
+                    ierr = MPAS_STREAM_MGR_ERROR
+                end if
                 return
             end if
 
@@ -2252,9 +2312,18 @@ module mpas_stream_manager
                     ! Build new stream from pools of fields and attributes
                     !
                     call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, &
-                                           stream % maxRecords, precision=stream % precision, ierr=local_ierr)
+                                           stream % maxRecords, precision=stream % precision, clobberRecords=clobberRecords, &
+                                           clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
                     if (local_ierr /= MPAS_STREAM_NOERR) then
-                        ierr = MPAS_STREAM_MGR_ERROR
+                        if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
+                            write(err_string,'(a)') 'Writing to stream '''//trim(stream % name)//''' would clobber file '''//&
+                                                    trim(stream % filename)//''''
+                            STREAM_ERROR_WRITE(trim(err_string))
+                            ierr = MPAS_STREAM_MGR_ERR_CLOBBER_FILE
+                        else
+                            ierr = MPAS_STREAM_MGR_ERROR
+                        end if
+                        stream % valid = .false.
                         return
                     end if
 
@@ -2297,7 +2366,14 @@ module mpas_stream_manager
         call postwrite_reindex(manager % allFields, stream % field_pool)
 
         if (local_ierr /= MPAS_STREAM_NOERR) then
-            ierr = MPAS_STREAM_MGR_ERROR
+            if (local_ierr == MPAS_STREAM_CLOBBER_RECORD) then
+                write(err_string,'(a,i4,a)') 'Writing to stream '''//trim(stream % name)//''' would overwrite record ', &
+                                             stream % nRecords, ' in file '''//trim(stream % filename)//''''
+                STREAM_ERROR_WRITE(trim(err_string))
+                ierr = MPAS_STREAM_MGR_ERR_CLOBBER_REC
+            else
+                ierr = MPAS_STREAM_MGR_ERROR
+            end if
             return
         end if
 
@@ -4074,14 +4150,16 @@ end module mpas_stream_manager
 
 
 subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, ref_time_c, rec_intv_c, &
-                                      maxRecords_c, immutable_c, precision_c, ierr_c) bind(c) !{{{
+                                      maxRecords_c, immutable_c, precision_c, clobber_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
                                     MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_STREAM_PROPERTY_REF_TIME, &
                                     MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
-                                    MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
+                                    MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
+                                    MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_stream_mgr_create_stream, &
+                                    MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION
     use mpas_io_units, only : stderrUnit
@@ -4097,11 +4175,13 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     integer(kind=c_int) :: maxRecords_c
     integer(kind=c_int) :: immutable_c
     integer(kind=c_int) :: precision_c
+    integer(kind=c_int) :: clobber_c
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, filename, reference_time, record_interval
     integer :: direction, maxRecords, immutable, prec, ierr
+    integer :: clobber_mode
 
 
     call c_f_pointer(manager_c, manager)
@@ -4112,12 +4192,25 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     call mpas_c_to_f_string(rec_intv_c, record_interval)
     immutable = immutable_c
     maxRecords = maxRecords_c
+
     if (precision_c == 4) then
         prec = MPAS_IO_SINGLE_PRECISION
     else if (precision_c == 8) then
         prec = MPAS_IO_DOUBLE_PRECISION
     else
         prec = MPAS_IO_NATIVE_PRECISION
+    end if
+    
+    if (clobber_c == 0) then
+       clobber_mode = MPAS_STREAM_CLOBBER_NEVER
+    else if (clobber_c == 1) then
+       clobber_mode = MPAS_STREAM_CLOBBER_APPEND
+    else if (clobber_c == 2) then
+       clobber_mode = MPAS_STREAM_CLOBBER_TRUNCATE
+    else if (clobber_c == 3) then
+       clobber_mode = MPAS_STREAM_CLOBBER_OVERWRITE
+    else
+       clobber_mode = MPAS_STREAM_CLOBBER_NEVER
     end if
 
     
@@ -4142,8 +4235,10 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
         end if
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords, ierr=ierr)
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_PRECISION, prec, ierr=ierr)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_CLOBBER, clobber_mode, ierr=ierr)
     else
-        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, realPrecision=prec, ierr=ierr)
+        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, realPrecision=prec, &
+                                           clobberMode=clobber_mode, ierr=ierr)
     end if
 
     if (reference_time /= 'none') then

@@ -69,7 +69,8 @@ module mpas_io
                          MPAS_IO_ERR_TWO_UNLIMITED_DIMS = -15, &
                          MPAS_IO_ERR_WRONG_MODE         = -16, &
                          MPAS_IO_ERR_NO_UNLIMITED_DIM   = -17, &
-                         MPAS_IO_ERR_UNIMPLEMENTED      = -18
+                         MPAS_IO_ERR_UNIMPLEMENTED      = -18, &
+                         MPAS_IO_ERR_WOULD_CLOBBER      = -19
 
 
    type MPAS_IO_Handle_type
@@ -81,6 +82,7 @@ module mpas_io
       integer :: iomode
       integer :: ioformat
       integer :: pio_unlimited_dimid
+      integer :: preexisting_records = 0
       integer (kind=PIO_offset) :: frame_number = 1
       type (dimlist_type), pointer :: dimlist_head => null()
       type (dimlist_type), pointer :: dimlist_tail => null()
@@ -212,6 +214,7 @@ module mpas_io
 
    contains
 
+
    subroutine MPAS_io_init(dminfo, io_task_count, io_task_stride, io_system, ierr)
 
       implicit none
@@ -227,18 +230,18 @@ module mpas_io
 
       local_dminfo = dminfo
 
-      if(present(io_system)) then
-        pio_iosystem => io_system
+      if (present(io_system)) then
+         pio_iosystem => io_system
       else
 !write(stderrUnit,*) 'MGD PIO_init'
-        allocate(pio_iosystem)
-        call PIO_init(local_dminfo % my_proc_id, &     ! comp_rank
-                      local_dminfo % comm,       &     ! comp_comm
-                      io_task_count,             &     ! num_iotasks
-                      0,                         &     ! num_aggregator
-                      io_task_stride,            &     ! stride
-                      PIO_rearr_box,             &     ! rearr
-                      pio_iosystem)                    ! iosystem
+         allocate(pio_iosystem)
+         call PIO_init(local_dminfo % my_proc_id, &     ! comp_rank
+                       local_dminfo % comm,       &     ! comp_comm
+                       io_task_count,             &     ! num_iotasks
+                       0,                         &     ! num_aggregator
+                       io_task_stride,            &     ! stride
+                       PIO_rearr_box,             &     ! rearr
+                       pio_iosystem)                    ! iosystem
   
       end if
 
@@ -270,6 +273,7 @@ module mpas_io
       end if
 
       master_pio_iotype = io_type_in
+
    end subroutine MPAS_io_set_iotype
 
 
@@ -296,23 +300,39 @@ module mpas_io
       end if
 
       master_pio_iotype = -999
+
    end subroutine MPAS_io_unset_iotype
+
    
-   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, ierr)
+   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, clobber_file, truncate_file, ierr)
 
       implicit none
 
       character (len=*), intent(in) :: filename
       integer, intent(in) :: mode
       integer, intent(in) :: ioformat
+      logical, intent(in), optional :: clobber_file
+      logical, intent(in), optional :: truncate_file
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr, pio_iotype
+      logical :: local_clobber, local_truncate
       logical :: exists
 
 !      write(stderrUnit,*) 'Called MPAS_io_open()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
+      if (present(clobber_file)) then
+         local_clobber = clobber_file
+      else
+         local_clobber = .false.
+      end if
+
+      if (present(truncate_file)) then
+         local_truncate = truncate_file
+      else
+         local_truncate = .false.
+      end if
 
       ! Sanity checks
       if (mode /= MPAS_IO_READ .and. &
@@ -347,7 +367,14 @@ module mpas_io
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
          inquire(file=trim(filename), exist=exists)
-         if (exists) then
+
+         ! If the file exists and we are not allowed to clobber it, return an
+         !    appropriate error code
+         if (exists .and. (.not. local_clobber)) then
+            if (present(ierr)) ierr = MPAS_IO_ERR_WOULD_CLOBBER
+         end if
+ 
+         if (exists .and. (.not. local_truncate)) then
             pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
             MPAS_io_open % preexisting_file = .true.
          else
@@ -366,6 +393,12 @@ module mpas_io
 !MPAS_io_open % pio_unlimited_dimid = 44
          pio_ierr = PIO_inquire(MPAS_io_open % pio_file, unlimitedDimID=MPAS_io_open % pio_unlimited_dimid)
 !write(stderrUnit,*) 'Found unlimited dim ', MPAS_io_open % pio_unlimited_dimid
+         if (pio_ierr /= PIO_noerr) then
+            if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+            return
+         end if
+
+         pio_ierr = PIO_inq_dimlen(MPAS_io_open % pio_file, MPAS_io_open % pio_unlimited_dimid, MPAS_io_open % preexisting_records)
          if (pio_ierr /= PIO_noerr) then
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
@@ -2013,6 +2046,32 @@ module mpas_io
    end subroutine MPAS_io_get_var_char0d
 
 
+   logical function MPAS_io_would_clobber_records(handle, ierr)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
+      integer, intent(out), optional :: ierr
+
+
+      if (present(ierr)) ierr = MPAS_IO_NOERR
+
+      ! Sanity checks
+      if (.not. handle % initialized) then
+         if (present(ierr)) ierr = MPAS_IO_ERR_UNINIT_HANDLE
+         MPAS_io_would_clobber_records = .false.
+         return 
+      end if
+
+      if (handle % frame_number <= handle % preexisting_records) then
+         MPAS_io_would_clobber_records = .true.
+      else
+         MPAS_io_would_clobber_records = .false.
+      end if
+
+   end function MPAS_io_would_clobber_records
+
+
    subroutine MPAS_io_put_var_generic(handle, fieldname, intVal, intArray1d, intArray2d, intArray3d, intArray4d, &
                                                         realVal, realArray1d, realArray2d, realArray3d, realArray4d, realArray5d, &
                                                         charVal, ierr)
@@ -2095,6 +2154,7 @@ module mpas_io
       end if
 
       if (field_cursor % fieldhandle % has_unlimited_dim) then
+
          call PIO_setframe(field_cursor % fieldhandle % field_desc, handle % frame_number)
          start1(1) = handle % frame_number
          count1(1) = 1
@@ -2103,7 +2163,7 @@ module mpas_io
          start2(2) = handle % frame_number
          count2(2) = 1
       else if (handle % frame_number > 1) then
-         if(present(ierr)) ierr = MPAS_IO_NOERR
+         if (present(ierr)) ierr = MPAS_IO_NOERR
          return
       end if
 
@@ -4271,7 +4331,7 @@ module mpas_io
       end do
 
 !write(stderrUnit,*) 'MGD PIO_finalize'
-      if(.not.present(io_system)) then
+      if (.not.present(io_system)) then
         call PIO_finalize(pio_iosystem, pio_ierr)
         if (pio_ierr /= PIO_noerr) then
            if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -4329,6 +4389,8 @@ module mpas_io
             write(stderrUnit,*) 'MPAS IO Error: No unlimited dimension found in dataset'
          case (MPAS_IO_ERR_UNIMPLEMENTED)
             write(stderrUnit,*) 'MPAS IO Error: Unimplemented functionality'
+         case (MPAS_IO_ERR_WOULD_CLOBBER)
+            write(stderrUnit,*) 'MPAS IO Error: Would clobber existing file'
          case default
             write(stderrUnit,*) 'MPAS IO Error: Unrecognized error code...'
       end select
