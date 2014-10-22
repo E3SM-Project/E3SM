@@ -250,7 +250,7 @@ contains
        allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
        
        ! set forcing directory
-       atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/240km/"
+       atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/"
 
        ! air temperature
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
@@ -401,7 +401,7 @@ contains
          iCell
 
     integer, pointer :: &
-         nCellsSolve
+         nCells
 
     real(kind=RKIND), dimension(:), pointer :: &
          airTemperature, &
@@ -438,7 +438,7 @@ contains
     logical, pointer :: &
          config_rotate_cartesian_grid
 
-    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
@@ -477,49 +477,49 @@ contains
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(1), &
-            airTemperature(1:nCellsSolve))
+            airTemperature)
 
        ! u air velocity
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(2), &
-            uAirVelocityPOP(1:nCellsSolve))
+            uAirVelocityPOP)
 
        ! v air velocity
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(3), &
-            vAirVelocityPOP(1:nCellsSolve))
+            vAirVelocityPOP)
 
        ! air density
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(4), &
-            airDensity(1:nCellsSolve))
+            airDensity)
 
        ! air humidity
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(5), &
-            airSpecificHumidity(1:nCellsSolve))
+            airSpecificHumidity)
 
        ! shortwave down
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(6), &
-            shortwaveDown(1:nCellsSolve))
+            shortwaveDown)
 
        ! cloudFraction
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(7), &
-            cloudFraction(1:nCellsSolve))
+            cloudFraction)
 
        ! precipitation
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(8), &
-            precipitationRate(1:nCellsSolve))
+            precipitationRate)
 
     else if (trim(forcingType) == "480km") then
 
@@ -527,42 +527,42 @@ contains
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(1), &
-            airTemperature(1:nCellsSolve))
+            airTemperature)
 
        ! u air velocity
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(2), &
-            uAirVelocityPOP(1:nCellsSolve))
+            uAirVelocityPOP)
 
        ! v air velocity
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(3), &
-            vAirVelocityPOP(1:nCellsSolve))
+            vAirVelocityPOP)
 
        ! air humidity
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(4), &
-            airSpecificHumidity(1:nCellsSolve))
+            airSpecificHumidity)
 
        ! cloudFraction
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(5), &
-            cloudFraction(1:nCellsSolve))
+            cloudFraction)
 
        ! precipitation
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(6), &
-            precipitationRate(1:nCellsSolve))
+            precipitationRate)
 
     endif
 
     ! calculate other quantities
-    do iCell = 1, nCellsSolve
+    do iCell = 1, nCells
 
        ! rotate the geographical inputs to the rotated grid
        call cice_latlon_vector_rotation_forward(&
@@ -585,7 +585,7 @@ contains
 
     if (trim(forcingType) == "gx3_POP" .or. trim(forcingType) == "gx3_MPAS") then
 
-       do iCell = 1, nCellsSolve
+       do iCell = 1, nCells
 
           call calculate_derived_forcing_variables_gx3(&
                longWavedown(iCell), &
@@ -607,7 +607,7 @@ contains
 
     else if (trim(forcingType) == "480km") then
 
-       do iCell = 1, nCellsSolve
+       do iCell = 1, nCells
 
           call calculate_derived_forcing_variables_gx1(&
                longWavedown(iCell), &
@@ -1239,9 +1239,9 @@ contains
          indexToCellID
 
     integer, pointer :: &
-         nCellsSolve
+         nCells
 
-    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
@@ -1339,7 +1339,7 @@ contains
     interpolationCoeff(1) = (desiredTimes(2) - forcingTimeEpoch) / (desiredTimes(2) - desiredTimes(1))
     interpolationCoeff(2) = (forcingTimeEpoch - desiredTimes(1)) / (desiredTimes(2) - desiredTimes(1))
 
-    do iCell = 1, nCellsSolve
+    do iCell = 1, nCells
        forcingArray(iCell) = forcingField % data(indexToCellID(iCell),forcingField % dataOrder(1)) * interpolationCoeff(1) + &
                              forcingField % data(indexToCellID(iCell),forcingField % dataOrder(2)) * interpolationCoeff(2)
     end do ! iCell

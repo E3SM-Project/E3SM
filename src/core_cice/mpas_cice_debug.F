@@ -2341,6 +2341,7 @@ contains
     surfaceTemperaturePlot(:) = surfaceTemperature(1,1,:)
 
     do iCell = 1, nCells
+
        if (iceAreaCategoryPlot(iCell) > 0.0_RKIND) then
           iceThickness(iCell)  = iceVolumeCategoryPlot(iCell)  / iceAreaCategoryPlot(iCell)
           snowThickness(iCell) = snowVolumeCategoryPlot(iCell) / iceAreaCategoryPlot(iCell)

@@ -56,11 +56,18 @@ contains
          mesh, &
          boundary
 
+    integer, dimension(:), pointer :: &
+         blockIDout
+
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
 
+    call MPAS_pool_get_array(boundary, "blockIDout", blockIDout)
+    blockIDout = block % blockID
+
     call interior_vertices(mesh, boundary)
     call interior_cells(mesh, boundary)
+    call interior_edges(mesh, boundary)
 
   end subroutine cice_init_boundary!}}}
 
@@ -97,7 +104,7 @@ contains
          vertexDegree, &
          nCells
 
-    type(field1DReal), pointer :: &
+    type(field1DInteger), pointer :: &
          interiorVertex
 
     integer :: &
@@ -112,9 +119,6 @@ contains
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-
-    write(*,*) nVerticesSolve
-    write(*,*) size(interiorVertex % array) ; stop
 
     ! boundary vertices
     do iVertex = 1, nVerticesSolve
@@ -184,7 +188,7 @@ contains
     integer, dimension(:,:), pointer :: &
          cellsOnCell
 
-    type(field1DReal), pointer :: &
+    type(field1DInteger), pointer :: &
          interiorCell
 
     call MPAS_pool_get_field(boundary, "interiorCell", interiorCell)
@@ -214,6 +218,69 @@ contains
     call mpas_dmpar_exch_halo_field(interiorCell)
 
   end subroutine interior_cells!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  interior_cells
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine interior_edges(&
+       mesh, &
+       boundary)!{{{
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    type (MPAS_pool_type), pointer, intent(inout) :: &
+         boundary !< Input: 
+
+    integer, pointer :: &
+         nCells, &
+         nEdgesSolve
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnEdge
+
+    type(field1DInteger), pointer :: &
+         interiorEdge
+
+    integer :: &
+         iEdge, &
+         iCellOnEdge
+    
+    call MPAS_pool_get_field(boundary, "interiorEdge", interiorEdge)
+
+    call MPAS_pool_get_dimension(mesh, "nEdgesSolve", nEdgesSolve)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
+
+    do iEdge = 1, nEdgesSolve
+
+       interiorEdge % array(iEdge) = 1
+
+       do iCellOnEdge = 1, 2
+
+          if (cellsOnEdge(iCellOnEdge,iEdge) > nCells) then
+
+             interiorEdge % array(iEdge) = 0
+
+          endif
+
+       enddo ! iCellOnEdge
+
+    end do ! iEdge
+
+    call mpas_dmpar_exch_halo_field(interiorEdge)
+
+  end subroutine interior_edges
 
 !-----------------------------------------------------------------------
 ! mesh searches

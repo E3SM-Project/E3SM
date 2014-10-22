@@ -218,6 +218,13 @@
 	    <var name="stress11var"/>
 	    <var name="stress22var"/>
 	    <var name="stress12var"/>
+	    <var name="solveStress"/>
+	    <var name="solveVelocity"/>
+	    <var name="airStressVertexU"/>
+	    <var name="airStressVertexV"/>
+	    <var name="airStressCellU"/>
+	    <var name="airStressCellV"/>
+	    <var name="blockIDout"/>
 	  </stream>
 	  <stream name="output" type="output">
 	    <var name="latCell"/>
@@ -275,6 +282,10 @@
 	    <var name="oceanStressU"/>
 	    <var name="oceanStressV"/>
 	    <var name="oceanStressCoeff"/>
+	    <var name="iceAreaCategory"/>
+	    <var name="iceVolumeCategory"/>
+	    <var name="snowVolumeCategory"/>
+	    <var name="surfaceTemperature"/>
 	    <var name="iceAreaCategoryPlot"/>
 	    <var name="iceVolumeCategoryPlot"/>
 	    <var name="snowVolumeCategoryPlot"/>
@@ -282,6 +293,7 @@
 	    <var name="iceThickness"/>
 	    <var name="snowThickness"/>
 	    <var name="iceAreaCell"/>
+	    <var name="iceAreaVertex"/>
 	    <var name="iceVolumeCell"/>
 	    <var name="totalMassCell"/>
 	    <var name="totalMassVertex"/>
@@ -409,13 +421,13 @@
 
 	<!-- ice state -->
 	<var_struct name="tracers" time_levs="2">
-		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpy"/>
-		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinity"/>
-		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
+		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="iceAreaCategory"/>
+		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="iceVolumeCategory"/>
+		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="snowVolumeCategory"/>
+		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="surfaceTemperature"/>
+		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells Time"   name_in_code="iceEnthalpy"/>
+		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells Time"   name_in_code="iceSalinity"/>
+		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells Time"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="tracer_tendencies" time_levs="1">
 		<var name="iceAreaCategoryTend"               type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategory"/>
@@ -489,6 +501,8 @@
 	<var_struct name="boundary" time_levs="1">
 		<var name="interiorVertex"                    type="integer"  dimensions="nVertices"                name_in_code="interiorVertex"/>
 		<var name="interiorCell"                      type="integer"  dimensions="nCells"                   name_in_code="interiorCell"/>
+		<var name="interiorEdge"                      type="integer"  dimensions="nEdges"                   name_in_code="interiorEdge"/>
+		<var name="blockIDout"                        type="integer"  dimensions="nCells"                   name_in_code="blockIDout"/>
 	</var_struct>
 
 	<!-- velocity solver -->
