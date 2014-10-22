@@ -994,6 +994,10 @@ if(-e "$machdir/env_mach_specific.$mach" ) {
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Copy Depends files if they exist
+if( -e "$machdir/Depends.$mach.$compiler" ) {
+    $sysmod = "cp $machdir/Depends.$mach.$compiler $caseroot/";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
 if( -e "$machdir/Depends.$mach" ) {
     $sysmod = "cp $machdir/Depends.$mach $caseroot/";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -1001,6 +1005,7 @@ if( -e "$machdir/Depends.$mach" ) {
 if( -e "$machdir/Depends.$compiler" ) {
     $sysmod = "cp $machdir/Depends.$compiler $caseroot/";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
 }
 
 # The following creates mach_syslog
