@@ -156,7 +156,8 @@ class darwin_gnu(platformBuilder):
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
                         '/opt/local/bin/mpiexec-mpich-gcc48 ')
-
+        self.EXECCA = ''
+    
     def runModuleCmd(self):
         """ implement ABC...give pass in this case...run module cmds
         """
@@ -220,6 +221,7 @@ class goldbach_nag(platformBuilder):
                         '/usr/local/'
                         'openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907'
                         '/bin/mpirun ')
+        self.EXECCA = ''
 
     def runModuleCmd(self):
         """ implement ABC...run module cmds
