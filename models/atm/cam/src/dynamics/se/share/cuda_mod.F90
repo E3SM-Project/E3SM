@@ -45,7 +45,6 @@ module cuda_mod
   public :: euler_step_cuda 
   public :: qdp_time_avg_cuda
   public :: advance_hypervis_scalar_cuda
-  public :: vertical_remap_cuda
   public :: copy_qdp_d2h
   public :: copy_qdp_h2d
   public :: cudaThreadSynchronize_wrap
@@ -960,9 +959,9 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     call MPI_Irecv(recvbuf_h(1,1,icycle),length,MPIreal_t,source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
   enddo
   if ( recv_external_nelem > 0 ) then
-    blockdim6 = dim3( max(np,max_neigh_edges) , nlev , 1 )
+    blockdim6 = dim3( max(np,max_corner_elem_d) , nlev , 1 )
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
-    call edgeVpack_qdp_kernel_new<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
+    call edgeVpack_kernel_stage<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
   endif
   do icycle = 1 , nSendCycles
     pCycle => pSchedule%SendCycle(icycle)
@@ -970,10 +969,10 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     ierr = cudaMemcpyAsync(sendbuf_h(1,1,icycle),edgebuf_d(1,iptr),size(sendbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyDeviceToHost,streams(1)); _CHECK(__LINE__)
   enddo
   if ( recv_internal_nelem > 0 ) then
-    blockdim6 = dim3( max(np,max_neigh_edges) , nlev , 1 )
+    blockdim6 = dim3( max(np,max_corner_elem_d) , nlev , 1 )
     griddim6  = dim3( qsize_d , recv_internal_nelem , 1    )
-    call edgeVpack_qdp_kernel_new<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
-    blockdim6 = dim3( np      , np     , nlev )
+    call edgeVpack_kernel_stage<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
+    blockdim6 = dim3( max(np,max_corner_elem_d) , nlev , 1 )
     griddim6  = dim3( qsize_d , recv_internal_nelem , 1    )
     call edgeVunpack_kernel_stage<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
   endif
@@ -1000,7 +999,7 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
   enddo
   call MPI_WaitAll(nSendCycles,Srequest,status,ierr)
   if ( recv_external_nelem > 0 ) then
-    blockdim6 = dim3( np      , np                  , nlev )
+    blockdim6 = dim3( max(np,max_corner_elem_d) , nlev , 1 )
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
     call edgeVunpack_kernel_stage<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
   endif
@@ -1011,7 +1010,7 @@ end subroutine pack_exchange_unpack_stage
 
 
 
-attributes(global) subroutine edgeVpack_qdp_kernel_new(edgebuf,v,putmapP,reverse,nbuf,kptr,nets,nete,nt,indices,tl_in)
+attributes(global) subroutine edgeVpack_kernel_stage(edgebuf,v,putmapP,reverse,nbuf,kptr,nets,nete,nt,indices,tl_in)
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   implicit none
   real(kind=real_kind)   ,intent(in   ) :: v(np*np*nlev,qsize_d,tl_in,nets:nete)
@@ -1038,8 +1037,9 @@ attributes(global) subroutine edgeVpack_qdp_kernel_new(edgebuf,v,putmapP,reverse
   ik = (k-1)*np+i
   koff = (k-1)*(np*np+1)
 
+  !Efficiently load v, reverse, and putmapP into shared memory to re-use and to efficiently retreive DRAM memory.
   if (i <= np) then
-    do ii = 1 , np
+    do ii = 1 , np  !Though this looping structure is strange, it allows the kernel to access contiguous np*nlev chunks of v.
       ind = (ii-1)*np*nlev+ik
       ind_k = (ind-1)/(np*np) + 1
       ind_ij = modulo(ind-1,np*np) + 1
@@ -1053,6 +1053,7 @@ attributes(global) subroutine edgeVpack_qdp_kernel_new(edgebuf,v,putmapP,reverse
   endif
   call syncthreads()
 
+  !Begin the packing process
   if (i <= np) then
     edgebuf(kq,put_s(west )+i) = v_s(koff+(i -1)*np+1 )
     edgebuf(kq,put_s(east )+i) = v_s(koff+(i -1)*np+np)
@@ -1073,217 +1074,76 @@ attributes(global) subroutine edgeVpack_qdp_kernel_new(edgebuf,v,putmapP,reverse
     ll = put_s(swest+2*max_corner_elem_d+i-1); if (ll /= -1) edgebuf(kq,ll+1) = v_s(koff+(np-1)*np+1 )
     ll = put_s(swest+3*max_corner_elem_d+i-1); if (ll /= -1) edgebuf(kq,ll+1) = v_s(koff+(np-1)*np+np)
   endif
-end subroutine edgeVpack_qdp_kernel_new
+end subroutine edgeVpack_kernel_stage
 
 
 
 attributes(global) subroutine edgeVunpack_kernel_stage(edgebuf,v,getmapP,nbuf,kptr,nets,nete,nt,recv_indices,tl_in)
+  use edge_mod, only: EdgeDescriptor_t, EdgeBuffer_t
+  use dimensions_mod, only : np, max_corner_elem
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   implicit none
-  real (kind=real_kind), intent(in   ) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: getmapP(max_neigh_edges_d,nets:nete)
-  real (kind=real_kind), intent(inout) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
-  integer              , intent(in   ) :: recv_indices(nets:nete)
-  integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,tl_in
-  integer :: i,j,k,l,q,el,offset,ij,ti,tj,tk,ijk,x,y,tij
-  integer, shared :: direction(4),is,ie,in,iw, ic(max_corner_elem_d,4)
-  real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
-  real (kind=real_kind) :: v_before_update, neighbor_value
-  
+  real(kind=real_kind)   ,intent(in   ) :: edgebuf(nlev*qsize_d,nbuf)
+  real(kind=real_kind)   ,intent(inout) :: v(np*np*nlev,qsize_d,tl_in,nets:nete)
+  integer                ,intent(in   ) :: getmapP(max_neigh_edges_d,nets:nete)
+  integer, value         ,intent(in   ) :: nbuf
+  integer, value         ,intent(in   ) :: kptr
+  integer, value         ,intent(in   ) :: nets
+  integer, value         ,intent(in   ) :: nete
+  integer, value         ,intent(in   ) :: nt
+  integer                ,intent(in   ) :: recv_indices(nets:nete)
+  integer, value         ,intent(in   ) :: tl_in
+  real(kind=real_kind), shared :: v_s((np*np+1)*nlev)
+  integer             , shared :: get_s(20)
+  integer :: i,k,ll,q,ie,kq,ik,koff,ind,ind_k,ind_ij,ii
   i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
+  k  = threadidx%y
   q  = blockidx%x
-  el = recv_indices(blockidx%y)
-  
-  ij = (j-1)*np+i
-  ijk = (k-1)*np*np + ij -1
-  tk = mod( ijk, nlev ) + 1
-  ti = mod( ijk/nlev, np ) + 1
-  tj = ijk/(nlev*np) + 1
-  
-  if( i + j + k == np+np+nlev ) then
-    direction(west_px)  = getmapP(west ,el)
-    direction(east_px)  = getmapP(east ,el)
-    direction(south_px) = getmapP(south,el)
-    direction(north_px) = getmapP(north,el)
-  endif
-  if( ijk < max_corner_elem_d) then
-    ic(ijk+1,1) = getmapP(swest+ijk,el)+1
-    ic(ijk+1,2) = getmapP(seast+ijk,el)+1
-    ic(ijk+1,3) = getmapP(nwest+ijk,el)+1
-    ic(ijk+1,4) = getmapP(neast+ijk,el)+1
-  endif
-  vshrd(k,i,j) = 0.D0
-  call syncthreads()
-    
-  offset = (q-1)*nlev + tk + kptr
-  neighbor_value = edgebuf( offset, direction(tj)+ti ) ! load neighbor values into registers 
-                                                       !  nlev x np consecutive threads contain all the face values
-                                                       !   tj = 1:  south   
-                                                       !   tj = 2:  west
-                                                       !   tj = 3:  east
-                                                       !   tj = 4:  north
-                                                       
-  ! combine the neighbor values in smem
-  if( 1==tj .or. 4==tj ) vshrd(tk, ti, tj) = neighbor_value  ! add the south and north values to smem
-  call syncthreads() ! this sync is needed to avoid race conditions (east/west share corners with sourth/north)
-  if( 2==tj ) vshrd(tk,1,ti) = vshrd(tk,1,ti) + neighbor_value  ! update west
-  if( 3==tj ) vshrd(tk,4,ti) = vshrd(tk,4,ti) + neighbor_value  ! update east
-  call syncthreads()
+  ie = recv_indices(blockidx%y)
+  kq = (q-1)*nlev+k + kptr
+  ik = (k-1)*np+i
+  koff = (k-1)*(np*np+1)
 
-  v_before_update = v(ij,k,q,nt,el) ! start loading the local value to be updated with neibhbor values
-  
-  ! update the "corner" columns
-  if( tj==1 ) then
-    do l=1, max_corner_elem_d       
-      x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
-      y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
-      if( ic(l,ti) /= 0 ) vshrd(tk,x,y) = vshrd(tk,x,y) + edgebuf( offset, ic(l,ti) )
+  !Efficiently load v, and getmapP into shared memory to re-use and to efficiently retreive DRAM memory.
+  if (i <= np) then
+    do ii = 1 , np  !Though this looping structure is strange, it allows the kernel to access contiguous np*nlev chunks of v.
+      ind = (ii-1)*np*nlev+ik
+      ind_k = (ind-1)/(np*np) + 1
+      ind_ij = modulo(ind-1,np*np) + 1
+      v_s((ind_k-1)*(np*np+1) + ind_ij) = v(ind,q,nt,ie)
     enddo
   endif
+  if (ik <= max_neigh_edges_d) get_s(ik) = getmapP(ik,ie)
   call syncthreads()
-    
-  v(ij,k,q,nt,el) = v_before_update + vshrd(k,i,j)
+
+  if (i <= np) then
+    v_s(koff+(1 -1)*np+i ) = v_s(koff+(1 -1)*np+i ) + edgebuf(kptr+kq,get_s(south)+i)
+    v_s(koff+(np-1)*np+i ) = v_s(koff+(np-1)*np+i ) + edgebuf(kptr+kq,get_s(north)+i)
+  endif
+  call syncthreads()
+  if (i <= np) then
+    v_s(koff+(i -1)*np+1 ) = v_s(koff+(i -1)*np+1 ) + edgebuf(kptr+kq,get_s(west )+i)
+    v_s(koff+(i -1)*np+np) = v_s(koff+(i -1)*np+np) + edgebuf(kptr+kq,get_s(east )+i)
+  endif
+  call syncthreads()
+  if (i <= max_corner_elem_d) then
+    ll = get_s(swest+0*max_corner_elem_d+i-1); if(ll /= -1) v_s(koff+(1 -1)*np+1 ) = v_s(koff+(1 -1)*np+1 ) + edgebuf(kptr+kq,ll+1)
+    ll = get_s(swest+1*max_corner_elem_d+i-1); if(ll /= -1) v_s(koff+(1 -1)*np+np) = v_s(koff+(1 -1)*np+np) + edgebuf(kptr+kq,ll+1)
+    ll = get_s(swest+2*max_corner_elem_d+i-1); if(ll /= -1) v_s(koff+(np-1)*np+1 ) = v_s(koff+(np-1)*np+1 ) + edgebuf(kptr+kq,ll+1)
+    ll = get_s(swest+3*max_corner_elem_d+i-1); if(ll /= -1) v_s(koff+(np-1)*np+np) = v_s(koff+(np-1)*np+np) + edgebuf(kptr+kq,ll+1)
+  endif
+  call syncthreads()
+
+  !Efficiently store v_s into DRAM memory.
+  if (i <= np) then
+    do ii = 1 , np  !Though this looping structure is strange, it allows the kernel to access contiguous np*nlev chunks of v.
+      ind = (ii-1)*np*nlev+ik
+      ind_k = (ind-1)/(np*np) + 1
+      ind_ij = modulo(ind-1,np*np) + 1
+      v(ind,q,nt,ie) = v_s((ind_k-1)*(np*np+1) + ind_ij)
+    enddo
+  endif
 end subroutine edgeVunpack_kernel_stage
-
-
-
-attributes(global) subroutine edgeVpack_kernel(edgebuf,v,putmapP,reverse,nbuf,kptr,nets,nete,nt,tl_in)
-  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-  implicit none
-  real (kind=real_kind), intent(  out) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: putmapP(max_neigh_edges_d,nets:nete)
-  logical              , intent(in   ) :: reverse(max_neigh_edges_d,nets:nete)
-  real (kind=real_kind), intent(in   ) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
-  integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,tl_in
-  integer :: i,j,k,q,l,offset,ij,ijk,ti,tj,tk,x,y,ir,  reverse_south, reverse_north, reverse_west, reverse_east, el
-  integer, shared :: ic(max_corner_elem_d,4), direction(4), reverse_direction(4)
-  real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
-  i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
-  q  = blockidx%x
-  el = blockidx%y
-  
-  ij = (j-1)*np+i
-  ijk = (k-1)*np*np + (j-1)*np + i -1
-  tk = mod( ijk, nlev ) + 1
-  ti = mod( ijk/nlev, np ) + 1
-  tj = ijk/(nlev*np) + 1
-
-  if( i+j+k == blockdim%x + blockdim%y + blockdim%z ) then
-    direction(west_px)  = putmapP(west ,el)
-    direction(east_px)  = putmapP(east ,el)
-    direction(south_px) = putmapP(south,el)
-    direction(north_px) = putmapP(north,el)
-    reverse_direction(south_px) = reverse(south,el)
-    reverse_direction(north_px) = reverse(north,el)
-    reverse_direction(west_px)  = reverse(west,el)
-    reverse_direction(east_px)  = reverse(east,el)
-  endif
-  if( ijk < max_corner_elem_d ) then
-    ic(ijk+1,1) = putmapP(swest+ijk,el)+1
-    ic(ijk+1,2) = putmapP(seast+ijk,el)+1
-    ic(ijk+1,3) = putmapP(nwest+ijk,el)+1
-    ic(ijk+1,4) = putmapP(neast+ijk,el)+1
-  endif
-  vshrd(k,i,j) = v(ij,k,q,nt,el)
-  
-  call syncthreads()
-   
-  offset = (q-1)*nlev + tk + kptr
-  ir = np-ti+1
-  if( 1==tj .or. 4==tj ) then
-    if( reverse_direction(tj) ) then; edgebuf(offset,direction(tj)+ti) = vshrd(tk,ir,tj)
-    else                            ; edgebuf(offset,direction(tj)+ti) = vshrd(tk,ti,tj); endif
-  endif
-  if( 2==tj ) then
-    if( reverse_direction(2) ) then; edgebuf(offset,direction(tj)+ti) = vshrd(tk,1,ir)
-    else                           ; edgebuf(offset,direction(tj)+ti) = vshrd(tk,1,ti); endif
-  endif
-  if( 3==tj ) then
-    if( reverse_direction(3) ) then; edgebuf(offset,direction(tj)+ti) = vshrd(tk,4,ir)
-    else                           ; edgebuf(offset,direction(tj)+ti) = vshrd(tk,4,ti); endif
-  endif
-  if( tj==1 ) then
-    do l=1, max_corner_elem_d       
-      x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
-      y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
-      if( ic(l,ti) /= 0 ) edgebuf( offset, ic(l,ti) ) = vshrd(tk,x,y)
-    enddo
-  endif
-end subroutine edgeVpack_kernel
-
-
-
-attributes(global) subroutine edgeVunpack_kernel(edgebuf,v,getmapP,nbuf,kptr,nets,nete,nt,tl_in)
-  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-  real (kind=real_kind), intent(in   ) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: getmapP(max_neigh_edges_d,nets:nete)
-  real (kind=real_kind), intent(inout) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
-  integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,tl_in
-  integer :: i,j,k,l,q,el,offset,ij,ti,tj,tk,ijk,x,y,tij
-  integer, shared :: direction(4),is,ie,in,iw, ic(max_corner_elem_d,4)
-  real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
-  real (kind=real_kind) :: v_before_update, neighbor_value
-  
-  i  = threadidx%x
-  j  = threadidx%y
-  k  = threadidx%z
-  q  = blockidx%x
-  el = blockidx%y
-  
-  ij = (j-1)*np+i
-  ijk = (k-1)*np*np + ij -1
-  tk = mod( ijk, nlev ) + 1
-  ti = mod( ijk/nlev, np ) + 1
-  tj = ijk/(nlev*np) + 1
-  
-  if( i + j + k == np+np+nlev ) then
-    direction(west_px)  = getmapP(west ,el)
-    direction(east_px)  = getmapP(east ,el)
-    direction(south_px) = getmapP(south,el)
-    direction(north_px) = getmapP(north,el)
-  endif
-  if( ijk < max_corner_elem_d) then
-    ic(ijk+1,1) = getmapP(swest+ijk,el)+1
-    ic(ijk+1,2) = getmapP(seast+ijk,el)+1
-    ic(ijk+1,3) = getmapP(nwest+ijk,el)+1
-    ic(ijk+1,4) = getmapP(neast+ijk,el)+1
-  endif
-  vshrd(k,i,j) = 0.D0
-  call syncthreads()
-    
-  offset = (q-1)*nlev + tk + kptr
-  neighbor_value = edgebuf( offset, direction(tj)+ti ) ! load neighbor values into registers 
-                                                       !  nlev x np consecutive threads contain all the face values
-                                                       !   tj = 1:  south   
-                                                       !   tj = 2:  west
-                                                       !   tj = 3:  east
-                                                       !   tj = 4:  north
-                                                       
-  ! combine the neighbor values in smem
-  if( 1==tj .or. 4==tj ) vshrd(tk, ti, tj) = neighbor_value  ! add the south and north values to smem
-  call syncthreads() ! this sync is needed to avoid race conditions (east/west share corners with sourth/north)
-  if( 2==tj ) vshrd(tk,1,ti) = vshrd(tk,1,ti) + neighbor_value  ! update west
-  if( 3==tj ) vshrd(tk,4,ti) = vshrd(tk,4,ti) + neighbor_value  ! update east
-  call syncthreads()
-
-  v_before_update = v(ij,k,q,nt,el) ! start loading the local value to be updated with neibhbor values
-  
-  ! update the "corner" columns
-  if( tj==1 ) then
-    do l=1, max_corner_elem_d       
-      x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}€;€;€;€;
-      y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
-      if( ic(l,ti) /= 0 ) vshrd(tk,x,y) = vshrd(tk,x,y) + edgebuf( offset, ic(l,ti) )
-    enddo
-  endif
-  call syncthreads()
-    
-  v(ij,k,q,nt,el) = v_before_update + vshrd(k,i,j)
-end subroutine edgeVunpack_kernel
 
 
 
