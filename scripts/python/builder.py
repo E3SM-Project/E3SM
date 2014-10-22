@@ -35,6 +35,7 @@ class platformBuilder(object):
         self.CFLAGS = ''
         self.OFLAGS = ''
         self.MPIEXEC = ''
+        self.EXECCA = ''
 
     @classmethod
     def _raise_not_implemented(cls, method_name):
