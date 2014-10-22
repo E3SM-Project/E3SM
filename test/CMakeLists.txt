@@ -57,14 +57,19 @@ endif()
 # -n <proc number> at the end of the command and we provide mpirunLsfReorderArgs.py
 # as a wrapper that does this reordering so we can keep this file relatively simple.
 ###-------------------------------------------------------------------------###
-if (${PLATFORM} STREQUAL "yellowstone" )
-    set(MPIEXEC python ${CMAKE_HOME_DIRECTORY}/scripts/python/contrib/standAlone/${MPIEXEC})
-endif()
 
-set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
-set(MPIEXEC_NPF2 ${MPIEXEC_NUMPROC_FLAG} 2)
-set(MPIEXEC_NPF3 ${MPIEXEC_NUMPROC_FLAG} 3)
-set(MPIEXEC_NPF4 ${MPIEXEC_NUMPROC_FLAG} 4)
+if (${PLATFORM} STREQUAL "yellowstone" )
+    set(MPIEXEC_NPF1 -n1 )
+    set(MPIEXEC_NPF2 -n2 )
+    set(MPIEXEC_NPF3 -n3 )
+    set(MPIEXEC_NPF4 -n4 )
+    set (EXECCA "execca")
+else()
+    set(MPIEXEC_NPF1 ${MPIEXEC_NUMPROC_FLAG} 1)
+    set(MPIEXEC_NPF2 ${MPIEXEC_NUMPROC_FLAG} 2)
+    set(MPIEXEC_NPF3 ${MPIEXEC_NUMPROC_FLAG} 3)
+    set(MPIEXEC_NPF4 ${MPIEXEC_NUMPROC_FLAG} 4)
+endif()
 
 ###-------------------------------------------------------------------------###
 #  arguments to binarys should be a CMake list not as a CMake string
@@ -77,173 +82,203 @@ set(MPIEXEC_NPF4 ${MPIEXEC_NUMPROC_FLAG} 4)
 ADD_EXECUTABLE(pio_init_finalize pio_init_finalize.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./pio_init_finalize)
-ADD_TEST(init_finalize_1_proc 
-         ${MPIEXEC} ${MPIEXEC_NPF1}
-         ${test_exe}  )
-ADD_TEST(init_finalize_2_proc 
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe}  )
-         
+
+#set (test_exe ./pio_init_finalize)
+#ADD_TEST(init_finalize_1_proc
+#         ${MPIEXEC} ${MPIEXEC_NPF1}
+#         ${test_exe}  )
+
+
+#add_test(NAME init_finalize_1_proc
+    #COMMAND bsub -Is -q caldera -PP93300070 -W2:0 ${MPIEXEC_NPF1} ${test_exe} )
+
+
+
+set (test_exe "./pio_init_finalize")
+
 if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2")
+    set(EXE_CMD ${EXECCA} ${MPIEXEC} ${test_exe} ${MPIEXEC_NPF1})
 else()
-   set (test_exe ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
+    set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF1} ${test_exe})
 endif()
-ADD_TEST(init_finalize_2_proc_with_args 
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe}  )
+
+add_test(NAME init_finalize_1_proc COMMAND ${EXE_CMD} )
+
+
+
+
+
+
+#add_test(NAME init_finalize_1_proc COMMAND ${EXECCA} ${MPIEXEC} ${test_exe} ${MPIEXEC_NPF1}  )
+
+#ADD_TEST(init_finalize_2_proc
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe}  )
+  
+  
+
+#add_test(NAME init_finalize_2_proc
+#    COMMAND bsub -Is -q caldera -PP93300070 -W2:0 -n2 mpirun.lsf ./pio_init_finalize )
+
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2")
+#else()
+#   set (test_exe ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
+#endif()
+#ADD_TEST(init_finalize_2_proc_with_args
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe}  )
 
 ###-------------------------------------------------------------------------###
 # test pio_file_simple_tests
 ###-------------------------------------------------------------------------###
 
-ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
+#ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./pio_file_simple_tests)
-ADD_TEST(pio_file_simple_tests 
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe} )
+#set (test_exe ./pio_file_simple_tests)
+#ADD_TEST(pio_file_simple_tests
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe} )
 
 ###-------------------------------------------------------------------------###
 # test pio_file_fai
 ###-------------------------------------------------------------------------###
 
-ADD_EXECUTABLE(pio_file_fail pio_file_fail.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(pio_file_fail  piof pioc ${TIMING_LINK_LIB} )
+#ADD_EXECUTABLE(pio_file_fail pio_file_fail.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(pio_file_fail  piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./pio_file_fail)
-ADD_TEST(pio_file_fail 
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe} )
+#set (test_exe ./pio_file_fail)
+#ADD_TEST(pio_file_fail
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe} )
 
 ###-------------------------------------------------------------------------###
 # test ncdf_simple_tests
 ###-------------------------------------------------------------------------###
 
-ADD_EXECUTABLE(ncdf_simple_tests ncdf_simple_tests.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(ncdf_simple_tests  piof pioc ${TIMING_LINK_LIB} )
+#ADD_EXECUTABLE(ncdf_simple_tests ncdf_simple_tests.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(ncdf_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./ncdf_simple_tests)
-ADD_TEST(ncdf_simple_tests 
-        ${MPIEXEC} ${MPIEXEC_NPF2}
-        ${test_exe} )
+#set (test_exe ./ncdf_simple_tests)
+#ADD_TEST(ncdf_simple_tests
+#        ${MPIEXEC} ${MPIEXEC_NPF2}
+#        ${test_exe} )
 
 ###-------------------------------------------------------------------------###
 # test ncdf_get_put
 ###-------------------------------------------------------------------------###
 
-ADD_EXECUTABLE(ncdf_get_put ncdf_get_put.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(ncdf_get_put  piof pioc ${TIMING_LINK_LIB} )
+#ADD_EXECUTABLE(ncdf_get_put ncdf_get_put.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(ncdf_get_put  piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./ncdf_get_put)
-ADD_TEST(ncdf_get_put_1proc 
-         ${MPIEXEC} ${MPIEXEC_NPF1}
-         ${test_exe} )
+#set (test_exe ./ncdf_get_put)
+#ADD_TEST(ncdf_get_put_1proc
+#         ${MPIEXEC} ${MPIEXEC_NPF1}
+#         ${test_exe} )
 
-ADD_TEST(ncdf_get_put_2proc
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe} )
+#ADD_TEST(ncdf_get_put_2proc
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe} )
 
 ###-------------------------------------------------------------------------###
 # test ncdf_fail
 ###-------------------------------------------------------------------------###
 
-ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
+#ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./ncdf_fail)
-ADD_TEST(ncdf_fail 
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe} )
+#set (test_exe ./ncdf_fail)
+#ADD_TEST(ncdf_fail
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe} )
 
 ###-------------------------------------------------------------------------###
 # test pio_decomp_tests
 ###-------------------------------------------------------------------------###
 
-ADD_EXECUTABLE(pio_decomp_tests pio_decomp_tests.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(pio_decomp_tests  piof pioc ${TIMING_LINK_LIB} )
+#ADD_EXECUTABLE(pio_decomp_tests pio_decomp_tests.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(pio_decomp_tests  piof pioc ${TIMING_LINK_LIB} )
 
-set (test_exe ./pio_decomp_tests)
-ADD_TEST(pio_decomp_tests_1p 
-         ${MPIEXEC} ${MPIEXEC_NPF1}
-         ${test_exe} )
-ADD_TEST(pio_decomp_tests_2p 
-         ${MPIEXEC} ${MPIEXEC_NPF2}
-         ${test_exe} )
-ADD_TEST(pio_decomp_tests_3p 
-         ${MPIEXEC} ${MPIEXEC_NPF3}
-         ${test_exe} )
+#set (test_exe ./pio_decomp_tests)
+#ADD_TEST(pio_decomp_tests_1p
+ #        ${MPIEXEC} ${MPIEXEC_NPF1}
+ #        ${test_exe} )
+#ADD_TEST(pio_decomp_tests_2p
+#         ${MPIEXEC} ${MPIEXEC_NPF2}
+#         ${test_exe} )
+#ADD_TEST(pio_decomp_tests_3p
+#         ${MPIEXEC} ${MPIEXEC_NPF3}
+#         ${test_exe} )
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=1")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=1)
-endif()
-ADD_TEST(pio_decomp_tests_4p_1agg 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe} )
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=1")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=1)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_1agg
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe} )
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=2")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=2)
-endif()
-ADD_TEST(pio_decomp_tests_4p_2agg 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe} )
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=2")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=2)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_2agg
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe} )
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=3")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=3)
-endif()
-ADD_TEST(pio_decomp_tests_4p_3agg 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe} )
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-aggregators=3")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-aggregators=3)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_3agg
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe} )#
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=1")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=1)
-endif()
-ADD_TEST(pio_decomp_tests_4p_1iop 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe} )
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=1")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=1)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_1iop
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe} )
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2)
-endif()
-ADD_TEST(pio_decomp_tests_4p_2iop 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe})
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_2iop
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe})
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=3")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=3)
-endif()
-ADD_TEST(pio_decomp_tests_4p_3iop 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe})
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=3")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=3)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_3iop
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe})
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2)
-endif()
-ADD_TEST(pio_decomp_tests_4p_2iop_2str 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe})
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_2iop_2str
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe})
 
-if (${PLATFORM} STREQUAL "yellowstone" )
-   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1")
-else()
-   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1)
-endif()
-ADD_TEST(pio_decomp_tests_4p_2iop_1agg 
-         ${MPIEXEC} ${MPIEXEC_NPF4}
-         ${test_exe})
+#if (${PLATFORM} STREQUAL "yellowstone" )
+#   set (test_exe "./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1")
+#else()
+#   set (test_exe ./pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1)
+#endif()
+#ADD_TEST(pio_decomp_tests_4p_2iop_1agg
+#         ${MPIEXEC} ${MPIEXEC_NPF4}
+#         ${test_exe})

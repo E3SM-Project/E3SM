@@ -252,7 +252,6 @@ class yellowstone_intel(platformBuilder):
                            'ncarbinlibs/1.1']
 
         self.CMAKE_EXE = 'cmake'
-        self.EXECCA_CMD = 'execca'
 
         self.FC = 'mpif90'
         self.CC = 'mpicc'
@@ -287,7 +286,7 @@ class yellowstone_intel(platformBuilder):
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
                        '-D PLATFORM:STRING=yellowstone '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
-        self.MPIEXEC = ('-D MPIEXEC:FILEPATH=mpirunLsfReorderArgs.py ')
+        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
 
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive
