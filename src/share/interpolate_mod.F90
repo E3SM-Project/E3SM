@@ -51,6 +51,15 @@ module interpolate_mod
 
   real (kind=real_kind), private :: delta  = 1.0D-9  ! move tiny bit off center to
   ! avoid landing on element edges
+
+
+  ! static data for interp_tracers
+  logical                           :: interp_tracers_init=.false.
+  real (kind=real_kind      )       :: interp_c(np,np)
+  real (kind=real_kind      )       :: interp_gll(np)
+
+
+
   public :: interp_init
   public :: setup_latlon_interp
   public :: interpolate_scalar
@@ -72,6 +81,7 @@ module interpolate_mod
   public :: parametric_coordinates
 
   public :: interpolate_tracers
+  public :: interpolate_tracers_init
   public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
@@ -243,7 +253,7 @@ contains
   end subroutine interpolate_create
 
 
-  subroutine interpolate_tracers(r, tracers, f) 
+  subroutine interpolate_tracers_init()
     use kinds,          only : longdouble_kind
     use dimensions_mod, only : np, qsize
     use quadrature_mod, only : quadrature_t, gausslobatto
@@ -251,25 +261,10 @@ contains
 
     implicit none
 
-    type (cartesian2D_t), intent(in)  :: r
-    real (kind=real_kind),intent(in)  :: tracers(np*np,qsize)
-    real (kind=real_kind),intent(out) :: f(qsize)
-
     type (quadrature_t        )       :: gll        
     real (kind=real_kind      )       :: dp    (np)
-    real (kind=real_kind      )       :: x     (np)
-    real (kind=real_kind      )       :: y     (np)
-    real (kind=real_kind      )       :: c     (np,np)
-    real (kind=real_kind      )       :: xy    (np*np)
-
     integer                           :: i,j
-    logical                           :: first_time=.true.
-    
-    save c
-    save gll
-   
-    if (first_time) then
-      first_time = .false.
+
       gll=gausslobatto(np)
       dp = 1
       do i=1,np
@@ -281,28 +276,62 @@ contains
       end do 
       do i=1,np
         do j=1,np
-          c(i,j) = 1/(dp(i)*dp(j))
+          interp_c(i,j) = 1/(dp(i)*dp(j))
         end do
       end do 
-    end if
+      interp_gll(:) = gll%points(:)
+      interp_tracers_init = .true.
+
+      deallocate(gll%points)
+      deallocate(gll%weights)
+
+
+  end subroutine interpolate_tracers_init
+
+
+
+
+  subroutine interpolate_tracers(r, tracers, f)
+    use kinds,          only : longdouble_kind
+    use dimensions_mod, only : np, qsize
+
+
+    implicit none
+    type (cartesian2D_t), intent(in)  :: r
+    real (kind=real_kind),intent(in)  :: tracers(np*np,qsize)
+    real (kind=real_kind),intent(out) :: f(qsize)
+
+    real (kind=real_kind      )       :: x     (np)
+    real (kind=real_kind      )       :: y     (np)
+    real (kind=real_kind      )       :: xy    (np*np)
+
+    integer                           :: i,j
+
+    
+    if (interp_tracers_init == .false.  ) then
+       stop 'ERROR: interpolate_tracers() was not initialized'
+    endif
 
     x = 1
     y = 1
     do i=1,np
       do j=1,np
         if (i /= j) then
-          x(i) = x(i) * (r%x - gll%points(j))
-          y(i) = y(i) * (r%y - gll%points(j))
+          x(i) = x(i) * (r%x - interp_gll(j))
+          y(i) = y(i) * (r%y - interp_gll(j))
         end if
       end do
     end do 
+
     do j=1,np  
       do i=1,np
-        xy(i + (j-1)*np) = x(i)*y(j)*c(i,j)
+        xy(i + (j-1)*np) = x(i)*y(j)*interp_c(i,j)
       end do
     end do 
     f = MATMUL(xy,tracers)
   end subroutine interpolate_tracers
+
+
 
   function linear_interpolate_2d(x,y,s) result(v)
     use dimensions_mod, only : np, qsize
@@ -370,7 +399,14 @@ contains
     real (kind=real_kind)             :: q_interp     (4,qsize)
     type (cartesian2D_t)              :: s
     real (kind=real_kind)             :: delta
-    
+    integer :: q    
+
+    do q=1,qsize
+       mint(q) = minval(tracers(:,:,q))
+       maxt(q) = maxval(tracers(:,:,q))
+    enddo
+    return
+
     delta = 1.D0/8.D0
 
     if (first_time) then

@@ -850,7 +850,8 @@ module prim_advection_mod
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
         prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer, edgevunpackmin, ghostbuffer3D_t
+  use edge_mod, only           : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer, &
+       edgevunpackmin, ghostbuffer3D_t, initghostbuffer3D
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
@@ -887,6 +888,8 @@ contains
   subroutine Prim_Advec_Init1(par, n_domains)
     use dimensions_mod, only : nlev, qsize, nelemd
     use parallel_mod, only : parallel_t
+    use control_mod, only : use_semi_lagrange_transport
+    use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
     integer, intent(in) :: n_domains
 
@@ -920,6 +923,11 @@ contains
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
     allocate (qmax(nlev,qsize,nelemd))
+
+    if  (use_semi_lagrange_transport) then
+       call initghostbuffer3D(ghostbuf_tr,nlev*qsize,np)
+       call interpolate_tracers_init()
+    endif
 
   end subroutine Prim_Advec_Init1
 
@@ -1065,7 +1073,6 @@ contains
     use fvm_bsp_mod, only: get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
-    use control_mod, only : use_semi_lagrange_transport
     use time_mod,    only : time_at
 
     implicit none
@@ -1225,7 +1232,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
   use control_mod   ,         only : qsplit
   use global_norms_mod,       only: wrap_repro_sum
-  use parallel_mod,           only: global_shared_buf, global_shared_sum
+  use parallel_mod,           only: global_shared_buf, global_shared_sum, syncmp
 
 
 
@@ -1256,19 +1263,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
   integer                                       :: num_neighbors
-  logical,save :: firstcall = .true.
 
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
   call t_startf('Prim_Advec_Tracers_remap_ALE')
-
-  if (firstcall) then
-!OMP BARRIER
-!OMP MASTER
-     firstcall=.false.
-     call initghostbuffer3D(ghostbuf_tr,nlev*qsize,np)
-!OMP END MASTER
-!OMP BARRIER
-  endif
 
   call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 
@@ -1293,54 +1290,45 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
      enddo
      enddo
   end do
-  call ghost_exchangeVfull(hybrid,ghostbuf_tr)
+  call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf_tr)
+
   do ie=nets,nete
      num_neighbors = elem(ie)%desc%actual_neigh_edges+1
      do k=1,nlev
 
-        call t_startf('Prim_Advec_Tracers_remap_ALE_departure_from_gll')
         ! find departure points
         call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
-        call t_stopf('Prim_Advec_Tracers_remap_ALE_departure_from_gll')
 
-        call t_startf('Prim_Advec_Tracers_remap_ALE_elems_with_dep_points')
         ! find element containing departure point
         call ALE_elems_with_dep_points  (elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
-        call t_stopf('Prim_Advec_Tracers_remap_ALE_elems_with_dep_points')
 
-        call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords')
         ! compute the parametric points
         call ALE_parametric_coords      (para_coords, elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
-        call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords')
 
-        call t_startf('Prim_Advec_Tracers_remap_ALE_ghostVunpack_unoriented')
         ! for each level k, unpack all tracer neighbor data on that level
         kptr=(k-1)*qsize
         neigh_q=0
         u(:,:,:) = elem(ie)%state%Q(:,:,k,:)
         call ghostVunpack_unoriented (ghostbuf_tr, neigh_q, np, qsize, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
-        call t_stopf('Prim_Advec_Tracers_remap_ALE_ghostVunpack_unoriented')
 
-        call t_startf('Prim_Advec_Tracers_remap_ALE_interpolate_tracers_minmax')
         do i=1,np
         do j=1,np
           ! interpolate tracers to deperature grid
           call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
           elem(ie)%state%Q(i,j,k,:) = f 
-
           call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
           minq(i,j,k,:,ie) = f 
           maxq(i,j,k,:,ie) = g 
         enddo
         enddo
-        call t_stopf('Prim_Advec_Tracers_remap_ALE_interpolate_tracers_minmax')
+
      end do
   end do
 
+
   call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
   ! compute original mass, at tl_1%n0
-  ! NOTE: global_shared_buf was allocated outside threaded region probably assuming n<=10.
-  do ie=nets,nete
+    do ie=nets,nete
     n=0
     do k=1,nlev
     do q=1,qsize
@@ -1361,6 +1349,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   enddo
   enddo
 
+
   do ie=nets,nete
   do k=1,nlev
     rho(:,:,k,ie) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
@@ -1368,16 +1357,16 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   end do
 
   do ie=nets,nete
-    Que_t(:,:,:,:,ie) = elem(ie)%state%Q(:,:,:,:)
+    Que_t(:,:,:,1:qsize,ie) = elem(ie)%state%Q(:,:,:,1:qsize)
   end do
-
   call t_startf('Prim_Advec_Tracers_remap_ALE_Cobra')
   call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   call t_stopf('Prim_Advec_Tracers_remap_ALE_Cobra')
 
   do ie=nets,nete
-    elem(ie)%state%Q(:,:,:,:) =  Que(:,:,:,:,ie)
+    elem(ie)%state%Q(:,:,:,1:qsize) =  Que(:,:,:,1:qsize,ie)
   end do
+
 
   do ie=nets,nete
   do k=1,nlev
@@ -1388,6 +1377,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   enddo
   enddo
   end do
+
 
 ! do ie=nets,nete
 !    do q = 1 , qsize
@@ -1406,8 +1396,6 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 !       enddo
 !    enddo
 ! enddo
-
-
   call t_stopf('Prim_Advec_Tracers_remap_ALE')
 
 
@@ -1467,7 +1455,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
 
-  integer,                            parameter :: max_clip = 10
+  integer,                            parameter :: max_clip = 50
   real(kind=real_kind),               parameter :: eta = 1D-08           
   real(kind=real_kind),               parameter :: hfd = 1D-10             
   real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
@@ -1925,23 +1913,24 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
     sphere(:,j) = change_coordinates(dep_points(:,j))
   end do
 
-  call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
+!!$  call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
+!!$  do i=1,np
+!!$    do j=1,np
+!!$      n = elem_indexes(i,j)
+!!$      ! Mark will fill in  parametric_coordinates for corners.
+!!$      parametric_coord(i,j) = cartesian_parametric_coordinates(sphere(i,j),ngh_corners(:,n))
+!!$    end do
+!!$  end do
+!!$  call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
+!  call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
   do i=1,np
     do j=1,np
       n = elem_indexes(i,j)
-      ! Mark will fill in  parametric_coordinates for corners.
-      parametric_coord(i,j) = cartesian_parametric_coordinates(sphere(i,j),ngh_corners(:,n))
+      !parametric_test(i,j)  = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
+      parametric_coord(i,j)= parametric_coordinates(sphere(i,j),ngh_corners(:,n))
     end do
   end do
-  call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_cart')
-  call t_startf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
-  do i=1,np
-    do j=1,np
-      n = elem_indexes(i,j)
-      parametric_test(i,j)  = parametric_coordinates(sphere(i,j),ngh_corners(:,n))
-    end do
-  end do
-  call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
+!  call t_stopf('Prim_Advec_Tracers_remap_ALE_parametric_coords_dmap')
 ! do i=1,np
 !   do j=1,np
 !     d = distance(parametric_coord(i,j),parametric_test(i,j))

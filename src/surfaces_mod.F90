@@ -462,7 +462,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        call ghostVpack3d(ghost_buf, vertpack2, 3, 0, elem(ie)%desc)
     enddo
 
-    call ghost_exchangevfull (hybrid, ghost_buf)
+    call ghost_exchangevfull (hybrid%par,hybrid%ithr, ghost_buf)
 
 
     do ie=nets,nete

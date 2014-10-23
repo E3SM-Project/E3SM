@@ -450,8 +450,8 @@ contains
      call ghostVpackfull(ghostbuf_cv, cin(:,:,:,ie),1,nc,nc,nlev,kptr,elem(ie)%desc)
   end do
 
-  call ghost_exchangeVfull(hybrid,ghostbuf)
-  call ghost_exchangeVfull(hybrid,ghostbuf_cv)
+  call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf)
+  call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf_cv)
 
   !call syncmp(hybrid%par)
   do ie=nets,nete
@@ -615,7 +615,7 @@ contains
      call ghostVpack3d(ghostbuf3d, pin(:,:,:,ie), nlev, kptr, elem(ie)%desc)
   end do
 
-  call ghost_exchangeVfull(hybrid, ghostbuf3d)
+  call ghost_exchangeVfull(hybrid%par, hybrid%ithr, ghostbuf3d)
 
   do ie=nets,nete
      kptr=0
