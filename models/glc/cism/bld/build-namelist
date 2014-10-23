@@ -368,7 +368,7 @@ my $GLC_NCPL               = $xmlvars{'GLC_NCPL'};
 my $CISM_USE_TRILINOS      = $xmlvars{'CISM_USE_TRILINOS'};
 my $CISM_OBSERVED_IC       = $xmlvars{'CISM_OBSERVED_IC'};
 
-(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################
