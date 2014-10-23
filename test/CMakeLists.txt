@@ -61,7 +61,7 @@ function( add_mpi_test _testName _testExe _testArgs _numProc )
         set(EXE_CMD ${EXECCA} ${MPIEXEC} ${_testExe} ${_testArgs} ${MPIEXEC_NPF})
     else()
         set(MPIEXEC_NPF ${MPIEXEC_NUMPROC_FLAG} ${_numProc})
-        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${_testExe} ${_testArgs} ${_testArgs)
+        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${_testExe} ${_testArgs} ${_testArgs}
     endif()
     add_test(NAME ${_testName} COMMAND ${EXE_CMD} )
 
