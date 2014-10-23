@@ -4242,7 +4242,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, realPrecision=prec, ierr=ierr)
     end if
 
-    if (reference_time /= 'none') then
+    if (reference_time /= 'initial_time') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, reference_time, ierr=ierr)
     end if
 

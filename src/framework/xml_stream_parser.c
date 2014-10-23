@@ -306,7 +306,7 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
  *********************************************************************************/
 int attribute_check(ezxml_t stream)
 {
-	const char *s_name, *s_type, *s_filename, *s_filename_intv, *s_input, *s_output;
+	const char *s_name, *s_type, *s_filename, *s_filename_intv, *s_input, *s_output, *s_ref_time;
 	char msgbuf[MSGSIZE];
 	int i, len, nextchar;
 
@@ -316,6 +316,7 @@ int attribute_check(ezxml_t stream)
 	s_filename_intv = ezxml_attr(stream, "filename_interval");
 	s_input = ezxml_attr(stream, "input_interval");
 	s_output = ezxml_attr(stream, "output_interval");
+	s_ref_time = ezxml_attr(stream, "reference_time");
 
 
 	/*
@@ -995,12 +996,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		if (reference_time != NULL) {
 			snprintf(ref_time_local, 256, "%s", reference_time);
-			fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
 		}
 		else {
-			snprintf(ref_time_local, 256, "none");
-			fprintf(stderr, "        %-20s%s\n", "reference time:", "-");
+			snprintf(ref_time_local, 256, "initial_time");
 		}
+		fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
 
 		if (record_interval != NULL) {
 			snprintf(rec_intv_local, 256, "%s", record_interval);
@@ -1194,12 +1194,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		if (reference_time != NULL) {
 			snprintf(ref_time_local, 256, "%s", reference_time);
-			fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
 		}
 		else {
-			snprintf(ref_time_local, 256, "none");
-			fprintf(stderr, "        %-20s%s\n", "reference time:", "-");
+			snprintf(ref_time_local, 256, "initial_time");
 		}
+		fprintf(stderr, "        %-20s%s\n", "reference time:", ref_time_local);
 
 		if (record_interval != NULL) {
 			snprintf(rec_intv_local, 256, "%s", record_interval);
