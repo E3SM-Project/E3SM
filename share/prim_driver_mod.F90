@@ -62,7 +62,7 @@ contains
                            vert_num_threads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, filter_counter, integration, topology, &
-         partmethod, while_iter
+         partmethod, while_iter, use_semi_lagrange_transport
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -111,6 +111,8 @@ contains
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
     use physical_constants, only : dd_pi
+    ! --------------------------------
+    use bndry_mod, only : sort_neighbor_buffer_mapping
     ! --------------------------------
 #ifndef CAM
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
@@ -529,6 +531,11 @@ contains
       call fvm_init1(par)
 #endif
     endif
+
+    if ( use_semi_lagrange_transport) then
+      call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
+    end if
+
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
@@ -547,14 +554,13 @@ contains
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q, use_semi_lagrange_transport
+         hypervis_subcycle_q
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
 #ifndef CAM
     use control_mod, only : pertlim                     !used for homme temperature perturbations
 #endif
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
-    use bndry_mod, only : sort_neighbor_buffer_mapping
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
@@ -1080,9 +1086,6 @@ contains
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
 
-    if ( use_semi_lagrange_transport) then
-      call sort_neighbor_buffer_mapping(hybrid, elem,nets,nete)
-    end if
   end subroutine prim_init2
 
 !=======================================================================================================!
