@@ -70,7 +70,8 @@ contains
          config_variational_basis
 
     logical, pointer :: &
-         config_rotate_cartesian_grid
+         config_rotate_cartesian_grid, &
+         config_include_metric_terms
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -93,6 +94,7 @@ contains
     call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
     call MPAS_pool_get_config(configs, "config_variational_basis", config_variational_basis)
     call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+    call MPAS_pool_get_config(configs, "config_include_metric_terms", config_include_metric_terms)
     
     call cice_init_evp(dt, configs)
 
@@ -111,7 +113,9 @@ contains
             mesh, &
             velocity_variational, &
             velocity_wachspress, &
-            boundary)
+            boundary, &
+            config_rotate_cartesian_grid, &
+            config_include_metric_terms)
 
     else if (trim(config_stress_divergence_scheme) == "variational" .and. &
              trim(config_variational_basis) == "pwl") then
@@ -120,7 +124,9 @@ contains
             mesh, &
             velocity_variational, &
             velocity_pwl, &
-            boundary)
+            boundary, &
+            config_rotate_cartesian_grid, &
+            config_include_metric_terms)
 
     endif
 

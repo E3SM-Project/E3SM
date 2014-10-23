@@ -47,18 +47,28 @@ contains
        mesh, &
        velocity_variational, &
        velocity_wachspress, &
-       boundary)!{{{
+       boundary, &
+       rotateCartesianGrid, &
+       includeMetricTerms)!{{{
 
     use cice_mesh, only: &
          cice_cell_vertices_at_vertex
+
+    use cice_velocity_solver_variational, only: &
+         cice_calc_local_coords, &
+         cice_calc_variational_metric_terms
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         velocity_variational, &  !< Input/Output: 
-         velocity_wachspress, & !< Input/Output: 
-         boundary   !< Input/Output: 
+         velocity_variational, & !< Input/Output: 
+         velocity_wachspress, &  !< Input/Output: 
+         boundary                !< Input/Output: 
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, & !< Input: 
+         includeMetricTerms     !< Input: 
 
     integer :: &
          iCell, &
@@ -69,6 +79,9 @@ contains
 
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &    
+         tanLatVertexRotatedOverRadius
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          xLocal, &
@@ -81,7 +94,8 @@ contains
          basisGradientU, &
          basisGradientV, &
          basisIntegralsU, &
-         basisIntegralsV
+         basisIntegralsV, &
+         basisIntegralsMetric
 
     ! init variables
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
@@ -89,6 +103,7 @@ contains
     call MPAS_pool_get_array(velocity_variational, "xLocal", xLocal)
     call MPAS_pool_get_array(velocity_variational, "yLocal", yLocal)
     call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
 
     call MPAS_pool_get_array(velocity_wachspress, "wachspressKappa", wachspressKappa)
     call MPAS_pool_get_array(velocity_wachspress, "wachspressA", wachspressA)
@@ -97,37 +112,51 @@ contains
     call MPAS_pool_get_array(velocity_wachspress, "basisGradientV", basisGradientV)
     call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsU", basisIntegralsU)
     call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsMetric", basisIntegralsMetric)
 
-    call calc_local_coords(mesh, &
+    call cice_calc_local_coords(&
+         mesh, &
          xLocal, &
-         yLocal)
+         yLocal, &
+         rotateCartesianGrid)
 
-    call calc_wachspress_coefficients(mesh, &
+    call cice_calc_variational_metric_terms(&
+         mesh, &
+         tanLatVertexRotatedOverRadius, &
+         rotateCartesianGrid, &
+         includeMetricTerms)
+
+    call calc_wachspress_coefficients(&
+         mesh, &
          wachspressKappa, &
          wachspressA, &
          wachspressB, &
          xLocal, &
          yLocal)
 
-    call calculate_wachspress_derivatives(mesh, &
-         basisGradientU,  &
-         basisGradientV,  &
-         xLocal,          &
-         yLocal,          &
-         wachspressA,     & 
-         wachspressB,     &
+    call calculate_wachspress_derivatives(&
+         mesh, &
+         basisGradientU, &
+         basisGradientV, &
+         xLocal, &
+         yLocal, &
+         wachspressA, & 
+         wachspressB, &
          wachspressKappa)
 
-    call integrate_wachspress(mesh, &
+    call integrate_wachspress(&
+         mesh, &
          basisIntegralsU, &
          basisIntegralsV, &
-         xLocal,          &        
-         yLocal,          &
-         wachspressA,     &   
-         wachspressB,     &
+         basisIntegralsMetric, &
+         xLocal, &        
+         yLocal, &
+         wachspressA, &   
+         wachspressB, &
          wachspressKappa)
 
-    call cice_cell_vertices_at_vertex(mesh, &
+    call cice_cell_vertices_at_vertex(&
+         mesh, &
          cellVerticesAtVertex)
 
     iCell = 1
@@ -144,75 +173,6 @@ contains
          yLocal(:,iCell))
 
   end subroutine cice_init_velocity_solver_wachspress!}}}
-  
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  calc_local_coords
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine calc_local_coords(&
-       mesh, &
-       xLocal, &
-       yLocal)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output: 
-         yLocal    !< Output: 
-
-    integer :: &
-         iCell, &
-         iVertex, &
-         iVertexOnCell
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         verticesOnCell
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, &
-         yVertex, &
-         xCell, &
-         yCell
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-
-    do iCell = 1, nCells
-
-       do iVertex = 1, nEdgesOnCell(iCell)
-
-          iVertexOnCell = verticesOnCell(iVertex, iCell)
-
-          xLocal(iVertex,iCell) = xVertex(iVertexOnCell) - xCell(iCell)
-          yLocal(iVertex,iCell) = yVertex(iVertexOnCell) - yCell(iCell)
-
-       enddo ! iVertex
-
-    enddo ! iCell
-
-  end subroutine calc_local_coords!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -882,6 +842,7 @@ contains
        mesh, &
        basisIntegralsU, &
        basisIntegralsV, &
+       basisIntegralsMetric, &
        xLocal, &
        yLocal, &
        wachspressA, &
@@ -898,8 +859,9 @@ contains
          mesh !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         basisIntegralsU, & !< Output: 
-         basisIntegralsV    !< Output: 
+         basisIntegralsU, &   !< Output: 
+         basisIntegralsV, &   !< Output: 
+         basisIntegralsMetric !< Output: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          xLocal, &      !< Input:
@@ -917,7 +879,7 @@ contains
          iCell, &
          iVertexOnCell, &
          jVertexOnCell, &
-         iDerivativeType
+         iIntegrationType
 
     integer, pointer :: &
          nCells
@@ -938,7 +900,7 @@ contains
 
           do jVertexOnCell = 1, nEdgesOnCell(iCell)
 
-             do iDerivativeType = 1, 2
+             do iIntegrationType = 1, 3
 
                 call integrate_wachspress_polygon(&
                      integration, &
@@ -950,19 +912,23 @@ contains
                      wachspressA(:,iCell), &
                      wachspressB(:,iCell), &
                      wachspressKappa(:,:,iCell), &
-                     iDerivativeType)
+                     iIntegrationType)
 
-                if (iDerivativeType == 1) then
+                if (iIntegrationType == 1) then
 
                    basisIntegralsU(iVertexOnCell,jVertexOnCell,iCell) = integration
 
-                else if (iDerivativeType == 2) then
+                else if (iIntegrationType == 2) then
 
                    basisIntegralsV(iVertexOnCell,jVertexOnCell,iCell) = integration
 
+                else if (iIntegrationType == 3) then
+
+                   basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iCell) = integration
+
                 endif
 
-             enddo ! iDerivativeType
+             enddo ! iIntegrationType
 
           enddo ! jVertex
 
@@ -1001,13 +967,13 @@ contains
        wachspressA, &
        wachspressB, &
        wachspressKappa, &
-       iDerivativeType)!{{{
+       iIntegrationType)!{{{
 
     integer, intent(in) :: &
          nEdgesOnCell, &  !< Input:
          iVertexOnCell, & !< Input:
          jvertexOnCell, & !< Input:
-         iDerivativeType  !< Input:
+         iIntegrationType  !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          xLocal, & !< Input:
@@ -1057,7 +1023,7 @@ contains
             wachspressKappa(:,:), &
             wachspressA(:), &
             wachspressB(:), &
-            iDerivativeType, &
+            iIntegrationType, &
             mapping)
 
        integration = integration + integration_subtriangle
@@ -1086,7 +1052,7 @@ contains
        wachspressKappa, &
        wachspressA, &
        wachspressB, &
-       iDerivativeType, &
+       iIntegrationType, &
        mapping)!{{{
 
     real(kind=RKIND), intent(out) :: &
@@ -1096,7 +1062,7 @@ contains
          nEdgesOnCell, &  !< Input:
          iVertexOnCell, & !< Input:
          jvertexOnCell, & !< Input:
-         iDerivativeType  !< Input:
+         iIntegrationType  !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          wachspressKappa !< Input:
@@ -1158,9 +1124,19 @@ contains
              !integration = integration + scaling * jacobian
              
              ! actual integration
-             integration = integration + scaling * jacobian * &
-                  wachspress_basis_function(nEdgesOnCell, iVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB) * &
-                  wachspress_basis_derivative(nEdgesOnCell, jVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB, iDerivativeType)
+             if (iIntegrationType == 1 .or. iIntegrationType == 2) then
+
+                integration = integration + scaling * jacobian * &
+                     wachspress_basis_function(nEdgesOnCell, iVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB) * &
+                     wachspress_basis_derivative(nEdgesOnCell, jVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB, iIntegrationType)
+                
+             else if (iIntegrationType == 3) then
+
+                integration = integration + scaling * jacobian * &
+                     wachspress_basis_function(nEdgesOnCell, iVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB) * &
+                     wachspress_basis_function(nEdgesOnCell, jVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             endif
 
           endif
 
@@ -1235,6 +1211,9 @@ contains
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
 
+    real(kind=RKIND), dimension(:), pointer :: &
+         tanLatVertexRotatedOverRadius
+
     real(kind=RKIND), dimension(:,:), pointer :: &
          strain11, &
          strain22, &
@@ -1247,7 +1226,8 @@ contains
          basisGradientU, &
          basisGradientV, &
          basisIntegralsU, &
-         basisIntegralsV
+         basisIntegralsV, &
+         basisIntegralsMetric
 
     call MPAS_pool_get_array(velocity_variational, "strain11", strain11)
     call MPAS_pool_get_array(velocity_variational, "strain22", strain22)
@@ -1256,42 +1236,47 @@ contains
     call MPAS_pool_get_array(velocity_variational, "stress22", stress22)
     call MPAS_pool_get_array(velocity_variational, "stress12", stress12)
     call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
 
     call MPAS_pool_get_array(velocity_wachspress, "basisGradientU", basisGradientU)
     call MPAS_pool_get_array(velocity_wachspress, "basisGradientV", basisGradientV)
     call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsU", basisIntegralsU)
     call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(velocity_wachspress, "basisIntegralsMetric", basisIntegralsMetric)
 
     call cice_strain_tensor_wachspress(mesh, &
-         strain11,       &
-         strain22,       &
-         strain12,       &
-         uVelocity,      &
-         vVelocity,      &
+         strain11, &
+         strain22, &
+         strain12, &
+         uVelocity, &
+         vVelocity, &
          basisGradientU, &
          basisGradientV, &
+         tanLatVertexRotatedOverRadius, &
          solveStress)
     
     call cice_stress_tensor_variational(mesh, &
-         stress11,             &
-         stress22,             &
-         stress12,             &
-         strain11,             & 
-         strain22,             &
-         strain12,             &
-         icePressure,          &
-         replacementPressure,  &
-         solveStress,          &
+         stress11, &
+         stress22, &
+         stress12, &
+         strain11, & 
+         strain22, &
+         strain12, &
+         icePressure, &
+         replacementPressure, &
+         solveStress, &
          dtElastic, evpDamping)
     
     call cice_stress_divergence_wachspress(mesh, &
-         stressDivergenceU,    &
-         stressDivergenceV,    &
-         stress11,             &
-         stress22,             &
-         stress12,             &
-         basisIntegralsU,      &
-         basisIntegralsV,      &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         stress11, &
+         stress22, &
+         stress12, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         basisIntegralsMetric, &
+         tanLatVertexRotatedOverRadius, &
          cellVerticesAtVertex, &
          solveVelocity)
     
@@ -1318,6 +1303,7 @@ contains
        vVelocity, &
        basisGradientU, &
        basisGradientV, &
+       tanLatVertexRotatedOverRadius, &
        solveStress)!{{{
     
     type(MPAS_pool_type), pointer, intent(in) :: &
@@ -1330,7 +1316,8 @@ contains
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          uVelocity, & !< Input: 
-         vVelocity    !< Input: 
+         vVelocity, & !< Input: 
+         tanLatVertexRotatedOverRadius !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          basisGradientU, & !< Input: 
@@ -1392,6 +1379,13 @@ contains
 
              enddo ! iVertexOnCell
 
+             ! metric terms
+             strain11(jVertexOnCell,iCell) = strain11(jVertexOnCell,iCell) - &
+                  vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
+
+             strain12(jVertexOnCell,iCell) = strain12(jVertexOnCell,iCell) + &
+                  uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
+
           enddo ! jVertexOnCell
 
        endif ! solveStress
@@ -1421,6 +1415,8 @@ contains
        stress12, &
        basisIntegralsU, &
        basisIntegralsV, &
+       basisIntegralsMetric, &
+       tanLatVertexRotatedOverRadius, &
        cellVerticesAtVertex, &
        solveVelocity)!{{{
 
@@ -1437,8 +1433,12 @@ contains
          stress12    !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &   
-         basisIntegralsU, & !< Input: 
-         basisIntegralsV    !< Input: 
+         basisIntegralsU, &   !< Input: 
+         basisIntegralsV, &   !< Input: 
+         basisIntegralsMetric !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(in) :: & 
+         tanLatVertexRotatedOverRadius !< Input: 
 
     integer, dimension(:,:), intent(in) :: &
          cellVerticesAtVertex !< Input: 
@@ -1455,7 +1455,8 @@ contains
          iCellOnVertex, &
          iCell, &
          iVertexOnCell, &
-         jVertexOnCell
+         jVertexOnCell, &
+         iVertex2
 
     integer, pointer :: &
          nVertices, &
@@ -1465,7 +1466,8 @@ contains
          nEdgesOnCell
 
     integer, dimension(:,:), pointer :: &
-         cellsOnVertex
+         cellsOnVertex, &
+         verticesOnCell
 
     real(kind=RKIND), dimension(:), pointer :: &
          areaTriangle
@@ -1476,6 +1478,7 @@ contains
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
 
     ! loop over velocity positions
@@ -1501,6 +1504,9 @@ contains
              ! loop over the vertices of the surrounding cell
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
+                iVertex2 = verticesOnCell(iVertexOnCell,iCell)
+
+                ! normal terms
                 stressDivergenceUCell = stressDivergenceUCell + &
                      stress11(iVertexOnCell,iCell) * basisIntegralsU(iVertexOnCell,jVertexOnCell,iCell) + &
                      stress12(iVertexOnCell,iCell) * basisIntegralsV(iVertexOnCell,jVertexOnCell,iCell)
@@ -1509,6 +1515,13 @@ contains
                      stress22(iVertexOnCell,iCell) * basisIntegralsV(iVertexOnCell,jVertexOnCell,iCell) + &
                      stress12(iVertexOnCell,iCell) * basisIntegralsU(iVertexOnCell,jVertexOnCell,iCell)
                 
+                ! metric terms
+                stressDivergenceUCell = stressDivergenceUCell + &
+                     stress12(iVertexOnCell,iCell) * basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iCell) * tanLatVertexRotatedOverRadius(iVertex2)
+
+                stressDivergenceVCell = stressDivergenceVCell - &
+                     stress11(iVertexOnCell,iCell) * basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iCell) * tanLatVertexRotatedOverRadius(iVertex2)
+
              enddo ! jVertex
 
              stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - stressDivergenceUCell

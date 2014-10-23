@@ -30,7 +30,8 @@ module cice_mesh
        cice_latlon_vector_rotation_forward, &
        cice_latlon_vector_rotation_backward, &
        cice_latlon_from_xyz, &
-       cice_interpolate_cell_to_vertex
+       cice_interpolate_cell_to_vertex, &
+       cice_project_3D_vector_onto_local_2D
 
 contains
 
@@ -1534,7 +1535,7 @@ contains
           call get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
 
           ! project the 3D vector onto the local 2D plane
-          call project_3D_vector_onto_local_2D(normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
+          call cice_project_3D_vector_onto_local_2D(normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
 
        enddo ! iEdgeOnCell
 
@@ -1630,7 +1631,7 @@ contains
              call get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
 
              ! project the 3D vector onto the local 2D plane
-             call project_3D_vector_onto_local_2D(normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
+             call cice_project_3D_vector_onto_local_2D(normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
 
           enddo ! iVertexDegree
 
@@ -1642,7 +1643,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  project_3D_vector_onto_local_2D
+!  cice_project_3D_vector_onto_local_2D
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -1652,7 +1653,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine project_3D_vector_onto_local_2D(&
+  subroutine cice_project_3D_vector_onto_local_2D(&
        normalVector2D, &
        normalVector3D, &
        xPoint, &
@@ -1702,7 +1703,7 @@ contains
     normalVector2D(1) = normalVector2D(1) / vectorMagnitude
     normalVector2D(2) = normalVector2D(2) / vectorMagnitude
 
-  end subroutine project_3D_vector_onto_local_2D!}}}
+  end subroutine cice_project_3D_vector_onto_local_2D!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
