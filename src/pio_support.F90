@@ -180,6 +180,8 @@ contains
     integer,optional,intent(in) :: punit
     integer :: err
     integer :: ndims
+    
+
     interface
        integer(c_int) function PIOc_writemap_from_f90(file, ndims, gdims, maplen, map, f90_comm) &
             bind(C,name="PIOc_writemap_from_f90")
@@ -242,7 +244,7 @@ contains
 
     call c_f_pointer(tgdims, gdims, (/ndims/))
     call c_f_pointer(tmap, DOF, (/maplen/))
-
+!    DOF = DOF+1
   end subroutine pio_readdof
 
 #ifdef NO_MPI2

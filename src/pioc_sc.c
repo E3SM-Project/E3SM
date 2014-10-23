@@ -35,7 +35,7 @@ typedef long long PIO_Offset;
 #endif
 
 //#define default_blocksize 884736;
-#define default_blocksize 1024
+#define default_blocksize 512
 int blocksize = default_blocksize;
 
 
@@ -358,6 +358,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
     for(i=0;i<ndims;i++){
       start[i]=mystart[i];
       kount[i]=mykount[i];
+      //      printf("%s %d %ld %ld\n",__FILE__,__LINE__,start[i],kount[i]);
     }
   }else{
     for(i=0;i<ndims;i++){
