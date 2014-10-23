@@ -6,7 +6,7 @@ If the test passes, 0 is returned, otherwise a non-zero error code
 is returned.
 """
 
-import argparse, sys, os, doctest, time
+import argparse, sys, os, doctest, time, threading, Queue
 
 VERBOSE = False
 TEST_STATUS_FILENAME = "TestStatus"
@@ -30,7 +30,7 @@ def verbose_print(msg):
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s [<Path to TestStatus>] [--verbose]
+usage="""\n%s [<Path to TestStatus> <Path to TestStatus> ...]  [--verbose]
 OR
 %s --help
 OR
@@ -41,65 +41,114 @@ OR
     > %s
     \033[1;32m# Wait for test in user specified tests\033[0m
     > %s path/to/testdir
-""" % ((os.path.basename(args[0]), ) * 5),
+    \033[1;32m# Wait for all tests in a test area\033[0m
+    > %s path/to/testarea/*/TestStatus
+""" % ((os.path.basename(args[0]), ) * 6),
 
 description=description,
 
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    parser.add_argument("path", default=".", nargs="?", help="Path to test directory. Pwd default.")
+    parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
 
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
                         help="Print shell commands as they are executed")
+
+    parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
+                        help="Do not wait for tests to finish")
 
     args = parser.parse_args(args[1:])
 
     global VERBOSE
     VERBOSE = args.verbose
 
-    return args.path
+    return args.paths, args.no_wait
 
 ###############################################################################
-def parse_test_status_file(file_contents):
+def parse_test_status_file(file_contents, test_path):
 ###############################################################################
     r"""
     >>> parse_test_status_file('PASS testname')
-    'PASS'
-    >>> parse_test_status_file('PASS testname \nGEN testname')
-    'GEN'
-    >>> parse_test_status_file('PASS testname\nPASS testname')
-    'PASS'
+    ('testname', 'PASS')
+    >>> parse_test_status_file('PASS testname \nGEN testname2')
+    ('testname', 'GEN')
+    >>> parse_test_status_file('PASS testname\nPASS testname2')
+    ('testname', 'PASS')
     """
+    real_test_name = None
     for line in file_contents.splitlines():
-        expect(len(line.split()) == 2, "Line '%s' not in expected format" % line)
-        status, test_name = line.split()
-        verbose_print("Test: '%s' has status '%s'" % (test_name, status))
-        if (status != TEST_PASSED_STATUS):
-            return status
+        if (len(line.split()) == 2):
+            status, test_name = line.split()
+            if (real_test_name is None):
+                real_test_name = test_name # just take the first one
 
-    return TEST_PASSED_STATUS
+            verbose_print("Test: '%s' has status '%s'" % (test_name, status))
+            if (status != TEST_PASSED_STATUS):
+                return real_test_name, status
+        else:
+            print "WARNING: For '%s', line '%s' not in expected format" % (test_path, line)
+
+    if (real_test_name is None):
+        print "WARNING: Empty status file for test", test_path
+
+    return real_test_name, TEST_PASSED_STATUS
 
 ###############################################################################
-def wait_for_test(test_path):
+def wait_for_test(test_path, results, no_wait):
 ###############################################################################
-    test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
+    if (os.path.isdir(test_path)):
+        test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
+    else:
+        test_status_filepath = test_path
     verbose_print("Watching file: '%s'" % test_status_filepath)
 
     while (True):
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_status = parse_test_status_file(test_status_contents)
-            if (test_status in TEST_NOT_FINISHED_STATUS):
+            test_name, test_status = parse_test_status_file(test_status_contents, test_path)
+            if (test_status in TEST_NOT_FINISHED_STATUS and not no_wait):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 verbose_print("Waiting for test to finish")
             else:
-                verbose_print("Finished with status '%s'" % test_status)
-                return test_status
+                results.put( (test_status, test_path) )
+                break
         else:
-            verbose_print("File '%s' does not yet exist" % test_status_filepath)
-            time.sleep(SLEEP_INTERVAL_SEC)
+            if (no_wait):
+                results.put( ("File '%s' doesn't exist" % test_status_filepath, test_path) )
+                break
+            else:
+                verbose_print("File '%s' does not yet exist" % test_status_filepath)
+                time.sleep(SLEEP_INTERVAL_SEC)
+
+###############################################################################
+def wait_for_tests(test_paths, no_wait):
+###############################################################################
+    results = Queue.Queue()
+
+    for test_path in test_paths:
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, no_wait))
+        t.daemon = True
+        t.start()
+
+    while threading.active_count() > 1:
+        time.sleep(1)
+
+    tests_with_results = dict()
+    while (not results.empty()):
+        test_status, test_path = results.get()
+        tests_with_results[test_path] = test_status
+
+    expect(set(test_paths) == set(tests_with_results),
+           "Missing results for tests: %s" % (set(test_paths) - set(tests_with_results)) )
+
+    all_pass = True
+    for test_status, test_path in sorted(tests_with_results.iteritems()):
+        print "Test '%s' finished with status '%s'" % (test_path, test_status)
+        all_pass &= test_status == TEST_PASSED_STATUS
+
+    return all_pass
 
 ###############################################################################
 def _main_func(description):
@@ -108,13 +157,9 @@ def _main_func(description):
         doctest.testmod()
         return
 
-    test_path = parse_command_line(sys.argv, description)
+    test_paths, no_wait = parse_command_line(sys.argv, description)
 
-    test_status = wait_for_test(test_path)
-    if (test_status == TEST_PASSED_STATUS):
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    sys.exit(0 if wait_for_tests(test_paths, no_wait) else 1)
 
 ###############################################################################
 
