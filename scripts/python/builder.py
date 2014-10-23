@@ -98,7 +98,7 @@ class platformBuilder(object):
 
         cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
                        self.CXXFLAGS + self.OFLAGS + self.EXECCA + self.MPIEXEC + ' ..')
-        print cmakeString
+
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()

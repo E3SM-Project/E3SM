@@ -26,8 +26,6 @@ def main(argv):
 
     exeCmd = ("mpirun.lsf " + args.exe + " -np " + args.np)
 
-    print exeCmd
-
     p = subprocess.Popen(exeCmd, shell=True)
     p.wait()
 
