@@ -707,7 +707,6 @@
 		<stream name="input" 
 				type="input"
 				filename_template="grid.nc"
-				records_per_file="1"
 				input_interval="initial_only"
 				immutable="true">
 
@@ -766,7 +765,6 @@
 		<stream name="modelRestart" 
 				type="input"
 				filename_template="restart.nc"
-				records_per_file="1"
 				input_interval="initial_only"
 				immutable="true">
 
@@ -833,7 +831,6 @@
 		<stream name="modelCheckpoint" 
 				type="output"
 				filename_template="checkpoints/restart.$Y-$M-$D_$h.$m.$s.nc"
-				records_per_file="1"
 				output_interval="0001_00:00:00"
 				immutable="true">
 
@@ -843,7 +840,7 @@
 		<stream name="output" 
 				type="output"
 				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
-				records_per_file="365"
+				filename_interval="01-00-00_00:00:00"
 				output_interval="0001_00:00:00"
 				runtime_format="single_file">
 

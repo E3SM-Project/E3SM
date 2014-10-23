@@ -38,7 +38,6 @@
 	<streams>
 		<stream name="zonalMeanOutput" type="output"
 				filename_template="analysis_members/zonalMeans.$Y-$M-$D_$h.$m.$s.nc"
-				records_per_file="1"
 				output_interval="0000_12:00:00"
 				runtime_format="single_file">
 
