@@ -459,6 +459,7 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 
 	const char *optstream, *optname, *optvarname, *opttype;
 	const char *optimmutable, *optfilename, *optfilename_interval, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
+	const char *optref_time, *optprecision, *optrecord_interval;
 	FILE *fd, *fd2;
 	char filename[64], filename2[64];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
@@ -481,15 +482,29 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 			optimmutable = ezxml_attr(opt_xml, "immutable");
 			optruntime = ezxml_attr(opt_xml, "runtime_format");
 			optpackages = ezxml_attr(opt_xml, "packages");
+			optprecision = ezxml_attr(opt_xml, "precision");
+			optref_time = ezxml_attr(opt_xml, "reference_time");
+			optrecord_interval = ezxml_attr(opt_xml, "record_interval");
 
 			/* Generate immutable default stream */
 			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
 				fprintf(fd, "<immutable_stream name=\"%s\"\n", optname);
 				fprintf(fd, "                  type=\"%s\"\n", opttype);
 				fprintf(fd, "                  filename_template=\"%s\"\n", optfilename);
-				fprintf(fd, "                  filename_interval=\"%s\"\n", optfilename_interval);
+				if (optfilename_interval) {
+					fprintf(fd, "                  filename_interval=\"%s\"\n", optfilename_interval);
+				}
 				if (optpackages) {
 					fprintf(fd, "                  packages=\"%s\"\n",optpackages);
+				}
+				if (optprecision) {
+					fprintf(fd, "                  precision=\"%s\"\n", optprecision);
+				}
+				if (optref_time) {
+					fprintf(fd, "                  reference_time=\"%s\"\n", optref_time);
+				}
+				if (optrecord_interval) {
+					fprintf(fd, "                  record_interval=\"%s\"\n", optrecord_interval);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "                  input_interval=\"%s\"", optinterval_in);
@@ -509,6 +524,15 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 				}
 				if (optpackages) {
 					fprintf(fd, "        packages=\"%s\"\n",optpackages);
+				}
+				if (optprecision) {
+					fprintf(fd, "        precision=\"%s\"\n", optprecision);
+				}
+				if (optref_time) {
+					fprintf(fd, "        reference_time=\"%s\"\n", optref_time);
+				}
+				if (optrecord_interval) {
+					fprintf(fd, "        record_interval=\"%s\"\n", optrecord_interval);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
