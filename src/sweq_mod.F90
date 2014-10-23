@@ -210,7 +210,7 @@ contains
           call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
           call test_ghost(hybrid,elem,nets,nete)
        endif
-       call sort_neighbor_buffer_mapping(hybrid,elem,nets,nete)
+       call sort_neighbor_buffer_mapping(hybrid%par,elem,nets,nete)
     end if
 
     if(Debug) print *,'homme: point #2'
