@@ -2148,15 +2148,16 @@ module mpas_stream_manager
         type (MPAS_TimeInterval_type) :: temp_interval
         type (MPAS_TimeInterval_type) :: write_interval, filename_interval
         character (len=StrKIND) :: now_string, time_string
-        character (len=StrKIND) :: temp_filename
+        character (len=StrKIND) :: temp_filename, actualWhen
         character (len=StrKIND) :: err_string
-        logical :: ringing_alarm
+        logical :: ringing_alarm, recordSeek, swapRecords
         logical :: clobberRecords, clobberFiles, truncateFiles
-        integer :: nAlarms
+        integer :: nAlarms, maxRecords, tempRecord
         integer :: local_ierr
 
 
         ierr = MPAS_STREAM_MGR_NOERR
+        swapRecords = .false.
 
         !
         ! Check whether this stream is active
@@ -2235,7 +2236,6 @@ module mpas_stream_manager
             truncateFiles = .false.
         end if
 
-
         !
         ! If the stream is not valid, assume that we have not yet written this
         ! stream, in which case we create the stream from scratch
@@ -2251,6 +2251,15 @@ module mpas_stream_manager
             end if
 
             stream % nRecords = 1
+
+            recordSeek = .false.
+            ! Based on clobber_mode, determine if it matters if the file exists or not.
+            if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
+                STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
+    
+                ! Check if the file exists
+                inquire(file=trim(stream % filename), exist=recordSeek)
+            end if
 
             !
             ! Build stream from pools of fields and attributes
@@ -2274,6 +2283,26 @@ module mpas_stream_manager
                     ierr = MPAS_STREAM_MGR_ERROR
                 end if
                 return
+            end if
+
+            ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
+            if ( recordSeek ) then
+                STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
+                now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                call mpas_get_time(now_time, dateTimeString=now_string)
+    
+                ! Look for exact record (in the case of overwriting)
+                ! This also gets the number of records in the file.
+                stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
+                STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+    
+                if ( stream % nRecords == 0 ) then
+                    ! If we didn't find an exact time, set record to point to the end of the file.
+                    ! This might result in non-monotonic timestamps in the output file.
+                    stream % nRecords = maxRecords + 1
+                    STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
+                    STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                end if
             end if
 
             call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
@@ -2308,6 +2337,17 @@ module mpas_stream_manager
                     return
                 end if
 
+                recordSeek = .false.
+                ! Based on clobber_mode, determine if it matters if the file exists or not.
+                if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
+                    STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
+        
+                    ! Check if the file exists
+                    inquire(file=trim(stream % filename), exist=recordSeek)
+                end if
+
+                stream % nRecords = 1
+
                 !
                 ! Build new stream from pools of fields and attributes
                 !
@@ -2332,15 +2372,54 @@ module mpas_stream_manager
                     return
                 end if
 
+                ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
+                if ( recordSeek ) then
+                    STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
+                    now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                    call mpas_get_time(now_time, dateTimeString=now_string)
+        
+                    ! Look for exact record (in the case of overwriting)
+                    ! This also gets the number of records in the file.
+                    stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
+                    STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+        
+                    if ( stream % nRecords == 0 ) then
+                        ! If we didn't find an exact time, set record to point to the end of the file.
+                        ! This might result in non-monotonic timestamps in the output file.
+                        stream % nRecords = maxRecords + 1
+                        STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
+                        STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                    end if
+                end if
+
                 call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
                 if (local_ierr /= MPAS_STREAM_NOERR) then
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
                 end if
                 stream % timeLevel = timeLevel
-                stream % nRecords = 1
             else
                 stream % nRecords = stream % nRecords + 1
+                if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
+                    now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                    call mpas_get_time(now_time, dateTimeString=now_string)
+        
+                    ! Look for exact record (in the case of overwriting)
+                    ! This also gets the number of records in the file.
+                    tempRecord = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
+                    STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+        
+                    if ( tempRecord /= 0 ) then
+                        ! If we found an exact result
+                        ! This might result in non-monotonic timestamps in the output file.
+                        swapRecords = .true.
+                        maxRecords = stream % nRecords
+                        stream % nRecords = tempRecord
+                        tempRecord = maxRecords
+                        STREAM_DEBUG_WRITE(' -- Exact time match found for ' COMMA trim(now_string) )
+                        STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                    end if
+                end if
             end if
         end if
 
@@ -2364,6 +2443,10 @@ module mpas_stream_manager
         ! 
         STREAM_DEBUG_WRITE(' -- Writing stream ' COMMA trim(stream % name))
         call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
+
+        if ( swapRecords ) then
+            stream % nRecords = tempRecord
+        end if
 
         !
         ! Regardless of the error code from MPAS_writeStream, we need to reset global indices in the stream back to local indices
