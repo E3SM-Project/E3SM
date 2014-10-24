@@ -53,11 +53,8 @@ contains
     use cice_velocity_solver_weak, only: &
          cice_init_velocity_solver_weak
 
-    use cice_velocity_solver_wachspress, only: &
-         cice_init_velocity_solver_wachspress
-
-    use cice_velocity_solver_pwl, only: &
-         cice_init_velocity_solver_pwl
+    use cice_velocity_solver_variational, only: &
+         cice_init_velocity_solver_variational
 
     type (block_type), intent(inout) :: &
          block !< Input/Output: 
@@ -78,7 +75,6 @@ contains
          boundary, &
          velocity_weak, &
          velocity_variational, &
-         velocity_wachspress, &
          velocity_pwl, &
          configs
 
@@ -88,8 +84,6 @@ contains
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
     call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
-    call MPAS_pool_get_subpool(block % structs, "velocity_wachspress", velocity_wachspress)
-    call MPAS_pool_get_subpool(block % structs, "velocity_pwl", velocity_pwl)
 
     call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
     call MPAS_pool_get_config(configs, "config_variational_basis", config_variational_basis)
@@ -106,27 +100,15 @@ contains
             velocity_weak, &
             config_rotate_cartesian_grid)
 
-    else if (trim(config_stress_divergence_scheme) == "variational" .and. &
-             trim(config_variational_basis) == "wachspress") then
+    else if (trim(config_variational_basis) == "wachspress") then
 
-       call cice_init_velocity_solver_wachspress(&
+       call cice_init_velocity_solver_variational(&
             mesh, &
             velocity_variational, &
-            velocity_wachspress, &
             boundary, &
             config_rotate_cartesian_grid, &
-            config_include_metric_terms)
-
-    else if (trim(config_stress_divergence_scheme) == "variational" .and. &
-             trim(config_variational_basis) == "pwl") then
-
-       call cice_init_velocity_solver_pwl(&
-            mesh, &
-            velocity_variational, &
-            velocity_pwl, &
-            boundary, &
-            config_rotate_cartesian_grid, &
-            config_include_metric_terms)
+            config_include_metric_terms, &
+            config_variational_basis)
 
     endif
 
@@ -192,9 +174,7 @@ contains
          ocean_forcing, &
          velocity_solver, &
          velocity_weak, &
-         velocity_variational, &
-         velocity_wachspress, &
-         velocity_pwl
+         velocity_variational
 
     integer, pointer :: &
          nCells, &
@@ -256,8 +236,6 @@ contains
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
     call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
-    call MPAS_pool_get_subpool(block % structs, "velocity_wachspress", velocity_wachspress)
-    call MPAS_pool_get_subpool(block % structs, "velocity_pwl", velocity_pwl)
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -429,8 +407,6 @@ contains
          velocity_solver, &
          velocity_weak, &
          velocity_variational, &
-         velocity_wachspress, &
-         velocity_pwl, &
          ciceDynamicsTimeStep, &
          ciceElasticTimeStep, &
          configs)
@@ -581,8 +557,6 @@ contains
        velocity_solver, &
        velocity_weak, &
        velocity_variational, &
-       velocity_wachspress, &
-       velocity_pwl, &
        dtDynamics, &
        dtElastic, &
        configs)!{{{
@@ -592,16 +566,14 @@ contains
          configs !< Input: 
 
     type(MPAS_Clock_type), intent(in) :: &
-         clock
+         clock !< Input: 
 
     type(MPAS_pool_type), pointer :: &
-         icestate, & !< Input/Output: 
-         boundary, & !< Input/Output: 
+         icestate, &          !< Input/Output: 
+         boundary, &          !< Input/Output: 
          velocity_solver, &   !< Input/Output: 
-         velocity_weak, &  !< Input/Output: 
-         velocity_variational, &   !< Input/Output: 
-         velocity_wachspress, &  !< Input/Output: 
-         velocity_pwl      !< Input/Output: 
+         velocity_weak, &     !< Input/Output: 
+         velocity_variational !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
          dtDynamics, & !< Input: 
@@ -625,8 +597,6 @@ contains
             velocity_solver, &
             velocity_weak, &
             velocity_variational, &
-            velocity_wachspress, &
-            velocity_pwl, &
             dtDynamics, &
             dtElastic, &
             configs, &
@@ -656,8 +626,6 @@ contains
        velocity_solver, &
        velocity_weak, &
        velocity_variational, &
-       velocity_wachspress, &
-       velocity_pwl, &
        dtDynamics, &
        dtElastic, &
        configs, &
@@ -670,11 +638,8 @@ contains
     use cice_velocity_solver_weak, only: &
          cice_internal_stress_weak
 
-    use cice_velocity_solver_wachspress, only: &
-         cice_internal_stress_wachspress
-
-    use cice_velocity_solver_pwl, only: &
-         cice_internal_stress_pwl
+    use cice_velocity_solver_variational, only: &
+         cice_internal_stress_variational
 
     use cice_debug, only: &
          cice_time_output_variable_real
@@ -687,13 +652,11 @@ contains
          clock
 
     type(MPAS_pool_type), pointer :: &
-         icestate, &             !< Input/Output: 
-         boundary, &             !< Input/Output: 
-         velocity_solver, &      !< Input/Output: 
-         velocity_weak, &        !< Input/Output: 
-         velocity_variational, & !< Input/Output: 
-         velocity_wachspress, &  !< Input/Output: 
-         velocity_pwl            !< Input/Output: 
+         icestate, &          !< Input/Output: 
+         boundary, &          !< Input/Output: 
+         velocity_solver, &   !< Input/Output: 
+         velocity_weak, &     !< Input/Output: 
+         velocity_variational !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
          dtDynamics, & !< Input: 
@@ -786,31 +749,11 @@ contains
             solveStress, &
             solveVelocity)
 
-    else if (trim(config_stress_divergence_scheme) == "variational" .and. &
-             trim(config_variational_basis) == "wachspress") then
+    else if (trim(config_variational_basis) == "wachspress") then
 
-       call cice_internal_stress_wachspress(&
+       call cice_internal_stress_variational(&
             mesh, &
             velocity_variational, &
-            velocity_wachspress, &
-            uVelocity % array, &
-            vVelocity % array, &
-            icePressure, &
-            replacementPressure, &
-            dtElastic, &
-            config_evp_damping, &
-            stressDivergenceU, &
-            stressDivergenceV, &
-            solveStress, &
-            solveVelocity)
-
-    else if (trim(config_stress_divergence_scheme) == "variational" .and. &
-             trim(config_variational_basis) == "pwl") then
-
-       call cice_internal_stress_pwl(&
-            mesh, &
-            velocity_variational, &
-            velocity_pwl, &
             uVelocity % array, &
             vVelocity % array, &
             icePressure, &

@@ -20,10 +20,7 @@ module cice_velocity_solver_pwl
   save
 
   public :: &
-       cice_init_velocity_solver_pwl, &
-       cice_internal_stress_pwl, &
-       cice_strain_tensor_pwl, &
-       cice_stress_divergence_pwl
+       cice_init_velocity_solver_pwl
 
 contains
 
@@ -46,7 +43,6 @@ contains
   subroutine cice_init_velocity_solver_pwl(&
        mesh, &
        velocity_variational, &
-       velocity_pwl, &
        boundary, &
        rotateCartesianGrid, &
        includeMetricTerms)!{{{
@@ -54,7 +50,7 @@ contains
     use cice_mesh, only: &
          cice_cell_vertices_at_vertex
 
-    use cice_velocity_solver_variational, only: &
+    use cice_velocity_solver_variational_shared, only: &
          cice_calc_local_coords, &
          cice_calc_variational_metric_terms
     
@@ -63,7 +59,6 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          velocity_variational, & !< Input/Output: 
-         velocity_pwl, &         !< Input/Output: 
          boundary                !< Input/Output: 
 
     logical, intent(in) :: &
@@ -73,30 +68,37 @@ contains
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
 
+    integer, pointer :: &
+         nCells, &
+         maxEdges
+
     real(kind=RKIND), dimension(:), pointer :: &
          tanLatVertexRotatedOverRadius
 
-    real(kind=RKIND), dimension(:,:), pointer :: &
+    real(kind=RKIND), dimension(:,:), allocatable :: &
          xLocal, &
-         yLocal, &
-         basisSubArea
+         yLocal
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          basisGradientU, &
-         basisGradientV
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV
 
-    real(kind=RKIND), dimension(:,:,:,:), pointer :: &
-         basisIntegralsMetric
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "maxEdges", maxEdges)
 
-    call MPAS_pool_get_array(velocity_variational, "xLocal", xLocal)
-    call MPAS_pool_get_array(velocity_variational, "yLocal", yLocal)
     call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
     call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+    call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
 
-    call MPAS_pool_get_array(velocity_pwl, "basisSubArea", basisSubArea)
-    call MPAS_pool_get_array(velocity_pwl, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(velocity_pwl, "basisGradientV", basisGradientV)
-    call MPAS_pool_get_array(velocity_pwl, "basisIntegralsMetric", basisIntegralsMetric)
+    allocate(xLocal(maxEdges,nCells))
+    allocate(yLocal(maxEdges,nCells))
 
     call cice_calc_local_coords(&
          mesh, &
@@ -116,12 +118,16 @@ contains
 
     call init_velocity_solver_pwl_basis(&
          mesh, &
-         basisSubArea, &
          basisGradientU, &
          basisGradientV, &
          basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV, &
          xLocal, &
          yLocal)
+
+    deallocate(xLocal)
+    deallocate(yLocal)
 
   end subroutine cice_init_velocity_solver_pwl!}}}
 
@@ -139,10 +145,11 @@ contains
 
   subroutine init_velocity_solver_pwl_basis(&
        mesh, &
-       basisSubArea, &
        basisGradientU, &
        basisGradientV, &
        basisIntegralsMetric, &
+       basisIntegralsU, &
+       basisIntegralsV, &
        xLocal, &
        yLocal)!{{{
 
@@ -152,15 +159,12 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         basisSubArea !< Output: 
-         
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &    
-         basisGradientU, & !< Output: 
-         basisGradientV    !< Output: 
-
-    real(kind=RKIND), dimension(:,:,:,:), intent(out) :: & 
-         basisIntegralsMetric !< Output:
+         basisGradientU, &       !< Output: 
+         basisGradientV, &       !< Output: 
+         basisIntegralsMetric, & !< Output:
+         basisIntegralsU, &      !< Output:
+         basisIntegralsV         !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          xLocal, & !< Input: 
@@ -170,7 +174,9 @@ contains
          xPWLCentre, &
          yPWLCentre, &
          alphaPWL, &
-         a, b, c, s
+         a, b, c, s, &
+         basisIntegral, &
+         basisIntegralsMetricSubCell
 
     integer :: &
          iCell, &
@@ -180,7 +186,8 @@ contains
          iVertexOnCell1, &
          iVertexOnCell2, &
          iSubCell, &
-         jEdgeOnCell
+         jEdgeOnCell, &
+         jEdgeOnCell2
 
     real(kind=RKIND), dimension(3,3) :: &
          leftMatrix
@@ -205,7 +212,12 @@ contains
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          subBasisGradientU, &
-         subBasisGradientV
+         subBasisGradientV, &
+         subCellgradientU, &
+         subCellgradientV
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         basisSubArea
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -218,6 +230,9 @@ contains
 
     allocate(subBasisGradientU(maxEdges,3))
     allocate(subBasisGradientV(maxEdges,3))
+    allocate(subCellgradientU(maxEdges,maxEdges))
+    allocate(subCellgradientV(maxEdges,maxEdges))
+    allocate(basisSubArea(maxEdges))
 
     ! loop over cells
     do iCell = 1, nCells
@@ -236,11 +251,11 @@ contains
        enddo ! iVertexOnCell
 
        ! calculate the area of the subcells
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+       do iSubCell = 1, nEdgesOnCell(iCell)
 
-          iEdge = edgesOnCell(iEdgeOnCell,iCell)
-          iVertexOnCell1 = iEdgeOnCell
-          iVertexOnCell2 = wrapped_index(iEdgeOnCell + 1, nEdgesOnCell(iCell))
+          iEdge = edgesOnCell(iSubCell,iCell)
+          iVertexOnCell1 = iSubCell
+          iVertexOnCell2 = wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
 
           c = dvEdge(iEdge)
           a = sqrt((xLocal(iVertexOnCell1,iCell) - xPWLCentre)**2 + &
@@ -251,16 +266,15 @@ contains
           s = (a + b + c) * 0.5_RKIND
 
           ! Heron's formula 
-          basisSubArea(iEdgeOnCell,iCell) = sqrt(s * (s-a) * (s-b) * (s-c))
+          basisSubArea(iSubCell) = sqrt(s * (s-a) * (s-b) * (s-c))
 
-       enddo ! iEdgeOnCell
+       enddo ! iSubCell
 
        ! calculate the linear basis on the sub triangle
+       do iSubCell = 1, nEdgesOnCell(iCell)
 
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-
-          iVertexOnCell1 = iEdgeOnCell
-          iVertexOnCell2 = wrapped_index(iEdgeOnCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell1 = iSubCell
+          iVertexOnCell2 = wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
 
           ! set up left hand matrix
           leftMatrix(1,1) = xLocal(iVertexOnCell1,iCell) - xPWLCentre
@@ -282,8 +296,8 @@ contains
 
           call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
-          subBasisGradientU(1,iEdgeOnCell) = solutionVector(1)
-          subBasisGradientV(1,iEdgeOnCell) = solutionVector(2)
+          subBasisGradientU(1,iSubCell) = solutionVector(1)
+          subBasisGradientV(1,iSubCell) = solutionVector(2)
 
           ! second basis
           rightHandSide(1) = 0.0_RKIND
@@ -292,14 +306,14 @@ contains
 
           call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
-          subBasisGradientU(2,iEdgeOnCell) = solutionVector(1)
-          subBasisGradientV(2,iEdgeOnCell) = solutionVector(2)
+          subBasisGradientU(2,iSubCell) = solutionVector(1)
+          subBasisGradientV(2,iSubCell) = solutionVector(2)
 
           ! third basis
-          subBasisGradientU(3,iEdgeOnCell) = 1.0_RKIND - subBasisGradientU(1,iEdgeOnCell) - subBasisGradientU(2,iEdgeOnCell)
-          subBasisGradientV(3,iEdgeOnCell) = 1.0_RKIND - subBasisGradientV(1,iEdgeOnCell) - subBasisGradientV(2,iEdgeOnCell)
+          subBasisGradientU(3,iSubCell) = 1.0_RKIND - subBasisGradientU(1,iSubCell) - subBasisGradientU(2,iSubCell)
+          subBasisGradientV(3,iSubCell) = 1.0_RKIND - subBasisGradientV(1,iSubCell) - subBasisGradientV(2,iSubCell)
 
-       enddo ! iEdgeOnCell
+       enddo ! iSubCell
 
        ! use the linear sub area basis to calculate the PWL basis
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
@@ -308,18 +322,18 @@ contains
           do iSubCell = 1, nEdgesOnCell(iCell)
 
              ! array (index of the basis vertex, subarea value)
-             basisGradientU(iEdgeOnCell,iSubCell,iCell) = subBasisGradientU(3,iSubCell) * alphaPWL
-             basisGradientV(iEdgeOnCell,iSubCell,iCell) = subBasisGradientV(3,iSubCell) * alphaPWL
+             subCellGradientU(iEdgeOnCell,iSubCell) = subBasisGradientU(3,iSubCell) * alphaPWL
+             subCellGradientV(iEdgeOnCell,iSubCell) = subBasisGradientV(3,iSubCell) * alphaPWL
 
              if (iSubCell == iEdgeOnCell) then
 
-                basisGradientU(iEdgeOnCell,iSubCell,iCell) = basisGradientU(iEdgeOnCell,iSubCell,iCell) + subBasisGradientU(1,iSubCell)
-                basisGradientV(iEdgeOnCell,iSubCell,iCell) = basisGradientV(iEdgeOnCell,iSubCell,iCell) + subBasisGradientV(1,iSubCell)
+                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(1,iSubCell)
+                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(1,iSubCell)
 
              else if (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell))) then
 
-                basisGradientU(iEdgeOnCell,iSubCell,iCell) = basisGradientU(iEdgeOnCell,iSubCell,iCell) + subBasisGradientU(2,iSubCell)
-                basisGradientV(iEdgeOnCell,iSubCell,iCell) = basisGradientV(iEdgeOnCell,iSubCell,iCell) + subBasisGradientV(2,iSubCell)
+                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(2,iSubCell)
+                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(2,iSubCell)
 
              endif
 
@@ -327,19 +341,66 @@ contains
           
        enddo ! iEdgeOnCell
 
+       ! calculate the gradients at the cell corners
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+          do jEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+             jEdgeOnCell2 = wrapped_index(jEdgeOnCell - 1, nEdgesOnCell(iCell))
+
+             basisGradientU(iEdgeOnCell,jEdgeOnCell,iCell) = 0.5_RKIND * &
+                  (subCellGradientU(iEdgeOnCell,jEdgeOnCell) + subCellGradientU(iEdgeOnCell,jEdgeOnCell2))
+             basisGradientV(iEdgeOnCell,jEdgeOnCell,iCell) = 0.5_RKIND * &
+                  (subCellGradientV(iEdgeOnCell,jEdgeOnCell) + subCellGradientV(iEdgeOnCell,jEdgeOnCell2))
+
+          enddo ! jEdgeOnCell
+
+       enddo ! iEdgeOnCell
+
+       ! calculate the basis integrals
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+          
+          do jEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+             basisIntegralsU(iEdgeOnCell,jEdgeOnCell,iCell) = 0.0_RKIND
+             basisIntegralsV(iEdgeOnCell,jEdgeOnCell,iCell) = 0.0_RKIND
+
+             do iSubCell = 1, nEdgesOnCell(iCell)
+
+                if (iSubCell == iEdgeOnCell .or. iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell))) then
+                   basisIntegral = ((alphaPWL + 1) * basisSubArea(iSubCell)) / 3.0_RKIND
+                else
+                   basisIntegral = ( alphaPWL      * basisSubArea(iSubCell)) / 3.0_RKIND
+                endif
+
+                basisIntegralsU(iEdgeOnCell,jEdgeOnCell,iCell) = basisIntegralsU(iEdgeOnCell,jEdgeOnCell,iCell) + &
+                     subCellGradientU(jEdgeOnCell,iSubCell) * basisIntegral
+
+                basisIntegralsV(iEdgeOnCell,jEdgeOnCell,iCell) = basisIntegralsV(iEdgeOnCell,jEdgeOnCell,iCell) + &
+                     subCellGradientV(jEdgeOnCell,iSubCell) * basisIntegral
+
+             enddo ! iSubCell
+
+          enddo ! jEdgeOnCell
+
+       enddo ! iEdgeOnCell
+
        ! basis integrals for the metric terms
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
           do jEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+             basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iCell) = 0.0_RKIND
+
              do iSubCell = 1, nEdgesOnCell(iCell)
 
-                basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iSubCell,iCell) = alphaPWL**2
+                basisIntegralsMetricSubCell = alphaPWL**2
 
                 if ( (iSubCell == iEdgeOnCell .and. &
-                      iSubCell == jEdgeOnCell) .or. &
+                     iSubCell == jEdgeOnCell) .or. &
                      (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell)) .and. &
                       iSubCell == wrapped_index(jEdgeOnCell - 1, nEdgesOnCell(iCell))) ) then
 
-                   basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iSubCell,iCell) = 2.0_RKIND * (alphaPWL + 1)**2
+                   basisIntegralsMetricSubCell = 2.0_RKIND * (alphaPWL + 1)**2
 
                 endif
 
@@ -348,14 +409,18 @@ contains
                      (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell)) .and. &
                       iSubCell == jEdgeOnCell) ) then
 
-                   basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iSubCell,iCell) = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 1.0_RKIND
+                   basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 1.0_RKIND
 
                 endif
 
-                basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iSubCell,iCell) = basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iSubCell,iCell) * &
-                     basisSubArea(iSubCell,iCell) / 12.0_RKIND
+                basisIntegralsMetricSubCell = basisIntegralsMetricSubCell * &
+                     basisSubArea(iSubCell) / 12.0_RKIND
+
+                basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iCell) = basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iCell) + &
+                     basisIntegralsMetricSubCell
 
              enddo ! iSubCell
+
           enddo ! jEdgeOnCell
        enddo ! iSubCell
 
@@ -363,424 +428,11 @@ contains
 
     deallocate(subBasisGradientU)
     deallocate(subBasisGradientV)
+    deallocate(subCellgradientU)
+    deallocate(subCellgradientV)
+    deallocate(basisSubArea)
 
   end subroutine init_velocity_solver_pwl_basis!}}}
-
-!-----------------------------------------------------------------------
-! time step
-!-----------------------------------------------------------------------
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  cice_internal_stress_pwl
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine cice_internal_stress_pwl(&
-       mesh, &
-       velocity_variational, &
-       velocity_pwl, &
-       uVelocity, &
-       vVelocity, &
-       icePressure, &
-       replacementPressure, &
-       dtElastic, &
-       evpDamping, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       solveStress, &
-       solveVelocity)!{{{
-
-    use cice_velocity_solver_variational, only: &
-         cice_stress_tensor_variational
-
-    type (MPAS_pool_type), pointer :: &
-         mesh, &   !< Input/Output: 
-         velocity_variational, & !< Input/Output: 
-         velocity_pwl    !< Input/Output: 
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input: 
-         vVelocity    !< Input:   
-
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         icePressure, &      !< Input/Output: 
-         replacementPressure !< Input/Output: 
-
-    real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input: 
-
-    logical, intent(in) :: &
-         evpDamping !< Input: 
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
-
-    integer, dimension(:), intent(in) :: &
-         solveStress, & !< Input: 
-         solveVelocity  !< Input: 
-
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         tanLatVertexRotatedOverRadius
-
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         strain11, &
-         strain22, &
-         strain12, &
-         stress11, &
-         stress22, &
-         stress12, &
-         basisSubArea
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         basisGradientUPWL, &
-         basisGradientVPWL
-
-    real(kind=RKIND), dimension(:,:,:,:), pointer :: &    
-         basisIntegralsMetric
-
-    call MPAS_pool_get_array(velocity_variational, "strain11", strain11)
-    call MPAS_pool_get_array(velocity_variational, "strain22", strain22)
-    call MPAS_pool_get_array(velocity_variational, "strain12", strain12)
-    call MPAS_pool_get_array(velocity_variational, "stress11", stress11)
-    call MPAS_pool_get_array(velocity_variational, "stress22", stress22)
-    call MPAS_pool_get_array(velocity_variational, "stress12", stress12)
-    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
-    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
-
-    call MPAS_pool_get_array(velocity_pwl, "basisGradientU", basisGradientUPWL)
-    call MPAS_pool_get_array(velocity_pwl, "basisGradientV", basisGradientVPWL)
-    call MPAS_pool_get_array(velocity_pwl, "basisSubArea", basisSubArea)
-    call MPAS_pool_get_array(velocity_pwl, "basisIntegralsMetric", basisIntegralsMetric)
-
-    call cice_strain_tensor_pwl(mesh, &
-         strain11, &
-         strain22, &
-         strain12, &
-         uVelocity, &
-         vVelocity, &
-         basisGradientUPWL, &
-         basisGradientVPWL, &
-         tanLatVertexRotatedOverRadius, &
-         solveStress)
-    
-    call cice_stress_tensor_variational(mesh, &
-         stress11, &
-         stress22, &
-         stress12, &
-         strain11, &
-         strain22, &
-         strain12, &
-         icePressure, &
-         replacementPressure, &
-         solveStress, &
-         dtElastic, evpDamping)
-    
-    call cice_stress_divergence_pwl(mesh, &
-         stressDivergenceU, &
-         stressDivergenceV, &
-         stress11, &
-         stress22, &
-         stress12, &
-         basisGradientUPWL, &
-         basisGradientVPWL, &
-         basisSubArea, &
-         basisIntegralsMetric, &
-         tanLatVertexRotatedOverRadius, &
-         cellVerticesAtVertex, &
-         solveVelocity)
-
-  end subroutine cice_internal_stress_pwl!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  cice_strain_tensor_pwl
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------  
-
-  subroutine cice_strain_tensor_pwl(&
-       mesh, &
-       strain11, &
-       strain22, &
-       strain12, &
-       uVelocity, &
-       vVelocity, &
-       basisGradientU, &
-       basisGradientV, &
-       tanLatVertexRotatedOverRadius, &
-       solveStress)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         strain11, & !< Output: 
-         strain22, & !< Output: 
-         strain12    !< Output: 
-    
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input: 
-         vVelocity, & !< Input: 
-         tanLatVertexRotatedOverRadius !< Input: 
-
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         basisGradientU, & !< Input: 
-         basisGradientV    !< Input: 
-    
-    integer, dimension(:), intent(in) :: &
-         solveStress !< Input: 
-
-    real(kind=RKIND) :: &
-         alphaPWL
-
-    integer :: &
-         iCell, &
-         jVertexOnCell, &
-         iVertexOnCell, &
-         iVertex, &
-         jVertex, &
-         iSubCell1, &
-         iSubCell2
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         verticesOnCell
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-
-    ! loop over cells
-    do iCell = 1, nCells
-
-       strain11(:,iCell) = 0.0_RKIND
-       strain22(:,iCell) = 0.0_RKIND
-       strain12(:,iCell) = 0.0_RKIND
-
-       if (solveStress(iCell) == 1) then
-
-          alphaPWL = 1.0_RKIND / real(nEdgesOnCell(iCell), RKIND)
-
-          ! loop over velocity points surrounding cell - location of stress and derivative
-          do jVertexOnCell = 1, nEdgesOnCell(iCell)
-
-             jVertex = verticesOnCell(jVertexOnCell,iCell)
-
-             iSubCell1 = jVertexOnCell
-             iSubCell2 = wrapped_index(jVertexOnCell + 1, nEdgesOnCell(iCell))
-
-             ! loop over basis functions
-             do iVertexOnCell = 1, nEdgesOnCell(iCell)
-
-                iVertex = verticesOnCell(iVertexOnCell,iCell)
-
-                strain11(jVertexOnCell,iCell) = strain11(jVertexOnCell,iCell) + &
-                     uVelocity(iVertex) * 0.5_RKIND * (basisGradientU(iVertexOnCell,iSubCell1,iCell) + basisGradientU(iVertexOnCell,iSubCell2,iCell))
-
-                strain22(jVertexOnCell,iCell) = strain22(jVertexOnCell,iCell) + &
-                     vVelocity(iVertex) * 0.5_RKIND * (basisGradientV(iVertexOnCell,iSubCell1,iCell) + basisGradientV(iVertexOnCell,iSubCell2,iCell))
-
-                strain12(jVertexOnCell,iCell) = strain12(jVertexOnCell,iCell) + 0.5_RKIND * ( &
-                     uVelocity(iVertex) * 0.5_RKIND * (basisGradientV(iVertexOnCell,iSubCell1,iCell) + basisGradientV(iVertexOnCell,iSubCell2,iCell)) + &
-                     vVelocity(iVertex) * 0.5_RKIND * (basisGradientU(iVertexOnCell,iSubCell1,iCell) + basisGradientU(iVertexOnCell,iSubCell2,iCell)))
-
-             enddo ! iVertexOnCell
-
-             ! metric terms
-             strain11(jVertexOnCell,iCell) = strain11(jVertexOnCell,iCell) - &
-                  vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
-
-             strain12(jVertexOnCell,iCell) = strain12(jVertexOnCell,iCell) + &
-                  uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
-
-          enddo ! jVertexOnCell
-
-       endif ! solveStress
-
-    enddo ! iCell
-
-  end subroutine cice_strain_tensor_pwl!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  cice_stress_divergence_pwl
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine cice_stress_divergence_pwl(&
-       mesh, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       stress11, &
-       stress22, &
-       stress12, &
-       basisGradientU, &
-       basisGradientV, &
-       basisSubArea, &
-       basisIntegralsMetric, &
-       tanLatVertexRotatedOverRadius, &
-       cellVerticesAtVertex, &
-       solveVelocity)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
-
-    real(kind=RKIND), dimension(:,:), intent(in) :: &    
-         stress11, & !< Input: 
-         stress22, & !< Input: 
-         stress12    !< Input: 
-
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &   
-         basisGradientU, & !< Input: 
-         basisGradientV    !< Input: 
-
-    real(kind=RKIND), dimension(:,:), intent(in) :: &
-         basisSubArea !< Input: 
-
-    real(kind=RKIND), dimension(:,:,:,:), intent(in) :: & 
-         basisIntegralsMetric !< Input:
-
-    real(kind=RKIND), dimension(:), intent(in) :: &     
-         tanLatVertexRotatedOverRadius !< Input:
-
-    integer, dimension(:,:), intent(in) :: &
-         cellVerticesAtVertex !< Input: 
-
-    integer, dimension(:), intent(in) :: &
-         solveVelocity !< Input: 
-
-    real(kind=RKIND) :: &
-         stressDivergenceUCell, &
-         stressDivergenceVCell
-
-    integer :: &
-         iVertex, &
-         iCellOnVertex, &
-         iCell, &
-         iVertexOnCell, &
-         jVertexOnCell, &
-         iSubCell, &
-         iVertex2
-
-    integer, pointer :: &
-         nVertices, &
-         vertexDegree
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         cellsOnVertex, &
-         verticesOnCell
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         areaTriangle
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
-
-    ! loop over velocity positions
-    do iVertex = 1, nVertices
-
-       stressDivergenceU(iVertex) = 0.0_RKIND
-       stressDivergenceV(iVertex) = 0.0_RKIND
-
-       if (solveVelocity(iVertex) == 1) then
-
-          ! loop over surrounding cells
-          do iCellOnVertex = 1, vertexDegree
-             
-             ! get the cell number of this cell
-             iCell = cellsOnVertex(iCellOnVertex, iVertex)
-             
-             ! get the vertexOnCell number of the iVertex velocity point from cell iCell
-             jVertexOnCell = cellVerticesAtVertex(iCellOnVertex,iVertex)
-
-             stressDivergenceUCell = 0.0_RKIND
-             stressDivergenceVCell = 0.0_RKIND
-
-             ! loop over the vertices of the surrounding cell
-             do iVertexOnCell = 1, nEdgesOnCell(iCell)
-
-                iVertex2 = verticesOnCell(iVertexOnCell,iCell)
-
-                ! loop over subcells
-                do iSubCell = 1, nEdgesOnCell(iCell)
-
-                   ! normal terms
-                   stressDivergenceUCell = stressDivergenceUCell + &
-                        stress11(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * basisGradientU(iVertexOnCell,iSubCell,iCell) + &
-                        stress12(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * basisGradientV(iVertexOnCell,iSubCell,iCell)
-                   
-                   stressDivergenceVCell = stressDivergenceVCell + &
-                        stress22(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * basisGradientV(iVertexOnCell,iSubCell,iCell) + &
-                        stress12(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * basisGradientU(iVertexOnCell,iSubCell,iCell)
-
-                   ! metric terms
-                   stressDivergenceUCell = stressDivergenceUCell + &
-                        stress12(iVertexOnCell,iCell) * basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iSubCell,iCell) * &
-                        tanLatVertexRotatedOverRadius(iVertex2)
-                   
-                   stressDivergenceVCell = stressDivergenceVCell - &
-                        stress11(iVertexOnCell,iCell) * basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iSubCell,iCell) * &
-                        tanLatVertexRotatedOverRadius(iVertex2)
-
-                enddo ! iSubCell
-                
-             enddo ! jVertex
-
-             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - stressDivergenceUCell
-             stressDivergenceV(iVertex) = stressDivergenceV(iVertex) - stressDivergenceVCell
-             
-          enddo ! iCellOnVertex
-
-          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
-          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
-
-       endif ! solveVelocity
-
-    enddo ! iVertex
- 
-  end subroutine cice_stress_divergence_pwl!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

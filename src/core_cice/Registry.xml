@@ -556,26 +556,13 @@
 		<var name="stress11var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress11"/>
 		<var name="stress22var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress22"/>
 		<var name="stress12var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"/>
-		<var name="xLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="xLocal"/>
-		<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"/>
 		<var name="tanLatVertexRotatedOverRadius"     type="real"     dimensions="nVertices"                name_in_code="tanLatVertexRotatedOverRadius"/>
 		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
-	</var_struct>
-	<var_struct name="velocity_wachspress" time_levs="1" packages="pkgWachspress">
-		<var name="wachspressA"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressA"/>
-		<var name="wachspressB"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressB"/>
-		<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"/>
 		<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsU"/>
 		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"/>
-		<var name="basisIntegralsMetricWach"          type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsMetric"/>
-		<var name="basisGradientUWach"                type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientVWach"                type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
-	</var_struct>
-	<var_struct name="velocity_pwl" time_levs="1" packages="pkgPieceWiseLinear">
-		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"          name_in_code="basisSubArea"/>
-		<var name="basisGradientUPWL"                 type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientVPWL"                 type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
-		<var name="basisIntegralsMetricPWL"           type="real"     dimensions="maxEdges maxEdges maxEdges nCells" name_in_code="basisIntegralsMetric"/>
+		<var name="basisIntegralsMetric"              type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsMetric"/>
+		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
+		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
 	</var_struct>
 
 	<!-- Plotting -->
