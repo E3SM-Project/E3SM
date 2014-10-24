@@ -1231,8 +1231,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
   use control_mod   ,         only : qsplit
-  use global_norms_mod,       only: wrap_repro_sum
+  use global_norms_mod,       only : wrap_repro_sum
   use parallel_mod,           only: global_shared_buf, global_shared_sum, syncmp
+  use control_mod,            only : use_semi_lagrange_transport_local_conservation
 
 
 
@@ -1256,6 +1257,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   real(kind=real_kind)                          :: f                      (qsize)
   real(kind=real_kind)                          :: g                      (qsize)
   real(kind=real_kind)                          :: mass              (nlev,qsize)
+  real(kind=real_kind)                          :: elem_mass         (nlev,qsize,nets:nete)
   real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
 
   real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
@@ -1316,7 +1318,11 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
           ! interpolate tracers to deperature grid
           call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
           elem(ie)%state%Q(i,j,k,:) = f 
-          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
+!         call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
+          do q=1,qsize
+            f(q) = MINVAL(neigh_q(:,:,q,elem_indexes(i,j)))
+            g(q) = MAXVAL(neigh_q(:,:,q,elem_indexes(i,j)))
+          end do 
           minq(i,j,k,:,ie) = f 
           maxq(i,j,k,:,ie) = g 
         enddo
@@ -1328,7 +1334,8 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
   call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
   ! compute original mass, at tl_1%n0
-    do ie=nets,nete
+  elem_mass = 0
+  do ie=nets,nete
     n=0
     do k=1,nlev
     do q=1,qsize
@@ -1336,6 +1343,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
       global_shared_buf(ie,n) = 0
       do j=1,np
         global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
+        elem_mass(k,q,ie)       = elem_mass(k,q,ie)       + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
       end do
     end do
     end do
@@ -1360,7 +1368,11 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
     Que_t(:,:,:,1:qsize,ie) = elem(ie)%state%Q(:,:,:,1:qsize)
   end do
   call t_startf('Prim_Advec_Tracers_remap_ALE_Cobra')
-  call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
+  if (use_semi_lagrange_transport_local_conservation) then
+    call Cobra_Elem (Que, Que_t, rho, minq, maxq, elem_mass, hybrid, nets, nete)
+  else
+    call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
+  end if
   call t_stopf('Prim_Advec_Tracers_remap_ALE_Cobra')
 
   do ie=nets,nete
@@ -1527,6 +1539,144 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
   enddo
 end subroutine Cobra_SLBQP
+
+
+subroutine Cobra_Elem(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete) 
+
+  use parallel_mod,        only: global_shared_buf, global_shared_sum
+  use global_norms_mod,    only: wrap_repro_sum
+
+  implicit none
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
+  real(kind=real_kind), intent(out)             :: Que         (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: Que_t       (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
+  real(kind=real_kind), intent(in)              :: minq        (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: maxq        (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: mass              (nlev,qsize,nets:nete)
+  type (hybrid_t)     , intent(in)              :: hybrid
+
+  integer,                            parameter :: max_clip = 50
+  real(kind=real_kind),               parameter :: eta = 1D-10           
+  real(kind=real_kind),               parameter :: hfd = 1D-08             
+  real(kind=real_kind)                          :: lambda_p          (nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: lambda_c          (nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: rp                (nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: rc                (nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: rd                (nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: alpha             (nlev,qsize,nets:nete)
+  integer                                       :: j,k,n,q,ie
+  integer                                       :: nclip
+  integer                                       :: mloc(3)
+
+  nclip = 1
+
+  Que(:,:,:,:) = Que_t(:,:,:,:)
+
+  Que = MIN(MAX(Que,minq),maxq)
+
+  do ie=nets,nete
+  do q=1,qsize
+  do k=1,nlev
+    rp(k,q,ie) = DOT_PRODUCT(Que(:,k,q,ie), rho(:,k,ie)) - mass(k,q,ie)
+  end do
+  end do
+  end do
+
+  if (MAXVAL(ABS(rp)).lt.eta) return
+
+  do ie=nets,nete
+  do q=1,qsize
+  do k=1,nlev
+     Que(:,k,q,ie) = hfd * rho(:,k,ie) + Que_t(:,k,q,ie)
+  enddo
+  enddo
+  enddo
+
+  Que = MIN(MAX(Que,minq),maxq)
+
+  do ie=nets,nete
+  do q=1,qsize
+  do k=1,nlev
+    rc(k,q,ie) = DOT_PRODUCT(Que(:,k,q,ie), rho(:,k,ie)) - mass(k,q,ie)
+  end do
+  end do
+  end do
+
+  rd = rc-rp
+  if (MAXVAL(ABS(rd)).eq.0) return 
+  
+  alpha = 0
+  WHERE (rd.ne.0) alpha = hfd / rd 
+
+  lambda_p = 0
+  lambda_c =  -alpha*rp
+
+! if (hybrid%par%masterproc) print *,__FILE__,__LINE__," mass(20,1,4):",mass(20,1,4)
+! do k=1,np*np
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," maxq(k,20,1,4):",maxq(k,20,1,4) ,minq(k,20,1,4),maxq(k,20,1,4)-minq(k,20,1,4)
+! enddo
+! do k=1,np*np
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," Que(k,20,1,4):",Que(k,20,1,4) ,rho(k,20,4)
+! enddo
+  do while (MAXVAL(ABS(rc)).gt.eta .and. nclip.lt.max_clip)
+    nclip = nclip + 1
+
+    do ie=nets,nete
+    do q=1,qsize
+    do k=1,nlev
+!      Que(:,k,q,ie) = (lambda_c(k,q,ie) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+       Que(:,k,q,ie) = lambda_c(k,q,ie) * rho(:,k,ie) + Que_t(:,k,q,ie)
+    enddo
+    enddo
+    enddo
+
+!   do ie=nets,nete
+!   do q=1,qsize
+!   do k=1,nlev
+!     rc(k,q,ie) = DOT_PRODUCT(Que(:,k,q,ie), rho(:,k,ie)) - mass(k,q,ie)
+!   end do
+!   end do
+!   end do
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," rc(20,1,4):",rc(20,1,4), DOT_PRODUCT(Que(:,20,1,4), rho(:,20,4))
+
+    Que = MIN(MAX(Que,minq),maxq)
+
+    do ie=nets,nete
+    do q=1,qsize
+    do k=1,nlev
+      rc(k,q,ie) = DOT_PRODUCT(Que(:,k,q,ie), rho(:,k,ie)) - mass(k,q,ie)
+    end do
+    end do
+    end do
+
+    
+    mloc = MAXLOC(ABS(rc))
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," MAXVAL(ABS(rc)):",MAXVAL(ABS(rc)), mloc, nclip
+
+    rd = rp-rc
+
+!   if (MAXVAL(ABS(rd)).eq.0) exit
+
+    alpha = 0
+    WHERE (rd.ne.0) alpha = (lambda_p - lambda_c) / rd 
+!   WHERE (alpha.eq.0.and.MAXVAL(ABS(rc)).gt.eta) alpha=10;
+
+    rp       = rc
+    lambda_p = lambda_c
+
+    lambda_c = lambda_c -  alpha * rc
+
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," rc(20,1,4):",rc(20,1,4)
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," rd(20,1,4):",rd(20,1,4)
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," lambda_p(20,1,4):",lambda_p(20,1,4)
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," lambda_c(20,1,4):",lambda_c(20,1,4)
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," alpha(20,1,4):",alpha(20,1,4)
+!   if (hybrid%par%masterproc) print *
+  enddo
+! if (hybrid%par%masterproc) print *,__FILE__,__LINE__," MAXVAL(ABS(rc)):",MAXVAL(ABS(rc)),eta," nclip:",nclip
+end subroutine Cobra_Elem 
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE ALE_RKDSS-----------------------------------------------CE-for FVM!
