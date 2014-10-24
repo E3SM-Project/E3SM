@@ -459,7 +459,7 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 
 	const char *optstream, *optname, *optvarname, *opttype;
 	const char *optimmutable, *optfilename, *optfilename_interval, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
-	const char *optref_time, *optprecision, *optrecord_interval;
+	const char *optref_time, *optprecision, *optrecord_interval, *optclobber_mode;
 	FILE *fd, *fd2;
 	char filename[64], filename2[64];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
@@ -485,6 +485,7 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 			optprecision = ezxml_attr(opt_xml, "precision");
 			optref_time = ezxml_attr(opt_xml, "reference_time");
 			optrecord_interval = ezxml_attr(opt_xml, "record_interval");
+			optclobber_mode = ezxml_attr(opt_xml, "clobber_mode");
 
 			/* Generate immutable default stream */
 			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
@@ -505,6 +506,9 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 				}
 				if (optrecord_interval) {
 					fprintf(fd, "                  record_interval=\"%s\"\n", optrecord_interval);
+				}
+				if (optclobber_mode) {
+					fprintf(fd, "                  clobber_mode=\"%s\"\n", optclobber_mode);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "                  input_interval=\"%s\"", optinterval_in);
@@ -533,6 +537,9 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 				}
 				if (optrecord_interval) {
 					fprintf(fd, "        record_interval=\"%s\"\n", optrecord_interval);
+				}
+				if (optclobber_mode) {
+					fprintf(fd, "        clobber_mode=\"%s\"\n", optclobber_mode);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
