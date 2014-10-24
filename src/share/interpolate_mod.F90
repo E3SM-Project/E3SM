@@ -308,7 +308,7 @@ contains
     integer                           :: i,j
 
     
-    if (interp_tracers_init == .false.  ) then
+    if (.not. interp_tracers_init   ) then
        stop 'ERROR: interpolate_tracers() was not initialized'
     endif
 
