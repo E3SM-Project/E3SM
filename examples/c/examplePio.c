@@ -3,31 +3,32 @@
 
 typedef struct examplePioClass
 {
-    void (*init)  (struct examplePioClass*);
-    void (*write) (struct examplePioClass*);
-    void (*read)  (struct examplePioClass*);
+    int someThing;
+    struct examplePioClass* (*init)  (struct examplePioClass*);
+    struct examplePioClass* (*write) (struct examplePioClass*);
+    struct examplePioClass* (*read)  (struct examplePioClass*);
     
 } examplePioClass;
 
-void epc_init( struct examplePioClass* this )
+struct examplePioClass* epc_init( struct examplePioClass* this )
 {
     /* implementation of init */
-    printf(" examplePioClass::init \n");
-    //return this;
+    printf(" examplePioClass::init %d\n",this->someThing);
+    return this;
 }
 
-void epc_write( struct examplePioClass* this )
+struct examplePioClass* epc_write( struct examplePioClass* this )
 {
     /* implementation of write */
-    printf(" examplePioClass::write \n");
-    //return this;
+    printf(" examplePioClass::write %d\n",this->someThing);
+    return this;
 }
 
-void epc_read( struct examplePioClass* this )
+struct examplePioClass* epc_read( struct examplePioClass* this )
 {
     /* implementation of read */
-    printf(" examplePioClass::read \n");
-    //return this;
+    printf(" examplePioClass::read %d\n",this->someThing);
+    return this;
 }
 
 struct examplePioClass* epc_new()
@@ -38,6 +39,7 @@ struct examplePioClass* epc_new()
     this->init = epc_init;
     this->write = epc_write;
     this->read = epc_read;
+    this->someThing = 10;
     return this;
 }
 
