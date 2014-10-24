@@ -33,6 +33,7 @@ module namelist_mod
        integration,   &       ! integration method
        tracer_advection_formulation, &   ! conservation or non-conservation formulaton
        use_semi_lagrange_transport , &   ! conservation or non-conservation formulaton
+       use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global 
        tstep_type, &
        cubed_sphere_map, &
        compute_mean_flux, &
@@ -281,6 +282,7 @@ module namelist_mod
                      integration,   &       ! integration method
                      tracer_advection_formulation, &
                      use_semi_lagrange_transport , &
+                     use_semi_lagrange_transport_local_conservation , &
                      tstep_type, &
                      npdg, &
                      compute_mean_flux, &
@@ -478,6 +480,7 @@ module namelist_mod
     tracer_advection_formulation  = TRACERADV_UGRADQ
 #endif
     use_semi_lagrange_transport   = .false.
+    use_semi_lagrange_transport_local_conservation   = .false.
     disable_diagnostics = .false.
 
 
@@ -898,6 +901,7 @@ module namelist_mod
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(tracer_advection_formulation,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(use_semi_lagrange_transport ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(use_semi_lagrange_transport_local_conservation ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(compute_mean_flux,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -1230,6 +1234,7 @@ module namelist_mod
        endif
        write(iulog,*)"readnl: tracer_advection_formulation  = ",tracer_advection_formulation
        write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport
+       write(iulog,*)"readnl: use_semi_lagrange_transport_local_conservation=",use_semi_lagrange_transport_local_conservation
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
