@@ -290,7 +290,7 @@ for mct, etc.
 
 <compiler COMPILER="intel" MACH="redsky">
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH></PNETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nc-config --flibs) </ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
 </compiler>

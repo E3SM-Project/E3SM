@@ -36,4 +36,7 @@ setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
 setenv NETCDF_INCLUDES $NETCDFROOT/include
 setenv NETCDF_LIBS $NETCDFROOT/lib
 
-
+# Get pnetcdf
+setenv PNETCDFROOT /projects/ccsm/pnetcdf1.2.0-intel
+setenv PATH $PNETCDFROOT/bin:$PATH
+setenv LD_LIBRARY_PATH $PNETCDFROOT/lib:$LD_LIBRARY_PATH
