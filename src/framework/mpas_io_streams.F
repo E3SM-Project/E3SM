@@ -18,6 +18,7 @@ module mpas_io_streams
 
    use mpas_attlist
    use mpas_grid_types
+   use mpas_kind_types, only : StrKIND
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
@@ -50,6 +51,7 @@ module mpas_io_streams
       integer :: framesPerFile
       integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
       logical :: clobberRecords = .false.
+      character(len=StrKIND) :: filename
       type (MPAS_IO_Handle_type) :: fileHandle
       type (att_list_type), pointer :: attList => null()
       type (field_list_type), pointer :: fieldList => null()
@@ -176,6 +178,7 @@ module mpas_io_streams
       stream % ioDirection = ioDirection
       stream % ioFormat = ioFormat
       stream % framesPerFile = framesPerFile
+      stream % filename = fileName
       if (present(clobberRecords)) then
          stream % clobberRecords = clobberRecords
       else
@@ -3116,10 +3119,13 @@ module mpas_io_streams
       !
       ! Check whether we will clobber any records
       !
-      if (.not. stream % clobberRecords) then
-         if (MPAS_io_would_clobber_records(stream % fileHandle, io_err)) then
+      if (MPAS_io_would_clobber_records(stream % fileHandle, io_err)) then
+         if (.not. stream % clobberRecords) then
             if (present(ierr)) ierr = MPAS_STREAM_CLOBBER_RECORD
             return
+         else
+            write(stderrUnit,'(a,i4,a)') 'MPAS I/O: Overwriting existing record ', frame, &
+                                         ' in output file '//trim(stream % filename)
          end if
       end if
 

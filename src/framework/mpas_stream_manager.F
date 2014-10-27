@@ -2248,7 +2248,7 @@ module mpas_stream_manager
             if (local_ierr /= 0) then
                 if (local_ierr == 1) then
                     STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
-                    STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
+                    STREAM_ERROR_WRITE('    combination of reference time, current time, and interval.')
                 end if
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2263,8 +2263,13 @@ module mpas_stream_manager
                                    truncateFiles=truncateFiles, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
+                    !
+                    ! We should have only reached this point if clobber_mode =  never_modify
+                    !
                     write(err_string,'(a)') 'Writing to stream '''//trim(stream % name)//''' would clobber file '''//&
-                                            trim(stream % filename)//''''
+                                            trim(stream % filename)//''','
+                    STREAM_ERROR_WRITE(trim(err_string))
+                    write(err_string,'(a)') '    but clobber_mode is set to ''never_modify''.'
                     STREAM_ERROR_WRITE(trim(err_string))
                     ierr = MPAS_STREAM_MGR_ERR_CLOBBER_FILE
                 else
@@ -2289,7 +2294,7 @@ module mpas_stream_manager
                 if (local_ierr /= 0) then
                     if (local_ierr == 1) then
                         STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
-                        STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
+                        STREAM_ERROR_WRITE('    combination of reference time, current time, and interval.')
                     end if
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
@@ -2316,8 +2321,13 @@ module mpas_stream_manager
                                            clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
                     if (local_ierr /= MPAS_STREAM_NOERR) then
                         if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
+                            !
+                            ! We should have only reached this point if clobber_mode =  never_modify
+                            !
                             write(err_string,'(a)') 'Writing to stream '''//trim(stream % name)//''' would clobber file '''//&
-                                                    trim(stream % filename)//''''
+                                                    trim(stream % filename)//''','
+                            STREAM_ERROR_WRITE(trim(err_string))
+                            write(err_string,'(a)') '    but clobber_mode is set to ''never_modify''.'
                             STREAM_ERROR_WRITE(trim(err_string))
                             ierr = MPAS_STREAM_MGR_ERR_CLOBBER_FILE
                         else
@@ -2367,8 +2377,13 @@ module mpas_stream_manager
 
         if (local_ierr /= MPAS_STREAM_NOERR) then
             if (local_ierr == MPAS_STREAM_CLOBBER_RECORD) then
+                !
+                ! We should have only reached this point if clobber_mode =  append
+                !
                 write(err_string,'(a,i4,a)') 'Writing to stream '''//trim(stream % name)//''' would overwrite record ', &
-                                             stream % nRecords, ' in file '''//trim(stream % filename)//''''
+                                             stream % nRecords, ' in file '''//trim(stream % filename)//''','
+                STREAM_ERROR_WRITE(trim(err_string))
+                write(err_string,'(a)') '    but clobber_mode is set to ''append''.'
                 STREAM_ERROR_WRITE(trim(err_string))
                 ierr = MPAS_STREAM_MGR_ERR_CLOBBER_REC
             else

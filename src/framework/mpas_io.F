@@ -379,6 +379,9 @@ module mpas_io
             MPAS_io_open % preexisting_file = .true.
          else
             pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_64BIT_OFFSET)
+            if (exists) then
+               write(stderrUnit,'(a)') 'MPAS I/O: Truncating existing data in output file '//trim(filename)
+            end if
          end if
       else
 !write(stderrUnit,*) 'MGD PIO_openfile'
