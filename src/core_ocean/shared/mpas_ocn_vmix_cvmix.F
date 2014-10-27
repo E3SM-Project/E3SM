@@ -154,7 +154,7 @@ contains
       !   mixing fields have to be added/merged together
       !
       !-----------------------------------------------------------------
-
+      
       !
       ! assume no errors during initialization and set to 1 when error is encountered
       !
@@ -166,7 +166,7 @@ contains
          timeLevel = 1
       end if
 
-!     write(stdoutUnit,*) 'TDR: ocn_vmix_coefs_cvmix_build enter'
+      !     write(stdoutUnit,*) 'TDR: ocn_vmix_coefs_cvmix_build enter'
       !
       ! only build up viscosity/diffusivity if CVMix is turned on
       !
@@ -231,7 +231,7 @@ contains
       !
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
- 
+
       vertViscTopOfCell = 0.0
       vertDiffTopOfCell = 0.0
 
@@ -247,8 +247,8 @@ contains
       ! start by adding the mininum background values to the visocity/diffusivity arrays
       !
       if (cvmixBackgroundOn) then
-        vertViscTopOfCell(:,:) = vertViscTopOfCell(:,:) + config_cvmix_background_viscosity
-        vertDiffTopOfCell(:,:) = vertDiffTopOfCell(:,:) + config_cvmix_background_diffusion
+         vertViscTopOfCell(:,:) = vertViscTopOfCell(:,:) + config_cvmix_background_viscosity
+         vertDiffTopOfCell(:,:) = vertDiffTopOfCell(:,:) + config_cvmix_background_diffusion
       endif
 
       !
@@ -275,213 +275,213 @@ contains
 
       do iCell = 1, nCells
 
-        ! specify geometry/location
-        cvmix_variables % SeaSurfaceHeight = ssh(iCell)
-        cvmix_variables % Coriolis = fCell(iCell)
-        cvmix_variables % lat = latCell(iCell) * 180.0 / 3.14
-        cvmix_variables % lon = lonCell(iCell) * 180.0 / 3.14
+         ! specify geometry/location
+         cvmix_variables % SeaSurfaceHeight = ssh(iCell)
+         cvmix_variables % Coriolis = fCell(iCell)
+         cvmix_variables % lat = latCell(iCell) * 180.0 / 3.14
+         cvmix_variables % lon = lonCell(iCell) * 180.0 / 3.14
 
-        ! fill vertical position of column
-        ! CVMix assume top of ocean is at z=0, so building all z-coordinate data based on layerThickness
-        cvmix_variables % zw_iface(1) = 0.0
-        cvmix_variables % dzw(1) = layerThickness(1,iCell)/2.0
-        cvmix_variables % zt_cntr(1) = -layerThickness(1,iCell)/2.0
-        do k=2,maxLevelCell(iCell)
-          cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
-          cvmix_variables % zt_cntr(k) = cvmix_variables %  zw_iface(k) - layerThickness(k,iCell)/2.0
-          cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zt_cntr(k) 
-          cvmix_variables % dzt(k) = layerThickness(k,iCell)
-        enddo
-        k = maxLevelCell(iCell)+1
-        cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
-        cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zw_iface(k)
-        do k = maxLevelCell(iCell) + 1, nVertLevels
-          cvmix_variables % zw_iface(k+1) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
-          cvmix_variables % zt_cntr(k) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
-          cvmix_variables % dzw(k+1) = 0.0
-          cvmix_variables % dzt(k) = 0.0
-        enddo
+         ! fill vertical position of column
+         ! CVMix assume top of ocean is at z=0, so building all z-coordinate data based on layerThickness
+         cvmix_variables % zw_iface(1) = 0.0
+         cvmix_variables % dzw(1) = layerThickness(1,iCell)/2.0
+         cvmix_variables % zt_cntr(1) = -layerThickness(1,iCell)/2.0
+         do k=2,maxLevelCell(iCell)
+            cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
+            cvmix_variables % zt_cntr(k) = cvmix_variables %  zw_iface(k) - layerThickness(k,iCell)/2.0
+            cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zt_cntr(k) 
+            cvmix_variables % dzt(k) = layerThickness(k,iCell)
+         enddo
+         k = maxLevelCell(iCell)+1
+         cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
+         cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zw_iface(k)
+         do k = maxLevelCell(iCell) + 1, nVertLevels
+            cvmix_variables % zw_iface(k+1) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
+            cvmix_variables % zt_cntr(k) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
+            cvmix_variables % dzw(k+1) = 0.0
+            cvmix_variables % dzt(k) = 0.0
+         enddo
 
-        ! fill the intent(in) convective adjustment
-        cvmix_variables % nlev = maxLevelCell(iCell)
-        cvmix_variables % OceanDepth = bottomDepth(iCell)
-        cvmix_variables % WaterDensity_cntr => density(:,iCell)
-        cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(:,iCell)
+         ! fill the intent(in) convective adjustment
+         cvmix_variables % nlev = maxLevelCell(iCell)
+         cvmix_variables % OceanDepth = bottomDepth(iCell)
+         cvmix_variables % WaterDensity_cntr => density(:,iCell)
+         cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(:,iCell)
 
-        ! eliminate 2dz mode from Ri
-        RiSmoothed(1:nVertLevels) = RiTopOfCell(1:nVertLevels,iCell)
-        RiSmoothed(nVertLevels+1) = RiSmoothed(nVertLevels)
-        do k=2,maxLevelCell(iCell)
-          ! For input to cvmix, Richardson number should be positive.
-          tmp(k) = max(0.0, (RiSmoothed(k-1)+2*RiSmoothed(k)+RiSmoothed(k+1))/4.0 )
-        enddo
-        k=1
-        tmp(k)=tmp(k+1)
-        k=maxLevelCell(iCell)+1
-        tmp(k:nVertLevels+1)=tmp(k-1)
-        RiSmoothed(:) = tmp(:)
-        cvmix_variables%ShearRichardson_iface => RiSmoothed
+         ! eliminate 2dz mode from Ri
+         RiSmoothed(1:nVertLevels) = RiTopOfCell(1:nVertLevels,iCell)
+         RiSmoothed(nVertLevels+1) = RiSmoothed(nVertLevels)
+         do k=2,maxLevelCell(iCell)
+            ! For input to cvmix, Richardson number should be positive.
+            tmp(k) = max(0.0, (RiSmoothed(k-1)+2*RiSmoothed(k)+RiSmoothed(k+1))/4.0 )
+         enddo
+         k=1
+         tmp(k)=tmp(k+1)
+         k=maxLevelCell(iCell)+1
+         tmp(k:nVertLevels+1)=tmp(k-1)
+         RiSmoothed(:) = tmp(:)
+         cvmix_variables%ShearRichardson_iface => RiSmoothed
 
-        ! eliminate 2dz mode from BVF
-        BVFSmoothed(1:nVertLevels) = BruntVaisalaFreqTop(1:nVertLevels,iCell)
-        BVFSmoothed(nVertLevels+1) = BVFSmoothed(nVertLevels)
-        do k=2,maxLevelCell(iCell)
-          tmp(k) = (BVFSmoothed(k-1)+2*BVFSmoothed(k)+BVFSmoothed(k+1))/4.0
-        enddo
-        k=1
-        tmp(k)=tmp(k+1)
-        k=maxLevelCell(iCell)+1
-        tmp(k:nVertLevels+1)=tmp(k-1)
-        BVFSmoothed(:) = tmp(:)
-        cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed
+         ! eliminate 2dz mode from BVF
+         BVFSmoothed(1:nVertLevels) = BruntVaisalaFreqTop(1:nVertLevels,iCell)
+         BVFSmoothed(nVertLevels+1) = BVFSmoothed(nVertLevels)
+         do k=2,maxLevelCell(iCell)
+            tmp(k) = (BVFSmoothed(k-1)+2*BVFSmoothed(k)+BVFSmoothed(k+1))/4.0
+         enddo
+         k=1
+         tmp(k)=tmp(k+1)
+         k=maxLevelCell(iCell)+1
+         tmp(k:nVertLevels+1)=tmp(k-1)
+         BVFSmoothed(:) = tmp(:)
+         cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed
 
-        ! fill the intent(in) KPP
-        cvmix_variables % SurfaceFriction = surfaceFrictionVelocity(iCell)
-        cvmix_variables % SurfaceBuoyancyForcing = surfaceBuoyancyForcing(iCell)
+         ! fill the intent(in) KPP
+         cvmix_variables % SurfaceFriction = surfaceFrictionVelocity(iCell)
+         cvmix_variables % SurfaceBuoyancyForcing = surfaceBuoyancyForcing(iCell)
 
-        ! call shear-based mixing scheme
-        if (config_use_cvmix_shear) then
-          cvmix_variables % Mdiff_iface(:)=0.0
-          cvmix_variables % Tdiff_iface(:)=0.0
-          call cvmix_coeffs_shear( &
+         ! call shear-based mixing scheme
+         if (config_use_cvmix_shear) then
+            cvmix_variables % Mdiff_iface(:)=0.0
+            cvmix_variables % Tdiff_iface(:)=0.0
+            call cvmix_coeffs_shear( &
                  cvmix_variables, &
                  cvmix_background_params, &
                  1, &
                  .false., &
                  cvmix_shear_params)
 
-        ! add shear mixing to vertical viscosity/diffusivity
-        ! at present, shear mixing adds in background values when using PP, but background is accounted for seperately. so remove background from shear mixing values
-        if(config_cvmix_shear_mixing_scheme=='PP') then
-          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
-          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
-        else
-          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
-          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
-        endif
+            ! add shear mixing to vertical viscosity/diffusivity
+            ! at present, shear mixing adds in background values when using PP, but background is accounted for seperately. so remove background from shear mixing values
+            if(config_cvmix_shear_mixing_scheme=='PP') then
+               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
+               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
+            else
+               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
+               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
+            endif
 
-        endif ! if (config_use_cvmix_shear)
+         endif ! if (config_use_cvmix_shear)
 
-        !
-        ! put tidal mixing here
-        !
+         !
+         ! put tidal mixing here
+         !
 
-        !
-        ! put double diffusion mxing here
-        !
+         !
+         ! put double diffusion mxing here
+         !
 
-        ! call kpp ocean mixed layer scheme
-        if (cvmixKPPOn) then
+         ! call kpp ocean mixed layer scheme
+         if (cvmixKPPOn) then
 
-        ! copy data into cvmix_variables, then iterate
-        cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
-        cvmix_variables % Tdiff_iface(:)=vertDiffTopOfCell(:,iCell)
-        cvmix_variables % BoundaryLayerDepth = boundaryLayerDepth(iCell)
-        cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
+            ! copy data into cvmix_variables, then iterate
+            cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
+            cvmix_variables % Tdiff_iface(:)=vertDiffTopOfCell(:,iCell)
+            cvmix_variables % BoundaryLayerDepth = boundaryLayerDepth(iCell)
+            cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
 
-        do iter=1,config_cvmix_kpp_niterate
+            do iter=1,config_cvmix_kpp_niterate
 
-          if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0) then
-             cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0 + 0.01
-          endif
+               if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0) then
+                  cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0 + 0.01
+               endif
 
-          if(cvmix_variables % BoundaryLayerDepth .gt. abs(cvmix_variables%zw_iface(maxLevelCell(iCell)+1))) then
-             cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables%zt_cntr(maxLevelCell(iCell))) + 0.01
-          endif
+               if(cvmix_variables % BoundaryLayerDepth .gt. abs(cvmix_variables%zw_iface(maxLevelCell(iCell)+1))) then
+                  cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables%zt_cntr(maxLevelCell(iCell))) + 0.01
+               endif
 
-          ! compute ocean boundary layer depth 
-          do k=1,maxLevelCell(iCell)
-            sigma(k) = -cvmix_variables % zt_cntr(k) / cvmix_variables % BoundaryLayerDepth
-            Nsqr_iface(k) = BVFSmoothed(k)
-          enddo
-          k=maxLevelCell(iCell)+1
-          sigma(k:nVertLevels) = sigma(k-1)
-          Nsqr_iface(k:nVertLevels+1) = Nsqr_iface(k-1)
+               ! compute ocean boundary layer depth 
+               do k=1,maxLevelCell(iCell)
+                  sigma(k) = -cvmix_variables % zt_cntr(k) / cvmix_variables % BoundaryLayerDepth
+                  Nsqr_iface(k) = BVFSmoothed(k)
+               enddo
+               k=maxLevelCell(iCell)+1
+               sigma(k:nVertLevels) = sigma(k-1)
+               Nsqr_iface(k:nVertLevels+1) = Nsqr_iface(k-1)
 
-          ! eliminate 2dz mode from N2
-          tmp(:)=0.0
-          do k=2,maxLevelCell(iCell)
-            tmp(k) = (Nsqr_iface(k-1)+2*Nsqr_iface(k)+Nsqr_iface(k+1))/4.0
-          enddo
-          k=maxLevelCell(iCell)+1
-          tmp(1)=tmp(2)
-          tmp(k:nVertLevels+1)=tmp(k-1)
-          Nsqr_iface(:)=tmp(:)
+               ! eliminate 2dz mode from N2
+               tmp(:)=0.0
+               do k=2,maxLevelCell(iCell)
+                  tmp(k) = (Nsqr_iface(k-1)+2*Nsqr_iface(k)+Nsqr_iface(k+1))/4.0
+               enddo
+               k=maxLevelCell(iCell)+1
+               tmp(1)=tmp(2)
+               tmp(k:nVertLevels+1)=tmp(k-1)
+               Nsqr_iface(:)=tmp(:)
 
-          ! compute the turbulent scales in order to compute the bulk Richardson number
-          call cvmix_kpp_compute_turbulent_scales( &
-            sigma(:), &
-            cvmix_variables % BoundaryLayerDepth, &
-            cvmix_variables % SurfaceBuoyancyForcing, &
-            cvmix_variables % SurfaceFriction, &
-            w_s = turbulentScalarVelocityScale(:) )
+               ! compute the turbulent scales in order to compute the bulk Richardson number
+               call cvmix_kpp_compute_turbulent_scales( &
+                    sigma(:), &
+                    cvmix_variables % BoundaryLayerDepth, &
+                    cvmix_variables % SurfaceBuoyancyForcing, &
+                    cvmix_variables % SurfaceFriction, &
+                    w_s = turbulentScalarVelocityScale(:) )
 
-          cvmix_variables % BulkRichardson_cntr  = cvmix_kpp_compute_bulk_Richardson( &
-            cvmix_variables % zt_cntr(1:nVertLevels), & 
-            bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
-            bulkRichardsonNumberShear(1:nVertLevels,iCell), &
-            ws_cntr = turbulentScalarVelocityScale(:), &
-            Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
+               cvmix_variables % BulkRichardson_cntr  = cvmix_kpp_compute_bulk_Richardson( &
+                    cvmix_variables % zt_cntr(1:nVertLevels), & 
+                    bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
+                    bulkRichardsonNumberShear(1:nVertLevels,iCell), &
+                    ws_cntr = turbulentScalarVelocityScale(:), &
+                    Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
 
-          ! compute the boundary layer depth based on model state at current time step
-          call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+               ! compute the boundary layer depth based on model state at current time step
+               call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
 
-          ! given current estimate of OBL and vertical profile of visc/diff, compute boundary layer mixing
-          call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
+               ! given current estimate of OBL and vertical profile of visc/diff, compute boundary layer mixing
+               call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
 
-        end do ! iterate
+            end do ! iterate
 
-        ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
-        boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
-        indexBoundaryLayerDepth(iCell) = cvmix_variables % kOBL_depth
-        bulkRichardsonNumber(:,iCell) = cvmix_variables % BulkRichardson_cntr(:)
+            ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
+            boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
+            indexBoundaryLayerDepth(iCell) = cvmix_variables % kOBL_depth
+            bulkRichardsonNumber(:,iCell) = cvmix_variables % BulkRichardson_cntr(:)
 
-        ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
-        ! if using KPP with "SimpleShape" matching, then the output from KPP needs to be added to current viscosity/diffusivity
-        if(config_cvmix_kpp_matching.eq."MatchBoth") then
-          vertViscTopOfCell(:,iCell) = cvmix_variables % Mdiff_iface(:)
-          vertDiffTopOfCell(:,iCell) = cvmix_variables % Tdiff_iface(:)
-        elseif(config_cvmix_kpp_matching.eq."SimpleShapes") then
-          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
-          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
-        else
-          stop
-        endif
+            ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
+            ! if using KPP with "SimpleShape" matching, then the output from KPP needs to be added to current viscosity/diffusivity
+            if(config_cvmix_kpp_matching.eq."MatchBoth") then
+               vertViscTopOfCell(:,iCell) = cvmix_variables % Mdiff_iface(:)
+               vertDiffTopOfCell(:,iCell) = cvmix_variables % Tdiff_iface(:)
+            elseif(config_cvmix_kpp_matching.eq."SimpleShapes") then
+               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
+               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
+            else
+               stop
+            endif
 
-        ! store non-local flux terms
-        ! these flux terms must be multiplied by the surfaceTracerFlux field
-        ! the tracer tendency is then the vertical divergence of vertNonLocalFlux*surfaceTracerFlux
-        ! both of these operations are done in ocn_tracer_nonlocalflux_tend routine
-        vertNonLocalFlux(index_vertNonLocalFluxTemp,:,iCell) = cvmix_variables % kpp_Tnonlocal_iface(:)
+            ! store non-local flux terms
+            ! these flux terms must be multiplied by the surfaceTracerFlux field
+            ! the tracer tendency is then the vertical divergence of vertNonLocalFlux*surfaceTracerFlux
+            ! both of these operations are done in ocn_tracer_nonlocalflux_tend routine
+            vertNonLocalFlux(index_vertNonLocalFluxTemp,:,iCell) = cvmix_variables % kpp_Tnonlocal_iface(:)
 
-        endif !if (config_use_cvmix_kpp)
+         endif !if (config_use_cvmix_kpp)
 
-        ! call convective mixing scheme
-        if (config_use_cvmix_convection) then
-          cvmix_variables % Mdiff_iface(:)=0.0
-          cvmix_variables % Tdiff_iface(:)=0.0
-          call cvmix_coeffs_conv( CVmix_vars = cvmix_variables )
+         ! call convective mixing scheme
+         if (config_use_cvmix_convection) then
+            cvmix_variables % Mdiff_iface(:)=0.0
+            cvmix_variables % Tdiff_iface(:)=0.0
+            call cvmix_coeffs_conv( CVmix_vars = cvmix_variables )
 
-          ! add convective mixing to vertical viscosity/diffusivity
-          ! if using KPP, then do not apply convective mixing within the ocean boundary layer
-          if(config_use_cvmix_kpp) then
-            do k = int(indexBoundaryLayerDepth(iCell)) + 1, maxLevelCell(iCell)
-              vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
-              vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
-            enddo
-          else
-            vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
-            vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
-          endif
-        endif  ! if (config_use_cvmix_convection)
+            ! add convective mixing to vertical viscosity/diffusivity
+            ! if using KPP, then do not apply convective mixing within the ocean boundary layer
+            if(config_use_cvmix_kpp) then
+               do k = int(indexBoundaryLayerDepth(iCell)) + 1, maxLevelCell(iCell)
+                  vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
+                  vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
+               enddo
+            else
+               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
+               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
+            endif
+         endif  ! if (config_use_cvmix_convection)
 
-        ! computation of viscosity/diffusivity complete
-        ! impose no-flux boundary conditions at top and bottom by zero viscosity/diffusivity
-        vertViscTopOfCell(1,iCell) = 0.0
-        vertDiffTopOfCell(1,iCell) = 0.0
-        vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
-        vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
-  
+         ! computation of viscosity/diffusivity complete
+         ! impose no-flux boundary conditions at top and bottom by zero viscosity/diffusivity
+         vertViscTopOfCell(1,iCell) = 0.0
+         vertDiffTopOfCell(1,iCell) = 0.0
+         vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
+         vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
+
       end do  ! do iCell=1,mesh%nCells
 
       ! dellocate cmvix variables
@@ -493,7 +493,7 @@ contains
       deallocate(cvmix_variables % dzt)
       deallocate(cvmix_variables % kpp_Tnonlocal_iface)
       deallocate(cvmix_variables % BulkRichardson_cntr)
-  
+
       deallocate(sigma)
       deallocate(Nsqr_iface)
       deallocate(turbulentScalarVelocityScale)
