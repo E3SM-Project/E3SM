@@ -420,7 +420,7 @@
 					description="Prandtl number to be used within the CVMix parameterization suite"
 					possible_values="Any non-negative real value."
 		/>
-		<nml_option name="config_use_cvmix_background" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_background" type="logical" default_value=".true." units="NA"
 					description="If true, background diffusivity and viscosity is computed using CVMix"
 					possible_values="True or False"
 		/>
@@ -444,7 +444,7 @@
 					description="Convective vertical viscosity applied to horizontal velocity components"
 					possible_values="Any positive real value."
 		/>
-                <nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".false." units="NA"
+                <nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".true." units="NA"
                                         description="If true, convection is triggered based on value of config_cvmix_convective_triggerBVF"
                                         possible_values="True or False"
                 />
