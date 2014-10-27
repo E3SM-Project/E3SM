@@ -564,6 +564,7 @@ contains
            shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
            RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10)
           end do
+          RiTopOfCell(1,iCell) = RiTopOfCell(2,iCell)
       end do
 
       !

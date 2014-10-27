@@ -312,7 +312,8 @@ contains
         RiSmoothed(1:nVertLevels) = RiTopOfCell(1:nVertLevels,iCell)
         RiSmoothed(nVertLevels+1) = RiSmoothed(nVertLevels)
         do k=2,maxLevelCell(iCell)
-          tmp(k) = (RiSmoothed(k-1)+2*RiSmoothed(k)+RiSmoothed(k+1))/4.0
+          ! For input to cvmix, Richardson number should be positive.
+          tmp(k) = max(0.0, (RiSmoothed(k-1)+2*RiSmoothed(k)+RiSmoothed(k+1))/4.0 )
         enddo
         k=1
         tmp(k)=tmp(k+1)
@@ -354,6 +355,9 @@ contains
         if(config_cvmix_shear_mixing_scheme=='PP') then
           vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
           vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
+        else
+          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
+          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
         endif
 
         endif ! if (config_use_cvmix_shear)
