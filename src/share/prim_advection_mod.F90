@@ -2862,7 +2862,6 @@ end subroutine ALE_parametric_coords
   use hybvcoord_mod, only : hvcoord_t
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
   use control_mod, only : rsplit, tracer_transport_type 
-  use control_mod, only : TRACERTRANSPORT_FLUXFORM_FVM,TRACERTRANSPORT_LAGRANGIAN_FVM
   use parallel_mod, only : abortmp
   use hybrid_mod     , only : hybrid_t
   use derivative_mod, only : interpolate_gll2fvm_points
