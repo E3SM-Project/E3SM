@@ -1494,7 +1494,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use control_mod, only : moisture, tracer_grid_type
   use control_mod, only : TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
-  use fvm_control_volume_mod, only : fvm_struct
+  use fvm_control_volume_mod, only : fvm_struct, n0_fvm
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
   type(fvm_struct)     , intent(inout) :: fvm(:)
@@ -1545,30 +1545,28 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
      enddo
-     if (tracer_grid_type == TRACER_GRIDTYPE_FVM) then
-        ! Repeat for the fvm tracers
-        do q = 1, ntrac
-           do k = 1, nlev
-              do j = 1, nc
-                 do i = 1, nc
-                    v1 = fvm(ie)%fc(i,j,k,q)
-                    if (fvm(ie)%c(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                       if (fvm(ie)%c(i,j,k,q,np1_qdp) < 0 ) then
-                          v1 = 0  ! C already negative, dont make it more so
-                       else
-                          v1 = -fvm(ie)%c(i,j,k,q,np1_qdp)
-                       end if
+     ! Repeat for the fvm tracers
+     do q = 1, ntrac
+        do k = 1, nlev
+           do j = 1, nc
+              do i = 1, nc
+                 v1 = fvm(ie)%fc(i,j,k,q)
+                 if (fvm(ie)%c(i,j,k,q,n0_fvm) + v1 < 0 .and. v1<0) then
+                    if (fvm(ie)%c(i,j,k,q,n0_fvm) < 0 ) then
+                       v1 = 0  ! C already negative, dont make it more so
+                    else
+                       v1 = -fvm(ie)%c(i,j,k,q,n0_fvm)
                     end if
-                    fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,np1_qdp) + v1
-                    !                    if (q == 1) then
-                    !!XXgoldyXX: Should update the pressure forcing here??!!??
-                    !                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                    !                  end if
-                 end do
+                 end if
+                 fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,n0_fvm) + v1
+                 !                    if (q == 1) then
+                 !!XXgoldyXX: Should update the pressure forcing here??!!??
+                 !                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                 !                  end if
               end do
            end do
         end do
-     end if
+     end do
 
      if (wet .and. qsize>0) then
         ! to conserve dry mass in the precese of Q1 forcing:
