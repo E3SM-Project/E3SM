@@ -81,7 +81,6 @@ contains
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
     use physical_constants, only : dd_pi
     use control_mod, only : tracer_transport_type
-    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
     use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 
     type (element_t), intent(in) :: elem(:)
@@ -469,8 +468,7 @@ contains
        !
        ! fvm diagnostics
        !
-       if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
-           tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+       if (ntrac>0) then
           write(iulog,'(A36)') "-----------------------------------"
           write(iulog,'(A36)') "fvm diagnostics                    "
           write(iulog,'(A36)') "-----------------------------------"
