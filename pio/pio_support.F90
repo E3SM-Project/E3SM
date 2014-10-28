@@ -501,7 +501,7 @@ contains
                   call mpi_irecv ( recvbuf(displs+1), recvcnt, &
                                    recvtype, p, mtag, comm, rcvid(head), &
                                    ier )
-                  call mpi_send ( hs, 1, recvtype, p, mtag, comm, ier )
+                  call mpi_send ( hs, 1, MPI_INTEGER, p, mtag, comm, ier )
                end if
             end if
          end do
@@ -520,7 +520,7 @@ contains
       else
 
          if (sendcnt > 0) then
-            call mpi_recv  ( hs, 1, sendtype, root, mtag, comm, &
+            call mpi_recv  ( hs, 1, MPI_INTEGER, root, mtag, comm, &
                              status, ier )
             call mpi_rsend ( sendbuf, sendcnt, sendtype, root, mtag, &
                              comm, ier )

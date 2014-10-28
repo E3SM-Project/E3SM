@@ -677,6 +677,7 @@ contains
     endif
 
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
+    if (ierr /= PIO_NOERR) varid = 0
     if(ios%async_interface.or.ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%IOMaster,ios%my_comm,ierr2)
     end if
