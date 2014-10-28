@@ -1,10 +1,13 @@
 program pioperformance
   use mpi
   use perf_mod, only : t_initf, t_finalizef
+  use pio, only : pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
   implicit none
   integer :: ierr, mype, npe, i
   character(len=256) :: decompfile(64)
-  namelist /pioperf/ decompfile
+  character(len=8) :: pio_typenames(4)
+  integer :: piotypes(4), niotypes
+  namelist /pioperf/ decompfile, pio_typenames
 
   !
   ! Initialize MPI
@@ -16,32 +19,57 @@ program pioperformance
   call MPI_Comm_size(MPI_COMM_WORLD, npe,  ierr)
   call CheckMPIreturn(__LINE__,ierr)
   decompfile = ' '
+  pio_typenames = ' '
+  piotypes = -1
   if(mype==0) then
      open(unit=12,file='pioperf.nl',status='old')
      read(12,pioperf)
      close(12)
+
+     do i=1,4
+        if(pio_typenames(i) .eq. 'netcdf') then
+           piotypes(i) = PIO_IOTYPE_NETCDF
+        else if(pio_typenames(i) .eq. 'netcdf4p') then
+           piotypes(i) = PIO_IOTYPE_NETCDF4P
+        else if(pio_typenames(i) .eq. 'netcdf4c') then
+           piotypes(i) = PIO_IOTYPE_NETCDF4C
+        else if(pio_typenames(i) .eq. 'pnetcdf') then
+           piotypes(i) = PIO_IOTYPE_PNETCDF
+        else
+           exit
+        endif
+     enddo
+
   endif
 
   call MPI_Bcast(decompfile,256*64,MPI_CHAR,0, MPI_COMM_WORLD,ierr)
-
+  call MPI_Bcast(piotypes,4, MPI_INT, 0, MPI_COMM_WORLD,ierr)
   call t_initf('pioperf.nl', LogPrint=.false.)
+  niotypes = 0
+  do i=1,4
+     if (piotypes(i) > -1) niotypes = niotypes+1
+  enddo
+
+
   do i=1,64
      if(len_trim(decompfile(i))==0) exit
      if(mype == 0) print *, decompfile(i)
 
-     call pioperformancetest(decompfile(i), mype, npe)
+     call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe)
   enddo
   call t_finalizef()
 
   call MPI_Finalize(ierr)
 contains
 
-  subroutine pioperformancetest(filename, mype, npe_base)
+  subroutine pioperformancetest(filename, piotypes, mype, npe_base)
     use pio
     use pio_support, only : pio_readdof
     use perf_mod
     character(len=*), intent(in) :: filename
     integer, intent(in) :: mype, npe_base
+    integer, intent(in) :: piotypes(:)
+
     integer(kind=PIO_Offset_kind), pointer :: compmap(:)
     integer :: ntasks
     integer :: comm
@@ -62,7 +90,7 @@ contains
     integer :: ierr
     integer(pio_offset_kind) :: frame=1
     integer :: iotype, rearr, rearrtype
-    integer :: j
+    integer :: j, k, errorcnt
     integer :: nframes = 5
     double precision :: wall(2), sys(2), usr(2)
     
@@ -99,34 +127,40 @@ contains
 !       ifld = mype
        rfld = mype
        dfld = mype
-       iotype = PIO_IOTYPE_PNETCDF
-
        do j=1,maplen
           ifld(j) = mype*1000000 + compmap(j)
        enddo
-       rearr = PIO_REARR_SUBSET
-       do rearrtype=1,2
 
-          do niotasks=npe,1,-1
+       do k=1,size(piotypes)
+          iotype = piotypes(k)
+          call MPI_Barrier(comm,ierr)
+          if(mype==0) then
+             print *,'iotype=',piotypes(k)
+          endif
+          rearr = PIO_REARR_SUBSET
+          do rearrtype=1,2
+
+             do niotasks=npe,1,-1
 !       do rearrtype=1,1
 !          do niotasks=npe,2048,-1
-             stride = max(1,npe/niotasks)
-             if(real(stride) == real(npe)/real(niotasks)) then
-                call pio_init(mype, comm, niotasks, 0, stride, PIO_REARR_SUBSET, iosystem)
-                
-                write(fname, '(a,i1,a,i4.4,a)') 'pioperf.',rearrtype,'-',niotasks,'.nc'
-                ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname))
-                
-                call WriteMetadata(File, gdims, vari, varr, vard)
-                call t_stampf(wall(1), usr(1), sys(1))
-                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
-                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
-                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
-
-                do frame=1,nframes
+                stride = max(1,npe/niotasks)
+                if(real(stride) == real(npe)/real(niotasks)) then
+                   call pio_init(mype, comm, niotasks, 0, stride, PIO_REARR_SUBSET, iosystem)
                    
-                   call PIO_setframe(File, vari, frame)
-                   call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
+                   write(fname, '(a,i1,a,i4.4,a)') 'pioperf.',rearrtype,'-',niotasks,'.nc'
+                   ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname))
+                   
+                   call WriteMetadata(File, gdims, vari, varr, vard)
+                   call MPI_Barrier(comm,ierr)
+                   call t_stampf(wall(1), usr(1), sys(1))
+                   call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+                   call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+                   call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+                   
+                   do frame=1,nframes
+                      
+                      call PIO_setframe(File, vari, frame)
+                      call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 !!$
 !!$                   
 !!$                   call PIO_setframe(File, varr, frame)
@@ -138,51 +172,61 @@ contains
 !!$                   call pio_write_darray(File, vard, iodesc_r8, dfld, ierr)
 !!$
 !!$
-                enddo
-                call pio_closefile(File)
-                call t_stampf(wall(2), usr(2), sys(2))
-                wall(1) = wall(2)-wall(1)
-                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
-                if(mype==0) then
-                   ! print out performance in MB/s
-                   print *, 'write ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
-                end if
+                   enddo
+                   call pio_closefile(File)
+                   call MPI_Barrier(comm,ierr)
+                   call t_stampf(wall(2), usr(2), sys(2))
+                   wall(1) = wall(2)-wall(1)
+                   call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
+                   if(mype==0) then
+                      ! print out performance in MB/s
+                      print *, 'write ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
+                   end if
 
 ! Now the Read
-                ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
-                ierr =  pio_inq_varid(File, 'vari', vari)
-                call t_stampf(wall(1), usr(1), sys(1))
+                   ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
+                   ierr =  pio_inq_varid(File, 'vari', vari)
+                   call MPI_Barrier(comm,ierr)
+                   call t_stampf(wall(1), usr(1), sys(1))
 
-                do frame=1,nframes                   
-                   call PIO_setframe(File, vari, frame)
-                   call pio_read_darray(File, vari, iodesc_i4, ifld_in, ierr)
-                enddo
+                   do frame=1,nframes                   
+                      call PIO_setframe(File, vari, frame)
+                      call pio_read_darray(File, vari, iodesc_i4, ifld_in, ierr)
+                   enddo
+                   
+                   call pio_closefile(File)
+                   call MPI_Barrier(comm,ierr)
+                   call t_stampf(wall(2), usr(2), sys(2))
+                   wall(1) = wall(2)-wall(1)
+                   call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
+                   errorcnt = 0
+                   do j=1,maplen
+                      if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
+                         print *,__LINE__,j,ifld(j),ifld_in(j),compmap(j)
+                         errorcnt = errorcnt+1
+                      endif
+                   enddo
+                   j = errorcnt
+                   call MPI_Reduce(j, errorcnt, 1, MPI_INT, MPI_SUM, 0, comm, ierr)
 
-                call pio_closefile(File)
-                call t_stampf(wall(2), usr(2), sys(2))
-                wall(1) = wall(2)-wall(1)
-                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
-                do j=1,maplen
-                   if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
-                      print *,__LINE__,j,ifld(j),ifld_in(j),compmap(j)
-                   endif
-                enddo
-
-                if(mype==0) then
-                   print *, 'read ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
-                end if
+                   if(mype==0) then
+                      if(errorcnt > 0) then
+                         print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
+                      endif
+                      print *, 'read ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
+                   end if
 
 
-                call PIO_freedecomp(iosystem, iodesc_r4)
-                call PIO_freedecomp(iosystem, iodesc_r8)
-                call PIO_freedecomp(iosystem, iodesc_i4)
+                   call PIO_freedecomp(iosystem, iodesc_r4)
+                   call PIO_freedecomp(iosystem, iodesc_r8)
+                   call PIO_freedecomp(iosystem, iodesc_i4)
              
-                call pio_finalize(iosystem, ierr)
-             endif
+                   call pio_finalize(iosystem, ierr)
+                endif
+             enddo
+             rearr = PIO_REARR_BOX
           enddo
-          rearr = PIO_REARR_BOX
        enddo
-
 !       deallocate(compmap)
        deallocate(ifld)
        deallocate(ifld_in)
