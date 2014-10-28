@@ -351,7 +351,6 @@ module mpas_core
       call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=ierr)
       alarmStartTime = startTime + alarmTimeStep
       call mpas_add_clock_alarm(clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
       ! set restart alarm, if necessary
       if (trim(config_restart_interval) /= "none") then
