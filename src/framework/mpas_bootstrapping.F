@@ -138,7 +138,7 @@ module mpas_bootstrapping
       nHalos = config_num_halos
 
 
-      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
          write(stderrUnit,*) ' '
          write(stderrUnit,*) '************************************************************************************'

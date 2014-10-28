@@ -36,6 +36,7 @@ module mpas_stream_list
         integer :: maxRecords
         integer :: nRecords
         integer :: precision = MPAS_IO_NATIVE_PRECISION
+        integer :: clobber_mode
         type (MPAS_TimeInterval_type), pointer :: recordInterval => null()
         type (MPAS_stream_list_type), pointer :: alarmList_in => null()
         type (MPAS_stream_list_type), pointer :: alarmList_out => null()
