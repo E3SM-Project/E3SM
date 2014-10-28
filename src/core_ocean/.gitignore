@@ -1,5 +1,9 @@
 # Ignore all cvmix code.
 cvmix
+.cvmix_all
+.*.zip
 
 # Ignore processed registry files.
 */Registry_processed.xml
+
+

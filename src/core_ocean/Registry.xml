@@ -432,16 +432,16 @@
 					description="Prandtl number to be used within the CVMix parameterization suite"
 					possible_values="Any non-negative real value."
 		/>
-		<nml_option name="config_use_cvmix_background" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_background" type="logical" default_value=".true." units="NA"
 					description="If true, background diffusivity and viscosity is computed using CVMix"
 					possible_values="True or False"
 		/>
 		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
-					description="Backround vertical diffusion applied to tracer quantities"
+					description="Background vertical diffusion applied to tracer quantities"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
-					description="Backround vertical viscosity applied to horizontal velocity"
+					description="Background vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false." units="NA"
@@ -453,24 +453,88 @@
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_cvmix_convective_viscosity" type="real" default_value="1.0" units="m^2 s^{-1}"
-					description="Convective vertical viscosity applied to horizontal velocity"
+					description="Convective vertical viscosity applied to horizontal velocity components"
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".true." units="NA"
+					description="If true, convection is triggered based on value of config_cvmix_convective_triggerBVF"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_convective_triggerBVF" type="real" default_value="0.0" units="s^{-2}"
+					description="Value of Brunt Viasala frequency squared below which convective mixing is triggered"
+					possible_values="Any real value"
+		/>
+		<nml_option name="config_use_cvmix_shear" type="logical" default_value=".false." units="NA"
+					description="If true, shear-based mixing is computed using CVMix"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
+					description="Choose between Pacanowski/Philander or Large et al. shear mixing"
+					possible_values="PP or KPP"
+		/>
+		<nml_option name="config_cvmix_shear_PP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Numerator of Pacanowski and Philander (1981) Eq (1)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_PP_alpha" type="real" default_value="5.0" units="unitless"
+					description="Alpha values used in Pacanowski and Philander (1981) Eqs (1) and (2)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_PP_exp" type="real" default_value="2.0" units="unitless"
+					description="Exponent used in denominator of Pacanowski and Philander (1981) Eqs (1)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Maximum diffusivity produced by shear-generated mixing"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_Ri_zero" type="real" default_value="0.7" units="non-dimensional"
+					description="Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="3" units="NA"
+					description="Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_use_cvmix_tidal_mixing" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix tidal mixing"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_use_cvmix_double_diffusion" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix double diffusion"
+					possible_values="True or False"
 		/>
 		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_cvmix_kpp_niteratorOBL_solver" type="integer" default_value="2" units="NA"
-					description="Number of iteration to solve for KPP ocean boundary layer depth"
+		<nml_option name="config_cvmix_kpp_niterate" type="integer" default_value="2" units="NA"
+					description="Number of iterations used to solve for KPP ocean boundary layer depth"
 					possible_values="Any positive integer"
 		/>
 		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
-					description="critical bulk Richardson number used to determine bottom of ocean mixed layer"
+					description="Critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="unitless"
-					description="determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
+		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="NA"
+					description="Determines how the KPP diffusivities are matched to values at base of boundary layer"
+					possible_values="MatchBoth, MatchGradient, SimpleShapes"
+		/>
+		<nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is limited by Ekman layer depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_MonObOBL" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is limited by Monin-Obukhov layer depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="NA"
+					description="Determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
 					possible_values="linear, quadratic, cubic"
+		/>
+		<nml_option name="config_cvmix_kpp_surface_layer_extent" type="real" default_value="0.1" units="non-dimensional"
+					description="The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth"
+					possible_values="Any value between 0 and 1"
 		/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
@@ -650,22 +714,22 @@
 		/>
 	</nml_record>
 	<nml_record name="debug" in_defaults="true">
-                <nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
-                                        description="If true, disables k33 portion of Redi neutral surface mixing." 
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_disable_redi_horizontal_term1" type="logical" default_value=".false." units="unitless"
-                                        description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_disable_redi_horizontal_term2" type="logical" default_value=".false." units="unitless"
-                                        description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_disable_redi_horizontal_term3" type="logical" default_value=".false." units="unitless"
-                                        description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
-                                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
+					description="If true, disables k33 portion of Redi neutral surface mixing." 
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term1" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term2" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term3" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
 					possible_values=".true. or .false."
@@ -752,6 +816,10 @@
 		/>
 		<nml_option name="config_disable_tr_sflux" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on tracer fields from surface fluxes."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_nonlocalflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes."
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
@@ -975,11 +1043,13 @@
 			<var name="vertDiffTopOfCell"/>
 			<var name="bulkRichardsonNumber"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="boundaryLayerDepthEdge"/>
 			<var name="indexBoundaryLayerDepth"/>
+			<var name="indexSurfaceLayerDepth"/>
 			<var name="surfaceFrictionVelocity"/>
 			<var name="windStressZonalDiag"/>
 			<var name="windStressMeridionalDiag"/>
-			<var name="buoyancyForcingOBL"/>
+			<var name="surfaceBuoyancyForcing"/>
 			<var name="areaCellGlobal"/>
 			<var name="areaEdgeGlobal"/>
 			<var name="areaTriangleGlobal"/>
@@ -1014,6 +1084,7 @@
 			<var name="avgSSHGradientZonal"/>
 			<var name="avgSSHGradientMeridional"/>
 			<var name="surfaceWindStressMagnitude"/>
+			<var name="surfaceWindStress"/>
 			<var name="surfaceMassFlux"/>
 			<var name="seaSurfacePressure"/>
 			<var name="seaIceEnergy"/>
@@ -1044,13 +1115,13 @@
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 			<var name="relativeSlopeTopOfCell"/>
-                        <var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTaperingCell"/>
 			<var name="relativeSlopeTopOfCellX"/>
 			<var name="relativeSlopeTopOfCellY"/>
 			<var name="relativeSlopeTopOfCellZ"/>
 			<var name="relativeSlopeTopOfCellZonal"/>
 			<var name="relativeSlopeTopOfCellMeridional"/>
-                        <var name="k33"/>
+			<var name="k33"/>
 			<var name="GMBolusVelocityX"/>
 			<var name="GMBolusVelocityY"/>
 			<var name="GMBolusVelocityZonal"/>
@@ -1060,6 +1131,7 @@
 			<var name="gmStreamFuncTopOfEdge"/>
 			<var name="GMStreamFuncX"/>
 			<var name="GMStreamFuncY"/>
+			<var name="vertNonLocalFluxTemp"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1391,6 +1463,20 @@
 				description="Tracer of 1 extrapolated to ocean surface"
 			/>
 		</var_array>
+		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time">
+			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
+				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="PSU" name_in_code="salinitySurfaceLayerValue"
+				description="salinity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+			<var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="na"
+				description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+		</var_array>
+		<var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" streams="" units="m s^{-1}"
+			 description="normal velocity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+		/>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
 			<var name="surfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
 				 description="Zonal surface velocity reconstructed at cell centers"
@@ -1398,7 +1484,6 @@
 			/>
 			<var name="surfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
 				 description="Meridional surface velocity reconstructed at cell centers"
-				
 			/>
 		</var_array>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
@@ -1476,7 +1561,6 @@
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 			 description="kinetic energy of horizonal velocity on cells"
 		/>
-
 		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Eddy flux in Gent-McWilliams eddy parameterization"
 		/>
@@ -1511,7 +1595,6 @@
 		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
 			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
 		/>
-
 		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^{-2}"
 			 description="Barotropic tendency computed from the baroclinic equations in stage 1 of the split-explicit algorithm."
 		/>
@@ -1549,7 +1632,6 @@
 		<var name="transportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
 		/>
-
 		<var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Gradient of sea surface height at edges."
 		/>
@@ -1587,7 +1669,6 @@
 		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
 		/>
-
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
 			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
 		/>
@@ -1604,42 +1685,33 @@
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="bulk Richardson number"
+			 description="CVMix/KPP: bulk Richardson number"
 		/>
 		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="contribution of buoyancy to bulk Richardson number"
+			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
 		/>
 		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="contribution of shear to bulk Richardson number"
+			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
-			 description="diagnosed depth of the ocean surface boundary layer"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
 		/>
 		<var name="boundaryLayerDepthEdge" type="real" dimensions="nEdges Time" units="m"
-			 description="diagnosed depth of the ocean surface boundary layer averaged to cell edges"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer averaged to cell edges"
 		/>
 		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time">
 			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
-				 description="nonlocal boundary layer mixing term for temperature"
-			/>
-			<var name="vertNonLocalFluxSalt" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxSalt"
-				 description="nonlocal boundary layer mixing term for salinity"
-			/>
-			<var name="vertNonLocalFluxZonalVel" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxZonalVel"
-				 description="nonlocal boundary layer mixing term for zonal velocity"
-			/>
-			<var name="vertNonLocalFluxMeridVel" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxMeridVel"
-				 description="nonlocal boundary layer mixing term for meridional velocity"
-			/>
+				 description="CVMix/KPP: nonlocal boundary layer mixing term for temperature"
+		/>
 		</var_array>
-		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time" units="none"
-			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
+		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
+			 description="CVMix/KPP: int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
 		/>
-		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" units="none"
-			 description="surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
+		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" streams="o" units="none"
+			 description="CVMix/KPP: surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
 		/>
-		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
-			 description="diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
+		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
+			 description="CVMix/KPP: diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
 		/>
 		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
@@ -1648,10 +1720,10 @@
 			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
 		/>
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
-			 description="Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 		/>
-		<var name="buoyancyForcingOBL" type="real" dimensions="nCells Time" units="m s^{-3}"
-			 description="diagnosed buoyancy forcing due to heat, salt and freshwater fluxes averaged over ocean boundary layer depth"
+		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
+			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 		/>
 
 		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
@@ -1674,16 +1746,16 @@
 		/>
 		<var name="relativeSlopeTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
-                />
-                <var name="relativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
-                         description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
 		/>
-                <var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
-                         description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell > config_gm_max_slope"
-                />
-                <var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
-                         description="averaging of relativeSlopeTapering function to cell centers"
-                />
+		<var name="relativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
+			 description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
+		/>
+		<var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
+			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell > config_gm_max_slope"
+		/>
+		<var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
+			 description="averaging of relativeSlopeTapering function to cell centers"
+		/>
 		<var name="relativeSlopeTopOfCellX" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 		/>
@@ -1780,7 +1852,7 @@
 			 description="time-averaged vertical GM Bolus velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
 		/>
 	</var_struct>
-        <var_struct name="forcing" time_levs="1">
+	<var_struct name="forcing" time_levs="1">
 		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
 			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>

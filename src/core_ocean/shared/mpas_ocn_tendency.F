@@ -28,6 +28,7 @@ module ocn_tendency
 
    use ocn_tracer_advection
    use ocn_tracer_short_wave_absorption
+   use ocn_tracer_nonlocalflux
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -332,13 +333,13 @@ contains
         tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, transmissionCoefficients, zMid, relativeSlopeTopOfEdge, &
         relativeSlopeTapering, relativeSlopeTaperingCell
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        tracers, tend_tr
+        tracers, tend_tr, vertNonLocalFlux
 
       integer :: err, iEdge, k
       integer, pointer :: nVertLevels, nEdges, indexTemperature
       integer :: timeLevel
 
-      logical, pointer :: config_disable_tr_all_tend
+      logical, pointer :: config_disable_tr_all_tend, config_use_cvmix_kpp
 
       call mpas_timer_start("ocn_tend_tracer")
 
@@ -349,6 +350,7 @@ contains
       end if
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
@@ -361,6 +363,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTapering', relativeSlopeTapering)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTaperingCell', relativeSlopeTaperingCell)
+      call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
 
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
@@ -420,6 +423,15 @@ contains
       call mpas_timer_start("short wave", .false.)
       call ocn_tracer_short_wave_absorption_tend(meshPool, indexTemperature, layerThickness, penetrativeTemperatureFlux, tend_tr, err)
       call mpas_timer_stop("short wave")
+
+      !
+      ! Compute tracer tendency due to non-local flux computed in KPP
+      !
+      if (config_use_cvmix_kpp) then
+        call mpas_timer_start("non-local flux from KPP", .false.)
+        call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, surfaceTracerFlux, tend_tr, err)
+        call mpas_timer_stop("non-local flux from KPP")
+      endif
 
       call mpas_timer_stop("ocn_tend_tracer")
 

@@ -117,6 +117,7 @@ module ocn_time_integration_rk4
       logical, pointer :: config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_filter_btr_mode, config_use_freq_filtered_thickness
       logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_cvmix_kpp
       real (kind=RKIND), pointer :: config_mom_del4
 
       ! State indices
@@ -164,6 +165,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       ! Diagnostics Field Pointers
+      type (field1DReal), pointer :: boundaryLayerDepthField
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
 
       ! State/Tend Field Pointers
@@ -178,6 +180,8 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
       call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
       call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
+
       !
       ! Initialize time_levs(2) with state at current time
       ! Initialize first RK state
@@ -299,10 +303,17 @@ module ocn_time_integration_rk4
       ! BEGIN RK loop 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do rk_step = 1, 4
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
         ! Update halos for diagnostic variables.
+        call mpas_timer_start("RK4-boundary layer depth halo update")
+        if (config_use_cvmix_kpp) then
+           call mpas_pool_get_field(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepthField)
+           call mpas_dmpar_exch_halo_field(boundaryLayerDepthField)
+        end if
+        call mpas_timer_stop("RK4-boundary layer depth halo update")
+
         call mpas_timer_start("RK4-diagnostic halo update")
-        call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
         call mpas_pool_get_field(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdgeField)
         call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)
