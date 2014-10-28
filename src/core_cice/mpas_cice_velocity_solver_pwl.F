@@ -86,8 +86,8 @@ contains
          basisIntegralsU, &
          basisIntegralsV
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "maxEdges", maxEdges)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
 
     call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
     call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
@@ -156,7 +156,7 @@ contains
     use cice_numerics, only: &
          cice_solve_linear_basis_system
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
+    type(MPAS_pool_type), pointer :: &
          mesh !< Input: 
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &    
@@ -213,6 +213,7 @@ contains
     real(kind=RKIND), dimension(:,:), allocatable :: &
          subBasisGradientU, &
          subBasisGradientV, &
+         subBasisConstant, &
          subCellgradientU, &
          subCellgradientV
 
@@ -230,6 +231,7 @@ contains
 
     allocate(subBasisGradientU(maxEdges,3))
     allocate(subBasisGradientV(maxEdges,3))
+    allocate(subBasisConstant(maxEdges,3))
     allocate(subCellgradientU(maxEdges,maxEdges))
     allocate(subCellgradientV(maxEdges,maxEdges))
     allocate(basisSubArea(maxEdges))
@@ -296,8 +298,9 @@ contains
 
           call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
-          subBasisGradientU(1,iSubCell) = solutionVector(1)
-          subBasisGradientV(1,iSubCell) = solutionVector(2)
+          subBasisGradientU(iSubCell,1) = solutionVector(1)
+          subBasisGradientV(iSubCell,1) = solutionVector(2)
+          subBasisConstant(iSubCell,1)  = solutionVector(3)
 
           ! second basis
           rightHandSide(1) = 0.0_RKIND
@@ -306,14 +309,35 @@ contains
 
           call cice_solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
-          subBasisGradientU(2,iSubCell) = solutionVector(1)
-          subBasisGradientV(2,iSubCell) = solutionVector(2)
+          subBasisGradientU(iSubCell,2) = solutionVector(1)
+          subBasisGradientV(iSubCell,2) = solutionVector(2)
+          subBasisConstant(iSubCell,2)  = solutionVector(3)
 
           ! third basis
-          subBasisGradientU(3,iSubCell) = 1.0_RKIND - subBasisGradientU(1,iSubCell) - subBasisGradientU(2,iSubCell)
-          subBasisGradientV(3,iSubCell) = 1.0_RKIND - subBasisGradientV(1,iSubCell) - subBasisGradientV(2,iSubCell)
+          subBasisGradientU(iSubCell,3) = -subBasisGradientU(iSubCell,1) - subBasisGradientU(iSubCell,2)
+          subBasisGradientV(iSubCell,3) = -subBasisGradientV(iSubCell,1) - subBasisGradientV(iSubCell,2)
+          subBasisConstant(iSubCell,3)  = 1.0_RKIND - subBasisConstant(iSubCell,1) - subBasisConstant(iSubCell,2)
+          
+
+          write(*,*) iCell, iSubCell, &
+               subBasisGradientU(iSubCell,1), subBasisGradientV(iSubCell,1), &
+               subBasisGradientU(iSubCell,2), subBasisGradientV(iSubCell,2), &
+               subBasisGradientU(iSubCell,3), subBasisGradientV(iSubCell,3)
 
        enddo ! iSubCell
+
+       call plot_pwl(&
+            mesh, &
+            iCell, &
+            nEdgesOnCell(iCell), &
+            1, &
+            subBasisGradientU, &
+            subBasisGradientV, &
+            subBasisConstant, &
+            xLocal(:,iCell), &
+            yLocal(:,iCell))!{{{
+       
+       stop
 
        ! use the linear sub area basis to calculate the PWL basis
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
@@ -322,18 +346,18 @@ contains
           do iSubCell = 1, nEdgesOnCell(iCell)
 
              ! array (index of the basis vertex, subarea value)
-             subCellGradientU(iEdgeOnCell,iSubCell) = subBasisGradientU(3,iSubCell) * alphaPWL
-             subCellGradientV(iEdgeOnCell,iSubCell) = subBasisGradientV(3,iSubCell) * alphaPWL
+             subCellGradientU(iEdgeOnCell,iSubCell) = subBasisGradientU(iSubCell,3) * alphaPWL
+             subCellGradientV(iEdgeOnCell,iSubCell) = subBasisGradientV(iSubCell,3) * alphaPWL
 
              if (iSubCell == iEdgeOnCell) then
 
-                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(1,iSubCell)
-                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(1,iSubCell)
+                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(iSubCell,1)
+                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(iSubCell,1)
 
              else if (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell))) then
 
-                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(2,iSubCell)
-                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(2,iSubCell)
+                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(iSubCell,2)
+                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(iSubCell,2)
 
              endif
 
@@ -428,6 +452,7 @@ contains
 
     deallocate(subBasisGradientU)
     deallocate(subBasisGradientV)
+    deallocate(subBasisConstant)
     deallocate(subCellgradientU)
     deallocate(subCellgradientV)
     deallocate(basisSubArea)
@@ -500,6 +525,362 @@ contains
     output = mod(input - 1, nelements) + 1
 
   end function wrapped_index!}}}
+
+
+!-----------------------------------------------------------------------
+! Hex specific plotting stuff
+!-----------------------------------------------------------------------
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_pwl
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 28 October 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine plot_pwl(&
+       mesh, &
+       iCell, &
+       nEdgesOnCell, &
+       iVertex, &
+       subBasisGradientU, &
+       subBasisGradientV, &
+       subBasisConstant, &
+       xLocal, &
+       yLocal)!{{{
+    
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    integer, intent(in) :: &
+         iCell, &        !< Input: 
+         nEdgesOnCell, & !< Input: 
+         iVertex         !< Input: 
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         subBasisGradientU, &
+         subBasisGradientV, &
+         subBasisConstant
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xLocal, & !< Input: 
+         yLocal    !< Input: 
+
+    real(kind=RKIND) :: &
+         xmin, xmax, ymin, ymax
+    
+    real(kind=RKIND), dimension(2,2) :: &
+         mapping
+
+    integer :: &
+         iSubTriangle, &
+         i1, &
+         i2, &
+         iVertexOnCell, &
+         iVertex2
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         xCell, &
+         yCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
+    xmin =  1e30
+    xmax = -1e30
+    ymin =  1e30
+    ymax = -1e30
+
+    do iVertexOnCell = 1, nEdgesOnCell
+
+       iVertex2 = verticesOnCell(iVertexOnCell,iCell)
+
+       xmin = min(xmin, xVertex(iVertex2)) - 1000.0_RKIND
+       xmax = max(xmax, xVertex(iVertex2)) + 1000.0_RKIND
+       ymin = min(ymin, yVertex(iVertex2)) - 1000.0_RKIND
+       ymax = max(ymax, yVertex(iVertex2)) + 1000.0_RKIND
+       
+       open(55,file='test.txt')
+       if (iVertexOnCell == iVertex) then
+          write(55,*) xVertex(iVertex2), yVertex(iVertex2)
+       endif
+       close(55)
+
+    enddo ! iVertex
+
+    xmin = xCell(iCell) - 11000.0_RKIND
+    xmax = xCell(iCell) + 11000.0_RKIND
+    ymin = yCell(iCell) - 11000.0_RKIND
+    ymax = yCell(iCell) + 11000.0_RKIND
+
+    open(55,file="pwl.txt")
+
+    write(55,fmt='(a,f10.2,a,f10.2,a)') "set xrange [",xmin,":",xmax,"]"
+    write(55,fmt='(a,f10.2,a,f10.2,a)') "set yrange [",ymin,":",ymax,"]"
+
+    ! loop over subtriangles
+    do iSubTriangle = 1, nEdgesOnCell
+
+       i1 = iSubTriangle
+       i2 = iSubTriangle + 1
+       if (i2 > nEdgesOnCell) i2 = i2 - nEdgesOnCell
+
+       ! get the triangle mapping
+       call get_triangle_mapping(mapping, &
+                                 1.0_RKIND,0.0_RKIND,&
+                                 0.0_RKIND,1.0_RKIND,&
+                                 xLocal(i1),yLocal(i1),&
+                                 xLocal(i2),yLocal(i2))    
+       
+       ! plot from subtriangle
+       call plot_subtriangle(&
+            nEdgesOnCell, &
+            iSubTriangle, &
+            iVertex, &
+            subBasisGradientU, &
+            subBasisGradientV, &
+            subBasisConstant, &
+            mapping, &
+            xCell(iCell), &
+            yCell(iCell))
+
+    enddo ! iSubTriangle
+
+    close(55)
+
+  end subroutine plot_pwl!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_subtriangle
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 28 October 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine plot_subtriangle(&
+       nEdgesOnCell, &
+       iSubTriangle, &
+       iVertex, &
+       subBasisGradientU, &
+       subBasisGradientV, &
+       subBasisConstant, &
+       mapping, &
+       x0, &
+       y0)!{{{
+
+    integer, intent(in) :: &
+         nEdgesOnCell, & !< Input: 
+         iSubTriangle, & !< Input: 
+         iVertex         !< Input: 
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         subBasisGradientU, & !< Input: 
+         subBasisGradientV, & !< Input: 
+         subBasisConstant     !< Input: 
+
+    real(kind=RKIND), dimension(2,2), intent(in) :: &
+         mapping !< Input: 
+
+    real(kind=RKIND), intent(in) :: &
+         x0, & !< Input: 
+         y0    !< Input: 
+
+    real(kind=RKIND) :: &
+         u, v, &
+         x, y, &
+         pwl, &
+         alpha
+
+    integer :: &
+         i, j, iObject
+
+    real(kind=RKIND) :: &
+         x1, x2, x3, x4, x5, &
+         y1, y2, y3, y4, y5, &
+         d, &
+         dx, dy
+
+    integer, parameter :: n = 50
+
+    logical, parameter :: &
+         lfinitedifference = .false.
+
+    iObject = ((iSubTriangle - 1) * (n+1) * (n+2)) / 2
+
+    d = 1.0_RKIND / real(n, RKIND)
+
+    do i = 0, n
+       do j = 0, n
+
+          if (i<=n-j-1) then
+
+             iObject = iObject + 1  
+
+             u = real(i,RKIND) / real(n,RKIND)
+             v = real(j,RKIND) / real(n,RKIND)
+
+             call use_triangle_mapping(x, y, u, v, mapping)
+
+             alpha = 1.0_RKIND / real(nEdgesOnCell,RKIND)
+
+             pwl = alpha * (subBasisGradientU(iSubTriangle,3) * x + &
+                            subBasisGradientV(iSubTriangle,3) * y + &
+                            subBasisConstant(iSubTriangle,3))
+
+             if (iSubTriangle == iVertex) then
+
+                pwl = pwl + &
+                     (subBasisGradientU(iSubTriangle,1) * x + &
+                      subBasisGradientV(iSubTriangle,1) * y + &
+                      subBasisConstant(iSubTriangle,1))
+                
+             !else if (iSubTriangle == wrapped_index(iVertex - 1, nEdgesOnCell)) then ! dont know why this doesnt work
+             else if (iSubTriangle == nEdgesOnCell) then
+
+                pwl = pwl + &
+                     (subBasisGradientU(iSubTriangle,2) * x + &
+                      subBasisGradientV(iSubTriangle,2) * y + &
+                      subBasisConstant(iSubTriangle,2))
+
+             endif
+
+             if (i<n-j-1) then
+                
+                call use_triangle_mapping(x1, y1, u,   v,   mapping)
+                call use_triangle_mapping(x2, y2, u,   v+d, mapping)
+                call use_triangle_mapping(x3, y3, u+d, v+d, mapping)
+                call use_triangle_mapping(x4, y4, u+d, v,   mapping)
+                x5 = x1
+                y5 = y1
+                
+                x1 = x1 + x0 ; y1 = y1 + y0
+                x2 = x2 + x0 ; y2 = y2 + y0
+                x3 = x3 + x0 ; y3 = y3 + y0
+                x4 = x4 + x0 ; y4 = y4 + y0
+                x5 = x5 + x0 ; y5 = y5 + y0
+                
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5     
+
+                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'
+
+             else
+
+                call use_triangle_mapping(x1, y1, u,   v,   mapping)
+                call use_triangle_mapping(x2, y2, u,   v+d, mapping)
+                call use_triangle_mapping(x4, y4, u+d, v,   mapping)
+                x5 = x1
+                y5 = y1
+
+                x1 = x1 + x0 ; y1 = y1 + y0
+                x2 = x2 + x0 ; y2 = y2 + y0
+                x4 = x4 + x0 ; y4 = y4 + y0
+                x5 = x5 + x0 ; y5 = y5 + y0
+                
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5    
+
+                write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'  
+
+             endif
+
+          endif
+
+       enddo ! j
+    enddo ! i
+
+  end subroutine plot_subtriangle!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_triangle_mapping
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_triangle_mapping(&
+       mapping, &
+       x1, y1, &
+       x2, y2, &
+       u1, v1, &
+       u2, v2)!{{{
+
+    real(kind=RKIND), dimension(2,2), intent(out) :: &
+         mapping !< Output: 
+
+    real(kind=RKIND), intent(in) :: &
+         x1, & !< Input: 
+         y1, & !< Input:
+         x2, & !< Input:
+         y2, & !< Input:
+         u1, & !< Input:
+         v1, & !< Input:
+         u2, & !< Input:
+         v2    !< Input:
+
+    mapping(1,1) = (u2*y1 - u1*y2) / (x2*y1 - x1*y2)
+    mapping(1,2) = (u1*x2 - u2*x1) / (y1*x2 - y2*x1)
+
+    mapping(2,1) = (v2*y1 - v1*y2) / (x2*y1 - x1*y2)
+    mapping(2,2) = (v1*x2 - v2*x1) / (y1*x2 - y2*x1)
+
+  end subroutine get_triangle_mapping!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  use_triangle_mapping
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine use_triangle_mapping(&
+       u, v, &
+       x, y, &
+       mapping)!{{{
+
+    real(kind=RKIND), intent(out) :: &
+         u, v !< Output: 
+
+    real(kind=RKIND), intent(in) :: &
+         x, y !< Input:
+
+    real(kind=RKIND), dimension(2,2), intent(in) :: &
+         mapping !< Input:
+
+    u = mapping(1,1) * x + mapping(1,2) * y
+    v = mapping(2,1) * x + mapping(2,2) * y
+
+  end subroutine use_triangle_mapping!}}}
 
 !-----------------------------------------------------------------------
 

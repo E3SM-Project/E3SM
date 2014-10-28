@@ -100,7 +100,7 @@ contains
             velocity_weak, &
             config_rotate_cartesian_grid)
 
-    else if (trim(config_variational_basis) == "wachspress") then
+    else if (trim(config_stress_divergence_scheme) == "variational") then
 
        call cice_init_velocity_solver_variational(&
             mesh, &
