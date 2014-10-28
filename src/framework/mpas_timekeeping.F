@@ -799,6 +799,9 @@ module mpas_timekeeping
       type (MPAS_Time_type) :: alarmNow
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
+      type (MPAS_TimeInterval_type) :: nowInterval, nowRemainder
+      integer :: nDivs
+
       if (present(ierr)) ierr = 0
 
       alarmPtr => clock % alarmListHead
@@ -818,19 +821,17 @@ module mpas_timekeeping
                         alarmNow = alarmNow + interval
                      end if
 
-                     do while(alarmPtr % prevRingTime <= alarmNow)
-                        alarmPtr % prevRingTime = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
-                     end do
-                     alarmPtr % prevRingTime =  alarmPtr % prevRingTime - alarmPtr % ringTimeInterval
+                     nowInterval = alarmNow - alarmPtr % prevRingTime
+                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     alarmPtr % prevRingTime = alarmNow - nowRemainder
                   else
                      if (present(interval)) then
                         alarmNow = alarmNow - interval
                      end if
 
-                     do while(alarmPtr % prevRingTime >= alarmNow)
-                        alarmPtr % prevRingTime = alarmPtr % prevRingTime - alarmPtr % ringTimeInterval
-                     end do
-                     alarmPtr % prevRingTime = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
+                     nowInterval = alarmPtr % prevRingTime - alarmNow
+                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     alarmPtr % prevRingTime = alarmNow + nowRemainder
                   end if
                end if
             end if
@@ -1096,7 +1097,7 @@ module mpas_timekeeping
    end subroutine mpas_get_time
 
 
-   subroutine mpas_set_timeInterval(interval, YY, MM, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
+   subroutine mpas_set_timeInterval(interval, YY, MM, DD, H, M, S, S_n, S_d, S_i8, timeString, dt, ierr)
 
       implicit none
 
@@ -1107,6 +1108,7 @@ module mpas_timekeeping
       integer, intent(in), optional :: H
       integer, intent(in), optional :: M
       integer, intent(in), optional :: S
+      integer (kind=I8KIND), intent(in), optional :: S_i8
       integer, intent(in), optional :: S_n
       integer, intent(in), optional :: S_d
       character (len=*), intent(in), optional :: timeString
@@ -1118,7 +1120,8 @@ module mpas_timekeeping
       integer :: numerator, denominator, denominatorPower
       type (MPAS_TimeInterval_type) :: zeroInterval
 
-      integer :: year, month, day, hour, min, sec
+      integer :: year, month, day, hour, min
+      integer (kind=I8KIND) :: sec
       character (len=StrKIND) :: timeString_
       character (len=StrKIND) :: dateSubString
       character (len=StrKIND) :: daySubString
@@ -1275,6 +1278,16 @@ module mpas_timekeeping
             read(subStrings(2),*) min 
             read(subStrings(3),*) sec 
             deallocate(subStrings)
+         else if (size(subStrings) == 2) then
+            hour = 0
+            read(subStrings(1),*) min 
+            read(subStrings(2),*) sec 
+            deallocate(subStrings)
+         else if (size(subStrings) == 1) then
+            hour = 0
+            min = 0
+            read(subStrings(1),*) sec 
+            deallocate(subStrings)
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
@@ -1282,11 +1295,11 @@ module mpas_timekeeping
             return
          end if
 
-         call ESMF_TimeIntervalSet(interval % ti, YY=year, MM=month, D=day, H=hour, M=min, S=sec, Sn=numerator, Sd=denominator, rc=ierr)
+         call ESMF_TimeIntervalSet(interval % ti, YY=year, MM=month, D=day, H=hour, M=min, S_i8=sec, Sn=numerator, Sd=denominator, rc=ierr)
 
       else
 
-         call ESMF_TimeIntervalSet(interval % ti, YY=YY, MM=MM, D=DD, H=H, M=M, S=S, Sn=S_n, Sd=S_d, rc=ierr)
+         call ESMF_TimeIntervalSet(interval % ti, YY=YY, MM=MM, D=DD, H=H, M=M, S_i8=S_i8, S=S, Sn=S_n, Sd=S_d, rc=ierr)
       
       end if
 
@@ -1305,7 +1318,7 @@ module mpas_timekeeping
    end subroutine mpas_set_timeInterval
 
 
-   subroutine mpas_get_timeInterval(interval, StartTimeIn, DD, H, M, S, S_n, S_d, timeString, dt, ierr)
+   subroutine mpas_get_timeInterval(interval, StartTimeIn, DD, H, M, S, S_n, S_d, S_i8, timeString, dt, ierr)
 ! TODO: add double-precision seconds
 
       implicit none
@@ -1320,23 +1333,25 @@ module mpas_timekeeping
       integer, intent(out), optional :: S
       integer, intent(out), optional :: S_n
       integer, intent(out), optional :: S_d
+      integer (kind=I8KIND), intent(out), optional :: S_i8
       character (len=StrKIND), intent(out), optional :: timeString
       real (kind=RKIND), intent(out), optional :: dt
       integer, intent(out), optional :: ierr
 
-      integer :: days, seconds, sn, sd
+      integer :: days, sn, sd
+      integer (kind=I8KIND) :: seconds
 
 
 
       if (present(StartTimeIn)) then
-         call ESMF_TimeIntervalGet(interval % ti, StartTimeIn=StartTimeIn%t, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+         call ESMF_TimeIntervalGet(interval % ti, StartTimeIn=StartTimeIn%t, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
       else
           if ( interval % ti % YR /= 0 .or. interval % ti % MM /= 0 ) then
              if (present(ierr)) ierr = 1
              write(stderrUnit,*) 'ERROR: mpas_get_timeInterval cannnot return time interval information for an interval containing months and years without a startTimeIn argument.'
              return
           end if
-          call ESMF_TimeIntervalGet(interval % ti, D=days, S=seconds, Sn=sn, Sd=sd, rc=ierr)
+          call ESMF_TimeIntervalGet(interval % ti, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
       endif
 
       if (present(dt)) then
@@ -1360,6 +1375,10 @@ module mpas_timekeeping
          seconds = seconds - M*60
          M = M + days * 1440
          days = 0
+      end if
+
+      if (present(S_i8)) then
+         S_i8 = seconds
       end if
 
       if (present(S)) then
@@ -1488,13 +1507,17 @@ module mpas_timekeeping
       integer, intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      ! If either time interval contains years or months, need to use slower linear interval computation
-      ! Otherwise, we can use faster log interval computation
-      if ( num % ti % YR /= 0 .or. num % ti % MM /= 0 .or. den % ti % YR /= 0 .or. den % ti % MM /= 0 ) then
-         call mpas_interval_division_linear(ref_time, num, den, n, rem)
-      else
-         call mpas_interval_division_log(num, den, n, rem)
-      end if
+      type (MPAS_TimeInterval_type) :: newNum, newDen
+      integer :: days, secondsNum, secondsDen
+      integer (kind=I8KIND) :: seconds
+
+      call mpas_get_timeInterval(num, startTimeIn=ref_time, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
+      call mpas_set_timeInterval(newNum, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
+
+      call mpas_get_timeInterval(den, startTimeIn=ref_time, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
+      call mpas_set_timeInterval(newDen, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
+
+      call mpas_interval_division_log(newNum, newDen, n, rem)
 
    end subroutine mpas_interval_division
 
