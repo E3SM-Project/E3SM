@@ -2,13 +2,10 @@ program pioperformance
   use mpi
   use perf_mod, only : t_initf, t_finalizef
   implicit none
-  integer :: ierr, mype, npe
-  character(len=30) :: decompfile
+  integer :: ierr, mype, npe, i
+  character(len=256) :: decompfile(64)
+  namelist /pioperf/ decompfile
 
-!  decompfile = "piodecomp30tasks01dims06.dat"
-!  decompfile = "piodecomp30tasks02dims05.dat"
-  decompfile = "piodecomp04tasks02dims03.dat"
-!  decompfile = "simple.dat"
   !
   ! Initialize MPI
   !
@@ -18,11 +15,22 @@ program pioperformance
   call CheckMPIreturn(__LINE__,ierr)
   call MPI_Comm_size(MPI_COMM_WORLD, npe,  ierr)
   call CheckMPIreturn(__LINE__,ierr)
+  decompfile = ' '
+  if(mype==0) then
+     open(unit=12,file='pioperf.nl',status='old')
+     read(12,pioperf)
+     close(12)
+  endif
+
+  call MPI_Bcast(decompfile,256*64,MPI_CHAR,0, MPI_COMM_WORLD,ierr)
 
   call t_initf('pioperf.nl', LogPrint=.false.)
+  do i=1,64
+     if(len_trim(decompfile(i))==0) exit
+     if(mype == 0) print *, decompfile(i)
 
-  call pioperformancetest(decompfile, mype, npe)
-
+     call pioperformancetest(decompfile(i), mype, npe)
+  enddo
   call t_finalizef()
 
   call MPI_Finalize(ierr)
@@ -46,7 +54,7 @@ contains
     type(var_desc_t) :: vari, varr, vard
     type(iosystem_desc_t) :: iosystem
     integer :: stride, niotasks
-    integer, allocatable :: ifld(:)
+    integer, allocatable :: ifld(:), ifld_in(:)
     real, allocatable :: rfld(:)
     double precision, allocatable :: dfld(:)
     type(file_desc_t) :: File
@@ -55,7 +63,7 @@ contains
     integer(pio_offset_kind) :: frame=1
     integer :: iotype, rearr, rearrtype
     integer :: j
-    integer :: nframes = 1
+    integer :: nframes = 5
     double precision :: wall(2), sys(2), usr(2)
     
 
@@ -79,11 +87,12 @@ contains
 
        call MPI_ALLREDUCE(maplen,gmaplen,1,MPI_OFFSET,MPI_SUM,comm,ierr)
 
-       if(gmaplen /= product(gdims)) then
-          print *,__FILE__,__LINE__,gmaplen,gdims
-       endif
+!       if(gmaplen /= product(gdims)) then
+!          print *,__FILE__,__LINE__,gmaplen,gdims
+!       endif
     
        allocate(ifld(maplen))
+       allocate(ifld_in(maplen))
        allocate(rfld(maplen))
        allocate(dfld(maplen))
 
@@ -98,7 +107,9 @@ contains
        rearr = PIO_REARR_SUBSET
        do rearrtype=1,2
 
-          do niotasks=1,npe
+          do niotasks=npe,1,-1
+!       do rearrtype=1,1
+!          do niotasks=npe,2048,-1
              stride = max(1,npe/niotasks)
              if(real(stride) == real(npe)/real(niotasks)) then
                 call pio_init(mype, comm, niotasks, 0, stride, PIO_REARR_SUBSET, iosystem)
@@ -115,9 +126,7 @@ contains
                 do frame=1,nframes
                    
                    call PIO_setframe(File, vari, frame)
-                   print *,__FILE__,__LINE__
                    call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
-                   print *,__FILE__,__LINE__
 !!$
 !!$                   
 !!$                   call PIO_setframe(File, varr, frame)
@@ -130,17 +139,43 @@ contains
 !!$
 !!$
                 enddo
-                call PIO_freedecomp(iosystem, iodesc_r4)
-                call PIO_freedecomp(iosystem, iodesc_r8)
-                
-                call PIO_freedecomp(iosystem, iodesc_i4)
                 call pio_closefile(File)
                 call t_stampf(wall(2), usr(2), sys(2))
                 wall(1) = wall(2)-wall(1)
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
-                   print *, rearrtype, niotasks, wall(2)
+                   ! print out performance in MB/s
+                   print *, 'write ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
                 end if
+
+! Now the Read
+                ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
+                ierr =  pio_inq_varid(File, 'vari', vari)
+                call t_stampf(wall(1), usr(1), sys(1))
+
+                do frame=1,nframes                   
+                   call PIO_setframe(File, vari, frame)
+                   call pio_read_darray(File, vari, iodesc_i4, ifld_in, ierr)
+                enddo
+
+                call pio_closefile(File)
+                call t_stampf(wall(2), usr(2), sys(2))
+                wall(1) = wall(2)-wall(1)
+                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
+                do j=1,maplen
+                   if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
+                      print *,__LINE__,j,ifld(j),ifld_in(j),compmap(j)
+                   endif
+                enddo
+
+                if(mype==0) then
+                   print *, 'read ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
+                end if
+
+
+                call PIO_freedecomp(iosystem, iodesc_r4)
+                call PIO_freedecomp(iosystem, iodesc_r8)
+                call PIO_freedecomp(iosystem, iodesc_i4)
              
                 call pio_finalize(iosystem, ierr)
              endif
@@ -148,8 +183,11 @@ contains
           rearr = PIO_REARR_BOX
        enddo
 
-       deallocate(compmap)
+!       deallocate(compmap)
        deallocate(ifld)
+       deallocate(ifld_in)
+       deallocate(rfld)
+       deallocate(dfld)
     endif
 
   end subroutine pioperformancetest
