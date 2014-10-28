@@ -522,15 +522,13 @@ contains
 
     integer :: output
 
-    output = mod(input - 1, nelements) + 1
+    output = modulo(input - 1, nelements) + 1
 
   end function wrapped_index!}}}
-
 
 !-----------------------------------------------------------------------
 ! Hex specific plotting stuff
 !-----------------------------------------------------------------------
-
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -747,6 +745,8 @@ contains
                             subBasisGradientV(iSubTriangle,3) * y + &
                             subBasisConstant(iSubTriangle,3))
 
+             write(*,*) iVertex, nEdgesOnCell, wrapped_index(iVertex - 1, nEdgesOnCell)
+
              if (iSubTriangle == iVertex) then
 
                 pwl = pwl + &
@@ -754,8 +754,7 @@ contains
                       subBasisGradientV(iSubTriangle,1) * y + &
                       subBasisConstant(iSubTriangle,1))
                 
-             !else if (iSubTriangle == wrapped_index(iVertex - 1, nEdgesOnCell)) then ! dont know why this doesnt work
-             else if (iSubTriangle == nEdgesOnCell) then
+             else if (iSubTriangle == wrapped_index(iVertex - 1, nEdgesOnCell)) then
 
                 pwl = pwl + &
                      (subBasisGradientU(iSubTriangle,2) * x + &
