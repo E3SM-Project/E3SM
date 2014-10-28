@@ -127,6 +127,7 @@ module ocn_time_integration_split
 
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
+      logical, pointer :: config_use_cvmix_kpp
 
       real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
       real (kind=RKIND), pointer :: config_btr_gam3_velWt2
@@ -181,7 +182,7 @@ module ocn_time_integration_split
 
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
-      type (field1DReal), pointer :: barotropicThicknessFluxField
+      type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField
 
       ! State/Tend Field Pointers
       type (field1DReal), pointer :: normalBarotropicVelocitySubcycleField, sshSubcycleField
@@ -217,6 +218,7 @@ module ocn_time_integration_split
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
 
       call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       allocate(n_bcl_iter(config_n_ts_iter))
 
@@ -314,10 +316,18 @@ module ocn_time_integration_split
       do split_explicit_step = 1, config_n_ts_iter
          stage1_tend_time = min(split_explicit_step,2)
 
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
+
+         ! ---  update halos for diagnostic ocean boundayr layer depth
+         call mpas_timer_start("se halo diag obd", .false., timer_halo_diagnostic)
+         if (config_use_cvmix_kpp) then
+            call mpas_pool_get_field(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepthField)
+            call mpas_dmpar_exch_halo_field(boundaryLayerDepthField)
+         end if
+         call mpas_timer_stop("se halo diag obd")
+
          ! ---  update halos for diagnostic variables
          call mpas_timer_start("se halo diag", .false., timer_halo_diagnostic)
-
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
          call mpas_pool_get_field(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdgeField)
          call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)

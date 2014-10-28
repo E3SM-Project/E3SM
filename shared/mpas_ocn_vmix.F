@@ -431,11 +431,14 @@ contains
       integer, intent(out) :: err
       integer, intent(in), optional :: timeLevelIn
 
-      integer :: timeLevel
-      integer, pointer :: nCells
+      integer :: timeLevel, k, cell1, cell2, iEdge
+      integer, pointer :: nCells, nEdges
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell
+      real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      logical, pointer :: config_use_cvmix
 
       err = 0
 
@@ -445,6 +448,8 @@ contains
          timeLevel = 1
       end if
 
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
+
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -453,12 +458,28 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
                
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, err, timeLevel)
+
+      ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
+      if ( config_use_cvmix ) then
+      vertViscTopOfEdge(:,:) = 0.0
+      do iEdge=1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k=1,maxLevelEdgeTop(iEdge)
+           vertViscTopOfEdge(k,iEdge) = 0.5*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
+         enddo
+      enddo
+      endif
 
       !
       !  Implicit vertical solve for momentum
