@@ -225,21 +225,32 @@ CPPINCLUDES =
 FCINCLUDES = 
 LIBS = 
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
-	CPPINCLUDES = -I$(NETCDF)/include -I$(PIO)/include -I$(PNETCDF)/include
-	FCINCLUDES = -I$(NETCDF)/include -I$(PIO)/include -I$(PNETCDF)/include
-	LIBS = -L$(PIO)/lib -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf
+	CPPINCLUDES = -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	LIBS = -L$(PIO)/lib -lpio
 else
-	CPPINCLUDES = -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-	FCINCLUDES = -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-	LIBS = -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf
+	CPPINCLUDES = -I$(PIO)
+	FCINCLUDES = -I$(PIO)
+	LIBS = -L$(PIO) -lpio
 endif
 
-NCLIB = -lnetcdf
-NCLIBF = -lnetcdff
-ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
-	LIBS += $(NCLIBF)
-endif # CHECK FOR NETCDF4
-LIBS += $(NCLIB)
+ifneq "$(PNETCDF)" ""
+	CPPINCLUDES += -I$(PNETCDF)/include
+	FCINCLUDES += -I$(PNETCDF)/include
+	LIBS += -L$(PNETCDF)/lib -lpnetcdf
+endif
+
+ifneq "$(NETCDF)" ""
+	CPPINCLUDES += -I$(NETCDF)/include
+	FCINCLUDES += -I$(NETCDF)/include
+	LIBS += -L$(NETCDF)/lib
+	NCLIB = -lnetcdf
+	NCLIBF = -lnetcdff
+	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
+		LIBS += $(NCLIBF)
+	endif # CHECK FOR NETCDF4
+	LIBS += $(NCLIB)
+endif
 
 RM = rm -f
 CPP = cpp -P -traditional

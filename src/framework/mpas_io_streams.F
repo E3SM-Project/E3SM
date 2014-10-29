@@ -18,6 +18,7 @@ module mpas_io_streams
 
    use mpas_attlist
    use mpas_grid_types
+   use mpas_kind_types, only : StrKIND
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
@@ -48,6 +49,8 @@ module mpas_io_streams
       integer :: ioFormat
       integer :: ioDirection
       integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
+      logical :: clobberRecords = .false.
+      character(len=StrKIND) :: filename
       type (MPAS_IO_Handle_type) :: fileHandle
       type (att_list_type), pointer :: attList => null()
       type (field_list_type), pointer :: fieldList => null()
@@ -110,7 +113,9 @@ module mpas_io_streams
    integer, parameter :: MPAS_STREAM_NOERR              =  0, &
                          MPAS_STREAM_NOT_INITIALIZED    = -1, &
                          MPAS_STREAM_FIELD_NOT_FOUND    = -2, &
-                         MPAS_IO_ERR                    = -3
+                         MPAS_STREAM_CLOBBER_FILE       = -3, &
+                         MPAS_STREAM_CLOBBER_RECORD     = -4, &
+                         MPAS_IO_ERR                    = -5
 
    integer, parameter :: FIELD_0D_INT   =  1, &
                          FIELD_1D_INT   =  2, &
@@ -128,10 +133,11 @@ module mpas_io_streams
    private mergeArrays
 
 
-contains
+   contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, ierr)
+   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, &
+                                clobberRecords, clobberFiles, truncateFiles, ierr)
 
       implicit none
 
@@ -140,6 +146,9 @@ contains
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
       integer, intent(in), optional :: precision
+      logical, intent(in), optional :: clobberRecords
+      logical, intent(in), optional :: clobberFiles
+      logical, intent(in), optional :: truncateFiles
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -147,7 +156,17 @@ contains
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
 
-      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, io_err) 
+      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, clobber_file=clobberFiles, truncate_file=truncateFiles, &
+                                         ierr=io_err) 
+      !
+      ! Catch a few special errors
+      !
+      if (io_err == MPAS_IO_ERR_WOULD_CLOBBER) then
+         if (present(ierr)) ierr = MPAS_STREAM_CLOBBER_FILE
+         return
+      end if
+
+      ! General error
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
@@ -156,6 +175,12 @@ contains
 
       stream % ioDirection = ioDirection
       stream % ioFormat = ioFormat
+      stream % filename = fileName
+      if (present(clobberRecords)) then
+         stream % clobberRecords = clobberRecords
+      else
+         stream % clobberRecords = .false.
+      end if
       if (present(precision)) stream % defaultPrecision = precision
 
       stream % isInitialized = .true.
@@ -3106,6 +3131,19 @@ contains
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
          return
+      end if
+
+      !
+      ! Check whether we will clobber any records
+      !
+      if (MPAS_io_would_clobber_records(stream % fileHandle, io_err)) then
+         if (.not. stream % clobberRecords) then
+            if (present(ierr)) ierr = MPAS_STREAM_CLOBBER_RECORD
+            return
+         else
+            write(stderrUnit,'(a,i4,a)') 'MPAS I/O: Overwriting existing record ', frame, &
+                                         ' in output file '//trim(stream % filename)
+         end if
       end if
 
       !

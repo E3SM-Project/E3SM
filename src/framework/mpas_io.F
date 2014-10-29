@@ -69,17 +69,20 @@ module mpas_io
                          MPAS_IO_ERR_TWO_UNLIMITED_DIMS = -15, &
                          MPAS_IO_ERR_WRONG_MODE         = -16, &
                          MPAS_IO_ERR_NO_UNLIMITED_DIM   = -17, &
-                         MPAS_IO_ERR_UNIMPLEMENTED      = -18
+                         MPAS_IO_ERR_UNIMPLEMENTED      = -18, &
+                         MPAS_IO_ERR_WOULD_CLOBBER      = -19
 
 
    type MPAS_IO_Handle_type
       logical :: initialized = .false.
+      logical :: preexisting_file = .false.
       logical :: data_mode = .false.
       type (file_desc_t) :: pio_file
       character (len=StrKIND) :: filename
       integer :: iomode
       integer :: ioformat
       integer :: pio_unlimited_dimid
+      integer :: preexisting_records = 0
       integer (kind=PIO_offset) :: frame_number = 1
       type (dimlist_type), pointer :: dimlist_head => null()
       type (dimlist_type), pointer :: dimlist_tail => null()
@@ -211,6 +214,7 @@ module mpas_io
 
    contains
 
+
    subroutine MPAS_io_init(dminfo, io_task_count, io_task_stride, io_system, ierr)
 
       implicit none
@@ -226,18 +230,18 @@ module mpas_io
 
       local_dminfo = dminfo
 
-      if(present(io_system)) then
-        pio_iosystem => io_system
+      if (present(io_system)) then
+         pio_iosystem => io_system
       else
 !write(stderrUnit,*) 'MGD PIO_init'
-        allocate(pio_iosystem)
-        call PIO_init(local_dminfo % my_proc_id, &     ! comp_rank
-                      local_dminfo % comm,       &     ! comp_comm
-                      io_task_count,             &     ! num_iotasks
-                      0,                         &     ! num_aggregator
-                      io_task_stride,            &     ! stride
-                      PIO_rearr_box,             &     ! rearr
-                      pio_iosystem)                    ! iosystem
+         allocate(pio_iosystem)
+         call PIO_init(local_dminfo % my_proc_id, &     ! comp_rank
+                       local_dminfo % comm,       &     ! comp_comm
+                       io_task_count,             &     ! num_iotasks
+                       0,                         &     ! num_aggregator
+                       io_task_stride,            &     ! stride
+                       PIO_rearr_box,             &     ! rearr
+                       pio_iosystem)                    ! iosystem
   
       end if
 
@@ -269,6 +273,7 @@ module mpas_io
       end if
 
       master_pio_iotype = io_type_in
+
    end subroutine MPAS_io_set_iotype
 
 
@@ -295,22 +300,39 @@ module mpas_io
       end if
 
       master_pio_iotype = -999
+
    end subroutine MPAS_io_unset_iotype
+
    
-   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, ierr)
+   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, clobber_file, truncate_file, ierr)
 
       implicit none
 
       character (len=*), intent(in) :: filename
       integer, intent(in) :: mode
       integer, intent(in) :: ioformat
+      logical, intent(in), optional :: clobber_file
+      logical, intent(in), optional :: truncate_file
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr, pio_iotype
+      logical :: local_clobber, local_truncate
+      logical :: exists
 
 !      write(stderrUnit,*) 'Called MPAS_io_open()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
+      if (present(clobber_file)) then
+         local_clobber = clobber_file
+      else
+         local_clobber = .false.
+      end if
+
+      if (present(truncate_file)) then
+         local_truncate = truncate_file
+      else
+         local_truncate = .false.
+      end if
 
       ! Sanity checks
       if (mode /= MPAS_IO_READ .and. &
@@ -344,7 +366,23 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_64BIT_OFFSET)
+         inquire(file=trim(filename), exist=exists)
+
+         ! If the file exists and we are not allowed to clobber it, return an
+         !    appropriate error code
+         if (exists .and. (.not. local_clobber)) then
+            if (present(ierr)) ierr = MPAS_IO_ERR_WOULD_CLOBBER
+         end if
+ 
+         if (exists .and. (.not. local_truncate)) then
+            pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
+            MPAS_io_open % preexisting_file = .true.
+         else
+            pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_64BIT_OFFSET)
+            if (exists) then
+               write(stderrUnit,'(a)') 'MPAS I/O: Truncating existing data in output file '//trim(filename)
+            end if
+         end if
       else
 !write(stderrUnit,*) 'MGD PIO_openfile'
          pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
@@ -354,10 +392,16 @@ module mpas_io
          return
       end if
 
-      if (mode == MPAS_IO_READ) then
+      if (mode == MPAS_IO_READ .or. MPAS_io_open % preexisting_file) then
 !MPAS_io_open % pio_unlimited_dimid = 44
          pio_ierr = PIO_inquire(MPAS_io_open % pio_file, unlimitedDimID=MPAS_io_open % pio_unlimited_dimid)
 !write(stderrUnit,*) 'Found unlimited dim ', MPAS_io_open % pio_unlimited_dimid
+         if (pio_ierr /= PIO_noerr) then
+            if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+            return
+         end if
+
+         pio_ierr = PIO_inq_dimlen(MPAS_io_open % pio_file, MPAS_io_open % pio_unlimited_dimid, MPAS_io_open % preexisting_records)
          if (pio_ierr /= PIO_noerr) then
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
@@ -496,6 +540,7 @@ module mpas_io
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
+      integer :: inq_dimsize
       type (dimlist_type), pointer :: new_dimlist_node
       type (dimlist_type), pointer :: dim_cursor
 
@@ -523,7 +568,12 @@ module mpas_io
       dim_cursor => handle % dimlist_head
       do while (associated(dim_cursor))
          if (trim(dimname) == trim(dim_cursor % dimhandle % dimname)) then
-            if (dimsize /= dim_cursor % dimhandle % dimsize) then
+
+            ! The second half of the test below avoids raising errors in the case where 
+            !    we are writing to an already existing file, in which case the dimlen for the
+            !    unlimited dimension in the file will generally not be MPAS_IO_UNLIMITED_DIM
+            if ((dimsize /= dim_cursor % dimhandle % dimsize) .and. &
+               .not. (dimsize == MPAS_IO_UNLIMITED_DIM .and. dim_cursor % dimhandle % is_unlimited_dim)) then
                if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
             end if
             return
@@ -536,6 +586,26 @@ module mpas_io
          end if
          dim_cursor => dim_cursor % next
       end do
+
+
+      !
+      ! If we're working with a preexisting file, see whether this dimension isn't already
+      !    defined in the file; if it is, the dimension should match the dimsize specified in
+      !    this call to define the dimension, at which point we can add it to our local cache
+      !
+      if (handle % preexisting_file) then
+         call MPAS_io_inq_dim(handle, dimname, inq_dimsize, ierr=pio_ierr)
+         if (pio_ierr /= MPAS_IO_ERR_PIO) then
+
+            ! Verify that the dimsize matches...
+            if (dimsize /= inq_dimsize .and. dimsize /= MPAS_IO_UNLIMITED_DIM) then
+               if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+               return
+            end if
+
+         end if
+         return
+      end if
 
 
       !
@@ -816,6 +886,9 @@ module mpas_io
       integer :: pio_ierr
       integer :: pio_type
       integer :: ndims
+      integer :: inq_fieldtype
+      integer :: inq_ndims
+      character (len=StrKIND), dimension(:), pointer :: inq_dimnames
       type (fieldlist_type), pointer :: new_fieldlist_node
       type (fieldlist_type), pointer :: field_cursor
       type (dimlist_type), pointer :: dim_cursor
@@ -873,6 +946,54 @@ module mpas_io
          end if
          field_cursor => field_cursor % next
       end do
+
+
+      !
+      ! If we're working with a preexisting file, see whether this variable isn't already
+      !    defined in the file; if it is, the type and dimensions should match the type and dimensions
+      !     specified in this call to define the variable, at which point we can add it to our local cache
+      !
+      if (handle % preexisting_file) then
+         call MPAS_io_inq_var(handle, fieldname, inq_fieldtype, inq_ndims, inq_dimnames, ierr=pio_ierr)
+         if (pio_ierr /= MPAS_IO_ERR_PIO) then
+
+            ! Verify that the type and dimensions matche...
+            if (fieldtype == MPAS_IO_DOUBLE) then
+               if (local_precision == MPAS_IO_SINGLE_PRECISION) then
+                  pio_type = MPAS_IO_REAL
+               else
+                  pio_type = MPAS_IO_DOUBLE
+               end if
+            else
+               pio_type = fieldtype
+            end if
+            if (pio_type /= inq_fieldtype) then
+               if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+               deallocate(inq_dimnames)
+               return
+            end if
+
+            if (ndims /= inq_ndims) then
+               if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+               deallocate(inq_dimnames)
+               return
+            end if
+
+            do i=1,ndims
+               if (trim(dimnames(i)) /= trim(inq_dimnames(i))) then
+                  if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_DIM
+                  deallocate(inq_dimnames)
+                  return
+               end if
+            end do
+   
+            ! TODO: Can we get the dimension sizes to see whether they match those from the file?
+   
+         end if
+
+         return
+      end if
+
 
       !
       ! Otherwise, define it
@@ -1928,6 +2049,32 @@ module mpas_io
    end subroutine MPAS_io_get_var_char0d
 
 
+   logical function MPAS_io_would_clobber_records(handle, ierr)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
+      integer, intent(out), optional :: ierr
+
+
+      if (present(ierr)) ierr = MPAS_IO_NOERR
+
+      ! Sanity checks
+      if (.not. handle % initialized) then
+         if (present(ierr)) ierr = MPAS_IO_ERR_UNINIT_HANDLE
+         MPAS_io_would_clobber_records = .false.
+         return 
+      end if
+
+      if (handle % frame_number <= handle % preexisting_records) then
+         MPAS_io_would_clobber_records = .true.
+      else
+         MPAS_io_would_clobber_records = .false.
+      end if
+
+   end function MPAS_io_would_clobber_records
+
+
    subroutine MPAS_io_put_var_generic(handle, fieldname, intVal, intArray1d, intArray2d, intArray3d, intArray4d, &
                                                         realVal, realArray1d, realArray2d, realArray3d, realArray4d, realArray5d, &
                                                         charVal, ierr)
@@ -1982,7 +2129,11 @@ module mpas_io
          handle % data_mode = .true.
 
          pio_ierr = PIO_enddef(handle % pio_file)
-         if (pio_ierr /= PIO_noerr) then
+         ! If we are working with a preexisting file, we likely didn't define
+         ! new dimensions or variables, in which case PIO_enddef() will return
+         ! an error under harmless circumstances; so, don't return only for
+         ! pre-existing files.
+         if (pio_ierr /= PIO_noerr .and. (.not. handle % preexisting_file)) then
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
          end if
@@ -2006,6 +2157,7 @@ module mpas_io
       end if
 
       if (field_cursor % fieldhandle % has_unlimited_dim) then
+
          call PIO_setframe(field_cursor % fieldhandle % field_desc, handle % frame_number)
          start1(1) = handle % frame_number
          count1(1) = 1
@@ -2014,7 +2166,7 @@ module mpas_io
          start2(2) = handle % frame_number
          count2(2) = 1
       else if (handle % frame_number > 1) then
-         if(present(ierr)) ierr = MPAS_IO_NOERR
+         if (present(ierr)) ierr = MPAS_IO_NOERR
          return
       end if
 
@@ -3994,7 +4146,35 @@ module mpas_io
 
       pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
       if (pio_ierr /= PIO_noerr) then
+
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+
+         !
+         ! If we are working with a pre-existing file and the text attribute is larger than in the file, we need 
+         ! to enter define mode before writing the attribute. Note the PIO_redef documentation:
+         !     'Entering and leaving netcdf define mode causes a file sync operation to occur, 
+         !      these operations can be very expensive in parallel systems.'
+         !
+         if (handle % preexisting_file .and. .not. handle % data_mode) then
+            pio_ierr = PIO_redef(handle % pio_file)
+            if (pio_ierr /= PIO_noerr) then
+               return
+            end if
+
+            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+            if (pio_ierr /= PIO_noerr) then
+               return
+            end if
+
+            pio_ierr = PIO_enddef(handle % pio_file)
+            if (pio_ierr /= PIO_noerr) then
+               return
+            end if
+
+            if (present(ierr)) ierr = MPAS_IO_NOERR
+
+         end if
+
          return
       end if
 
@@ -4154,7 +4334,7 @@ module mpas_io
       end do
 
 !write(stderrUnit,*) 'MGD PIO_finalize'
-      if(.not.present(io_system)) then
+      if (.not.present(io_system)) then
         call PIO_finalize(pio_iosystem, pio_ierr)
         if (pio_ierr /= PIO_noerr) then
            if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -4212,6 +4392,8 @@ module mpas_io
             write(stderrUnit,*) 'MPAS IO Error: No unlimited dimension found in dataset'
          case (MPAS_IO_ERR_UNIMPLEMENTED)
             write(stderrUnit,*) 'MPAS IO Error: Unimplemented functionality'
+         case (MPAS_IO_ERR_WOULD_CLOBBER)
+            write(stderrUnit,*) 'MPAS IO Error: Would clobber existing file'
          case default
             write(stderrUnit,*) 'MPAS IO Error: Unrecognized error code...'
       end select

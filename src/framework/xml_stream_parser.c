@@ -25,7 +25,7 @@
 /* 
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
-void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, char *, char *, int *, int *, int *);
+void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, char *, char *, int *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
 void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
@@ -861,6 +861,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	const char *compstreamname_const, *structname_const;
 	const char *streamID, *filename_template, *filename_interval, *direction, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const, *precision;
 	const char *interval_in, *interval_out, *packagelist;
+	const char *clobber;
 	char *packages, *package;
 	char filename_interval_string[256];
 	char ref_time_local[256];
@@ -869,6 +870,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	FILE *fd;
 	char msgbuf[MSGSIZE];
 	int itype;
+	int iclobber;
 	int iprec;
 	int immutable;
 	int err;
@@ -907,6 +909,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		record_interval = ezxml_attr(stream_xml, "record_interval");
 		precision = ezxml_attr(stream_xml, "precision");
 		packagelist = ezxml_attr(stream_xml, "packages");
+		clobber = ezxml_attr(stream_xml, "clobber_mode");
 
 		/* Setup filename_interval correctly.
 		 *
@@ -975,10 +978,38 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
 		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
 
+		/* NB: These clobber constants must match those in the mpas_stream_manager module! */
+		if (clobber != NULL) {
+			if (strstr(clobber, "never_modify") != NULL) {
+				iclobber = 0;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "never_modify");
+			}
+			else if (strstr(clobber, "append") != NULL) {
+				iclobber = 1;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "append");
+			}
+			else if (strstr(clobber, "truncate") != NULL) {             /* Synonym for "replace_files" */
+				iclobber = 2;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "truncate");
+			}
+			else if (strstr(clobber, "replace_files") != NULL) {        /* Synonym for "truncate" */
+				iclobber = 2;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "replace_files");
+			}
+			else if (strstr(clobber, "overwrite") != NULL) {
+				iclobber = 3;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "overwrite");
+			}
+			else {
+                		iclobber = 0;
+				fprintf(stderr, "        *** unrecognized clobber_mode specification; existing files will not be modified\n");
+			}
+		}
+
+
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
 		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
 			itype = 3;
-			fprintf(stderr, "        direction:          input, output\n");
 			fprintf(stderr, "        %-20s%s\n", "direction:", "input, output");
 		}
 		else if (strstr(direction, "input") != NULL) {
@@ -1037,7 +1068,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local, 
-					&immutable, &iprec, &err);
+					&immutable, &iprec, &iclobber, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
@@ -1106,6 +1137,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		record_interval = ezxml_attr(stream_xml, "record_interval");
 		precision = ezxml_attr(stream_xml, "precision");
 		packagelist = ezxml_attr(stream_xml, "packages");
+		clobber = ezxml_attr(stream_xml, "clobber_mode");
 
 		/* Setup filename_interval correctly.
 		 *
@@ -1174,6 +1206,34 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		fprintf(stderr, "        %-20s%s\n", "filename template:", filename_template);
 		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
 
+		/* NB: These clobber constants must match those in the mpas_stream_manager module! */
+		if (clobber != NULL) {
+			if (strstr(clobber, "never_modify") != NULL) {
+				iclobber = 0;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "never_modify");
+			}
+			else if (strstr(clobber, "append") != NULL) {
+				iclobber = 1;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "append");
+			}
+			else if (strstr(clobber, "truncate") != NULL) {             /* Synonym for "replace_files" */
+				iclobber = 2;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "truncate");
+			}
+			else if (strstr(clobber, "replace_files") != NULL) {        /* Synonym for "truncate" */
+				iclobber = 2;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "replace_files");
+			}
+			else if (strstr(clobber, "overwrite") != NULL) {
+				iclobber = 3;
+				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "overwrite");
+			}
+			else {
+                		iclobber = 0;
+				fprintf(stderr, "        *** unrecognized clobber_mode specification; existing files will not be modified\n");
+			}
+		}
+
 		/* NB: These type constants must match those in the mpas_stream_manager module! */
 		if (strstr(direction, "input") != NULL && strstr(direction, "output") != NULL) {
 			itype = 3;
@@ -1235,7 +1295,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 
 		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local, 
-						&immutable, &iprec, &err);
+						&immutable, &iprec, &iclobber, &err);
 		if (err != 0) {
 			*status = 1;
 			return;
