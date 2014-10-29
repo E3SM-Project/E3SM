@@ -180,7 +180,7 @@ contains
                    call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
                    if(mype==0) then
                       ! print out performance in MB/s
-                      print *, 'write ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
+                      print *, 'write ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
                    end if
 
 ! Now the Read
@@ -213,7 +213,7 @@ contains
                       if(errorcnt > 0) then
                          print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                       endif
-                      print *, 'read ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048567.0*wall(2))
+                      print *, 'read ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
                    end if
 
 
