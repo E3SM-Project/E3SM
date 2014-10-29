@@ -8,13 +8,16 @@ module pioExample
     use pio, only : PIO_finalize, PIO_noerr, PIO_iotype_netcdf, PIO_createfile
     use pio, only : PIO_int,var_desc_t, PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef
     use pio, only : PIO_closefile, io_desc_t, PIO_initdecomp, PIO_write_darray
-    use pio, only : PIO_freedecomp, PIO_write
+    use pio, only : PIO_freedecomp, PIO_clobber, PIO_readvar
 
     implicit none
     save
     private
 
     include 'mpif.h'
+
+    integer, parameter :: LEN = 1024
+    integer, parameter :: VAL = 42
 
     type, public :: pioExampleClass
 
@@ -31,8 +34,10 @@ module pioExample
         integer               :: pioDimId
         type(var_desc_t)      :: pioVar
         type(io_desc_t)       :: iodescNCells
-        integer, dimension(3) :: dataBuffer, compdof
-        integer, dimension(1) :: dims
+        integer               :: dataBuffer(LEN)
+        integer               :: readBuffer(LEN)
+        integer               :: compdof(LEN)
+        integer, dimension(1) :: dimLen
 
         character(len=255) :: fileName
 
@@ -64,8 +69,6 @@ contains
 
         type(pioExampleClass) :: newPioExampleClass
 
-        write(*,*) ' pioExample::new  - ctor '
-
     end function newPioExampleClass
 
     subroutine init(this)
@@ -74,7 +77,7 @@ contains
 
         class(pioExampleClass), intent(inout) :: this
 
-        integer :: ierr
+        integer :: ierr,i
 
         !
         ! initialize MPI
@@ -84,19 +87,17 @@ contains
         call MPI_Comm_rank(MPI_COMM_WORLD, this%myRank, ierr)
         call MPI_Comm_size(MPI_COMM_WORLD, this%ntasks , ierr)
 
-        write(*,*) ' pioExample::init ',this%myRank,this%ntasks, this%stride
-
         !
         ! set up PIO for rest of example
         !
 
-        this%stride = 1
+        this%stride        = 1
         this%numAggregator = 0
-        this%optBase = 1
-        this%iotype = PIO_iotype_netcdf
-        this%fileName = "examplePio_f90.nc"
-        this%dims(1) = 3 * this%ntasks
-        this%compdof = 3 * this%myRank + (/1,2,3/)
+        this%optBase       = 1
+        this%iotype        = PIO_iotype_netcdf
+        this%fileName      = "examplePio_f90.nc"
+        this%dimLen(1)     = LEN
+        this%compdof       = (/ (i, i = 1,LEN) /)
 
         this%niotasks = this%ntasks/this%stride
 
@@ -113,9 +114,7 @@ contains
         ! set up some data that we will write and read from a netcdf file
         !
 
-        this%dataBuffer = this%myRank
-        write(*,*) 'dataBuffer ',this%myRank, this%dataBuffer
-        write(*,*) 'compdof ',this%myRank, this%compdof
+        this%dataBuffer = this%compdof * VAL
 
     end subroutine init
 
@@ -125,7 +124,7 @@ contains
 
         class(pioExampleClass), intent(inout) :: this
 
-        call PIO_initdecomp(this%pioIoSystem, PIO_int, this%dims, this%compdof, this%iodescNCells)
+        call PIO_initdecomp(this%pioIoSystem, PIO_int, this%dimLen, this%compdof, this%iodescNCells)
 
     end subroutine createDecomp
 
@@ -138,14 +137,8 @@ contains
         integer :: retVal
         character(len=255) :: errMsg
 
-        write(*,*) 'this%pioIoSystem ',this%pioIoSystem
-        write(*,*) 'this%iotype ',this%iotype
-        write(*,*) 'this%fileName ',trim(this%fileName)
-
-        retVal = PIO_createfile(this%pioIoSystem, this%pioFileDesc, this%iotype, trim(this%fileName),PIO_write)
+        retVal = PIO_createfile(this%pioIoSystem, this%pioFileDesc, this%iotype, trim(this%fileName),PIO_clobber)
         call this%errorHandle("Could not create "//trim(this%fileName), retVal)
-
-        write(*,*) " exit createFile "
 
     end subroutine createFile
 
@@ -158,21 +151,14 @@ contains
         integer :: retVal
         character(len=255) :: errMsg
 
-        !retVal = PIO_redef(this%pioFileDesc)
-        !call this%errorHandle("Could not enter redef mode", retVal)
-
-        write(*,*) "before PIO_def_dim"
-        retVal = PIO_def_dim(this%pioFileDesc, 'x', this%ntasks, this%pioDimId)
+        retVal = PIO_def_dim(this%pioFileDesc, 'x', this%dimLen(1) , this%pioDimId)
         call this%errorHandle("Could not define dimension x", retVal)
 
-        write(*,*) "before PIO_def_var"
         retVal = PIO_def_var(this%pioFileDesc, 'foo', PIO_int, (/this%pioDimId/), this%pioVar)
         call this%errorHandle("Could not define variable foo", retVal)
 
-        !retVal = PIO_enddef(this%pioFileDesc)
-        !call this%errorHandle("Could not exit define mode", retVal)
-
-        write(*,*) "exit defineVar"
+        retVal = PIO_enddef(this%pioFileDesc)
+        call this%errorHandle("Could not end define mode", retVal)
 
     end subroutine defineVar
 
@@ -184,14 +170,8 @@ contains
 
         integer :: retVal
 
-        ! Write foo
-        write(*,*) "before PIO_write_darray"
         call PIO_write_darray(this%pioFileDesc, this%pioVar, this%iodescNCells, this%dataBuffer, retVal, -1)
-        !call mpi_barrier(MPI_COMM_WORLD,ret_val)
-
         call this%errorHandle("Could not write foo", retVal)
-
-        write(*,*) " exit writeVar "
 
     end subroutine writeVar
 
@@ -202,8 +182,11 @@ contains
         class(pioExampleClass), intent(inout) :: this
 
         integer :: ierr
+        integer :: retVal
 
+        call PIO_read_darray(this%pioFileDesc, this%pioVar, this%iodescNCells,  this%readBuffer, retVal)
 
+        write(*,*) 'After PIO read, elements 1:10 ',this%readBuffer(1:10)
 
     end subroutine readVar
 
@@ -230,8 +213,6 @@ contains
         call PIO_freedecomp(this%pioIoSystem, this%iodescNCells)
         call PIO_finalize(this%pioIoSystem, ierr)
         call MPI_Finalize(ierr)
-
-        write(*,*) ' pioExample::delete - dtor '
 
     end subroutine delete
 
@@ -263,7 +244,6 @@ program main
     type(pioExampleClass) :: pioExInst
 
     pioExInst = pioExampleClass()
-
     call pioExInst%init()
     call pioExInst%createDecomp()
     call pioExInst%createFile()

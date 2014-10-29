@@ -15,4 +15,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 
 SET(SRC examplePio.f90)
 ADD_EXECUTABLE(examplePio_f90 ${SRC})
-TARGET_LINK_LIBRARIES(examplePio_f90 pioc piof)
+TARGET_LINK_LIBRARIES(examplePio_f90 piof pioc)

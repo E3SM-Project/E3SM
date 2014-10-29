@@ -160,7 +160,5 @@ ADD_SUBDIRECTORY(examples)
 
 if(${PIO_BUILD_TESTS})
   ADD_SUBDIRECTORY(test)
-  ADD_SUBDIRECTORY(unittests)
-  ADD_SUBDIRECTORY(testpio)
 endif()
 
