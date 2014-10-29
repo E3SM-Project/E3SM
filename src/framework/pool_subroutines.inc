@@ -4533,6 +4533,38 @@
 
 
 !-----------------------------------------------------------------------
+!  routine mpas_pool_config_type
+!
+!> \brief Returns the type of a config in an MPAS pool.
+!> \author Michael Duda
+!> \date   29 October 2014
+!> \details
+!> Returns the type of the specified config in the MPAS pool. If the 
+!> config does not exist in the pool, a value of MPAS_POOL_FATAL is returned.
+!
+!-----------------------------------------------------------------------
+   integer function mpas_pool_config_type(inPool, key)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+
+      type (mpas_pool_data_type), pointer :: mem
+
+
+      mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+
+      if (associated(mem)) then
+         mpas_pool_config_type = mem % contentsType
+      else
+         mpas_pool_config_type = MPAS_POOL_FATAL
+      end if
+
+   end function mpas_pool_config_type!}}}
+
+
+!-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_config_real
 !
 !> \brief MPAS Pool Real Config Access Routine
