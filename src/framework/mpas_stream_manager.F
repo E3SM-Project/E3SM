@@ -1837,12 +1837,17 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
+        type (MPAS_pool_type), pointer :: att_pool
+        integer, pointer :: queryVal
+        integer :: att_type
+        integer :: err_level
         integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+        nullify(queryVal)
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
@@ -1850,10 +1855,30 @@ module mpas_stream_manager
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                 return 
             end if
-    
-            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+
+            att_pool => stream_cursor % att_pool
         else
-            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+            att_pool => manager % defaultAtts
+        end if
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+        call mpas_pool_get_config(att_pool, attName, queryVal)
+        call mpas_pool_set_error_level(err_level)
+        if (.not. associated(queryVal)) then
+            !
+            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+            !    in the call above to mpas_pool_get_config()
+            !
+            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type integer.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+            call mpas_pool_add_config(att_pool, attName, attVal)
+        else
+            queryVal = attVal
         end if
 
     end subroutine MPAS_stream_mgr_add_att_int!}}}
@@ -1884,12 +1909,17 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
+        type (MPAS_pool_type), pointer :: att_pool
+        real (kind=RKIND), pointer :: queryVal
+        integer :: att_type
+        integer :: err_level
         integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+        nullify(queryVal)
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
@@ -1898,9 +1928,29 @@ module mpas_stream_manager
                 return 
             end if
 
-            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+            att_pool => stream_cursor % att_pool
         else
-            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+            att_pool => manager % defaultAtts
+        end if
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+        call mpas_pool_get_config(att_pool, attName, queryVal)
+        call mpas_pool_set_error_level(err_level)
+        if (.not. associated(queryVal)) then
+            !
+            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+            !    in the call above to mpas_pool_get_config()
+            !
+            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type real.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+            call mpas_pool_add_config(att_pool, attName, attVal)
+        else
+            queryVal = attVal
         end if
 
     end subroutine MPAS_stream_mgr_add_att_real!}}}
@@ -1931,12 +1981,17 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
+        type (MPAS_pool_type), pointer :: att_pool
+        character (len=StrKIND), pointer :: queryVal
+        integer :: att_type
+        integer :: err_level
         integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+        nullify(queryVal)
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
@@ -1945,9 +2000,29 @@ module mpas_stream_manager
                 return 
             end if
 
-            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+            att_pool => stream_cursor % att_pool
         else
-            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+            att_pool => manager % defaultAtts
+        end if
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+        call mpas_pool_get_config(att_pool, attName, queryVal)
+        call mpas_pool_set_error_level(err_level)
+        if (.not. associated(queryVal)) then
+            !
+            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+            !    in the call above to mpas_pool_get_config()
+            !
+            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type character.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+            call mpas_pool_add_config(att_pool, attName, attVal)
+        else
+            queryVal = attVal
         end if
 
     end subroutine MPAS_stream_mgr_add_att_char!}}}
@@ -1978,12 +2053,17 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
+        type (MPAS_pool_type), pointer :: att_pool
+        logical, pointer :: queryVal
+        integer :: att_type
+        integer :: err_level
         integer :: err_local
 
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_att()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+        nullify(queryVal)
 
         if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
@@ -1992,9 +2072,29 @@ module mpas_stream_manager
                 return 
             end if
 
-            call mpas_pool_add_config(stream_cursor % att_pool, attName, attVal)
+            att_pool => stream_cursor % att_pool
         else
-            call mpas_pool_add_config(manager % defaultAtts, attName, attVal)
+            att_pool => manager % defaultAtts
+        end if
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+        call mpas_pool_get_config(att_pool, attName, queryVal)
+        call mpas_pool_set_error_level(err_level)
+        if (.not. associated(queryVal)) then
+            !
+            ! Querying the type of the attribute should return MPAS_POOL_FATAL if the attribute really
+            !    does not exist in the pool; otherwise, the attribute exists but was of the wrong type
+            !    in the call above to mpas_pool_get_config()
+            !
+            if (mpas_pool_config_type(att_pool, attName) /= MPAS_POOL_FATAL) then
+                STREAM_ERROR_WRITE('Attribute '//trim(attName)//' in stream '//trim(streamID)//' is not of type logical.')
+                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                return 
+            end if
+            call mpas_pool_add_config(att_pool, attName, attVal)
+        else
+            queryVal = attVal
         end if
 
     end subroutine MPAS_stream_mgr_add_att_logical!}}}
