@@ -144,7 +144,7 @@ def wait_for_tests(test_paths, no_wait):
            "Missing results for tests: %s" % (set(test_paths) - set(tests_with_results)) )
 
     all_pass = True
-    for test_status, test_path in sorted(tests_with_results.iteritems()):
+    for test_path, test_status in sorted(tests_with_results.iteritems()):
         print "Test '%s' finished with status '%s'" % (test_path, test_status)
         all_pass &= test_status == TEST_PASSED_STATUS
 
