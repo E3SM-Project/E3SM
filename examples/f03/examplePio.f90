@@ -60,23 +60,7 @@ module pioExample
 
     end type pioExampleClass
 
-    !
-    ! Fortran way of getting a user-defined ctor in the
-    ! <inst> = <newClass> form.
-    !
-    interface pioExampleClass
-        module procedure newPioExampleClass
-    end interface
-
 contains
-
-    function newPioExampleClass()
-
-        implicit none
-
-        type(pioExampleClass) :: newPioExampleClass
-
-    end function newPioExampleClass
 
     subroutine init(this)
 
@@ -276,8 +260,6 @@ program main
     implicit none
 
     type(pioExampleClass) :: pioExInst
-
-    pioExInst = pioExampleClass()
 
     call pioExInst%init()
     call pioExInst%createDecomp()
