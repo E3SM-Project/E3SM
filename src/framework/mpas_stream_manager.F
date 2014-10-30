@@ -2407,9 +2407,9 @@ module mpas_stream_manager
                     ! Look for exact record (in the case of overwriting)
                     ! This also gets the number of records in the file.
                     tempRecord = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                    STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+                    STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA tempRecord COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
         
-                    if ( tempRecord /= 0 ) then
+                    if ( tempRecord /= 0 .and. stream % nRecords < maxRecords ) then
                         ! If we found an exact result
                         ! This might result in non-monotonic timestamps in the output file.
                         swapRecords = .true.
@@ -2444,10 +2444,6 @@ module mpas_stream_manager
         STREAM_DEBUG_WRITE(' -- Writing stream ' COMMA trim(stream % name))
         call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
 
-        if ( swapRecords ) then
-            stream % nRecords = tempRecord
-        end if
-
         !
         ! Regardless of the error code from MPAS_writeStream, we need to reset global indices in the stream back to local indices
         !
@@ -2467,7 +2463,15 @@ module mpas_stream_manager
             else
                 ierr = MPAS_STREAM_MGR_ERROR
             end if
+
+            if ( swapRecords ) then
+                stream % nRecords = tempRecord
+            end if
             return
+        end if
+
+        if ( swapRecords ) then
+            stream % nRecords = tempRecord
         end if
 
     end subroutine write_stream !}}}
