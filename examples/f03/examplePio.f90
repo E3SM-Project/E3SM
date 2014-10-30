@@ -8,7 +8,7 @@ module pioExample
     use pio, only : PIO_finalize, PIO_noerr, PIO_iotype_netcdf, PIO_createfile
     use pio, only : PIO_int,var_desc_t, PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef
     use pio, only : PIO_closefile, io_desc_t, PIO_initdecomp, PIO_write_darray
-    use pio, only : PIO_freedecomp, PIO_clobber, PIO_readvar
+    use pio, only : PIO_freedecomp, PIO_clobber, PIO_read_darray, PIO_syncfile, PIO_OFFSET_KIND
 
     implicit none
     save
@@ -16,8 +16,8 @@ module pioExample
 
     include 'mpif.h'
 
-    integer, parameter :: LEN = 1024
-    integer, parameter :: VAL = 42
+    integer, parameter :: LEN = 16  ! total length of the array we are using.  This is then divided among MPI processes
+    integer, parameter :: VAL = 42  ! value used for array that will be written to netcdf file
 
     type, public :: pioExampleClass
 
@@ -30,27 +30,34 @@ module pioExample
 
         type(iosystem_desc_t) :: pioIoSystem
         type(file_desc_t)     :: pioFileDesc
-        integer               :: iotype
-        integer               :: pioDimId
         type(var_desc_t)      :: pioVar
         type(io_desc_t)       :: iodescNCells
-        integer               :: dataBuffer(LEN)
-        integer               :: readBuffer(LEN)
-        integer               :: compdof(LEN)
+
+        integer               :: iotype
+        integer               :: pioDimId
+        integer               :: ista
+        integer               :: isto
+        integer               :: arrIdxPerPe
         integer, dimension(1) :: dimLen
+
+        integer, allocatable  :: dataBuffer(:)
+        integer, allocatable  :: readBuffer(:)
+        integer, allocatable  :: compdof(:)
 
         character(len=255) :: fileName
 
     contains
-        procedure, non_overridable, public :: init
-        procedure,                  public :: createDecomp
-        procedure,                  public :: createFile
-        procedure,                  public :: defineVar
-        procedure,                  public :: writeVar
-        procedure,                  public :: readVar
-        procedure,                  public :: closeFile
-        procedure,                  public :: delete
-        procedure,                  private :: errorHandle
+
+        procedure,  public  :: init
+        procedure,  public  :: createDecomp
+        procedure,  public  :: createFile
+        procedure,  public  :: defineVar
+        procedure,  public  :: writeVar
+        procedure,  public  :: readVar
+        procedure,  public  :: closeFile
+        procedure,  public  :: cleanUp
+        procedure,  private :: errorHandle
+
     end type pioExampleClass
 
     !
@@ -97,9 +104,10 @@ contains
         this%iotype        = PIO_iotype_netcdf
         this%fileName      = "examplePio_f90.nc"
         this%dimLen(1)     = LEN
-        this%compdof       = (/ (i, i = 1,LEN) /)
 
-        this%niotasks = this%ntasks/this%stride
+        this%niotasks = this%ntasks ! keep things simple - 1 iotask per MPI process
+
+        write(*,*) 'this%niotasks ',this%niotasks
 
         call PIO_init(this%myRank,      & ! MPI rank
             MPI_COMM_WORLD,             & ! MPI communicator
@@ -111,10 +119,30 @@ contains
             base=this%optBase)            ! base (optional argument)
 
         ! 
-        ! set up some data that we will write and read from a netcdf file
+        ! set up some data that we will write to a netcdf file
         !
 
-        this%dataBuffer = this%compdof * VAL
+        this%arrIdxPerPe = LEN / this%ntasks
+
+        if (this%arrIdxPerPe < 1) then
+            call this%errorHandle("Not enough work to distribute among pes", 9999)
+        endif
+
+        this%ista = this%myRank * this%arrIdxPerPe + 1
+        this%isto = this%ista + (this%arrIdxPerPe - 1)
+
+        allocate(this%compdof(this%ista:this%isto))
+        allocate(this%dataBuffer(this%ista:this%isto))
+        allocate(this%readBuffer(this%ista:this%isto))
+
+        write(*,*) 'this%myRank ',this%myRank,this%ista,this%isto,this%arrIdxPerPe
+
+        this%compdof(this%ista:this%isto) = (/(i, i=this%ista,this%isto, 1)/)
+
+        write(*,*) 'setting up compdof ',this%compdof(this%ista:this%isto)
+
+        this%dataBuffer(this%ista:this%isto) = this%myRank + VAL
+        write(*,*) 'Before PIO write, elements ',this%dataBuffer(this%ista:this%isto)
 
     end subroutine init
 
@@ -124,7 +152,14 @@ contains
 
         class(pioExampleClass), intent(inout) :: this
 
-        call PIO_initdecomp(this%pioIoSystem, PIO_int, this%dimLen, this%compdof, this%iodescNCells)
+        integer(PIO_OFFSET_KIND) :: start(1)
+        integer(PIO_OFFSET_KIND) :: count(1)
+
+        start(1) = this%ista
+        count(1) = this%arrIdxPerPe
+
+        call PIO_initdecomp(this%pioIoSystem, PIO_int, this%dimLen, this%compdof(this%ista:this%isto), &
+            this%iodescNCells, iostart=start, iocount=count)
 
     end subroutine createDecomp
 
@@ -135,7 +170,6 @@ contains
         class(pioExampleClass), intent(inout) :: this
 
         integer :: retVal
-        character(len=255) :: errMsg
 
         retVal = PIO_createfile(this%pioIoSystem, this%pioFileDesc, this%iotype, trim(this%fileName),PIO_clobber)
         call this%errorHandle("Could not create "//trim(this%fileName), retVal)
@@ -149,7 +183,6 @@ contains
         class(pioExampleClass), intent(inout) :: this
 
         integer :: retVal
-        character(len=255) :: errMsg
 
         retVal = PIO_def_dim(this%pioFileDesc, 'x', this%dimLen(1) , this%pioDimId)
         call this%errorHandle("Could not define dimension x", retVal)
@@ -170,8 +203,9 @@ contains
 
         integer :: retVal
 
-        call PIO_write_darray(this%pioFileDesc, this%pioVar, this%iodescNCells, this%dataBuffer, retVal, -1)
+        call PIO_write_darray(this%pioFileDesc, this%pioVar, this%iodescNCells, this%dataBuffer(this%ista:this%isto), retVal, -1)
         call this%errorHandle("Could not write foo", retVal)
+        call PIO_syncfile(this%pioFileDesc)
 
     end subroutine writeVar
 
@@ -181,12 +215,12 @@ contains
 
         class(pioExampleClass), intent(inout) :: this
 
-        integer :: ierr
         integer :: retVal
 
-        call PIO_read_darray(this%pioFileDesc, this%pioVar, this%iodescNCells,  this%readBuffer, retVal)
+        call PIO_read_darray(this%pioFileDesc, this%pioVar, this%iodescNCells,  this%readBuffer(this%ista:this%isto), retVal)
+        call this%errorHandle("Could not read foo", retVal)
 
-        write(*,*) 'After PIO read, elements 1:10 ',this%readBuffer(1:10)
+        write(*,*) 'After PIO read, elements, rank: ',this%myRank, ' data: ',this%readBuffer(this%ista:this%isto)
 
     end subroutine readVar
 
@@ -196,13 +230,11 @@ contains
 
         class(pioExampleClass), intent(inout) :: this
 
-        integer :: ierr
-
         call PIO_closefile(this%pioFileDesc)
 
     end subroutine closeFile
 
-    subroutine delete(this)
+    subroutine cleanUp(this)
 
         implicit none
 
@@ -210,19 +242,22 @@ contains
 
         integer :: ierr
 
+        deallocate(this%dataBuffer)
+        deallocate(this%readBuffer)
+
         call PIO_freedecomp(this%pioIoSystem, this%iodescNCells)
         call PIO_finalize(this%pioIoSystem, ierr)
         call MPI_Finalize(ierr)
 
-    end subroutine delete
+    end subroutine cleanUp
 
     subroutine errorHandle(this, errMsg, retVal)
 
         implicit none
 
         class(pioExampleClass), intent(inout) :: this
-        character(len=*), intent(in) :: errMsg
-        integer, intent(in) :: retVal
+        character(len=*),       intent(in)    :: errMsg
+        integer,                intent(in)    :: retVal
 
         if (retVal .ne. PIO_NOERR) then
             write(*,*) retVal,errMsg
@@ -231,7 +266,6 @@ contains
         end if
 
     end subroutine errorHandle
-
 
 end module pioExample
 
@@ -244,6 +278,7 @@ program main
     type(pioExampleClass) :: pioExInst
 
     pioExInst = pioExampleClass()
+
     call pioExInst%init()
     call pioExInst%createDecomp()
     call pioExInst%createFile()
@@ -251,6 +286,6 @@ program main
     call pioExInst%writeVar()
     call pioExInst%readVar()
     call pioExInst%closeFile()
-    call pioExInst%delete()
+    call pioExInst%cleanUp()
 
 end program main
