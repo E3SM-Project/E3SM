@@ -3074,7 +3074,7 @@ module mpas_stream_manager
         character(len=StrKIND) :: temp_string
         character(len=StrKIND) :: when_string
         type (MPAS_Time_type) :: filetime
-        type (MPAS_TimeInterval_type) :: intv, rem
+        type (MPAS_TimeInterval_type) :: intv, rem, zeroIntv
         integer :: nrecs, nfiles, irec, direction
         logical :: in_future
 
@@ -3105,12 +3105,18 @@ module mpas_stream_manager
 
 !       STREAM_DEBUG_WRITE(' ** Divisions are: ' COMMA nrecs)
 
-        ! direction == 1 means when is later than ref_time
-        if (direction == 1) then
-            filetime = when - rem
+        call mpas_set_timeInterval(zeroIntv, s=0)
+
+        if ( rem /= zeroIntv ) then
+            ! direction == 1 means when is later than ref_time
+            if (direction == 1) then
+                filetime = when - rem
+            else
+                filetime = when + rem
+                filetime = filetime - filename_interval
+            end if
         else
-            filetime = when + rem
-            filetime = filetime - filename_interval
+            filetime = when
         end if
         call mpas_get_time(filetime, dateTimeString=when_string)
         STREAM_DEBUG_WRITE(' ** filetime start is: ' COMMA trim(when_string))
