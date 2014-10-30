@@ -490,11 +490,11 @@ module mpas_grid_types
       type (mpas_pool_type), pointer :: p => null()
  
       ! For storing config options, dimensions, and packages
-      integer, pointer :: simple_int
+      integer, pointer :: simple_int => null()
       integer, dimension(:), pointer :: simple_int_arr => null()
-      real(kind=RKIND), pointer :: simple_real
-      logical, pointer :: simple_logical
-      character(len=StrKIND), pointer :: simple_char
+      real(kind=RKIND), pointer :: simple_real => null()
+      logical, pointer :: simple_logical => null()
+      character(len=StrKIND), pointer :: simple_char => null()
    end type mpas_pool_data_type
 
    type mpas_pool_member_type
