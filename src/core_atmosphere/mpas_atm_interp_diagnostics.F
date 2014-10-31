@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atm_interp_diagnostics
+ use mpas_dmpar
  use mpas_kind_types
  use mpas_grid_types
  use mpas_constants
@@ -36,6 +37,8 @@
  integer :: nVertLevelsP1
  integer, pointer :: index_qv
  integer, dimension(:,:), pointer :: cellsOnVertex
+
+ type (field2DReal), pointer:: pressure_p_field
 
  real (kind=RKIND), dimension(:), pointer :: areaTriangle
  real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
@@ -91,8 +94,8 @@
  
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter subroutine interp_diagnostics:'
+! write(0,*)
+! write(0,*) '--- enter subroutine interp_diagnostics:'
 
  call mpas_pool_get_dimension(mesh, 'nCells', nCells)
  call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
@@ -113,6 +116,9 @@
 
  qvapor  => scalars(index_qv,:,:)    !MGD does this actually work?
  
+ call mpas_pool_get_field(diag, 'pressure_p', pressure_p_field)
+ call mpas_dmpar_exch_halo_field(pressure_p_field)
+
  call mpas_pool_get_array(diag, 'exner', exner)
  call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
  call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
@@ -255,7 +261,7 @@
  temperature_500hPa(1:nCells) = field_interp(1:nCells,2)
  temperature_700hPa(1:nCells) = field_interp(1:nCells,3)
  temperature_850hPa(1:nCells) = field_interp(1:nCells,4)
- write(0,*) '--- end interpolate temperature:'
+! write(0,*) '--- end interpolate temperature:'
 
 !... relative humidity:
  do iCell = 1, nCells
@@ -269,7 +275,7 @@
  relhum_500hPa(1:nCells) = field_interp(1:nCells,2)
  relhum_700hPa(1:nCells) = field_interp(1:nCells,3)
  relhum_850hPa(1:nCells) = field_interp(1:nCells,4)
- write(0,*) '--- end interpolate relative humidity:'
+! write(0,*) '--- end interpolate relative humidity:'
 
 !... u zonal wind:
  do iCell = 1, nCells
@@ -283,7 +289,7 @@
  uzonal_500hPa(1:nCells) = field_interp(1:nCells,2)
  uzonal_700hPa(1:nCells) = field_interp(1:nCells,3)
  uzonal_850hPa(1:nCells) = field_interp(1:nCells,4)
- write(0,*) '--- end interpolate zonal wind:'
+! write(0,*) '--- end interpolate zonal wind:'
 
 !... u meridional wind:
  do iCell = 1, nCells
@@ -297,7 +303,7 @@
  umeridional_500hPa(1:nCells) = field_interp(1:nCells,2)
  umeridional_700hPa(1:nCells) = field_interp(1:nCells,3)
  umeridional_850hPa(1:nCells) = field_interp(1:nCells,4)
- write(0,*) '--- end interpolate meridional wind:'
+! write(0,*) '--- end interpolate meridional wind:'
 
  if(allocated(field_in)) deallocate(field_in)
  if(allocated(press_in)) deallocate(press_in)
@@ -325,7 +331,7 @@
  height_500hPa(1:nCells) = field_interp(1:nCells,2)
  height_700hPa(1:nCells) = field_interp(1:nCells,3)
  height_850hPa(1:nCells) = field_interp(1:nCells,4)
- write(0,*) '--- end interpolate height:'
+! write(0,*) '--- end interpolate height:'
  
 !... vertical velocity
  do iCell = 1, nCells
@@ -339,7 +345,7 @@
  w_500hPa(1:nCells) = field_interp(1:nCells,2)
  w_700hPa(1:nCells) = field_interp(1:nCells,3)
  w_850hPa(1:nCells) = field_interp(1:nCells,4)
- write(0,*) '--- end interpolate vertical velocity:'
+! write(0,*) '--- end interpolate vertical velocity:'
  
  if(allocated(field_interp)) deallocate(field_interp)
  if(allocated(press_interp)) deallocate(press_interp)
@@ -379,7 +385,7 @@
  vorticity_500hPa(1:nVertices) = field_interp(1:nVertices,2)
  vorticity_700hPa(1:nVertices) = field_interp(1:nVertices,3)
  vorticity_850hPa(1:nVertices) = field_interp(1:nVertices,4)
- write(0,*) '--- end interpolate relative vorticity:'
+! write(0,*) '--- end interpolate relative vorticity:'
 
  if(allocated(field_interp)) deallocate(field_interp)
  if(allocated(press_interp)) deallocate(press_interp)

@@ -15,6 +15,7 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_stream_manager
+      use mpas_io_streams, only : MPAS_STREAM_NEAREST
       use mpas_configure
       use init_atm_cases
    
@@ -48,7 +49,15 @@ module mpas_core
          block => block % next
       end do 
 
-      call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
+      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius, streamID='output', ierr=ierr)
+      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius, streamID='surface', ierr=ierr)
+
+      !
+      ! We don't actually expect the time in the (most likely 'static') file to
+      !    match the time in the namelist, so just read whatever time we find in
+      !    the input file.
+      !
+      call MPAS_stream_mgr_read(stream_manager, whence=MPAS_STREAM_NEAREST, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
    end subroutine mpas_core_init

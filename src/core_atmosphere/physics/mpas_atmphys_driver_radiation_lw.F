@@ -61,17 +61,17 @@
 !>      rrtmg_lw and camrad.
 !>      Laura D. Fowler (birch.mmm,ucar.edu) / 2013-05-29.
 !>    * added structure diag in the call to subroutine init_radiation_lw.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-01.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
 !>    * modified the call to subroutine rrtmg_lwrad to include the option of using the same ozone
 !>      climatology as the one used in the CAM radiation codes.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-17.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-17.
 !>    * in call to subroutine rrtmg_lwrad, replaced the variable g (that originally pointed to 
 !>      gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains
@@ -626,24 +626,24 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter radiation_lw initialization:'
+! write(0,*)
+! write(0,*) '--- enter radiation_lw initialization:'
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case ("rrtmg_lw")
-       write(0,*) '    enter subroutine rrtmg_lwinit:'
+!       write(0,*) '    enter subroutine rrtmg_lwinit:'
        call rrtmg_initlw_forMPAS(dminfo)
-       write(0,*) '    end subroutine rrtmg_lwinit'
+!       write(0,*) '    end subroutine rrtmg_lwinit'
 
     case("cam_lw")
-       write(0,*) '    enter subroutine camradinit:'
+!       write(0,*) '    enter subroutine camradinit:'
        call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
-       write(0,*) '    end subroutine camradinit'
+!       write(0,*) '    end subroutine camradinit'
     
     case default
 
  end select radiation_lw_select
- write(0,*) '--- end radiation_lw initialization'
+! write(0,*) '--- end radiation_lw initialization'
 
  end subroutine init_radiation_lw
 
@@ -675,7 +675,7 @@
 
 !--------------------------------------------------------------------------------------------------
  call mpas_timer_start("radiation_lw")
- write(0,100)
+! write(0,100)
 
 !formats:
  100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
@@ -690,7 +690,7 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case ("rrtmg_lw")
-       write(0,*) '--- enter subroutine rrtmg_lwrad:'
+!       write(0,*) '--- enter subroutine rrtmg_lwrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
 
@@ -715,7 +715,7 @@
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
-       write(0,*) '--- exit subroutine rrtmg_lwrad'
+!       write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
        xtime_m = xtime_s/60.
@@ -727,7 +727,7 @@
        radt = dt_radtlw/60.
 
        call mpas_timer_start("camrad")
-       write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
+!       write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -784,7 +784,7 @@
 !copy local arrays to MPAS grid:
  call radiation_lw_to_MPAS(diag_physics,tend_physics)
 
- write(0,*) '--- end subroutine driver_radiation_lw'
+! write(0,*) '--- end subroutine driver_radiation_lw'
  call mpas_timer_stop("radiation_lw")
 
 !formats:

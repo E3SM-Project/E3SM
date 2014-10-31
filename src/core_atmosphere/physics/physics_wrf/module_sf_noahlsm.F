@@ -3,6 +3,7 @@ MODULE module_sf_noahlsm
 #if defined(mpas)
 !MPAS specific (Laura D. Fowler):
 use mpas_atmphys_constants, rhowater => rho_w
+use mpas_atmphys_utilities
 #else
   USE module_model_constants
 #endif
@@ -2347,13 +2348,13 @@ CONTAINS
 ! ----------------------------------------------------------------------
 !
                IF (SOILTYP .gt. SLCATS) THEN
-!                       CALL wrf_error_fatal ( 'Warning: too many input soil types' )
+                        CALL physics_error_fatal ( 'Warning: too many input soil types' )
                END IF
                IF (VEGTYP .gt. LUCATS) THEN
-!                    CALL wrf_error_fatal ( 'Warning: too many input landuse types' )
+                     CALL physics_error_fatal ( 'Warning: too many input landuse types' )
                END IF
                IF (SLOPETYP .gt. SLPCATS) THEN
-!                    CALL wrf_error_fatal ( 'Warning: too many input slope types' )
+                     CALL physics_error_fatal ( 'Warning: too many input slope types' )
                END IF
 
 ! ----------------------------------------------------------------------

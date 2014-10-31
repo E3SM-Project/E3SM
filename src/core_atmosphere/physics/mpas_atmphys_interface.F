@@ -6,7 +6,7 @@
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 !==================================================================================================
- module mpas_atmphys_interface_nhyd
+ module mpas_atmphys_interface
  use mpas_kind_types
  use mpas_grid_types
 
@@ -48,13 +48,23 @@
 !>      water vapor mixing ratio, we first update the total pressure and exner functions. Then, we
 !>      update the modified potential temperature and calculate the diabatic tendency due to cloud
 !>      microphysics processes.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
 !>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * Added calculation of the surface pressure tendency. Moved the calculation of znu_p below 
+!>      the calculation of the surface pressure to avoid dividing by zero if the surface pressure
+!>      is not output in the init file.
+!>      Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
+!>    * Renamed module mpas_atmphys_interface_nhyd to mpas_atmphys_interface.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-19.
+!>    * In subroutine microphysics_to_MPAS, reverted the calculation of cloud microphysics tendency
+!>      rt_diabatic_tend, and update of the state variables to git hash identifier 7a66f273e182f4.
+!>      This change reflects the fact that we want to compute rt_diabatic_tend at constant volume.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-1-015. 
 
 
  contains
@@ -169,7 +179,7 @@
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: fzm,fzp,rdzw
- real(kind=RKIND),dimension(:),pointer    :: sfc_pressure,plrad
+ real(kind=RKIND),dimension(:),pointer    :: surface_pressure,plrad
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p,u,v,w
@@ -184,15 +194,15 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter subroutine MPAS_to_phys:'
- write(0,*) 'ims=',ims,' ime=',ime
- write(0,*) 'jms=',jms,' jme=',jme
- write(0,*) 'kms=',kms,' kme=',kme
- write(0,*)
- write(0,*) 'its=',its,' ite=',ite
- write(0,*) 'jts=',jts,' jte=',jte
- write(0,*) 'kts=',kts,' kte=',kte
+! write(0,*)
+! write(0,*) '--- enter subroutine MPAS_to_phys:'
+! write(0,*) 'ims=',ims,' ime=',ime
+! write(0,*) 'jms=',jms,' jme=',jme
+! write(0,*) 'kms=',kms,' kme=',kme
+! write(0,*)
+! write(0,*) 'its=',its,' ite=',ite
+! write(0,*) 'jts=',jts,' jte=',jte
+! write(0,*) 'kts=',kts,' kte=',kte
 
 !initialization:
  call mpas_pool_get_array(mesh,'latCell',latCell)
@@ -203,14 +213,14 @@
  call mpas_pool_get_array(mesh,'zgrid'  ,zgrid  )
  call mpas_pool_get_array(mesh,'zz'     ,zz     )
 
- call mpas_pool_get_array(diag,'surface_pressure'      ,sfc_pressure)
- call mpas_pool_get_array(diag,'exner'                 ,exner       )
- call mpas_pool_get_array(diag,'pressure_base'         ,pressure_b  )
- call mpas_pool_get_array(diag,'pressure_p'            ,pressure_p  )
- call mpas_pool_get_array(diag,'rtheta_base'           ,rtheta_b    )
- call mpas_pool_get_array(diag,'rtheta_p'              ,rtheta_p    )
- call mpas_pool_get_array(diag,'uReconstructZonal'     ,u           )
- call mpas_pool_get_array(diag,'uReconstructMeridional',v           )
+ call mpas_pool_get_array(diag,'surface_pressure'      ,surface_pressure)
+ call mpas_pool_get_array(diag,'exner'                 ,exner           )
+ call mpas_pool_get_array(diag,'pressure_base'         ,pressure_b      )
+ call mpas_pool_get_array(diag,'pressure_p'            ,pressure_p      )
+ call mpas_pool_get_array(diag,'rtheta_base'           ,rtheta_b        )
+ call mpas_pool_get_array(diag,'rtheta_p'              ,rtheta_p        )
+ call mpas_pool_get_array(diag,'uReconstructZonal'     ,u               )
+ call mpas_pool_get_array(diag,'uReconstructMeridional',v               )
 
  call mpas_pool_get_array(state,'rho_zz' ,rho_zz ,time_lev)
  call mpas_pool_get_array(state,'theta_m',theta_m,time_lev)
@@ -257,7 +267,6 @@
 
     pi_p(i,k,j)   = exner(k,i)
     pres_p(i,k,j) = pressure_p(k,i) + pressure_b(k,i)
-    znu_p(i,k,j)  = pres_p(i,k,j) / sfc_pressure(i)
 
     zmid_p(i,k,j) = 0.5*(zgrid(k+1,i)+zgrid(k,i))
     dz_p(i,k,j)   = zgrid(k+1,i)-zgrid(k,i)
@@ -273,9 +282,15 @@
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
-    sfc_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
+    surface_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
                     * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
-    sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+    surface_pressure(i) = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+ enddo
+ 
+ do k = kts,kte
+ do i = its,ite
+    znu_p(i,k,j)  = pres_p(i,k,j) / surface_pressure(i)
+ enddo
  enddo
  enddo
 
@@ -420,8 +435,8 @@
 !--------------------------------------------------------------------------------------------------
 
 !initialization:
- write(0,*)
- write(0,*) '--- enter subroutine microphysics_from_MPAS:'
+! write(0,*)
+! write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -488,7 +503,7 @@
 
  end select microp_select_init
 
- write(0,*) '--- end subroutine microphysics_from_MPAS.'
+! write(0,*) '--- end subroutine microphysics_from_MPAS.'
 
 !formats:
  201 format(2i6,10(1x,e15.8))
@@ -512,7 +527,7 @@
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  real(kind=RKIND),dimension(:),pointer    :: rdzw
- real(kind=RKIND),dimension(:),pointer    :: sfc_pressure
+ real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,exner_b,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
@@ -523,25 +538,27 @@
 !local variables:
  integer:: icount
  integer:: i,k,j
- real(kind=RKIND):: acoef,rho1,rho2,tem1,tem2
+ real(kind=RKIND):: rho1,rho2,tem1,tem2
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter subroutine microphysics_to_MPAS:'
+! write(0,*)
+! write(0,*) '--- enter subroutine microphysics_to_MPAS:'
 
 !initialization:
  call mpas_pool_get_array(mesh,'rdzw' ,rdzw )
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
 
- call mpas_pool_get_array(diag,'exner'           ,exner       )
- call mpas_pool_get_array(diag,'exner_base'      ,exner_b     )
- call mpas_pool_get_array(diag,'pressure_base'   ,pressure_b  )
- call mpas_pool_get_array(diag,'pressure_p'      ,pressure_p  )
- call mpas_pool_get_array(diag,'rtheta_base'     ,rtheta_b    )
- call mpas_pool_get_array(diag,'rtheta_p'        ,rtheta_p    )
- call mpas_pool_get_array(diag,'surface_pressure',sfc_pressure) 
+ call mpas_pool_get_array(diag,'exner'           ,exner           )
+ call mpas_pool_get_array(diag,'exner_base'      ,exner_b         )
+ call mpas_pool_get_array(diag,'pressure_base'   ,pressure_b      )
+ call mpas_pool_get_array(diag,'pressure_p'      ,pressure_p      )
+ call mpas_pool_get_array(diag,'rtheta_base'     ,rtheta_b        )
+ call mpas_pool_get_array(diag,'rtheta_p'        ,rtheta_p        )
+ call mpas_pool_get_array(diag,'surface_pressure',surface_pressure)
+
+ call mpas_pool_get_array(tend,'tend_sfc_pressure',tend_sfc_pressure)
 
  call mpas_pool_get_array(state,'rho_zz' ,rho_zz ,time_lev)
  call mpas_pool_get_array(state,'theta_m',theta_m,time_lev)
@@ -564,8 +581,6 @@
  call mpas_pool_get_array(tend,'rt_diabatic_tend',rt_diabatic_tend)
 
 !update variables needed in the dynamical core:
- if(.not.allocated(t_p)) allocate(t_p(ims:ime,kms:kme,jms:jme))
- acoef = (cp-R_d)/cp
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
@@ -573,40 +588,38 @@
     qc(k,i) = qc_p(i,k,j)
     qr(k,i) = qr_p(i,k,j)
 
-    !perturbation pressure and exner function using the equation of state:
-    t_p(i,k,j)    = th_p(i,k,j)*pi_p(i,k,j)
-    rho_p(i,k,j)  = zz(k,i)*rho_zz(k,i)*(1._RKIND+R_v/R_d*qv_p(i,k,j))
-
-    pres_p(i,k,j) = R_d*rho_p(i,k,j)*t_p(i,k,j)
-    pressure_p(k,i) = pres_p(i,k,j)-pressure_b(k,i)
-    exner(k,i) = (pres_p(i,k,j)/P0)**rcp
-
-    !perturbation modified potential temperature and tendency of modified
-    !potential temperature due to cloud microphysics processes:
+    !potential temperature and diabatic forcing:
     rt_diabatic_tend(k,i) = theta_m(k,i)
-    theta_m(k,i) = (pres_p(i,k,j)/P0)**acoef
-    theta_m(k,i) = theta_m(k,i)*P0/(R_d*zz(k,i)*rho_zz(k,i))
-    rt_diabatic_tend(k,i) = (theta_m(k,i)-rt_diabatic_tend(k,i)) / dt_dyn
-    rtheta_p(k,i) = rho_zz(k,i)*theta_m(k,i)-rtheta_b(k,i)
+    theta_m(k,i) = th_p(i,k,j) * (1. + R_v/R_d * qv_p(i,k,j))
+    rt_diabatic_tend(k,i) = (theta_m(k,i) - rt_diabatic_tend(k,i)) / dt_dyn
 
-    !updated potential temperature and recalculate the dry air density:
-    th_p(i,k,j)  = t_p(i,k,j)/exner(k,i)
-    rho_p(i,k,j) = zz(k,i)*rho_zz(k,i) 
- enddo
- enddo
- enddo
- if(allocated(t_p)) deallocate(t_p)
+    !density-weighted perturbation potential temperature:
+    rtheta_p(k,i) = rho_zz(k,i) * theta_m(k,i) - rtheta_b(k,i)
 
-!updates the surface pressure.
+    !exner function:
+    exner(k,i) = (zz(k,i)*(R_d/P0)*(rtheta_p(k,i)+rtheta_b(k,i)))**rcv
+
+    !pertubation pressure:
+    pressure_p(k,i) = zz(k,i)*R_d*(exner(k,i)*rtheta_p(k,i) &
+                    + (exner(k,i)-exner_b(k,i))*rtheta_b(k,i))
+
+ enddo
+ enddo
+ enddo
+
+!updates the surface pressure and calculates the surface pressure tendency:
  do j = jts,jte
  do i = its,ite
     tem1 = zgrid(2,i)-zgrid(1,i)
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
-    sfc_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
-                    * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
-    sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+
+    tend_sfc_pressure(i) = surface_pressure(i)
+    surface_pressure(i)  = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
+                         * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
+    surface_pressure(i)  = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+    tend_sfc_pressure(i)   = (surface_pressure(i)-tend_sfc_pressure(i)) / dt_dyn
  enddo
  enddo
 
@@ -633,10 +646,10 @@
 !formats:
  201 format(2i6,10(1x,e15.8))
 
- write(0,*) '--- end subroutine microphysics_to_MPAS'
+! write(0,*) '--- end subroutine microphysics_to_MPAS'
 
  end subroutine microphysics_to_MPAS
 
 !==================================================================================================
- end module mpas_atmphys_interface_nhyd
+ end module mpas_atmphys_interface
 !==================================================================================================

@@ -30,9 +30,7 @@
  logical,parameter:: frpcpn   = .false.
  logical,parameter:: rdlai2d  = .false.
 
-!urban physics: since MPAS does not plan to run the urban physics option, the two options
-!below are defined locally:
- integer,parameter,public:: isurban=1
+!urban physics: MPAS does not plan to run the urban physics option.
  integer,parameter:: sf_urban_physics = 0 !activate urban canopy model (=0: no urban canopy) 
 
  integer,private:: i,j,k,n
@@ -60,9 +58,12 @@
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine lsm.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * moved the definition of isurban to landuse_init_forMPAS in mpas_atmphys_landuse.F.
+!>      isurban is now defined as a function of the input landuse data file.
+!>      Dominikus Heinzeller (IMK) / 2014-07-24.
 
 !>
 !> DOCUMENTATION:
@@ -527,21 +528,21 @@
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter land surface model initialization:'
+! write(0,*)
+! write(0,*) '--- enter land surface model initialization:'
 
  lsm_select: select case (trim(lsm_scheme))
 
     case ("noah")
-       write(0,*) '    enter subroutine noah_init_forMPAS:'
+!       write(0,*) '    enter subroutine noah_init_forMPAS:'
        call noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
-       write(0,*) '    end subroutine noah_init_forMPAS'
+!       write(0,*) '    end subroutine noah_init_forMPAS'
     
     case default
  
  end select lsm_select
 
- write(0,*) '--- end land surface model initialization'
+! write(0,*) '--- end land surface model initialization'
 
  end subroutine init_lsm
 
@@ -560,17 +561,17 @@
 
 !local pointers:
  logical,pointer:: config_sfc_albedo
- character(len=StrKIND),pointer:: input_landuse_data
+ character(len=StrKIND),pointer:: mminlu
 
 !---------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_lsm:'
- write(0,*) '--- isice   = ',isice
- write(0,*) '--- iswater = ', iswater
- write(0,*) '--- isurban = ', isurban
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_lsm:'
+! write(0,*) '--- isice   = ',isice
+! write(0,*) '--- iswater = ', iswater
+! write(0,*) '--- isurban = ', isurban
 
  call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
- call mpas_pool_get_config(configs,'input_landuse_data',input_landuse_data)
+ call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
 
 !formats:
  101 format(2i6,8(1x,e15.8))
@@ -578,7 +579,7 @@
 
 !copy MPAS arrays to local arrays:
  call lsm_from_MPAS(mesh,diag_physics,sfc_input)
- write(0,*) '--- end lsm_from_MPAS'
+! write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
  lsm_select: select case (trim(lsm_scheme))
@@ -609,7 +610,7 @@
                 itimestep = itimestep , frpcpn    = frpcpn       , rdlai2d   = rdlai2d      , &
                 xice_threshold   = xice_threshold     ,                                       &
                 usemonalb        = config_sfc_albedo  ,                                       &
-                mminlu           = input_landuse_data ,                                       &
+                mminlu           = mminlu ,                                                   &
                 num_soil_layers  = num_soils          ,                                       &         
                 num_roof_layers  = num_soils    ,                                             &
                 num_wall_layers  = num_soils    ,                                             &
@@ -627,7 +628,7 @@
 
 !copy local arrays to MPAS grid:
  call lsm_to_MPAS(mesh,diag_physics,sfc_input)
- write(0,*) '--- end subroutine driver_lsm'
+! write(0,*) '--- end subroutine driver_lsm'
 
  end subroutine driver_lsm
 

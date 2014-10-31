@@ -95,6 +95,10 @@
                 <nml_option name="config_do_DAcycling"               type="logical"       default_value="false"              in_defaults="false"/>
         </nml_record>
 
+        <nml_record name="printout" in_defaults="true">
+                <nml_option name="config_print_global_minmax_vel"    type="logical"       default_value="true"/>
+                <nml_option name="config_print_global_minmax_sca"    type="logical"       default_value="false"              in_defaults="false"/>
+        </nml_record>
 
 <!-- **************************************************************************************** -->
 <!-- *************************************** Streams **************************************** -->
@@ -151,7 +155,6 @@
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
-			<var name="hx"/>
 			<var name="zgrid"/>
 			<var name="rdzw"/>
 			<var name="dzu"/>
@@ -185,6 +188,7 @@
 			<var name="surface_pressure"/>
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -274,7 +278,6 @@
 			<var name="cf3"/>
 			<var name="cpr"/>
 			<var name="cpl"/>
-			<var name="hx"/>
 			<var name="zgrid"/>
 			<var name="rdzw"/>
 			<var name="dzu"/>
@@ -325,6 +328,7 @@
 			<var name="rtheta_p"/>
 			<var name="rho_p"/>
 			<var name="surface_pressure"/>
+                        <var name="tend_sfc_pressure"/>
 			<var name="rt_diabatic_tend"/>
 			<var name="dcEdge_m"/>
 			<var name="nsteps_accum"/>
@@ -473,6 +477,7 @@
 			<var name="ozmixm"/>
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -542,314 +547,69 @@
 			<var name="angleEdge"/>
 			<var name="areaCell"/>
 			<var name="areaTriangle"/>
-			<var name="edgeNormalVectors"/>
-			<var name="localVerticalUnitVectors"/>
-			<var name="cellTangentPlane"/>
 			<var name="cellsOnCell"/>
 			<var name="verticesOnCell"/>
 			<var name="verticesOnEdge"/>
 			<var name="edgesOnVertex"/>
 			<var name="cellsOnVertex"/>
 			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
 			<var name="meshDensity"/>
-			<var name="meshScalingDel2"/>
-			<var name="meshScalingDel4"/>
-			<var name="cf1"/>
-			<var name="cf2"/>
-			<var name="cf3"/>
-			<var name="cpr"/>
-			<var name="cpl"/>
-			<var name="hx"/>
 			<var name="zgrid"/>
-			<var name="rdzw"/>
-			<var name="dzu"/>
-			<var name="rdzu"/>
 			<var name="fzm"/>
 			<var name="fzp"/>
-			<var name="zx"/>
 			<var name="zz"/>
-			<var name="zb"/>
-			<var name="zb3"/>
-			<var name="dss"/>
-			<var name="u_init"/>
-			<var name="t_init"/>
-			<var name="qv_init"/>
-			<var name="defc_a"/>
-			<var name="defc_b"/>
-			<var name="coeffs_reconstruct"/>
-			<var_array name="scalars"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
-			<var name="pressure_p"/>
+			<var name="pressure"/>
+			<var name="surface_pressure"/>
 			<var name="rho"/>
 			<var name="theta"/>
+			<var_array name="scalars"/>
 			<var name="rh"/>
-			<var name="v"/>
 			<var name="divergence"/>
 			<var name="vorticity"/>
-			<var name="pv_edge"/>
-			<var name="rho_edge"/>
 			<var name="ke"/>
-			<var name="pv_vertex"/>
-			<var name="pv_cell"/>
-			<var name="uReconstructX"/>
-			<var name="uReconstructY"/>
-			<var name="uReconstructZ"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
-			<var name="h_divergence"/>
-			<var name="exner"/>
-			<var name="exner_base"/>
-			<var name="pressure_base"/>
-			<var name="rho_base"/>
-			<var name="theta_base"/>
-			<var name="kdiff"/>
-			<var name="surface_pressure"/>
-			<var name="temperature_200hPa"/>
-			<var name="temperature_500hPa"/>
-			<var name="temperature_700hPa"/>
-			<var name="temperature_850hPa"/>
-			<var name="relhum_200hPa"/>
-			<var name="relhum_500hPa"/>
-			<var name="relhum_700hPa"/>
-			<var name="relhum_850hPa"/>
-			<var name="height_200hPa"/>
-			<var name="height_500hPa"/>
-			<var name="height_700hPa"/>
-			<var name="height_850hPa"/>
-			<var name="uzonal_200hPa"/>
-			<var name="uzonal_500hPa"/>
-			<var name="uzonal_700hPa"/>
-			<var name="uzonal_850hPa"/>
-			<var name="umeridional_200hPa"/>
-			<var name="umeridional_500hPa"/>
-			<var name="umeridional_700hPa"/>
-			<var name="umeridional_850hPa"/>
-			<var name="w_200hPa"/>
-			<var name="w_500hPa"/>
-			<var name="w_700hPa"/>
-			<var name="w_850hPa"/>
-			<var name="vorticity_200hPa"/>
-			<var name="vorticity_500hPa"/>
-			<var name="vorticity_700hPa"/>
-			<var name="vorticity_850hPa"/>
-			<var_array name="scalars_tend"/>
-			<var name="tend_u"/>
-			<var name="tend_w"/>
-			<var name="tend_rho"/>
-			<var name="tend_theta"/>
-			<var name="dcEdge_m"/>
-			<var name="refl10cm_max"/>
 			<var name="i_rainnc"/>
-			<var name="sr"/>
-			<var name="rainncv"/>
-			<var name="snowncv"/>
-			<var name="graupelncv"/>
 			<var name="rainnc"/>
-			<var name="snownc"/>
-			<var name="graupelnc"/>
 			<var name="precipw"/>
 			<var name="relhum"/>
-			<var name="i_rainc"/>
 			<var name="cuprec"/>
+			<var name="i_rainc"/>
 			<var name="rainc"/>
-			<var name="raincv"/>
-			<var name="nca"/>
-			<var name="cubot"/>
-			<var name="cutop"/>
-			<var name="w0avg"/>
 			<var name="kpbl"/>
 			<var name="hpbl"/>
-			<var name="exch_h"/>
-			<var name="kzh"/>
-			<var name="kzm"/>
-			<var name="kzq"/>
 			<var name="hfx"/>
-			<var name="mavail"/>
-			<var name="mol"/>
 			<var name="qfx"/>
-			<var name="qsfc"/>
-			<var name="ust"/>
-			<var name="ustm"/>
-			<var name="zol"/>
-			<var name="znt"/>
-			<var name="br"/>
 			<var name="cd"/>
 			<var name="cda"/>
-			<var name="chs"/>
-			<var name="chs2"/>
-			<var name="cqs2"/>
 			<var name="ck"/>
 			<var name="cka"/>
-			<var name="cpm"/>
-			<var name="flhc"/>
-			<var name="flqc"/>
-			<var name="gz1oz0"/>
 			<var name="lh"/>
-			<var name="psim"/>
-			<var name="psih"/>
-			<var name="qgh"/>
-			<var name="regime"/>
-			<var name="rmol"/>
-			<var name="wspd"/>
-			<var name="fh"/>
-			<var name="fm"/>
 			<var name="u10"/>
 			<var name="v10"/>
 			<var name="q2"/>
 			<var name="t2m"/>
 			<var name="th2m"/>
-			<var name="dusfcg"/>
-			<var name="dvsfcg"/>
-			<var name="dtaux3d"/>
-			<var name="dtauy3d"/>
-			<var name="rubldiff"/>
-			<var name="rvbldiff"/>
-			<var name="i_acswdnb"/>
-			<var name="i_acswdnbc"/>
-			<var name="i_acswdnt"/>
-			<var name="i_acswdntc"/>
-			<var name="i_acswupb"/>
-			<var name="i_acswupbc"/>
-			<var name="i_acswupt"/>
-			<var name="i_acswuptc"/>
-			<var name="coszr"/>
-			<var name="swcf"/>
-			<var name="swdnb"/>
-			<var name="swdnbc"/>
-			<var name="swdnt"/>
-			<var name="swdntc"/>
-			<var name="swupb"/>
-			<var name="swupbc"/>
-			<var name="swupt"/>
-			<var name="swuptc"/>
-			<var name="acswdnb"/>
-			<var name="acswdnbc"/>
-			<var name="acswdnt"/>
-			<var name="acswdntc"/>
-			<var name="acswupb"/>
-			<var name="acswupbc"/>
-			<var name="acswupt"/>
-			<var name="acswuptc"/>
 			<var name="gsw"/>
-			<var name="swdnflx"/>
-			<var name="swdnflxc"/>
-			<var name="swupflx"/>
-			<var name="swupflxc"/>
-			<var name="nlrad"/>
-			<var name="plrad"/>
-			<var name="i_aclwdnb"/>
-			<var name="i_aclwdnbc"/>
-			<var name="i_aclwdnt"/>
-			<var name="i_aclwdntc"/>
-			<var name="i_aclwupb"/>
-			<var name="i_aclwupbc"/>
-			<var name="i_aclwupt"/>
-			<var name="i_aclwuptc"/>
-			<var name="lwcf"/>
-			<var name="lwdnb"/>
-			<var name="lwdnbc"/>
-			<var name="lwdnt"/>
-			<var name="lwdntc"/>
-			<var name="lwupb"/>
-			<var name="lwupbc"/>
-			<var name="lwupt"/>
-			<var name="lwuptc"/>
-			<var name="aclwdnb"/>
-			<var name="aclwdnbc"/>
-			<var name="aclwdnt"/>
-			<var name="aclwdntc"/>
-			<var name="aclwupb"/>
-			<var name="aclwupbc"/>
-			<var name="aclwupt"/>
-			<var name="aclwuptc"/>
-			<var name="olrtoa"/>
 			<var name="glw"/>
-			<var name="o3clim"/>
-			<var name="o3vmr "/>
-			<var name="cldfrac"/>
-			<var name="acsnom"/>
 			<var name="acsnow"/>
-			<var name="canwat"/>
-			<var name="chklowq"/>
-			<var name="grdflx"/>
-			<var name="lai"/>
-			<var name="noahres"/>
-			<var name="potevp"/>
-			<var name="qz0"/>
-			<var name="sfc_albedo"/>
-			<var name="sfc_emiss"/>
-			<var name="sfc_emibck"/>
-			<var name="sfcrunoff"/>
-			<var name="smstav"/>
-			<var name="smstot"/>
-			<var name="snopcx"/>
-			<var name="snotime"/>
-			<var name="sstsk"/>
-			<var name="sstsk_dtc"/>
-			<var name="sstsk_dtw"/>
-			<var name="thc"/>
-			<var name="udrunoff"/>
-			<var name="xicem"/>
-			<var name="z0"/>
-			<var name="zs"/>
-			<var name="rthcuten"/>
-			<var name="rqvcuten"/>
-			<var name="rqccuten"/>
-			<var name="rqicuten"/>
-			<var name="rqrcuten"/>
-			<var name="rqscuten"/>
-			<var name="rqvdynten"/>
-			<var name="rucuten"/>
-			<var name="rvcuten"/>
-			<var name="rublten"/>
-			<var name="rvblten"/>
-			<var name="rthblten"/>
-			<var name="rqvblten"/>
-			<var name="rqcblten"/>
-			<var name="rqiblten"/>
-			<var name="rthratensw"/>
-			<var name="rthratenlw"/>
 			<var name="pin"/>
 			<var name="ozmixm"/>
-			<var name="isltyp"/>
-			<var name="ivgtyp"/>
-			<var name="landmask"/>
-			<var name="shdmin"/>
-			<var name="shdmax"/>
-			<var name="snoalb"/>
+			<var name="mminlu"/>
+			<var name="xland"/>
 			<var name="ter"/>
-			<var name="albedo12m"/>
-			<var name="greenfrac"/>
-			<var name="sfc_albbck"/>
 			<var name="skintemp"/>
 			<var name="snow"/>
-			<var name="snowc"/>
 			<var name="snowh"/>
 			<var name="sst"/>
-			<var name="tmn"/>
 			<var name="vegfra"/>
-			<var name="seaice"/>
 			<var name="xice"/>
-			<var name="xland"/>
-			<var name="dzs"/>
-			<var name="smcrel"/>
 			<var name="sh2o"/>
 			<var name="smois"/>
 			<var name="tslb"/>
-			<var name="var2d"/>
-			<var name="con"/>
-			<var name="oa1"/>
-			<var name="oa2"/>
-			<var name="oa3"/>
-			<var name="oa4"/>
-			<var name="ol1"/>
-			<var name="ol2"/>
-			<var name="ol3"/>
-			<var name="ol4"/>
 		</stream>
 
 		<stream name="diagnostics" 
@@ -958,7 +718,6 @@
                 <var name="cpl"                       type="real"     dimensions="THREE nEdges"/>
 
                 <!-- description of the vertical grid structure -->
-                <var name="hx"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="rdzw"                      type="real"     dimensions="nVertLevels"/>
                 <var name="dzu"                       type="real"     dimensions="nVertLevels"/>
@@ -1084,6 +843,7 @@
                 <var name="exner"                   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="exner_base"              type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_base"             type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="pressure"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="pressure_base"           type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rho_base"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta_base"              type="real"     dimensions="nVertLevels nCells Time"/>
@@ -1159,6 +919,7 @@
                 <var name="euler_tend_theta"   name_in_code="theta_euler" type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="tend_w_pgf"         name_in_code="w_pgf"       type="real"     dimensions="nVertLevelsP1 nCells Time"/>
                 <var name="tend_w_buoy"        name_in_code="w_buoy"      type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="tend_sfc_pressure"                             type="real"     dimensions="nCells Time"/>
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
@@ -1181,7 +942,6 @@
 
         <nml_record name="physics" in_defaults="true">
                 <!-- NAMELIST VARIABLES ADDED FOR INITIALIZATION OF SURFACE CHARACTERISTICS: -->
-                <nml_option name="input_landuse_data"                type="character"     default_value="USGS"       in_defaults="false"/>
                 <nml_option name="input_soil_data"                   type="character"     default_value="STAS"       in_defaults="false"/>
                 <nml_option name="input_soil_temperature_lag"        type="integer"       default_value="140"        in_defaults="false"/>
                 <nml_option name="num_soil_layers"                   type="integer"       default_value="4"          in_defaults="false"/>
@@ -1194,30 +954,30 @@
                 <nml_option name="camdim1"                           type="integer"       default_value="4"          in_defaults="false"/>
 
                 <!-- NAMELIST VARIABLES ADDED FOR PHYSICS CONFIGURATION: -->
-                <nml_option name="config_frac_seaice"                type="logical"       default_value="false"/>
-                <nml_option name="config_sfc_albedo"                 type="logical"       default_value="true"/>
-                <nml_option name="config_sfc_snowalbedo"             type="logical"       default_value="true"/>
+                <nml_option name="config_frac_seaice"                type="logical"       default_value="false"      in_defaults="false"/>
+                <nml_option name="config_sfc_albedo"                 type="logical"       default_value="true"       in_defaults="false"/>
+                <nml_option name="config_sfc_snowalbedo"             type="logical"       default_value="true"       in_defaults="false"/>
                 <nml_option name="config_sst_update"                 type="logical"       default_value="false"/>
                 <nml_option name="config_sstdiurn_update"            type="logical"       default_value="false"/>
                 <nml_option name="config_deepsoiltemp_update"        type="logical"       default_value="false"/>
                 <nml_option name="config_o3climatology"              type="logical"       default_value="false"      in_defaults="false"/>
 
-                <nml_option name="config_n_microp"                   type="integer"       default_value="1"/>
+                <nml_option name="config_n_microp"                   type="integer"       default_value="1"          in_defaults="false"/>
 
                 <nml_option name="config_radtlw_interval"            type="character"     default_value="00:30:00"/>
                 <nml_option name="config_radtsw_interval"            type="character"     default_value="00:30:00"/>
-                <nml_option name="config_conv_interval"              type="character"     default_value="none"/>
-                <nml_option name="config_pbl_interval"               type="character"     default_value="none"/>
+                <nml_option name="config_conv_interval"              type="character"     default_value="none"       in_defaults="false"/>
+                <nml_option name="config_pbl_interval"               type="character"     default_value="none"       in_defaults="false"/>
                 <nml_option name="config_camrad_abs_update"          type="character"     default_value="06:00:00"   in_defaults="false"/>
                 <nml_option name="config_greeness_update"            type="character"     default_value="24:00:00"   in_defaults="false"/>
                 <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
 
                 <nml_option name="config_microp_scheme"              type="character"     default_value="wsm6"/>
-                <nml_option name="config_conv_deep_scheme"           type="character"     default_value="kain_fritsch"/>
+                <nml_option name="config_convection_scheme"          type="character"     default_value="kain_fritsch"/>
                 <nml_option name="config_lsm_scheme"                 type="character"     default_value="noah"/>
                 <nml_option name="config_pbl_scheme"                 type="character"     default_value="ysu"/>
                 <nml_option name="config_gwdo_scheme"                type="character"     default_value="off"/>
-                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="cld_incidence"/>
+                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="cld_fraction"/>
                 <nml_option name="config_radt_lw_scheme"             type="character"     default_value="rrtmg_lw"/>
                 <nml_option name="config_radt_sw_scheme"             type="character"     default_value="rrtmg_sw"/>
                 <nml_option name="config_sfclayer_scheme"            type="character"     default_value="monin_obukhov"/>
@@ -1731,6 +1491,7 @@
                 <!--  greenfrac      :monthly climatological greeness fraction                                      [-] -->
                 <!--  isltyp         :dominant soil category                                                        [-] -->
                 <!--  ivgtyp         :dominant vegetation category                                                  [-] -->
+                <!--  mminlu         :land use classification scheme                                                [-] -->
                 <!--  landmask       :=0 for ocean;=1 for land                                                      [-] -->
                 <!--  sfc_albbck     :background albedo                                                             [-] -->
                 <!--  shdmin         :minimum areal fractional coverage of annual green vegetation                  [-] -->
@@ -1756,6 +1517,7 @@
 
                 <var name="isltyp"      type="integer"  dimensions="nCells"/>
                 <var name="ivgtyp"      type="integer"  dimensions="nCells"/>
+                <var name="mminlu"      type="text"     dimensions=""/>
                 <var name="landmask"    type="integer"  dimensions="nCells"/>
                 <var name="shdmin"      type="real"     dimensions="nCells"/>
                 <var name="shdmax"      type="real"     dimensions="nCells"/>

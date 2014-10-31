@@ -25,14 +25,16 @@
 !>    * added the variables sf_surface_physics,alswvisdir_p,alswvisdif_p,alswnirdir_p,alswnirdif_p,
 !>      swvisdir_p,swvisdif_p,swnirdir_p,and swnirdif_p to upgrade the RRTMG short wave radiation
 !>      code to WRF version 3.4.1. see definition of each individual variables below.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-03-11.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
 !>    * removed call to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * added the arrays o3clim_p for implementation of monthly-varying climatological ozone in the
 !>      long wave and short wave RRTMG radiation codes.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-08.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-08.
 !>    * corrected definition of local variable dx_p.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
+!>    * renamed local variable conv_deep_scheme to convection_scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
 !==================================================================================================
@@ -40,7 +42,7 @@
 !==================================================================================================
 
  character(len=StrKIND),public:: microp_scheme
- character(len=StrKIND),public:: conv_deep_scheme
+ character(len=StrKIND),public:: convection_scheme
  character(len=StrKIND),public:: gwdo_scheme
  character(len=StrKIND),public:: lsm_scheme
  character(len=StrKIND),public:: pbl_scheme

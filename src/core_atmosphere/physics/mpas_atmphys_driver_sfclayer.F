@@ -55,21 +55,24 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutine
 !>      sfclay.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * updated the definition of the horizontal resolution to the actual mean distance between
 !>      cell centers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
 !>    * in call to subroutine sfclay, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * in subroutine sfclayer_from_MPAS, added initialization of ustm, cd, cda, ck, and cka. in
 !>      subroutine sfclayer_to_MPAS, filled diag_physics%ustm with ustm_p after call to subroutine
 !>      sfclay.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-16. 
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-16. 
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * added initialization of local logical "allowed_to read" in subroutine init_sfclayer. This
+!>      logical is actually not used in subroutine sfclayinit.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-25. 
 
 
  contains
@@ -356,22 +359,22 @@
 !==================================================================================================
 
 !local variables:
- logical:: allowed_to_read
+ logical, parameter:: allowed_to_read = .false. !actually not used in subroutine sfclayinit.
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter sfclayer_initialization:'
+! write(0,*)
+! write(0,*) '--- enter sfclayer_initialization:'
  sfclayer_select: select case (trim(sfclayer_scheme))
 
     case("monin_obukhov")
-       write(0,*) '    enter monin_obukhov initialization:'
+!       write(0,*) '    enter monin_obukhov initialization:'
        call sfclayinit(allowed_to_read)
-       write(0,*) '    end monin_obukhov initialization'
+!       write(0,*) '    end monin_obukhov initialization'
 
     case default
 
  end select sfclayer_select
- write(0,*) '--- end sfclayer_initialization'
+! write(0,*) '--- end sfclayer_initialization'
 
  end subroutine init_sfclayer
 
@@ -391,8 +394,8 @@
  real(kind=RKIND):: dx
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_sfclayer:'
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_sfclayer:'
 
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
@@ -439,7 +442,7 @@
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(diag_physics)
 
- write(0,*) '--- end subroutine driver_sfclayer'
+! write(0,*) '--- end subroutine driver_sfclayer'
 
  end subroutine driver_sfclayer
 

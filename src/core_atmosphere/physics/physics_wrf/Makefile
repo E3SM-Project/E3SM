@@ -72,7 +72,8 @@ module_sf_noahdrv.o: \
 	module_sf_urban.o
 
 module_sf_noahlsm.o: \
-	../mpas_atmphys_constants.o
+	../mpas_atmphys_constants.o \
+	../mpas_atmphys_utilities.o
 
 clean:
 	$(RM) *.f90 *.o *.mod

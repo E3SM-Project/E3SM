@@ -56,20 +56,20 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutines
 !>      rrtmg_sw and camrad.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * added structure diag in the call to subroutine init_radiation_sw and call to subroutine
 !>      camradinit for initialization of variable mxaerl.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-01.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
 !>    * modified the call to subroutine rrtmg_swrad to include the option of using the same ozone
 !>      climatology as the one used in the CAM radiation codes.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-17.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-17.
 !>    * in call to subroutine rrtmg_swrad, replaced the variable g (that originally pointed to
 !>      gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains
@@ -577,27 +577,27 @@
  type(mpas_pool_type),intent(inout),optional:: state
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter radiation_sw initialization:'
+! write(0,*)
+! write(0,*) '--- enter radiation_sw initialization:'
 
 !call to shortwave radiation scheme:
  radiation_sw_select: select case (trim(radt_sw_scheme))
 
     case ("rrtmg_sw")
-       write(0,*) '    enter subroutine rrtmg_swinit:'
+!       write(0,*) '    enter subroutine rrtmg_swinit:'
        call rrtmg_initsw_forMPAS(dminfo)
-       write(0,*) '    end subroutine rrtmg_swinit'
+!       write(0,*) '    end subroutine rrtmg_swinit'
 
     case("cam_sw")
-       write(0,*) '    enter subroutine camradinit:'
+!       write(0,*) '    enter subroutine camradinit:'
        call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
-       write(0,*) '    end subroutine camradinit'
+!       write(0,*) '    end subroutine camradinit'
 
     case default
 
  end select radiation_sw_select
 
- write(0,*) '--- end radiation_sw initialization'
+! write(0,*) '--- end radiation_sw initialization'
 
  end subroutine init_radiation_sw
 
@@ -630,7 +630,7 @@
  real(kind=RKIND):: radt,xtime_m
 
 !--------------------------------------------------------------------------------------------------
- write(0,100) itimestep
+! write(0,100) itimestep
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
 
@@ -653,7 +653,7 @@
 !... calculates solar declination:
 !call radconst(declin,solcon,julday,degrad,dpd)
  call radconst(declin,solcon,curr_julday,degrad,dpd)
- write(0,101) itimestep,year,julday,gmt,xtime_m,curr_julday,solcon,declin
+! write(0,101) itimestep,year,julday,gmt,xtime_m,curr_julday,solcon,declin
 
 !... convert the radiation time_step to minutes:
  radt = dt_radtsw/60.
@@ -663,7 +663,7 @@
 
     case ("rrtmg_sw")
 
-       write(0,*) '--- enter subroutine rrtmg_swrad:'
+!       write(0,*) '--- enter subroutine rrtmg_swrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
 
@@ -695,11 +695,11 @@
               ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
               its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
-       write(0,*) '--- exit subroutine rrtmg_swrad'
+!       write(0,*) '--- exit subroutine rrtmg_swrad'
 
     case ("cam_sw")
 
-       write(0,*) '--- enter subroutine camrad_sw:'
+!       write(0,*) '--- enter subroutine camrad_sw:'
        call camrad( dolw = .false. , dosw = .true. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -756,7 +756,7 @@
 !copy local arrays to MPAS grid:
  call radiation_sw_to_MPAS(diag_physics,tend_physics)
 
- write(0,*) '--- end subroutine driver_radiation_sw'
+! write(0,*) '--- end subroutine driver_radiation_sw'
 
 !formats:
  200 format(i3,i6,8(1x,e15.8))

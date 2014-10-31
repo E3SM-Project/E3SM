@@ -44,9 +44,12 @@
 !>      -> removed modifying snoalb (surface albedo over snow) over sea-ice points.
 !>      -> revised subroutine physics_init_sst.
 !>      -> revised subroutine physics_init_seaice.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-02.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-02.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * In subroutine physics_init_seaice, assign the sea-ice land use category as a function of
+!>      the land use category input file (MODIS OR USGS).
+!>      Dominikus Heinzeller (IMK) / 2014-07-24.
 
 
  contains
@@ -89,8 +92,8 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter physics_initialize_real:'
+! write(0,*)
+! write(0,*) '--- enter physics_initialize_real:'
 
  call mpas_pool_get_config(configs, 'config_sfc_prefix', config_sfc_prefix)
  call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -170,7 +173,7 @@
 !initialize seaice points:
  call physics_init_seaice(mesh,fg,dims,configs)
  
- write(0,*) '--- end physics_initialize_real:'
+! write(0,*) '--- end physics_initialize_real:'
 
  end subroutine physics_initialize_real
 
@@ -279,8 +282,8 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- enter subroutine init_soil_layers_depth:'
+! write(0,*)
+! write(0,*) '--- enter subroutine init_soil_layers_depth:'
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -354,7 +357,7 @@
 !--------------------------------------------------------------------------------------------------
 
 !write(0,*)
- write(0,*) '--- enter subroutine init_soil_layers_properties:'
+! write(0,*) '--- enter subroutine init_soil_layers_properties:'
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -526,8 +529,8 @@
  logical, pointer :: config_frac_seaice
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine physics_init_sst:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_init_sst:'
 
  call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
 
@@ -568,7 +571,7 @@
        num_seaice_changes
  call physics_message(mess)
 
- write(0,*) '--- end subroutine physics_init_sst:'
+! write(0,*) '--- end subroutine physics_init_sst:'
 
  end subroutine physics_init_sst
 
@@ -599,6 +602,8 @@
  real(kind=RKIND),dimension(:,:),pointer:: tslb,smois,sh2o,smcrel
 
  logical, pointer :: config_frac_seaice
+ character(len=StrKIND),pointer:: config_landuse_data
+ integer:: isice_lu
 
 !note that this threshold is also defined in module_physics_vars.F.It is defined here to avoid
 !adding "use module_physics_vars" since this subroutine is only used for the initialization of
@@ -607,10 +612,11 @@
  real(kind=RKIND),parameter:: total_depth        = 3.   ! 3-meter soil depth.
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter physics_init_seaice:'
+! write(0,*)
+! write(0,*) '--- enter physics_init_seaice:'
 
  call mpas_pool_get_config(configs, 'config_frac_seaice', config_frac_seaice)
+ call mpas_pool_get_config(configs, 'config_landuse_data', config_landuse_data)
 
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
@@ -632,6 +638,18 @@
  call mpas_pool_get_array(input, 'sh2o', sh2o)
  call mpas_pool_get_array(input, 'smcrel', smcrel)
 
+!define the land use category for sea-ice as a function of the land use category input file:
+ sfc_input_select1: select case(trim(config_landuse_data))
+    case('OLD')
+       isice_lu = 11
+    case('USGS')
+       isice_lu = 24
+    case('MODIFIED_IGBP_MODIS_NOAH')
+       isice_lu = 15
+    case default
+       CALL physics_error_fatal ('Invalid Land Use Dataset '//trim(config_landuse_data))
+ end select sfc_input_select1
+ write(0,*) '--- isice_lu   = ',isice_lu
 
 !assign the threshold value for xice as a function of config_frac_seaice:
  if(.not. config_frac_seaice) then
@@ -659,7 +677,7 @@
        num_seaice_changes = num_seaice_changes + 1
        !... sea-ice points are converted to land points:
        if(landmask(iCell) .eq. 0) tmn(iCell) = 271.4_RKIND
-       ivgtyp(iCell) = 24 ! (isice = 24)
+       ivgtyp(iCell) = isice_lu
        isltyp(iCell) = 16
        vegfra(iCell) = 0._RKIND
        xland(iCell)  = 1._RKIND
@@ -696,7 +714,7 @@
  enddo
  101 format(i9,5(1x,e15.8))
 
- write(0,*) '--- end physics_init_seaice:'
+! write(0,*) '--- end physics_init_seaice:'
 
  end subroutine physics_init_seaice
 

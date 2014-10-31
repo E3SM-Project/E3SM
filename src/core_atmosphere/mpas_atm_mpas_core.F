@@ -65,6 +65,9 @@ module mpas_core
       else
          call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=ierr)
       end if
+      if (ierr /= MPAS_STREAM_MGR_NOERR) then
+         call mpas_dmpar_global_abort('Error reading initial conditions.') 
+      end if
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
 
@@ -209,12 +212,14 @@ module mpas_core
 
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: sfc_input
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: atm_input
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      character(len=StrKIND), pointer :: mminlu
 
       integer, pointer :: nEdgesSolve
    
@@ -255,16 +260,29 @@ module mpas_core
       call physics_namelist_check(mesh, block % configs)
 
       !proceed with initialization of physics parameterization if moist_physics is set to true:
+      call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
+
+      ! Before calling physics_init, ensure that mminlu contains the name of the land use dataset
+      call mpas_pool_get_array(sfc_input, 'mminlu', mminlu)
+      if (len_trim(mminlu) == 0) then
+            write(0,*) '****************************************************************'
+            write(0,*) 'No information on land use dataset is available.'
+            write(0,*) 'Assume that we are using ''USGS''.'
+            write(0,*) '****************************************************************'
+            write(mminlu,'(a)') 'USGS'
+      end if
+
+
       if (moist_physics) then
-         !initialization of seom input variables in registry:
-         call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
+         !initialization of some input variables in registry:
+         call mpas_pool_get_subpool(block % structs, 'tend', tend)
          call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
          call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
          call physics_registry_init(mesh, block % configs, sfc_input)
          call physics_run_init(block % configs, mesh, state, clock, stream_manager)
 
          !initialization of all physics:
-         call physics_init(dminfo, clock, block % configs, mesh, diag, state, 1, diag_physics, &
+         call physics_init(dminfo, clock, block % configs, mesh, diag, tend, state, 1, diag_physics, &
                            atm_input, sfc_input)
       endif
 #endif
@@ -294,6 +312,7 @@ module mpas_core
       use mpas_grid_types
       use mpas_kind_types
       use mpas_stream_manager
+      use mpas_io_streams, only : MPAS_STREAM_LATEST_BEFORE
       use mpas_timer
    
       implicit none
@@ -351,12 +370,17 @@ module mpas_core
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
+
+         write(0,*) ' '
          write(0,*) 'Begin timestep ', trim(timeStamp)
 
          !
          ! Read external field updates
          !
-         call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
+         call MPAS_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=ierr)
+         if (ierr /= MPAS_STREAM_MGR_NOERR) then
+            call mpas_dmpar_global_abort('Error reading one or more input files.') 
+         end if
          call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
          call mpas_timer_start("time integration")
@@ -435,6 +459,7 @@ module mpas_core
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels, index_qv
       real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz
+      real (kind=RKIND), dimension(:,:), pointer :: pressure_base, pressure_p, pressure
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -447,6 +472,9 @@ module mpas_core
 
       call mpas_pool_get_array(diag, 'theta', theta)
       call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_base', pressure_base)
+      call mpas_pool_get_array(diag, 'pressure', pressure)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
 
@@ -454,6 +482,7 @@ module mpas_core
          do k=1,nVertLevels
             theta(k,iCell) = theta_m(k,iCell) / (1._RKIND + rvord * scalars(index_qv,k,iCell))
             rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            pressure(k,iCell) = pressure_base(k,iCell) + pressure_p(k,iCell)
          end do
       end do
 
