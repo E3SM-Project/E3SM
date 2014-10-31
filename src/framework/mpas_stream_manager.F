@@ -2634,7 +2634,7 @@ module mpas_stream_manager
         integer, intent(out) :: ierr
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
-        type (MPAS_Time_type) :: now_time, ref_time
+        type (MPAS_Time_type) :: now_time, ref_time, temp_time
         type (MPAS_TimeInterval_type) :: temp_interval
         type (MPAS_TimeInterval_type) :: filename_interval
         character (len=StrKIND) :: temp_filename
@@ -2811,7 +2811,26 @@ module mpas_stream_manager
               !
               ! This only needs to be checked if we found the first or last time slice in the file.
               if ( whence == MPAS_STREAM_NEAREST ) then
-                 if ( stream % nRecords == 1 ) then
+                 if ( stream % nRecords == 1 .and. stream % nRecords == temp_maxRecords ) then
+                     call mpas_set_time(temp_time, dateTimeString=temp_actualWhen)
+
+                     ! If an exact time was found, read that one, and don't bother re-testing.
+                     if ( currentTime == temp_time ) then
+                        retestFile = .false.
+
+                     ! If current time is before the time that was read, re-test using the previous file
+                     else if ( currentTime < temp_time ) then
+                        filenameTime = currentTime - filenameInterval
+                        retestFile = .true.
+                        STREAM_DEBUG_WRITE('Retest nearest prev file')
+
+                     ! If current time is before the time that was read, re-test using the next file
+                     else if ( currentTime > temp_time ) then
+                        filenameTime = currentTime + filenameInterval
+                        retestFile = .true.
+                        STREAM_DEBUG_WRITE('Retest nearest next file')
+                     end if
+                 else if ( stream % nRecords == 1 ) then
                      ! Subtract filename_interval from when, build new filename, and check for nearest time in that file.
                      ! Compare the two, and keep the one closest to when.
                      filenameTime = currentTime - filenameInterval
