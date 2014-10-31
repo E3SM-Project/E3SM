@@ -2853,6 +2853,7 @@ module mpas_stream_manager
                ierr = MPAS_STREAM_MGR_ERROR
                STREAM_DEBUG_WRITE(' Filename: ' COMMA trim(test_filename) COMMA ' does not exist.')
                retestFile = .false.
+               call mpas_closeStream(testStream, ierr=local_ierr)
            end if
         end if
 
@@ -2894,6 +2895,7 @@ module mpas_stream_manager
                   rebuildStream = .true.
               end if
            end if
+           call MPAS_closeStream(testStream, ierr=local_ierr)
         end if
 
         ! Rebuild stream if we need to, because a different file has a closer time.
