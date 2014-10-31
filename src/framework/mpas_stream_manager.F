@@ -2146,13 +2146,13 @@ module mpas_stream_manager
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         type (MPAS_Time_type) :: now_time, ref_time
         type (MPAS_TimeInterval_type) :: temp_interval
-        type (MPAS_TimeInterval_type) :: write_interval, filename_interval
+        type (MPAS_TimeInterval_type) :: filename_interval
         character (len=StrKIND) :: now_string, time_string
         character (len=StrKIND) :: temp_filename, actualWhen
         character (len=StrKIND) :: err_string
         logical :: ringing_alarm, recordSeek, swapRecords
         logical :: clobberRecords, clobberFiles, truncateFiles
-        integer :: nAlarms, maxRecords, tempRecord
+        integer :: maxRecords, tempRecord
         integer :: local_ierr
 
 
@@ -2192,26 +2192,6 @@ module mpas_stream_manager
         if ((.not. ringing_alarm) .and. (.not. forceWriteNow)) then
             return
         end if
-
-
-        !
-        ! Figure out the write interval for the stream, defined as the minimum
-        !    period of any output alarm associated with the stream
-        !
-        alarm_cursor => stream % alarmList_out % head
-        nAlarms = 0
-        do while (associated(alarm_cursor))
-            temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, local_ierr)
-            if (local_ierr == 0) then
-                if (nAlarms == 0) then
-                    write_interval = temp_interval
-                else if (temp_interval < write_interval) then
-                    write_interval = temp_interval
-                end if
-                nAlarms = nAlarms + 1
-            end if
-            alarm_cursor => alarm_cursor % next
-        end do
 
         !
         ! Work out file clobbering options
@@ -2650,12 +2630,11 @@ module mpas_stream_manager
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         type (MPAS_Time_type) :: now_time, ref_time
         type (MPAS_TimeInterval_type) :: temp_interval
-        type (MPAS_TimeInterval_type) :: read_interval
         type (MPAS_TimeInterval_type) :: filename_interval
         character (len=StrKIND) :: temp_filename
         character (len=StrKIND) :: temp_actualWhen
         logical :: ringing_alarm
-        integer :: nAlarms, temp_maxRecords
+        integer :: temp_maxRecords
         integer :: local_ierr
 
         type (MPAS_Time_Type) :: currentTime, filenameTime
@@ -2706,33 +2685,6 @@ module mpas_stream_manager
 
         if ((.not. ringing_alarm) .and. (.not. forceReadNow)) then
             return
-        end if
-
-
-        !
-        ! Figure out the read interval for the stream, defined as the minimum
-        !    period of any input alarm associated with the stream
-        !
-        if (.not. associated(stream % recordInterval)) then
-            alarm_cursor => stream % alarmList_in % head
-            nAlarms = 0
-            do while (associated(alarm_cursor))
-                temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, local_ierr)
-                if (local_ierr == 0) then
-                    if (nAlarms == 0) then
-                        read_interval = temp_interval
-                    else if (temp_interval < read_interval) then
-                        read_interval = temp_interval
-                    end if
-                    nAlarms = nAlarms + 1
-                end if
-                alarm_cursor => alarm_cursor % next
-            end do
-        else
-            read_interval = stream % recordInterval
-
-            ! We should handle this stream below as if it were periodic and therefore had a periodic alarm
-            nAlarms = 1       
         end if
 
         !
