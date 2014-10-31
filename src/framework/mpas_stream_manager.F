@@ -2857,12 +2857,13 @@ module mpas_stream_manager
 
            STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
 
-           call mpas_createStream(testStream, test_filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
-           if (local_ierr /= MPAS_STREAM_NOERR) then
-               ierr = MPAS_STREAM_MGR_ERROR
+           inquire(file=trim(test_filename), exist=retestFile)
+
+           ! If file exists, the testing stream needs to be built.
+           if ( retestFile ) then
+               call mpas_createStream(testStream, test_filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           else
                STREAM_DEBUG_WRITE(' Filename: ' COMMA trim(test_filename) COMMA ' does not exist.')
-               retestFile = .false.
-               call mpas_closeStream(testStream, ierr=local_ierr)
            end if
         end if
 
@@ -2872,7 +2873,7 @@ module mpas_stream_manager
 
            STREAM_DEBUG_WRITE(' -- Test record is ' COMMA test_record COMMA ' out of ' COMMA test_maxRecords COMMA ' with a time of ' COMMA trim(test_actualWhen))
 
-           if ( test_record /= -1 ) then
+           if ( test_record /= 0 ) then
               if ( whence == MPAS_STREAM_NEAREST ) then
                   call mpas_set_time(whenTime, dateTimeString=when)
                   call mpas_set_time(firstTime, dateTimeString=temp_actualWhen)
@@ -2894,15 +2895,25 @@ module mpas_stream_manager
 
                   ! Compare first and second diff, keeping the closest one to when.
                   ! Only need to rebuild stream if the second* ones are closer.
-                  if ( secondDiff < firstDiff ) then
+                  if ( secondDiff == firstDiff ) then
+
+                     ! If times are equidistance, take the later of the two.
+                     if ( firstTime > secondTime ) then
+                        rebuildStream = .false.
+                     else
+                        rebuildStream = .true.
+                     end if
+                  else if ( secondDiff < firstDiff ) then
                      rebuildStream = .true.
                      STREAM_DEBUG_WRITE(' --- New time is closer than old time')
                   else
                      STREAM_DEBUG_WRITE(' --- Old time is closer than test time')
                   end if
-              else if ( stream % nRecords == -1 ) then
+              else if ( stream % nRecords == 0 ) then
                   rebuildStream = .true.
               end if
+           else
+               rebuildStream = .false.
            end if
            call MPAS_closeStream(testStream, ierr=local_ierr)
         end if
