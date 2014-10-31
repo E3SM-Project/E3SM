@@ -245,10 +245,10 @@ class goldbach_intel(platformBuilder):
         """
         self.setInvariantClassAttr()
 
-        self.moduleList = ['compiler/intel/14.0.2']
+        self.moduleList = ['compiler/intel/13.1.2']
 
         self.CMAKE_EXE = '/usr/bin/cmake'
-        self.COMPILE_PATH = ('/usr/mpi/intel/openmpi-1.4.3-qlc/bin/')
+        self.COMPILE_PATH = ('/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc/bin/')
         self.FC = self.COMPILE_PATH + 'mpif90'
         self.CC = self.COMPILE_PATH + 'mpicc'
         self.CXX = self.COMPILE_PATH + 'mpicxx'
@@ -262,19 +262,19 @@ class goldbach_intel(platformBuilder):
                        'mpi_allgather,mpi_alltoallv,mpi_file_read_all,'
                        'mpi_file_write_all,mpibcast,mpiscatterv '
                        '-convert=BIG_ENDIAN '
-                       '-gline  -C=all -g -time -f2003 -ieee=stop -DLINUX '
+                       '-gline  -C=all -g -time -DLINUX '
                        '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF '
                        '-DLINUX '
                        '-DCPRNAG -DHAVE_SLASHPROC -I. '
                        '-I/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183/include '
-                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
+                       '-I/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc/include " ')
         self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
                        '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
                        '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
                        '-DHAVE_SLASHPROC -I. '
-                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
+                       '-I/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc/include " ')
         self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING="-g -Wl,--as-needed,'
                          '--allow-shlib-undefined -DLINUX -DMCT_INTERFACE '
                          '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
@@ -282,12 +282,12 @@ class goldbach_intel(platformBuilder):
                          '-DHAVE_SLASHPROC -I. '
                          '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
         self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-                       '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
+                       '-D NETCDF_DIR:STRING=/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183 '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
                        '-D PLATFORM:STRING=goldbach '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH='
-                        '/usr/mpi/intel/openmpi-1.4.3-qlc'
+                        '/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc'
                         '/bin/mpirun ')
         self.EXECCA = ''
 

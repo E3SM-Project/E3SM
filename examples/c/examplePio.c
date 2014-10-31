@@ -156,9 +156,11 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
     int i;
     PIOc_read_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                      (PIO_Offset)this->arrIdxPerPe, this->readBuffer);
+    
     for (i = 0; i < this->arrIdxPerPe; i++ ){
         printf("after read %d %d\n", this->myRank,this->readBuffer[i]);
     }
+    
     return this;
 }
 
