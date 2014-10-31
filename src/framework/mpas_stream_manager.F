@@ -2398,6 +2398,12 @@ module mpas_stream_manager
                         tempRecord = maxRecords
                         STREAM_DEBUG_WRITE(' -- Exact time match found for ' COMMA trim(now_string) )
                         STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                    else if ( tempRecord == 0 .and. stream % nRecords < maxRecords ) then
+                        ! If we didn't find an exact time, set record to point to the end of the file.
+                        ! This might result in non-monotonic timestamps in the output file.
+                        stream % nRecords = maxRecords + 1
+                        STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
+                        STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
                     end if
                 end if
             end if
