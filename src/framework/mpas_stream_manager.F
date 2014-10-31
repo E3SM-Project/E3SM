@@ -2771,11 +2771,15 @@ module mpas_stream_manager
         !
         stream % nRecords = MPAS_seekStream(stream % stream, when, whence, temp_actualWhen, maxRecords=temp_maxRecords, ierr=local_ierr)
 
-        if ( trim(stream % filename_interval) == 'none' .and. stream % nRecords == 0 .and. temp_maxRecords == 1 ) then
-           stream % nRecords = 1
-           STREAM_DEBUG_WRITE('   Forcing read of first record.')
+        if ( stream % nRecords == 0 .and. temp_maxRecords == 0 ) then
+            stream % nRecords = 1
+            STREAM_WARNING_WRITE('File ' COMMA trim(stream % filename) COMMA ' does not contain a seekable xtime variable. Forcing a read of the first time record.')
         else if (stream % nRecords /= 0) then
-           STREAM_DEBUG_WRITE('   Seeked record is: ' COMMA stream % nRecords COMMA ' out of ' COMMA temp_maxRecords COMMA ' with a time stamp of ' COMMA trim(temp_actualWhen) COMMA ' filename was ' COMMA trim(stream % filename))
+            STREAM_DEBUG_WRITE('   Seeked record is: ' COMMA stream % nRecords COMMA ' out of ' COMMA temp_maxRecords COMMA ' with a time stamp of ' COMMA trim(temp_actualWhen) COMMA ' filename was ' COMMA trim(stream % filename))
+        else if (temp_maxRecords /= 0 .and. whence == MPAS_STREAM_EXACT_TIME) then
+            STREAM_ERROR_WRITE('File ' COMMA trim(stream % filename) COMMA ' does not contain the time ' COMMA trim(when))
+            ierr = MPAS_STREAM_MGR_ERROR
+            return
         end if
 
         retestFile = .false.

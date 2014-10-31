@@ -238,6 +238,7 @@ module mpas_io_streams
       call MPAS_io_inq_var(stream % fileHandle, 'xtime', ierr=io_err)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(maxRecords)) maxRecords = 0
          return
       end if
 
