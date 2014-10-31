@@ -111,6 +111,8 @@ class platformBuilder(object):
             return darwin_gnu()
         if type == "goldbach_nag":
             return goldbach_nag()
+        if type == "goldbach_intel":
+            return goldbach_intel()
         if type == "yellowstone_intel":
             return yellowstone_intel()
 
