@@ -9,6 +9,7 @@ module pioExample
     use pio, only : PIO_int,var_desc_t, PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef
     use pio, only : PIO_closefile, io_desc_t, PIO_initdecomp, PIO_write_darray
     use pio, only : PIO_freedecomp, PIO_clobber, PIO_read_darray, PIO_syncfile, PIO_OFFSET_KIND
+    use pio, only : PIO_nowrite, PIO_openfile
 
     implicit none
     save
@@ -18,6 +19,7 @@ module pioExample
 
     integer, parameter :: LEN = 16  ! total length of the array we are using.  This is then divided among MPI processes
     integer, parameter :: VAL = 42  ! value used for array that will be written to netcdf file
+    integer, parameter :: ERR_CODE = 99
 
     type, public :: pioExampleClass
 
@@ -91,7 +93,7 @@ contains
 
         this%niotasks = this%ntasks ! keep things simple - 1 iotask per MPI process
 
-        write(*,*) 'this%niotasks ',this%niotasks
+        !write(*,*) 'this%niotasks ',this%niotasks
 
         call PIO_init(this%myRank,      & ! MPI rank
             MPI_COMM_WORLD,             & ! MPI communicator
@@ -109,7 +111,7 @@ contains
         this%arrIdxPerPe = LEN / this%ntasks
 
         if (this%arrIdxPerPe < 1) then
-            call this%errorHandle("Not enough work to distribute among pes", 9999)
+            call this%errorHandle("Not enough work to distribute among pes", ERR_CODE)
         endif
 
         this%ista = this%myRank * this%arrIdxPerPe + 1
@@ -119,14 +121,9 @@ contains
         allocate(this%dataBuffer(this%ista:this%isto))
         allocate(this%readBuffer(this%ista:this%isto))
 
-        write(*,*) 'this%myRank ',this%myRank,this%ista,this%isto,this%arrIdxPerPe
-
         this%compdof(this%ista:this%isto) = (/(i, i=this%ista,this%isto, 1)/)
-
-        write(*,*) 'setting up compdof ',this%compdof(this%ista:this%isto)
-
         this%dataBuffer(this%ista:this%isto) = this%myRank + VAL
-        write(*,*) 'Before PIO write, elements ',this%dataBuffer(this%ista:this%isto)
+        this%readBuffer(this%ista:this%isto) = 0
 
     end subroutine init
 
@@ -155,7 +152,7 @@ contains
 
         integer :: retVal
 
-        retVal = PIO_createfile(this%pioIoSystem, this%pioFileDesc, this%iotype, trim(this%fileName),PIO_clobber)
+        retVal = PIO_createfile(this%pioIoSystem, this%pioFileDesc, this%iotype, trim(this%fileName), PIO_clobber)
         call this%errorHandle("Could not create "//trim(this%fileName), retVal)
 
     end subroutine createFile
@@ -187,7 +184,9 @@ contains
 
         integer :: retVal
 
-        call PIO_write_darray(this%pioFileDesc, this%pioVar, this%iodescNCells, this%dataBuffer(this%ista:this%isto), retVal, -1)
+        write(*,*) 'Before write ',this%dataBuffer(this%ista:this%isto)
+
+        call PIO_write_darray(this%pioFileDesc, this%pioVar, this%iodescNCells, this%dataBuffer(this%ista:this%isto), retVal)
         call this%errorHandle("Could not write foo", retVal)
         call PIO_syncfile(this%pioFileDesc)
 
@@ -201,10 +200,10 @@ contains
 
         integer :: retVal
 
-        call PIO_read_darray(this%pioFileDesc, this%pioVar, this%iodescNCells,  this%readBuffer(this%ista:this%isto), retVal)
+        call PIO_read_darray(this%pioFileDesc, this%pioVar, this%iodescNCells,  this%readBuffer, retVal)
         call this%errorHandle("Could not read foo", retVal)
 
-        write(*,*) 'After PIO read, elements, rank: ',this%myRank, ' data: ',this%readBuffer(this%ista:this%isto)
+        write(*,*) 'After read ',this%readBuffer
 
     end subroutine readVar
 
@@ -226,6 +225,7 @@ contains
 
         integer :: ierr
 
+        deallocate(this%compdof)
         deallocate(this%dataBuffer)
         deallocate(this%readBuffer)
 
