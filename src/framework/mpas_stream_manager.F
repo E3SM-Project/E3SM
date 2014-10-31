@@ -2828,16 +2828,6 @@ module mpas_stream_manager
            end if
         end if
 
-        
-        ! We can only retest the stream if we expect a file to exist there.
-        ! If filenameTime is before referenceTime, we expect no file should
-        ! exist, since referenceTime should be the first time stamp in any
-        ! file.
-        if ( retestFile .and. filenameTime < stream % referenceTime ) then
-            retestFile = .false.
-            STREAM_DEBUG_WRITE(' Do not retest. No files expected prior to ' COMMA trim(stream % filename))
-        end if
-
         if ( retestFile ) then
            STREAM_DEBUG_WRITE(' --- Retesting file... ')
            call mpas_get_time(filenameTime, dateTimeString=test_when)
