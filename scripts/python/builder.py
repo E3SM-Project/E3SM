@@ -248,7 +248,7 @@ class goldbach_intel(platformBuilder):
         self.moduleList = ['compiler/intel/14.0.2']
 
         self.CMAKE_EXE = '/usr/bin/cmake'
-        self.COMPILE_PATH = ('/usr/mpi/intel/openmpi-1.4.3-qlc/bin')
+        self.COMPILE_PATH = ('/usr/mpi/intel/openmpi-1.4.3-qlc/bin/')
         self.FC = self.COMPILE_PATH + 'mpif90'
         self.CC = self.COMPILE_PATH + 'mpicc'
         self.CXX = self.COMPILE_PATH + 'mpicxx'
