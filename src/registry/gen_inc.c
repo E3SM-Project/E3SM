@@ -458,7 +458,8 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 	ezxml_t streams_xml, varstruct_xml, opt_xml, var_xml, vararray_xml, stream_xml;
 
 	const char *optstream, *optname, *optvarname, *opttype;
-	const char *optimmutable, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
+	const char *optimmutable, *optfilename, *optfilename_interval, *optinterval_in, *optinterval_out, *optruntime, *optpackages;
+	const char *optref_time, *optprecision, *optrecord_interval, *optclobber_mode;
 	FILE *fd, *fd2;
 	char filename[64], filename2[64];
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
@@ -475,21 +476,39 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 			optname = ezxml_attr(opt_xml, "name");
 			opttype = ezxml_attr(opt_xml, "type");
 			optfilename = ezxml_attr(opt_xml, "filename_template");
-			optrecords = ezxml_attr(opt_xml, "records_per_file");
+			optfilename_interval = ezxml_attr(opt_xml, "filename_interval");
 			optinterval_in = ezxml_attr(opt_xml, "input_interval");
 			optinterval_out = ezxml_attr(opt_xml, "output_interval");
 			optimmutable = ezxml_attr(opt_xml, "immutable");
 			optruntime = ezxml_attr(opt_xml, "runtime_format");
 			optpackages = ezxml_attr(opt_xml, "packages");
+			optprecision = ezxml_attr(opt_xml, "precision");
+			optref_time = ezxml_attr(opt_xml, "reference_time");
+			optrecord_interval = ezxml_attr(opt_xml, "record_interval");
+			optclobber_mode = ezxml_attr(opt_xml, "clobber_mode");
 
 			/* Generate immutable default stream */
 			if (optimmutable != NULL && strcmp(optimmutable, "true") == 0) {
 				fprintf(fd, "<immutable_stream name=\"%s\"\n", optname);
 				fprintf(fd, "                  type=\"%s\"\n", opttype);
 				fprintf(fd, "                  filename_template=\"%s\"\n", optfilename);
-				fprintf(fd, "                  records_per_file=\"%s\"\n", optrecords);
+				if (optfilename_interval) {
+					fprintf(fd, "                  filename_interval=\"%s\"\n", optfilename_interval);
+				}
 				if (optpackages) {
 					fprintf(fd, "                  packages=\"%s\"\n",optpackages);
+				}
+				if (optprecision) {
+					fprintf(fd, "                  precision=\"%s\"\n", optprecision);
+				}
+				if (optref_time) {
+					fprintf(fd, "                  reference_time=\"%s\"\n", optref_time);
+				}
+				if (optrecord_interval) {
+					fprintf(fd, "                  record_interval=\"%s\"\n", optrecord_interval);
+				}
+				if (optclobber_mode) {
+					fprintf(fd, "                  clobber_mode=\"%s\"\n", optclobber_mode);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "                  input_interval=\"%s\"", optinterval_in);
@@ -504,9 +523,23 @@ void write_default_streams(ezxml_t registry){/*{{{*/
 				fprintf(fd, "<stream name=\"%s\"\n", optname);
 				fprintf(fd, "        type=\"%s\"\n", opttype);
 				fprintf(fd, "        filename_template=\"%s\"\n", optfilename);
-				fprintf(fd, "        records_per_file=\"%s\"\n", optrecords);
+				if( optfilename_interval) {
+					fprintf(fd, "        filename_interval=\"%s\"\n", optfilename_interval);
+				}
 				if (optpackages) {
 					fprintf(fd, "        packages=\"%s\"\n",optpackages);
+				}
+				if (optprecision) {
+					fprintf(fd, "        precision=\"%s\"\n", optprecision);
+				}
+				if (optref_time) {
+					fprintf(fd, "        reference_time=\"%s\"\n", optref_time);
+				}
+				if (optrecord_interval) {
+					fprintf(fd, "        record_interval=\"%s\"\n", optrecord_interval);
+				}
+				if (optclobber_mode) {
+					fprintf(fd, "        clobber_mode=\"%s\"\n", optclobber_mode);
 				}
 				if (strstr(opttype, "input") != NULL) {
 					fprintf(fd, "        input_interval=\"%s\"", optinterval_in);
@@ -2127,7 +2160,7 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	ezxml_t streams_xml, stream_xml, var_xml, vararr_xml, varstruct_xml;
 	ezxml_t substream_xml, matchstreams_xml, matchstream_xml;
 
-	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optrecords, *optinterval_in, *optinterval_out, *optimmutable;
+	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optinterval_in, *optinterval_out, *optimmutable;
 	const char *optstructname, *optsubstreamname, *optmatchstreamname, *optmatchimmutable;
 	const char *corename;
 	FILE *fd;
@@ -2163,17 +2196,16 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 				optname = ezxml_attr(stream_xml, "name");
 				opttype = ezxml_attr(stream_xml, "type");
 				optfilename = ezxml_attr(stream_xml, "filename_template");
-				optrecords = ezxml_attr(stream_xml, "records_per_file");
 
 				/* create the stream */
 				if (strstr(opttype, "input") != NULL && strstr(opttype, "output") != NULL)
-					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT_OUTPUT, \'%s\', ierr=ierr)\n", optname, optfilename);
 				else if (strstr(opttype, "input") != NULL)
-					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_INPUT, \'%s\', ierr=ierr)\n", optname, optfilename);
 				else if (strstr(opttype, "output") != NULL)
-					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_OUTPUT, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_OUTPUT, \'%s\', ierr=ierr)\n", optname, optfilename);
 				else
-					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_NONE, \'%s\', %s, ierr=ierr)\n", optname, optfilename, optrecords);
+					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_NONE, \'%s\', ierr=ierr)\n", optname, optfilename);
 
 				/* Loop over streams listed within the stream (only use immutable streams) */
 				for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {

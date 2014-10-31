@@ -18,7 +18,6 @@
 	<streams>
 		<stream name="globalStatsOutput" type="output"
 				filename_template="analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc"
-				records_per_file="1"
 				output_interval="0000_12:00:00"
 				runtime_format="single_file">
 

@@ -31,9 +31,9 @@ module mpas_stream_list
         logical :: active_stream = .true.
         character(len=StrKIND) :: filename
         character(len=StrKIND) :: filename_template
+        character(len=StrKIND) :: filename_interval
         type (MPAS_Stream_type), pointer :: stream => null()
         integer :: timeLevel = 0
-        integer :: maxRecords
         integer :: nRecords
         integer :: precision = MPAS_IO_NATIVE_PRECISION
         integer :: clobber_mode

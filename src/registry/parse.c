@@ -89,7 +89,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
-	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
+	const char *streamname, *streamtype, *streamfilename, *streaminterval_in, *streaminterval_out, *streampackages;
 	const char *streamimmutable, *streamformat;
 	const char *streamname2, *streamfilename2;
 	const char *substreamname, *streamimmutable2;
@@ -512,7 +512,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			streamname = ezxml_attr(stream_xml, "name");
 			streamtype = ezxml_attr(stream_xml, "type");
 			streamfilename = ezxml_attr(stream_xml, "filename_template");
-			streamrecords = ezxml_attr(stream_xml, "records_per_file");
 			streaminterval_in = ezxml_attr(stream_xml, "input_interval");
 			streaminterval_out = ezxml_attr(stream_xml, "output_interval");
 			streampackages = ezxml_attr(stream_xml, "packages");
@@ -529,10 +528,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			}
 			else if (streamfilename == NULL) {
 				fprintf(stderr, "ERROR: Stream specification for %s missing \"filename_template\" attribute.\n", streamname);
-				return 1;
-			}
-			else if (streamrecords == NULL) {
-				fprintf(stderr, "ERROR: Stream specification for %s missing \"records_per_file\" attribute.\n", streamname);
 				return 1;
 			}
 			else if (strstr(streamtype, "input") != NULL && streaminterval_in == NULL) {

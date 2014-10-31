@@ -48,7 +48,6 @@ module mpas_io_streams
       logical :: isInitialized = .false.
       integer :: ioFormat
       integer :: ioDirection
-      integer :: framesPerFile
       integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
       logical :: clobberRecords = .false.
       character(len=StrKIND) :: filename
@@ -137,7 +136,7 @@ module mpas_io_streams
    contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, framesPerFile, precision, &
+   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, &
                                 clobberRecords, clobberFiles, truncateFiles, ierr)
 
       implicit none
@@ -146,7 +145,6 @@ module mpas_io_streams
       character (len=*), intent(in) :: fileName
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
-      integer, intent(in) :: framesPerFile
       integer, intent(in), optional :: precision
       logical, intent(in), optional :: clobberRecords
       logical, intent(in), optional :: clobberFiles
@@ -177,7 +175,6 @@ module mpas_io_streams
 
       stream % ioDirection = ioDirection
       stream % ioFormat = ioFormat
-      stream % framesPerFile = framesPerFile
       stream % filename = fileName
       if (present(clobberRecords)) then
          stream % clobberRecords = clobberRecords
@@ -191,7 +188,7 @@ module mpas_io_streams
    end subroutine MPAS_createStream
 
 
-   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, ierr)
+   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, maxRecords, ierr)
 
       implicit none
 
@@ -199,6 +196,7 @@ module mpas_io_streams
       character (len=*), intent(in) :: seekTime
       integer, intent(in) :: seekPosition
       character (len=*), intent(out) :: actualTime
+      integer, intent(out), optional :: maxRecords
       integer, intent(out), optional :: ierr
       
       integer :: io_err
@@ -217,6 +215,7 @@ module mpas_io_streams
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
       MPAS_seekStream = 0
 
+      if (present(maxRecords)) maxRecords = 0
 
       !
       ! Sanity checks
@@ -232,11 +231,14 @@ module mpas_io_streams
          return
       end if
 
+      if (present(maxRecords)) maxRecords = timeDim
+
 !write(stderrUnit,*) 'Found ', timeDim, ' times in file' 
 
       call MPAS_io_inq_var(stream % fileHandle, 'xtime', ierr=io_err)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(maxRecords)) maxRecords = 0
          return
       end if
 
@@ -283,6 +285,22 @@ module mpas_io_streams
             end if
          else if (seekPosition == MPAS_STREAM_EARLIEST_AFTER) then
             if (sliceTime >= startTime) then
+               timeDiff = abs(sliceTime - startTime)
+               if (timeDiff < minTimeDiff) then
+                  minTimeDiff = timeDiff
+                  MPAS_seekStream = i
+               end if
+            end if
+         else if (seekPosition == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
+            if (sliceTime < startTime) then
+               timeDiff = abs(sliceTime - startTime)
+               if (timeDiff < minTimeDiff) then
+                  minTimeDiff = timeDiff
+                  MPAS_seekStream = i
+               end if
+            end if
+         else if (seekPosition == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
+            if (sliceTime > startTime) then
                timeDiff = abs(sliceTime - startTime)
                if (timeDiff < minTimeDiff) then
                   minTimeDiff = timeDiff

@@ -104,7 +104,6 @@
 		<stream name="input" 
                         type="input" 
                         filename_template="x1.40962.init.nc" 
-                        records_per_file="1" 
                         input_interval="initial_only"
                         immutable="true">
 
@@ -223,7 +222,6 @@
 		<stream name="restart" 
                         type="input;output" 
                         filename_template="restart.$Y-$M-$D_$h.$m.$s.nc" 
-                        records_per_file="1" 
                         input_interval="initial_only" 
                         output_interval="1_00:00:00" 
                         immutable="true">
@@ -512,7 +510,6 @@
 		<stream name="output" 
                         type="output" 
                         filename_template="history.$Y-$M-$D_$h.$m.$s.nc" 
-                        records_per_file="1" 
                         output_interval="6:00:00"
                         runtime_format="separate_file">
 
@@ -858,7 +855,6 @@
 		<stream name="diagnostics" 
                         type="output" 
                         filename_template="diag.$Y-$M-$D_$h.$m.$s.nc" 
-                        records_per_file="1" 
                         output_interval="3:00:00"
                         runtime_format="separate_file">
 
@@ -891,8 +887,8 @@
 		<stream name="surface" 
                         type="input" 
                         filename_template="x1.40962.sfc_update.nc" 
-                        records_per_file="0" 
                         input_interval="none"
+                        filename_interval="none"
                         runtime_format="separate_file">
 
 			<var name="sst"/>

@@ -27,14 +27,14 @@ module mpas_stream_manager
                                   MPAS_STREAM_INPUT_OUTPUT = 3, &
                                   MPAS_STREAM_NONE         = 4
 
-    integer, public, parameter :: MPAS_STREAM_PROPERTY_ACTIVE      =  5, &
-                                  MPAS_STREAM_PROPERTY_IMMUTABLE   =  6, &
-                                  MPAS_STREAM_PROPERTY_FILENAME    =  7, &
-                                  MPAS_STREAM_PROPERTY_MAX_RECORDS =  8, &
-                                  MPAS_STREAM_PROPERTY_REF_TIME    =  9, &
-                                  MPAS_STREAM_PROPERTY_RECORD_INTV = 10, &
-                                  MPAS_STREAM_PROPERTY_PRECISION   = 11, &
-                                  MPAS_STREAM_PROPERTY_CLOBBER     = 12
+    integer, public, parameter :: MPAS_STREAM_PROPERTY_ACTIVE        =  5, &
+                                  MPAS_STREAM_PROPERTY_IMMUTABLE     =  6, &
+                                  MPAS_STREAM_PROPERTY_FILENAME      =  7, &
+                                  MPAS_STREAM_PROPERTY_REF_TIME      =  8, &
+                                  MPAS_STREAM_PROPERTY_RECORD_INTV   =  9, &
+                                  MPAS_STREAM_PROPERTY_PRECISION     = 10, &
+                                  MPAS_STREAM_PROPERTY_FILENAME_INTV = 11, &
+                                  MPAS_STREAM_PROPERTY_CLOBBER       = 12
 
     integer, public, parameter :: MPAS_STREAM_CLOBBER_NEVER     = 100, &
                                   MPAS_STREAM_CLOBBER_APPEND    = 101, &
@@ -287,8 +287,7 @@ module mpas_stream_manager
     !>  argument may be either MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, 
     !>  MPAS_STREAM_INPUT_OUTPUT, or MPAS_STREAM_NONE. The "filename" argument 
     !>  is the template of the filenames that are associated with the stream. 
-    !>  The "maxRecords" argument specifies the maximum number of records that are 
-    !>  stored in each file. Knowing how many records are in each file, and 
+    !>  Knowing the interval between files, and 
     !>  the filename template, a "referenceTime" argument must be provided to 
     !>  specify the first timestamp appearing in any of the files associated with 
     !>  the stream, thereby determining where the "file breaks" will occur between 
@@ -313,8 +312,9 @@ module mpas_stream_manager
     !>  existing files (MPAS_STREAM_CLOBBER_NEVER).
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, &
-                                             referenceTime, recordInterval, realPrecision, clobberMode, ierr) !{{{
+    subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, &
+                                             filenameInterval, referenceTime, recordInterval, &
+                                             realPrecision, clobberMode, ierr) !{{{
 
         implicit none
 
@@ -324,7 +324,7 @@ module mpas_stream_manager
         character (len=*), intent(in) :: streamID
         integer, intent(in) :: direction
         character (len=*), intent(in) :: filename
-        integer, intent(in) :: maxRecords
+        character (len=*), intent(in), optional :: filenameInterval
         type (MPAS_Time_type), intent(in), optional :: referenceTime
         type (MPAS_TimeInterval_type), intent(in), optional :: recordInterval
         integer, intent(in), optional :: realPrecision
@@ -357,7 +357,14 @@ module mpas_stream_manager
         new_stream % valid = .false.
 !TODO: ensure that filename does not contain ':' characters, which PNETCDF does not like...
         new_stream % filename_template = filename
-        new_stream % maxRecords = maxRecords
+
+        ! Filename interval is 'none' by deault, but is set through the set_property routine.
+        if (present(filenameInterval)) then
+            new_stream % filename_interval = filenameInterval
+        else
+            new_stream % filename_interval = 'none'
+        end if
+
         new_stream % nRecords = 0
         if (present(clobberMode)) then
             new_stream % clobber_mode = clobberMode
@@ -1333,9 +1340,6 @@ module mpas_stream_manager
         !
         select case (propertyName)
 
-            case (MPAS_STREAM_PROPERTY_MAX_RECORDS)
-                stream_cursor % maxRecords = propertyValue
-
             case (MPAS_STREAM_PROPERTY_PRECISION)
                 stream_cursor % precision = propertyValue
 
@@ -1398,6 +1402,9 @@ module mpas_stream_manager
             case (MPAS_STREAM_PROPERTY_FILENAME)
 !TODO: ensure that filename does not contain ':' characters, which PNETCDF does not like...
                 stream_cursor % filename_template = propertyValue
+
+            case (MPAS_STREAM_PROPERTY_FILENAME_INTV)
+                stream_cursor % filename_interval = propertyValue
 
             case (MPAS_STREAM_PROPERTY_REF_TIME)
                 call mpas_set_time(stream_cursor % referenceTime, dateTimeString=propertyValue)
@@ -1523,9 +1530,6 @@ module mpas_stream_manager
         !
         select case (propertyName)
 
-            case (MPAS_STREAM_PROPERTY_MAX_RECORDS)
-                propertyValue = stream_cursor % maxRecords
-
             case (MPAS_STREAM_PROPERTY_PRECISION)
                 propertyValue = stream_cursor % precision
 
@@ -1590,6 +1594,9 @@ module mpas_stream_manager
 
             case (MPAS_STREAM_PROPERTY_FILENAME)
                 propertyValue = stream_cursor % filename_template
+
+            case (MPAS_STREAM_PROPERTY_FILENAME_INTV)
+                propertyValue = stream_cursor % filename_interval
 
             case (MPAS_STREAM_PROPERTY_REF_TIME)
                 call mpas_get_time(stream_cursor % referenceTime, dateTimeString=propertyValue)
@@ -2237,19 +2244,20 @@ module mpas_stream_manager
         integer, intent(out) :: ierr
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
-        type (MPAS_Time_type) :: now_time
+        type (MPAS_Time_type) :: now_time, ref_time
         type (MPAS_TimeInterval_type) :: temp_interval
-        type (MPAS_TimeInterval_type) :: write_interval
-        character (len=StrKIND) :: now_string
-        character (len=StrKIND) :: temp_filename
+        type (MPAS_TimeInterval_type) :: filename_interval
+        character (len=StrKIND) :: now_string, time_string
+        character (len=StrKIND) :: temp_filename, actualWhen
         character (len=StrKIND) :: err_string
-        logical :: ringing_alarm
+        logical :: ringing_alarm, recordSeek, swapRecords
         logical :: clobberRecords, clobberFiles, truncateFiles
-        integer :: nAlarms
+        integer :: maxRecords, tempRecord
         integer :: local_ierr
 
 
         ierr = MPAS_STREAM_MGR_NOERR
+        swapRecords = .false.
 
         !
         ! Check whether this stream is active
@@ -2285,27 +2293,6 @@ module mpas_stream_manager
             return
         end if
 
-
-        !
-        ! Figure out the write interval for the stream, defined as the minimum
-        !    period of any output alarm associated with the stream
-        !
-        alarm_cursor => stream % alarmList_out % head
-        nAlarms = 0
-        do while (associated(alarm_cursor))
-            temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, local_ierr)
-            if (local_ierr == 0) then
-                if (nAlarms == 0) then
-                    write_interval = temp_interval
-                else if (temp_interval < write_interval) then
-                    write_interval = temp_interval
-                end if
-                nAlarms = nAlarms + 1
-            end if
-            alarm_cursor => alarm_cursor % next
-        end do
-
-
         !
         ! Work out file clobbering options
         !
@@ -2329,38 +2316,38 @@ module mpas_stream_manager
             truncateFiles = .false.
         end if
 
-
         !
         ! If the stream is not valid, assume that we have not yet written this
         ! stream, in which case we create the stream from scratch
         !
         if (.not. stream % valid) then
-            if (stream % maxRecords == 0 .or. nAlarms == 0) then
-                call mpas_get_time(stream % referenceTime, dateTimeString=now_string, ierr=local_ierr)
-                call mpas_expand_string(now_string, stream % filename_template, stream % filename)
-                stream % nRecords = 1
-            else
+            if ( stream % filename_interval /= 'none' ) then
                 now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
-                call mpas_get_time(now_time, dateTimeString=now_string, ierr=local_ierr)
-                call build_filename(stream % referenceTime, now_time, MPAS_STREAM_EXACT_TIME, stream % maxRecords, write_interval, &
-                                    stream % filename_template, stream % filename, stream % nRecords, local_ierr)
+                call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
+                call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
+            else
+                call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
+                call mpas_expand_string(time_string, stream % filename_template, stream % filename)
             end if
-            if (local_ierr /= 0) then
-                if (local_ierr == 1) then
-                    STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
-                    STREAM_ERROR_WRITE('    combination of reference time, current time, and interval.')
-                end if
-                ierr = MPAS_STREAM_MGR_ERROR
-                return
+
+            stream % nRecords = 1
+
+            recordSeek = .false.
+            ! Based on clobber_mode, determine if it matters if the file exists or not.
+            if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
+                STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
+    
+                ! Check if the file exists
+                inquire(file=trim(stream % filename), exist=recordSeek)
             end if
 
             !
             ! Build stream from pools of fields and attributes
             !
             allocate(stream % stream)
-            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, stream % maxRecords, &
-                                   precision=stream % precision, clobberRecords=clobberRecords, clobberFiles=clobberFiles, &
-                                   truncateFiles=truncateFiles, ierr=local_ierr)
+            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE,  &
+                                   precision=stream % precision, clobberRecords=clobberRecords, &
+                                   clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
                     !
@@ -2378,6 +2365,26 @@ module mpas_stream_manager
                 return
             end if
 
+            ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
+            if ( recordSeek ) then
+                STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
+                now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                call mpas_get_time(now_time, dateTimeString=now_string)
+    
+                ! Look for exact record (in the case of overwriting)
+                ! This also gets the number of records in the file.
+                stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
+                STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+    
+                if ( stream % nRecords == 0 ) then
+                    ! If we didn't find an exact time, set record to point to the end of the file.
+                    ! This might result in non-monotonic timestamps in the output file.
+                    stream % nRecords = maxRecords + 1
+                    STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
+                    STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                end if
+            end if
+
             call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
@@ -2387,66 +2394,118 @@ module mpas_stream_manager
 
             stream % valid = .true.
         else
-            if (stream % maxRecords /= 0 .and. nAlarms /= 0) then
+            if ( stream % filename_interval /= 'none' ) then
                 now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
-                call build_filename(stream % referenceTime, now_time, MPAS_STREAM_EXACT_TIME, stream % maxRecords, write_interval, &
-                                    stream % filename_template, temp_filename, stream % nRecords, local_ierr)
-                if (local_ierr /= 0) then
-                    if (local_ierr == 1) then
-                        STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
-                        STREAM_ERROR_WRITE('    combination of reference time, current time, and interval.')
-                    end if
+                call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
+    
+                call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+            else
+                call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
+                call mpas_expand_string(time_string, stream % filename_template, temp_filename)
+            end if
+
+            if (temp_filename /= stream % filename) then
+
+                stream % filename = temp_filename
+
+                !
+                ! Close existing stream
+                !
+                call MPAS_closeStream(stream % stream, ierr=local_ierr)
+                if (local_ierr /= MPAS_STREAM_NOERR) then
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
                 end if
 
-                if (temp_filename /= stream % filename) then
-
-                    stream % filename = temp_filename
-
-                    !
-                    ! Close existing stream
-                    !
-                    call MPAS_closeStream(stream % stream, ierr=local_ierr)
-                    if (local_ierr /= MPAS_STREAM_NOERR) then
-                        ierr = MPAS_STREAM_MGR_ERROR
-                        return
-                    end if
-
-                    !
-                    ! Build new stream from pools of fields and attributes
-                    !
-                    call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, &
-                                           stream % maxRecords, precision=stream % precision, clobberRecords=clobberRecords, &
-                                           clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
-                    if (local_ierr /= MPAS_STREAM_NOERR) then
-                        if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
-                            !
-                            ! We should have only reached this point if clobber_mode =  never_modify
-                            !
-                            write(err_string,'(a)') 'Writing to stream '''//trim(stream % name)//''' would clobber file '''//&
-                                                    trim(stream % filename)//''','
-                            STREAM_ERROR_WRITE(trim(err_string))
-                            write(err_string,'(a)') '    but clobber_mode is set to ''never_modify''.'
-                            STREAM_ERROR_WRITE(trim(err_string))
-                            ierr = MPAS_STREAM_MGR_ERR_CLOBBER_FILE
-                        else
-                            ierr = MPAS_STREAM_MGR_ERROR
-                        end if
-                        stream % valid = .false.
-                        return
-                    end if
-
-                    call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
-                    if (local_ierr /= MPAS_STREAM_NOERR) then
-                        ierr = MPAS_STREAM_MGR_ERROR
-                        return
-                    end if
-                    stream % timeLevel = timeLevel
-
+                recordSeek = .false.
+                ! Based on clobber_mode, determine if it matters if the file exists or not.
+                if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
+                    STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
+        
+                    ! Check if the file exists
+                    inquire(file=trim(stream % filename), exist=recordSeek)
                 end if
+
+                stream % nRecords = 1
+
+                !
+                ! Build new stream from pools of fields and attributes
+                !
+                call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, &
+                                       precision=stream % precision, clobberRecords=clobberRecords, &
+                                       clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
+                if (local_ierr /= MPAS_STREAM_NOERR) then
+                    if (local_ierr == MPAS_STREAM_CLOBBER_FILE) then
+                        !
+                        ! We should have only reached this point if clobber_mode =  never_modify
+                        !
+                        write(err_string,'(a)') 'Writing to stream '''//trim(stream % name)//''' would clobber file '''//&
+                                                trim(stream % filename)//''','
+                        STREAM_ERROR_WRITE(trim(err_string))
+                        write(err_string,'(a)') '    but clobber_mode is set to ''never_modify''.'
+                        STREAM_ERROR_WRITE(trim(err_string))
+                        ierr = MPAS_STREAM_MGR_ERR_CLOBBER_FILE
+                    else
+                        ierr = MPAS_STREAM_MGR_ERROR
+                    end if
+                    stream % valid = .false.
+                    return
+                end if
+
+                ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
+                if ( recordSeek ) then
+                    STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
+                    now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                    call mpas_get_time(now_time, dateTimeString=now_string)
+        
+                    ! Look for exact record (in the case of overwriting)
+                    ! This also gets the number of records in the file.
+                    stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
+                    STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+        
+                    if ( stream % nRecords == 0 ) then
+                        ! If we didn't find an exact time, set record to point to the end of the file.
+                        ! This might result in non-monotonic timestamps in the output file.
+                        stream % nRecords = maxRecords + 1
+                        STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
+                        STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                    end if
+                end if
+
+                call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+                if (local_ierr /= MPAS_STREAM_NOERR) then
+                    ierr = MPAS_STREAM_MGR_ERROR
+                    return
+                end if
+                stream % timeLevel = timeLevel
             else
                 stream % nRecords = stream % nRecords + 1
+                if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
+                    now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+                    call mpas_get_time(now_time, dateTimeString=now_string)
+        
+                    ! Look for exact record (in the case of overwriting)
+                    ! This also gets the number of records in the file.
+                    tempRecord = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
+                    STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA tempRecord COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
+        
+                    if ( tempRecord /= 0 .and. stream % nRecords < maxRecords ) then
+                        ! If we found an exact result
+                        ! This might result in non-monotonic timestamps in the output file.
+                        swapRecords = .true.
+                        maxRecords = stream % nRecords
+                        stream % nRecords = tempRecord
+                        tempRecord = maxRecords
+                        STREAM_DEBUG_WRITE(' -- Exact time match found for ' COMMA trim(now_string) )
+                        STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                    else if ( tempRecord == 0 .and. stream % nRecords < maxRecords ) then
+                        ! If we didn't find an exact time, set record to point to the end of the file.
+                        ! This might result in non-monotonic timestamps in the output file.
+                        stream % nRecords = maxRecords + 1
+                        STREAM_DEBUG_WRITE(' -- No exact time match found for ' COMMA trim(now_string) COMMA ' appending record instead.')
+                        STREAM_DEBUG_WRITE(' -- Setting record to: ' COMMA stream % nRecords)
+                    end if
+                end if
             end if
         end if
 
@@ -2468,6 +2527,7 @@ module mpas_stream_manager
         ! 
         ! Write the stream
         ! 
+        STREAM_DEBUG_WRITE(' -- Writing stream ' COMMA trim(stream % name))
         call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
 
         !
@@ -2489,7 +2549,15 @@ module mpas_stream_manager
             else
                 ierr = MPAS_STREAM_MGR_ERROR
             end if
+
+            if ( swapRecords ) then
+                stream % nRecords = tempRecord
+            end if
             return
+        end if
+
+        if ( swapRecords ) then
+            stream % nRecords = tempRecord
         end if
 
     end subroutine write_stream !}}}
@@ -2645,7 +2713,7 @@ module mpas_stream_manager
     !  routine read_stream
     !
     !> \brief Handle the reading of a stream pointed to by the stream list node
-    !> \author Michael Duda
+    !> \author Michael Duda, Doug Jacobsen
     !> \date   4 September 2014
     !> \details
     !>  Private subroutine to handle the details of actually reading a stream.
@@ -2666,17 +2734,30 @@ module mpas_stream_manager
         integer, intent(out) :: ierr
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
-        type (MPAS_Time_type) :: now_time
+        type (MPAS_Time_type) :: now_time, ref_time, temp_time
         type (MPAS_TimeInterval_type) :: temp_interval
-        type (MPAS_TimeInterval_type) :: read_interval
+        type (MPAS_TimeInterval_type) :: filename_interval
         character (len=StrKIND) :: temp_filename
         character (len=StrKIND) :: temp_actualWhen
         logical :: ringing_alarm
-        integer :: nAlarms
+        integer :: temp_maxRecords
         integer :: local_ierr
+
+        type (MPAS_Time_Type) :: currentTime, filenameTime
+        type (MPAS_TimeInterval_Type) :: filenameInterval
+        type (MPAS_Time_Type) :: whenTime, firstTime, secondTime
+        type (MPAS_TimeInterval_Type) :: firstDiff, secondDiff
+
+        type (MPAS_Stream_type) :: testStream
+        character (len=StrKIND) :: test_when
+        character (len=StrKIND) :: test_filename
+        character (len=StrKIND) :: test_actualWhen
+        integer :: test_record, test_maxRecords
+        logical :: retestFile, rebuildStream
 
 
         ierr = MPAS_STREAM_MGR_NOERR
+        rebuildStream = .false.
 
         !
         ! Check whether this stream is active
@@ -2712,61 +2793,32 @@ module mpas_stream_manager
             return
         end if
 
-
         !
-        ! Figure out the read interval for the stream, defined as the minimum
-        !    period of any input alarm associated with the stream
+        ! First we need to build the filename for the current read time.
         !
-        if (.not. associated(stream % recordInterval)) then
-            alarm_cursor => stream % alarmList_in % head
-            nAlarms = 0
-            do while (associated(alarm_cursor))
-                temp_interval = mpas_alarm_interval(manager % streamClock, alarm_cursor % name, local_ierr)
-                if (local_ierr == 0) then
-                    if (nAlarms == 0) then
-                        read_interval = temp_interval
-                    else if (temp_interval < read_interval) then
-                        read_interval = temp_interval
-                    end if
-                    nAlarms = nAlarms + 1
-                end if
-                alarm_cursor => alarm_cursor % next
-            end do
+        if ( stream % filename_interval /= 'none' ) then
+            call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
+            call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
+            
+            call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
         else
-            read_interval = stream % recordInterval
-
-            ! We should handle this stream below as if it were periodic and therefore had a periodic alarm
-            nAlarms = 1       
+            call mpas_expand_string(when, stream % filename_template, temp_filename)
         end if
 
+        STREAM_DEBUG_WRITE(' -- Stream filename is: ' COMMA trim(temp_filename) )
 
         !
         ! If the stream is not valid, assume that we have not yet written this
         ! stream, in which case we create the stream from scratch
         !
         if (.not. stream % valid) then
-            if (stream % maxRecords == 0 .or. nAlarms == 0) then
-                call mpas_expand_string(when, stream % filename_template, stream % filename)
-                stream % nRecords = 1
-            else
-                call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
-                call build_filename(stream % referenceTime, now_time, whence, stream % maxRecords, read_interval, &
-                                    stream % filename_template, stream % filename, stream % nRecords, local_ierr)
-                if (local_ierr /= 0) then
-                    if (local_ierr == 1) then
-                        STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
-                        STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
-                    end if
-                    ierr = MPAS_STREAM_MGR_ERROR
-                    return
-                end if
-            end if
+            stream % filename = temp_filename
 
             !
             ! Build stream from pools of fields and attributes
             !
             allocate(stream % stream)
-            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, stream % maxRecords, &
+            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
                                    precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
@@ -2780,75 +2832,228 @@ module mpas_stream_manager
             end if
             stream % timeLevel = timeLevel
 
-            !
-            ! With multiple times per file, we either get the record number from
-            ! build_filename(), when maxRecords > 0, or we need to compute it here.
-            !
-            if (stream % maxRecords == 0) then
-                stream % nRecords = MPAS_seekStream(stream % stream, when, whence, temp_actualWhen, local_ierr)
-                if (local_ierr /= MPAS_STREAM_NOERR) then
-                    ierr = MPAS_STREAM_MGR_ERROR
-                    return
-                end if
-            end if
-
             stream % valid = .true.
-        else
-            if (stream % maxRecords /= 0 .and. nAlarms /= 0) then
-                call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
-                call build_filename(stream % referenceTime, now_time, whence, stream % maxRecords, read_interval, &
-                                    stream % filename_template, temp_filename, stream % nRecords, local_ierr)
-                if (local_ierr /= 0) then
-                    if (local_ierr == 1) then
-                        STREAM_ERROR_WRITE('Could not find a file offset that exactly matches')
-                        STREAM_ERROR_WRITE('      combination of reference time, current time, and interval.')
-                    end if
-                    ierr = MPAS_STREAM_MGR_ERROR
-                    return
-                end if
+        else if (temp_filename /= stream % filename) then
+           STREAM_DEBUG_WRITE('-- Changing filename from '//trim(stream % filename)//' to '//trim(temp_filename))
 
-                if (temp_filename /= stream % filename) then
+           stream % filename = temp_filename
 
-                    stream % filename = temp_filename
+           !
+           ! Close existing stream
+           !
+           call MPAS_closeStream(stream % stream, ierr=local_ierr)
+           if (local_ierr /= MPAS_STREAM_NOERR) then
+               ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
 
-                    !
-                    ! Close existing stream
-                    !
-                    call MPAS_closeStream(stream % stream, ierr=local_ierr)
-                    if (local_ierr /= MPAS_STREAM_NOERR) then
-                        ierr = MPAS_STREAM_MGR_ERROR
-                        return
-                    end if
+           !
+           ! Build new stream from pools of fields and attributes
+           !
+           call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           if (local_ierr /= MPAS_STREAM_NOERR) then
+               ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
 
-                    !
-                    ! Build new stream from pools of fields and attributes
-                    !
-                    call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
-                                           stream % maxRecords, precision=stream % precision, ierr=local_ierr)
-                    if (local_ierr /= MPAS_STREAM_NOERR) then
-                        ierr = MPAS_STREAM_MGR_ERROR
-                        return
-                    end if
+           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+           if (local_ierr /= MPAS_STREAM_NOERR) then
+               ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
+           stream % timeLevel = timeLevel
+        end if
 
-                    call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
-                    if (local_ierr /= MPAS_STREAM_NOERR) then
-                        ierr = MPAS_STREAM_MGR_ERROR
-                        return
-                    end if
-                    stream % timeLevel = timeLevel
+        STREAM_DEBUG_WRITE(' Seeking time of ' COMMA trim(when))
 
-                end if
-            else
+        !
+        ! With multiple times per file, we need to get the record number from MPAS_seekStream.
+        !
+        stream % nRecords = MPAS_seekStream(stream % stream, when, whence, temp_actualWhen, maxRecords=temp_maxRecords, ierr=local_ierr)
 
-                !
-                ! TODO: Here, perhaps we should call build_filename just to ensure we read from the proper record,
-                !       rather than assuming the records are at the same interval as calls to read the stream
-                !
-                ! Update: We could consider calling MPAS_seekStream(), but doing  so should only be required 
-                !         if we are not making reads from sequential records in the file
+        if ( stream % nRecords == 0 .and. temp_maxRecords == 0 ) then
+            stream % nRecords = 1
+            STREAM_WARNING_WRITE('File ' COMMA trim(stream % filename) COMMA ' does not contain a seekable xtime variable. Forcing a read of the first time record.')
+        else if (stream % nRecords /= 0) then
+            STREAM_DEBUG_WRITE('   Seeked record is: ' COMMA stream % nRecords COMMA ' out of ' COMMA temp_maxRecords COMMA ' with a time stamp of ' COMMA trim(temp_actualWhen) COMMA ' filename was ' COMMA trim(stream % filename))
+        else if (temp_maxRecords /= 0 .and. whence == MPAS_STREAM_EXACT_TIME) then
+            STREAM_ERROR_WRITE('File ' COMMA trim(stream % filename) COMMA ' does not contain the time ' COMMA trim(when))
+            ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
 
-                stream % nRecords = stream % nRecords + 1
-            end if
+        retestFile = .false.
+        if ( trim(stream % filename_interval) /= 'none' .and. whence /= MPAS_STREAM_EXACT_TIME ) then
+           currentTime = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+           call mpas_set_timeInterval(filenameInterval, timeString=stream % filename_interval, ierr=local_ierr)
+
+           ! Need to handle the case where the time requested was not found.
+           !
+           ! Things that need to be handled here are when we're at the beginning
+           ! or end of a file and we're looking for the next or previous time
+           ! record.
+           !
+           ! Currently this only checks one file each direction (forward or
+           ! backward). It will fail finding a file more than one interval away
+           ! from when.
+           if ( stream % nRecords == 0) then
+              if ( ( whence == MPAS_STREAM_LATEST_BEFORE .and. temp_actualWhen /= when ) .or. whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE ) then
+                 ! Subtract filename_interval from when, build new filename, and
+                 ! check for a time latest before in that file.
+                 filenameTime = currentTime - filenameInterval
+                 retestFile = .true.
+                 STREAM_DEBUG_WRITE(' Retest latest before...')
+              else if ( ( whence == MPAS_STREAM_EARLIEST_AFTER .and. temp_actualWhen /= when ).or. whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER ) then
+                 ! Add filename_interval from when, build new filename, and
+                 ! check for a time latest before in that file.
+                 filenameTime = currentTime + filenameInterval
+                 retestFile = .true.
+                 STREAM_DEBUG_WRITE(' Retest earliest after...')
+              end if
+           else
+              ! If time was found, and we were looking for nearest need to make sure nearest isn't in previous or next file.
+              !
+              ! This only needs to be checked if we found the first or last time slice in the file.
+              if ( whence == MPAS_STREAM_NEAREST ) then
+                 if ( stream % nRecords == 1 .and. stream % nRecords == temp_maxRecords ) then
+                     call mpas_set_time(temp_time, dateTimeString=temp_actualWhen)
+
+                     ! If an exact time was found, read that one, and don't bother re-testing.
+                     if ( currentTime == temp_time ) then
+                        retestFile = .false.
+
+                     ! If current time is before the time that was read, re-test using the previous file
+                     else if ( currentTime < temp_time ) then
+                        filenameTime = currentTime - filenameInterval
+                        retestFile = .true.
+                        STREAM_DEBUG_WRITE('Retest nearest prev file')
+
+                     ! If current time is before the time that was read, re-test using the next file
+                     else if ( currentTime > temp_time ) then
+                        filenameTime = currentTime + filenameInterval
+                        retestFile = .true.
+                        STREAM_DEBUG_WRITE('Retest nearest next file')
+                     end if
+                 else if ( stream % nRecords == 1 ) then
+                     ! Subtract filename_interval from when, build new filename, and check for nearest time in that file.
+                     ! Compare the two, and keep the one closest to when.
+                     filenameTime = currentTime - filenameInterval
+                     retestFile = .true.
+                     STREAM_DEBUG_WRITE('Retest nearest beginning')
+                 else if ( stream % nRecords == temp_maxRecords ) then
+                     ! Add filename_interval from when, build new filename, and check for nearest time in that file.
+                     ! Compare the two, and keep the one closest to when.
+                     filenameTime = currentTime + filenameInterval
+                     retestFile = .true.
+                     STREAM_DEBUG_WRITE('Retest nearest end')
+                 end if
+              end if
+           end if
+        end if
+
+        if ( retestFile ) then
+           STREAM_DEBUG_WRITE(' --- Retesting file... ')
+           call mpas_get_time(filenameTime, dateTimeString=test_when)
+
+           call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
+           
+           call build_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
+
+           STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
+
+           inquire(file=trim(test_filename), exist=retestFile)
+
+           ! If file exists, the testing stream needs to be built.
+           if ( retestFile ) then
+               call mpas_createStream(testStream, test_filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           else
+               STREAM_DEBUG_WRITE(' Filename: ' COMMA trim(test_filename) COMMA ' does not exist.')
+           end if
+        end if
+
+        ! Only continue testing file it if was found.
+        if ( retestFile ) then
+           test_record = MPAS_seekStream(testStream, when, whence, test_actualWhen, maxRecords=test_maxRecords, ierr=local_ierr)
+
+           STREAM_DEBUG_WRITE(' -- Test record is ' COMMA test_record COMMA ' out of ' COMMA test_maxRecords COMMA ' with a time of ' COMMA trim(test_actualWhen))
+
+           if ( test_record /= 0 ) then
+              if ( whence == MPAS_STREAM_NEAREST ) then
+                  call mpas_set_time(whenTime, dateTimeString=when)
+                  call mpas_set_time(firstTime, dateTimeString=temp_actualWhen)
+                  call mpas_set_time(secondTime, dateTimeString=test_actualWhen)
+
+                  ! Build first diff
+                  if ( firstTime > whenTime ) then
+                     firstDiff = firstTime - whenTime
+                  else
+                     firstDiff = whenTime - firstTime
+                  end if
+
+                  ! Build second diff
+                  if ( secondTime > whenTime ) then
+                     secondDiff = secondTime - whenTime
+                  else
+                     secondDiff = whenTime - secondTime
+                  end if
+
+                  ! Compare first and second diff, keeping the closest one to when.
+                  ! Only need to rebuild stream if the second* ones are closer.
+                  if ( secondDiff == firstDiff ) then
+
+                     ! If times are equidistance, take the later of the two.
+                     if ( firstTime > secondTime ) then
+                        rebuildStream = .false.
+                     else
+                        rebuildStream = .true.
+                     end if
+                  else if ( secondDiff < firstDiff ) then
+                     rebuildStream = .true.
+                     STREAM_DEBUG_WRITE(' --- New time is closer than old time')
+                  else
+                     STREAM_DEBUG_WRITE(' --- Old time is closer than test time')
+                  end if
+              else if ( stream % nRecords == 0 ) then
+                  rebuildStream = .true.
+              end if
+           else
+               rebuildStream = .false.
+           end if
+           call MPAS_closeStream(testStream, ierr=local_ierr)
+        end if
+
+        ! Rebuild stream if we need to, because a different file has a closer time.
+        if ( rebuildStream ) then
+           STREAM_DEBUG_WRITE(' --- rebuilding stream...')
+           stream % filename = test_filename
+
+           !
+           ! Close existing stream
+           !
+           call MPAS_closeStream(stream % stream, ierr=local_ierr)
+           if (local_ierr /= MPAS_STREAM_NOERR) then
+               ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
+
+           !
+           ! Build new stream from pools of fields and attributes
+           !
+           call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           if (local_ierr /= MPAS_STREAM_NOERR) then
+               ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
+
+           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+           if (local_ierr /= MPAS_STREAM_NOERR) then
+               ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
+           stream % timeLevel = timeLevel
+
+           ! Set record number based on test_record from the read we just did.
+           stream % nRecords = test_record
         end if
 
         if (timeLevel /= stream % timeLevel) then
@@ -2860,7 +3065,6 @@ module mpas_stream_manager
             end if
             stream % timeLevel = timeLevel
         end if
-
 
         ! 
         ! Read the stream
@@ -2926,111 +3130,80 @@ module mpas_stream_manager
     !  routine build_filename
     !
     !> \brief Construct the filename that contains a specific time in a stream
-    !> \author Michael Duda
+    !> \author Michael Duda, Doug Jacobsen
     !> \date   21 August 2014
     !> \details 
     !>  Given a filename template and the information necessary to determine the time
     !>  in the stream that matches a time available in any of the files associated with
-    !>  the stream, returns a specific filename and a record offset within that file
-    !>  matching that time.
-    !>  
-    !>  Implementation note: When two times in a stream are equidistant from the requested
-    !>  time, the MPAS_STREAM_NEAREST option for 'whence' will choose the later time when
-    !>  the requested time is before the reference time, and it will choose the earlier time
-    !>  when the requested time is after the reference time. In other words, we round the
-    !>  requested time towards the reference time.
+    !>  the stream, returns a specific filename that should contain that time.
+    !>
+    !>  Filenames are assumed to start at the earliest time. In other words, a
+    !>  file name is expanded using the earliest time that could possibly be
+    !>  stored in the file.
     !>  
     !>  Return error codes:
     !>  0 no error
-    !>  1 requested exact match for time but found remainder when calculating offset
     !-----------------------------------------------------------------------
-    subroutine build_filename(ref_time, when, whence, maxRecords, period, filename_template, filename, offset, ierr) !{{{
+    subroutine build_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
 
         implicit none
 
         type (MPAS_Time_type), intent(in) :: ref_time
         type (MPAS_Time_type), intent(in) :: when
-        integer, intent(in) :: whence
-        integer, intent(in) :: maxRecords
-        type (MPAS_TimeInterval_type), intent(in) :: period
+        type (MPAS_TimeInterval_type), intent(in) :: filename_interval
         character(len=*), intent(in) :: filename_template
         character(len=*), intent(out) :: filename
-        integer, intent(out) :: offset
         integer, intent(out) :: ierr
 
+        character(len=StrKIND) :: temp_string
         character(len=StrKIND) :: when_string
         type (MPAS_Time_type) :: filetime
-        type (MPAS_TimeInterval_type) :: zero
-        type (MPAS_TimeInterval_type) :: intv, rem
-        integer :: nrecs, nfiles
+        type (MPAS_TimeInterval_type) :: intv, rem, zeroIntv
+        integer :: nrecs, nfiles, irec, direction
         logical :: in_future
 
-!
-! TODO: Use more descriptive error codes so that caller can tell why we couldn't build a filename
-!
+        STREAM_DEBUG_WRITE(' ** Building Filename')
 
         ierr = 0
 
-        if (when >= ref_time) then
-            intv = when - ref_time
-            in_future = .true.
-        else 
-            intv = ref_time - when
-            in_future = .false.
-        end if
-
-        call mpas_interval_division( ref_time, intv, period, nrecs, rem)
-
-        call mpas_set_timeInterval(zero, S=0)
-
-        if (whence == MPAS_STREAM_EXACT_TIME .and. rem /= zero) then
-            ierr = 1
-            return
-
-        else if (rem /= zero) then
-            if ((whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE .or. whence == MPAS_STREAM_LATEST_BEFORE) .and. .not. in_future) then
-                nrecs = nrecs + 1
-            else if ((whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER .or. whence == MPAS_STREAM_EARLIEST_AFTER) .and. in_future) then
-                nrecs = nrecs + 1
-            else if (whence == MPAS_STREAM_NEAREST) then
-                if (rem > (period / 2)) then
-                    nrecs = nrecs + 1
-                end if
-            end if
-
-        else if (rem == zero) then
-            if (in_future) then
-                if (whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
-                    nrecs = nrecs + 1
-                else if (whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
-                    nrecs = nrecs - 1
-                end if
-            else
-                if (whence == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
-                    nrecs = nrecs - 1
-                else if (whence == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
-                    nrecs = nrecs + 1
-                end if
-            end if
-        end if 
-
-        nfiles = nrecs / maxRecords
-        offset = nrecs - (nfiles * maxRecords)
-
-        if (in_future) then
-            filetime = ref_time + period * (maxRecords * nfiles)
+        ! If current time (when) is further ahead than ref_time
+        ! the interval we want is when - ref_time (time between now and the reference time)
+        if ( when >= ref_time ) then
+           intv = when - ref_time
+           direction = 1
         else
-            if (offset /= 0) then
-                nfiles = nfiles + 1
-                offset = maxRecords - offset
-            end if
-            filetime = ref_time - period * (maxRecords * nfiles)
+           intv = ref_time - when
+           direction = -1
         end if
 
-        ! Switch from a 0-based to a 1-based offset
-        offset = offset + 1
+!       call mpas_get_time(when, dateTimeString=temp_string)
+        STREAM_DEBUG_WRITE(' ** when is: ' COMMA trim(temp_string))
 
+!       call mpas_get_time(ref_time, dateTimeString=temp_string)
+        STREAM_DEBUG_WRITE(' ** ref_time is: ' COMMA trim(temp_string))
+
+!       call mpas_get_timeInterval(intv, timeString=temp_string)
+        STREAM_DEBUG_WRITE(' ** intv is: ' COMMA trim(temp_string))
+
+        call mpas_interval_division(ref_time, intv, filename_interval, nrecs, rem) 
+
+!       STREAM_DEBUG_WRITE(' ** Divisions are: ' COMMA nrecs)
+
+        call mpas_set_timeInterval(zeroIntv, s=0)
+
+        if ( rem /= zeroIntv ) then
+            ! direction == 1 means when is later than ref_time
+            if (direction == 1) then
+                filetime = when - rem
+            else
+                filetime = when + rem
+                filetime = filetime - filename_interval
+            end if
+        else
+            filetime = when
+        end if
         call mpas_get_time(filetime, dateTimeString=when_string)
+        STREAM_DEBUG_WRITE(' ** filetime start is: ' COMMA trim(when_string))
 
         call mpas_expand_string(when_string, filename_template, filename)
 
@@ -4264,17 +4437,18 @@ end module mpas_stream_manager
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, ref_time_c, rec_intv_c, &
-                                      maxRecords_c, immutable_c, precision_c, clobber_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, filename_intv_c, ref_time_c, rec_intv_c, &
+                                      immutable_c, precision_c, clobber_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
-                                    MPAS_STREAM_PROPERTY_MAX_RECORDS, MPAS_STREAM_PROPERTY_REF_TIME, &
+                                    MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
                                     MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
                                     MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
                                     MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_stream_mgr_create_stream, &
                                     MPAS_stream_mgr_set_property
+
     use mpas_kind_types, only : StrKIND
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION
     use mpas_io_units, only : stderrUnit
@@ -4285,28 +4459,27 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     character(kind=c_char) :: streamID_c(*)
     integer(kind=c_int) :: direction_c
     character(kind=c_char) :: filename_c(*)
+    character(kind=c_char) :: filename_intv_c(*)
     character(kind=c_char) :: ref_time_c(*)
     character(kind=c_char) :: rec_intv_c(*)
-    integer(kind=c_int) :: maxRecords_c
     integer(kind=c_int) :: immutable_c
     integer(kind=c_int) :: precision_c
     integer(kind=c_int) :: clobber_c
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, filename, reference_time, record_interval
-    integer :: direction, maxRecords, immutable, prec, ierr
+    character(len=StrKIND) :: streamID, filename, filename_interval, reference_time, record_interval
+    integer :: direction, immutable, prec, ierr
     integer :: clobber_mode
-
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     direction = direction_c
     call mpas_c_to_f_string(filename_c, filename)
+    call mpas_c_to_f_string(filename_intv_c, filename_interval)
     call mpas_c_to_f_string(ref_time_c, reference_time)
     call mpas_c_to_f_string(rec_intv_c, record_interval)
     immutable = immutable_c
-    maxRecords = maxRecords_c
 
     if (precision_c == 4) then
         prec = MPAS_IO_SINGLE_PRECISION
@@ -4328,10 +4501,11 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
        clobber_mode = MPAS_STREAM_CLOBBER_NEVER
     end if
 
+    STREAM_DEBUG_WRITE('Creating stream from c...')
     
     !
     ! For immutable streams, the stream should have already been defined at this point, and
-    !    all we need to do is update the stream's filename template and maximum records per file;
+    !    all we need to do is update the stream's filename template;
     !    otherwise, we need to create a new stream
     !
     ierr = 0
@@ -4348,20 +4522,23 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
             ierr_c = 1
             return
         end if
-        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MAX_RECORDS, maxRecords, ierr=ierr)
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_PRECISION, prec, ierr=ierr)
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_CLOBBER, clobber_mode, ierr=ierr)
     else
-        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, maxRecords, realPrecision=prec, &
+        call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, realPrecision=prec, &
                                            clobberMode=clobber_mode, ierr=ierr)
     end if
 
-    if (reference_time /= 'none') then
+    if (reference_time /= 'initial_time') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, reference_time, ierr=ierr)
     end if
 
     if (record_interval /= 'none') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_RECORD_INTV, record_interval, ierr=ierr)
+    end if
+
+    if (trim(filename_interval) /= 'none') then
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_FILENAME_INTV, filename_interval, ierr=ierr)
     end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then

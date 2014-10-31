@@ -100,7 +100,6 @@
 		<stream name="input" 
                         type="input" 
                         filename_template="x1.40962.grid.nc"
-                        records_per_file="1"
                         input_interval="initial_only" 
                         immutable="true">
 
@@ -224,7 +223,6 @@
 		<stream name="output" 
                         type="output" 
                         filename_template="x1.40962.init.nc"
-                        records_per_file="1"
                         output_interval="initial_only"
                         packages="initial_conds"
                         runtime_format="separate_file">
@@ -369,8 +367,8 @@
 		<stream name="surface" 
                         type="output" 
                         filename_template="x1.40962.sfc_update.nc"
-                        records_per_file="0"
                         output_interval="none" 
+                        filename_interval="none"
                         packages="sfc_update"
                         immutable="true">
 

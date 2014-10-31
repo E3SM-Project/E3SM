@@ -52,11 +52,11 @@
 	</nml_record>
 	<streams>
 		<stream name="input" 
-                        type="input"
-                        filename_template="grid.nc"
-                        records_per_file="1"
-                        input_interval="initial_only"
-                        immutable="true">
+				type="input"
+				filename_template="grid.nc"
+				filename_interval="none"
+				input_interval="initial_only"
+				immutable="true">
 
 			<var name="u"/>
 			<var name="h"/>
@@ -107,12 +107,12 @@
 			<var name="u_src"/>
 		</stream>
 		<stream name="restart" 
-                        type="input;output"
-                        filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
-                        records_per_file="1"
-                        input_interval="initial_only"
-                        output_interval="none"
-                        immutable="true">
+				type="input;output"
+				filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="00_00:00:01"
+				input_interval="initial_only"
+				output_interval="none"
+				immutable="true">
 
 			<var name="xtime"/>
 			<var name="u"/>
@@ -166,11 +166,11 @@
 			<var name="u_src"/>
 		</stream>
 		<stream name="output" 
-                        type="output"
-                        filename_template="output.nc"
-                        records_per_file="1"
-                        output_interval="6:00:00"
-                        runtime_format="single_file">
+				type="output"
+				filename_template="output.nc"
+				filename_interval="none"
+				output_interval="6:00:00"
+				runtime_format="single_file">
 
 			<var name="xtime"/>
 			<var name="u"/>
